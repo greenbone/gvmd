@@ -4537,6 +4537,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   column_t *select_columns;
   gchar *columns;
   gchar *trash_columns;
+  gchar *opts_table;
   const char **filter_columns;
   int first, max;
   gchar *from_table, *trash_extra, *clause, *filter_order, *filter;
@@ -4577,6 +4578,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   columns = type_columns (type, apply_overrides);
   trash_columns = type_trash_columns (type, apply_overrides);
   filter_columns = type_filter_columns (type, apply_overrides);
+  opts_table = type_opts_table (type, apply_overrides);
 
   if (columns == NULL || filter_columns == NULL)
     {
@@ -4756,7 +4758,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                  " sum (aggregate_avg) / sum(aggregate_count),"
                  " sum (aggregate_sum), aggregate_group_value"
                  " FROM (SELECT%s %s, %s"
-                 "       FROM %s%s"
+                 "       FROM %s%s%s"
                  "       WHERE"
                  "       %s%s"
                  "       %s%s%s%s"
@@ -4766,6 +4768,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                  aggregate_select,
                  columns,
                  from_table,
+                 opts_table ? opts_table : "",
                  extra_tables ? extra_tables : "",
                  owned_clause,
                  trash_extra,
@@ -8966,7 +8969,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
    "last_report", "threat", "trend", "severity", "schedule", "next_due",      \
    "first", "last", NULL }
 
-#define TASK_ITERATOR_COLUMNS(overrides)                                    \
+#define TASK_ITERATOR_COLUMNS                                               \
  {                                                                          \
    GET_ITERATOR_COLUMNS (tasks),                                            \
    { "run_status", NULL },                                                  \
@@ -8982,8 +8985,8 @@ append_to_task_string (task_t task, const char* field, const char* value)
      " ORDER BY date ASC LIMIT 1)",                                         \
      "first_report"                                                         \
    },                                                                       \
-   { "task_threat_level (id, " overrides ")", "threat" },                   \
-   { "task_trend (id, " overrides ")", "trend" },                           \
+   { "task_threat_level (id, opts.override)", "threat" },                   \
+   { "task_trend (id, opts.override)", "trend" },                           \
    { "run_status_name (run_status)", "status" },                            \
    {                                                                        \
      "(SELECT uuid FROM reports WHERE task = tasks.id"                      \
@@ -8992,7 +8995,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      " ORDER BY date DESC LIMIT 1)",                                        \
      "last_report"                                                          \
    },                                                                       \
-   { "task_severity (id, " overrides ")", "severity" },                     \
+   { "task_severity (id, opts.override)", "severity" },                     \
    {                                                                        \
      "(SELECT count(*) FROM reports"                                        \
      /* TODO 1 == TASK_STATUS_DONE */                                       \
@@ -9035,6 +9038,22 @@ append_to_task_string (task_t task, const char* field, const char* value)
  }
 
 /**
+ * @brief Generate the extra_tables string for a task iterator.
+ *
+ * @param[in]  override  Whether to apply overrides.
+ *
+ * @return Newly allocated string with the extra_tables clause.
+ */
+static gchar*
+task_iterator_opts_table (int override)
+{
+  return g_strdup_printf (", (SELECT"
+                          "   %d AS override)"
+                          "  AS opts",
+                          override);
+}
+
+/**
  * @brief Initialise a task iterator, limited to current user's tasks.
  *
  * @param[in]  iterator    Task iterator.
@@ -9043,22 +9062,27 @@ append_to_task_string (task_t task, const char* field, const char* value)
 static void
 init_user_task_iterator (iterator_t* iterator, int trash)
 {
-  static column_t select_columns[] = TASK_ITERATOR_COLUMNS ("0");
+  static column_t select_columns[] = TASK_ITERATOR_COLUMNS;
+  gchar *extra_tables;
   gchar *columns;
+
+  extra_tables = task_iterator_opts_table (0);
 
   columns = columns_build_select (select_columns);
 
   init_iterator (iterator,
                  "SELECT %s"
-                 " FROM tasks"
+                 " FROM tasks%s"
                  " WHERE ((owner IS NULL)"
                  "        OR (owner = (SELECT id FROM users"
                  "                     WHERE users.uuid = '%s')))"
                  "%s;",
                  columns,
+                 extra_tables,
                  current_credentials.uuid,
                  trash ? " AND hidden = 2" : " AND hidden < 2");
 
+  g_free (extra_tables);
   g_free (columns);
 }
 
@@ -9075,11 +9099,12 @@ int
 init_task_iterator (iterator_t* iterator, const get_data_t *get)
 {
   static const char *filter_columns[] = TASK_ITERATOR_FILTER_COLUMNS;
-  static column_t columns_overrides[] = TASK_ITERATOR_COLUMNS ("1");
-  static column_t columns[] = TASK_ITERATOR_COLUMNS ("0");
+  static column_t columns[] = TASK_ITERATOR_COLUMNS;
   char *filter;
   gchar *value;
   int overrides;
+  gchar *extra_tables;
+  int ret;
 
   if (get->filt_id && strcmp (get->filt_id, "0"))
     {
@@ -9094,16 +9119,18 @@ init_task_iterator (iterator_t* iterator, const get_data_t *get)
   overrides = value && strcmp (value, "0");
   g_free (value);
 
-  return init_get_iterator (iterator,
+  extra_tables = task_iterator_opts_table (overrides);
+
+  ret = init_get_iterator (iterator,
                             "task",
                             get,
                             /* Columns. */
-                            overrides ? columns_overrides : columns,
+                            columns,
                             /* Columns for trashcan. */
-                            overrides ? columns_overrides : columns,
+                            columns,
                             filter_columns,
                             0,
-                            NULL,
+                            extra_tables,
                             (get->id
                              && (strcmp (get->id, MANAGE_EXAMPLE_TASK_UUID)
                                  == 0))
@@ -9112,6 +9139,9 @@ init_task_iterator (iterator_t* iterator, const get_data_t *get)
                                  ? " AND hidden = 2"
                                  : " AND hidden = 0"),
                             current_credentials.uuid ? TRUE : FALSE);
+
+  g_free (extra_tables);
+  return ret;
 }
 
 /**
@@ -12766,11 +12796,12 @@ unsigned int
 task_count (const get_data_t *get)
 {
   static const char *extra_columns[] = TASK_ITERATOR_FILTER_COLUMNS;
-  static column_t columns_overrides[] = TASK_ITERATOR_COLUMNS ("1");
-  static column_t columns[] = TASK_ITERATOR_COLUMNS ("0");
+  static column_t columns[] = TASK_ITERATOR_COLUMNS;
   char *filter;
   gchar *value;
   int overrides;
+  gchar *extra_tables;
+  int ret;
 
   if (get->filt_id && strcmp (get->filt_id, "0"))
     {
@@ -12785,10 +12816,13 @@ task_count (const get_data_t *get)
   overrides = value && strcmp (value, "0");
   g_free (value);
 
-  return count ("task", get,
-                overrides ? columns_overrides : columns,
-                overrides ? columns_overrides : columns,
-                extra_columns, 0, NULL,
+  extra_tables = task_iterator_opts_table (overrides);
+
+  ret = count ("task", get,
+                columns,
+                columns,
+                extra_columns, 0,
+                extra_tables,
                 (get->id
                  && (strcmp (get->id, MANAGE_EXAMPLE_TASK_UUID)
                      == 0))
@@ -12797,6 +12831,9 @@ task_count (const get_data_t *get)
                      ? " AND hidden = 2"
                      : " AND hidden = 0"),
                 TRUE);
+
+  g_free (extra_tables);
+  return ret;
 }
 
 /**
@@ -54022,10 +54059,8 @@ type_columns (const char *type, int apply_overrides)
     return NULL;
   else if (strcasecmp (type, "TASK") == 0)
     {
-      static column_t columns[] = TASK_ITERATOR_COLUMNS ("0");
-      static column_t columns_overrides[] = TASK_ITERATOR_COLUMNS ("1");
-      return columns_build_select (apply_overrides ? columns_overrides
-                                                   : columns);
+      static column_t columns[] = TASK_ITERATOR_COLUMNS;
+      return columns_build_select (columns);
     }
   else if (strcasecmp (type, "ALLINFO") == 0)
     {
@@ -54072,8 +54107,7 @@ type_columns (const char *type, int apply_overrides)
 column_t *
 type_select_columns (const char *type, int apply_overrides)
 {
-  static column_t task_columns[] = TASK_ITERATOR_COLUMNS ("0");
-  static column_t task_columns_overrides[] = TASK_ITERATOR_COLUMNS ("1");
+  static column_t task_columns[] = TASK_ITERATOR_COLUMNS;
   static column_t allinfo_columns[] = ALL_INFO_ITERATOR_COLUMNS;
   static column_t cpe_columns[] = CPE_INFO_ITERATOR_COLUMNS;
   static column_t cve_columns[] = CVE_INFO_ITERATOR_COLUMNS;
@@ -54086,7 +54120,7 @@ type_select_columns (const char *type, int apply_overrides)
   if (type == NULL)
     return NULL;
   else if (strcasecmp (type, "TASK") == 0)
-    return apply_overrides ? task_columns_overrides : task_columns;
+    return task_columns;
   else if (strcasecmp (type, "ALLINFO") == 0)
     return allinfo_columns;
   else if (strcasecmp (type, "CPE") == 0)
@@ -54168,15 +54202,26 @@ type_trash_columns (const char *type, int apply_overrides)
     return NULL;
   else if (strcasecmp (type, "TASK") == 0)
     {
-      static column_t columns[] = TASK_ITERATOR_COLUMNS ("0");
-      static column_t columns_overrides[] = TASK_ITERATOR_COLUMNS ("1");
-      return columns_build_select (apply_overrides ? columns_overrides
-                                                   : columns);
+      static column_t columns[] = TASK_ITERATOR_COLUMNS;
+      return columns_build_select (columns);
     }
   else if (strcasecmp (type, "ALERT") == 0)
     {
       static column_t columns[] = ALERT_ITERATOR_TRASH_COLUMNS;
       return columns_build_select (columns);
+    }
+  else
+    return NULL;
+}
+
+gchar*
+type_opts_table (const char *type, int apply_overrides)
+{
+  if (type == NULL)
+    return NULL;
+  else if (strcasecmp (type, "TASK") == 0)
+    {
+      return task_iterator_opts_table (apply_overrides);
     }
   else
     return NULL;
