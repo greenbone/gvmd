@@ -4320,6 +4320,7 @@ resource_name (const char *type, const char *uuid, int location, char **name)
  * @param[in]  filter_columns  Columns for filter.
  * @param[in]  distinct        Whether the query should be distinct.  Skipped
  *                             for trash and single resource.
+ * @param[in]  extra_tables    Extra tables to join in FROM clause.
  * @param[in]  extra_where     Extra WHERE clauses.  Skipped for single
  *                             resource.
  * @param[in]  owned           Only get items owned by the current user.
@@ -4332,6 +4333,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    const get_data_t *get, column_t *select_columns,
                    column_t *trash_select_columns,
                    const char **filter_columns, int distinct,
+                   const char *extra_tables,
                    const char *extra_where, int owned)
 {
   int first, max;
@@ -4425,12 +4427,13 @@ init_get_iterator (iterator_t* iterator, const char *type,
   if (resource && get->trash)
     init_iterator (iterator,
                    "SELECT %s"
-                   " FROM %ss%s"
+                   " FROM %ss%s %s"
                    " WHERE id = %llu"
                    " AND %s"
                    "%s;",
                    columns,
                    type,
+                   extra_tables ? extra_tables : "",
                    type_trash_in_table (type) ? "" : "_trash",
                    resource,
                    owned_clause,
@@ -4438,13 +4441,14 @@ init_get_iterator (iterator_t* iterator, const char *type,
   else if (get->trash)
     init_iterator (iterator,
                    "SELECT %s"
-                   " FROM %ss%s"
+                   " FROM %ss%s %s"
                    " WHERE"
                    "%s"
                    "%s"
                    "%s;",
                    columns,
                    type,
+                   extra_tables ? extra_tables : "",
                    type_trash_in_table (type) ? "" : "_trash",
                    owned_clause,
                    extra_where ? extra_where : "",
@@ -4452,12 +4456,13 @@ init_get_iterator (iterator_t* iterator, const char *type,
   else if (resource)
     init_iterator (iterator,
                    "SELECT %s"
-                   " FROM %ss"
+                   " FROM %ss %s"
                    " WHERE id = %llu"
                    " AND %s"
                    "%s;",
                    columns,
                    type,
+                   extra_tables ? extra_tables : "",
                    resource,
                    owned_clause,
                    order);
@@ -4465,7 +4470,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
     {
       init_iterator (iterator,
                    "%sSELECT %s"
-                   " FROM %ss"
+                   " FROM %ss %s"
                    " WHERE"
                    " %s"
                    "%s%s%s%s%s"
@@ -4473,6 +4478,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    distinct ? "SELECT DISTINCT * FROM (" : "",
                    columns,
                    type,
+                   extra_tables ? extra_tables : "",
                    owned_clause,
                    clause ? " AND (" : "",
                    clause ? clause : "",
@@ -6561,6 +6567,7 @@ init_alert_iterator (iterator_t* iterator, const get_data_t *get)
                             trash_columns,
                             filter_columns,
                             0,
+                            NULL,
                             NULL,
                             TRUE);
 }
@@ -9096,6 +9103,7 @@ init_task_iterator (iterator_t* iterator, const get_data_t *get)
                             overrides ? columns_overrides : columns,
                             filter_columns,
                             0,
+                            NULL,
                             (get->id
                              && (strcmp (get->id, MANAGE_EXAMPLE_TASK_UUID)
                                  == 0))
@@ -16045,6 +16053,7 @@ init_report_iterator (iterator_t* iterator, const get_data_t *get)
                             NULL,
                             filter_columns,
                             0,
+                            NULL,
                             get->trash
                              ? " AND (SELECT hidden FROM tasks"
                                "      WHERE tasks.id = task)"
@@ -16683,7 +16692,7 @@ where_search_phrase (const char* search_phrase, int exact)
 /**
  * @brief Result iterator columns.
  */
-#define RESULT_ITERATOR_COLUMNS(autofp, override, dynamic)                    \
+#define RESULT_ITERATOR_COLUMNS                                               \
   {                                                                           \
     { "id", NULL },                                                           \
     { "uuid", NULL },                                                         \
@@ -16706,11 +16715,11 @@ where_search_phrase (const char* search_phrase, int exact)
       "                      = (SELECT users.id"                              \
       "                         FROM current_credentials, users"              \
       "                         WHERE current_credentials.uuid = users.uuid)" \
-      "                  AND override = " override                            \
-      "                  AND dynamic = " dynamic                              \
+      "                  AND result_new_severities.override = opts.override"  \
+      "                  AND result_new_severities.dynamic = opts.dynamic"    \
       "                  LIMIT 1))", "type" },                                \
     { "(SELECT autofp FROM results_autofp"                                    \
-      " WHERE (result = results.id) AND (autofp_selection = " autofp "))",    \
+      " WHERE (result = results.id) AND (autofp_selection = opts.autofp))",   \
       "auto_type" },                                                          \
     { "description", NULL },                                                  \
     { "task", NULL },                                                         \
@@ -16724,8 +16733,8 @@ where_search_phrase (const char* search_phrase, int exact)
       "     = (SELECT users.id"                                               \
       "        FROM current_credentials, users"                               \
       "        WHERE current_credentials.uuid = users.uuid)"                  \
-      " AND override = " override                                             \
-      " AND dynamic = " dynamic                                               \
+      " AND result_new_severities.override = opts.override"                   \
+      " AND result_new_severities.dynamic = opts.dynamic"                     \
       " LIMIT 1)", "severity" },                                              \
     { "(SELECT name FROM nvts WHERE nvts.oid =  nvt)",                        \
       "vulnerability" },                                                      \
@@ -16737,37 +16746,6 @@ where_search_phrase (const char* search_phrase, int exact)
     { "qod_type", NULL },                                                     \
     { NULL, NULL }                                                            \
   }
-
-#define RESULT_ITERATOR_COLUMN_COUNT 30
-
-#define RESULT_ITERATOR_COLUMNS_ARRAY                 \
-      {                                               \
-        {                                             \
-          {                                           \
-            RESULT_ITERATOR_COLUMNS ("0", "0", "0"),  \
-            RESULT_ITERATOR_COLUMNS ("0", "0", "1")   \
-          }, {                                        \
-            RESULT_ITERATOR_COLUMNS ("0", "1", "0"),  \
-            RESULT_ITERATOR_COLUMNS ("0", "1", "1")   \
-          }                                           \
-        }, {                                          \
-          {                                           \
-            RESULT_ITERATOR_COLUMNS ("1", "0", "0"),  \
-            RESULT_ITERATOR_COLUMNS ("1", "0", "1")   \
-          }, {                                        \
-            RESULT_ITERATOR_COLUMNS ("1", "1", "0"),  \
-            RESULT_ITERATOR_COLUMNS ("1", "1", "1")   \
-          }                                           \
-        }, {                                          \
-          {                                           \
-            RESULT_ITERATOR_COLUMNS ("2", "0", "0"),  \
-            RESULT_ITERATOR_COLUMNS ("2", "0", "1")   \
-          }, {                                        \
-            RESULT_ITERATOR_COLUMNS ("2", "1", "0"),  \
-            RESULT_ITERATOR_COLUMNS ("2", "1", "1")   \
-          }                                           \
-        }                                             \
-      };                                              \
 
 /**
  * @brief Initialise a result iterator.
@@ -16783,22 +16761,35 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
                           int autofp, int override, int dynamic_severity)
 {
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[3][2][2][RESULT_ITERATOR_COLUMN_COUNT]
-                    = RESULT_ITERATOR_COLUMNS_ARRAY;
+  static column_t columns[] = RESULT_ITERATOR_COLUMNS;
+  int ret;
+  gchar *extra_tables;
 
-  return init_get_iterator (iterator,
+  extra_tables
+    = g_strdup_printf (", (SELECT"
+                       "   %d AS autofp,"
+                       "   %d AS override,"
+                       "   %d AS dynamic) AS opts",
+                       autofp,
+                       override,
+                       dynamic_severity);
+
+  ret = init_get_iterator (iterator,
                             "result",
                             get,
-                            columns [autofp][override][dynamic_severity],
-                            columns [autofp][override][dynamic_severity],
+                            columns,
+                            columns,
                             filter_columns,
                             0,
+                            extra_tables,
                             get->trash
                               ? "AND ((SELECT (hidden = 2) FROM tasks"
                                 "      WHERE tasks.id = task))"
                               : "AND ((SELECT (hidden = 0) FROM tasks"
                                 "      WHERE tasks.id = task))",
                             TRUE);
+  g_free (extra_tables);
+  return ret;
 }
 
 /**
@@ -16813,19 +16804,32 @@ result_count (const get_data_t *get,
               int autofp, int override, int dynamic_severity)
 {
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[3][2][2][RESULT_ITERATOR_COLUMN_COUNT]
-                    = RESULT_ITERATOR_COLUMNS_ARRAY
+  static column_t columns[] = RESULT_ITERATOR_COLUMNS;
+  int ret;
+  gchar *extra_tables;
 
-  return count ("result", get,
-                columns [autofp][override][dynamic_severity],
-                columns [autofp][override][dynamic_severity],
-                filter_columns, 0, 0,
+  extra_tables
+    = g_strdup_printf (", (SELECT"
+                       "   %d AS autofp,"
+                       "   %d AS override,"
+                       "   %d AS dynamic) AS opts",
+                       autofp,
+                       override,
+                       dynamic_severity);
+
+  ret = count ("result", get,
+                columns,
+                columns,
+                filter_columns, 0,
+                extra_tables,
                 get->trash
                   ? "AND ((SELECT (hidden = 2) FROM tasks"
                     "      WHERE tasks.id = task))"
                   : "AND ((SELECT (hidden = 0) FROM tasks"
                     "      WHERE tasks.id = task))",
                 TRUE);
+  g_free (extra_tables);
+  return ret;
 }
 
 /**
@@ -27882,6 +27886,7 @@ init_target_iterator (iterator_t* iterator, const get_data_t *get)
                             filter_columns,
                             0,
                             NULL,
+                            NULL,
                             TRUE);
 }
 
@@ -29578,6 +29583,7 @@ init_config_iterator (iterator_t* iterator, const get_data_t *get)
                             filter_columns,
                             0,
                             NULL,
+                            NULL,
                             TRUE);
 }
 
@@ -30948,6 +30954,7 @@ init_nvt_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
                            NULL,
                            filter_columns,
                            0,
+                           NULL,
                            clause,
                            0);
 
@@ -34049,6 +34056,7 @@ init_lsc_credential_iterator (iterator_t* iterator, const get_data_t *get)
                             filter_columns,
                             0,
                             NULL,
+                            NULL,
                             TRUE);
 }
 
@@ -35430,6 +35438,7 @@ init_agent_iterator (iterator_t* iterator, const get_data_t *get)
                             filter_columns,
                             0,
                             NULL,
+                            NULL,
                             TRUE);
 }
 
@@ -36312,6 +36321,7 @@ init_note_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
                            trash_columns,
                            filter_columns,
                            task || nvt,
+                           NULL,
                            result_clause,
                            TRUE);
 
@@ -37342,6 +37352,7 @@ init_override_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
                            trash_columns,
                            filter_columns,
                            task || nvt,
+                           NULL,
                            result_clause,
                            TRUE);
 
@@ -38229,7 +38240,7 @@ init_scanner_iterator (iterator_t* iterator, const get_data_t *get)
   static column_t trash_columns[] = SCANNER_ITERATOR_TRASH_COLUMNS;
 
   return init_get_iterator (iterator, "scanner", get, columns, trash_columns,
-                            filter_columns, 0, NULL, TRUE);
+                            filter_columns, 0, NULL, NULL, TRUE);
 }
 
 /**
@@ -39195,6 +39206,7 @@ init_schedule_iterator (iterator_t* iterator, const get_data_t *get)
                             trash_columns,
                             filter_columns,
                             0,
+                            NULL,
                             NULL,
                             TRUE);
 }
@@ -42104,6 +42116,7 @@ init_report_format_iterator (iterator_t* iterator, const get_data_t *get)
                             filter_columns,
                             0,
                             NULL,
+                            NULL,
                             TRUE);
 }
 
@@ -42938,6 +42951,7 @@ init_slave_iterator (iterator_t* iterator, const get_data_t *get)
                             trash_columns,
                             filter_columns,
                             0,
+                            NULL,
                             NULL,
                             TRUE);
 }
@@ -43878,6 +43892,7 @@ init_group_iterator (iterator_t* iterator, const get_data_t *get)
                             filter_columns,
                             0,
                             NULL,
+                            NULL,
                             TRUE);
 }
 
@@ -44683,6 +44698,7 @@ init_permission_iterator (iterator_t* iterator, const get_data_t *get)
                             trash_columns,
                             filter_columns,
                             0,
+                            NULL,
                             NULL,
                             TRUE);
 }
@@ -46272,6 +46288,7 @@ init_port_list_iterator (iterator_t* iterator, const get_data_t *get)
                             filter_columns,
                             0,
                             NULL,
+                            NULL,
                             TRUE);
 }
 
@@ -47263,6 +47280,7 @@ init_role_iterator (iterator_t* iterator, const get_data_t *get)
                             filter_columns,
                             0,
                             NULL,
+                            NULL,
                             TRUE);
 }
 
@@ -47782,6 +47800,7 @@ init_filter_iterator (iterator_t* iterator, const get_data_t *get)
                             trash_columns,
                             filter_columns,
                             0,
+                            NULL,
                             NULL,
                             TRUE);
 }
@@ -50476,6 +50495,7 @@ init_cpe_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
                            NULL,
                            filter_columns,
                            0,
+                           NULL,
                            clause,
                            FALSE);
   g_free (clause);
@@ -50540,6 +50560,7 @@ init_cve_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
                            NULL,
                            filter_columns,
                            0,
+                           NULL,
                            clause,
                            FALSE);
   g_free (clause);
@@ -50740,6 +50761,7 @@ init_ovaldef_info_iterator (iterator_t* iterator, get_data_t *get,
                            NULL,
                            filter_columns,
                            0,
+                           NULL,
                            clause,
                            FALSE);
   g_free (clause);
@@ -50908,6 +50930,7 @@ init_cert_bund_adv_info_iterator (iterator_t* iterator, get_data_t *get,
                            NULL,
                            filter_columns,
                            0,
+                           NULL,
                            clause,
                            FALSE);
   g_free (clause);
@@ -51089,6 +51112,7 @@ init_dfn_cert_adv_info_iterator (iterator_t* iterator, get_data_t *get,
                            NULL,
                            filter_columns,
                            0,
+                           NULL,
                            clause,
                            FALSE);
   g_free (clause);
@@ -52941,6 +52965,7 @@ init_user_iterator (iterator_t* iterator, const get_data_t *get)
                             filter_columns,
                             0,
                             NULL,
+                            NULL,
                             TRUE);
 }
 
@@ -53649,6 +53674,7 @@ init_tag_iterator (iterator_t* iterator, const get_data_t *get)
                             filter_columns,
                             0,
                             NULL,
+                            NULL,
                             TRUE);
 }
 
@@ -53817,6 +53843,7 @@ init_tag_name_iterator (iterator_t* iterator, const get_data_t *get)
                             columns,
                             filter_columns,
                             1,
+                            NULL,
                             NULL,
                             TRUE);
 }

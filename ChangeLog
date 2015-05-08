@@ -1,3 +1,32 @@
+2015-05-08  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r22142.
+
+	Allow setting options like autofp and overrides in iterator columns
+	via an addition to the FROM clause, which is more flexible than
+	macro parmeters. Use this in init_result_get_iterator.
+
+	* src/manage_sql.c (init_get_iterator): Add extra_tables parameter for
+	adding to the FROM clause.
+	(init_alert_iterator, init_task_iterator, init_report_iterator): Add
+	NULL extra_tables parameter to init_get_iterator calls.
+	(RESULT_ITERATOR_COLUMNS): Remove macro parameters and use extra
+	columns added in FROM clause for the options instead.
+	(RESULT_ITERATOR_COLUMN_COUNT, RESULT_ITERATOR_COLUMNS_ARRAY): Remove.
+	(init_result_get_iterator, result_count): Use RESULT_ITERATOR_COLUMNS
+	and an addition to the FROM clause via extra_tables instead of the now
+	removed RESULT_ITERATOR_COLUMNS_ARRAY.
+	(init_target_iterator, init_config_iterator, init_nvt_info_iterator)
+	(init_lsc_credential_iterator, init_agent_iterator, init_note_iterator)
+	(init_override_iterator, init_scanner_iterator, init_schedule_iterator)
+	(init_report_format_iterator, init_slave_iterator, init_group_iterator)
+	(init_permission_iterator, init_port_list_iterator, init_role_iterator)
+	(init_filter_iterator, init_cpe_info_iterator, init_cve_info_iterator)
+	(init_ovaldef_info_iterator, init_cert_bund_adv_info_iterator)
+	(init_dfn_cert_adv_info_iterator, init_user_iterator)
+	(init_tag_iterator, init_tag_name_iterator): Add NULL extra_tables
+	parameter to init_get_iterator calls.
+
 2015-05-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r22311.
