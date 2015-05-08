@@ -1,5 +1,13 @@
 2015-05-08  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Backport r22156.
+
+	* src/manage_sql.c (type_columns, type_select_columns)
+	(type_filter_columns, type_trash_columns, type_opts_table)
+	(type_table): Add documentation.
+
+2015-05-08  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Backport r22155.
 
 	* src/manage_sql.c (result_iterator_opts_table): New function.
