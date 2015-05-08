@@ -15983,7 +15983,7 @@ report_add_result (report_t report, result_t result)
 /**
  * @brief Report iterator columns.
  */
-#define REPORT_ITERATOR_COLUMNS(overrides)                                   \
+#define REPORT_ITERATOR_COLUMNS                                              \
  {                                                                           \
    { "id", NULL },                                                           \
    { "uuid", NULL },                                                         \
@@ -15998,7 +15998,7 @@ report_add_result (report_t report, result_t result)
    { "(SELECT uuid FROM tasks WHERE tasks.id = task)", "task_id" },          \
    { "date", NULL },                                                         \
    { "(SELECT name FROM tasks WHERE tasks.id = task)", "task" },             \
-   { "report_severity (id, " overrides ")", "severity" },                    \
+   { "report_severity (id, opts.override)", "severity" },                    \
    {                                                                         \
      "(CASE WHEN (SELECT target IS NULL FROM tasks WHERE tasks.id = task)"   \
      "  THEN 'Container'"                                                    \
@@ -16011,19 +16011,35 @@ report_add_result (report_t report, result_t result)
      "status"                                                                \
    },                                                                        \
    {                                                                         \
-     " report_severity_count (id, " overrides ", 'False Positive')",         \
+     " report_severity_count (id, opts.override, 'False Positive')",         \
      "false_positive"                                                        \
    },                                                                        \
-   { "report_severity_count (id, " overrides ", 'Log')", "log" },            \
-   { "report_severity_count (id, " overrides ", 'Low')", "low" },            \
-   { "report_severity_count (id, " overrides ", 'Medium')", "medium" },      \
-   { "report_severity_count (id, " overrides ", 'High')", "high" },          \
+   { "report_severity_count (id, opts.override, 'Log')", "log" },            \
+   { "report_severity_count (id, opts.override, 'Low')", "low" },            \
+   { "report_severity_count (id, opts.override, 'Medium')", "medium" },      \
+   { "report_severity_count (id, opts.override, 'High')", "high" },          \
    {                                                                         \
      "(SELECT name FROM users WHERE users.id = reports.owner)",              \
      "_owner"                                                                \
    },                                                                        \
    { NULL, NULL }                                                            \
  }
+
+/**
+ * @brief Generate the extra_tables string for a report iterator.
+ *
+ * @param[in]  override  Whether to apply overrides.
+ *
+ * @return Newly allocated string with the extra_tables clause.
+ */
+static gchar*
+report_iterator_opts_table (int override)
+{
+  return g_strdup_printf (", (SELECT"
+                          "   %d AS override)"
+                          "  AS opts",
+                          override);
+}
 
 /**
  * @brief Count number of reports.
@@ -16036,9 +16052,15 @@ int
 report_count (const get_data_t *get)
 {
   static const char *filter_columns[] = REPORT_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = REPORT_ITERATOR_COLUMNS ("0");
-  return count ("report", get, columns, NULL,
-                filter_columns, 0, 0,
+  static column_t columns[] = REPORT_ITERATOR_COLUMNS;
+  gchar *extra_tables;
+  int ret;
+
+  extra_tables = report_iterator_opts_table (0);
+
+  ret = count ("report", get, columns, NULL,
+                filter_columns, 0,
+                extra_tables,
                 get->trash
                  ? " AND (SELECT hidden FROM tasks"
                    "      WHERE tasks.id = task)"
@@ -16047,6 +16069,9 @@ report_count (const get_data_t *get)
                    "      WHERE tasks.id = task)"
                    "     = 0",
                 TRUE);
+
+  g_free (extra_tables);
+  return ret;
 }
 
 /**
@@ -16062,11 +16087,12 @@ int
 init_report_iterator (iterator_t* iterator, const get_data_t *get)
 {
   static const char *filter_columns[] = REPORT_ITERATOR_FILTER_COLUMNS;
-  static column_t columns_overrides[] = REPORT_ITERATOR_COLUMNS ("1");
-  static column_t columns[] = REPORT_ITERATOR_COLUMNS ("0");
+  static column_t columns[] = REPORT_ITERATOR_COLUMNS;
   char *filter;
   gchar *value;
   int overrides;
+  gchar *extra_tables;
+  int ret;
 
   if (get->filt_id && strcmp (get->filt_id, "0"))
     {
@@ -16081,16 +16107,18 @@ init_report_iterator (iterator_t* iterator, const get_data_t *get)
   overrides = value && strcmp (value, "0");
   g_free (value);
 
-  return init_get_iterator (iterator,
+  extra_tables = report_iterator_opts_table (overrides);
+
+  ret = init_get_iterator (iterator,
                             "report",
                             get,
                             /* Columns. */
-                            overrides ? columns_overrides : columns,
+                            columns,
                             /* Columns for trashcan. */
                             NULL,
                             filter_columns,
                             0,
-                            NULL,
+                            extra_tables,
                             get->trash
                              ? " AND (SELECT hidden FROM tasks"
                                "      WHERE tasks.id = task)"
@@ -16099,6 +16127,8 @@ init_report_iterator (iterator_t* iterator, const get_data_t *get)
                                "      WHERE tasks.id = task)"
                                "     = 0",
                             TRUE);
+  g_free (extra_tables);
+  return ret;
 }
 
 /**
