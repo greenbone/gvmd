@@ -32,12 +32,14 @@
 
 TMP=`mktemp -d` || exit 1
 
-xsltproc ./latex.xsl $1 > ${TMP}/report.tex
+xsltproc ./latex.xsl $1 > ${TMP}/report.tex 2>/tmp/err.out
 
 pdflatex -interaction batchmode -output-directory ${TMP} ${TMP}/report.tex > /dev/null 2>&1
 
 # Run a second time to resolve references and page numbering as assembled
 # during first run.
-pdflatex -interaction batchmode -output-directory ${TMP} ${TMP}/report.tex > /dev/null 2>&1
+pdflatex -interaction batchmode -output-directory ${TMP} ${TMP}/report.tex > /dev/null 2>&1 &
+
+wait
 
 cat ${TMP}/report.pdf && rm -rf ${TMP}

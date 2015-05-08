@@ -28,4 +28,4 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-xsltproc ./HTML.xsl $1
+xsltproc ./HTML.xsl $1 2>/tmp/err.out
