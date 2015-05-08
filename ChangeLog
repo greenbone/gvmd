@@ -1,5 +1,13 @@
 2015-05-08  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Backport r22155.
+
+	* src/manage_sql.c (result_iterator_opts_table): New function.
+	(init_result_get_iterator, result_count): Use the new function to get
+	extra_tables for consistency with Tasks and Reports.
+
+2015-05-08  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Backport r22154.
 
 	Adapt Report iterators to use the new FROM clause options instead of
