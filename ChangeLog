@@ -1,5 +1,12 @@
 2015-05-08  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Backport r22164.
+
+	* src/manage_sql.c (init_get_iterator): Correct insertion order of
+	"_trash" suffix and extra_tables into the SQL string.
+
+2015-05-08  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Backport r22156.
 
 	* src/manage_sql.c (type_columns, type_select_columns)
