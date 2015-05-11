@@ -1,3 +1,23 @@
+openvas-manager 6.0.3 (2015-05-11)
+
+This is the third maintenance release of the openvas-manager 6.0 module for
+the Open Vulnerability Assessment System release 8 (OpenVAS-8).
+
+This release adds the "Verinice ITG" report format to the list of predefined
+report formats and improves the handling of QoD information in report lists. It
+also fixes an issue with signal handling and improves cross device support.
+
+Many thanks to everyone who contributed to this release:
+Matthew Mundell and Timo Pollmeier.
+
+Main changes compared to 6.0.2:
+* Cross device support when deleting RFPs has been improved.
+* The "Verinice ITG" report format is now a predefined report format.
+* An issue which caused processes spawned by OpenVAS Manager to miss signals
+  due to an overly restrictive signal mask has been fixed.
+* The handling of QoD information in report lists has been improved.
+
+
 openvas-manager 6.0.2 (2015-04-30)
 
 This is the second maintenance release of the openvas-manager 6.0 module for
