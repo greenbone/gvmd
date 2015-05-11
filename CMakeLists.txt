@@ -432,7 +432,7 @@ install (FILES src/schema_formats/RNC/generate
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_schema_formats/787a4a18-dabc-11df-9486-002264764cea/
          PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ)
 
-install (FILES src/schema_formats/XML/OMP.xml
+install (FILES ${CMAKE_BINARY_DIR}/src/schema_formats/XML/OMP.xml
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_schema_formats/18e826fc-dab6-11df-b913-002264764cea/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 

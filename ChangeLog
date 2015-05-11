@@ -1,5 +1,12 @@
 2015-05-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r22327.
+
+	* CMakeLists.txt: Add back prefix removed in last patch.  Needed because
+	OMP.xml is generated.
+
+2015-05-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r22325.
 
 	* report_formats/IVIL/generate,
