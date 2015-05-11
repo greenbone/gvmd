@@ -1,3 +1,31 @@
+2015-05-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r22325.
+
+	* report_formats/IVIL/generate,
+	report_formats/simple_bar_chart/generate,
+	report_formats/simple_map_plot/generate,
+	report_formats/simple_pie_chart/generate,
+	report_formats/simple_topo_plot/generate,
+	report_formats/sourcefire/generate, report_formats/tls-map/generate,
+	src/alert_methods/Sourcefire/alert, src/alert_methods/verinice/alert,
+	src/report_formats/ARF/generate,
+	src/report_formats/Anonymous_XML/generate,
+	src/report_formats/CPE/generate, src/report_formats/CSV_Hosts/generate,
+	src/report_formats/CSV_Results/generate,
+	src/report_formats/HTML/generate, src/report_formats/ITG/generate,
+	src/report_formats/LaTeX/generate, src/report_formats/NBE/generate,
+	src/report_formats/PDF/generate, src/report_formats/TXT/generate,
+	src/report_formats/Topology/generate,
+	src/report_formats/Verinice_ISM/generate,
+	src/report_formats/Verinice_ITG/generate,
+	src/report_formats/XML/generate, src/schema_formats/HTML/generate,
+	src/schema_formats/RNC/generate, src/schema_formats/XML-brief/generate,
+	src/schema_formats/XML/generate: Add execute permission.
+
+	* CMakeLists.txt: Install generate and alert scripts with execute
+	permissions.
+
 2015-05-08  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r22205.
