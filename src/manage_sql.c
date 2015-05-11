@@ -7306,7 +7306,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
     clean_ip = g_shell_quote (ip);
     clean_port = g_shell_quote (port);
 
-    command = g_strdup_printf ("/bin/sh %s %s %s %s %s > /dev/null"
+    command = g_strdup_printf ("%s %s %s %s %s > /dev/null"
                                " 2> /dev/null",
                                script,
                                clean_ip,
@@ -7625,14 +7625,14 @@ send_to_verinice (const char *url, const char *username, const char *password,
     clean_username = g_shell_quote (username);
     clean_password = g_shell_quote (password);
 
-    command = g_strdup_printf ("/bin/sh %s %s %s %s %s > /dev/null"
+    command = g_strdup_printf ("%s %s %s %s %s > /dev/null"
                                " 2> /dev/null",
                                script,
                                clean_url,
                                clean_username,
                                clean_password,
                                archive_file);
-    log_command = g_strdup_printf ("/bin/sh %s %s %s ****** %s > /dev/null"
+    log_command = g_strdup_printf ("%s %s %s ****** %s > /dev/null"
                                    " 2> /dev/null",
                                    script,
                                    clean_url,
@@ -25066,7 +25066,7 @@ manage_report (report_t report, report_format_t report_format,
 
       /* Call the script. */
 
-      command = g_strdup_printf ("/bin/sh %s %s > %s"
+      command = g_strdup_printf ("%s %s > %s"
                                  " 2> /dev/null",
                                  script,
                                  xml_file,
@@ -25587,7 +25587,7 @@ manage_send_report (report_t report, report_t delta_report,
 
       /* Call the script. */
 
-      command = g_strdup_printf ("/bin/sh %s %s > %s"
+      command = g_strdup_printf ("%s %s > %s"
                                  " 2> /dev/null",
                                  script,
                                  xml_file,
@@ -48652,7 +48652,7 @@ manage_schema (gchar *format, gchar **output_return, gsize *output_length,
 
       /* Call the script. */
 
-      command = g_strdup_printf ("/bin/sh %s " OPENVAS_DATA_DIR
+      command = g_strdup_printf ("%s " OPENVAS_DATA_DIR
                                  "/openvasmd/global_schema_formats"
                                  "/18e826fc-dab6-11df-b913-002264764cea/OMP.xml"
                                  " > %s"

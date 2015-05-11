@@ -1,3 +1,9 @@
+2015-05-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (send_to_sourcefire, send_to_verinice, manage_report)
+	(manage_send_report, manage_schema): Remove "/bin/sh" from commands, now
+	that all scripts are installed as executable.
+
 2015-05-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* CMakeLists.txt: Add back prefix removed in last patch.  Needed because
