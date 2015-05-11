@@ -1,3 +1,11 @@
+2015-05-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r22347.
+
+	* src/manage_sql.c (send_to_sourcefire, send_to_verinice, manage_report)
+	(manage_send_report, manage_schema): Remove "/bin/sh" from commands, now
+	that all scripts are installed as executable.
+
 2015-05-11  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post release version bump.
