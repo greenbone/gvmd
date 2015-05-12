@@ -1,3 +1,10 @@
+2015-05-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r22298.
+
+	* src/manage_sql.c (trim_partial_report): Compare end_time to 0 because
+	it's an integer now.
+
 2015-05-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r22347.
