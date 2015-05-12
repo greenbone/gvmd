@@ -1,3 +1,10 @@
+2015-05-12  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r22356.
+
+	* src/manage_sql.c (init_asset_iterator, filtered_host_count): Filter
+	out results with QoD less than MIN_QOD_DEFAULT in the levels check.
+
 2015-05-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r22298.
