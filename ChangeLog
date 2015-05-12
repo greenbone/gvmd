@@ -1,3 +1,8 @@
+2015-05-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (make_osp_result): If the severity is not given and
+	the NVT is a CVE, then get the severity from the SecInfo database.
+
 2015-05-12  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/report_formats/Anonymous_XML/generate,
@@ -20,7 +25,7 @@
 	* src/manage_sql.c (init_asset_iterator, filtered_host_count): Filter
 	out results with QoD less than MIN_QOD_DEFAULT in the levels check.
 
-2015-05-07  Matthew Mundell <matthew.mundell@greenbone.net>
+2015-05-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (send_to_sourcefire, send_to_verinice, manage_report)
 	(manage_send_report, manage_schema): Remove "/bin/sh" from commands, now

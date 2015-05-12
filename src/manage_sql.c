@@ -14485,7 +14485,12 @@ make_osp_result (task_t task, const char *host, const char *nvt,
       if (!strcmp (type, severity_to_type (SEVERITY_ERROR)))
         result_severity = g_strdup (G_STRINGIFY (SEVERITY_ERROR));
       else
-        result_severity = g_strdup (G_STRINGIFY (SEVERITY_LOG));
+        {
+          if (nvt && g_str_has_prefix (nvt, "CVE-"))
+            result_severity = cve_cvss_base (nvt);
+          else
+            result_severity = g_strdup (G_STRINGIFY (SEVERITY_LOG));
+        }
     }
   else
     result_severity = g_strdup (severity);
