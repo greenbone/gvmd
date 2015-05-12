@@ -14475,7 +14475,12 @@ make_osp_result (task_t task, const char *host, const char *nvt,
       if (!strcmp (type, severity_to_type (SEVERITY_ERROR)))
         result_severity = g_strdup (G_STRINGIFY (SEVERITY_ERROR));
       else
-        result_severity = g_strdup (G_STRINGIFY (SEVERITY_LOG));
+        {
+          if (nvt && g_str_has_prefix (nvt, "CVE-"))
+            result_severity = cve_cvss_base (nvt);
+          else
+            result_severity = g_strdup (G_STRINGIFY (SEVERITY_LOG));
+        }
     }
   else
     result_severity = g_strdup (severity);
@@ -50652,6 +50657,25 @@ init_cpe_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
                            clause,
                            FALSE);
   g_free (clause);
+  return ret;
+}
+
+/**
+ * @brief Get the short file name for an OVALDEF.
+ *
+ * @param[in]  cve  Full OVAL identifier with file suffix.
+ *
+ * @return The file name of the OVAL definition relative to the SCAP directory,
+ *         Freed by g_free.
+ */
+gchar *
+cve_cvss_base (const gchar *cve)
+{
+  gchar *quoted_cve, *ret;
+  quoted_cve = sql_quote (cve);
+  ret = sql_string ("SELECT cvss FROM cves WHERE name = '%s'",
+                    quoted_cve);
+  g_free (quoted_cve);
   return ret;
 }
 

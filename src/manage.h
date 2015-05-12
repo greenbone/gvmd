@@ -3174,6 +3174,9 @@ init_cve_info_iterator (iterator_t*, get_data_t*, const char*);
 int
 cve_info_count (const get_data_t *get);
 
+gchar *
+cve_cvss_base (const gchar *);
+
 /* OVAL defintions */
 int
 init_ovaldef_info_iterator (iterator_t*, get_data_t*, const char*);

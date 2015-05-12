@@ -1,3 +1,13 @@
+2015-05-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r22359.  (And cve_cvss_base from r22124.)
+
+	* src/manage_sql.c (make_osp_result): If the severity is not given and
+	the NVT is a CVE, then get the severity from the SecInfo database.
+	(cve_cvss_base): New function.
+
+	* src/manage.h: Add header accordingly.
+
 2015-05-12  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r22356.
