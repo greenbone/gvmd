@@ -18444,6 +18444,7 @@ init_asset_iterator (iterator_t* iterator, int first_result,
             "             FROM results"
             "             WHERE results.report = %s"
             "             AND results.host = distinct_host"
+            "             AND qod >= " G_STRINGIFY (MIN_QOD_DEFAULT)
             "             %s)"
             " LIMIT %s OFFSET %i;",
             quoted_search_phrase,
@@ -18468,6 +18469,7 @@ init_asset_iterator (iterator_t* iterator, int first_result,
           "               FROM results"
           "               WHERE results.report = %s"
           "               AND results.host = distinct_host"
+            "             AND qod >= " G_STRINGIFY (MIN_QOD_DEFAULT)
           "               %s)"
           " LIMIT %s OFFSET %i;",
           last_report_sql,
@@ -21649,6 +21651,7 @@ filtered_host_count (const char *levels, const char *search_phrase,
                   "             FROM results"
                   "             WHERE results.report = %s"
                   "             AND results.host = distinct_host"
+                  "             AND qod >= " G_STRINGIFY (MIN_QOD_DEFAULT)
                   "             %s);",
                   quoted_search_phrase,
                   last_report_sql,
@@ -21669,6 +21672,7 @@ filtered_host_count (const char *levels, const char *search_phrase,
                 "               FROM results"
                 "               WHERE results.report = %s"
                 "               AND results.host = distinct_host"
+                "               AND qod >= " G_STRINGIFY (MIN_QOD_DEFAULT)
                 "               %s);",
                 new_severity_sql,
                 last_report_sql,
