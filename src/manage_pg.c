@@ -1243,7 +1243,7 @@ manage_create_sql_functions ()
            "         WHEN 'pci-dss'"
            "         THEN (CASE $2"
            "               WHEN 'high'"
-           "               THEN $1 >= 4.3"
+           "               THEN $1 >= 4.0"
            "               WHEN 'none'"
            "               THEN $1 = 0"
            "               ELSE 0::boolean"
