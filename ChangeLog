@@ -1,3 +1,9 @@
+2015-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r22186.  Original patch by Hani Benhabiles.
+
+	* src/manage_sql.c (find_trash): Add check for function parameter.
+
 2015-05-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r22359.  (And cve_cvss_base from r22124.)

@@ -634,7 +634,11 @@ array_add_new_string (array_t *array, const gchar *string)
 static gboolean
 find_trash (const char *type, const char *uuid, resource_t *resource)
 {
-  gchar *quoted_uuid = sql_quote (uuid);
+  gchar *quoted_uuid;
+
+  if (!uuid)
+    return FALSE;
+  quoted_uuid = sql_quote (uuid);
   if (user_owns_trash_uuid (type, quoted_uuid) == 0)
     {
       g_free (quoted_uuid);
