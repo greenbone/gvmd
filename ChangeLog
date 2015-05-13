@@ -1,4 +1,9 @@
-2015-05-11  Matthew Mundell <matthew.mundell@greenbone.net>
+2015-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/openvasmd.c (main): Upgrade the version message to a warning, so
+	it is displayed by default.
+
+2015-05-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (make_osp_result): If the severity is not given and
 	the NVT is a CVE, then get the severity from the SecInfo database.

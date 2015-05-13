@@ -1402,9 +1402,9 @@ main (int argc, char** argv)
   if (!g_thread_supported ()) g_thread_init (NULL);
 #endif
 
-  infof ("   OpenVAS Manager version %s (DB revision %i)\n",
-         OPENVASMD_VERSION,
-         manage_db_supported_version ());
+  g_warning ("   OpenVAS Manager version %s (DB revision %i)\n",
+             OPENVASMD_VERSION,
+             manage_db_supported_version ());
 
   if (backup_database)
     {
