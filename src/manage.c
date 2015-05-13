@@ -244,7 +244,7 @@ severity_in_level (double severity, const char *level)
   else if (strcmp (class, "pci-dss") == 0)
     {
       if (strcmp (level, "high") == 0)
-        return severity >= 4.3;
+        return severity >= 4.0;
       else if (strcmp (level, "none") == 0)
         return severity == 0;
       else

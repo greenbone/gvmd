@@ -23032,11 +23032,11 @@ severity_class_xml (const gchar *severity)
                                 "<severity_range>"
                                 "<name>None</name>"
                                 "<min>0.0</min>"
-                                "<max>4.2</max>"
+                                "<max>3.9</max>"
                                 "</severity_range>"
                                 "<severity_range>"
                                 "<name>High</name>"
-                                "<min>4.2</min>"
+                                "<min>4.0</min>"
                                 "<max>10.0</max>"
                                 "</severity_range>"
                                 "</severity_class>");

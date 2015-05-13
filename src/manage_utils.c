@@ -235,7 +235,7 @@ level_min_severity (const char *level, const char *class)
   else if (strcmp (class, "pci-dss") == 0)
     {
       if (strcmp (level, "high") == 0)
-        return 4.3;
+        return 4.0;
       else
         return SEVERITY_UNDEFINED;
     }

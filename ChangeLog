@@ -1,5 +1,17 @@
 2015-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r22372.
+
+	* src/manage.c (severity_in_level): Update PCI-DSS min.
+
+	* src/manage_sql.c (manage_create_sql_functions): Update PCI-DSS min.
+
+	* src/manage_sql.c (severity_class_xml): Update PCI-DSS min.
+
+	* src/manage_utils.c (level_min_severity): Update PCI-DSS min.
+
+2015-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r22186.  Original patch by Hani Benhabiles.
 
 	* src/manage_sql.c (find_trash): Add check for function parameter.
