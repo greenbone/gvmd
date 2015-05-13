@@ -1402,7 +1402,7 @@ main (int argc, char** argv)
   if (!g_thread_supported ()) g_thread_init (NULL);
 #endif
 
-  g_warning ("   OpenVAS Manager version %s (DB revision %i)\n",
+  g_message ("   OpenVAS Manager version %s (DB revision %i)\n",
              OPENVASMD_VERSION,
              manage_db_supported_version ());
 
