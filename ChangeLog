@@ -1,5 +1,10 @@
 2015-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* CMakeLists.txt: Check parent directory when setting SVN_EXECUTABLE,
+	because since 1.7 svn has a single .svn directory.
+
+2015-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c (main): Upgrade the version message to a warning, so
 	it is displayed by default.
 
