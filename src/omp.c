@@ -10949,11 +10949,13 @@ results_xml_append_nvt (iterator_t *results, GString *buffer)
                                 "<name>%s</name>"
                                 "<cvss_base>%s</cvss_base>"
                                 "<cpe id='%s'/>"
+                                "<cve>%s</cve>"
                                 "</nvt>",
                                 oid,
                                 oid,
                                 cvss_base,
-                                result_iterator_port (results));
+                                result_iterator_port (results),
+                                oid);
       g_free (cvss_base);
       return;
     }
