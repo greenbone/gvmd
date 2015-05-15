@@ -261,7 +261,7 @@ severity_in_level (double severity, const char *level)
         return severity > 2 && severity <= 5;
       else if (strcmp (level, "low") == 0)
         return severity > 0 && severity <= 2;
-      else if (strcmp (level, "none") == 0)
+      else if (strcmp (level, "none") == 0 || strcmp (level, "log") == 0)
         return severity == 0;
       else
         return 0;
@@ -270,8 +270,8 @@ severity_in_level (double severity, const char *level)
     {
       if (strcmp (level, "high") == 0)
         return severity >= 4.0;
-      else if (strcmp (level, "none") == 0)
-        return severity == 0;
+      else if (strcmp (level, "none") == 0 || strcmp (level, "log") == 0)
+        return severity >= 0.0 && severity < 4.0;
       else
         return 0;
     }
@@ -284,7 +284,7 @@ severity_in_level (double severity, const char *level)
         return severity >= 4 && severity < 7;
       else if (strcmp (level, "low") == 0)
         return severity > 0 && severity < 4;
-      else if (strcmp (level, "none") == 0)
+      else if (strcmp (level, "none") == 0  || strcmp (level, "log") == 0)
         return severity == 0;
       else
         return 0;

@@ -16586,18 +16586,13 @@ where_levels_auto (const char *levels, const char *new_severity_sql,
         {
           levels_sql = g_string_new ("");
           g_string_append_printf (levels_sql,
-                                  " AND (((%s IS NULL)"
-                                  "       AND ((%s"
-                                  "             = " G_STRINGIFY
-                                                     (SEVERITY_LOG) ")",
+                                  " AND (((%s IS NULL) AND (severity_in_level (%s, 'log')",
                                   auto_type_sql,
                                   new_severity_sql);
         }
       else
         g_string_append_printf (levels_sql,
-                                " OR (%s"
-                                "     = " G_STRINGIFY
-                                           (SEVERITY_LOG) ")",
+                                " OR severity_in_level (%s, 'log')",
                                 new_severity_sql);
       count++;
     }
@@ -16725,15 +16720,10 @@ where_levels_type (const char* levels)
   if (strchr (levels, 'g'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND ((severity"
-                                   "       = " G_STRINGIFY
-                                                (SEVERITY_LOG) ")");
+        levels_sql = g_string_new (" AND (severity_in_level (severity, 'log')");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR (severity"
-                                      "     = " G_STRINGIFY
-                                                 (SEVERITY_LOG) ")");
-      count++;
+                                      " OR severity_in_level (severity, 'log')");
     }
 
   /* Debug. */

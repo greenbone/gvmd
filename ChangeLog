@@ -1,3 +1,11 @@
+2015-05-15  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (where_levels_auto, where_levels_type): Use the
+	function severity_in_level for log level.
+
+	* src/manage.c (severity_in_level): Add "log" as alias for "none"
+	and also count results with non-zero severity as log for pci-dss.
+
 2015-05-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Replace aborts in GET_TASKS
