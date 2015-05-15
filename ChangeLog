@@ -1,4 +1,12 @@
-2015-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
+2015-05-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r22377.
+
+	* src/omp.c (results_xml_append_nvt): Add CVE to NVT in "CVE-" case, so
+	that the CVE appears in the References section on the GSA Result
+	Details.
+
+2015-05-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport a little of r22124 and r22165.
 
@@ -11,7 +19,7 @@
 
 	* src/manage.c (severity_in_level): Update PCI-DSS min.
 
-	* src/manage_sql.c (manage_create_sql_functions): Update PCI-DSS min.
+	* src/manage_pg.c (manage_create_sql_functions): Update PCI-DSS min.
 
 	* src/manage_sql.c (severity_class_xml): Update PCI-DSS min.
 
