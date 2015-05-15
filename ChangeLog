@@ -1,5 +1,12 @@
 2015-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport a little of r22124 and r22165.
+
+	* src/omp.c (results_xml_append_nvt): Add CVE case.  Move CVE info into
+	NVT.
+
+2015-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r22372.
 
 	* src/manage.c (severity_in_level): Update PCI-DSS min.

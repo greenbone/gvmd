@@ -10907,6 +10907,26 @@ results_xml_append_nvt (iterator_t *results, GString *buffer)
 
   assert (results);
   assert (buffer);
+
+  if (g_str_has_prefix (oid, "CVE-"))
+    {
+      gchar *cvss_base;
+      cvss_base = cve_cvss_base (oid);
+      buffer_xml_append_printf (buffer,
+                                "<nvt oid=\"%s\">"
+                                "<type>cve</type>"
+                                "<name>%s</name>"
+                                "<cvss_base>%s</cvss_base>"
+                                "<cpe id='%s'/>"
+                                "</nvt>",
+                                oid,
+                                oid,
+                                cvss_base,
+                                result_iterator_port (results));
+      g_free (cvss_base);
+      return;
+    }
+
   if (g_str_has_prefix (oid, "oval:"))
     {
       int ret;
