@@ -255,7 +255,6 @@ TODOS: Solve Whitespace/Indentation problem of this file.
     <xsl:text>\title{Scan Report}</xsl:text>
   </xsl:otherwise>
 </xsl:choose>
-<xsl:call-template name="latex-newline"/>
 <xsl:text>
 \pagestyle{headings}
 \pagenumbering{arabic}
@@ -480,7 +479,9 @@ TODOS: Solve Whitespace/Indentation problem of this file.
     <xsl:param name="string"/>
   
     <xsl:for-each select="str:split($string, '&#10;&#10;')">
-      <xsl:value-of select="."/>
+      <xsl:call-template name="escape_text">
+        <xsl:with-param name="string" select="."/>
+      </xsl:call-template>
       <xsl:call-template name="latex-newline"/>
     </xsl:for-each>
   </xsl:template>
