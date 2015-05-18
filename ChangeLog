@@ -1,3 +1,13 @@
+2015-05-18  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r22381.
+
+	* src/manage_sql.c (where_levels_auto, where_levels_type): Use the
+	function severity_in_level for log level.
+
+	* src/manage.c (severity_in_level): Add "log" as alias for "none"
+	and also count results with non-zero severity as log for pci-dss.
+
 2015-05-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r22377.
