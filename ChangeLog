@@ -1622,7 +1622,6 @@
 
 	* doc/omp.html, doc/omp.rnc: Update from source.
 
->>>>>>> .r22383
 2015-02-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Setup the filter before
