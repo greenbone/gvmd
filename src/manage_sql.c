@@ -37995,8 +37995,8 @@ manage_create_scanner (GSList *log_config, const gchar *database,
   char *ca_pub, *key_pub, *key_priv;
   GError *error = NULL;
 
-  if (openvas_auth_init_funcs (manage_user_hash, manage_user_set_role,
-                               manage_user_exists, manage_user_uuid))
+  if (openvas_auth_init_funcs (manage_user_hash, manage_user_exists,
+                               manage_user_uuid))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -38080,8 +38080,8 @@ manage_delete_scanner (GSList *log_config, const gchar *database,
       return 3;
     }
 
-  if (openvas_auth_init_funcs (manage_user_hash, manage_user_set_role,
-                               manage_user_exists, manage_user_uuid))
+  if (openvas_auth_init_funcs (manage_user_hash, manage_user_exists,
+                               manage_user_uuid))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -38145,8 +38145,8 @@ manage_modify_scanner (GSList *log_config, const gchar *database,
   char *ca_pub, *key_pub, *key_priv;
   GError *error = NULL;
 
-  if (openvas_auth_init_funcs (manage_user_hash, manage_user_set_role,
-                               manage_user_exists, manage_user_uuid))
+  if (openvas_auth_init_funcs (manage_user_hash, manage_user_exists,
+                               manage_user_uuid))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -38247,8 +38247,8 @@ manage_verify_scanner (GSList *log_config, const gchar *database,
 
   assert (uuid);
 
-  if (openvas_auth_init_funcs (manage_user_hash, manage_user_set_role,
-                               manage_user_exists, manage_user_uuid))
+  if (openvas_auth_init_funcs (manage_user_hash, manage_user_exists,
+                               manage_user_uuid))
     return -1;
   db = database ? database : sql_default_database ();
 
@@ -52069,8 +52069,8 @@ manage_create_user (GSList *log_config, const gchar *database,
   const gchar *db;
   int ret;
 
-  if (openvas_auth_init_funcs (manage_user_hash, manage_user_set_role,
-                               manage_user_exists, manage_user_uuid))
+  if (openvas_auth_init_funcs (manage_user_hash,  manage_user_exists,
+                               manage_user_uuid))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -52154,8 +52154,8 @@ manage_delete_user (GSList *log_config, const gchar *database,
   const gchar *db;
   int ret;
 
-  if (openvas_auth_init_funcs (manage_user_hash, manage_user_set_role,
-                               manage_user_exists, manage_user_uuid))
+  if (openvas_auth_init_funcs (manage_user_hash, manage_user_exists,
+                               manage_user_uuid))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -52210,8 +52210,8 @@ manage_get_users (GSList *log_config, const gchar *database,
   const gchar *db;
   int ret;
 
-  if (openvas_auth_init_funcs (manage_user_hash, manage_user_set_role,
-                               manage_user_exists, manage_user_uuid))
+  if (openvas_auth_init_funcs (manage_user_hash, manage_user_exists,
+                               manage_user_uuid))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -52270,8 +52270,8 @@ manage_get_scanners (GSList *log_config, const gchar *database)
   const gchar *db;
   int ret;
 
-  if (openvas_auth_init_funcs (manage_user_hash, manage_user_set_role,
-                               manage_user_exists, manage_user_uuid))
+  if (openvas_auth_init_funcs (manage_user_hash, manage_user_exists,
+                               manage_user_uuid))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -52351,8 +52351,8 @@ manage_set_password (GSList *log_config, const gchar *database,
   int ret;
   const gchar *db;
 
-  if (openvas_auth_init_funcs (manage_user_hash, manage_user_set_role,
-                               manage_user_exists, manage_user_uuid))
+  if (openvas_auth_init_funcs (manage_user_hash, manage_user_exists,
+                               manage_user_uuid))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -54879,8 +54879,8 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
       return 1;
     }
 
-  if (openvas_auth_init_funcs (manage_user_hash, manage_user_set_role,
-                               manage_user_exists, manage_user_uuid))
+  if (openvas_auth_init_funcs (manage_user_hash, manage_user_exists,
+                               manage_user_uuid))
     return -1;
 
   db = database ? database : sql_default_database ();

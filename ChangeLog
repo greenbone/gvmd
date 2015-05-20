@@ -1,3 +1,8 @@
+2015-05-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c: Remove arg from openvas_auth_init_funcs calls, to
+	match interface change.
+
 2015-05-18  Benoît Allard  <benoit.allard@greenbone.net>
 
 	* src/report_formats/LaTeX/latex.xsl: Fix errors in the generated
