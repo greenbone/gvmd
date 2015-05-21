@@ -1,5 +1,9 @@
 2015-05-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c (main): Add ldap arg to openvas_auth_init_funcs call.
+
+2015-05-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move LDAP config from auth.conf file into database.
 
 	* src/manage.c (keyfile_to_auth_conf_settings_xml): Remove.
