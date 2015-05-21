@@ -1,6 +1,12 @@
 2015-05-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/manage_sql.c: Remove has arg from openvas_auth_init_funcs calls.
+	* src/manage_sql.c (manage_create_scanner): Update auth init call.
+
+	* src/openvasmd.c (main): Update auth init call.
+
+2015-05-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c: Remove hash arg from openvas_auth_init_funcs calls.
 	(authenticate_any_method): Pass the hash directly to
 	openvas_authenticate_classic.
 

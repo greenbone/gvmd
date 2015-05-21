@@ -2119,7 +2119,7 @@ main (int argc, char** argv)
   /* Initialize the authentication system. */
 
   // TODO Should be part of manage init.
-  if (openvas_auth_init_funcs (manage_get_ldap_info))
+  if (openvas_auth_init ())
     exit (EXIT_FAILURE);
 
   /* Enter the main forever-loop. */
