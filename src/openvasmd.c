@@ -2115,8 +2115,8 @@ main (int argc, char** argv)
   /* Initialize the authentication system. */
 
   // TODO Should be part of manage init.
-  if (openvas_auth_init_funcs (manage_user_hash, manage_user_set_role,
-                               manage_user_exists, manage_user_uuid))
+  if (openvas_auth_init_funcs (manage_user_hash, manage_user_exists,
+                               manage_user_uuid))
     exit (EXIT_FAILURE);
 
   /* Initialise the process for manage_schedule. */

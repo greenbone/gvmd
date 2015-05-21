@@ -1,3 +1,8 @@
+2015-05-21  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/openvasmd.c (main): Remove arg from openvas_auth_init_funcs
+	calls, to match interface change.
+
 2015-05-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c: Remove arg from openvas_auth_init_funcs calls, to
