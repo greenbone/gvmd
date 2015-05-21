@@ -1,3 +1,8 @@
+2015-05-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/openvasmd.c (main): Initialise the process earlier, because the
+	authentication init may access the database.
+
 2015-05-21  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/openvasmd.c (main): Remove arg from openvas_auth_init_funcs

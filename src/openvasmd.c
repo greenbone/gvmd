@@ -2112,6 +2112,10 @@ main (int argc, char** argv)
                       &manager_socket_2))
     return EXIT_FAILURE;
 
+  /* Initialise the process for manage_schedule. */
+
+  init_manage_process (0, database);
+
   /* Initialize the authentication system. */
 
   // TODO Should be part of manage init.
@@ -2119,13 +2123,9 @@ main (int argc, char** argv)
                                manage_user_uuid))
     exit (EXIT_FAILURE);
 
-  /* Initialise the process for manage_schedule. */
-
-  init_manage_process (0, database);
-  proctitle_set ("openvasmd");
-
   /* Enter the main forever-loop. */
 
+  proctitle_set ("openvasmd");
   serve_and_schedule ();
 
   /*@notreached@*/
