@@ -64,6 +64,7 @@
 #include <openvas/base/openvas_hosts.h>
 #include <openvas/base/openvas_networking.h>
 #include <openvas/misc/openvas_auth.h>
+#include <openvas/misc/ldap_connect_auth.h>
 #include <openvas/misc/openvas_logging.h>
 #include <openvas/misc/openvas_uuid.h>
 #include <openvas/base/pwpolicy.h>
@@ -12380,7 +12381,7 @@ manage_user_hash (const gchar *username)
  * @return UUID.
  */
 gchar *
-manage_user_uuid (const gchar *username, auth_method_t method)
+user_uuid_method (const gchar *username, auth_method_t method)
 {
   gchar *uuid, *quoted_username, *quoted_method;
   quoted_username = sql_quote (username);
@@ -12392,6 +12393,70 @@ manage_user_uuid (const gchar *username, auth_method_t method)
   g_free (quoted_username);
   g_free (quoted_method);
   return uuid;
+}
+
+/**
+ * @brief Check whether LDAP is enabled.
+ *
+ * @return 0 no, else yes.
+ */
+static int
+ldap_auth_enabled ()
+{
+  if (openvas_auth_ldap_enabled ())
+    return sql_int ("SELECT coalesce ((SELECT value FROM meta"
+                    "                  WHERE name = 'ldap_enabled'),"
+                    "                 0);");
+  return 0;
+}
+
+/**
+ * @brief Check if user exists.
+ *
+ * @param[in]  name    User name.
+ * @param[in]  method  Auth method.
+ *
+ * @return 0 yes, 1 no.
+ */
+static int
+user_exists_method (const gchar *name, auth_method_t method)
+{
+  gchar *quoted_name, *quoted_method;
+  int ret;
+
+  quoted_name = sql_quote (name);
+  quoted_method = sql_quote (auth_method_name (method));
+  ret = sql_int ("SELECT count (*) FROM users"
+                 " WHERE name = '%s' AND method = '%s';",
+                 quoted_name,
+                 quoted_method);
+  g_free (quoted_name);
+  g_free (quoted_method);
+
+  return ret;
+}
+
+/**
+ * @brief Get user uuid, trying all authentication methods.
+ *
+ * @param[in]  name    User name.
+ *
+ * @return UUID.
+ */
+gchar *
+user_uuid_any_method (const gchar *name)
+{
+  if (ldap_auth_enabled ())
+    {
+      if (user_exists_method (name, AUTHENTICATION_METHOD_LDAP_CONNECT))
+        return user_uuid_method (name, AUTHENTICATION_METHOD_LDAP_CONNECT);
+      if (user_exists_method (name, AUTHENTICATION_METHOD_FILE))
+        return user_uuid_method (name, AUTHENTICATION_METHOD_FILE);
+      return NULL;
+    }
+  if (user_exists_method (name, AUTHENTICATION_METHOD_FILE))
+    return user_uuid_method (name, AUTHENTICATION_METHOD_FILE);
+  return NULL;
 }
 
 /**
@@ -12493,28 +12558,17 @@ manage_user_set_role (const gchar *name, const gchar *method, const gchar *role)
  * @brief Check if user exists.
  *
  * @param[in]  name    User name.
- * @param[in]  method  Auth method.
  *
  * @return 0 yes, 1 no.
  */
 int
-manage_user_exists (const gchar *name, auth_method_t method)
+user_exists (const gchar *name)
 {
-  gchar *quoted_name, *quoted_method;
-  int ret;
-
-  quoted_name = sql_quote (name);
-  quoted_method = sql_quote (auth_method_name (method));
-  ret = sql_int ("SELECT count (*) FROM users"
-                 " WHERE name = '%s' AND method = '%s';",
-                 quoted_name,
-                 quoted_method);
-  g_free (quoted_name);
-  g_free (quoted_method);
-
-  return ret;
+  if (ldap_auth_enabled ())
+    return user_exists_method (name, AUTHENTICATION_METHOD_LDAP_CONNECT)
+           || user_exists_method (name, AUTHENTICATION_METHOD_FILE);
+  return user_exists_method (name, AUTHENTICATION_METHOD_FILE);
 }
-
 
 /**
  * @brief Set the address of scanner to connect to.
@@ -12633,6 +12687,37 @@ credentials_setup (credentials_t *credentials)
 }
 
 /**
+ * @brief Authenticate, trying any method.
+ *
+ * @param[in]  username     Username.
+ * @param[in]  password     Password.
+ * @param[out] auth_method  Auth method return.
+ *
+ * @return 0 authentication success, 1 authentication failure, 99 permission
+ *         denied, -1 error.
+ */
+int
+authenticate_any_method (const gchar *username, const gchar *password,
+                         auth_method_t *auth_method)
+{
+  if (openvas_auth_ldap_enabled ()
+      && ldap_auth_enabled ()
+      && user_exists_method (username, AUTHENTICATION_METHOD_LDAP_CONNECT))
+    {
+      ldap_auth_info_t info;
+      int ret;
+
+      *auth_method = AUTHENTICATION_METHOD_LDAP_CONNECT;
+      info = ldap_auth_info_from_function (manage_get_ldap_info);
+      ret = ldap_connect_authenticate (username, password, info);
+      ldap_auth_info_free (info);
+      return ret;
+    }
+  *auth_method = AUTHENTICATION_METHOD_FILE;
+  return openvas_authenticate_classic (username, password, NULL);
+}
+
+/**
  * @brief Authenticate credentials.
  *
  * @param[in]  credentials  Credentials.
@@ -12665,9 +12750,9 @@ authenticate (credentials_t* credentials)
           return -1;
         }
 
-      fail = openvas_authenticate_method (credentials->username,
-                                          credentials->password,
-                                          &auth_method);
+      fail = authenticate_any_method (credentials->username,
+                                      credentials->password,
+                                      &auth_method);
       if (fail == 0)
         {
           gchar *quoted_name, *quoted_method;
@@ -14226,7 +14311,7 @@ set_task_observers (task_t task, const gchar *observers)
 
       added = g_list_prepend (added, name);
 
-      if (openvas_user_exists (name) == 0)
+      if (user_exists (name) == 0)
         {
           g_list_free (added);
           g_strfreev (split);
@@ -14255,7 +14340,7 @@ set_task_observers (task_t task, const gchar *observers)
               return 1;
             }
 
-          uuid = openvas_user_uuid (name);
+          uuid = user_uuid_any_method (name);
 
           if (uuid == NULL)
             {
@@ -37995,8 +38080,7 @@ manage_create_scanner (GSList *log_config, const gchar *database,
   char *ca_pub, *key_pub, *key_priv;
   GError *error = NULL;
 
-  if (openvas_auth_init_funcs (manage_user_hash, manage_user_exists,
-                               manage_user_uuid, manage_get_ldap_info))
+  if (openvas_auth_init_funcs (manage_user_hash, manage_get_ldap_info))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -38080,8 +38164,7 @@ manage_delete_scanner (GSList *log_config, const gchar *database,
       return 3;
     }
 
-  if (openvas_auth_init_funcs (manage_user_hash, manage_user_exists,
-                               manage_user_uuid, manage_get_ldap_info))
+  if (openvas_auth_init_funcs (manage_user_hash, manage_get_ldap_info))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -38145,8 +38228,7 @@ manage_modify_scanner (GSList *log_config, const gchar *database,
   char *ca_pub, *key_pub, *key_priv;
   GError *error = NULL;
 
-  if (openvas_auth_init_funcs (manage_user_hash, manage_user_exists,
-                               manage_user_uuid, manage_get_ldap_info))
+  if (openvas_auth_init_funcs (manage_user_hash, manage_get_ldap_info))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -38247,8 +38329,7 @@ manage_verify_scanner (GSList *log_config, const gchar *database,
 
   assert (uuid);
 
-  if (openvas_auth_init_funcs (manage_user_hash, manage_user_exists,
-                               manage_user_uuid, manage_get_ldap_info))
+  if (openvas_auth_init_funcs (manage_user_hash, manage_get_ldap_info))
     return -1;
   db = database ? database : sql_default_database ();
 
@@ -43891,7 +43972,7 @@ add_users (const gchar *type, resource_t resource, const char *users)
 
           added = g_list_prepend (added, name);
 
-          if (openvas_user_exists (name) == 0)
+          if (user_exists (name) == 0)
             {
               g_list_free (added);
               g_strfreev (split);
@@ -43917,7 +43998,7 @@ add_users (const gchar *type, resource_t resource, const char *users)
                   return 4;
                 }
 
-              uuid = openvas_user_uuid (name);
+              uuid = user_uuid_any_method (name);
 
               if (uuid == NULL)
                 {
@@ -52069,8 +52150,7 @@ manage_create_user (GSList *log_config, const gchar *database,
   const gchar *db;
   int ret;
 
-  if (openvas_auth_init_funcs (manage_user_hash,  manage_user_exists,
-                               manage_user_uuid, manage_get_ldap_info))
+  if (openvas_auth_init_funcs (manage_user_hash, manage_get_ldap_info))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -52154,8 +52234,7 @@ manage_delete_user (GSList *log_config, const gchar *database,
   const gchar *db;
   int ret;
 
-  if (openvas_auth_init_funcs (manage_user_hash, manage_user_exists,
-                               manage_user_uuid, manage_get_ldap_info))
+  if (openvas_auth_init_funcs (manage_user_hash, manage_get_ldap_info))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -52210,8 +52289,7 @@ manage_get_users (GSList *log_config, const gchar *database,
   const gchar *db;
   int ret;
 
-  if (openvas_auth_init_funcs (manage_user_hash, manage_user_exists,
-                               manage_user_uuid, manage_get_ldap_info))
+  if (openvas_auth_init_funcs (manage_user_hash, manage_get_ldap_info))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -52270,8 +52348,7 @@ manage_get_scanners (GSList *log_config, const gchar *database)
   const gchar *db;
   int ret;
 
-  if (openvas_auth_init_funcs (manage_user_hash, manage_user_exists,
-                               manage_user_uuid, manage_get_ldap_info))
+  if (openvas_auth_init_funcs (manage_user_hash, manage_get_ldap_info))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -52351,8 +52428,7 @@ manage_set_password (GSList *log_config, const gchar *database,
   int ret;
   const gchar *db;
 
-  if (openvas_auth_init_funcs (manage_user_hash, manage_user_exists,
-                               manage_user_uuid, manage_get_ldap_info))
+  if (openvas_auth_init_funcs (manage_user_hash, manage_get_ldap_info))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -53704,9 +53780,7 @@ user_role_iterator_readable (iterator_t* iterator)
 int
 manage_get_ldap_info (gchar **ldap_host, gchar **auth_dn, int *plaintext)
 {
-  if (sql_int ("SELECT coalesce ((SELECT value FROM meta"
-               "                  WHERE name = 'ldap_enabled'),"
-               "                 0);"))
+  if (ldap_auth_enabled ())
     {
       *ldap_host = sql_string ("SELECT value FROM meta"
                                " WHERE name = 'ldap_host';");
@@ -54955,8 +55029,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
       return 1;
     }
 
-  if (openvas_auth_init_funcs (manage_user_hash, manage_user_exists,
-                               manage_user_uuid, manage_get_ldap_info))
+  if (openvas_auth_init_funcs (manage_user_hash, manage_get_ldap_info))
     return -1;
 
   db = database ? database : sql_default_database ();

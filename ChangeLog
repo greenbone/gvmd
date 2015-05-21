@@ -1,5 +1,28 @@
 2015-05-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Handle authentication checks locally, providing a simple option of
+	"classic" or a single "ldap_connect" server, instead of relying on the
+	older more complex mechanism from openvas-libraries.  Only use
+	openvas-libraries for the very basic authentication functions.
+
+	A side of effect of this change is that modifications to the LDAP auth
+	config take immediate effect.
+
+	* src/manage_sql.c: Remove more args from openvas_auth_init_funcs call.
+	(manage_user_uuid): Remove.  Now user_uuid_method.
+	(user_uuid_method): New function.  Was manage_user_uuid.
+	(ldap_auth_enabled, user_uuid_any_method): New functions.
+	(manage_user_exists): Remove.  Now user_exists_method.
+	(user_exists_method): New function.  Was manage_user_exists.
+	(user_exists, authenticate_any_method): New functions.
+	(authenticate, set_task_observers, add_users): Call Manager auth
+	functions instead of library ones.
+	(manage_get_ldap_info): Call ldap_auth_enabled.
+
+	* src/openvasmd.c (main): Add ldap arg to openvas_auth_init_funcs call.
+
+2015-05-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c (main): Add ldap arg to openvas_auth_init_funcs call.
 
 2015-05-21  Matthew Mundell <matthew.mundell@greenbone.net>
