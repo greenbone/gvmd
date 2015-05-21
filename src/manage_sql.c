@@ -12700,12 +12700,14 @@ int
 authenticate_any_method (const gchar *username, const gchar *password,
                          auth_method_t *auth_method)
 {
+  int ret;
+  gchar *hash;
+
   if (openvas_auth_ldap_enabled ()
       && ldap_auth_enabled ()
       && user_exists_method (username, AUTHENTICATION_METHOD_LDAP_CONNECT))
     {
       ldap_auth_info_t info;
-      int ret;
 
       *auth_method = AUTHENTICATION_METHOD_LDAP_CONNECT;
       info = ldap_auth_info_from_function (manage_get_ldap_info);
@@ -12714,7 +12716,10 @@ authenticate_any_method (const gchar *username, const gchar *password,
       return ret;
     }
   *auth_method = AUTHENTICATION_METHOD_FILE;
-  return openvas_authenticate_classic (username, password, NULL);
+  hash = manage_user_hash (username);
+  ret = openvas_authenticate_classic (username, password, hash);
+  g_free (hash);
+  return ret;
 }
 
 /**
@@ -38080,7 +38085,7 @@ manage_create_scanner (GSList *log_config, const gchar *database,
   char *ca_pub, *key_pub, *key_priv;
   GError *error = NULL;
 
-  if (openvas_auth_init_funcs (manage_user_hash, manage_get_ldap_info))
+  if (openvas_auth_init_funcs (manage_get_ldap_info))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -38164,7 +38169,7 @@ manage_delete_scanner (GSList *log_config, const gchar *database,
       return 3;
     }
 
-  if (openvas_auth_init_funcs (manage_user_hash, manage_get_ldap_info))
+  if (openvas_auth_init_funcs (manage_get_ldap_info))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -38228,7 +38233,7 @@ manage_modify_scanner (GSList *log_config, const gchar *database,
   char *ca_pub, *key_pub, *key_priv;
   GError *error = NULL;
 
-  if (openvas_auth_init_funcs (manage_user_hash, manage_get_ldap_info))
+  if (openvas_auth_init_funcs (manage_get_ldap_info))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -38329,7 +38334,7 @@ manage_verify_scanner (GSList *log_config, const gchar *database,
 
   assert (uuid);
 
-  if (openvas_auth_init_funcs (manage_user_hash, manage_get_ldap_info))
+  if (openvas_auth_init_funcs (manage_get_ldap_info))
     return -1;
   db = database ? database : sql_default_database ();
 
@@ -52150,7 +52155,7 @@ manage_create_user (GSList *log_config, const gchar *database,
   const gchar *db;
   int ret;
 
-  if (openvas_auth_init_funcs (manage_user_hash, manage_get_ldap_info))
+  if (openvas_auth_init_funcs (manage_get_ldap_info))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -52234,7 +52239,7 @@ manage_delete_user (GSList *log_config, const gchar *database,
   const gchar *db;
   int ret;
 
-  if (openvas_auth_init_funcs (manage_user_hash, manage_get_ldap_info))
+  if (openvas_auth_init_funcs (manage_get_ldap_info))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -52289,7 +52294,7 @@ manage_get_users (GSList *log_config, const gchar *database,
   const gchar *db;
   int ret;
 
-  if (openvas_auth_init_funcs (manage_user_hash, manage_get_ldap_info))
+  if (openvas_auth_init_funcs (manage_get_ldap_info))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -52348,7 +52353,7 @@ manage_get_scanners (GSList *log_config, const gchar *database)
   const gchar *db;
   int ret;
 
-  if (openvas_auth_init_funcs (manage_user_hash, manage_get_ldap_info))
+  if (openvas_auth_init_funcs (manage_get_ldap_info))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -52428,7 +52433,7 @@ manage_set_password (GSList *log_config, const gchar *database,
   int ret;
   const gchar *db;
 
-  if (openvas_auth_init_funcs (manage_user_hash, manage_get_ldap_info))
+  if (openvas_auth_init_funcs (manage_get_ldap_info))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -55029,7 +55034,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
       return 1;
     }
 
-  if (openvas_auth_init_funcs (manage_user_hash, manage_get_ldap_info))
+  if (openvas_auth_init_funcs (manage_get_ldap_info))
     return -1;
 
   db = database ? database : sql_default_database ();

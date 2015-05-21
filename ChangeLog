@@ -1,11 +1,19 @@
 2015-05-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c: Remove has arg from openvas_auth_init_funcs calls.
+	(authenticate_any_method): Pass the hash directly to
+	openvas_authenticate_classic.
+
+	* src/openvasmd.c (main): Remove arg from openvas_auth_init_funcs call.
+
+2015-05-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Handle authentication checks locally, providing a simple option of
 	"classic" or a single "ldap_connect" server, instead of relying on the
 	older more complex mechanism from openvas-libraries.  Only use
 	openvas-libraries for the very basic authentication functions.
 
-	A side of effect of this change is that modifications to the LDAP auth
+	A side effect of this change is that modifications to the LDAP auth
 	config take immediate effect.
 
 	* src/manage_sql.c: Remove more args from openvas_auth_init_funcs call.
