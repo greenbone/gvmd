@@ -37996,7 +37996,7 @@ manage_create_scanner (GSList *log_config, const gchar *database,
   GError *error = NULL;
 
   if (openvas_auth_init_funcs (manage_user_hash, manage_user_exists,
-                               manage_user_uuid))
+                               manage_user_uuid, manage_get_ldap_info))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -38081,7 +38081,7 @@ manage_delete_scanner (GSList *log_config, const gchar *database,
     }
 
   if (openvas_auth_init_funcs (manage_user_hash, manage_user_exists,
-                               manage_user_uuid))
+                               manage_user_uuid, manage_get_ldap_info))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -38146,7 +38146,7 @@ manage_modify_scanner (GSList *log_config, const gchar *database,
   GError *error = NULL;
 
   if (openvas_auth_init_funcs (manage_user_hash, manage_user_exists,
-                               manage_user_uuid))
+                               manage_user_uuid, manage_get_ldap_info))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -38248,7 +38248,7 @@ manage_verify_scanner (GSList *log_config, const gchar *database,
   assert (uuid);
 
   if (openvas_auth_init_funcs (manage_user_hash, manage_user_exists,
-                               manage_user_uuid))
+                               manage_user_uuid, manage_get_ldap_info))
     return -1;
   db = database ? database : sql_default_database ();
 
@@ -52070,7 +52070,7 @@ manage_create_user (GSList *log_config, const gchar *database,
   int ret;
 
   if (openvas_auth_init_funcs (manage_user_hash,  manage_user_exists,
-                               manage_user_uuid))
+                               manage_user_uuid, manage_get_ldap_info))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -52155,7 +52155,7 @@ manage_delete_user (GSList *log_config, const gchar *database,
   int ret;
 
   if (openvas_auth_init_funcs (manage_user_hash, manage_user_exists,
-                               manage_user_uuid))
+                               manage_user_uuid, manage_get_ldap_info))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -52211,7 +52211,7 @@ manage_get_users (GSList *log_config, const gchar *database,
   int ret;
 
   if (openvas_auth_init_funcs (manage_user_hash, manage_user_exists,
-                               manage_user_uuid))
+                               manage_user_uuid, manage_get_ldap_info))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -52271,7 +52271,7 @@ manage_get_scanners (GSList *log_config, const gchar *database)
   int ret;
 
   if (openvas_auth_init_funcs (manage_user_hash, manage_user_exists,
-                               manage_user_uuid))
+                               manage_user_uuid, manage_get_ldap_info))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -52352,7 +52352,7 @@ manage_set_password (GSList *log_config, const gchar *database,
   const gchar *db;
 
   if (openvas_auth_init_funcs (manage_user_hash, manage_user_exists,
-                               manage_user_uuid))
+                               manage_user_uuid, manage_get_ldap_info))
     return -1;
 
   db = database ? database : sql_default_database ();
@@ -53692,6 +53692,82 @@ user_role_iterator_readable (iterator_t* iterator)
   return iterator_int (iterator, 4);
 }
 
+/**
+ * @brief Get LDAP info.
+ *
+ * @param[out]  ldap_host        LDAP host.
+ * @param[out]  auth_dn          Auth DN.
+ * @param[out]  plaintext  Whether plaintext auth is allowed.
+ *
+ * @return 0 success, 1 ldap not enabled, -1 error.
+ */
+int
+manage_get_ldap_info (gchar **ldap_host, gchar **auth_dn, int *plaintext)
+{
+  if (sql_int ("SELECT coalesce ((SELECT value FROM meta"
+               "                  WHERE name = 'ldap_enabled'),"
+               "                 0);"))
+    {
+      *ldap_host = sql_string ("SELECT value FROM meta"
+                               " WHERE name = 'ldap_host';");
+      if (ldap_host == NULL)
+        return -1;
+
+      *auth_dn = sql_string ("SELECT value FROM meta"
+                             " WHERE name = 'ldap_auth_dn';");
+      if (auth_dn == NULL)
+        {
+          g_free (*ldap_host);
+          *ldap_host = NULL;
+          return -1;
+        }
+
+      *plaintext = sql_int ("SELECT coalesce ((SELECT CAST (value AS integer)"
+                            "                  FROM meta"
+                            "                  WHERE name"
+                            "                        = 'ldap_allow_plaintext'),"
+                            "                 0);");
+      return 0;
+    }
+  return 1;
+}
+
+/**
+ * @brief Set LDAP info.
+ *
+ * @param[out]  enabled    Whether LDAP is enabled.
+ * @param[out]  host       LDAP host.
+ * @param[out]  authdn     Auth DN.
+ * @param[out]  allow_plaintext  Whether plaintext auth is allowed.
+ */
+void
+manage_set_ldap_info (int enabled, gchar *host, gchar *authdn,
+                      int allow_plaintext)
+{
+  gchar *quoted;
+
+  sql_begin_immediate ();
+
+  sql ("DELETE FROM meta WHERE name LIKE 'ldap_%%';");
+
+  sql ("INSERT INTO meta (name, value) VALUES ('ldap_enabled', %i);", enabled);
+
+  quoted = sql_quote (host ? host : "");
+  sql ("INSERT INTO meta (name, value) VALUES ('ldap_host', '%s');",
+       quoted);
+  g_free (quoted);
+
+  quoted = sql_quote (authdn ? authdn : "");
+  sql ("INSERT INTO meta (name, value) VALUES ('ldap_auth_dn', '%s');",
+       quoted);
+  g_free (quoted);
+
+  sql ("INSERT INTO meta (name, value) VALUES ('ldap_allow_plaintext', %i);",
+       allow_plaintext);
+
+  sql ("COMMIT;");
+}
+
 
 /* Tags */
 
@@ -54880,7 +54956,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
     }
 
   if (openvas_auth_init_funcs (manage_user_hash, manage_user_exists,
-                               manage_user_uuid))
+                               manage_user_uuid, manage_get_ldap_info))
     return -1;
 
   db = database ? database : sql_default_database ();

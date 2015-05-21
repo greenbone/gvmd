@@ -3518,6 +3518,12 @@ user_count (const get_data_t*);
 char*
 user_uuid (user_t);
 
+int
+manage_get_ldap_info (gchar **, gchar **, int *);
+
+void
+manage_set_ldap_info (int, gchar *, gchar *, int);
+
 
 /* Tags */
 

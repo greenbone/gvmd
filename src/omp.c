@@ -12293,9 +12293,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_DESCRIBE_AUTH:
         {
-          gchar *config_file, *content, *resp;
-
-          assert (current_credentials.username);
+          gchar *ldap_host, *ldap_auth_dn;
+          int ldap_plaintext;
 
           if (acl_user_may ("describe_auth") == 0)
             {
@@ -12306,28 +12305,34 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          /* Get base 64 encoded content of the auth configuration file. */
-          config_file = g_build_filename (OPENVAS_STATE_DIR, "openvasmd",
-                                          "auth.conf", NULL);
-          content = keyfile_to_auth_conf_settings_xml (config_file);
-          g_free (config_file);
-          if (content == NULL)
-            {
-              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("describe_auth"));
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-
-          resp = g_strdup_printf ("<describe_auth_response"
+          SEND_TO_CLIENT_OR_FAIL ("<describe_auth_response"
                                   " status=\"" STATUS_OK "\""
                                   " status_text=\"" STATUS_OK_TEXT "\">"
-                                  "%s"
-                                  "</describe_auth_response>",
-                                  content);
-          g_free (content);
+                                  "<group name=\"method:file\">"
+                                  "<auth_conf_setting key=\"enable\" value=\"true\"/>"
+                                  "<auth_conf_setting key=\"order\" value=\"1\"/>"
+                                  "</group>");
 
-          SEND_TO_CLIENT_OR_FAIL (resp);
-          g_free (resp);
+          if (manage_get_ldap_info (&ldap_host, &ldap_auth_dn, &ldap_plaintext)
+              == 0)
+            {
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<group name=\"method:ldap_connect\">"
+                "<auth_conf_setting key=\"enable\" value=\"true\"/>"
+                "<auth_conf_setting key=\"order\" value=\"0\"/>"
+                "<auth_conf_setting key=\"ldaphost\" value=\"%s\"/>"
+                "<auth_conf_setting key=\"authdn\" value=\"%s\"/>"
+                "<auth_conf_setting key=\"allow-plaintext\" value=\"%i\"/>"
+                "</group>",
+                ldap_host,
+                ldap_auth_dn,
+                ldap_plaintext);
+              g_free (ldap_host);
+              g_free (ldap_auth_dn);
+            }
+
+          SEND_TO_CLIENT_OR_FAIL ("</describe_auth_response>");
+
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
@@ -22670,7 +22675,7 @@ create_task_fail:
 
       case CLIENT_MODIFY_AUTH:
         {
-          GKeyFile *key_file;
+          GSList *item;
 
           assert (strcasecmp ("MODIFY_AUTH", element_name) == 0);
 
@@ -22684,15 +22689,11 @@ create_task_fail:
               break;
             }
 
-          key_file = g_key_file_new ();
-
-          /* Lets output the data for now. */
-          GSList *item = modify_auth_data->groups;
+          item = modify_auth_data->groups;
           while (item)
             {
               auth_group_t *auth_group;
               gchar *group;
-              GSList *setting;
 
               auth_group = (auth_group_t *) item->data;
               group = auth_group->group_name;
@@ -22701,42 +22702,45 @@ create_task_fail:
                   SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
                                            ("modify_auth",
                                             "GROUP requires a name attribute"));
-                  g_key_file_free (key_file);
                   set_client_state (CLIENT_AUTHENTIC);
                   modify_auth_data_reset (modify_auth_data);
                   break;
                 }
-              setting = auth_group->settings;
-              while (setting)
+              if (strcmp (group, "method:ldap_connect") == 0)
                 {
-                  auth_conf_setting_t *kvp =
-                    (auth_conf_setting_t *) setting->data;
-                  g_key_file_set_value (key_file, group, kvp->key, kvp->value);
-                  setting = g_slist_next (setting);
+                  GSList *setting;
+                  gchar *ldap_host, *ldap_authdn;
+                  int ldap_enabled, ldap_plaintext;
+
+                  ldap_enabled = ldap_plaintext = 0;
+                  ldap_host = ldap_authdn = NULL;
+                  setting = auth_group->settings;
+                  while (setting)
+                    {
+                      auth_conf_setting_t *kvp =
+                        (auth_conf_setting_t *) setting->data;
+
+                      if (kvp->key == NULL || kvp->value == NULL)
+                        /* Skip this one. */;
+                      else if (strcmp (kvp->key, "enable") == 0)
+                        ldap_enabled = (strcmp (kvp->value, "true") == 0);
+                      else if (strcmp (kvp->key, "ldaphost") == 0)
+                        ldap_host = g_strdup (kvp->value);
+                      else if (strcmp (kvp->key, "authdn") == 0)
+                        ldap_authdn = g_strdup (kvp->value);
+                      else if (strcmp (kvp->key, "allow-plaintext") == 0)
+                        ldap_plaintext = (strcmp (kvp->value, "true") == 0);
+
+                      setting = g_slist_next (setting);
+                    }
+
+                  manage_set_ldap_info (ldap_enabled, ldap_host, ldap_authdn,
+                                        ldap_plaintext);
                 }
               item = g_slist_next (item);
             }
 
-          /** @todo Implement sighup in and send to openvas-manager in order
-            *       for the changed config to take effect. */
-            // FIX
-          switch (openvas_auth_write_config (key_file))
-            {
-            case 0:
-              SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_auth"));
-              break;
-            case 1:
-              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
-                                      ("modify_auth",
-                                       "Valid authdn required"));
-              break;
-            default:
-            case -1:
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_auth"));
-              break;
-            }
-
-          g_key_file_free (key_file);
+          SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_auth"));
           modify_auth_data_reset (modify_auth_data);
           set_client_state (CLIENT_AUTHENTIC);
 
