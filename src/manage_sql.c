@@ -4753,6 +4753,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
           g_free (trash_columns);
           g_free (owned_clause);
           g_free (trash_extra);
+          g_free (outer_group_by);
           g_free (order);
           g_free (clause);
           return -1;
@@ -4760,6 +4761,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
 
       aggregate_group_by = g_strdup ("");
     }
+
+  g_free (select_stat_column);
 
   from_table = type_table (type, get->trash);
 
@@ -4794,6 +4797,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
 
   g_free (columns);
   g_free (trash_columns);
+  g_free (opts_table);
   g_free (owned_clause);
   g_free (trash_extra);
   g_free (filter_order);

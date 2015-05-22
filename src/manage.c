@@ -5172,6 +5172,7 @@ manage_schedule (int (*fork_connection) (int *,
             g_free (owner);
             g_free (owner_uuid);
             exit (EXIT_FAILURE);
+            break;
 
           default:
             {
