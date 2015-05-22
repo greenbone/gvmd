@@ -53814,10 +53814,11 @@ manage_get_ldap_info (gchar **ldap_host, gchar **auth_dn, int *plaintext)
 /**
  * @brief Set LDAP info.
  *
- * @param[out]  enabled    Whether LDAP is enabled.
- * @param[out]  host       LDAP host.
- * @param[out]  authdn     Auth DN.
- * @param[out]  allow_plaintext  Whether plaintext auth is allowed.
+ * @param[out]  enabled    Whether LDAP is enabled.  -1 to keep current value.
+ * @param[out]  host       LDAP host.  NULL to keep current value.
+ * @param[out]  authdn     Auth DN.  NULL to keep current value.
+ * @param[out]  allow_plaintext  Whether plaintext auth is allowed.  -1 to
+ *                               keep current value.
  */
 void
 manage_set_ldap_info (int enabled, gchar *host, gchar *authdn,
@@ -53827,22 +53828,36 @@ manage_set_ldap_info (int enabled, gchar *host, gchar *authdn,
 
   sql_begin_immediate ();
 
-  sql ("DELETE FROM meta WHERE name LIKE 'ldap_%%';");
+  if (enabled >= 0)
+    {
+      sql ("DELETE FROM meta WHERE name LIKE 'ldap_enabled';");
+      sql ("INSERT INTO meta (name, value) VALUES ('ldap_enabled', %i);", enabled);
+    }
 
-  sql ("INSERT INTO meta (name, value) VALUES ('ldap_enabled', %i);", enabled);
+  if (host)
+    {
+      sql ("DELETE FROM meta WHERE name LIKE 'ldap_host';");
+      quoted = sql_quote (host);
+      sql ("INSERT INTO meta (name, value) VALUES ('ldap_host', '%s');",
+           quoted);
+      g_free (quoted);
+    }
 
-  quoted = sql_quote (host ? host : "");
-  sql ("INSERT INTO meta (name, value) VALUES ('ldap_host', '%s');",
-       quoted);
-  g_free (quoted);
+  if (authdn)
+    {
+      sql ("DELETE FROM meta WHERE name LIKE 'ldap_auth_dn';");
+      quoted = sql_quote (authdn);
+      sql ("INSERT INTO meta (name, value) VALUES ('ldap_auth_dn', '%s');",
+           quoted);
+      g_free (quoted);
+    }
 
-  quoted = sql_quote (authdn ? authdn : "");
-  sql ("INSERT INTO meta (name, value) VALUES ('ldap_auth_dn', '%s');",
-       quoted);
-  g_free (quoted);
-
-  sql ("INSERT INTO meta (name, value) VALUES ('ldap_allow_plaintext', %i);",
-       allow_plaintext);
+  if (allow_plaintext >= 0)
+    {
+      sql ("DELETE FROM meta WHERE name LIKE 'ldap_allow_plaintext';");
+      sql ("INSERT INTO meta (name, value) VALUES ('ldap_allow_plaintext', %i);",
+           allow_plaintext);
+    }
 
   sql ("COMMIT;");
 }

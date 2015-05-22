@@ -22712,7 +22712,7 @@ create_task_fail:
                   gchar *ldap_host, *ldap_authdn;
                   int ldap_enabled, ldap_plaintext;
 
-                  ldap_enabled = ldap_plaintext = 0;
+                  ldap_enabled = ldap_plaintext = -1;
                   ldap_host = ldap_authdn = NULL;
                   setting = auth_group->settings;
                   while (setting)

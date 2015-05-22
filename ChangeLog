@@ -1,5 +1,12 @@
 2015-05-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_set_ldap_info): Set only the given values.
+
+	* src/omp.c (create_task_fail): Init LDAP integer params to -1, so that
+	manage_set_ldap_info can see if they were given.
+
+2015-05-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (ldap_auth_enabled): Cast value so that both coalesce
 	args have the same type.
 
