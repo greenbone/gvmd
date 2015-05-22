@@ -12293,9 +12293,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_DESCRIBE_AUTH:
         {
-          gchar *ldap_host, *ldap_auth_dn;
-          int ldap_plaintext;
-
           if (acl_user_may ("describe_auth") == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
@@ -12313,22 +12310,26 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   "<auth_conf_setting key=\"order\" value=\"1\"/>"
                                   "</group>");
 
-          if (manage_get_ldap_info (&ldap_host, &ldap_auth_dn, &ldap_plaintext)
-              == 0)
+          if (openvas_auth_ldap_enabled ())
             {
+              gchar *ldap_host, *ldap_authdn;
+              int ldap_enabled, ldap_allow_plaintext;
+              manage_get_ldap_info (&ldap_enabled, &ldap_host, &ldap_authdn,
+                                    &ldap_allow_plaintext);
               SENDF_TO_CLIENT_OR_FAIL
                ("<group name=\"method:ldap_connect\">"
-                "<auth_conf_setting key=\"enable\" value=\"true\"/>"
+                "<auth_conf_setting key=\"enable\" value=\"%s\"/>"
                 "<auth_conf_setting key=\"order\" value=\"0\"/>"
                 "<auth_conf_setting key=\"ldaphost\" value=\"%s\"/>"
                 "<auth_conf_setting key=\"authdn\" value=\"%s\"/>"
                 "<auth_conf_setting key=\"allow-plaintext\" value=\"%i\"/>"
                 "</group>",
+                ldap_enabled ? "true" : "false",
                 ldap_host,
-                ldap_auth_dn,
-                ldap_plaintext);
+                ldap_authdn,
+                ldap_allow_plaintext);
               g_free (ldap_host);
-              g_free (ldap_auth_dn);
+              g_free (ldap_authdn);
             }
 
           SEND_TO_CLIENT_OR_FAIL ("</describe_auth_response>");

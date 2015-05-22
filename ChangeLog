@@ -1,3 +1,20 @@
+2015-05-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Match LDAP db names better to auth.conf names.  Always send LDAP info
+	when LDAP has been compiled.
+
+	* src/manage_sql.c (ldap_auth_enabled): Rename field to ldap_enable.
+	(authenticate_any_method): Call ldap_auth_info_new directly.
+	(manage_get_ldap_info): Add enabled arg.  Return default when field is
+	missing, instead of an error.
+	(manage_set_ldap_info): Rename fields to match auth.conf names better.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Always send the LDAP group now
+	that there are defaults.  Also check the "enable" value, which will show
+	if LDAP is enabled.
+
 2015-05-22  Benoît Allard  <benoit.allard@greenbone.net>
 
 	* src/manage_sql.ci (modify_task_check_slave_scanner): Make sure

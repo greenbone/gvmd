@@ -12410,7 +12410,7 @@ ldap_auth_enabled ()
 {
   if (openvas_auth_ldap_enabled ())
     return sql_int ("SELECT coalesce ((SELECT CAST (value AS INTEGER) FROM meta"
-                    "                  WHERE name = 'ldap_enabled'),"
+                    "                  WHERE name = 'ldap_enable'),"
                     "                 0);");
   return 0;
 }
@@ -12713,9 +12713,14 @@ authenticate_any_method (const gchar *username, const gchar *password,
       && user_exists_method (username, AUTHENTICATION_METHOD_LDAP_CONNECT))
     {
       ldap_auth_info_t info;
+      int allow_plaintext;
+      gchar *authdn, *host;
 
       *auth_method = AUTHENTICATION_METHOD_LDAP_CONNECT;
-      info = ldap_auth_info_from_function (manage_get_ldap_info);
+      manage_get_ldap_info (NULL, &host, &authdn, &allow_plaintext);
+      info = ldap_auth_info_new (host, authdn, allow_plaintext);
+      g_free (host);
+      g_free (authdn);
       ret = ldap_connect_authenticate (username, password, info);
       ldap_auth_info_free (info);
       return ret;
@@ -53784,39 +53789,33 @@ user_role_iterator_readable (iterator_t* iterator)
 /**
  * @brief Get LDAP info.
  *
- * @param[out]  ldap_host        LDAP host.
- * @param[out]  auth_dn          Auth DN.
+ * @param[out]  enabled    Whether LDAP is enabled.
+ * @param[out]  ldap_host  Freshly allocated LDAP host.
+ * @param[out]  authdn     Freshly allocated Auth DN.
  * @param[out]  plaintext  Whether plaintext auth is allowed.
- *
- * @return 0 success, 1 ldap not enabled, -1 error.
  */
-int
-manage_get_ldap_info (gchar **ldap_host, gchar **auth_dn, int *plaintext)
+void
+manage_get_ldap_info (int *enabled, gchar **host, gchar **authdn,
+                      int *plaintext)
 {
-  if (ldap_auth_enabled ())
-    {
-      *ldap_host = sql_string ("SELECT value FROM meta"
-                               " WHERE name = 'ldap_host';");
-      if (ldap_host == NULL)
-        return -1;
+  if (enabled)
+    *enabled = ldap_auth_enabled ();
 
-      *auth_dn = sql_string ("SELECT value FROM meta"
-                             " WHERE name = 'ldap_auth_dn';");
-      if (auth_dn == NULL)
-        {
-          g_free (*ldap_host);
-          *ldap_host = NULL;
-          return -1;
-        }
+  *host = sql_string ("SELECT value FROM meta"
+                      " WHERE name = 'ldap_host';");
+  if (*host == NULL)
+    *host = g_strdup ("127.0.0.1");
 
-      *plaintext = sql_int ("SELECT coalesce ((SELECT CAST (value AS integer)"
-                            "                  FROM meta"
-                            "                  WHERE name"
-                            "                        = 'ldap_allow_plaintext'),"
-                            "                 0);");
-      return 0;
-    }
-  return 1;
+  *authdn = sql_string ("SELECT value FROM meta"
+                        " WHERE name = 'ldap_authdn';");
+  if (*authdn == NULL)
+    *authdn = g_strdup ("userid=%s,dc=example,dc=org");
+
+  *plaintext = sql_int ("SELECT coalesce ((SELECT CAST (value AS integer)"
+                        "                  FROM meta"
+                        "                  WHERE name"
+                        "                        = 'ldap_allow_plaintext'),"
+                        "                 0);");
 }
 
 /**
@@ -53838,8 +53837,8 @@ manage_set_ldap_info (int enabled, gchar *host, gchar *authdn,
 
   if (enabled >= 0)
     {
-      sql ("DELETE FROM meta WHERE name LIKE 'ldap_enabled';");
-      sql ("INSERT INTO meta (name, value) VALUES ('ldap_enabled', %i);", enabled);
+      sql ("DELETE FROM meta WHERE name LIKE 'ldap_enable';");
+      sql ("INSERT INTO meta (name, value) VALUES ('ldap_enable', %i);", enabled);
     }
 
   if (host)
@@ -53853,9 +53852,9 @@ manage_set_ldap_info (int enabled, gchar *host, gchar *authdn,
 
   if (authdn)
     {
-      sql ("DELETE FROM meta WHERE name LIKE 'ldap_auth_dn';");
+      sql ("DELETE FROM meta WHERE name LIKE 'ldap_authdn';");
       quoted = sql_quote (authdn);
-      sql ("INSERT INTO meta (name, value) VALUES ('ldap_auth_dn', '%s');",
+      sql ("INSERT INTO meta (name, value) VALUES ('ldap_authdn', '%s');",
            quoted);
       g_free (quoted);
     }
