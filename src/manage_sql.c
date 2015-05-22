@@ -29588,6 +29588,9 @@ modify_task_check_slave_scanner (task_t task, const char *slave_id,
 
   /* Either way, ensure that the scanner accepts slaves. */
 
+  if (existing_scanner_id == NULL && scanner_id == NULL)
+    return 1;
+
   if (strcmp (existing_scanner_id ? existing_scanner_id : scanner_id,
               SCANNER_UUID_DEFAULT))
     {

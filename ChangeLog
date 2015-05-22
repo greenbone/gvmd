@@ -1,5 +1,10 @@
 2015-05-22  Benoît Allard  <benoit.allard@greenbone.net>
 
+	* src/manage_sql.ci (modify_task_check_slave_scanner): Make sure
+	  existing_scanner_id and scanner_id aren't both NULL at the same time.
+
+2015-05-22  Benoît Allard  <benoit.allard@greenbone.net>
+
 	* src/manage_sql.c, src/manage.c: Fix more memory leaks.
 
 2015-05-22  Benoît Allard  <benoit.allard@greenbone.net>
