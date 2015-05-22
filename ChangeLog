@@ -1,5 +1,11 @@
 2015-05-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (client_state_t, omp_xml_handle_start_element)
+	(omp_xml_handle_end_element): Add spaces in AUTHCONFSETTING to match the
+	other state names.
+
+2015-05-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_aggregate_iterator): Name subclause for Postgres.
 
 2015-05-22  Matthew Mundell <matthew.mundell@greenbone.net>

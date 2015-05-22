@@ -5250,7 +5250,7 @@ typedef enum
   CLIENT_MODIFY_ALERT_NAME,
   CLIENT_MODIFY_AUTH,
   CLIENT_MODIFY_AUTH_GROUP,
-  CLIENT_MODIFY_AUTH_GROUP_AUTHCONFSETTING,
+  CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING,
   CLIENT_MODIFY_CONFIG,
   CLIENT_MODIFY_CONFIG_COMMENT,
   CLIENT_MODIFY_CONFIG_FAMILY_SELECTION,
@@ -7847,7 +7847,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_MODIFY_AUTH_GROUP:
         if (strcasecmp ("AUTH_CONF_SETTING", element_name) == 0)
           {
-            set_client_state (CLIENT_MODIFY_AUTH_GROUP_AUTHCONFSETTING);
+            set_client_state (CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING);
             auth_conf_setting_t *setting =
               auth_conf_setting_from_xml (element_name,
                                           attribute_names,
@@ -7857,7 +7857,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         ELSE_ERROR ("modify_auth");
 
-      case CLIENT_MODIFY_AUTH_GROUP_AUTHCONFSETTING:
+      case CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING:
         {
           /* AUTH_CONF_SETTING should not have any children. */
           if (send_element_error_to_client ("auth_conf_setting", element_name,
@@ -22766,7 +22766,7 @@ create_task_fail:
           break;
         }
 
-      case CLIENT_MODIFY_AUTH_GROUP_AUTHCONFSETTING:
+      case CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING:
         {
           set_client_state (CLIENT_MODIFY_AUTH_GROUP);
           break;
