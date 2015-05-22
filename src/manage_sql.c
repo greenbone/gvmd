@@ -12404,7 +12404,7 @@ static int
 ldap_auth_enabled ()
 {
   if (openvas_auth_ldap_enabled ())
-    return sql_int ("SELECT coalesce ((SELECT value FROM meta"
+    return sql_int ("SELECT coalesce ((SELECT CAST (value AS INTEGER) FROM meta"
                     "                  WHERE name = 'ldap_enabled'),"
                     "                 0);");
   return 0;

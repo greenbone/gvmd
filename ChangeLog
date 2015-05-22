@@ -1,3 +1,8 @@
+2015-05-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (ldap_auth_enabled): Cast value so that both coalesce
+	args have the same type.
+
 2015-05-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_create_scanner): Update auth init call.
