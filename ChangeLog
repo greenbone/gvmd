@@ -1,3 +1,7 @@
+2015-05-22  Benoît Allard  <benoit.allard@greenbone.net>
+
+	* src/sql_pg.c (sql_bind_double): Fix a memory leak.
+
 2015-05-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (client_state_t, omp_xml_handle_start_element)

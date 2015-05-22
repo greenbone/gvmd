@@ -631,6 +631,7 @@ sql_bind_double (sql_stmt_t *stmt, int position, double *value)
   gchar *string;
   string = g_strdup_printf ("%f", *value);
   bind_param (stmt, position, string, strlen (string), 0);
+  g_free (string);
   return 0;
 }
 
