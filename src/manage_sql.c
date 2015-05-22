@@ -4774,6 +4774,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                  "       %s%s"
                  "       %s%s%s%s"
                  "       %s)"
+                 "      AS agg_sub"
                  " %s %s;",
                  distinct ? " DISTINCT" : "",
                  aggregate_select,

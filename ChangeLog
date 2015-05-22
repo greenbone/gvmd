@@ -1,5 +1,9 @@
 2015-05-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_aggregate_iterator): Name subclause for Postgres.
+
+2015-05-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_set_ldap_info): Set only the given values.
 
 	* src/omp.c (create_task_fail): Init LDAP integer params to -1, so that
