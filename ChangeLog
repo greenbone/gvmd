@@ -1,5 +1,10 @@
 2015-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/scap_db_init_pg.sql: Check if SCAP schema exists before dropping
+	it, to avoid NOTICE.
+
+2015-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.h: Format page break like others.
 
 	* src/manage_sql.c (manage_get_scanners): Move to Scanners section.

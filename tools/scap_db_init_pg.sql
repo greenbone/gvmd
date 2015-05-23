@@ -25,7 +25,18 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-DROP SCHEMA IF EXISTS scap CASCADE;
+CREATE OR REPLACE FUNCTION drop_scap () RETURNS void AS $$
+BEGIN
+    IF EXISTS (SELECT schema_name FROM information_schema.schemata
+               WHERE schema_name = 'scap')
+    THEN
+      DROP SCHEMA IF EXISTS scap CASCADE;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT drop_scap ();
+DROP FUNCTION drop_scap ();
 CREATE SCHEMA scap;
 SET search_path TO scap;
 
