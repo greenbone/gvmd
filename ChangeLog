@@ -1,5 +1,11 @@
 2015-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.h: Format page break like others.
+
+	* src/manage_sql.c (manage_get_scanners): Move to Scanners section.
+
+2015-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_TASKS initialise
 	the _2 variables because they are set when there are reports but used
 	also used when there are no reports.

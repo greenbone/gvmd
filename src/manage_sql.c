@@ -39266,6 +39266,45 @@ verify_scanner (const char *scanner_id, char **version)
   return -1;
 }
 
+/**
+ * @brief List scanners.
+ *
+ * @param[in]  log_config  Log configuration.
+ * @param[in]  database    Location of manage database.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+manage_get_scanners (GSList *log_config, const gchar *database)
+{
+  iterator_t scanners;
+  const gchar *db;
+  int ret;
+
+  if (openvas_auth_init ())
+    return -1;
+
+  db = database ? database : sql_default_database ();
+
+  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
+  assert (ret != -4);
+  if (ret)
+    return ret;
+
+  init_manage_process (0, db);
+
+  init_iterator (&scanners, "SELECT uuid, name FROM scanners;");
+  while (next (&scanners))
+    printf ("%s  %s\n", iterator_string (&scanners, 0),
+            iterator_string (&scanners, 1));
+
+  cleanup_iterator (&scanners);
+
+  cleanup_manage_process (TRUE);
+
+  return 0;
+}
+
 
 /* Schedules. */
 
@@ -52345,45 +52384,6 @@ manage_get_users (GSList *log_config, const gchar *database,
   while (next (&users))
     printf ("%s\n", iterator_string (&users, 0));
   cleanup_iterator (&users);
-
-  cleanup_manage_process (TRUE);
-
-  return 0;
-}
-
-/**
- * @brief List scanners.
- *
- * @param[in]  log_config  Log configuration.
- * @param[in]  database    Location of manage database.
- *
- * @return 0 success, -1 error.
- */
-int
-manage_get_scanners (GSList *log_config, const gchar *database)
-{
-  iterator_t scanners;
-  const gchar *db;
-  int ret;
-
-  if (openvas_auth_init ())
-    return -1;
-
-  db = database ? database : sql_default_database ();
-
-  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
-  assert (ret != -4);
-  if (ret)
-    return ret;
-
-  init_manage_process (0, db);
-
-  init_iterator (&scanners, "SELECT uuid, name FROM scanners;");
-  while (next (&scanners))
-    printf ("%s  %s\n", iterator_string (&scanners, 0),
-            iterator_string (&scanners, 1));
-
-  cleanup_iterator (&scanners);
 
   cleanup_manage_process (TRUE);
 

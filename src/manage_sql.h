@@ -242,8 +242,8 @@
 /* Variables */
 
 extern gchar *task_db_name;
-
 
+
 /* Function prototypes */
 
 typedef long long int rowid_t;
