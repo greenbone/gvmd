@@ -17541,8 +17541,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   current_report_id = report_uuid (running_report);
 
                   if (report_timestamp (current_report_id, &timestamp))
-                    /** @todo Either fail better or abort at SQL level. */
-                    abort ();
+                    g_error ("%s: GET_TASKS: error getting timestamp of report,"
+                             " aborting",
+                             __FUNCTION__);
 
                   scan_end = scan_end_time_uuid (current_report_id),
 
@@ -17575,12 +17576,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                      &warnings_2, &false_positives,
                                      &severity_2, apply_overrides,
                                      0, min_qod))
-                    /** @todo Either fail better or abort at SQL level. */
-                    abort ();
+                    g_error ("%s: GET_TASKS: error getting counts for first"
+                             " report, aborting",
+                             __FUNCTION__);
 
                   if (report_timestamp (first_report_id, &timestamp))
-                    /** @todo Either fail better or abort at SQL level. */
-                    abort ();
+                    g_error ("%s: GET_TASKS: failed to get timestamp of first"
+                             " report, aborting",
+                             __FUNCTION__);
 
                   scan_end = scan_end_time_uuid (first_report_id),
 
@@ -17635,11 +17638,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         &false_positives, &severity_2,
                                         apply_overrides,
                                         0, min_qod))
-                    /** @todo Either fail better or abort at SQL level. */
-                    abort ();
+                    g_error ("%s: GET_TASKS: error getting counts for second"
+                             " report, aborting",
+                             __FUNCTION__);
 
                   if (report_timestamp (second_last_report_id, &timestamp))
-                    abort ();
+                    g_error ("%s: GET_TASKS: error getting timestamp of second"
+                             " report, aborting",
+                             __FUNCTION__);
 
                   scan_end = scan_end_time_uuid (second_last_report_id),
 
@@ -17697,8 +17703,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             &warnings, &false_positives, &severity,
                             apply_overrides,
                             0, min_qod))
-                        /** @todo Either fail better or abort at SQL level. */
-                        abort ();
+                        g_error ("%s: GET_TASKS: error getting counts for last"
+                                 " report, aborting",
+                                 __FUNCTION__);
                     }
                   else
                     {
@@ -17709,7 +17716,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     }
 
                   if (report_timestamp (last_report_id, &timestamp))
-                    abort ();
+                    g_error ("%s: GET_TASKS: error getting timestamp for last"
+                             " report, aborting",
+                             __FUNCTION__);
 
                   scan_end = scan_end_time_uuid (last_report_id);
 
@@ -17767,7 +17776,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   if (find_target_with_permission (task_target_uuid,
                                                    &found,
                                                    "get_targets"))
-                    abort ();
+                    g_error ("%s: GET_TASKS: error finding task target,"
+                             " aborting",
+                             __FUNCTION__);
                   target_available = (found > 0);
                 }
               else
@@ -17784,7 +17795,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   if (find_config_with_permission (config_uuid,
                                                    &found,
                                                    "get_configs"))
-                    abort ();
+                    g_error ("%s: GET_TASKS: error finding task config,"
+                             " aborting",
+                             __FUNCTION__);
                   config_available = (found > 0);
                 }
               slave_available = 1;
@@ -17802,7 +17815,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   if (find_slave_with_permission (task_slave_uuid,
                                                   &found,
                                                   "get_slaves"))
-                    abort ();
+                    g_error ("%s: GET_TASKS: error finding task slave,"
+                             " aborting",
+                             __FUNCTION__);
 
                   slave_available = (found > 0);
                 }
@@ -17830,7 +17845,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       if (find_schedule_with_permission (task_schedule_uuid,
                                                          &found,
                                                          "get_schedules"))
-                        abort ();
+                        g_error ("%s: GET_TASKS: error finding task schedule,"
+                                 " aborting",
+                                 __FUNCTION__);
                       schedule_available = (found > 0);
                     }
                 }
@@ -17854,7 +17871,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   if (find_scanner_with_permission (task_scanner_uuid,
                                                     &found,
                                                     "get_scanners"))
-                    abort ();
+                    g_error ("%s: GET_TASKS: error finding task scanner,"
+                             " aborting",
+                             __FUNCTION__);
                   scanner_available = (found > 0);
                 }
               else
