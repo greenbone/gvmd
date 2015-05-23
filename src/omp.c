@@ -17553,11 +17553,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               char *owner, *observers;
               int target_in_trash, schedule_in_trash;
               int debugs, holes = 0, infos = 0, logs, warnings = 0;
-              int holes_2, infos_2, warnings_2;
+              int holes_2 = 0, infos_2 = 0, warnings_2 = 0;
               int false_positives, task_scanner_type, slave_available;
               int schedule_available, target_available, config_available;
               int scanner_available;
-              double severity = 0, severity_2;
+              double severity = 0, severity_2 = 0;
               gchar *response;
               iterator_t alerts, groups, roles;
               gchar *in_assets, *max_checks, *max_hosts, *source_iface;
