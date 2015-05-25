@@ -1,3 +1,12 @@
+2015-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r22440.
+
+	* src/manage_acl.c (acl_where_owned_user): Correct comparison by using
+	g_str_has_prefix.  Previous version was comparing the whole string
+	instead of looking for a prefix.  This was causing the global resources
+	to be excluded when a GET_XXX permission was requested.
+
 2015-04-23  Matthew Mundell <matthew.mund...@greenbone.net>
 
 	Backport r22378.

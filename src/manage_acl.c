@@ -969,7 +969,7 @@ where_owned_user (const char *user_id, const char *user_sql, const char *type,
                 permissions_include_get = 1;
                 break;
               }
-            if (strlen (permission) > 3 && strcmp ("get_", permission) == 0)
+            if (g_str_has_prefix (permission, "get_"))
               permissions_include_get = 1;
             quoted = sql_quote (permission);
             if (index == 0)
