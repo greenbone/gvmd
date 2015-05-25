@@ -365,4 +365,6 @@ void manage_session_init (const char *);
 
 int valid_omp_command (const char *);
 
+void check_generate_scripts ();
+
 #endif /* not OPENVAS_MANAGER_MANAGE_SQL_H */

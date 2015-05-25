@@ -10089,6 +10089,39 @@ migrate_146_to_147 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 147 to version 148.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_147_to_148 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 147. */
+
+  if (manage_db_version () != 147)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The "generate" scripts of all report formats must now be executable. */
+
+  check_generate_scripts ();
+
+  /* Set the database version to 148. */
+
+  set_db_version (148);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
 #ifdef SQL_IS_SQLITE
 #define SQLITE_OR_NULL(function) function
 #else
@@ -10247,6 +10280,7 @@ static migrator_t database_migrators[]
     {145, migrate_144_to_145},
     {146, migrate_145_to_146},
     {147, migrate_146_to_147},
+    {148, migrate_147_to_148},
     /* End marker. */
     {-1, NULL}};
 
