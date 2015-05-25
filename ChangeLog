@@ -1,5 +1,9 @@
 2015-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_acl.c: Add tracef, so that the log domain is initialised.
+
+2015-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/scap_db_init_pg.sql: Check if SCAP schema exists before dropping
 	it, to avoid NOTICE.
 

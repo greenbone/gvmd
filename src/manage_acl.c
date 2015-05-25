@@ -34,6 +34,7 @@
 #include "manage_acl.h"
 #include "manage_sql.h"
 #include "sql.h"
+#include "tracef.h"
 
 #include <assert.h>
 #include <stdlib.h>
