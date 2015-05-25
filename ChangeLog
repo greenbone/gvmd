@@ -1,5 +1,14 @@
 2015-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r22445, but do the check every time instead of in a migrator.
+
+	* src/manage_sql.c (check_generate_scripts): New function.
+	(check_db): Check generate scripts.
+
+	* src/manage.h: Add header accordingly.
+
+2015-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r22443.
 
 	* src/manage_sql.c (create_report_format): Create the "generate" script

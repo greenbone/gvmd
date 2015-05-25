@@ -12017,10 +12017,64 @@ check_db ()
   check_db_roles ();
   check_db_permissions ();
   check_db_settings ();
+  check_generate_scripts ();
   if (progress)
     progress ();
 
   return 0;
+}
+
+/**
+ * @brief Ensure the generate scripts are all executable.
+ *
+ * Used by a migrator.
+ */
+void
+check_generate_scripts ()
+{
+  iterator_t rows;
+
+  init_iterator (&rows, "SELECT owner,"
+                        "       uuid,"
+                        "       (SELECT uuid FROM users"
+                        "        WHERE users.id = report_formats.owner)"
+                        " FROM report_formats;");
+  while (next (&rows))
+    {
+      resource_t owner;
+
+      owner = iterator_int64 (&rows, 0);
+      if (owner)
+        {
+          const gchar *report_format_uuid, *user_uuid;
+          gchar *path;
+
+          report_format_uuid = iterator_string (&rows, 1);
+          if (report_format_uuid == NULL)
+            continue;
+
+          user_uuid = iterator_string (&rows, 2);
+          if (user_uuid == NULL)
+            continue;
+
+          path = g_build_filename (OPENVAS_STATE_DIR,
+                                   "openvasmd",
+                                   "report_formats",
+                                   user_uuid,
+                                   report_format_uuid,
+                                   "generate",
+                                   NULL);
+
+          if (chmod (path, 0755 /* rwxr-xr-x */))
+            g_warning ("%s: chmod %s failed: %s\n",
+                       __FUNCTION__,
+                       path,
+                       strerror (errno));
+
+          g_free (path);
+        }
+    }
+  cleanup_iterator (&rows);
 }
 
 /**
