@@ -15873,10 +15873,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SENDF_TO_CLIENT_OR_FAIL
                    ("<trust>%s<time>%s</time></trust>"
                     "<active>%i</active>",
-                    report_format_predefined (get_iterator_resource
-                                               (&report_formats))
-                     ? "yes"
-                     : report_format_iterator_trust (&report_formats),
+                    get_report_formats_data->get.trash
+                     ? report_format_iterator_trust (&report_formats)
+                     : (report_format_predefined (get_iterator_resource
+                                                   (&report_formats))
+                         ? "yes"
+                         : report_format_iterator_trust (&report_formats)),
                     iso_time (&trust_time),
                     report_format_iterator_active (&report_formats));
 

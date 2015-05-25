@@ -1,3 +1,9 @@
+2015-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): Skip the predefined check in
+	the trash case of GET_REPORT_FORMATS, because predefined report formats
+	can't be in the trash.
+
 2015-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_acl.c (acl_where_owned_user): Correct comparison by using
