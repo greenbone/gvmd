@@ -1,3 +1,10 @@
+2015-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r22443.
+
+	* src/manage_sql.c (create_report_format): Create the "generate" script
+	with execute permission, now that execute is required to run the script.
+
 2015-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r22440.

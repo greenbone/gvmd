@@ -40462,6 +40462,7 @@ create_report_format (const char *uuid, const char *name,
       gchar *contents, *file, *full_file_name;
       gsize contents_size;
       GError *error;
+      int ret;
 
       if (strlen (file_name) == 0)
         {
@@ -40500,7 +40501,11 @@ create_report_format (const char *uuid, const char *name,
           return -1;
         }
 
-      if (chmod (full_file_name, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH))
+      if (strcmp (file_name, "generate") == 0)
+        ret = chmod (full_file_name, 0755 /* rwxr-xr-x */);
+      else
+        ret = chmod (full_file_name, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+      if (ret)
         {
           g_warning ("%s: chmod failed: %s\n",
                      __FUNCTION__,
