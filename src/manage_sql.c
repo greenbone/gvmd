@@ -14652,8 +14652,8 @@ make_osp_result (task_t task, const char *host, const char *nvt,
        "  qod, qod_type, description, uuid)"
        " VALUES (%llu, '%s', '', '%s', '%s', '%s', '%s',"
        "         '%s', '', '%s', make_uuid ());",
-       task, host ?: "", quoted_nvt, nvt_revision ?: "", result_severity, type,
-       G_STRINGIFY (QOD_DEFAULT), quoted_desc);
+       task, host ?: "", quoted_nvt, nvt_revision ?: "", result_severity ?: "0",
+       type, G_STRINGIFY (QOD_DEFAULT), quoted_desc);
   g_free (result_severity);
   g_free (nvt_revision);
   g_free (quoted_desc);

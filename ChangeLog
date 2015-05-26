@@ -1,3 +1,8 @@
+2015-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (make_osp_result): Add a default for result_severity,
+	in case it's a "CVE-" result and the CVE is not in the database.
+
 2015-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Ensure all existing generate scripts are executalbe.  Hence increase
