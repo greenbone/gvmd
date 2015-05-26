@@ -1,5 +1,11 @@
 2015-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (check_permission_args): Allow the user to give a
+	predefined role permission on a resource, as long as the user owns the
+	resource.
+
+2015-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (check_permission_args): Correct subject check.
 
 2015-05-26  Matthew Mundell <matthew.mundell@greenbone.net>

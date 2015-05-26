@@ -44794,12 +44794,6 @@ check_permission_args (const char *name_arg, const char *resource_type_arg,
 
   assert (subject_type);
 
-  /* Check if the subject is a predefined role. */
-  if (subject_id
-      && strcmp (subject_type, "role") == 0
-      && role_is_predefined_id (subject_id))
-    return 99;
-
   *name = strcasecmp (name_arg, "super")
            ? g_ascii_strdown (name_arg, -1)
            : g_strdup ("Super");
@@ -44867,6 +44861,7 @@ check_permission_args (const char *name_arg, const char *resource_type_arg,
     }
 
   /* Ensure the user may grant this permission. */
+
   if (((*resource == 0) || strcasecmp (*name, "super") == 0)
       && (acl_user_can_everything (current_credentials.uuid) == 0))
     {
@@ -44898,6 +44893,12 @@ check_permission_args (const char *name_arg, const char *resource_type_arg,
       gchar *permission;
 
       /* Command level permission.  Must have write access to the subject. */
+
+      /* However, modification of the predefined roles is forbidden. */
+      if (subject_id
+          && strcmp (subject_type, "role") == 0
+          && role_is_predefined_id (subject_id))
+        return 99;
 
       permission = g_strdup_printf ("modify_%s", subject_type);
       if (find_resource_with_permission (subject_type,
