@@ -1,3 +1,10 @@
+2015-04-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r20044.  Original patch by Hani Benhabiles.
+
+	* src/manage_sql.c (create_report): Use sql transactions as Debian 5 is
+	not supported anymore.
+
 2015-04-20  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r22158.

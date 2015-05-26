@@ -15092,21 +15092,23 @@ create_report (array_t *results, const char *task_id, const char *task_name,
 
   /* Find or create the task. */
 
-  /** @todo This should really lock the task for the entire duration, because
-   *        someone could remove the task during the upload.   But will probably
-   *        cause problems on Debian 5 (sqlite 3.5.9), as below.
-   */
+  sql ("BEGIN IMMEDIATE;");
 
   if (task_id)
     {
+      int rc = 0;
+
       if (find_task (task_id, &task))
-        return -1;
-
-      if (task == 0)
-        return -4;
-
-      if (task_target (task))
-        return -5;
+        rc = -1;
+      else if (task == 0)
+        rc = -4;
+      else if (task_target (task))
+        rc = -5;
+      if (rc)
+        {
+          sql ("ROLLBACK;");
+          return rc;
+        }
     }
   else
     task = make_task (g_strdup (task_name),
@@ -15116,7 +15118,11 @@ create_report (array_t *results, const char *task_id, const char *task_name,
   /* Generate report UUID. */
 
   *report_id = openvas_uuid_make ();
-  if (*report_id == NULL) return -2;
+  if (*report_id == NULL)
+    {
+      sql ("ROLLBACK;");
+      return -2;
+    }
 
   /* Create the report. */
 
@@ -15142,6 +15148,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
   sql ("UPDATE tasks SET upload_result_count = %llu WHERE ROWID = %llu;",
        results->len,
        task);
+  sql ("COMMIT;");
 
   /* Fork a child to import the results while the parent responds to the
    * client. */
@@ -15168,10 +15175,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
 
   /* Add the results. */
 
-  /* This is faster, but causes problems on Debian 5 (sqlite 3.5.9). */
-#if 0
   sql ("BEGIN IMMEDIATE;");
-#endif
 
   index = 0;
   while ((start = (create_report_result_t*) g_ptr_array_index (host_starts,
@@ -15297,9 +15301,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
         g_free (quoted_value);
       }
 
-#if 0
   sql ("COMMIT;");
-#endif
 
   current_scanner_task = task;
   current_report = report;
