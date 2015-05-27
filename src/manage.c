@@ -2301,6 +2301,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
       entity_t get_tasks, report, get_report;
       const char *status;
       task_status_t run_status;
+      int status_done;
 
       /* Check if some other process changed the task status. */
 
@@ -2380,8 +2381,9 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
           goto giveup;
         }
+      status_done = (strcmp (status, "Done") == 0);
       if ((strcmp (status, "Running") == 0)
-          || (strcmp (status, "Done") == 0))
+          || status_done)
         {
           int ret2 = 0;
           omp_get_report_opts_t opts;
@@ -2403,7 +2405,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           opts.apply_overrides = 0;
           opts.levels = "hmlgd";
 
-          if (strcmp (status, "Done") == 0)
+          if (status_done)
             /* Request all the hosts to get their end times. */
             opts.result_hosts_only = 0;
           else
@@ -2461,7 +2463,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           goto fail_stop_task;
         }
 
-      if (strcmp (status, "Done") == 0)
+      if (status_done)
         {
           if (update_end_times (report, 1))
             {
@@ -7330,7 +7332,6 @@ manage_run_wizard (const gchar *name,
   /* Run each step of the wizard. */
 
   response = NULL;
-  ret = 0;
   steps = mode_entity->entities;
   while ((step = first_entity (steps)))
     {
