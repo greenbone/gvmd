@@ -1,5 +1,9 @@
 2015-04-27  Matthew Mundell <matthew.mund...@greenbone.net>
 
+	* src/manage_sql.c (create_permission): Correct function name.
+
+2015-04-27  Matthew Mundell <matthew.mund...@greenbone.net>
+
 	Backport r22207.
 
 	Use the create_permission arg checks for modify_permission too.  This

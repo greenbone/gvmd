@@ -44522,7 +44522,7 @@ create_permission (const char *name_arg, const char *comment,
 
   sql_begin_immediate ();
 
-  if (acl_user_may ("create_permission") == 0)
+  if (user_may ("create_permission") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
