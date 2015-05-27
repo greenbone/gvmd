@@ -1,3 +1,18 @@
+2015-04-27  Matthew Mundell <matthew.mund...@greenbone.net>
+
+	Backport r22207.
+
+	Use the create_permission arg checks for modify_permission too.  This
+	brings modify_permission up to date, including allowing the user to
+	modify a resource permission if the user has GET access to the subject.
+
+	* src/manage_sql.c (check_permission_args): New function.  From
+	create_permission.
+	(create_permission): Call check_permission_args to do arg checks.
+	(permission_subject_id, permission_resource_type)
+	(permission_resource_id): New functions.
+	(modify_permission): Let check_permission_args do the arg checks.
+
 2015-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r22445, but do the check every time instead of in a migrator.
