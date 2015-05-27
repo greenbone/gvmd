@@ -19403,17 +19403,22 @@ report_counts_match (iterator_t *results, const char *search_phrase,
         {
           if (min_cvss_base && iterator_int (results, 1))
             {
+              gchar *quoted_min_cvss_base;
+              quoted_min_cvss_base = sql_quote (min_cvss_base);
               if (sql_int ("SELECT EXISTS (SELECT id FROM nvts"
                            "               WHERE nvts.oid = '%s')"
                            "       AND (SELECT (CAST (cvss_base AS REAL))"
-                           "                   >= CAST (%s AS REAL)"
+                           "                   >= CAST ('%s' AS REAL)"
                            "            FROM nvts"
                            "            WHERE nvts.oid = '%s');",
                            iterator_string (results, 1),
-                           /* Assume valid SQL string. */
-                           min_cvss_base,
+                           quoted_min_cvss_base,
                            iterator_string (results, 1)))
-                return 1;
+                {
+                  g_free (quoted_min_cvss_base);
+                  return 1;
+                }
+              g_free (quoted_min_cvss_base);
             }
           else
             return 1;
@@ -19440,17 +19445,22 @@ report_counts_match (iterator_t *results, const char *search_phrase,
         {
           if (min_cvss_base && iterator_int (results, 1))
             {
+              gchar *quoted_min_cvss_base;
+              quoted_min_cvss_base = sql_quote (min_cvss_base);
               if (sql_int ("SELECT EXISTS (SELECT id FROM nvts"
                            "               WHERE nvts.oid = '%s')"
                            "       AND (SELECT (CAST (cvss_base AS REAL))"
-                           "                   >= CAST (%s AS REAL)"
+                           "                   >= CAST ('%s' AS REAL)"
                            "            FROM nvts"
                            "            WHERE nvts.oid = '%s');",
                            iterator_string (results, 1),
-                           /* Assume valid SQL string. */
-                           min_cvss_base,
+                           quoted_min_cvss_base,
                            iterator_string (results, 1)))
-                return 1;
+                {
+                  g_free (quoted_min_cvss_base);
+                  return 1;
+                }
+              g_free (quoted_min_cvss_base);
             }
           else
             return 1;
@@ -19458,17 +19468,22 @@ report_counts_match (iterator_t *results, const char *search_phrase,
     }
   else if (min_cvss_base && iterator_int (results, 1))
     {
+      gchar *quoted_min_cvss_base;
+      quoted_min_cvss_base = sql_quote (min_cvss_base);
       if (sql_int ("SELECT EXISTS (SELECT id FROM nvts"
                    "               WHERE nvts.oid = '%s')"
                    "       AND (SELECT (CAST (cvss_base AS REAL))"
-                   "                   >= CAST (%s AS REAL)"
+                   "                   >= CAST ('%s' AS REAL)"
                    "            FROM nvts"
                    "            WHERE nvts.oid = '%s');",
                    iterator_string (results, 1),
-                   /* Assume valid SQL string. */
-                   min_cvss_base,
+                   quoted_min_cvss_base,
                    iterator_string (results, 1)))
-        return 1;
+        {
+          g_free (quoted_min_cvss_base);
+          return 1;
+        }
+      g_free (quoted_min_cvss_base);
     }
   else
     return 1;
