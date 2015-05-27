@@ -44481,7 +44481,7 @@ check_permission_args (const char *name_arg, const char *resource_type_arg,
       g_free (permission);
     }
 
-  if (subject == 0)
+  if (*subject == 0)
     {
       g_free (*name);
       g_free (*resource_type);

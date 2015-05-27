@@ -1,3 +1,9 @@
+2015-05-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r22457.
+
+	* src/manage_sql.c (check_permission_args): Correct subject check.
+
 2015-04-27  Matthew Mundell <matthew.mund...@greenbone.net>
 
 	* src/manage_sql.c (create_permission): Correct function name.
