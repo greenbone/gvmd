@@ -5836,7 +5836,6 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
           && strcmp (get_iterator_uuid (iterator), current_credentials.uuid))
         {
           /* Resource is the Super Admin. */
-          writable = 0;
           buffer_xml_append_printf (buffer,
                                     "<permission><name>get_users</name></permission>"
                                     "</permissions>");

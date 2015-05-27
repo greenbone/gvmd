@@ -747,7 +747,14 @@ lsc_crypt_decrypt (lsc_crypt_ctx_t ctx, const char *ciphertext,
               return NULL;
             }
           nl = g_malloc (sizeof *nl + namelen);
+#if 0
           strcpy (nl->name, name);
+#else
+          /* The pointer arithmetic helps Clang see that nl is allocated
+           * bigger than the size of *nl. */
+          strcpy (((char *) nl) + (nl->name - (char *) nl), name);
+#endif
+
           if (n + 1 < len && p[n] == 0)
             {
               /* The values is followed by another name and the first
@@ -782,7 +789,13 @@ lsc_crypt_decrypt (lsc_crypt_ctx_t ctx, const char *ciphertext,
  not_found:
   /* Cache a NULL value.  */
   nl = g_malloc (sizeof *nl + namelen);
+#if 0
   strcpy (nl->name, name);
+#else
+  /* The pointer arithmetic helps Clang see that nl is allocated
+   * bigger than the size of *nl. */
+  strcpy (((char *) nl) + (nl->name - (char *) nl), name);
+#endif
   nl->valoff = 0;
   nl->value  = NULL;
   nl->next = ctx->namelist;

@@ -7104,10 +7104,8 @@ email (const char *to_address, const char *from_address, const char *subject,
 
   tracef ("   command: %s\n", command);
 
-  if (ret = system (command),
-      /** @todo ret is always -1. */
-      0 && ((ret) == -1
-            || WEXITSTATUS (ret)))
+  ret = system (command);
+  if ((ret == -1) || WEXITSTATUS (ret))
     {
       g_warning ("%s: system failed with ret %i, %i, %s\n",
                  __FUNCTION__,
@@ -7392,10 +7390,10 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                   }
 
                 /* RATS: ignore, command is defined above. */
-                if (ret = system (command),
-                    /** @todo ret is always -1. */
-                    0 && ((ret) == -1
-                          || WEXITSTATUS (ret)))
+                ret = system (command);
+                /* Ignore the shell command exit status, because we've not
+                 * specified what it must be in the past. */
+                if (ret == -1)
                   {
                     g_warning ("%s (child):"
                                " system failed with ret %i, %i, %s\n",
@@ -7495,10 +7493,10 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
         g_free (pkcs12_file);
 
         /* RATS: ignore, command is defined above. */
-        if (ret = system (command),
-            /** @todo ret is always -1. */
-            0 && ((ret) == -1
-                  || WEXITSTATUS (ret)))
+        ret = system (command);
+        /* Ignore the shell command exit status, because we've not
+         * specified what it must be in the past. */
+        if (ret == -1)
           {
             g_warning ("%s: system failed with ret %i, %i, %s\n",
                        __FUNCTION__,
@@ -7718,10 +7716,10 @@ send_to_verinice (const char *url, const char *username, const char *password,
                   }
 
                 /* RATS: ignore, command is defined above. */
-                if (ret = system (command),
-                    /** @todo ret is always -1. */
-                    0 && ((ret) == -1
-                          || WEXITSTATUS (ret)))
+                ret = system (command);
+                /* Ignore the shell command exit status, because we've not
+                 * specified what it must be in the past. */
+                if (ret == -1)
                   {
                     g_warning ("%s (child):"
                                " system failed with ret %i, %i, %s\n",
@@ -7819,10 +7817,10 @@ send_to_verinice (const char *url, const char *username, const char *password,
         g_free (archive_file);
 
         /* RATS: ignore, command is defined above. */
-        if (ret = system (command),
-            /** @todo ret is always -1. */
-            0 && ((ret) == -1
-                  || WEXITSTATUS (ret)))
+        ret = system (command);
+        /* Ignore the shell command exit status, because we've not
+         * specified what it must be in the past. */
+        if (ret == -1)
           {
             g_warning ("%s: system failed with ret %i, %i, %s\n",
                        __FUNCTION__,
@@ -23497,6 +23495,12 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
    * warning. */
   run_status = TASK_STATUS_INTERNAL_ERROR;
 
+  if (type
+      && strcmp (type, "scan")
+      && strcmp (type, "assets")
+      && strcmp (type, "prognostic"))
+    return -1;
+
   if ((type == NULL) || (strcmp (type, "scan") == 0))
     {
       type = NULL;
@@ -25310,10 +25314,10 @@ manage_report (report_t report, report_format_t report_format,
                     }
 
                   /* RATS: ignore, command is defined above. */
-                  if (ret = system (command),
-                      /** @todo ret is always -1. */
-                      0 && ((ret) == -1
-                            || WEXITSTATUS (ret)))
+                  ret = system (command);
+                  /* Ignore the shell command exit status, because we've not
+                   * specified what it must be in the past. */
+                  if (ret == -1)
                     {
                       g_warning ("%s (child):"
                                  " system failed with ret %i, %i, %s\n",
@@ -25426,10 +25430,8 @@ manage_report (report_t report, report_format_t report_format,
           /* Just run the command as the current user. */
 
           /* RATS: ignore, command is defined above. */
-          if (ret = system (command),
-              /** @todo ret is always -1. */
-              0 && ((ret) == -1
-                    || WEXITSTATUS (ret)))
+          ret = system (command);
+          if (ret == -1)
             {
               g_warning ("%s: system failed with ret %i, %i, %s\n",
                          __FUNCTION__,
@@ -25830,10 +25832,10 @@ manage_send_report (report_t report, report_t delta_report,
                     }
 
                   /* RATS: ignore, command is defined above. */
-                  if (ret = system (command),
-                      /** @todo ret is always -1. */
-                      0 && ((ret) == -1
-                            || WEXITSTATUS (ret)))
+                  ret = system (command);
+                  /* Ignore the shell command exit status, because we've not
+                   * specified what it must be in the past. */
+                  if (ret == -1)
                     {
                       g_warning ("%s (child):"
                                  " system failed with ret %i, %i, %s\n",
@@ -25938,10 +25940,10 @@ manage_send_report (report_t report, report_t delta_report,
           g_free (xml_file);
 
           /* RATS: ignore, command is defined above. */
-          if (ret = system (command),
-              /** @todo ret is always -1. */
-              0 && ((ret) == -1
-                    || WEXITSTATUS (ret)))
+          ret = system (command);
+          /* Ignore the shell command exit status, because we've not
+           * specified what it must be in the past. */
+          if (ret == -1)
             {
               g_warning ("%s: system failed with ret %i, %i, %s\n",
                          __FUNCTION__,
@@ -39342,7 +39344,11 @@ verify_scanner (const char *scanner_id, char **version)
       return 0;
     }
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_CVE)
-    return 0;
+    {
+      if (version)
+        *version = g_strdup ("OTP/2.0");
+      return 0;
+    }
   assert (0);
   return -1;
 }
@@ -45897,7 +45903,7 @@ modify_permission (const char *permission_id, const char *name_arg,
     }
 
   new_name = name_arg ? NULL : permission_name (permission);
-  if (resource_type_arg && resource_id && strcmp (resource_id_arg, "0"))
+  if (resource_type_arg && resource_id_arg && strcmp (resource_id_arg, "0"))
     /* Given a resource. */
     new_resource_type = NULL;
   else if (resource_id_arg && (strcmp (resource_id_arg, "0") == 0))
@@ -48888,10 +48894,10 @@ manage_schema (gchar *format, gchar **output_return, gsize *output_length,
       g_debug ("   command: %s\n", command);
 
       /* RATS: ignore, command is defined above. */
-      if (ret = system (command),
-          /** @todo ret is always -1. */
-          0 && ((ret) == -1
-                || WEXITSTATUS (ret)))
+      ret = system (command);
+      if ((ret == -1)
+          /* The schema "generate" script must exit with 0. */
+          || WEXITSTATUS (ret))
         {
           g_warning ("%s: system failed with ret %i, %i, %s\n",
                      __FUNCTION__,

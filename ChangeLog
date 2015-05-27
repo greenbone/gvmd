@@ -1,5 +1,32 @@
 2015-05-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Deal with issues found by Clang's ccc-analyzer.
+
+	* src/manage.c (slave_setup): Store done status in a variable, to make
+	it easier for Clang to see that "report" is always initialised before
+	use.
+	(manage_run_wizard): Remove init of ret, as it is initialised later.
+
+	* src/manage_sql.c (email, send_to_sourcefire, send_to_verinice)
+	(manage_report, manage_send_report, manage_schema): Check system return,
+	now that the /bin/sh call is gone.
+	(print_report_xml): Explicitly check "type", to make
+	it possible for Clang to see that result_count is always initialised
+	before use.
+	(verify_scanner): Set version in CVE case too.
+	(modify_permission): Check correct variable.
+
+	* src/schema_formats/XML/generate: Ensure that exit code is 0.
+
+	* src/lsc_crypt.c (lsc_crypt_decrypt): Get the address of nl->name via
+	pointer arithmetic, to help Clang figure out that there's enough room
+	there.
+
+	* src/omp.c (send_get_common): Remove setting of "writable", as it is
+	not used after that.
+
+2015-05-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (report_counts_match): String and SQL quote
 	min_cvss_base for CAST.
 
