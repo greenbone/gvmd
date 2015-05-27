@@ -1,5 +1,12 @@
 2015-05-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r22472.
+
+	* src/manage_sql.c (report_counts_match): String and SQL quote
+	min_cvss_base for CAST.
+
+2015-05-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r22458.
 
 	* src/manage_sql.c (check_permission_args): Allow the user to give a
