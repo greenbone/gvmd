@@ -1,5 +1,13 @@
 2015-05-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (init_aggregate_iterator): Add PostgreSQL version
+	of date rounding. Adapt to syntax restrictions of PostgreSQL: Change
+	outer_group_by to a column definition outer_group_by_column so the
+	columns and GROUP BY clause match. Add various casts and remove extra
+	columns not used by GROUP BY or aggregate functions.
+
+2015-05-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_pg.c (manage_create_sql_functions): Create functions
 	report_severity and report_severity_count only if the database version
 	is 147 or higher as they need the min_qod column added in that version.

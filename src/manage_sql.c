@@ -4554,7 +4554,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   resource_t resource = 0;
   gchar *owner_filter;
   gchar *aggregate_select, *aggregate_group_by;
-  gchar *outer_group_by;
+  gchar *outer_group_by_column;
   gchar *select_group_column, *select_stat_column;
   gchar *order;
 
@@ -4693,18 +4693,26 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   if (group_column && (strcmp (group_column, "created") == 0
                        || strcmp (group_column, "modified") == 0
                        || strcmp (group_column, "published") == 0))
-    outer_group_by
-      = g_strdup_printf ("GROUP BY CAST (strftime ('%%s',"
-                         "               date(%s, 'unixepoch',"
-                         "                    'localtime'),"
-                         "               'localtime')"
-                         "      AS INTEGER)",
-                         "aggregate_group_value");
+    if (sql_is_sqlite3 ())
+      outer_group_by_column
+        = g_strdup_printf ("CAST (strftime ('%%s',"
+                           "                date(%s, 'unixepoch',"
+                           "                     'localtime'),"
+                           "                'localtime')"
+                           "      AS INTEGER)",
+                           "aggregate_group_value");
+    else
+      outer_group_by_column
+        = g_strdup_printf ("EXTRACT (EPOCH FROM"
+                           "           date_trunc ('day',"
+                           "           TIMESTAMP WITH TIME ZONE 'epoch'"
+                           "           + (%s) * INTERVAL '1 second'))",
+                           "aggregate_group_value");
   else
-    outer_group_by = g_strdup ("GROUP BY aggregate_group_value");
+    outer_group_by_column = g_strdup ("aggregate_group_value");
 
   order = g_strdup_printf ("ORDER BY %s ASC",
-                           "aggregate_group_value");
+                           "outer_group_column");
 
   if (group_column && strcmp (group_column, ""))
     {
@@ -4712,9 +4720,10 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
         aggregate_select = g_strdup_printf (" count(*) AS aggregate_count,"
                                             " min(%s) AS aggregate_min,"
                                             " max(%s) AS aggregate_max,"
-                                            " avg(%s) * count(*)"
+                                            " avg(CAST (%s AS real)) * count(*)"
                                             "   AS aggregate_avg,"
-                                            " sum(%s) AS aggregate_sum,"
+                                            " sum(CAST (%s AS real))"
+                                            "   AS aggregate_sum,"
                                             " %s as aggregate_group_value",
                                             select_stat_column,
                                             select_stat_column,
@@ -4723,10 +4732,14 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                                             select_group_column);
       else
         aggregate_select = g_strdup_printf (" count(*) AS aggregate_count,"
-                                            " NULL AS aggregate_min,"
-                                            " NULL AS aggregate_max,"
-                                            " NULL AS aggregate_avg,"
-                                            " NULL AS aggregate_sum,"
+                                            " CAST (NULL AS real)"
+                                            "   AS aggregate_min,"
+                                            " CAST (NULL AS real)"
+                                            "   AS aggregate_max,"
+                                            " CAST (NULL AS real)"
+                                            "   AS aggregate_avg,"
+                                            " CAST (NULL AS real)"
+                                            "   AS aggregate_sum,"
                                             " %s as aggregate_group_value",
                                             select_group_column);
 
@@ -4739,9 +4752,10 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
         aggregate_select = g_strdup_printf (" count(*) AS aggregate_count,"
                                             " min(%s) AS aggregate_min,"
                                             " max(%s) AS aggregate_max,"
-                                            " avg(%s) * count(*)"
+                                            " avg(CAST (%s AS real)) * count(*)"
                                             "   AS aggregate_avg,"
-                                            " sum(%s) AS aggregate_sum,"
+                                            " sum(CAST (%s AS real))"
+                                            "   AS aggregate_sum,"
                                             " NULL as aggregate_group_value",
                                             select_stat_column,
                                             select_stat_column,
@@ -4753,7 +4767,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
           g_free (trash_columns);
           g_free (owned_clause);
           g_free (trash_extra);
-          g_free (outer_group_by);
+          g_free (outer_group_by_column);
           g_free (order);
           g_free (clause);
           return -1;
@@ -4770,18 +4784,18 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                  "SELECT sum(aggregate_count),"
                  " min(aggregate_min), max (aggregate_max),"
                  " sum (aggregate_avg) / sum(aggregate_count),"
-                 " sum (aggregate_sum), aggregate_group_value"
-                 " FROM (SELECT%s %s, %s"
+                 " sum (aggregate_sum), %s AS outer_group_column"
+                 " FROM (SELECT%s %s"
                  "       FROM %s%s%s"
                  "       WHERE"
                  "       %s%s"
                  "       %s%s%s%s"
                  "       %s)"
                  "      AS agg_sub"
-                 " %s %s;",
+                 " GROUP BY outer_group_column %s;",
+                 outer_group_by_column,
                  distinct ? " DISTINCT" : "",
                  aggregate_select,
-                 columns,
                  from_table,
                  opts_table ? opts_table : "",
                  extra_tables ? extra_tables : "",
@@ -4792,7 +4806,6 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                  clause ? ")" : "",
                  extra_where ? extra_where : "",
                  aggregate_group_by,
-                 outer_group_by,
                  order);
 
   g_free (columns);
@@ -4805,7 +4818,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   g_free (clause);
   g_free (aggregate_group_by);
   g_free (aggregate_select);
-  g_free (outer_group_by);
+  g_free (outer_group_by_column);
   g_free (select_group_column);
   return 0;
 }
