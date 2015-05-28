@@ -17950,7 +17950,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   task_scanner_type = 0;
                 }
               next_time = task_schedule_next_time_tz (index);
-              scanner = task_iterator_scanner (&tasks);
               response = g_strdup_printf
                           ("<alterable>%i</alterable>"
                            "<config id=\"%s\">"
