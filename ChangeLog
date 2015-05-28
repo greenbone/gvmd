@@ -1,3 +1,8 @@
+2015-05-28  Sven Haardiek <sven.haardiek@greenbone.net>
+
+	* src/CMakeLists.txt: Remove obsolete checks with splint and rats and add
+	cppcheck instead.
+
 2015-05-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Deal with issues found by Clang's ccc-analyzer.
