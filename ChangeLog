@@ -1,5 +1,9 @@
 2015-05-28  Benoît Allard  <benoit.allard@greenbone.net>
 
+	* src/manage.c: Fix wrong variable names introduced in the last commit.
+
+2015-05-28  Benoît Allard  <benoit.allard@greenbone.net>
+
 	* src/manage.c: Remove some cppcheck errors, by storing the return value of
 	  freopen, and closing it when done.
 
