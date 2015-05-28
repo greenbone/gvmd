@@ -6985,31 +6985,31 @@ openvas_sync_feed (const gchar * sync_script, const gchar * current_user,
     case 0:
       {
         /* Child.  Become the sync process. */
-        FILE* sync_out = freopen ("/tmp/openvasad_sync_out", "w", stdout);
+        FILE* sync_err, sync_out = freopen ("/tmp/openvasad_sync_out", "w", stdout);
         if (sync_out == NULL)
           {
             g_warning ("Failed to reopen stdout: %s", strerror (errno));
             exit (EXIT_FAILURE);
           }
 
-        FILE* sync_err = freopen ("/tmp/openvasad_sync_err", "w", stderr);
+        sync_err = freopen ("/tmp/openvasad_sync_err", "w", stderr);
         if (sync_err == NULL)
           {
             g_warning ("Failed to reopen stderr: %s", strerror (errno));
-            fclose(sync_out);
+            fclose (sync_out);
             exit (EXIT_FAILURE);
           }
 
         if (execl (sync_script, sync_script, (char *) NULL))
           {
             g_warning ("Failed to execl %s: %s", sync_script, strerror (errno));
-            fclose(sync_out);
-            fclose(sync_err);
+            fclose (sync_out);
+            fclose (sync_err);
             exit (EXIT_FAILURE);
           }
         /*@notreached@ */
-        fclose(sync_out);
-        fclose(sync_err);
+        fclose (sync_out);
+        fclose (sync_err);
         exit (EXIT_FAILURE);
       }
     case -1:
@@ -7219,31 +7219,31 @@ openvas_migrate_secinfo (const gchar * sync_script, int feed_type)
       {
         /* Child.  Become the sync process. */
 
-        FILE* sync_out = freopen ("/tmp/openvasad_sync_out", "w", stdout);
+        FILE* sync_err, sync_out = freopen ("/tmp/openvasad_sync_out", "w", stdout);
         if (sync_out== NULL)
           {
             g_warning ("Failed to reopen stdout: %s", strerror (errno));
             exit (EXIT_FAILURE);
           }
 
-        FILE* sync_err = freopen ("/tmp/openvasad_sync_err", "w", stderr);
+        sync_err = freopen ("/tmp/openvasad_sync_err", "w", stderr);
         if (sync_err == NULL)
           {
             g_warning ("Failed to reopen stderr: %s", strerror (errno));
-            fclose(sync_out);
+            fclose (sync_out);
             exit (EXIT_FAILURE);
           }
 
         if (execl (sync_script, sync_script, "--migrate", (char *) NULL))
           {
             g_warning ("Failed to execl %s: %s", sync_script, strerror (errno));
-            fclose(sync_out);
-            fclose(sync_err);
+            fclose (sync_out);
+            fclose (sync_err);
             exit (EXIT_FAILURE);
           }
         /*@notreached@ */
-        fclose(sync_out);
-        fclose(sync_err);
+        fclose (sync_out);
+        fclose (sync_err);
         exit (EXIT_FAILURE);
       }
     case -1:
