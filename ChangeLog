@@ -1,3 +1,9 @@
+2015-05-28  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (parse_osp_report, fork_osp_scan_handler): Adjust
+	make_osp_result() call. Get result port from OSP scan report.
+	(make_osp_result): Insert result port in DB.
+
 2015-05-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Init "scanner" via iterator in

@@ -2766,7 +2766,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
   while (results)
     {
       result_t result;
-      const char *type, *name, *severity, *host, *test_id;
+      const char *type, *name, *severity, *host, *test_id, *port;
       char *desc = NULL, *nvt_id = NULL, *severity_str = NULL;
       entity_t r_entity = results->data;
 
@@ -2775,6 +2775,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       severity = entity_attribute (r_entity, "severity");
       test_id = entity_attribute (r_entity, "test_id");
       host = entity_attribute (r_entity, "host");
+      port = entity_attribute (r_entity, "port");
       assert (name);
       assert (type);
       assert (severity);
@@ -2801,7 +2802,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
           desc = g_strdup (entity_text (r_entity));
         }
       result = make_osp_result (task, host, nvt_id, type, desc,
-                                severity_str ?: severity);
+                                port ?: "", severity_str ?: severity);
       report_add_result (report, result);
       g_free (nvt_id);
       g_free (desc);
@@ -3033,7 +3034,7 @@ fork_osp_scan_handler (task_t task, target_t target)
       type = threat_message_type ("Error");
       if (scan_id == NULL)
         scan_id = g_strdup ("Couldn't connect to the scanner");
-      result = make_osp_result (task, "", "", type, scan_id, "");
+      result = make_osp_result (task, "", "", type, scan_id, "", "");
       report_add_result (current_report, result);
       g_free (scan_id);
 

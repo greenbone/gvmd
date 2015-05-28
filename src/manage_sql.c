@@ -14626,6 +14626,7 @@ find_result_with_permission (const char* uuid, result_t* result,
  *                          result, a title for the result otherwise.
  * @param[in]  type         Type of result.  "Alarm", etc.
  * @param[in]  description  Description of the result.
+ * @param[in]  port         Result port.
  * @param[in]  severity     Result severity.
  *
  * @return A result descriptor for the new result, 0 if error.
@@ -14633,9 +14634,10 @@ find_result_with_permission (const char* uuid, result_t* result,
 result_t
 make_osp_result (task_t task, const char *host, const char *nvt,
                  const char *type, const char *description,
-                 const char *severity)
+                 const char *port, const char *severity)
 {
   char *nvt_revision = NULL, *quoted_desc, *quoted_nvt, *result_severity;
+  char *quoted_port;
 
   assert (task);
   assert (type);
@@ -14644,6 +14646,7 @@ make_osp_result (task_t task, const char *host, const char *nvt,
     nvt_revision = ovaldef_version (nvt);
   quoted_desc = sql_quote (description ?: "");
   quoted_nvt = sql_quote (nvt ?: "");
+  quoted_port = sql_quote (port ?: "");
   if (!severity || !strcmp (severity, ""))
     {
       if (!strcmp (type, severity_to_type (SEVERITY_ERROR)))
@@ -14657,18 +14660,19 @@ make_osp_result (task_t task, const char *host, const char *nvt,
         }
     }
   else
-    result_severity = g_strdup (severity);
+    result_severity = sql_quote (severity);
   sql ("INSERT into results"
        " (task, host, port, nvt, nvt_version, severity, type,"
        "  qod, qod_type, description, uuid)"
-       " VALUES (%llu, '%s', '', '%s', '%s', '%s', '%s',"
+       " VALUES (%llu, '%s', '%s', '%s', '%s', '%s', '%s',"
        "         '%s', '', '%s', make_uuid ());",
-       task, host ?: "", quoted_nvt, nvt_revision ?: "", result_severity ?: "0",
-       type, G_STRINGIFY (QOD_DEFAULT), quoted_desc);
+       task, host ?: "", quoted_port, quoted_nvt, nvt_revision ?: "",
+       result_severity ?: "0", type, G_STRINGIFY (QOD_DEFAULT), quoted_desc);
   g_free (result_severity);
   g_free (nvt_revision);
   g_free (quoted_desc);
   g_free (quoted_nvt);
+  g_free (quoted_port);
 
   return sql_last_insert_id ();
 }
