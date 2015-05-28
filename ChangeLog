@@ -1,3 +1,8 @@
+2015-05-28  Benoît Allard  <benoit.allard@greenbone.net>
+
+	* src/manage.c: Remove some cppcheck errors, by storing the return value of
+	  freopen, and closing it when done.
+
 2015-05-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Remove init of "scanner" in
