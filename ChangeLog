@@ -1,5 +1,10 @@
 2015-05-28  Benoît Allard  <benoit.allard@greenbone.net>
 
+	* src/manage.c (openvas_sync_feed, openvas_migrate_secinfo): Make it
+	  compile (again).
+
+2015-05-28  Benoît Allard  <benoit.allard@greenbone.net>
+
 	* src/manage.c (openvas_sync_feed, openvas_migrate_secinfo): Update
 	  style.
 
