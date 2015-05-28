@@ -6984,8 +6984,11 @@ openvas_sync_feed (const gchar * sync_script, const gchar * current_user,
     {
     case 0:
       {
+        FILE *sync_err, *sync_out;
+
         /* Child.  Become the sync process. */
-        FILE *sync_err, *sync_out = freopen ("/tmp/openvasad_sync_out", "w", stdout);
+
+        sync_out = freopen ("/tmp/openvasad_sync_out", "w", stdout);
         if (sync_out == NULL)
           {
             g_warning ("Failed to reopen stdout: %s", strerror (errno));
@@ -7217,9 +7220,11 @@ openvas_migrate_secinfo (const gchar * sync_script, int feed_type)
     {
     case 0:
       {
+        FILE *sync_err, *sync_out;
+
         /* Child.  Become the sync process. */
 
-        FILE *sync_err, *sync_out = freopen ("/tmp/openvasad_sync_out", "w", stdout);
+        sync_out = freopen ("/tmp/openvasad_sync_out", "w", stdout);
         if (sync_out == NULL)
           {
             g_warning ("Failed to reopen stdout: %s", strerror (errno));

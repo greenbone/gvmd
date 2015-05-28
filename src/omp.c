@@ -17924,7 +17924,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   schedule_in_trash = 0;
                 }
               scanner_available = 1;
-              scanner = task_scanner (index);
+              scanner = task_iterator_scanner (&tasks);
               // FIX trash case?
               if (scanner)
                 {
