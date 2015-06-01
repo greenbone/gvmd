@@ -1,3 +1,12 @@
+2015-06-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r22519.
+
+	* src/manage_sql.c (permission_is_predefined): Add resource clause,
+	because it's possible to create permissions on roles now, as long as
+	they have resources.
+	(modify_permission): Similarly, add resource check.
+
 2015-05-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r22480.
