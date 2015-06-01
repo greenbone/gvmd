@@ -45256,6 +45256,7 @@ permission_is_predefined (permission_t permission)
                     " WHERE id = %llu"
                     " AND (uuid = '" PERMISSION_UUID_ADMIN_EVERYTHING "'"
                     "      OR (subject_type = 'role'"
+                    "          AND resource = 0"
                     "          AND subject"
                     "              IN (SELECT id FROM roles"
                     "                  WHERE uuid = '" ROLE_UUID_ADMIN "'"
@@ -45879,10 +45880,12 @@ modify_permission (const char *permission_id, const char *name_arg,
       return 1;
     }
 
-  /* Check if the existing subject is a predefined role. */
+  /* Check if it's a command-level permission on a predefined role. */
   existing_subject_type = permission_subject_type (permission);
+  resource = permission_resource (resource);
   subject = permission_subject (permission);
-  if (existing_subject_type
+  if (resource == 0
+      && existing_subject_type
       && strcmp (existing_subject_type, "role") == 0
       && subject
       && role_is_predefined (subject))

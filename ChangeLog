@@ -1,3 +1,10 @@
+2015-06-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (permission_is_predefined): Add resource clause,
+	because it's possible to create permissions on roles now, as long as
+	they have resources.
+	(modify_permission): Similarly, add resource check.
+
 2015-05-28  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (parse_osp_report, fork_osp_scan_handler): Adjust
