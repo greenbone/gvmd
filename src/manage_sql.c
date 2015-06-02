@@ -1361,6 +1361,30 @@ parse_time (const gchar *string, int *seconds)
   return 0;
 }
 
+/**
+ * @brief Check min CVSS base.
+ *
+ * @param[in]  min_cvss_base  Minimum value for CVSS.
+ *
+ * @return Min CVSS base.
+ */
+static const char *
+check_min_cvss_base (const char* min_cvss_base)
+{
+  float min_cvss_base_float;
+  int end;
+
+  /* Postgres throws an error if it's not in the right format, so make sure
+   * it's a float.  SQLite just returns 0.0 when CASTing strings that are not
+   * floats. */
+  end = 0;
+  sscanf (min_cvss_base, "%f%n", &min_cvss_base_float, &end);
+  if (end == strlen (min_cvss_base))
+    return min_cvss_base;
+
+  return "0.0";
+}
+
 
 /* Filter utilities. */
 
@@ -15231,6 +15255,7 @@ prognosis_where_cvss_base (const char* min_cvss_base)
       if (strlen (min_cvss_base) == 0)
         return NULL;
 
+      min_cvss_base = check_min_cvss_base (min_cvss_base);
       quoted_min_cvss_base = sql_quote (min_cvss_base);
       cvss_sql = g_string_new ("");
       g_string_append_printf (cvss_sql,
@@ -16955,6 +16980,7 @@ where_cvss_base (const char* min_cvss_base)
       if (strlen (min_cvss_base) == 0)
         return NULL;
 
+      min_cvss_base = check_min_cvss_base (min_cvss_base);
       quoted_min_cvss_base = sql_quote (min_cvss_base);
       cvss_sql = g_string_new ("");
       g_string_append_printf (cvss_sql,
@@ -19406,6 +19432,8 @@ report_counts_match (iterator_t *results, const char *search_phrase,
           if (min_cvss_base && iterator_int (results, 1))
             {
               gchar *quoted_min_cvss_base;
+
+              min_cvss_base = check_min_cvss_base (min_cvss_base);
               quoted_min_cvss_base = sql_quote (min_cvss_base);
               if (sql_int ("SELECT EXISTS (SELECT id FROM nvts"
                            "               WHERE nvts.oid = '%s')"
@@ -19448,6 +19476,8 @@ report_counts_match (iterator_t *results, const char *search_phrase,
           if (min_cvss_base && iterator_int (results, 1))
             {
               gchar *quoted_min_cvss_base;
+
+              min_cvss_base = check_min_cvss_base (min_cvss_base);
               quoted_min_cvss_base = sql_quote (min_cvss_base);
               if (sql_int ("SELECT EXISTS (SELECT id FROM nvts"
                            "               WHERE nvts.oid = '%s')"
@@ -19471,6 +19501,8 @@ report_counts_match (iterator_t *results, const char *search_phrase,
   else if (min_cvss_base && iterator_int (results, 1))
     {
       gchar *quoted_min_cvss_base;
+
+      min_cvss_base = check_min_cvss_base (min_cvss_base);
       quoted_min_cvss_base = sql_quote (min_cvss_base);
       if (sql_int ("SELECT EXISTS (SELECT id FROM nvts"
                    "               WHERE nvts.oid = '%s')"
