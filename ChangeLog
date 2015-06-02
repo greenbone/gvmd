@@ -1,3 +1,7 @@
+2015-06-02  Benoît Allard  <benoit.allard@greenbone.net>
+
+	* src/manage_sql.c (modify permission): Fix parameter in function call.
+
 2015-06-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (permission_is_predefined): Add resource clause,

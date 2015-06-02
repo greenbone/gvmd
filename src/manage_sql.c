@@ -45882,7 +45882,7 @@ modify_permission (const char *permission_id, const char *name_arg,
 
   /* Check if it's a command-level permission on a predefined role. */
   existing_subject_type = permission_subject_type (permission);
-  resource = permission_resource (resource);
+  resource = permission_resource (permission);
   subject = permission_subject (permission);
   if (resource == 0
       && existing_subject_type
