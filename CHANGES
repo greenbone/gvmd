@@ -1,3 +1,21 @@
+openvas-manager 5.0.11 (2015-06-02)
+
+This is the eleventh maintenance release of the openvas-manager 5.0 module for
+the Open Vulnerability Assessment System release 7 (OpenVAS-7). The OpenVAS
+Manager is the central management service between the actual security scanner
+and various user clients.
+
+This release improves the handling of search phrases and report uploads.
+
+Many thanks to everyone who contributed to this release:
+Hani Benhabiles, Matthew Mundell and Timo Pollmeier.
+
+Main changes since 5.0.10:
+* An issue which cause the search phrase to not be applied properly when
+  filtering NVTs has been addressed.
+* Handling of report uploads has been improved.
+
+
 openvas-manager 5.0.10 (2015-04-17)
 
 This is the tenth maintenance release of the openvas-manager 5.0 module for
