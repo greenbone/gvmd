@@ -9407,9 +9407,6 @@ trash_task_writable (task_t task)
 void
 init_manage_process (int update_nvt_cache, const gchar *database)
 {
-  gchar *mgr_dir;
-  int ret;
-
   if (sql_is_open ())
     {
       if (update_nvt_cache == -2)
@@ -9425,50 +9422,6 @@ init_manage_process (int update_nvt_cache, const gchar *database)
         }
       return;
     }
-
-  /* Ensure the mgr directory exists. */
-  mgr_dir = g_build_filename (OPENVAS_STATE_DIR, "mgr", NULL);
-  ret = g_mkdir_with_parents (mgr_dir, 0755 /* "rwxr-xr-x" */);
-  g_free (mgr_dir);
-  if (ret == -1)
-    {
-      g_warning ("%s: failed to create mgr directory: %s\n",
-                 __FUNCTION__,
-                 strerror (errno));
-      abort ();
-    }
-
-  {
-    struct stat state;
-    int err;
-
-    err = stat (database ? database : sql_default_database (),
-                &state);
-    if (err)
-      switch (errno)
-        {
-          case ENOENT:
-            break;
-          default:
-            g_warning ("%s: failed to stat database: %s\n",
-                       __FUNCTION__,
-                       strerror (errno));
-            abort ();
-        }
-    else if (state.st_mode & (S_IXUSR | S_IRWXG | S_IRWXO))
-      {
-        g_warning ("%s: database permissions are too loose, repairing\n",
-                   __FUNCTION__);
-        if (chmod (database ? database : sql_default_database (),
-                   S_IRUSR | S_IWUSR))
-          {
-            g_warning ("%s: chmod failed: %s\n",
-                       __FUNCTION__,
-                       strerror (errno));
-            abort ();
-          }
-      }
-  }
 
   /* Open the database. */
   if (sql_open (database))

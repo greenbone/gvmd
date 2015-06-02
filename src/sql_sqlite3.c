@@ -160,12 +160,55 @@ int
 sql_open (const char *database)
 {
   int chunk_size = DB_CHUNK_SIZE;
+  struct stat state;
+  int err, ret;
+  gchar *mgr_dir;
 
-  // Workaround for SQLite temp file name conflicts that can occur if
-  //  concurrent forked processes have the same PRNG state.
-  #if SQLITE_VERSION_NUMBER < 3008003
+  /* Ensure the mgr directory exists. */
+
+  mgr_dir = g_build_filename (OPENVAS_STATE_DIR, "mgr", NULL);
+  ret = g_mkdir_with_parents (mgr_dir, 0755 /* "rwxr-xr-x" */);
+  g_free (mgr_dir);
+  if (ret == -1)
+    {
+      g_warning ("%s: failed to create mgr directory: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
+      abort ();
+    }
+
+  err = stat (database ? database : sql_default_database (),
+              &state);
+  if (err)
+    switch (errno)
+      {
+        case ENOENT:
+          break;
+        default:
+          g_warning ("%s: failed to stat database: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          abort ();
+      }
+  else if (state.st_mode & (S_IXUSR | S_IRWXG | S_IRWXO))
+    {
+      g_warning ("%s: database permissions are too loose, repairing\n",
+                 __FUNCTION__);
+      if (chmod (database ? database : sql_default_database (),
+                 S_IRUSR | S_IWUSR))
+        {
+          g_warning ("%s: chmod failed: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          abort ();
+        }
+    }
+
+  /* Workaround for SQLite temp file name conflicts that can occur if
+   * concurrent forked processes have the same PRNG state. */
+#if SQLITE_VERSION_NUMBER < 3008003
     sqlite3_test_control (SQLITE_TESTCTRL_PRNG_RESET);
-  #endif
+#endif
 
   if (sqlite3_open (database ? database : sql_default_database (),
                     &task_db))

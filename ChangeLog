@@ -1,5 +1,12 @@
 2015-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_manage_process): Remove SQLite specific checks.
+
+	* src/sql_sqlite3.c (sql_open): Add checks that were in
+	init_manage_process.
+
+2015-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (check_min_cvss_base): New function.
 	(prognosis_where_cvss_base, where_cvss_base, report_counts_match): Make
 	sure that min CVSS base is in float format before trying to cast it, for
