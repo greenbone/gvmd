@@ -1,5 +1,11 @@
 2015-06-02  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	Post release version bump.
+
+	* CMakeLists.txt: Updated version number to 5.0.12.
+
+2015-06-02  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	Preparing the openvas-manager 5.0.11 release.
 
 	* CHANGES: Updated.
