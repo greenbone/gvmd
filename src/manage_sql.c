@@ -10322,10 +10322,10 @@ check_db_tasks ()
                " %u, 0, '');",
                task, TASK_STATUS_DONE);
           report = sql_last_insert_id ();
-          sql ("INSERT into results (uuid, task, host, port, nvt, type,"
-               " severity, description, qod)"
-               " VALUES ('cb291ec0-1b0d-11df-8aa1-002264764cea', %llu,"
-               " '127.0.0.1', 'telnet (23/tcp)',"
+          sql ("INSERT into results (owner, date, uuid, task, host, port, nvt,"
+               " type, severity, description, qod)"
+               " VALUES (NULL, m_now(), 'cb291ec0-1b0d-11df-8aa1-002264764cea',"
+               " %llu, '127.0.0.1', 'telnet (23/tcp)',"
                " '1.3.6.1.4.1.25623.1.0.10330', 'Security Note', 2.0,"
                " 'A telnet server seems to be running on this port',"
                " '" G_STRINGIFY (QOD_DEFAULT) "');",
@@ -14541,9 +14541,9 @@ make_osp_result (task_t task, const char *host, const char *nvt,
   else
     result_severity = g_strdup (severity);
   sql ("INSERT into results"
-       " (task, host, port, nvt, nvt_version, severity, type,"
+       " (owner, date, task, host, port, nvt, nvt_version, severity, type,"
        "  qod, qod_type, description, uuid)"
-       " VALUES (%llu, '%s', '', '%s', '%s', '%s', '%s',"
+       " VALUES (NULL, m_now(), %llu, '%s', '', '%s', '%s', '%s', '%s',"
        "         '%s', '', '%s', make_uuid ());",
        task, host ?: "", quoted_nvt, nvt_revision ?: "", result_severity, type,
        G_STRINGIFY (QOD_DEFAULT), quoted_desc);

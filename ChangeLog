@@ -1,3 +1,10 @@
+2015-06-03  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	Backport r22535.
+
+	* src/manage_sql.c (check_db_tasks, make_osp_result): Set result owner
+	and date.
+
 2015-06-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r22522.  Original patch by Benoît Allard.
