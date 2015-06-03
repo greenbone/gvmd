@@ -1,5 +1,10 @@
 2015-06-03  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (schedule_in_use): Return true only when task is not
+	hidden.
+
+2015-06-03  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
 	Add scanner_location column to tasks table. Hence increase database
 	version to 149. Add database migration from version 148 to 149.
 

@@ -39647,8 +39647,8 @@ delete_schedule (const char *schedule_id, int ultimate)
 int
 schedule_in_use (schedule_t schedule)
 {
-  return !!sql_int ("SELECT count (*) FROM tasks WHERE schedule = %llu;",
-                    schedule);
+  return !!sql_int ("SELECT count(*) FROM tasks WHERE schedule = %llu"
+                    " AND hidden = 0;", schedule);
 }
 
 /**
