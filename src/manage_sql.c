@@ -17007,7 +17007,7 @@ where_search_phrase (const char* search_phrase, int exact)
     "type", "original_type", "auto_type",                                     \
     "description", "task", "report", "cvss_base", "nvt_version",              \
     "severity", "original_severity", "vulnerability", "date", "report_id",    \
-    "solution_type", "qod", "qod_type", "task_id", NULL }
+    "solution_type", "qod", "qod_type", "task_id", "cve", NULL }
 
 /**
  * @brief Result iterator columns.
@@ -17066,6 +17066,7 @@ where_search_phrase (const char* search_phrase, int exact)
     { "qod_type", NULL },                                                     \
     { "qod_type", NULL },                                                     \
     { "(SELECT uuid FROM tasks WHERE id = task)", "task_id" },                \
+    { "(SELECT cve FROM nvts WHERE oid = nvt)", "cve" },                      \
     { NULL, NULL }                                                            \
   }
 
