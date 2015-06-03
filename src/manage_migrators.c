@@ -10122,6 +10122,39 @@ migrate_147_to_148 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 148 to version 149.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_148_to_149 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 148. */
+
+  if (manage_db_version () != 148)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The view result_overrides changed. */
+  sql ("ALTER TABLE tasks ADD COLUMN scanner_location INTEGER;");
+  sql ("UPDATE tasks SET scanner_location = " G_STRINGIFY (LOCATION_TABLE));
+
+  /* Set the database version to 149. */
+
+  set_db_version (149);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
 #ifdef SQL_IS_SQLITE
 #define SQLITE_OR_NULL(function) function
 #else
@@ -10281,6 +10314,7 @@ static migrator_t database_migrators[]
     {146, migrate_145_to_146},
     {147, migrate_146_to_147},
     {148, migrate_147_to_148},
+    {149, migrate_148_to_149},
     /* End marker. */
     {-1, NULL}};
 

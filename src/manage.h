@@ -537,6 +537,9 @@ task_hosts_ordering (task_t);
 scanner_t
 task_scanner (task_t);
 
+int
+task_scanner_in_trash (task_t);
+
 config_t
 task_config (task_t);
 
@@ -2210,6 +2213,9 @@ find_scanner_with_permission (const char *, scanner_t *, const char *);
 
 int
 scanner_in_use (scanner_t);
+
+int
+trash_scanner_readable (scanner_t);
 
 int
 trash_scanner_in_use (scanner_t);

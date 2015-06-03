@@ -1,3 +1,27 @@
+2015-06-03  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	Add scanner_location column to tasks table. Hence increase database
+	version to 149. Add database migration from version 148 to 149.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 149.
+
+	* src/manage_migrators.c (migrate_148_to_149): New function.
+	(database_migrators): Add migrate_148_to_149.
+
+	* src/manage_pg.c (create_tables), src/manage_sqlite3.c (create_tables):
+	Add scanner_location column to tasks table.
+
+	* src/manage_sql.c (task_scanner_in_trash, trash_scanner_readable): New
+	functions.
+	(make_task, copy_task, delete_scanner, scanner_in_use)
+	(trash_scanner_in_use, manage_restore): Adjust for scanner_location
+	column.
+
+	* src/manage.h: Add new functions prototypes.
+
+	* src/omp.c (omp_xml_handle_end_element): Handle scanner in trash case
+	for GET_TASKS.
+
 2015-06-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (RESULT_ITERATOR_COLUMNS)

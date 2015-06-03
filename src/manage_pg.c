@@ -1830,6 +1830,7 @@ create_tables ()
        "  config_location integer,"
        "  target_location integer,"
        "  schedule_location integer,"
+       "  scanner_location integer,"
        "  slave_location integer,"
        "  upload_result_count integer,"
        "  hosts_ordering text,"

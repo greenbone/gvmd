@@ -2422,8 +2422,9 @@ create_tables ()
        "  config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time,"
        "  schedule_periods INTEGER, slave INTEGER, config_location INTEGER,"
        "  target_location INTEGER, schedule_location INTEGER,"
-       "  slave_location INTEGER, upload_result_count INTEGER, hosts_ordering,"
-       "  scanner, alterable, creation_time, modification_time);");
+       "  slave_location INTEGER, scanner_location INTEGER,"
+       "  upload_result_count INTEGER, hosts_ordering, scanner, alterable,"
+       "  creation_time, modification_time);");
   /* Field password contains the hash. */
   /* Field hosts_allow: 0 deny, 1 allow. */
   /* Field ifaces_allow: 0 deny, 1 allow. */

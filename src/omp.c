@@ -17552,7 +17552,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               schedule_t schedule;
               time_t next_time;
               char *owner, *observers;
-              int target_in_trash, schedule_in_trash;
+              int target_in_trash, schedule_in_trash, scanner_in_trash;
               int debugs, holes = 0, infos = 0, logs, warnings = 0;
               int holes_2 = 0, infos_2 = 0, warnings_2 = 0;
               int false_positives, task_scanner_type, slave_available;
@@ -17901,7 +17901,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     {
                       task_schedule_uuid = schedule_uuid (schedule);
                       task_schedule_name = schedule_name (schedule);
-                      schedule_available = trash_schedule_readable (slave);
+                      schedule_available = trash_schedule_readable (schedule);
                     }
                   else
                     {
@@ -17925,22 +17925,26 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
               scanner_available = 1;
               scanner = task_iterator_scanner (&tasks);
-              // FIX trash case?
               if (scanner)
                 {
-                  schedule_t found;
+                  scanner_in_trash = task_scanner_in_trash (index);
 
                   task_scanner_uuid = scanner_uuid (scanner);
                   task_scanner_name = scanner_name (scanner);
                   task_scanner_type = scanner_type (scanner);
+                  if (scanner_in_trash)
+                    scanner_available = trash_scanner_readable (scanner);
+                  else
+                    {
+                      scanner_t found;
 
-                  if (find_scanner_with_permission (task_scanner_uuid,
-                                                    &found,
-                                                    "get_scanners"))
-                    g_error ("%s: GET_TASKS: error finding task scanner,"
-                             " aborting",
-                             __FUNCTION__);
-                  scanner_available = (found > 0);
+                      if (find_scanner_with_permission
+                           (task_scanner_uuid, &found, "get_scanners"))
+                        g_error ("%s: GET_TASKS: error finding task scanner,"
+                                 " aborting",
+                                 __FUNCTION__);
+                      scanner_available = (found > 0);
+                    }
                 }
               else
                 {
@@ -17948,6 +17952,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   task_scanner_uuid = g_strdup ("");
                   task_scanner_name = g_strdup ("");
                   task_scanner_type = 0;
+                  scanner_in_trash = 0;
                 }
               next_time = task_schedule_next_time_tz (index);
               response = g_strdup_printf
@@ -17967,6 +17972,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            "<scanner id='%s'>"
                            "<name>%s</name>"
                            "<type>%d</type>"
+                           "<trash>%i</trash>"
                            "%s"
                            "</scanner>"
                            "<slave id=\"%s\">"
@@ -18004,6 +18010,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            task_scanner_uuid,
                            task_scanner_name,
                            task_scanner_type,
+                           scanner_in_trash,
                            scanner_available ? "" : "<permissions/>",
                            task_slave_uuid ?: "",
                            task_slave_name ?: "",

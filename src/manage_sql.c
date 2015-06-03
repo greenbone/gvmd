@@ -13311,6 +13311,20 @@ set_task_scanner (task_t task, scanner_t scanner)
 }
 
 /**
+ * @brief Return whether the scanner of a task is in the trashcan.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return 1 if in trash, else 0.
+ */
+int
+task_scanner_in_trash (task_t task)
+{
+  return sql_int ("SELECT scanner_location = " G_STRINGIFY (LOCATION_TRASH)
+                  " FROM tasks WHERE id = %llu;", task);
+}
+
+/**
  * @brief Return the slave of a task.
  *
  * @param[in]  task  Task.
@@ -26298,10 +26312,10 @@ make_task (char* name, char* comment)
   sql ("INSERT into tasks"
        " (owner, uuid, name, hidden, comment, schedule,"
        "  schedule_next_time, slave, config_location, target_location,"
-       "  schedule_location, slave_location, alterable, creation_time,"
-       "  modification_time)"
+       "  scanner_location, schedule_location, slave_location, alterable,"
+       " creation_time, modification_time)"
        " VALUES ((SELECT id FROM users WHERE users.uuid = '%s'),"
-       "         '%s', '%s', 0, '%s', 0, 0, 0, 0, 0, 0, 0, 0, m_now (),"
+       "         '%s', '%s', 0, '%s', 0, 0, 0, 0, 0, 0, 0, 0, 0, m_now (),"
        "         m_now ());",
        current_credentials.uuid,
        uuid,
@@ -26444,10 +26458,10 @@ copy_task (const char* name, const char* comment, const char *task_id,
 
   // FIX task names are allowed to clash
   ret = copy_resource_lock ("task", name, comment, task_id,
-                            "config, target, schedule,"
+                            "config, target, schedule, scanner,"
                             " schedule_next_time, slave, config_location,"
                             " target_location, schedule_location,"
-                            " slave_location, hosts_ordering, scanner",
+                            " scanner_location, slave_location, hosts_ordering",
                             1, &new, &old);
   if (ret)
     {
@@ -38689,6 +38703,16 @@ delete_scanner (const char *scanner_id, int ultimate)
           return 0;
         }
 
+      /* Check if it's in use by a task in the trashcan. */
+      if (sql_int ("SELECT count(*) FROM tasks"
+                   " WHERE scanner = %llu"
+                   " AND scanner_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+                   scanner))
+        {
+          sql ("ROLLBACK;");
+          return 1;
+        }
+
       permissions_set_orphans ("scanner", scanner, LOCATION_TRASH);
       tags_set_orphans ("scanner", scanner, LOCATION_TRASH);
 
@@ -38697,11 +38721,18 @@ delete_scanner (const char *scanner_id, int ultimate)
       return 0;
     }
 
-  if (scanner_in_use (scanner))
-    return 1;
-
   if (ultimate == 0)
     {
+      if (sql_int ("SELECT count(*) FROM tasks"
+                   " WHERE scanner = %llu"
+                   " AND scanner_location = " G_STRINGIFY (LOCATION_TABLE)
+                   " AND (hidden = 0 OR hidden = 1);",
+                   scanner))
+        {
+          sql ("ROLLBACK;");
+          return 1;
+        }
+
       sql ("INSERT INTO scanners_trash"
            " (uuid, owner, name, comment, host, port, type, ca_pub,"
            "  key_pub, key_priv, creation_time, modification_time)"
@@ -38709,8 +38740,16 @@ delete_scanner (const char *scanner_id, int ultimate)
            "        key_pub, key_priv, creation_time, modification_time"
            " FROM scanners WHERE id = %llu;", scanner);
 
-      permissions_set_locations ("scanner", scanner,
-                                 sql_last_insert_id (),
+      /* Update the location of the scanner in any trashcan tasks. */
+      sql ("UPDATE tasks"
+           " SET scanner = %llu,"
+           "     scanner_location = " G_STRINGIFY (LOCATION_TRASH)
+           " WHERE scanner = %llu"
+           " AND scanner_location = " G_STRINGIFY (LOCATION_TABLE) ";",
+           sql_last_insert_id (),
+           scanner);
+
+      permissions_set_locations ("scanner", scanner, sql_last_insert_id (),
                                  LOCATION_TRASH);
       tags_set_locations ("scanner", scanner,
                           sql_last_insert_id (), LOCATION_TRASH);
@@ -38923,8 +38962,8 @@ scanner_task_iterator_readable (iterator_t* iterator)
 int
 scanner_in_use (scanner_t scanner)
 {
-  return !!sql_int ("SELECT count(*) FROM tasks" " WHERE scanner = %llu;",
-                    scanner);
+  return !!sql_int ("SELECT count(*) FROM tasks WHERE scanner = %llu"
+                    " AND hidden = 0;", scanner);
 }
 
 /**
@@ -38937,7 +38976,10 @@ scanner_in_use (scanner_t scanner)
 int
 trash_scanner_in_use (scanner_t scanner)
 {
-  return 0;
+  return !!sql_int ("SELECT count(*) FROM tasks"
+                    " WHERE scanner = %llu"
+                    " AND scanner_location = " G_STRINGIFY (LOCATION_TRASH),
+                    scanner);
 }
 
 /**
@@ -38964,6 +39006,31 @@ int
 trash_scanner_writable (scanner_t scanner)
 {
   return (trash_scanner_in_use (scanner) == 0);
+}
+
+/**
+ * @brief Return whether a trashcan scanner is readable.
+ *
+ * @param[in]  scanner  Scanner.
+ *
+ * @return 1 if readable, else 0.
+ */
+int
+trash_scanner_readable (scanner_t scanner)
+{
+  char *uuid;
+  scanner_t found;
+
+  if (scanner == 0)
+    return 0;
+  uuid = scanner_uuid (scanner);
+  if (find_trash ("scanner", uuid, &found))
+    {
+      g_free (uuid);
+      return 0;
+    }
+  g_free (uuid);
+  return found > 0;
 }
 
 /**
@@ -49646,6 +49713,14 @@ manage_restore (const char *id)
            "        key_pub, key_priv, creation_time, modification_time"
            " FROM scanners_trash WHERE id = %llu;", resource);
 
+      /* Update the scanner in any trashcan tasks. */
+      sql ("UPDATE tasks"
+           " SET scanner = %llu,"
+           "     scanner_location = " G_STRINGIFY (LOCATION_TABLE)
+           " WHERE scanner = %llu"
+           " AND scanner_location = " G_STRINGIFY (LOCATION_TRASH),
+           sql_last_insert_id (), resource);
+
       permissions_set_locations ("scanner", resource,
                                  sql_last_insert_id (),
                                  LOCATION_TABLE);
@@ -49869,6 +49944,7 @@ manage_restore (const char *id)
       if (sql_int ("SELECT (target_location = " G_STRINGIFY (LOCATION_TRASH) ")"
                    " OR (config_location = " G_STRINGIFY (LOCATION_TRASH) ")"
                    " OR (schedule_location = " G_STRINGIFY (LOCATION_TRASH) ")"
+                   " OR (scanner_location = " G_STRINGIFY (LOCATION_TRASH) ")"
                    " OR (slave_location = " G_STRINGIFY (LOCATION_TRASH) ")"
                    " OR (SELECT count(*) > 0 FROM task_alerts"
                    "     WHERE task = tasks.id"
