@@ -1,3 +1,8 @@
+2015-06-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (RESULT_ITERATOR_COLUMNS)
+	(RESULT_ITERATOR_FILTER_COLUMNS): Add task_id.
+
 2015-06-03  Benoît Allard  <benoit.allard@greenbone.net>
 
 	* src/sql_sqlite3.c: Add missing include statements from the last
