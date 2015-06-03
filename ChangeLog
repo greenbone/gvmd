@@ -1,3 +1,8 @@
+2015-06-03  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage.h, src/manage_sql.c (find_lsc_credential)
+	(manage_user_set_role): Remove unused functions.
+
 2015-06-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (RESULT_ITERATOR_COLUMNS)

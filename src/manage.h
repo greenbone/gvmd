@@ -1812,9 +1812,6 @@ task_role_iterator_uuid (iterator_t*);
 /* LSC credentials. */
 
 gboolean
-find_lsc_credential (const char*, lsc_credential_t*);
-
-gboolean
 find_lsc_credential_with_permission (const char*, lsc_credential_t*,
                                      const char*);
 
@@ -3411,9 +3408,6 @@ manage_user_hash (const gchar *);
 
 gchar *
 manage_user_uuid (const gchar *, auth_method_t);
-
-int
-manage_user_set_role (const gchar *, const gchar *, const gchar *);
 
 int
 manage_user_exists (const gchar *, auth_method_t);

@@ -12556,51 +12556,6 @@ user_ensure_in_db (const gchar *name, const gchar *method)
 }
 
 /**
- * @brief Set user role.
- *
- * This works for any auth method.
- *
- * @param[in]  name    User name.
- * @param[in]  method  Auth method.
- * @param[in]  role    User role.
- *
- * @return 0 success.
- */
-int
-manage_user_set_role (const gchar *name, const gchar *method, const gchar *role)
-{
-  gchar *quoted_role, *quoted_name, *quoted_method;
-
-  assert ((strcmp (role, "Admin") == 0)
-          || (strcmp (role, "User") == 0)
-          || (strcmp (role, "Observer") == 0));
-
-  user_ensure_in_db (name, method);
-
-  quoted_role = sql_quote (role);
-  quoted_name = sql_quote (name);
-  quoted_method = sql_quote (method);
-  sql ("DELETE FROM role_users"
-       " WHERE \"user\" = (SELECT id FROM users"
-       "                   WHERE name = '%s' AND method = '%s');",
-       quoted_name,
-       quoted_method);
-  sql ("INSERT INTO role_users (role, \"user\")"
-       " VALUE ((SELECT id FROM users"
-       "         WHERE name = '%s' AND method = '%s'),"
-       "        (SELECT id FROM roles"
-       "         WHERE name = '%s'));",
-       quoted_name,
-       quoted_method,
-       quoted_role);
-  g_free (quoted_role);
-  g_free (quoted_name);
-  g_free (quoted_method);
-
-  return 0;
-}
-
-/**
  * @brief Check if user exists.
  *
  * @param[in]  name    User name.
@@ -33702,47 +33657,6 @@ set_task_preferences (task_t task, array_t *preferences)
 
 
 /* LSC Credentials. */
-
-/**
- * @brief Find an LSC credential given a UUID.
- *
- * @param[in]   uuid            UUID of LSC credential.
- * @param[out]  lsc_credential  LSC credential return, 0 if succesfully failed
- *                              to find credential.
- *
- * @return FALSE on success (including if failed to find LSC credential),
- *         TRUE on error.
- */
-gboolean
-find_lsc_credential (const char* uuid, lsc_credential_t* lsc_credential)
-{
-  gchar *quoted_uuid = sql_quote (uuid);
-  if (acl_user_owns_uuid ("lsc_credential", quoted_uuid, 0) == 0)
-    {
-      g_free (quoted_uuid);
-      *lsc_credential = 0;
-      return FALSE;
-    }
-  switch (sql_int64 (lsc_credential,
-                     "SELECT id FROM lsc_credentials WHERE uuid = '%s';",
-                     quoted_uuid))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *lsc_credential = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_uuid);
-        return TRUE;
-        break;
-    }
-
-  g_free (quoted_uuid);
-  return FALSE;
-}
 
 /**
  * @brief Find an LSC credential for a specific permission, given a UUID.
