@@ -1,5 +1,12 @@
 2015-06-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r22556.
+
+	* src/manage_sql.c (RESULT_ITERATOR_COLUMNS)
+	(RESULT_ITERATOR_FILTER_COLUMNS): Add NVT cve as "cve".
+
+2015-06-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r22550.
 
 	* src/manage_sql.c (RESULT_ITERATOR_COLUMNS)
