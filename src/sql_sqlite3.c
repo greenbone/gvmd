@@ -29,6 +29,8 @@
 #include <assert.h>
 #include <sqlite3.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <errno.h>
 
 /**
  * @brief Chunk size for SQLite memory allocation.

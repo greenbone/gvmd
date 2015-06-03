@@ -1,3 +1,8 @@
+2015-06-03  Benoît Allard  <benoit.allard@greenbone.net>
+
+	* src/sql_sqlite3.c: Add missing include statements from the last
+	  commit.
+
 2015-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_manage_process): Remove SQLite specific checks.
