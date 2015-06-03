@@ -1,5 +1,11 @@
 2015-06-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r22522.  Original patch by Benoît Allard.
+
+	* src/manage_sql.c (modify permission): Fix parameter in function call.
+
+2015-06-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r22556.
 
 	* src/manage_sql.c (RESULT_ITERATOR_COLUMNS)
