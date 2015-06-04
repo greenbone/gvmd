@@ -1,5 +1,11 @@
 2015-06-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_pg.c (manage_create_sql_functions): Add "log" cases to
+	severity_in_level function and also count severity scores between 0.0
+	and 4.0 if severity_class is pci-dss.
+
+2015-06-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_start_element): In case
 	CLIENT_CREATE_REPORT_RR_RESULTS_RESULT add branch for DESCRIPTION
 	element.
