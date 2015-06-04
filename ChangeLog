@@ -1,3 +1,8 @@
+2015-06-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml.in (note, override, report): Add TYPE
+	to NVT.
+
 2015-06-03  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (schedule_in_use): Return true only when task is not

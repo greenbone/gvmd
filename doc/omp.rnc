@@ -608,12 +608,20 @@ note_nvt
      {
        attribute oid { oid }
        & note_nvt_name
+       & note_nvt_type
      }
 
 note_nvt_name
  = element name
      {
        name
+     }
+
+# The type of the NVT: nvt, cve, ovaldef, ....
+note_nvt_type
+ = element type
+     {
+       text
      }
 
 # Date and time the note was created.
@@ -792,6 +800,7 @@ note_result_nvt
      {
        attribute oid { oid }
        & note_result_nvt_name
+       & note_result_nvt_type
        & note_result_nvt_cvss_base
        & note_result_nvt_risk_factor
        & note_result_nvt_cve?
@@ -802,6 +811,13 @@ note_result_nvt_name
  = element name
      {
        name
+     }
+
+# The type of the NVT: nvt, cve, ovaldef, ....
+note_result_nvt_type
+ = element type
+     {
+       text
      }
 
 note_result_nvt_cvss_base
@@ -939,12 +955,20 @@ override_nvt
      {
        attribute oid { oid }
        & override_nvt_name
+       & override_nvt_type
      }
 
 override_nvt_name
  = element name
      {
        name
+     }
+
+# The type of the NVT: nvt, cve, ovaldef, ....
+override_nvt_type
+ = element type
+     {
+       text
      }
 
 # Date and time the override was created.
@@ -1137,6 +1161,7 @@ override_result_nvt
      {
        attribute oid { oid }
        & override_result_nvt_name
+       & override_result_nvt_type
        & override_result_nvt_cvss_base
        & override_result_nvt_risk_factor
        & override_result_nvt_cve?
@@ -1147,6 +1172,13 @@ override_result_nvt_name
  = element name
      {
        name
+     }
+
+# The type of the NVT: nvt, cve, ovaldef, ....
+override_result_nvt_type
+ = element type
+     {
+       text
      }
 
 override_result_nvt_cvss_base
@@ -1379,6 +1411,7 @@ result_nvt
      {
        attribute oid { oid }
        & result_nvt_name
+       & result_nvt_type
        & result_nvt_family
        & result_nvt_cvss_base
        & result_nvt_cve
@@ -1393,6 +1426,13 @@ result_nvt_name
  = element name
      {
        name
+     }
+
+# The type of the NVT: nvt, cve, ovaldef, ....
+result_nvt_type
+ = element type
+     {
+       text
      }
 
 # The family the NVT is in.
@@ -2933,12 +2973,20 @@ report_report_errors_error_nvt
      {
        attribute oid {  }
        & report_report_errors_error_nvt_name
+       & report_report_errors_error_nvt_type
        & report_report_errors_error_nvt_cvss_base
      }
 
 # The name of the NVT.
 report_report_errors_error_nvt_name
  = element name
+     {
+       text
+     }
+
+# The type of the NVT: nvt, cve, ovaldef, ....
+report_report_errors_error_nvt_type
+ = element type
      {
        text
      }

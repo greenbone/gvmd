@@ -1638,6 +1638,11 @@ command_definition_ele
               &lt;<b>name</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>type</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The type of the NVT: nvt, cve, ovaldef, ....</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li>
 <li>
@@ -1777,6 +1782,11 @@ command_definition_ele
               <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>type</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The type of the NVT: nvt, cve, ovaldef, ....</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>cvss_base</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
@@ -1889,12 +1899,19 @@ note_nvt
      {
        attribute oid { oid }
        &amp; note_nvt_name
+       &amp; note_nvt_type
      }
 
 note_nvt_name
  = element name
      {
        name
+     }
+
+note_nvt_type
+ = element type
+     {
+       text
      }
 
 note_creation_time
@@ -2052,6 +2069,7 @@ note_result_nvt
      {
        attribute oid { oid }
        &amp; note_result_nvt_name
+       &amp; note_result_nvt_type
        &amp; note_result_nvt_cvss_base
        &amp; note_result_nvt_risk_factor
        &amp; note_result_nvt_cve?
@@ -2062,6 +2080,12 @@ note_result_nvt_name
  = element name
      {
        name
+     }
+
+note_result_nvt_type
+ = element type
+     {
+       text
      }
 
 note_result_nvt_cvss_base
@@ -2167,6 +2191,11 @@ note_result_description
 <li>
               &lt;<b>name</b>&gt;
               <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>type</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The type of the NVT: nvt, cve, ovaldef, ....</div>
+<ul style="list-style: none"></ul>
 </li>
 </ul>
 </li>
@@ -2329,6 +2358,11 @@ note_result_description
               <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>type</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The type of the NVT: nvt, cve, ovaldef, ....</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>cvss_base</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
@@ -2444,12 +2478,19 @@ override_nvt
      {
        attribute oid { oid }
        &amp; override_nvt_name
+       &amp; override_nvt_type
      }
 
 override_nvt_name
  = element name
      {
        name
+     }
+
+override_nvt_type
+ = element type
+     {
+       text
      }
 
 override_creation_time
@@ -2619,6 +2660,7 @@ override_result_nvt
      {
        attribute oid { oid }
        &amp; override_result_nvt_name
+       &amp; override_result_nvt_type
        &amp; override_result_nvt_cvss_base
        &amp; override_result_nvt_risk_factor
        &amp; override_result_nvt_cve?
@@ -2629,6 +2671,12 @@ override_result_nvt_name
  = element name
      {
        name
+     }
+
+override_result_nvt_type
+ = element type
+     {
+       text
      }
 
 override_result_nvt_cvss_base
@@ -2814,6 +2862,11 @@ override_result_description
 <li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">The name of the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>type</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The type of the NVT: nvt, cve, ovaldef, ....</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -3163,6 +3216,7 @@ result_nvt
      {
        attribute oid { oid }
        &amp; result_nvt_name
+       &amp; result_nvt_type
        &amp; result_nvt_family
        &amp; result_nvt_cvss_base
        &amp; result_nvt_cve
@@ -3176,6 +3230,12 @@ result_nvt_name
  = element name
      {
        name
+     }
+
+result_nvt_type
+ = element type
+     {
+       text
      }
 
 result_nvt_family
@@ -4353,6 +4413,11 @@ result_overrides_override
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>type</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The type of the NVT: nvt, cve, ovaldef, ....</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>cvss_base</b>&gt;
               <div style="margin-left: 15px; display: inline;">The base CVSS score of the NVT.</div>
 <ul style="list-style: none"></ul>
@@ -5416,11 +5481,18 @@ report_report_errors_error_nvt
      {
        attribute oid {  }
        &amp; report_report_errors_error_nvt_name
+       &amp; report_report_errors_error_nvt_type
        &amp; report_report_errors_error_nvt_cvss_base
      }
 
 report_report_errors_error_nvt_name
  = element name
+     {
+       text
+     }
+
+report_report_errors_error_nvt_type
+ = element type
      {
        text
      }

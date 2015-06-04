@@ -508,10 +508,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <required>1</required>
         </attrib>
         <e>name</e>
+        <e>type</e>
       </pattern>
       <ele>
         <name>name</name>
         <pattern><t>name</t></pattern>
+      </ele>
+      <ele>
+        <name>type</name>
+        <summary>The type of the NVT: nvt, cve, ovaldef, ...</summary>
+        <pattern>text</pattern>
       </ele>
     </ele>
     <ele>
@@ -684,6 +690,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>name</e>
+          <e>type</e>
           <e>cvss_base</e>
           <e>risk_factor</e>
           <o><e>cve</e></o>
@@ -693,6 +700,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>name</name>
           <pattern><t>name</t></pattern>
         </ele>
+		<ele>
+		  <name>type</name>
+		  <summary>The type of the NVT: nvt, cve, ovaldef, ...</summary>
+		  <pattern>text</pattern>
+		</ele>
         <ele>
           <name>cvss_base</name>
           <pattern>text</pattern>
@@ -821,10 +833,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <required>1</required>
         </attrib>
         <e>name</e>
+        <e>type</e>
       </pattern>
       <ele>
         <name>name</name>
         <pattern><t>name</t></pattern>
+      </ele>
+      <ele>
+        <name>type</name>
+        <summary>The type of the NVT: nvt, cve, ovaldef, ...</summary>
+        <pattern>text</pattern>
       </ele>
     </ele>
     <ele>
@@ -1013,6 +1031,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>name</e>
+          <e>type</e>
           <e>cvss_base</e>
           <e>risk_factor</e>
           <o><e>cve</e></o>
@@ -1022,6 +1041,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>name</name>
           <pattern><t>name</t></pattern>
         </ele>
+		<ele>
+		  <name>type</name>
+		  <summary>The type of the NVT: nvt, cve, ovaldef, ...</summary>
+		  <pattern>text</pattern>
+		</ele>
         <ele>
           <name>cvss_base</name>
           <pattern>text</pattern>
@@ -1240,6 +1264,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <required>1</required>
         </attrib>
         <e>name</e>
+        <e>type</e>
         <e>family</e>
         <e>cvss_base</e>
         <e>cve</e>
@@ -1252,6 +1277,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>name</name>
         <summary>The name of the NVT</summary>
         <pattern><t>name</t></pattern>
+      </ele>
+      <ele>
+        <name>type</name>
+        <summary>The type of the NVT: nvt, cve, ovaldef, ...</summary>
+        <pattern>text</pattern>
       </ele>
       <ele>
         <name>family</name>
@@ -2628,11 +2658,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <required>1</required>
               </attrib>
               <e>name</e>
+              <e>type</e>
               <e>cvss_base</e>
             </pattern>
             <ele>
               <name>name</name>
               <summary>The name of the NVT</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>type</name>
+              <summary>The type of the NVT: nvt, cve, ovaldef, ...</summary>
               <pattern>text</pattern>
             </ele>
             <ele>
