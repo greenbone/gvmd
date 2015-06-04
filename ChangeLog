@@ -1,3 +1,9 @@
+2015-06-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_start_element): In case
+	CLIENT_CREATE_REPORT_RR_RESULTS_RESULT add branch for DESCRIPTION
+	element.
+
 2015-06-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/XML/OMP.xml.in (note, override, report): Add TYPE
