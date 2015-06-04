@@ -9168,6 +9168,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_CREATION_TIME);
             omp_parser->read_over = 1;
           }
+        else if (strcasecmp ("DESCRIPTION", element_name) == 0)
+          set_client_state
+           (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DESCRIPTION);
         else if (strcasecmp ("DETECTION", element_name) == 0)
           {
             omp_parser->read_over = 1;
