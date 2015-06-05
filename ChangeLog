@@ -1,3 +1,9 @@
+2015-06-05  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (report_add_result): Correct SQL queries to get
+	existing report_counts entries and the query to get QoD values in use
+	with overrides enabled.
+
 2015-06-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_pg.c (manage_create_sql_functions): Add "log" cases to

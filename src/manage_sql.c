@@ -16133,7 +16133,7 @@ report_add_result (report_t report, result_t result)
                 " WHERE report = %llu"
                 " AND \"user\" = (SELECT id FROM users WHERE users.uuid = '%s')"
                 " AND override = 0"
-                " AND severity = %1.1f;"
+                " AND severity = %1.1f"
                 " AND min_qod = %d",
                 report, current_credentials.uuid, severity, min_qod);
       if (rowid)
@@ -16192,7 +16192,7 @@ report_add_result (report_t report, result_t result)
                  "SELECT DISTINCT min_qod"
                  " FROM report_counts"
                  " WHERE report = %llu"
-                 " AND override = 0"
+                 " AND override = 1"
                  " AND \"user\" = (SELECT id FROM users"
                  "                 WHERE users.uuid = '%s')"
                  " ORDER BY min_qod DESC",
@@ -16208,7 +16208,7 @@ report_add_result (report_t report, result_t result)
                 " WHERE report = %llu"
                 " AND \"user\" = (SELECT id FROM users WHERE users.uuid = '%s')"
                 " AND override = 1"
-                " AND severity = %1.1f;"
+                " AND severity = %1.1f"
                 " AND min_qod = %d",
                 report, current_credentials.uuid, ov_severity, min_qod);
       if (rowid)
