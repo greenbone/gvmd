@@ -1,3 +1,10 @@
+2015-06-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (report_counts_match): Look for search_phrase
+	in the name and the last tag of the NVT.  Use strcasestr to compare
+	port, host, NVT OID and description to search_phrase when
+	search_phrase_exact is 0.
+
 2015-06-05  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (report_add_result): Correct SQL queries to get
