@@ -19144,12 +19144,16 @@ report_counts_match (iterator_t *results, const char *search_phrase,
           || (strcmp (iterator_string (results, 1), search_phrase) == 0)
           /* Description. */
           || (strcmp (iterator_string (results, 5), search_phrase) == 0)
-          /* NVT Tag or CVE. */
+          /* NVT Name, Tag or CVE. */
           || sql_int ("SELECT EXISTS (SELECT 1 FROM nvts"
                       "               WHERE oid = '%s'"
-                      "               AND (tag LIKE '%%%%=%s|%%%%'"
+                      "               AND (name = '%s'"
+                      "                    OR tag LIKE '%%%%=%s|%%%%'"
+                      "                    OR tag LIKE '%%%%=%s'"
                       "                    OR cve LIKE '%%%%%s%%%%'))",
                       iterator_string (results, 1),
+                      search_phrase,
+                      search_phrase,
                       search_phrase,
                       search_phrase))
         {
@@ -19175,19 +19179,21 @@ report_counts_match (iterator_t *results, const char *search_phrase,
   else if (search_phrase)
     {
       if (/* Port. */
-          (strcmp (iterator_string (results, 4), search_phrase) == 0)
+          (strcasestr (iterator_string (results, 4), search_phrase) != 0)
           /* Host. */
-          || (strcmp (iterator_string (results, 3), search_phrase) == 0)
+          || (strcasestr (iterator_string (results, 3), search_phrase) != 0)
           /* NVT OID. */
-          || (strcmp (iterator_string (results, 1), search_phrase) == 0)
+          || (strcasestr (iterator_string (results, 1), search_phrase) != 0)
           /* Description. */
-          || (strcmp (iterator_string (results, 5), search_phrase) == 0)
-          /* NVT Tag or CVE. */
+          || (strcasestr (iterator_string (results, 5), search_phrase) != 0)
+          /* NVT Name, Tag or CVE. */
           || sql_int ("SELECT EXISTS (SELECT 1 FROM nvts"
                       "               WHERE oid = '%s'"
-                      "               AND (tag LIKE '%%%%=%s|%%%%'"
+                      "               AND (name LIKE '%%%%%s%%%%'"
+                      "                    OR tag LIKE '%%%%=%%%%%s%%%%'"
                       "                    OR cve LIKE '%%%%%s%%%%'))",
                       iterator_string (results, 1),
+                      search_phrase,
                       search_phrase,
                       search_phrase))
         {
