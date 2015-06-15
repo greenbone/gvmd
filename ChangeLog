@@ -1,3 +1,15 @@
+2015-06-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r22637.
+
+	* src/manage.c (manage_schedule): Add sigmask_current arg.  Restore this
+	sigmask in forked child, so that it has sensible signal handling.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/openvasmd.c (serve_and_schedule): Pass sigmask_current to
+	manage_schedule.
+
 2015-06-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r22599.
