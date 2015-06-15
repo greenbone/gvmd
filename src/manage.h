@@ -2337,7 +2337,8 @@ manage_schedule (int (*) (int *,
                           gnutls_session_t *,
                           gnutls_certificate_credentials_t *,
                           gchar*),
-                 gboolean);
+                 gboolean,
+                 sigset_t *sigmask_current);
 
 char *
 schedule_uuid (schedule_t);

@@ -1034,7 +1034,8 @@ serve_and_schedule ()
       if ((time (NULL) - last_schedule_time) > SCHEDULE_PERIOD)
         {
           if (manage_schedule (fork_connection_for_schedular,
-                               scheduling_enabled)
+                               scheduling_enabled,
+                               &sigmask_current)
               < 0)
             exit (EXIT_FAILURE);
 
@@ -1076,7 +1077,8 @@ serve_and_schedule ()
             accept_and_maybe_fork (manager_socket_2, &sigmask_current);
         }
 
-      if (manage_schedule (fork_connection_for_schedular, scheduling_enabled)
+      if (manage_schedule (fork_connection_for_schedular, scheduling_enabled,
+                           &sigmask_current)
           < 0)
         exit (EXIT_FAILURE);
 

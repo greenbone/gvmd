@@ -4981,6 +4981,7 @@ reschedule_task (const gchar *task_id)
  *                              to the Manager.  Must return PID in parent, 0
  *                              in child, or -1 on error.
  * @param[in]  run_tasks        Whether to run scheduled tasks.
+ * @param[in]  sigmask_current  Sigmask to restore in child.
  *
  * @return 0 success, 1 failed to get lock, -1 error.
  */
@@ -4989,7 +4990,8 @@ manage_schedule (int (*fork_connection) (int *,
                                          gnutls_session_t *,
                                          gnutls_certificate_credentials_t *,
                                          gchar*),
-                 gboolean run_tasks)
+                 gboolean run_tasks,
+                 sigset_t *sigmask_current)
 {
   iterator_t schedules;
   GSList *starts = NULL, *stops = NULL;
@@ -5130,6 +5132,10 @@ manage_schedule (int (*fork_connection) (int *,
           case 0:
             /* Child.  Carry on to start the task, reopen the database (required
              * after fork). */
+
+            /* Restore the sigmask that was blanked for pselect. */
+            pthread_sigmask (SIG_SETMASK, sigmask_current, NULL);
+
             reinit_manage_process ();
             while (starts)
               {
