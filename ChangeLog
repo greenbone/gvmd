@@ -1,3 +1,10 @@
+2015-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r22642.
+
+	* src/manage_sql.c (event): Run the alerts outside the iterator, to
+	prevent them from blocking update commands.
+
 2015-06-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r22637.
