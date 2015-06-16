@@ -1,5 +1,10 @@
 2015-06-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (event): Run the alerts outside the iterator, to
+	prevent them from blocking update commands.
+
+2015-06-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (manage_schedule): Add sigmask_current arg.  Restore this
 	sigmask in forked child, so that it has sensible signal handling.
 

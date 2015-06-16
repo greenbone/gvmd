@@ -8871,7 +8871,13 @@ static void
 event (task_t task, event_t event, void* event_data)
 {
   iterator_t alerts;
+  array_t *alerts_triggered;
+  guint index;
+
   tracef ("   EVENT %i on task %llu", event, task);
+
+  alerts_triggered = make_array ();
+
   init_task_alert_iterator (&alerts, task, event);
   while (next (&alerts))
     {
@@ -8882,15 +8888,31 @@ event (task_t task, event_t event, void* event_data)
 
           condition = alert_condition (alert);
           if (condition_met (task, alert, condition))
-            escalate_1 (alert,
-                        task,
-                        event,
-                        event_data,
-                        alert_method (alert),
-                        condition);
+            array_add (alerts_triggered, (void*) alert);
         }
     }
   cleanup_iterator (&alerts);
+
+  /* Run the alerts outside the iterator, because they make take some
+   * time and the iterator would prevent update processes (OMP MODIFY_XXX,
+   * CREATE_XXX, ...) from locking the database. */
+  index = alerts_triggered->len;
+  while (index--)
+    {
+      alert_t alert;
+      alert_condition_t condition;
+
+      alert = (alert_t) g_ptr_array_index (alerts_triggered, index);
+      condition = alert_condition (alert);
+      escalate_1 (alert,
+                  task,
+                  event,
+                  event_data,
+                  alert_method (alert),
+                  condition);
+    }
+
+  g_ptr_array_free (alerts_triggered, TRUE);
 }
 
 /**
