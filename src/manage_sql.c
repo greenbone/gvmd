@@ -18078,7 +18078,6 @@ init_report_errors_iterator (iterator_t* iterator, report_t report)
                    "  results.nvt_version, results.severity"
                    "  FROM results"
                    "  WHERE results.type = 'Error Message'"
-                   "   AND results.nvt = ''"
                    "   AND results.report = %llu",
                    report,
                    report);

@@ -1,3 +1,10 @@
+2015-06-17  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	Backport r22650.
+
+	* src/manage_sql.c (init_report_erors_iterator): Don't limit query to
+	results with empty nvt value.
+
 2015-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r22642.
