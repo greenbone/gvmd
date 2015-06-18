@@ -1,3 +1,11 @@
+2015-06-18  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (init_task_schedule_iterator): Remove unused schedule
+	owner from query.
+	(task_schedule_iterator_owner): Remove unused function.
+	(task_schedule_iterator_timezone)
+	(task_schedule_iterator_initial_offset): Adjust column number.
+
 2015-06-17  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (init_report_erors_iterator): Don't limit query to

@@ -40031,7 +40031,7 @@ init_task_schedule_iterator (iterator_t* iterator)
                  " schedules.period, schedules.period_months,"
                  " schedules.first_time,"
                  " schedules.duration,"
-                 " users.uuid, users.name, schedules.owner,"
+                 " users.uuid, users.name,"
                  " schedules.timezone, schedules.initial_offset"
                  " FROM tasks, schedules, users"
                  " WHERE tasks.schedule = schedules.id"
@@ -40175,16 +40175,6 @@ DEF_ACCESS (task_schedule_iterator_owner_uuid, 8);
 DEF_ACCESS (task_schedule_iterator_owner_name, 9);
 
 /**
- * @brief Get the schedule owner from a task schedule iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Owner name, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (task_schedule_iterator_owner, 10);
-
-/**
  * @brief Get the timezone from a task schedule iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -40192,7 +40182,7 @@ DEF_ACCESS (task_schedule_iterator_owner, 10);
  * @return Timezone, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (task_schedule_iterator_timezone, 11);
+DEF_ACCESS (task_schedule_iterator_timezone, 10);
 
 /**
  * @brief Get the initial offset from a task schedule iterator.
@@ -40205,7 +40195,7 @@ time_t
 task_schedule_iterator_initial_offset (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (time_t) iterator_int64 (iterator, 12);
+  return (time_t) iterator_int64 (iterator, 11);
 }
 
 /**
