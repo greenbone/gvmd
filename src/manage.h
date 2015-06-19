@@ -945,7 +945,7 @@ make_result (task_t, const char*, const char*, const char*,
 
 result_t
 make_osp_result (task_t, const char*, const char*, const char*, const char*,
-                 const char *, const char *);
+                 const char *, const char *, int);
 
 result_t
 make_cve_result (task_t, const char*, const char*, double, const char*);

@@ -14602,7 +14602,7 @@ find_result_with_permission (const char* uuid, result_t* result,
 result_t
 make_osp_result (task_t task, const char *host, const char *nvt,
                  const char *type, const char *description,
-                 const char *port, const char *severity)
+                 const char *port, const char *severity, int qod)
 {
   char *nvt_revision = NULL, *quoted_desc, *quoted_nvt, *result_severity;
   char *quoted_port;
@@ -14633,9 +14633,9 @@ make_osp_result (task_t task, const char *host, const char *nvt,
        " (owner, date, task, host, port, nvt, nvt_version, severity, type,"
        "  qod, qod_type, description, uuid)"
        " VALUES (NULL, m_now(), %llu, '%s', '%s', '%s', '%s', '%s', '%s',"
-       "         '%s', '', '%s', make_uuid ());",
+       "         %d, '', '%s', make_uuid ());",
        task, host ?: "", quoted_port, quoted_nvt, nvt_revision ?: "",
-       result_severity ?: "0", type, G_STRINGIFY (QOD_DEFAULT), quoted_desc);
+       result_severity ?: "0", type, qod, quoted_desc);
   g_free (result_severity);
   g_free (nvt_revision);
   g_free (quoted_desc);

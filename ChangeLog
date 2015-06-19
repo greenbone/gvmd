@@ -1,3 +1,12 @@
+2015-06-19  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (parse_osp_report): Handle result qod value.
+	(fork_osp_scan_handler): Adjust make_osp_result() call.
+
+	* src/manage.h: Modify function prototype.
+
+	* src/manage_sql.c (make_osp_result): Add qod function argument.
+
 2015-06-18  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (init_task_schedule_iterator): Remove unused schedule
