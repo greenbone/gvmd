@@ -1,3 +1,9 @@
+2015-06-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (event): Use GArray functions for alerts_triggered
+	instead of GPointerArray / array_t ones as pointers can be a different
+	size than alert_t on some systems.
+
 2015-06-19  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (parse_osp_report): Handle result qod value.
