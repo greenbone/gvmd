@@ -1,3 +1,16 @@
+2015-06-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_pg.c (manage_create_sql_functions): In the functions
+	severity_class and severity_in_level coalesce NULL owner of settings
+	to 0 so ORDER BY works the same in both database backends.
+
+	* src/manage_sql.c (escalate_2, credentials_setup): Coalesce NULL owner
+	of settings to 0.
+	(note_count, init_note_iterator, override_count)
+	(init_override_iterator): Cast nvts.cvss_base to real for Postgres.
+	(setting_filter, init_setting_iterator, setting_value_int): Coalesce
+	NULL owner of settings to 0.
+
 2015-06-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (event): Use GArray functions for alerts_triggered

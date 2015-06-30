@@ -941,7 +941,7 @@ manage_create_sql_functions ()
            "       OR (owner = (SELECT id FROM users"
            "                    WHERE users.uuid = (SELECT uuid"
            "                                        FROM current_credentials))))"
-           "  ORDER BY owner DESC LIMIT 1;"
+           "  ORDER BY coalesce (owner, 0) DESC LIMIT 1;"
            "$$ LANGUAGE SQL;");
 
       /* min_qod column was added in version 147 */
@@ -1230,7 +1230,7 @@ manage_create_sql_functions ()
            "                                       = (SELECT uuid"
            "                                          FROM current_credentials))))"
            // FIX coalesce else null first
-           "               ORDER BY owner DESC LIMIT 1)"
+           "               ORDER BY coalesce (owner, 0) DESC LIMIT 1)"
            "         WHEN 'classic'"
            "         THEN (CASE $2"
            "               WHEN 'high'"

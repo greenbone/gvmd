@@ -8333,7 +8333,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                               " WHERE name"
                               "       = 'Report Export File Name'"
                               " AND " ACL_USER_OWNS ()
-                              " ORDER BY owner DESC LIMIT 1;",
+                              " ORDER BY coalesce (owner, 0) DESC LIMIT 1;",
                               current_credentials.uuid);
 
               report_id = report_uuid (report);
@@ -12696,14 +12696,14 @@ credentials_setup (credentials_t *credentials)
     = sql_string ("SELECT value FROM settings"
                   " WHERE name = 'Severity Class'"
                   " AND " ACL_USER_OWNS ()
-                  " ORDER BY owner DESC LIMIT 1;",
+                  " ORDER BY coalesce (owner, 0) DESC LIMIT 1;",
                   credentials->uuid);
 
   credentials->dynamic_severity
     = sql_int ("SELECT value FROM settings"
                 " WHERE name = 'Dynamic Severity'"
                 " AND " ACL_USER_OWNS ()
-                " ORDER BY owner DESC LIMIT 1;",
+                " ORDER BY coalesce (owner, 0) DESC LIMIT 1;",
                 credentials->uuid);
 
   return 0;
@@ -36622,7 +36622,7 @@ note_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
         severity_sql = g_strdup_printf ("(SELECT CASE"
                                         " WHEN results.severity"
                                         "      > " G_STRINGIFY (SEVERITY_LOG)
-                                        " THEN nvts.cvss_base"
+                                        " THEN CAST (nvts.cvss_base AS real)"
                                         " ELSE results.severity END"
                                         " FROM results, nvts"
                                         " WHERE (nvts.oid = results.nvt)"
@@ -36760,7 +36760,7 @@ init_note_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
         severity_sql = g_strdup_printf ("(SELECT CASE"
                                         " WHEN results.severity"
                                         "      > " G_STRINGIFY (SEVERITY_LOG)
-                                        " THEN nvts.cvss_base"
+                                        " THEN CAST (nvts.cvss_base AS real)"
                                         " ELSE results.severity END"
                                         " FROM results, nvts"
                                         " WHERE (nvts.oid = results.nvt)"
@@ -37691,7 +37691,7 @@ override_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
         severity_sql = g_strdup_printf ("(SELECT CASE"
                                         " WHEN results.severity"
                                         "      > " G_STRINGIFY (SEVERITY_LOG)
-                                        " THEN nvts.cvss_base"
+                                        " THEN CAST (nvts.cvss_base AS real)"
                                         " ELSE results.severity END"
                                         " FROM results, nvts"
                                         " WHERE (nvts.oid = results.nvt)"
@@ -37830,7 +37830,7 @@ init_override_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
         severity_sql = g_strdup_printf ("(SELECT CASE"
                                         " WHEN results.severity"
                                         "      > " G_STRINGIFY (SEVERITY_LOG)
-                                        " THEN nvts.cvss_base"
+                                        " THEN CAST (nvts.cvss_base AS real)"
                                         " ELSE results.severity END"
                                         " FROM results, nvts"
                                         " WHERE (nvts.oid = results.nvt)"
@@ -50302,7 +50302,7 @@ setting_filter (const char *resource)
 {
   return sql_string ("SELECT value FROM settings WHERE name = '%s Filter'"
                      " AND " ACL_USER_OWNS () ""
-                     " ORDER BY owner DESC;",
+                     " ORDER BY coalesce (owner, 0) DESC;",
                      resource,
                      current_credentials.uuid);
 }
@@ -50384,7 +50384,7 @@ init_setting_iterator (iterator_t *iterator, const char *uuid,
                    " WHERE uuid = '%s'"
                    " AND " ACL_USER_OWNS ()
                    /* Force the user's setting to come before the default. */
-                   " ORDER BY owner DESC;",
+                   " ORDER BY coalesce (owner, 0) DESC;",
                    columns,
                    quoted_uuid,
                    current_credentials.uuid);
@@ -50493,7 +50493,7 @@ setting_value_int (const char *uuid, int *value)
                     " WHERE uuid = '%s'"
                     " AND " ACL_USER_OWNS ()
                     /* Force the user's setting to come before the default. */
-                    " ORDER BY owner DESC;",
+                    " ORDER BY coalesce (owner, 0) DESC;",
                     quoted_uuid,
                     current_credentials.uuid);
 
