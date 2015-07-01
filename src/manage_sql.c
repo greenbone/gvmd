@@ -39614,7 +39614,11 @@ init_task_schedule_iterator (iterator_t* iterator)
                  /* And a user may run the task. */
                  " AND %s"
                  /* And the same user has access to the schedule. */
-                 " AND %s;",
+                 " AND %s"
+                 /* Sort by task and prefer owner of task or schedule as user */
+                 " ORDER BY tasks.id,"
+                 "          (users.id = tasks.owner) DESC,"
+                 "          (users.id = schedules.owner) DESC;",
                  task_clause,
                  schedule_clause);
 

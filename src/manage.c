@@ -4666,6 +4666,8 @@ manage_schedule (int (*fork_connection) (int *,
   iterator_t schedules;
   GSList *starts = NULL, *stops = NULL;
   int ret;
+  task_t previous_start_task = 0;
+  task_t previous_stop_task = 0;
 
   manage_update_nvti_cache ();
 
@@ -4743,6 +4745,14 @@ manage_schedule (int (*fork_connection) (int *,
           set_task_schedule_next_time
            (task_schedule_iterator_task (&schedules), 0);
 
+        /* Skip this task if it was already added to the starts list
+         *  to avoid conflicts between multiple users with permissions.
+         */
+
+        if (previous_start_task == task_schedule_iterator_task (&schedules))
+          continue;
+        previous_start_task = task_schedule_iterator_task (&schedules);
+
         /* Add task UUID and owner name and UUID to the list. */
 
         starts = g_slist_prepend
@@ -4757,6 +4767,14 @@ manage_schedule (int (*fork_connection) (int *,
       }
     else if (task_schedule_iterator_stop_due (&schedules))
       {
+        /* Skip this task if it was already added to the stops list
+         *  to avoid conflicts between multiple users with permissions.
+         */
+
+        if (previous_stop_task == task_schedule_iterator_task (&schedules))
+          continue;
+        previous_stop_task = task_schedule_iterator_task (&schedules);
+
         /* Add task UUID and owner name and UUID to the list. */
 
         stops = g_slist_prepend

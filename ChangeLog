@@ -1,3 +1,17 @@
+2015-07-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r22681.
+
+	Ensure that each task is added only once to the starts and stops list
+	of the scheduling, preferring the owner of the task or schedule as the
+	user starting or stopping the task.
+
+	* src/manage_sql.c (init_task_schedule_iterator): Sort by Task ID and
+	by whether the user matches the task or schedule owner.
+
+	* src/manage.c (manage_schedule): Add each task only once to the starts
+	and stops lists.
+
 2015-06-17  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	Backport r22650.
