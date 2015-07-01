@@ -1,5 +1,11 @@
 2015-07-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Backport r22683.
+
+	* src/manage_sql.c (qod_from_type): Add case for "general_note".
+
+2015-07-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Backport r22681.
 
 	Ensure that each task is added only once to the starts and stops list
