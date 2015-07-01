@@ -1,3 +1,15 @@
+2015-07-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Ensure that each task is added only once to the starts and stops list
+	of the scheduling, preferring the owner of the task or schedule as the
+	user starting or stopping the task.
+
+	* src/manage_sql.c (init_task_schedule_iterator): Sort by Task ID and
+	by whether the user matches the task or schedule owner.
+
+	* src/manage.c (manage_schedule): Add each task only once to the starts
+	and stops lists.
+
 2015-06-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_pg.c (manage_create_sql_functions): In the functions
