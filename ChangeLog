@@ -1,5 +1,9 @@
 2015-07-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (qod_from_type): Add case for "general_note".
+
+2015-07-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Ensure that each task is added only once to the starts and stops list
 	of the scheduling, preferring the owner of the task or schedule as the
 	user starting or stopping the task.

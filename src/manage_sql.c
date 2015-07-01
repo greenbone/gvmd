@@ -14681,6 +14681,8 @@ qod_from_type (const char *qod_type)
     return 30;
   else if (strcmp (qod_type, "executable_version_unreliable") == 0)
     return 30;
+  else if (strcmp (qod_type, "general_note") == 0)
+    return 1;
   else
     return QOD_DEFAULT;
 }
