@@ -8828,12 +8828,12 @@ static void
 event (task_t task, event_t event, void* event_data)
 {
   iterator_t alerts;
-  array_t *alerts_triggered;
+  GArray *alerts_triggered;
   guint index;
 
   tracef ("   EVENT %i on task %llu", event, task);
 
-  alerts_triggered = make_array ();
+  alerts_triggered = g_array_new (TRUE, TRUE, sizeof (alert_t));
 
   init_task_alert_iterator (&alerts, task, event);
   while (next (&alerts))
@@ -8845,7 +8845,7 @@ event (task_t task, event_t event, void* event_data)
 
           condition = alert_condition (alert);
           if (condition_met (task, alert, condition))
-            array_add (alerts_triggered, (void*) alert);
+            g_array_append_val (alerts_triggered, alert);
         }
     }
   cleanup_iterator (&alerts);
@@ -8859,7 +8859,7 @@ event (task_t task, event_t event, void* event_data)
       alert_t alert;
       alert_condition_t condition;
 
-      alert = (alert_t) g_ptr_array_index (alerts_triggered, index);
+      alert = g_array_index (alerts_triggered, alert_t, index);
       condition = alert_condition (alert);
       escalate_1 (alert,
                   task,
@@ -8869,7 +8869,7 @@ event (task_t task, event_t event, void* event_data)
                   condition);
     }
 
-  g_ptr_array_free (alerts_triggered, TRUE);
+  g_array_free (alerts_triggered, TRUE);
 }
 
 /**

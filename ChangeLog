@@ -1,6 +1,14 @@
 2015-07-06  Michael Wiegand <michael.wiegand@greenbone.net>
 
-	Backport 22691.
+	Backport r22665. Original patch by Timo Pollmeier.
+
+	* src/manage_sql.c (event): Use GArray functions for alerts_triggered
+	instead of GPointerArray / array_t ones as pointers can be a different
+	size than alert_t on some systems.
+
+2015-07-06  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Backport r22691.
 
 	* src/manage.c: Define _GNU_SOURCE so pthread_sigmask () is correctly
 	declared with glibc < 2.19.
