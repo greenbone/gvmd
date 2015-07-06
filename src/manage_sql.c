@@ -50628,13 +50628,48 @@ modify_setting (const gchar *uuid, const gchar *name,
 
       if (strcmp (uuid, "6765549a-934e-11e3-b358-406186ea4fc5") == 0)
         {
+          GRegex *languages_regex;
+          gboolean match;
+          /*
+           * regex: colon-separated lists of language or language and country
+           *  codes (ISO 639-1, 639-2 and 3166-1 alpha-2)
+           *  as used in the LANGUAGE env variable by gettext
+           */
+          languages_regex
+            = g_regex_new ("^(Browser Language|"
+                           "([a-z]{2,3})(_[A-Z]{2})?(@[[:alnum:]_-]+)?"
+                           "(:([a-z]{2,3})(_[A-Z]{2})?(@[[:alnum:]_-]+)?)*)$",
+                           0, 0, NULL);
+          match = g_regex_match (languages_regex, value, 0, NULL);
+          g_regex_unref (languages_regex);
+
           /* User Interface Language. */
-          if (strcmp (value, "Chinese")
-              && strcmp (value, "English")
-              && strcmp (value, "German")
-              && strcmp (value, "Browser Language"))
+          if (match)
+            {
+              // Valid languages string or "Browser Language":
+              //  keep string as it is
+            }
+          /* Legacy full language names */
+          else if (strcmp (value, "Chinese") == 0)
+            {
+              g_free (value);
+              value = g_strdup ("zh");
+            }
+          else if (strcmp (value, "English") == 0)
+            {
+              g_free (value);
+              value = g_strdup ("en");
+            }
+          else if (strcmp (value, "German") == 0)
+            {
+              g_free (value);
+              value = g_strdup ("de");
+            }
+          /* Invalid value */
+          else
             {
               g_free (quoted_uuid);
+              g_free (value);
               return 2;
             }
         }
