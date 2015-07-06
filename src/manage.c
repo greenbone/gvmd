@@ -39,6 +39,8 @@
 
 /* time.h in glibc2 needs this for strptime. */
 #define _XOPEN_SOURCE
+/* pthread_sigmask () needs this with glibc < 2.19 */
+#define _GNU_SOURCE
 
 #include "manage.h"
 #include "scanner.h"
