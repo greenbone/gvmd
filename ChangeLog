@@ -163,17 +163,17 @@
 	predefined role permission on a resource, as long as the user owns the
 	resource.
 
-2015-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
+2015-05-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r22457.
 
 	* src/manage_sql.c (check_permission_args): Correct subject check.
 
-2015-04-27  Matthew Mundell <matthew.mund...@greenbone.net>
+2015-05-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_permission): Correct function name.
 
-2015-04-27  Matthew Mundell <matthew.mund...@greenbone.net>
+2015-05-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r22207.
 
@@ -213,14 +213,14 @@
 	instead of looking for a prefix.  This was causing the global resources
 	to be excluded when a GET_XXX permission was requested.
 
-2015-04-23  Matthew Mundell <matthew.mund...@greenbone.net>
+2015-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r22378.
 
 	* src/omp.c (omp_xml_handle_end_element): Replace aborts in GET_TASKS
 	with g_errors.
 
-2015-04-21  Matthew Mundell <matthew.mund...@greenbone.net>
+2015-05-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r22181.
 
