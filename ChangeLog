@@ -1,3 +1,8 @@
+2015-07-06  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/manage.c: Define _GNU_SOURCE so pthread_sigmask () is correctly
+	declared with glibc < 2.19.
+
 2015-07-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (qod_from_type): Add case for "general_note".
