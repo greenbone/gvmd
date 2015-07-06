@@ -1,3 +1,12 @@
+2015-07-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r22695.
+
+	* src/manage_sql.c (modify_setting): Also accept colon-separated lists
+	of ISO language or language and country codes for the setting
+	"User Interface Language". Convert old names other than
+	"Browser language" to codes.
+
 2015-07-06  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Backport r22665. Original patch by Timo Pollmeier.
