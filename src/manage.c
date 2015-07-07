@@ -2778,15 +2778,13 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       severity = entity_attribute (r_entity, "severity");
       test_id = entity_attribute (r_entity, "test_id");
       host = entity_attribute (r_entity, "host");
-      port = entity_attribute (r_entity, "port");
-      qod = entity_attribute (r_entity, "qod");
+      port = entity_attribute (r_entity, "port") ?: "";
+      qod = entity_attribute (r_entity, "qod") ?: "";
       assert (name);
       assert (type);
       assert (severity);
       assert (test_id);
       assert (host);
-      assert (port);
-      assert (qod);
 
       /* Add report host if it doesn't exist. */
       manage_report_host_add (report, host, start_time, end_time);
@@ -2809,7 +2807,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
         }
 
       qod_int = atoi (qod);
-      if (atoi (qod) <= 0 || atoi (qod) > 100)
+      if (qod_int <= 0 || qod_int > 100)
         qod_int = QOD_DEFAULT;
       result = make_osp_result (task, host, nvt_id, type, desc, port ?: "",
                                 severity_str ?: severity, qod_int);
