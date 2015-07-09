@@ -1,3 +1,55 @@
+openvas-manager 6.0.4 (2015-07-09)
+
+This is the fourth maintenance release of the openvas-manager 6.0 module for
+the Open Vulnerability Assessment System release 8 (OpenVAS-8).
+
+This release addresses a number of issues discovered after the release of
+OpenVAS Manager 6.0.3 and incorporates several improvements from the development
+branch of OpenVAS. Please see below for a comprehensive list of changes.
+
+Many thanks to everyone who contributed to this release:
+Benoît Allard, Hani Benhabiles, Matthew Mundell, Timo Pollmeier and Michael
+Wiegand.
+
+Main changes compared to 6.0.3:
+* An issue which caused duplicate scan results under certain circumstances has
+  been fixed.
+* An issue which caused a segmentation fault when deleting tasks referring to
+  nonexistent targets from the trash can has been fixed.
+* An issue which caused scheduled tasks to be executed multiple times when
+  multiple users had the correct permissions has been fixed.
+* An issue which caused processes spawned by OpenVAS Manager to miss signals
+  when executing scheduled task due to an overly restrictive signal mask has
+  been fixed.
+* An issue which caused results not in the critical range to be not displayed
+  when using the PCI-DSS severity class type has been addressed.
+* An issue which cause global users to be missing from selection when creating
+  new permissions has been addressed.
+* An issue which caused the result description to not be imported correctly when
+  importing reports has been fixed.
+* An issue which caused results with the "Log" level to be missing from reports
+  when using the PostgreSQL back end has been fixed.
+* An issue which caused an internal error when using invalid minimum CVSS base
+  values has been addressed.
+* An issue with incorrect result counting has been addressed.
+* Performance of database access when a report is created from an alert has been
+  improved.
+* CVE results from OSP scanners with known CVEs now automatically use the CVE
+  severity.
+* The critical range for the PCI-DSS severity class type now correctly starts at
+  4.0 instead of 4.3.
+* Handling of CVEs associated with results has been improved.
+* Users are now allowed to create a resource permission if they have GET access
+  to the subject instead of MODIFY access.
+* Several support scripts are now executed directly instead of via an additional
+  shell.
+* The RFP "generate" scripts are now installed with executable permissions.
+* A number of issues found with static code analysis have been addressed.
+* The QoD value for "general_note" results is now set correctly.
+* Support for filtering reports by CVE has been added.
+* Timestamp support has been added for OSP scan results.
+
+
 openvas-manager 6.0.3 (2015-05-11)
 
 This is the third maintenance release of the openvas-manager 6.0 module for
