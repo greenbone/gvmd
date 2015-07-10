@@ -1904,9 +1904,8 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
 
       if (target_ssh_credential)
         {
-          init_user_lsc_credential_iterator (&credentials,
-                                             target_ssh_credential, 0,
-                                             1, NULL);
+          init_lsc_credential_iterator_one (&credentials,
+                                            target_ssh_credential);
           if (next (&credentials))
             {
               const char *user, *password, *private_key;
@@ -1950,9 +1949,8 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
 
       if (target_smb_credential)
         {
-          init_user_lsc_credential_iterator (&credentials,
-                                             target_smb_credential, 0,
-                                             1, NULL);
+          init_lsc_credential_iterator_one (&credentials,
+                                            target_smb_credential);
           if (next (&credentials))
             {
               const char *user, *password;
@@ -1991,9 +1989,8 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
 
       if (target_esxi_credential)
         {
-          init_user_lsc_credential_iterator (&credentials,
-                                             target_esxi_credential, 0,
-                                             1, NULL);
+          init_lsc_credential_iterator_one (&credentials,
+                                            target_esxi_credential);
           if (next (&credentials))
             {
               const char *user, *password;
@@ -2926,7 +2923,7 @@ get_osp_task_options (task_t task, target_t target)
       ssh_port = target_ssh_port (target);
       g_hash_table_insert (options, g_strdup ("port"), ssh_port);
 
-      init_user_lsc_credential_iterator (&iter, cred, 0, 1, NULL);
+      init_lsc_credential_iterator_one (&iter, cred);
       if (!next (&iter))
         {
           g_warning ("%s: LSC Credential not found.", __FUNCTION__);
@@ -3954,8 +3951,7 @@ run_task (const char *task_id, char **report_id, int from,
     {
       iterator_t credentials;
 
-      init_user_lsc_credential_iterator (&credentials, ssh_credential, 0, 1,
-                                         NULL);
+      init_lsc_credential_iterator_one (&credentials, ssh_credential);
       if (next (&credentials))
         {
           const char *user = lsc_credential_iterator_login (&credentials);
@@ -4013,8 +4009,7 @@ run_task (const char *task_id, char **report_id, int from,
     {
       iterator_t credentials;
 
-      init_user_lsc_credential_iterator (&credentials, smb_credential, 0, 1,
-                                         NULL);
+      init_lsc_credential_iterator_one (&credentials, smb_credential);
       if (next (&credentials))
         {
           const char *user = lsc_credential_iterator_login (&credentials);
@@ -4044,8 +4039,7 @@ run_task (const char *task_id, char **report_id, int from,
     {
       iterator_t credentials;
 
-      init_user_lsc_credential_iterator (&credentials, esxi_credential, 0, 1,
-                                         NULL);
+      init_lsc_credential_iterator_one (&credentials, esxi_credential);
       if (next (&credentials))
         {
           const char *user = lsc_credential_iterator_login (&credentials);
