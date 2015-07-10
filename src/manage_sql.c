@@ -34235,53 +34235,24 @@ set_lsc_credential_password (lsc_credential_t lsc_credential,
 }
 
 /**
- * @brief Initialise an LSC Credential iterator, limiting to user's credentials.
+ * @brief Initialise an LSC Credential iterator, given a single LSC credential.
  *
  * @param[in]  iterator        Iterator.
- * @param[in]  lsc_credential  Single LSC credential to iterate, 0 for all.
- * @param[in]  trash           Whether to iterate over trashcan credentials.
- * @param[in]  ascending       Whether to sort ascending or descending.
- * @param[in]  sort_field      Field to sort on, or NULL for "id".
+ * @param[in]  lsc_credential  Single LSC credential to iterate.
  */
 void
-init_user_lsc_credential_iterator (iterator_t* iterator,
-                                   lsc_credential_t lsc_credential, int trash,
-                                   int ascending, const char* sort_field)
+init_lsc_credential_iterator_one (iterator_t* iterator,
+                                  lsc_credential_t lsc_credential)
 {
-  gchar *columns;
-  static column_t select_columns[] = LSC_CREDENTIAL_ITERATOR_COLUMNS;
+  get_data_t get;
 
-  assert (current_credentials.uuid);
+  assert (lsc_credential);
 
-  columns = columns_build_select (select_columns);
+  memset (&get, '\0', sizeof (get));
+  get.id = lsc_credential_uuid (lsc_credential);
+  get.filter = "owner=any permission=get_lsc_credentials";
 
-  if (lsc_credential)
-    init_iterator (iterator,
-                   "SELECT %s"
-                   " FROM lsc_credentials%s"
-                   " WHERE id = %llu"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT id FROM users WHERE users.uuid = '%s')))"
-                   " ORDER BY %s %s;",
-                   columns,
-                   trash ? "_trash" : "",
-                   lsc_credential,
-                   current_credentials.uuid,
-                   sort_field ? sort_field : "id",
-                   ascending ? "ASC" : "DESC");
-  else
-    init_iterator (iterator,
-                   "SELECT %s"
-                   " FROM lsc_credentials%s"
-                   " WHERE ((owner IS NULL) OR (owner ="
-                   " (SELECT id FROM users WHERE users.uuid = '%s')))"
-                   " ORDER BY %s %s;",
-                   columns,
-                   trash ? "_trash" : "",
-                   current_credentials.uuid,
-                   sort_field ? sort_field : "id",
-                   ascending ? "ASC" : "DESC");
-  g_free (columns);
+  init_lsc_credential_iterator (iterator, &get);
 }
 
 /**

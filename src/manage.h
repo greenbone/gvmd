@@ -1818,8 +1818,7 @@ void
 set_lsc_credential_password (lsc_credential_t, const char *);
 
 void
-init_user_lsc_credential_iterator (iterator_t*, lsc_credential_t, int, int,
-                                   const char*);
+init_lsc_credential_iterator_one (iterator_t*, lsc_credential_t);
 
 int
 init_lsc_credential_iterator (iterator_t*, const get_data_t *);

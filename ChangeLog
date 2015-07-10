@@ -1,3 +1,19 @@
+2015-07-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r22772.
+
+	Adjust iterator call so that credentials are found when a user runs a
+	task that uses someone else's credentials.
+
+	* src/manage_sql.c (init_user_lsc_credential_iterator): Remove.
+	(init_lsc_credential_iterator_one): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/manage.c (slave_setup, get_osp_task_options, run_task): Use
+	init_lsc_credential_iterator_one to get credential details, so that
+	permission checks are done.
+
 2015-07-09  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post release version bump.
