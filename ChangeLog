@@ -1,3 +1,8 @@
+2015-07-10  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* doc/Doxyfile.in, doc/Doxyfile_full.in: Updated Doxygen configuration
+	files with Doxygen 1.8.8.
+
 2015-07-07  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (parse_osp_report): Add default values for qod and port
