@@ -1,5 +1,9 @@
 2015-07-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (report_counts_match): Add missing close paren.
+
+2015-07-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Adjust iterator call so that credentials are found when a user runs a
 	task that uses someone else's credentials.
 

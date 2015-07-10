@@ -19421,7 +19421,7 @@ report_counts_match (iterator_t *results, const char *search_phrase,
                       "               WHERE oid = '%s'"
                       "               AND (name LIKE '%%%%%s%%%%'"
                       "                    OR tag LIKE '%%%%=%%%%%s%%%%'"
-                      "                    OR cve LIKE '%%%%%s%%%%')",
+                      "                    OR cve LIKE '%%%%%s%%%%'))",
                       iterator_string (results, 1),
                       search_phrase,
                       search_phrase,
