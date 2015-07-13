@@ -1,3 +1,8 @@
+2015-07-13  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (init_report_errors_iterator): Simplify query to not
+	duplicate values in certain cases.
+
 2015-07-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (manage_create_sql_functions, create_tables): When
