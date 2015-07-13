@@ -1,3 +1,10 @@
+2015-07-13  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	Backport r22801.
+
+	* src/manage_sql.c (init_report_errors_iterator): Simplify query to not
+	duplicate values in certain cases.
+
 2015-07-13  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r22796.

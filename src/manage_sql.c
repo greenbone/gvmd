@@ -18069,19 +18069,15 @@ init_report_errors_iterator (iterator_t* iterator, report_t report)
   if (report)
     init_iterator (iterator,
                    "SELECT results.host, results.port, results.nvt,"
-                   " results.description, nvts.name, nvts.cvss_base,"
+                   " results.description,"
+                   " coalesce((SELECT name FROM nvts"
+                   "           WHERE nvts.oid = results.nvt), ''),"
+                   " coalesce((SELECT cvss_base FROM nvts"
+                   "           WHERE nvts.oid = results.nvt), ''),"
                    " results.nvt_version, results.severity"
-                   " FROM results, nvts"
+                   " FROM results"
                    " WHERE results.type = 'Error Message'"
-                   "  AND results.nvt = nvts.oid"
-                   "  AND results.report = %llu"
-                   " UNION ALL SELECT results.host, results.port, results.nvt,"
-                   "  results.description, '', '',"
-                   "  results.nvt_version, results.severity"
-                   "  FROM results"
-                   "  WHERE results.type = 'Error Message'"
-                   "   AND results.report = %llu",
-                   report,
+                   "  AND results.report = %llu",
                    report);
 }
 
