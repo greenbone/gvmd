@@ -439,6 +439,7 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
  * @param[in]  client_session      Client session.
  * @param[in]  client_credentials  Client credentials.
  * @param[in]  uuid                UUID of schedule user.
+ * @param[in]  sigmask_current     Sigmask to restore in child.
  *
  * @return PID parent on success, 0 child on success, -1 error.
  */
@@ -447,7 +448,8 @@ fork_connection_for_schedular (int *client_socket,
                                gnutls_session_t *client_session,
                                gnutls_certificate_credentials_t
                                *client_credentials,
-                               gchar* uuid)
+                               gchar* uuid,
+                               sigset_t *sigmask_current)
 {
   int pid, parent_client_socket, ret;
   int sockets[2];
@@ -479,9 +481,12 @@ fork_connection_for_schedular (int *client_socket,
   /* This is now a child of the main Manager process.  It forks again.  The
    * only case that returns is the process that the caller can use for OMP
    * commands.  The caller must exit this process.
-   *
-   * Create a connected pair of sockets. */
+   */
 
+  /* Restore the sigmask that was blanked for pselect. */
+  pthread_sigmask (SIG_SETMASK, sigmask_current, NULL);
+
+  /* Create a connected pair of sockets. */
   if (socketpair (AF_UNIX, SOCK_STREAM, 0, sockets))
     {
       g_warning ("%s: socketpair: %s\n", __FUNCTION__, strerror (errno));
