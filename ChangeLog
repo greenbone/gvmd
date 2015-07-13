@@ -1,3 +1,18 @@
+2015-07-13  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r22796.
+
+	* src/manage.c (manage_schedule): Add a sigset_t* parameter to
+	the parameter fork_connection and pass sigmask_current to
+	fork_connection.
+
+	* src/manage.h (manage_schedule): Add a sigset_t* parameter to
+	the first parameter (fork_connection).
+
+	* src/openvasmd.c (fork_connection_for_schedular): Add parameter
+	sigmask_current and used it to restore the sigmask in the child of the
+	first fork.
+
 2015-07-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r22772.

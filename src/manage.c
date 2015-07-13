@@ -4655,7 +4655,7 @@ int
 manage_schedule (int (*fork_connection) (int *,
                                          gnutls_session_t *,
                                          gnutls_certificate_credentials_t *,
-                                         gchar*),
+                                         gchar*, sigset_t*),
                  gboolean run_tasks,
                  sigset_t *sigmask_current)
 {
@@ -4849,7 +4849,8 @@ manage_schedule (int (*fork_connection) (int *,
 
       /* Run the callback to fork a child connected to the Manager. */
 
-      pid = fork_connection (&socket, &session, &credentials, owner_uuid);
+      pid = fork_connection (&socket, &session, &credentials, owner_uuid,
+                             sigmask_current);
       switch (pid)
         {
           case 0:
@@ -5021,7 +5022,8 @@ manage_schedule (int (*fork_connection) (int *,
 
       /* Run the callback to fork a child connected to the Manager. */
 
-      switch (fork_connection (&socket, &session, &credentials, owner_uuid))
+      switch (fork_connection (&socket, &session, &credentials, owner_uuid,
+                               sigmask_current))
         {
           case 0:
             /* Child.  Break, stop task, exit. */

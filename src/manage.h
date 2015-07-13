@@ -2295,7 +2295,8 @@ int
 manage_schedule (int (*) (int *,
                           gnutls_session_t *,
                           gnutls_certificate_credentials_t *,
-                          gchar*),
+                          gchar*,
+                          sigset_t*),
                  gboolean,
                  sigset_t *sigmask_current);
 
