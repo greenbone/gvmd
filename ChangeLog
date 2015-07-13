@@ -1,3 +1,12 @@
+2015-07-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_pg.c (manage_create_sql_functions, create_tables): When
+	getting the severity of a result dynamically from the nvts table, fall back
+	to the static result severity when the nvts table value is NULL, because
+	results of OSP scans do not have an associated NVT in the nvts table.
+
+	* src/manage_sqlite3.c (create_tables): As above.
+
 2015-07-13  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage.c (manage_schedule): Add a sigset_t* parameter to
