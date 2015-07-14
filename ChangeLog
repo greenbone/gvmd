@@ -1,5 +1,9 @@
 2015-07-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* CMakeLists.txt: Missed in last commit.
+
+2015-07-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Increase database version to 150 for change to result_new_severities
 	view.  Add database migration from version 149 to 150.
 
