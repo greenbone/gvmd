@@ -10076,7 +10076,7 @@ migrate_146_to_147 ()
 
   /* Update the database. */
 
-  /* The view result_overrides changed. */
+  /* The report_counts table got a min_qod column. */
   sql ("ALTER TABLE report_counts ADD COLUMN min_qod INTEGER;");
   sql ("UPDATE report_counts SET min_qod = %d;", MIN_QOD_DEFAULT);
 
@@ -10142,13 +10142,45 @@ migrate_148_to_149 ()
 
   /* Update the database. */
 
-  /* The view result_overrides changed. */
+  /* The tasks table got a scanner_location column. */
   sql ("ALTER TABLE tasks ADD COLUMN scanner_location INTEGER;");
   sql ("UPDATE tasks SET scanner_location = " G_STRINGIFY (LOCATION_TABLE));
 
   /* Set the database version to 149. */
 
   set_db_version (149);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 149 to version 150.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_149_to_150 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 149. */
+
+  if (manage_db_version () != 149)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The view result_new_severities changed. */
+  sql ("DROP VIEW IF EXISTS result_new_severities;");
+
+  /* Set the database version to 150. */
+
+  set_db_version (150);
 
   sql ("COMMIT;");
 
@@ -10315,6 +10347,7 @@ static migrator_t database_migrators[]
     {147, migrate_146_to_147},
     {148, migrate_147_to_148},
     {149, migrate_148_to_149},
+    {150, migrate_149_to_150},
     /* End marker. */
     {-1, NULL}};
 

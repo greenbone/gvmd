@@ -1,3 +1,13 @@
+2015-07-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Increase database version to 150 for change to result_new_severities
+	view.  Add database migration from version 149 to 150.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 150.
+
+	* src/manage_migrators.c (migrate_149_to_150): New function.
+	(database_migrators): Add migrate_149_to_150.
+
 2015-07-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Add filter and get_aggregate columns with host counts and result counts
@@ -383,7 +393,7 @@
 
 2015-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	Ensure all existing generate scripts are executalbe.  Hence increase
+	Ensure all existing generate scripts are executable.  Hence increase
 	database version to 147.  Add database migration from version 146 to
 	147.
 
