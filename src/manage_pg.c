@@ -938,6 +938,25 @@ manage_create_sql_functions ()
              "         END;"
              "$$ LANGUAGE SQL;");
 
+      sql ("CREATE OR REPLACE FUNCTION report_host_count (report integer)"
+            " RETURNS integer AS $$"
+            "  SELECT count (DISTINCT id) FROM report_hosts"
+            "  WHERE report_hosts.report = $1"
+            "    AND EXISTS (SELECT * FROM results"
+            "                WHERE results.host = report_hosts.host"
+            "                  AND results.qod >= %d)",
+            "$$ LANGUAGE SQL;");
+
+      sql ("CREATE OR REPLACE FUNCTION report_result_host_count (report integer,"
+            "                                                     min_qod integer)"
+            " RETURNS integer AS $$"
+            "  SELECT count (DISTINCT id) FROM report_hosts"
+            "  WHERE report_hosts.report = $1"
+            "    AND EXISTS (SELECT * FROM results"
+            "                WHERE results.host = report_hosts.host"
+            "                  AND results.qod >= $2)",
+            "$$ LANGUAGE SQL;");
+
       sql ("CREATE OR REPLACE FUNCTION severity_class ()"
            " RETURNS text AS $$"
            /* Get the user's severity class setting. */

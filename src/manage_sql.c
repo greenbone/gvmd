@@ -2725,7 +2725,12 @@ filter_clause (const char* type, const char* filter,
                        || strcmp (keyword->string, "original_severity") == 0
                        || strcmp (keyword->string, "cvss") == 0
                        || strcmp (keyword->string, "cvss_base") == 0
-                       || strcmp (keyword->string, "max_cvss") == 0)
+                       || strcmp (keyword->string, "max_cvss") == 0
+                       || strcmp (keyword->string, "fp_per_host") == 0
+                       || strcmp (keyword->string, "log_per_host") == 0
+                       || strcmp (keyword->string, "low_per_host") == 0
+                       || strcmp (keyword->string, "medium_per_host") == 0
+                       || strcmp (keyword->string, "high_per_host") == 0)
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
@@ -2762,7 +2767,9 @@ filter_clause (const char* type, const char* filter,
                        || (strcmp (keyword->string, "medium") == 0)
                        || (strcmp (keyword->string, "low") == 0)
                        || (strcmp (keyword->string, "log") == 0)
-                       || (strcmp (keyword->string, "false_positive") == 0))
+                       || (strcmp (keyword->string, "false_positive") == 0)
+                       || (strcmp (keyword->string, "hosts") == 0)
+                       || (strcmp (keyword->string, "result_hosts") == 0))
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
@@ -2846,7 +2853,12 @@ filter_clause (const char* type, const char* filter,
                        || strcmp (keyword->string, "original_severity") == 0
                        || strcmp (keyword->string, "cvss") == 0
                        || strcmp (keyword->string, "cvss_base") == 0
-                       || strcmp (keyword->string, "max_cvss") == 0)
+                       || strcmp (keyword->string, "max_cvss") == 0
+                       || strcmp (keyword->string, "fp_per_host") == 0
+                       || strcmp (keyword->string, "log_per_host") == 0
+                       || strcmp (keyword->string, "low_per_host") == 0
+                       || strcmp (keyword->string, "medium_per_host") == 0
+                       || strcmp (keyword->string, "high_per_host") == 0)
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
@@ -2883,7 +2895,9 @@ filter_clause (const char* type, const char* filter,
                        || (strcmp (keyword->string, "medium") == 0)
                        || (strcmp (keyword->string, "low") == 0)
                        || (strcmp (keyword->string, "log") == 0)
-                       || (strcmp (keyword->string, "false_positive") == 0))
+                       || (strcmp (keyword->string, "false_positive") == 0)
+                       || (strcmp (keyword->string, "hosts") == 0)
+                       || (strcmp (keyword->string, "result_hosts") == 0))
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
@@ -4662,6 +4676,17 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
         trash_extra = g_strdup (" AND hidden = 2");
       else
         trash_extra = g_strdup (" AND hidden = 0");
+    }
+  else if (strcasecmp (type, "REPORT") == 0)
+    {
+      if (get->trash)
+        trash_extra = g_strdup (" AND (SELECT hidden FROM tasks"
+                                "      WHERE tasks.id = task)"
+                                "     = 2");
+      else
+        trash_extra = g_strdup (" AND (SELECT hidden FROM tasks"
+                                "      WHERE tasks.id = task)"
+                                "     = 0");
     }
   else
     trash_extra = g_strdup ("");
@@ -16266,7 +16291,8 @@ report_add_result (report_t report, result_t result)
 #define REPORT_ITERATOR_FILTER_COLUMNS                                         \
  { ANON_GET_ITERATOR_FILTER_COLUMNS, "task_id", "name", "date", "status",      \
    "task", "severity", "false_positive", "log", "low", "medium", "high",       \
-   NULL }
+   "hosts", "result_hosts", "fp_per_host", "log_per_host", "low_per_host",     \
+   "medium_per_host", "high_per_host", NULL }
 
 /**
  * @brief Report iterator columns.
@@ -16314,6 +16340,31 @@ report_add_result (report_t report, result_t result)
      "(SELECT name FROM users WHERE users.id = reports.owner)",              \
      "_owner"                                                                \
    },                                                                        \
+   {                                                                         \
+     "report_host_count (id)",                                               \
+     "hosts"                                                                 \
+   },                                                                        \
+   {                                                                         \
+     "report_result_host_count (id, opts.min_qod)",                          \
+     "result_hosts"                                                          \
+   },                                                                        \
+   {                                                                         \
+     "(report_severity_count (id, opts.override, opts.min_qod,"              \
+     "                        'False Positive')"                             \
+     " / report_result_host_count (id, opts.min_qod))",                      \
+     "fp_per_host" },                                                        \
+   { "(report_severity_count (id, opts.override, opts.min_qod, 'Log')"       \
+     " / report_result_host_count (id, opts.min_qod))",                      \
+     "log_per_host" },                                                       \
+   { "(report_severity_count (id, opts.override, opts.min_qod, 'Low')"       \
+     " / report_result_host_count (id, opts.min_qod))",                      \
+     "low_per_host" },                                                       \
+   { "(report_severity_count (id, opts.override, opts.min_qod, 'Medium')"    \
+     " / report_result_host_count (id, opts.min_qod))",                      \
+     "medium_per_host" },                                                    \
+   { "(report_severity_count (id, opts.override, opts.min_qod, 'High')"      \
+     " / report_result_host_count (id, opts.min_qod))",                      \
+     "high_per_host" },                                                      \
    { NULL, NULL }                                                            \
  }
 
@@ -22009,12 +22060,32 @@ report_filter_term (int sort_order, const char* sort_field,
  *
  * @return Host count.
  */
-static int
+int
 report_host_count (report_t report)
 {
   return sql_int ("SELECT count (DISTINCT id) FROM report_hosts"
                   " WHERE report = %llu;",
                   report);
+}
+
+/**
+ * @brief Count a report's total number of hosts with results.
+ *
+ * @param[in]   report         Report.
+ * @param[in]   min_qod        Minimum QoD of results to count.
+ *
+ * @return The number of hosts with results
+ */
+int
+report_result_host_count (report_t report, int min_qod)
+{
+  return sql_int ("SELECT count (DISTINCT id) FROM report_hosts"
+                  " WHERE report_hosts.report = %llu"
+                  "   AND EXISTS (SELECT * FROM results"
+                  "               WHERE results.host = report_hosts.host"
+                  "                 AND results.qod >= %d)",
+                  report,
+                  min_qod);
 }
 
 /**
@@ -54852,6 +54923,11 @@ type_columns (const char *type, int apply_overrides)
       static column_t columns[] = TASK_ITERATOR_COLUMNS;
       return columns_build_select (columns);
     }
+  else if (strcasecmp (type, "REPORT") == 0)
+    {
+      static column_t columns[] = REPORT_ITERATOR_COLUMNS;
+      return columns_build_select (columns);
+    }
   else if (strcasecmp (type, "ALLINFO") == 0)
     {
       static column_t columns[] = ALL_INFO_ITERATOR_COLUMNS;
@@ -54906,6 +54982,7 @@ column_t *
 type_select_columns (const char *type, int apply_overrides)
 {
   static column_t task_columns[] = TASK_ITERATOR_COLUMNS;
+  static column_t report_columns[] = REPORT_ITERATOR_COLUMNS;
   static column_t allinfo_columns[] = ALL_INFO_ITERATOR_COLUMNS;
   static column_t cpe_columns[] = CPE_INFO_ITERATOR_COLUMNS;
   static column_t cve_columns[] = CVE_INFO_ITERATOR_COLUMNS;
@@ -54919,6 +54996,8 @@ type_select_columns (const char *type, int apply_overrides)
     return NULL;
   else if (strcasecmp (type, "TASK") == 0)
     return task_columns;
+  else if (strcasecmp (type, "REPORT") == 0)
+    return report_columns;
   else if (strcasecmp (type, "ALLINFO") == 0)
     return allinfo_columns;
   else if (strcasecmp (type, "CPE") == 0)
@@ -54954,6 +55033,11 @@ type_filter_columns (const char *type, int apply_overrides)
   else if (strcasecmp (type, "TASK") == 0)
     {
       static const char *ret[] = TASK_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
+  else if (strcasecmp (type, "REPORT") == 0)
+    {
+      static const char *ret[] = REPORT_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
   else if (strcasecmp (type, "ALLINFO") == 0)
@@ -55044,6 +55128,10 @@ type_opts_table (const char *type, int apply_overrides, int min_qod)
   else if (strcasecmp (type, "TASK") == 0)
     {
       return task_iterator_opts_table (apply_overrides, min_qod);
+    }
+  else if (strcasecmp (type, "REPORT") == 0)
+    {
+      return report_iterator_opts_table (apply_overrides, min_qod);
     }
   else
     return NULL;

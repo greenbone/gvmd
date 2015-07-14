@@ -1,3 +1,30 @@
+2015-07-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add filter and get_aggregate columns with host counts and result counts
+	per host for each severity level.
+
+	* src/manage_pg.c (manage_create_sql_functions): Add functions
+	report_host_count and report_result_host_count.
+
+	* src/manage_sql.c (filter_clause): Sort new report columns by
+	numeric value.
+	(init_aggregate_iterator): Check the Task's field "hidden" for Reports.
+	(REPORT_ITERATOR_FILTER_COLUMNS, REPORT_ITERATOR_COLUMNS): Add columns
+	"hosts", "result_hosts", "fp_per_host", "log_by_host","low_per_host",
+	"medium_per_host" and "high_per_host".
+	(report_host_count): Make non-static.
+	(report_result_host_count): New function.
+	(type_columns, type_select_columns, type_filter_columns)
+	(type_opts_table): Add cases for type "REPORT".
+
+	* src/manage_sqlite3.c (sql_report_host_count)
+	(sql_report_result_host_count): New functions.
+	(manage_create_sql_functions): Add functions report_host_count and
+	report_result_host_count.
+
+	* src/manage.h (report_host_count, report_result_host_count): New
+	function prototypes.
+
 2015-07-13  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (init_report_errors_iterator): Simplify query to not

@@ -930,6 +930,12 @@ report_cache_counts (report_t);
 double
 report_severity (report_t, int, int);
 
+int
+report_host_count (report_t);
+
+int
+report_result_host_count (report_t, int);
+
 gboolean
 find_report_with_permission (const char *, report_t *, const char *);
 

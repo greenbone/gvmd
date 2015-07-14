@@ -1187,6 +1187,74 @@ sql_report_severity_count (sqlite3_context *context, int argc,
 }
 
 /**
+ * @brief Count the number of hosts of a report.
+ *
+ * This is a callback for a scalar SQL function of one argument.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_report_host_count (sqlite3_context *context,
+                       int argc, sqlite3_value** argv)
+{
+  report_t report;
+  int host_count;
+
+  assert (argc == 1);
+
+  report = sqlite3_value_int64 (argv[0]);
+  if (report == 0)
+    {
+      sqlite3_result_text (context, "", -1, SQLITE_TRANSIENT);
+      return;
+    }
+
+  host_count = report_host_count (report);
+
+  sqlite3_result_int (context, host_count);
+  return;
+}
+
+/**
+ * @brief Count the number of hosts of a report with results.
+ *
+ * This is a callback for a scalar SQL function of two arguments.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_report_result_host_count (sqlite3_context *context,
+                              int argc, sqlite3_value** argv)
+{
+  report_t report;
+  int min_qod;
+  int host_count;
+
+  assert (argc == 2);
+
+  report = sqlite3_value_int64 (argv[0]);
+  if (report == 0)
+    {
+      sqlite3_result_text (context, "", -1, SQLITE_TRANSIENT);
+      return;
+    }
+
+  if (sqlite3_value_type (argv[1]) == SQLITE_NULL)
+    min_qod = MIN_QOD_DEFAULT;
+  else
+    min_qod = sqlite3_value_int (argv[1]);
+
+  host_count = report_result_host_count (report, min_qod);
+
+  sqlite3_result_int (context, host_count);
+  return;
+}
+
+/**
  * @brief Calculate the severity of a task.
  *
  * This is a callback for a scalar SQL function of two arguments.
@@ -1954,6 +2022,34 @@ manage_create_sql_functions ()
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create report_severity_count", __FUNCTION__);
+      return -1;
+    }
+
+  if (sqlite3_create_function (task_db,
+                               "report_host_count",
+                               1,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_report_host_count,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create report_result_host_count", __FUNCTION__);
+      return -1;
+    }
+
+  if (sqlite3_create_function (task_db,
+                               "report_result_host_count",
+                               2,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_report_result_host_count,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create report_result_host_count", __FUNCTION__);
       return -1;
     }
 
