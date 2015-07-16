@@ -16349,21 +16349,34 @@ report_add_result (report_t report, result_t result)
      "result_hosts"                                                          \
    },                                                                        \
    {                                                                         \
-     "(report_severity_count (id, opts.override, opts.min_qod,"              \
-     "                        'False Positive')"                             \
-     " / report_result_host_count (id, opts.min_qod))",                      \
+     "coalesce (report_severity_count (id, opts.override, opts.min_qod,"     \
+     "                                 'False Positive') * 1.0"              \
+     "            / nullif (report_result_host_count (id, opts.min_qod), 0),"\
+     "          0)",                                                         \
      "fp_per_host" },                                                        \
-   { "(report_severity_count (id, opts.override, opts.min_qod, 'Log')"       \
-     " / report_result_host_count (id, opts.min_qod))",                      \
+   {                                                                         \
+     "coalesce (report_severity_count (id, opts.override, opts.min_qod,"     \
+     "                                 'Log') * 1.0"                         \
+     "            / nullif (report_result_host_count (id, opts.min_qod), 0),"\
+     "          0)",                                                         \
      "log_per_host" },                                                       \
-   { "(report_severity_count (id, opts.override, opts.min_qod, 'Low')"       \
-     " / report_result_host_count (id, opts.min_qod))",                      \
+   {                                                                         \
+     "coalesce (report_severity_count (id, opts.override, opts.min_qod,"     \
+     "                                 'Low') * 1.0"                         \
+     "            / nullif (report_result_host_count (id, opts.min_qod), 0),"\
+     "          0)",                                                         \
      "low_per_host" },                                                       \
-   { "(report_severity_count (id, opts.override, opts.min_qod, 'Medium')"    \
-     " / report_result_host_count (id, opts.min_qod))",                      \
+   {                                                                         \
+     "coalesce (report_severity_count (id, opts.override, opts.min_qod,"     \
+     "                                 'Medium') * 1.0"                      \
+     "            / nullif (report_result_host_count (id, opts.min_qod), 0),"\
+     "          0)",                                                         \
      "medium_per_host" },                                                    \
-   { "(report_severity_count (id, opts.override, opts.min_qod, 'High')"      \
-     " / report_result_host_count (id, opts.min_qod))",                      \
+   {                                                                         \
+     "coalesce (report_severity_count (id, opts.override, opts.min_qod,"     \
+     "                                 'High') * 1.0"                        \
+     "            / nullif (report_result_host_count (id, opts.min_qod), 0),"\
+     "          0)",                                                         \
      "high_per_host" },                                                      \
    { NULL, NULL }                                                            \
  }
