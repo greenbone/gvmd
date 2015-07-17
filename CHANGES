@@ -1,3 +1,37 @@
+openvas-manager 6.1+beta1 (2014-07-17)
+
+This is the first beta version of the upcoming 6.1 release of the OpenVAS
+Manager. It is the central management service between the actual security
+scanners and various user clients.
+
+This release moves authentication configuration from file based function to the
+Manager database. It also adds support for CVE scanning and contains a number of
+other improvements.
+
+Please make sure to read the INSTALL file for important installation and
+migration information, even and especially if you have used OpenVAS Manager
+before.
+
+Many thanks to everyone who has contributed to this release:
+Benoît Allard, Hani Benhabiles, Sven Haardiek, Matthew Mundell, Timo Pollmeier and Michael Wiegand.
+
+Main changes since 6.0 series:
+* The required minimum version of OpenVAS Libraries has been raised to 8.1.0.
+* Authentication checks are now handled locally instead of file based OpenVAS
+  Libraries functions.
+* Permission management has been improved.
+* OSP support has been improved.
+* Support for CVE scanning has been added.
+* Handling of QoD information has been improved.
+* PostgreSQL support has been improved.
+* Internal improvements.
+* The built-in LaTeX report format has been improved.
+* Support for running cppcheck from the build environment has been added.
+* A number of issues discovered through static code analysis have been
+  addressed.
+* Documentation has been updated.
+
+
 openvas-manager 6.0.1 (2015-04-01)
 
 This is the first maintenance release of the openvas-manager 6.0 module for
