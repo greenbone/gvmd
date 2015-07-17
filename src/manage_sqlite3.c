@@ -178,7 +178,7 @@ sql_strpos (sqlite3_context *context, int argc,
  * @param[in]  argv     Argument array.
  */
 void
-sql_inet (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_order_inet (sqlite3_context *context, int argc, sqlite3_value** argv)
 {
   const char *ip;
   unsigned int one, two, three, four;
@@ -1718,16 +1718,16 @@ manage_create_sql_functions ()
     }
 
   if (sqlite3_create_function (task_db,
-                               "inet",
+                               "order_inet",
                                1,               /* Number of args. */
                                SQLITE_UTF8,
                                NULL,            /* Callback data. */
-                               sql_inet,
+                               sql_order_inet,
                                NULL,            /* xStep. */
                                NULL)            /* xFinal. */
       != SQLITE_OK)
     {
-      g_warning ("%s: failed to create inet", __FUNCTION__);
+      g_warning ("%s: failed to create order_inet", __FUNCTION__);
       return -1;
     }
 

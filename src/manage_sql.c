@@ -15260,9 +15260,9 @@ prognosis_order_by (const char* sort_field, int ascending)
   else if (strcmp (sort_field, "host") == 0)
     g_string_append_printf (order_sql,
                             " ORDER BY"
-                            " inet ((SELECT host FROM report_hosts"
-                            "        WHERE id"
-                            "              = report_host_details.report_host))"
+                            " order_inet"
+                            "  ((SELECT host FROM report_hosts"
+                            "    WHERE id = report_host_details.report_host))"
                             " %s,"
                             " severity DESC",
                             ascending ? "ASC" : "DESC");
@@ -17397,7 +17397,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
       else if (strcmp (sort_field, "port") == 0)
         order_sql = g_strdup_printf (" ORDER BY"
                                      " order_port (port) %s,"
-                                     " inet (host),"
+                                     " order_inet (host),"
                                      " (CASE WHEN %s IS NULL"
                                      "  THEN CAST (%s AS REAL)"
                                      "  ELSE " G_STRINGIFY (SEVERITY_FP)
@@ -17418,7 +17418,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                      auto_type_sql);
       else if (strcmp (sort_field, "host") == 0)
         order_sql = g_strdup_printf (" ORDER BY"
-                                     " inet (host) %s,"
+                                     " order_inet (host) %s,"
                                      " (CASE WHEN %s IS NULL"
                                      "  THEN CAST (%s AS REAL)"
                                      "  ELSE " G_STRINGIFY (SEVERITY_FP)
@@ -17441,7 +17441,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
         order_sql = g_strdup_printf (" ORDER BY"
                                      " vulnerability %s,"
                                      " order_port (port),"
-                                     " inet (host),"
+                                     " order_inet (host),"
                                      " (CASE WHEN %s IS NULL"
                                      "  THEN CAST (%s AS REAL)"
                                      "  ELSE " G_STRINGIFY (SEVERITY_FP)
@@ -17465,7 +17465,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                      " solution_type %s,"
                                      " vulnerability,"
                                      " order_port (port),"
-                                     " inet (host),"
+                                     " order_inet (host),"
                                      " (CASE WHEN %s IS NULL"
                                      "  THEN CAST (%s AS REAL)"
                                      "  ELSE " G_STRINGIFY (SEVERITY_FP)
@@ -17489,7 +17489,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                      " qod %s,"
                                      " vulnerability,"
                                      " order_port (port),"
-                                     " inet (host),"
+                                     " order_inet (host),"
                                      " (CASE WHEN %s IS NULL"
                                      "  THEN CAST (%s AS REAL)"
                                      "  ELSE " G_STRINGIFY (SEVERITY_FP)
@@ -17521,7 +17521,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                      "  END)"
                                      " DESC,"
                                      " order_port (port),"
-                                     " inet (host),"
+                                     " order_inet (host),"
                                      " (CASE"
                                      "  WHEN CAST (" CVSS_BASE_SQL " AS REAL)"
                                      "       >= 0.0"
@@ -18156,7 +18156,7 @@ init_host_iterator (iterator_t* iterator, report_t report, const char *host,
                        " FROM report_hosts WHERE id = %llu"
                        " AND report = %llu"
                        "%s%s%s"
-                       " ORDER BY inet (host);",
+                       " ORDER BY order_inet (host);",
                        report_host,
                        report,
                        host ? " AND host = '" : "",
@@ -18169,7 +18169,7 @@ init_host_iterator (iterator_t* iterator, report_t report, const char *host,
                        " (SELECT uuid FROM reports WHERE id = report)"
                        " FROM report_hosts WHERE report = %llu"
                        "%s%s%s"
-                       " ORDER BY inet (host);",
+                       " ORDER BY order_inet (host);",
                        report,
                        host ? " AND host = '" : "",
                        host ? host : "",
@@ -18184,7 +18184,7 @@ init_host_iterator (iterator_t* iterator, report_t report, const char *host,
                        " (SELECT uuid FROM reports WHERE id = report)"
                        " FROM report_hosts WHERE id = %llu"
                        "%s%s%s"
-                       " ORDER BY inet (host);",
+                       " ORDER BY order_inet (host);",
                        report_host,
                        host ? " AND host = '" : "",
                        host ? host : "",
@@ -18196,7 +18196,7 @@ init_host_iterator (iterator_t* iterator, report_t report, const char *host,
                        " (SELECT uuid FROM reports WHERE id = report)"
                        " FROM report_hosts"
                        "%s%s%s"
-                       " ORDER BY inet (host);",
+                       " ORDER BY order_inet (host);",
                        host ? " WHERE host = '" : "",
                        host ? host : "",
                        host ? "'" : "");
@@ -18617,9 +18617,9 @@ init_asset_iterator (iterator_t* iterator, int first_result,
            (iterator,
             "SELECT"
             " distinct_host"
-            " FROM (SELECT DISTINCT host AS distinct_host, inet (host)"
+            " FROM (SELECT DISTINCT host AS distinct_host, order_inet (host)"
             "       FROM report_hosts"
-            "       ORDER BY inet (host))"
+            "       ORDER BY order_inet (host))"
             "      AS distinct_host_subquery"
             /* Search IP. */
             " WHERE (distinct_host LIKE '%%%s%%%'"
@@ -18658,9 +18658,9 @@ init_asset_iterator (iterator_t* iterator, int first_result,
          (iterator,
           "SELECT"
           " distinct_host"
-          " FROM (SELECT DISTINCT host AS distinct_host, inet (host)"
+          " FROM (SELECT DISTINCT host AS distinct_host, order_inet (host)"
           "       FROM report_hosts"
-          "       ORDER BY inet (host))"
+          "       ORDER BY order_inet (host))"
           "      AS distinct_host_subquery"
           " WHERE EXISTS (SELECT results.id"
           "               FROM results"
@@ -18712,7 +18712,7 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                      "       OR name = 'ports')"
                      "  AND source_type = 'nvt'"
                      "  AND value LIKE '%%%s%%')"
-                     " ORDER BY inet (host)"
+                     " ORDER BY order_inet (host)"
                      " LIMIT %s OFFSET %i;",
                      quoted_search_phrase,
                      quoted_search_phrase,
@@ -18722,7 +18722,7 @@ init_asset_iterator (iterator_t* iterator, int first_result,
     }
   else
     init_iterator (iterator,
-                   "SELECT DISTINCT host, inet (host) FROM report_hosts"
+                   "SELECT DISTINCT host, order_inet (host) FROM report_hosts"
                    " WHERE report_hosts.report"
                    "     IN (SELECT reports.id FROM reports"
                    "         WHERE user_owns ('task', reports.task))"
@@ -18738,7 +18738,7 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                    "      AND task_preferences.name = 'in_assets')"
                    "     = 'yes'"
                    " AND report_hosts.end_time IS NOT NULL"
-                   " ORDER BY inet (host)"
+                   " ORDER BY order_inet (host)"
                    " LIMIT %s OFFSET %i;",
                    sql_select_limit (max_results),
                    first_result);
@@ -21936,7 +21936,7 @@ filtered_host_count (const char *levels, const char *search_phrase,
                       "        OR name = 'ports')"
                       "   AND source_type = 'nvt'"
                       "   AND value LIKE '%%%s%%')"
-                      "  ORDER BY inet (host);",
+                      "  ORDER BY order_inet (host);",
                       quoted_search_phrase,
                       quoted_search_phrase);
       g_free (quoted_search_phrase);

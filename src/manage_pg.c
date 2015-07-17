@@ -417,6 +417,21 @@ manage_create_sql_functions ()
        " END;"
        "$$ LANGUAGE plpgsql;");
 
+  sql ("CREATE OR REPLACE FUNCTION order_inet (text)"
+       " RETURNS text AS $$"
+       " BEGIN"
+       "   IF $1 ~ '^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+' THEN"
+       "     RETURN chr (1)" /* Make IPs sort before hostnames. */
+       "            || chr (split_part ($1, '.', 1)::integer + 1)"
+       "            || chr (split_part ($1, '.', 2)::integer + 1)"
+       "            || chr (split_part ($1, '.', 3)::integer + 1)"
+       "            || chr (split_part ($1, '.', 4)::integer + 1);"
+       "   ELSE"
+       "     RETURN $1;"
+       "   END IF;"
+       " END;"
+       "$$ LANGUAGE plpgsql;");
+
   sql ("CREATE OR REPLACE FUNCTION order_message_type (text)"
        " RETURNS integer AS $$"
        " BEGIN"

@@ -1,3 +1,16 @@
+2015-07-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Handle free-form text in Postgres sorting of hosts, instead of requiring
+	IPs.
+
+	* src/manage_sql.c: Replace uses of inet with order_inet, in SQL.
+
+	* src/manage_pg.c (manage_create_sql_functions): Add order_inet.
+
+	* src/manage_pg.c (sql_inet): Remove.  Now sql_order_inet.
+	(sql_oder_inet): New function.  Was sql_inet.
+	(manage_create_sql_functions): Rename inet to order_inet.
+
 2015-07-17  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post-release version bump.
