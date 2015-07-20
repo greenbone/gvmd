@@ -11721,6 +11721,7 @@ check_scanner_cert (const char *cert_str)
 {
   gnutls_x509_crt_t crt;
   gnutls_datum_t data;
+  int ret = 0;
 
   assert (cert_str);
   if (gnutls_x509_crt_init (&crt))
@@ -11733,9 +11734,20 @@ check_scanner_cert (const char *cert_str)
       g_free (data.data);
       return 1;
     }
+
+  if (time (NULL) > gnutls_x509_crt_get_expiration_time (crt))
+    {
+      g_warning ("Certificate expiration time passed");
+      ret = 1;
+    }
+  if (time (NULL) < gnutls_x509_crt_get_activation_time (crt))
+    {
+      g_warning ("Certificate activation time in the future");
+      ret = 1;
+    }
   g_free (data.data);
   gnutls_x509_crt_deinit (crt);
-  return 0;
+  return ret;
 }
 
 /**

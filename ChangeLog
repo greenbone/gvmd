@@ -1,3 +1,8 @@
+2015-07-20  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/omp.c (check_scanner_cert): Check certificate activation and
+	expiration times.
+
 2015-07-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add "subject" and "message" method data for email alerts, so that the
