@@ -1,3 +1,10 @@
+2015-07-20  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	Backport r22861.
+
+	* src/omp.c (check_scanner_cert): Check certificate activation and
+	expiration times.
+
 2015-07-13  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	Backport r22801.
