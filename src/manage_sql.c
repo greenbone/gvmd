@@ -5847,6 +5847,7 @@ validate_alert_condition_data (gchar *name, gchar* data,
  * @return 0 success, 1 escalation exists already, 2 validation of email failed,
  *         3 failed to find filter, 4 type must be "result" if specified,
  *         5 unexpected condition data name, 6 syntax error in condition data,
+ *         7 email subject too long, 8 email message too long,
  *         99 permission denied, -1 error.
  */
 int
@@ -6002,6 +6003,26 @@ create_alert (const char* name, const char* comment, const char* filter_id,
           return 2;
         }
 
+      if (method == ALERT_METHOD_EMAIL
+          && strcmp (name, "subject") == 0
+          && strlen (data) > 80)
+        {
+          g_free (name);
+          g_free (data);
+          sql ("ROLLBACK;");
+          return 7;
+        }
+
+      if (method == ALERT_METHOD_EMAIL
+          && strcmp (name, "message") == 0
+          && strlen (data) > 1000)
+        {
+          g_free (name);
+          g_free (data);
+          sql ("ROLLBACK;");
+          return 8;
+        }
+
       sql ("INSERT INTO alert_method_data (alert, name, data)"
            " VALUES (%llu, '%s', '%s');",
            *alert,
@@ -6095,6 +6116,7 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
  *         3 alert_id required, 4 failed to find filter, 5 filter type must be
  *         result if specified, 6 Provided email address not valid,
  *         7 unexpected condition data name, 8 syntax error in condition data,
+ *         9 email subject too long, 10 email message too long,
  *         99 permission denied, -1 internal error.
  */
 int
@@ -6263,6 +6285,7 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
         {
           gchar *name = sql_quote (item);
           gchar *data = sql_quote (item + strlen (item) + 1);
+
           if (method == ALERT_METHOD_EMAIL
               && strcmp (name, "to_address") == 0
               && validate_email_list (data))
@@ -6281,6 +6304,26 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
               g_free (data);
               sql ("ROLLBACK;");
               return 6;
+            }
+
+          if (method == ALERT_METHOD_EMAIL
+              && strcmp (name, "subject") == 0
+              && strlen (data) > 80)
+            {
+              g_free (name);
+              g_free (data);
+              sql ("ROLLBACK;");
+              return 9;
+            }
+
+          if (method == ALERT_METHOD_EMAIL
+              && strcmp (name, "message") == 0
+              && strlen (data) > 1000)
+            {
+              g_free (name);
+              g_free (data);
+              sql ("ROLLBACK;");
+              return 10;
             }
 
           sql ("INSERT INTO alert_method_data (alert, name, data)"
@@ -7028,7 +7071,7 @@ email (const char *to_address, const char *from_address, const char *subject,
                "%s%s%s"
                "\n"
                "%s"
-               "%s",
+               "%s\n",
                to_address,
                from_address ? from_address
                             : "automated@openvas.org",
@@ -7995,6 +8038,184 @@ static int max_attach_length = MAX_ATTACH_LENGTH;
  "should not have received it.\n"
 
 /**
+ * @brief Print an alert subject.
+ *
+ * @param[in]  subject     Format string for subject.
+ * @param[in]  event       Event.
+ * @param[in]  event_data  Event data.
+ * @param[in]  task        Task.
+ *
+ * @return Freshly allocated subject.
+ */
+static gchar *
+alert_subject_print (const gchar *subject, event_t event,
+                     const void *event_data, task_t task)
+{
+  int formatting;
+  const gchar *point, *end;
+  GString *new_subject;
+
+  assert (subject);
+
+  new_subject = g_string_new ("");
+  for (formatting = 0, point = subject, end = (subject + strlen (subject));
+       point < end;
+       point++)
+    if (formatting)
+      {
+        switch (*point)
+          {
+            case '$':
+              g_string_append_c (new_subject, '$');
+              break;
+            case 'e':
+              {
+                gchar *event_desc;
+                event_desc = event_description (event, event_data,
+                                                NULL);
+                g_string_append (new_subject, event_desc);
+                g_free (event_desc);
+                break;
+              }
+            case 'n':
+              {
+                char *name = task_name (task);
+                g_string_append (new_subject, name);
+                free (name);
+                break;
+              }
+            default:
+              g_string_append_c (new_subject, '$');
+              g_string_append_c (new_subject, *point);
+              break;
+          }
+        formatting = 0;
+      }
+    else if (*point == '$')
+      formatting = 1;
+    else
+      g_string_append_c (new_subject, *point);
+
+  return g_string_free (new_subject, FALSE);
+}
+
+/**
+ * @brief Print an alert message.
+ *
+ * @param[in]  message      Format string for message.
+ * @param[in]  event        Event.
+ * @param[in]  event_data   Event data.
+ * @param[in]  task         Task.
+ * @param[in]  format_name  Report format name.
+ * @param[in]  filter       Filter.
+ * @param[in]  term         Filter term.
+ *
+ * @return Freshly allocated message.
+ */
+static gchar *
+alert_message_print (const gchar *message, event_t event,
+                     const void *event_data, task_t task,
+                     alert_t alert, alert_condition_t condition,
+                     gchar *format_name, filter_t filter,
+                     const gchar *term, const gchar *zone)
+{
+  int formatting;
+  const gchar *point, *end;
+  GString *new_message;
+
+  assert (message);
+
+  new_message = g_string_new ("");
+  for (formatting = 0, point = message, end = (message + strlen (message));
+       point < end;
+       point++)
+    if (formatting)
+      {
+        switch (*point)
+          {
+            case '$':
+              g_string_append_c (new_message, '$');
+              break;
+            case 'c':
+              {
+                gchar *condition_desc;
+                condition_desc = alert_condition_description
+                                  (condition, alert);
+                g_string_append (new_message, condition_desc);
+                g_free (condition_desc);
+                break;
+              }
+            case 'e':
+              {
+                gchar *event_desc;
+                event_desc = event_description (event, event_data,
+                                                NULL);
+                g_string_append (new_message, event_desc);
+                g_free (event_desc);
+                break;
+              }
+            case 'n':
+              {
+                char *name = task_name (task);
+                g_string_append (new_message, name);
+                free (name);
+                break;
+              }
+            case 'r':
+              {
+                /* Report format name. */
+
+                g_string_append (new_message,
+                                 format_name ? format_name : "N/A");
+                break;
+              }
+            case 'F':
+              {
+                /* Name of filter. */
+
+                if (filter)
+                  {
+                    char *name = filter_name (filter);
+                    g_string_append (new_message, name);
+                    free (name);
+                  }
+                else
+                  g_string_append (new_message, "N/A");
+                break;
+              }
+            case 'f':
+              {
+                /* Filter term. */
+
+                g_string_append (new_message, term ? term : "N/A");
+                break;
+              }
+            case 'z':
+              {
+                /* Timezone. */
+
+                g_string_append (new_message, zone ? zone : "N/A");
+                break;
+              }
+
+            case 'H':
+            case 'R':
+            default:
+              g_string_append_c (new_message, '$');
+              g_string_append_c (new_message, *point);
+              break;
+          }
+        formatting = 0;
+      }
+    else if (*point == '$')
+      formatting = 1;
+    else
+      g_string_append_c (new_message, *point);
+
+  return g_string_free (new_message, FALSE);
+}
+
+/**
  * @brief Escalate an event.
  *
  * @param[in]  alert   Alert.
@@ -8067,7 +8288,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           if (to_address)
             {
               int ret;
-              gchar *body, *subject;
+              gchar *body, *subject, *term, *report_zone;
               char *name, *notice, *from_address, *filt_id;
               gchar *base64, *type, *extension;
               filter_t filter;
@@ -8075,6 +8296,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               base64 = NULL;
               type = NULL;
               extension = NULL;
+              term = NULL;
+              report_zone = NULL;
 
               from_address = alert_data (alert,
                                              "method",
@@ -8082,6 +8305,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
 
               notice = alert_data (alert, "method", "notice");
               filt_id = alert_filter_id (alert);
+              filter = 0;
               if (filt_id)
                 {
                   if (find_filter_with_permission (filt_id, &filter,
@@ -8095,7 +8319,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               if (notice && strcmp (notice, "0") == 0)
                 {
                   gchar *event_desc, *condition_desc, *report_content;
-                  gchar *note, *note_2;
+                  gchar *note, *note_2, *alert_subject, *message;
                   char *format_uuid;
                   report_format_t report_format = 0;
                   gsize content_length;
@@ -8165,7 +8389,9 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                                   &content_length,
                                                   NULL,    /* Extension. */
                                                   NULL,   /* Content type. */
-                                                  zone);
+                                                  zone,
+                                                  &term,
+                                                  &report_zone);
                   if (report_content == NULL)
                     {
                       free (event_desc);
@@ -8182,6 +8408,15 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   subject = g_strdup_printf ("[OpenVAS-Manager] Task '%s': %s",
                                              name ? name : "Internal Error",
                                              event_desc);
+                  alert_subject = alert_data (alert, "method", "subject");
+                  if (alert_subject && strlen (alert_subject))
+                    {
+                      g_free (subject);
+                      subject = alert_subject_print (alert_subject, event,
+                                                     event_data, task);
+                      alert_subject = NULL;
+                    }
+                  g_free (alert_subject);
                   if (content_length > max_content_length)
                     {
                       note = g_strdup_printf ("Note: This report exceeds the"
@@ -8196,18 +8431,53 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   else
                     note = note_2 = NULL;
 
-                  body = g_strdup_printf (REPORT_NOTICE_FORMAT,
-                                          name,
-                                          event_desc,
-                                          event_desc,
-                                          condition_desc,
-                                          format_name,
-                                          note ? note : "",
-                                          /* Cast for 64 bit. */
-                                          (int) MIN (content_length,
-                                                     max_content_length),
-                                          report_content,
-                                          note_2 ? note_2 : "");
+                  message = alert_data (alert, "method", "message");
+                  if (message && strlen (message))
+                    {
+                      if (note)
+                        {
+                          gchar *old_message;
+                          old_message = message;
+                          message = g_strdup_printf ("%s\n\n%s",
+                                                     old_message, note);
+                          g_free (old_message);
+                        }
+                      if (report_content)
+                        {
+                          gchar *old_message;
+                          old_message = message;
+                          message = g_strdup_printf ("%s\n\n%s",
+                                                     old_message,
+                                                     report_content);
+                          g_free (old_message);
+                        }
+                      if (note_2)
+                        {
+                          gchar *old_message;
+                          old_message = message;
+                          message = g_strdup_printf ("%s\n\n%s",
+                                                     old_message, note_2);
+                          g_free (old_message);
+                        }
+                      body = alert_message_print (message, event, event_data,
+                                                  task, alert, condition,
+                                                  format_name, filter,
+                                                  term, report_zone);
+                    }
+                  else
+                    body = g_strdup_printf (REPORT_NOTICE_FORMAT,
+                                            name,
+                                            event_desc,
+                                            event_desc,
+                                            condition_desc,
+                                            format_name,
+                                            note ? note : "",
+                                            /* Cast for 64 bit. */
+                                            (int) MIN (content_length,
+                                                       max_content_length),
+                                            report_content,
+                                            note_2 ? note_2 : "");
+                  g_free (message);
                   g_free (note);
                   g_free (note_2);
                   g_free (report_content);
@@ -8220,6 +8490,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   char *format_uuid;
                   report_format_t report_format = 0;
                   gsize content_length;
+                  gchar *alert_subject, *message;
 
                   /* Message with attached report. */
 
@@ -8285,7 +8556,9 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                                   &content_length,
                                                   &extension,
                                                   &type,
-                                                  zone);
+                                                  zone,
+                                                  &term,
+                                                  &report_zone);
                   if (report_content == NULL)
                     {
                       g_free (event_desc);
@@ -8302,6 +8575,15 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   subject = g_strdup_printf ("[OpenVAS-Manager] Task '%s': %s",
                                              name ? name : "Internal Error",
                                              event_desc);
+                  alert_subject = alert_data (alert, "method", "subject");
+                  if (alert_subject && strlen (alert_subject))
+                    {
+                      g_free (subject);
+                      subject = alert_subject_print (alert_subject, event,
+                                                     event_data, task);
+                      alert_subject = NULL;
+                    }
+                  g_free (alert_subject);
                   if (max_attach_length <= 0
                       || content_length <= max_attach_length)
                     {
@@ -8315,13 +8597,31 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                             " %i bytes.\n",
                                             max_attach_length);
                   g_free (report_content);
-                  body = g_strdup_printf (REPORT_ATTACH_FORMAT,
-                                          name,
-                                          event_desc,
-                                          event_desc,
-                                          condition_desc,
-                                          format_name,
-                                          note ? note : "");
+                  message = alert_data (alert, "method", "message");
+                  if (message && strlen (message))
+                    {
+                      if (note)
+                        {
+                          gchar *old_message;
+                          old_message = message;
+                          message = g_strdup_printf ("%s\n\n%s",
+                                                     old_message, note);
+                          g_free (old_message);
+                        }
+                      body = alert_message_print (message, event, event_data,
+                                                  task, alert, condition,
+                                                  format_name, filter,
+                                                  term, report_zone);
+                    }
+                  else
+                    body = g_strdup_printf (REPORT_ATTACH_FORMAT,
+                                            name,
+                                            event_desc,
+                                            event_desc,
+                                            condition_desc,
+                                            format_name,
+                                            note ? note : "");
+                  g_free (message);
                   g_free (note);
                   g_free (event_desc);
                   g_free (condition_desc);
@@ -8329,6 +8629,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               else
                 {
                   gchar *event_desc, *generic_desc, *condition_desc;
+                  gchar *alert_subject, *message;
 
                   /* Simple notice message. */
                   format_name = NULL;
@@ -8336,13 +8637,32 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   generic_desc = event_description (event, event_data, NULL);
                   condition_desc = alert_condition_description (condition,
                                                                     alert);
+
                   subject = g_strdup_printf ("[OpenVAS-Manager] Task '%s':"
                                              " An event occurred",
                                              name);
-                  body = g_strdup_printf (SIMPLE_NOTICE_FORMAT,
-                                          event_desc,
-                                          generic_desc,
-                                          condition_desc);
+
+                  alert_subject = alert_data (alert, "method", "subject");
+                  if (alert_subject && strlen (alert_subject))
+                    {
+                      g_free (subject);
+                      subject = alert_subject_print (alert_subject, event,
+                                                     event_data, task);
+                      alert_subject = NULL;
+                    }
+                  g_free (alert_subject);
+
+                  message = alert_data (alert, "method", "message");
+                  if (message && strlen (message))
+                    body = alert_message_print (message, event, event_data,
+                                                task, alert, condition,
+                                                NULL, 0, NULL, NULL);
+                  else
+                    body = g_strdup_printf (SIMPLE_NOTICE_FORMAT,
+                                            event_desc,
+                                            generic_desc,
+                                            condition_desc);
+                  g_free (message);
                   g_free (event_desc);
                   g_free (generic_desc);
                   g_free (condition_desc);
@@ -8522,7 +8842,9 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                           &content_length,
                                           NULL,    /* Extension. */
                                           NULL,    /* Content type. */
-                                          zone);
+                                          zone,
+                                          NULL,
+                                          NULL);
           if (report_content == NULL)
             return -1;
 
@@ -8642,7 +8964,9 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                           &content_length,
                                           NULL,    /* Extension. */
                                           NULL,    /* Content type. */
-                                          zone);
+                                          zone,
+                                          NULL,
+                                          NULL);
           if (report_content == NULL)
             {
               g_warning ("Empty Report");
@@ -23532,7 +23856,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                   const char *type, const char *host, int pos,
                   const char *host_search_phrase, const char *host_levels,
                   int host_first_result, int host_max_results,
-                  int ignore_pagination, const char *given_zone)
+                  int ignore_pagination, const char *given_zone,
+                  gchar **filter_term_return, gchar **zone_return)
 {
   FILE *out;
   gchar *clean, *term, *sort_field, *levels, *search_phrase;
@@ -23778,6 +24103,9 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                 : (get->filter ? get->filter : ""));
   g_free (term);
   term = clean;
+
+  if (filter_term_return)
+    *filter_term_return = g_strdup (term);
 
   PRINT
    (out,
@@ -24137,6 +24465,10 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     else
       report_zone = setting_timezone ();
     iso_time_tz (&start_time_epoch, report_zone, &abbrev);
+
+    if (zone_return)
+      *zone_return = g_strdup (report_zone ? report_zone : "");
+
     PRINT (out,
            "<timezone>%s</timezone>"
            "<timezone_abbrev>%s</timezone_abbrev>",
@@ -25151,6 +25483,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
  * @param[out] content_type       NULL or location for report format content
  *                                type.
  * @param[in]  zone               Timezone.  NULL or "" for user's timezone.
+ * @param[out] filter_term_return  Filter term used in report.
+ * @param[out] zone_return         Actual zone used in report.
  *
  * @return Contents of report on success, NULL on error.
  */
@@ -25165,7 +25499,8 @@ manage_report (report_t report, report_format_t report_format,
                int notes, int notes_details, int overrides,
                int overrides_details, int first_result,
                int max_results, const char *type, gsize *output_length,
-               gchar **extension, gchar **content_type, const char *zone)
+               gchar **extension, gchar **content_type, const char *zone,
+               gchar **filter_term_return, gchar **zone_return)
 {
   task_t task;
   gchar *xml_file;
@@ -25203,7 +25538,8 @@ manage_report (report_t report, report_format_t report_format,
                           levels, delta_states, apply_overrides, search_phrase,
                           autofp, notes, notes_details, overrides,
                           overrides_details, first_result, max_results, type,
-                          NULL, 0, NULL, NULL, 0, 0, 0, zone);
+                          NULL, 0, NULL, NULL, 0, 0, 0, zone,
+                          filter_term_return, zone_return);
   g_free (get.filt_id);
   if (ret)
     {
@@ -25735,7 +26071,7 @@ manage_send_report (report_t report, report_t delta_report,
                           overrides, overrides_details, first_result,
                           max_results, type, host, pos, host_search_phrase,
                           host_levels, host_first_result, host_max_results,
-                          ignore_pagination, zone);
+                          ignore_pagination, zone, NULL, NULL);
   if (ret)
     {
       g_free (xml_file);

@@ -1,3 +1,23 @@
+2015-07-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add "subject" and "message" method data for email alerts, so that the
+	user can set these fields.
+
+	* src/manage_sql.c (create_alert, modify_alert): Check subject and
+	message length.
+	(email): Add a newline after the body, in case the user supplied message
+	is missing a newline.
+	(alert_subject_print, alert_message_print): New functions.
+	(escalate_2): Use user's subject and message if given.
+	(print_report_xml, manage_report): Add filter term and timezone return
+	args.
+	(manage_send_report): Add dummy args for print_report_xml.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Handle new error returns from
+	create_alert and modify_alert.
+
 2015-07-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Handle free-form text in Postgres sorting of hosts, instead of requiring
