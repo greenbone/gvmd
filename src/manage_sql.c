@@ -4558,7 +4558,7 @@ type_select_columns (const char *type, int);
  * @param[in]  filter_columns  Columns for filter.
  * @param[in]  distinct        Whether the query should be distinct.  Skipped
  *                             for trash and single resource.
- * @param[in]  stat_column     Column to calculate statistics for.
+ * @param[in]  data_columns    Columns to calculate statistics for.
  * @param[in]  group_column    Column to group data by.
  * @param[in]  extra_tables    Join tables.  Skipped for trash and single
  *                             resource.
@@ -4574,7 +4574,7 @@ type_select_columns (const char *type, int);
 int
 init_aggregate_iterator (iterator_t* iterator, const char *type,
                          const get_data_t *get, int distinct,
-                         const char *stat_column, const char *group_column,
+                         GArray *data_columns, const char *group_column,
                          const char *extra_tables, const char *extra_where)
 {
   int owned;
@@ -4591,9 +4591,11 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   array_t *permissions;
   resource_t resource = 0;
   gchar *owner_filter;
-  gchar *aggregate_select, *aggregate_group_by;
+  GString *aggregate_select, *outer_col_select;
+  gchar *aggregate_group_by;
   gchar *outer_group_by_column;
-  gchar *select_group_column, *select_stat_column;
+  gchar *select_group_column;
+  GArray *select_data_columns;
   gchar *order;
 
   assert (get);
@@ -4644,11 +4646,21 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
 
   owned = type_owned (type);
 
-  if (stat_column && vector_find_filter (filter_columns, stat_column) == 0)
+  select_data_columns = g_array_new (TRUE, TRUE, sizeof (gchar*));
+  if (data_columns && data_columns->len > 0)
     {
-      g_free (columns);
-      g_free (trash_columns);
-      return 3;
+      int i;
+      for (i = 0; i < data_columns->len; i++)
+        {
+          if (vector_find_filter (filter_columns,
+                                  g_array_index (data_columns, gchar*, i))
+              == 0)
+            {
+              g_free (columns);
+              g_free (trash_columns);
+              return 3;
+            }
+        }
     }
   if (group_column && vector_find_filter (filter_columns, group_column) == 0)
     {
@@ -4695,7 +4707,6 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   array_free (permissions);
 
   select_group_column = NULL;
-  select_stat_column = NULL;
 
   if (group_column == NULL)
     {
@@ -4717,21 +4728,29 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
         }
     }
 
-  if (stat_column == NULL)
-    select_stat_column = NULL;
-  else
+  if (data_columns && data_columns->len > 0)
     {
-      int i = 0;
-      while (select_columns[i].select != NULL)
+      int column_index;
+      for (column_index = 0; column_index < data_columns->len; column_index++)
         {
-          if (strcmp (select_columns[i].select, stat_column) == 0
-              || (select_columns[i].filter
-                  && strcmp (select_columns[i].filter, stat_column) == 0))
+          gchar *data_column_name = g_array_index (data_columns, gchar*,
+                                                   column_index);
+          int i = 0;
+          while (select_columns[i].select != NULL)
             {
-              select_stat_column = g_strdup (select_columns[i].select);
-              break;
+              gchar *select = NULL;
+              if (strcmp (select_columns[i].select, data_column_name) == 0
+                  || (select_columns[i].filter
+                      && strcmp (select_columns[i].filter,
+                                 data_column_name)
+                         == 0))
+                {
+                  select = g_strdup (select_columns[i].select);
+                  g_array_append_val (select_data_columns, select);
+                  break;
+                }
+              i++;
             }
-          i++;
         }
     }
 
@@ -4763,77 +4782,62 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   order = g_strdup_printf ("ORDER BY %s ASC",
                            "outer_group_column");
 
+  aggregate_select = g_string_new ("");
+  outer_col_select = g_string_new ("");
   if (group_column && strcmp (group_column, ""))
     {
-      if (stat_column && strcmp (stat_column, ""))
-        aggregate_select = g_strdup_printf (" count(*) AS aggregate_count,"
-                                            " min(%s) AS aggregate_min,"
-                                            " max(%s) AS aggregate_max,"
-                                            " avg(CAST (%s AS real)) * count(*)"
-                                            "   AS aggregate_avg,"
-                                            " sum(CAST (%s AS real))"
-                                            "   AS aggregate_sum,"
-                                            " %s as aggregate_group_value",
-                                            select_stat_column,
-                                            select_stat_column,
-                                            select_stat_column,
-                                            select_stat_column,
-                                            select_group_column);
-      else
-        aggregate_select = g_strdup_printf (" count(*) AS aggregate_count,"
-                                            " CAST (NULL AS real)"
-                                            "   AS aggregate_min,"
-                                            " CAST (NULL AS real)"
-                                            "   AS aggregate_max,"
-                                            " CAST (NULL AS real)"
-                                            "   AS aggregate_avg,"
-                                            " CAST (NULL AS real)"
-                                            "   AS aggregate_sum,"
-                                            " %s as aggregate_group_value",
-                                            select_group_column);
+      xml_string_append (aggregate_select,
+                         " count(*) AS aggregate_count,"
+                         " %s as aggregate_group_value",
+                         select_group_column);
 
       aggregate_group_by = g_strdup_printf (" GROUP BY %s",
                                             select_group_column);
     }
   else
     {
-      if (stat_column && strcmp (stat_column, ""))
-        aggregate_select = g_strdup_printf (" count(*) AS aggregate_count,"
-                                            " min(%s) AS aggregate_min,"
-                                            " max(%s) AS aggregate_max,"
-                                            " avg(CAST (%s AS real)) * count(*)"
-                                            "   AS aggregate_avg,"
-                                            " sum(CAST (%s AS real))"
-                                            "   AS aggregate_sum,"
-                                            " NULL as aggregate_group_value",
-                                            select_stat_column,
-                                            select_stat_column,
-                                            select_stat_column,
-                                            select_stat_column);
-      else
-        {
-          g_free (columns);
-          g_free (trash_columns);
-          g_free (owned_clause);
-          g_free (trash_extra);
-          g_free (outer_group_by_column);
-          g_free (order);
-          g_free (clause);
-          return -1;
-        }
+      aggregate_select = g_string_new ("");
+      xml_string_append (aggregate_select,
+                         " count(*) AS aggregate_count,"
+                         " NULL as aggregate_group_value");
 
       aggregate_group_by = g_strdup ("");
     }
 
-  g_free (select_stat_column);
+  int col_index;
+  for (col_index = 0; col_index < select_data_columns->len; col_index ++)
+    {
+      gchar *select_data_column = g_array_index (select_data_columns, gchar*,
+                                                 col_index);
+      g_string_append_printf (aggregate_select,
+                              ","
+                              " min(%s) AS aggregate_min_%d,"
+                              " max(%s) AS aggregate_max_%d,"
+                              " avg(CAST (%s AS real)) * count(*)"
+                              "   AS aggregate_avg_%d,"
+                              " sum(CAST (%s AS real))"
+                              "   AS aggregate_sum_%d",
+                              select_data_column,
+                              col_index,
+                              select_data_column,
+                              col_index,
+                              select_data_column,
+                              col_index,
+                              select_data_column,
+                              col_index);
+      g_string_append_printf (outer_col_select,
+                              ", min(aggregate_min_%d),"
+                              " max (aggregate_max_%d),"
+                              " sum (aggregate_avg_%d) / sum(aggregate_count),"
+                              " sum (aggregate_sum_%d)",
+                              col_index, col_index, col_index, col_index);
+    }
 
   from_table = type_table (type, get->trash);
 
   init_iterator (iterator,
-                 "SELECT sum(aggregate_count),"
-                 " min(aggregate_min), max (aggregate_max),"
-                 " sum (aggregate_avg) / sum(aggregate_count),"
-                 " sum (aggregate_sum), %s AS outer_group_column"
+                 "SELECT sum(aggregate_count), %s AS outer_group_column"
+                 " %s"
                  " FROM (SELECT%s %s"
                  "       FROM %s%s%s"
                  "       WHERE"
@@ -4843,8 +4847,9 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                  "      AS agg_sub"
                  " GROUP BY outer_group_column %s;",
                  outer_group_by_column,
+                 outer_col_select->str,
                  distinct ? " DISTINCT" : "",
-                 aggregate_select,
+                 aggregate_select->str,
                  from_table,
                  opts_table ? opts_table : "",
                  extra_tables ? extra_tables : "",
@@ -4866,11 +4871,15 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   g_free (order);
   g_free (clause);
   g_free (aggregate_group_by);
-  g_free (aggregate_select);
+  g_string_free (aggregate_select, TRUE);
+  g_string_free (outer_col_select, TRUE);
   g_free (outer_group_by_column);
   g_free (select_group_column);
   return 0;
 }
+
+#define AGGREGATE_ITERATOR_OFFSET 2
+#define AGGREGATE_ITERATOR_N_STATS 4
 
 /**
  * @brief Get the count from an aggregate iterator.
@@ -4888,53 +4897,65 @@ aggregate_iterator_count (iterator_t* iterator)
 /**
  * @brief Get the minimum from an aggregate iterator.
  *
- * @param[in]  iterator  Iterator.
+ * @param[in]  iterator           Iterator.
+ * @param[in]  data_column_index  Index of the data column to get min of.
  *
  * @return The minimum value in the current group.
  */
 double
-aggregate_iterator_min (iterator_t* iterator)
+aggregate_iterator_min (iterator_t* iterator, int data_column_index)
 {
-  return sql_column_double (iterator->stmt, 1);
+  return sql_column_double (iterator->stmt,
+                            AGGREGATE_ITERATOR_OFFSET
+                            + data_column_index * AGGREGATE_ITERATOR_N_STATS);
 }
 
 /**
  * @brief Get the maximum from an aggregate iterator.
  *
- * @param[in]  iterator  Iterator.
+ * @param[in]  iterator           Iterator.
+ * @param[in]  data_column_index  Index of the data column to get max of.
  *
  * @return The maximum value in the current group.
  */
 double
-aggregate_iterator_max (iterator_t* iterator)
+aggregate_iterator_max (iterator_t* iterator, int data_column_index)
 {
-  return sql_column_double (iterator->stmt, 2);
+  return sql_column_double (iterator->stmt,
+                            AGGREGATE_ITERATOR_OFFSET + 1
+                            + data_column_index * AGGREGATE_ITERATOR_N_STATS);
 }
 
 /**
  * @brief Get the mean from an aggregate iterator.
  *
- * @param[in]  iterator  Iterator.
+ * @param[in]  iterator           Iterator.
+ * @param[in]  data_column_index  Index of the data column to get mean of.
  *
  * @return The mean value in the current group.
  */
 double
-aggregate_iterator_mean (iterator_t* iterator)
+aggregate_iterator_mean (iterator_t* iterator, int data_column_index)
 {
-  return sql_column_double (iterator->stmt, 3);
+  return sql_column_double (iterator->stmt,
+                            AGGREGATE_ITERATOR_OFFSET + 2
+                            + data_column_index * AGGREGATE_ITERATOR_N_STATS);
 }
 
 /**
  * @brief Get the sum from a statistics iterator.
  *
- * @param[in]  iterator  Iterator.
+ * @param[in]  iterator           Iterator.
+ * @param[in]  data_column_index  Index of the data column to get sum of.
  *
  * @return The sum of values in the current group.
  */
 double
-aggregate_iterator_sum (iterator_t* iterator)
+aggregate_iterator_sum (iterator_t* iterator, int data_column_index)
 {
-  return sql_column_double (iterator->stmt, 4);
+  return sql_column_double (iterator->stmt,
+                            AGGREGATE_ITERATOR_OFFSET + 3
+                            + data_column_index * AGGREGATE_ITERATOR_N_STATS);
 }
 
 /**
@@ -4950,7 +4971,7 @@ aggregate_iterator_value (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return NULL;
-  ret = (const char*) sql_column_text (iterator->stmt, 5);
+  ret = (const char*) sql_column_text (iterator->stmt, 1);
   return ret;
 }
 
@@ -51276,6 +51297,11 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("Chart Selection Tasks Left");
       else if (strcmp (uuid, "ce8608af-7e66-45a8-aa8a-76def4f9f838") == 0)
         setting_name = g_strdup ("Chart Selection Tasks Right");
+
+      else if (strcmp (uuid, "e599bb6b-b95a-4bb2-a6bb-fe8ac69bc071") == 0)
+        setting_name = g_strdup ("Chart Selection Reports Left");
+      else if (strcmp (uuid, "fc875cd4-16bf-42d1-98ed-c0c9bd6015cd") == 0)
+        setting_name = g_strdup ("Chart Selection Reports Right");
 
       /* SecInfo charts */
       else if (strcmp (uuid, "84ab32da-fe69-44d8-8a8f-70034cf28d4e") == 0)

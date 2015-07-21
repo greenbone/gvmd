@@ -3623,23 +3623,23 @@ trash_tag_writable (tag_t);
 
 int
 init_aggregate_iterator (iterator_t*, const char *, const get_data_t *, int,
-                         const char *, const char *, const char *,
+                         GArray *, const char *, const char *,
                          const char *);
 
 int
 aggregate_iterator_count (iterator_t*);
 
 double
-aggregate_iterator_min (iterator_t*);
+aggregate_iterator_min (iterator_t*, int);
 
 double
-aggregate_iterator_max (iterator_t*);
+aggregate_iterator_max (iterator_t*, int);
 
 double
-aggregate_iterator_mean (iterator_t*);
+aggregate_iterator_mean (iterator_t*, int);
 
 double
-aggregate_iterator_sum (iterator_t*);
+aggregate_iterator_sum (iterator_t*, int);
 
 const char*
 aggregate_iterator_value (iterator_t*);

@@ -1,3 +1,41 @@
+2015-07-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Allow specifying multiple data columns via elements in the OMP command
+	GET_AGGREGATES and change the response to list statistics grouped for
+	each data_column.
+
+	* src/manage_sql.c (init_aggregate_iterator): Replace stat_column
+	string parameter with data_columns GArray and change SQL queries to
+	allow selecting multiple data columns.
+	(AGGREGATE_ITERATOR_OFFSET, AGGREGATE_ITERATOR_N_STATS): New #defines.
+	(aggregate_iterator_min, aggregate_iterator_max)
+	(aggregate_iterator_mean, aggregate_iterator_sum): Add parameter
+	data_column_index and select data using new column numbers.
+	(aggregate_iterator_value): Select data using new column number.
+	(modify_setting): Add settings for charts on Reports list.
+
+	* src/manage.h (init_aggregate_iterator): Replace string parameter with
+	GArray one.
+	(aggregate_iterator_min, aggregate_iterator_max)
+	(aggregate_iterator_mean, aggregate_iterator_sum): Add parameter.
+	
+	* src/omp.c (get_aggregates_data_t, get_aggregates_data_reset): Replace
+	string field data_column with GList data_columns.
+	(client_state_t): Add CLIENT_GET_AGGREGATES_DATA_COLUMN.
+	(omp_xml_handle_start_element): For GET_AGGREGATES element add
+	data_column to data_columns list. In case CLIENT_GET_AGGREGATES handle
+	DATA_COLUMN subelement and add new item to data_columns list.
+	(omp_xml_handle_start_element): In case CLIENT_GET_AGGREGATES handle
+	data_columns list. Put statistics inside stats elements for each
+	data_column and prepend the data_column name to each stat column in the
+	column_info.
+	(omp_xml_handle_text): Add case for CLIENT_GET_AGGREGATES_DATA_COLUMN.
+
+	* src/schema_formats/XML/OMP.xml.in: Add data_column elements to
+	get_aggregates command and update the response pattern.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
 2015-07-20  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (check_scanner_cert): Check certificate activation and

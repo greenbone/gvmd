@@ -5043,10 +5043,17 @@ get_aggregates
        attribute filt_id { uuid }?
        & # The OMP resource type to gather data from.
        attribute type { text }
-       & # The column to get the data to aggregate from.
+       & # A single column to get the data to aggregate from.
        attribute data_column { text }?
        & # The field to group the resources by.
        attribute group_column { text }?
+       & get_aggregates_data_column*
+     }
+
+# A column to get the data to aggregate from.
+get_aggregates_data_column
+ = element data_column    # type text
+     {
      }
 
 ## Command get_alerts
@@ -8780,7 +8787,7 @@ get_aggregates_response_aggregate
  = element aggregate
      {
        get_aggregates_response_aggregate_data_type
-       & get_aggregates_response_aggregate_data_column?
+       & get_aggregates_response_aggregate_data_column*
        & get_aggregates_response_aggregate_group_column?
        & ( get_aggregates_response_aggregate_group*
            | get_aggregates_response_aggregate_overall )
@@ -8794,7 +8801,7 @@ get_aggregates_response_aggregate_data_type
        text
      }
 
-# The column the data is aggregated from.
+# A column the data is aggregated from.
 get_aggregates_response_aggregate_data_column
  = element data_column
      {
@@ -8822,11 +8829,7 @@ get_aggregates_response_aggregate_group
        get_aggregates_response_aggregate_group_value
        & get_aggregates_response_aggregate_group_count
        & get_aggregates_response_aggregate_group_c_count
-       & ( get_aggregates_response_aggregate_group_min
-           & get_aggregates_response_aggregate_group_max
-           & get_aggregates_response_aggregate_group_mean
-           & get_aggregates_response_aggregate_group_sum
-           & get_aggregates_response_aggregate_group_c_sum )?
+       & get_aggregates_response_aggregate_group_stats*
      }
 
 # Value of the group column.
@@ -8850,36 +8853,49 @@ get_aggregates_response_aggregate_group_c_count
        integer
      }
 
+# Statistics of a data column.
+get_aggregates_response_aggregate_group_stats
+ = element stats
+     {
+       # Name of the column the stats apply to.
+       attribute column { text }?
+       & get_aggregates_response_aggregate_group_stats_min
+       & get_aggregates_response_aggregate_group_stats_max
+       & get_aggregates_response_aggregate_group_stats_mean
+       & get_aggregates_response_aggregate_group_stats_sum
+       & get_aggregates_response_aggregate_group_stats_c_sum
+     }
+
 # Minimum value of the data column.
-get_aggregates_response_aggregate_group_min
+get_aggregates_response_aggregate_group_stats_min
  = element min
      {
        text
      }
 
 # Maximum value of the data column.
-get_aggregates_response_aggregate_group_max
+get_aggregates_response_aggregate_group_stats_max
  = element max
      {
        text
      }
 
 # Arithmetic mean of the numeric values of the data.
-get_aggregates_response_aggregate_group_mean
+get_aggregates_response_aggregate_group_stats_mean
  = element mean
      {
        text
      }
 
 # Sum of the numeric values of the data column.
-get_aggregates_response_aggregate_group_sum
+get_aggregates_response_aggregate_group_stats_sum
  = element sum
      {
        text
      }
 
 # Cumulative sum of the numeric values of the data column for all groups up to and including the current one.
-get_aggregates_response_aggregate_group_c_sum
+get_aggregates_response_aggregate_group_stats_c_sum
  = element c_sum
      {
        text

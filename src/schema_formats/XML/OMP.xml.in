@@ -8097,7 +8097,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </attrib>
       <attrib>
         <name>data_column</name>
-        <summary>The column to get the data to aggregate from</summary>
+        <summary>A single column to get the data to aggregate from</summary>
         <type>text</type>
       </attrib>
       <attrib>
@@ -8105,7 +8105,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <summary>The field to group the resources by</summary>
         <type>text</type>
       </attrib>
+      <any><e>data_column</e></any>
     </pattern>
+    <ele>
+      <name>data_column</name>
+      <summary>A column to get the data to aggregate from</summary>
+      <type>text</type>
+    </ele>
     <response>
       <pattern>
         <attrib>
@@ -8126,7 +8132,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <summary>A collection of aggregated data of the selected type</summary>
         <pattern>
           <e>data_type</e>
-          <o><e>data_column</e></o>
+          <any><e>data_column</e></any>
           <o><e>group_column</e></o>
           <or>
             <any><e>group</e></any>
@@ -8141,7 +8147,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </ele>
         <ele>
           <name>data_column</name>
-          <summary>The column the data is aggregated from</summary>
+          <summary>A column the data is aggregated from</summary>
           <pattern><t>text</t></pattern>
         </ele>
         <ele>
@@ -8161,15 +8167,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <e>value</e>
             <e>count</e>
             <e>c_count</e>
-            <o>
-              <g>
-                <e>min</e>
-                <e>max</e>
-                <e>mean</e>
-                <e>sum</e>
-                <e>c_sum</e>
-              </g>
-            </o>
+            <any><e>stats</e></any>
           </pattern>
           <ele>
             <name>value</name>
@@ -8187,29 +8185,45 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <pattern><t>integer</t></pattern>
           </ele>
           <ele>
-            <name>min</name>
-            <summary>Minimum value of the data column</summary>
-            <pattern><t>text</t></pattern>
-          </ele>
-          <ele>
-            <name>max</name>
-            <summary>Maximum value of the data column</summary>
-            <pattern><t>text</t></pattern>
-          </ele>
-          <ele>
-            <name>mean</name>
-            <summary>Arithmetic mean of the numeric values of the data</summary>
-            <pattern><t>text</t></pattern>
-          </ele>
-          <ele>
-            <name>sum</name>
-            <summary>Sum of the numeric values of the data column</summary>
-            <pattern><t>text</t></pattern>
-          </ele>
-          <ele>
-            <name>c_sum</name>
-            <summary>Cumulative sum of the numeric values of the data column for all groups up to and including the current one</summary>
-            <pattern><t>text</t></pattern>
+            <name>stats</name>
+            <summary>Statistics of a data column</summary>
+            <pattern>
+              <attrib>
+                <name>column</name>
+                <summary>Name of the column the stats apply to</summary>
+                <type>text</type>
+              </attrib>
+              <e>min</e>
+              <e>max</e>
+              <e>mean</e>
+              <e>sum</e>
+              <e>c_sum</e>
+            </pattern>
+            <ele>
+              <name>min</name>
+              <summary>Minimum value of the data column</summary>
+              <pattern><t>text</t></pattern>
+            </ele>
+            <ele>
+              <name>max</name>
+              <summary>Maximum value of the data column</summary>
+              <pattern><t>text</t></pattern>
+            </ele>
+            <ele>
+              <name>mean</name>
+              <summary>Arithmetic mean of the numeric values of the data</summary>
+              <pattern><t>text</t></pattern>
+            </ele>
+            <ele>
+              <name>sum</name>
+              <summary>Sum of the numeric values of the data column</summary>
+              <pattern><t>text</t></pattern>
+            </ele>
+            <ele>
+              <name>c_sum</name>
+              <summary>Cumulative sum of the numeric values of the data column for all groups up to and including the current one</summary>
+              <pattern><t>text</t></pattern>
+            </ele>
           </ele>
         </ele>
         <ele>

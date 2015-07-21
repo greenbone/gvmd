@@ -14225,13 +14225,19 @@ get_configs_response_config_count_page
 <li>
           @<b>data_column</b>
           (text)
-          The column to get the data to aggregate from.
+          A single column to get the data to aggregate from.
           </li>
 <li>
           @<b>group_column</b>
           (text)
           The field to group the resources by.
           </li>
+<li>
+              &lt;<b>data_column</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">(text)</div>
+<div style="margin-left: 15px; display: inline;">A column to get the data to aggregate from.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li>
 <li style="margin-top: 15px;">
@@ -14255,7 +14261,7 @@ get_configs_response_config_count_page
 </li>
 <li>
               &lt;<b>data_column</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">The column the data is aggregated from.</div>
+              *<div style="margin-left: 15px; display: inline;">A column the data is aggregated from.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -14285,7 +14291,14 @@ get_configs_response_config_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
-<i>The group</i><b>?</b><ul style="list-style: none">
+              &lt;<b>stats</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Statistics of a data column.</div>
+<ul style="list-style: none">
+<li>
+          @<b>column</b>
+          (text)
+          Name of the column the stats apply to.
+          </li>
 <li>
               &lt;<b>min</b>&gt;
               <div style="margin-left: 15px; display: inline;">Minimum value of the data column.</div>
@@ -14442,6 +14455,12 @@ get_configs_response_config_count_page
        &amp; attribute type { text }
        &amp; attribute data_column { text }?
        &amp; attribute group_column { text }?
+       &amp; get_aggregates_data_column*
+     }
+
+get_aggregates_data_column
+ = element data_column    # type text
+     {
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_aggregates_response
@@ -14457,7 +14476,7 @@ get_aggregates_response_aggregate
  = element aggregate
      {
        get_aggregates_response_aggregate_data_type
-       &amp; get_aggregates_response_aggregate_data_column?
+       &amp; get_aggregates_response_aggregate_data_column*
        &amp; get_aggregates_response_aggregate_group_column?
        &amp; ( get_aggregates_response_aggregate_group*
            | get_aggregates_response_aggregate_overall )
@@ -14494,11 +14513,7 @@ get_aggregates_response_aggregate_group
        get_aggregates_response_aggregate_group_value
        &amp; get_aggregates_response_aggregate_group_count
        &amp; get_aggregates_response_aggregate_group_c_count
-       &amp; ( get_aggregates_response_aggregate_group_min
-           &amp; get_aggregates_response_aggregate_group_max
-           &amp; get_aggregates_response_aggregate_group_mean
-           &amp; get_aggregates_response_aggregate_group_sum
-           &amp; get_aggregates_response_aggregate_group_c_sum )?
+       &amp; get_aggregates_response_aggregate_group_stats*
      }
 
 get_aggregates_response_aggregate_group_value
@@ -14519,31 +14534,42 @@ get_aggregates_response_aggregate_group_c_count
        integer
      }
 
-get_aggregates_response_aggregate_group_min
+get_aggregates_response_aggregate_group_stats
+ = element stats
+     {
+       attribute column { text }?
+       &amp; get_aggregates_response_aggregate_group_stats_min
+       &amp; get_aggregates_response_aggregate_group_stats_max
+       &amp; get_aggregates_response_aggregate_group_stats_mean
+       &amp; get_aggregates_response_aggregate_group_stats_sum
+       &amp; get_aggregates_response_aggregate_group_stats_c_sum
+     }
+
+get_aggregates_response_aggregate_group_stats_min
  = element min
      {
        text
      }
 
-get_aggregates_response_aggregate_group_max
+get_aggregates_response_aggregate_group_stats_max
  = element max
      {
        text
      }
 
-get_aggregates_response_aggregate_group_mean
+get_aggregates_response_aggregate_group_stats_mean
  = element mean
      {
        text
      }
 
-get_aggregates_response_aggregate_group_sum
+get_aggregates_response_aggregate_group_stats_sum
  = element sum
      {
        text
      }
 
-get_aggregates_response_aggregate_group_c_sum
+get_aggregates_response_aggregate_group_stats_c_sum
  = element c_sum
      {
        text

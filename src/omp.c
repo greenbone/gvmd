@@ -2338,7 +2338,7 @@ typedef struct
   get_data_t get;        ///< Get args.
   char *type;            ///< Resource type.
   char *subtype;         ///< Resource subtype.
-  char *data_column;     ///< Column to calculate aggregate for.
+  GList *data_columns;   ///< Columns to calculate aggregate for.
   char *group_column;    ///< Column to group data by.
 } get_aggregates_data_t;
 
@@ -2352,7 +2352,8 @@ get_aggregates_data_reset (get_aggregates_data_t *data)
 {
   get_data_reset (&data->get);
   free (data->type);
-  free (data->data_column);
+  g_list_free_full (data->data_columns, g_free);
+  data->data_columns = NULL;
   free (data->group_column);
 
   memset (data, 0, sizeof (get_aggregates_data_t));
@@ -5202,6 +5203,7 @@ typedef enum
   CLIENT_EMPTY_TRASHCAN,
   CLIENT_GET_AGENTS,
   CLIENT_GET_AGGREGATES,
+  CLIENT_GET_AGGREGATES_DATA_COLUMN,
   CLIENT_GET_ALERTS,
   CLIENT_GET_CONFIGS,
   CLIENT_GET_FILTERS,
@@ -6793,6 +6795,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("GET_AGGREGATES", element_name) == 0)
           {
+            gchar* data_column = g_strdup ("");
             append_attribute (attribute_names, attribute_values, "type",
                               &get_aggregates_data->type);
 
@@ -6803,7 +6806,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                                 &get_aggregates_data->subtype);
             }
             append_attribute (attribute_names, attribute_values, "data_column",
-                              &get_aggregates_data->data_column);
+                              &data_column);
+            get_aggregates_data->data_columns
+              = g_list_append (get_aggregates_data->data_columns,
+                               data_column);
 
             append_attribute (attribute_names, attribute_values, "group_column",
                               &get_aggregates_data->group_column);
@@ -7758,6 +7764,16 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         if (strcasecmp ("UNIT", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE_PERIOD_UNIT);
         ELSE_ERROR ("create_schedule");
+
+      case CLIENT_GET_AGGREGATES:
+        if (strcasecmp ("DATA_COLUMN", element_name) == 0)
+          {
+            get_aggregates_data->data_columns
+              = g_list_append (get_aggregates_data->data_columns,
+                               g_strdup (""));
+            set_client_state (CLIENT_GET_AGGREGATES_DATA_COLUMN);
+          }
+        ELSE_ERROR ("get_aggregates");
 
       case CLIENT_MODIFY_AGENT:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -16587,11 +16603,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           iterator_t aggregate;
           const char *type;
           get_data_t *get;
-          const char *data_column, *group_column;
-          const char *data_column_type, *group_column_type;
-          int ret;
+          GList *current_data_column_list;
+          GArray *data_columns, *data_column_types, *c_sums;
+          const char *group_column;
+          const char *group_column_type;
+          int ret, index;
           GString *xml;
-          double c_sum;
           long c_count;
           gchar *sort_field, *filter;
           int first, max, sort_order;
@@ -16609,7 +16626,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           get = &get_aggregates_data->get;
           INIT_GET (aggregate, Aggregate);
-          data_column = get_aggregates_data->data_column;
+          current_data_column_list
+            = g_list_first (get_aggregates_data->data_columns);
           group_column = get_aggregates_data->group_column;
 
           if (group_column == NULL)
@@ -16622,29 +16640,39 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           else
             group_column_type = "text";
 
-          if (data_column == NULL)
-            data_column_type = "";
-          else if (strcmp (data_column, "severity") == 0)
-            data_column_type = "cvss";
-          else if (strcmp (data_column, "created") == 0
-                   || strcmp (data_column, "modified") == 0)
-            data_column_type = "unix_time";
-          else
-            data_column_type = "decimal";
+          data_columns = g_array_new (TRUE, TRUE, sizeof (gchar*));
+          data_column_types = g_array_new (TRUE, TRUE, sizeof (char*));
+          c_sums = g_array_new (TRUE, TRUE, sizeof (double));
 
-          if (data_column == NULL && group_column == NULL)
+          while (current_data_column_list)
             {
-              SEND_TO_CLIENT_OR_FAIL
-                  (XML_ERROR_SYNTAX ("get_aggregates",
-                                      "GET_AGGREGATES requires at least one of"
-                                      " the attributes 'data_column'"
-                                      " and 'group_column'"));
-              return;
+              gchar *data_column = current_data_column_list->data;
+              if (strcmp (data_column, ""))
+                {
+                  gchar *current_column = g_strdup (data_column);
+                  gchar *current_column_type;
+                  double c_sum = 0.0;
+                  g_array_append_val (data_columns,
+                                      current_column);
+
+                  if (strcmp (data_column, "severity") == 0)
+                    current_column_type = g_strdup ("cvss");
+                  else if (strcmp (data_column, "created") == 0
+                          || strcmp (data_column, "modified") == 0)
+                    current_column_type = g_strdup ("unix_time");
+                  else
+                    current_column_type = g_strdup ("decimal");
+
+                  g_array_append_val (data_column_types, current_column_type);
+
+                  g_array_append_val (c_sums, c_sum);
+                }
+              current_data_column_list = current_data_column_list->next;
             }
 
           ret = init_aggregate_iterator (&aggregate, type, get,
                                          0 /* distinct */,
-                                         data_column, group_column,
+                                         data_columns, group_column,
                                          NULL /* extra_tables */,
                                          NULL /* extra_where */);
 
@@ -16697,7 +16725,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             }
 
           if (ret)
-            return;
+            {
+              g_array_free (data_columns, TRUE);
+              g_array_free (data_column_types, TRUE);
+              g_array_free (c_sums, TRUE);
+              return;
+            }
 
           xml = g_string_new ("<get_aggregates_response"
                               "  status_text=\"" STATUS_OK_TEXT "\""
@@ -16708,23 +16741,28 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             g_string_append_printf (xml,
                                     "<data_type>%s</data_type>",
                                     type);
-          if (data_column)
-            g_string_append_printf (xml,
-                                    "<data_column>%s</data_column>",
-                                    data_column);
+
+          for (index = 0; index < data_columns->len ;index ++)
+            {
+              gchar *column_name = g_array_index (data_columns, gchar*, index);
+              if (column_name && strcmp (column_name, ""))
+                {
+                  g_string_append_printf (xml,
+                                          "<data_column>%s</data_column>",
+                                          column_name);
+                }
+            }
+
           if (group_column)
             g_string_append_printf (xml,
                                     "<group_column>%s</group_column>",
                                     group_column);
 
-          c_sum = 0.0;
           c_count = 0L;
           while (next (&aggregate))
             {
               gchar *value_escaped;
 
-              if (data_column || group_column == NULL)
-                c_sum += aggregate_iterator_sum (&aggregate);
               c_count += aggregate_iterator_count (&aggregate);
 
               if (group_column)
@@ -16734,56 +16772,63 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               else
                 value_escaped = NULL;
 
-              if (group_column && data_column)
-                g_string_append_printf (xml,
-                                        "<group>"
-                                        "<value>%s</value>"
-                                        "<count>%d</count>"
-                                        "<c_count>%ld</c_count>"
-                                        "<min>%g</min>"
-                                        "<max>%g</max>"
-                                        "<mean>%g</mean>"
-                                        "<sum>%g</sum>"
-                                        "<c_sum>%g</c_sum>"
-                                        "</group>",
-                                        value_escaped,
-                                        aggregate_iterator_count (&aggregate),
-                                        c_count,
-                                        aggregate_iterator_min (&aggregate),
-                                        aggregate_iterator_max (&aggregate),
-                                        aggregate_iterator_mean (&aggregate),
-                                        aggregate_iterator_sum (&aggregate),
-                                        c_sum);
-              else if (group_column)
-                g_string_append_printf (xml,
-                                        "<group>"
-                                        "<value>%s</value>"
-                                        "<count>%d</count>"
-                                        "<c_count>%ld</c_count>"
-                                        "</group>",
-                                        value_escaped,
-                                        aggregate_iterator_count (&aggregate),
-                                        c_count);
-              else
-                g_string_append_printf (xml,
-                                        "<overall>"
-                                        "<count>%d</count>"
-                                        "<c_count>%ld</c_count>"
-                                        "<min>%g</min>"
-                                        "<max>%g</max>"
-                                        "<mean>%g</mean>"
-                                        "<sum>%g</sum>"
-                                        "<c_sum>%g</c_sum>"
-                                        "</overall>",
-                                        aggregate_iterator_count (&aggregate),
-                                        c_count,
-                                        aggregate_iterator_min (&aggregate),
-                                        aggregate_iterator_max (&aggregate),
-                                        aggregate_iterator_mean (&aggregate),
-                                        aggregate_iterator_sum (&aggregate),
-                                        c_sum
-                                       );
 
+              if (group_column)
+                {
+                  g_string_append_printf (xml,
+                                          "<group>"
+                                          "<value>%s</value>"
+                                          "<count>%d</count>"
+                                          "<c_count>%ld</c_count>",
+                                          value_escaped,
+                                          aggregate_iterator_count (&aggregate),
+                                          c_count);
+                }
+              else
+                {
+                  g_string_append_printf (xml,
+                                          "<overall>"
+                                          "<count>%d</count>"
+                                          "<c_count>%ld</c_count>",
+                                          aggregate_iterator_count (&aggregate),
+                                          c_count);
+                }
+
+              for (index = 0; index < data_columns->len; index++)
+                {
+                  double c_sum = g_array_index (c_sums, double, index);
+                  c_sum += aggregate_iterator_sum (&aggregate, index);
+                  g_array_index (c_sums, double, index) = c_sum;
+
+                  g_string_append_printf (xml,
+                                          "<stats column=\"%s\">"
+                                          "<min>%g</min>"
+                                          "<max>%g</max>"
+                                          "<mean>%g</mean>"
+                                          "<sum>%g</sum>"
+                                          "<c_sum>%g</c_sum>"
+                                          "</stats>",
+                                          g_array_index (data_columns, gchar*,
+                                                         index),
+                                          aggregate_iterator_min (&aggregate,
+                                                                  index),
+                                          aggregate_iterator_max (&aggregate,
+                                                                  index),
+                                          aggregate_iterator_mean (&aggregate,
+                                                                   index),
+                                          aggregate_iterator_sum (&aggregate,
+                                                                  index),
+                                          c_sum);
+                }
+
+              if (group_column)
+                {
+                  g_string_append_printf (xml, "</group>");
+                }
+              else
+                {
+                  g_string_append_printf (xml, "</overall>");
+                }
               g_free (value_escaped);
             }
 
@@ -16824,63 +16869,71 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   "</aggregate_column>",
                                   type);
 
-          if (data_column)
+          for (index = 0; index < data_columns->len; index++)
             {
+              gchar *column_name, *column_type;
+              column_name = g_array_index (data_columns, gchar*, index);
+              column_type = g_array_index (data_column_types, gchar*, index);
               g_string_append_printf (xml,
                                       "<aggregate_column>"
-                                      "<name>min</name>"
+                                      "<name>%s_min</name>"
                                       "<stat>min</stat>"
                                       "<type>%s</type>"
                                       "<column>%s</column>"
                                       "<data_type>%s</data_type>"
                                       "</aggregate_column>",
+                                      column_name,
                                       type,
-                                      data_column,
-                                      data_column_type);
+                                      column_name,
+                                      column_type);
               g_string_append_printf (xml,
                                       "<aggregate_column>"
-                                      "<name>max</name>"
+                                      "<name>%s_max</name>"
                                       "<stat>max</stat>"
                                       "<type>%s</type>"
                                       "<column>%s</column>"
                                       "<data_type>%s</data_type>"
                                       "</aggregate_column>",
+                                      column_name,
                                       type,
-                                      data_column,
-                                      data_column_type);
+                                      column_name,
+                                      column_type);
               g_string_append_printf (xml,
                                       "<aggregate_column>"
-                                      "<name>mean</name>"
+                                      "<name>%s_mean</name>"
                                       "<stat>mean</stat>"
                                       "<type>%s</type>"
                                       "<column>%s</column>"
                                       "<data_type>%s</data_type>"
                                       "</aggregate_column>",
+                                      column_name,
                                       type,
-                                      data_column,
-                                      data_column_type);
+                                      column_name,
+                                      column_type);
               g_string_append_printf (xml,
                                       "<aggregate_column>"
-                                      "<name>sum</name>"
+                                      "<name>%s_sum</name>"
                                       "<stat>sum</stat>"
                                       "<type>%s</type>"
                                       "<column>%s</column>"
                                       "<data_type>%s</data_type>"
                                       "</aggregate_column>",
+                                      column_name,
                                       type,
-                                      data_column,
-                                      data_column_type);
+                                      column_name,
+                                      column_type);
               g_string_append_printf (xml,
                                       "<aggregate_column>"
-                                      "<name>c_sum</name>"
+                                      "<name>%s_c_sum</name>"
                                       "<stat>c_sum</stat>"
                                       "<type>%s</type>"
                                       "<column>%s</column>"
                                       "<data_type>%s</data_type>"
                                       "</aggregate_column>",
+                                      column_name,
                                       type,
-                                      data_column,
-                                      data_column_type);
+                                      column_name,
+                                      column_type);
             }
 
           g_string_append (xml, "</column_info>");
@@ -16933,6 +16986,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           g_string_append (xml, "</get_aggregates_response>");
 
+          for (index = 0; index < data_columns->len; index++)
+            g_free (g_array_index (data_columns, gchar*, index));
+          g_array_free (data_columns, TRUE);
+          for (index = 0; index < data_column_types->len; index++)
+            g_free (g_array_index (data_column_types, gchar*, index));
+          g_array_free (data_column_types, TRUE);
+          g_array_free (c_sums, TRUE);
 
           SEND_TO_CLIENT_OR_FAIL (xml->str);
 
@@ -16942,6 +17002,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
+
+      CLOSE (CLIENT_GET_AGGREGATES, DATA_COLUMN);
 
       case CLIENT_GET_SYSTEM_REPORTS:
         {
@@ -27030,6 +27092,16 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_USER_SOURCES_SOURCE,
               &create_user_data->current_source);
+
+
+      case CLIENT_GET_AGGREGATES_DATA_COLUMN:
+        {
+          GList *last = g_list_last (get_aggregates_data->data_columns);
+          gchar *data_column = last->data;
+          openvas_append_text (&data_column, text, text_len);
+          last->data = data_column;
+          break;
+        }
 
 
       APPEND (CLIENT_MODIFY_AGENT_COMMENT,
