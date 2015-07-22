@@ -213,28 +213,28 @@ manage_count_hosts_FIX (const char *given_hosts, const char *exclude_hosts)
 double
 level_min_severity (const char *level, const char *class)
 {
-  if (strcmp (level, "Log") == 0)
+  if (strcasecmp (level, "Log") == 0)
     return SEVERITY_LOG;
-  else if (strcmp (level, "False Positive") == 0)
+  else if (strcasecmp (level, "False Positive") == 0)
     return SEVERITY_FP;
-  else if (strcmp (level, "Debug") == 0)
+  else if (strcasecmp (level, "Debug") == 0)
     return SEVERITY_DEBUG;
-  else if (strcmp (level, "Error") == 0)
+  else if (strcasecmp (level, "Error") == 0)
     return SEVERITY_ERROR;
-  else if (strcmp (class, "classic") == 0)
+  else if (strcasecmp (class, "classic") == 0)
     {
-      if (strcmp (level, "high") == 0)
+      if (strcasecmp (level, "high") == 0)
         return 5.1;
-      else if (strcmp (level, "medium") == 0)
+      else if (strcasecmp (level, "medium") == 0)
         return 2.1;
-      else if (strcmp (level, "low") == 0)
+      else if (strcasecmp (level, "low") == 0)
         return 0.1;
       else
         return SEVERITY_UNDEFINED;
     }
-  else if (strcmp (class, "pci-dss") == 0)
+  else if (strcasecmp (class, "pci-dss") == 0)
     {
-      if (strcmp (level, "high") == 0)
+      if (strcasecmp (level, "high") == 0)
         return 4.0;
       else
         return SEVERITY_UNDEFINED;
@@ -242,11 +242,11 @@ level_min_severity (const char *level, const char *class)
   else
     {
       /* NIST/BSI. */
-      if (strcmp (level, "high") == 0)
+      if (strcasecmp (level, "high") == 0)
         return 7.0;
-      else if (strcmp (level, "medium") == 0)
+      else if (strcasecmp (level, "medium") == 0)
         return 4.0;
-      else if (strcmp (level, "low") == 0)
+      else if (strcasecmp (level, "low") == 0)
         return 0.1;
       else
         return SEVERITY_UNDEFINED;
@@ -264,28 +264,28 @@ level_min_severity (const char *level, const char *class)
 double
 level_max_severity (const char *level, const char *class)
 {
-  if (strcmp (level, "Log") == 0)
+  if (strcasecmp (level, "Log") == 0)
     return SEVERITY_LOG;
-  else if (strcmp (level, "False Positive") == 0)
+  else if (strcasecmp (level, "False Positive") == 0)
     return SEVERITY_FP;
-  else if (strcmp (level, "Debug") == 0)
+  else if (strcasecmp (level, "Debug") == 0)
     return SEVERITY_DEBUG;
-  else if (strcmp (level, "Error") == 0)
+  else if (strcasecmp (level, "Error") == 0)
     return SEVERITY_ERROR;
-  else if (strcmp (class, "classic") == 0)
+  else if (strcasecmp (class, "classic") == 0)
     {
-      if (strcmp (level, "high") == 0)
+      if (strcasecmp (level, "high") == 0)
         return 10.0;
-      else if (strcmp (level, "medium") == 0)
+      else if (strcasecmp (level, "medium") == 0)
         return 5.0;
-      else if (strcmp (level, "low") == 0)
+      else if (strcasecmp (level, "low") == 0)
         return 2.0;
       else
         return SEVERITY_UNDEFINED;
     }
-  else if (strcmp (class, "pci-dss") == 0)
+  else if (strcasecmp (class, "pci-dss") == 0)
     {
-      if (strcmp (level, "high") == 0)
+      if (strcasecmp (level, "high") == 0)
         return 10.0;
       else
         return SEVERITY_UNDEFINED;
@@ -293,11 +293,11 @@ level_max_severity (const char *level, const char *class)
   else
     {
       /* NIST/BSI. */
-      if (strcmp (level, "high") == 0)
+      if (strcasecmp (level, "high") == 0)
         return 10.0;
-      else if (strcmp (level, "medium") == 0)
+      else if (strcasecmp (level, "medium") == 0)
         return 6.9;
-      else if (strcmp (level, "low") == 0)
+      else if (strcasecmp (level, "low") == 0)
         return 3.9;
       else
         return SEVERITY_UNDEFINED;

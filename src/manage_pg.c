@@ -1280,7 +1280,7 @@ manage_create_sql_functions ()
            // FIX coalesce else null first
            "               ORDER BY coalesce (owner, 0) DESC LIMIT 1)"
            "         WHEN 'classic'"
-           "         THEN (CASE $2"
+           "         THEN (CASE lower ($2)"
            "               WHEN 'high'"
            "               THEN $1 > 5"
            "                    AND $1 <= 10"
@@ -1297,7 +1297,7 @@ manage_create_sql_functions ()
            "               ELSE 0::boolean"
            "               END)"
            "         WHEN 'pci-dss'"
-           "         THEN (CASE $2"
+           "         THEN (CASE lower ($2)"
            "               WHEN 'high'"
            "               THEN $1 >= 4.0"
            "               WHEN 'none'"
@@ -1307,7 +1307,7 @@ manage_create_sql_functions ()
            "               ELSE 0::boolean"
            "               END)"
            "         ELSE " /* NIST/BSI */
-           "              (CASE $2"
+           "              (CASE lower ($2)"
            "               WHEN 'high'"
            "               THEN $1 >= 7"
            "                    AND $1 <= 10"
