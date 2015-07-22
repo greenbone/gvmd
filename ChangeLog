@@ -1,3 +1,7 @@
+2015-07-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (modify_setting): Save "Chinese" as "zh_CN".
+
 2015-07-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add a simple host summary as $H for alert messages.
