@@ -1,3 +1,15 @@
+2015-07-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add a simple host summary as $H for alert messages.
+
+	* src/manage_sql.c (alert_message_print): Add Host Summary.
+	(escalate_2): Get host summary from manage_report and pass to
+	alert_message_print.
+	(host_summary_append): New function.
+	(print_report_xml, manage_report): Add host_summary arg.
+
+	* src/manage.h: Update header accordingly.
+
 2015-07-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_pg.c (manage_create_sql_functions): Make the level name
@@ -26,7 +38,7 @@
 	GArray one.
 	(aggregate_iterator_min, aggregate_iterator_max)
 	(aggregate_iterator_mean, aggregate_iterator_sum): Add parameter.
-	
+
 	* src/omp.c (get_aggregates_data_t, get_aggregates_data_reset): Replace
 	string field data_column with GList data_columns.
 	(client_state_t): Add CLIENT_GET_AGGREGATES_DATA_COLUMN.
