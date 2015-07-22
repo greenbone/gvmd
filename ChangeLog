@@ -1,3 +1,7 @@
+2015-07-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (escalate_2): Free term and report_zone.
+
 2015-07-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (modify_setting): Save "Chinese" as "zh_CN".

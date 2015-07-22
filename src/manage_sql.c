@@ -8317,7 +8317,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           if (to_address)
             {
               int ret;
-              gchar *body, *subject, *term, *report_zone, *host_summary;
+              gchar *body, *subject;
               char *name, *notice, *from_address, *filt_id;
               gchar *base64, *type, *extension;
               filter_t filter;
@@ -8325,8 +8325,6 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               base64 = NULL;
               type = NULL;
               extension = NULL;
-              term = NULL;
-              report_zone = NULL;
 
               from_address = alert_data (alert,
                                              "method",
@@ -8349,7 +8347,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                 {
                   gchar *event_desc, *condition_desc, *report_content;
                   gchar *note, *note_2, *alert_subject, *message;
-                  gchar *host_summary;
+                  gchar *term, *report_zone, *host_summary;
                   char *format_uuid;
                   report_format_t report_format = 0;
                   gsize content_length;
@@ -8403,6 +8401,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   g_free (format_uuid);
 
                   event_desc = event_description (event, event_data, NULL);
+                  term = NULL;
+                  report_zone = NULL;
                   host_summary = NULL;
                   report_content = manage_report (report, report_format,
                                                   filt_id,
@@ -8432,6 +8432,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                       free (name);
                       free (to_address);
                       free (from_address);
+                      g_free (term);
+                      g_free (report_zone);
                       g_free (host_summary);
                       return -1;
                     }
@@ -8517,6 +8519,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   g_free (report_content);
                   g_free (event_desc);
                   g_free (condition_desc);
+                  g_free (term);
+                  g_free (report_zone);
                   g_free (host_summary);
                 }
               else if (notice && strcmp (notice, "2") == 0)
@@ -8526,6 +8530,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   report_format_t report_format = 0;
                   gsize content_length;
                   gchar *alert_subject, *message;
+                  gchar *term, *report_zone, *host_summary;
 
                   /* Message with attached report. */
 
@@ -8576,6 +8581,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   g_free (format_uuid);
 
                   event_desc = event_description (event, event_data, NULL);
+                  term = NULL;
+                  report_zone = NULL;
                   host_summary = NULL;
                   report_content = manage_report (report, report_format,
                                                   filt_id,
@@ -8663,6 +8670,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   g_free (note);
                   g_free (event_desc);
                   g_free (condition_desc);
+                  g_free (term);
+                  g_free (report_zone);
                   g_free (host_summary);
                 }
               else
