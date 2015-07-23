@@ -18914,8 +18914,6 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                                 "                 WHERE nvts.oid"
                                 "                        = results.nvt),"
                                 "                results.severity)"
-                                "       FROM nvts"
-                                "       WHERE nvts.oid = results.nvt)"
                                 " ELSE results.severity END");
       else
         severity_sql = g_strdup ("results.severity");
