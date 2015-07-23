@@ -1,5 +1,13 @@
 2015-07-23  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Backport r22883.
+
+	* src/manage_sqlite3.c (create_tables): Drop and recreate views for
+	consistency with PostgreSQL version and to avoid migrators for changes
+	that do not affect the column schema.
+
+2015-07-23  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Backport r22877.
 
 	* src/manage_sql.c (report_severity_data): Get severity values from
