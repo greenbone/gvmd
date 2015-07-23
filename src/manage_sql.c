@@ -50145,7 +50145,7 @@ modify_setting (const gchar *uuid, const gchar *name,
           else if (strcmp (value, "Chinese") == 0)
             {
               g_free (value);
-              value = g_strdup ("zh");
+              value = g_strdup ("zh_CN");
             }
           else if (strcmp (value, "English") == 0)
             {
