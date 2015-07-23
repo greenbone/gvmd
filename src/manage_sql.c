@@ -14139,7 +14139,12 @@ task_severity (task_t task, int overrides, int min_qod, int offset)
   if (setting_dynamic_severity_int ())
     severity_sql = g_strdup("CASE WHEN results.severity"
                             "          > " G_STRINGIFY (SEVERITY_LOG)
-                            " THEN (SELECT CAST (cvss_base AS REAL)"
+                            " THEN coalesce ((SELECT CAST (cvss_base"
+                            "                              AS REAL)"
+                            "                 FROM nvts"
+                            "                 WHERE nvts.oid"
+                            "                         = results.nvt),"
+                            "                results.severity)"
                             "       FROM nvts"
                             "       WHERE nvts.oid = results.nvt)"
                             " ELSE results.severity END");
@@ -18282,7 +18287,12 @@ init_asset_iterator (iterator_t* iterator, int first_result,
       if (setting_dynamic_severity_int ())
         severity_sql = g_strdup("CASE WHEN results.severity"
                                 "          > " G_STRINGIFY (SEVERITY_LOG)
-                                " THEN (SELECT CAST (cvss_base AS REAL)"
+                                " THEN coalesce ((SELECT CAST (cvss_base"
+                                "                              AS REAL)"
+                                "                 FROM nvts"
+                                "                 WHERE nvts.oid"
+                                "                         = results.nvt),"
+                                "                results.severity)"
                                 "       FROM nvts"
                                 "       WHERE nvts.oid = results.nvt)"
                                 " ELSE results.severity END");
@@ -18980,9 +18990,12 @@ report_scan_result_count (report_t report, const char* levels,
       if (setting_dynamic_severity_int ())
         severity_sql = g_strdup("CASE WHEN results.severity"
                                 "          > " G_STRINGIFY (SEVERITY_LOG)
-                                " THEN (SELECT CAST (cvss_base AS REAL)"
-                                "       FROM nvts"
-                                "       WHERE nvts.oid = results.nvt)"
+                                " THEN coalesce ((SELECT CAST (cvss_base"
+                                "                              AS REAL)"
+                                "                 FROM nvts"
+                                "                 WHERE nvts.oid"
+                                "                         = results.nvt),"
+                                "                results.severity)"
                                 " ELSE results.severity END");
       else
         severity_sql = g_strdup ("results.severity");
@@ -19397,9 +19410,12 @@ report_severity_data (report_t report, int override,
       if (setting_dynamic_severity_int ())
         severity_sql = g_strdup("CASE WHEN results.severity"
                                 "          > " G_STRINGIFY (SEVERITY_LOG)
-                                " THEN (SELECT CAST (cvss_base AS REAL)"
-                                "       FROM nvts"
-                                "       WHERE nvts.oid = results.nvt)"
+                                " THEN coalesce ((SELECT CAST (cvss_base"
+                                "                              AS REAL)"
+                                "                 FROM nvts"
+                                "                 WHERE nvts.oid"
+                                "                         = results.nvt),"
+                                "                results.severity)"
                                 " ELSE results.severity END");
       else
         severity_sql = g_strdup ("results.severity");
@@ -21482,9 +21498,12 @@ filtered_host_count (const char *levels, const char *search_phrase,
       if (setting_dynamic_severity_int ())
         severity_sql = g_strdup("CASE WHEN results.severity"
                                 "          > " G_STRINGIFY (SEVERITY_LOG)
-                                " THEN (SELECT CAST (cvss_base AS REAL)"
-                                "       FROM nvts"
-                                "       WHERE nvts.oid = results.nvt)"
+                                " THEN coalesce ((SELECT CAST (cvss_base"
+                                "                              AS REAL)"
+                                "                 FROM nvts"
+                                "                 WHERE nvts.oid"
+                                "                         = results.nvt),"
+                                "                results.severity)"
                                 " ELSE results.severity END");
       else
         severity_sql = g_strdup ("results.severity");
