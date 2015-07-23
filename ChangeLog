@@ -1,3 +1,14 @@
+2015-07-23  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r22797 by Matthew Mundell.
+
+	* src/manage_pg.c (manage_create_sql_functions, create_tables): When
+	getting the severity of a result dynamically from the nvts table, fall back
+	to the static result severity when the nvts table value is NULL, because
+	results of OSP scans do not have an associated NVT in the nvts table.
+
+	* src/manage_sqlite3.c (create_tables): As above.
+
 2015-07-20  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	Backport r22861.
