@@ -20043,15 +20043,19 @@ report_severity_data (report_t report, int override,
       else
         quoted_host = NULL;
 
-      if (setting_dynamic_severity_int ())
-        severity_sql = g_strdup("CASE WHEN results.severity"
-                                "          > " G_STRINGIFY (SEVERITY_LOG)
-                                " THEN (SELECT CAST (cvss_base AS REAL)"
-                                "       FROM nvts"
-                                "       WHERE nvts.oid = results.nvt)"
-                                " ELSE results.severity END");
-      else
-        severity_sql = g_strdup ("results.severity");
+      severity_sql
+        = g_strdup_printf ("(SELECT new_severity FROM result_new_severities"
+                           " WHERE result_new_severities.result = results.id"
+                           "   AND result_new_severities.user"
+                           "         = (SELECT users.id"
+                           "            FROM current_credentials, users"
+                           "            WHERE current_credentials.uuid"
+                           "                    = users.uuid)"
+                           "   AND result_new_severities.override = %d"
+                           "   AND result_new_severities.dynamic = %d"
+                           " LIMIT 1)",
+                           override,
+                           setting_dynamic_severity_int ());
 
       qod_sql = where_qod (min_qod);
 
