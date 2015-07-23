@@ -2533,7 +2533,8 @@ create_tables ()
 
   owned_clause = acl_where_owned_for_get ("override", "users.id");
 
-  sql ("CREATE VIEW IF NOT EXISTS result_overrides AS"
+  sql ("DROP VIEW IF EXISTS result_overrides;");
+  sql ("CREATE VIEW result_overrides AS"
        " SELECT users.id AS user,"
        "        results.id as result,"
        "        overrides.id AS override,"
@@ -2564,7 +2565,8 @@ create_tables ()
 
   g_free (owned_clause);
 
-  sql ("CREATE VIEW IF NOT EXISTS result_new_severities AS"
+  sql ("DROP VIEW IF EXISTS result_new_severities;");
+  sql ("CREATE VIEW result_new_severities AS"
        "  SELECT results.id as result, users.id as user, dynamic, override,"
        "    CASE WHEN dynamic THEN"
        "      CASE WHEN override THEN"
@@ -2601,7 +2603,8 @@ create_tables ()
        "  JOIN (SELECT 0 AS override UNION SELECT 1 AS override_opts)"
        "  JOIN (SELECT 0 AS dynamic UNION SELECT 1 AS dynamic_opts);");
 
-  sql ("CREATE VIEW IF NOT EXISTS results_autofp AS"
+  sql ("DROP VIEW IF EXISTS results_autofp;");
+  sql ("CREATE VIEW results_autofp AS"
        " SELECT results.id as result, autofp_selection,"
        "        (CASE autofp_selection"
        "         WHEN 1 THEN"
