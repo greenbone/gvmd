@@ -1,5 +1,12 @@
 2015-07-23  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Backport r22877.
+
+	* src/manage_sql.c (report_severity_data): Get severity values from
+	result_new_severities view.
+
+2015-07-23  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Backport r22797 by Matthew Mundell.
 
 	* src/manage_pg.c (manage_create_sql_functions, create_tables): When
