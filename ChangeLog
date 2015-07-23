@@ -1,5 +1,11 @@
 2015-07-23  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Backport r22887.
+
+	* src/manage_sql.c (init_asset_iterator): Remove extra FROM clause.
+
+2015-07-23  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Backport r22885.
 
 	* src/manage_sql.c (task_severity, init_asset_iterator)
