@@ -1,5 +1,12 @@
 2015-07-23  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (task_severity, init_asset_iterator)
+	(report_scan_result_count, report_severity_data, filtered_host_count):
+	If NVT cannot be found for dynamic severity without overrides, use
+	static severity instead.
+
+2015-07-23  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sqlite3.c (create_tables): Drop and recreate views for
 	consistency with PostgreSQL version and to avoid migrators for changes
 	that do not affect the column schema.
