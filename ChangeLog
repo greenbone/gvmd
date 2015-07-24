@@ -1,3 +1,9 @@
+2015-07-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r22895.
+
+	* src/manage.c (validate_username): Allow dot (.) in username.
+
 2015-07-23  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r22871.

@@ -6237,7 +6237,7 @@ keyfile_to_auth_conf_settings_xml (const gchar * filename)
 int
 validate_username (const gchar * name)
 {
-  if (g_regex_match_simple ("^[[:alnum:]-_]+$", name, 0, 0))
+  if (g_regex_match_simple ("^[[:alnum:]-_.]+$", name, 0, 0))
     return 0;
   else
     return 1;
