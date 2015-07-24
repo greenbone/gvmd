@@ -1,3 +1,7 @@
+2015-07-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage.c (validate_username): Allow dot (.) in username.
+
 2015-07-23  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (init_asset_iterator): Remove extra FROM clause.
