@@ -12854,6 +12854,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               iterator_t data;
               char *filter_uuid;
+              int notice, message;
+              const char *method;
 
               ret = get_next (&alerts, &get_alerts_data->get, &first,
                               &count, init_alert_iterator);
@@ -12925,19 +12927,43 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               /* Method. */
 
-              SENDF_TO_CLIENT_OR_FAIL ("<method>%s",
-                                       alert_method_name
-                                        (alert_iterator_method
-                                          (&alerts)));
+              method = alert_method_name (alert_iterator_method (&alerts));
+              SENDF_TO_CLIENT_OR_FAIL ("<method>%s", method);
               init_alert_data_iterator (&data, get_iterator_resource (&alerts),
                                         get_alerts_data->get.trash, "method");
+              notice = -1;
+              message = 0;
               while (next (&data))
+                {
+                  const char *name;
+                  name = alert_data_iterator_name (&data);
+                  if (strcmp (name, "notice") == 0)
+                    notice = atoi (alert_data_iterator_data (&data));
+                  else if (strcmp (method, "Email") == 0
+                           && strcmp (name, "message") == 0)
+                    {
+                      if (strlen (alert_data_iterator_data (&data)) == 0)
+                        continue;
+                      message = 1;
+                    }
+                  SENDF_TO_CLIENT_OR_FAIL ("<data>"
+                                           "<name>%s</name>"
+                                           "%s"
+                                           "</data>",
+                                           name,
+                                           alert_data_iterator_data (&data));
+                }
+              /* If there is no email message data, send the default. */
+              if (strcmp (method, "Email") == 0
+                  && message == 0
+                  && (notice == 0 || notice == 2))
                 SENDF_TO_CLIENT_OR_FAIL ("<data>"
-                                         "<name>%s</name>"
+                                         "<name>message</name>"
                                          "%s"
                                          "</data>",
-                                         alert_data_iterator_name (&data),
-                                         alert_data_iterator_data (&data));
+                                         notice == 0
+                                          ? ALERT_MESSAGE_INCLUDE
+                                          : ALERT_MESSAGE_ATTACH);
               cleanup_iterator (&data);
               SEND_TO_CLIENT_OR_FAIL ("</method>");
 

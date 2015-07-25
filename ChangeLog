@@ -1,3 +1,24 @@
+2015-07-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Use an email alert "message" for the defaults when attaching or
+	including a report.  Add $i and $t to the message.
+
+	* src/manage_sql.c (REPORT_NOTICE_FORMAT, REPORT_ATTACH_FORMAT): Remove.
+	(alert_message_print): Add $i to include the report, and $t to include
+	a note when the report is truncated.
+	(escalate_2): When including or attaching in an email, and there is no
+	message, use a default message instead of printing the default email by
+	hand.  Also remove handling of the notes and included report, because
+	these are now available with $i and $t in the message.
+
+	* src/manage.h  (ALERT_MESSAGE_INCLUDE, ALERT_MESSAGE_ATTACH): New
+	defines.  Default messages.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_ALERTS, when the
+	method is email and a report is being attached/included and there is no
+	message, send the default message.  This ensures old alerts get the
+	default message.
+
 2015-07-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage.c (validate_username): Allow dot (.) in username.
