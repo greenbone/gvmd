@@ -7882,29 +7882,6 @@ send_to_verinice (const char *url, const char *username, const char *password,
 }
 
 /**
- * @brief Format string for simple notice alert email.
- */
-#define REPORT_NOTICE_FORMAT                                                  \
- "Task '%s': %s\n"                                                            \
- "\n"                                                                         \
- "After the event %s,\n"                                                      \
- "the following condition was met: %s\n"                                      \
- "\n"                                                                         \
- "This email escalation is configured to apply report format '%s'.\n"         \
- "Full details and other report formats are available on the scan engine.\n"  \
- "\n"                                                                         \
- "%s"                                                                         \
- "\n"                                                                         \
- "%.*s"                                                                       \
- "%s"                                                                         \
- "\n"                                                                         \
- "\n"                                                                         \
- "Note:\n"                                                                    \
- "This email was sent to you as a configured security scan escalation.\n"     \
- "Please contact your local system administrator if you think you\n"          \
- "should not have received it.\n"
-
-/**
  * @brief Default max number of bytes of reports included in email alerts.
  */
 #define MAX_CONTENT_LENGTH 20000
@@ -7915,26 +7892,6 @@ send_to_verinice (const char *url, const char *username, const char *password,
  * A value less or equal to 0 allows any size.
  */
 static int max_content_length = MAX_CONTENT_LENGTH;
-
-/**
- * @brief Format string for attached report alert email.
- */
-#define REPORT_ATTACH_FORMAT                                                  \
- "Task '%s': %s\n"                                                            \
- "\n"                                                                         \
- "After the event %s,\n"                                                      \
- "the following condition was met: %s\n"                                      \
- "\n"                                                                         \
- "This email escalation is configured to attach report format '%s'.\n"        \
- "Full details and other report formats are available on the scan engine.\n"  \
- "\n"                                                                         \
- "%s"                                                                         \
- "\n"                                                                         \
- "\n"                                                                         \
- "Note:\n"                                                                    \
- "This email was sent to you as a configured security scan escalation.\n"     \
- "Please contact your local system administrator if you think you\n"          \
- "should not have received it.\n"
 
 /**
  * @brief Default max number of bytes of reports attached to email alerts.
@@ -8038,6 +7995,10 @@ alert_subject_print (const gchar *subject, event_t event,
  * @param[in]  format_name  Report format name.
  * @param[in]  filter       Filter.
  * @param[in]  term         Filter term.
+ * @param[in]  content      The report, for inlining.
+ * @param[in]  content_length  Length of content.
+ * @param[in]  truncated       Whether the report was truncated.
+ * @param[in]  max_length      Max allowed length of content.
  *
  * @return Freshly allocated message.
  */
@@ -8047,7 +8008,8 @@ alert_message_print (const gchar *message, event_t event,
                      alert_t alert, alert_condition_t condition,
                      gchar *format_name, filter_t filter,
                      const gchar *term, const gchar *zone,
-                     const gchar *host_summary)
+                     const gchar *host_summary, const gchar *content,
+                     gsize content_length, int truncated, int max_length)
 {
   int formatting;
   const gchar *point, *end;
@@ -8092,6 +8054,25 @@ alert_message_print (const gchar *message, event_t event,
                                  host_summary ? host_summary : "N/A");
                 break;
               }
+            case 'i':
+              {
+                if (content)
+                  {
+                    g_string_append_printf (new_message,
+                                            "%.*s",
+                                            /* Cast for 64 bit. */
+                                            (int) MIN (content_length,
+                                                       max_content_length),
+                                            content);
+                    if (content_length > max_content_length)
+                      g_string_append_printf (new_message,
+                                              "\n... (report truncated after"
+                                              " %i characters)\n",
+                                              max_content_length);
+                  }
+
+                break;
+              }
             case 'n':
               {
                 char *name = task_name (task);
@@ -8126,6 +8107,17 @@ alert_message_print (const gchar *message, event_t event,
                 /* Filter term. */
 
                 g_string_append (new_message, term ? term : "N/A");
+                break;
+              }
+            case 't':
+              {
+                if (truncated)
+                  g_string_append_printf (new_message,
+                                          "Note: This report exceeds the"
+                                          " maximum length of %i characters"
+                                          " and thus\n"
+                                          "was truncated.\n",
+                                          max_length);
                 break;
               }
             case 'z':
@@ -8254,7 +8246,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               if (notice && strcmp (notice, "0") == 0)
                 {
                   gchar *event_desc, *condition_desc, *report_content;
-                  gchar *note, *note_2, *alert_subject, *message;
+                  gchar *alert_subject, *message;
                   gchar *term, *report_zone, *host_summary;
                   char *format_uuid;
                   report_format_t report_format = 0;
@@ -8360,70 +8352,23 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                       alert_subject = NULL;
                     }
                   g_free (alert_subject);
-                  if (content_length > max_content_length)
-                    {
-                      note = g_strdup_printf ("Note: This report exceeds the"
-                                              " maximum length of %i characters"
-                                              " and thus\n"
-                                              "was truncated.\n",
-                                              max_content_length);
-                      note_2 = g_strdup_printf ("\n... (report truncated after"
-                                                " %i characters)\n",
-                                                max_content_length);
-                    }
-                  else
-                    note = note_2 = NULL;
 
                   message = alert_data (alert, "method", "message");
-                  if (message && strlen (message))
+                  if (message == NULL || strlen (message) == 0)
                     {
-                      if (note)
-                        {
-                          gchar *old_message;
-                          old_message = message;
-                          message = g_strdup_printf ("%s\n\n%s",
-                                                     old_message, note);
-                          g_free (old_message);
-                        }
-                      if (report_content)
-                        {
-                          gchar *old_message;
-                          old_message = message;
-                          message = g_strdup_printf ("%s\n\n%s",
-                                                     old_message,
-                                                     report_content);
-                          g_free (old_message);
-                        }
-                      if (note_2)
-                        {
-                          gchar *old_message;
-                          old_message = message;
-                          message = g_strdup_printf ("%s\n\n%s",
-                                                     old_message, note_2);
-                          g_free (old_message);
-                        }
-                      body = alert_message_print (message, event, event_data,
-                                                  task, alert, condition,
-                                                  format_name, filter,
-                                                  term, report_zone,
-                                                  host_summary);
+                      g_free (message);
+                      message = g_strdup (ALERT_MESSAGE_INCLUDE);
                     }
-                  else
-                    body = g_strdup_printf (REPORT_NOTICE_FORMAT,
-                                            name,
-                                            event_desc,
-                                            event_desc,
-                                            condition_desc,
-                                            format_name,
-                                            note ? note : "",
-                                            /* Cast for 64 bit. */
-                                            (int) MIN (content_length,
-                                                       max_content_length),
-                                            report_content,
-                                            note_2 ? note_2 : "");
+                  body = alert_message_print (message, event, event_data,
+                                              task, alert, condition,
+                                              format_name, filter,
+                                              term, report_zone,
+                                              host_summary, report_content,
+                                              content_length,
+                                              content_length
+                                              > max_content_length,
+                                              max_content_length);
                   g_free (message);
-                  g_free (note);
-                  g_free (note_2);
                   g_free (report_content);
                   g_free (event_desc);
                   g_free (condition_desc);
@@ -8433,7 +8378,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                 }
               else if (notice && strcmp (notice, "2") == 0)
                 {
-                  gchar *event_desc, *condition_desc, *report_content, *note;
+                  gchar *event_desc, *condition_desc, *report_content;
                   char *format_uuid;
                   report_format_t report_format = 0;
                   gsize content_length;
@@ -8538,44 +8483,23 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   g_free (alert_subject);
                   if (max_attach_length <= 0
                       || content_length <= max_attach_length)
-                    {
-                      base64 = g_base64_encode ((guchar*) report_content,
-                                                content_length);
-                      note = NULL;
-                    }
-                  else
-                    note = g_strdup_printf ("Note: The report exceeds the"
-                                            " maximum attachment length of"
-                                            " %i bytes.\n",
-                                            max_attach_length);
+                    base64 = g_base64_encode ((guchar*) report_content,
+                                              content_length);
                   g_free (report_content);
                   message = alert_data (alert, "method", "message");
-                  if (message && strlen (message))
+                  if (message == NULL || strlen (message) == 0)
                     {
-                      if (note)
-                        {
-                          gchar *old_message;
-                          old_message = message;
-                          message = g_strdup_printf ("%s\n\n%s",
-                                                     old_message, note);
-                          g_free (old_message);
-                        }
-                      body = alert_message_print (message, event, event_data,
-                                                  task, alert, condition,
-                                                  format_name, filter,
-                                                  term, report_zone,
-                                                  host_summary);
+                      g_free (message);
+                      message = g_strdup (ALERT_MESSAGE_ATTACH);
                     }
-                  else
-                    body = g_strdup_printf (REPORT_ATTACH_FORMAT,
-                                            name,
-                                            event_desc,
-                                            event_desc,
-                                            condition_desc,
-                                            format_name,
-                                            note ? note : "");
+                  body = alert_message_print (message, event, event_data,
+                                              task, alert, condition,
+                                              format_name, filter,
+                                              term, report_zone,
+                                              host_summary, NULL, 0,
+                                              base64 == NULL,
+                                              max_attach_length);
                   g_free (message);
-                  g_free (note);
                   g_free (event_desc);
                   g_free (condition_desc);
                   g_free (term);
@@ -8612,7 +8536,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   if (message && strlen (message))
                     body = alert_message_print (message, event, event_data,
                                                 task, alert, condition,
-                                                NULL, 0, NULL, NULL, NULL);
+                                                NULL, 0, NULL, NULL, NULL,
+                                                NULL, 0, 0, 0);
                   else
                     body = g_strdup_printf (SIMPLE_NOTICE_FORMAT,
                                             event_desc,

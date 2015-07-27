@@ -296,6 +296,47 @@ trash_id_exists (const char *, const char *);
 /* Events and Alerts. */
 
 /**
+ * @brief Default format string for alert email, when including report.
+ */
+#define ALERT_MESSAGE_INCLUDE                                                 \
+ "Task '$n': $e\n"                                                            \
+ "\n"                                                                         \
+ "After the event $e,\n"                                                      \
+ "the following condition was met: $c\n"                                      \
+ "\n"                                                                         \
+ "This email escalation is configured to apply report format '$r'.\n"         \
+ "Full details and other report formats are available on the scan engine.\n"  \
+ "\n"                                                                         \
+ "$t"                                                                         \
+ "\n"                                                                         \
+ "$i"                                                                         \
+ "\n"                                                                         \
+ "\n"                                                                         \
+ "Note:\n"                                                                    \
+ "This email was sent to you as a configured security scan escalation.\n"     \
+ "Please contact your local system administrator if you think you\n"          \
+ "should not have received it.\n"
+
+/**
+ * @brief Default format string for alert email, when attaching report.
+ */
+#define ALERT_MESSAGE_ATTACH                                                  \
+ "Task '$n': $e\n"                                                            \
+ "\n"                                                                         \
+ "After the event $e,\n"                                                      \
+ "the following condition was met: $c\n"                                      \
+ "\n"                                                                         \
+ "This email escalation is configured to attach report format '$r'.\n"        \
+ "Full details and other report formats are available on the scan engine.\n"  \
+ "\n"                                                                         \
+ "$t"                                                                         \
+ "\n"                                                                         \
+ "Note:\n"                                                                    \
+ "This email was sent to you as a configured security scan escalation.\n"     \
+ "Please contact your local system administrator if you think you\n"          \
+ "should not have received it.\n"
+
+/**
  * @brief Types of task events.
  */
 typedef enum
