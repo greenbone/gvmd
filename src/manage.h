@@ -1221,7 +1221,7 @@ gchar *
 manage_report (report_t, report_format_t, const char *, int, const char*, int,
                const char *, const char *, const char *, const char *, int,
                const char *, int, int, int, int, int, int, int, const char *,
-               gsize *, gchar **, gchar **, const char *);
+               gsize *, gchar **, gchar **, const char *, gchar **, gchar **);
 
 int
 manage_send_report (report_t, report_t, report_format_t, const get_data_t *,
