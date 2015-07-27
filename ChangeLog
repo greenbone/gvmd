@@ -1,5 +1,11 @@
 2015-07-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r22876.
+
+	* src/manage_sql.c (escalate_2): Free term and report_zone.
+
+2015-07-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r22869.
 
 	Add a simple host summary as $H for alert messages.
