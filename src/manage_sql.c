@@ -8046,7 +8046,8 @@ alert_message_print (const gchar *message, event_t event,
                      const void *event_data, task_t task,
                      alert_t alert, alert_condition_t condition,
                      gchar *format_name, filter_t filter,
-                     const gchar *term, const gchar *zone)
+                     const gchar *term, const gchar *zone,
+                     const gchar *host_summary)
 {
   int formatting;
   const gchar *point, *end;
@@ -8081,6 +8082,14 @@ alert_message_print (const gchar *message, event_t event,
                                                 NULL);
                 g_string_append (new_message, event_desc);
                 g_free (event_desc);
+                break;
+              }
+            case 'H':
+              {
+                /* Host summary. */
+
+                g_string_append (new_message,
+                                 host_summary ? host_summary : "N/A");
                 break;
               }
             case 'n':
@@ -8127,7 +8136,6 @@ alert_message_print (const gchar *message, event_t event,
                 break;
               }
 
-            case 'H':
             case 'R':
             default:
               g_string_append_c (new_message, '$');
@@ -8217,7 +8225,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           if (to_address)
             {
               int ret;
-              gchar *body, *subject, *term, *report_zone;
+              gchar *body, *subject, *term, *report_zone, *host_summary;
               char *name, *notice, *from_address, *filt_id;
               gchar *base64, *type, *extension;
               filter_t filter;
@@ -8249,6 +8257,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                 {
                   gchar *event_desc, *condition_desc, *report_content;
                   gchar *note, *note_2, *alert_subject, *message;
+                  gchar *host_summary;
                   char *format_uuid;
                   report_format_t report_format = 0;
                   gsize content_length;
@@ -8302,6 +8311,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   g_free (format_uuid);
 
                   event_desc = event_description (event, event_data, NULL);
+                  host_summary = NULL;
                   report_content = manage_report (report, report_format,
                                                   filt_id,
                                                   sort_order, sort_field,
@@ -8320,7 +8330,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                                   NULL,   /* Content type. */
                                                   zone,
                                                   &term,
-                                                  &report_zone);
+                                                  &report_zone,
+                                                  &host_summary);
                   if (report_content == NULL)
                     {
                       free (event_desc);
@@ -8329,6 +8340,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                       free (name);
                       free (to_address);
                       free (from_address);
+                      g_free (host_summary);
                       return -1;
                     }
                   format_name = report_format_name (report_format);
@@ -8391,7 +8403,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                       body = alert_message_print (message, event, event_data,
                                                   task, alert, condition,
                                                   format_name, filter,
-                                                  term, report_zone);
+                                                  term, report_zone,
+                                                  host_summary);
                     }
                   else
                     body = g_strdup_printf (REPORT_NOTICE_FORMAT,
@@ -8412,6 +8425,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   g_free (report_content);
                   g_free (event_desc);
                   g_free (condition_desc);
+                  g_free (host_summary);
                 }
               else if (notice && strcmp (notice, "2") == 0)
                 {
@@ -8470,6 +8484,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   g_free (format_uuid);
 
                   event_desc = event_description (event, event_data, NULL);
+                  host_summary = NULL;
                   report_content = manage_report (report, report_format,
                                                   filt_id,
                                                   sort_order, sort_field,
@@ -8487,7 +8502,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                                   &type,
                                                   zone,
                                                   &term,
-                                                  &report_zone);
+                                                  &report_zone,
+                                                  &host_summary);
                   if (report_content == NULL)
                     {
                       g_free (event_desc);
@@ -8540,7 +8556,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                       body = alert_message_print (message, event, event_data,
                                                   task, alert, condition,
                                                   format_name, filter,
-                                                  term, report_zone);
+                                                  term, report_zone,
+                                                  host_summary);
                     }
                   else
                     body = g_strdup_printf (REPORT_ATTACH_FORMAT,
@@ -8554,6 +8571,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   g_free (note);
                   g_free (event_desc);
                   g_free (condition_desc);
+                  g_free (host_summary);
                 }
               else
                 {
@@ -8585,7 +8603,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   if (message && strlen (message))
                     body = alert_message_print (message, event, event_data,
                                                 task, alert, condition,
-                                                NULL, 0, NULL, NULL);
+                                                NULL, 0, NULL, NULL, NULL);
                   else
                     body = g_strdup_printf (SIMPLE_NOTICE_FORMAT,
                                             event_desc,
@@ -8776,6 +8794,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                           NULL,    /* Content type. */
                                           zone,
                                           NULL,
+                                          NULL,
                                           NULL);
           if (report_content == NULL)
             return -1;
@@ -8897,6 +8916,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                           NULL,    /* Extension. */
                                           NULL,    /* Content type. */
                                           zone,
+                                          NULL,
                                           NULL,
                                           NULL);
           if (report_content == NULL)
@@ -23505,6 +23525,55 @@ tz_revert (gchar *zone, char *tz)
 /**
  * @brief Print the XML for a report to a file.
  *
+ * @param[in]  host_summary_buffer  Summary.
+ * @param[in]  host                 Host.
+ * @param[in]  start                Start time, in ISO format.
+ * @param[in]  end                  End time, in ISO format.
+ */
+static void
+host_summary_append (GString *host_summary_buffer, const char *host,
+                     const char *start_iso, const char *end_iso)
+{
+  if (host_summary_buffer)
+    {
+      struct tm start_tm, end_tm;
+      char start[200], end[200];
+
+      if (strptime (start_iso, "%FT%H:%M:%S", &start_tm) == NULL)
+        {
+          g_warning ("%s: Failed to parse start", __FUNCTION__);
+          return;
+        }
+
+      if (strftime (start, 200, "%b %d, %H:%M:%S", &start_tm) == 0)
+        {
+          g_warning ("%s: Failed to format start", __FUNCTION__);
+          return;
+        }
+
+      if (strptime (end_iso, "%FT%H:%M:%S", &end_tm) == NULL)
+        {
+          g_warning ("%s: Failed to parse end", __FUNCTION__);
+          return;
+        }
+
+      if (strftime (end, 200, "%b %d, %H:%M:%S", &end_tm) == 0)
+        {
+          g_warning ("%s: Failed to format end", __FUNCTION__);
+          return;
+        }
+
+      g_string_append_printf (host_summary_buffer,
+                              "   %-15s   %-16s   %s\n",
+                              host,
+                              start,
+                              end);
+    }
+}
+
+/**
+ * @brief Print the XML for a report to a file.
+ *
  * @param[in]  report      The report.
  * @param[in]  delta       Report to compare with the report.
  * @param[in]  task        Task associated with report.
@@ -23551,6 +23620,9 @@ tz_revert (gchar *zone, char *tz)
  * @param[in]  host_max_results    The host maximum number of results returned.
  * @param[in]  ignore_pagination   Whether to ignore pagination data.
  * @param[in]  given_zone          Timezone.  NULL or "" for user's timezone.
+ * @param[out] filter_term_return  Filter term used in report.
+ * @param[out] zone_return         Actual zone used in report.
+ * @param[out] host_summary    Summary of results per host.
  *
  * @return 0 on success, -1 error, 2 failed to find filter (before any printing).
  */
@@ -23568,7 +23640,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                   const char *host_search_phrase, const char *host_levels,
                   int host_first_result, int host_max_results,
                   int ignore_pagination, const char *given_zone,
-                  gchar **filter_term_return, gchar **zone_return)
+                  gchar **filter_term_return, gchar **zone_return,
+                  gchar **host_summary)
 {
   FILE *out;
   gchar *clean, *term, *sort_field, *levels, *search_phrase;
@@ -23585,6 +23658,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   int search_phrase_exact, apply_overrides;
   double severity, f_severity;
   gchar *tz, *zone;
+  GString *host_summary_buffer;
 
   /* Init some vars to prevent warnings from older compilers. */
   orig_filtered_result_count = 0;
@@ -25022,6 +25096,16 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
           f_severity);
     }
 
+  if (host_summary)
+    {
+      host_summary_buffer = g_string_new ("");
+      g_string_append_printf (host_summary_buffer,
+                              "   %-15s   %-16s   End\n",
+                              "Host", "Start");
+    }
+  else
+    host_summary_buffer = NULL;
+
   if (get->details && result_hosts_only)
     {
       gchar *host;
@@ -25041,6 +25125,10 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
             }
           if (present)
             {
+              host_summary_append (host_summary_buffer,
+                                   host,
+                                   host_iterator_start_time (&hosts),
+                                   host_iterator_end_time (&hosts));
               PRINT (out,
                      "<host>"
                      "<ip>%s</ip>"
@@ -25056,6 +25144,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                   (host_iterator_report_host (&hosts), out))
                 {
                   tz_revert (zone, tz);
+                  if (host_summary_buffer)
+                    g_string_free (host_summary_buffer, TRUE);
                   return -1;
                 }
 
@@ -25087,6 +25177,10 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       init_host_iterator (&hosts, report, NULL, 0);
       while (next (&hosts))
         {
+          host_summary_append (host_summary_buffer,
+                               host_iterator_host (&hosts),
+                               host_iterator_start_time (&hosts),
+                               host_iterator_end_time (&hosts));
           PRINT (out,
                  "<host>"
                  "<ip>%s</ip>"
@@ -25102,6 +25196,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
               (host_iterator_report_host (&hosts), out))
             {
               tz_revert (zone, tz);
+              if (host_summary_buffer)
+                g_string_free (host_summary_buffer, TRUE);
               return -1;
             }
 
@@ -25134,6 +25230,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   if (delta == 0 && print_report_errors_xml (report, out))
     {
       tz_revert (zone, tz);
+      if (host_summary_buffer)
+        g_string_free (host_summary_buffer, TRUE);
       return -1;
     }
 
@@ -25145,6 +25243,9 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   g_free (min_cvss_base);
   g_free (min_qod);
   g_free (delta_states);
+
+  if (host_summary && host_summary_buffer)
+    *host_summary = g_string_free (host_summary_buffer, FALSE);
 
   if (fclose (out))
     {
@@ -25196,6 +25297,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
  * @param[in]  zone               Timezone.  NULL or "" for user's timezone.
  * @param[out] filter_term_return  Filter term used in report.
  * @param[out] zone_return         Actual zone used in report.
+ * @param[out] host_summary    Summary of results per host.
  *
  * @return Contents of report on success, NULL on error.
  */
@@ -25211,7 +25313,8 @@ manage_report (report_t report, report_format_t report_format,
                int overrides_details, int first_result,
                int max_results, const char *type, gsize *output_length,
                gchar **extension, gchar **content_type, const char *zone,
-               gchar **filter_term_return, gchar **zone_return)
+               gchar **filter_term_return, gchar **zone_return,
+               gchar **host_summary)
 {
   task_t task;
   gchar *xml_file;
@@ -25250,7 +25353,7 @@ manage_report (report_t report, report_format_t report_format,
                           autofp, notes, notes_details, overrides,
                           overrides_details, first_result, max_results, type,
                           NULL, 0, NULL, NULL, 0, 0, 0, zone,
-                          filter_term_return, zone_return);
+                          filter_term_return, zone_return, host_summary);
   g_free (get.filt_id);
   if (ret)
     {
@@ -25782,7 +25885,7 @@ manage_send_report (report_t report, report_t delta_report,
                           overrides, overrides_details, first_result,
                           max_results, type, host, pos, host_search_phrase,
                           host_levels, host_first_result, host_max_results,
-                          ignore_pagination, zone, NULL, NULL);
+                          ignore_pagination, zone, NULL, NULL, NULL);
   if (ret)
     {
       g_free (xml_file);
