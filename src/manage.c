@@ -491,7 +491,7 @@ cleanup_severity_data (severity_data_t* data)
 }
 
 /**
- * @brief Add a severity occurence to the counts of a severity_data_t.
+ * @brief Add a severity occurrence to the counts of a severity_data_t.
  *
  * @param[in]   severity_data   The severity count struct to add to.
  * @param[in]   severity        The severity to add.
@@ -508,11 +508,11 @@ severity_data_add (severity_data_t* severity_data, double severity)
 }
 
 /**
- * @brief Add a multiple severity occurences to the counts of a severity_data_t.
+ * @brief Add a multiple severity occurrences to the counts of a severity_data_t.
  *
  * @param[in]   severity_data   The severity count struct to add to.
  * @param[in]   severity        The severity to add.
- * @param[in]   count           The number of occurences to add.
+ * @param[in]   count           The number of occurrences to add.
  */
 void
 severity_data_add_count (severity_data_t* severity_data, double severity,
@@ -1297,7 +1297,7 @@ finished_hosts_str (report_t stopped_report)
  *
  * @param[in]  task            Task.
  * @param[in]  target          Scan target.
- * @param[in]  stopped_report  Previously stoppped report, if any, else 0.
+ * @param[in]  stopped_report  Previously stopped report, if any, else 0.
  *
  * @return 0 on success, -1 on failure.
  */
@@ -6521,7 +6521,7 @@ validate_username (const gchar * name)
  * @param[in]   sync_script  The file name of the synchronization script.
  * @param[out]  result       Return location for selftest errors, or NULL.
  *
- * @return TRUE if the selftest was successful, or FALSE if an error occured.
+ * @return TRUE if the selftest was successful, or FALSE if an error occurred.
  */
 gboolean
 openvas_sync_script_perform_selftest (const gchar * sync_script,
@@ -6593,7 +6593,7 @@ openvas_sync_script_perform_selftest (const gchar * sync_script,
  * @param[in]   feed_type       Could be NVT_FEED, SCAP_FEED or CERT_FEED.
  *
  * @return TRUE if the identification string was retrieved, or FALSE if an
- *         error occured.
+ *         error occurred.
  */
 gboolean
 openvas_get_sync_script_identification (const gchar * sync_script,
@@ -6688,7 +6688,7 @@ openvas_get_sync_script_identification (const gchar * sync_script,
  * @param[out]  description  Return location of the description string.
  *
  * @return TRUE if the description was retrieved, or FALSE if an error
- *         occured.
+ *         occurred.
  */
 gboolean
 openvas_get_sync_script_description (const gchar * sync_script,
@@ -6754,7 +6754,7 @@ openvas_get_sync_script_description (const gchar * sync_script,
  * @param[out]  feed_version  Return location of the feed version string.
  *
  * @return TRUE if the feed version was retrieved, or FALSE if an error
- *         occured.
+ *         occurred.
  */
 gboolean
 openvas_get_sync_script_feed_version (const gchar * sync_script,

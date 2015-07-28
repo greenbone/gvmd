@@ -1,3 +1,7 @@
+2015-07-28  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/manage.c: Fix typos in comments.
+
 2015-07-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Use an email alert "message" for the defaults when attaching or
