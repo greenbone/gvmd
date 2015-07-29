@@ -1,5 +1,10 @@
 2015-07-29  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (make_osp_result): Fix sql statement columns change
+	from last commit.
+
+2015-07-29  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
 	Backport r22496.
 
 	* src/manage.c (parse_osp_report, fork_osp_scan_handler): Adjust
