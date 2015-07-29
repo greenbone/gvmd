@@ -1,3 +1,11 @@
+2015-07-29  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	Backport r22496.
+
+	* src/manage.c (parse_osp_report, fork_osp_scan_handler): Adjust
+	make_osp_result() call. Get result port from OSP scan report.
+	(make_osp_result): Insert result port in DB.
+
 2015-07-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r22901.
