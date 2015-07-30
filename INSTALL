@@ -14,7 +14,7 @@ Prerequisites:
 * glib-2.0 >= 2.16
 * gnutls >= 2.8
 * openvas-libraries >= 8.1.0
-* sqlite3 library
+* sqlite3 library or PostgreSQL database
 * pkg-config
 
 Prerequisites for building documentation:
@@ -102,6 +102,20 @@ Please note that the target directory in the commands above might have
 to be prefixed with the prefix you have set earlier.
 
 
+Choosing the Database Backend
+-----------------------------
+
+OpenVAS Manager can use either SQLite or PostgreSQL as the database
+backend.
+
+SQLite is the default and as a prerequisite you need to have
+the sqlite3 library installed. No further configuration
+is required, the database is created automatically.
+
+In order to use PostgreSQL as database backend, follow the
+instructions given in file doc/postgres-HOWTO.
+
+
 Initializing the Database
 -------------------------
 
@@ -145,8 +159,9 @@ Also, the new user can change her password via GSA.
 
 Optimizing the database
 -----------------------
+
 OpenVAS Manager offers the command line option --optimize=<name> to run various
- optimization of the database. The currently supported values for <name> are:
+optimization of the database. The currently supported values for <name> are:
 
 vacuum
   This option can reduce the file size by freeing some unused storage
@@ -209,27 +224,6 @@ update the information in the database from a newer list.
 Currently, the helper tool supports only the official IANA Services Names list.
 
 
-Migrating Credentials
----------------------
-
-While OpenVAS Manager 4.0 initially place the credential encryption key in
-<install-prefix>/etc/openvas/gnupg, OpenVAS Manager 5.0 has switched to using
-<install-prefix>/var/lib/openvas/gnupg for better FHS compliance and to set the
-key apart from the one used for signature verification.
-
-In order to continue using your encrypted credentials, please copy the contents
-of <install-prefix>/etc/openvas/gnupg to
-<install-prefix>/var/lib/openvas/gnupg.
-
-Make sure the permissions on <install-prefix>/var/lib/openvas/gnupg are
-suitable for the user OpenVAS Manager is running as.
-
-Once your encrypted credentials are working again, feel free to remove the
-credential encryptions key from the keyring in
-<install-prefix>/etc/openvas/gnupg and the signature verification key from the
-one in <install-prefix>/var/lib/openvas/gnupg.
-
-
 Encrypted Credentials
 ---------------------
 
@@ -289,6 +283,56 @@ $ openvasmd --encrypt-all-credentials
 No encryption: If for backward compatibility reasons encrypted credentials
 are not desired, the manager must _always_ be started with the option
 --disable-encrypted-credentials.
+
+
+Resetting Credentials Encryption Key
+------------------------------------
+
+If you lost some part of the encryption key, neither a regular migration nor
+a simple creation might work.
+
+In this case you need to reset the encryption key with the following
+procedure. In not way you will get the encrypted credentials back. You
+will need to enter all of them anew afterwards.
+
+Get the key fingerprint:
+
+$ gpg --homedir <install-prefix>/var/lib/openvas/gnupg --list-secret-keys
+
+Remove the secret key:
+
+$ gpg --homedir=<prefix>/etc/openvas/gnupg --delete-secret-keys KEYID
+
+Remove the key:
+
+$ gpg --homedir=<prefix>/etc/openvas/gnupg --delete-keys KEYID
+
+Create a new key:
+
+$ openvasmd --create-credentials-encryption-key
+
+Finally, reset all credentials, by hand.
+
+
+Migrating Encrypted Credentials from OpenVAS Manager 4.0
+--------------------------------------------------------
+
+While OpenVAS Manager 4.0 initially place the credential encryption key in
+<install-prefix>/etc/openvas/gnupg, OpenVAS Manager 5.0 has switched to using
+<install-prefix>/var/lib/openvas/gnupg for better FHS compliance and to set the
+key apart from the one used for signature verification.
+
+In order to continue using your encrypted credentials, please copy the contents
+of <install-prefix>/etc/openvas/gnupg to
+<install-prefix>/var/lib/openvas/gnupg.
+
+Make sure the permissions on <install-prefix>/var/lib/openvas/gnupg are
+suitable for the user OpenVAS Manager is running as.
+
+Once your encrypted credentials are working again, feel free to remove the
+credential encryptions key from the keyring in
+<install-prefix>/etc/openvas/gnupg and the signature verification key from the
+one in <install-prefix>/var/lib/openvas/gnupg.
 
 
 Prerequisites for Optional Features
