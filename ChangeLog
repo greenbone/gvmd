@@ -1,3 +1,7 @@
+2015-07-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* INSTALL: Correct small typo.
+
 2015-07-30  Sven Haardiek <sven.haardiek@greenbone.net>
 
 	* CMakeLists.txt: Change non release version style to fit better to debian

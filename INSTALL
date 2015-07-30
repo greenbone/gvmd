@@ -292,7 +292,7 @@ If you lost some part of the encryption key, neither a regular migration nor
 a simple creation might work.
 
 In this case you need to reset the encryption key with the following
-procedure. In not way you will get the encrypted credentials back. You
+procedure. There is no way to get the encrypted credentials back. You
 will need to enter all of them anew afterwards.
 
 Get the key fingerprint:
