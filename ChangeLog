@@ -1,5 +1,11 @@
 2015-08-03  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	Preparing the openvas-manager 6.0.5 release.
+
+	* CHANGES: Updated.
+
+2015-08-03  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	Backport r22358 by Hani Benhabiles.
 
 	* src/report_formats/Anonymous_XML/generate,

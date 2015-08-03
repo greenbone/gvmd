@@ -1,3 +1,34 @@
+openvas-manager 6.0.5 (2015-08-03)
+
+This is the fifth maintenance release of the openvas-manager 6.0 module for
+the Open Vulnerability Assessment System release 8 (OpenVAS-8).
+
+This release addresses a number of issues discovered after the release of
+OpenVAS Manager 6.0.4 and incorporates several improvements from the development
+branch of OpenVAS. Please see below for a comprehensive list of changes.
+
+Many thanks to everyone who contributed to this release:
+Hani Benhabiles, Matthew Mundell, Timo Pollmeier and Michael Wiegand.
+
+Main changes compared to 6.0.4:
+* An issue which caused reports to appear empty due to report generation scripts
+  being installed with insufficient permissions has been fixed.
+* An issue which caused processes spawned by OpenVAS Manager when executing
+  schedules to miss signals when executing scheduled task due to an overly
+  restrictive signal mask has been fixed.
+* An issue which caused credentials to not be used when a user ran
+  a task for which the target credentials were owned by another user has been
+  addressed.
+* The activation and expiration time of certificates used for OSP scanners is
+  now properly verified.
+* The handling of dynamic severities for OSP results has been improved.
+* Usernames are now allowed to contain dot (".") characters.
+* Manager now uses "zh_CN" instead of "zh" when referring to the Chinese
+  language.
+* Support for configurable subjects and messages in email alerts has been added.
+* Support for ports in OSP results has been added.
+
+
 openvas-manager 6.0.4 (2015-07-09)
 
 This is the fourth maintenance release of the openvas-manager 6.0 module for
