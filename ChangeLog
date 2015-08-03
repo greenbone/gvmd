@@ -1,3 +1,22 @@
+2015-08-03  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Backport r22358 by Hani Benhabiles.
+
+	* src/report_formats/Anonymous_XML/generate,
+	src/report_formats/ARF/generate,
+	src/report_formats/CPE/generate, src/report_formats/CSV_Hosts/generate,
+	src/report_formats/CSV_Results/generate,
+	src/report_formats/HTML/generate, src/report_formats/ITG/generate,
+	src/report_formats/LaTeX/generate, src/report_formats/NBE/generate,
+	src/report_formats/PDF/generate, src/report_formats/TXT/generate,
+	src/report_formats/Topology/generate,
+	src/report_formats/Verinice_ISM/generate,
+	src/report_formats/Verinice_ITG/generate,
+	src/report_formats/XML/generate, src/schema_formats/HTML/generate,
+	src/schema_formats/RNC/generate, src/schema_formats/XML-brief/generate,
+	src/alert_methods/Sourcefire/alert, src/alert_methods/verinice/alert,
+	src/schema_formats/XML/generate: Add WORLD_EXECUTE permission.
+
 2015-07-29  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (make_osp_result): Fix sql statement columns change
