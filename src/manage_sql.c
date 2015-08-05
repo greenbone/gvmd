@@ -15017,6 +15017,35 @@ qod_from_type (const char *qod_type)
 }
 
 /**
+ * @brief Get a severity string from an nvt and result type.
+ *
+ * @param[in]  nvt_id   NVT oid.
+ * @param[in]  type     Result type.
+ *
+ * @return A severity string, NULL if unknown type or no nvt id for Alarm type.
+ */
+char *
+nvt_severity (const char *nvt_id, const char *type)
+{
+  char *severity = NULL;
+
+  if (strcasecmp (type, "Alarm") == 0 && nvt_id)
+    severity = sql_string ("SELECT coalesce(cvss_base, '0.0')"
+                           " FROM nvts WHERE uuid = '%s';", nvt_id);
+  else if (strcasecmp (type, "Alarm") == 0)
+    g_warning ("%s result type requires an NVT", type);
+  else if (strcasecmp (type, "Log Message") == 0)
+    severity = g_strdup (G_STRINGIFY (SEVERITY_LOG));
+  else if (strcasecmp (type, "Debug Message") == 0)
+    severity = g_strdup (G_STRINGIFY (SEVERITY_DEBUG));
+  else if (strcasecmp (type, "Error Message") == 0)
+    severity = g_strdup (G_STRINGIFY (SEVERITY_ERROR));
+  else
+    g_warning ("Invalid result nvt type %s", type);
+  return severity;
+}
+
+/**
  * @brief Make a result.
  *
  * @param[in]  task         The task associated with the result.
@@ -15068,24 +15097,6 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
           quoted_qod_type = g_strdup ("");
         }
 
-      if (strcasecmp (type, "Alarm") == 0)
-        {
-          severity = sql_string ("SELECT coalesce(cvss_base, '0.0')"
-                                 " FROM nvts WHERE uuid = '%s';",
-                                 nvt);
-
-        }
-      else if (strcasecmp (type, "Log Message") == 0)
-        severity = g_strdup (G_STRINGIFY (SEVERITY_LOG));
-      else if (strcasecmp (type, "Debug Message") == 0)
-        severity = g_strdup (G_STRINGIFY (SEVERITY_DEBUG));
-      else if (strcasecmp (type, "Error Message") == 0)
-        severity = g_strdup (G_STRINGIFY (SEVERITY_ERROR));
-      else
-        {
-          g_warning ("%s: Invalid message type: '%s'", __FUNCTION__, type);
-          return 0;
-        }
       nvt_revision = sql_string ("SELECT version FROM nvts WHERE uuid = '%s';",
                                  nvt);
     }
@@ -15093,23 +15104,11 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
     {
       qod = QOD_DEFAULT;
       quoted_qod_type = g_strdup ("");
-      if (strcasecmp (type, "Log Message") == 0)
-        severity = g_strdup (G_STRINGIFY (SEVERITY_LOG));
-      else if (strcasecmp (type, "Debug Message") == 0)
-        severity = g_strdup (G_STRINGIFY (SEVERITY_DEBUG));
-      else if (strcasecmp (type, "Error Message") == 0)
-        severity = g_strdup (G_STRINGIFY (SEVERITY_ERROR));
-      else
-        {
-          if (strcasecmp (type, "Alarm") == 0)
-            g_warning ("%s: Message type requires an NVT: '%s'",
-                       __FUNCTION__, type);
-          else
-            g_warning ("%s: Invalid message type: '%s'", __FUNCTION__, type);
-          return 0;
-        }
       nvt_revision = g_strdup ("");
     }
+  severity = nvt_severity (nvt, type);
+  if (!severity)
+    return 0;
 
   if (!strcmp (severity, ""))
     {

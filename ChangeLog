@@ -1,3 +1,13 @@
+2015-08-05  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (parse_osp_report): Adjust to detect when test_id is an
+	nvt oid.
+
+	* src/manage_sql.c (nvt_severity): New function.
+	(make_result): Refactor to use new function.
+
+	* src/manage.h: Add new function prototype.
+
 2015-07-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* INSTALL: Correct small typo.

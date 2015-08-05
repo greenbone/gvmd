@@ -986,6 +986,9 @@ make_report (task_t, const char *, task_status_t);
 int
 qod_from_type (const char *);
 
+char *
+nvt_severity (const char *, const char *);
+
 result_t
 make_result (task_t, const char*, const char*, const char*,
              const char*, const char*);

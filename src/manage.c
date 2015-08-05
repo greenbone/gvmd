@@ -2792,7 +2792,13 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
           results = next_entities (results);
           continue;
         }
-      if (g_str_has_prefix (test_id, "oval:"))
+      else if (g_str_has_prefix (test_id, "1.3.6.1.4.1.25623.1.0."))
+        {
+          nvt_id = g_strdup (test_id);
+          severity_str = nvt_severity (test_id, type);
+          desc = g_strdup (entity_text (r_entity));
+        }
+      else if (g_str_has_prefix (test_id, "oval:"))
         {
           nvt_id = ovaldef_uuid (test_id, defs_file);
           severity_str = ovaldef_severity (nvt_id);
