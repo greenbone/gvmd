@@ -1,3 +1,54 @@
+2015-08-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Collect hosts and operating systems during scanning, in a standalone
+	tables.  Also store a few "identifiers" used to recognise the host (ip,
+	hostname, MAC-Ifaces, OS...).  Add OMP GET_ASSETS for these.
+
+	* src/manage_sqlite3.c, src/manage_pg.c (create_tables): Add hosts,
+	host_identifiers, oss and host_oss.
+
+	* src/manage.c (finished_hosts_str, cve_scan_host): Rename
+	init_host_iterator.
+
+	* src/manage_sql.c (host_identify, host_notcie): New functions.
+	(init_host_iterator): Remove.  Now init_report_host_iterator.
+	(init_asset_iterator): Remove.  Now init_classic_asset_iterator.
+	(asset_iterator_ip): Remove.  Now classic_asset_iterator_ip.
+	(init_report_host_iterator, init_classic_asset_iterator)
+	(classic_asset_iterator_ip): New.  Renamed.  Update callers.
+	(identifiers, identifier_hosts): New variables.
+	(identifier_t): New type.
+	(identifier_free, hosts_set_identifiers): New functions.
+	(manage_report_host_details): Rename "host" arg to "ip".  Add identifier
+	information to global arrays.
+	(init_host_identifier_iterator, host_identifier_iterator_value)
+	(host_identifier_iterator_source_type)
+	(host_identifier_iterator_source_id)
+	(host_identifier_iterator_source_data, host_identifier_iterator_os_id)
+	(host_identifier_iterator_os_title): New function.
+	(HOST_ITERATOR_FILTER_COLUMNS, HOST_ITERATOR_COLUMNS)
+	(OS_ITERATOR_FILTER_COLUMNS, OS_ITERATOR_COLUMNS): New define.
+	(init_asset_host_iterator, asset_host_count, init_asset_os_iterator)
+	(asset_os_iterator_title, asset_os_iterator_installs, asset_os_count)
+	(total_asset_count): New functions.
+
+	* src/manage.h: Update headers accordingly.
+	(host_t): New type.
+
+	* src/manage_sql.h: Add header accordingly.
+
+	* src/otp.c (process_otp_scanner_input): Call host_notice when getting
+	START_TIME, to store the host with IP identifier.  Call
+	hosts_set_identifiers at the end of the scan to store the hosts and
+	their identifiers from the global arrays.
+
+	* src/omp.c (get_assets_data_t): New type.
+	(get_assets_data_reset): New function.
+	(command_data_t, client_state_t): Add GET_ASSETS entry.
+	(get_assets_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add
+	GET_ASSETS.
+
 2015-08-05  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (parse_osp_report): Adjust to detect when test_id is an

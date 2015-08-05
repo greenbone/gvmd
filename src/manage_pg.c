@@ -1584,6 +1584,52 @@ create_tables ()
        "  \"group\" integer REFERENCES groups_trash (id) ON DELETE RESTRICT,"
        "  \"user\" integer REFERENCES users (id) ON DELETE RESTRICT);");
 
+  sql ("CREATE TABLE IF NOT EXISTS hosts"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL,"
+       "  comment text,"
+       "  creation_time integer,"
+       "  modification_time integer);");
+
+  sql ("CREATE TABLE IF NOT EXISTS host_identifiers"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  host integer REFERENCES hosts (id) ON DELETE RESTRICT,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL,"
+       "  comment text,"
+       "  value text NOT NULL,"
+       "  source_type text NOT NULL,"
+       "  source_id text NOT NULL,"
+       "  source_data text NOT NULL,"
+       "  creation_time integer,"
+       "  modification_time integer);");
+
+  sql ("CREATE TABLE IF NOT EXISTS oss"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL,"
+       "  comment text,"
+       "  creation_time integer,"
+       "  modification_time integer);");
+
+  sql ("CREATE TABLE IF NOT EXISTS host_oss"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  host integer REFERENCES hosts (id) ON DELETE RESTRICT,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL,"
+       "  comment text,"
+       "  os integer REFERENCES oss (id) ON DELETE RESTRICT,"
+       "  source_type text NOT NULL,"
+       "  source_id text NOT NULL,"
+       "  source_data text NOT NULL,"
+       "  creation_time integer,"
+       "  modification_time integer);");
+
   sql ("CREATE TABLE IF NOT EXISTS roles"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"

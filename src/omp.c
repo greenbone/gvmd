@@ -2359,6 +2359,29 @@ get_aggregates_data_reset (get_aggregates_data_t *data)
   memset (data, 0, sizeof (get_aggregates_data_t));
 }
 
+/**
+ * @brief Command data for the get_assets command.
+ */
+typedef struct
+{
+  char *type;         ///< Requested asset type.
+  get_data_t get;     ///< Get Args.
+  int details;        ///< Boolean.  Whether to include full details.
+} get_assets_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+get_assets_data_reset (get_assets_data_t *data)
+{
+  free (data->type);
+  get_data_reset (&data->get);
+
+  memset (data, 0, sizeof (get_assets_data_t));
+}
 
 /**
  * @brief Command data for the get_configs command.
@@ -4111,6 +4134,7 @@ typedef union
   get_aggregates_data_t get_aggregates;               ///< get_aggregates
   get_configs_data_t get_configs;                     ///< get_configs
   get_alerts_data_t get_alerts;                       ///< get_alerts
+  get_assets_data_t get_assets;                       ///< get_assets
   get_filters_data_t get_filters;                     ///< get_filters
   get_groups_data_t get_groups;                       ///< get_groups
   get_info_data_t get_info;                           ///< get_info
@@ -4459,6 +4483,12 @@ get_configs_data_t *get_configs_data
  */
 get_alerts_data_t *get_alerts_data
  = &(command_data.get_alerts);
+
+/**
+ * @brief Parser callback data for GET_ASSETS.
+ */
+get_assets_data_t *get_assets_data
+ = &(command_data.get_assets);
 
 /**
  * @brief Parser callback data for GET_FILTERS.
@@ -5205,6 +5235,7 @@ typedef enum
   CLIENT_GET_AGGREGATES,
   CLIENT_GET_AGGREGATES_DATA_COLUMN,
   CLIENT_GET_ALERTS,
+  CLIENT_GET_ASSETS,
   CLIENT_GET_CONFIGS,
   CLIENT_GET_FILTERS,
   CLIENT_GET_GROUPS,
@@ -6866,6 +6897,17 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_alerts_data->tasks = 0;
 
             set_client_state (CLIENT_GET_ALERTS);
+          }
+        else if (strcasecmp ("GET_ASSETS", element_name) == 0)
+          {
+            const gchar* typebuf;
+            get_data_parse_attributes (&get_assets_data->get, "asset",
+                                       attribute_names,
+                                       attribute_values);
+            if (find_attribute (attribute_names, attribute_values,
+                                "type", &typebuf))
+              get_assets_data->type = g_ascii_strdown (typebuf, -1);
+            set_client_state (CLIENT_GET_ASSETS);
           }
         else if (strcasecmp ("GET_FILTERS", element_name) == 0)
           {
@@ -17030,6 +17072,229 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         }
 
       CLOSE (CLIENT_GET_AGGREGATES, DATA_COLUMN);
+
+      case CLIENT_GET_ASSETS:
+        {
+          iterator_t assets;
+          int count, first, filtered, ret;
+          int (*init_asset_iterator) (iterator_t *, const get_data_t *);
+          int (*asset_count) (const get_data_t *get);
+          get_data_t *get;
+
+          if (acl_user_may ("get_assets") == 0)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("get_assets",
+                                  "Permission denied"));
+              get_assets_data_reset (get_assets_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
+          if (get_assets_data->type == NULL)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+                (XML_ERROR_SYNTAX ("get_assets",
+                                   "No type specified."));
+              get_assets_data_reset (get_assets_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
+          get = &get_assets_data->get;
+          if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
+            {
+              char *user_filter;
+              gchar *name;
+
+              if (strcmp (get_assets_data->type, "host") == 0)
+                name = g_strdup ("HOST");
+              else if (strcmp (get_assets_data->type, "os") == 0)
+                name = g_strdup ("OS");
+              else if (strcmp (get_assets_data->type, "app") == 0)
+                name = g_strdup ("APP");
+              else
+                {
+                  if (send_find_error_to_client ("get_assets", "type",
+                                                 get_assets_data->type,
+                                                 omp_parser))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  get_assets_data_reset (get_assets_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  break;
+                }
+
+              user_filter = setting_filter (name);
+              g_free (name);
+
+              if (user_filter && strlen (user_filter))
+                {
+                  get->filt_id = user_filter;
+                  get->filter = filter_term (user_filter);
+                }
+              else
+                 get->filt_id = g_strdup ("0");
+            }
+
+          /* Set type specific functions. */
+          if (g_strcmp0 ("host", get_assets_data->type) == 0)
+            {
+              init_asset_iterator = init_asset_host_iterator;
+              asset_count = asset_host_count;
+              get_assets_data->get.subtype = g_strdup ("host");
+            }
+          else if (g_strcmp0 ("os", get_assets_data->type) == 0)
+            {
+              init_asset_iterator = init_asset_os_iterator;
+              asset_count = asset_os_count;
+              get_assets_data->get.subtype = g_strdup ("os");
+            }
+          else
+            {
+              if (send_find_error_to_client ("get_assets", "type",
+                                             get_assets_data->type, omp_parser))
+                {
+                  error_send_to_client (error);
+                }
+              return;
+            }
+
+          ret = init_asset_iterator (&assets, &get_assets_data->get);
+          if (ret)
+            {
+              switch (ret)
+                {
+                case 1:
+                  if (send_find_error_to_client ("get_assets", "type",
+                                                 get_assets_data->type,
+                                                 omp_parser))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  break;
+                case 2:
+                  if (send_find_error_to_client
+                      ("get_assets", "filter", get_assets_data->get.filt_id,
+                       omp_parser))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  break;
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL
+                    (XML_INTERNAL_ERROR ("get_assets"));
+                  break;
+                }
+              get_assets_data_reset (get_assets_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              return;
+            }
+
+          count = 0;
+          manage_filter_controls (get_assets_data->get.filter, &first, NULL, NULL, NULL);
+          SEND_GET_START ("asset");
+          while (next (&assets))
+            {
+              GString *result;
+              iterator_t identifiers;
+
+              /* Assets are currently always read only. */
+              if (send_get_common ("asset", &get_assets_data->get, &assets,
+                                   write_to_client, write_to_client_data, 0, 0))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+
+              result = g_string_new ("");
+
+              /* Information depending on type. */
+
+              if (g_strcmp0 ("host", get_assets_data->type) == 0)
+                {
+                  xml_string_append (result, "<identifiers>");
+                  init_host_identifier_iterator (&identifiers,
+                                                 get_iterator_resource (&assets),
+                                                 0, NULL);
+                  while (next (&identifiers))
+                    {
+                      xml_string_append (result,
+                                         "<identifier id=\"%s\">"
+                                         "<name>%s</name>"
+                                         "<value>%s</value>"
+                                         "<creation_time>%s</creation_time>"
+                                         "<modification_time>%s</modification_time>"
+                                         "<source id=\"%s\">"
+                                         "<type>%s</type>"
+                                         "<data>%s</data>"
+                                         "</source>",
+                                         get_iterator_uuid (&identifiers),
+                                         get_iterator_name (&identifiers),
+                                         host_identifier_iterator_value
+                                          (&identifiers),
+                                         get_iterator_creation_time (&identifiers),
+                                         get_iterator_modification_time
+                                          (&identifiers),
+                                         host_identifier_iterator_source_id
+                                          (&identifiers),
+                                         host_identifier_iterator_source_type
+                                          (&identifiers),
+                                         host_identifier_iterator_source_data
+                                          (&identifiers));
+
+                      if (strcmp (get_iterator_name (&identifiers), "OS") == 0)
+                        xml_string_append (result,
+                                           "<os id=\"%s\">"
+                                           "<title>%s</title>"
+                                           "</os>",
+                                           host_identifier_iterator_os_id
+                                            (&identifiers),
+                                           host_identifier_iterator_os_title
+                                            (&identifiers));
+
+                      xml_string_append (result, "</identifier>");
+                    }
+                  cleanup_iterator (&identifiers);
+                  xml_string_append (result, "</identifiers>");
+                }
+
+              g_string_append_printf (result, "<%s>", get_assets_data->type);
+
+              if (g_strcmp0 ("os", get_assets_data->type) == 0)
+                g_string_append_printf (result,
+                                        "<title>%s</title>"
+                                        "<installs>%i</installs>",
+                                        asset_os_iterator_title (&assets),
+                                        asset_os_iterator_installs (&assets));
+
+              g_string_append_printf (result,
+                                      "</%s>"
+                                      "</asset>",
+                                      get_assets_data->type);
+              SEND_TO_CLIENT_OR_FAIL (result->str);
+              count++;
+              g_string_free (result, TRUE);
+            }
+          cleanup_iterator (&assets);
+
+          if (get_assets_data->details == 1)
+            SEND_TO_CLIENT_OR_FAIL ("<details>1</details>");
+
+          filtered = get_assets_data->get.id
+                      ? 1
+                      : asset_count (&get_assets_data->get);
+
+          SEND_GET_END ("asset", &get_assets_data->get, count, filtered);
+
+          get_assets_data_reset (get_assets_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
 
       case CLIENT_GET_SYSTEM_REPORTS:
         {

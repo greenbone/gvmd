@@ -257,6 +257,9 @@ void manage_transaction_start ();
 
 void manage_transaction_stop (gboolean);
 
+void
+hosts_set_identifiers ();
+
 gboolean
 host_nthlast_report_host (const char *, report_host_t *, int);
 

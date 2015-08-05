@@ -214,6 +214,7 @@ typedef long long int config_t;
 typedef long long int alert_t;
 typedef long long int filter_t;
 typedef long long int group_t;
+typedef long long int host_t;
 typedef long long int slave_t;
 typedef long long int tag_t;
 typedef long long int target_t;
@@ -1249,9 +1250,8 @@ result_iterator_qod_type (iterator_t*);
 const char*
 result_iterator_date (iterator_t*);
 
-
 void
-init_host_iterator (iterator_t*, report_t, const char *, report_host_t);
+init_report_host_iterator (iterator_t*, report_t, const char *, report_host_t);
 
 const char*
 host_iterator_host (iterator_t*);
@@ -2025,6 +2025,55 @@ agent_iterator_howto_install (iterator_t*);
 
 const char*
 agent_iterator_howto_use (iterator_t*);
+
+
+/* Assets. */
+
+host_t
+host_notice (const char *, const char *, const char *, const char *,
+             const char *);
+
+void
+init_host_identifier_iterator (iterator_t*, host_t, int, const char*);
+
+const char*
+host_identifier_iterator_value (iterator_t *);
+
+const char*
+host_identifier_iterator_source_type (iterator_t *);
+
+const char*
+host_identifier_iterator_source_id (iterator_t *);
+
+const char*
+host_identifier_iterator_source_data (iterator_t *);
+
+const char*
+host_identifier_iterator_os_id (iterator_t *);
+
+const char*
+host_identifier_iterator_os_title (iterator_t *);
+
+int
+init_asset_host_iterator (iterator_t *, const get_data_t *);
+
+int
+asset_host_count (const get_data_t *);
+
+int
+init_asset_os_iterator (iterator_t *, const get_data_t *);
+
+const char*
+asset_os_iterator_title (iterator_t *);
+
+int
+asset_os_iterator_installs (iterator_t *);
+
+int
+asset_os_count (const get_data_t *);
+
+int
+total_asset_count (const get_data_t *);
 
 
 /* Notes. */

@@ -15017,6 +15017,140 @@ qod_from_type (const char *qod_type)
 }
 
 /**
+ * @brief Identify a host, given an identifier.
+ *
+ * Find a host which has an identifier of the same name and value, and
+ * which has no identifiers of the same name and a different value.
+ *
+ * @param[in]  host_name         Host name.
+ * @param[in]  identifier_name   Host identifier name.
+ * @param[in]  identifier_value  Value of host identifier.
+ * @param[in]  source_type       Source of identification: result.
+ * @param[in]  source            Source identifier.
+ *
+ * @return Host if exists, else 0.
+ */
+host_t
+host_identify (const char *host_name, const char *identifier_name,
+               const char *identifier_value, const char *source_type,
+               const char *source)
+{
+  host_t host;
+  gchar *quoted_host_name, *quoted_identifier_name, *quoted_identifier_value;
+
+  quoted_host_name = sql_quote (host_name);
+  quoted_identifier_name = sql_quote (identifier_name);
+  quoted_identifier_value = sql_quote (identifier_value);
+
+  switch (sql_int64 (&host,
+                     "SELECT id FROM hosts"
+                     " WHERE name = '%s'"
+                     " AND owner = (SELECT id FROM users"
+                     "              WHERE uuid = '%s')"
+                     " AND (EXISTS (SELECT * FROM host_identifiers"
+                     "              WHERE host = hosts.id"
+                     "              AND owner = (SELECT id FROM users"
+                     "                           WHERE uuid = '%s')"
+                     "              AND name = '%s'"
+                     "              AND value = '%s')"
+                     "      OR NOT EXISTS (SELECT * FROM host_identifiers"
+                     "                     WHERE host = hosts.id"
+                     "                     AND owner = (SELECT id FROM users"
+                     "                                  WHERE uuid = '%s')"
+                     "                     AND name = '%s'));",
+                     quoted_host_name,
+                     current_credentials.uuid,
+                     current_credentials.uuid,
+                     quoted_identifier_name,
+                     quoted_identifier_value,
+                     current_credentials.uuid,
+                     quoted_identifier_name))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        host = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        host = 0;
+        break;
+    }
+
+
+  g_free (quoted_host_name);
+  g_free (quoted_identifier_name);
+  g_free (quoted_identifier_value);
+
+  return host;
+}
+
+/**
+ * @brief Notice a host.
+ *
+ * @param[in]  host_name         Name of host.
+ * @param[in]  identifier_type   Type of host identifier.
+ * @param[in]  identifier_value  Value of host identifier.
+ * @param[in]  source_type       Type of source identifier
+ * @param[in]  source_id         Source identifier.
+ *
+ * @return Host if existed, else 0.
+ */
+host_t
+host_notice (const char *host_name, const char *identifier_type,
+             const char *identifier_value, const char *source_type,
+             const char *source_id)
+{
+  host_t host;
+  gchar *quoted_identifier_value, *quoted_identifier_type, *quoted_source_type;
+  gchar *quoted_source_id;
+
+  host = host_identify (host_name, identifier_type, identifier_value,
+                        source_type, source_id);
+  if (host == 0)
+    {
+      gchar *quoted_host_name;
+      quoted_host_name = sql_quote (host_name);
+      sql ("INSERT into hosts"
+           " (uuid, owner, name, comment, creation_time, modification_time)"
+           " VALUES"
+           " (make_uuid (), (SELECT id FROM users WHERE uuid = '%s'), '%s', '',"
+           "  m_now (), m_now ());",
+           current_credentials.uuid,
+           quoted_host_name);
+      g_free (quoted_host_name);
+
+      host = sql_last_insert_id ();
+    }
+
+  quoted_identifier_value = sql_quote (identifier_value);
+  quoted_source_id = sql_quote (source_id);
+  quoted_source_type = sql_quote (source_type);
+  quoted_identifier_type = sql_quote (identifier_type);
+
+  sql ("INSERT into host_identifiers"
+       " (uuid, host, owner, name, comment, value, source_type, source_id,"
+       "  source_data, creation_time, modification_time)"
+       " VALUES"
+       " (make_uuid (), %llu, (SELECT id FROM users WHERE uuid = '%s'), '%s',"
+       "  '', '%s', '%s', '%s', '', m_now (), m_now ());",
+       host,
+       current_credentials.uuid,
+       quoted_identifier_type,
+       quoted_identifier_value,
+       quoted_source_type,
+       quoted_source_id);
+
+  g_free (quoted_identifier_type);
+  g_free (quoted_identifier_value);
+  g_free (quoted_source_id);
+  g_free (quoted_source_type);
+
+  return host;
+}
+
+/**
  * @brief Get a severity string from an nvt and result type.
  *
  * @param[in]  nvt_id   NVT oid.
@@ -18446,8 +18580,8 @@ DEF_ACCESS (result_iterator_qod_type, GET_ITERATOR_COLUMN_COUNT + 18);
  * @param[in]  report_host  Single report host to iterate over.  All if 0.
  */
 void
-init_host_iterator (iterator_t* iterator, report_t report, const char *host,
-                    report_host_t report_host)
+init_report_host_iterator (iterator_t* iterator, report_t report, const char *host,
+                           report_host_t report_host)
 {
   if (report)
     {
@@ -18818,9 +18952,9 @@ DEF_ACCESS (report_host_details_iterator_extra, 6);
  * @param[in]  apply_overrides  Whether to apply overrides.
  */
 static void
-init_asset_iterator (iterator_t* iterator, int first_result,
-                     int max_results, const char *levels,
-                     const char *search_phrase, int apply_overrides)
+init_classic_asset_iterator (iterator_t* iterator, int first_result,
+                             int max_results, const char *levels,
+                             const char *search_phrase, int apply_overrides)
 {
   assert (current_credentials.uuid);
 
@@ -19057,7 +19191,7 @@ init_asset_iterator (iterator_t* iterator, int first_result,
  *
  * @return Host IP.
  */
-DEF_ACCESS (asset_iterator_ip, 0);
+DEF_ACCESS (classic_asset_iterator_ip, 0);
 
 /**
  * @brief Set the end time of a task.
@@ -22688,8 +22822,8 @@ print_report_assets_xml (FILE *out, const char *host, int first_result, int
   else
     {
       // TODO Slow (about 30% of assets page).
-      init_asset_iterator (&hosts, first_result, max_results, levels,
-                           search_phrase, apply_overrides);
+      init_classic_asset_iterator (&hosts, first_result, max_results, levels,
+                                   search_phrase, apply_overrides);
       PRINT (out,
              "<host_count>"
              "<full>%i</full>"
@@ -22710,7 +22844,7 @@ print_report_assets_xml (FILE *out, const char *host, int first_result, int
       report_host_t report_host;
       const char *ip;
 
-      ip = host ? host : asset_iterator_ip (&hosts);
+      ip = host ? host : classic_asset_iterator_ip (&hosts);
 
       if (host_nthlast_report_host (ip, &report_host, pos))
         {
@@ -22723,7 +22857,7 @@ print_report_assets_xml (FILE *out, const char *host, int first_result, int
       if (report_host)
         {
           iterator_t report_hosts;
-          init_host_iterator (&report_hosts, 0, NULL, report_host);
+          init_report_host_iterator (&report_hosts, 0, NULL, report_host);
           if (next (&report_hosts))
             {
               iterator_t details;
@@ -23166,8 +23300,9 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
     {
       host_levels = host_levels ? host_levels : "hmlgd";
 
-      init_asset_iterator (&hosts, host_first_result, host_max_results,
-                           host_levels, host_search_phrase, apply_overrides);
+      init_classic_asset_iterator (&hosts, host_first_result, host_max_results,
+                                   host_levels, host_search_phrase,
+                                   apply_overrides);
     }
 
   buffer = make_array ();
@@ -23192,7 +23327,7 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
       report_host_t report_host;
       const char *ip;
 
-      ip = host ? host : asset_iterator_ip (&hosts);
+      ip = host ? host : classic_asset_iterator_ip (&hosts);
 
       if (host_nthlast_report_host (ip, &report_host, pos))
         {
@@ -23229,7 +23364,7 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
 
       if (report_host)
         {
-          init_host_iterator (&report_hosts, 0, NULL, report_host);
+          init_report_host_iterator (&report_hosts, 0, NULL, report_host);
           if (next (&report_hosts))
             {
               iterator_t prognosis;
@@ -23350,7 +23485,7 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
   while ((buffer_host = g_ptr_array_index (buffer, index++)))
     {
       iterator_t report_hosts;
-      init_host_iterator (&report_hosts, 0, NULL, buffer_host->report_host);
+      init_report_host_iterator (&report_hosts, 0, NULL, buffer_host->report_host);
       if (next (&report_hosts))
         {
           report_t report;
@@ -23558,7 +23693,7 @@ report_progress_active (report_t report, int maximum_hosts, gchar **hosts_xml)
 
   string = g_string_new ("");
 
-  init_host_iterator (&hosts, report, NULL, 0);
+  init_report_host_iterator (&hosts, report, NULL, 0);
   while (next (&hosts))
     {
       unsigned int max_port, current_port;
@@ -25379,12 +25514,12 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
         {
           gboolean present;
           iterator_t hosts;
-          init_host_iterator (&hosts, report, host, 0);
+          init_report_host_iterator (&hosts, report, host, 0);
           present = next (&hosts);
           if (delta && (present == FALSE))
             {
               cleanup_iterator (&hosts);
-              init_host_iterator (&hosts, delta, host, 0);
+              init_report_host_iterator (&hosts, delta, host, 0);
               present = next (&hosts);
             }
           if (present)
@@ -25438,7 +25573,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   else if (get->details)
     {
       iterator_t hosts;
-      init_host_iterator (&hosts, report, NULL, 0);
+      init_report_host_iterator (&hosts, report, NULL, 0);
       while (next (&hosts))
         {
           host_summary_append (host_summary_buffer,
@@ -25475,7 +25610,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
         }
       cleanup_iterator (&hosts);
 
-      init_host_iterator (&hosts, report, NULL, 0);
+      init_report_host_iterator (&hosts, report, NULL, 0);
       while (next (&hosts))
         PRINT (out,
                  "<host_end><host>%s</host>%s</host_end>",
@@ -50625,21 +50760,298 @@ report_host_set_end_time (report_host_t report_host, time_t end_time)
 }
 
 /**
+ * @brief Host identifiers for the current scan.
+ */
+array_t *identifiers = NULL;
+
+/**
+ * @brief Unique hosts listed in host_identifiers.
+ */
+array_t *identifier_hosts = NULL;
+
+/**
+ * @brief Host identifier type.
+ */
+typedef struct
+{
+  gchar *ip;                ///< IP of host.
+  gchar *name;              ///< Name of identifier, like "hostname".
+  gchar *value;             ///< Value of identifier.
+  gchar *source_type;       ///< Type of identifier source, like "Report Host".
+  gchar *source_id;         ///< ID of source.
+  gchar *source_data;       ///< Extra data for source.
+} identifier_t;
+
+/**
+ * @brief Free an identifier.
+ */
+void
+identifier_free (identifier_t *identifier)
+{
+  if (identifier)
+    {
+      g_free (identifier->ip);
+      g_free (identifier->name);
+      g_free (identifier->value);
+      g_free (identifier->source_type);
+      g_free (identifier->source_id);
+      g_free (identifier->source_data);
+    }
+}
+
+/**
+ * @brief Setup hosts and their identifiers after a scan, from host details.
+ */
+void
+hosts_set_identifiers ()
+{
+  if (identifier_hosts)
+    {
+      int host_index, index;
+      gchar *ip;
+
+      array_terminate (identifiers);
+      array_terminate (identifier_hosts);
+
+      host_index = 0;
+      while ((ip = (gchar*) g_ptr_array_index (identifier_hosts, host_index)))
+        {
+          host_t host, host_new;
+          gchar *quoted_host_name;
+          identifier_t *identifier;
+          GString *select;
+
+          quoted_host_name = sql_quote (ip);
+
+          select = g_string_new ("");
+
+          /* Select the most recent host whose identifiers all match the given
+           * identifiers, even if the host has fewer identifiers than given. */
+
+          g_string_append_printf (select,
+                                  "SELECT id FROM hosts"
+                                  " WHERE name = '%s'"
+                                  " AND owner = (SELECT id FROM users"
+                                  "              WHERE uuid = '%s')",
+                                  quoted_host_name,
+                                  current_credentials.uuid);
+
+          index = 0;
+          while ((identifier = (identifier_t*) g_ptr_array_index (identifiers, index)))
+            {
+              gchar *quoted_identifier_name, *quoted_identifier_value;
+
+              if (strcmp (identifier->ip, ip))
+                {
+                  index++;
+                  continue;
+                }
+
+              quoted_identifier_name = sql_quote (identifier->name);
+              quoted_identifier_value = sql_quote (identifier->value);
+
+              g_string_append_printf (select,
+                                      " AND (EXISTS (SELECT * FROM host_identifiers"
+                                      "              WHERE host = hosts.id"
+                                      "              AND owner = (SELECT id FROM users"
+                                      "                           WHERE uuid = '%s')"
+                                      "              AND name = '%s'"
+                                      "              AND value = '%s')"
+                                      "      OR NOT EXISTS (SELECT * FROM host_identifiers"
+                                      "                     WHERE host = hosts.id"
+                                      "                     AND owner = (SELECT id FROM users"
+                                      "                                  WHERE uuid = '%s')"
+                                      "                     AND name = '%s'))",
+                                      current_credentials.uuid,
+                                      quoted_identifier_name,
+                                      quoted_identifier_value,
+                                      current_credentials.uuid,
+                                      quoted_identifier_name);
+
+              g_free (quoted_identifier_name);
+              g_free (quoted_identifier_value);
+
+              index++;
+            }
+
+          g_string_append_printf (select,
+                                  " ORDER BY creation_time DESC LIMIT 1;");
+
+          switch (sql_int64 (&host, select->str))
+            {
+              case 0:
+                break;
+              case 1:        /* Too few rows in result of query. */
+                host = 0;
+                break;
+              default:       /* Programming error. */
+                assert (0);
+              case -1:
+                host = 0;
+                break;
+            }
+
+          g_string_free (select, TRUE);
+
+          if (host == 0)
+            {
+              /* Add the host. */
+
+              sql ("INSERT into hosts"
+                   " (uuid, owner, name, comment, creation_time, modification_time)"
+                   " VALUES"
+                   " (make_uuid (), (SELECT id FROM users WHERE uuid = '%s'), '%s', '',"
+                   "  m_now (), m_now ());",
+                   current_credentials.uuid,
+                   quoted_host_name);
+
+              host_new = host = sql_last_insert_id ();
+            }
+          else
+            {
+              /* Use the existing host. */
+
+              host_new = 0;
+            }
+
+          g_free (quoted_host_name);
+
+          /* Add the host identifiers. */
+
+          index = 0;
+          while ((identifier = (identifier_t*) g_ptr_array_index (identifiers,
+                                                                  index)))
+            {
+              gchar *quoted_identifier_name, *quoted_identifier_value;
+              gchar *quoted_source_id, *quoted_source_type, *quoted_source_data;
+
+              if (strcmp (identifier->ip, ip))
+                {
+                  index++;
+                  continue;
+                }
+
+              quoted_identifier_name = sql_quote (identifier->name);
+              quoted_identifier_value = sql_quote (identifier->value);
+              quoted_source_id = sql_quote (identifier->source_id);
+              quoted_source_data = sql_quote (identifier->source_data);
+              quoted_source_type = sql_quote (identifier->source_type);
+
+              if (strcmp (identifier->name, "OS") == 0)
+                {
+                  resource_t os;
+
+                  switch (sql_int64 (&os,
+                                     "SELECT id FROM oss"
+                                     " WHERE name = '%s'"
+                                     " AND owner = (SELECT id FROM users"
+                                     "              WHERE uuid = '%s');",
+                                     quoted_identifier_value,
+                                     current_credentials.uuid))
+                    {
+                      case 0:
+                        break;
+                      default:       /* Programming error. */
+                        assert (0);
+                      case -1:
+                      case 1:        /* Too few rows in result of query. */
+                        sql ("INSERT into oss"
+                             " (uuid, owner, name, comment, creation_time,"
+                             "  modification_time)"
+                             " VALUES"
+                             " (make_uuid (),"
+                             "  (SELECT id FROM users WHERE uuid = '%s'),"
+                             "  '%s', '', m_now (), m_now ());",
+                             current_credentials.uuid,
+                             quoted_identifier_value);
+                        os = sql_last_insert_id ();
+                        break;
+                    }
+
+                  sql ("INSERT into host_oss"
+                       " (uuid, host, owner, name, comment, os, source_type,"
+                       "  source_id, source_data, creation_time, modification_time)"
+                       " VALUES"
+                       " (make_uuid (), %llu,"
+                       "  (SELECT id FROM users WHERE uuid = '%s'),"
+                       "  '%s', '', %llu, '%s', '%s', '%s', m_now (), m_now ());",
+                       host,
+                       current_credentials.uuid,
+                       quoted_identifier_name,
+                       os,
+                       quoted_source_type,
+                       quoted_source_id,
+                       quoted_source_data);
+                }
+              else
+                sql ("INSERT into host_identifiers"
+                     " (uuid, host, owner, name, comment, value, source_type,"
+                     "  source_id, source_data, creation_time, modification_time)"
+                     " VALUES"
+                     " (make_uuid (), %llu,"
+                     "  (SELECT id FROM users WHERE uuid = '%s'),"
+                     "  '%s', '', '%s', '%s', '%s', '%s', m_now (), m_now ());",
+                     host,
+                     current_credentials.uuid,
+                     quoted_identifier_name,
+                     quoted_identifier_value,
+                     quoted_source_type,
+                     quoted_source_id,
+                     quoted_source_data);
+
+              if (host_new)
+                /* Make sure all existing identifiers from this report refer to
+                 * this host.  Currently these will only be the Report Host
+                 * identifiers added for OTP HOST_START in otp.c. */
+                sql ("UPDATE host_identifiers SET host = %llu"
+                     " WHERE source_id = '%s';",
+                     host_new,
+                     quoted_source_id);
+
+              g_free (quoted_source_type);
+              g_free (quoted_source_id);
+              g_free (quoted_source_data);
+              g_free (quoted_identifier_name);
+              g_free (quoted_identifier_value);
+
+              index++;
+            }
+          host_index++;
+        }
+
+      index = 0;
+      while (identifiers && (index < identifiers->len))
+        identifier_free (g_ptr_array_index (identifiers, index++));
+      array_free (identifiers);
+      identifiers = NULL;
+
+      array_free (identifier_hosts);
+      identifier_hosts = NULL;
+    }
+}
+
+/**
  * @brief Add host details to a report host.
  *
  * @param[in]  report  UUID of resource.
- * @param[in]  host    Host.
+ * @param[in]  ip      Host.
  * @param[in]  entity  XML entity containing details.
  *
  * @return 0 success, -1 failed to parse XML.
  */
 int
-manage_report_host_details (report_t report, const char *host, entity_t entity)
+manage_report_host_details (report_t report, const char *ip, entity_t entity)
 {
   entities_t details;
   entity_t detail;
+  char *uuid;
 
   details = entity->entities;
+  if (identifiers == NULL)
+    identifiers = make_array ();
+  if (identifier_hosts == NULL)
+    identifier_hosts = make_array ();
+  uuid = report_uuid (report);
   while ((detail = first_entity (details)))
     {
       if (strcmp (entity_name (detail), "detail") == 0)
@@ -50648,30 +51060,93 @@ manage_report_host_details (report_t report, const char *host, entity_t entity)
 
           source = entity_child (detail, "source");
           if (source == NULL)
-            return -1;
+            goto error;
           source_type = entity_child (source, "type");
           if (source_type == NULL)
-            return -1;
+            goto error;
           source_name = entity_child (source, "name");
           if (source_name == NULL)
-            return -1;
+            goto error;
           source_desc = entity_child (source, "description");
           if (source_desc == NULL)
-            return -1;
+            goto error;
           name = entity_child (detail, "name");
           if (name == NULL)
-            return -1;
+            goto error;
           value = entity_child (detail, "value");
           if (value == NULL)
-            return -1;
+            goto error;
           insert_report_host_detail
-           (report, host, entity_text (source_type), entity_text (source_name),
+           (report, ip, entity_text (source_type), entity_text (source_name),
             entity_text (source_desc), entity_text (name), entity_text (value));
+
+          if (strcmp (entity_text (name), "hostname") == 0)
+            {
+              identifier_t *identifier;
+
+              identifier = g_malloc (sizeof (identifier_t));
+              identifier->ip = g_strdup (ip);
+              identifier->name = g_strdup ("hostname");
+              identifier->value = g_strdup (entity_text (value));
+              identifier->source_id = g_strdup (uuid);
+              identifier->source_type = g_strdup ("Report Host Detail");
+              identifier->source_data = g_strdup (entity_text (source_name));
+              array_add (identifiers, identifier);
+              array_add_new_string (identifier_hosts, g_strdup (ip));
+            }
+          if (strcmp (entity_text (name), "MAC-Ifaces") == 0)
+            {
+              identifier_t *identifier;
+
+              identifier = g_malloc (sizeof (identifier_t));
+              identifier->ip = g_strdup (ip);
+              identifier->name = g_strdup ("MAC-Ifaces");
+              identifier->value = g_strdup (entity_text (value));
+              identifier->source_id = g_strdup (uuid);
+              identifier->source_type = g_strdup ("Report Host Detail");
+              identifier->source_data = g_strdup (entity_text (source_name));
+              array_add (identifiers, identifier);
+              array_add_new_string (identifier_hosts, g_strdup (ip));
+            }
+          if (strcmp (entity_text (name), "DNS-via-TargetDefinition") == 0)
+            {
+              identifier_t *identifier;
+
+              identifier = g_malloc (sizeof (identifier_t));
+              identifier->ip = g_strdup (ip);
+              identifier->name = g_strdup ("DNS-via-TargetDefinition");
+              identifier->value = g_strdup (entity_text (value));
+              identifier->source_id = g_strdup (uuid);
+              identifier->source_type = g_strdup ("Report Host Detail");
+              identifier->source_data = g_strdup (entity_text (source_name));
+              array_add (identifiers, identifier);
+              array_add_new_string (identifier_hosts, g_strdup (ip));
+            }
+          if (strcmp (entity_text (name), "OS") == 0
+              && g_str_has_prefix (entity_text (value), "cpe:/o:"))
+            {
+              identifier_t *identifier;
+
+              identifier = g_malloc (sizeof (identifier_t));
+              identifier->ip = g_strdup (ip);
+              identifier->name = g_strdup ("OS");
+              identifier->value = g_strdup (entity_text (value));
+              identifier->source_id = g_strdup (uuid);
+              identifier->source_type = g_strdup ("Report Host Detail");
+              identifier->source_data = g_strdup (entity_text (source_name));
+              array_add (identifiers, identifier);
+              array_add_new_string (identifier_hosts, g_strdup (ip));
+            }
         }
       details = next_entities (details);
     }
+  free (uuid);
 
   return 0;
+
+ error:
+  free (uuid);
+  return -1;
 }
 
 /**
@@ -50699,6 +51174,284 @@ manage_report_host_detail (report_t report, const char *host, const char *xml)
   ret = manage_report_host_details (report, host, entity);
   free_entity (entity);
   return ret;
+}
+
+/**
+ * @brief Initialise a host identifier iterator.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  host        Host.
+ * @param[in]  ascending   Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for type then start.
+ */
+void
+init_host_identifier_iterator (iterator_t* iterator, host_t host,
+                               int ascending, const char* sort_field)
+{
+  assert (current_credentials.uuid);
+
+  if (host)
+    init_iterator (iterator,
+                   "SELECT id, uuid, name, comment, iso_time (creation_time),"
+                   "       iso_time (modification_time), creation_time,"
+                   "       modification_time, owner, owner, value,"
+                   "       source_type, source_id, source_data, '', ''"
+                   " FROM host_identifiers"
+                   " WHERE host = %llu"
+                   " UNION"
+                   " SELECT id, uuid, name, comment, iso_time (creation_time),"
+                   "        iso_time (modification_time), creation_time,"
+                   "        modification_time, owner, owner,"
+                   "        (SELECT name FROM oss WHERE id = os),"
+                   "        source_type, source_id, source_data,"
+                   "        (SELECT uuid FROM oss WHERE id = os),"
+                   "        (SELECT title FROM scap.cpes"
+                   "         WHERE uuid = (SELECT name FROM oss WHERE id = os))"
+                   " FROM host_oss"
+                   " WHERE host = %llu"
+                   " ORDER BY %s %s;",
+                   host,
+                   host,
+                   sort_field ? sort_field : "creation_time",
+                   ascending ? "ASC" : "DESC");
+  else
+    init_iterator (iterator,
+                   "SELECT id, uuid, name, comment, iso_time (creation_time),"
+                   "       iso_time (modification_time), creation_time,"
+                   "       modification_time, owner, owner, value,"
+                   "       source_type, source_id, source_data, '', ''"
+                   " FROM host_identifiers"
+                   " ORDER BY %s %s;",
+                   sort_field ? sort_field : "creation_time",
+                   ascending ? "ASC" : "DESC");
+}
+
+/**
+ * @brief Get the value from a host identifier iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The value of the host identifier, or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (host_identifier_iterator_value, GET_ITERATOR_COLUMN_COUNT);
+
+/**
+ * @brief Get the source type from a host identifier iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The source type of the host identifier, or NULL if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (host_identifier_iterator_source_type,
+            GET_ITERATOR_COLUMN_COUNT + 1);
+
+/**
+ * @brief Get the source from a host identifier iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The source of the host identifier, or NULL if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (host_identifier_iterator_source_id, GET_ITERATOR_COLUMN_COUNT + 2);
+
+/**
+ * @brief Get the source data from a host identifier iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The source data of the host identifier, or NULL if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (host_identifier_iterator_source_data,
+            GET_ITERATOR_COLUMN_COUNT + 3);
+
+/**
+ * @brief Get the OS UUID from a host identifier iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The OS UUID of the host identifier, or NULL if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (host_identifier_iterator_os_id,
+            GET_ITERATOR_COLUMN_COUNT + 4);
+
+/**
+ * @brief Get the OS title from a host identifier iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The OS title of the host identifier, or NULL if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (host_identifier_iterator_os_title,
+            GET_ITERATOR_COLUMN_COUNT + 5);
+
+/**
+ * @brief Filter columns for host iterator.
+ */
+#define HOST_ITERATOR_FILTER_COLUMNS                      \
+ { GET_ITERATOR_FILTER_COLUMNS, NULL }
+
+/**
+ * @brief Host iterator columns.
+ */
+#define HOST_ITERATOR_COLUMNS                             \
+ {                                                        \
+   GET_ITERATOR_COLUMNS (hosts),                          \
+   { NULL, NULL }                                         \
+ }
+
+/**
+ * @brief Initialise a host iterator.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find host, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_asset_host_iterator (iterator_t *iterator, const get_data_t *get)
+{
+  static const char *filter_columns[] = HOST_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = HOST_ITERATOR_COLUMNS;
+
+  return init_get_iterator (iterator,
+                            "host",
+                            get,
+                            /* Columns. */
+                            columns,
+                            /* Columns for trashcan. */
+                            NULL,
+                            filter_columns,
+                            0,
+                            NULL,
+                            NULL,
+                            TRUE);
+}
+
+/**
+ * @brief Count number of hosts.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of hosts in filtered set.
+ */
+int
+asset_host_count (const get_data_t *get)
+{
+  static const char *extra_columns[] = HOST_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = HOST_ITERATOR_COLUMNS;
+  return count ("host", get, columns, NULL, extra_columns, 0, 0, 0, TRUE);
+}
+
+/**
+ * @brief Filter columns for os iterator.
+ */
+#define OS_ITERATOR_FILTER_COLUMNS                          \
+ { GET_ITERATOR_FILTER_COLUMNS, "title", "installs", NULL }
+
+/**
+ * @brief OS iterator columns.
+ */
+#define OS_ITERATOR_COLUMNS                                                   \
+ {                                                                            \
+   GET_ITERATOR_COLUMNS (oss),                                                \
+   {                                                                          \
+     "(SELECT coalesce ((SELECT title FROM scap.cpes WHERE uuid = oss.name)," \
+     "                  ''))",                                                \
+     "title"                                                                  \
+   },                                                                         \
+   {                                                                          \
+     "(SELECT count (*) FROM host_oss WHERE os = id)",                        \
+     "installs"                                                               \
+   },                                                                         \
+   { NULL, NULL }                                                             \
+ }
+
+/**
+ * @brief Initialise an OS iterator.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find os, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_asset_os_iterator (iterator_t *iterator, const get_data_t *get)
+{
+  static const char *filter_columns[] = OS_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = OS_ITERATOR_COLUMNS;
+
+  return init_get_iterator (iterator,
+                            "os",
+                            get,
+                            /* Columns. */
+                            columns,
+                            /* Columns for trashcan. */
+                            NULL,
+                            filter_columns,
+                            0,
+                            NULL,
+                            NULL,
+                            TRUE);
+}
+
+/**
+ * @brief Get the title from an OS iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The title of the OS, or NULL if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (asset_os_iterator_title, GET_ITERATOR_COLUMN_COUNT);
+
+/**
+ * @brief Get the number of installs from an asset OS iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Number of hosts that have the OS.
+ */
+int
+asset_os_iterator_installs (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 1);
+}
+
+/**
+ * @brief Count number of oss.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of oss in filtered set.
+ */
+int
+asset_os_count (const get_data_t *get)
+{
+  static const char *extra_columns[] = OS_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = OS_ITERATOR_COLUMNS;
+  return count ("os", get, columns, NULL, extra_columns, 0, 0, 0, TRUE);
+}
+
+/**
+ * @brief Count number of all assets.
+ *
+ * @param[in]   get       GET params.
+ *
+ * @return Total number of assets.
+ */
+int
+total_asset_count (const get_data_t *get)
+{
+  return sql_int ("SELECT (SELECT count (*) FROM hosts);");
 }
 
 

@@ -1273,7 +1273,7 @@ finished_hosts_str (report_t stopped_report)
 
   if (stopped_report == 0)
     return NULL;
-  init_host_iterator (&hosts, stopped_report, NULL, 0);
+  init_report_host_iterator (&hosts, stopped_report, NULL, 0);
   while (next (&hosts))
     {
       const char *end_time = host_iterator_end_time (&hosts);
@@ -3163,7 +3163,7 @@ cve_scan_host (task_t task, openvas_host_t *openvas_host)
 
       /* Get the report_host for the host. */
 
-      init_host_iterator (&report_hosts, 0, NULL, report_host);
+      init_report_host_iterator (&report_hosts, 0, NULL, report_host);
       if (next (&report_hosts))
         {
           iterator_t prognosis;

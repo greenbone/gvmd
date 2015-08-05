@@ -2299,6 +2299,20 @@ create_tables ()
        " (id INTEGER PRIMARY KEY, `group` INTEGER, user INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS group_users_trash"
        " (id INTEGER PRIMARY KEY, `group` INTEGER, user INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS hosts"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
+       "  creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS host_identifiers"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, host INTEGER, owner INTEGER, name,"
+       "  comment, value, source_type, source_id, source_data, creation_time,"
+       "  modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS oss"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
+       "  creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS host_oss"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, host INTEGER, owner INTEGER,"
+       "  name, comment, os INTEGER, source_type, source_id, source_data,"
+       "  creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login,"
        "  password, comment, private_key TEXT,"

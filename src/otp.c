@@ -1465,7 +1465,16 @@ process_otp_scanner_input (void (*progress) ())
                 {
                   if (current_scanner_task)
                     {
+                      char *uuid;
+
                       assert (current_host);
+                      assert (current_report);
+
+                      uuid = report_uuid (current_report);
+                      host_notice (current_host, "ip", current_host,
+                                   "Report Host", uuid);
+                      free (uuid);
+
                       set_scan_host_start_time_otp (current_report,
                                                     current_host,
                                                     field);
@@ -1549,6 +1558,7 @@ process_otp_scanner_input (void (*progress) ())
                       /* Stop transaction now, because delete_task_lock and
                        * set_scan_end_time_otp run transactions themselves. */
                       manage_transaction_stop (TRUE);
+                      hosts_set_identifiers ();
                       if (current_report)
                         set_scan_end_time_otp (current_report, field);
                       switch (task_run_status (current_scanner_task))
