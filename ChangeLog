@@ -1,3 +1,11 @@
+2015-08-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Done in r22982.
+
+	* src/manage_sql.c (init_port_range_iterator): Use
+	acl_user_has_access_uuid for permission check for single port list
+	case, so that Super check is done.
+
 2015-08-03  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post release version bump.

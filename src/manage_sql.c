@@ -47107,33 +47107,28 @@ init_port_range_iterator (iterator_t* iterator, port_list_t port_list,
   assert (current_credentials.uuid);
 
   if (port_list)
-    init_iterator (iterator,
-                   "SELECT uuid, comment, start, \"end\", type, exclude"
-                   " FROM port_ranges%s"
-                   " WHERE port_list = %llu"
-                   " AND"
-                   " (((SELECT owner FROM port_lists%s WHERE id = port_list)"
-                   "   IS NULL)"
-                   "  OR ((SELECT owner FROM port_lists%s WHERE id = port_list)"
-                   "      = (SELECT id FROM users WHERE users.uuid = '%s'))"
-                   "  OR (CAST (%i AS boolean)"
-                   "      AND (" USER_MAY ("port_list") ")))"
-                   " ORDER BY %s %s;",
-                   trash ? "_trash" : "",
-                   port_list,
-                   trash ? "_trash" : "",
-                   trash ? "_trash" : "",
-                   current_credentials.uuid,
-                   trash ? 0 : 1,
-                   current_credentials.uuid,
-                   current_credentials.uuid,
-                   current_credentials.uuid,
-                   "get_port_lists",
-                   "get_port_lists",
-                   "get_port_lists",
-                   "get_port_lists",
-                   sort_field ? sort_field : "type, CAST (start AS INTEGER)",
-                   ascending ? "ASC" : "DESC");
+    {
+      char *uuid;
+
+      uuid = port_list_uuid (port_list);
+      assert (uuid);
+      if (user_has_access_uuid ("port_list", uuid, "get_port_lists", trash))
+        init_iterator (iterator,
+                       "SELECT uuid, comment, start, \"end\", type, exclude"
+                       " FROM port_ranges%s"
+                       " WHERE port_list = %llu"
+                       " ORDER BY %s %s;",
+                       trash ? "_trash" : "",
+                       port_list,
+                       sort_field ? sort_field : "type, CAST (start AS INTEGER)",
+                       ascending ? "ASC" : "DESC");
+      else
+        init_iterator (iterator,
+                       "SELECT uuid, comment, start, \"end\", type, exclude"
+                       " FROM port_ranges"
+                       " WHERE 1 == 0");
+      free (uuid);
+    }
   else
     init_iterator (iterator,
                    "SELECT uuid, comment, start, end, type, exclude"
