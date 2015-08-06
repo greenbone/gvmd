@@ -3762,6 +3762,7 @@ run_task (const char *task_id, char **report_id, int from,
         /* Child.  Carry on starting the task, reopen the database (required
          * after fork). */
         reinit_manage_process ();
+        manage_session_init (current_credentials.uuid);
         break;
       case -1:
         /* Parent when error. */
@@ -5164,6 +5165,7 @@ manage_schedule (int (*fork_connection) (int *,
             pthread_sigmask (SIG_SETMASK, sigmask_current, NULL);
 
             reinit_manage_process ();
+            manage_session_init (current_credentials.uuid);
             while (starts)
               {
                 g_free (starts->data);
