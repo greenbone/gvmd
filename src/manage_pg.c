@@ -1277,7 +1277,6 @@ manage_create_sql_functions ()
            "                                 WHERE users.uuid"
            "                                       = (SELECT uuid"
            "                                          FROM current_credentials))))"
-           // FIX coalesce else null first
            "               ORDER BY coalesce (owner, 0) DESC LIMIT 1)"
            "         WHEN 'classic'"
            "         THEN (CASE lower ($2)"
