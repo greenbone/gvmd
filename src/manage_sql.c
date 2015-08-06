@@ -14533,8 +14533,6 @@ task_severity (task_t task, int overrides, int min_qod, int offset)
                             "                 WHERE nvts.oid"
                             "                         = results.nvt),"
                             "                results.severity)"
-                            "       FROM nvts"
-                            "       WHERE nvts.oid = results.nvt)"
                             " ELSE results.severity END");
   else
     severity_sql = g_strdup ("results.severity");
