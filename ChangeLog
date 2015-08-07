@@ -1,3 +1,9 @@
+2015-08-07  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r22993.
+
+	* src/omp.c (handle_get_scanners): Add names of OSP params to response.
+
 2015-08-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r22986.
