@@ -30168,7 +30168,6 @@ create_config_from_scanner (const char *scanner_id, const char *name,
  * @brief Return the UUID of a config.
  *
  * @param[in]   config  Config.
- * @param[out]  id      Pointer to a newly allocated string.
  *
  * @return Newly allocated config uuid pointer.
  */

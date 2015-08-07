@@ -1,3 +1,12 @@
+2015-08-07  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Fix errors in function documentations.
+
+	* src/manage.c (run_osp_task): Correct name of function parameter.
+
+	* src/manage_sql.c (config_uuid): Remove reference to nonexistent
+	parameter.
+
 2015-08-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (manage_create_sql_functions): Remove comment.  The

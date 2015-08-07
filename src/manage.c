@@ -3087,7 +3087,7 @@ fork_osp_scan_handler (task_t task, target_t target)
 /**
  * @brief Start a task on an OSP scanner.
  *
- * @param[in]   task_id    The task ID.
+ * @param[in]   task       The task.
  *
  * @return 0 success, 99 permission denied, -1 error.
  */
