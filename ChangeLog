@@ -1,3 +1,13 @@
+2015-08-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_pg.c (manage_create_sql_functions): Add current_severity.
+	(create_tables): Use current_severity to get dynamic severity in
+	views, so that special case severities like -3.0 are checked.  Use
+	current_severity for functions too, to reduce duplication.
+
+	* src/manage_sqlite3.c (create_tables): In result_new_severities add
+	check for special case severities to dynamic severity retrieval.
+
 2015-08-07  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Fix errors in function documentations.
