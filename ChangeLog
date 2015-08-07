@@ -1,3 +1,9 @@
+2015-08-07  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* INSTALL: Updated to describe usage of openvas-manage-certs instead
+	of openvas-mkcert-client. Add section documenting how the scanner
+	certificates in database can be updated.
+
 2015-08-07  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/omp.c (handle_get_scanners): Add names of OSP params to response.

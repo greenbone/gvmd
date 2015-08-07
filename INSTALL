@@ -73,33 +73,30 @@ OPENVAS_CA_CERTIFICATE may need modifying.
 Certificate Generation
 ----------------------
 
-Note that the manager always connects to the scanner via client certificate
-using certificate based authentication exclusively.  This means that you
-have to generate the certificate and key for this and provide them to the
-manager.
-The easiest way to do this is to use the "openvas-mkcert-client" script
-provided by the openvas-scanner module.  You can generate the certificates,
-register them with the OpenVAS scanner and install the client certificates
-into the proper location for use with openvas-manager with a single command:
+All communication with OpenVAS Manager uses the TLS protocol to establish
+secure connections and for authentication and authorization.
+This requires the presence of a certificate infrastructure consisting of a
+certificate authority (CA) and a server and client certificate signed by the
+CA.
 
-    $ openvas-mkcert-client -n -i
+OpenVAS Manager uses a client certificate when connecting to a scanner via the
+OTP or OSP protocol.
 
-Or you can call the script without parameters if you want to have finer
-control over the process:
+The easiest way to generate this certificate is to use the
+"openvas-manage-certs" script provided with the openvas-scanner module. If you
+have already executed the "openvas-manage-certs -a" command when setting up
+OpenVAS Scanner you are all set; the client certificate already exists, is
+signed by the CA and installed in the location where OpenVAS Manager expects it
+to be.
 
-    $ openvas-mkcert-client
+Please note that for this to work both OpenVAS Manager and OpenVAS Scanner need
+to be installed on the same system.
 
-If you did not use the "-i" option described above, the script will
-create the client certificate and key in a temporary directory.  In order
-to have the manager use the certificate and key, you have to copy the
-files into a specific location.  Change into the temporary directory
-created by openvas-mkcert-client and execute the following commands:
-
-    $ cp key_om.pem /var/lib/openvas/private/CA/clientkey.pem
-    $ cp cert_om.pem /var/lib/openvas/CA/clientcert.pem
-
-Please note that the target directory in the commands above might have
-to be prefixed with the prefix you have set earlier.
+If you intend to use Scanner and Manager on separate systems you need to make
+sure the CA certificate used by both daemons is identical and that both server
+and client certificate are signed by this CA. The "openvas-manage-certs" script
+can assist you in setting up your infrastructure. Please refer to the
+documentation provided with the script for usage details.
 
 
 Choosing the Database Backend
@@ -333,6 +330,31 @@ Once your encrypted credentials are working again, feel free to remove the
 credential encryptions key from the keyring in
 <install-prefix>/etc/openvas/gnupg and the signature verification key from the
 one in <install-prefix>/var/lib/openvas/gnupg.
+
+
+Updating Scanner Certificates
+-----------------------------
+
+If you have changed the CA certificate used to sign the server and client
+certificates or the client certificate itself you will need to update the
+certificates in Manager database as well.
+
+The database can be updated using the following command:
+
+  $ openvasmd --modify-scanner <uuid> \
+              --scanner-ca-pub <cacert> \
+              --scanner-key-pub <clientcert> \
+              --scanner-key-priv <clientkey>
+
+Where:
+<uuid>       refers to the UUID used by OpenVAS Manager to identify the scanner;
+             the UUID can be retrieved with "openvasmd --get-scanners"
+<cacert>     refers to the certificate of the CA used to sign the scanner
+             certificate
+<clientcert> refers to the certificate Manager uses to authenticate when
+             connecting to the scanner
+<clientkey>  refers to the private key Manager uses to authenticate when
+             connecting to the scanner
 
 
 Prerequisites for Optional Features
