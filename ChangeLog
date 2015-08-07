@@ -1,6 +1,18 @@
+2015-08-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r22986.
+
+	* src/manage_pg.c (manage_create_sql_functions): Add current_severity.
+	(create_tables): Use current_severity to get dynamic severity in
+	views, so that special case severities like -3.0 are checked.  Use
+	current_severity for functions too, to reduce duplication.
+
+	* src/manage_sqlite3.c (create_tables): In result_new_severities add
+	check for special case severities to dynamic severity retrieval.
+
 2015-08-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	Done in r22982.
+	Backport r22982.
 
 	* src/manage_sql.c (init_port_range_iterator): Use
 	acl_user_has_access_uuid for permission check for single port list
