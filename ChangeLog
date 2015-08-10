@@ -1,3 +1,10 @@
+2015-08-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/omp.c (init_aggregate_lists, buffer_aggregate_xml): New functions.
+	(omp_xml_handle_end_element): In case CLIENT_GET_AGGREGATES move
+	initialization of lists and buffering of aggregate XML to the newly
+	added functions.
+
 2015-08-07  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* INSTALL: Updated to describe usage of openvas-manage-certs instead
