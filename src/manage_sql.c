@@ -29317,7 +29317,7 @@ int
 trash_target_readable (target_t target)
 {
   char *uuid;
-  target_t found;
+  target_t found = 0;
 
   if (target == 0)
     return 0;
@@ -35396,7 +35396,7 @@ int
 trash_lsc_credential_readable (lsc_credential_t lsc_credential)
 {
   char *uuid;
-  lsc_credential_t found;
+  lsc_credential_t found = 0;
 
   if (lsc_credential == 0)
     return 0;
@@ -39647,7 +39647,7 @@ int
 trash_scanner_readable (scanner_t scanner)
 {
   char *uuid;
-  scanner_t found;
+  scanner_t found = 0;
 
   if (scanner == 0)
     return 0;
@@ -40332,7 +40332,7 @@ int
 trash_schedule_readable (schedule_t schedule)
 {
   char *uuid;
-  schedule_t found;
+  schedule_t found = 0;
 
   if (schedule == 0)
     return 0;
@@ -44139,7 +44139,7 @@ int
 trash_slave_readable (slave_t slave)
 {
   char *uuid;
-  slave_t found;
+  slave_t found = 0;
 
   if (slave == 0)
     return 0;

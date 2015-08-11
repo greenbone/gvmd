@@ -1,3 +1,10 @@
+2015-08-11  Benoît Allard  <benoit.allard@greenbone.net>
+
+	* src/manage_sql.c (trash_target_readable,
+	  trash_lsc_credential_readable, trash_scanner_readable,
+	  trash_schedule_readable, trash_slave_readable): Prevent the usage of
+	  garbage values
+
 2015-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (create_tables): Create functions before creating the
