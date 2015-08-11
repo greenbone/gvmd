@@ -15140,6 +15140,13 @@ host_notice (const char *host_name, const char *identifier_type,
        quoted_source_type,
        quoted_source_id);
 
+  sql ("UPDATE hosts SET modification_time = (SELECT modification_time"
+       "                                      FROM host_identifiers"
+       "                                      WHERE id = %llu)"
+       " WHERE id = %llu;",
+       sql_last_insert_id (),
+       host);
+
   g_free (quoted_identifier_type);
   g_free (quoted_identifier_value);
   g_free (quoted_source_id);
@@ -50974,22 +50981,42 @@ hosts_set_identifiers ()
                        quoted_source_type,
                        quoted_source_id,
                        quoted_source_data);
+
+                  if (host_new == 0)
+                    sql ("UPDATE hosts"
+                         " SET modification_time = (SELECT modification_time"
+                         "                          FROM host_oss"
+                         "                          WHERE id = %llu)"
+                         " WHERE id = %llu;",
+                         sql_last_insert_id (),
+                         host);
                 }
               else
-                sql ("INSERT into host_identifiers"
-                     " (uuid, host, owner, name, comment, value, source_type,"
-                     "  source_id, source_data, creation_time, modification_time)"
-                     " VALUES"
-                     " (make_uuid (), %llu,"
-                     "  (SELECT id FROM users WHERE uuid = '%s'),"
-                     "  '%s', '', '%s', '%s', '%s', '%s', m_now (), m_now ());",
-                     host,
-                     current_credentials.uuid,
-                     quoted_identifier_name,
-                     quoted_identifier_value,
-                     quoted_source_type,
-                     quoted_source_id,
-                     quoted_source_data);
+                {
+                  sql ("INSERT into host_identifiers"
+                       " (uuid, host, owner, name, comment, value, source_type,"
+                       "  source_id, source_data, creation_time, modification_time)"
+                       " VALUES"
+                       " (make_uuid (), %llu,"
+                       "  (SELECT id FROM users WHERE uuid = '%s'),"
+                       "  '%s', '', '%s', '%s', '%s', '%s', m_now (), m_now ());",
+                       host,
+                       current_credentials.uuid,
+                       quoted_identifier_name,
+                       quoted_identifier_value,
+                       quoted_source_type,
+                       quoted_source_id,
+                       quoted_source_data);
+
+                  if (host_new == 0)
+                    sql ("UPDATE hosts"
+                         " SET modification_time = (SELECT modification_time"
+                         "                          FROM host_identifiers"
+                         "                          WHERE id = %llu)"
+                         " WHERE id = %llu;",
+                         sql_last_insert_id (),
+                         host);
+                }
 
               if (host_new)
                 /* Make sure all existing identifiers from this report refer to
