@@ -2217,6 +2217,10 @@ create_tables ()
 
   /* Create result views. */
 
+  /* Create functions, so that current_severity is created for
+   * result_new_severities. */
+  manage_create_sql_functions ();
+
   owned_clause = acl_where_owned_for_get ("override", "users.id");
 
   sql ("CREATE OR REPLACE VIEW result_overrides AS"

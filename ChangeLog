@@ -1,5 +1,11 @@
 2015-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_pg.c (create_tables): Create functions before creating the
+	views, to ensure that current_severity is available for
+	result_new_severities.
+
+2015-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c (serve_and_schedule): Add log to match other cases.
 
 2015-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
