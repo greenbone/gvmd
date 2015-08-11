@@ -944,7 +944,7 @@ fork_update_nvt_cache ()
         /* Clean up the process. */
 
         /** @todo This should happen via omp, maybe with "cleanup_omp ();". */
-        cleanup_manage_process (TRUE);
+        cleanup_manage_process (FALSE);
         if (manager_socket > -1) close (manager_socket);
         if (manager_socket_2 > -1) close (manager_socket_2);
         openvas_auth_tear_down ();

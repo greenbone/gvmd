@@ -1,3 +1,9 @@
+2015-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/openvasmd.c (fork_update_nvt_cache): Pass FALSE to
+	cleanup_manage_process, as usual after fork, to indicate that the
+	database connection should be left alone because the parent will use it.
+
 2015-08-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/omp.c (init_aggregate_lists, buffer_aggregate_xml): New functions.
