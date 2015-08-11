@@ -1100,6 +1100,8 @@ serve_and_schedule ()
 
       if (sighup_update_nvt_cache)
         {
+          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Received %s signal.\n",
+                 sys_siglist[SIGHUP]);
           sighup_update_nvt_cache = 0;
           fork_update_nvt_cache ();
         }

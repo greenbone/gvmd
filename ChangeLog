@@ -1,5 +1,9 @@
 2015-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c (serve_and_schedule): Add log to match other cases.
+
+2015-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c (fork_update_nvt_cache): Pass FALSE to
 	cleanup_manage_process, as usual after fork, to indicate that the
 	database connection should be left alone because the parent will use it.
