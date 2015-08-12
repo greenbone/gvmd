@@ -1,3 +1,15 @@
+2015-08-12  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (check_db_settings, credentials_setup): Add new
+	setting "Default Severity".
+	(make_osp_result): If no severity is given, fall back to value of
+	Default Severity if none is found in SecInfo database and do not
+	accept non-CVE results without severity.
+	(setting_default_severity_dbl): New function.
+	(modify_setting): Add new setting "Default Severity".
+
+	* src/manage.h (setting_default_severity_dbl): New function prototype.
+
 2015-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (host_notice, host_set_identifiers): Update host
