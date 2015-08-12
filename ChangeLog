@@ -1,3 +1,8 @@
+2015-08-12  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (parse_osp_report, handle_osp_scan): Replace asserts with
+	adequate errors checks and logging.
+
 2015-08-12  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (check_db_settings, credentials_setup): Add new

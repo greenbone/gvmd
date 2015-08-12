@@ -2733,7 +2733,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
   entity_t entity, child;
   entities_t results;
   const char *str;
-  char *defs_file;
+  char *defs_file = NULL;
   time_t start_time, end_time;
 
   assert (task);
@@ -2749,17 +2749,29 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
   sql_begin_immediate ();
   /* Set the report's start and end times. */
   str = entity_attribute (entity, "start_time");
-  assert (str);
+  if (!str)
+    {
+      g_warning ("Missing start_time in OSP report %s", report_xml);
+      goto end_parse_osp_report;
+    }
   start_time = atoi (str);
   set_scan_start_time_epoch (report, start_time);
   str = entity_attribute (entity, "end_time");
-  assert (str);
+  if (!str)
+    {
+      g_warning ("Missing end_time in OSP report %s", report_xml);
+      goto end_parse_osp_report;
+    }
   end_time = atoi (str);
   set_scan_end_time_epoch (report, end_time);
 
   /* Insert results. */
   child = entity_child (entity, "results");
-  assert (child);
+  if (!child)
+    {
+      g_warning ("Missing results element in OSP report %s", report_xml);
+      goto end_parse_osp_report;
+    }
   results = child->entities;
   defs_file = get_definitions_file (task);
   while (results)
@@ -2770,6 +2782,13 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       entity_t r_entity = results->data;
       int qod_int;
 
+      if (strcmp (entity_name (r_entity), "result"))
+        {
+          g_warning ("Erroneous entry in OSP results %s",
+                     entity_name (r_entity));
+          results = next_entities (results);
+          continue;
+        }
       type = entity_attribute (r_entity, "type");
       name = entity_attribute (r_entity, "name");
       severity = entity_attribute (r_entity, "severity");
@@ -2777,11 +2796,16 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       host = entity_attribute (r_entity, "host");
       port = entity_attribute (r_entity, "port") ?: "";
       qod = entity_attribute (r_entity, "qod") ?: "";
-      assert (name);
-      assert (type);
-      assert (severity);
-      assert (test_id);
-      assert (host);
+      if (!name || !type || !severity || !test_id || !host)
+        {
+          GString *string = g_string_new ("");
+
+          print_entity_to_string (r_entity, string);
+          g_warning ("Erroneous attribute in OSP result %s", string->str);
+          g_string_free (string, TRUE);
+          results = next_entities (results);
+          continue;
+        }
 
       /* Add report host if it doesn't exist. */
       manage_report_host_add (report, host, start_time, end_time);
@@ -2820,6 +2844,8 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       g_free (severity_str);
       results = next_entities (results);
     }
+
+end_parse_osp_report:
   sql ("COMMIT;");
   g_free (defs_file);
   free_entity (entity);
@@ -2879,7 +2905,12 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
 
       progress = osp_get_scan (connection, scan_id, &report_xml);
       osp_connection_close (connection);
-      assert (progress <= 100 && progress >= 0);
+      if (progress > 100 || progress < 0)
+        {
+          g_warning ("Erroneous progress value %d in OSP report", progress);
+          rc = 1;
+          break;
+        }
       if (progress == 100)
         {
           /* Parse the report XML. */
