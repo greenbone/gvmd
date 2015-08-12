@@ -17307,11 +17307,27 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               g_string_append_printf (result, "<%s>", get_assets_data->type);
 
               if (g_strcmp0 ("os", get_assets_data->type) == 0)
-                g_string_append_printf (result,
-                                        "<title>%s</title>"
-                                        "<installs>%i</installs>",
-                                        asset_os_iterator_title (&assets),
-                                        asset_os_iterator_installs (&assets));
+                {
+                  iterator_t os_hosts;
+
+                  g_string_append_printf (result,
+                                          "<title>%s</title>"
+                                          "<installs>%i</installs>"
+                                          "<hosts>",
+                                          asset_os_iterator_title (&assets),
+                                          asset_os_iterator_installs (&assets));
+                  init_os_host_iterator (&os_hosts,
+                                         get_iterator_resource (&assets));
+                  while (next (&os_hosts))
+                    g_string_append_printf (result,
+                                            "<asset id=\"%s\">"
+                                            "<name>%s</name>"
+                                            "</asset>",
+                                            get_iterator_uuid (&os_hosts),
+                                            get_iterator_name (&os_hosts));
+                  cleanup_iterator (&os_hosts);
+                  g_string_append_printf (result, "</hosts>");
+                }
 
               g_string_append_printf (result,
                                       "</%s>"

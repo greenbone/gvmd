@@ -51511,6 +51511,27 @@ total_asset_count (const get_data_t *get)
   return sql_int ("SELECT (SELECT count (*) FROM hosts);");
 }
 
+/**
+ * @brief Initialise an OS host iterator.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  os          OS.
+ */
+void
+init_os_host_iterator (iterator_t* iterator, resource_t os)
+{
+  assert (os);
+  init_iterator (iterator,
+                 "SELECT id, uuid, name, comment, iso_time (creation_time),"
+                 "       iso_time (modification_time), creation_time,"
+                 "       modification_time, owner"
+                 " FROM hosts"
+                 " WHERE id IN (SELECT DISTINCT host FROM host_oss"
+                 "              WHERE os = %llu);"
+                 " ORDER BY creation_time DESC;",
+                 os);
+}
+
 
 /* Settings. */
 

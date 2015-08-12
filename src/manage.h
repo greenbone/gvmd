@@ -2075,6 +2075,9 @@ asset_os_count (const get_data_t *);
 int
 total_asset_count (const get_data_t *);
 
+void
+init_os_host_iterator (iterator_t *, resource_t);
+
 
 /* Notes. */
 

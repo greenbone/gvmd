@@ -1,3 +1,12 @@
+2015-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): Send hosts that an OS uses,
+	in GET_ASSETS.
+
+	* src/manage_sql.c (init_os_host_iterator): New function.
+
+	* src/manage.h: Add header accordingly.
+
 2015-08-12  Benoît Allard  <benoit.allard@greenbone.net>
 
 	* src/manage.c (send_alive_test_preferences): Clarify calculation
