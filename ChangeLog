@@ -1,3 +1,8 @@
+2015-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (manage_report_host_details): Use MAC instead of
+	MAC-Ifaces.
+
 2015-08-12  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (parse_osp_report, handle_osp_scan): Replace asserts with
