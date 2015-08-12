@@ -51424,7 +51424,7 @@ asset_host_count (const get_data_t *get)
      "title"                                                                  \
    },                                                                         \
    {                                                                          \
-     "(SELECT count (*) FROM host_oss WHERE os = id)",                        \
+     "(SELECT count (distinct host) FROM host_oss WHERE os = oss.id)",        \
      "installs"                                                               \
    },                                                                         \
    { NULL, NULL }                                                             \

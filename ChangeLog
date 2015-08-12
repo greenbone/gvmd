@@ -1,5 +1,9 @@
 2015-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (OS_ITERATOR_COLUMNS): Correct "installs" count.
+
+2015-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_report_host_details): Use MAC instead of
 	MAC-Ifaces.
 
