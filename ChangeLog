@@ -1,3 +1,8 @@
+2015-08-12  Benoît Allard  <benoit.allard@greenbone.net>
+
+	* src/manage.c (send_alive_test_preferences): Clarify calculation
+	  precedence of '&' and '?'.
+
 2015-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (OS_ITERATOR_COLUMNS): Correct "installs" count.

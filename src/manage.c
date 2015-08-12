@@ -1475,26 +1475,26 @@ send_alive_test_preferences (target_t target)
 
   if (sendf_to_server ("Ping Host[checkbox]:TCP ping tries also TCP-SYN ping"
                        " <|> %s\n",
-                       alive_test & ALIVE_TEST_TCP_SYN_SERVICE
+                       (alive_test & ALIVE_TEST_TCP_SYN_SERVICE)
                         ? "yes"
                         : "no"))
     return -1;
 
   if (sendf_to_server ("Ping Host[checkbox]:Do an ICMP ping <|> %s\n",
-                       alive_test & ALIVE_TEST_ICMP
+                       (alive_test & ALIVE_TEST_ICMP)
                         ? "yes"
                         : "no"))
     return -1;
 
   if (sendf_to_server ("Ping Host[checkbox]:Use ARP <|> %s\n",
-                       alive_test & ALIVE_TEST_ARP
+                       (alive_test & ALIVE_TEST_ARP)
                         ? "yes"
                         : "no"))
     return -1;
 
   if (sendf_to_server ("Ping Host[checkbox]:"
                        "Mark unrechable Hosts as dead (not scanning) <|> %s\n",
-                       alive_test & ALIVE_TEST_CONSIDER_ALIVE
+                       (alive_test & ALIVE_TEST_CONSIDER_ALIVE)
                         ? "no"
                         : "yes"))
     return -1;
