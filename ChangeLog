@@ -1,3 +1,9 @@
+2015-08-13  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (TASK_ITERATOR_COLUMNS): Return 0 in result and host
+	count columns for container tasks to make these columns consistent with
+	task_severity.
+
 2015-08-13  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (get_osp_scan_report): New function.

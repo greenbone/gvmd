@@ -9514,69 +9514,97 @@ append_to_task_string (task_t task, const char* field, const char* value)
      "last"                                                                 \
    },                                                                       \
    {                                                                        \
+     "CASE WHEN target IS null THEN 0 ELSE"                                 \
      " report_severity_count (task_last_report (id),"                       \
      "                        opts.override, opts.min_qod,"                 \
-     "                        'False Positive')",                           \
+     "                        'False Positive')"                            \
+     " END",                                                                \
      "false_positive" },                                                    \
-   { "report_severity_count (task_last_report (id),"                        \
-     "                       opts.override, opts.min_qod, 'Log')",          \
+   {                                                                        \
+     "CASE WHEN target IS null THEN 0 ELSE"                                 \
+     " report_severity_count (task_last_report (id),"                       \
+     "                        opts.override, opts.min_qod, 'Log')"          \
+     " END",                                                                \
      "log" },                                                               \
-   { "report_severity_count (task_last_report (id),"                        \
-     "                       opts.override, opts.min_qod, 'Low')",          \
+   {                                                                        \
+     "CASE WHEN target IS null THEN 0 ELSE"                                 \
+     " report_severity_count (task_last_report (id),"                       \
+     "                        opts.override, opts.min_qod, 'Low')"          \
+     " END",                                                                \
      "low" },                                                               \
-   { "report_severity_count (task_last_report (id),"                        \
-     "                       opts.override, opts.min_qod, 'Medium')",       \
+   {                                                                        \
+     "CASE WHEN target IS null THEN 0 ELSE"                                 \
+     " report_severity_count (task_last_report (id),"                       \
+     "                        opts.override, opts.min_qod, 'Medium')"       \
+     " END",                                                                \
      "medium" },                                                            \
-   { "report_severity_count (task_last_report (id),"                        \
-     "                       opts.override, opts.min_qod, 'High')",         \
+   {                                                                        \
+     "CASE WHEN target IS null THEN 0 ELSE"                                 \
+     " report_severity_count (task_last_report (id),"                       \
+     "                        opts.override, opts.min_qod, 'High')"         \
+     " END",                                                                \
      "high" },                                                              \
    {                                                                        \
-     "report_host_count (task_last_report (id))",                           \
+     "CASE WHEN target IS null THEN 0 ELSE"                                 \
+     " report_host_count (task_last_report (id))"                           \
+     " END",                                                                \
      "hosts"                                                                \
    },                                                                       \
    {                                                                        \
-     "report_result_host_count (task_last_report (id), opts.min_qod)",      \
+     "CASE WHEN target IS null THEN 0 ELSE"                                 \
+     " report_result_host_count (task_last_report (id), opts.min_qod)"      \
+     " END",                                                                \
      "result_hosts"                                                         \
    },                                                                       \
-   {                                                                        \
-     "coalesce (report_severity_count (task_last_report (id),"               \
+   {                                                                         \
+     "CASE WHEN target IS null THEN 0 ELSE"                                  \
+     " coalesce (report_severity_count (task_last_report (id),"              \
      "                                 opts.override, opts.min_qod,"         \
      "                                 'False Positive') * 1.0"              \
      "            / nullif (report_result_host_count (task_last_report (id),"\
      "                                                opts.min_qod), 0),"    \
-     "          0)",                                                         \
+     "          0)"                                                          \
+     " END",                                                                 \
      "fp_per_host" },                                                        \
    {                                                                         \
-     "coalesce (report_severity_count (task_last_report (id),"               \
+     "CASE WHEN target IS null THEN 0 ELSE"                                  \
+     " coalesce (report_severity_count (task_last_report (id),"              \
      "                                 opts.override, opts.min_qod,"         \
      "                                 'Log') * 1.0"                         \
      "            / nullif (report_result_host_count (task_last_report (id),"\
      "                                                opts.min_qod), 0),"    \
-     "          0)",                                                         \
+     "          0)"                                                          \
+     " END",                                                                 \
      "log_per_host" },                                                       \
    {                                                                         \
-     "coalesce (report_severity_count (task_last_report (id),"               \
+     "CASE WHEN target IS null THEN 0 ELSE"                                  \
+     " coalesce (report_severity_count (task_last_report (id),"              \
      "                                 opts.override, opts.min_qod,"         \
      "                                 'Low') * 1.0"                         \
      "            / nullif (report_result_host_count (task_last_report (id),"\
      "                                                opts.min_qod), 0),"    \
-     "          0)",                                                         \
+     "          0)"                                                          \
+     " END",                                                                 \
      "low_per_host" },                                                       \
    {                                                                         \
-     "coalesce (report_severity_count (task_last_report (id),"               \
+     "CASE WHEN target IS null THEN 0 ELSE"                                  \
+     " coalesce (report_severity_count (task_last_report (id),"              \
      "                                 opts.override, opts.min_qod,"         \
      "                                 'Medium') * 1.0"                      \
      "            / nullif (report_result_host_count (task_last_report (id),"\
      "                                                opts.min_qod), 0),"    \
-     "          0)",                                                         \
+     "          0)"                                                          \
+     " END",                                                                 \
      "medium_per_host" },                                                    \
    {                                                                         \
-     "coalesce (report_severity_count (task_last_report (id),"               \
+     "CASE WHEN target IS null THEN 0 ELSE"                                  \
+     " coalesce (report_severity_count (task_last_report (id),"              \
      "                                 opts.override, opts.min_qod,"         \
      "                                 'High') * 1.0"                        \
      "            / nullif (report_result_host_count (task_last_report (id),"\
      "                                                opts.min_qod), 0),"    \
-     "          0)",                                                         \
+     "          0)"                                                          \
+     " END",                                                                 \
      "high_per_host" },                                                      \
    { NULL, NULL }                                                           \
  }
