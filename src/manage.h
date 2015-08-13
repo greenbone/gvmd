@@ -2057,6 +2057,9 @@ host_identifier_iterator_os_title (iterator_t *);
 int
 init_asset_host_iterator (iterator_t *, const get_data_t *);
 
+const char*
+asset_host_iterator_max_severity (iterator_t *);
+
 int
 asset_host_count (const get_data_t *);
 

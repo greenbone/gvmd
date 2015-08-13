@@ -1594,6 +1594,13 @@ create_tables ()
        "  creation_time integer,"
        "  modification_time integer);");
 
+  sql ("CREATE TABLE IF NOT EXISTS host_max_severities"
+       " (id SERIAL PRIMARY KEY,"
+       "  severity real,"
+       "  source_type text NOT NULL,"
+       "  source_id text NOT NULL,"
+       "  creation_time integer);");
+
   sql ("CREATE TABLE IF NOT EXISTS roles"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"

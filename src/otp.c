@@ -1560,7 +1560,10 @@ process_otp_scanner_input (void (*progress) ())
                       manage_transaction_stop (TRUE);
                       hosts_set_identifiers ();
                       if (current_report)
-                        set_scan_end_time_otp (current_report, field);
+                        {
+                          hosts_set_max_severity (current_report);
+                          set_scan_end_time_otp (current_report, field);
+                        }
                       switch (task_run_status (current_scanner_task))
                         {
                           case TASK_STATUS_INTERNAL_ERROR:

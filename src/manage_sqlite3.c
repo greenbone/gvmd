@@ -2355,6 +2355,9 @@ create_tables ()
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, host INTEGER, owner INTEGER,"
        "  name, comment, os INTEGER, source_type, source_id, source_data,"
        "  creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS host_max_severities"
+       " (id INTEGER PRIMARY KEY, host INTEGER, severity REAL, source_type,"
+       "  source_id, creation_time);");
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login,"
        "  password, comment, private_key TEXT,"

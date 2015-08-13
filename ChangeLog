@@ -1,3 +1,23 @@
+2015-08-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Keep track of the maximum severity of every asset host.
+
+	* src/omp.c (omp_xml_handle_end_element): Add MAX_SEVERITY to HOST in
+	GET_ASSETS.
+
+	* src/otp.c (process_otp_scanner_input): Add host max_severities at end
+	of scan.
+
+	* src/manage_sql.c (hosts_set_max_severity): New function.
+	(HOST_ITERATOR_FILTER_COLUMNS, HOST_ITERATOR_COLUMNS): Add max_severity.
+	(asset_host_iterator_max_severity): New function.
+
+	* src/manage.h, src/manage_sql.h: Add headers accordingly.
+
+	* src/manage_sqlite3.c (create_tables): Add host_max_severities.
+
+	* src/manage_pg.c (create_tables): Add host_max_severities.
+
 2015-08-13  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (TASK_ITERATOR_COLUMNS): Return 0 in result and host

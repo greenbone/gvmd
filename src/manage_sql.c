@@ -51263,6 +51263,35 @@ hosts_set_identifiers ()
 }
 
 /**
+ * @brief Set the end time of a scan.
+ *
+ * @param[in]  report     The report associated with the scan.
+ * @param[in]  timestamp  End time.  OTP format (ctime).  If NULL, clear end
+ *                        time.
+ */
+void
+hosts_set_max_severity (report_t report)
+{
+  sql ("INSERT INTO host_max_severities"
+       " (host, severity, source_type, source_id, creation_time)"
+       " SELECT asset_host,"
+       "        coalesce ((SELECT max (severity) FROM results"
+       "                   WHERE report = %llu"
+       "                   AND host = (SELECT name FROM hosts"
+       "                               WHERE id = asset_host)),"
+       "                  0.0),"
+       "        'Report',"
+       "        (SELECT uuid FROM reports WHERE id = %llu),"
+       "        m_now ()"
+       " FROM (SELECT host AS asset_host"
+       "       FROM host_identifiers"
+       "       WHERE source_id = (SELECT uuid FROM reports WHERE id = %llu));",
+       report,
+       report,
+       report);
+}
+
+/**
  * @brief Add host details to a report host.
  *
  * @param[in]  report  UUID of resource.
@@ -51526,7 +51555,7 @@ DEF_ACCESS (host_identifier_iterator_os_title,
  * @brief Filter columns for host iterator.
  */
 #define HOST_ITERATOR_FILTER_COLUMNS                      \
- { GET_ITERATOR_FILTER_COLUMNS, NULL }
+ { GET_ITERATOR_FILTER_COLUMNS, "max_severity", NULL }
 
 /**
  * @brief Host iterator columns.
@@ -51534,6 +51563,12 @@ DEF_ACCESS (host_identifier_iterator_os_title,
 #define HOST_ITERATOR_COLUMNS                             \
  {                                                        \
    GET_ITERATOR_COLUMNS (hosts),                          \
+   {                                                      \
+     "(SELECT severity FROM host_max_severities"          \
+     " WHERE host = hosts.id"                             \
+     " ORDER by creation_time DESC)",                     \
+     "max_severity"                                       \
+   },                                                     \
    { NULL, NULL }                                         \
  }
 
@@ -51565,6 +51600,16 @@ init_asset_host_iterator (iterator_t *iterator, const get_data_t *get)
                             NULL,
                             TRUE);
 }
+
+/**
+ * @brief Get the max severity from an asset host iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The maximum severity of the host, or NULL if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (asset_host_iterator_max_severity, GET_ITERATOR_COLUMN_COUNT);
 
 /**
  * @brief Count number of hosts.

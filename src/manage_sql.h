@@ -260,6 +260,9 @@ void manage_transaction_stop (gboolean);
 void
 hosts_set_identifiers ();
 
+void
+hosts_set_max_severity ();
+
 gboolean
 host_nthlast_report_host (const char *, report_host_t *, int);
 

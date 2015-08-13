@@ -17415,6 +17415,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   cleanup_iterator (&os_hosts);
                   g_string_append_printf (result, "</hosts>");
                 }
+              else if (g_strcmp0 ("host", get_assets_data->type) == 0)
+                {
+                  const char *max;
+
+                  max = asset_host_iterator_max_severity (&assets);
+                  g_string_append_printf (result,
+                                          "<max_severity>"
+                                          "<value>%s</value>"
+                                          "</max_severity>",
+                                          max ? max : "");
+                }
 
               g_string_append_printf (result,
                                       "</%s>"
