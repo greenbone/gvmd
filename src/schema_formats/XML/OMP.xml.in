@@ -8106,10 +8106,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>text</type>
       </attrib>
       <any><e>data_column</e></any>
+      <any><e>text_column</e></any>
     </pattern>
     <ele>
       <name>data_column</name>
       <summary>A column to get the data to aggregate from</summary>
+      <type>text</type>
+    </ele>
+    <ele>
+      <name>text_column</name>
+      <summary>A simple text column which no statistics are calculated for</summary>
       <type>text</type>
     </ele>
     <response>
@@ -8134,6 +8140,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>data_type</e>
           <any><e>data_column</e></any>
           <o><e>group_column</e></o>
+          <any><e>text_column</e></any>
           <or>
             <any><e>group</e></any>
             <e>overall</e>
@@ -8156,6 +8163,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern><t>text</t></pattern>
         </ele>
         <ele>
+          <name>text_column</name>
+          <summary>A simple text column</summary>
+          <pattern><t>text</t></pattern>
+        </ele>
+        <ele>
           <name>group</name>
           <summary>Aggregate data for a group of resources</summary>
           <pattern><t>text</t></pattern>
@@ -8168,6 +8180,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <e>count</e>
             <e>c_count</e>
             <any><e>stats</e></any>
+            <any><e>text</e></any>
           </pattern>
           <ele>
             <name>value</name>
@@ -8183,6 +8196,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <name>c_count</name>
             <summary>Cumulative number of resources in all groups up to and including the current one</summary>
             <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>text</name>
+            <summary>The value of a simple text column.</summary>
+            <pattern>
+              <attrib>
+                <name>name</name>
+                <summary>Name of the text column</summary>
+                <type>text</type>
+              </attrib>
+              text
+            </pattern>
           </ele>
           <ele>
             <name>stats</name>

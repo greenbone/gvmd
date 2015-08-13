@@ -3723,7 +3723,7 @@ trash_tag_writable (tag_t);
 
 int
 init_aggregate_iterator (iterator_t*, const char *, const get_data_t *, int,
-                         GArray *, const char *, const char *,
+                         GArray *, const char *, GArray*, const char *,
                          const char *);
 
 int
@@ -3740,6 +3740,9 @@ aggregate_iterator_mean (iterator_t*, int);
 
 double
 aggregate_iterator_sum (iterator_t*, int);
+
+const char*
+aggregate_iterator_text (iterator_t*, int, int);
 
 const char*
 aggregate_iterator_value (iterator_t*);

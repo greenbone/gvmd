@@ -1,3 +1,39 @@
+2015-08-13  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add host and result counts to task iterators and add "text columns"
+	option to get_aggregates.
+
+	* src/manage_sql.c (init_aggregate_iterator): Add option to get text
+	columns.
+	(aggregate_iterator_text): New function.
+	(TASK_ITERATOR_FILTER_COLUMNS, TASK_ITERATOR_COLUMNS): Add columns
+	"first", "last", "false_positive", "log", "low", "medium", "high",
+	"hosts", "result_hosts", "fp_per_host", "log_per_host", "low_per_host",
+	"medium_per_host" and "high_per_host".
+	* src/manage_sqlite3.c (report_severity_count): Always return 0 for
+	NULL and dummy users.
+	(sql_task_severity): Return NULL if severity is missing.
+	(sql_task_last_report): New function.
+	(manage_create_sql_functions): Add function task_last_report.
+
+	* src/manage.h (init_aggregate_iterator): Add parameter
+	(aggregate_iterator_text): New function prototype.
+
+	* src/omp.c (get_aggregates_data_t, get_aggregates_data_reset): Add
+	field text_columns.
+	(client_state_t): Add CLIENT_GET_AGGREGATES_TEXT_COLUMN.
+	(omp_xml_handle_start_element): Add TEXT_COLUMN subelement to
+	get_aggregates.
+	(init_aggregate_lists, buffer_aggregate_xml): Add new parameters for
+	text column lists.
+	(omp_xml_handle_end_element, omp_xml_handle_text): Handle text columns
+	in GET_AGGREGATES.
+
+	* src/schema_formats/XML/OMP.xml.in: Add text_column elements to
+	get_aggregates command and update the response pattern.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
 2015-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Send hosts that an OS uses,

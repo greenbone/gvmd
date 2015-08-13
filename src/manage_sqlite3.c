@@ -1116,6 +1116,10 @@ report_severity_count (report_t report, int overrides, int min_qod,
 {
   int debugs, false_positives, logs, lows, mediums, highs;
 
+  if (current_credentials.uuid == NULL
+      || strcmp (current_credentials.uuid, "") == 0)
+    return 0;
+
   gchar *min_qod_str = g_strdup_printf ("%d", min_qod);
   report_counts_id (report, &debugs, &highs, &lows, &logs, &mediums,
                     &false_positives, NULL, overrides, NULL, 0,
@@ -1301,12 +1305,36 @@ sql_task_severity (sqlite3_context *context, int argc, sqlite3_value** argv)
   task_last_report (task, &last_report);
   if (last_report == 0)
     {
-      sqlite3_result_double (context, SEVERITY_MISSING);
+      sqlite3_result_null (context);
       return;
     }
 
-  sqlite3_result_double (context, SEVERITY_MISSING);
+  sqlite3_result_null (context);
   return;
+}
+
+/**
+ * @brief Get the last report of a task.
+ *
+ * This is a callback for a scalar SQL function of two arguments.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_task_last_report (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  task_t task;
+  report_t report;
+
+  task = sqlite3_value_int64 (argv[0]);
+  if (task == 0)
+    sqlite3_result_int64 (context, 0);
+  else if (task_last_report (task, &report))
+    sqlite3_result_int64 (context, 0);
+  else
+    sqlite3_result_int64 (context, report);
 }
 
 /**
@@ -2064,6 +2092,20 @@ manage_create_sql_functions ()
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create task_severity", __FUNCTION__);
+      return -1;
+    }
+
+  if (sqlite3_create_function (task_db,
+                               "task_last_report",
+                               1,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_task_last_report,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create task_last_report", __FUNCTION__);
       return -1;
     }
 

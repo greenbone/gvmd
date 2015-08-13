@@ -2339,6 +2339,7 @@ typedef struct
   char *type;            ///< Resource type.
   char *subtype;         ///< Resource subtype.
   GList *data_columns;   ///< Columns to calculate aggregate for.
+  GList *text_columns;   ///< Columns to get simple text from.
   char *group_column;    ///< Column to group data by.
 } get_aggregates_data_t;
 
@@ -2354,6 +2355,8 @@ get_aggregates_data_reset (get_aggregates_data_t *data)
   free (data->type);
   g_list_free_full (data->data_columns, g_free);
   data->data_columns = NULL;
+  g_list_free_full (data->text_columns, g_free);
+  data->text_columns = NULL;
   free (data->group_column);
 
   memset (data, 0, sizeof (get_aggregates_data_t));
@@ -5234,6 +5237,7 @@ typedef enum
   CLIENT_GET_AGENTS,
   CLIENT_GET_AGGREGATES,
   CLIENT_GET_AGGREGATES_DATA_COLUMN,
+  CLIENT_GET_AGGREGATES_TEXT_COLUMN,
   CLIENT_GET_ALERTS,
   CLIENT_GET_ASSETS,
   CLIENT_GET_CONFIGS,
@@ -7814,6 +7818,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               = g_list_append (get_aggregates_data->data_columns,
                                g_strdup (""));
             set_client_state (CLIENT_GET_AGGREGATES_DATA_COLUMN);
+          }
+        else if (strcasecmp ("TEXT_COLUMN", element_name) == 0)
+          {
+            get_aggregates_data->text_columns
+              = g_list_append (get_aggregates_data->text_columns,
+                               g_strdup (""));
+            set_client_state (CLIENT_GET_AGGREGATES_TEXT_COLUMN);
           }
         ELSE_ERROR ("get_aggregates");
 
@@ -11349,14 +11360,19 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
  * @param[out] group_column_type Type of the group_column.
  * @param[out] data_column_types Types of the data_columns.
  * @param[out] data_columns      data_column_list copied to a GArray.
+ * @param[out] text_column_types Types of the data_columns.
+ * @param[out] text_columns      data_column_list copied to a GArray.
  * @param[out] c_sums            Array for calculating cumulative sums.
  */
 void init_aggregate_lists (const gchar* group_column,
-                               GList *data_column_list,
-                               gchar **group_column_type,
-                               GArray **data_column_types,
-                               GArray **data_columns,
-                               GArray **c_sums)
+                           GList *data_column_list,
+                           GList *text_column_list,
+                           gchar **group_column_type,
+                           GArray **data_column_types,
+                           GArray **data_columns,
+                           GArray **text_column_types,
+                           GArray **text_columns,
+                           GArray **c_sums)
 {
   if (group_column == NULL)
     *group_column_type = "";
@@ -11370,6 +11386,8 @@ void init_aggregate_lists (const gchar* group_column,
 
   *data_columns = g_array_new (TRUE, TRUE, sizeof (gchar*));
   *data_column_types = g_array_new (TRUE, TRUE, sizeof (char*));
+  *text_columns = g_array_new (TRUE, TRUE, sizeof (gchar*));
+  *text_column_types = g_array_new (TRUE, TRUE, sizeof (char*));
   *c_sums = g_array_new (TRUE, TRUE, sizeof (double));
 
   data_column_list = g_list_first (data_column_list);
@@ -11398,6 +11416,23 @@ void init_aggregate_lists (const gchar* group_column,
         }
       data_column_list = data_column_list->next;
     }
+
+  text_column_list = g_list_first (text_column_list);
+  while (text_column_list)
+    {
+      gchar *text_column = text_column_list->data;
+      if (strcmp (text_column, ""))
+        {
+          gchar *current_column = g_strdup (text_column);
+          gchar *current_column_type;
+
+          current_column_type = g_strdup ("text");
+
+          g_array_append_val (*text_columns, current_column);
+          g_array_append_val (*text_column_types, current_column_type);
+        }
+      text_column_list = text_column_list->next;
+    }
 }
 
 /**
@@ -11416,6 +11451,7 @@ void
 buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
                       const char* group_column, const char* group_column_type,
                       GArray *data_columns, GArray *data_column_types,
+                      GArray *text_columns, GArray *text_column_types,
                       GArray *c_sums)
 {
   int index;
@@ -11430,6 +11466,17 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
         {
           g_string_append_printf (xml,
                                   "<data_column>%s</data_column>",
+                                  column_name);
+        }
+    }
+
+  for (index = 0; index < text_columns->len ;index ++)
+    {
+      gchar *column_name = g_array_index (text_columns, gchar*, index);
+      if (column_name && strcmp (column_name, ""))
+        {
+          g_string_append_printf (xml,
+                                  "<text_column>%s</text_column>",
                                   column_name);
         }
     }
@@ -11496,6 +11543,15 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
                                   aggregate_iterator_mean (aggregate, index),
                                   aggregate_iterator_sum (aggregate, index),
                                   c_sum);
+        }
+
+      for (index = 0; index < text_columns->len; index++)
+        {
+          g_string_append_printf (xml,
+                                  "<text column=\"%s\">%s</text>",
+                                  g_array_index (text_columns, gchar*, index),
+                                  aggregate_iterator_text (aggregate, index,
+                                                           data_columns->len));
         }
 
       if (group_column)
@@ -11603,6 +11659,25 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
                               "<aggregate_column>"
                               "<name>%s_c_sum</name>"
                               "<stat>c_sum</stat>"
+                              "<type>%s</type>"
+                              "<column>%s</column>"
+                              "<data_type>%s</data_type>"
+                              "</aggregate_column>",
+                              column_name,
+                              type,
+                              column_name,
+                              column_type);
+    }
+
+  for (index = 0; index < text_columns->len; index++)
+    {
+      gchar *column_name, *column_type;
+      column_name = g_array_index (text_columns, gchar*, index);
+      column_type = g_array_index (text_column_types, gchar*, index);
+      g_string_append_printf (xml,
+                              "<aggregate_column>"
+                              "<name>%s</name>"
+                              "<stat>text</stat>"
                               "<type>%s</type>"
                               "<column>%s</column>"
                               "<data_type>%s</data_type>"
@@ -16949,8 +17024,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           iterator_t aggregate;
           const char *type;
           get_data_t *get;
-          GList *current_data_column_list;
-          GArray *data_columns, *data_column_types, *c_sums;
+          GArray *data_columns, *data_column_types;
+          GArray *text_columns, *text_column_types;
+          GArray *c_sums;
           const char *group_column;
           char *group_column_type;
           int ret, index;
@@ -16971,16 +17047,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           get = &get_aggregates_data->get;
           INIT_GET (aggregate, Aggregate);
-          current_data_column_list = get_aggregates_data->data_columns;
+
           group_column = get_aggregates_data->group_column;
 
-          init_aggregate_lists (group_column, current_data_column_list,
+          init_aggregate_lists (group_column,
+                                get_aggregates_data->data_columns,
+                                get_aggregates_data->text_columns,
                                 &group_column_type, &data_column_types,
-                                &data_columns, &c_sums);
+                                &data_columns, &text_column_types,
+                                &text_columns, &c_sums);
 
           ret = init_aggregate_iterator (&aggregate, type, get,
                                          0 /* distinct */,
                                          data_columns, group_column,
+                                         text_columns,
                                          NULL /* extra_tables */,
                                          NULL /* extra_where */);
 
@@ -17018,6 +17098,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     (XML_ERROR_SYNTAX ("get_aggregates",
                                         "Trashcan not used by resource type"));
                 break;
+              case 7:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("get_aggregates",
+                                    "Invalid text_column"));
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("get_aggregates",
@@ -17047,6 +17132,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           buffer_aggregate_xml (xml, &aggregate, type,
                                 group_column, group_column_type,
                                 data_columns, data_column_types,
+                                text_columns, text_column_types,
                                 c_sums);
 
           if (get->filt_id && strcmp (get->filt_id, "0"))
@@ -17113,6 +17199,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         }
 
       CLOSE (CLIENT_GET_AGGREGATES, DATA_COLUMN);
+      CLOSE (CLIENT_GET_AGGREGATES, TEXT_COLUMN);
 
       case CLIENT_GET_ASSETS:
         {
@@ -27451,6 +27538,14 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
 
+      case CLIENT_GET_AGGREGATES_TEXT_COLUMN:
+        {
+          GList *last = g_list_last (get_aggregates_data->text_columns);
+          gchar *text_column = last->data;
+          openvas_append_text (&text_column, text, text_len);
+          last->data = text_column;
+          break;
+        }
 
       APPEND (CLIENT_MODIFY_AGENT_COMMENT,
               &modify_agent_data->comment);

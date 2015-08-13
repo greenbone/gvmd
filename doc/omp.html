@@ -14238,6 +14238,12 @@ get_configs_response_config_count_page
 <div style="margin-left: 15px; display: inline;">A column to get the data to aggregate from.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>text_column</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">(text)</div>
+<div style="margin-left: 15px; display: inline;">A simple text column which no statistics are calculated for.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li>
 <li style="margin-top: 15px;">
@@ -14267,6 +14273,11 @@ get_configs_response_config_count_page
 <li>
               &lt;<b>group_column</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">The column the data is grouped by.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>text_column</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">A simple text column.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -14325,6 +14336,15 @@ get_configs_response_config_count_page
 <ul style="list-style: none"></ul>
 </li>
 </ul>
+</li>
+<li>
+              &lt;<b>text</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">The value of a simple text column..</div>
+<ul style="list-style: none"><li>
+          @<b>name</b>
+          (text)
+          Name of the text column.
+          </li></ul>
 </li>
 </ul>
 </li>
@@ -14456,10 +14476,16 @@ get_configs_response_config_count_page
        &amp; attribute data_column { text }?
        &amp; attribute group_column { text }?
        &amp; get_aggregates_data_column*
+       &amp; get_aggregates_text_column*
      }
 
 get_aggregates_data_column
  = element data_column    # type text
+     {
+     }
+
+get_aggregates_text_column
+ = element text_column    # type text
      {
      }
 </pre></div>
@@ -14478,6 +14504,7 @@ get_aggregates_response_aggregate
        get_aggregates_response_aggregate_data_type
        &amp; get_aggregates_response_aggregate_data_column*
        &amp; get_aggregates_response_aggregate_group_column?
+       &amp; get_aggregates_response_aggregate_text_column*
        &amp; ( get_aggregates_response_aggregate_group*
            | get_aggregates_response_aggregate_overall )
        &amp; get_aggregates_response_aggregate_column_info
@@ -14501,6 +14528,12 @@ get_aggregates_response_aggregate_group_column
        text
      }
 
+get_aggregates_response_aggregate_text_column
+ = element text_column
+     {
+       text
+     }
+
 get_aggregates_response_aggregate_group
  = element group
      {
@@ -14514,6 +14547,7 @@ get_aggregates_response_aggregate_group
        &amp; get_aggregates_response_aggregate_group_count
        &amp; get_aggregates_response_aggregate_group_c_count
        &amp; get_aggregates_response_aggregate_group_stats*
+       &amp; get_aggregates_response_aggregate_group_text*
      }
 
 get_aggregates_response_aggregate_group_value
@@ -14532,6 +14566,13 @@ get_aggregates_response_aggregate_group_c_count
  = element c_count
      {
        integer
+     }
+
+get_aggregates_response_aggregate_group_text
+ = element text
+     {
+       text
+       &amp; attribute name { text }?
      }
 
 get_aggregates_response_aggregate_group_stats

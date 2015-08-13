@@ -5048,11 +5048,18 @@ get_aggregates
        & # The field to group the resources by.
        attribute group_column { text }?
        & get_aggregates_data_column*
+       & get_aggregates_text_column*
      }
 
 # A column to get the data to aggregate from.
 get_aggregates_data_column
  = element data_column    # type text
+     {
+     }
+
+# A simple text column which no statistics are calculated for.
+get_aggregates_text_column
+ = element text_column    # type text
      {
      }
 
@@ -8789,6 +8796,7 @@ get_aggregates_response_aggregate
        get_aggregates_response_aggregate_data_type
        & get_aggregates_response_aggregate_data_column*
        & get_aggregates_response_aggregate_group_column?
+       & get_aggregates_response_aggregate_text_column*
        & ( get_aggregates_response_aggregate_group*
            | get_aggregates_response_aggregate_overall )
        & get_aggregates_response_aggregate_column_info
@@ -8815,6 +8823,13 @@ get_aggregates_response_aggregate_group_column
        text
      }
 
+# A simple text column.
+get_aggregates_response_aggregate_text_column
+ = element text_column
+     {
+       text
+     }
+
 # Aggregate data for a group of resources.
 get_aggregates_response_aggregate_group
  = element group
@@ -8830,6 +8845,7 @@ get_aggregates_response_aggregate_group
        & get_aggregates_response_aggregate_group_count
        & get_aggregates_response_aggregate_group_c_count
        & get_aggregates_response_aggregate_group_stats*
+       & get_aggregates_response_aggregate_group_text*
      }
 
 # Value of the group column.
@@ -8851,6 +8867,15 @@ get_aggregates_response_aggregate_group_c_count
  = element c_count
      {
        integer
+     }
+
+# The value of a simple text column..
+get_aggregates_response_aggregate_group_text
+ = element text
+     {
+       text
+       & # Name of the text column.
+       attribute name { text }?
      }
 
 # Statistics of a data column.

@@ -4560,6 +4560,7 @@ type_select_columns (const char *type, int);
  *                             for trash and single resource.
  * @param[in]  data_columns    Columns to calculate statistics for.
  * @param[in]  group_column    Column to group data by.
+ * @param[in]  text_columns    Columns to get text from.
  * @param[in]  extra_tables    Join tables.  Skipped for trash and single
  *                             resource.
  * @param[in]  extra_where     Extra WHERE clauses.  Skipped for single
@@ -4569,12 +4570,13 @@ type_select_columns (const char *type, int);
  *
  * @return 0 success, 1 failed to find resource, 2 failed to find filter,
  *         3 invalid stat_column, 4 invalid group_column, 5 invalid type,
- *         6 trashcan not used by type, -1 error.
+ *         6 trashcan not used by type, 7 invalid text column, -1 error.
  */
 int
 init_aggregate_iterator (iterator_t* iterator, const char *type,
                          const get_data_t *get, int distinct,
                          GArray *data_columns, const char *group_column,
+                         GArray *text_columns,
                          const char *extra_tables, const char *extra_where)
 {
   int owned;
@@ -4595,7 +4597,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   gchar *aggregate_group_by;
   gchar *outer_group_by_column;
   gchar *select_group_column;
-  GArray *select_data_columns;
+  GArray *select_data_columns, *select_text_columns;
   gchar *order;
 
   assert (get);
@@ -4646,7 +4648,6 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
 
   owned = type_owned (type);
 
-  select_data_columns = g_array_new (TRUE, TRUE, sizeof (gchar*));
   if (data_columns && data_columns->len > 0)
     {
       int i;
@@ -4662,12 +4663,29 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
             }
         }
     }
+  if (text_columns && text_columns->len > 0)
+    {
+      int i;
+      for (i = 0; i < text_columns->len; i++)
+        {
+          if (vector_find_filter (filter_columns,
+                                  g_array_index (text_columns, gchar*, i))
+              == 0)
+            {
+              g_free (columns);
+              g_free (trash_columns);
+              return 7;
+            }
+        }
+    }
   if (group_column && vector_find_filter (filter_columns, group_column) == 0)
     {
       g_free (columns);
       g_free (trash_columns);
       return 4;
     }
+  select_data_columns = g_array_new (TRUE, TRUE, sizeof (gchar*));
+  select_text_columns = g_array_new (TRUE, TRUE, sizeof (gchar*));
 
   clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
                           select_columns, get->trash, &filter_order,
@@ -4754,6 +4772,32 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
         }
     }
 
+  if (text_columns && text_columns->len > 0)
+    {
+      int column_index;
+      for (column_index = 0; column_index < text_columns->len; column_index++)
+        {
+          gchar *text_column_name = g_array_index (text_columns, gchar*,
+                                                   column_index);
+          int i = 0;
+          while (select_columns[i].select != NULL)
+            {
+              gchar *select = NULL;
+              if (strcmp (select_columns[i].select, text_column_name) == 0
+                  || (select_columns[i].filter
+                      && strcmp (select_columns[i].filter,
+                                 text_column_name)
+                         == 0))
+                {
+                  select = g_strdup (select_columns[i].select);
+                  g_array_append_val (select_text_columns, select);
+                  break;
+                }
+              i++;
+            }
+        }
+    }
+
   /* Round time fields to the next day to reduce amount of rows returned
    * This returns "pseudo-UTC" dates which are used by the GSA charts because
    *  the JavaScript Date objects do not support setting the timezone.
@@ -4831,6 +4875,18 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                               " sum (aggregate_avg_%d) / sum(aggregate_count),"
                               " sum (aggregate_sum_%d)",
                               col_index, col_index, col_index, col_index);
+    }
+  for (col_index = 0; col_index < select_text_columns->len; col_index ++)
+    {
+      gchar *select_text_column = g_array_index (select_text_columns, gchar*,
+                                                 col_index);
+      g_string_append_printf (aggregate_select,
+                              ", max (%s) as text_column_%d",
+                              select_text_column,
+                              col_index);
+      g_string_append_printf (outer_col_select,
+                              ", max (text_column_%d)",
+                              col_index);
     }
 
   from_table = type_table (type, get->trash);
@@ -4956,6 +5012,30 @@ aggregate_iterator_sum (iterator_t* iterator, int data_column_index)
   return sql_column_double (iterator->stmt,
                             AGGREGATE_ITERATOR_OFFSET + 3
                             + data_column_index * AGGREGATE_ITERATOR_N_STATS);
+}
+
+/**
+ * @brief Get the value of a text column from an aggregate iterator.
+ *
+ * @param[in]  iterator           Iterator.
+ * @param[in]  text_column_index  Index of the text column to get.
+ * @param[in]  data_columns       Number of data columns.
+ *
+ * @return The value, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+const char*
+aggregate_iterator_text (iterator_t* iterator, int text_column_index,
+                         int data_columns)
+{
+  const char *ret;
+  if (iterator->done) return NULL;
+  ret = (const char*) sql_column_text (iterator->stmt,
+                                       AGGREGATE_ITERATOR_OFFSET
+                                        + (data_columns
+                                           * AGGREGATE_ITERATOR_N_STATS)
+                                        + text_column_index);
+  return ret;
 }
 
 /**
@@ -9364,7 +9444,9 @@ append_to_task_string (task_t task, const char* field, const char* value)
 #define TASK_ITERATOR_FILTER_COLUMNS                                          \
  { GET_ITERATOR_FILTER_COLUMNS, "status", "total", "first_report",            \
    "last_report", "threat", "trend", "severity", "schedule", "next_due",      \
-   "first", "last", NULL }
+   "first", "last", "false_positive", "log", "low", "medium", "high",         \
+   "hosts", "result_hosts", "fp_per_host", "log_per_host", "low_per_host",    \
+   "medium_per_host", "high_per_host", NULL }
 
 #define TASK_ITERATOR_COLUMNS                                               \
  {                                                                          \
@@ -9431,6 +9513,71 @@ append_to_task_string (task_t task, const char* field, const char* value)
      " ORDER BY date DESC LIMIT 1)",                                        \
      "last"                                                                 \
    },                                                                       \
+   {                                                                        \
+     " report_severity_count (task_last_report (id),"                       \
+     "                        opts.override, opts.min_qod,"                 \
+     "                        'False Positive')",                           \
+     "false_positive" },                                                    \
+   { "report_severity_count (task_last_report (id),"                        \
+     "                       opts.override, opts.min_qod, 'Log')",          \
+     "log" },                                                               \
+   { "report_severity_count (task_last_report (id),"                        \
+     "                       opts.override, opts.min_qod, 'Low')",          \
+     "low" },                                                               \
+   { "report_severity_count (task_last_report (id),"                        \
+     "                       opts.override, opts.min_qod, 'Medium')",       \
+     "medium" },                                                            \
+   { "report_severity_count (task_last_report (id),"                        \
+     "                       opts.override, opts.min_qod, 'High')",         \
+     "high" },                                                              \
+   {                                                                        \
+     "report_host_count (task_last_report (id))",                           \
+     "hosts"                                                                \
+   },                                                                       \
+   {                                                                        \
+     "report_result_host_count (task_last_report (id), opts.min_qod)",      \
+     "result_hosts"                                                         \
+   },                                                                       \
+   {                                                                        \
+     "coalesce (report_severity_count (task_last_report (id),"               \
+     "                                 opts.override, opts.min_qod,"         \
+     "                                 'False Positive') * 1.0"              \
+     "            / nullif (report_result_host_count (task_last_report (id),"\
+     "                                                opts.min_qod), 0),"    \
+     "          0)",                                                         \
+     "fp_per_host" },                                                        \
+   {                                                                         \
+     "coalesce (report_severity_count (task_last_report (id),"               \
+     "                                 opts.override, opts.min_qod,"         \
+     "                                 'Log') * 1.0"                         \
+     "            / nullif (report_result_host_count (task_last_report (id),"\
+     "                                                opts.min_qod), 0),"    \
+     "          0)",                                                         \
+     "log_per_host" },                                                       \
+   {                                                                         \
+     "coalesce (report_severity_count (task_last_report (id),"               \
+     "                                 opts.override, opts.min_qod,"         \
+     "                                 'Low') * 1.0"                         \
+     "            / nullif (report_result_host_count (task_last_report (id),"\
+     "                                                opts.min_qod), 0),"    \
+     "          0)",                                                         \
+     "low_per_host" },                                                       \
+   {                                                                         \
+     "coalesce (report_severity_count (task_last_report (id),"               \
+     "                                 opts.override, opts.min_qod,"         \
+     "                                 'Medium') * 1.0"                      \
+     "            / nullif (report_result_host_count (task_last_report (id),"\
+     "                                                opts.min_qod), 0),"    \
+     "          0)",                                                         \
+     "medium_per_host" },                                                    \
+   {                                                                         \
+     "coalesce (report_severity_count (task_last_report (id),"               \
+     "                                 opts.override, opts.min_qod,"         \
+     "                                 'High') * 1.0"                        \
+     "            / nullif (report_result_host_count (task_last_report (id),"\
+     "                                                opts.min_qod), 0),"    \
+     "          0)",                                                         \
+     "high_per_host" },                                                      \
    { NULL, NULL }                                                           \
  }
 
