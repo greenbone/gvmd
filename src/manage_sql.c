@@ -14847,7 +14847,6 @@ make_osp_result (task_t task, const char *host, const char *nvt,
         }
     }
   else
-    result_severity = g_strdup (severity);
     result_severity = sql_quote (severity);
   sql ("INSERT into results"
        " (owner, date, task, host, port, nvt, nvt_version, severity, type,"

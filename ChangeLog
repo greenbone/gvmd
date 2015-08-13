@@ -1,3 +1,8 @@
+2015-08-13  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (make_osp_result): Remove a line accidentally left
+	in the backport of r22496 (r22924).
+
 2015-08-07  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r22993.
