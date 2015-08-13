@@ -1,3 +1,9 @@
+2015-08-13  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (get_osp_scan_report): New function.
+	(handle_osp_scan): Adjust to use new function. Only get detailed scan
+	report when scan is finished.
+
 2015-08-13  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Add host and result counts to task iterators and add "text columns"
