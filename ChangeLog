@@ -1,5 +1,13 @@
 2015-08-14  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	Port r20857 from openvas-manager-5.0 branch.
+
+	* tools/greenbone-scapdata-sync.in, tools/greenbone-certdata-sync.in:
+	Check if the current user is indeed the owner of the database and
+	abort before doing any write operations if not.
+
+2015-08-14  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	* src/manage_sql.c (send_to_sourcefire, send_to_verinice)
 	(manage_report, manage_send_report): Check effective user ID instead
 	of user ID when deciding if privileges need to be dropped.
