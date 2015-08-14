@@ -1596,6 +1596,7 @@ create_tables ()
 
   sql ("CREATE TABLE IF NOT EXISTS host_max_severities"
        " (id SERIAL PRIMARY KEY,"
+       "  host integer REFERENCES hosts (id) ON DELETE RESTRICT,"
        "  severity real,"
        "  source_type text NOT NULL,"
        "  source_id text NOT NULL,"

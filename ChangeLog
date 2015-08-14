@@ -1,3 +1,11 @@
+2015-08-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (hosts_set_max_severity): Add AS for Postgres.
+	(HOST_ITERATOR_COLUMNS): Add a LIMIT to the max_severity SQL for Postgres.
+	(init_os_host_iterator): Remove stray semicolon.
+
+	* src/manage_pg.c (create_tables): Add missing column.
+
 2015-08-14  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Port r20857 from openvas-manager-5.0 branch.

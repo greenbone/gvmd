@@ -51285,7 +51285,8 @@ hosts_set_max_severity (report_t report)
        "        m_now ()"
        " FROM (SELECT host AS asset_host"
        "       FROM host_identifiers"
-       "       WHERE source_id = (SELECT uuid FROM reports WHERE id = %llu));",
+       "       WHERE source_id = (SELECT uuid FROM reports WHERE id = %llu))"
+       "      AS subquery;",
        report,
        report,
        report);
@@ -51566,7 +51567,8 @@ DEF_ACCESS (host_identifier_iterator_os_title,
    {                                                      \
      "(SELECT severity FROM host_max_severities"          \
      " WHERE host = hosts.id"                             \
-     " ORDER by creation_time DESC)",                     \
+     " ORDER by creation_time DESC"                       \
+     " LIMIT 1)",                                         \
      "max_severity"                                       \
    },                                                     \
    { NULL, NULL }                                         \
@@ -51747,7 +51749,7 @@ init_os_host_iterator (iterator_t* iterator, resource_t os)
                  "       modification_time, owner"
                  " FROM hosts"
                  " WHERE id IN (SELECT DISTINCT host FROM host_oss"
-                 "              WHERE os = %llu);"
+                 "              WHERE os = %llu)"
                  " ORDER BY creation_time DESC;",
                  os);
 }
