@@ -7529,7 +7529,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
 
     g_debug ("   command: %s\n", command);
 
-    if (getuid () == 0)
+    if (geteuid () == 0)
       {
         pid_t pid;
         struct passwd *nobody;
@@ -7855,7 +7855,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
 
     g_debug ("   command: %s\n", log_command);
 
-    if (getuid () == 0)
+    if (geteuid () == 0)
       {
         pid_t pid;
         struct passwd *nobody;
@@ -26096,7 +26096,7 @@ manage_report (report_t report, report_format_t report_format,
 
       g_debug ("   command: %s\n", command);
 
-      if (getuid () == 0)
+      if (geteuid () == 0)
         {
           pid_t pid;
           struct passwd *nobody;
@@ -26615,7 +26615,7 @@ manage_send_report (report_t report, report_t delta_report,
 
       g_debug ("   command: %s\n", command);
 
-      if (getuid () == 0)
+      if (geteuid () == 0)
         {
           pid_t pid;
           struct passwd *nobody;
