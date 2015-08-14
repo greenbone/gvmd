@@ -2081,6 +2081,21 @@ total_asset_count (const get_data_t *);
 void
 init_os_host_iterator (iterator_t *, resource_t);
 
+void
+init_host_detail_iterator (iterator_t *, resource_t);
+
+const char*
+host_detail_iterator_name (iterator_t *);
+
+const char*
+host_detail_iterator_value (iterator_t *);
+
+const char*
+host_detail_iterator_source_type (iterator_t *);
+
+const char*
+host_detail_iterator_source_id (iterator_t *);
+
 
 /* Notes. */
 

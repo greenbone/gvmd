@@ -1,5 +1,28 @@
 2015-08-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Store host details "best_os_cpe" and "best_os_txt" in the assets, to
+	keep a record of which OS identifier links to the hosts actual OS.
+
+	* src/manage_sql.c (hosts_set_max_severity): Update doc.
+	(hosts_set_details, init_host_detail_iterator)
+	(host_detail_iterator_name, host_detail_iterator_value)
+	(host_detail_iterator_source_type, host_detail_iterator_source_id): New
+	functions.
+
+	* src/manage.h, src/manage_sql.h: Update headers accordingly.
+
+	* src/manage_pg.c (create_tables): Add host_details.
+
+	* src/manage_sqlite3.c (create_tables): Add host_details.
+
+	* src/omp.c (omp_xml_handle_end_element): Send asset host details with
+	hosts in GET_ASSETS.
+
+	* src/otp.c (process_otp_scanner_input): Call hosts_set_details to store
+	certain host details in the assets at the end of the scan.
+
+2015-08-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (hosts_set_max_severity): Add AS for Postgres.
 	(HOST_ITERATOR_COLUMNS): Add a LIMIT to the max_severity SQL for Postgres.
 	(init_os_host_iterator): Remove stray semicolon.

@@ -1562,6 +1562,7 @@ process_otp_scanner_input (void (*progress) ())
                       if (current_report)
                         {
                           hosts_set_max_severity (current_report);
+                          hosts_set_details (current_report);
                           set_scan_end_time_otp (current_report, field);
                         }
                       switch (task_run_status (current_scanner_task))

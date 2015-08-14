@@ -51263,11 +51263,9 @@ hosts_set_identifiers ()
 }
 
 /**
- * @brief Set the end time of a scan.
+ * @brief Set the maximum severity of each host in a scan.
  *
- * @param[in]  report     The report associated with the scan.
- * @param[in]  timestamp  End time.  OTP format (ctime).  If NULL, clear end
- *                        time.
+ * @param[in]  report  The report associated with the scan.
  */
 void
 hosts_set_max_severity (report_t report)
@@ -51287,6 +51285,43 @@ hosts_set_max_severity (report_t report)
        "       FROM host_identifiers"
        "       WHERE source_id = (SELECT uuid FROM reports WHERE id = %llu))"
        "      AS subquery;",
+       report,
+       report,
+       report);
+}
+
+/**
+ * @brief Store certain host details in the assets after a scan.
+ *
+ * @param[in]  report  The report associated with the scan.
+ */
+void
+hosts_set_details (report_t report)
+{
+  sql ("INSERT INTO host_details"
+       " (detail_source_type, detail_source_name, detail_source_description,"
+       "  name, value, source_type, source_id, host)"
+       " SELECT source_type,"
+       "        source_name,"
+       "        source_description,"
+       "        name,"
+       "        value,"
+       "        'Report',"
+       "        (SELECT uuid FROM reports WHERE id = %llu),"
+       /*       Assume that every report host details has a corresponding host
+        *       in the assets. */
+       "        (SELECT host"
+       "         FROM host_identifiers"
+       "         WHERE source_id = (SELECT uuid FROM reports"
+       "                            WHERE id = %llu)"
+       "         AND (SELECT name FROM hosts WHERE id = host)"
+       "             = (SELECT host FROM report_hosts"
+       "                WHERE id = report_host_details.report_host))"
+       " FROM report_host_details"
+       " WHERE (SELECT report FROM report_hosts"
+       "        WHERE id = report_host)"
+       "       = %llu"
+       " AND (name = 'best_os_cpe' OR name = 'best_os_txt');",
        report,
        report,
        report);
@@ -51753,6 +51788,68 @@ init_os_host_iterator (iterator_t* iterator, resource_t os)
                  " ORDER BY creation_time DESC;",
                  os);
 }
+
+/**
+ * @brief Initialise an asset host detail iterator.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  host        Host.
+ */
+void
+init_host_detail_iterator (iterator_t* iterator, resource_t host)
+{
+  assert (host);
+  init_iterator (iterator,
+                 "SELECT sub.id, name, value, source_type, source_id"
+                 " FROM (SELECT max (id) AS id FROM host_details"
+                 "       WHERE host = %llu"
+                 "       GROUP BY name)"
+                 "      AS sub,"
+                 "      host_details"
+                 " WHERE sub.id = host_details.id"
+                 " ORDER BY name ASC;",
+                 host);
+}
+
+/**
+ * @brief Get the name from an asset host detail iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The name of the host detail, or NULL if iteration is
+ *         complete.  Freed by cleanup_iterator.
+ */
+DEF_ACCESS (host_detail_iterator_name, 1);
+
+/**
+ * @brief Get the name from an asset host detail iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The name of the host detail, or NULL if iteration is
+ *         complete.  Freed by cleanup_iterator.
+ */
+DEF_ACCESS (host_detail_iterator_value, 2);
+
+/**
+ * @brief Get the source type from an asset host detail iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The source type of the host detail, or NULL if iteration is
+ *         complete.  Freed by cleanup_iterator.
+ */
+DEF_ACCESS (host_detail_iterator_source_type, 3);
+
+/**
+ * @brief Get the source ID from an asset host detail iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The source ID of the host detail, or NULL if iteration is
+ *         complete.  Freed by cleanup_iterator.
+ */
+DEF_ACCESS (host_detail_iterator_source_id, 4);
 
 
 /* Settings. */

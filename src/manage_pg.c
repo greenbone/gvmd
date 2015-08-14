@@ -1602,6 +1602,19 @@ create_tables ()
        "  source_id text NOT NULL,"
        "  creation_time integer);");
 
+  sql ("CREATE TABLE IF NOT EXISTS host_details"
+       " (id SERIAL PRIMARY KEY,"
+       "  host integer REFERENCES hosts (id) ON DELETE RESTRICT,"
+       /* The report that the host detail came from. */
+       "  source_type text NOT NULL,"
+       "  source_id text NOT NULL,"
+       /* The original source of the host detail, from the scanner. */
+       "  detail_source_type text,"
+       "  detail_source_name text,"
+       "  detail_source_description text,"
+       "  name text,"
+       "  value text);");
+
   sql ("CREATE TABLE IF NOT EXISTS roles"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"

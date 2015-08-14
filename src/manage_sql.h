@@ -261,7 +261,10 @@ void
 hosts_set_identifiers ();
 
 void
-hosts_set_max_severity ();
+hosts_set_max_severity (report_t report);
+
+void
+hosts_set_details (report_t report);
 
 gboolean
 host_nthlast_report_host (const char *, report_host_t *, int);

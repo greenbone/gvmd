@@ -2358,6 +2358,17 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS host_max_severities"
        " (id INTEGER PRIMARY KEY, host INTEGER, severity REAL, source_type,"
        "  source_id, creation_time);");
+  sql ("CREATE TABLE IF NOT EXISTS host_details"
+       " (id INTEGER PRIMARY KEY, host INTEGER,"
+       /* The report that the host detail came from. */
+       "  source_type,"
+       "  source_id,"
+       /* The original source of the host detail, from the scanner. */
+       "  detail_source_type,"
+       "  detail_source_name,"
+       "  detail_source_description,"
+       "  name,"
+       "  value);");
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login,"
        "  password, comment, private_key TEXT,"

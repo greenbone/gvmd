@@ -17418,6 +17418,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               else if (g_strcmp0 ("host", get_assets_data->type) == 0)
                 {
                   const char *max;
+                  iterator_t details;
 
                   max = asset_host_iterator_max_severity (&assets);
                   g_string_append_printf (result,
@@ -17425,6 +17426,28 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                           "<value>%s</value>"
                                           "</max_severity>",
                                           max ? max : "");
+
+                  init_host_detail_iterator (&details,
+                                             get_iterator_resource (&assets));
+                  while (next (&details))
+                    g_string_append_printf (result,
+                                            "<detail>"
+                                            "<name>%s</name>"
+                                            "<value>%s</value>"
+                                            "<source id=\"%s\">"
+                                            "<type>%s</type>"
+                                            "</source>"
+                                            "<extra/>"
+                                            "</detail>",
+                                            host_detail_iterator_name
+                                             (&details),
+                                            host_detail_iterator_value
+                                             (&details),
+                                            host_detail_iterator_source_id
+                                             (&details),
+                                            host_detail_iterator_source_type
+                                             (&details));
+                  cleanup_iterator (&details);
                 }
 
               g_string_append_printf (result,
