@@ -4577,6 +4577,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                          const get_data_t *get, int distinct,
                          GArray *data_columns, const char *group_column,
                          GArray *text_columns,
+                         const char *sort_field, const char *sort_stat,
+                         int sort_order, int first_group, int max_groups,
                          const char *extra_tables, const char *extra_where)
 {
   int owned;
@@ -4598,7 +4600,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   gchar *outer_group_by_column;
   gchar *select_group_column;
   GArray *select_data_columns, *select_text_columns;
-  gchar *order;
+  gchar *order_column, *order;
 
   assert (get);
 
@@ -4823,8 +4825,59 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   else
     outer_group_by_column = g_strdup ("aggregate_group_value");
 
-  order = g_strdup_printf ("ORDER BY %s ASC",
-                           "outer_group_column");
+  if (sort_stat && strcmp (sort_stat, "count") == 0)
+    order_column = g_strdup ("outer_count");
+  else if (sort_stat && strcmp (sort_stat, "value") == 0)
+    order_column = g_strdup ("outer_group_column");
+  else if (sort_field
+      && strcmp (sort_field, "")
+      && strcmp (sort_field, group_column))
+    {
+      int index;
+      order_column = NULL;
+      for (index = 0;
+           index < data_columns->len && order_column == NULL;
+           index++)
+        {
+          gchar *column = g_array_index (data_columns, gchar*, index);
+          if (strcmp (column, sort_field) == 0)
+            {
+              if (sort_stat == NULL || strcmp (sort_stat, "") == 0
+                  || (   strcmp (sort_stat, "min")
+                      && strcmp (sort_stat, "max")
+                      && strcmp (sort_stat, "mean")
+                      && strcmp (sort_stat, "sum")))
+                order_column = g_strdup_printf ("aggregate_max_%d",
+                                                index);
+              else if (strcmp (sort_stat, "mean") == 0)
+                order_column = g_strdup_printf ("aggregate_avg_%d",
+                                                index);
+              else
+                order_column = g_strdup_printf ("aggregate_%s_%d",
+                                                sort_stat, index);
+            }
+        }
+
+      for (index = 0;
+           index < text_columns->len && order_column == NULL;
+           index++)
+        {
+          gchar *column = g_array_index (text_columns, gchar*, index);
+          if (strcmp (column, sort_field) == 0)
+            {
+              order_column = g_strdup_printf ("text_column_%d",
+                                              index);
+            }
+        }
+    }
+  else
+    order_column = g_strdup ("outer_group_column");
+
+  order = g_strdup_printf ("ORDER BY %s %s",
+                           order_column,
+                           sort_order ? "ASC" : "DESC");
+  g_free (order_column);
+  order_column = NULL;
 
   aggregate_select = g_string_new ("");
   outer_col_select = g_string_new ("");
@@ -4892,7 +4945,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   from_table = type_table (type, get->trash);
 
   init_iterator (iterator,
-                 "SELECT sum(aggregate_count), %s AS outer_group_column"
+                 "SELECT sum(aggregate_count) AS outer_count,"
+                 " %s AS outer_group_column"
                  " %s"
                  " FROM (SELECT%s %s"
                  "       FROM %s%s%s"
@@ -4901,7 +4955,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                  "       %s%s%s%s"
                  "       %s)"
                  "      AS agg_sub"
-                 " GROUP BY outer_group_column %s;",
+                 " GROUP BY outer_group_column %s"
+                 " LIMIT %s OFFSET %d;",
                  outer_group_by_column,
                  outer_col_select->str,
                  distinct ? " DISTINCT" : "",
@@ -4916,7 +4971,9 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                  clause ? ")" : "",
                  extra_where ? extra_where : "",
                  aggregate_group_by,
-                 order);
+                 order,
+                 sql_select_limit (max_groups),
+                 first_group);
 
   g_free (columns);
   g_free (trash_columns);

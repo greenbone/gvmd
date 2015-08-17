@@ -8105,6 +8105,45 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <summary>The field to group the resources by</summary>
         <type>text</type>
       </attrib>
+      <attrib>
+        <name>sort_field</name>
+        <summary>The column to sort the aggregated rows by</summary>
+        <type>text</type>
+      </attrib>
+      <attrib>
+        <name>sort_order</name>
+        <summary>The order to sort by</summary>
+        <type>
+          <alts>
+            <alt>ascending</alt>
+            <alt>descending</alt>
+          </alts>
+        </type>
+      </attrib>
+      <attrib>
+        <name>sort_stat</name>
+        <summary>The statistic to sort the aggregated rows by</summary>
+        <type>
+          <alts>
+            <alt>min</alt>
+            <alt>max</alt>
+            <alt>mean</alt>
+            <alt>sum</alt>
+            <alt>count</alt>
+            <alt>value</alt>
+          </alts>
+        </type>
+      </attrib>
+      <attrib>
+        <name>first_group</name>
+        <summary>The index of the first aggregate group to return</summary>
+        <type>integer</type>
+      </attrib>
+      <attrib>
+        <name>max_groups</name>
+        <summary>The maximum number of aggregate groups to return, -1 for all</summary>
+        <type>integer</type>
+      </attrib>
       <any><e>data_column</e></any>
       <any><e>text_column</e></any>
     </pattern>

@@ -5047,6 +5047,16 @@ get_aggregates
        attribute data_column { text }?
        & # The field to group the resources by.
        attribute group_column { text }?
+       & # The column to sort the aggregated rows by.
+       attribute sort_field { text }?
+       & # The order to sort by.
+       attribute sort_order { xsd:token { pattern = "ascending|descending" } }?
+       & # The statistic to sort the aggregated rows by.
+       attribute sort_stat { xsd:token { pattern = "min|max|mean|sum|count|value" } }?
+       & # The index of the first aggregate group to return.
+       attribute first_group { integer }?
+       & # The maximum number of aggregate groups to return, -1 for all.
+       attribute max_groups { integer }?
        & get_aggregates_data_column*
        & get_aggregates_text_column*
      }

@@ -14233,6 +14233,31 @@ get_configs_response_config_count_page
           The field to group the resources by.
           </li>
 <li>
+          @<b>sort_field</b>
+          (text)
+          The column to sort the aggregated rows by.
+          </li>
+<li>
+          @<b>sort_order</b>
+          ("ascending" or "descending")
+          The order to sort by.
+          </li>
+<li>
+          @<b>sort_stat</b>
+          ("min", "max", "mean", "sum", "count" or "value")
+          The statistic to sort the aggregated rows by.
+          </li>
+<li>
+          @<b>first_group</b>
+          (<a href="#type_integer">integer</a>)
+          The index of the first aggregate group to return.
+          </li>
+<li>
+          @<b>max_groups</b>
+          (<a href="#type_integer">integer</a>)
+          The maximum number of aggregate groups to return, -1 for all.
+          </li>
+<li>
               &lt;<b>data_column</b>&gt;
               *<div style="margin-left: 15px; display: inline;">(text)</div>
 <div style="margin-left: 15px; display: inline;">A column to get the data to aggregate from.</div>
@@ -14475,6 +14500,11 @@ get_configs_response_config_count_page
        &amp; attribute type { text }
        &amp; attribute data_column { text }?
        &amp; attribute group_column { text }?
+       &amp; attribute sort_field { text }?
+       &amp; attribute sort_order { xsd:token { pattern = "ascending|descending" } }?
+       &amp; attribute sort_stat { xsd:token { pattern = "min|max|mean|sum|count|value" } }?
+       &amp; attribute first_group { integer }?
+       &amp; attribute max_groups { integer }?
        &amp; get_aggregates_data_column*
        &amp; get_aggregates_text_column*
      }

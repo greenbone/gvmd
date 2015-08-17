@@ -2341,6 +2341,11 @@ typedef struct
   GList *data_columns;   ///< Columns to calculate aggregate for.
   GList *text_columns;   ///< Columns to get simple text from.
   char *group_column;    ///< Column to group data by.
+  char *sort_field;      ///< Field to sort aggregate groups on.
+  char *sort_stat;      ///< Statistic to sort aggregate groups on.
+  int sort_order;        ///< Group sort order: 0 descending, else ascending.
+  int first_group;       ///< Skip over groups before this group number.
+  int max_groups;        ///< Maximum number of aggregate groups to return.
 } get_aggregates_data_t;
 
 /**
@@ -2358,6 +2363,8 @@ get_aggregates_data_reset (get_aggregates_data_t *data)
   g_list_free_full (data->text_columns, g_free);
   data->text_columns = NULL;
   free (data->group_column);
+  free (data->sort_field);
+  free (data->sort_stat);
 
   memset (data, 0, sizeof (get_aggregates_data_t));
 }
@@ -6830,7 +6837,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("GET_AGGREGATES", element_name) == 0)
           {
-            gchar* data_column = g_strdup ("");
+            gchar *data_column = g_strdup ("");
+            const gchar *attribute;
+
             append_attribute (attribute_names, attribute_values, "type",
                               &get_aggregates_data->type);
 
@@ -6848,6 +6857,31 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
             append_attribute (attribute_names, attribute_values, "group_column",
                               &get_aggregates_data->group_column);
+
+            append_attribute (attribute_names, attribute_values, "sort_field",
+                              &get_aggregates_data->sort_field);
+
+            append_attribute (attribute_names, attribute_values, "sort_stat",
+                              &get_aggregates_data->sort_stat);
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "sort_order", &attribute))
+              get_aggregates_data->sort_order = strcmp (attribute,
+                                                        "descending");
+            else
+              get_aggregates_data->sort_order = 1;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "first_group", &attribute))
+              get_aggregates_data->first_group = atoi (attribute) - 1;
+            else
+              get_aggregates_data->first_group = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "max_groups", &attribute))
+              get_aggregates_data->max_groups = atoi (attribute);
+            else
+              get_aggregates_data->max_groups = -1;
 
             get_data_parse_attributes (&get_aggregates_data->get,
                                        get_aggregates_data->type
@@ -17061,6 +17095,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                          0 /* distinct */,
                                          data_columns, group_column,
                                          text_columns,
+                                         get_aggregates_data->sort_field,
+                                         get_aggregates_data->sort_stat,
+                                         get_aggregates_data->sort_order,
+                                         get_aggregates_data->first_group,
+                                         get_aggregates_data->max_groups,
                                          NULL /* extra_tables */,
                                          NULL /* extra_where */);
 
