@@ -1,3 +1,24 @@
+2015-08-17  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Simplify project version setting. Use SVN version at build time in
+	binary instead of SVN version at configuration time.
+
+	* CMakeLists.txt: Set project version independently of CPack
+	configuration. Make switching between beta and stable version
+	schemes easier. Use version string with possible SVN revision suffix
+	for the CPack package version, but skip SVN revision suffix for
+	OPENVASMD_VERSION since we do not care about the revision at
+	configuration time.
+
+	* src/CMakeLists.txt: Determine build time SVN revision if the build
+	type is "Debug" and SVN information is available.
+
+	* src/openvasmd.c: Include SVN revision in version information if it
+	is available.
+
+	* getsvn.cmake: CMake script to write SVN revision to a header file if
+	SVN information is available.
+
 2015-08-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Store host details "best_os_cpe" and "best_os_txt" in the assets, to

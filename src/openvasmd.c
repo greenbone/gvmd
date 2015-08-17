@@ -114,6 +114,10 @@
 #include "ovas-mngr-comm.h"
 #include "tracef.h"
 
+#ifdef SVN_REV_AVAILABLE
+#include "svnrevision.h"
+#endif
+
 #ifdef S_SPLINT_S
 #include "splint.h"
 #endif
@@ -1364,6 +1368,9 @@ main (int argc, char** argv)
   if (print_version)
     {
       printf ("OpenVAS Manager %s\n", OPENVASMD_VERSION);
+#ifdef OPENVASMD_SVN_REVISION
+      printf ("SVN revision %i\n", OPENVASMD_SVN_REVISION);
+#endif
       printf ("Manager DB revision %i\n", manage_db_supported_version ());
       printf ("Copyright (C) 2010-2015 Greenbone Networks GmbH\n");
       printf ("License GPLv2+: GNU GPL version 2 or later\n");
@@ -1411,9 +1418,16 @@ main (int argc, char** argv)
   if (!g_thread_supported ()) g_thread_init (NULL);
 #endif
 
+#ifdef OPENVASMD_SVN_REVISION
+  g_message ("   OpenVAS Manager version %s (SVN revision %i) (DB revision %i)\n",
+             OPENVASMD_VERSION,
+             OPENVASMD_SVN_REVISION,
+             manage_db_supported_version ());
+#else
   g_message ("   OpenVAS Manager version %s (DB revision %i)\n",
              OPENVASMD_VERSION,
              manage_db_supported_version ());
+#endif
 
   if (backup_database)
     {
