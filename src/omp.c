@@ -11523,17 +11523,15 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
   c_count = 0L;
   while (next (aggregate))
     {
+      const char *value = aggregate_iterator_value (aggregate);
       gchar *value_escaped;
 
       c_count += aggregate_iterator_count (aggregate);
 
-      if (group_column)
-        value_escaped
-          = g_markup_escape_text (aggregate_iterator_value (aggregate),
-                                  -1);
+      if (group_column && value)
+        value_escaped = g_markup_escape_text (value, -1);
       else
         value_escaped = NULL;
-
 
       if (group_column)
         {
@@ -11542,7 +11540,7 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
                                   "<value>%s</value>"
                                   "<count>%d</count>"
                                   "<c_count>%ld</c_count>",
-                                  value_escaped,
+                                  value_escaped ? value_escaped : "",
                                   aggregate_iterator_count (aggregate),
                                   c_count);
         }
@@ -11581,11 +11579,19 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
 
       for (index = 0; index < text_columns->len; index++)
         {
+          const char *text = aggregate_iterator_text (aggregate, index,
+                                                      data_columns->len);
+          gchar *text_escaped;
+
+          if (text)
+            text_escaped  = g_markup_escape_text (text, -1);
+          else
+            text_escaped = NULL;
           g_string_append_printf (xml,
                                   "<text column=\"%s\">%s</text>",
                                   g_array_index (text_columns, gchar*, index),
-                                  aggregate_iterator_text (aggregate, index,
-                                                           data_columns->len));
+                                  text_escaped ? text_escaped : "");
+          g_free (text_escaped);
         }
 
       if (group_column)
