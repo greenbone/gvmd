@@ -4709,7 +4709,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
       else
         trash_extra = g_strdup (" AND hidden = 0");
     }
-  else if (strcasecmp (type, "REPORT") == 0)
+  else if (strcasecmp (type, "REPORT") == 0
+           || strcasecmp (type, "RESULT") == 0)
     {
       if (get->trash)
         trash_extra = g_strdup (" AND (SELECT hidden FROM tasks"
@@ -56593,6 +56594,11 @@ type_columns (const char *type, int apply_overrides)
       static column_t columns[] = REPORT_ITERATOR_COLUMNS;
       return columns_build_select (columns);
     }
+  else if (strcasecmp (type, "RESULT") == 0)
+    {
+      static column_t columns[] = RESULT_ITERATOR_COLUMNS;
+      return columns_build_select (columns);
+    }
   else if (strcasecmp (type, "ALLINFO") == 0)
     {
       static column_t columns[] = ALL_INFO_ITERATOR_COLUMNS;
@@ -56648,6 +56654,7 @@ type_select_columns (const char *type, int apply_overrides)
 {
   static column_t task_columns[] = TASK_ITERATOR_COLUMNS;
   static column_t report_columns[] = REPORT_ITERATOR_COLUMNS;
+  static column_t result_columns[] = RESULT_ITERATOR_COLUMNS;
   static column_t allinfo_columns[] = ALL_INFO_ITERATOR_COLUMNS;
   static column_t cpe_columns[] = CPE_INFO_ITERATOR_COLUMNS;
   static column_t cve_columns[] = CVE_INFO_ITERATOR_COLUMNS;
@@ -56663,6 +56670,8 @@ type_select_columns (const char *type, int apply_overrides)
     return task_columns;
   else if (strcasecmp (type, "REPORT") == 0)
     return report_columns;
+  else if (strcasecmp (type, "RESULT") == 0)
+    return result_columns;
   else if (strcasecmp (type, "ALLINFO") == 0)
     return allinfo_columns;
   else if (strcasecmp (type, "CPE") == 0)
@@ -56703,6 +56712,11 @@ type_filter_columns (const char *type, int apply_overrides)
   else if (strcasecmp (type, "REPORT") == 0)
     {
       static const char *ret[] = REPORT_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
+  else if (strcasecmp (type, "RESULT") == 0)
+    {
+      static const char *ret[] = RESULT_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
   else if (strcasecmp (type, "ALLINFO") == 0)
@@ -56797,6 +56811,11 @@ type_opts_table (const char *type, int apply_overrides, int min_qod)
   else if (strcasecmp (type, "REPORT") == 0)
     {
       return report_iterator_opts_table (apply_overrides, min_qod);
+    }
+  else if (strcasecmp (type, "RESULT") == 0)
+    {
+      return result_iterator_opts_table (apply_overrides, min_qod,
+                                         setting_dynamic_severity_int ());
     }
   else
     return NULL;

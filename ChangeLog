@@ -1,5 +1,12 @@
 2015-08-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (init_aggregate_iterator): Apply special trash
+	handling for results.
+	(type_columns, type_select_columns, type_filter_columns)
+	(type_opts_table): Add type "result".
+
+2015-08-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/omp.c (buffer_aggregate_xml): Check if group column value is NULL
 	before trying to escape it and output empty strings for NULL values.
 	Escape text column values as well.
