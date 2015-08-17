@@ -1,3 +1,11 @@
+2015-08-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r22981.
+
+	* src/manage.c (run_task, manage_schedule): Init manage session after
+	reinit_manage_process, so that the current_credentials table is created
+	with SQLite.
+
 2015-08-14  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Backport r23050.
