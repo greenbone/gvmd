@@ -383,6 +383,7 @@ CREATE TABLE tasks
   config_location integer,
   target_location integer,
   schedule_location integer,
+  scanner_location integer,
   slave_location integer,
   upload_result_count integer,
   hosts_ordering text,
@@ -535,6 +536,73 @@ CREATE TABLE report_host_details
   source_type text,
   source_name text,
   source_description text,
+  name text,
+  value text);
+
+CREATE TABLE hosts
+ (id SERIAL PRIMARY KEY,
+  uuid text UNIQUE NOT NULL,
+  owner integer REFERENCES users (id) ON DELETE RESTRICT,
+  name text NOT NULL,
+  comment text,
+  creation_time date,
+  modification_time date);
+
+CREATE TABLE oss
+ (id SERIAL PRIMARY KEY,
+  uuid text UNIQUE NOT NULL,
+  owner integer REFERENCES users (id) ON DELETE RESTRICT,
+  name text NOT NULL,
+  comment text,
+  creation_time date,
+  modification_time date);
+
+CREATE TABLE host_identifiers
+ (id SERIAL PRIMARY KEY,
+  uuid text UNIQUE NOT NULL,
+  host integer REFERENCES hosts (id) ON DELETE RESTRICT,
+  owner integer REFERENCES users (id) ON DELETE RESTRICT,
+  name text NOT NULL,
+  comment text,
+  value text NOT NULL,
+  source_type text NOT NULL,
+  source_id text NOT NULL,
+  source_data text NOT NULL,
+  creation_time date,
+  modification_time date);
+
+CREATE TABLE host_oss
+ (id SERIAL PRIMARY KEY,
+  uuid text UNIQUE NOT NULL,
+  host integer REFERENCES hosts (id) ON DELETE RESTRICT,
+  owner integer REFERENCES users (id) ON DELETE RESTRICT,
+  name text NOT NULL,
+  comment text,
+  os integer REFERENCES oss (id) ON DELETE RESTRICT,
+  source_type text NOT NULL,
+  source_id text NOT NULL,
+  source_data text NOT NULL,
+  creation_time date,
+  modification_time date);
+
+CREATE TABLE host_max_severities
+ (id SERIAL PRIMARY KEY,
+  host integer REFERENCES hosts (id) ON DELETE RESTRICT,
+  severity real,
+  source_type text NOT NULL,
+  source_id text NOT NULL,
+  creation_time date);
+
+CREATE TABLE host_details
+ (id SERIAL PRIMARY KEY,
+  host integer REFERENCES hosts (id) ON DELETE RESTRICT,
+  -- The report that the host detail came from.
+  source_type text NOT NULL,
+  source_id text NOT NULL,
+  -- The original source of the host detail, from the scanner.
+  detail_source_type text,
+  detail_source_name text,
+  detail_source_description text,
   name text,
   value text);
 

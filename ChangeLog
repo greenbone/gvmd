@@ -1,5 +1,13 @@
 2015-08-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/db_postgres.sql (tasks): Add scanner_location.
+	(hosts, oss, host_identifiers, host_oss, host_max_severities)
+	(host_details): New tables.
+
+	* doc/db.png: Update from source.
+
+2015-08-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (task_severity, init_result_iterator)
 	(init_classic_asset_iterator, report_scan_result_count)
 	(report_severity_data, filtered_host_count, print_report_xml): Add
