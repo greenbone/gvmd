@@ -62,6 +62,7 @@ command
     | get_configs
     | get_aggregates
     | get_alerts
+    | get_assets
     | get_filters
     | get_groups
     | get_info
@@ -177,6 +178,7 @@ response
     | get_configs_response
     | get_aggregates_response
     | get_alerts_response
+    | get_assets_response
     | get_filters_response
     | get_groups_response
     | get_info_response
@@ -3102,6 +3104,7 @@ commands
            | empty_trashcan
            | get_agents
            | get_alerts
+           | get_assets
            | get_configs
            | get_filters
            | get_groups
@@ -5090,6 +5093,21 @@ get_alerts
        attribute trash { boolean }?
        & # Whether to get the tasks using the alerts.
        attribute tasks { boolean }?
+     }
+
+## Command get_assets
+##
+## Get one or many assets.
+
+get_assets
+ = element get_assets
+     {
+       # ID of single asset to get.
+       attribute asset_id { uuid }?
+       & # Filter term to use to filter query.
+       attribute filter { uuid }?
+       & # ID of filter to use to filter query.
+       attribute filt_id { uuid }?
      }
 
 ## Command get_filters
@@ -7249,6 +7267,7 @@ commands_response
            | empty_trashcan_response
            | get_agents_response
            | get_alerts_response
+           | get_assets_response
            | get_configs_response
            | get_groups_response
            | get_info_response
@@ -9488,6 +9507,468 @@ get_alerts_response_alert_count_filtered
 
 # Number of alerts on current page.
 get_alerts_response_alert_count_page
+ = element page
+     {
+       integer
+     }
+
+## Response to get_assets
+
+get_assets_response
+ = element get_assets_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_assets_response_asset*
+       & get_assets_response_filters
+       & get_assets_response_sort
+       & get_assets_response_assets
+       & get_assets_response_asset_count
+     }
+
+get_assets_response_asset
+ = element asset
+     {
+       attribute id { uuid }
+       & get_assets_response_asset_owner
+       & get_assets_response_asset_name
+       & get_assets_response_asset_comment
+       & get_assets_response_asset_creation_time
+       & get_assets_response_asset_modification_time
+       & get_assets_response_asset_writable
+       & get_assets_response_asset_in_use
+       & get_assets_response_asset_permissions
+       & get_assets_response_asset_user_tags
+       & get_assets_response_asset_identifiers?
+       & ( get_assets_response_asset_host
+           | get_assets_response_asset_os )
+     }
+
+# Owner of the asset.
+get_assets_response_asset_owner
+ = element owner
+     {
+       get_assets_response_asset_owner_name
+     }
+
+# The name of the owner.
+get_assets_response_asset_owner_name
+ = element name
+     {
+       name
+     }
+
+# The name of the asset.
+get_assets_response_asset_name
+ = element name
+     {
+       name
+     }
+
+# The comment on the asset.
+get_assets_response_asset_comment
+ = element comment
+     {
+       text
+     }
+
+# Date and time the asset was created.
+get_assets_response_asset_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+# Date and time the asset was last modified.
+get_assets_response_asset_modification_time
+ = element modification_time
+     {
+       iso_time
+     }
+
+# Host identifiers.
+get_assets_response_asset_identifiers
+ = element identifiers
+     {
+       get_assets_response_asset_identifiers_identifier
+     }
+
+# A single identifier.
+get_assets_response_asset_identifiers_identifier
+ = element identifier
+     {
+       get_assets_response_asset_identifiers_identifier_name
+       & get_assets_response_asset_identifiers_identifier_value
+       & get_assets_response_asset_identifiers_identifier_creation_time
+       & get_assets_response_asset_identifiers_identifier_modification_time
+       & get_assets_response_asset_identifiers_identifier_source
+       & get_assets_response_asset_identifiers_identifier_os?
+     }
+
+# The name of the identifier.
+get_assets_response_asset_identifiers_identifier_name
+ = element name
+     {
+       name
+     }
+
+# The value of the identifier.
+get_assets_response_asset_identifiers_identifier_value
+ = element value
+     {
+       text
+     }
+
+# Date and time the identifier was created.
+get_assets_response_asset_identifiers_identifier_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+# Date and time the identifier was last modified.
+get_assets_response_asset_identifiers_identifier_modification_time
+ = element modification_time
+     {
+       iso_time
+     }
+
+# The source of the identifier.
+get_assets_response_asset_identifiers_identifier_source
+ = element source
+     {
+       attribute id { uuid }
+       & get_assets_response_asset_identifiers_identifier_source_type
+       & get_assets_response_asset_identifiers_identifier_source_data
+       & get_assets_response_asset_identifiers_identifier_source_deleted
+     }
+
+# Type of source.
+get_assets_response_asset_identifiers_identifier_source_type
+ = element type
+     {
+       text
+     }
+
+# Extra data, depends on type of source.
+get_assets_response_asset_identifiers_identifier_source_data
+ = element data
+     {
+       text
+     }
+
+# Whether the source has been deleted.
+get_assets_response_asset_identifiers_identifier_source_deleted
+ = element deleted
+     {
+       boolean
+     }
+
+get_assets_response_asset_identifiers_identifier_os
+ = element os
+     {
+       attribute id { uuid }
+       & get_assets_response_asset_identifiers_identifier_os_title
+     }
+
+# Title of OS.
+get_assets_response_asset_identifiers_identifier_os_title
+ = element title
+     {
+       text
+     }
+
+# A host.
+get_assets_response_asset_host
+ = element host
+     {
+       get_assets_response_asset_host_severity
+       & get_assets_response_asset_host_detail*
+     }
+
+# Severity of the host.
+get_assets_response_asset_host_severity
+ = element severity
+     {
+       get_assets_response_asset_host_severity_value
+     }
+
+get_assets_response_asset_host_severity_value
+ = element value
+     {
+       severity
+     }
+
+# A host detail.
+get_assets_response_asset_host_detail
+ = element detail
+     {
+       get_assets_response_asset_host_detail_name
+       & get_assets_response_asset_host_detail_value
+       & get_assets_response_asset_host_detail_source
+     }
+
+# The name of the detail.
+get_assets_response_asset_host_detail_name
+ = element name
+     {
+       name
+     }
+
+# The value of the detail.
+get_assets_response_asset_host_detail_value
+ = element value
+     {
+       text
+     }
+
+# The source of the detail.
+get_assets_response_asset_host_detail_source
+ = element source
+     {
+       attribute id { uuid }
+       & get_assets_response_asset_host_detail_source_type
+     }
+
+# Type of source.
+get_assets_response_asset_host_detail_source_type
+ = element type
+     {
+       text
+     }
+
+# An OS.
+get_assets_response_asset_os
+ = element os
+     {
+       get_assets_response_asset_os_title
+       & get_assets_response_asset_os_installs
+       & get_assets_response_asset_os_hosts
+     }
+
+# Title of the OS.
+get_assets_response_asset_os_title
+ = element title
+     {
+       text
+     }
+
+# Number of hosts on which OS has been detected.
+get_assets_response_asset_os_installs
+ = element installs
+     {
+       integer
+     }
+
+# Hosts on which this OS has been detected.
+get_assets_response_asset_os_hosts
+ = element hosts
+     {
+       get_assets_response_asset_os_hosts_asset
+     }
+
+# The host.
+get_assets_response_asset_os_hosts_asset
+ = element asset
+     {
+       attribute id { uuid }
+       & get_assets_response_asset_os_hosts_asset_name
+     }
+
+# The name of the host.
+get_assets_response_asset_os_hosts_asset_name
+ = element name
+     {
+       name
+     }
+
+# Whether any tasks are using the asset.
+get_assets_response_asset_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+# Whether the asset is writable.
+get_assets_response_asset_writable
+ = element writable
+     {
+       boolean
+     }
+
+# Permissions that the current user has on the asset.
+get_assets_response_asset_permissions
+ = element permissions
+     {
+       get_assets_response_asset_permissions_permission*
+     }
+
+get_assets_response_asset_permissions_permission
+ = element permission
+     {
+       get_assets_response_asset_permissions_permission_name
+     }
+
+# The name of the permission.
+get_assets_response_asset_permissions_permission_name
+ = element name
+     {
+       name
+     }
+
+# Info on tags attached to the asset.
+get_assets_response_asset_user_tags
+ = element user_tags
+     {
+       get_assets_response_asset_user_tags_count
+       & get_assets_response_asset_user_tags_tag*
+     }
+
+# Number of attached tags.
+get_assets_response_asset_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+# Short info on an individual tag (only if details were requested).
+get_assets_response_asset_user_tags_tag
+ = element tag
+     {
+       # UUID of the tag.
+       attribute id { uuid }
+       & get_assets_response_asset_user_tags_tag_name
+       & get_assets_response_asset_user_tags_tag_value
+       & get_assets_response_asset_user_tags_tag_comment
+     }
+
+# Name of the tag (usually namespace:predicate).
+get_assets_response_asset_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+# Value of the tag.
+get_assets_response_asset_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+# Comment for the tag.
+get_assets_response_asset_user_tags_tag_comment
+ = element comment
+     {
+       text
+     }
+
+get_assets_response_filters
+ = element filters
+     {
+       # UUID of filter if any, else 0.
+       attribute id { uuid }
+       & get_assets_response_filters_term
+       & get_assets_response_filters_name?
+       & get_assets_response_filters_keywords
+     }
+
+# Filter term.
+get_assets_response_filters_term
+ = element term
+     {
+       text
+     }
+
+# Filter name, if applicable.
+get_assets_response_filters_name
+ = element name
+     {
+       text
+     }
+
+# Filter broken down into keywords.
+get_assets_response_filters_keywords
+ = element keywords
+     {
+       get_assets_response_filters_keywords_keyword*
+     }
+
+get_assets_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_assets_response_filters_keywords_keyword_column
+       & get_assets_response_filters_keywords_keyword_relation
+       & get_assets_response_filters_keywords_keyword_value
+     }
+
+# Column prefix.
+get_assets_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+# Relation operator.
+get_assets_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+# The filter text.
+get_assets_response_filters_keywords_keyword_value
+ = element value
+     {
+       text
+     }
+
+get_assets_response_sort
+ = element sort
+     {
+       text
+       & get_assets_response_sort_field
+     }
+
+get_assets_response_sort_field
+ = element field
+     {
+       get_assets_response_sort_field_order
+     }
+
+get_assets_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_assets_response_assets
+ = element assets
+     {
+       # First asset.
+       attribute start { integer }
+       & # Maximum number of assets.
+       attribute max { integer }
+     }
+
+get_assets_response_asset_count
+ = element asset_count
+     {
+       get_assets_response_asset_count_filtered
+       & get_assets_response_asset_count_page
+     }
+
+# Number of assets after filtering.
+get_assets_response_asset_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+# Number of assets on current page.
+get_assets_response_asset_count_page
  = element page
      {
        integer

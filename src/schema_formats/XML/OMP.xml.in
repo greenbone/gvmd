@@ -2859,6 +2859,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>empty_trashcan</c>
           <c>get_agents</c>
           <c>get_alerts</c>
+          <c>get_assets</c>
           <c>get_configs</c>
           <c>get_filters</c>
           <c>get_groups</c>
@@ -2984,6 +2985,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>empty_trashcan</r>
             <r>get_agents</r>
             <r>get_alerts</r>
+            <r>get_assets</r>
             <r>get_configs</r>
             <r>get_groups</r>
             <r>get_info</r>
@@ -9011,6 +9013,552 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </alert>
           <truncated>...</truncated>
         </get_alerts_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_assets</name>
+    <summary>Get one or many assets</summary>
+    <description>
+      The client uses the get_assets command to get asset information.
+    </description>
+    <pattern>
+      <attrib>
+        <name>asset_id</name>
+        <summary>ID of single asset to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>asset</e></any>
+        <e>filters</e>
+        <e>sort</e>
+        <e>assets</e>
+        <e>asset_count</e>
+      </pattern>
+      <ele>
+        <name>asset</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
+          <e>name</e>
+          <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
+          <e>permissions</e>
+          <e>user_tags</e>
+          <o><e>identifiers</e></o>
+          <or>
+            <e>host</e>
+            <e>os</e>
+          </or>
+        </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the asset</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>The name of the asset</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>The comment on the asset</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <summary>Date and time the asset was created</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <summary>Date and time the asset was last modified</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>identifiers</name>
+          <summary>Host identifiers</summary>
+          <pattern>
+            <e>identifier</e>
+          </pattern>
+          <ele>
+            <name>identifier</name>
+            <summary>A single identifier</summary>
+            <pattern>
+              <e>name</e>
+              <e>value</e>
+              <e>creation_time</e>
+              <e>modification_time</e>
+              <e>source</e>
+              <o><e>os</e></o>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the identifier</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>The value of the identifier</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>creation_time</name>
+              <summary>Date and time the identifier was created</summary>
+              <pattern><t>iso_time</t></pattern>
+            </ele>
+            <ele>
+              <name>modification_time</name>
+              <summary>Date and time the identifier was last modified</summary>
+              <pattern><t>iso_time</t></pattern>
+            </ele>
+            <ele>
+              <name>source</name>
+              <summary>The source of the identifier</summary>
+              <pattern>
+                <attrib>
+                  <name>id</name>
+                  <type>uuid</type>
+                  <required>1</required>
+                </attrib>
+                <e>type</e>
+                <e>data</e>
+                <e>deleted</e>
+              </pattern>
+              <ele>
+                <name>type</name>
+                <summary>Type of source</summary>
+                <pattern>text</pattern>
+              </ele>
+              <ele>
+                <name>data</name>
+                <summary>Extra data, depends on type of source</summary>
+                <pattern>text</pattern>
+              </ele>
+              <ele>
+                <name>deleted</name>
+                <summary>Whether the source has been deleted</summary>
+                <pattern>boolean</pattern>
+              </ele>
+            </ele>
+            <ele>
+              <name>os</name>
+              <pattern>
+                <attrib>
+                  <name>id</name>
+                  <type>uuid</type>
+                  <required>1</required>
+                </attrib>
+                <e>title</e>
+              </pattern>
+              <ele>
+                <name>title</name>
+                <summary>Title of OS</summary>
+                <pattern>text</pattern>
+              </ele>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>host</name>
+          <summary>A host</summary>
+          <pattern>
+            <e>severity</e>
+            <any><e>detail</e></any>
+          </pattern>
+          <ele>
+            <name>severity</name>
+            <summary>Severity of the host</summary>
+            <pattern>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>value</name>
+              <pattern><t>severity</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>detail</name>
+            <summary>A host detail</summary>
+            <pattern>
+              <e>name</e>
+              <e>value</e>
+              <e>source</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the detail</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>The value of the detail</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>source</name>
+              <summary>The source of the detail</summary>
+              <pattern>
+                <attrib>
+                  <name>id</name>
+                  <type>uuid</type>
+                  <required>1</required>
+                </attrib>
+                <e>type</e>
+              </pattern>
+              <ele>
+                <name>type</name>
+                <summary>Type of source</summary>
+                <pattern>text</pattern>
+              </ele>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>os</name>
+          <summary>An OS</summary>
+          <pattern>
+            <e>title</e>
+            <e>installs</e>
+            <e>hosts</e>
+          </pattern>
+          <ele>
+            <name>title</name>
+            <summary>Title of the OS</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+<!-- FIX hosts/host_count? -->
+            <name>installs</name>
+            <summary>Number of hosts on which OS has been detected</summary>
+            <pattern>integer</pattern>
+          </ele>
+          <ele>
+            <name>hosts</name>
+            <summary>Hosts on which this OS has been detected</summary>
+            <pattern>
+              <e>asset</e>
+            </pattern>
+            <ele>
+              <name>asset</name>
+              <summary>The host</summary>
+              <pattern>
+                <attrib>
+                  <name>id</name>
+                  <type>uuid</type>
+                  <required>1</required>
+                </attrib>
+                <e>name</e>
+              </pattern>
+              <ele>
+                <name>name</name>
+                <summary>The name of the host</summary>
+                <pattern><t>name</t></pattern>
+              </ele>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether any tasks are using the asset</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>Whether the asset is writable</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>Permissions that the current user has on the asset</summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the asset</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else 0</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+          <o><e>name</e></o>
+          <e>keywords</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>keywords</name>
+          <summary>Filter broken down into keywords</summary>
+          <pattern><any><e>keyword</e></any></pattern>
+          <ele>
+            <name>keyword</name>
+            <pattern>
+              <e>column</e>
+              <e>relation</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>column</name>
+              <summary>Column prefix</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>relation</name>
+              <summary>Relation operator</summary>
+              <pattern>
+                <alts>
+                  <alt>=</alt>
+                  <alt>:</alt>
+                  <alt>~</alt>
+                  <alt>&gt;</alt>
+                  <alt>&lt;</alt>
+                </alts>
+              </pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>The filter text</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <t>
+                <alts>
+                  <alt>ascending</alt>
+                  <alt>descending</alt>
+                </alts>
+              </t>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>assets</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First asset</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of assets</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>asset_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of assets after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of assets on current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get one or many assets</summary>
+      <request>
+        <get_assets></get_assets>
+      </request>
+      <response>
+        <get_assets_response status="200" status_text="OK">
+          <asset id="b493b7a8-7489-11df-a3ec-002264764cea">
+            <name>Localhost</name>
+            <comment></comment>
+            <creation_time>Sun Jun 27 08:49:43 2010</creation_time>
+            <modification_time>Sun Jun 27 08:49:43 2010</modification_time>
+            <writable>0</writable>
+            <in_use>7</in_use>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
+            <hosts>localhost</hosts>
+            <max_hosts>1</max_hosts>
+            <ssh_lsc_credential id="">
+              <name></name>
+            </ssh_lsc_credential>
+            <smb_lsc_credential id="">
+              <name></name>
+            </smb_lsc_credential>
+            <esxi_lsc_credential id="">
+              <name></name>
+            </esxi_lsc_credential>
+          </asset>
+          <truncated>...</truncated>
+        </get_assets_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get a single asset, including tasks using the asset</summary>
+      <request>
+        <get_assets asset_id="1f28d970-17ef-4c69-ba8a-13827059f2b9" tasks="1">
+        </get_assets>
+      </request>
+      <response>
+        <get_assets_response status="200" status_text="OK">
+          <asset id="1f28d970-17ef-4c69-ba8a-13827059f2b9">
+            <name>dik</name>
+            <comment>dik mm</comment>
+            <creation_time>Sun Jun 27 08:49:43 2010</creation_time>
+            <modification_time>Sun Jun 27 08:49:43 2010</modification_time>
+            <writable>0</writable>
+            <in_use>4</in_use>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
+            <hosts>dik.example.org</hosts>
+            <max_hosts>1</max_hosts>
+            <ssh_lsc_credential id="58ff2793-2dc7-43fe-85f9-20bfac5a87e4">
+              <name>mm</name>
+            </ssh_lsc_credential>
+            <smb_lsc_credential id="">
+              <name></name>
+            </smb_lsc_credential>
+            <esxi_lsc_credential id="">
+              <name></name>
+            </esxi_lsc_credential>
+            <tasks>
+              <task id="13bb418a-4220-4575-b35b-ec398bff7417">
+                <name>dik mm</name>
+              </task>
+              <truncated>...</truncated>
+            </tasks>
+          </asset>
+        </get_assets_response>
       </response>
     </example>
   </command>

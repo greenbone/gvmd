@@ -1,5 +1,11 @@
 2015-08-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml.in (get_assets): New command.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
+2015-08-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* doc/db_postgres.sql (tasks): Add scanner_location.
 	(hosts, oss, host_identifiers, host_oss, host_max_severities)
 	(host_details): New tables.
