@@ -1,5 +1,11 @@
 2015-08-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (host_notice, hosts_set_details)
+	(manage_report_host_details): Only add asset information if the task
+	preference "in_assets" is set to "yes".
+
+2015-08-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Mark identifiers when the source report has been deleted.
 
 	* src/manage_sql.c (init_host_identifier_iterator): Add orphan column.

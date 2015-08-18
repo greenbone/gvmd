@@ -15375,6 +15375,14 @@ host_notice (const char *host_name, const char *identifier_type,
   gchar *quoted_identifier_value, *quoted_identifier_type, *quoted_source_type;
   gchar *quoted_source_id;
 
+  /* Only add to assets if "Add to Assets" is set on the task. */
+  if (g_str_has_prefix (source_type, "Report")
+      && sql_int ("SELECT value = 'no' FROM task_preferences"
+                  " WHERE task = (SELECT task FROM reports WHERE uuid = '%s')"
+                  " AND name = 'in_assets';",
+                  source_id))
+    return 0;
+
   host = host_identify (host_name, identifier_type, identifier_value,
                         source_type, source_id);
   if (host == 0)
@@ -51380,7 +51388,12 @@ hosts_set_details (report_t report)
        " WHERE (SELECT report FROM report_hosts"
        "        WHERE id = report_host)"
        "       = %llu"
+       /* Only if the task is included in the assets. */
+       " AND (SELECT value = 'yes' FROM task_preferences"
+       "      WHERE task = (SELECT task FROM reports WHERE id = %llu)"
+       "      AND name = 'in_assets')"
        " AND (name = 'best_os_cpe' OR name = 'best_os_txt');",
+       report,
        report,
        report,
        report);
@@ -51401,6 +51414,13 @@ manage_report_host_details (report_t report, const char *ip, entity_t entity)
   entities_t details;
   entity_t detail;
   char *uuid;
+
+  /* Only add to assets if "Add to Assets" is set on the task. */
+  if (sql_int ("SELECT value = 'no' FROM task_preferences"
+               " WHERE task = (SELECT task FROM reports WHERE id = %llu)"
+               " AND name = 'in_assets';",
+               report))
+    return 0;
 
   details = entity->entities;
   if (identifiers == NULL)
