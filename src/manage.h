@@ -2048,6 +2048,9 @@ host_identifier_iterator_source_id (iterator_t *);
 const char*
 host_identifier_iterator_source_data (iterator_t *);
 
+int
+host_identifier_iterator_source_orphan (iterator_t *);
+
 const char*
 host_identifier_iterator_os_id (iterator_t *);
 

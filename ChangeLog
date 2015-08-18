@@ -1,5 +1,17 @@
 2015-08-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Mark identifiers when the source report has been deleted.
+
+	* src/manage_sql.c (init_host_identifier_iterator): Add orphan column.
+	(host_identifier_iterator_source_orphan): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Add DELETED to SOURCE of
+	IDENTIFIER in GET_ASSETS.
+
+2015-08-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (host_set_details): Correct comment typo.
 	(host_set_details): Add LIMIT, for Postgres.
 

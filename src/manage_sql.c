@@ -51551,7 +51551,13 @@ init_host_identifier_iterator (iterator_t* iterator, host_t host,
                    "SELECT id, uuid, name, comment, iso_time (creation_time),"
                    "       iso_time (modification_time), creation_time,"
                    "       modification_time, owner, owner, value,"
-                   "       source_type, source_id, source_data, '', ''"
+                   "       source_type, source_id, source_data,"
+                   "       (CASE WHEN source_type LIKE 'Report%%'"
+                   "        THEN NOT EXISTS (SELECT * FROM reports"
+                   "                         WHERE uuid = source_id)"
+                   "        ELSE CAST (0 AS boolean)"
+                   "        END),"
+                   "       '', ''"
                    " FROM host_identifiers"
                    " WHERE host = %llu"
                    " UNION"
@@ -51560,6 +51566,11 @@ init_host_identifier_iterator (iterator_t* iterator, host_t host,
                    "        modification_time, owner, owner,"
                    "        (SELECT name FROM oss WHERE id = os),"
                    "        source_type, source_id, source_data,"
+                   "        (CASE WHEN source_type LIKE 'Report%%'"
+                   "         THEN NOT EXISTS (SELECT * FROM reports"
+                   "                          WHERE uuid = source_id)"
+                   "         ELSE CAST (0 AS boolean)"
+                   "         END),"
                    "        (SELECT uuid FROM oss WHERE id = os),"
                    "        (SELECT title FROM scap.cpes"
                    "         WHERE uuid = (SELECT name FROM oss WHERE id = os))"
@@ -51575,7 +51586,7 @@ init_host_identifier_iterator (iterator_t* iterator, host_t host,
                    "SELECT id, uuid, name, comment, iso_time (creation_time),"
                    "       iso_time (modification_time), creation_time,"
                    "       modification_time, owner, owner, value,"
-                   "       source_type, source_id, source_data, '', ''"
+                   "       source_type, source_id, source_data, 0, '', ''"
                    " FROM host_identifiers"
                    " ORDER BY %s %s;",
                    sort_field ? sort_field : "creation_time",
@@ -51625,6 +51636,21 @@ DEF_ACCESS (host_identifier_iterator_source_data,
             GET_ITERATOR_COLUMN_COUNT + 3);
 
 /**
+ * @brief Get the source orphan state from a host identifier iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The source orphan state of the host identifier, or 0 if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+int
+host_identifier_iterator_source_orphan (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
+}
+
+/**
  * @brief Get the OS UUID from a host identifier iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -51633,7 +51659,7 @@ DEF_ACCESS (host_identifier_iterator_source_data,
  *         complete. Freed by cleanup_iterator.
  */
 DEF_ACCESS (host_identifier_iterator_os_id,
-            GET_ITERATOR_COLUMN_COUNT + 4);
+            GET_ITERATOR_COLUMN_COUNT + 5);
 
 /**
  * @brief Get the OS title from a host identifier iterator.
@@ -51644,7 +51670,7 @@ DEF_ACCESS (host_identifier_iterator_os_id,
  *         complete. Freed by cleanup_iterator.
  */
 DEF_ACCESS (host_identifier_iterator_os_title,
-            GET_ITERATOR_COLUMN_COUNT + 5);
+            GET_ITERATOR_COLUMN_COUNT + 6);
 
 /**
  * @brief Filter columns for host iterator.

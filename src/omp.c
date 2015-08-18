@@ -17405,6 +17405,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                          "<source id=\"%s\">"
                                          "<type>%s</type>"
                                          "<data>%s</data>"
+                                         "<deleted>%i</deleted>"
                                          "</source>",
                                          get_iterator_uuid (&identifiers),
                                          get_iterator_name (&identifiers),
@@ -17418,6 +17419,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                          host_identifier_iterator_source_type
                                           (&identifiers),
                                          host_identifier_iterator_source_data
+                                          (&identifiers),
+                                         host_identifier_iterator_source_orphan
                                           (&identifiers));
 
                       if (strcmp (get_iterator_name (&identifiers), "OS") == 0)
