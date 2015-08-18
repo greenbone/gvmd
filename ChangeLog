@@ -1,5 +1,14 @@
 2015-08-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (task_severity, init_result_iterator)
+	(init_classic_asset_iterator, report_scan_result_count)
+	(report_severity_data, filtered_host_count, print_report_xml): Add
+	missing space before paren.
+
+	* src/omp.c (omp_xml_handle_end_element): Add missing space.
+
+2015-08-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (host_notice, hosts_set_details)
 	(manage_report_host_details): Only add asset information if the task
 	preference "in_assets" is set to "yes".

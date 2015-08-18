@@ -14428,7 +14428,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_GET_END ("info", &get_info_data->get, count, filtered);
           else
             send_get_end ("info", &get_info_data->get, count, filtered,
-                          total_info_count(&get_info_data->get, 0),
+                          total_info_count (&get_info_data->get, 0),
                           write_to_client, write_to_client_data);
 
           get_info_data_reset (get_info_data);
