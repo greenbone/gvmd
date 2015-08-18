@@ -1,5 +1,10 @@
 2015-08-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (omp_xml_handle_end_element): Drop EXTRA from
+	GET_ASSETS, as it is not used.
+
+2015-08-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml.in (get_assets): New command.
 
 	* doc/omp.rnc, doc/omp.html: Update from source.

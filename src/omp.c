@@ -17485,7 +17485,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                             "<source id=\"%s\">"
                                             "<type>%s</type>"
                                             "</source>"
-                                            "<extra/>"
                                             "</detail>",
                                             host_detail_iterator_name
                                              (&details),
