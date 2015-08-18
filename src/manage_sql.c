@@ -51366,7 +51366,7 @@ hosts_set_details (report_t report)
        "        value,"
        "        'Report',"
        "        (SELECT uuid FROM reports WHERE id = %llu),"
-       /*       Assume that every report host details has a corresponding host
+       /*       Assume that every report host detail has a corresponding host
         *       in the assets. */
        "        (SELECT host"
        "         FROM host_identifiers"
@@ -51374,7 +51374,8 @@ hosts_set_details (report_t report)
        "                            WHERE id = %llu)"
        "         AND (SELECT name FROM hosts WHERE id = host)"
        "             = (SELECT host FROM report_hosts"
-       "                WHERE id = report_host_details.report_host))"
+       "                WHERE id = report_host_details.report_host)"
+       "         LIMIT 1)"
        " FROM report_host_details"
        " WHERE (SELECT report FROM report_hosts"
        "        WHERE id = report_host)"

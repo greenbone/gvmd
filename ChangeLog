@@ -1,3 +1,8 @@
+2015-08-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (host_set_details): Correct comment typo.
+	(host_set_details): Add LIMIT, for Postgres.
+
 2015-08-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (init_aggregate_iterator): Apply special trash
