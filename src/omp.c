@@ -17465,15 +17465,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
               else if (g_strcmp0 ("host", get_assets_data->type) == 0)
                 {
-                  const char *max;
+                  const char *severity;
                   iterator_t details;
 
-                  max = asset_host_iterator_max_severity (&assets);
+                  severity = asset_host_iterator_severity (&assets);
                   g_string_append_printf (result,
-                                          "<max_severity>"
+                                          "<severity>"
                                           "<value>%s</value>"
-                                          "</max_severity>",
-                                          max ? max : "");
+                                          "</severity>",
+                                          severity ? severity : "");
 
                   init_host_detail_iterator (&details,
                                              get_iterator_resource (&assets));

@@ -1,5 +1,17 @@
 2015-08-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Rename GET_ASSETS
+	MAX_SEVERITY to SEVERITY.
+
+	* src/manage_sql.c (HOST_ITERATOR_FILTER_COLUMNS): Rename max_severity.
+	(HOST_ITERATOR_COLUMNS): Rename max_severity.
+	(asset_host_iterator_max_severity): Remove.  Renamed.
+	(asset_host_iterator_severity): New function.  From rename.
+
+	* src/manage.h: Adjust header accordingly.
+
+2015-08-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (omp_xml_handle_end_element): Drop EXTRA from
 	GET_ASSETS, as it is not used.
 

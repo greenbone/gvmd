@@ -51696,7 +51696,7 @@ DEF_ACCESS (host_identifier_iterator_os_title,
  * @brief Filter columns for host iterator.
  */
 #define HOST_ITERATOR_FILTER_COLUMNS                      \
- { GET_ITERATOR_FILTER_COLUMNS, "max_severity", NULL }
+ { GET_ITERATOR_FILTER_COLUMNS, "severity", NULL }
 
 /**
  * @brief Host iterator columns.
@@ -51709,7 +51709,7 @@ DEF_ACCESS (host_identifier_iterator_os_title,
      " WHERE host = hosts.id"                             \
      " ORDER by creation_time DESC"                       \
      " LIMIT 1)",                                         \
-     "max_severity"                                       \
+     "severity"                                           \
    },                                                     \
    { NULL, NULL }                                         \
  }
@@ -51751,7 +51751,7 @@ init_asset_host_iterator (iterator_t *iterator, const get_data_t *get)
  * @return The maximum severity of the host, or NULL if iteration is
  *         complete. Freed by cleanup_iterator.
  */
-DEF_ACCESS (asset_host_iterator_max_severity, GET_ITERATOR_COLUMN_COUNT);
+DEF_ACCESS (asset_host_iterator_severity, GET_ITERATOR_COLUMN_COUNT);
 
 /**
  * @brief Count number of hosts.
