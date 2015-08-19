@@ -52641,6 +52641,11 @@ modify_setting (const gchar *uuid, const gchar *name,
       else if (strcmp (uuid, "fc875cd4-16bf-42d1-98ed-c0c9bd6015cd") == 0)
         setting_name = g_strdup ("Chart Selection Reports Right");
 
+      else if (strcmp (uuid, "0b8ae70d-d8fc-4418-8a72-e65ac8d2828e") == 0)
+        setting_name = g_strdup ("Chart Selection Results Left");
+      else if (strcmp (uuid, "cb7db2fe-3fe4-4704-9fa1-efd4b9e522a8") == 0)
+        setting_name = g_strdup ("Chart Selection Results Right");
+
       /* SecInfo charts */
       else if (strcmp (uuid, "84ab32da-fe69-44d8-8a8f-70034cf28d4e") == 0)
         setting_name = g_strdup ("Chart Selection SecInfo Dashboard 1");

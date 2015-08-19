@@ -14276,6 +14276,11 @@ get_configs_response_config_count_page
           The maximum number of aggregate groups to return, -1 for all.
           </li>
 <li>
+          @<b>mode</b>
+          ("" or "word_counts")
+          Special mode for aggregate.
+          </li>
+<li>
               &lt;<b>data_column</b>&gt;
               *<div style="margin-left: 15px; display: inline;">(text)</div>
 <div style="margin-left: 15px; display: inline;">A column to get the data to aggregate from.</div>
@@ -14523,6 +14528,7 @@ get_configs_response_config_count_page
        &amp; attribute sort_stat { xsd:token { pattern = "min|max|mean|sum|count|value" } }?
        &amp; attribute first_group { integer }?
        &amp; attribute max_groups { integer }?
+       &amp; attribute mode { xsd:token { pattern = "|word_counts" } }?
        &amp; get_aggregates_data_column*
        &amp; get_aggregates_text_column*
      }

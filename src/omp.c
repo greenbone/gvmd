@@ -2346,6 +2346,7 @@ typedef struct
   int sort_order;        ///< Group sort order: 0 descending, else ascending.
   int first_group;       ///< Skip over groups before this group number.
   int max_groups;        ///< Maximum number of aggregate groups to return.
+  char *mode;            ///< Special aggregate mode.
 } get_aggregates_data_t;
 
 /**
@@ -2365,6 +2366,7 @@ get_aggregates_data_reset (get_aggregates_data_t *data)
   free (data->group_column);
   free (data->sort_field);
   free (data->sort_stat);
+  free (data->mode);
 
   memset (data, 0, sizeof (get_aggregates_data_t));
 }
@@ -6863,6 +6865,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
             append_attribute (attribute_names, attribute_values, "sort_stat",
                               &get_aggregates_data->sort_stat);
+
+            append_attribute (attribute_names, attribute_values, "mode",
+                              &get_aggregates_data->mode);
 
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_order", &attribute))
@@ -11467,6 +11472,337 @@ void init_aggregate_lists (const gchar* group_column,
         }
       text_column_list = text_column_list->next;
     }
+}
+
+/**
+ * @brief Helper data structure for word counts.
+ */
+typedef struct
+{
+  gchar *string;  ///< The string counted.
+  int count;      ///< The number of occurences.
+} count_data_t;
+
+/**
+ * @brief Helper data structure for buffering word counts.
+ */
+typedef struct
+{
+  GString *buffer;  ///< The GString buffer to write to
+  int skip;         ///< The amount of entries to skip at start.
+  int limit;        ///< The maximum number of entries to output or -1 for all.
+} buffer_counts_data_t;
+
+/**
+ * @brief Helper function for comparing strings in reverse order.
+ *
+ * @param[in]  s1   The first string to compare
+ * @param[in]  s2   The second string to compare
+ * 
+ * @return The result of g_ascii_strcasecmp with string order reversed.
+ */
+static int
+strcasecmp_reverse (gchar *s1, gchar *s2)
+{
+  return g_ascii_strcasecmp (s2, s1);
+}
+
+/**
+ * @brief Helper function for comparing word count structs by count.
+ *
+ * @param[in]  s1     The first count struct to compare
+ * @param[in]  s2     The second count struct to compare
+ * @param[in]  dummy  Dummy parameter required by glib.
+ *
+ * @return A value > 0 if c1 > c2, a value < 0 if c1 < c2, 0 if c1 = c2.
+ */
+static int
+compare_count_data (gconstpointer c1, gconstpointer c2, gpointer dummy)
+{
+  return (((count_data_t*)c2)->count - ((count_data_t*)c1)->count);
+}
+
+/**
+ * @brief Helper function for comparing word count structs by count in reverse.
+ *
+ * @param[in]  s1     The first count struct to compare
+ * @param[in]  s2     The second count struct to compare
+ * @param[in]  dummy  Dummy parameter required by glib.
+ *
+ * @return A value > 0 if c1 < c2, a value < 0 if c1 > c2, 0 if c1 = c2.
+ */
+static int
+compare_count_data_reverse (gconstpointer c1, gconstpointer c2, gpointer dummy)
+{
+  return (((count_data_t*)c1)->count - ((count_data_t*)c2)->count);
+}
+
+/**
+ * @brief Copy word counts to a GSequence of count_data_t structs (ascending).
+ *
+ * @param[in]  key    The key (word).
+ * @param[in]  value  The value (count).
+ * @param      data   The GSequence object to insert into.
+ *
+ * @return Always FALSE.
+ */
+static gboolean
+copy_word_counts_asc (gpointer key, gpointer value, gpointer data)
+{
+  count_data_t* new_count = g_malloc (sizeof (count_data_t));
+
+  new_count->string = (gchar*)key;
+  new_count->count = GPOINTER_TO_INT (value);
+
+  g_sequence_insert_sorted ((GSequence*) data,
+                            new_count,
+                            compare_count_data_reverse,
+                            NULL);
+
+  return FALSE;
+}
+
+/**
+ * @brief Copy word counts to a GSequence of count_data_t structs (descending).
+ *
+ * @param[in]  key    The key (word).
+ * @param[in]  value  The value (count).
+ * @param      data   The GSequence object to insert into.
+ *
+ * @return Always FALSE.
+ */
+static gboolean
+copy_word_counts_desc (gpointer key, gpointer value, gpointer data)
+{
+  count_data_t* new_count = g_malloc (sizeof (count_data_t));
+
+  new_count->string = (gchar*)key;
+  new_count->count = GPOINTER_TO_INT (value);
+
+  g_sequence_insert_sorted ((GSequence*) data,
+                            new_count,
+                            compare_count_data,
+                            NULL);
+
+  return FALSE;
+}
+
+/**
+ * @brief Buffer word count data
+ *
+ * @param[in]  key    The key (word).
+ * @param[in]  value  The value (count).
+ * @param      data   The buffer_counts_data_t struct containing info.
+ *
+ * @return TRUE if the limit has been reached, FALSE otherwise
+ */
+static gboolean
+buffer_word_counts_tree (gpointer key, gpointer value, gpointer data)
+{
+  buffer_counts_data_t* count_data = (buffer_counts_data_t*) data;
+  if (count_data->skip)
+    {
+      count_data->skip--;
+      return FALSE;
+    }
+  xml_string_append (count_data->buffer,
+                     "<group>"
+                     "<value>%s</value>"
+                     "<count>%d</count>"
+                     "</group>",
+                     (gchar*) key,
+                     GPOINTER_TO_INT (value));
+  if (count_data->limit > 0)
+    count_data->limit--;
+
+  return (count_data->limit == 0);
+}
+
+/**
+ * @brief Buffer word count data
+ *
+ * @param[in]  value  The value
+ * @param      buffer The buffer object
+ *
+ * @return TRUE if strings are equal, FALSE otherwise
+ */
+static void
+buffer_word_counts_seq (gpointer value, gpointer buffer)
+{
+  xml_string_append ((GString*) buffer,
+                     "<group>"
+                     "<value>%s</value>"
+                     "<count>%d</count>"
+                     "</group>",
+                     ((count_data_t*) value)->string,
+                     ((count_data_t*) value)->count);
+}
+
+/**
+ * @brief Count words of an aggregate and buffer as XML.
+ *
+ * @param[in]  xml           Buffer into which to buffer aggregate.
+ * @param[in]  aggregate     The aggregate iterator.
+ * @param[in]  type          The aggregated type.
+ * @param[in]  group_column  Column the data are grouped by.
+ * @param[in]  sort_stat     Statistic to sort by.
+ * @param[in]  sort_order    0 = descending, 1 = ascending.
+ * @param[in]  first_group   Index of the first word to output, starting at 0.
+ * @param[in]  max_groups    Maximum number of words to output or -1 for all.
+ */
+void
+buffer_aggregate_wc_xml (GString *xml, iterator_t* aggregate,
+                         const gchar* type, const char* group_column,
+                         const char* sort_stat, int sort_order,
+                         int first_group, int max_groups)
+{
+  GTree *word_counts, *ignore_words;
+  GRegex *word_regex;
+
+  // Word regex: Words must contain at least 1 letter
+  word_regex = g_regex_new ("[[:alpha:]]", 0, 0, NULL);
+
+  ignore_words = g_tree_new_full ((GCompareDataFunc) g_ascii_strcasecmp, NULL,
+                                  g_free, NULL);
+  g_tree_insert (ignore_words, g_strdup ("an"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("the"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("and"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("or"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("not"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("is"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("are"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("was"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("were"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("you"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("your"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("it"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("its"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("they"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("this"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("that"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("which"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("when"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("if"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("do"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("does"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("did"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("at"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("where"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("in"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("will"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("as"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("has"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("have"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("can"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("cannot"), GINT_TO_POINTER (1));
+
+  if (sort_order)
+    word_counts = g_tree_new_full ((GCompareDataFunc) g_ascii_strcasecmp, NULL,
+                                   g_free, NULL);
+  else
+    word_counts = g_tree_new_full ((GCompareDataFunc) strcasecmp_reverse, NULL,
+                                   g_free, NULL);
+
+  g_string_append_printf (xml, "<aggregate>");
+
+  g_string_append_printf (xml, "<group_column>word</group_column>");
+
+  while (next (aggregate))
+    {
+      const gchar *value = aggregate_iterator_value (aggregate);
+      int count = aggregate_iterator_count (aggregate);
+
+      int current_index = 0;
+      gchar **split_string;
+
+      if (!value)
+        continue;
+
+      split_string = g_strsplit_set (value, " \t\n.,:;\"'()[]{}<>&", -1);
+      while (split_string [current_index])
+        {
+          gchar *word = split_string [current_index];
+          if (strlen (word) >= 3
+              && g_regex_match (word_regex, word, 0, NULL)
+              && g_tree_lookup (ignore_words, word) == 0)
+            {
+              int word_count
+                = GPOINTER_TO_INT (g_tree_lookup (word_counts, word));
+              if (word_count)
+                {
+                  g_tree_insert (word_counts, word,
+                                GINT_TO_POINTER (word_count + count));
+                }
+              else
+                {
+                  g_tree_insert (word_counts, g_strdup (word),
+                                GINT_TO_POINTER (count));
+                }
+            }
+          current_index++;
+        }
+    }
+
+  if (sort_stat && strcasecmp (sort_stat, "count") == 0)
+    {
+      GSequence *word_counts_sorted;
+      GSequenceIter *start, *end;
+      word_counts_sorted = g_sequence_new (g_free);
+      g_tree_foreach (word_counts,
+                      sort_order
+                        ? copy_word_counts_asc
+                        : copy_word_counts_desc,
+                      word_counts_sorted);
+
+      start = g_sequence_get_iter_at_pos (word_counts_sorted, first_group);
+      if (max_groups < 0)
+        end = g_sequence_get_end_iter (word_counts_sorted);
+      else
+        end = g_sequence_get_iter_at_pos (word_counts_sorted,
+                                          first_group + max_groups);
+
+      g_sequence_foreach_range (start, end, buffer_word_counts_seq, xml);
+
+      g_sequence_free (word_counts_sorted);
+    }
+  else
+    {
+      // value: use default alphabetical sorting
+      buffer_counts_data_t counts_data;
+      counts_data.buffer = xml;
+      counts_data.skip = first_group;
+      counts_data.limit = max_groups;
+      g_tree_foreach (word_counts, buffer_word_counts_tree, &counts_data);
+    }
+
+  g_tree_destroy (word_counts);
+  g_tree_destroy (ignore_words);
+
+  g_string_append (xml, "<column_info>");
+
+  g_string_append_printf (xml,
+                          "<aggregate_column>"
+                          "<name>value</name>"
+                          "<stat>value</stat>"
+                          "<type>%s</type>"
+                          "<column>word</column>"
+                          "<data_type>text</data_type>"
+                          "</aggregate_column>",
+                          type);
+
+  g_string_append_printf (xml,
+                          "<aggregate_column>"
+                          "<name>count</name>"
+                          "<stat>count</stat>"
+                          "<type>%s</type>"
+                          "<column></column>"
+                          "<data_type>integer</data_type>"
+                          "</aggregate_column>",
+                          type);
+
+  g_string_append (xml, "</column_info>");
+
+  g_string_append_printf (xml, "</aggregate>");
 }
 
 /**
@@ -17097,17 +17433,35 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 &data_columns, &text_column_types,
                                 &text_columns, &c_sums);
 
-          ret = init_aggregate_iterator (&aggregate, type, get,
-                                         0 /* distinct */,
-                                         data_columns, group_column,
-                                         text_columns,
-                                         get_aggregates_data->sort_field,
-                                         get_aggregates_data->sort_stat,
-                                         get_aggregates_data->sort_order,
-                                         get_aggregates_data->first_group,
-                                         get_aggregates_data->max_groups,
-                                         NULL /* extra_tables */,
-                                         NULL /* extra_where */);
+          if (get_aggregates_data->mode
+              && strcasecmp (get_aggregates_data->mode, "word_counts") == 0)
+            {
+              ret = init_aggregate_iterator (&aggregate, type, get,
+                                            0 /* distinct */,
+                                            data_columns, group_column,
+                                            text_columns,
+                                            NULL, /* ignore sorting */
+                                            NULL,
+                                            0,
+                                            0,    /* get all groups */
+                                            -1,
+                                            NULL /* extra_tables */,
+                                            NULL /* extra_where */);
+            }
+          else
+            {
+              ret = init_aggregate_iterator (&aggregate, type, get,
+                                            0 /* distinct */,
+                                            data_columns, group_column,
+                                            text_columns,
+                                            get_aggregates_data->sort_field,
+                                            get_aggregates_data->sort_stat,
+                                            get_aggregates_data->sort_order,
+                                            get_aggregates_data->first_group,
+                                            get_aggregates_data->max_groups,
+                                            NULL /* extra_tables */,
+                                            NULL /* extra_where */);
+            }
 
           switch (ret)
             {
@@ -17174,11 +17528,23 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               "  status_text=\"" STATUS_OK_TEXT "\""
                               "  status=\"" STATUS_OK "\">");
 
-          buffer_aggregate_xml (xml, &aggregate, type,
-                                group_column, group_column_type,
-                                data_columns, data_column_types,
-                                text_columns, text_column_types,
-                                c_sums);
+          if (get_aggregates_data->mode
+              && strcasecmp (get_aggregates_data->mode, "word_counts") == 0)
+            {
+              buffer_aggregate_wc_xml (xml, &aggregate, type, group_column,
+                                       get_aggregates_data->sort_stat,
+                                       get_aggregates_data->sort_order,
+                                       get_aggregates_data->first_group,
+                                       get_aggregates_data->max_groups);
+            }
+          else
+            {
+              buffer_aggregate_xml (xml, &aggregate, type,
+                                    group_column, group_column_type,
+                                    data_columns, data_column_types,
+                                    text_columns, text_column_types,
+                                    c_sums);
+            }
 
           if (get->filt_id && strcmp (get->filt_id, "0"))
             {

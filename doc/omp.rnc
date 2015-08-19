@@ -5060,6 +5060,8 @@ get_aggregates
        attribute first_group { integer }?
        & # The maximum number of aggregate groups to return, -1 for all.
        attribute max_groups { integer }?
+       & # Special mode for aggregate.
+       attribute mode { xsd:token { pattern = "|word_counts" } }?
        & get_aggregates_data_column*
        & get_aggregates_text_column*
      }

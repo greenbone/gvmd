@@ -1,3 +1,24 @@
+2015-08-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add a "word_counts" mode to the GET_AGGREGATES OMP command.
+
+	* src/manage_sql.c (modify_setting): Add settings for Results charts.
+
+	* src/omp.c (get_aggregates_data_t, get_aggregates_data_reset): Add
+	"mode" field.
+	(omp_xml_handle_start_element): Add "mode" attribute to GET_AGGREGATES.
+	(count_data_t, buffer_counts_data_t): New struct types.
+	(strcasecmp_reverse, compare_count_data, compare_count_data_reverse)
+	(copy_word_counts_asc, copy_word_counts_desc, buffer_word_counts_tree)
+	(buffer_word_counts_seq, buffer_aggregate_wc_xml): New functions.
+	(omp_xml_handle_start_element): Handle new "mode" field in command
+	GET_AGGREGATES.
+
+	* src/schema_formats/XML/OMP.xml.in: Add "mode" attribute to
+	GET_AGGREGATES command.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
 2015-08-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Rename GET_ASSETS
