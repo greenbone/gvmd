@@ -4848,14 +4848,14 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                       && strcmp (sort_stat, "max")
                       && strcmp (sort_stat, "mean")
                       && strcmp (sort_stat, "sum")))
-                order_column = g_strdup_printf ("aggregate_max_%d",
+                order_column = g_strdup_printf ("max (aggregate_max_%d)",
                                                 index);
               else if (strcmp (sort_stat, "mean") == 0)
-                order_column = g_strdup_printf ("aggregate_avg_%d",
+                order_column = g_strdup_printf ("sum (aggregate_avg_%d)",
                                                 index);
               else
-                order_column = g_strdup_printf ("aggregate_%s_%d",
-                                                sort_stat, index);
+                order_column = g_strdup_printf ("%s (aggregate_%s_%d)",
+                                                sort_stat, sort_stat, index);
             }
         }
 
@@ -4866,7 +4866,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
           gchar *column = g_array_index (text_columns, gchar*, index);
           if (strcmp (column, sort_field) == 0)
             {
-              order_column = g_strdup_printf ("text_column_%d",
+              order_column = g_strdup_printf ("max (text_column_%d)",
                                               index);
             }
         }
