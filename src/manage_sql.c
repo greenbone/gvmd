@@ -2199,6 +2199,7 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
           point++;
         }
       if (sort_field && (*sort_field == NULL))
+        // FIX name??
         *sort_field = g_strdup ("name");
     }
 
@@ -21575,7 +21576,7 @@ compare_severity_asc (gconstpointer arg_one, gconstpointer arg_two)
 static gint
 compare_port_severity (gconstpointer arg_one, gconstpointer arg_two)
 {
-  int host;
+  int port;
   gchar *one = *((gchar**) arg_one);
   gchar *two = *((gchar**) arg_two);
   gchar *one_severity = one + strlen (one) + 1;
@@ -21583,9 +21584,9 @@ compare_port_severity (gconstpointer arg_one, gconstpointer arg_two)
   double severity_cmp = (g_strtod (two_severity, NULL)
                          - g_strtod (one_severity, NULL));
 
-  host = strcmp (one_severity + strlen (one_severity) + 1,
+  port = strcmp (one_severity + strlen (one_severity) + 1,
                  two_severity + strlen (two_severity) + 1);
-  if (host == 0)
+  if (port == 0)
     {
       int port = strcmp (one, two);
       if (port != 0)
@@ -21597,7 +21598,7 @@ compare_port_severity (gconstpointer arg_one, gconstpointer arg_two)
       else
         return 0;
     }
-  return host;
+  return port;
 }
 
 /** @todo Defined in omp.c! */
@@ -22789,6 +22790,7 @@ report_filter_term (int sort_order, const char* sort_field,
                           search_phrase ? search_phrase : "",
                           search_phrase && strlen (search_phrase) ? "\" " : "",
                           sort_order ? "sort" : "sort-reverse",
+                          // FIX "id" is no longer a sort option
                           sort_field ? sort_field : "id",
                           result_hosts_only,
                           min_cvss_base ? min_cvss_base : "",
@@ -23356,6 +23358,55 @@ print_report_assets_xml (FILE *out, const char *host, int first_result, int
 }
 
 /**
+ * @brief Some result info, for sorting.
+ */
+struct result_buffer
+{
+  gchar *host;                  ///< Host.
+  gchar *port;                  ///< Port.
+  gchar *severity;              ///< Severity.
+};
+
+/**
+ * @brief Buffer host type.
+ */
+typedef struct result_buffer result_buffer_t;
+
+/**
+ * @brief Create a result buffer.
+ *
+ * @param[in]  host      Host.
+ * @param[in]  port      Port.
+ * @param[in]  severity  Severity.
+ *
+ * @return Freshly allocated result buffer.
+ */
+static result_buffer_t*
+result_buffer_new (const gchar *host, const gchar *port, const gchar *severity)
+{
+  result_buffer_t *result_buffer;
+  result_buffer = g_malloc (sizeof (result_buffer_t));
+  result_buffer->host = g_strdup (host);
+  result_buffer->port = g_strdup (port);
+  result_buffer->severity = g_strdup (severity);
+  return result_buffer;
+}
+
+/**
+ * @brief Free a result buffer.
+ *
+ * @param[in]  result_buffer  Result buffer.
+ */
+static void
+result_buffer_free (result_buffer_t *result_buffer)
+{
+  g_free (result_buffer->host);
+  g_free (result_buffer->port);
+  g_free (result_buffer->severity);
+  g_free (result_buffer);
+}
+
+/**
  * @brief Print the XML for a report port summary to a file.
  *
  * @param[in]  report           The report.
@@ -23420,8 +23471,7 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
           || strcmp (host, last_host))
         {
           const char *cvss;
-          gchar *item;
-          int port_len, cvss_len;
+          result_buffer_t *item;
 
           g_free (last_port);
           last_port = g_strdup (port);
@@ -23431,16 +23481,8 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
           cvss = result_iterator_severity (&results);
           if (cvss == NULL)
             cvss = "0.0";
-          port_len = strlen (port);
-          cvss_len = strlen (cvss);
-          item = g_malloc (port_len
-                            + cvss_len
-                            + strlen (host)
-                            + 3);
+          item = result_buffer_new (host, port, cvss);
           g_array_append_val (ports, item);
-          strcpy (item, port);
-          strcpy (item + port_len + 1, cvss);
-          strcpy (item + port_len + cvss_len + 2, host);
         }
 
     }
@@ -23454,6 +23496,8 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
       int index, length;
 
       /** @todo Sort by ROWID if was requested. */
+
+      // FIX working: severity reverse, port, host
 
       /* Sort by port then severity. */
 
@@ -23503,13 +23547,11 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
            max_results,
            report_port_count (report));
   {
-    gchar *item;
+    result_buffer_t *item;
     int index = 0;
 
-    while ((item = g_array_index (ports, gchar*, index++)))
+    while ((item = g_array_index (ports, result_buffer_t*, index++)))
       {
-        int port_len = strlen (item);
-        int cvss_len = strlen (item + port_len + 1);
         PRINT (out,
                "<port>"
                "<host>%s</host>"
@@ -23517,11 +23559,11 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
                "<severity>%s</severity>"
                "<threat>%s</threat>"
                "</port>",
-               item + port_len + cvss_len + 2,
-               item,
-               item + port_len + 1,
-               severity_to_level (g_strtod (item + port_len + 1, NULL), 0));
-        g_free (item);
+               item->host,
+               item->port,
+               item->severity,
+               severity_to_level (g_strtod (item->severity, NULL), 0));
+        result_buffer_free (item);
       }
     g_array_free (ports, TRUE);
   }

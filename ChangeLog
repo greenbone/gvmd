@@ -1,3 +1,13 @@
+2015-08-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (manage_report_filter_controls): Mark field.
+	(compare_port_severity): Rename variable.
+	(report_filter_term): Mark field.
+	(struct result_buffer, result_buffer_t): New type.
+	(result_buffer_new, result_buffer_free): New functions.
+	(print_report_port_xml): Use a struct instead of messing about with
+	memory directly.
+
 2015-08-20  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/report_formats/Verinice_ISM/Verinice_ISM.xsl: Ignore results
