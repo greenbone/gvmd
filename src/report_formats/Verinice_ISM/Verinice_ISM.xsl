@@ -919,7 +919,7 @@ CIS</value>
             </syncAttribute>
             <extId><xsl:value-of select="$task_id"/>-ism-vulnerabilities</extId>
             <extObjectType>gsm_ism_vulnerabilities</extObjectType>
-            <xsl:for-each select="/report/results/result[count(notes/note) &gt; 0]/nvt[generate-id(@oid) = generate-id(key('vulnerabilities', @oid)[1])]/..">
+            <xsl:for-each select="/report/results/result[count(notes/note) &gt; 0 and threat != 'False Positive']/nvt[generate-id(@oid) = generate-id(key('vulnerabilities', @oid)[1])]/..">
               <xsl:call-template name="vulnerability_details">
                 <xsl:with-param name="task_id">
                   <xsl:value-of select="$task_id"/>
@@ -960,7 +960,7 @@ CIS</value>
             <extId><xsl:value-of select="$task_id"/>-ism-scenario</extId>
             <extObjectType>gsm_ism_scenarios</extObjectType>
             <!-- Only create one scenario per NVT -->
-            <xsl:for-each select="/report/results/result[count(notes/note) &gt; 0]/nvt[generate-id(@oid) = generate-id(key('scenarios', @oid)[1])]">
+            <xsl:for-each select="/report/results/result[count(notes/note) &gt; 0 and threat != 'False Positive']/nvt[generate-id(@oid) = generate-id(key('scenarios', @oid)[1])]">
               <xsl:call-template name="scenario_details">
                 <xsl:with-param name="task_id">
                   <xsl:value-of select="$task_id"/>
@@ -1019,7 +1019,7 @@ CIS</value>
         </xsl:choose>
 
         </syncObject>
-        <xsl:for-each select="/report/results/result[count(notes/note) &gt; 0]/nvt[generate-id(@oid) = generate-id(key('scenarios', @oid)[1])]">
+        <xsl:for-each select="/report/results/result[count(notes/note) &gt; 0 and threat != 'False Positive']/nvt[generate-id(@oid) = generate-id(key('scenarios', @oid)[1])]">
           <xsl:call-template name="create_links">
             <xsl:with-param name="task_id">
               <xsl:value-of select="$task_id"/>
