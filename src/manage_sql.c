@@ -22621,6 +22621,7 @@ struct result_buffer
   gchar *host;                  ///< Host.
   gchar *port;                  ///< Port.
   gchar *severity;              ///< Severity.
+  double severity_double;       ///< Severity.
 };
 
 /**
@@ -22634,17 +22635,20 @@ typedef struct result_buffer result_buffer_t;
  * @param[in]  host      Host.
  * @param[in]  port      Port.
  * @param[in]  severity  Severity.
+ * @param[in]  severity_double  Severity.
  *
  * @return Freshly allocated result buffer.
  */
 static result_buffer_t*
-result_buffer_new (const gchar *host, const gchar *port, const gchar *severity)
+result_buffer_new (const gchar *host, const gchar *port, const gchar *severity,
+                   double severity_double)
 {
   result_buffer_t *result_buffer;
   result_buffer = g_malloc (sizeof (result_buffer_t));
   result_buffer->host = g_strdup (host);
   result_buffer->port = g_strdup (port);
   result_buffer->severity = g_strdup (severity);
+  result_buffer->severity_double = severity_double;
   return result_buffer;
 }
 
@@ -22694,7 +22698,7 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
                        int apply_overrides)
 {
   iterator_t results;
-  gchar *last_port, *last_host;
+  result_buffer_t *last_item;
   GArray *ports = g_array_new (TRUE, FALSE, sizeof (gchar*));
 
   init_result_iterator
@@ -22716,34 +22720,41 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
 
   /* Buffer the results, removing duplicates. */
 
-  last_port = NULL;
-  last_host = NULL;
+  last_item = NULL;
   while (next (&results))
     {
       const char *port = result_iterator_port (&results);
       const char *host = result_iterator_host (&results);
+      double cvss_double;
 
-      if (last_port == NULL || strcmp (port, last_port)
-          || strcmp (host, last_host))
+      cvss_double = result_iterator_severity_double (&results);
+
+      if (last_item
+          && strcmp (port, last_item->port) == 0
+          && strcmp (host, last_item->host) == 0
+          && last_item->severity_double <= cvss_double)
+        {
+          last_item->severity_double = cvss_double;
+          g_free (last_item->severity);
+          last_item->severity = g_strdup (result_iterator_severity (&results));
+        }
+      else
         {
           const char *cvss;
           result_buffer_t *item;
 
-          g_free (last_port);
-          last_port = g_strdup (port);
-          g_free (last_host);
-          last_host = g_strdup (host);
-
           cvss = result_iterator_severity (&results);
           if (cvss == NULL)
-            cvss = "0.0";
-          item = result_buffer_new (host, port, cvss);
+            {
+              cvss_double = 0.0;
+              cvss = "0.0";
+            }
+          item = result_buffer_new (host, port, cvss, cvss_double);
           g_array_append_val (ports, item);
+          last_item = item;
         }
 
     }
-  g_free (last_port);
-  g_free (last_host);
 
   /* Handle sorting by threat and ROWID. */
 
@@ -22756,31 +22767,36 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
       // FIX working: severity reverse, port, host
 
       /* Sort by port then severity. */
+      // FIX what about by host?
 
       g_array_sort (ports, compare_port_severity);
 
       /* Remove duplicates. */
 
-      last_port = NULL;
-      last_host = NULL;
+      last_item = NULL;
       for (index = 0, length = ports->len; index < length; index++)
         {
-          char *port = g_array_index (ports, char*, index);
-          char *host = port + strlen (port) + 1;
-          host += strlen (host) + 1;
-          if (last_port
-              && (strcmp (port, last_port) == 0)
-              && (strcmp (host, last_host) == 0))
+          result_buffer_t *item;
+
+          item = g_array_index (ports, result_buffer_t*, index);
+          if (last_item
+              && (strcmp (item->port, last_item->port) == 0)
+              && (strcmp (item->host, last_item->host) == 0))
             {
+              if (item->severity_double > last_item->severity_double)
+                {
+                  gchar *severity;
+                  severity = last_item->severity;
+                  last_item->severity = item->severity;
+                  item->severity = severity;
+                  last_item->severity_double = item->severity_double;
+                }
               g_array_remove_index (ports, index);
               length = ports->len;
               index--;
             }
           else
-            {
-              last_port = port;
-              last_host = host;
-            }
+            last_item = item;
         }
 
       /* Sort by severity. */

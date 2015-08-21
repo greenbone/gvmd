@@ -1,5 +1,16 @@
 2015-04-21  Matthew Mundell <matthew.mundell at greenbone.net>
 
+	Backport r23110.
+
+	* src/manage_sql.c (struct result_buffer, result_buffer_new): Add
+	severity_double.
+	(print_report_port_xml): When buffering results include the severity in
+	the duplicate check, otherwise higher-severity results may be removed
+	when the results are sorted by increasing severity (which happens for
+	alerts that do not have filters).
+
+2015-08-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r23102.
 
 	* src/manage_sql.c (manage_report_filter_controls): Mark field.
