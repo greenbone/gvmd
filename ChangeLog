@@ -1,3 +1,15 @@
+2015-08-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r23117.
+
+	* src/manage_sql.c (struct result_buffer, result_buffer_t)
+	(result_buffer_new, result_buffer_new, result_buffer_free): Move up in
+	file.
+	(compare_port_severity): Rename variable back, was host after all.  Use
+	struct instead of messing around with memory.
+	(print_report_port_xml): Remove notes.  Host is considered in
+	compare_port_severity.
+
 2015-04-21  Matthew Mundell <matthew.mundell at greenbone.net>
 
 	Backport r23110.

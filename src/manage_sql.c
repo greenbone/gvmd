@@ -20845,7 +20845,60 @@ compare_severity_asc (gconstpointer arg_one, gconstpointer arg_two)
 }
 
 /**
- * @brief Compares two buffered results, sorting by port then severity.
+ * @brief Some result info, for sorting.
+ */
+struct result_buffer
+{
+  gchar *host;                  ///< Host.
+  gchar *port;                  ///< Port.
+  gchar *severity;              ///< Severity.
+  double severity_double;       ///< Severity.
+};
+
+/**
+ * @brief Buffer host type.
+ */
+typedef struct result_buffer result_buffer_t;
+
+/**
+ * @brief Create a result buffer.
+ *
+ * @param[in]  host      Host.
+ * @param[in]  port      Port.
+ * @param[in]  severity  Severity.
+ * @param[in]  severity_double  Severity.
+ *
+ * @return Freshly allocated result buffer.
+ */
+static result_buffer_t*
+result_buffer_new (const gchar *host, const gchar *port, const gchar *severity,
+                   double severity_double)
+{
+  result_buffer_t *result_buffer;
+  result_buffer = g_malloc (sizeof (result_buffer_t));
+  result_buffer->host = g_strdup (host);
+  result_buffer->port = g_strdup (port);
+  result_buffer->severity = g_strdup (severity);
+  result_buffer->severity_double = severity_double;
+  return result_buffer;
+}
+
+/**
+ * @brief Free a result buffer.
+ *
+ * @param[in]  result_buffer  Result buffer.
+ */
+static void
+result_buffer_free (result_buffer_t *result_buffer)
+{
+  g_free (result_buffer->host);
+  g_free (result_buffer->port);
+  g_free (result_buffer->severity);
+  g_free (result_buffer);
+}
+
+/**
+ * @brief Compares two buffered results, sorting by host, port then severity.
  *
  * @param[in]  arg_one  First result.
  * @param[in]  arg_two  Second result.
@@ -20856,29 +20909,31 @@ compare_severity_asc (gconstpointer arg_one, gconstpointer arg_two)
 static gint
 compare_port_severity (gconstpointer arg_one, gconstpointer arg_two)
 {
-  int port;
-  gchar *one = *((gchar**) arg_one);
-  gchar *two = *((gchar**) arg_two);
-  gchar *one_severity = one + strlen (one) + 1;
-  gchar *two_severity = two + strlen (two) + 1;
-  double severity_cmp = (g_strtod (two_severity, NULL)
-                         - g_strtod (one_severity, NULL));
+  int host;
+  result_buffer_t *one, *two;
 
-  port = strcmp (one_severity + strlen (one_severity) + 1,
-                 two_severity + strlen (two_severity) + 1);
-  if (port == 0)
+  one = *((result_buffer_t**) arg_one);
+  two = *((result_buffer_t**) arg_two);
+
+  host = strcmp (one->host, two->host);
+  if (host == 0)
     {
-      int port = strcmp (one, two);
+      double severity_cmp;
+      int port;
+
+      port = strcmp (one->port, two->port);
       if (port != 0)
         return port;
-      else if (severity_cmp > 0)
+
+      severity_cmp = two->severity_double - one->severity_double;
+      if (severity_cmp > 0)
         return 1;
       else if (severity_cmp < 0)
         return -1;
       else
         return 0;
     }
-  return port;
+  return host;
 }
 
 /** @todo Defined in omp.c! */
@@ -22614,59 +22669,6 @@ print_report_assets_xml (FILE *out, const char *host, int first_result, int
 }
 
 /**
- * @brief Some result info, for sorting.
- */
-struct result_buffer
-{
-  gchar *host;                  ///< Host.
-  gchar *port;                  ///< Port.
-  gchar *severity;              ///< Severity.
-  double severity_double;       ///< Severity.
-};
-
-/**
- * @brief Buffer host type.
- */
-typedef struct result_buffer result_buffer_t;
-
-/**
- * @brief Create a result buffer.
- *
- * @param[in]  host      Host.
- * @param[in]  port      Port.
- * @param[in]  severity  Severity.
- * @param[in]  severity_double  Severity.
- *
- * @return Freshly allocated result buffer.
- */
-static result_buffer_t*
-result_buffer_new (const gchar *host, const gchar *port, const gchar *severity,
-                   double severity_double)
-{
-  result_buffer_t *result_buffer;
-  result_buffer = g_malloc (sizeof (result_buffer_t));
-  result_buffer->host = g_strdup (host);
-  result_buffer->port = g_strdup (port);
-  result_buffer->severity = g_strdup (severity);
-  result_buffer->severity_double = severity_double;
-  return result_buffer;
-}
-
-/**
- * @brief Free a result buffer.
- *
- * @param[in]  result_buffer  Result buffer.
- */
-static void
-result_buffer_free (result_buffer_t *result_buffer)
-{
-  g_free (result_buffer->host);
-  g_free (result_buffer->port);
-  g_free (result_buffer->severity);
-  g_free (result_buffer);
-}
-
-/**
  * @brief Print the XML for a report port summary to a file.
  *
  * @param[in]  report           The report.
@@ -22764,10 +22766,7 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
 
       /** @todo Sort by ROWID if was requested. */
 
-      // FIX working: severity reverse, port, host
-
       /* Sort by port then severity. */
-      // FIX what about by host?
 
       g_array_sort (ports, compare_port_severity);
 
