@@ -2998,6 +2998,7 @@ fork_osp_scan_handler (task_t task, target_t target)
    * Else, exit(1) in error cases like connection to scanner failure.
    */
   reinit_manage_process ();
+  manage_session_init (current_credentials.uuid);
   if (launch_osp_task (task, target, &report_id) || !report_id)
     {
       set_task_run_status (task, TASK_STATUS_STOPPED);
