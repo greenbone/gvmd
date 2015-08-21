@@ -11695,6 +11695,16 @@ buffer_aggregate_wc_xml (GString *xml, iterator_t* aggregate,
   g_tree_insert (ignore_words, g_strdup ("have"), GINT_TO_POINTER (1));
   g_tree_insert (ignore_words, g_strdup ("can"), GINT_TO_POINTER (1));
   g_tree_insert (ignore_words, g_strdup ("cannot"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("been"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("with"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("under"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("for"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("than"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("seen"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("full"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("use"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("see"), GINT_TO_POINTER (1));
+  g_tree_insert (ignore_words, g_strdup ("more"), GINT_TO_POINTER (1));
 
   if (sort_order)
     word_counts = g_tree_new_full ((GCompareDataFunc) g_ascii_strcasecmp, NULL,
