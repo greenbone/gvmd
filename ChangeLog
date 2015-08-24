@@ -1,3 +1,7 @@
+2015-08-24  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): Log authentication failure.
+
 2015-08-21  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/omp.c (buffer_aggregate_wc_xml): Added some more ignore words.
