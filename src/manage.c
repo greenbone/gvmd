@@ -1659,12 +1659,11 @@ slave_sleep_connect (slave_t slave, const char *host, int port, task_t task,
  * @brief Update end times, and optionally add host details.
  *
  * @param[in]  report            Report.
- * @param[in]  add_host_details  Whether to add host details.
  *
  * @return 0 success, -1 error.
  */
-static int
-update_end_times (entity_t report, int add_host_details)
+int
+update_end_times (entity_t report)
 {
   entity_t end;
   entities_t entities;
@@ -1729,15 +1728,17 @@ update_end_times (entity_t report, int add_host_details)
 
           text = entity_text (time);
           while (*text && isspace (*text)) text++;
-          if (*text != '\0')
-            set_scan_host_end_time (current_report,
-                                    entity_text (ip),
-                                    entity_text (time));
-          if (add_host_details
-              && manage_report_host_details (current_report,
-                                             entity_text (ip),
-                                             end))
-            return -1;
+          if ((*text != '\0')
+              && (scan_host_end_time (current_report, entity_text (ip)) == 0))
+            {
+              set_scan_host_end_time (current_report,
+                                      entity_text (ip),
+                                      entity_text (time));
+              if (manage_report_host_details (current_report,
+                                              entity_text (ip),
+                                              end))
+                return -1;
+            }
         }
 
       entities = next_entities (entities);
@@ -2443,7 +2444,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
 
           if (strcmp (status, "Running") == 0)
             {
-              if (update_end_times (report, 0))
+              if (update_end_times (report))
                 goto fail_stop_task;
               free_entity (get_report);
             }
@@ -2464,7 +2465,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
 
       if (status_done)
         {
-          if (update_end_times (report, 1))
+          if (update_end_times (report))
             {
               free_entity (get_tasks);
               free_entity (get_report);
