@@ -1,5 +1,10 @@
 2015-08-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (hosts_set_identifiers): Also update the OS
+	modification time when an OS is identified for a host.
+
+2015-08-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	For slave tasks, add the host details of finished hosts, even if the
 	task is still running.
 

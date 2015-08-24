@@ -51339,13 +51339,23 @@ hosts_set_identifiers ()
                        quoted_source_data);
 
                   if (host_new == 0)
-                    sql ("UPDATE hosts"
-                         " SET modification_time = (SELECT modification_time"
-                         "                          FROM host_oss"
-                         "                          WHERE id = %llu)"
-                         " WHERE id = %llu;",
-                         sql_last_insert_id (),
-                         host);
+                    {
+                      sql ("UPDATE hosts"
+                           " SET modification_time = (SELECT modification_time"
+                           "                          FROM host_oss"
+                           "                          WHERE id = %llu)"
+                           " WHERE id = %llu;",
+                           sql_last_insert_id (),
+                           host);
+
+                      sql ("UPDATE oss"
+                           " SET modification_time = (SELECT modification_time"
+                           "                          FROM host_oss"
+                           "                          WHERE id = %llu)"
+                           " WHERE id = %llu;",
+                           sql_last_insert_id (),
+                           os);
+                    }
                 }
               else
                 {
