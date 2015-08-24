@@ -1,3 +1,18 @@
+2015-08-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	For slave tasks, add the host details of finished hosts, even if the
+	task is still running.
+
+	* src/manage.c (update_end_times): Remove add_host_details arg.
+	Only add host details when setting end time.  Only set end time when
+	the end time was not set before.
+	(slave_setup): Remove arg from add_host_details, so that the details
+	are added when the task is running too.
+
+	* src/manage_sql.c (scan_host_end_time): New function.
+
+	* src/manage.h: Add header accordingly.
+
 2015-08-24  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Log authentication failure.

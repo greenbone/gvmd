@@ -1131,6 +1131,9 @@ set_scan_host_start_time (report_t, const char*, const char*);
 void
 set_scan_host_start_time_otp (report_t, const char*, const char*);
 
+int
+scan_host_end_time (report_t, const char*);
+
 void
 set_scan_host_end_time (report_t, const char*, const char*);
 
