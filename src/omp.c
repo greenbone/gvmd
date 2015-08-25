@@ -11498,7 +11498,7 @@ typedef struct
  *
  * @param[in]  s1   The first string to compare
  * @param[in]  s2   The second string to compare
- * 
+ *
  * @return The result of g_ascii_strcasecmp with string order reversed.
  */
 static int
@@ -17828,6 +17828,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               if (g_strcmp0 ("os", get_assets_data->type) == 0)
                 {
                   iterator_t os_hosts;
+                  const char *latest, *average;
+
+                  latest = asset_os_iterator_latest_severity (&assets);
+                  average = asset_os_iterator_average_severity (&assets);
+                  g_string_append_printf (result,
+                                          "<latest_severity>"
+                                          "<value>%s</value>"
+                                          "</latest_severity>"
+                                          "<average_severity>"
+                                          "<value>%s</value>"
+                                          "</average_severity>",
+                                          latest ? latest : "",
+                                          average ? average : "");
 
                   g_string_append_printf (result,
                                           "<title>%s</title>"
@@ -17838,12 +17851,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   init_os_host_iterator (&os_hosts,
                                          get_iterator_resource (&assets));
                   while (next (&os_hosts))
-                    g_string_append_printf (result,
-                                            "<asset id=\"%s\">"
-                                            "<name>%s</name>"
-                                            "</asset>",
-                                            get_iterator_uuid (&os_hosts),
-                                            get_iterator_name (&os_hosts));
+                    {
+                      const char *severity;
+                      severity = os_host_iterator_severity (&os_hosts);
+                      g_string_append_printf (result,
+                                              "<asset id=\"%s\">"
+                                              "<name>%s</name>"
+                                              "<severity>"
+                                              "<value>%s</value>"
+                                              "</severity>"
+                                              "</asset>",
+                                              get_iterator_uuid (&os_hosts),
+                                              get_iterator_name (&os_hosts),
+                                              severity ? severity : "");
+                    }
                   cleanup_iterator (&os_hosts);
                   g_string_append_printf (result, "</hosts>");
                 }

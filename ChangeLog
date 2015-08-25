@@ -1,3 +1,20 @@
+2015-08-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add OS severities to GET_ASSETS response.
+
+	* src/manage_sql.c (OS_ITERATOR_FILTER_COLUMNS)
+	(OS_ITERATOR_COLUMNS): Add severity columns.
+	(asset_os_iterator_latest_severity)
+	(asset_os_iterator_average_severity): New functions.
+	(init_os_host_iterator): Add severity column.  Order by modification
+	time.
+	(os_host_iterator_severity): New function.
+
+	* src/omp.c (omp_xml_handle_end_element): Send severities of OS and
+	of hosts using the OS.
+
+	* src/manage.h: Add headers accordingly.
+
 2015-08-25  Benoît Allard  <benoit.allard@greenbone.net>
 
 	* CMakeLists.txt: Improve handling of the beta version switch.

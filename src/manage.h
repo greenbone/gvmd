@@ -2078,6 +2078,15 @@ asset_os_iterator_title (iterator_t *);
 int
 asset_os_iterator_installs (iterator_t *);
 
+const char*
+asset_os_iterator_title (iterator_t *);
+
+const char*
+asset_os_iterator_latest_severity (iterator_t *);
+
+const char*
+asset_os_iterator_average_severity (iterator_t *);
+
 int
 asset_os_count (const get_data_t *);
 
@@ -2086,6 +2095,9 @@ total_asset_count (const get_data_t *);
 
 void
 init_os_host_iterator (iterator_t *, resource_t);
+
+const char*
+os_host_iterator_severity (iterator_t *);
 
 void
 init_host_detail_iterator (iterator_t *, resource_t);
