@@ -1,5 +1,9 @@
 2015-08-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (OS_ITERATOR_COLUMNS): Round average to 2 places.
+
+2015-08-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add OS severities to GET_ASSETS response.
 
 	* src/manage_sql.c (OS_ITERATOR_FILTER_COLUMNS)
