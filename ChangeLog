@@ -1,3 +1,7 @@
+2015-08-25  Benoît Allard  <benoit.allard@greenbone.net>
+
+	* CMakeLists.txt: Improve handling of the beta version switch.
+
 2015-08-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (hosts_set_identifiers): Also update the OS
