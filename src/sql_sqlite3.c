@@ -510,6 +510,17 @@ sql_begin_immediate ()
   sql ("BEGIN IMMEDIATE;");
 }
 
+/**
+ * @brief Begin an exclusive transaction.
+ *
+ * @return 0 got lock, 1 gave up, -1 error.
+ */
+int
+sql_begin_immediate_giveup ()
+{
+  return sql_giveup ("BEGIN IMMEDIATE;");
+}
+
 
 /* Iterators. */
 

@@ -149,6 +149,9 @@ sql_begin_exclusive_giveup ();
 void
 sql_begin_immediate ();
 
+int
+sql_begin_immediate_giveup ();
+
 
 /* Iterators. */
 

@@ -10172,10 +10172,17 @@ update_nvti_cache ()
 
 /**
  * @brief Update the memory cache of NVTs, if this has been requested.
+ *
+ * @return 0 success, 1 failed to get lock, -1 error.
  */
-void
+int
 manage_update_nvti_cache ()
 {
+  int ret;
+
+  ret = sql_begin_immediate_giveup ();
+  if (ret)
+    return ret;
   if (sql_int ("SELECT value FROM %s.meta"
                " WHERE name = 'update_nvti_cache';",
                sql_schema ()))
@@ -10184,6 +10191,8 @@ manage_update_nvti_cache ()
       sql ("UPDATE %s.meta SET value = 0 WHERE name = 'update_nvti_cache';",
            sql_schema ());
     }
+  sql ("COMMIT;");
+  return 0;
 }
 
 /**

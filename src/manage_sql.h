@@ -356,7 +356,7 @@ void update_duration_schedule_periods (task_t);
 
 void reinit_manage_process ();
 
-void manage_update_nvti_cache ();
+int manage_update_nvti_cache ();
 
 int manage_report_host_details (report_t, const char *, entity_t);
 
