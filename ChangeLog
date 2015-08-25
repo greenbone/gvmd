@@ -1,3 +1,24 @@
+2015-08-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r23151.
+
+	Give up when doing the nvti cache update check and the database is busy,
+	because this is done in the main omp service loop, so it could delay the
+	service of OMP clients.
+
+	* src/manage.c (manage_schedule): Handle new giveup return.
+
+	* src/manage_sql.c (manage_update_nvti_cache): Wrap in a transaction,
+	in order to giveup if the database is busy.
+
+	* src/manage_sql.h: Adjust header accordingly.
+
+	* src/sql_pg.c (sql_begin_immediate_giveup): New function.
+
+	* src/sql_sqlite3.c (sql_begin_immediate_giveup): New function.
+
+	* src/sql.h: Add header accordingly.
+
 2015-08-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r23138.
