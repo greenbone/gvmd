@@ -1,5 +1,10 @@
 2015-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (OS_ITERATOR_COLUMNS): Cast avg return for Postgres
+	round function.
+
+2015-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (OS_ITERATOR_COLUMNS): Name column in inner SQL for
 	SQLite3.
 

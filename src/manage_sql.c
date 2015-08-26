@@ -51895,7 +51895,7 @@ asset_host_count (const get_data_t *get)
      "latest_severity"                                                        \
    },                                                                         \
    {                                                                          \
-     "(SELECT round (avg (severity), 2)"                                      \
+     "(SELECT round (CAST (avg (severity) AS numeric), 2)"                    \
      " FROM (SELECT (SELECT severity FROM host_max_severities"                \
      "               WHERE host = hosts.host"                                 \
      "               ORDER BY creation_time DESC LIMIT 1)"                    \
