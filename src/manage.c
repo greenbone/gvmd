@@ -4669,7 +4669,13 @@ manage_schedule (int (*fork_connection) (int *,
   task_t previous_start_task = 0;
   task_t previous_stop_task = 0;
 
-  manage_update_nvti_cache ();
+  ret = manage_update_nvti_cache ();
+  if (ret)
+    {
+      if (ret == -1)
+        g_warning ("%s: manage_update_nvti_cache error\n", __FUNCTION__);
+      return ret;
+    }
 
   if (run_tasks == 0)
     return 0;

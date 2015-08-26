@@ -1,5 +1,9 @@
 2015-08-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Commit files missed in last commit.
+
+2015-08-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r23151.
 
 	Give up when doing the nvti cache update check and the database is busy,

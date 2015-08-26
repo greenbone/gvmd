@@ -502,6 +502,18 @@ sql_begin_immediate ()
   sql ("LOCK TABLE meta IN ACCESS EXCLUSIVE MODE;");
 }
 
+/**
+ * @brief Begin an immediate transaction.
+ *
+ * @return 0 got lock, 1 gave up, -1 error.
+ */
+int
+sql_begin_immediate_giveup ()
+{
+  /* TODO This is just an exclusive lock. */
+  return sql_begin_exclusive_giveup ();
+}
+
 
 /* Iterators. */
 
