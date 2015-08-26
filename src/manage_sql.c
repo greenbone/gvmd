@@ -51899,6 +51899,7 @@ asset_host_count (const get_data_t *get)
      " FROM (SELECT (SELECT severity FROM host_max_severities"                \
      "               WHERE host = hosts.host"                                 \
      "               ORDER BY creation_time DESC LIMIT 1)"                    \
+     "              AS severity"                                              \
      "       FROM (SELECT distinct host FROM host_oss WHERE os = oss.id)"     \
      "       AS hosts)"                                                       \
      " AS severities)",                                                       \

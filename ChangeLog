@@ -1,3 +1,8 @@
+2015-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (OS_ITERATOR_COLUMNS): Name column in inner SQL for
+	SQLite3.
+
 2015-08-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Give up when doing the nvti cache update check and the database is busy,
