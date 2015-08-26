@@ -1,3 +1,12 @@
+2015-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (check_db_configs): Adjust Discovery NVT selector for
+	moved and removed Service Detection NVTs.
+
+	* src/manage_config_discovery.c (make_config_discovery): Remove NVTs
+	from "Service detection" that were moved to "Product detection" or
+	removed from scanner.
+
 2015-08-26  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Add client address when
