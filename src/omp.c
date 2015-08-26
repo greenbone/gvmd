@@ -11950,6 +11950,8 @@ modify_scanner_leave:
   set_client_state (CLIENT_AUTHENTIC);
 }
 
+extern char client_address[];
+
 /**
  * @brief Handle the end of an OMP XML element.
  *
@@ -12022,6 +12024,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   if (setenv ("TZ", timezone, 1) == -1)
                     {
                       free_credentials (&current_credentials);
+                      g_warning ("Timezone setting failure for %s",
+                                 current_credentials.username);
                       SEND_TO_CLIENT_OR_FAIL
                        (XML_INTERNAL_ERROR ("authenticate"));
                       set_client_state (CLIENT_TOP);
@@ -12069,11 +12073,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
               break;
             case 1:   /* Authentication failed. */
+              g_warning ("Authentication failure for '%s' from %s",
+                         current_credentials.username ?: "", client_address);
               free_credentials (&current_credentials);
               SEND_TO_CLIENT_OR_FAIL (XML_ERROR_AUTH_FAILED ("authenticate"));
               set_client_state (CLIENT_TOP);
               break;
             case 99:   /* Authentication failed. */
+              g_warning ("Authentication failure for '%s' from %s",
+                         current_credentials.username ?: "", client_address);
               free_credentials (&current_credentials);
               SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("authenticate",
                                                         "Permission denied"));
@@ -12081,6 +12089,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             case -1:  /* Error while authenticating. */
             default:
+              g_warning ("Authentication failure for '%s' from %s",
+                         current_credentials.username ?: "", client_address);
               free_credentials (&current_credentials);
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("authenticate"));
               set_client_state (CLIENT_TOP);

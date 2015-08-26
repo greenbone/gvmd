@@ -1,3 +1,12 @@
+2015-08-26  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	Backport r23133 and r23164.
+
+	* src/omp.c (omp_xml_handle_end_element): Log authentication failure.
+
+	* src/openvasmd.c (accept_and_maybe_fork): Set global variable
+	client_address.
+
 2015-08-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Commit files missed in last commit.
