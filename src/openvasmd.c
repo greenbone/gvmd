@@ -273,6 +273,11 @@ gboolean disable_encrypted_credentials;
  */
 gboolean scheduling_enabled;
 
+/**
+ * @brief The OMP client's address.
+ */
+char client_address[INET6_ADDRSTRLEN];
+
 
 /* Forking, serving the client. */
 
@@ -352,13 +357,12 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
 {
   /* Accept the client connection. */
   pid_t pid;
-  struct sockaddr_in client_address;
-  socklen_t size = sizeof (client_address);
   int client_socket;
-  client_address.sin_family = AF_INET;
-  while ((client_socket = accept (server_socket,
-                                  (struct sockaddr *) &client_address,
-                                  &size))
+  struct sockaddr_storage addr;
+  socklen_t addrlen = sizeof (addr);
+
+  while ((client_socket = accept (server_socket, (struct sockaddr *) &addr,
+                                  &addrlen))
          == -1)
     {
       if (errno == EINTR)
@@ -371,6 +375,7 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
                   strerror (errno));
       exit (EXIT_FAILURE);
     }
+  sockaddr_as_str (&addr, client_address);
 
   /* Fork a child to serve the client. */
   pid = fork ();
