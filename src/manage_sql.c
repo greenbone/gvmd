@@ -11465,6 +11465,18 @@ check_db_configs ()
     make_config_discovery (CONFIG_UUID_DISCOVERY,
                            MANAGE_NVT_SELECTOR_UUID_DISCOVERY);
 
+  /* In the Service Detection family, NVTs sometimes move to Product
+   * Detection, and once an NVT was removed.  So remove those NVTs
+   * from Service Detection in the NVT selector. */
+  sql ("DELETE FROM nvt_selectors"
+       " WHERE name = '" MANAGE_NVT_SELECTOR_UUID_DISCOVERY "'"
+       " AND family = 'Service detection'"
+       " AND (((SELECT family FROM nvts"
+       "        WHERE oid = nvt_selectors.family_or_nvt)"
+       "       = 'Product detection')"
+       "      OR NOT EXISTS (SELECT * FROM nvts"
+       "                     WHERE oid = nvt_selectors.family_or_nvt));");
+
   if (sql_int ("SELECT count(*) FROM configs"
                " WHERE uuid = '%s';",
                CONFIG_UUID_HOST_DISCOVERY)
