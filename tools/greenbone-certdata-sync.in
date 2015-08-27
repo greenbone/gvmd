@@ -448,14 +448,14 @@ do_help () {
   then
     echo " --database       database name"
   fi
-  echo " --describe	display current feed info"
-  echo " --feedversion	display version of this feed"
-  echo " --help		display this help"
-  echo " --identify	display information"
-  echo " --migrate	update database without downloading new state"
-  echo " --refresh	update database without downloading new state"
-  echo " --selftest	perform self-test"
-  echo " --version	display version"
+  echo " --describe     display current feed info"
+  echo " --feedversion  display version of this feed"
+  echo " --help         display this help"
+  echo " --identify     display information"
+  echo " --migrate      update database without downloading new state"
+  echo " --refresh      update database without downloading new state"
+  echo " --selftest     perform self-test"
+  echo " --version      display version"
   echo ""
   exit 0
 }
@@ -512,20 +512,20 @@ update_cvss () {
       until [ "$try_sql" -eq 0 ]
       do
         sql "${ATTACH_SCAP}
-			 ${RECURSIVE_TRIGGERS_OFF}
-			 UPDATE ${SCHEMA_CERT}cert_bund_advs
-			   SET max_cvss =
-				   (
-					 SELECT max(cvss)
-					 FROM scap.cves
-					 WHERE name IN
-					   (
-						 SELECT cve_name
-						 FROM ${SCHEMA_CERT}cert_bund_cves
-						 WHERE adv_id=cert_bund_advs.id
-					   )
-					   AND cvss != 0.0
-				   );"
+             ${RECURSIVE_TRIGGERS_OFF}
+             UPDATE ${SCHEMA_CERT}cert_bund_advs
+               SET max_cvss =
+                   (
+                     SELECT max(cvss)
+                     FROM scap.cves
+                     WHERE name IN
+                       (
+                         SELECT cve_name
+                         FROM ${SCHEMA_CERT}cert_bund_cves
+                         WHERE adv_id=cert_bund_advs.id
+                       )
+                       AND cvss != 0.0
+                   );"
         test_sql_exit "Could not update CVSS scores for CERT-Bund Advisories"
       done
     else
@@ -540,20 +540,20 @@ update_cvss () {
       until [ "$try_sql" -eq 0 ]
       do
         sql "${ATTACH_SCAP}
-			 ${RECURSIVE_TRIGGERS_OFF}
-			 UPDATE ${SCHEMA_CERT}dfn_cert_advs
-			   SET max_cvss =
-				   (
-					 SELECT max(cvss)
-					 FROM scap.cves
-					 WHERE name IN
-					   (
-						 SELECT cve_name
-						 FROM ${SCHEMA_CERT}dfn_cert_cves
-						 WHERE adv_id=dfn_cert_advs.id
-					   )
-					   AND cvss != 0.0
-				   );"
+             ${RECURSIVE_TRIGGERS_OFF}
+             UPDATE ${SCHEMA_CERT}dfn_cert_advs
+               SET max_cvss =
+                   (
+                     SELECT max(cvss)
+                     FROM scap.cves
+                     WHERE name IN
+                       (
+                         SELECT cve_name
+                         FROM ${SCHEMA_CERT}dfn_cert_cves
+                         WHERE adv_id=dfn_cert_advs.id
+                       )
+                       AND cvss != 0.0
+                   );"
         test_sql_exit "Could not update CVSS scores for DFN-CERT Advisories"
       done
     else
@@ -779,25 +779,25 @@ do_self_test () {
 
   if [ $POSTGRES -eq 1 ] ;
   then
-	POSTGRESQL=`command -v psql`
-	if [ -z "$POSTGRESQL" ]; then
-	  if [ 0 -ne $SELFTEST_STDERR ]
-	  then
-		echo "psql not found (required)." 1>&2
-	  fi
-	  log_err "psql not found (required)."
-	  SELFTEST_FAIL=1
-	fi
+    POSTGRESQL=`command -v psql`
+    if [ -z "$POSTGRESQL" ]; then
+      if [ 0 -ne $SELFTEST_STDERR ]
+      then
+        echo "psql not found (required)." 1>&2
+      fi
+      log_err "psql not found (required)."
+      SELFTEST_FAIL=1
+    fi
   else
-	SQLITE=`command -v sqlite3`
-	if [ -z "$SQLITE" ]; then
-	  if [ 0 -ne $SELFTEST_STDERR ]
-	  then
-		echo "sqlite3 not found (required)." 1>&2
-	  fi
-	  log_err "sqlite3 not found (required)."
-	  SELFTEST_FAIL=1
-	fi
+    SQLITE=`command -v sqlite3`
+    if [ -z "$SQLITE" ]; then
+      if [ 0 -ne $SELFTEST_STDERR ]
+      then
+        echo "sqlite3 not found (required)." 1>&2
+      fi
+      log_err "sqlite3 not found (required)."
+      SELFTEST_FAIL=1
+    fi
   fi
 
   if [ -z "$RSYNC" ]
@@ -824,21 +824,21 @@ do_self_test () {
 psql_setup "tasks"
 while test $# -gt 0; do
  case "$1" in
-		--database)
-		  if [ $POSTGRES -eq 1 ] ;
-		  then
-			shift
-			if [ $# -gt 0 ]; then
-			  psql_setup $1
-			else
-			  echo "[e] --database argument missing"
-			  exit 1
-			fi
-		  else
-			echo "[e] --database option available only for Postgres"
-			exit 1
-		  fi
-		  ;;
+        --database)
+          if [ $POSTGRES -eq 1 ] ;
+          then
+            shift
+            if [ $# -gt 0 ]; then
+              psql_setup $1
+            else
+              echo "[e] --database argument missing"
+              exit 1
+            fi
+          else
+            echo "[e] --database option available only for Postgres"
+            exit 1
+          fi
+          ;;
         --version)
           echo $VERSION
           exit 0

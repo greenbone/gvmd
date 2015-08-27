@@ -638,10 +638,10 @@ check_db_version () {
          reinit
        else
          db_migrate_9
-		 db_migrate_10
-		 db_migrate_11
-		 db_migrate_12
-		 db_migrate_13
+         db_migrate_10
+         db_migrate_11
+         db_migrate_12
+         db_migrate_13
          db_migrate_14
          db_migrate_15
        fi;;
@@ -655,17 +655,17 @@ check_db_version () {
          db_migrate_13
          db_migrate_14
          db_migrate_15
-	   fi;;
+       fi;;
    10) if [ $POSTGRES -eq 1 ]
        then
          reinit
        else
          db_migrate_11
-		 db_migrate_12
-		 db_migrate_13
-		 db_migrate_14
+         db_migrate_12
+         db_migrate_13
+         db_migrate_14
          db_migrate_15
-	    fi;;
+        fi;;
    11) if [ $POSTGRES -eq 1 ]
        then
          reinit
@@ -674,7 +674,7 @@ check_db_version () {
          db_migrate_13
          db_migrate_14
          db_migrate_15
-	   fi;;
+       fi;;
    12) if [ $POSTGRES -eq 1 ]
        then
          reinit
@@ -1355,25 +1355,25 @@ do_self_test () {
 
   if [ $POSTGRES -eq 1 ] ;
   then
-	POSTGRESQL=`command -v psql`
-	if [ -z "$POSTGRESQL" ]; then
-	  if [ 0 -ne $SELFTEST_STDERR ]
-	  then
-		echo "psql not found (required)." 1>&2
-	  fi
-	  log_err "psql not found (required)."
-	  SELFTEST_FAIL=1
-	fi
+    POSTGRESQL=`command -v psql`
+    if [ -z "$POSTGRESQL" ]; then
+      if [ 0 -ne $SELFTEST_STDERR ]
+      then
+        echo "psql not found (required)." 1>&2
+      fi
+      log_err "psql not found (required)."
+      SELFTEST_FAIL=1
+    fi
   else
-	SQLITE=`command -v sqlite3`
-	if [ -z "$SQLITE" ]; then
-	  if [ 0 -ne $SELFTEST_STDERR ]
-	  then
-		echo "sqlite3 not found (required)." 1>&2
-	  fi
-	  log_err "sqlite3 not found (required)."
-	  SELFTEST_FAIL=1
-	fi
+    SQLITE=`command -v sqlite3`
+    if [ -z "$SQLITE" ]; then
+      if [ 0 -ne $SELFTEST_STDERR ]
+      then
+        echo "sqlite3 not found (required)." 1>&2
+      fi
+      log_err "sqlite3 not found (required)."
+      SELFTEST_FAIL=1
+    fi
   fi
 
   if [ -z "$RSYNC" ]
@@ -1420,21 +1420,21 @@ while test $# -gt 0; do
           do_help
           exit 0
           ;;
-		--database)
-		  if [ $POSTGRES -eq 1 ] ;
-		  then
-			shift
-			if [ $# -gt 0 ]; then
-			  psql_setup $1
-			else
-			  echo "[e] --database argument missing"
-			  exit 1
-			fi
-		  else
-			echo "[e] --database option available only for Postgres"
-			exit 1
-		  fi
-		  ;;
+        --database)
+          if [ $POSTGRES -eq 1 ] ;
+          then
+            shift
+            if [ $# -gt 0 ]; then
+              psql_setup $1
+            else
+              echo "[e] --database argument missing"
+              exit 1
+            fi
+          else
+            echo "[e] --database option available only for Postgres"
+            exit 1
+          fi
+          ;;
         --verbose)
           VERBOSE=1
           ;;

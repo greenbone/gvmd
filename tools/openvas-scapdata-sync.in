@@ -113,17 +113,17 @@ SPLIT_PART_SIZE=0
 
 do_help () {
   echo "$0: Sync SCAP data using different protocols"
-  echo " --rsync		sync with rsync (default)"
-  echo " --migrate		migrate database without downloading feed data"
-  echo " --refresh		update database without downloading feed data"
-  echo " --refresh-private	update database only using private data"
-  echo " --check		just checksum check"
+  echo " --rsync                sync with rsync (default)"
+  echo " --migrate              migrate database without downloading feed data"
+  echo " --refresh              update database without downloading feed data"
+  echo " --refresh-private      update database only using private data"
+  echo " --check                just checksum check"
   echo "OpenVAS administrator functions:"
-  echo " --selftest	perform self-test"
-  echo " --identify	display information"
-  echo " --version	display version"
-  echo " --describe	display current scap feed info"
-  echo " --feedversion   display current scap feed version"
+  echo " --selftest     perform self-test"
+  echo " --identify     display information"
+  echo " --version      display version"
+  echo " --describe     display current scap feed info"
+  echo " --feedversion  display current scap feed version"
   echo "Options:"
   echo " --verbose       enable verbose log messages"
   if [ $POSTGRES -eq 1 ];
@@ -132,10 +132,10 @@ do_help () {
   fi
   echo ""
   echo "Environment variables:"
-  echo "SCAP_DIR		where to extract plugins (absolute path)"
-  echo "OV_RSYNC_FEED	URL of rsync feed"
-  echo "OV_HTTP_FEED	URL of http feed"
-  echo "TMPDIR		temporary directory used to download the files"
+  echo "SCAP_DIR        where to extract plugins (absolute path)"
+  echo "OV_RSYNC_FEED   URL of rsync feed"
+  echo "OV_HTTP_FEED    URL of http feed"
+  echo "TMPDIR          temporary directory used to download the files"
   echo "PRIVATE_SUBDIR  subdirectory to exclude from deletion by rsync"
   echo "Note that you can use standard ones as well (e.g. http_proxy) for wget/curl"
   echo ""
@@ -1248,19 +1248,19 @@ if [ -n "$1" ]; then
         exit 0
         ;;
       --database)
-		if [ $POSTGRES -eq 1 ] ;
-		then
-		  shift
+        if [ $POSTGRES -eq 1 ] ;
+        then
+          shift
           if [ $# -gt 0 ]; then
-		    psql_setup $1
-	      else
-			echo "[e] --database argument missing"
-			exit 1
-		  fi
-		else
-		  echo "[e] --database option available only for Postgres"
-		  exit 1
-		fi
+            psql_setup $1
+          else
+            echo "[e] --database argument missing"
+            exit 1
+          fi
+        else
+          echo "[e] --database option available only for Postgres"
+          exit 1
+        fi
         ;;
       --verbose)
         VERBOSE=1

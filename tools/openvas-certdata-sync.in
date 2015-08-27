@@ -696,19 +696,19 @@ if [ -n "$1" ]; then
         exit 0
         ;;
       --database)
-		if [ $POSTGRES -eq 1 ] ;
-		then
-		  shift
+        if [ $POSTGRES -eq 1 ] ;
+        then
+          shift
           if [ $# -gt 0 ]; then
-		    psql_setup $1
-	      else
-			echo "[e] --database argument missing"
-			exit 1
-		  fi
-		else
-		  echo "[e] --database option available only for Postgres"
-		  exit 1
-		fi
+            psql_setup $1
+          else
+            echo "[e] --database argument missing"
+            exit 1
+          fi
+        else
+          echo "[e] --database option available only for Postgres"
+          exit 1
+        fi
         ;;
     esac
     shift
