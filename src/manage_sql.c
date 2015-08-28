@@ -28386,7 +28386,8 @@ manage_transaction_start ()
  *
  * @param[in] force_commit  Force committing the pending transaction.
  */
-void manage_transaction_stop (gboolean force_commit)
+void
+manage_transaction_stop (gboolean force_commit)
 {
   struct timeval now;
 

@@ -1,5 +1,9 @@
 2015-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_transaction_stop): Move return type up.
+
+2015-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/otp.c (process_otp_scanner_input): Check the transaction while
 	parsing, to prevent locking the db for too long.
 
