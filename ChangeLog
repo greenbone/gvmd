@@ -1,3 +1,8 @@
+2015-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/otp.c (process_otp_scanner_input): Check the transaction while
+	parsing, to prevent locking the db for too long.
+
 2015-08-28  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c, src/omp.c: Fix includes.
