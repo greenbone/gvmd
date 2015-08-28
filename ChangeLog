@@ -1,3 +1,7 @@
+2015-08-28  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c, src/omp.c: Fix includes.
+
 2015-08-27  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* tools/greenbone-certdata-sync.in, tools/greenbone-scapdata-sync.in,

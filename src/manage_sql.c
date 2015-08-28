@@ -62,11 +62,11 @@
 #include <openvas/base/openvas_string.h>
 #include <openvas/base/openvas_file.h>
 #include <openvas/base/openvas_hosts.h>
-#include <openvas/base/openvas_networking.h>
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/misc/ldap_connect_auth.h>
 #include <openvas/misc/openvas_logging.h>
 #include <openvas/misc/openvas_uuid.h>
+#include <openvas/misc/openvas_ssh.h>
 #include <openvas/base/pwpolicy.h>
 #include <openvas/omp/xml.h>
 
