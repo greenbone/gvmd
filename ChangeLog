@@ -1,3 +1,10 @@
+2015-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r23199.
+
+	* src/otp.c (process_otp_scanner_input): Check the transaction while
+	parsing, to prevent locking the db for too long.
+
 2015-08-27  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* CHANGES: Updated in preparation for the upcoming 6.0.6 release.

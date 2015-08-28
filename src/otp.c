@@ -918,6 +918,14 @@ process_otp_scanner_input (void (*progress) ())
              != NULL))
     {
       assert (match >= input);
+
+      /* Check whether we've had a transaction open too long, because
+       * it may take some time until we get out of this loop and do a
+       * process_omp_change, and we don't want to hold up other writer
+       * processes.  Note that in GSA even tabular pages like Tasks now
+       * write (settings) to the db. */
+      manage_transaction_stop (FALSE);
+
       if ((((match - input) + from_start + 1) < from_end)
           && (match[1] == '|')
           && (match[2] == '>'))
