@@ -5060,7 +5060,7 @@ get_aggregates
        attribute first_group { integer }?
        & # The maximum number of aggregate groups to return, -1 for all.
        attribute max_groups { integer }?
-       & # Special mode for aggregate.
+       & # Special mode for aggregation.
        attribute mode { xsd:token { pattern = "|word_counts" } }?
        & get_aggregates_data_column*
        & get_aggregates_text_column*
@@ -5613,6 +5613,10 @@ get_tasks
        attribute trash { boolean }?
        & # Whether to include full task details.
        attribute details { boolean }?
+       & # Whether to ignore info used to split the report into pages like the filter terms "first" and "rows"..
+       attribute ignore_pagination { boolean }?
+       & # Whether to only include id, name and schedule details.
+       attribute schedules_only { boolean }?
      }
 
 ## Command get_users
@@ -15972,35 +15976,38 @@ get_tasks_response_task
  = element task
      {
        attribute id { uuid }
-       & get_tasks_response_task_owner
-       & get_tasks_response_task_name
-       & get_tasks_response_task_comment
-       & get_tasks_response_task_creation_time
-       & get_tasks_response_task_modification_time
-       & get_tasks_response_task_writable
-       & get_tasks_response_task_in_use
-       & get_tasks_response_task_permissions
-       & get_tasks_response_task_user_tags
-       & get_tasks_response_task_status
-       & get_tasks_response_task_progress
-       & get_tasks_response_task_alterable
-       & get_tasks_response_task_config
-       & get_tasks_response_task_target
-       & get_tasks_response_task_hosts_ordering
-       & get_tasks_response_task_scanner
-       & get_tasks_response_task_alert
-       & get_tasks_response_task_observers
-       & get_tasks_response_task_schedule
-       & get_tasks_response_task_schedule_periods
-       & get_tasks_response_task_slave
-       & get_tasks_response_task_report_count
-       & get_tasks_response_task_trend
-       & get_tasks_response_task_current_report?
-       & get_tasks_response_task_first_report?
-       & get_tasks_response_task_last_report?
-       & get_tasks_response_task_second_last_report?
-       & get_tasks_response_task_reports*
-       & get_tasks_response_task_preferences
+       & ( ( get_tasks_response_task_owner
+           & get_tasks_response_task_name
+           & get_tasks_response_task_comment
+           & get_tasks_response_task_creation_time
+           & get_tasks_response_task_modification_time
+           & get_tasks_response_task_writable
+           & get_tasks_response_task_in_use
+           & get_tasks_response_task_permissions
+           & get_tasks_response_task_user_tags
+           & get_tasks_response_task_status
+           & get_tasks_response_task_progress
+           & get_tasks_response_task_alterable
+           & get_tasks_response_task_config
+           & get_tasks_response_task_target
+           & get_tasks_response_task_hosts_ordering
+           & get_tasks_response_task_scanner
+           & get_tasks_response_task_alert
+           & get_tasks_response_task_observers
+           & get_tasks_response_task_schedule
+           & get_tasks_response_task_schedule_periods
+           & get_tasks_response_task_slave
+           & get_tasks_response_task_report_count
+           & get_tasks_response_task_trend
+           & get_tasks_response_task_current_report?
+           & get_tasks_response_task_first_report?
+           & get_tasks_response_task_last_report?
+           & get_tasks_response_task_second_last_report?
+           & get_tasks_response_task_reports*
+           & get_tasks_response_task_preferences )
+           | ( get_tasks_response_task_name
+           & get_tasks_response_task_schedule
+           & get_tasks_response_task_schedule_periods ) )
      }
 
 # Owner of the task.
@@ -16338,8 +16345,13 @@ get_tasks_response_task_schedule
      {
        attribute id { uuid_or_empty }
        & get_tasks_response_task_schedule_name
+       & get_tasks_response_task_schedule_next_time?
        & get_tasks_response_task_schedule_permissions?
        & get_tasks_response_task_schedule_trash
+       & get_tasks_response_task_schedule_first_time?
+       & get_tasks_response_task_schedule_period?
+       & get_tasks_response_task_schedule_period_months?
+       & get_tasks_response_task_schedule_duration?
      }
 
 # The name of the schedule.
@@ -16347,6 +16359,13 @@ get_tasks_response_task_schedule_name
  = element name
      {
        name
+     }
+
+# The next date and time the schedule will be run in ISO format or "over"..
+get_tasks_response_task_schedule_next_time
+ = element next_time
+     {
+       iso_time
      }
 
 # Permissions the user has on the schedule.
@@ -16361,6 +16380,34 @@ get_tasks_response_task_schedule_trash
  = element trash
      {
        boolean
+     }
+
+# The first time was or will be run.
+get_tasks_response_task_schedule_first_time
+ = element first_time
+     {
+       iso_time
+     }
+
+# The time period between repeated runs of the schedule. Run only once if this and period_months is 0.
+get_tasks_response_task_schedule_period
+ = element period
+     {
+       integer
+     }
+
+# The number of months between repeated runs of the schedule. Run only once if this and period is 0.
+get_tasks_response_task_schedule_period_months
+ = element period_months
+     {
+       integer
+     }
+
+# The maximum duration of the task in seconds or 0 for unlimited.
+get_tasks_response_task_schedule_duration
+ = element duration
+     {
+       integer
      }
 
 # A limit to the number of times the task will be scheduled, or 0 for no limit.

@@ -14278,7 +14278,7 @@ get_configs_response_config_count_page
 <li>
           @<b>mode</b>
           ("" or "word_counts")
-          Special mode for aggregate.
+          Special mode for aggregation.
           </li>
 <li>
               &lt;<b>data_column</b>&gt;
@@ -29131,6 +29131,16 @@ get_targets_response_target_count_page
           (<a href="#type_boolean">boolean</a>)
           Whether to include full task details.
           </li>
+<li>
+          @<b>ignore_pagination</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to ignore info used to split the report into pages like the filter terms "first" and "rows"..
+          </li>
+<li>
+          @<b>schedules_only</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to only include id, name and schedule details.
+          </li>
 </ul>
 </li>
 <li style="margin-top: 15px;">
@@ -29154,6 +29164,10 @@ get_targets_response_target_count_page
           @<b>id</b>
           (<a href="#type_uuid">uuid</a>)
           </li>
+<li>
+<i>One of</i><b></b><ul style="list-style: none">
+<li>
+<i>The group</i><b></b><ul style="list-style: none">
 <li>
               &lt;<b>owner</b>&gt;
               <div style="margin-left: 15px; display: inline;">Owner of the task.</div>
@@ -29419,6 +29433,11 @@ get_targets_response_target_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>next_time</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The next date and time the schedule will be run in ISO format or "over"..</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>permissions</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the schedule.</div>
 <ul style="list-style: none"></ul>
@@ -29426,6 +29445,26 @@ get_targets_response_target_count_page
 <li>
               &lt;<b>trash</b>&gt;
               <div style="margin-left: 15px; display: inline;">Whether the schedule is in the trashcan.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>first_time</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The first time was or will be run.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>period</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The time period between repeated runs of the schedule. Run only once if this and period_months is 0.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>period_months</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The number of months between repeated runs of the schedule. Run only once if this and period is 0.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>duration</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The maximum duration of the task in seconds or 0 for unlimited.</div>
 <ul style="list-style: none"></ul>
 </li>
 </ul>
@@ -29739,6 +29778,74 @@ get_targets_response_target_count_page
 </ul>
 </li>
 <li>
+<i>The group</i><b></b><ul style="list-style: none">
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the task.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>schedule</b>&gt;
+              <div style="margin-left: 15px; display: inline;">When the task will run.</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid_or_empty">uuid_or_empty</a>)
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the schedule.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>next_time</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The next date and time the schedule will be run in ISO format or "over"..</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the schedule.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>trash</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the schedule is in the trashcan.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>first_time</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The first time was or will be run.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>period</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The time period between repeated runs of the schedule. Run only once if this and period_months is 0.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>period_months</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The number of months between repeated runs of the schedule. Run only once if this and period is 0.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>duration</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The maximum duration of the task in seconds or 0 for unlimited.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>schedule_periods</b>&gt;
+              <div style="margin-left: 15px; display: inline;">A limit to the number of times the task will be scheduled, or 0 for no limit.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
               &lt;<b>filters</b>&gt;
               <ul style="list-style: none">
 <li>
@@ -29835,6 +29942,8 @@ get_targets_response_target_count_page
        &amp; attribute filt_id { uuid }?
        &amp; attribute trash { boolean }?
        &amp; attribute details { boolean }?
+       &amp; attribute ignore_pagination { boolean }?
+       &amp; attribute schedules_only { boolean }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_tasks_response
@@ -29860,35 +29969,38 @@ get_tasks_response_task
  = element task
      {
        attribute id { uuid }
-       &amp; get_tasks_response_task_owner
-       &amp; get_tasks_response_task_name
-       &amp; get_tasks_response_task_comment
-       &amp; get_tasks_response_task_creation_time
-       &amp; get_tasks_response_task_modification_time
-       &amp; get_tasks_response_task_writable
-       &amp; get_tasks_response_task_in_use
-       &amp; get_tasks_response_task_permissions
-       &amp; get_tasks_response_task_user_tags
-       &amp; get_tasks_response_task_status
-       &amp; get_tasks_response_task_progress
-       &amp; get_tasks_response_task_alterable
-       &amp; get_tasks_response_task_config
-       &amp; get_tasks_response_task_target
-       &amp; get_tasks_response_task_hosts_ordering
-       &amp; get_tasks_response_task_scanner
-       &amp; get_tasks_response_task_alert
-       &amp; get_tasks_response_task_observers
-       &amp; get_tasks_response_task_schedule
-       &amp; get_tasks_response_task_schedule_periods
-       &amp; get_tasks_response_task_slave
-       &amp; get_tasks_response_task_report_count
-       &amp; get_tasks_response_task_trend
-       &amp; get_tasks_response_task_current_report?
-       &amp; get_tasks_response_task_first_report?
-       &amp; get_tasks_response_task_last_report?
-       &amp; get_tasks_response_task_second_last_report?
-       &amp; get_tasks_response_task_reports*
-       &amp; get_tasks_response_task_preferences
+       &amp; ( ( get_tasks_response_task_owner
+           &amp; get_tasks_response_task_name
+           &amp; get_tasks_response_task_comment
+           &amp; get_tasks_response_task_creation_time
+           &amp; get_tasks_response_task_modification_time
+           &amp; get_tasks_response_task_writable
+           &amp; get_tasks_response_task_in_use
+           &amp; get_tasks_response_task_permissions
+           &amp; get_tasks_response_task_user_tags
+           &amp; get_tasks_response_task_status
+           &amp; get_tasks_response_task_progress
+           &amp; get_tasks_response_task_alterable
+           &amp; get_tasks_response_task_config
+           &amp; get_tasks_response_task_target
+           &amp; get_tasks_response_task_hosts_ordering
+           &amp; get_tasks_response_task_scanner
+           &amp; get_tasks_response_task_alert
+           &amp; get_tasks_response_task_observers
+           &amp; get_tasks_response_task_schedule
+           &amp; get_tasks_response_task_schedule_periods
+           &amp; get_tasks_response_task_slave
+           &amp; get_tasks_response_task_report_count
+           &amp; get_tasks_response_task_trend
+           &amp; get_tasks_response_task_current_report?
+           &amp; get_tasks_response_task_first_report?
+           &amp; get_tasks_response_task_last_report?
+           &amp; get_tasks_response_task_second_last_report?
+           &amp; get_tasks_response_task_reports*
+           &amp; get_tasks_response_task_preferences )
+           | ( get_tasks_response_task_name
+           &amp; get_tasks_response_task_schedule
+           &amp; get_tasks_response_task_schedule_periods ) )
      }
 
 get_tasks_response_task_owner
@@ -30182,14 +30294,25 @@ get_tasks_response_task_schedule
      {
        attribute id { uuid_or_empty }
        &amp; get_tasks_response_task_schedule_name
+       &amp; get_tasks_response_task_schedule_next_time?
        &amp; get_tasks_response_task_schedule_permissions?
        &amp; get_tasks_response_task_schedule_trash
+       &amp; get_tasks_response_task_schedule_first_time?
+       &amp; get_tasks_response_task_schedule_period?
+       &amp; get_tasks_response_task_schedule_period_months?
+       &amp; get_tasks_response_task_schedule_duration?
      }
 
 get_tasks_response_task_schedule_name
  = element name
      {
        name
+     }
+
+get_tasks_response_task_schedule_next_time
+ = element next_time
+     {
+       iso_time
      }
 
 get_tasks_response_task_schedule_permissions
@@ -30202,6 +30325,30 @@ get_tasks_response_task_schedule_trash
  = element trash
      {
        boolean
+     }
+
+get_tasks_response_task_schedule_first_time
+ = element first_time
+     {
+       iso_time
+     }
+
+get_tasks_response_task_schedule_period
+ = element period
+     {
+       integer
+     }
+
+get_tasks_response_task_schedule_period_months
+ = element period_months
+     {
+       integer
+     }
+
+get_tasks_response_task_schedule_duration
+ = element duration
+     {
+       integer
      }
 
 get_tasks_response_task_schedule_periods

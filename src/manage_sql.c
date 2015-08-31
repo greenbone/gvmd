@@ -4471,6 +4471,13 @@ init_get_iterator (iterator_t* iterator, const char *type,
   else
     columns = columns_build_select (select_columns);
 
+  if (get->ignore_pagination
+      && (strcmp (type, "task") == 0))
+    {
+      first = 0;
+      max = -1;
+    }
+
   if (resource && get->trash)
     init_iterator (iterator,
                    "SELECT %s"

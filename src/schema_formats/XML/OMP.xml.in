@@ -18011,6 +18011,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <summary>Whether to include full task details</summary>
         <type>boolean</type>
       </attrib>
+      <attrib>
+        <name>ignore_pagination</name>
+        <summary>
+          Whether to ignore info used to split the report into pages
+          like the filter terms "first" and "rows".
+        </summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>schedules_only</name>
+        <summary>Whether to only include id, name and schedule details</summary>
+        <type>boolean</type>
+      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -18045,35 +18058,44 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <type>uuid</type>
             <required>1</required>
           </attrib>
-          <e>owner</e>
-          <e>name</e>
-          <e>comment</e>
-          <e>creation_time</e>
-          <e>modification_time</e>
-          <e>writable</e>
-          <e>in_use</e>
-          <e>permissions</e>
-          <e>user_tags</e>
-          <e>status</e>
-          <e>progress</e>
-          <e>alterable</e>
-          <e>config</e>
-          <e>target</e>
-          <e>hosts_ordering</e>
-          <e>scanner</e>
-          <e>alert</e>
-          <e>observers</e>
-          <e>schedule</e>
-          <e>schedule_periods</e>
-          <e>slave</e>
-          <e>report_count</e>
-          <e>trend</e>
-          <o><e>current_report</e></o>
-          <o><e>first_report</e></o>
-          <o><e>last_report</e></o>
-          <o><e>second_last_report</e></o>
-          <any><e>reports</e></any>
-          <e>preferences</e>
+          <or>
+            <g>
+              <e>owner</e>
+              <e>name</e>
+              <e>comment</e>
+              <e>creation_time</e>
+              <e>modification_time</e>
+              <e>writable</e>
+              <e>in_use</e>
+              <e>permissions</e>
+              <e>user_tags</e>
+              <e>status</e>
+              <e>progress</e>
+              <e>alterable</e>
+              <e>config</e>
+              <e>target</e>
+              <e>hosts_ordering</e>
+              <e>scanner</e>
+              <e>alert</e>
+              <e>observers</e>
+              <e>schedule</e>
+              <e>schedule_periods</e>
+              <e>slave</e>
+              <e>report_count</e>
+              <e>trend</e>
+              <o><e>current_report</e></o>
+              <o><e>first_report</e></o>
+              <o><e>last_report</e></o>
+              <o><e>second_last_report</e></o>
+              <any><e>reports</e></any>
+              <e>preferences</e>
+            </g>
+            <g>
+              <e>name</e>
+              <e>schedule</e>
+              <e>schedule_periods</e>
+            </g>
+          </or>
         </pattern>
         <ele>
           <name>owner</name>
@@ -18387,23 +18409,53 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <required>1</required>
             </attrib>
             <e>name</e>
+            <o><e>next_time</e></o>
             <o><e>permissions</e></o>
             <e>trash</e>
+            <o><e>first_time</e></o>
+            <o><e>period</e></o>
+            <o><e>period_months</e></o>
+            <o><e>duration</e></o>
           </pattern>
           <ele>
             <name>name</name>
             <summary>The name of the schedule</summary>
             <pattern><t>name</t></pattern>
           </ele>
-		  <ele>
-			<name>permissions</name>
-			<summary>Permissions the user has on the schedule</summary>
-			<pattern></pattern>
-		  </ele>
+          <ele>
+            <name>next_time</name>
+            <summary>The next date and time the schedule will be run in ISO format or "over".</summary>
+            <pattern><t>iso_time</t></pattern>
+          </ele>
+          <ele>
+          <name>permissions</name>
+          <summary>Permissions the user has on the schedule</summary>
+          <pattern></pattern>
+          </ele>
           <ele>
             <name>trash</name>
             <summary>Whether the schedule is in the trashcan</summary>
             <pattern><t>boolean</t></pattern>
+          </ele>
+          <ele>
+            <name>first_time</name>
+            <summary>The first time was or will be run</summary>
+            <pattern><t>iso_time</t></pattern>
+          </ele>
+          <ele>
+            <name>period</name>
+            <summary>The time period between repeated runs of the schedule. Run only once if this and period_months is 0</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>period_months</name>
+            <summary>The number of months between repeated runs of the schedule. Run only once if this and period is 0</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>duration</name>
+            <summary>The maximum duration of the task in seconds or 0 for unlimited</summary>
+            <pattern><t>integer</t></pattern>
           </ele>
         </ele>
         <ele>
