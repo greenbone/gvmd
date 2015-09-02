@@ -1805,6 +1805,7 @@ delete_agent_data_reset (delete_agent_data_t *data)
 typedef struct
 {
   char *asset_id;   ///< ID of asset to delete.
+  char *report_id;  ///< ID of report from which to delete assets.
   int ultimate;     ///< Dummy field for generic macros.
 } delete_asset_data_t;
 
@@ -1817,6 +1818,7 @@ static void
 delete_asset_data_reset (delete_asset_data_t *data)
 {
   free (data->asset_id);
+  free (data->report_id);
 
   memset (data, 0, sizeof (delete_asset_data_t));
 }
@@ -6631,6 +6633,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             append_attribute (attribute_names, attribute_values, "asset_id",
                               &delete_asset_data->asset_id);
+            append_attribute (attribute_names, attribute_values, "report_id",
+                              &delete_asset_data->report_id);
             set_client_state (CLIENT_DELETE_ASSET);
           }
         else if (strcasecmp ("DELETE_CONFIG", element_name) == 0)
@@ -13021,7 +13025,82 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       CASE_DELETE (AGENT, agent, "Agent");
       CASE_DELETE (ALERT, alert, "Alert");
-      CASE_DELETE (ASSET, asset, "Asset");
+
+      case CLIENT_DELETE_ASSET:
+        assert (strcasecmp ("DELETE_ASSET", element_name) == 0);
+        if (delete_asset_data->asset_id
+            || delete_asset_data->report_id)
+          switch (delete_asset (delete_asset_data->asset_id,
+                                delete_asset_data->report_id,
+                                delete_asset_data->ultimate))
+            {
+              case 0:
+                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_asset"));
+                log_event ("delete_asset", "Asset",
+                           delete_asset_data->asset_id, "deleted");
+                break;
+              case 1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("delete_asset",
+                                    "Asset is in use"));
+                log_event_fail ("asset", "Asset",
+                                delete_asset_data->asset_id,
+                                "deleted");
+                break;
+              case 2:
+                if (send_find_error_to_client
+                     ("delete_asset",
+                      "asset",
+                      delete_asset_data->asset_id,
+                      omp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                log_event_fail ("asset", "Asset",
+                                delete_asset_data->asset_id,
+                                "deleted");
+                break;
+              case 3:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("delete_asset",
+                                    "Attempt to delete a predefined asset"));
+                log_event_fail ("asset", "Asset",
+                                delete_asset_data->asset_id,
+                                "deleted");
+                break;
+              case 4:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("delete_asset",
+                                    "DELETE_ASSET requires an asset_id or a"
+                                    "report_id"));
+                log_event_fail ("asset", "Asset",
+                                delete_asset_data->asset_id,
+                                "deleted");
+                break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("delete_asset",
+                                    "Permission denied"));
+                log_event_fail ("asset", "Asset",
+                                delete_asset_data->asset_id,
+                                "deleted");
+                break;
+              default:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("delete_asset"));
+                log_event_fail ("asset", "Asset",
+                                delete_asset_data->asset_id,
+                                "deleted");
+            }
+        else
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("delete_asset",
+                              "DELETE_ASSET requires an asset_id attribute"));
+        delete_asset_data_reset (delete_asset_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
       CASE_DELETE (CONFIG, config, "Config");
       CASE_DELETE (FILTER, filter, "Filter");
       CASE_DELETE (GROUP, group, "Group");

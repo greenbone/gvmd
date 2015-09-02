@@ -52145,16 +52145,103 @@ find_host_with_permission (const char* uuid, host_t* host,
 }
 
 /**
+ * @brief Delete all asset that came from a report.
+ *
+ * Assume caller started a transaction.
+ *
+ * @param[in]  report_id  UUID of report.
+ *
+ * @return 0 success, 2 failed to find report, 4 UUID
+ *         required, 99 permission denied, -1 error.
+ */
+int
+delete_report_assets (const char *report_id)
+{
+  resource_t report;
+  gchar *quoted_report_id;
+
+  report = 0;
+  if (find_report_with_permission (report_id, &report, "delete_report"))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (report == 0)
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
+
+  quoted_report_id = sql_quote (report_id);
+
+  sql ("DELETE FROM host_identifiers WHERE source_id = '%s';",
+       quoted_report_id);
+  sql ("DELETE FROM host_oss WHERE source_id = '%s';",
+       quoted_report_id);
+  sql ("DELETE FROM host_max_severities WHERE source_id = '%s';",
+       quoted_report_id);
+  sql ("DELETE FROM host_details WHERE source_id = '%s';",
+       quoted_report_id);
+
+  /* Delete the hosts and OSs identified by this report if they were only
+   * identified by this report. */
+
+  sql ("DELETE FROM host_details"
+       " WHERE NOT EXISTS (SELECT * FROM host_identifiers"
+       "                   WHERE host = host_details.host"
+       "                   AND source_id != '%s')"
+       " AND NOT EXISTS (SELECT * FROM host_oss"
+       "                 WHERE host = host_details.host"
+       "                 AND source_id != '%s');",
+      quoted_report_id,
+      quoted_report_id);
+
+  sql ("DELETE FROM host_max_severities"
+       " WHERE NOT EXISTS (SELECT * FROM host_identifiers"
+       "                   WHERE host = host_max_severities.host"
+       "                   AND source_id != '%s')"
+       " AND NOT EXISTS (SELECT * FROM host_oss"
+       "                 WHERE host = host_max_severities.host"
+       "                 AND source_id != '%s');",
+      quoted_report_id,
+      quoted_report_id);
+
+  sql ("DELETE FROM hosts"
+       " WHERE NOT EXISTS (SELECT * FROM host_identifiers"
+       "                   WHERE host = hosts.id"
+       "                   AND source_id != '%s')"
+       " AND NOT EXISTS (SELECT * FROM host_oss"
+       "                 WHERE host = hosts.id"
+       "                 AND source_id != '%s');",
+      quoted_report_id,
+      quoted_report_id);
+
+  sql ("DELETE FROM oss"
+       " WHERE NOT EXISTS (SELECT * FROM host_oss"
+       "                   WHERE os = oss.id"
+       "                   AND source_id != '%s');",
+       quoted_report_id);
+
+  g_free (quoted_report_id);
+
+  sql ("COMMIT;");
+  return 0;
+}
+
+/**
  * @brief Delete an asset.
  *
  * @param[in]  asset_id   UUID of asset.
+ * @param[in]  report_id  UUID of report from which to delete assets.
+ *                        Overridden by asset_id.
  * @param[in]  dummy      Dummy arg to match other delete functions.
  *
- * @return 0 success, 1 asset is in use, 2 failed to find asset, 99 permission
- *         denied, -1 error.
+ * @return 0 success, 1 asset is in use, 2 failed to find asset, 4 UUID
+ *         required, 99 permission denied, -1 error.
  */
 int
-delete_asset (const char *asset_id, int dummy)
+delete_asset (const char *asset_id, const char *report_id, int dummy)
 {
   resource_t asset, parent;
   gchar *quoted_asset_id, *parent_id;
@@ -52167,6 +52254,16 @@ delete_asset (const char *asset_id, int dummy)
     {
       sql ("ROLLBACK;");
       return 99;
+    }
+
+  if (asset_id == NULL)
+    {
+      if (report_id == NULL)
+        {
+          sql ("ROLLBACK;");
+          return 3;
+        }
+      return delete_report_assets (report_id);
     }
 
   /* Host identifier. */

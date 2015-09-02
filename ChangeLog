@@ -1,5 +1,21 @@
 2015-09-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add report_id param to DELETE_ASSET, for deleting all assets that came
+	from a report.
+
+	* src/manage_sql.c (delete_report_assets): New function.
+	(delete_asset): Add report_id arg.
+
+	* src/manage.h: Adjust header accordingly.
+
+	* src/omp.c (delete_asset_data_t, delete_asset_data_reset): Add
+	report_id.
+	(omp_xml_handle_start_element): Parse report_id.
+	(omp_xml_handle_end_element): Do DELETE_ASSET manually, in order to pass
+	report_id to delete_asset.
+
+2015-09-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add DELETE_ASSET, for deleting asset identifiers.  Hence increase
 	database version to 151.  Add database migration from version 150 to
 	151.

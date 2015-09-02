@@ -2116,7 +2116,7 @@ const char*
 host_detail_iterator_source_id (iterator_t *);
 
 int
-delete_asset (const char *, int);
+delete_asset (const char *, const char *, int);
 
 
 /* Notes. */
