@@ -1,3 +1,30 @@
+2015-09-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add DELETE_ASSET, for deleting asset identifiers.  Hence increase
+	database version to 151.  Add database migration from version 150 to
+	151.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 151.
+
+	* src/manage_migrators.c (INSERT_PERMISSION): New define.
+	(migrate_150_to_151): New function.
+	(database_migrators): Add migrate_150_to_151.
+
+	* src/manage_sql.c (omp_commands): Add DELETE_ASSET and GET_ASSETS.
+	(find_host_with_permission): New function.
+	(delete_asset): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (delete_asset_data_t): New type.
+	(delete_asset_data_reset): New function.
+	(command_data_t, client_state_t): Add delete_asset.
+	(delete_asset_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add
+	DELETE_ASSET.
+
+	* doc/db.png: Update for version change.
+
 2015-08-31  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Add params ignore_pagination and schedules_only for OMP GET_TASKS.

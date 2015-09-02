@@ -140,7 +140,7 @@ include (CPack)
 
 ## Variables
 
-set (OPENVASMD_DATABASE_VERSION 150)
+set (OPENVASMD_DATABASE_VERSION 151)
 
 set (OPENVASMD_SCAP_DATABASE_VERSION 15)
 
@@ -295,7 +295,8 @@ configure_file (tools/openvas-migrate-to-postgres.in tools/openvas-migrate-to-po
 
 ## Program
 
-set (HARDENING_FLAGS            "-Wformat -Wformat-security -O2 -D_FORTIFY_SOURCE=2 -fstack-protector -Wl,-z,relro -Wl,-z,now")
+#set (HARDENING_FLAGS            "-Wformat -Wformat-security -O2 -D_FORTIFY_SOURCE=2 -fstack-protector -Wl,-z,relro -Wl,-z,now")
+set (HARDENING_FLAGS            "-Wformat -Wformat-security -O0 -D_FORTIFY_SOURCE=2 -fstack-protector -Wl,-z,relro -Wl,-z,now")
 
 set (CMAKE_C_FLAGS_DEBUG        "${CMAKE_C_FLAGS_DEBUG} -Werror")
 set (CMAKE_C_FLAGS              "${CMAKE_C_FLAGS} ${HARDENING_FLAGS} -Wall -D_BSD_SOURCE -D_ISOC99_SOURCE -D_SVID_SOURCE -D_DEFAULT_SOURCE -D_FILE_OFFSET_BITS=64")

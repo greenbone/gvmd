@@ -10155,6 +10155,18 @@ migrate_148_to_149 ()
   return 0;
 }
 
+#define INSERT_PERMISSION(name, role)                                          \
+  sql ("INSERT INTO permissions"                                               \
+       " (uuid, owner, name, comment, resource_type, resource, resource_uuid," \
+       "  resource_location, subject_type, subject, subject_location,"         \
+       "  creation_time, modification_time)"                                   \
+       " VALUES"                                                               \
+       " (make_uuid (), NULL, '" G_STRINGIFY (name) "', '', '',"               \
+       "  0, '', " G_STRINGIFY (LOCATION_TABLE) ", 'role',"                    \
+       "  (SELECT id FROM roles WHERE uuid = '%s'),"                           \
+       "  " G_STRINGIFY (LOCATION_TABLE) ", m_now (), m_now ());",             \
+       role)
+
 /**
  * @brief Migrate the database from version 149 to version 150.
  *
@@ -10181,6 +10193,46 @@ migrate_149_to_150 ()
   /* Set the database version to 150. */
 
   set_db_version (150);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 150 to version 151.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_150_to_151 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 150. */
+
+  if (manage_db_version () != 150)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Commands GET_ASSETS and DELETE_ASSET were added. */
+
+  INSERT_PERMISSION (get_assets, ROLE_UUID_ADMIN);
+  INSERT_PERMISSION (get_assets, ROLE_UUID_OBSERVER);
+  INSERT_PERMISSION (get_assets, ROLE_UUID_SUPER_ADMIN);
+  INSERT_PERMISSION (get_assets, ROLE_UUID_USER);
+
+  INSERT_PERMISSION (delete_asset, ROLE_UUID_ADMIN);
+  INSERT_PERMISSION (delete_asset, ROLE_UUID_SUPER_ADMIN);
+  INSERT_PERMISSION (delete_asset, ROLE_UUID_USER);
+
+  /* Set the database version to 151. */
+
+  set_db_version (151);
 
   sql ("COMMIT;");
 
@@ -10348,6 +10400,7 @@ static migrator_t database_migrators[]
     {148, migrate_147_to_148},
     {149, migrate_148_to_149},
     {150, migrate_149_to_150},
+    {151, migrate_150_to_151},
     /* End marker. */
     {-1, NULL}};
 

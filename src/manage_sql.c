@@ -332,6 +332,7 @@ command_t omp_commands[]
     {"CREATE_USER", "Create a new user."},
     {"DELETE_AGENT", "Delete an agent."},
     {"DELETE_ALERT", "Delete an alert."},
+    {"DELETE_ASSET", "Delete an asset."},
     {"DELETE_CONFIG", "Delete a config."},
     {"DELETE_FILTER", "Delete a filter."},
     {"DELETE_GROUP", "Delete a group."},
@@ -359,6 +360,7 @@ command_t omp_commands[]
     {"GET_AGENTS", "Get all agents."},
     {"GET_AGGREGATES", "Get aggregates of resources."},
     {"GET_ALERTS", "Get all alerts."},
+    {"GET_ASSETS", "Get all assets."},
     {"GET_CONFIGS", "Get all configs."},
     {"GET_FILTERS", "Get all filters."},
     {"GET_GROUPS", "Get all groups."},
@@ -52125,6 +52127,147 @@ DEF_ACCESS (host_detail_iterator_source_type, 3);
  *         complete.  Freed by cleanup_iterator.
  */
 DEF_ACCESS (host_detail_iterator_source_id, 4);
+
+/**
+ * @brief Find a host for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of host.
+ * @param[out]  host      Host return, 0 if succesfully failed to find host.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find host), TRUE on error.
+ */
+gboolean
+find_host_with_permission (const char* uuid, host_t* host,
+                           const char *permission)
+{
+  return find_resource_with_permission ("host", uuid, host, permission, 0);
+}
+
+/**
+ * @brief Delete an asset.
+ *
+ * @param[in]  asset_id   UUID of asset.
+ * @param[in]  dummy      Dummy arg to match other delete functions.
+ *
+ * @return 0 success, 1 asset is in use, 2 failed to find asset, 99 permission
+ *         denied, -1 error.
+ */
+int
+delete_asset (const char *asset_id, int dummy)
+{
+  resource_t asset, parent;
+  gchar *quoted_asset_id, *parent_id;
+
+  asset = parent = 0;
+
+  sql_begin_immediate ();
+
+  if (acl_user_may ("delete_asset") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
+
+  /* Host identifier. */
+
+  quoted_asset_id = sql_quote (asset_id);
+  switch (sql_int64 (&asset,
+                     "SELECT id FROM host_identifiers WHERE uuid = '%s';",
+                     quoted_asset_id))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        asset = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_asset_id);
+        sql ("ROLLBACK;");
+        return -1;
+        break;
+    }
+
+  g_free (quoted_asset_id);
+
+  if (asset)
+    {
+      parent_id = sql_string ("SELECT uuid FROM hosts"
+                              " WHERE id = (SELECT host FROM host_identifiers"
+                              "             WHERE id = %llu);",
+                              asset);
+      parent = 0;
+      if (find_host_with_permission (parent_id, &parent, "delete_asset"))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+
+      if (parent == 0)
+        {
+          sql ("ROLLBACK;");
+          return 99;
+        }
+
+      sql ("DELETE FROM host_identifiers WHERE id = %llu;", asset);
+      sql ("COMMIT;");
+
+      return 0;
+    }
+
+  /* Host OS. */
+
+  quoted_asset_id = sql_quote (asset_id);
+  switch (sql_int64 (&asset,
+                     "SELECT id FROM host_oss WHERE uuid = '%s';",
+                     quoted_asset_id))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        asset = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_asset_id);
+        sql ("ROLLBACK;");
+        return -1;
+        break;
+    }
+
+  g_free (quoted_asset_id);
+
+  if (asset)
+    {
+      parent_id = sql_string ("SELECT uuid FROM hosts"
+                              " WHERE id = (SELECT host FROM host_oss"
+                              "             WHERE id = %llu);",
+                              asset);
+      parent = 0;
+      if (find_host_with_permission (parent_id, &parent, "delete_asset"))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+
+      if (parent == 0)
+        {
+          sql ("ROLLBACK;");
+          return 99;
+        }
+
+      sql ("DELETE FROM host_oss WHERE id = %llu;", asset);
+      sql ("COMMIT;");
+
+      return 0;
+    }
+
+  sql ("ROLLBACK;");
+  return 2;
+}
 
 
 /* Settings. */

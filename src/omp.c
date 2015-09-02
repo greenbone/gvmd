@@ -1800,6 +1800,28 @@ delete_agent_data_reset (delete_agent_data_t *data)
 }
 
 /**
+ * @brief Command data for the delete_asset command.
+ */
+typedef struct
+{
+  char *asset_id;   ///< ID of asset to delete.
+  int ultimate;     ///< Dummy field for generic macros.
+} delete_asset_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+delete_asset_data_reset (delete_asset_data_t *data)
+{
+  free (data->asset_id);
+
+  memset (data, 0, sizeof (delete_asset_data_t));
+}
+
+/**
  * @brief Command data for the delete_config command.
  */
 typedef struct
@@ -4129,6 +4151,7 @@ typedef union
   create_task_data_t create_task;                     ///< create_task
   create_user_data_t create_user;                     ///< create_user
   delete_agent_data_t delete_agent;                   ///< delete_agent
+  delete_asset_data_t delete_asset;                   ///< delete_asset
   delete_config_data_t delete_config;                 ///< delete_config
   delete_alert_data_t delete_alert;                   ///< delete_alert
   delete_filter_data_t delete_filter;                 ///< delete_filter
@@ -4358,6 +4381,12 @@ create_user_data_t *create_user_data
  */
 delete_agent_data_t *delete_agent_data
  = (delete_agent_data_t*) &(command_data.delete_agent);
+
+/**
+ * @brief Parser callback data for DELETE_ASSET.
+ */
+delete_asset_data_t *delete_asset_data
+ = (delete_asset_data_t*) &(command_data.delete_asset);
 
 /**
  * @brief Parser callback data for DELETE_CONFIG.
@@ -5226,6 +5255,7 @@ typedef enum
   CLIENT_CREATE_USER_SOURCES_SOURCE,
   CLIENT_DELETE_AGENT,
   CLIENT_DELETE_ALERT,
+  CLIENT_DELETE_ASSET,
   CLIENT_DELETE_CONFIG,
   CLIENT_DELETE_FILTER,
   CLIENT_DELETE_GROUP,
@@ -6596,6 +6626,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             else
               delete_agent_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_AGENT);
+          }
+        else if (strcasecmp ("DELETE_ASSET", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "asset_id",
+                              &delete_asset_data->asset_id);
+            set_client_state (CLIENT_DELETE_ASSET);
           }
         else if (strcasecmp ("DELETE_CONFIG", element_name) == 0)
           {
@@ -12985,6 +13021,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       CASE_DELETE (AGENT, agent, "Agent");
       CASE_DELETE (ALERT, alert, "Alert");
+      CASE_DELETE (ASSET, asset, "Asset");
       CASE_DELETE (CONFIG, config, "Config");
       CASE_DELETE (FILTER, filter, "Filter");
       CASE_DELETE (GROUP, group, "Group");

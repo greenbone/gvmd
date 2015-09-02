@@ -2115,6 +2115,9 @@ host_detail_iterator_source_type (iterator_t *);
 const char*
 host_detail_iterator_source_id (iterator_t *);
 
+int
+delete_asset (const char *, int);
+
 
 /* Notes. */
 
