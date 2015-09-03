@@ -1,5 +1,18 @@
 2015-09-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Increase database version to 152 for new command CREATE_ASSET.  Add
+	database migration from version 151 to 152.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 152.
+
+	* src/manage_migrators.c (INSERT_PERMISSION): New define.
+	(migrate_151_to_152): New function.
+	(database_migrators): Add migrate_151_to_152.
+
+	* doc/db.png: Update for version change.
+
+2015-09-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add OMP CREATE_ASSET, for adding all assets from a report to the assets.
 
 	* src/omp.c (create_asset_data_t): New type.

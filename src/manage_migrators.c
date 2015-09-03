@@ -10239,6 +10239,41 @@ migrate_150_to_151 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 151 to version 152.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_151_to_152 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 151. */
+
+  if (manage_db_version () != 151)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Command CREATE_ASSET was added. */
+
+  INSERT_PERMISSION (create_asset, ROLE_UUID_ADMIN);
+  INSERT_PERMISSION (create_asset, ROLE_UUID_SUPER_ADMIN);
+  INSERT_PERMISSION (create_asset, ROLE_UUID_USER);
+
+  /* Set the database version to 152. */
+
+  set_db_version (152);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
 #ifdef SQL_IS_SQLITE
 #define SQLITE_OR_NULL(function) function
 #else
@@ -10401,6 +10436,7 @@ static migrator_t database_migrators[]
     {149, migrate_148_to_149},
     {150, migrate_149_to_150},
     {151, migrate_150_to_151},
+    {152, migrate_151_to_152},
     /* End marker. */
     {-1, NULL}};
 
