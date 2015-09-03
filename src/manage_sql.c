@@ -311,6 +311,7 @@ command_t omp_commands[]
     {"COMMANDS",     "Run a list of commands."},
     {"CREATE_AGENT", "Create an agent."},
     {"CREATE_ALERT", "Create an alert."},
+    {"CREATE_ASSET", "Create an asset."},
     {"CREATE_CONFIG", "Create a config."},
     {"CREATE_FILTER", "Create a filter."},
     {"CREATE_GROUP", "Create a group."},
@@ -15394,20 +15395,23 @@ host_identify (const char *host_name, const char *identifier_name,
  * @param[in]  identifier_value  Value of host identifier.
  * @param[in]  source_type       Type of source identifier
  * @param[in]  source_id         Source identifier.
+ * @param[in]  check_add_to_assets  Whether to check the 'Add to Assets'
+ *                                  task preference.
  *
  * @return Host if existed, else 0.
  */
 host_t
 host_notice (const char *host_name, const char *identifier_type,
              const char *identifier_value, const char *source_type,
-             const char *source_id)
+             const char *source_id, int check_add_to_assets)
 {
   host_t host;
   gchar *quoted_identifier_value, *quoted_identifier_type, *quoted_source_type;
   gchar *quoted_source_id;
 
   /* Only add to assets if "Add to Assets" is set on the task. */
-  if (g_str_has_prefix (source_type, "Report")
+  if (check_add_to_assets
+      && g_str_has_prefix (source_type, "Report")
       && sql_int ("SELECT value = 'no' FROM task_preferences"
                   " WHERE task = (SELECT task FROM reports WHERE uuid = '%s')"
                   " AND name = 'in_assets';",
@@ -52142,6 +52146,141 @@ find_host_with_permission (const char* uuid, host_t* host,
                            const char *permission)
 {
   return find_resource_with_permission ("host", uuid, host, permission, 0);
+}
+
+/**
+ * @brief Check whether a string is an identifier name.
+ *
+ * @param[in]  name  Possible identifier name.
+ *
+ * @return 1 if an identifier name, else 0.
+ */
+static int
+identifier_name (const char *name)
+{
+  return (strcmp ("hostname", name) == 0)
+         || (strcmp ("MAC", name) == 0)
+         || (strcmp ("DNS-via-TargetDefinition", name) == 0)
+         || (strcmp ("OS", name) == 0);
+}
+
+/**
+ * @brief Create an asset entry.
+ *
+ * @param[in]  name           Name of asset.  Must be at least one character long.
+ * @param[in]  comment        Comment on asset.
+ * @param[in]  installer_64   Installer, in base64.
+ * @param[in]  installer_filename   Installer filename.
+ * @param[in]  installer_signature_64   Installer signature, in base64.
+ * @param[in]  howto_install  Install HOWTO, in base64.
+ * @param[in]  howto_use      Usage HOWTO, in base64.
+ * @param[out] asset          Created asset.
+ *
+ * @return 0 success, 1 failed to find report, 99 permission denied, -1 error.
+ */
+int
+create_asset (const char *report_id)
+{
+  resource_t report;
+  iterator_t hosts;
+
+  if (report_id == NULL)
+    return -1;
+
+  /* Check that the name is unique. */
+
+  sql_begin_immediate ();
+
+  if (acl_user_may ("create_asset") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
+
+  report = 0;
+  if (find_report_with_permission (report_id, &report, "get_reports"))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (report == 0)
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
+
+  /* These are freed by hosts_set_identifiers. */
+  if (identifiers == NULL)
+    identifiers = make_array ();
+  if (identifier_hosts == NULL)
+    identifier_hosts = make_array ();
+
+  init_report_host_iterator (&hosts, report, NULL, 0);
+  while (next (&hosts))
+    {
+      const char *host;
+      report_host_t report_host;
+      iterator_t details;
+      gchar *quoted_report_id;
+
+      host = host_iterator_host (&hosts);
+      host_notice (host, "ip", host, "Report Host", report_id, 0);
+
+      report_host = host_iterator_report_host (&hosts);
+
+      quoted_report_id = sql_quote (report_id);
+      sql ("DELETE FROM host_identifiers WHERE source_id = '%s';",
+           quoted_report_id);
+      sql ("DELETE FROM host_oss WHERE source_id = '%s';",
+           quoted_report_id);
+      sql ("DELETE FROM host_max_severities WHERE source_id = '%s';",
+           quoted_report_id);
+      sql ("DELETE FROM host_details WHERE source_id = '%s';",
+           quoted_report_id);
+      g_free (quoted_report_id);
+
+      init_report_host_details_iterator (&details, report_host);
+      while (next (&details))
+        {
+          const char *name;
+
+          name = report_host_details_iterator_name (&details);
+
+          if (identifier_name (name))
+            {
+              const char *value;
+              identifier_t *identifier;
+
+              value = report_host_details_iterator_value (&details);
+
+              if ((strcmp (name, "OS") == 0)
+                  && (g_str_has_prefix (value, "cpe:/o:") == 0))
+                continue;
+
+              identifier = g_malloc (sizeof (identifier_t));
+              identifier->ip = g_strdup (host);
+              identifier->name = g_strdup (name);
+              identifier->value = g_strdup (value);
+              identifier->source_id = g_strdup (report_id);
+              identifier->source_type = g_strdup ("Report Host Detail");
+              identifier->source_data
+               = g_strdup (report_host_details_iterator_source_name (&details));
+
+              array_add (identifiers, identifier);
+              array_add_new_string (identifier_hosts, g_strdup (host));
+            }
+        }
+      cleanup_iterator (&details);
+    }
+  cleanup_iterator (&hosts);
+  hosts_set_identifiers ();
+  hosts_set_max_severity (report);
+  hosts_set_details (report);
+
+  sql ("COMMIT;");
+
+  return 0;
 }
 
 /**

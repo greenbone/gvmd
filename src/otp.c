@@ -1480,7 +1480,7 @@ process_otp_scanner_input (void (*progress) ())
 
                       uuid = report_uuid (current_report);
                       host_notice (current_host, "ip", current_host,
-                                   "Report Host", uuid);
+                                   "Report Host", uuid, 1);
                       free (uuid);
 
                       set_scan_host_start_time_otp (current_report,

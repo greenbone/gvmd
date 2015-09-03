@@ -1,3 +1,22 @@
+2015-09-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add OMP CREATE_ASSET, for adding all assets from a report to the assets.
+
+	* src/omp.c (create_asset_data_t): New type.
+	(create_asset_data_reset): New function.
+	(command_data_t, client_state_t): Add create_asset.
+	(create_asset_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add
+	CREATE_ASSET.
+
+	* src/manage_sql.c (omp_command): Add CREATE_ASSET.
+	(host_notice): Add check_add_to_assets flag.
+	(identifier_name, create_asset): New functions.
+
+	* src/manage.h: Adjust headers accordingly.
+
+	* src/otp.c (process_otp_scanner_input): Adjust host_notice call.
+
 2015-09-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add report_id param to DELETE_ASSET, for deleting all assets that came

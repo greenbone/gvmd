@@ -2035,7 +2035,7 @@ agent_iterator_howto_use (iterator_t*);
 
 host_t
 host_notice (const char *, const char *, const char *, const char *,
-             const char *);
+             const char *, int);
 
 void
 init_host_identifier_iterator (iterator_t*, host_t, int, const char*);
@@ -2117,6 +2117,9 @@ host_detail_iterator_source_id (iterator_t *);
 
 int
 delete_asset (const char *, const char *, int);
+
+int
+create_asset (const char *);
 
 
 /* Notes. */
