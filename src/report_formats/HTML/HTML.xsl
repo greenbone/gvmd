@@ -1093,7 +1093,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
     <h2>Host Summary</h2>
 
-    <table>
+    <table width="100%">
       <tr style="background-color: #d5d5d5;">
         <td>Host</td>
         <td>Start</td>
@@ -1240,7 +1240,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <xsl:otherwise>
           <h3>Port Summary for Host <xsl:value-of select="$current_host" /></h3>
 
-          <table>
+          <table width="100%">
             <tr style="background-color: #d5d5d5;">
               <td>Service (Port)</td>
               <td>Threat Level</td>
@@ -1282,17 +1282,11 @@ pre {
         </style>
       </head>
       <body style="background-color: #FFFFFF; margin: 0px; font: small Verdana, sans-serif; font-size: 12px; color: #1A1A1A;">
-        <div style="width: 98%; width:700px; align: center; margin-left: auto; margin-right: auto;">
-          <table style="width: 100%;" cellpadding="3" cellspacing="0">
-            <tr>
-              <td valign="top">
+        <div style="width: 98%; align: center; margin-left: auto; margin-right: auto;">
                 <xsl:apply-templates/>
                 <div style="text-align: center;">
                   This file was automatically generated.
                 </div>
-              </td>
-            </tr>
-          </table>
         </div>
       </body>
     </html>

@@ -1,5 +1,10 @@
 2015-09-04  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	* src/report_formats/HTML/HTML.xsl: Removed surrounding unneeded
+	<table> and changed width of all tables to 100%.
+
+2015-09-04  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	* src/report_formats/HTML/HTML.xsl (wrap, wrap-line): Removed
 	and removed any use of it.
 	(/): Added style section with style for <pre> to wrap content.
