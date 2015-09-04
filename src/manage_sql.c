@@ -52314,6 +52314,32 @@ delete_report_assets (const char *report_id)
 
   quoted_report_id = sql_quote (report_id);
 
+  /* Delete the hosts and OSs identified by this report if they were only
+   * identified by this report. */
+
+  sql ("CREATE TEMPORARY TABLE delete_report_assets_hosts (host INTEGER);");
+
+  /* Collect hosts that were only identified by the given source. */
+  sql ("INSERT into delete_report_assets_hosts"
+       " (host)"
+       " SELECT id FROM hosts"
+       " WHERE (EXISTS (SELECT * FROM host_identifiers"
+       "                WHERE host = hosts.id"
+       "                AND source_id = '%s')"
+       "        OR EXISTS (SELECT * FROM host_oss"
+       "                   WHERE host = hosts.id"
+       "                   AND source_id = '%s'))"
+       " AND NOT EXISTS (SELECT * FROM host_identifiers"
+       "                 WHERE host = hosts.id"
+       "                 AND source_id != '%s')"
+       " AND NOT EXISTS (SELECT * FROM host_oss"
+       "                 WHERE host = hosts.id"
+       "                 AND source_id != '%s');",
+      quoted_report_id,
+      quoted_report_id,
+      quoted_report_id,
+      quoted_report_id);
+
   sql ("DELETE FROM host_identifiers WHERE source_id = '%s';",
        quoted_report_id);
   sql ("DELETE FROM host_oss WHERE source_id = '%s';",
@@ -52323,46 +52349,21 @@ delete_report_assets (const char *report_id)
   sql ("DELETE FROM host_details WHERE source_id = '%s';",
        quoted_report_id);
 
-  /* Delete the hosts and OSs identified by this report if they were only
-   * identified by this report. */
+  g_free (quoted_report_id);
 
+  /* The host may have details from sources that did not identify the host. */
   sql ("DELETE FROM host_details"
-       " WHERE NOT EXISTS (SELECT * FROM host_identifiers"
-       "                   WHERE host = host_details.host"
-       "                   AND source_id != '%s')"
-       " AND NOT EXISTS (SELECT * FROM host_oss"
-       "                 WHERE host = host_details.host"
-       "                 AND source_id != '%s');",
-      quoted_report_id,
-      quoted_report_id);
+       " WHERE host in (SELECT host FROM delete_report_assets_hosts);");
 
+  /* The host may have severities from sources that did not identify the
+   * host. */
   sql ("DELETE FROM host_max_severities"
-       " WHERE NOT EXISTS (SELECT * FROM host_identifiers"
-       "                   WHERE host = host_max_severities.host"
-       "                   AND source_id != '%s')"
-       " AND NOT EXISTS (SELECT * FROM host_oss"
-       "                 WHERE host = host_max_severities.host"
-       "                 AND source_id != '%s');",
-      quoted_report_id,
-      quoted_report_id);
+       " WHERE host in (SELECT host FROM delete_report_assets_hosts);");
 
   sql ("DELETE FROM hosts"
-       " WHERE NOT EXISTS (SELECT * FROM host_identifiers"
-       "                   WHERE host = hosts.id"
-       "                   AND source_id != '%s')"
-       " AND NOT EXISTS (SELECT * FROM host_oss"
-       "                 WHERE host = hosts.id"
-       "                 AND source_id != '%s');",
-      quoted_report_id,
-      quoted_report_id);
+       " WHERE id in (SELECT host FROM delete_report_assets_hosts);");
 
-  sql ("DELETE FROM oss"
-       " WHERE NOT EXISTS (SELECT * FROM host_oss"
-       "                   WHERE os = oss.id"
-       "                   AND source_id != '%s');",
-       quoted_report_id);
-
-  g_free (quoted_report_id);
+  sql ("DROP TABLE delete_report_assets_hosts;");
 
   sql ("COMMIT;");
   return 0;
