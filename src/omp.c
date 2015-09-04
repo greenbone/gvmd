@@ -3933,6 +3933,29 @@ modify_user_data_reset (modify_user_data_t * data)
 }
 
 /**
+ * @brief Command data for the move_task command.
+ */
+typedef struct
+{
+  gchar *task_id;   ///< ID of the task to move.
+  gchar *slave_id;  ///< ID of the slave to move to.
+} move_task_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+move_task_data_reset (move_task_data_t *data)
+{
+  g_free (data->task_id);
+  g_free (data->slave_id);
+
+  memset (data, 0, sizeof (move_task_data_t));
+}
+
+/**
  * @brief Command data for the restore command.
  */
 typedef struct
@@ -4244,6 +4267,7 @@ typedef union
   modify_target_data_t modify_target;                 ///< modify_target
   modify_task_data_t modify_task;                     ///< modify_task
   modify_user_data_t modify_user;                     ///< modify_user
+  move_task_data_t move_task;                         ///< move_task
   restore_data_t restore;                             ///< restore
   resume_task_data_t resume_task;                     ///< resume_task
   start_task_data_t start_task;                       ///< start_task
@@ -4852,6 +4876,11 @@ modify_task_data_t *modify_task_data
  * @brief Parser callback data for MODIFY_USER.
  */
 modify_user_data_t *modify_user_data = &(command_data.modify_user);
+
+/**
+ * @brief Parser callback data for MOVE_TASK.
+ */
+move_task_data_t *move_task_data = &(command_data.move_task);
 
 /**
  * @brief Parser callback data for RESTORE.
@@ -5520,6 +5549,7 @@ typedef enum
   CLIENT_MODIFY_USER_ROLE,
   CLIENT_MODIFY_USER_SOURCES,
   CLIENT_MODIFY_USER_SOURCES_SOURCE,
+  CLIENT_MOVE_TASK,
   CLIENT_RESTORE,
   CLIENT_RESUME_TASK,
   CLIENT_RUN_WIZARD,
@@ -7782,6 +7812,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "user_id",
                               &modify_user_data->user_id);
             set_client_state (CLIENT_MODIFY_USER);
+          }
+        else if (strcasecmp ("MOVE_TASK", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "task_id",
+                              &move_task_data->task_id);
+            append_attribute (attribute_names, attribute_values, "slave_id",
+                              &move_task_data->slave_id);
+            set_client_state (CLIENT_MOVE_TASK);
           }
         else if (strcasecmp ("RESTORE", element_name) == 0)
           {
@@ -26684,6 +26722,97 @@ create_task_fail:
         g_free (modify_user_data->current_source);
         modify_user_data->current_source = NULL;
         set_client_state (CLIENT_MODIFY_USER_SOURCES);
+        break;
+
+      case CLIENT_MOVE_TASK:
+        if (move_task_data->task_id == NULL
+            || strcmp (move_task_data->task_id, "") == 0)
+          {
+            SEND_TO_CLIENT_OR_FAIL
+              (XML_ERROR_SYNTAX ("move_task",
+                                 "MOVE_TASK requires a non-empty task_id"
+                                 " attribute"));
+            break;
+          }
+
+        if (move_task_data->slave_id == NULL)
+          {
+            SEND_TO_CLIENT_OR_FAIL
+              (XML_ERROR_SYNTAX ("move_task",
+                                 "MOVE_TASK requires a slave_id attribute"));
+            break;
+          }
+
+        switch (move_task (move_task_data->task_id,
+                           move_task_data->slave_id))
+          {
+            case 0:
+              SEND_TO_CLIENT_OR_FAIL (XML_OK ("move_task"));
+              break;
+            case 1:
+              /* Forked task process: success. */
+              forked = 1;
+              current_error = 2;
+              g_set_error (error,
+                            G_MARKUP_ERROR,
+                            G_MARKUP_ERROR_INVALID_CONTENT,
+                            "Dummy error for current_error");
+              break;
+            case 2:
+              if (send_find_error_to_client ("move_task",
+                                              "Task",
+                                              move_task_data->task_id,
+                                              omp_parser))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+              break;
+            case 3:
+              if (send_find_error_to_client ("move_task",
+                                              "Slave",
+                                              move_task_data->slave_id,
+                                              omp_parser))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+              break;
+            case 4:
+              SEND_TO_CLIENT_OR_FAIL
+                (XML_ERROR_SYNTAX ("move_task",
+                                   "Task must use an OpenVAS scanner to assign"
+                                   " a slave."));
+              break;
+            case 5:
+              SEND_TO_CLIENT_OR_FAIL
+                (XML_ERROR_SYNTAX ("move_task",
+                                   "Task cannot be stopped at the moment."));
+              break;
+            case 6:
+              SEND_TO_CLIENT_OR_FAIL
+                (XML_ERROR_SYNTAX ("move_task",
+                                   "Scanner does not allow stopping"
+                                   " the Task."));
+              break;
+            case 98:
+              SEND_TO_CLIENT_OR_FAIL
+                (XML_ERROR_SYNTAX ("move_task",
+                                   "Permission to stop and resume denied"));
+              break;
+            case 99:
+              SEND_TO_CLIENT_OR_FAIL
+                (XML_ERROR_SYNTAX ("move_task",
+                                   "Permission denied"));
+              break;
+            default: /* Programming error. */
+              SEND_TO_CLIENT_OR_FAIL
+                (XML_INTERNAL_ERROR ("move_task"));
+              assert (0);
+              break;
+          }
+          move_task_data_reset (move_task_data);
+          set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_TEST_ALERT:

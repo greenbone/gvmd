@@ -1,3 +1,24 @@
+2015-09-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add new OMP command MOVE_TASK to move a task to a new slave, even
+	when it is running.
+
+	* src/manage_sql.c (omp_commands): Add MOVE_TASK command.
+
+	* src/manage.c (move_task): New function.
+
+	* src/manage.h (move_task): New function prototype.
+
+	* src/omp.c (move_task_data_t, move_task_data_reset)
+	(command_data_t, move_task_data): Add new command data for "move_task".
+	(client_state_t): Add CLIENT_MOVE_TASK.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add case
+	for new MOVE_TASK command.
+
+	* src/schema_formats/XML/OMP.xml.in (move_task): New command.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
 2015-09-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_report_host_details, create_asset): Remove

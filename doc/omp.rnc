@@ -112,6 +112,7 @@ command
     | modify_tag
     | modify_task
     | modify_user
+    | move_task
     | restore
     | resume_task
     | run_wizard
@@ -228,6 +229,7 @@ response
     | modify_tag_response
     | modify_task_response
     | modify_user_response
+    | move_task_response
     | restore_response
     | resume_task_response
     | run_wizard_response
@@ -7033,6 +7035,21 @@ modify_user_role
 modify_user_sources
  = element sources    # type sources
      {
+     }
+
+## Command move_task
+##
+## 
+      Moves an existing task to another slave or the master
+    .
+
+move_task
+ = element move_task
+     {
+       # ID of task to reassign.
+       attribute task_id { uuid }
+       & # ID of slave to reassign to, empty for master.
+       attribute slave_id { uuid }
      }
 
 ## Command restore
@@ -17649,6 +17666,15 @@ modify_task_response
 
 modify_user_response
  = element modify_user_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to move_task
+
+move_task_response
+ = element move_task_response
      {
        attribute status { status }
        & attribute status_text { text }

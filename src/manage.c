@@ -4397,6 +4397,118 @@ resume_task (const char *task_id, char **report_id)
   return 22;
 }
 
+/**
+ * @brief Reassign a task to another slave.
+ *
+ * @param[in]  task_id    UUID of task.
+ * @param[in]  slave_id   UUID of slave.
+ * @param[out] forked     Whether the current process is a fork of the caller.
+ *
+ * @return 0 success, 1 success, process forked,
+ * 2 task not found, 3 slave not found, 4 slaves not supported by scanner,
+ * 5 task cannot be stopped currently, 6 scanner does not allow stopping,
+ * 98 stop and resume permission denied, 99 permission denied, -1 error.
+ */
+int
+move_task (const char *task_id, const char *slave_id)
+{
+  task_t task;
+  int task_scanner_type;
+  slave_t slave;
+  task_status_t status;
+  int should_resume_task = 0;
+
+  if (task_id == NULL)
+    return -1;
+  if (slave_id == NULL)
+    return -1;
+
+  if (acl_user_may ("modify_task") == 0)
+    return 99;
+
+  if (find_task_with_permission (task_id, &task, "get_tasks"))
+    return -1;
+  if (task == 0)
+    return 2;
+
+  if (slave_id && strcmp (slave_id, ""))
+    {
+      if (find_slave_with_permission (slave_id, &slave, "get_slaves"))
+        return -1;
+      if (slave == 0)
+        return 3;
+    }
+
+  task_scanner_type = scanner_type (task_scanner (task));
+  if (task_scanner_type != SCANNER_TYPE_OPENVAS)
+    return 4;
+
+  status = task_run_status (task);
+
+  switch (status)
+    {
+      case TASK_STATUS_DELETE_REQUESTED:
+      case TASK_STATUS_DELETE_ULTIMATE_REQUESTED:
+      case TASK_STATUS_DELETE_WAITING:
+      case TASK_STATUS_DELETE_ULTIMATE_WAITING:
+      case TASK_STATUS_REQUESTED:
+        // Task cannot be stopped now
+        return 5;
+        break;
+      case TASK_STATUS_RUNNING:
+        if (task_scanner_type == SCANNER_TYPE_CVE)
+          return 6;
+        // Check permissions to stop and resume task
+        if (acl_user_has_access_uuid ("task", task_id, "stop_task", 0)
+            && acl_user_has_access_uuid ("task", task_id, "resume_task", 0))
+          {
+            // Stop the task, wait and resume after changes
+            stop_task_internal (task);
+            should_resume_task = 1;
+
+            status = task_run_status (task);
+            while (status == TASK_STATUS_STOP_REQUESTED
+                   || status == TASK_STATUS_STOP_REQUESTED_GIVEUP
+                   || status == TASK_STATUS_STOP_WAITING)
+              {
+                sleep (5);
+                status = task_run_status (task);
+              }
+          }
+        else
+          return 98;
+        break;
+      case TASK_STATUS_STOP_REQUESTED:
+      case TASK_STATUS_STOP_REQUESTED_GIVEUP:
+      case TASK_STATUS_STOP_WAITING:
+        while (status == TASK_STATUS_STOP_REQUESTED
+                || status == TASK_STATUS_STOP_REQUESTED_GIVEUP
+                || status == TASK_STATUS_STOP_WAITING)
+          {
+            sleep (5);
+            status = task_run_status (task);
+          }
+        break;
+      default:
+        break;
+    }
+
+  sql ("UPDATE tasks SET slave = %llu WHERE id = %llu",
+       strcmp (slave_id, "") ? slave : 0, task);
+
+  if (should_resume_task)
+    {
+      pid_t pid = getpid ();
+
+      resume_task (task_id, NULL);
+
+      if (getpid () != pid)
+        return 1;
+    }
+
+  return 0;
+}
+
 
 /* OTP Scanner messaging. */
 

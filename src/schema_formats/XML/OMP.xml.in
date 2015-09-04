@@ -22267,6 +22267,59 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
+    <name>move_task</name>
+    <summary>
+      Moves an existing task to another slave or the master
+    </summary>
+    <description>
+      <p>
+        If a scan is running, this command will stop the task and resume it
+        after reassigning to the new slave or master.
+        Note that in this case, the command will wait until the task has been
+        requested to resume.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>task_id</name>
+        <summary>ID of task to reassign</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>slave_id</name>
+        <summary>ID of slave to reassign to, empty for master</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Move a task to a slave</summary>
+      <request>
+        <restore task_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"
+                 slave_id="97390ade-e075-11df-9973-002264764cea">
+        </restore>
+      </request>
+      <response>
+        <restore_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>restore</name>
     <summary>Restore a resource</summary>
     <description>

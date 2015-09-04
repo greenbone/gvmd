@@ -890,6 +890,9 @@ stop_task (const char *);
 int
 resume_task (const char *, char **);
 
+int
+move_task (const char*, const char*);
+
 /* Iteration. */
 
 void
