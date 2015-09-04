@@ -51621,7 +51621,7 @@ manage_report_host_details (report_t report, const char *ip, entity_t entity)
               array_add_new_string (identifier_hosts, g_strdup (ip));
             }
           if (strcmp (entity_text (name), "OS") == 0
-              && g_str_has_prefix (entity_text (value), "cpe:/o:"))
+              && g_str_has_prefix (entity_text (value), "cpe:"))
             {
               identifier_t *identifier;
 
@@ -52299,7 +52299,7 @@ create_asset (const char *report_id)
               value = report_host_details_iterator_value (&details);
 
               if ((strcmp (name, "OS") == 0)
-                  && (g_str_has_prefix (value, "cpe:/o:") == 0))
+                  && (g_str_has_prefix (value, "cpe:") == 0))
                 continue;
 
               identifier = g_malloc (sizeof (identifier_t));

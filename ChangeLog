@@ -1,5 +1,11 @@
 2015-09-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_report_host_details, create_asset): Remove
+	"/o:" part of CPE check, because at least one OS "cpe:/h:hp:jetdirect"
+	does not use an "o".
+
+2015-09-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add deleting of OS assets to DELETE_ASSET.
 
 	* src/omp.c (omp_xml_handle_end_element): Add writable and in_use values
