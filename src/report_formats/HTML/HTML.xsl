@@ -95,60 +95,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:for-each>
 </xsl:template>
 
-<!-- This is called within a PRE. -->
-<xsl:template name="wrap">
-  <xsl:param name="string"/>
-
-  <xsl:for-each select="str:tokenize($string, '&#10;')">
-    <xsl:call-template name="wrap-line">
-      <xsl:with-param name="string" select="."/>
-    </xsl:call-template>
-    <xsl:text>
-</xsl:text>
-  </xsl:for-each>
-</xsl:template>
-
-<!-- This is called within a PRE. -->
-<xsl:template name="wrap-line">
-  <xsl:param name="string"/>
-
-  <xsl:variable name="to-next-newline">
-    <xsl:value-of select="substring-before($string, '&#10;')"/>
-  </xsl:variable>
-
-  <xsl:choose>
-    <xsl:when test="string-length($string) = 0">
-      <!-- The string is empty. -->
-    </xsl:when>
-    <xsl:when test="(string-length($to-next-newline) = 0) and (substring($string, 1, 1) != '&#10;')">
-      <!-- A single line missing a newline, output up to the edge. -->
-<xsl:value-of select="substring($string, 1, 90)"/>
-      <xsl:if test="string-length($string) &gt; 90">&#8629;
-<xsl:call-template name="wrap-line">
-  <xsl:with-param name="string" select="substring($string, 91, string-length($string))"/>
-</xsl:call-template>
-      </xsl:if>
-    </xsl:when>
-    <xsl:when test="(string-length($to-next-newline) + 1 &lt; string-length($string)) and (string-length($to-next-newline) &lt; 90)">
-      <!-- There's a newline before the edge, so output the line. -->
-<xsl:value-of select="substring($string, 1, string-length($to-next-newline) + 1)"/>
-<xsl:call-template name="wrap-line">
-  <xsl:with-param name="string" select="substring($string, string-length($to-next-newline) + 2, string-length($string))"/>
-</xsl:call-template>
-    </xsl:when>
-    <xsl:otherwise>
-      <!-- Any newline comes after the edge, so output up to the edge. -->
-<xsl:value-of select="substring($string, 1, 90)"/>
-      <xsl:if test="string-length($string) &gt; 90">&#8629;
-<xsl:call-template name="wrap-line">
-  <xsl:with-param name="string" select="substring($string, 91, string-length($string))"/>
-</xsl:call-template>
-      </xsl:if>
-    </xsl:otherwise>
-  </xsl:choose>
-
-</xsl:template>
-
 <xsl:template name="highlight-diff">
   <xsl:param name="string"/>
 
@@ -300,9 +246,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px; background-color: #ffff90;">
           <b>Note</b><xsl:if test="$delta and $delta &gt; 0"> (Result <xsl:value-of select="$delta"/>)</xsl:if><br/>
           <pre>
-            <xsl:call-template name="wrap">
-              <xsl:with-param name="string" select="text"/>
-            </xsl:call-template>
+            <xsl:value-of select="text"/>
           </pre>
           <xsl:choose>
             <xsl:when test="string-length (end_time) &gt; 0">
@@ -345,9 +289,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </xsl:choose>
             to <xsl:value-of select="new_threat"/></b><xsl:if test="$delta and $delta &gt; 0"> (Result <xsl:value-of select="$delta"/>)</xsl:if><br/>
           <pre>
-            <xsl:call-template name="wrap">
-              <xsl:with-param name="string" select="text"/>
-            </xsl:call-template>
+            <xsl:value-of select="text"/>
           </pre>
           <xsl:choose>
             <xsl:when test="string-length (end_time) &gt; 0">
@@ -432,10 +374,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <td>CERT:</td>
         <td>
           <xsl:for-each select="$certlist/cert_ref">
-            <xsl:call-template name="wrap">
-              <xsl:with-param name="string" select="@id"/>
-              <xsl:with-param name="width" select="'55'"/>
-            </xsl:call-template>
+            <xsl:value-of select="@id"/>
             <xsl:if test="position() &lt; $certcount">
               <xsl:text>, </xsl:text>
             </xsl:if>
@@ -602,9 +541,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 </xsl:when>
                 <xsl:otherwise>
                   <pre>
-                    <xsl:call-template name="wrap">
-                      <xsl:with-param name="string"><xsl:value-of select="description"/></xsl:with-param>
-                    </xsl:call-template>
+                    <xsl:value-of select="description"/>
                   </pre>
                 </xsl:otherwise>
               </xsl:choose>
@@ -707,10 +644,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <tr>
                   <td>Product:</td>
                   <td>
-                    <xsl:call-template name="wrap">
-                      <xsl:with-param name="string" select="detection/result/details/detail[name = 'product']/value/text()"/>
-                      <xsl:with-param name="width" select="'55'"/>
-                    </xsl:call-template>
+                    <xsl:value-of select="detection/result/details/detail[name = 'product']/value/text()"/>
                   </td>
                 </tr>
                 <tr>
@@ -770,9 +704,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
                 <b>Result 2</b>
                 <pre>
-                  <xsl:call-template name="wrap">
-                    <xsl:with-param name="string" select="delta/result/description"/>
-                  </xsl:call-template>
+                  <xsl:value-of select="delta/result/description"/>
                 </pre>
               </div>
               <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
@@ -1342,6 +1274,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <head>
         <link rel="stylesheet" type="text/css" href="./style.css" />
         <title>Scan Report</title>
+        <style>
+pre {
+ white-space: pre-wrap;
+ word-wrap: break-word;
+}
+        </style>
       </head>
       <body style="background-color: #FFFFFF; margin: 0px; font: small Verdana, sans-serif; font-size: 12px; color: #1A1A1A;">
         <div style="width: 98%; width:700px; align: center; margin-left: auto; margin-right: auto;">

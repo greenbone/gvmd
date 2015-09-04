@@ -1,3 +1,9 @@
+2015-09-04  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/report_formats/HTML/HTML.xsl (wrap, wrap-line): Removed
+	and removed any use of it.
+	(/): Added style section with style for <pre> to wrap content.
+
 2015-09-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (delete_asset): Add host case.
