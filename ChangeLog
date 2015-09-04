@@ -1,3 +1,7 @@
+2015-09-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (delete_asset): Add host case.
+
 2015-09-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Add new OMP command MOVE_TASK to move a task to a new slave, even

@@ -52586,6 +52586,41 @@ delete_asset (const char *asset_id, const char *report_id, int dummy)
       return 0;
     }
 
+  /* Host. */
+
+  quoted_asset_id = sql_quote (asset_id);
+  switch (sql_int64 (&asset,
+                     "SELECT id FROM hosts WHERE uuid = '%s';",
+                     quoted_asset_id))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        asset = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_asset_id);
+        sql ("ROLLBACK;");
+        return -1;
+        break;
+    }
+
+  g_free (quoted_asset_id);
+
+  if (asset)
+    {
+      sql ("DELETE FROM host_identifiers WHERE host = %llu;", asset);
+      sql ("DELETE FROM host_oss WHERE host = %llu;", asset);
+      sql ("DELETE FROM host_max_severities WHERE host = %llu;", asset);
+      sql ("DELETE FROM host_details WHERE host = %llu;", asset);
+      sql ("DELETE FROM hosts WHERE id = %llu;", asset);
+      sql ("COMMIT;");
+
+      return 0;
+    }
+
   sql ("ROLLBACK;");
   return 2;
 }
