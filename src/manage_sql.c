@@ -51827,6 +51827,14 @@ DEF_ACCESS (host_identifier_iterator_os_title,
  {                                                        \
    GET_ITERATOR_COLUMNS (hosts),                          \
    {                                                      \
+     "0",                                                 \
+     "writable"                                           \
+   },                                                     \
+   {                                                      \
+     "0",                                                 \
+     "in_use"                                             \
+   },                                                     \
+   {                                                      \
      "(SELECT severity FROM host_max_severities"          \
      " WHERE host = hosts.id"                             \
      " ORDER by creation_time DESC"                       \
@@ -51866,6 +51874,34 @@ init_asset_host_iterator (iterator_t *iterator, const get_data_t *get)
 }
 
 /**
+ * @brief Get the writable status from an asset iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if writable, else 0.
+ */
+int
+asset_iterator_writable (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT);
+}
+
+/**
+ * @brief Get the "in use" status from an asset iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+asset_iterator_in_use (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 1);
+}
+
+/**
  * @brief Get the max severity from an asset host iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -51873,7 +51909,7 @@ init_asset_host_iterator (iterator_t *iterator, const get_data_t *get)
  * @return The maximum severity of the host, or NULL if iteration is
  *         complete. Freed by cleanup_iterator.
  */
-DEF_ACCESS (asset_host_iterator_severity, GET_ITERATOR_COLUMN_COUNT);
+DEF_ACCESS (asset_host_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 2);
 
 /**
  * @brief Count number of hosts.
@@ -51903,6 +51939,14 @@ asset_host_count (const get_data_t *get)
 #define OS_ITERATOR_COLUMNS                                                   \
  {                                                                            \
    GET_ITERATOR_COLUMNS (oss),                                                \
+   {                                                                          \
+     "0",                                                                     \
+     "writable"                                                               \
+   },                                                                         \
+   {                                                                          \
+     "(SELECT count (*) > 0 FROM host_oss WHERE os = oss.id)",                \
+     "in_use"                                                                 \
+   },                                                                         \
    {                                                                          \
      "(SELECT coalesce ((SELECT title FROM scap.cpes WHERE uuid = oss.name)," \
      "                  ''))",                                                \
@@ -52497,6 +52541,45 @@ delete_asset (const char *asset_id, const char *report_id, int dummy)
         }
 
       sql ("DELETE FROM host_oss WHERE id = %llu;", asset);
+      sql ("COMMIT;");
+
+      return 0;
+    }
+
+  /* OS. */
+
+  quoted_asset_id = sql_quote (asset_id);
+  switch (sql_int64 (&asset,
+                     "SELECT id FROM oss WHERE uuid = '%s';",
+                     quoted_asset_id))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        asset = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_asset_id);
+        sql ("ROLLBACK;");
+        return -1;
+        break;
+    }
+
+  g_free (quoted_asset_id);
+
+  if (asset)
+    {
+      if (sql_int ("SELECT count (*) FROM host_oss"
+                   " WHERE os = %llu;",
+                   asset))
+        {
+          sql ("ROLLBACK;");
+          return 1;
+        }
+
+      sql ("DELETE FROM oss WHERE id = %llu;", asset);
       sql ("COMMIT;");
 
       return 0;

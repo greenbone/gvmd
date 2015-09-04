@@ -1,5 +1,20 @@
 2015-09-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add deleting of OS assets to DELETE_ASSET.
+
+	* src/omp.c (omp_xml_handle_end_element): Add writable and in_use values
+	in CLIENT_GET_ASSETS.
+
+	* src/manage_sql.c (HOST_ITERATOR_COLUMNS, OS_ITERATOR_COLUMNS): Add
+	writable and in_use.
+	(asset_iterator_writable, asset_iterator_in_use): New functions.
+	(asset_host_iterator_severity): Adjust offset.
+	(delete_asset): Add OS case.
+
+	* src/manage.h: Add headers accordingly.
+
+2015-09-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (delete_report_assets): Use a temporary table to
 	store the hosts where only identified by the given source, because
 	there's no way to calculate these hosts after removing the identifiers.

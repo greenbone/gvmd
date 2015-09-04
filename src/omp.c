@@ -17938,7 +17938,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               /* Assets are currently always read only. */
               if (send_get_common ("asset", &get_assets_data->get, &assets,
-                                   write_to_client, write_to_client_data, 0, 0))
+                                   write_to_client, write_to_client_data,
+                                   asset_iterator_writable (&assets),
+                                   asset_iterator_in_use (&assets)))
                 {
                   error_send_to_client (error);
                   return;

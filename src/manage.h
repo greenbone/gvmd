@@ -2064,6 +2064,12 @@ host_identifier_iterator_os_title (iterator_t *);
 int
 init_asset_host_iterator (iterator_t *, const get_data_t *);
 
+int
+asset_iterator_writable (iterator_t *);
+
+int
+asset_iterator_in_use (iterator_t *);
+
 const char*
 asset_host_iterator_severity (iterator_t *);
 
