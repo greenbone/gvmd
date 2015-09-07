@@ -416,9 +416,7 @@ install (FILES src/report_formats/XML/generate
          PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 install (FILES src/report_formats/Verinice_ISM/Verinice_ISM.xsl
-               src/report_formats/Verinice_ISM/classification.csv
                src/report_formats/Verinice_ISM/classification.xsl
-               src/report_formats/Verinice_ISM/classification_generator.sh
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/c15ad349-bd8d-457a-880a-c7056532ee15/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
