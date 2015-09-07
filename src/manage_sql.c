@@ -52210,21 +52210,72 @@ identifier_name (const char *name)
 }
 
 /**
- * @brief Create an asset entry.
+ * @brief Create a host asset.
  *
- * @param[in]  name           Name of asset.  Must be at least one character long.
- * @param[in]  comment        Comment on asset.
- * @param[in]  installer_64   Installer, in base64.
- * @param[in]  installer_filename   Installer filename.
- * @param[in]  installer_signature_64   Installer signature, in base64.
- * @param[in]  howto_install  Install HOWTO, in base64.
- * @param[in]  howto_use      Usage HOWTO, in base64.
- * @param[out] asset          Created asset.
+ * @param[in]  host_id      Host UUID.
+ * @param[out] host_return  Created asset.
  *
  * @return 0 success, 1 failed to find report, 99 permission denied, -1 error.
  */
 int
-create_asset (const char *report_id)
+create_asset_host (const char *host_name, resource_t* host_return)
+{
+  resource_t host;
+  gchar *quoted_host_name;
+
+  assert (host);
+
+  if (host_name == NULL)
+    return -1;
+
+  sql_begin_immediate ();
+
+  if (acl_user_may ("create_asset") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
+
+  quoted_host_name = sql_quote (host_name);
+  sql ("INSERT into hosts"
+       " (uuid, owner, name, comment, creation_time, modification_time)"
+       " VALUES"
+       " (make_uuid (), (SELECT id FROM users WHERE uuid = '%s'), '%s', '',"
+       "  m_now (), m_now ());",
+       current_credentials.uuid,
+       quoted_host_name);
+  g_free (quoted_host_name);
+
+  host = sql_last_insert_id ();
+
+  sql ("INSERT into host_identifiers"
+       " (uuid, host, owner, name, comment, value, source_type, source_id,"
+       "  source_data, creation_time, modification_time)"
+       " VALUES"
+       " (make_uuid (), %llu, (SELECT id FROM users WHERE uuid = '%s'), 'ip',"
+       "  '', '%s', 'User', '%s', '', m_now (), m_now ());",
+       host,
+       current_credentials.uuid,
+       host_name,
+       current_credentials.uuid);
+
+  if (host_return)
+    *host_return = host;
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
+ * @brief Create all available assets from a report.
+ *
+ * @param[in]  report_id  UUID of report.
+ *
+ * @return 0 success, 1 failed to find report, 99 permission denied, -1 error.
+ */
+int
+create_asset_report (const char *report_id)
 {
   resource_t report;
   iterator_t hosts;

@@ -1,3 +1,20 @@
+2015-09-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add ASSET to CREATE_ASSET, for manually creating host assets.
+
+	* src/manage_sql.c (create_asset): Remove.  Now create_asset_report.
+	(create_asset_host): New function.
+	(create_asset_report): New function.  Was create_asset.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (create_asset_data_t, create_asset_data_reset): Add name and
+	type.
+	(client_state_t): Add CREATE_ASSET ASSET.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add CREATE_ASSET ASSET.  Also add TYPE to ASSET
+	in GET_ASSETS, so that it matches CREATE_ASSET.
+
 2015-09-07  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* CMakeLists.txt: Skip superfluous helper files when installing

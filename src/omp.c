@@ -850,7 +850,9 @@ create_agent_data_reset (create_agent_data_t *data)
  */
 typedef struct
 {
+  char *name;                  ///< Name of asset.
   char *report_id;             ///< Report UUID.
+  char *type;                  ///< Type of asset.
 } create_asset_data_t;
 
 /**
@@ -860,6 +862,8 @@ static void
 create_asset_data_reset (create_asset_data_t *data)
 {
   free (data->report_id);
+  free (data->type);
+  free (data->name);
 
   memset (data, 0, sizeof (create_asset_data_t));
 }
@@ -5028,6 +5032,9 @@ typedef enum
   CLIENT_CREATE_ALERT_NAME,
   CLIENT_CREATE_ASSET,
   CLIENT_CREATE_ASSET_REPORT,
+  CLIENT_CREATE_ASSET_ASSET,
+  CLIENT_CREATE_ASSET_ASSET_NAME,
+  CLIENT_CREATE_ASSET_ASSET_TYPE,
   CLIENT_CREATE_CONFIG,
   CLIENT_CREATE_CONFIG_COMMENT,
   CLIENT_CREATE_CONFIG_COPY,
@@ -8797,12 +8804,21 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         ELSE_ERROR ("create_agent");
 
       case CLIENT_CREATE_ASSET:
-        if (strcasecmp ("REPORT", element_name) == 0)
+        if (strcasecmp ("ASSET", element_name) == 0)
+          set_client_state (CLIENT_CREATE_ASSET_ASSET);
+        else if (strcasecmp ("REPORT", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
                               &create_asset_data->report_id);
             set_client_state (CLIENT_CREATE_ASSET_REPORT);
           }
+        ELSE_ERROR ("create_asset");
+
+      case CLIENT_CREATE_ASSET_ASSET:
+        if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_CREATE_ASSET_ASSET_NAME);
+        else if (strcasecmp ("TYPE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_ASSET_ASSET_TYPE);
         ELSE_ERROR ("create_asset");
 
       case CLIENT_CREATE_CONFIG:
@@ -18039,6 +18055,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   xml_string_append (result, "</identifiers>");
                 }
 
+              g_string_append_printf (result, "<type>%s</type>",
+                                      get_assets_data->type);
               g_string_append_printf (result, "<%s>", get_assets_data->type);
 
               if (g_strcmp0 ("os", get_assets_data->type) == 0)
@@ -19965,13 +19983,52 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_CREATE_ASSET:
         {
+          resource_t asset;
+
           assert (strcasecmp ("CREATE_ASSET", element_name) == 0);
 
-          if (create_asset_data->report_id == NULL)
+          if (create_asset_data->report_id == NULL
+              && create_asset_data->name == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_asset",
-                                "CREATE_ASSET requires a report_id attribute"));
-          else switch (create_asset (create_asset_data->report_id))
+                                "CREATE_ASSET requires a report ID or host"
+                                " name"));
+          else if (create_asset_data->report_id)
+            switch (create_asset_report (create_asset_data->report_id))
+              {
+                case 0:
+                  SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_asset"));
+                  log_event ("asset", "Asset", NULL, "created");
+                  break;
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_asset",
+                                      "Asset exists already"));
+                  log_event_fail ("asset", "Asset", NULL, "created");
+                  break;
+                case 2:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_asset",
+                                      "Name may only contain alphanumeric"
+                                      " characters"));
+                  log_event_fail ("asset", "Asset", NULL, "created");
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_asset",
+                                      "Permission denied"));
+                  log_event_fail ("asset", "Asset", NULL, "created");
+                  break;
+                default:
+                  assert (0);
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("create_asset"));
+                  log_event_fail ("asset", "Asset", NULL, "created");
+                  break;
+              }
+          else switch (create_asset_host (create_asset_data->name,
+                                          &asset))
             {
               case 0:
                 SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_asset"));
@@ -20009,6 +20066,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
       CLOSE (CLIENT_CREATE_ASSET, REPORT);
+      CLOSE (CLIENT_CREATE_ASSET, ASSET);
+      CLOSE (CLIENT_CREATE_ASSET_ASSET, NAME);
+      CLOSE (CLIENT_CREATE_ASSET_ASSET, TYPE);
 
       case CLIENT_CREATE_CONFIG:
         {
@@ -27916,6 +27976,13 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_AGENT_NAME,
               &create_agent_data->name);
+
+
+      APPEND (CLIENT_CREATE_ASSET_ASSET_NAME,
+              &create_asset_data->name);
+
+      APPEND (CLIENT_CREATE_ASSET_ASSET_TYPE,
+              &create_asset_data->type);
 
 
       APPEND (CLIENT_CREATE_CONFIG_COMMENT,
