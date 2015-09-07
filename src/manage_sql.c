@@ -52283,8 +52283,6 @@ create_asset_report (const char *report_id)
   if (report_id == NULL)
     return -1;
 
-  /* Check that the name is unique. */
-
   sql_begin_immediate ();
 
   if (acl_user_may ("create_asset") == 0)
@@ -52320,11 +52318,6 @@ create_asset_report (const char *report_id)
       iterator_t details;
       gchar *quoted_report_id;
 
-      host = host_iterator_host (&hosts);
-      host_notice (host, "ip", host, "Report Host", report_id, 0);
-
-      report_host = host_iterator_report_host (&hosts);
-
       quoted_report_id = sql_quote (report_id);
       sql ("DELETE FROM host_identifiers WHERE source_id = '%s';",
            quoted_report_id);
@@ -52335,6 +52328,11 @@ create_asset_report (const char *report_id)
       sql ("DELETE FROM host_details WHERE source_id = '%s';",
            quoted_report_id);
       g_free (quoted_report_id);
+
+      host = host_iterator_host (&hosts);
+      host_notice (host, "ip", host, "Report Host", report_id, 0);
+
+      report_host = host_iterator_report_host (&hosts);
 
       init_report_host_details_iterator (&details, report_host);
       while (next (&details))

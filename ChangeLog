@@ -1,5 +1,10 @@
 2015-09-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_asset_report): Call host_notice before
+	deleting all identifiers, else the "ip" identifier will be removed.
+
+2015-09-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add ASSET to CREATE_ASSET, for manually creating host assets.
 
 	* src/manage_sql.c (create_asset): Remove.  Now create_asset_report.
