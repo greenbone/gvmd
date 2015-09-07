@@ -1,3 +1,8 @@
+2015-09-07  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/CMakeLists.txt: Include configured backend in the manager binary
+	name. Create an "openvasmd" symlink to binary and install it as well.
+
 2015-09-04  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/report_formats/HTML/HTML.xsl: Removed surrounding unneeded

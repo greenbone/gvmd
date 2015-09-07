@@ -67,10 +67,16 @@ add_library (otp STATIC otp.c)
 
 ## Program
 
-add_executable (openvasmd openvasmd.c ompd.c)
-target_link_libraries (openvasmd ovas-mngr-comm omp otp manage ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${GCRYPT_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT})
+if (BACKEND STREQUAL SQLITE3)
+  set (BINARY_NAME "openvasmd-sqlite")
+else (BACKEND STREQUAL SQLITE3)
+  set (BINARY_NAME "openvasmd-pg")
+endif (BACKEND STREQUAL SQLITE3)
 
-set_target_properties (openvasmd PROPERTIES LINKER_LANGUAGE C)
+add_executable (${BINARY_NAME} openvasmd.c ompd.c)
+target_link_libraries (${BINARY_NAME} ovas-mngr-comm omp otp manage ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${GCRYPT_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT})
+
+set_target_properties (${BINARY_NAME} PROPERTIES LINKER_LANGUAGE C)
 
 if (OPENVASMD_VERSION)
   add_definitions (-DOPENVASMD_VERSION=\\\"${OPENVASMD_VERSION}\\\")
@@ -89,13 +95,16 @@ if (NOT CMAKE_BUILD_TYPE MATCHES "Release")
                         -P ${CMAKE_SOURCE_DIR}/getsvn.cmake)
 
     # explicitly say that the executable depends on custom target
-    add_dependencies (openvasmd revisiontag)
+    add_dependencies (${BINARY_NAME} revisiontag)
 
     # include the output directory, where the svnversion.h file is generated
     include_directories (${CMAKE_CURRENT_BINARY_DIR})
     add_definitions (-DSVN_REV_AVAILABLE)
   endif (SVN_REVISION)
 endif (NOT CMAKE_BUILD_TYPE MATCHES "Release")
+
+add_custom_command (TARGET ${BINARY_NAME} POST_BUILD
+                    COMMAND ln -sf ${BINARY_NAME} openvasmd)
 
 if (OMP_VERSION)
   add_definitions (-DOMP_VERSION=\\\"${OMP_VERSION}\\\")
@@ -171,10 +180,13 @@ endif (SBINDIR)
 
 ## Install
 
-install (TARGETS openvasmd
+install (TARGETS ${BINARY_NAME}
          RUNTIME DESTINATION ${SBINDIR}
          LIBRARY DESTINATION ${LIBDIR}
          ARCHIVE DESTINATION ${LIBDIR}/static)
+
+install (FILES ${CMAKE_CURRENT_BINARY_DIR}/openvasmd
+         DESTINATION ${SBINDIR})
 
 if (BACKEND STREQUAL POSTGRESQL)
   install (TARGETS manage-pg-server
