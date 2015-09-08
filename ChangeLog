@@ -1,5 +1,14 @@
 2015-09-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (host_uuid): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Send UUID with CREATE_ASSET
+	response when creating host.
+
+2015-09-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_asset_host): Remove stray assert.
 
 2015-09-08  Matthew Mundell <matthew.mundell@greenbone.net>

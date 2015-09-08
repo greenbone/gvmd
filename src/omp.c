@@ -20031,9 +20031,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                           &asset))
             {
               case 0:
-                SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_asset"));
-                log_event ("asset", "Asset", NULL, "created");
-                break;
+                {
+                  char *uuid;
+                  uuid = host_uuid (asset);
+                  SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_asset"),
+                                           uuid);
+                  log_event ("asset", "Asset", uuid, "created");
+                  g_free (uuid);
+                  break;
+                }
               case 1:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_asset",

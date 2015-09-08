@@ -2036,6 +2036,9 @@ agent_iterator_howto_use (iterator_t*);
 
 /* Assets. */
 
+char*
+host_uuid (resource_t);
+
 host_t
 host_notice (const char *, const char *, const char *, const char *,
              const char *, int);
