@@ -51836,7 +51836,8 @@ DEF_ACCESS (host_identifier_iterator_os_title,
      "in_use"                                             \
    },                                                     \
    {                                                      \
-     "(SELECT severity FROM host_max_severities"          \
+     "(SELECT round (CAST (severity AS numeric), 1)"      \
+     " FROM host_max_severities"                          \
      " WHERE host = hosts.id"                             \
      " ORDER by creation_time DESC"                       \
      " LIMIT 1)",                                         \
@@ -51958,7 +51959,7 @@ asset_host_count (const get_data_t *get)
      "installs"                                                               \
    },                                                                         \
    {                                                                          \
-     "(SELECT severity FROM host_max_severities"                              \
+     "(SELECT round (CAST (severity AS numeric), 1) FROM host_max_severities" \
      " WHERE host = (SELECT host FROM host_oss"                               \
      "               WHERE os = oss.id"                                       \
      "               ORDER BY creation_time DESC LIMIT 1)"                    \
@@ -52016,7 +52017,7 @@ init_asset_os_iterator (iterator_t *iterator, const get_data_t *get)
  * @return The title of the OS, or NULL if iteration is
  *         complete. Freed by cleanup_iterator.
  */
-DEF_ACCESS (asset_os_iterator_title, GET_ITERATOR_COLUMN_COUNT);
+DEF_ACCESS (asset_os_iterator_title, GET_ITERATOR_COLUMN_COUNT + 2);
 
 /**
  * @brief Get the number of installs from an asset OS iterator.
@@ -52029,7 +52030,7 @@ int
 asset_os_iterator_installs (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 1);
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
 }
 
 /**
@@ -52040,7 +52041,7 @@ asset_os_iterator_installs (iterator_t* iterator)
  * @return The severity of the OS, or NULL if iteration is
  *         complete. Freed by cleanup_iterator.
  */
-DEF_ACCESS (asset_os_iterator_latest_severity, GET_ITERATOR_COLUMN_COUNT + 2);
+DEF_ACCESS (asset_os_iterator_latest_severity, GET_ITERATOR_COLUMN_COUNT + 4);
 
 /**
  * @brief Get the severity from an OS iterator.
@@ -52050,7 +52051,7 @@ DEF_ACCESS (asset_os_iterator_latest_severity, GET_ITERATOR_COLUMN_COUNT + 2);
  * @return The severity of the OS, or NULL if iteration is
  *         complete. Freed by cleanup_iterator.
  */
-DEF_ACCESS (asset_os_iterator_average_severity, GET_ITERATOR_COLUMN_COUNT + 3);
+DEF_ACCESS (asset_os_iterator_average_severity, GET_ITERATOR_COLUMN_COUNT + 5);
 
 /**
  * @brief Count number of oss.
@@ -52094,7 +52095,8 @@ init_os_host_iterator (iterator_t* iterator, resource_t os)
                  "SELECT id, uuid, name, comment, iso_time (creation_time),"
                  "       iso_time (modification_time), creation_time,"
                  "       modification_time, owner, owner,"
-                 "       (SELECT severity FROM host_max_severities"
+                 "       (SELECT round (CAST (severity AS numeric), 1)"
+                 "        FROM host_max_severities"
                  "        WHERE host = hosts.id"
                  "        ORDER by creation_time DESC"
                  "        LIMIT 1)"
