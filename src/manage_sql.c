@@ -51709,6 +51709,7 @@ init_host_identifier_iterator (iterator_t* iterator, host_t host,
                    "       iso_time (modification_time), creation_time,"
                    "       modification_time, owner, owner, value,"
                    "       source_type, source_id, source_data,"
+                   // FIX user
                    "       (CASE WHEN source_type LIKE 'Report%%'"
                    "        THEN NOT EXISTS (SELECT * FROM reports"
                    "                         WHERE uuid = source_id)"
@@ -51723,6 +51724,7 @@ init_host_identifier_iterator (iterator_t* iterator, host_t host,
                    "        modification_time, owner, owner,"
                    "        (SELECT name FROM oss WHERE id = os),"
                    "        source_type, source_id, source_data,"
+                   // FIX user
                    "        (CASE WHEN source_type LIKE 'Report%%'"
                    "         THEN NOT EXISTS (SELECT * FROM reports"
                    "                          WHERE uuid = source_id)"
@@ -56058,6 +56060,25 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
       return 3;
     }
   return 0;
+}
+
+/**
+ * @brief Return the name of a user.
+ *
+ * @param[in]  uuid  UUID of user.
+ *
+ * @return Newly allocated name if available, else NULL.
+ */
+gchar*
+user_name (const char *uuid)
+{
+  gchar *name, *quoted_uuid;
+
+  quoted_uuid = sql_quote (uuid);
+  name = sql_string ("SELECT name FROM users WHERE uuid = '%s';",
+                     quoted_uuid);
+  g_free (quoted_uuid);
+  return name;
 }
 
 /**

@@ -18012,6 +18012,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                  0, NULL);
                   while (next (&identifiers))
                     {
+                      const char *source_type;
+                      gchar *name;
+
+                      source_type = host_identifier_iterator_source_type
+                                     (&identifiers);
+                      if (strcmp (source_type, "User") == 0)
+                        name = user_name (host_identifier_iterator_source_id
+                                           (&identifiers));
+                      else
+                        name = NULL;
+
                       xml_string_append (result,
                                          "<identifier id=\"%s\">"
                                          "<name>%s</name>"
@@ -18022,6 +18033,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                          "<type>%s</type>"
                                          "<data>%s</data>"
                                          "<deleted>%i</deleted>"
+                                         "<name>%s</name>"
                                          "</source>",
                                          get_iterator_uuid (&identifiers),
                                          get_iterator_name (&identifiers),
@@ -18032,12 +18044,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                           (&identifiers),
                                          host_identifier_iterator_source_id
                                           (&identifiers),
-                                         host_identifier_iterator_source_type
-                                          (&identifiers),
+                                         source_type,
                                          host_identifier_iterator_source_data
                                           (&identifiers),
                                          host_identifier_iterator_source_orphan
-                                          (&identifiers));
+                                          (&identifiers),
+                                         name ? name : "");
+
+                      g_free (name);
 
                       if (strcmp (get_iterator_name (&identifiers), "OS") == 0)
                         xml_string_append (result,
