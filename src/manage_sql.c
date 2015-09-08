@@ -52225,8 +52225,6 @@ create_asset_host (const char *host_name, resource_t* host_return)
   resource_t host;
   gchar *quoted_host_name;
 
-  assert (host);
-
   if (host_name == NULL)
     return -1;
 

@@ -1,10 +1,14 @@
 2015-09-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_asset_host): Remove stray assert.
+
+2015-09-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (HOST_ITERATOR_COLUMNS, OS_ITERATOR_COLUMNS)
 	(init_os_host_iterator): Round severity to single decimal place.
 	(asset_os_iterator_installs, asset_os_iterator_title)
 	(asset_os_iterator_latest_severity)
-	(asset_os_iterator_average_severity): Correct offset.
+	(asset_os_iterator_average_severity): Correct offset.<
 
 2015-09-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
