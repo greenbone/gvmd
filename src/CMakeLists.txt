@@ -178,6 +178,10 @@ if (SBINDIR)
   add_definitions (-DSBINDIR=\\\"${SBINDIR}\\\")
 endif (SBINDIR)
 
+if (OPENVAS_SQLITE_SLEEP_MAX)
+  add_definitions (-DOPENVAS_SQLITE_SLEEP_MAX=${OPENVAS_SQLITE_SLEEP_MAX})
+endif (OPENVAS_SQLITE_SLEEP_MAX)
+
 ## Install
 
 install (TARGETS ${BINARY_NAME}

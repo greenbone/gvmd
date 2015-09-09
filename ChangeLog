@@ -1,3 +1,11 @@
+2015-09-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* CMakeLists.txt, src/CMakeLists.txt: Set OPENVAS_SQLITE_SLEEP_MAX.
+
+	* src/sql_sqlite3.c (sql_prepare_internal, sql_exec_internal)
+	(sql_bind_blob, sql_bind_int64, sql_bind_double, sql_bind_text)
+	(sql_reset): Use OPENVASMD_DATABASE_VERSION
+
 2015-09-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (user_name): New function.
