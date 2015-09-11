@@ -2539,7 +2539,10 @@ report_report_task
      {
        attribute id { uuid }
        & report_report_task_name
+       & report_report_task_comment
        & report_report_task_target
+       & report_report_task_progress
+       & report_report_task_user_tags
      }
 
 # The name of the task.
@@ -2547,6 +2550,13 @@ report_report_task_name
  = element name
      {
        name
+     }
+
+# Comment for the task.
+report_report_task_comment
+ = element comment
+     {
+       text
      }
 
 # The target of the task.
@@ -2562,6 +2572,60 @@ report_report_task_target
 report_report_task_target_trash
  = element trash    # type boolean
      {
+     }
+
+# The percentage of the task that is complete.
+report_report_task_progress
+ = element progress
+     {
+       integer
+     }
+
+# Info on tags attached to the task.
+report_report_task_user_tags
+ = element user_tags
+     {
+       report_report_task_user_tags_count
+       & report_report_task_user_tags_tag*
+     }
+
+# Number of attached tags.
+report_report_task_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+# Short info on an individual tag.
+report_report_task_user_tags_tag
+ = element tag
+     {
+       # UUID of the tag.
+       attribute id { uuid }
+       & report_report_task_user_tags_tag_name
+       & report_report_task_user_tags_tag_value
+       & report_report_task_user_tags_tag_comment
+     }
+
+# Name of the tag (usually namespace:predicate).
+report_report_task_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+# Value of the tag.
+report_report_task_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+# Comment for the tag.
+report_report_task_user_tags_tag_comment
+ = element comment
+     {
+       text
      }
 
 # Info from scan time.

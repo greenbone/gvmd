@@ -24847,6 +24847,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       char *tsk_name, *task_target_uuid, *comment;
       target_t target;
       gchar *progress_xml;
+      iterator_t tags;
 
       tsk_name = task_name (task);
 
@@ -24877,8 +24878,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
              "<target id=\"%s\">"
              "<trash>%i</trash>"
              "</target>"
-             "<progress>%s</progress>"
-             "</task>",
+             "<progress>%s</progress>",
              tsk_uuid,
              tsk_name ? tsk_name : "",
              comment ? comment : "",
@@ -24889,6 +24889,31 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       free (comment);
       free (tsk_name);
       free (tsk_uuid);
+
+      PRINT (out,
+             "<user_tags>"
+             "<count>%i</count>",
+             resource_tag_count ("task", task, 1));
+
+      init_resource_tag_iterator (&tags, "task", task, 1, NULL, 1);
+      while (next (&tags))
+        {
+          PRINT (out,
+                 "<tag id=\"%s\">"
+                 "<name>%s</name>"
+                 "<value>%s</value>"
+                 "<comment>%s</comment>"
+                 "</tag>",
+                 resource_tag_iterator_uuid (&tags),
+                 resource_tag_iterator_name (&tags),
+                 resource_tag_iterator_value (&tags),
+                 resource_tag_iterator_comment (&tags));
+        }
+      cleanup_iterator (&tags);
+
+      PRINT (out,
+             "</user_tags>"
+             "</task>");
 
       {
         char *slave_uuid, *slave_name, *slave_host, *slave_port, *source_iface;
