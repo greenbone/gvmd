@@ -2236,13 +2236,21 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>name</e>
+          <e>comment</e>
           <e>target</e>
+          <e>progress</e>
+          <e>user_tags</e>
         </pattern>
         <ele>
           <name>name</name>
           <summary>The name of the task</summary>
           <pattern><t>name</t></pattern>
         </ele>
+		<ele>
+		  <name>comment</name>
+		  <summary>Comment for the task</summary>
+		  <pattern>text</pattern>
+		</ele>
         <ele>
           <name>target</name>
           <summary>The target of the task</summary>
@@ -2258,6 +2266,58 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <name>trash</name>
             <summary>Whether the target is in the trashcan</summary>
             <type>boolean</type>
+          </ele>
+        </ele>
+        <ele>
+          <name>progress</name>
+          <summary>The percentage of the task that is complete</summary>
+          <pattern>
+            <t>integer</t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the task</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
           </ele>
         </ele>
       </ele>
