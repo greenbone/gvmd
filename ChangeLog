@@ -1,3 +1,7 @@
+2015-09-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* CMakeLists.txt: Revert -O flag accidentally changed in r23226.
+
 2015-09-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (print_report_xml): Add USER_TAGS to TASK.
