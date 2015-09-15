@@ -1365,10 +1365,10 @@ gboolean
 find_target_with_permission (const char *, target_t *, const char *);
 
 int
-create_target (const char*, const char*, const char*, const char*, const char *,
-               const char*, lsc_credential_t, const char*, lsc_credential_t,
-               lsc_credential_t, const char *, const char *, const char *, int,
-               target_t*);
+create_target (const char*, const char*, const char*, const char*, const char*,
+               const char *, const char*, lsc_credential_t, const char*,
+               lsc_credential_t, lsc_credential_t, const char *, const char *,
+               const char *, int, target_t*);
 
 int
 copy_target (const char*, const char*, const char *, target_t*);

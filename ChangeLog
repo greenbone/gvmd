@@ -1,5 +1,19 @@
 2015-09-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add ASSET_HOSTS to CREATE_TARGET.
+
+	* src/manage_sql.c (create_target): Add asset_hosts_filter arg.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (create_target_data_t, create_target_data_reset): Add
+	asset_hosts_filter.
+	(client_state_t, omp_xml_handle_start_element)
+	(omp_xml_handle_end_element): Add ASSET_HOSTS to CREATE_TARGET, for
+	creating a target from a selection of asset hosts.
+
+2015-09-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* CMakeLists.txt: Revert -O flag accidentally changed in r23226.
 
 2015-09-11  Matthew Mundell <matthew.mundell@greenbone.net>

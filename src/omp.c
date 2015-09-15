@@ -1623,6 +1623,7 @@ create_slave_data_reset (create_slave_data_t *data)
 typedef struct
 {
   char *alive_tests;             ///< Alive tests.
+  char *asset_hosts_filter;      ///< Asset hosts.
   char *comment;                 ///< Comment.
   char *exclude_hosts;           ///< Hosts to exclude from set.
   char *reverse_lookup_only;     ///< Boolean. Whether to consider only hosts that reverse lookup.
@@ -1648,6 +1649,7 @@ static void
 create_target_data_reset (create_target_data_t *data)
 {
   free (data->alive_tests);
+  free (data->asset_hosts_filter);
   free (data->comment);
   free (data->exclude_hosts);
   free (data->reverse_lookup_only);
@@ -5275,6 +5277,7 @@ typedef enum
   CLIENT_CREATE_TAG_VALUE,
   CLIENT_CREATE_TARGET,
   CLIENT_CREATE_TARGET_ALIVE_TESTS,
+  CLIENT_CREATE_TARGET_ASSET_HOSTS,
   CLIENT_CREATE_TARGET_EXCLUDE_HOSTS,
   CLIENT_CREATE_TARGET_REVERSE_LOOKUP_ONLY,
   CLIENT_CREATE_TARGET_REVERSE_LOOKUP_UNIFY,
@@ -9750,7 +9753,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         ELSE_ERROR ("create_tag");
 
       case CLIENT_CREATE_TARGET:
-        if (strcasecmp ("EXCLUDE_HOSTS", element_name) == 0)
+        if (strcasecmp ("ASSET_HOSTS", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "filter",
+                              &create_target_data->asset_hosts_filter);
+            set_client_state (CLIENT_CREATE_TARGET_ASSET_HOSTS);
+          }
+        else if (strcasecmp ("EXCLUDE_HOSTS", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_EXCLUDE_HOSTS);
         else if (strcasecmp ("REVERSE_LOOKUP_ONLY", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_REVERSE_LOOKUP_ONLY);
@@ -23115,11 +23124,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("create_target",
                                 "CREATE_TARGET name must be at"
                                 " least one character long"));
-          else if (create_target_data->hosts == NULL)
+          else if (create_target_data->asset_hosts_filter == NULL
+                   && create_target_data->hosts == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_target",
                                 " CREATE_TARGET requires a host"));
-          else if (strlen (create_target_data->hosts) == 0)
+          else if (create_target_data->asset_hosts_filter == NULL
+                   && strlen (create_target_data->hosts) == 0)
             /** @todo Legitimate to pass an empty hosts element? */
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_target",
@@ -23179,6 +23190,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           /* Create target from host string. */
           else switch (create_target
                         (create_target_data->name,
+                         create_target_data->asset_hosts_filter,
                          create_target_data->hosts,
                          create_target_data->exclude_hosts,
                          create_target_data->comment,
@@ -23268,6 +23280,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
+      CLOSE (CLIENT_CREATE_TARGET, ASSET_HOSTS);
       CLOSE (CLIENT_CREATE_TARGET, COMMENT);
       CLOSE (CLIENT_CREATE_TARGET, ESXI_LSC_CREDENTIAL);
       CLOSE (CLIENT_CREATE_TARGET, EXCLUDE_HOSTS);

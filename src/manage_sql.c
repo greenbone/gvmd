@@ -28555,6 +28555,8 @@ alive_test_from_string (const char* alive_tests)
  * @brief Create a target.
  *
  * @param[in]   name            Name of target.
+ * @param[in]   asset_hosts_filter  Asset host filter to select hosts.
+ *                                  Overrides \p hosts and \p exclude_hosts.
  * @param[in]   hosts           Host list of target.
  * @param[in]   exclude_hosts   List of hosts to exclude from \p hosts.
  * @param[in]   comment         Comment on target.
@@ -28576,7 +28578,8 @@ alive_test_from_string (const char* alive_tests)
  *         99 permission denied, -1 error.
  */
 int
-create_target (const char* name, const char* hosts, const char* exclude_hosts,
+create_target (const char* name, const char* asset_hosts_filter,
+               const char* hosts, const char* exclude_hosts,
                const char* comment, const char* port_list_id,
                const char* port_range, lsc_credential_t ssh_lsc_credential,
                const char* ssh_port, lsc_credential_t smb_lsc_credential,
@@ -28586,7 +28589,7 @@ create_target (const char* name, const char* hosts, const char* exclude_hosts,
                int make_name_unique, target_t* target)
 {
   gchar *quoted_name, *quoted_hosts, *quoted_exclude_hosts, *quoted_comment;
-  gchar *port_list_comment, *quoted_ssh_port, *clean;
+  gchar *port_list_comment, *quoted_ssh_port, *clean, *chosen_hosts;
   port_list_t port_list;
   int ret, alive_test, max;
 
@@ -28634,18 +28637,54 @@ create_target (const char* name, const char* hosts, const char* exclude_hosts,
         }
     }
   quoted_name = sql_quote (name);
-  quoted_exclude_hosts = exclude_hosts ? sql_quote (exclude_hosts)
-                                       : g_strdup ("");
 
-  max = manage_count_hosts (hosts, quoted_exclude_hosts);
+  if (asset_hosts_filter)
+    {
+      iterator_t asset_hosts;
+      int previous;
+      get_data_t get;
+      GString *buffer;
+
+      memset (&get, 0, sizeof (get));
+      get.filter = g_strdup (asset_hosts_filter);
+      init_asset_host_iterator (&asset_hosts, &get);
+      g_free (get.filter);
+      previous = 0;
+      buffer = g_string_new ("");
+      while (next (&asset_hosts))
+        {
+          g_string_append_printf (buffer,
+                                  "%s%s",
+                                  previous ? ", " : "",
+                                  get_iterator_name (&asset_hosts));
+          previous = 1;
+        }
+      cleanup_iterator (&asset_hosts);
+      chosen_hosts = g_string_free (buffer, FALSE);
+      quoted_exclude_hosts = g_strdup ("");
+
+      tracef ("asset chosen_hosts: %s\n", chosen_hosts);
+    }
+  else
+    {
+      chosen_hosts = g_strdup (hosts);
+      quoted_exclude_hosts = exclude_hosts ? sql_quote (exclude_hosts)
+                                           : g_strdup ("");
+
+      tracef ("manual chosen_hosts: %s\n", chosen_hosts);
+    }
+
+  max = manage_count_hosts (chosen_hosts, quoted_exclude_hosts);
   if (max <= 0)
     {
+      g_free (chosen_hosts);
       g_free (quoted_exclude_hosts);
       g_free (quoted_name);
       sql ("ROLLBACK;");
       return 2;
     }
-  clean = clean_hosts (hosts, &max);
+  clean = clean_hosts (chosen_hosts, &max);
+  g_free (chosen_hosts);
   if (max > max_hosts)
     {
       g_free (quoted_exclude_hosts);
