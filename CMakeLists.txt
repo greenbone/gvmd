@@ -184,8 +184,13 @@ if (NOT INCLUDEDIR)
   set (INCLUDEDIR "${CMAKE_INSTALL_PREFIX}/include")
 endif (NOT INCLUDEDIR)
 
+# The maximum number of seconds the SQLite backend will sleep
+# before retrying an SQL operation that is getting a busy response.
+#
+# 0 means to not sleep at all, and let the db/libsqlite do its own thing.
+#
 if (NOT DEFINED OPENVAS_SQLITE_SLEEP_MAX)
-  set (OPENVAS_SQLITE_SLEEP_MAX 5000000)
+  set (OPENVAS_SQLITE_SLEEP_MAX 0)
 endif (NOT DEFINED OPENVAS_SQLITE_SLEEP_MAX)
 
 #if (NOT SYSCONFDIR)

@@ -1,5 +1,11 @@
 2015-09-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* CMakeLists.txt: Make the OPENVAS_SQLITE_SLEEP_MAX default 0, because
+	this showed much much better responsiveness (compared to 5000000) on a
+	heavily loaded machine.
+
+2015-09-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* CMakeLists.txt, src/CMakeLists.txt: Use DEFINED for
 	OPENVAS_SQLITE_SLEEP_MAX because 0 is a valid value but it is considered
 	to be FALSE.
