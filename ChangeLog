@@ -1,5 +1,13 @@
 2015-09-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r23374.
+
+	* CMakeLists.txt: Make the OPENVAS_SQLITE_SLEEP_MAX default 0, because
+	this showed much much better responsiveness (compared to 5000000) on a
+	heavily loaded machine.
+
+2015-09-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport missing case from r23306.
 
 	* src/sql_sqlite3.c (sql_prepare_internal): Use
