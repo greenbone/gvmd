@@ -1,3 +1,14 @@
+2015-09-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* CMakeLists.txt, src/CMakeLists.txt: Use DEFINED for
+	OPENVAS_SQLITE_SLEEP_MAX because 0 is a valid value but it is considered
+	to be FALSE.
+
+	* src/sql_sqlite3.c (sql_open): Add debug log that include sleep time.
+	(sql_prepare_internal, sql_exec_internal, sql_bind_blob, sql_bind_int64)
+	(sql_bind_double, sql_bind_text, sql_reset): If OPENVAS_SQLITE_SLEEP_MAX
+	is 0 skip the openvas_usleep call entirely.
+
 2015-09-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add ASSET_HOSTS to CREATE_TARGET.
@@ -30,7 +41,7 @@
 
 	* src/sql_sqlite3.c (sql_prepare_internal, sql_exec_internal)
 	(sql_bind_blob, sql_bind_int64, sql_bind_double, sql_bind_text)
-	(sql_reset): Use OPENVASMD_DATABASE_VERSION
+	(sql_reset): Use OPENVAS_SQLITE_SLEEP_MAX.
 
 2015-09-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
