@@ -1,5 +1,12 @@
 2015-09-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport missing case from r23306.
+
+	* src/sql_sqlite3.c (sql_prepare_internal): Use
+	OPENVAS_SQLITE_SLEEP_MAX.
+
+2015-09-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r23357.
 
 	* CMakeLists.txt, src/CMakeLists.txt: Use DEFINED for

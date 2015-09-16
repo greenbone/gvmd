@@ -290,7 +290,8 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
           if (retry)
             {
               if ((retries > 10) && (OPENVAS_SQLITE_SLEEP_MAX > 0))
-                openvas_usleep (MIN ((retries - 10) * 10000, 5000000));
+                openvas_usleep (MIN ((retries - 10) * 10000,
+                                     OPENVAS_SQLITE_SLEEP_MAX));
               retries++;
               continue;
             }
