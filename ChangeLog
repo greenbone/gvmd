@@ -1,5 +1,10 @@
 2015-09-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (print_report_xml): Print empty string if asset UUID
+	is NULL.
+
+2015-09-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_report_host_iterator): Add UUID of asset
 	associated with report host.
 	(host_iterator_asset_uuid): New function.

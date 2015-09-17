@@ -25986,7 +25986,9 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                      "<start>%s</start>"
                      "<end>%s</end>",
                      host,
-                     host_iterator_asset_uuid (&hosts),
+                     host_iterator_asset_uuid (&hosts)
+                       ? host_iterator_asset_uuid (&hosts)
+                       : "",
                      host_iterator_start_time (&hosts),
                      host_iterator_end_time (&hosts)
                        ? host_iterator_end_time (&hosts)
@@ -26040,7 +26042,9 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                  "<start>%s</start>"
                  "<end>%s</end>",
                  host_iterator_host (&hosts),
-                 host_iterator_asset_uuid (&hosts),
+                 host_iterator_asset_uuid (&hosts)
+                   ? host_iterator_asset_uuid (&hosts)
+                   : "",
                  host_iterator_start_time (&hosts),
                  host_iterator_end_time (&hosts)
                    ? host_iterator_end_time (&hosts)
