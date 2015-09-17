@@ -851,6 +851,7 @@ create_agent_data_reset (create_agent_data_t *data)
 typedef struct
 {
   char *name;                  ///< Name of asset.
+  char *comment;               ///< Comment on asset.
   char *report_id;             ///< Report UUID.
   char *type;                  ///< Type of asset.
 } create_asset_data_t;
@@ -861,6 +862,7 @@ typedef struct
 static void
 create_asset_data_reset (create_asset_data_t *data)
 {
+  free (data->comment);
   free (data->report_id);
   free (data->type);
   free (data->name);
@@ -5035,6 +5037,7 @@ typedef enum
   CLIENT_CREATE_ASSET,
   CLIENT_CREATE_ASSET_REPORT,
   CLIENT_CREATE_ASSET_ASSET,
+  CLIENT_CREATE_ASSET_ASSET_COMMENT,
   CLIENT_CREATE_ASSET_ASSET_NAME,
   CLIENT_CREATE_ASSET_ASSET_TYPE,
   CLIENT_CREATE_CONFIG,
@@ -8818,7 +8821,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         ELSE_ERROR ("create_asset");
 
       case CLIENT_CREATE_ASSET_ASSET:
-        if (strcasecmp ("NAME", element_name) == 0)
+        if (strcasecmp ("COMMENT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_ASSET_ASSET_COMMENT);
+        else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_ASSET_ASSET_NAME);
         else if (strcasecmp ("TYPE", element_name) == 0)
           set_client_state (CLIENT_CREATE_ASSET_ASSET_TYPE);
@@ -20051,6 +20056,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   break;
               }
           else switch (create_asset_host (create_asset_data->name,
+                                          create_asset_data->comment,
                                           &asset))
             {
               case 0:
@@ -20096,6 +20102,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         }
       CLOSE (CLIENT_CREATE_ASSET, REPORT);
       CLOSE (CLIENT_CREATE_ASSET, ASSET);
+      CLOSE (CLIENT_CREATE_ASSET_ASSET, COMMENT);
       CLOSE (CLIENT_CREATE_ASSET_ASSET, NAME);
       CLOSE (CLIENT_CREATE_ASSET_ASSET, TYPE);
 
@@ -28010,6 +28017,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_AGENT_NAME,
               &create_agent_data->name);
 
+
+      APPEND (CLIENT_CREATE_ASSET_ASSET_COMMENT,
+              &create_asset_data->comment);
 
       APPEND (CLIENT_CREATE_ASSET_ASSET_NAME,
               &create_asset_data->name);

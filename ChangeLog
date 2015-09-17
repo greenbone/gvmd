@@ -1,5 +1,18 @@
 2015-09-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add COMMENT to CREATE_ASSET.
+
+	* src/manage_sql.c (create_asset_host): Add comment arg.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (create_asset_data_t, create_asset_data_reset): Add comment.
+	(client_state_t, omp_xml_handle_start_element)
+	(omp_xml_handle_end_element, omp_xml_handle_text): Add CREATE_ASSET
+	comment.
+
+2015-09-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (print_report_xml): Print empty string if asset UUID
 	is NULL.
 

@@ -52333,15 +52333,17 @@ identifier_name (const char *name)
  * @brief Create a host asset.
  *
  * @param[in]  host_id      Host UUID.
+ * @param[in]  comment      Comment.
  * @param[out] host_return  Created asset.
  *
  * @return 0 success, 1 failed to find report, 99 permission denied, -1 error.
  */
 int
-create_asset_host (const char *host_name, resource_t* host_return)
+create_asset_host (const char *host_name, const char *comment,
+                   resource_t* host_return)
 {
   resource_t host;
-  gchar *quoted_host_name;
+  gchar *quoted_host_name, *quoted_comment;
 
   if (host_name == NULL)
     return -1;
@@ -52355,14 +52357,17 @@ create_asset_host (const char *host_name, resource_t* host_return)
     }
 
   quoted_host_name = sql_quote (host_name);
+  quoted_comment = sql_quote (comment ? comment : "");
   sql ("INSERT into hosts"
        " (uuid, owner, name, comment, creation_time, modification_time)"
        " VALUES"
-       " (make_uuid (), (SELECT id FROM users WHERE uuid = '%s'), '%s', '',"
+       " (make_uuid (), (SELECT id FROM users WHERE uuid = '%s'), '%s', '%s',"
        "  m_now (), m_now ());",
        current_credentials.uuid,
-       quoted_host_name);
+       quoted_host_name,
+       quoted_comment);
   g_free (quoted_host_name);
+  g_free (quoted_comment);
 
   host = sql_last_insert_id ();
 
