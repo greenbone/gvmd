@@ -18909,7 +18909,16 @@ init_report_host_iterator (iterator_t* iterator, report_t report, const char *ho
         init_iterator (iterator,
                        "SELECT id, host, iso_time (start_time),"
                        " iso_time (end_time), current_port, max_port, report,"
-                       " (SELECT uuid FROM reports WHERE id = report)"
+                       " (SELECT uuid FROM reports WHERE id = report),"
+                       " (SELECT uuid FROM hosts"
+                       "  WHERE id = (SELECT host FROM host_identifiers"
+                       "              WHERE source_type = 'Report Host'"
+                       "              AND name = 'ip'"
+                       "              AND source_id = (SELECT uuid"
+                       "                               FROM reports"
+                       "                               WHERE id = report)"
+                       "              AND value = report_hosts.host"
+                       "              LIMIT 1))"
                        " FROM report_hosts WHERE id = %llu"
                        " AND report = %llu"
                        "%s%s%s"
@@ -18923,7 +18932,16 @@ init_report_host_iterator (iterator_t* iterator, report_t report, const char *ho
         init_iterator (iterator,
                        "SELECT id, host, iso_time (start_time),"
                        " iso_time (end_time), current_port, max_port, report,"
-                       " (SELECT uuid FROM reports WHERE id = report)"
+                       " (SELECT uuid FROM reports WHERE id = report),"
+                       " (SELECT uuid FROM hosts"
+                       "  WHERE id = (SELECT host FROM host_identifiers"
+                       "              WHERE source_type = 'Report Host'"
+                       "              AND name = 'ip'"
+                       "              AND source_id = (SELECT uuid"
+                       "                               FROM reports"
+                       "                               WHERE id = report)"
+                       "              AND value = report_hosts.host"
+                       "              LIMIT 1))"
                        " FROM report_hosts WHERE report = %llu"
                        "%s%s%s"
                        " ORDER BY order_inet (host);",
@@ -18938,7 +18956,8 @@ init_report_host_iterator (iterator_t* iterator, report_t report, const char *ho
         init_iterator (iterator,
                        "SELECT id, host, iso_time (start_time),"
                        " iso_time (end_time), current_port, max_port, report,"
-                       " (SELECT uuid FROM reports WHERE id = report)"
+                       " (SELECT uuid FROM reports WHERE id = report),"
+                       " ''"
                        " FROM report_hosts WHERE id = %llu"
                        "%s%s%s"
                        " ORDER BY order_inet (host);",
@@ -18950,7 +18969,8 @@ init_report_host_iterator (iterator_t* iterator, report_t report, const char *ho
         init_iterator (iterator,
                        "SELECT id, host, iso_time (start_time),"
                        " iso_time (end_time), current_port, max_port, report,"
-                       " (SELECT uuid FROM reports WHERE id = report)"
+                       " (SELECT uuid FROM reports WHERE id = report),"
+                       " ''"
                        " FROM report_hosts"
                        "%s%s%s"
                        " ORDER BY order_inet (host);",
@@ -19060,6 +19080,16 @@ host_iterator_report (iterator_t* iterator)
  *         calling cleanup_iterator.
  */
 DEF_ACCESS (host_iterator_report_uuid, 7);
+
+/**
+ * @brief Get the asset UUID from a host iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The UUID of the assset associate with the host.  Caller must use
+ *         only before calling cleanup_iterator.
+ */
+DEF_ACCESS (host_iterator_asset_uuid, 8);
 
 /**
  * @brief Initialise a report errors iterator.
@@ -25952,9 +25982,11 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
               PRINT (out,
                      "<host>"
                      "<ip>%s</ip>"
+                     "<asset asset_id=\"%s\"/>"
                      "<start>%s</start>"
                      "<end>%s</end>",
                      host,
+                     host_iterator_asset_uuid (&hosts),
                      host_iterator_start_time (&hosts),
                      host_iterator_end_time (&hosts)
                        ? host_iterator_end_time (&hosts)
@@ -26004,9 +26036,11 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
           PRINT (out,
                  "<host>"
                  "<ip>%s</ip>"
+                 "<asset asset_id=\"%s\"/>"
                  "<start>%s</start>"
                  "<end>%s</end>",
                  host_iterator_host (&hosts),
+                 host_iterator_asset_uuid (&hosts),
                  host_iterator_start_time (&hosts),
                  host_iterator_end_time (&hosts)
                    ? host_iterator_end_time (&hosts)
