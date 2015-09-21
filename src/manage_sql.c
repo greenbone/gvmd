@@ -392,6 +392,7 @@ command_t omp_commands[]
     {"HELP", "Get this help text."},
     {"MODIFY_AGENT", "Modify an existing agent."},
     {"MODIFY_ALERT", "Modify an existing alert."},
+    {"MODIFY_ASSET", "Modify an existing asset."},
     {"MODIFY_AUTH", "Modify the authentication methods."},
     {"MODIFY_CONFIG", "Update an existing config."},
     {"MODIFY_FILTER", "Modify an existing filter."},
@@ -51946,7 +51947,7 @@ DEF_ACCESS (host_identifier_iterator_os_title,
  {                                                        \
    GET_ITERATOR_COLUMNS (hosts),                          \
    {                                                      \
-     "0",                                                 \
+     "1",                                                 \
      "writable"                                           \
    },                                                     \
    {                                                      \
@@ -52494,6 +52495,76 @@ create_asset_report (const char *report_id)
   hosts_set_identifiers ();
   hosts_set_max_severity (report);
   hosts_set_details (report);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
+ * @brief Modify an asset.
+ *
+ * @param[in]   asset_id        UUID of asset.
+ * @param[in]   comment         Comment on asset.
+ *
+ * @return 0 success, 1 failed to find asset, 3 asset_id required,
+ *         99 permission denied, -1 internal error.
+ */
+int
+modify_asset (const char *asset_id, const char *comment)
+{
+  gchar *quoted_asset_id, *quoted_comment;
+  resource_t asset;
+
+  if (asset_id == NULL)
+    return 3;
+
+  sql_begin_immediate ();
+
+  if (acl_user_may ("modify_asset") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
+
+  /* Host. */
+
+  quoted_asset_id = sql_quote (asset_id);
+  switch (sql_int64 (&asset,
+                     "SELECT id FROM hosts WHERE uuid = '%s';",
+                     quoted_asset_id))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        asset = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_asset_id);
+        sql ("ROLLBACK;");
+        return -1;
+        break;
+    }
+
+  g_free (quoted_asset_id);
+
+  if (asset == 0)
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
+
+  quoted_comment = sql_quote (comment ?: "");
+
+  sql ("UPDATE hosts SET"
+       " comment = '%s',"
+       " modification_time = m_now ()"
+       " WHERE id = %llu;",
+       quoted_comment, asset);
+
+  g_free (quoted_comment);
 
   sql ("COMMIT;");
 

@@ -1,3 +1,30 @@
+2015-09-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add MODIFY_ASSET.  Hence increase database version to 153.  Add
+	database migration from version 152 to 153.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 153.
+
+	* src/manage_migrators.c (DELETE_PERMISSION): New define.
+	(migrate_152_to_153): New function.
+	(database_migrators): Add migrate_152_to_153.
+
+	* src/manage_sql.c (omp_commands): Add MODIFY_ASSET.
+	(HOST_ITERATOR_COLUMNS): Make "writable" 1.
+	(modify_asset): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (modify_asset_data_t): New type.
+	(modify_asset_data_reset): New function.
+	(command_data_t): Add modify_asset.
+	(modify_asset_data): New variable.
+	(client_state_t): Add modify_asset entry.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add MODIFY_ASSET.
+
+	* doc/db.png: Update for version change.
+
 2015-09-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add COMMENT to CREATE_ASSET.

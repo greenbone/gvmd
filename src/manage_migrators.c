@@ -10274,6 +10274,55 @@ migrate_151_to_152 ()
   return 0;
 }
 
+#define DELETE_PERMISSION(name, role)                                          \
+  sql ("DELETE FROM permissions"                                               \
+       " WHERE subject_type = 'role'"                                          \
+       " AND subject_location = " G_STRINGIFY (LOCATION_TABLE)                 \
+       " AND subject = (SELECT id FROM roles WHERE uuid = '%s')"               \
+       " AND name = '" G_STRINGIFY (name) "';",                                \
+       role)
+
+/**
+ * @brief Migrate the database from version 152 to version 153.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_152_to_153 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 152. */
+
+  if (manage_db_version () != 152)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Command MODIFY_ASSET was added.  Also remove permissions added in previous
+   * two migrators on roles that have "Everything". */
+
+  INSERT_PERMISSION (modify_asset, ROLE_UUID_USER);
+
+  DELETE_PERMISSION (create_asset, ROLE_UUID_ADMIN);
+  DELETE_PERMISSION (create_asset, ROLE_UUID_SUPER_ADMIN);
+  DELETE_PERMISSION (get_assets, ROLE_UUID_ADMIN);
+  DELETE_PERMISSION (get_assets, ROLE_UUID_SUPER_ADMIN);
+  DELETE_PERMISSION (delete_asset, ROLE_UUID_ADMIN);
+  DELETE_PERMISSION (delete_asset, ROLE_UUID_SUPER_ADMIN);
+
+  /* Set the database version to 153. */
+
+  set_db_version (153);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
 #ifdef SQL_IS_SQLITE
 #define SQLITE_OR_NULL(function) function
 #else
@@ -10437,6 +10486,7 @@ static migrator_t database_migrators[]
     {150, migrate_149_to_150},
     {151, migrate_150_to_151},
     {152, migrate_151_to_152},
+    {153, migrate_152_to_153},
     /* End marker. */
     {-1, NULL}};
 

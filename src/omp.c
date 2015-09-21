@@ -3213,6 +3213,29 @@ modify_alert_data_reset (modify_alert_data_t *data)
 }
 
 /**
+ * @brief Command data for the modify_asset command.
+ */
+typedef struct
+{
+  char *comment;                 ///< Comment.
+  char *asset_id;                ///< asset UUID.
+} modify_asset_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+modify_asset_data_reset (modify_asset_data_t *data)
+{
+  free (data->comment);
+  free (data->asset_id);
+
+  memset (data, 0, sizeof (modify_asset_data_t));
+}
+
+/**
  * @brief Authentication method settings.
  */
 typedef struct
@@ -4257,6 +4280,7 @@ typedef union
   help_data_t help;                                   ///< help
   modify_agent_data_t modify_agent;                   ///< modify_agent
   modify_alert_data_t modify_alert;                   ///< modify_alert
+  modify_asset_data_t modify_asset;                   ///< modify_asset
   modify_auth_data_t modify_auth;                     ///< modify_auth
   modify_config_data_t modify_config;                 ///< modify_config
   modify_filter_data_t modify_filter;                 ///< modify_filter
@@ -4771,6 +4795,12 @@ modify_agent_data_t *modify_agent_data
  */
 modify_alert_data_t *modify_alert_data
  = &(command_data.modify_alert);
+
+/**
+ * @brief Parser callback data for MODIFY_ASSET.
+ */
+modify_asset_data_t *modify_asset_data
+ = &(command_data.modify_asset);
 
 /**
  * @brief Parser callback data for MODIFY_AUTH.
@@ -5403,6 +5433,8 @@ typedef enum
   CLIENT_MODIFY_ALERT_METHOD_DATA,
   CLIENT_MODIFY_ALERT_METHOD_DATA_NAME,
   CLIENT_MODIFY_ALERT_NAME,
+  CLIENT_MODIFY_ASSET,
+  CLIENT_MODIFY_ASSET_COMMENT,
   CLIENT_MODIFY_AUTH,
   CLIENT_MODIFY_AUTH_GROUP,
   CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING,
@@ -7703,6 +7735,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &modify_alert_data->alert_id);
             set_client_state (CLIENT_MODIFY_ALERT);
           }
+        else if (strcasecmp ("MODIFY_ASSET", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "asset_id",
+                              &modify_asset_data->asset_id);
+            set_client_state (CLIENT_MODIFY_ASSET);
+          }
         else if (strcasecmp ("MODIFY_AUTH", element_name) == 0)
           set_client_state (CLIENT_MODIFY_AUTH);
         else if (strcasecmp ("MODIFY_CONFIG", element_name) == 0)
@@ -8074,6 +8112,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_MODIFY_ALERT_METHOD_DATA_NAME);
         ELSE_ERROR ("modify_alert");
+
+      case CLIENT_MODIFY_ASSET:
+        if (strcasecmp ("COMMENT", element_name) == 0)
+          {
+            openvas_append_string (&modify_asset_data->comment, "");
+            set_client_state (CLIENT_MODIFY_ASSET_COMMENT);
+          }
+        ELSE_ERROR ("modify_asset");
 
       case CLIENT_MODIFY_AUTH:
         if (strcasecmp ("GROUP", element_name) == 0)
@@ -18004,7 +18050,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               GString *result;
               iterator_t identifiers;
 
-              /* Assets are currently always read only. */
+              /* Assets are currently always writable. */
               if (send_get_common ("asset", &get_assets_data->get, &assets,
                                    write_to_client, write_to_client_data,
                                    asset_iterator_writable (&assets),
@@ -24191,6 +24237,65 @@ create_task_fail:
         }
       CLOSE (CLIENT_MODIFY_ALERT_METHOD_DATA, NAME);
 
+      case CLIENT_MODIFY_ASSET:
+        {
+          assert (strcasecmp ("MODIFY_ASSET", element_name) == 0);
+
+          switch (modify_asset
+                   (modify_asset_data->asset_id,
+                    modify_asset_data->comment))
+            {
+              case 0:
+                SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_asset"));
+                log_event ("asset", "Asset", modify_asset_data->asset_id,
+                           "modified");
+                break;
+              case 1:
+                if (send_find_error_to_client ("modify_asset", "asset",
+                                               modify_asset_data->asset_id,
+                                               omp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                log_event_fail ("asset", "Asset", modify_asset_data->asset_id,
+                                "modified");
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_asset",
+                                    "asset with new name exists already"));
+                log_event_fail ("asset", "Asset", modify_asset_data->asset_id,
+                                "modified");
+                break;
+              case 3:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_asset",
+                                    "MODIFY_asset requires a asset_id"));
+                log_event_fail ("asset", "Asset", modify_asset_data->asset_id,
+                                "modified");
+                break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_asset",
+                                    "Permission denied"));
+                log_event_fail ("asset", "Asset", modify_asset_data->asset_id,
+                                "modified");
+                break;
+              default:
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_asset"));
+                log_event_fail ("asset", "Asset", modify_asset_data->asset_id,
+                                "modified");
+                break;
+            }
+
+          modify_asset_data_reset (modify_asset_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      CLOSE (CLIENT_MODIFY_ASSET, COMMENT);
+
       case CLIENT_MODIFY_AUTH:
         {
           GSList *item;
@@ -28663,6 +28768,10 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_ALERT_METHOD_DATA_NAME,
               &modify_alert_data->part_name);
+
+
+      APPEND (CLIENT_MODIFY_ASSET_COMMENT,
+              &modify_asset_data->comment);
 
 
       APPEND (CLIENT_MODIFY_FILTER_COMMENT,
