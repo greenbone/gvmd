@@ -52462,6 +52462,7 @@ create_asset_report (const char *report_id)
 {
   resource_t report;
   iterator_t hosts;
+  gchar *quoted_report_id;
 
   if (report_id == NULL)
     return -1;
@@ -52493,24 +52494,23 @@ create_asset_report (const char *report_id)
   if (identifier_hosts == NULL)
     identifier_hosts = make_array ();
 
+  quoted_report_id = sql_quote (report_id);
+  sql ("DELETE FROM host_identifiers WHERE source_id = '%s';",
+       quoted_report_id);
+  sql ("DELETE FROM host_oss WHERE source_id = '%s';",
+       quoted_report_id);
+  sql ("DELETE FROM host_max_severities WHERE source_id = '%s';",
+       quoted_report_id);
+  sql ("DELETE FROM host_details WHERE source_id = '%s';",
+       quoted_report_id);
+  g_free (quoted_report_id);
+
   init_report_host_iterator (&hosts, report, NULL, 0);
   while (next (&hosts))
     {
       const char *host;
       report_host_t report_host;
       iterator_t details;
-      gchar *quoted_report_id;
-
-      quoted_report_id = sql_quote (report_id);
-      sql ("DELETE FROM host_identifiers WHERE source_id = '%s';",
-           quoted_report_id);
-      sql ("DELETE FROM host_oss WHERE source_id = '%s';",
-           quoted_report_id);
-      sql ("DELETE FROM host_max_severities WHERE source_id = '%s';",
-           quoted_report_id);
-      sql ("DELETE FROM host_details WHERE source_id = '%s';",
-           quoted_report_id);
-      g_free (quoted_report_id);
 
       host = host_iterator_host (&hosts);
       host_notice (host, "ip", host, "Report Host", report_id, 0);

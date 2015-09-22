@@ -1,3 +1,9 @@
+2015-09-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (create_asset_report): Delete existing asset info
+	outside the loop, else previous hosts are deleted when there are
+	multiple hosts.
+
 2015-09-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In case CLIENT_CREATE_CONFIG
