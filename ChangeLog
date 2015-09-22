@@ -1,3 +1,8 @@
+2015-09-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In case CLIENT_CREATE_CONFIG
+	make message for failure to get scanner params more verbose.
+
 2015-09-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add ASSET to RESULT/HOST, because the detailed HOST (which also has an

@@ -20282,7 +20282,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   case 4:
                     SENDF_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_config",
-                                        "Failed to get params from scanner"));
+                                        "Failed to get params from scanner"
+                                        " - the scanner may be offline or not"
+                                        " configured correctly"));
                     break;
                   case 99:
                     SEND_TO_CLIENT_OR_FAIL
