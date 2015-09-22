@@ -1,3 +1,10 @@
+2015-09-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r23421.
+
+	* src/omp.c (omp_xml_handle_end_element): In case CLIENT_CREATE_CONFIG
+	make message for failure to get scanner params more verbose.
+
 2015-09-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r23374.
