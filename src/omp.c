@@ -11379,13 +11379,15 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
 {
   const char *descr = result_iterator_descr (results);
   const char *name, *owner_name, *comment, *creation_time, *modification_time;
-  gchar *nl_descr = descr ? convert_to_newlines (descr) : NULL;
+  gchar *nl_descr, *asset_id;
   const char *qod = result_iterator_qod (results);
   const char *qod_type = result_iterator_qod_type (results);
   result_t result = result_iterator_result (results);
   char *uuid;
   char *detect_ref, *detect_cpe, *detect_loc, *detect_oid, *detect_name;
   task_t selected_task;
+
+  nl_descr = descr ? convert_to_newlines (descr) : NULL;
 
   result_uuid (result, &uuid);
 
@@ -11505,9 +11507,25 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   g_free (detect_oid);
   g_free (detect_name);
 
-  buffer_xml_append_printf
-   (buffer, "<host>%s</host><port>%s</port>",
-    result_iterator_host (results), result_iterator_port (results));
+  if (result_iterator_host (results))
+    asset_id = result_host_asset_id (result_iterator_host (results),
+                                     get_iterator_resource (results));
+  else
+    asset_id = NULL;
+
+  buffer_xml_append_printf (buffer,
+                            "<host>"
+                            "%s"
+                            "<asset asset_id=\"%s\"/>"
+                            "</host>",
+                            result_iterator_host (results),
+                            asset_id ? asset_id : "");
+  free (asset_id);
+
+  buffer_xml_append_printf (buffer,
+                            "<port>%s</port>",
+                            result_iterator_port (results));
+
   results_xml_append_nvt (results, buffer);
 
   buffer_xml_append_printf

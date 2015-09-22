@@ -19109,7 +19109,8 @@ init_report_errors_iterator (iterator_t* iterator, report_t report)
                    "           WHERE nvts.oid = results.nvt), ''),"
                    " coalesce((SELECT cvss_base FROM nvts"
                    "           WHERE nvts.oid = results.nvt), ''),"
-                   " results.nvt_version, results.severity"
+                   " results.nvt_version, results.severity,"
+                   " results.id"
                    " FROM results"
                    " WHERE results.type = 'Error Message'"
                    "  AND results.report = %llu",
@@ -19195,6 +19196,20 @@ DEF_ACCESS (report_errors_iterator_scan_nvt_version, 6);
  *         Caller must use only before calling cleanup_iterator.
  */
 DEF_ACCESS (report_errors_iterator_severity, 7);
+
+/**
+ * @brief Get the result from a report error messages iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Result.
+ */
+result_t
+report_errors_iterator_result (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int64 (iterator, 8);
+}
 
 /**
  * @brief Initialise a report host details iterator.
@@ -23162,12 +23177,15 @@ print_report_host_details_xml (report_host_t report_host, FILE *stream)
  * @param[in]   stream      Stream to write to.
  * @param[in]   errors      Pointer to report error messages iterator.
  */
-#define PRINT_REPORT_ERROR(stream, errors)                                 \
+#define PRINT_REPORT_ERROR(stream, errors, asset_id)                       \
   do                                                                       \
     {                                                                      \
       PRINT (stream,                                                       \
              "<error>"                                                     \
-             "<host>%s</host>"                                             \
+             "<host>"                                                      \
+             "%s"                                                          \
+             "<asset asset_id=\"%s\"/>"                                    \
+             "</host>"                                                     \
              "<port>%s</port>"                                             \
              "<description>%s</description>"                               \
              "<nvt oid=\"%s\">"                                            \
@@ -23179,6 +23197,7 @@ print_report_host_details_xml (report_host_t report_host, FILE *stream)
              "<severity>%s</severity>"                                     \
              "</error>",                                                   \
              report_errors_iterator_host (errors),                         \
+             asset_id ? asset_id : "",                                     \
              report_errors_iterator_port (errors),                         \
              report_errors_iterator_desc (errors),                         \
              report_errors_iterator_nvt_oid (errors),                      \
@@ -23206,7 +23225,14 @@ print_report_errors_xml (report_t report, FILE *stream)
 
   PRINT (stream, "<errors><count>%i</count>", report_error_count (report));
   while (next (&errors))
-    PRINT_REPORT_ERROR (stream, &errors);
+    {
+      char *asset_id;
+
+      asset_id = result_host_asset_id (report_errors_iterator_host (&errors),
+                                       report_errors_iterator_result (&errors));
+      PRINT_REPORT_ERROR (stream, &errors, asset_id);
+      free (asset_id);
+    }
   cleanup_iterator (&errors);
   PRINT (stream, "</errors>");
 
@@ -51212,6 +51238,39 @@ manage_empty_trashcan ()
 
 
 /* Assets. */
+
+/**
+ * @brief Return the UUID of the asset associated with a result host.
+ *
+ * @param[in]  host    Host value from result.
+ * @param[in]  result  Result.
+ *
+ * @return Asset UUID.
+ */
+char *
+result_host_asset_id (const char *host, result_t result)
+{
+  gchar *quoted_host;
+  char *asset_id;
+
+  quoted_host = sql_quote (host);
+  asset_id = sql_string ("SELECT uuid FROM hosts"
+                         " WHERE id = (SELECT host FROM host_identifiers"
+                         "             WHERE source_type = 'Report Host'"
+                         "             AND name = 'ip'"
+                         "             AND source_id"
+                         "                 = (SELECT uuid"
+                         "                    FROM reports"
+                         "                    WHERE id = (SELECT report"
+                         "                                FROM results"
+                         "                                WHERE id = %llu))"
+                         "             AND value = '%s'"
+                         "             LIMIT 1);",
+                         result,
+                         quoted_host);
+  g_free (quoted_host);
+  return asset_id;
+}
 
 /**
  * @brief Return the UUID of a host.

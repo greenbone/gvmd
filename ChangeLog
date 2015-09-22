@@ -1,3 +1,18 @@
+2015-09-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add ASSET to RESULT/HOST, because the detailed HOST (which also has an
+	ASSET) is not always available.
+
+	* src/manage_sql.c (init_report_errors_iterator): Add result ID.
+	(report_errors_iterator_result): New function.
+	(PRINT_REPORT_ERROR): Add ASSET to HOST.
+	(print_report_errors_xml): Pass asset ID to printer.
+	(result_host_asset_id): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (buffer_results_xml): Add result ASSET to HOST.
+
 2015-09-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add MODIFY_ASSET.  Hence increase database version to 153.  Add
