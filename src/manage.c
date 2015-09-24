@@ -2820,6 +2820,48 @@ delete_osp_scan (const char *report_id, const char *host, int port,
 }
 
 /**
+ * @brief Get an OSP scan's report.
+ *
+ * @param[in]   scan_id     Scan ID.
+ * @param[in]   host        Scanner host.
+ * @param[in]   port        Scanner port.
+ * @param[in]   ca_pub      CA Certificate.
+ * @param[in]   key_pub     Certificate.
+ * @param[in]   key_priv    Private key.
+ * @param[in]   details     1 for detailed report, 0 otherwise.
+ * @param[out]  report_xml  Scan report.
+ *
+ * @return -1 on error, progress value between 0 and 100 on success.
+ */
+static int
+get_osp_scan_report (const char *scan_id, const char *host, int port,
+                     const char *ca_pub, const char *key_pub, const char
+                     *key_priv, int details, char **report_xml)
+{
+  osp_connection_t *connection;
+  int progress;
+
+  connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
+  if (!connection)
+    {
+      g_warning ("Couldn't connect to OSP scanner on %s:%d\n", host, port);
+      return -1;
+    }
+  progress = osp_get_scan (connection, scan_id, report_xml, details);
+  if (progress > 100 || progress < 0)
+    {
+      g_warning ("Erroneous progress value %d in OSP report", progress);
+      g_free (*report_xml);
+      return -1;
+    }
+  if (progress < 100)
+    return progress;
+
+  osp_connection_close (connection);
+  return 100;
+}
+
+/**
  * @brief Handle an ongoing OSP scan, until success or failure.
  *
  * @param[in]   task        The task.
@@ -2843,35 +2885,34 @@ handle_osp_scan (task_t task, report_t report, const char *report_id)
   key_priv = scanner_key_priv (scanner);
   while (1)
     {
-      int progress;
-      osp_connection_t *connection;
       char *report_xml = NULL;
 
-      connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
-      if (!connection)
+      int progress = get_osp_scan_report (report_id, host, port, ca_pub,
+                                          key_pub, key_priv, 0, &report_xml);
+      if (progress == -1)
         {
-          g_warning ("Couldn't connect to OSP scanner on %s:%d\n", host, port);
-          rc = 1;
+          rc = -1;
           break;
         }
-
-      progress = osp_get_scan (connection, report_id, &report_xml);
-      osp_connection_close (connection);
-      assert (progress <= 100 && progress >= 0);
-      if (progress == 100)
+      else if (progress < 100)
         {
-          /* Parse the report XML. */
+          set_report_slave_progress (report, progress);
+          g_free (report_xml);
+          openvas_sleep (10);
+        }
+      else if (progress == 100)
+        {
+          /* Get the full OSP report. */
+          g_free (report_xml);
+          progress = get_osp_scan_report (report_id, host, port, ca_pub,
+                                          key_pub, key_priv, 1, &report_xml);
+          assert (progress == 100);
           parse_osp_report (task, report, report_xml);
           g_free (report_xml);
           delete_osp_scan (report_id, host, port, ca_pub, key_pub, key_priv);
           rc = 0;
           break;
         }
-      else
-        set_report_slave_progress (report, progress);
-
-      g_free (report_xml);
-      openvas_sleep (10);
     }
 
   g_free (host);

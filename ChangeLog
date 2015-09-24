@@ -1,3 +1,11 @@
+2015-09-24  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	Backport r23037.
+
+	* src/manage.c (get_osp_scan_report): New function.
+	(handle_osp_scan): Adjust to use new function. Only get detailed scan
+	report when scan is finished.
+
 2015-09-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r23421.
