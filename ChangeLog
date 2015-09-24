@@ -1,3 +1,8 @@
+2015-09-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_TASK, if
+	the target UUID is given as 0 then create a container task.
+
 2015-09-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_asset_report): Delete existing asset info

@@ -23491,13 +23491,34 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           /* Check for the right combination of target and config. */
 
-          if (create_task_data->config_id == NULL
-              || create_task_data->target_id == NULL)
+          if (create_task_data->target_id == NULL)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_task",
-                                  "CREATE_TASK requires a config"
-                                  " a scanner, and a target"));
+                                  "CREATE_TASK requires a target"));
+              goto create_task_fail;
+            }
+
+          if (strcmp (create_task_data->target_id, "0") == 0)
+            {
+              /* Container task. */
+
+              set_task_target (create_task_data->task, 0);
+              SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_task"),
+                                       tsk_uuid);
+              make_task_complete (tsk_uuid);
+              log_event ("task", "Task", tsk_uuid, "created");
+              g_free (tsk_uuid);
+              create_task_data_reset (create_task_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
+          if (create_task_data->config_id == NULL)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_task",
+                                  "CREATE_TASK requires a config"));
               goto create_task_fail;
             }
 
