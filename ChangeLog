@@ -1,3 +1,8 @@
+2015-09-25  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (create_config_from_scanner): Adjust handling of osp
+	selection parameter type.
+
 2015-09-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_TASK, if

@@ -30669,12 +30669,16 @@ create_config_from_scanner (const char *scanner_id, const char *name,
           char *param_type, *param_def, *param_value = NULL;
 
           param_type = sql_quote (osp_param_type_str (param));
-          param_def = sql_quote (osp_param_default (param));
           if (!strcmp (param_type, "selection"))
             {
-              param_value = g_strdup (param_def);
-              param_value = strtok (param_value, "|");
+              char **strarray = g_strsplit (osp_param_default (param), "|", 2);
+
+              param_value = sql_quote (strarray[0] ?: "");
+              param_def = sql_quote (strarray[1] ?: param_value);
+              g_strfreev (strarray);
             }
+          else
+            param_def = sql_quote (osp_param_default (param));
           sql ("INSERT INTO config_preferences (config, name, type, value,"
                " default_value) VALUES (%llu, '%s', '%s', '%s', '%s')",
                config , param_id, param_type, param_value ?: param_def,
