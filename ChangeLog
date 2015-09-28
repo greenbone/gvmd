@@ -1,3 +1,13 @@
+2015-09-28  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Preparing the openvas-manager 6.0.6 release.
+
+	* CHANGES: Updated.
+
+	* CMakeLists.txt: Raise required openvas-libraries version to 8.0.5.
+
+	* INSTALL: Update required openvas-libraries version.
+
 2015-09-24  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	Backport r23037.

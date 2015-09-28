@@ -1,16 +1,18 @@
-openvas-manager 6.0.6 (2015-XX-XX)
+openvas-manager 6.0.6 (2015-09-28)
 
 This is the sixth maintenance release of the openvas-manager 6.0 module for
 the Open Vulnerability Assessment System release 8 (OpenVAS-8).
 
 This release addresses a number of issues discovered after the release of
 OpenVAS Manager 6.0.5 and incorporates several improvements from the development
-branch of OpenVAS. Please see below for a comprehensive list of changes.
+branch of OpenVAS. It raises the required minimum OpenVAS Libraries version to
+8.0.5. Please see below for a comprehensive list of changes.
 
 Many thanks to everyone who contributed to this release:
 Hani Benhabiles, Matthew Mundell, Timo Pollmeier and Michael Wiegand.
 
 Main changes compared to 6.0.5:
+* The required minimum OpenVAS Libraries version has increased to 8.0.5.
 * An issue which caused different permission when sharing objects in a group has
   been fixed.
 * An issue with displaying error results when using dynamic severity has been
@@ -22,7 +24,10 @@ Main changes compared to 6.0.5:
 * The Verinice_ISM report format plugin has been updated.
 * An issue which caused inconsistent severity values under certain circumstances
   has been fixed.
+* The responsiveness under heavy load has been improved.
 * Host details for slave tasks are now available during running tasks.
+* Task user tags are now available in the report XML export.
+* OSP scan details are now only requested once the scan has finished.
 * NVTi cache update handling has been improved.
 * Authentication failures are now logged.
 * An issue which caused incorrect NVT counts in scan configurations has been

@@ -205,9 +205,9 @@ message ("-- Install prefix: ${CMAKE_INSTALL_PREFIX}")
 ## list and throw an error, otherwise long install-cmake-install-cmake cycles
 ## might occur.
 
-pkg_check_modules (LIBOPENVAS_OMP REQUIRED libopenvas_omp>=8.0.0)
-pkg_check_modules (LIBOPENVAS_MISC REQUIRED libopenvas_misc>=8.0.0)
-pkg_check_modules (LIBOPENVAS_BASE REQUIRED libopenvas_base>=8.0.0)
+pkg_check_modules (LIBOPENVAS_OMP REQUIRED libopenvas_omp>=8.0.5)
+pkg_check_modules (LIBOPENVAS_MISC REQUIRED libopenvas_misc>=8.0.5)
+pkg_check_modules (LIBOPENVAS_BASE REQUIRED libopenvas_base>=8.0.5)
 pkg_check_modules (GNUTLS REQUIRED gnutls>=2.8)
 pkg_check_modules (GLIB REQUIRED glib-2.0>=2.16)
 
