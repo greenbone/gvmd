@@ -22933,6 +22933,10 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
   int holes, infos, logs, warnings;
   int f_holes, f_infos, f_logs, f_warnings;
   iterator_t hosts;
+  time_t now;
+  gchar *scan_start, *scan_end;
+
+  time (&now);
 
   if (host == NULL)
     {
@@ -23117,6 +23121,16 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
              host_max_results);
     }
 
+  scan_start = g_strdup (iso_time (&now));
+  time (&now);
+  scan_end = g_strdup (iso_time (&now));
+
+  PRINT (out,
+         "<scan_start>%s</scan_start>"
+         "<scan_end>%s</scan_end>",
+         scan_start,
+         scan_end);
+
   array_terminate (buffer);
   index = 0;
   while ((buffer_host = g_ptr_array_index (buffer, index++)))
@@ -23128,6 +23142,18 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
           report_t report;
           int h_holes, h_infos, h_logs, h_warnings, h_false_positives;
           double h_severity;
+
+          PRINT (out,
+                 "<host_start>"
+                 "<host>%s</host>%s"
+                 "</host_start>"
+                 "<host_end>"
+                 "<host>%s</host>%s"
+                 "</host_end>",
+                 buffer_host->ip,
+                 scan_start,
+                 buffer_host->ip,
+                 scan_end);
 
           PRINT (out,
                  "<host>"
@@ -23243,6 +23269,8 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
       cleanup_iterator (&report_hosts);
     }
 
+  g_free (scan_start);
+  g_free (scan_end);
   free_buffer (buffer);
 
   PRINT (out,
