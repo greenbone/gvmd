@@ -1,3 +1,8 @@
+2015-09-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (print_report_prognostic_xml): Add the scan and host start
+	and end elements, at least because the NBE report requires them.
+
 2015-09-25  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (create_config_from_scanner): Adjust handling of osp
