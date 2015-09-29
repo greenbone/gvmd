@@ -52029,7 +52029,7 @@ DEF_ACCESS (host_identifier_iterator_os_title,
  * @brief Filter columns for host iterator.
  */
 #define HOST_ITERATOR_FILTER_COLUMNS                      \
- { GET_ITERATOR_FILTER_COLUMNS, "severity", NULL }
+ { GET_ITERATOR_FILTER_COLUMNS, "severity", "os", NULL }
 
 /**
  * @brief Host iterator columns.
@@ -52052,6 +52052,35 @@ DEF_ACCESS (host_identifier_iterator_os_title,
      " ORDER by creation_time DESC"                       \
      " LIMIT 1)",                                         \
      "severity"                                           \
+   },                                                     \
+   {                                                      \
+     "(SELECT CASE"                                                   \
+     "        WHEN best_os_text LIKE '%[possible conflict]%'"         \
+     "        THEN best_os_text"                                      \
+     "        WHEN best_os_cpe IS NULL"                               \
+     "        THEN '[unknown]'"                                       \
+     "        ELSE best_os_cpe"                                       \
+     "        END"                                                    \
+     " FROM (SELECT (SELECT value"                                    \
+     "               FROM (SELECT max (id) AS id"                     \
+     "                     FROM host_details"                         \
+     "                     WHERE host = hosts.id"                     \
+     "                     AND name = 'best_os_cpe')"                 \
+     "                     AS sub,"                                   \
+     "                    host_details"                               \
+     "               WHERE sub.id = host_details.id)"                 \
+     "              AS best_os_cpe,"                                  \
+     "              (SELECT value"                                    \
+     "               FROM (SELECT max (id) AS id"                     \
+     "                     FROM host_details"                         \
+     "                     WHERE host = hosts.id"                     \
+     "                     AND name = 'best_os_text')"                \
+     "                     AS sub,"                                   \
+     "                    host_details"                               \
+     "               WHERE sub.id = host_details.id)"                 \
+     "              AS best_os_text)"                                 \
+     "      AS vars)",                                                \
+     "os"                                                 \
    },                                                     \
    { NULL, NULL }                                         \
  }
