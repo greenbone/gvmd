@@ -1,5 +1,9 @@
 2015-09-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (HOST_ITERATOR_COLUMNS): Align backslashes.
+
+2015-09-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (HOST_ITERATOR_COLUMNS, HOST_ITERATOR_COLUMNS): Add "os".
 
 2015-09-29  Hani Benhabiles <hani.benhabiles@greenbone.net>

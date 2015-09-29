@@ -52034,26 +52034,26 @@ DEF_ACCESS (host_identifier_iterator_os_title,
 /**
  * @brief Host iterator columns.
  */
-#define HOST_ITERATOR_COLUMNS                             \
- {                                                        \
-   GET_ITERATOR_COLUMNS (hosts),                          \
-   {                                                      \
-     "1",                                                 \
-     "writable"                                           \
-   },                                                     \
-   {                                                      \
-     "0",                                                 \
-     "in_use"                                             \
-   },                                                     \
-   {                                                      \
-     "(SELECT round (CAST (severity AS numeric), 1)"      \
-     " FROM host_max_severities"                          \
-     " WHERE host = hosts.id"                             \
-     " ORDER by creation_time DESC"                       \
-     " LIMIT 1)",                                         \
-     "severity"                                           \
-   },                                                     \
-   {                                                      \
+#define HOST_ITERATOR_COLUMNS                                         \
+ {                                                                    \
+   GET_ITERATOR_COLUMNS (hosts),                                      \
+   {                                                                  \
+     "1",                                                             \
+     "writable"                                                       \
+   },                                                                 \
+   {                                                                  \
+     "0",                                                             \
+     "in_use"                                                         \
+   },                                                                 \
+   {                                                                  \
+     "(SELECT round (CAST (severity AS numeric), 1)"                  \
+     " FROM host_max_severities"                                      \
+     " WHERE host = hosts.id"                                         \
+     " ORDER by creation_time DESC"                                   \
+     " LIMIT 1)",                                                     \
+     "severity"                                                       \
+   },                                                                 \
+   {                                                                  \
      "(SELECT CASE"                                                   \
      "        WHEN best_os_text LIKE '%[possible conflict]%'"         \
      "        THEN best_os_text"                                      \
@@ -52080,9 +52080,9 @@ DEF_ACCESS (host_identifier_iterator_os_title,
      "               WHERE sub.id = host_details.id)"                 \
      "              AS best_os_text)"                                 \
      "      AS vars)",                                                \
-     "os"                                                 \
-   },                                                     \
-   { NULL, NULL }                                         \
+     "os"                                                             \
+   },                                                                 \
+   { NULL, NULL }                                                     \
  }
 
 /**
