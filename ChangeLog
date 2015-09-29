@@ -1,3 +1,10 @@
+2015-09-29  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	Backport r23438.
+
+	* src/manage_sql.c (create_config_from_scanner): Adjust handling of osp
+	selection parameter type.
+
 2015-09-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r23456.
