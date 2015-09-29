@@ -2101,6 +2101,9 @@ const char*
 asset_os_iterator_latest_severity (iterator_t *);
 
 const char*
+asset_os_iterator_highest_severity (iterator_t *);
+
+const char*
 asset_os_iterator_average_severity (iterator_t *);
 
 int

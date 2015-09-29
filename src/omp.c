@@ -18154,18 +18154,23 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               if (g_strcmp0 ("os", get_assets_data->type) == 0)
                 {
                   iterator_t os_hosts;
-                  const char *latest, *average;
+                  const char *latest, *highest, *average;
 
                   latest = asset_os_iterator_latest_severity (&assets);
+                  highest = asset_os_iterator_highest_severity (&assets);
                   average = asset_os_iterator_average_severity (&assets);
                   g_string_append_printf (result,
                                           "<latest_severity>"
                                           "<value>%s</value>"
                                           "</latest_severity>"
+                                          "<highest_severity>"
+                                          "<value>%s</value>"
+                                          "</highest_severity>"
                                           "<average_severity>"
                                           "<value>%s</value>"
                                           "</average_severity>",
                                           latest ? latest : "",
+                                          highest ? highest : "",
                                           average ? average : "");
 
                   g_string_append_printf (result,

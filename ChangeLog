@@ -1,5 +1,16 @@
 2015-09-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (OS_ITERATOR_FILTER_COLUMNS)
+	(OS_ITERATOR_COLUMNS): Add highest_severity.
+	(asset_os_iterator_highest_severity): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Send HIGHEST_SEVERITY in OS
+	in GET_ASSETS.
+
+2015-09-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (HOST_ITERATOR_FILTER_COLUMNS)
 	(HOST_ITERATOR_COLUMNS): Add "oss", which is a comma separated list of
 	all CPEs of OSs identified on the host.

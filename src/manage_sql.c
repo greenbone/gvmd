@@ -52178,7 +52178,7 @@ asset_host_count (const get_data_t *get)
  */
 #define OS_ITERATOR_FILTER_COLUMNS                                           \
  { GET_ITERATOR_FILTER_COLUMNS, "title", "installs", "latest_severity",      \
-   "average_severity" }
+   "highest_severity", "average_severity" }
 
 /**
  * @brief OS iterator columns.
@@ -52210,6 +52210,13 @@ asset_host_count (const get_data_t *get)
      "               ORDER BY creation_time DESC LIMIT 1)"                    \
      " ORDER BY creation_time DESC LIMIT 1)",                                 \
      "latest_severity"                                                        \
+   },                                                                         \
+   {                                                                          \
+     "(SELECT round (max (CAST (severity AS numeric)), 1)"                    \
+     " FROM host_max_severities"                                              \
+     " WHERE host IN (SELECT DISTINCT host FROM host_oss"                     \
+     "                WHERE os = oss.id))",                                   \
+     "highest_severity"                                                       \
    },                                                                         \
    {                                                                          \
      "(SELECT round (CAST (avg (severity) AS numeric), 2)"                    \
@@ -52279,7 +52286,7 @@ asset_os_iterator_installs (iterator_t* iterator)
 }
 
 /**
- * @brief Get the severity from an OS iterator.
+ * @brief Get the latest severity from an OS iterator.
  *
  * @param[in]  iterator  Iterator.
  *
@@ -52289,14 +52296,24 @@ asset_os_iterator_installs (iterator_t* iterator)
 DEF_ACCESS (asset_os_iterator_latest_severity, GET_ITERATOR_COLUMN_COUNT + 4);
 
 /**
- * @brief Get the severity from an OS iterator.
+ * @brief Get the highest severity from an OS iterator.
  *
  * @param[in]  iterator  Iterator.
  *
  * @return The severity of the OS, or NULL if iteration is
  *         complete. Freed by cleanup_iterator.
  */
-DEF_ACCESS (asset_os_iterator_average_severity, GET_ITERATOR_COLUMN_COUNT + 5);
+DEF_ACCESS (asset_os_iterator_highest_severity, GET_ITERATOR_COLUMN_COUNT + 5);
+
+/**
+ * @brief Get the average severity from an OS iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The severity of the OS, or NULL if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (asset_os_iterator_average_severity, GET_ITERATOR_COLUMN_COUNT + 6);
 
 /**
  * @brief Count number of oss.
