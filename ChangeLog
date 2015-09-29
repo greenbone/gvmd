@@ -1,3 +1,9 @@
+2015-09-29  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (handle_osp_scan): Add error result for erroneous
+	scan progress value.
+	(fork_osp_scan_handler): Fix return value check. Code style update.
+
 2015-09-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (print_report_prognostic_xml): Add the scan and host start
