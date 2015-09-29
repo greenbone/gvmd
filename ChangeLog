@@ -1,10 +1,17 @@
 2015-09-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (HOST_ITERATOR_FILTER_COLUMNS)
+	(HOST_ITERATOR_COLUMNS): Add "oss", which is a comma separated list of
+	all CPEs of OSs identified on the host.
+
+2015-09-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (HOST_ITERATOR_COLUMNS): Align backslashes.
 
 2015-09-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/omp.c (HOST_ITERATOR_COLUMNS, HOST_ITERATOR_COLUMNS): Add "os".
+	* src/manage_sql.c (HOST_ITERATOR_FILTER_COLUMNS)
+	(HOST_ITERATOR_COLUMNS): Add "os".
 
 2015-09-29  Hani Benhabiles <hani.benhabiles@greenbone.net>
 

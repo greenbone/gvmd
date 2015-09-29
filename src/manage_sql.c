@@ -52028,8 +52028,8 @@ DEF_ACCESS (host_identifier_iterator_os_title,
 /**
  * @brief Filter columns for host iterator.
  */
-#define HOST_ITERATOR_FILTER_COLUMNS                      \
- { GET_ITERATOR_FILTER_COLUMNS, "severity", "os", NULL }
+#define HOST_ITERATOR_FILTER_COLUMNS                                  \
+ { GET_ITERATOR_FILTER_COLUMNS, "severity", "os", "oss", NULL }
 
 /**
  * @brief Host iterator columns.
@@ -52081,6 +52081,12 @@ DEF_ACCESS (host_identifier_iterator_os_title,
      "              AS best_os_text)"                                 \
      "      AS vars)",                                                \
      "os"                                                             \
+   },                                                                 \
+   {                                                                  \
+     "(SELECT group_concat (name, ', ') FROM oss"                     \
+     "  WHERE id IN (SELECT distinct os FROM host_oss"                \
+     "               WHERE host = hosts.id))",                        \
+     "oss"                                                            \
    },                                                                 \
    { NULL, NULL }                                                     \
  }
