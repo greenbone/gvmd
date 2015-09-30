@@ -2775,7 +2775,10 @@ filter_clause (const char* type, const char* filter,
                        || (strcmp (keyword->string, "log") == 0)
                        || (strcmp (keyword->string, "false_positive") == 0)
                        || (strcmp (keyword->string, "hosts") == 0)
-                       || (strcmp (keyword->string, "result_hosts") == 0))
+                       || (strcmp (keyword->string, "result_hosts") == 0)
+                       || (strcmp (keyword->string, "latest_severity") == 0)
+                       || (strcmp (keyword->string, "highest_severity") == 0)
+                       || (strcmp (keyword->string, "average_severity") == 0))
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
@@ -2903,7 +2906,10 @@ filter_clause (const char* type, const char* filter,
                        || (strcmp (keyword->string, "log") == 0)
                        || (strcmp (keyword->string, "false_positive") == 0)
                        || (strcmp (keyword->string, "hosts") == 0)
-                       || (strcmp (keyword->string, "result_hosts") == 0))
+                       || (strcmp (keyword->string, "result_hosts") == 0)
+                       || (strcmp (keyword->string, "latest_severity") == 0)
+                       || (strcmp (keyword->string, "highest_severity") == 0)
+                       || (strcmp (keyword->string, "average_severity") == 0))
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
