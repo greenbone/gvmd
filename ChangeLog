@@ -1,3 +1,12 @@
+2015-09-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): Add host count to HOSTS too,
+	to match filter name.
+
+	* src/manage_sql.c (OS_ITERATOR_FILTER_COLUMNS)
+	(OS_ITERATOR_COLUMNS): Rename "installs" to "hosts" to match GSA column
+	name.
+
 2015-09-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (OS_ITERATOR_FILTER_COLUMNS)

@@ -18176,8 +18176,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   g_string_append_printf (result,
                                           "<title>%s</title>"
                                           "<installs>%i</installs>"
-                                          "<hosts>",
+                                          "<hosts>"
+                                          "%i",
                                           asset_os_iterator_title (&assets),
+                                          asset_os_iterator_installs (&assets),
                                           asset_os_iterator_installs (&assets));
                   init_os_host_iterator (&os_hosts,
                                          get_iterator_resource (&assets));

@@ -52177,7 +52177,7 @@ asset_host_count (const get_data_t *get)
  * @brief Filter columns for os iterator.
  */
 #define OS_ITERATOR_FILTER_COLUMNS                                           \
- { GET_ITERATOR_FILTER_COLUMNS, "title", "installs", "latest_severity",      \
+ { GET_ITERATOR_FILTER_COLUMNS, "title", "hosts", "latest_severity",         \
    "highest_severity", "average_severity" }
 
 /**
@@ -52201,7 +52201,7 @@ asset_host_count (const get_data_t *get)
    },                                                                         \
    {                                                                          \
      "(SELECT count (distinct host) FROM host_oss WHERE os = oss.id)",        \
-     "installs"                                                               \
+     "hosts"                                                                  \
    },                                                                         \
    {                                                                          \
      "(SELECT round (CAST (severity AS numeric), 1) FROM host_max_severities" \
