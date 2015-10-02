@@ -1,3 +1,13 @@
+2015-10-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_pg.c (manage_session_init): Skip INSERT if uuid is NULL.
+
+	* src/manage_sqlite3.c (manage_session_init): Skip INSERT if uuid is
+	NULL.
+
+	* src/manage_sql.c (reports_build_count_cache): Init session for user
+	change.
+
 2015-09-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (filter_clause): Add checks for asset severity
