@@ -15639,6 +15639,7 @@ reports_build_count_cache (int clear, int* changes_out)
                __FUNCTION__, user_name, user_uuid);
       current_credentials.uuid = user_uuid;
       current_credentials.username = user_name;
+      manage_session_init (user_uuid);
 
       owned_clause = where_owned_for_get ("report", NULL);
       init_iterator (&reports,
@@ -15700,6 +15701,7 @@ reports_build_count_cache (int clear, int* changes_out)
   cleanup_iterator (&users);
   current_credentials.uuid = old_uuid;
   current_credentials.username = old_username;
+  manage_session_init (old_uuid);
 
   if (changes_out)
     *changes_out = changes;

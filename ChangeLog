@@ -1,3 +1,15 @@
+2015-10-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r23498.
+
+	* src/manage_pg.c (manage_session_init): Skip INSERT if uuid is NULL.
+
+	* src/manage_sqlite3.c (manage_session_init): Skip INSERT if uuid is
+	NULL.
+
+	* src/manage_sql.c (reports_build_count_cache): Init session for user
+	change.
+
 2015-09-29  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	Backport r23438.
