@@ -1468,6 +1468,7 @@ typedef struct
   char *nvt_name;  ///< Name of NVT preference affects.
   char *nvt_oid;   ///< OID of NVT preference affects.
   array_t *alts;   ///< Array of gchar's.  Alternate values for radio type.
+  char *default_value; ///< Default value of preference.
 } preference_t;
 
 /**
@@ -1483,7 +1484,7 @@ typedef struct
 
 int
 create_config (const char*, const char*, const array_t*, const array_t*,
-               config_t*, char**);
+               const char*, config_t*, char**);
 
 int
 create_config_from_scanner (const char*, const char *, const char *,

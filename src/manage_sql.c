@@ -29500,12 +29500,14 @@ find_config_with_permission (const char* uuid, config_t* config,
  *
  * @param[in]  config       Config.
  * @param[in]  preferences  Preferences.
+ * @param[in]  config_type  Config type.
  *
  * @return 0 success, -1 error, -4 input error.
  */
 static int
 config_insert_preferences (config_t config,
-                           const array_t* preferences /* preference_t. */)
+                           const array_t* preferences /* preference_t. */,
+                           const char* config_type)
 {
   int index = 0;
   const preference_t *preference;
@@ -29527,7 +29529,9 @@ config_insert_preferences (config_t config,
 
             /* Special Timeout preference. */
 
-            if (preference->nvt_oid == NULL) return -4;
+            if (preference->nvt_oid == NULL
+                && (config_type == NULL || strcmp (config_type, "0") == 0))
+              return -4;
 
             quoted_nvt_oid = sql_quote (preference->nvt_oid);
             quoted_value = sql_quote (preference->value);
@@ -29544,32 +29548,57 @@ config_insert_preferences (config_t config,
         else if (preference->type)
           {
             gchar *quoted_type, *quoted_nvt_name, *quoted_preference_name;
+            gchar *quoted_default;
 
-            /* Presume NVT preference. */
+            /* Presume NVT or OSP preference. */
 
-            if (preference->nvt_name == NULL) return -4;
+            if (preference->nvt_name == NULL
+                && (config_type == NULL || strcmp (config_type, "0") == 0))
+              return -4;
 
             value = g_string_new (preference->value);
             while ((alt = (gchar*) g_ptr_array_index (preference->alts, alt_index++)))
               g_string_append_printf (value, ";%s", alt);
 
-            quoted_nvt_name = sql_quote (preference->nvt_name);
+            quoted_nvt_name = preference->nvt_name
+                                ? sql_quote (preference->nvt_name) : NULL;
             quoted_preference_name = sql_quote (preference->name);
             quoted_type = sql_quote (preference->type);
             quoted_value = sql_quote (value->str);
             g_string_free (value, TRUE);
-            /* LDAPsearch[entry]:Timeout value */
-            sql ("INSERT into config_preferences (config, type, name, value)"
-                 " VALUES (%llu, 'PLUGINS_PREFS', '%s[%s]:%s', '%s');",
-                 config,
-                 quoted_nvt_name,
-                 quoted_type,
-                 quoted_preference_name,
-                 quoted_value);
+            quoted_default = preference ? sql_quote (preference->default_value)
+                                        : NULL;
+
+            if (config_type == NULL || strcmp (config_type, "0") == 0)
+              {
+                /* NVT preference */
+                /* LDAPsearch[entry]:Timeout value */
+                sql ("INSERT INTO config_preferences"
+                     " (config, type, name, value)"
+                     " VALUES (%llu, 'PLUGINS_PREFS', '%s[%s]:%s', '%s');",
+                     config,
+                     quoted_nvt_name,
+                     quoted_type,
+                     quoted_preference_name,
+                     quoted_value);
+              }
+            else
+              {
+                /* OSP preference */
+                sql ("INSERT into config_preferences"
+                     " (config, type, name, value, default_value)"
+                     " VALUES (%llu, '%s', '%s', '%s', '%s');",
+                     config,
+                     quoted_type,
+                     quoted_preference_name,
+                     quoted_value,
+                     quoted_default);
+              }
             g_free (quoted_nvt_name);
             g_free (quoted_preference_name);
             g_free (quoted_type);
             g_free (quoted_value);
+            g_free (quoted_default);
           }
         else
           {
@@ -29601,6 +29630,7 @@ config_insert_preferences (config_t config,
  * @param[in]   comment        Comment on config.
  * @param[in]   selectors      NVT selectors.
  * @param[in]   preferences    Preferences.
+ * @param[in]   config_type    Config type.
  * @param[out]  config         On success the config.
  * @param[out]  name           On success the name of the config.
  *
@@ -29612,10 +29642,11 @@ int
 create_config (const char* proposed_name, const char* comment,
                const array_t* selectors /* nvt_selector_t. */,
                const array_t* preferences /* preference_t. */,
-               config_t *config, char **name)
+               const char* config_type, config_t *config, char **name)
 {
   int ret;
   gchar *quoted_comment, *candidate_name, *quoted_candidate_name;
+  gchar *quoted_type;
   char *selector_uuid;
   unsigned int num = 1;
 
@@ -29638,6 +29669,7 @@ create_config (const char* proposed_name, const char* comment,
 
   candidate_name = g_strdup (proposed_name);
   quoted_candidate_name = sql_quote (candidate_name);
+  quoted_type = config_type ? sql_quote (config_type) : g_strdup ("0");
 
   while (1)
     {
@@ -29656,11 +29688,12 @@ create_config (const char* proposed_name, const char* comment,
            " type, creation_time, modification_time)"
            " VALUES (make_uuid (), '%s',"
            " (SELECT id FROM users WHERE users.uuid = '%s'),"
-           " '%s', '%s', 0, m_now (), m_now ());",
+           " '%s', '%s', '%s', m_now (), m_now ());",
            quoted_candidate_name,
            current_credentials.uuid,
            selector_uuid,
-           quoted_comment);
+           quoted_comment,
+           quoted_type);
       g_free (quoted_comment);
     }
   else
@@ -29668,26 +29701,32 @@ create_config (const char* proposed_name, const char* comment,
          " type, creation_time, modification_time)"
          " VALUES (make_uuid (), '%s',"
          " (SELECT id FROM users WHERE users.uuid = '%s'),"
-         " '%s', '', 0, m_now (), m_now ());",
+         " '%s', '', '%s', m_now (), m_now ());",
          quoted_candidate_name,
          current_credentials.uuid,
-         selector_uuid);
+         selector_uuid,
+         quoted_type);
   g_free (quoted_candidate_name);
+  g_free (quoted_type);
 
   /* Insert the selectors into the nvt_selectors table. */
 
   *config = sql_last_insert_id ();
-  if ((ret = insert_nvt_selectors (selector_uuid, selectors)))
+
+  if (config_type && strcmp (config_type, "0") == 0)
     {
-      sql ("ROLLBACK;");
-      free (selector_uuid);
-      return ret;
+      if ((ret = insert_nvt_selectors (selector_uuid, selectors)))
+        {
+          sql ("ROLLBACK;");
+          free (selector_uuid);
+          return ret;
+        }
     }
   free (selector_uuid);
 
   /* Insert the preferences into the config_preferences table. */
 
-  if ((ret = config_insert_preferences (*config, preferences)))
+  if ((ret = config_insert_preferences (*config, preferences, config_type)))
     {
       sql ("ROLLBACK;");
       return ret;

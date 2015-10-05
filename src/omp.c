@@ -767,12 +767,13 @@ command_disabled (omp_parser_t *omp_parser, const gchar *name)
  * @param[in]  nvt_name  Name of NVT of preference.
  * @param[in]  nvt_oid   OID of NVT of preference.
  * @param[in]  alts      Array of gchar's.  Alternative values for type radio.
+ * @param[in]  default_value   Default value of preference.
  *
  * @return Newly allocated preference.
  */
 static gpointer
 preference_new (char *name, char *type, char *value, char *nvt_name,
-                char *nvt_oid, array_t *alts)
+                char *nvt_oid, array_t *alts, char* default_value)
 {
   preference_t *preference;
 
@@ -783,6 +784,7 @@ preference_new (char *name, char *type, char *value, char *nvt_name,
   preference->nvt_name = nvt_name;
   preference->nvt_oid = nvt_oid;
   preference->alts = alts;
+  preference->default_value = default_value;
 
   return preference;
 }
@@ -860,11 +862,13 @@ typedef struct
   array_t *preferences;              ///< Array of preference_t's.
   array_t *preference_alts;          ///< Array of gchar's in PREFERENCES.
   char *preference_alt;              ///< Single radio alternative in PREFERENCE.
+  char *preference_default;          ///< Default value in PREFERENCE.
   char *preference_name;             ///< Name in PREFERENCE.
   char *preference_nvt_name;         ///< NVT name in PREFERENCE.
   char *preference_nvt_oid;          ///< NVT OID in PREFERENCE.
   char *preference_type;             ///< Type in PREFERENCE.
   char *preference_value;            ///< Value in PREFERENCE.
+  char *type;                        ///< Config type.
 } import_config_data_t;
 
 /**
@@ -916,10 +920,12 @@ create_config_data_reset (create_config_data_t *data)
 
   g_free (import->preference_alt);
   g_free (import->preference_name);
+  g_free (import->preference_name);
   g_free (import->preference_nvt_name);
   g_free (import->preference_nvt_oid);
   g_free (import->preference_type);
   g_free (import->preference_value);
+  g_free (import->type);
 
   g_free (data->name);
 
@@ -4909,11 +4915,13 @@ typedef enum
   CLIENT_C_C_GCR_CONFIG_PREFERENCES,
   CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE,
   CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_ALT,
+  CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_DEFAULT,
   CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NAME,
   CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NVT,
   CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NVT_NAME,
   CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_TYPE,
   CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_VALUE,
+  CLIENT_C_C_GCR_CONFIG_TYPE,
   CLIENT_CREATE_FILTER,
   CLIENT_CREATE_FILTER_COMMENT,
   CLIENT_CREATE_FILTER_COPY,
@@ -8604,6 +8612,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             array_reset (&import_config_data->preferences);
             set_client_state (CLIENT_C_C_GCR_CONFIG_PREFERENCES);
           }
+        else if (strcasecmp ("TYPE", element_name) == 0)
+          {
+            set_client_state (CLIENT_C_C_GCR_CONFIG_TYPE);
+          }
         ELSE_ERROR ("create_config");
 
       case CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS:
@@ -8638,6 +8650,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         if (strcasecmp ("ALT", element_name) == 0)
           set_client_state
            (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_ALT);
+        else if (strcasecmp ("DEFAULT", element_name) == 0)
+          set_client_state
+           (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_DEFAULT);
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state
            (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NAME);
@@ -18622,6 +18637,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                      import_config_data->comment,
                                      import_config_data->nvt_selectors,
                                      import_config_data->preferences,
+                                     import_config_data->type,
                                      &new_config,
                                      &name))
                 {
@@ -18852,13 +18868,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                    import_config_data->preference_value,
                                    import_config_data->preference_nvt_name,
                                    import_config_data->preference_nvt_oid,
-                                   import_config_data->preference_alts));
+                                   import_config_data->preference_alts,
+                                   import_config_data->preference_default));
         import_config_data->preference_name = NULL;
         import_config_data->preference_type = NULL;
         import_config_data->preference_value = NULL;
         import_config_data->preference_nvt_name = NULL;
         import_config_data->preference_nvt_oid = NULL;
         import_config_data->preference_alts = NULL;
+        import_config_data->preference_default = NULL;
         set_client_state (CLIENT_C_C_GCR_CONFIG_PREFERENCES);
         break;
       case CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_ALT:
@@ -18868,11 +18886,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         import_config_data->preference_alt = NULL;
         set_client_state (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE);
         break;
+      CLOSE (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE, DEFAULT);
       CLOSE (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE, NAME);
       CLOSE (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE, NVT);
       CLOSE (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NVT, NAME);
       CLOSE (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE, TYPE);
       CLOSE (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE, VALUE);
+      CLOSE (CLIENT_C_C_GCR_CONFIG, TYPE);
 
       case CLIENT_CREATE_ALERT:
         {
@@ -26412,6 +26432,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       APPEND (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_ALT,
               &import_config_data->preference_alt);
 
+      APPEND (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_DEFAULT,
+              &import_config_data->preference_default);
+
       APPEND (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NAME,
               &import_config_data->preference_name);
 
@@ -26423,6 +26446,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_VALUE,
               &import_config_data->preference_value);
+
+      APPEND (CLIENT_C_C_GCR_CONFIG_TYPE,
+              &import_config_data->type);
 
 
       APPEND (CLIENT_CREATE_LSC_CREDENTIAL_COMMENT,

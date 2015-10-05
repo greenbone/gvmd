@@ -1,3 +1,22 @@
+2015-10-05  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r23507.
+
+	Make it possible to import OSP scan configs.
+
+	* src/manage_sql.c (config_insert_preferences, create_config): Add
+	config_type parameter and handle OSP configs and parameters.
+
+	* src/manage.h (preference_t): Add default_value field.
+	(create_config): Add parameter.
+
+	* src/omp.c (preference_new): Add default_value parameter.
+	(import_config_data_t, create_config_data_reset): Add fields
+	preference_default and type.
+	(client_state_t, omp_xml_handle_start_element)
+	(omp_xml_handle_end_element, omp_xml_handle_text): Handle preference
+	default and type elements when importing a config.
+
 2015-10-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r22979.
