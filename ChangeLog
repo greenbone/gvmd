@@ -1,3 +1,9 @@
+2015-10-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r22979.
+
+	* src/manage_sql.c (task_severity): Remove extra FROM clause.
+
 2015-10-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r23498.
