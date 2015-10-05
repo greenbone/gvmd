@@ -100,6 +100,75 @@ CREATE TABLE alerts_trash
   creation_time date,
   modification_time date);
 
+--
+-- Credentials.
+--
+-- This table stores the credentials for LSCs and other functions that require
+--  authentication.
+-- In addition the names for packages or tools to be installed on the
+--  targets are stored.
+CREATE TABLE credentials
+ (id SERIAL PRIMARY KEY,
+    uuid text UNIQUE NOT NULL,
+  owner integer REFERENCES users (id) ON DELETE RESTRICT,
+    -- The OpenVAS name for this credential.
+  name text NOT NULL,
+  comment text,
+  creation_time date,
+  modification_time date,
+    -- The type abbreviation of the credential,
+    --  e.g. "up" for "username + password"
+  type text);
+
+--
+-- Trashcan for credentials.
+--
+CREATE TABLE credentials_trash
+ (id SERIAL PRIMARY KEY,
+  uuid text UNIQUE NOT NULL,
+  owner integer REFERENCES users (id) ON DELETE RESTRICT,
+  name text NOT NULL,
+  comment text,
+  creation_time date,
+  modification_time date,
+  type text);
+
+--
+-- Data table for credentials
+--
+CREATE TABLE credentials_data
+ (id SERIAL PRIMARY KEY,
+    -- The credential the data entry belongs to.
+  credential integer REFERENCES credentials (id),
+    -- The type of data for unencrypted data like "username"
+    --  or "secret" for a container of encrypted data (see "value" column).
+  type TEXT,
+    -- The actual data or an encrypted data container.
+    -- The format of this container is a list of name-value pairs.
+    --  For example:
+    --   <len(8)> "password" <len> <value>
+    --   <len(10)> "private_key" <len> <value>
+    --  The len fields are encoded as 32 bit big endian unsigned
+    --  integer values.  A value of 0 for the value length is is
+    --  allowed and indicates and empty string.  A missing name
+    --  (e.g. "password", indicates a NULL value for that name.
+    --  This format closely resembles an unencrypted
+    --  credential.  However, recursive encryption is not
+    --  supported.  The container itself is OpenPGP encrypted
+    --  with the binary OpenPGP format wrapped into a standard
+    --  base64 encoding without linefeeds or checksums (i.e. it
+    --  is not the armor format).
+  value TEXT);
+
+--
+-- Trashcan for credentials_data
+--
+CREATE TABLE credentials_trash_data
+ (id SERIAL PRIMARY KEY,
+  credential INTEGER,
+  type TEXT,
+  value TEXT);
+
 CREATE TABLE filters
  (id SERIAL PRIMARY KEY,
   uuid text UNIQUE NOT NULL,
@@ -257,14 +326,14 @@ CREATE TABLE targets
   reverse_lookup_only integer,
   reverse_lookup_unify integer,
   comment text,
-  lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT, -- SSH
+  lsc_credential integer REFERENCES credentials (id) ON DELETE RESTRICT, -- SSH
   ssh_port text,
-  smb_lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT,
+  smb_lsc_credential integer REFERENCES credentials (id) ON DELETE RESTRICT,
   port_range integer REFERENCES port_lists (id) ON DELETE RESTRICT,
   alive_test integer,
   creation_time date,
   modification_time date,
-  esxi_lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT);
+  esxi_lsc_credential integer REFERENCES credentials (id) ON DELETE RESTRICT);
 
 CREATE TABLE targets_trash
  (id SERIAL PRIMARY KEY,
@@ -276,16 +345,16 @@ CREATE TABLE targets_trash
   reverse_lookup_only integer,
   reverse_lookup_unify integer,
   comment text,
-  lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT, -- SSH
+  lsc_credential integer REFERENCES credentials (id) ON DELETE RESTRICT, -- SSH
   ssh_port text,
-  smb_lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT,
+  smb_lsc_credential integer REFERENCES credentials (id) ON DELETE RESTRICT,
   port_range integer REFERENCES port_lists (id) ON DELETE RESTRICT,
   ssh_location integer,
   smb_location integer,
   port_list_location integer,
   creation_time date,
   modification_time date,
-  esxi_lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT),
+  esxi_lsc_credential integer REFERENCES credentials (id) ON DELETE RESTRICT),
   esxi_location integer;
 
 CREATE TABLE configs
@@ -638,68 +707,6 @@ CREATE TABLE nvt_cves
   nvt integer REFERENCES nvts (id) ON DELETE RESTRICT,
   oid text,
   cve_name text);
-
---
--- Local Security Check Credentials.
---
--- This table stores the credentials for LSCs.  In addition the names
--- for packages or tools to be installed on the targets are stored.
---
-CREATE TABLE lsc_credentials
- (id SERIAL PRIMARY KEY,
-    uuid text UNIQUE NOT NULL,
-  owner integer REFERENCES users (id) ON DELETE RESTRICT,
-    -- The OpenVAS name for this credential.
-  name text NOT NULL,
-    -- The name of the account.
-  login text,
-    -- We have 3 uses for the password field:
-    -- 1. If private_key is NULL, this is a simple password.
-    -- 2. If private key is not NULL and its values is not ";;encrypted;;"
-    --  this is the passphrase to protect the private key.
-    -- 3. If private_key has the value ";;encrypted;;" this
-    --  is an encrypted container for a password or a private key.
-    --  The format of this container is a list of name-value pairs.
-    --  For example:
-    --   <len(8)> "password" <len> <value>
-    --   <len(10)> "private_key" <len> <value>
-    --  The len fields are encoded as 32 bit big endian unsigned
-    --  integer values.  A value of 0 for the value length is is
-    --  allowed and indicates and empty string.  A missing name
-    --  (e.g. "password", indicates a NULL value for that name.
-    --  This format closely resembles an unencrypted
-    --  lsc_credential.  However, recursive encryption is not
-    --  supported.  The container itself is OpenPGP encrypted
-    --  with the binary OpenPGP format wrapped into a standard
-    --  base64 encoding without linefeeds or checksums (i.e. it
-    --  is not the armor format).
-  password text,
-    -- A comment describing this credential.
-  comment text,
-    -- Private key, commonly used with ssh.
-    -- A flag value of ";;encrypted;;" in the private_key field is used to
-    -- indicate an encrypted credential.  Note: We can't use the password
-    -- field for the flag value because the password field is allowed to
-    -- contain arbitrary data; the private_key field however is a structured
-    -- value (for example PEM or plain base64).
-  private_key text,
-  creation_time date,
-  modification_time date);
-
---
--- Trashcan for lsc_credentials.
---
-CREATE TABLE lsc_credentials_trash
- (id SERIAL PRIMARY KEY,
-  uuid text UNIQUE NOT NULL,
-  owner integer REFERENCES users (id) ON DELETE RESTRICT,
-  name text NOT NULL,
-  login text,
-  password text,
-  comment text,
-  private_key text,
-  creation_time date,
-  modification_time date);
 
 CREATE TABLE notes
  (id SERIAL PRIMARY KEY,

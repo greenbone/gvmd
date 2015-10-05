@@ -313,9 +313,9 @@ command_t omp_commands[]
     {"CREATE_ALERT", "Create an alert."},
     {"CREATE_ASSET", "Create an asset."},
     {"CREATE_CONFIG", "Create a config."},
+    {"CREATE_CREDENTIAL", "Create a credential."},
     {"CREATE_FILTER", "Create a filter."},
     {"CREATE_GROUP", "Create a group."},
-    {"CREATE_LSC_CREDENTIAL", "Create a local security check credential."},
     {"CREATE_NOTE", "Create a note."},
     {"CREATE_OVERRIDE", "Create an override."},
     {"CREATE_PERMISSION", "Create a permission."},
@@ -335,9 +335,9 @@ command_t omp_commands[]
     {"DELETE_ALERT", "Delete an alert."},
     {"DELETE_ASSET", "Delete an asset."},
     {"DELETE_CONFIG", "Delete a config."},
+    {"DELETE_CREDENTIAL", "Delete a credential."},
     {"DELETE_FILTER", "Delete a filter."},
     {"DELETE_GROUP", "Delete a group."},
-    {"DELETE_LSC_CREDENTIAL", "Delete a local security check credential."},
     {"DELETE_NOTE", "Delete a note."},
     {"DELETE_OVERRIDE", "Delete an override."},
     {"DELETE_PERMISSION", "Delete a permission."},
@@ -363,10 +363,10 @@ command_t omp_commands[]
     {"GET_ALERTS", "Get all alerts."},
     {"GET_ASSETS", "Get all assets."},
     {"GET_CONFIGS", "Get all configs."},
+    {"GET_CREDENTIALS", "Get all credentials."},
     {"GET_FILTERS", "Get all filters."},
     {"GET_GROUPS", "Get all groups."},
     {"GET_INFO", "Get raw information for a given item."},
-    {"GET_LSC_CREDENTIALS", "Get all local security check credentials."},
     {"GET_NOTES", "Get all notes."},
     {"GET_NVTS", "Get one or all available NVTs."},
     {"GET_NVT_FAMILIES", "Get a list of all NVT families."},
@@ -395,9 +395,9 @@ command_t omp_commands[]
     {"MODIFY_ASSET", "Modify an existing asset."},
     {"MODIFY_AUTH", "Modify the authentication methods."},
     {"MODIFY_CONFIG", "Update an existing config."},
+    {"MODIFY_CREDENTIAL", "Modify an existing credential."},
     {"MODIFY_FILTER", "Modify an existing filter."},
     {"MODIFY_GROUP", "Modify an existing group."},
-    {"MODIFY_LSC_CREDENTIAL", "Modify an existing LSC credential."},
     {"MODIFY_NOTE", "Modify an existing note."},
     {"MODIFY_OVERRIDE", "Modify an existing override."},
     {"MODIFY_PERMISSION", "Modify an existing permission."},
@@ -3646,10 +3646,10 @@ valid_type (const char* type)
   return (strcasecmp (type, "agent") == 0)
          || (strcasecmp (type, "alert") == 0)
          || (strcasecmp (type, "config") == 0)
+         || (strcasecmp (type, "credential") == 0)
          || (strcasecmp (type, "filter") == 0)
          || (strcasecmp (type, "group") == 0)
          || (strcasecmp (type, "info") == 0)
-         || (strcasecmp (type, "lsc_credential") == 0)
          || (strcasecmp (type, "note") == 0)
          || (strcasecmp (type, "override") == 0)
          || (strcasecmp (type, "permission") == 0)
@@ -3683,7 +3683,7 @@ type_pretty_name (const char* type)
     return "Alert";
   if (strcasecmp (type, "config") == 0)
     return "Config";
-  if (strcasecmp (type, "lsc_credential") == 0)
+  if (strcasecmp (type, "credential") == 0)
     return "Credential";
   if (strcasecmp (type, "filter") == 0)
     return "Filter";
@@ -3743,7 +3743,7 @@ type_db_name (const char* type)
   if (strcasecmp (type, "Config") == 0)
     return "config";
   if (strcasecmp (type, "Credential") == 0)
-    return "lsc_credential";
+    return "credential";
   if (strcasecmp (type, "Filter") == 0)
     return "filter";
   if (strcasecmp (type, "Note") == 0)
@@ -5436,7 +5436,7 @@ set_db_version (int version)
 /**
  * @brief Encrypt, re-encrypt or decrypt all credentials
  *
- * All plaintext credentials in the lsc_credentials table are
+ * All plaintext credentials in the credentials table are
  * encrypted, all already encrypted credentials are encrypted again
  * using the latest key.
  *
@@ -5451,7 +5451,17 @@ encrypt_all_credentials (gboolean decrypt_flag)
   unsigned long ntotal, nencrypted, nreencrypted, ndecrypted;
 
   init_iterator (&iterator,
-                 "SELECT id, password, private_key FROM lsc_credentials");
+                 "SELECT id,"
+                 " (SELECT value FROM credentials_data"
+                 "  WHERE credential = credentials.id"
+                 "  AND type = 'secret'),"
+                 " (SELECT value FROM credentials_data"
+                 "  WHERE credential = credentials.id"
+                 "  AND type = 'password'),"
+                 " (SELECT value FROM credentials_data"
+                 "  WHERE credential = credentials.id"
+                 "  AND type = 'private_key')"
+                 " FROM credentials");
   iterator.crypt_ctx = lsc_crypt_new ();
 
   sql_begin_immediate ();
@@ -5460,29 +5470,26 @@ encrypt_all_credentials (gboolean decrypt_flag)
   while (next (&iterator))
     {
       long long int rowid;
-      const char *password, *privkey;
+      const char *secret, *password, *privkey;
 
       ntotal++;
       if (!(ntotal % 10))
         g_message ("  %lu credentials so far processed", ntotal);
 
       rowid    = iterator_int64 (&iterator, 0);
-      password = iterator_string (&iterator, 1);
-      privkey  = iterator_string (&iterator, 2);
+      secret   = iterator_string (&iterator, 1);
+      password = iterator_string (&iterator, 2);
+      privkey  = iterator_string (&iterator, 3);
 
-      /* If there is no password or private key, skip the row.  */
-      if (!password && !privkey)
+      /* If there is no secret, password or private key, skip the row.  */
+      if (!secret && !password && !privkey)
         continue;
 
-      /* If the row is alread encrypted, retrieve the plaintext values
-         first.  */
-      if (privkey && !strcmp (privkey, ";;encrypted;;"))
+      if (secret)
         {
-          const char *tmp = password;
-
           lsc_crypt_flush (iterator.crypt_ctx);
-          password = lsc_crypt_get_password (iterator.crypt_ctx, tmp);
-          privkey  = lsc_crypt_get_private_key (iterator.crypt_ctx, tmp);
+          password = lsc_crypt_get_password (iterator.crypt_ctx, secret);
+          privkey  = lsc_crypt_get_private_key (iterator.crypt_ctx, secret);
 
           /* If there is no password or private key, skip the row.  */
           if (!password && !privkey)
@@ -5500,17 +5507,12 @@ encrypt_all_credentials (gboolean decrypt_flag)
 
       if (decrypt_flag)
         {
-          char *quoted_password, *quoted_privkey;
-
-          quoted_password = sql_insert (password);
-          quoted_privkey  = sql_insert (privkey);
-
-          sql ("UPDATE lsc_credentials SET password = %s,"
-               " private_key = %s,"
+          set_credential_data (rowid, "password", password);
+          set_credential_data (rowid, "private_key", privkey);
+          set_credential_data (rowid, "secret", NULL);
+          sql ("UPDATE credentials SET"
                " modification_time = m_now ()"
-               " WHERE id = %llu;", quoted_password, quoted_privkey, rowid);
-          g_free (quoted_password);
-          g_free (quoted_privkey);
+               " WHERE id = %llu;", rowid);
           ndecrypted++;
         }
       else
@@ -5534,10 +5536,12 @@ encrypt_all_credentials (gboolean decrypt_flag)
               cleanup_iterator (&iterator);
               return -1;
             }
-          sql ("UPDATE lsc_credentials SET password = '%s',"
-               " private_key = ';;encrypted;;',"
+          set_credential_data (rowid, "password", NULL);
+          set_credential_data (rowid, "private_key", NULL);
+          set_credential_data (rowid, "secret", encblob);
+          sql ("UPDATE credentials SET"
                " modification_time = m_now ()"
-               " WHERE id = %llu;", encblob, rowid);
+               " WHERE id = %llu;", rowid);
           g_free (encblob);
         }
     }
@@ -5557,7 +5561,7 @@ encrypt_all_credentials (gboolean decrypt_flag)
 /**
  * @brief Driver to encrypt or re-encrypt all credentials
  *
- * All plaintext credentials in the lsc_credentials table are
+ * All plaintext credentials in the credentials table are
  * encrypted, all already encrypted credentials are encrypted again
  * using the latest key.
  *
@@ -28682,9 +28686,9 @@ int
 create_target (const char* name, const char* asset_hosts_filter,
                const char* hosts, const char* exclude_hosts,
                const char* comment, const char* port_list_id,
-               const char* port_range, lsc_credential_t ssh_lsc_credential,
-               const char* ssh_port, lsc_credential_t smb_lsc_credential,
-               lsc_credential_t esxi_lsc_credential,
+               const char* port_range, credential_t ssh_lsc_credential,
+               const char* ssh_port, credential_t smb_lsc_credential,
+               credential_t esxi_lsc_credential,
                const char *reverse_lookup_only,
                const char *reverse_lookup_unify, const char *alive_tests,
                int make_name_unique, target_t* target)
@@ -29196,7 +29200,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
   if (ssh_lsc_credential_id)
     {
-      lsc_credential_t ssh_lsc_credential;
+      credential_t ssh_lsc_credential;
       gchar *quoted_ssh_port;
 
       if (target_in_use (target))
@@ -29208,9 +29212,9 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       ssh_lsc_credential = 0;
       if (strcmp (ssh_lsc_credential_id, "0"))
         {
-          if (find_lsc_credential_with_permission (ssh_lsc_credential_id,
-                                                   &ssh_lsc_credential,
-                                                   "get_lsc_credentials"))
+          if (find_credential_with_permission (ssh_lsc_credential_id,
+                                               &ssh_lsc_credential,
+                                               "get_credentials"))
             {
               sql ("ROLLBACK;");
               return -1;
@@ -29247,7 +29251,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
   if (smb_lsc_credential_id)
     {
-      lsc_credential_t smb_lsc_credential;
+      credential_t smb_lsc_credential;
 
       if (target_in_use (target))
         {
@@ -29258,9 +29262,9 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       smb_lsc_credential = 0;
       if (strcmp (smb_lsc_credential_id, "0"))
         {
-          if (find_lsc_credential_with_permission (smb_lsc_credential_id,
-                                                   &smb_lsc_credential,
-                                                   "get_lsc_credentials"))
+          if (find_credential_with_permission (smb_lsc_credential_id,
+                                               &smb_lsc_credential,
+                                               "get_credentials"))
             {
               sql ("ROLLBACK;");
               return -1;
@@ -29283,7 +29287,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
   if (esxi_lsc_credential_id)
     {
-      lsc_credential_t esxi_lsc_credential;
+      credential_t esxi_lsc_credential;
 
       if (target_in_use (target))
         {
@@ -29294,9 +29298,9 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       esxi_lsc_credential = 0;
       if (strcmp (esxi_lsc_credential_id, "0"))
         {
-          if (find_lsc_credential_with_permission (esxi_lsc_credential_id,
-                                                   &esxi_lsc_credential,
-                                                   "get_lsc_credentials"))
+          if (find_credential_with_permission (esxi_lsc_credential_id,
+                                               &esxi_lsc_credential,
+                                               "get_credentials"))
             {
               sql ("ROLLBACK;");
               return -1;
@@ -29449,18 +29453,18 @@ modify_target (const char *target_id, const char *name, const char *hosts,
    { "esxi_lsc_credential", NULL },                         \
    { "0", NULL },                                           \
    {                                                        \
-     "(SELECT name FROM lsc_credentials"                    \
-     " WHERE lsc_credentials.id = lsc_credential)",         \
+     "(SELECT name FROM credentials"                        \
+     " WHERE credentials.id = lsc_credential)",             \
      "ssh_credential"                                       \
    },                                                       \
    {                                                        \
-     "(SELECT name FROM lsc_credentials"                    \
-     " WHERE lsc_credentials.id = smb_lsc_credential)",     \
+     "(SELECT name FROM credentials"                        \
+     " WHERE credentials.id = smb_lsc_credential)",         \
      "smb_credential"                                       \
    },                                                       \
    {                                                        \
-     "(SELECT name FROM lsc_credentials"                    \
-     " WHERE lsc_credentials.id = esxi_lsc_credential)",    \
+     "(SELECT name FROM credentials"                        \
+     " WHERE credentials.id = esxi_lsc_credential)",        \
      "esxi_credential"                                      \
    },                                                       \
    { "hosts", NULL },                                       \
@@ -30005,10 +30009,10 @@ target_ssh_port (target_t target)
  *
  * @return SSH credential if any, else 0.
  */
-lsc_credential_t
+credential_t
 target_ssh_lsc_credential (target_t target)
 {
-  lsc_credential_t lsc_credential;
+  credential_t lsc_credential;
 
   switch (sql_int64 (&lsc_credential,
                      "SELECT lsc_credential FROM targets"
@@ -30037,10 +30041,10 @@ target_ssh_lsc_credential (target_t target)
  *
  * @return SMB credential if any, else 0.
  */
-lsc_credential_t
+credential_t
 target_smb_lsc_credential (target_t target)
 {
-  lsc_credential_t lsc_credential;
+  credential_t lsc_credential;
 
   switch (sql_int64 (&lsc_credential,
                      "SELECT smb_lsc_credential FROM targets"
@@ -30069,10 +30073,10 @@ target_smb_lsc_credential (target_t target)
  *
  * @return ESXi credential if any, else 0.
  */
-lsc_credential_t
+credential_t
 target_esxi_lsc_credential (target_t target)
 {
-  lsc_credential_t lsc_credential;
+  credential_t lsc_credential;
 
   switch (sql_int64 (&lsc_credential,
                      "SELECT esxi_lsc_credential FROM targets"
@@ -34894,35 +34898,98 @@ set_task_preferences (task_t task, array_t *preferences)
 }
 
 
-/* LSC Credentials. */
+/* Credentials. */
 
 /**
  * @brief Find an LSC credential for a specific permission, given a UUID.
  *
  * @param[in]   uuid            UUID of lsc_credential.
- * @param[out]  lsc_credential  LSC credential return, 0 if succesfully failed
- *                              to find LSC credential.
+ * @param[out]  credential      Credential return, 0 if succesfully failed
+ *                              to find Credential.
  * @param[in]   permission      Permission.
  *
  * @return FALSE on success (including if failed to find lsc_credential), TRUE
  *         on error.
  */
 gboolean
-find_lsc_credential_with_permission (const char* uuid,
-                                     lsc_credential_t* lsc_credential,
-                                     const char *permission)
+find_credential_with_permission (const char* uuid,
+                                 credential_t* credential,
+                                 const char *permission)
 {
-  return find_resource_with_permission ("lsc_credential", uuid, lsc_credential,
+  return find_resource_with_permission ("credential", uuid, credential,
                                         permission, 0);
 }
 
 /**
- * @brief Length of password generated in create_lsc_credential.
+ * @brief Set data for a credential.
+ *
+ * @param[in]  credential     The credential.
+ * @param[in]  type           The data type (e.g. "username" or "secret").
+ * @param[in]  value          The value to set or NULL to remove data entry.
+ *
+ * @return  0 on success, -1 on error, 1 credential not found, 99 permission
+ *          denied.
+ */
+int
+set_credential_data (credential_t credential,
+                     const char* type,
+                     const char* value)
+{
+  gchar *quoted_type;
+
+  if (current_credentials.uuid
+      && (acl_user_may ("modify_credential") == 0))
+    return 99;
+
+  if (type == NULL)
+    return -1;
+
+  if (credential == 0)
+    return 1;
+
+  quoted_type = sql_quote (type);
+
+  if (sql_int ("SELECT count (*) FROM credentials_data"
+               " WHERE credential = '%llu' AND type = '%s';",
+               credential, quoted_type))
+    {
+      if (value == NULL)
+        {
+          sql ("DELETE FROM credentials_data"
+               " WHERE credential = '%llu' AND type = '%s';",
+               credential, quoted_type);
+        }
+      else
+        {
+          gchar *quoted_value;
+          quoted_value = sql_quote (value);
+          sql ("UPDATE credentials_data SET value = '%s'"
+              " WHERE credential = %llu AND type = '%s';",
+                quoted_value, credential, quoted_type);
+          g_free (quoted_value);
+        }
+    }
+  else if (value != NULL)
+    {
+      gchar *quoted_value;
+      quoted_value = sql_quote (value);
+      sql ("INSERT INTO credentials_data (credential, type, value)"
+            " VALUES (%llu, '%s', '%s')",
+            credential, quoted_type, quoted_value);
+      g_free (quoted_value);
+    }
+
+  g_free (quoted_type);
+  return 0;
+}
+
+/**
+ * @brief Length of password generated in create_credential.
  */
 #define PASSWORD_LENGTH 10
 
 /**
- * @brief Create an LSC credential.
+ * @brief Create a Credential.
  *
  * @param[in]  name            Name of LSC credential.  Must be at least one
  *                             character long.
@@ -34932,22 +34999,24 @@ find_lsc_credential_with_permission (const char* uuid,
  * @param[in]  given_password  Password for password-only credential, NULL to
  *                             generate credentials.
  * @param[in]  key_private     Private key, or NULL.
- * @param[out] lsc_credential  Created LSC credential.
+ * @param[out] credential      Created Credential.
  *
  * @return 0 success, 1 LSC credential exists already, 2 name contains space,
  *         3 Failed to create public key from private key/password,
  *         99 permission denied, -1 error.
  */
 int
-create_lsc_credential (const char* name, const char* comment, const char* login,
-                       const char* given_password, const char* key_private,
-                       lsc_credential_t *lsc_credential)
+create_credential (const char* name, const char* comment, const char* login,
+                   const char* given_password, const char* key_private,
+                   credential_t *credential)
 {
-  gchar *quoted_name, *private_key;
+  gchar *quoted_name, *quoted_comment, *quoted_type;
   int i;
   GRand *rand;
-  gchar password[PASSWORD_LENGTH];
+  gchar generated_password[PASSWORD_LENGTH];
+  gchar *generated_private_key;
   const char *s = login;
+  credential_t new_credential;
 
   assert (name && strlen (name) > 0);
   assert (login && strlen (login) > 0);
@@ -34956,149 +35025,137 @@ create_lsc_credential (const char* name, const char* comment, const char* login,
 
   sql_begin_immediate ();
 
-  if (acl_user_may ("create_lsc_credential") == 0)
+  if (acl_user_may ("create_credential") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
     }
 
-  if (resource_with_name_exists (name, "lsc_credential", 0))
+  if (resource_with_name_exists (name, "credential", 0))
     {
       sql ("ROLLBACK;");
       return 1;
     }
 
+  if (login && key_private)
+    quoted_type = g_strdup ("usk");
+  else if (login && given_password)
+    quoted_type = g_strdup ("up");
+  else if (login && key_private == NULL && given_password == NULL)
+    quoted_type = g_strdup ("usk"); /* auto-generate */
+  else
+    {
+      g_warning ("%s: Cannot determine type of new credential", __FUNCTION__);
+      return -1;
+    }
+
   quoted_name = sql_quote (name);
+  quoted_comment = sql_quote (comment ? comment : "");
+
+  sql ("INSERT INTO credentials"
+       " (uuid, name, owner, comment, creation_time, modification_time,"
+       "  type)"
+       " VALUES"
+       " (make_uuid (), '%s',"
+       "  (SELECT id FROM users WHERE users.uuid = '%s'),"
+       "   '%s', m_now (), m_now (), '%s');",
+       quoted_name,
+       current_credentials.uuid,
+       quoted_comment,
+       quoted_type);
+
+  g_free (quoted_name);
+  g_free (quoted_comment);
+  g_free (quoted_type);
+
+  new_credential = sql_last_insert_id ();
+
+  /* Add non-secret data */
+  if (login)
+    {
+      set_credential_data (new_credential, "username", login);
+    }
+
+  /* Add secret data like passwords and private keys */
   if (key_private)
     {
       lsc_crypt_ctx_t crypt_ctx;
-      gchar *quoted_login, *quoted_phrase, *quoted_comment, *quoted_private;
 
       if (!openvas_ssh_public_from_private (key_private, given_password))
         return 3;
-
-      /* Key pair credential. */
-      if (!strcmp (key_private, ";;encrypted;;"))
-        {
-          g_free (quoted_name);
-          sql ("ROLLBACK;");
-          return -1;
-        }
 
       /* Encrypt password and private key.  Note that we do not need
          to call sql_quote because the result of the encryption is
          base64 encoded and does not contain apostrophes.  */
       if (!disable_encrypted_credentials)
         {
+          gchar *secret;
           crypt_ctx = lsc_crypt_new ();
-          quoted_phrase = lsc_crypt_encrypt (crypt_ctx,
-                                             "password", given_password,
-                                             "private_key", key_private, NULL);
-          if (!quoted_phrase)
+          secret = lsc_crypt_encrypt (crypt_ctx,
+                                      "password", given_password,
+                                      "private_key", key_private, NULL);
+          if (!secret)
             {
-              g_free (quoted_name);
               lsc_crypt_release (crypt_ctx);
               sql ("ROLLBACK;");
               return -1;
             }
-          quoted_private = g_strdup (";;encrypted;;");
+          set_credential_data (new_credential, "secret", secret);
+          g_free (secret);
         }
       else
         {
           crypt_ctx = NULL;
-          quoted_phrase = given_password ? sql_quote (given_password)
-                                         : g_strdup ("");
-          quoted_private = sql_quote (key_private);
+          set_credential_data (new_credential, "password", given_password);
+          set_credential_data (new_credential, "private_key", key_private);
         }
-      quoted_login = sql_quote (login);
-      quoted_comment = sql_quote (comment);
-
-      sql ("INSERT INTO lsc_credentials"
-           " (uuid, name, owner, login, password, comment,"
-           "  private_key, creation_time, modification_time)"
-           " VALUES"
-           " (make_uuid (), '%s',"
-           "  (SELECT id FROM users WHERE users.uuid = '%s'),"
-           "  '%s', '%s', '%s', '%s', m_now (), m_now ());",
-           quoted_name,
-           current_credentials.uuid,
-           quoted_login,
-           quoted_phrase,
-           quoted_comment,
-           quoted_private);
-
-      g_free (quoted_name);
-      g_free (quoted_login);
-      g_free (quoted_phrase);
-      g_free (quoted_comment);
-      g_free (quoted_private);
       lsc_crypt_release (crypt_ctx);
 
-      if (lsc_credential)
-        *lsc_credential = sql_last_insert_id ();
+      if (credential)
+        *credential = new_credential;
 
       sql ("COMMIT;");
       return 0;
     }
 
+  /* Password only */
   if (given_password)
     {
       lsc_crypt_ctx_t crypt_ctx;
-      gchar *quoted_login, *quoted_password, *quoted_comment, *quoted_private;
 
       /* Password-only credential. */
 
       if (!disable_encrypted_credentials)
         {
           crypt_ctx = lsc_crypt_new ();
-          quoted_password = lsc_crypt_encrypt (crypt_ctx,
-                                               "password", given_password,
-                                               NULL);
-          if (!quoted_password)
+          gchar *secret = lsc_crypt_encrypt (crypt_ctx,
+                                             "password", given_password,
+                                             NULL);
+          if (!secret)
             {
-              g_free (quoted_name);
               lsc_crypt_release (crypt_ctx);
               sql ("ROLLBACK;");
               return -1;
             }
-          quoted_private = g_strdup ("';;encrypted;;'");
+          set_credential_data (new_credential, "secret", secret);
+          g_free (secret);
         }
       else
         {
           crypt_ctx = NULL;
-          quoted_password = sql_quote (given_password);
-          quoted_private = g_strdup ("NULL");
+          set_credential_data (new_credential, "password", given_password);
         }
-      quoted_login = sql_quote (login);
-      quoted_comment = sql_quote (comment);
 
-      sql ("INSERT INTO lsc_credentials"
-           " (uuid, name, owner, login, password, comment, "
-           "  private_key, creation_time, modification_time)"
-           " VALUES"
-           " (make_uuid (), '%s',"
-           "  (SELECT id FROM users WHERE users.uuid = '%s'),"
-           "  '%s', '%s', '%s', %s, m_now (), m_now ());",
-           quoted_name,
-           current_credentials.uuid,
-           quoted_login,
-           quoted_password,
-           quoted_comment,
-           quoted_private);
-
-      g_free (quoted_name);
-      g_free (quoted_login);
-      g_free (quoted_password);
-      g_free (quoted_comment);
-      g_free (quoted_private);
-      lsc_crypt_release (crypt_ctx);
-
-      if (lsc_credential)
-        *lsc_credential = sql_last_insert_id ();
+      if (credential)
+        *credential = new_credential;
 
       sql ("COMMIT;");
       return 0;
     }
+
+  /*
+   * Auto-generate credential
+   */
 
   /* Ensure the login is alphanumeric, to help the package generation. */
 
@@ -35117,78 +35174,54 @@ create_lsc_credential (const char* name, const char* comment, const char* login,
   rand = g_rand_new ();
   for (i = 0; i < PASSWORD_LENGTH - 1; i++)
     {
-      password[i] = (gchar) g_rand_int_range (rand, '0', 'z');
-      if (password[i] == '\\')
-        password[i] = '{';
+      generated_password[i] = (gchar) g_rand_int_range (rand, '0', 'z');
+      if (generated_password[i] == '\\')
+        generated_password[i] = '{';
     }
-  password[PASSWORD_LENGTH - 1] = '\0';
+  generated_password[PASSWORD_LENGTH - 1] = '\0';
   g_rand_free (rand);
 
-  if (lsc_user_keys_create (password, &private_key))
+  if (lsc_user_keys_create (generated_password, &generated_private_key))
     {
-      g_free (quoted_name);
       sql ("ROLLBACK;");
       return -1;
     }
 
   {
     lsc_crypt_ctx_t crypt_ctx;
-    gchar *quoted_login, *quoted_password, *quoted_comment;
-    gchar *quoted_private_key;
 
     /* Generated key credential. */
 
     if (!disable_encrypted_credentials)
       {
+        gchar *secret;
         crypt_ctx = lsc_crypt_new ();
-        quoted_password = lsc_crypt_encrypt (crypt_ctx,
-                                             "password", password,
-                                             "private_key", private_key, NULL);
-        if (!quoted_password)
+        secret = lsc_crypt_encrypt (crypt_ctx,
+                                    "password", generated_password,
+                                    "private_key", generated_private_key,
+                                    NULL);
+        if (!secret)
           {
             lsc_crypt_release (crypt_ctx);
-            g_free (private_key);
-            g_free (quoted_name);
             sql ("ROLLBACK;");
             return -1;
           }
-        quoted_private_key = g_strdup (";;encrypted;;");
+        set_credential_data (new_credential, "secret", secret);
+        g_free (secret);
       }
     else
       {
+        set_credential_data (new_credential, "password", generated_password);
+        set_credential_data (new_credential,
+                             "private_key", generated_private_key);
         crypt_ctx = NULL;
-        quoted_password = sql_quote (password);
-        quoted_private_key = sql_quote (private_key);
       }
-    quoted_login = sql_quote (login);
-    quoted_comment = sql_quote (comment);
-
-    sql_quiet ("INSERT INTO lsc_credentials"
-               " (uuid, name, owner, login, password, comment,"
-               "  private_key, creation_time, modification_time)"
-               " VALUES"
-               " (make_uuid (), '%s',"
-               "  (SELECT id FROM users WHERE users.uuid = '%s'),"
-               "  '%s', '%s', '%s', '%s', m_now (), m_now ());",
-               quoted_name,
-               current_credentials.uuid,
-               quoted_login,
-               quoted_password,
-               quoted_comment,
-               quoted_private_key);
-
-    g_free (quoted_name);
-    g_free (quoted_login);
-    g_free (quoted_password);
-    g_free (quoted_comment);
-    g_free (quoted_private_key);
     lsc_crypt_release (crypt_ctx);
+    g_free (generated_private_key);
   }
 
-  g_free (private_key);
-
-  if (lsc_credential)
-    *lsc_credential = sql_last_insert_id ();
+  if (credential)
+    *credential = new_credential;
 
   sql ("COMMIT;");
 
@@ -35198,34 +35231,50 @@ create_lsc_credential (const char* name, const char* comment, const char* login,
 /**
  * @brief Create an LSC Credential from an existing one.
  *
- * @param[in]  name                 Name of new LSC Credential. NULL to copy
+ * @param[in]  name                 Name of new Credential. NULL to copy
  *                                  from existing.
- * @param[in]  comment              Comment on new LSC Credential. NULL to copy
+ * @param[in]  comment              Comment on new Credential. NULL to copy
  *                                  from existing.
- * @param[in]  lsc_credential_id    UUID of existing LSC Credential.
- * @param[out] new_lsc_credential   New LSC Credential.
+ * @param[in]  credential_id        UUID of existing Credential.
+ * @param[out] new_credential       New Credential.
  *
- * @return 0 success, 1 LSC Credential exists already, 2 failed to find
- *         existing LSC Credential, -1 error.
+ * @return 0 success, 1 Credential exists already, 2 failed to find
+ *         existing Credential, -1 error.
  */
 int
-copy_lsc_credential (const char* name, const char* comment,
-                     const char *lsc_credential_id,
-                     lsc_credential_t* new_lsc_credential)
+copy_credential (const char* name, const char* comment,
+                 const char *credential_id,
+                 credential_t* new_credential)
 {
-  return copy_resource ("lsc_credential", name, comment, lsc_credential_id,
-                        "login, password, private_key", 1, new_lsc_credential);
+  int ret;
+  credential_t credential;
+
+  assert (new_credential);
+  ret = copy_resource ("credential", name, comment, credential_id,
+                       "type", 1, new_credential);
+  if (ret)
+    return ret;
+
+  if (find_resource ("credential", credential_id, &credential))
+    return -1;
+
+  sql ("INSERT INTO credentials_data (credential, type, value)"
+       " SELECT %llu, type, value FROM credentials_data"
+       " WHERE credential = %llu;",
+       *new_credential, credential);
+
+  return 0;
 }
 
 /**
- * @brief Return whether an LSC credential is the packaged type.
+ * @brief Return whether a Credential is the packaged type.
  *
- * @param[in]  cred_id  The LSC Credential uuid.
+ * @param[in]  cred_id  The Credential uuid.
  *
  * @return 0 false, 1 true.
  */
 static int
-lsc_credential_packaged (const char *cred_id)
+credential_packaged (const char *cred_id)
 {
   get_data_t get;
   iterator_t iter;
@@ -35233,35 +35282,35 @@ lsc_credential_packaged (const char *cred_id)
 
   memset (&get, '\0', sizeof (get));
   get.id = g_strdup (cred_id);
-  if (init_lsc_credential_iterator (&iter, &get) || !next (&iter))
+  if (init_credential_iterator (&iter, &get) || !next (&iter))
     return 0;
 
-  key = lsc_credential_iterator_private_key (&iter);
+  key = credential_iterator_private_key (&iter);
   cleanup_iterator (&iter);
   return key ? 1 : 0;
 }
 
 /**
- * @brief Modify a LSC Credential.
+ * @brief Modify a Credential.
  *
- * @param[in]   lsc_credential_id   UUID of lsc credential.
- * @param[in]   name                Name of lsc credential.
- * @param[in]   comment             Comment on lsc credential.
- * @param[in]   login               Login of lsc credential.
- * @param[in]   password            Password of lsc credential.
+ * @param[in]   credential_id       UUID of Credential.
+ * @param[in]   name                Name of Credential.
+ * @param[in]   comment             Comment on Credential.
+ * @param[in]   login               Login of Credential.
+ * @param[in]   password            Password of Credential.
  *
  * @return 0 success, 1 failed to find credential, 2 credential with new name
  *         exists, 3 lsc_credential_id required, 4 attempt to modify login/pass
  *         of packaged lsc credential, 99 permission denied, -1 internal error.
  */
 int
-modify_lsc_credential (const char *lsc_credential_id,
-                       const char *name, const char *comment,
-                       const char *login, const char *password)
+modify_credential (const char *credential_id,
+                   const char *name, const char *comment,
+                   const char *login, const char *password)
 {
-  lsc_credential_t lsc_credential;
+  credential_t credential;
 
-  if (lsc_credential_id == NULL)
+  if (credential_id == NULL)
     return 3;
 
   sql_begin_immediate ();
@@ -35274,28 +35323,28 @@ modify_lsc_credential (const char *lsc_credential_id,
       return 99;
     }
 
-  lsc_credential = 0;
-  if (find_lsc_credential_with_permission (lsc_credential_id, &lsc_credential,
-                                           "modify_lsc_credential"))
+  credential = 0;
+  if (find_credential_with_permission (credential_id, &credential,
+                                       "modify_credential"))
     {
       sql ("ROLLBACK;");
       return -1;
     }
 
-  if (lsc_credential == 0)
+  if (credential == 0)
     {
       sql ("ROLLBACK;");
       return 1;
     }
 
   /* Check attempt to change login or password of packaged LSC credential */
-  if ((login || password) && lsc_credential_packaged (lsc_credential_id))
+  if ((login || password) && credential_packaged (credential_id))
     return 4;
 
   /* Check whether a lsc_credential with the same name exists already. */
   if (name)
     {
-      if (resource_with_name_exists (name, "lsc_credential", lsc_credential))
+      if (resource_with_name_exists (name, "credential", credential))
         {
           sql ("ROLLBACK;");
           return 2;
@@ -35305,16 +35354,16 @@ modify_lsc_credential (const char *lsc_credential_id,
   /* Update values */
 
   if (name)
-    set_lsc_credential_name (lsc_credential, name);
+    set_credential_name (credential, name);
 
   if (comment)
-    set_lsc_credential_comment (lsc_credential, comment);
+    set_credential_comment (credential, comment);
 
   if (login)
-    set_lsc_credential_login (lsc_credential, login);
+    set_credential_login (credential, login);
 
   if (password)
-    set_lsc_credential_password (lsc_credential, password);
+    set_credential_password (credential, password);
 
   sql ("COMMIT;");
 
@@ -35322,42 +35371,42 @@ modify_lsc_credential (const char *lsc_credential_id,
 }
 
 /**
- * @brief Delete an LSC credential.
+ * @brief Delete a Credential.
  *
- * @param[in]  lsc_credential_id  UUID of LSC credential.
+ * @param[in]  credential_id      UUID of Credential.
  * @param[in]  ultimate           Whether to remove entirely, or to trashcan.
  *
  * @return 0 success, 1 fail because the LSC credential is in use, 99 permission
  *         denied, -1 error.
  */
 int
-delete_lsc_credential (const char *lsc_credential_id, int ultimate)
+delete_credential (const char *credential_id, int ultimate)
 {
-  lsc_credential_t lsc_credential = 0;
+  credential_t credential = 0;
 
   sql_begin_immediate ();
 
-  if (acl_user_may ("delete_lsc_credential") == 0)
+  if (acl_user_may ("delete_credential") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
     }
 
-  if (find_lsc_credential_with_permission (lsc_credential_id, &lsc_credential,
-                                           "delete_lsc_credential"))
+  if (find_credential_with_permission (credential_id, &credential,
+                                       "delete_credential"))
     {
       sql ("ROLLBACK;");
       return -1;
     }
 
-  if (lsc_credential == 0)
+  if (credential == 0)
     {
-      if (find_trash ("lsc_credential", lsc_credential_id, &lsc_credential))
+      if (find_trash ("credential", credential_id, &credential))
         {
           sql ("ROLLBACK;");
           return -1;
         }
-      if (lsc_credential == 0)
+      if (credential == 0)
         {
           sql ("ROLLBACK;");
           return 2;
@@ -35375,19 +35424,19 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
                    "        AND ssh_location = " G_STRINGIFY (LOCATION_TRASH) ")"
                    " OR (smb_lsc_credential = %llu"
                    "     AND smb_location = " G_STRINGIFY (LOCATION_TRASH) ");",
-                   lsc_credential,
-                   lsc_credential))
+                   credential,
+                   credential))
         {
           sql ("ROLLBACK;");
           return 1;
         }
 
-      permissions_set_orphans ("lsc_credential", lsc_credential,
+      permissions_set_orphans ("credential", credential,
                                LOCATION_TRASH);
-      tags_set_orphans ("lsc_credential", lsc_credential,
+      tags_set_orphans ("credential", credential,
                         LOCATION_TRASH);
 
-      sql ("DELETE FROM lsc_credentials_trash WHERE id = %llu;", lsc_credential);
+      sql ("DELETE FROM credentials_trash WHERE id = %llu;", credential);
       sql ("COMMIT;");
       return 0;
     }
@@ -35397,9 +35446,9 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
                " WHERE lsc_credential = %llu"
                " OR smb_lsc_credential = %llu"
                " OR esxi_lsc_credential = %llu",
-               lsc_credential,
-               lsc_credential,
-               lsc_credential))
+               credential,
+               credential,
+               credential))
     {
       sql ("ROLLBACK;");
       return 1;
@@ -35407,13 +35456,23 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
 
   if (ultimate == 0)
     {
-      sql ("INSERT INTO lsc_credentials_trash"
-           " (uuid, owner, name, login, password, comment, "
-           "  private_key, creation_time, modification_time)"
-           " SELECT uuid, owner, name, login, password, comment, "
-           "  private_key, creation_time, modification_time"
-           " FROM lsc_credentials WHERE id = %llu;",
-           lsc_credential);
+      credential_t trash_credential;
+
+      sql ("INSERT INTO credentials_trash"
+           " (uuid, owner, name, comment, creation_time,"
+           "  modification_time, type)"
+           " SELECT uuid, owner, name, comment, creation_time,"
+           "        modification_time, type"
+           " FROM credentials WHERE id = %llu;",
+           credential);
+      trash_credential = sql_last_insert_id ();
+
+      sql ("INSERT INTO credentials_trash_data"
+           " (credential, type, value)"
+           " SELECT %llu, type, value"
+           " FROM credentials_data"
+           " WHERE credential = %llu",
+           trash_credential, credential);
 
       /* Update the credential references in any trashcan targets.  This
        * situation is possible if the user restores the credential when the
@@ -35423,35 +35482,35 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
            "     lsc_credential = %llu"
            " WHERE lsc_credential = %llu;",
            sql_last_insert_id (),
-           lsc_credential);
+           credential);
       sql ("UPDATE targets_trash"
            " SET smb_location = " G_STRINGIFY (LOCATION_TRASH) ","
            " smb_lsc_credential = %llu"
            " WHERE smb_lsc_credential = %llu;",
            sql_last_insert_id (),
-           lsc_credential);
+           credential);
       sql ("UPDATE targets_trash"
            " SET esxi_location = " G_STRINGIFY (LOCATION_TRASH) ","
            " esxi_lsc_credential = %llu"
            " WHERE esxi_lsc_credential = %llu;",
            sql_last_insert_id (),
-           lsc_credential);
+           credential);
 
-      permissions_set_locations ("lsc_credential", lsc_credential,
+      permissions_set_locations ("credential", credential,
                                  sql_last_insert_id (),
                                  LOCATION_TRASH);
-      tags_set_locations ("lsc_credential", lsc_credential,
+      tags_set_locations ("credential", credential,
                           sql_last_insert_id (),
                           LOCATION_TRASH);
     }
   else
     {
-      permissions_set_orphans ("lsc_credential", lsc_credential,
-                               LOCATION_TABLE);
-      tags_set_orphans ("lsc_credential", lsc_credential, LOCATION_TABLE);
+      permissions_set_orphans ("credential", credential, LOCATION_TABLE);
+      tags_set_orphans ("credential", credential, LOCATION_TABLE);
     }
 
-  sql ("DELETE FROM lsc_credentials WHERE id = %llu;", lsc_credential);
+  sql ("DELETE FROM credentials WHERE id = %llu;", credential);
+  sql ("DELETE FROM credentials_data WHERE credential = %llu;", credential);
 
   sql ("COMMIT;");
   return 0;
@@ -35460,30 +35519,56 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
 /**
  * @brief Filter columns for LSC Credential iterator.
  */
-#define LSC_CREDENTIAL_ITERATOR_FILTER_COLUMNS                                 \
- { GET_ITERATOR_FILTER_COLUMNS, "login", NULL }
+#define CREDENTIAL_ITERATOR_FILTER_COLUMNS                                    \
+ { GET_ITERATOR_FILTER_COLUMNS, "login", "type", NULL }
 
 /**
  * @brief LSC Credential iterator columns.
  */
-#define LSC_CREDENTIAL_ITERATOR_COLUMNS                                       \
+#define CREDENTIAL_ITERATOR_COLUMNS                                           \
  {                                                                            \
-   GET_ITERATOR_COLUMNS (lsc_credentials),                                    \
-   { "login", NULL },                                                         \
-   { "password", NULL },                                                      \
-   { "private_key", NULL },                                                   \
+   GET_ITERATOR_COLUMNS (credentials),                                        \
+   /* public generic data */                                                  \
+   { "type", NULL },                                                          \
+   /* public type specific data */                                            \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id AND type = 'username')",             \
+     "login" },                                                               \
+   /* private data */                                                         \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id AND type = 'secret')",               \
+     "secret" },                                                              \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id AND type = 'password')",             \
+     "password" },                                                            \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id AND type = 'private_key')",          \
+     "private_key" },                                                         \
    { NULL, NULL }                                                             \
  }
 
 /**
  * @brief LSC Credential iterator columns for trash case.
  */
-#define LSC_CREDENTIAL_ITERATOR_TRASH_COLUMNS                                 \
+#define CREDENTIAL_ITERATOR_TRASH_COLUMNS                                     \
  {                                                                            \
-   GET_ITERATOR_COLUMNS (lsc_credentials_trash),                              \
-   { "login", NULL },                                                         \
-   { "password", NULL },                                                      \
-   { "private_key", NULL },                                                   \
+   GET_ITERATOR_COLUMNS (credentials_trash),                                  \
+   /* public generic data */                                                  \
+   { "type", NULL },                                                          \
+   /* public type specific data */                                            \
+   { "(SELECT value FROM credentials_trash_data"                              \
+     " WHERE credential = credentials_trash.id AND type = 'username')",       \
+     "login" },                                                               \
+   /* private data */                                                         \
+   { "(SELECT value FROM credentials_trash_data"                              \
+     " WHERE credential = credentials_trash.id AND type = 'secret')",         \
+     "secret" },                                                              \
+   { "(SELECT value FROM credentials_trash_data"                              \
+     " WHERE credential = credentials_trash.id AND type = 'password')",       \
+     "password" },                                                            \
+   { "(SELECT value FROM credentials_trash_data"                              \
+     " WHERE credential = credentials_trash.id AND type = 'private_key')",    \
+     "private_key" },                                                         \
    { NULL, NULL }                                                             \
  }
 
@@ -35495,43 +35580,43 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
  * @return Total number of LSC Credentials in filtered set.
  */
 int
-lsc_credential_count (const get_data_t *get)
+credential_count (const get_data_t *get)
 {
-  static const char *filter_columns[] = LSC_CREDENTIAL_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = LSC_CREDENTIAL_ITERATOR_COLUMNS;
-  static column_t trash_columns[] = LSC_CREDENTIAL_ITERATOR_TRASH_COLUMNS;
-  return count ("lsc_credential", get, columns, trash_columns, filter_columns,
+  static const char *filter_columns[] = CREDENTIAL_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = CREDENTIAL_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = CREDENTIAL_ITERATOR_TRASH_COLUMNS;
+  return count ("credential", get, columns, trash_columns, filter_columns,
                 0, 0, 0, TRUE);
 }
 
 /**
- * @brief Check whether a LSC Credential is in use.
+ * @brief Check whether a Credential is in use.
  *
- * @param[in]  lsc_credential  LSC Credential.
+ * @param[in]  credential  Credential.
  *
  * @return 1 yes, 0 no.
  */
 int
-lsc_credential_in_use (lsc_credential_t lsc_credential)
+credential_in_use (credential_t credential)
 {
   return !!sql_int ("SELECT count (*) FROM targets"
                     " WHERE lsc_credential = %llu"
                     " OR smb_lsc_credential = %llu"
                     " OR esxi_lsc_credential = %llu;",
-                    lsc_credential,
-                    lsc_credential,
-                    lsc_credential);
+                    credential,
+                    credential,
+                    credential);
 }
 
 /**
- * @brief Check whether a trashcan LSC Credential is in use.
+ * @brief Check whether a trashcan Credential is in use.
  *
- * @param[in]  lsc_credential  LSC Credential.
+ * @param[in]  credential  Credential.
  *
  * @return 1 yes, 0 no.
  */
 int
-trash_lsc_credential_in_use (lsc_credential_t lsc_credential)
+trash_credential_in_use (credential_t credential)
 {
   return !!sql_int ("SELECT count (*) FROM targets_trash"
                     " WHERE (lsc_credential = %llu"
@@ -35540,171 +35625,169 @@ trash_lsc_credential_in_use (lsc_credential_t lsc_credential)
                     " AND smb_location = " G_STRINGIFY (LOCATION_TRASH) ")"
                     " OR (esxi_lsc_credential = %llu"
                     " AND esxi_location = " G_STRINGIFY (LOCATION_TRASH) ");",
-                    lsc_credential,
-                    lsc_credential,
-                    lsc_credential);
+                    credential,
+                    credential,
+                    credential);
 }
 
 /**
- * @brief Check whether a LSC Credential is writable.
+ * @brief Check whether a Credential is writable.
  *
- * @param[in]  lsc_credential  LSC Credential.
+ * @param[in]  credential  Credential.
  *
  * @return 1 yes, 0 no.
  */
 int
-lsc_credential_writable (lsc_credential_t lsc_credential)
+credential_writable (credential_t credential)
 {
   return 1;
 }
 
 /**
- * @brief Check whether a trashcan LSC Credential is writable.
+ * @brief Check whether a trashcan Credential is writable.
  *
- * @param[in]  lsc_credential  LSC Credential.
+ * @param[in]  credential  Credential.
  *
  * @return 1 yes, 0 no.
  */
 int
-trash_lsc_credential_writable (lsc_credential_t lsc_credential)
+trash_credential_writable (credential_t credential)
 {
   return 1;
 }
 
 /**
- * @brief Set the name of an LSC credential.
+ * @brief Set the name of a Credential.
  *
- * @param[in]  lsc_credential  The LSC credential.
+ * @param[in]  credential      The Credential.
  * @param[in]  name            Name.
  */
 void
-set_lsc_credential_name (lsc_credential_t lsc_credential, const char *name)
+set_credential_name (credential_t credential, const char *name)
 {
   gchar *quoted_name = sql_quote (name);
-  sql ("UPDATE lsc_credentials SET name = '%s', modification_time = m_now ()"
+  sql ("UPDATE credentials SET name = '%s', modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_name,
-       lsc_credential);
+       credential);
   g_free (quoted_name);
 }
 
 /**
- * @brief Set the comment of an LSC credential.
+ * @brief Set the comment of a Credential.
  *
- * @param[in]  lsc_credential  The LSC credential.
+ * @param[in]  credential      The Credential.
  * @param[in]  comment         Comment.
  */
 void
-set_lsc_credential_comment (lsc_credential_t lsc_credential,
-                            const char *comment)
+set_credential_comment (credential_t credential,
+                        const char *comment)
 {
   gchar *quoted_comment = sql_quote (comment);
-  sql ("UPDATE lsc_credentials SET comment = '%s', modification_time = m_now ()"
+  sql ("UPDATE credentials SET comment = '%s', modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_comment,
-       lsc_credential);
+       credential);
   g_free (quoted_comment);
 }
 
 /**
- * @brief Set the login of an LSC credential.
+ * @brief Set the login of a Credential.
  *
- * @param[in]  lsc_credential  The LSC credential.
+ * @param[in]  credential      The Credential.
  * @param[in]  login           Login.
  */
 void
-set_lsc_credential_login (lsc_credential_t lsc_credential, const char *login)
+set_credential_login (credential_t credential, const char *login)
 {
-  gchar *quoted_login = sql_quote (login);
-  sql ("UPDATE lsc_credentials SET login = '%s', modification_time = m_now ()"
+  set_credential_data (credential, "username", login);
+  sql ("UPDATE credentials SET"
+       " modification_time = m_now ()"
        " WHERE id = %llu;",
-       quoted_login,
-       lsc_credential);
-  g_free (quoted_login);
+       credential);
 }
 
 /**
- * @brief Set the password of an LSC credential.
+ * @brief Set the password of a Credential.
  *
- * @param[in]  lsc_credential  The LSC credential.
+ * @param[in]  credential      The Credential.
  * @param[in]  password        Password.
  */
 void
-set_lsc_credential_password (lsc_credential_t lsc_credential,
-                             const char *password)
+set_credential_password (credential_t credential, const char *password)
 {
   lsc_crypt_ctx_t crypt_ctx;
-  gchar *quoted_password, *quoted_private;
 
   if (!disable_encrypted_credentials)
     {
+      gchar *encrypted_blob;
       crypt_ctx = lsc_crypt_new ();
-      quoted_password = lsc_crypt_encrypt (crypt_ctx,
-                                           "password", password, NULL);
-      if (!quoted_password)
+      encrypted_blob = lsc_crypt_encrypt (crypt_ctx,
+                                          "password", password, NULL);
+      if (!encrypted_blob)
         {
           g_critical ("%s: encryption failed", G_STRFUNC);
           lsc_crypt_release (crypt_ctx);
           return;
         }
-      quoted_private = g_strdup ("';;encrypted;;'");
+      set_credential_data (credential, "secret", encrypted_blob);
+      set_credential_data (credential, "password", NULL);
+      set_credential_data (credential, "private_key", NULL);
+      g_free (encrypted_blob);
     }
   else
     {
       crypt_ctx = NULL;
-      quoted_password = sql_quote (password);
-      quoted_private = g_strdup ("NULL");
+      set_credential_data (credential, "secret", NULL);
+      set_credential_data (credential, "password", password);
+      set_credential_data (credential, "private_key", NULL);
     }
 
-  sql ("UPDATE lsc_credentials SET password = '%s', private_key = %s,"
-       " modification_time = m_now ()"
+  sql ("UPDATE credentials SET modification_time = m_now ()"
        " WHERE id = %llu;",
-       quoted_password, quoted_private,
-       lsc_credential);
-  g_free (quoted_password);
-  g_free (quoted_private);
+       credential);
   lsc_crypt_release (crypt_ctx);
 }
 
 /**
- * @brief Initialise an LSC Credential iterator, given a single LSC credential.
+ * @brief Initialise a Credential iterator, given a single Credential.
  *
  * @param[in]  iterator        Iterator.
- * @param[in]  lsc_credential  Single LSC credential to iterate.
+ * @param[in]  credential      Single Credential to iterate.
  */
 void
-init_lsc_credential_iterator_one (iterator_t* iterator,
-                                  lsc_credential_t lsc_credential)
+init_credential_iterator_one (iterator_t* iterator,
+                              credential_t credential)
 {
   get_data_t get;
 
-  assert (lsc_credential);
+  assert (credential);
 
   memset (&get, '\0', sizeof (get));
-  get.id = lsc_credential_uuid (lsc_credential);
-  get.filter = "owner=any permission=get_lsc_credentials";
+  get.id = credential_uuid (credential);
+  get.filter = "owner=any permission=get_credentials";
 
-  init_lsc_credential_iterator (iterator, &get);
+  init_credential_iterator (iterator, &get);
 }
 
 /**
- * @brief Initialise a LSC Credential iterator.
+ * @brief Initialise a Credential iterator.
  *
  * @param[in]  iterator  Iterator.
- * @param[in]  get         GET data.
+ * @param[in]  get       GET data.
  *
  * @return 0 success, 1 failed to find filter, failed to find filter (filt_id),
  *         -1 error.
  */
 int
-init_lsc_credential_iterator (iterator_t* iterator, const get_data_t *get)
+init_credential_iterator (iterator_t* iterator, const get_data_t *get)
 {
-  static const char *filter_columns[] = LSC_CREDENTIAL_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = LSC_CREDENTIAL_ITERATOR_COLUMNS;
-  static column_t trash_columns[] = LSC_CREDENTIAL_ITERATOR_TRASH_COLUMNS;
+  static const char *filter_columns[] = CREDENTIAL_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = CREDENTIAL_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = CREDENTIAL_ITERATOR_TRASH_COLUMNS;
 
   return init_get_iterator (iterator,
-                            "lsc_credential",
+                            "credential",
                             get,
                             columns,
                             trash_columns,
@@ -35716,49 +35799,63 @@ init_lsc_credential_iterator (iterator_t* iterator, const get_data_t *get)
 }
 
 /*
- * Common code for lsc_credential_iterator_password and
- * lsc_credential_iterator_private_key.
+ * Common code for credential_iterator_password and
+ * credential_iterator_private_key.
  */
 static const char*
-lsc_credential_iterator_pass_or_priv (iterator_t* iterator, int want_privkey)
+credential_iterator_pass_or_priv (iterator_t* iterator, int want_privkey)
 {
-  const char *password, *privkey, *result;
+  const char *secret, *password, *privkey, *result;
 
   if (iterator->done)
     return NULL;
-  password = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 1);
-  privkey  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 2);
+  secret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 2);
+  password = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
+  privkey  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
   /* If we do not have a private key, there is no encrypted data.
      Return the password as is or NULL.  */
-  if (!privkey)
-    return want_privkey? NULL : password;
-  /* If we have a private key but it has not the flag value, we return
-     the password field or the private key.  */
-  if (strcmp (privkey, ";;encrypted;;"))
-    return want_privkey? privkey : password;
-  /* This is an encrypted credential.  */
-  if (!iterator->crypt_ctx)
-    iterator->crypt_ctx = lsc_crypt_new ();
-  if (want_privkey)
-    result = lsc_crypt_get_private_key (iterator->crypt_ctx, password);
+  if (secret)
+    {
+      /* This is an encrypted credential.  */
+      if (!iterator->crypt_ctx)
+        iterator->crypt_ctx = lsc_crypt_new ();
+      if (want_privkey)
+        result = lsc_crypt_get_private_key (iterator->crypt_ctx, secret);
+      else
+        result = lsc_crypt_get_password (iterator->crypt_ctx, secret);
+    }
   else
-    result = lsc_crypt_get_password (iterator->crypt_ctx, password);
-
+    {
+      if (want_privkey)
+        result = privkey;
+      else
+        result = password;
+    }
   return result;
 }
 
 /**
- * @brief Get the login from an LSC credential iterator.
+ * @brief Get the login from a Credential iterator.
  *
  * @param[in]  iterator  Iterator.
  *
  * @return Login, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (lsc_credential_iterator_login, GET_ITERATOR_COLUMN_COUNT);
+DEF_ACCESS (credential_iterator_type, GET_ITERATOR_COLUMN_COUNT);
 
 /**
- * @brief Get the password from an LSC credential iterator.
+ * @brief Get the credential type abbreviation from an LSC credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Credential type, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (credential_iterator_login, GET_ITERATOR_COLUMN_COUNT + 1);
+
+/**
+ * @brief Get the password from a Credential iterator.
  *
  * @param[in]  iterator  Iterator.
  *
@@ -35766,14 +35863,14 @@ DEF_ACCESS (lsc_credential_iterator_login, GET_ITERATOR_COLUMN_COUNT);
  *         cleanup_iterator.
  */
 const char*
-lsc_credential_iterator_password (iterator_t* iterator)
+credential_iterator_password (iterator_t* iterator)
 {
-  return lsc_credential_iterator_pass_or_priv (iterator, 0);
+  return credential_iterator_pass_or_priv (iterator, 0);
 }
 
 
 /**
- * @brief Get the private_key from an LSC credential iterator.
+ * @brief Get the private_key from a Credential iterator.
  *
  * @param[in]  iterator  Iterator.
  *
@@ -35781,20 +35878,20 @@ lsc_credential_iterator_password (iterator_t* iterator)
  *         cleanup_iterator.
  */
 const char*
-lsc_credential_iterator_private_key (iterator_t* iterator)
+credential_iterator_private_key (iterator_t* iterator)
 {
-  return lsc_credential_iterator_pass_or_priv (iterator, 1);
+  return credential_iterator_pass_or_priv (iterator, 1);
 }
 
 /**
- * @brief Get the rpm from an LSC credential iterator.
+ * @brief Get the rpm from a Credential iterator.
  *
  * @param[in]  iterator  Iterator.
  *
  * @return Rpm, or NULL if iteration is complete. Free with g_free().
  */
 char*
-lsc_credential_iterator_rpm (iterator_t *iterator)
+credential_iterator_rpm (iterator_t *iterator)
 {
   const char *private_key, *login, *pass;
   void *rpm;
@@ -35804,12 +35901,12 @@ lsc_credential_iterator_rpm (iterator_t *iterator)
 
   if (iterator->done) return NULL;
 
-  private_key = lsc_credential_iterator_private_key (iterator);
-  pass = lsc_credential_iterator_password (iterator);
+  private_key = credential_iterator_private_key (iterator);
+  pass = credential_iterator_password (iterator);
   public_key = openvas_ssh_public_from_private (private_key, pass);
   if (!public_key)
     return NULL;
-  login = lsc_credential_iterator_login (iterator);
+  login = credential_iterator_login (iterator);
   if (lsc_user_rpm_recreate (login, public_key, &rpm, &rpm_size))
     {
       g_free (public_key);
@@ -35824,14 +35921,14 @@ lsc_credential_iterator_rpm (iterator_t *iterator)
 }
 
 /**
- * @brief Get the deb from an LSC credential iterator.
+ * @brief Get the deb from a Credential iterator.
  *
  * @param[in]  iterator  Iterator.
  *
  * @return Deb, or NULL if iteration is complete. Free with g_free().
  */
 char*
-lsc_credential_iterator_deb (iterator_t *iterator)
+credential_iterator_deb (iterator_t *iterator)
 {
   const char *login, *private_key, *pass;
   char *public_key;
@@ -35841,12 +35938,12 @@ lsc_credential_iterator_deb (iterator_t *iterator)
 
   if (iterator->done) return NULL;
 
-  private_key = lsc_credential_iterator_private_key (iterator);
-  pass = lsc_credential_iterator_password (iterator);
+  private_key = credential_iterator_private_key (iterator);
+  pass = credential_iterator_password (iterator);
   public_key = openvas_ssh_public_from_private (private_key, pass);
   if (!public_key)
     return NULL;
-  login = lsc_credential_iterator_login (iterator);
+  login = credential_iterator_login (iterator);
   if (lsc_user_rpm_recreate (login, public_key, &rpm, &rpm_size))
     {
       g_free (public_key);
@@ -35868,14 +35965,14 @@ lsc_credential_iterator_deb (iterator_t *iterator)
 }
 
 /**
- * @brief Get the exe from an LSC credential iterator.
+ * @brief Get the exe from a Credential iterator.
  *
  * @param[in]  iterator  Iterator.
  *
  * @return Exe, or NULL if iteration is complete. Free with g_free().
  */
 char*
-lsc_credential_iterator_exe (iterator_t *iterator)
+credential_iterator_exe (iterator_t *iterator)
 {
   const char *login, *password;
   void *exe;
@@ -35884,8 +35981,8 @@ lsc_credential_iterator_exe (iterator_t *iterator)
 
   if (iterator->done) return NULL;
 
-  login = lsc_credential_iterator_login (iterator);
-  password = lsc_credential_iterator_password (iterator);
+  login = credential_iterator_login (iterator);
+  password = credential_iterator_password (iterator);
   if (lsc_user_exe_recreate (login, password, &exe, &exe_size))
     return NULL;
   exe64 = (exe && exe_size)
@@ -35896,80 +35993,80 @@ lsc_credential_iterator_exe (iterator_t *iterator)
 }
 
 /**
- * @brief Get the UUID of an LSC credential.
+ * @brief Get the UUID of a Credential.
  *
- * @param[in]  lsc_credential  LSC credential.
+ * @param[in]  credential  Credential.
  *
  * @return UUID.
  */
 char*
-lsc_credential_uuid (lsc_credential_t lsc_credential)
+credential_uuid (credential_t credential)
 {
-  return sql_string ("SELECT uuid FROM lsc_credentials WHERE id = %llu;",
-                     lsc_credential);
+  return sql_string ("SELECT uuid FROM credentials WHERE id = %llu;",
+                     credential);
 }
 
 /**
- * @brief Get the UUID of an LSC credential in the trashcan.
+ * @brief Get the UUID of a Credential in the trashcan.
  *
- * @param[in]  lsc_credential  LSC credential.
+ * @param[in]  credential  Credential.
  *
  * @return UUID.
  */
 char*
-trash_lsc_credential_uuid (lsc_credential_t lsc_credential)
+trash_credential_uuid (credential_t credential)
 {
-  return sql_string ("SELECT uuid FROM lsc_credentials_trash"
+  return sql_string ("SELECT uuid FROM credentials_trash"
                      " WHERE id = %llu;",
-                     lsc_credential);
+                     credential);
 }
 
 /**
  * @brief Get the name of an LSC credential.
  *
- * @param[in]  lsc_credential  LSC credential.
+ * @param[in]  credential  Credential.
  *
  * @return Name.
  */
 char*
-lsc_credential_name (lsc_credential_t lsc_credential)
+credential_name (credential_t credential)
 {
-  return sql_string ("SELECT name FROM lsc_credentials WHERE id = %llu;",
-                     lsc_credential);
+  return sql_string ("SELECT name FROM credentials WHERE id = %llu;",
+                     credential);
 }
 
 /**
  * @brief Get the name of an LSC credential in the trashcan.
  *
- * @param[in]  lsc_credential  LSC credential.
+ * @param[in]  credential  Credential.
  *
  * @return Name.
  */
 char*
-trash_lsc_credential_name (lsc_credential_t lsc_credential)
+trash_credential_name (credential_t credential)
 {
-  return sql_string ("SELECT name FROM lsc_credentials_trash"
+  return sql_string ("SELECT name FROM credentials_trash"
                      " WHERE id = %llu;",
-                     lsc_credential);
+                     credential);
 }
 
 /**
- * @brief Return whether a trashcan lsc_credential is readable.
+ * @brief Return whether a trashcan credential is readable.
  *
- * @param[in]  lsc_credential  LSC credential.
+ * @param[in]  credential  Credential.
  *
  * @return 1 if readable, else 0.
  */
 int
-trash_lsc_credential_readable (lsc_credential_t lsc_credential)
+trash_credential_readable (credential_t credential)
 {
   char *uuid;
-  lsc_credential_t found = 0;
+  credential_t found = 0;
 
-  if (lsc_credential == 0)
+  if (credential == 0)
     return 0;
-  uuid = lsc_credential_uuid (lsc_credential);
-  if (find_trash ("lsc_credential", uuid, &found))
+  uuid = credential_uuid (credential);
+  if (find_trash ("credential", uuid, &found))
     {
       g_free (uuid);
       return 0;
@@ -35979,24 +36076,24 @@ trash_lsc_credential_readable (lsc_credential_t lsc_credential)
 }
 
 /**
- * @brief Initialise an LSC credential target iterator.
+ * @brief Initialise a Credential target iterator.
  *
  * Iterates over all targets that use the credential.
  *
  * @param[in]  iterator        Iterator.
- * @param[in]  lsc_credential  Name of LSC credential.
+ * @param[in]  credential      Name of LSC credential.
  * @param[in]  ascending       Whether to sort ascending or descending.
  */
 void
-init_lsc_credential_target_iterator (iterator_t* iterator,
-                                     lsc_credential_t lsc_credential,
-                                     int ascending)
+init_credential_target_iterator (iterator_t* iterator,
+                                 credential_t credential,
+                                 int ascending)
 {
   gchar *available;
   get_data_t get;
   array_t *permissions;
 
-  assert (lsc_credential);
+  assert (credential);
 
   get.trash = 0;
   permissions = make_array ();
@@ -36011,33 +36108,33 @@ init_lsc_credential_target_iterator (iterator_t* iterator,
                  " OR esxi_lsc_credential = %llu"
                  " ORDER BY name %s;",
                  available,
-                 lsc_credential,
-                 lsc_credential,
-                 lsc_credential,
+                 credential,
+                 credential,
+                 credential,
                  ascending ? "ASC" : "DESC");
 
   g_free (available);
 }
 
 /**
- * @brief Get the uuid from an LSC credential_target iterator.
+ * @brief Get the uuid from an Credential Target iterator.
  *
  * @param[in]  iterator  Iterator.
  *
  * @return Uuid, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (lsc_credential_target_iterator_uuid, 0);
+DEF_ACCESS (credential_target_iterator_uuid, 0);
 
 /**
- * @brief Get the name from an LSC credential_target iterator.
+ * @brief Get the name from an Credential Target iterator.
  *
  * @param[in]  iterator  Iterator.
  *
  * @return Name, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (lsc_credential_target_iterator_name, 1);
+DEF_ACCESS (credential_target_iterator_name, 1);
 
 /**
  * @brief Get the read permission status from a GET iterator.
@@ -36047,7 +36144,7 @@ DEF_ACCESS (lsc_credential_target_iterator_name, 1);
  * @return 1 if may read, else 0.
  */
 int
-lsc_credential_target_iterator_readable (iterator_t* iterator)
+credential_target_iterator_readable (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return iterator_int (iterator, 2);
@@ -50458,9 +50555,9 @@ manage_restore (const char *id)
       return 0;
     }
 
-  /* LSC credential. */
+  /* Credential. */
 
-  if (find_trash ("lsc_credential", id, &resource))
+  if (find_trash ("credential", id, &resource))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -50468,11 +50565,11 @@ manage_restore (const char *id)
 
   if (resource)
     {
-      lsc_credential_t credential;
+      credential_t credential;
 
-      if (sql_int ("SELECT count(*) FROM lsc_credentials"
+      if (sql_int ("SELECT count(*) FROM credentials"
                    " WHERE name ="
-                   " (SELECT name FROM lsc_credentials_trash WHERE id = %llu)"
+                   " (SELECT name FROM credentials_trash WHERE id = %llu)"
                    " AND " ACL_USER_OWNS () ";",
                    resource,
                    current_credentials.uuid))
@@ -50481,15 +50578,23 @@ manage_restore (const char *id)
           return 3;
         }
 
-      sql ("INSERT INTO lsc_credentials"
-           " (uuid, owner, name, login, password, comment, "
-           "  private_key, creation_time, modification_time)"
-           " SELECT uuid, owner, name, login, password, comment, "
-           "  private_key, creation_time, modification_time"
-           " FROM lsc_credentials_trash WHERE id = %llu;",
+      sql ("INSERT INTO credentials"
+           " (uuid, owner, name, comment, creation_time,"
+           "  modification_time, type)"
+           " SELECT uuid, owner, name, comment, creation_time,"
+           "        modification_time, type"
+           " FROM credentials_trash WHERE id = %llu;",
            resource);
 
       credential = sql_last_insert_id ();
+
+      sql ("INSERT INTO credentials_data"
+           " (credential, type, value)"
+           " SELECT %llu, type, value"
+           " FROM credentials_trash_data"
+           " WHERE credential = %llu",
+           credential,
+           resource);
 
       /* Update the credentials in any trashcan targets. */
       sql ("UPDATE targets_trash"
@@ -50514,12 +50619,14 @@ manage_restore (const char *id)
            credential,
            resource);
 
-      permissions_set_locations ("lsc_credential", resource, credential,
+      permissions_set_locations ("credential", resource, credential,
                                  LOCATION_TABLE);
-      tags_set_locations ("lsc_credential", resource, credential,
+      tags_set_locations ("credential", resource, credential,
                           LOCATION_TABLE);
 
-      sql ("DELETE FROM lsc_credentials_trash WHERE id = %llu;", resource);
+      sql ("DELETE FROM credentials_trash WHERE id = %llu;", resource);
+      sql ("DELETE FROM credentials_trash_data WHERE credential = %llu;",
+           resource);
       sql ("COMMIT;");
       return 0;
     }
@@ -51211,8 +51318,8 @@ manage_empty_trashcan ()
   sql ("DELETE FROM alert_event_data_trash;");
   sql ("DELETE FROM alert_method_data_trash;");
   sql ("DELETE FROM alerts_trash;");
+  sql ("DELETE FROM credentials_trash;");
   sql ("DELETE FROM filters_trash;");
-  sql ("DELETE FROM lsc_credentials_trash;");
   sql ("DELETE FROM notes_trash;");
   sql ("DELETE FROM overrides_trash;");
   sql ("DELETE FROM permissions_trash;");
@@ -55934,10 +56041,18 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   sql ("DELETE FROM configs WHERE owner = %llu;", user);
   sql ("DELETE FROM configs_trash WHERE owner = %llu;", user);
 
+  sql ("DELETE FROM credentials_data WHERE credential IN"
+       " SELECT id FROM credentials WHERE owner = %llu;",
+       user);
+  sql ("DELETE FROM credentials_trash_data WHERE credential IN"
+       " SELECT id FROM credentials_trash WHERE owner = %llu;",
+       user);
+
+  sql ("DELETE FROM credentials WHERE owner = %llu;", user);
+  sql ("DELETE FROM credentials_trash WHERE owner = %llu;", user);
+
   sql ("DELETE FROM filters WHERE owner = %llu;", user);
   sql ("DELETE FROM filters_trash WHERE owner = %llu;", user);
-  sql ("DELETE FROM lsc_credentials WHERE owner = %llu;", user);
-  sql ("DELETE FROM lsc_credentials_trash WHERE owner = %llu;", user);
   sql ("DELETE FROM notes WHERE owner = %llu;", user);
   sql ("DELETE FROM notes_trash WHERE owner = %llu;", user);
 

@@ -2326,6 +2326,16 @@ create_tables ()
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
        "  event INTEGER, condition INTEGER, method INTEGER, filter INTEGER,"
        "  filter_location INTEGER, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS credentials"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
+       "  creation_time, modification_time, type TEXT);");
+  sql ("CREATE TABLE IF NOT EXISTS credentials_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
+       "  creation_time, modification_time, type TEXT);");
+  sql ("CREATE TABLE IF NOT EXISTS credentials_data"
+       " (id INTEGER PRIMARY KEY, credential INTEGER, type TEXT, value TEXT);");
+  sql ("CREATE TABLE IF NOT EXISTS credentials_trash_data"
+       " (id INTEGER PRIMARY KEY, credential INTEGER, type TEXT, value TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS filters"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
        "  type, term, creation_time, modification_time);");
@@ -2370,14 +2380,6 @@ create_tables ()
        "  detail_source_description,"
        "  name,"
        "  value);");
-  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials"
-       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login,"
-       "  password, comment, private_key TEXT,"
-       "  creation_time, modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials_trash"
-       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login,"
-       "  password, comment, private_key TEXT,"
-       "  creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS meta"
        " (id INTEGER PRIMARY KEY, name UNIQUE, value);");
   sql ("CREATE TABLE IF NOT EXISTS notes"

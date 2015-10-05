@@ -1839,9 +1839,9 @@ cleanup_slave ()
 static int
 slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
              const char *name, const char *host, int port, task_t task,
-             target_t target, lsc_credential_t target_ssh_credential,
-             lsc_credential_t target_smb_credential,
-             lsc_credential_t target_esxi_credential,
+             target_t target, credential_t target_ssh_credential,
+             credential_t target_smb_credential,
+             credential_t target_esxi_credential,
              report_t last_stopped_report)
 {
   int ret, next_result;
@@ -1905,7 +1905,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
 
       if (target_ssh_credential)
         {
-          init_lsc_credential_iterator_one (&credentials,
+          init_credential_iterator_one (&credentials,
                                             target_ssh_credential);
           if (next (&credentials))
             {
@@ -1913,9 +1913,9 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
               gchar *user_copy, *password_copy, *private_key_copy;
               omp_create_lsc_credential_opts_t opts;
 
-              user = lsc_credential_iterator_login (&credentials);
-              password = lsc_credential_iterator_password (&credentials);
-              private_key = lsc_credential_iterator_private_key (&credentials);
+              user = credential_iterator_login (&credentials);
+              password = credential_iterator_password (&credentials);
+              private_key = credential_iterator_private_key (&credentials);
 
               if (user == NULL
                   || (private_key == NULL && password == NULL))
@@ -1950,16 +1950,16 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
 
       if (target_smb_credential)
         {
-          init_lsc_credential_iterator_one (&credentials,
-                                            target_smb_credential);
+          init_credential_iterator_one (&credentials,
+                                        target_smb_credential);
           if (next (&credentials))
             {
               const char *user, *password;
               gchar *user_copy, *password_copy, *smb_name;
               omp_create_lsc_credential_opts_t opts;
 
-              user = lsc_credential_iterator_login (&credentials);
-              password = lsc_credential_iterator_password (&credentials);
+              user = credential_iterator_login (&credentials);
+              password = credential_iterator_password (&credentials);
 
               if (user == NULL || password == NULL)
                 {
@@ -1990,7 +1990,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
 
       if (target_esxi_credential)
         {
-          init_lsc_credential_iterator_one (&credentials,
+          init_credential_iterator_one (&credentials,
                                             target_esxi_credential);
           if (next (&credentials))
             {
@@ -1998,8 +1998,8 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
               gchar *user_copy, *password_copy, *esxi_name;
               omp_create_lsc_credential_opts_t opts;
 
-              user = lsc_credential_iterator_login (&credentials);
-              password = lsc_credential_iterator_password (&credentials);
+              user = credential_iterator_login (&credentials);
+              password = credential_iterator_password (&credentials);
 
               if (user == NULL || password == NULL)
                 {
@@ -2579,9 +2579,10 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
  * @return 0 success, -1 error.
  */
 static int
-run_slave_task (task_t task, target_t target, lsc_credential_t
-                target_ssh_credential, lsc_credential_t target_smb_credential,
-                lsc_credential_t target_esxi_credential,
+run_slave_task (task_t task, target_t target,
+                credential_t target_ssh_credential,
+                credential_t target_smb_credential,
+                credential_t target_esxi_credential,
                 report_t last_stopped_report)
 {
   slave_t slave;
@@ -2990,7 +2991,7 @@ get_osp_task_options (task_t task, target_t target)
   char *ssh_port;
   const char *user, *pass;
   iterator_t iter;
-  lsc_credential_t cred;
+  credential_t cred;
   GHashTable *options = task_scanner_options (task);
 
   if (!options)
@@ -3002,7 +3003,7 @@ get_osp_task_options (task_t task, target_t target)
       ssh_port = target_ssh_port (target);
       g_hash_table_insert (options, g_strdup ("port"), ssh_port);
 
-      init_lsc_credential_iterator_one (&iter, cred);
+      init_credential_iterator_one (&iter, cred);
       if (!next (&iter))
         {
           g_warning ("%s: LSC Credential not found.", __FUNCTION__);
@@ -3010,15 +3011,15 @@ get_osp_task_options (task_t task, target_t target)
           cleanup_iterator (&iter);
           return NULL;
         }
-      if (lsc_credential_iterator_private_key (&iter))
+      if (credential_iterator_private_key (&iter))
         {
           g_warning ("%s: LSC Credential not a user/pass pair.", __FUNCTION__);
           g_hash_table_destroy (options);
           cleanup_iterator (&iter);
           return NULL;
         }
-      user = lsc_credential_iterator_login (&iter);
-      pass = lsc_credential_iterator_password (&iter);
+      user = credential_iterator_login (&iter);
+      pass = credential_iterator_password (&iter);
       g_hash_table_insert (options, g_strdup ("username"), g_strdup (user));
       g_hash_table_insert (options, g_strdup ("password"), g_strdup (pass));
       cleanup_iterator (&iter);
@@ -3533,7 +3534,7 @@ run_task (const char *task_id, char **report_id, int from,
   GPtrArray *preference_files;
   task_status_t run_status;
   config_t config;
-  lsc_credential_t ssh_credential, smb_credential, esxi_credential;
+  credential_t ssh_credential, smb_credential, esxi_credential;
   report_t last_stopped_report;
   port_list_t port_list;
 
@@ -3686,12 +3687,12 @@ run_task (const char *task_id, char **report_id, int from,
   if (ssh_credential)
     {
       char *uuid;
-      lsc_credential_t found;
+      credential_t found;
 
-      uuid = lsc_credential_uuid (ssh_credential);
-      if (find_lsc_credential_with_permission (uuid,
-                                               &found,
-                                               "get_lsc_credentials"))
+      uuid = credential_uuid (ssh_credential);
+      if (find_credential_with_permission (uuid,
+                                           &found,
+                                           "get_credentials"))
         {
           g_free (uuid);
           set_task_run_status (task, run_status);
@@ -3709,12 +3710,12 @@ run_task (const char *task_id, char **report_id, int from,
   if (smb_credential)
     {
       char *uuid;
-      lsc_credential_t found;
+      credential_t found;
 
-      uuid = lsc_credential_uuid (smb_credential);
-      if (find_lsc_credential_with_permission (uuid,
-                                               &found,
-                                               "get_lsc_credentials"))
+      uuid = credential_uuid (smb_credential);
+      if (find_credential_with_permission (uuid,
+                                           &found,
+                                           "get_credentials"))
         {
           g_free (uuid);
           set_task_run_status (task, run_status);
@@ -3732,12 +3733,12 @@ run_task (const char *task_id, char **report_id, int from,
   if (esxi_credential)
     {
       char *uuid;
-      lsc_credential_t found;
+      credential_t found;
 
-      uuid = lsc_credential_uuid (esxi_credential);
-      if (find_lsc_credential_with_permission (uuid,
-                                               &found,
-                                               "get_lsc_credentials"))
+      uuid = credential_uuid (esxi_credential);
+      if (find_credential_with_permission (uuid,
+                                           &found,
+                                           "get_credentials"))
         {
           g_free (uuid);
           set_task_run_status (task, run_status);
@@ -4028,16 +4029,16 @@ run_task (const char *task_id, char **report_id, int from,
     {
       iterator_t credentials;
 
-      init_lsc_credential_iterator_one (&credentials, ssh_credential);
+      init_credential_iterator_one (&credentials, ssh_credential);
       if (next (&credentials))
         {
-          const char *user = lsc_credential_iterator_login (&credentials);
-          const char *password = lsc_credential_iterator_password (&credentials);
+          const char *user = credential_iterator_login (&credentials);
+          const char *password = credential_iterator_password (&credentials);
 
           if (sendf_to_server ("SSH Authorization[entry]:SSH login name:"
                                " <|> %s\n",
                                user)
-              || (lsc_credential_iterator_private_key (&credentials)
+              || (credential_iterator_private_key (&credentials)
                    ? sendf_to_server ("SSH Authorization[password]:"
                                       "SSH key passphrase:"
                                       " <|> %s\n",
@@ -4060,7 +4061,7 @@ run_task (const char *task_id, char **report_id, int from,
               return -10;
             }
 
-          if (lsc_credential_iterator_private_key (&credentials))
+          if (credential_iterator_private_key (&credentials))
             {
               char *uuid = openvas_uuid_make ();
               if (uuid == NULL)
@@ -4069,7 +4070,7 @@ run_task (const char *task_id, char **report_id, int from,
               g_ptr_array_add (preference_files, (gpointer) uuid);
               g_ptr_array_add
                (preference_files,
-                (gpointer) g_strdup (lsc_credential_iterator_private_key
+                (gpointer) g_strdup (credential_iterator_private_key
                                       (&credentials)));
 
               if (sendf_to_server ("SSH Authorization[file]:"
@@ -4086,11 +4087,11 @@ run_task (const char *task_id, char **report_id, int from,
     {
       iterator_t credentials;
 
-      init_lsc_credential_iterator_one (&credentials, smb_credential);
+      init_credential_iterator_one (&credentials, smb_credential);
       if (next (&credentials))
         {
-          const char *user = lsc_credential_iterator_login (&credentials);
-          const char *password = lsc_credential_iterator_password (&credentials);
+          const char *user = credential_iterator_login (&credentials);
+          const char *password = credential_iterator_password (&credentials);
 
           if (sendf_to_server ("SMB Authorization[entry]:SMB login: <|> %s\n",
                                user)
@@ -4116,11 +4117,11 @@ run_task (const char *task_id, char **report_id, int from,
     {
       iterator_t credentials;
 
-      init_lsc_credential_iterator_one (&credentials, esxi_credential);
+      init_credential_iterator_one (&credentials, esxi_credential);
       if (next (&credentials))
         {
-          const char *user = lsc_credential_iterator_login (&credentials);
-          const char *password = lsc_credential_iterator_password (&credentials);
+          const char *user = credential_iterator_login (&credentials);
+          const char *password = credential_iterator_password (&credentials);
 
           if (sendf_to_server ("ESXi Authorization[entry]:ESXi login name:"
                                " <|> %s\n",
@@ -4599,6 +4600,29 @@ manage_check_current_task ()
         }
     }
   return 0;
+}
+
+
+/* Credentials. */
+
+/**
+ * @brief Get the written-out name of an LSC Credential type.
+ *
+ * @param[in]  abbreviation  The type abbreviation.
+ *
+ * @return The written-out type name.
+ */
+const char*
+credential_full_type (const char* abbreviation)
+{
+  if (abbreviation == NULL)
+    return NULL;
+  else if (strcasecmp (abbreviation, "up") == 0)
+    return "username + password";
+  else if (strcasecmp (abbreviation, "usk") == 0)
+    return "username + SSH key";
+  else
+    return abbreviation;
 }
 
 

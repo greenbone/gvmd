@@ -81,7 +81,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <delete_target target_id="{/wizard/previous/response/commands_response/get_targets_response/target/@id}" ultimate="{/wizard/params/param[name='ultimate']/value}" />
             </xsl:if>
             <xsl:if test="/wizard/previous/response/commands_response/get_targets_response/target/ssh_lsc_credential/@id != ''">
-              <delete_lsc_credential lsc_credential_id="{/wizard/previous/response/commands_response/get_targets_response/target/ssh_lsc_credential/@id}" ultimate="{/wizard/params/param[name='ultimate']/value}"/>
+              <delete_credential credential_id="{/wizard/previous/response/commands_response/get_targets_response/target/ssh_lsc_credential/@id}" ultimate="{/wizard/params/param[name='ultimate']/value}"/>
             </xsl:if>
           </commands>
         </xsl:template>

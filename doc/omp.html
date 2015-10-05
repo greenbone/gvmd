@@ -191,16 +191,16 @@
 <td id="index"><div style="margin-left: 15px;">Create an alert.</div></td>
 </tr>
 <tr id="index">
+<td id="index"><a href="#command_create_credential">create_credential</a></td>
+<td id="index"><div style="margin-left: 15px;">Create a credential.</div></td>
+</tr>
+<tr id="index">
 <td id="index"><a href="#command_create_filter">create_filter</a></td>
 <td id="index"><div style="margin-left: 15px;">Create a filter.</div></td>
 </tr>
 <tr id="index">
 <td id="index"><a href="#command_create_group">create_group</a></td>
 <td id="index"><div style="margin-left: 15px;">Create a group.</div></td>
-</tr>
-<tr id="index">
-<td id="index"><a href="#command_create_lsc_credential">create_lsc_credential</a></td>
-<td id="index"><div style="margin-left: 15px;">Create an LSC credential.</div></td>
 </tr>
 <tr id="index">
 <td id="index"><a href="#command_create_note">create_note</a></td>
@@ -275,16 +275,16 @@
 <td id="index"><div style="margin-left: 15px;">Delete an alert.</div></td>
 </tr>
 <tr id="index">
+<td id="index"><a href="#command_delete_credential">delete_credential</a></td>
+<td id="index"><div style="margin-left: 15px;">Delete a credential.</div></td>
+</tr>
+<tr id="index">
 <td id="index"><a href="#command_delete_filter">delete_filter</a></td>
 <td id="index"><div style="margin-left: 15px;">Delete a filter.</div></td>
 </tr>
 <tr id="index">
 <td id="index"><a href="#command_delete_group">delete_group</a></td>
 <td id="index"><div style="margin-left: 15px;">Delete a group.</div></td>
-</tr>
-<tr id="index">
-<td id="index"><a href="#command_delete_lsc_credential">delete_lsc_credential</a></td>
-<td id="index"><div style="margin-left: 15px;">Delete an LSC credential.</div></td>
 </tr>
 <tr id="index">
 <td id="index"><a href="#command_delete_note">delete_note</a></td>
@@ -387,6 +387,10 @@
 <td id="index"><div style="margin-left: 15px;">Get one or many assets.</div></td>
 </tr>
 <tr id="index">
+<td id="index"><a href="#command_get_credentials">get_credentials</a></td>
+<td id="index"><div style="margin-left: 15px;">Get one or many credentials.</div></td>
+</tr>
+<tr id="index">
 <td id="index"><a href="#command_get_filters">get_filters</a></td>
 <td id="index"><div style="margin-left: 15px;">Get one or many filters.</div></td>
 </tr>
@@ -397,10 +401,6 @@
 <tr id="index">
 <td id="index"><a href="#command_get_info">get_info</a></td>
 <td id="index"><div style="margin-left: 15px;">Get information for items of given type.</div></td>
-</tr>
-<tr id="index">
-<td id="index"><a href="#command_get_lsc_credentials">get_lsc_credentials</a></td>
-<td id="index"><div style="margin-left: 15px;">Get one or many LSC credentials.</div></td>
 </tr>
 <tr id="index">
 <td id="index"><a href="#command_get_notes">get_notes</a></td>
@@ -511,16 +511,16 @@
 <td id="index"><div style="margin-left: 15px;">Modify an existing config.</div></td>
 </tr>
 <tr id="index">
+<td id="index"><a href="#command_modify_credential">modify_credential</a></td>
+<td id="index"><div style="margin-left: 15px;">Modify an existing credential.</div></td>
+</tr>
+<tr id="index">
 <td id="index"><a href="#command_modify_filter">modify_filter</a></td>
 <td id="index"><div style="margin-left: 15px;">Modify an existing filter.</div></td>
 </tr>
 <tr id="index">
 <td id="index"><a href="#command_modify_group">modify_group</a></td>
 <td id="index"><div style="margin-left: 15px;">Modify an existing group.</div></td>
-</tr>
-<tr id="index">
-<td id="index"><a href="#command_modify_lsc_credential">modify_lsc_credential</a></td>
-<td id="index"><div style="margin-left: 15px;">Modify an existing LSC credential.</div></td>
 </tr>
 <tr id="index">
 <td id="index"><a href="#command_modify_note">modify_note</a></td>
@@ -642,9 +642,9 @@ command
     | create_agent
     | create_config
     | create_alert
+    | create_credential
     | create_filter
     | create_group
-    | create_lsc_credential
     | create_note
     | create_override
     | create_permission
@@ -663,9 +663,9 @@ command
     | delete_agent
     | delete_config
     | delete_alert
+    | delete_credential
     | delete_filter
     | delete_group
-    | delete_lsc_credential
     | delete_note
     | delete_override
     | delete_report
@@ -691,10 +691,10 @@ command
     | get_aggregates
     | get_alerts
     | get_assets
+    | get_credentials
     | get_filters
     | get_groups
     | get_info
-    | get_lsc_credentials
     | get_notes
     | get_nvts
     | get_nvt_families
@@ -722,9 +722,9 @@ command
     | modify_alert
     | modify_auth
     | modify_config
+    | modify_credential
     | modify_filter
     | modify_group
-    | modify_lsc_credential
     | modify_note
     | modify_override
     | modify_permission
@@ -759,9 +759,9 @@ response
     | create_agent_response
     | create_config_response
     | create_alert_response
+    | create_credential_response
     | create_filter_response
     | create_group_response
-    | create_lsc_credential_response
     | create_note_response
     | create_override_response
     | create_permission_response
@@ -780,9 +780,9 @@ response
     | delete_agent_response
     | delete_config_response
     | delete_alert_response
+    | delete_credential_response
     | delete_filter_response
     | delete_group_response
-    | delete_lsc_credential_response
     | delete_note_response
     | delete_override_response
     | delete_report_response
@@ -808,10 +808,10 @@ response
     | get_aggregates_response
     | get_alerts_response
     | get_assets_response
+    | get_credentials_response
     | get_filters_response
     | get_groups_response
     | get_info_response
-    | get_lsc_credentials_response
     | get_notes_response
     | get_nvts_response
     | get_nvt_families_response
@@ -839,9 +839,9 @@ response
     | modify_alert_response
     | modify_auth_response
     | modify_config_response
+    | modify_credential_response
     | modify_filter_response
     | modify_group_response
-    | modify_lsc_credential_response
     | modify_note_response
     | modify_override_response
     | modify_permission_response
@@ -5808,6 +5808,11 @@ authenticate_response_timezone
           </div>
 </li>
 <li>
+          &lt;<b>create_credential&gt;</b><div style="margin-left: 15px; display: inline;">
+<a href="#command_create_credential">create_credential</a> command.
+          </div>
+</li>
+<li>
           &lt;<b>create_filter&gt;</b><div style="margin-left: 15px; display: inline;">
 <a href="#command_create_filter">create_filter</a> command.
           </div>
@@ -5815,11 +5820,6 @@ authenticate_response_timezone
 <li>
           &lt;<b>create_group&gt;</b><div style="margin-left: 15px; display: inline;">
 <a href="#command_create_group">create_group</a> command.
-          </div>
-</li>
-<li>
-          &lt;<b>create_lsc_credential&gt;</b><div style="margin-left: 15px; display: inline;">
-<a href="#command_create_lsc_credential">create_lsc_credential</a> command.
           </div>
 </li>
 <li>
@@ -5908,6 +5908,11 @@ authenticate_response_timezone
           </div>
 </li>
 <li>
+          &lt;<b>delete_credential&gt;</b><div style="margin-left: 15px; display: inline;">
+<a href="#command_delete_credential">delete_credential</a> command.
+          </div>
+</li>
+<li>
           &lt;<b>delete_filter&gt;</b><div style="margin-left: 15px; display: inline;">
 <a href="#command_delete_filter">delete_filter</a> command.
           </div>
@@ -5915,11 +5920,6 @@ authenticate_response_timezone
 <li>
           &lt;<b>delete_group&gt;</b><div style="margin-left: 15px; display: inline;">
 <a href="#command_delete_group">delete_group</a> command.
-          </div>
-</li>
-<li>
-          &lt;<b>delete_lsc_credential&gt;</b><div style="margin-left: 15px; display: inline;">
-<a href="#command_delete_lsc_credential">delete_lsc_credential</a> command.
           </div>
 </li>
 <li>
@@ -6043,6 +6043,11 @@ authenticate_response_timezone
           </div>
 </li>
 <li>
+          &lt;<b>get_credentials&gt;</b><div style="margin-left: 15px; display: inline;">
+<a href="#command_get_credentials">get_credentials</a> command.
+          </div>
+</li>
+<li>
           &lt;<b>get_filters&gt;</b><div style="margin-left: 15px; display: inline;">
 <a href="#command_get_filters">get_filters</a> command.
           </div>
@@ -6055,11 +6060,6 @@ authenticate_response_timezone
 <li>
           &lt;<b>get_info&gt;</b><div style="margin-left: 15px; display: inline;">
 <a href="#command_get_info">get_info</a> command.
-          </div>
-</li>
-<li>
-          &lt;<b>get_lsc_credentials&gt;</b><div style="margin-left: 15px; display: inline;">
-<a href="#command_get_lsc_credentials">get_lsc_credentials</a> command.
           </div>
 </li>
 <li>
@@ -6198,6 +6198,11 @@ authenticate_response_timezone
           </div>
 </li>
 <li>
+          &lt;<b>modify_credential&gt;</b><div style="margin-left: 15px; display: inline;">
+<a href="#command_modify_credential">modify_credential</a> command.
+          </div>
+</li>
+<li>
           &lt;<b>modify_filter&gt;</b><div style="margin-left: 15px; display: inline;">
 <a href="#command_modify_filter">modify_filter</a> command.
           </div>
@@ -6205,11 +6210,6 @@ authenticate_response_timezone
 <li>
           &lt;<b>modify_group&gt;</b><div style="margin-left: 15px; display: inline;">
 <a href="#command_modify_group">modify_group</a> command.
-          </div>
-</li>
-<li>
-          &lt;<b>modify_lsc_credential&gt;</b><div style="margin-left: 15px; display: inline;">
-<a href="#command_modify_lsc_credential">modify_lsc_credential</a> command.
           </div>
 </li>
 <li>
@@ -6373,6 +6373,11 @@ authenticate_response_timezone
           </div>
 </li>
 <li>
+          &lt;<b>create_credential_response&gt;</b><div style="margin-left: 15px; display: inline;">
+            Response to <a href="#command_create_credential">create_credential</a> command.
+          </div>
+</li>
+<li>
           &lt;<b>create_filter_response&gt;</b><div style="margin-left: 15px; display: inline;">
             Response to <a href="#command_create_filter">create_filter</a> command.
           </div>
@@ -6380,11 +6385,6 @@ authenticate_response_timezone
 <li>
           &lt;<b>create_group_response&gt;</b><div style="margin-left: 15px; display: inline;">
             Response to <a href="#command_create_group">create_group</a> command.
-          </div>
-</li>
-<li>
-          &lt;<b>create_lsc_credential_response&gt;</b><div style="margin-left: 15px; display: inline;">
-            Response to <a href="#command_create_lsc_credential">create_lsc_credential</a> command.
           </div>
 </li>
 <li>
@@ -6468,6 +6468,11 @@ authenticate_response_timezone
           </div>
 </li>
 <li>
+          &lt;<b>delete_credential_response&gt;</b><div style="margin-left: 15px; display: inline;">
+            Response to <a href="#command_delete_credential">delete_credential</a> command.
+          </div>
+</li>
+<li>
           &lt;<b>delete_filter_response&gt;</b><div style="margin-left: 15px; display: inline;">
             Response to <a href="#command_delete_filter">delete_filter</a> command.
           </div>
@@ -6475,11 +6480,6 @@ authenticate_response_timezone
 <li>
           &lt;<b>delete_group_response&gt;</b><div style="margin-left: 15px; display: inline;">
             Response to <a href="#command_delete_group">delete_group</a> command.
-          </div>
-</li>
-<li>
-          &lt;<b>delete_lsc_credential_response&gt;</b><div style="margin-left: 15px; display: inline;">
-            Response to <a href="#command_delete_lsc_credential">delete_lsc_credential</a> command.
           </div>
 </li>
 <li>
@@ -6603,6 +6603,11 @@ authenticate_response_timezone
           </div>
 </li>
 <li>
+          &lt;<b>get_credentials_response&gt;</b><div style="margin-left: 15px; display: inline;">
+            Response to <a href="#command_get_credentials">get_credentials</a> command.
+          </div>
+</li>
+<li>
           &lt;<b>get_groups_response&gt;</b><div style="margin-left: 15px; display: inline;">
             Response to <a href="#command_get_groups">get_groups</a> command.
           </div>
@@ -6610,11 +6615,6 @@ authenticate_response_timezone
 <li>
           &lt;<b>get_info_response&gt;</b><div style="margin-left: 15px; display: inline;">
             Response to <a href="#command_get_info">get_info</a> command.
-          </div>
-</li>
-<li>
-          &lt;<b>get_lsc_credentials_response&gt;</b><div style="margin-left: 15px; display: inline;">
-            Response to <a href="#command_get_lsc_credentials">get_lsc_credentials</a> command.
           </div>
 </li>
 <li>
@@ -6758,6 +6758,11 @@ authenticate_response_timezone
           </div>
 </li>
 <li>
+          &lt;<b>modify_credential_response&gt;</b><div style="margin-left: 15px; display: inline;">
+            Response to <a href="#command_modify_credential">modify_credential</a> command.
+          </div>
+</li>
+<li>
           &lt;<b>modify_filter_response&gt;</b><div style="margin-left: 15px; display: inline;">
             Response to <a href="#command_modify_filter">modify_filter</a> command.
           </div>
@@ -6765,11 +6770,6 @@ authenticate_response_timezone
 <li>
           &lt;<b>modify_group_response&gt;</b><div style="margin-left: 15px; display: inline;">
             Response to <a href="#command_modify_group">modify_group</a> command.
-          </div>
-</li>
-<li>
-          &lt;<b>modify_lsc_credential_response&gt;</b><div style="margin-left: 15px; display: inline;">
-            Response to <a href="#command_modify_lsc_credential">modify_lsc_credential</a> command.
           </div>
 </li>
 <li>
@@ -6907,9 +6907,9 @@ authenticate_response_timezone
            | create_agent
            | create_alert
            | create_config
+           | create_credential
            | create_filter
            | create_group
-           | create_lsc_credential
            | create_note
            | create_override
            | create_permission
@@ -6927,9 +6927,9 @@ authenticate_response_timezone
            | delete_agent
            | delete_alert
            | delete_config
+           | delete_credential
            | delete_filter
            | delete_group
-           | delete_lsc_credential
            | delete_note
            | delete_override
            | delete_permission
@@ -6954,10 +6954,10 @@ authenticate_response_timezone
            | get_alerts
            | get_assets
            | get_configs
+           | get_credentials
            | get_filters
            | get_groups
            | get_info
-           | get_lsc_credentials
            | get_notes
            | get_nvts
            | get_nvt_families
@@ -6985,9 +6985,9 @@ authenticate_response_timezone
            | modify_alert
            | modify_auth
            | modify_config
+           | modify_credential
            | modify_filter
            | modify_group
-           | modify_lsc_credential
            | modify_note
            | modify_override
            | modify_permission
@@ -7024,9 +7024,9 @@ authenticate_response_timezone
            | create_agent_response
            | create_alert_response
            | create_config_response
+           | create_credential_response
            | create_filter_response
            | create_group_response
-           | create_lsc_credential_response
            | create_note_response
            | create_override_response
            | create_permission_response
@@ -7043,9 +7043,9 @@ authenticate_response_timezone
            | delete_agent_response
            | delete_alert_response
            | delete_config_response
+           | delete_credential_response
            | delete_filter_response
            | delete_group_response
-           | delete_lsc_credential_response
            | delete_note_response
            | delete_override_response
            | delete_permission_response
@@ -7070,9 +7070,9 @@ authenticate_response_timezone
            | get_alerts_response
            | get_assets_response
            | get_configs_response
+           | get_credentials_response
            | get_groups_response
            | get_info_response
-           | get_lsc_credentials_response
            | get_filters_response
            | get_notes_response
            | get_nvts_response
@@ -7101,9 +7101,9 @@ authenticate_response_timezone
            | modify_alert_response
            | modify_auth_response
            | modify_config_response
+           | modify_credential_response
            | modify_filter_response
            | modify_group_response
-           | modify_lsc_credential_response
            | modify_note_response
            | modify_override_response
            | modify_permission_response
@@ -7653,14 +7653,179 @@ create_alert_filter
 </div>
 </div>
 <div>
-<div><h3 id="command_create_filter">7.6
+<div><h3 id="command_create_credential">7.6
+        Command <tt>create_credential</tt>
+</h3></div>
+<p>In short: Create a credential.</p>
+<p>
+        The client uses the create_lsc_credential command to create a new
+        credential for local security checks and other functions
+        requiring authentication.
+      </p>
+<p>
+        If the command includes a key, then the manager creates a key-based
+        credential from the key.  If the command includes a password, then
+        the manager creates a password only credential.  Otherwise the
+        manager autogenerates a key-based credential.
+      </p>
+<h4>7.6.1 Structure</h4>
+<ul style="list-style: none">
+<li>
+<i>Command</i><ul style="list-style: none">
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">A name for the credential.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">A comment on the credential.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>copy</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The UUID of an existing credential.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>key</b>&gt;
+              ?<ul style="list-style: none">
+<li>
+              &lt;<b>phrase</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Key passphrase.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>private</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Private key.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>login</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The user name of the credential.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>password</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The password for the credential login.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>7.6.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<i>Command</i><div style="margin-left: 5%"><pre>create_credential
+ = element create_credential
+     {
+       create_credential_name
+       &amp; create_credential_comment?
+       &amp; create_credential_copy?
+       &amp; create_credential_key?
+       &amp; create_credential_login
+       &amp; create_credential_password?
+     }
+
+create_credential_name
+ = element name
+     {
+       name
+     }
+
+create_credential_comment
+ = element comment
+     {
+       text
+     }
+
+create_credential_copy
+ = element copy
+     {
+       uuid
+     }
+
+create_credential_key
+ = element key
+     {
+       create_credential_key_phrase
+       &amp; create_credential_key_private
+     }
+
+create_credential_key_phrase
+ = element phrase
+     {
+       text
+     }
+
+create_credential_key_private
+ = element private
+     {
+       text
+     }
+
+create_credential_login
+ = element login
+     {
+       text
+     }
+
+create_credential_password
+ = element password
+     {
+       text
+     }
+</pre></div>
+<i>Response</i><div style="margin-left: 5%"><pre>create_credential_response
+ = element create_credential_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+       &amp; attribute id { uuid }
+     }
+</pre></div>
+</div>
+<h4>7.6.3 Example: Create an LSC credential</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_credential&gt;
+   &lt;name&gt;cluster sally&lt;/name&gt;
+   &lt;login&gt;sally&lt;/login&gt;
+   &lt;password&gt;secret&lt;/password&gt;
+   &lt;comment&gt;Sally's login to the cluster.&lt;/comment&gt;
+ &lt;/create_credential&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_credential_response status="201"
+                             status_text="OK, resource created"
+                             id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
+</pre></div>
+</div>
+</div>
+<div>
+<div><h3 id="command_create_filter">7.7
         Command <tt>create_filter</tt>
 </h3></div>
 <p>In short: Create a filter.</p>
 <p>
         The client uses the create_filter command to create a new filter.
       </p>
-<h4>7.6.1 Structure</h4>
+<h4>7.7.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -7712,7 +7877,7 @@ create_alert_filter
 </ul>
 </li>
 </ul>
-<h4>7.6.2 RNC</h4>
+<h4>7.7.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>create_filter
  = element create_filter
@@ -7770,7 +7935,7 @@ create_filter_type
      }
 </pre></div>
 </div>
-<h4>7.6.3 Example: Create a filter</h4>
+<h4>7.7.3 Example: Create a filter</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_filter&gt;
    &lt;name&gt;Single Targets&lt;/name&gt;
@@ -7786,7 +7951,7 @@ create_filter_type
 </div>
 </div>
 <div>
-<div><h3 id="command_create_group">7.7
+<div><h3 id="command_create_group">7.8
         Command <tt>create_group</tt>
 </h3></div>
 <p>In short: Create a group.</p>
@@ -7794,7 +7959,7 @@ create_filter_type
         The client uses the create_group command to create a new
         group.
       </p>
-<h4>7.7.1 Structure</h4>
+<h4>7.8.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -7837,7 +8002,7 @@ create_filter_type
 </ul>
 </li>
 </ul>
-<h4>7.7.2 RNC</h4>
+<h4>7.8.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>create_group
  = element create_group
@@ -7881,7 +8046,7 @@ create_group_users
      }
 </pre></div>
 </div>
-<h4>7.7.3 Example: Create a group</h4>
+<h4>7.8.3 Example: Create a group</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_group&gt;
    &lt;name&gt;Managers&lt;/name&gt;
@@ -7891,170 +8056,6 @@ create_group_users
 <i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_group_response status="201"
                         status_text="OK, resource created"
                         id="d94211b6-ba40-11e3-bcb1-406186ea4fc5"/&gt;
-</pre></div>
-</div>
-</div>
-<div>
-<div><h3 id="command_create_lsc_credential">7.8
-        Command <tt>create_lsc_credential</tt>
-</h3></div>
-<p>In short: Create an LSC credential.</p>
-<p>
-        The client uses the create_lsc_credential command to create a new
-        LSC credential.
-      </p>
-<p>
-        If the command includes a key, then the manager creates a key-based
-        credential from the key.  If the command includes a password, then
-        the manager creates a password only credential.  Otherwise the
-        manager autogenerates a key-based credential.
-      </p>
-<h4>7.8.1 Structure</h4>
-<ul style="list-style: none">
-<li>
-<i>Command</i><ul style="list-style: none">
-<li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">A name for the LSC credential.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>comment</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">A comment on the LSC credential.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>copy</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">The UUID of an existing LSC credential.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>key</b>&gt;
-              ?<ul style="list-style: none">
-<li>
-              &lt;<b>phrase</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Key passphrase.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>private</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Private key.</div>
-<ul style="list-style: none"></ul>
-</li>
-</ul>
-</li>
-<li>
-              &lt;<b>login</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The user name of the credential.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>password</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">The password for the credential login.</div>
-<ul style="list-style: none"></ul>
-</li>
-</ul>
-</li>
-<li style="margin-top: 15px;">
-<i>Response</i><ul style="list-style: none">
-<li>
-          @<b>status</b>
-          (<a href="#type_status">status</a>)
-          </li>
-<li>
-          @<b>status_text</b>
-          (text)
-          </li>
-<li>
-          @<b>id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li>
-</ul>
-</li>
-</ul>
-<h4>7.8.2 RNC</h4>
-<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>create_lsc_credential
- = element create_lsc_credential
-     {
-       create_lsc_credential_name
-       &amp; create_lsc_credential_comment?
-       &amp; create_lsc_credential_copy?
-       &amp; create_lsc_credential_key?
-       &amp; create_lsc_credential_login
-       &amp; create_lsc_credential_password?
-     }
-
-create_lsc_credential_name
- = element name
-     {
-       name
-     }
-
-create_lsc_credential_comment
- = element comment
-     {
-       text
-     }
-
-create_lsc_credential_copy
- = element copy
-     {
-       uuid
-     }
-
-create_lsc_credential_key
- = element key
-     {
-       create_lsc_credential_key_phrase
-       &amp; create_lsc_credential_key_private
-     }
-
-create_lsc_credential_key_phrase
- = element phrase
-     {
-       text
-     }
-
-create_lsc_credential_key_private
- = element private
-     {
-       text
-     }
-
-create_lsc_credential_login
- = element login
-     {
-       text
-     }
-
-create_lsc_credential_password
- = element password
-     {
-       text
-     }
-</pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>create_lsc_credential_response
- = element create_lsc_credential_response
-     {
-       attribute status { status }
-       &amp; attribute status_text { text }
-       &amp; attribute id { uuid }
-     }
-</pre></div>
-</div>
-<h4>7.8.3 Example: Create an LSC credential</h4>
-<div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_lsc_credential&gt;
-   &lt;name&gt;cluster sally&lt;/name&gt;
-   &lt;login&gt;sally&lt;/login&gt;
-   &lt;password&gt;secret&lt;/password&gt;
-   &lt;comment&gt;Sally's login to the cluster.&lt;/comment&gt;
- &lt;/create_lsc_credential&gt;
-</pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_lsc_credential_response status="201"
-                                 status_text="OK, resource created"
-                                 id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
 </pre></div>
 </div>
 </div>
@@ -10853,7 +10854,75 @@ create_user_role
 </div>
 </div>
 <div>
-<div><h3 id="command_delete_filter">7.27
+<div><h3 id="command_delete_credential">7.27
+        Command <tt>delete_credential</tt>
+</h3></div>
+<p>In short: Delete a credential.</p>
+<p>
+        The client uses the delete_credential command to delete an
+        existing credential.
+      </p>
+<p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+<h4>7.27.1 Structure</h4>
+<ul style="list-style: none">
+<li>
+<i>Command</i><ul style="list-style: none">
+<li>
+          @<b>credential_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+          @<b>ultimate</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to remove entirely, or to the trashcan.
+          </li>
+</ul>
+</li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>7.27.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<i>Command</i><div style="margin-left: 5%"><pre>delete_credential
+ = element delete_credential
+     {
+       attribute credential_id { uuid }
+       &amp; attribute ultimate { boolean }
+     }
+</pre></div>
+<i>Response</i><div style="margin-left: 5%"><pre>delete_credential_response
+ = element delete_credential_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre></div>
+</div>
+<h4>7.27.3 Example: Delete a credential</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_credential credential_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_credential_response status="200"
+                             status_text="OK"/&gt;
+</pre></div>
+</div>
+</div>
+<div>
+<div><h3 id="command_delete_filter">7.28
         Command <tt>delete_filter</tt>
 </h3></div>
 <p>In short: Delete a filter.</p>
@@ -10865,7 +10934,7 @@ create_user_role
         for confirmation from the user before sending this command to the
         Manager.
       </p>
-<h4>7.27.1 Structure</h4>
+<h4>7.28.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -10893,7 +10962,7 @@ create_user_role
 </ul>
 </li>
 </ul>
-<h4>7.27.2 RNC</h4>
+<h4>7.28.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>delete_filter
  = element delete_filter
@@ -10910,7 +10979,7 @@ create_user_role
      }
 </pre></div>
 </div>
-<h4>7.27.3 Example: Delete a filter</h4>
+<h4>7.28.3 Example: Delete a filter</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_filter filter_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
@@ -10920,7 +10989,7 @@ create_user_role
 </div>
 </div>
 <div>
-<div><h3 id="command_delete_group">7.28
+<div><h3 id="command_delete_group">7.29
         Command <tt>delete_group</tt>
 </h3></div>
 <p>In short: Delete a group.</p>
@@ -10933,7 +11002,7 @@ create_user_role
         for confirmation from the user before sending this command to the
         Manager.
       </p>
-<h4>7.28.1 Structure</h4>
+<h4>7.29.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -10961,7 +11030,7 @@ create_user_role
 </ul>
 </li>
 </ul>
-<h4>7.28.2 RNC</h4>
+<h4>7.29.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>delete_group
  = element delete_group
@@ -10978,80 +11047,12 @@ create_user_role
      }
 </pre></div>
 </div>
-<h4>7.28.3 Example: Delete a group</h4>
+<h4>7.29.3 Example: Delete a group</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_group group_id="d94211b6-ba40-11e3-bcb1-406186ea4fc5"/&gt;
 </pre></div>
 <i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_group_response status="200"
                         status_text="OK"/&gt;
-</pre></div>
-</div>
-</div>
-<div>
-<div><h3 id="command_delete_lsc_credential">7.29
-        Command <tt>delete_lsc_credential</tt>
-</h3></div>
-<p>In short: Delete an LSC credential.</p>
-<p>
-        The client uses the delete_lsc_credential command to delete an
-        existing LSC credential.
-      </p>
-<p>
-        Since this is a destructive command, the client is advised to ask
-        for confirmation from the user before sending this command to the
-        Manager.
-      </p>
-<h4>7.29.1 Structure</h4>
-<ul style="list-style: none">
-<li>
-<i>Command</i><ul style="list-style: none">
-<li>
-          @<b>lsc_credential_id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li>
-<li>
-          @<b>ultimate</b>
-          (<a href="#type_boolean">boolean</a>)
-          Whether to remove entirely, or to the trashcan.
-          </li>
-</ul>
-</li>
-<li style="margin-top: 15px;">
-<i>Response</i><ul style="list-style: none">
-<li>
-          @<b>status</b>
-          (<a href="#type_status">status</a>)
-          </li>
-<li>
-          @<b>status_text</b>
-          (text)
-          </li>
-</ul>
-</li>
-</ul>
-<h4>7.29.2 RNC</h4>
-<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>delete_lsc_credential
- = element delete_lsc_credential
-     {
-       attribute lsc_credential_id { uuid }
-       &amp; attribute ultimate { boolean }
-     }
-</pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>delete_lsc_credential_response
- = element delete_lsc_credential_response
-     {
-       attribute status { status }
-       &amp; attribute status_text { text }
-     }
-</pre></div>
-</div>
-<h4>7.29.3 Example: Delete an LSC credential</h4>
-<div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_lsc_credential lsc_credential_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
-</pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_lsc_credential_response status="200"
-                                 status_text="OK"/&gt;
 </pre></div>
 </div>
 </div>
@@ -16622,14 +16623,709 @@ get_assets_response_asset_count_page
 </div>
 </div>
 <div>
-<div><h3 id="command_get_filters">7.55
+<div><h3 id="command_get_credentials">7.55
+        Command <tt>get_credentials</tt>
+</h3></div>
+<p>In short: Get one or many credentials.</p>
+<p>
+      The client uses the get_credentials command to get credentials information.
+      If the command sent by the client was valid, the manager will
+      reply with a list of credentials to the client.
+    </p>
+<h4>7.55.1 Structure</h4>
+<ul style="list-style: none">
+<li>
+<i>Command</i><ul style="list-style: none">
+<li>
+          @<b>credential_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          ID of single credential to get.
+          </li>
+<li>
+          @<b>filter</b>
+          (<a href="#type_uuid">uuid</a>)
+          Filter term to use to filter query.
+          </li>
+<li>
+          @<b>filt_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          ID of filter to use to filter query.
+          </li>
+<li>
+          @<b>trash</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to get the trashcan credentials instead.
+          </li>
+<li>
+          @<b>targets</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to include a list of targets using the credentials.
+          </li>
+<li>
+          @<b>format</b>
+          ("key", "rpm", "deb" or "exe")
+          </li>
+</ul>
+</li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+<li>
+              &lt;<b>credential</b>&gt;
+              *<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>owner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Owner of the credential.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the credential.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>login</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The username of the credential.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The comment on the credential.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>creation_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Date and time the credential was created.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>modification_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Date and time the credential was last modified.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>writable</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether this credential is writable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>in_use</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether any targets are using the credential.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the credential.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>permission</b>&gt;
+              *<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>user_tags</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Info on tags attached to the credential.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of attached tags.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>tag</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Short info on an individual tag (only if details were requested).</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the tag.
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the tag (usually namespace:predicate).</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Value of the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Comment for the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>type</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The type of the credential.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>targets</b>&gt;
+              <div style="margin-left: 15px; display: inline;">All targets using this credential.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>target</b>&gt;
+              *<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the target.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the target.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+<li>
+<i>One of</i><b></b><ul style="list-style: none">
+<li>
+              &lt;<b>public_key</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>package</b>&gt;
+              <ul style="list-style: none"><li>
+          @<b>format</b>
+          ("rpm", "deb" or "exe")
+          </li></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>filters</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of filter if any, else 0.
+          </li>
+<li>
+              &lt;<b>term</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter term.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>name</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Filter name, if applicable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>keywords</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>keyword</b>&gt;
+              *<ul style="list-style: none">
+<li>
+              &lt;<b>column</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Column prefix.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>relation</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Relation operator.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The filter text.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>sort</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>field</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>order</b>&gt;
+              <ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>credentials</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>start</b>
+          (<a href="#type_integer">integer</a>)
+          First credential.
+          </li>
+<li>
+          @<b>max</b>
+          (<a href="#type_integer">integer</a>)
+          Maximum number of credentials.
+          </li>
+</ul>
+</li>
+<li>
+              &lt;<b>credential_count</b>&gt;
+              <ul style="list-style: none">
+<li>
+              &lt;<b>filtered</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of credentials after filtering.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>page</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of credentials on current page.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4>7.55.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<i>Command</i><div style="margin-left: 5%"><pre>get_credentials
+ = element get_credentials
+     {
+       attribute credential_id { uuid }?
+       &amp; attribute filter { uuid }?
+       &amp; attribute filt_id { uuid }?
+       &amp; attribute trash { boolean }?
+       &amp; attribute targets { boolean }?
+       &amp; attribute format { xsd:token { pattern = "key|rpm|deb|exe" } }?
+     }
+</pre></div>
+<i>Response</i><div style="margin-left: 5%"><pre>get_credentials_response
+ = element get_credentials_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+       &amp; get_credentials_response_credential*
+       &amp; get_credentials_response_filters
+       &amp; get_credentials_response_sort
+       &amp; get_credentials_response_credentials
+       &amp; get_credentials_response_credential_count
+     }
+
+get_credentials_response_credential
+ = element credential
+     {
+       attribute id { uuid }
+       &amp; get_credentials_response_credential_owner
+       &amp; get_credentials_response_credential_name
+       &amp; get_credentials_response_credential_login
+       &amp; get_credentials_response_credential_comment
+       &amp; get_credentials_response_credential_creation_time
+       &amp; get_credentials_response_credential_modification_time
+       &amp; get_credentials_response_credential_writable
+       &amp; get_credentials_response_credential_in_use
+       &amp; get_credentials_response_credential_permissions
+       &amp; get_credentials_response_credential_user_tags
+       &amp; get_credentials_response_credential_type
+       &amp; get_credentials_response_credential_targets
+       &amp; ( get_credentials_response_credential_public_key
+           | get_credentials_response_credential_package )
+     }
+
+get_credentials_response_credential_owner
+ = element owner
+     {
+       get_credentials_response_credential_owner_name
+     }
+
+get_credentials_response_credential_owner_name
+ = element name
+     {
+       name
+     }
+
+get_credentials_response_credential_name
+ = element name
+     {
+       name
+     }
+
+get_credentials_response_credential_login
+ = element login
+     {
+       name
+     }
+
+get_credentials_response_credential_comment
+ = element comment
+     {
+       text
+     }
+
+get_credentials_response_credential_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+get_credentials_response_credential_modification_time
+ = element modification_time
+     {
+       iso_time
+     }
+
+get_credentials_response_credential_writable
+ = element writable
+     {
+       boolean
+     }
+
+get_credentials_response_credential_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+get_credentials_response_credential_permissions
+ = element permissions
+     {
+       get_credentials_response_credential_permissions_permission*
+     }
+
+get_credentials_response_credential_permissions_permission
+ = element permission
+     {
+       get_credentials_response_credential_permissions_permission_name
+     }
+
+get_credentials_response_credential_permissions_permission_name
+ = element name
+     {
+       name
+     }
+
+get_credentials_response_credential_user_tags
+ = element user_tags
+     {
+       get_credentials_response_credential_user_tags_count
+       &amp; get_credentials_response_credential_user_tags_tag*
+     }
+
+get_credentials_response_credential_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+get_credentials_response_credential_user_tags_tag
+ = element tag
+     {
+       attribute id { uuid }
+       &amp; get_credentials_response_credential_user_tags_tag_name
+       &amp; get_credentials_response_credential_user_tags_tag_value
+       &amp; get_credentials_response_credential_user_tags_tag_comment
+     }
+
+get_credentials_response_credential_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+get_credentials_response_credential_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+get_credentials_response_credential_user_tags_tag_comment
+ = element comment
+     {
+       text
+     }
+
+get_credentials_response_credential_type
+ = element type
+     {
+       xsd:token { pattern = "up|usk" }
+     }
+
+get_credentials_response_credential_full_type
+ = element full_type
+     {
+       text
+     }
+
+get_credentials_response_credential_targets
+ = element targets
+     {
+       get_credentials_response_credential_targets_target*
+     }
+
+get_credentials_response_credential_targets_target
+ = element target
+     {
+       attribute id { uuid }
+       &amp; get_credentials_response_credential_targets_target_name
+       &amp; get_credentials_response_credential_targets_target_permissions?
+     }
+
+get_credentials_response_credential_targets_target_name
+ = element name
+     {
+       name
+     }
+
+get_credentials_response_credential_targets_target_permissions
+ = element permissions
+     {
+       ""
+     }
+
+get_credentials_response_credential_public_key
+ = element public_key
+     {
+       text
+     }
+
+get_credentials_response_credential_package
+ = element package
+     {
+       base64
+       &amp; attribute format { xsd:token { pattern = "rpm|deb|exe" } }
+     }
+
+get_credentials_response_filters
+ = element filters
+     {
+       attribute id { uuid }
+       &amp; get_credentials_response_filters_term
+       &amp; get_credentials_response_filters_name?
+       &amp; get_credentials_response_filters_keywords
+     }
+
+get_credentials_response_filters_term
+ = element term
+     {
+       text
+     }
+
+get_credentials_response_filters_name
+ = element name
+     {
+       text
+     }
+
+get_credentials_response_filters_keywords
+ = element keywords
+     {
+       get_credentials_response_filters_keywords_keyword*
+     }
+
+get_credentials_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_credentials_response_filters_keywords_keyword_column
+       &amp; get_credentials_response_filters_keywords_keyword_relation
+       &amp; get_credentials_response_filters_keywords_keyword_value
+     }
+
+get_credentials_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+get_credentials_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+get_credentials_response_filters_keywords_keyword_value
+ = element value
+     {
+       text
+     }
+
+get_credentials_response_sort
+ = element sort
+     {
+       text
+       &amp; get_credentials_response_sort_field
+     }
+
+get_credentials_response_sort_field
+ = element field
+     {
+       get_credentials_response_sort_field_order
+     }
+
+get_credentials_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_credentials_response_credentials
+ = element credentials
+     {
+       attribute start { integer }
+       &amp; attribute max { integer }
+     }
+
+get_credentials_response_credential_count
+ = element credential_count
+     {
+       get_credentials_response_credential_count_filtered
+       &amp; get_credentials_response_credential_count_page
+     }
+
+get_credentials_response_credential_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+get_credentials_response_credential_count_page
+ = element page
+     {
+       integer
+     }
+</pre></div>
+</div>
+<h4>7.55.3 Example: Get one or many the credentials</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_credentials/&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_credentials_response status="200"
+                           status_text="OK"&gt;
+   &lt;credential id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"&gt;
+     &lt;name&gt;sally&lt;/name&gt;
+     &lt;login&gt;sally&lt;/login&gt;
+     &lt;comment/&gt;
+     &lt;creation_time&gt;2012-12-14T17:11:25+01:00&lt;/creation_time&gt;
+     &lt;modification_time&gt;2012-05-28T11:19:20+01:00&lt;/modification_time&gt;
+     &lt;writable&gt;1&lt;/writable&gt;
+     &lt;in_use&gt;0&lt;/in_use&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
+     &lt;type&gt;usk&lt;/type&gt;
+     &lt;full_type&gt;username + SSH key&lt;/full_type&gt;
+   &lt;/credential&gt;
+   &lt;credential id="8e305b0b-260d-450d-91a8-dadf0b144e15"&gt;
+     &lt;name&gt;bob&lt;/name&gt;
+     &lt;comment&gt;Bob on the web server.&lt;/comment&gt;
+     &lt;creation_time&gt;2013-01-03T15:49:35+01:00&lt;/creation_time&gt;
+     &lt;modification_time&gt;2013-01-18T12:07:00+01:00&lt;/modification_time&gt;
+     &lt;writable&gt;1&lt;/writable&gt;
+     &lt;in_use&gt;1&lt;/in_use&gt;
+     &lt;login&gt;bob&lt;/login&gt;
+     &lt;type&gt;up&lt;/type&gt;
+     &lt;full_type&gt;username + password&lt;/full_type&gt;
+   &lt;/credential&gt;
+   ...
+ &lt;/get_credentials_response&gt;
+</pre></div>
+</div>
+<h4>7.55.3 Example: Get a single credential, its public key and targets using it</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_credentials credential_id="8e305b0b-260d-450d-91a8-dadf0b144e15"
+                  format="key"
+                  targets="1"/&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_credentials_response status="200"
+                           status_text="OK"&gt;
+   &lt;credential id="8e305b0b-260d-450d-91a8-dadf0b144e15"&gt;
+     &lt;name&gt;bob&lt;/name&gt;
+     &lt;comment&gt;Bob on the web server.&lt;/comment&gt;
+     &lt;creation_time&gt;2012-11-03T15:41:35+01:00&lt;/creation_time&gt;
+     &lt;modification_time&gt;2012-11-18T13:17:00+01:00&lt;/modification_time&gt;
+     &lt;writable&gt;1&lt;/writable&gt;
+     &lt;in_use&gt;1&lt;/in_use&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
+     &lt;login&gt;bob&lt;/login&gt;
+     &lt;type&gt;up&lt;/type&gt;
+     &lt;full_type&gt;username + password&lt;/full_type&gt;
+     &lt;targets&gt;
+       &lt;target id="1f28d970-17ef-4c69-ba8a-13827059f2b9"&gt;
+         &lt;name&gt;Web server&lt;/name&gt;
+       &lt;/target&gt;
+     &lt;/targets&gt;
+     &lt;public_key&gt;
+       ssh-rsa AAAAB3...Z64IcQ== Key generated by OpenVAS Manager
+     &lt;/public_key&gt;
+   &lt;/credential&gt;
+ &lt;/get_credentials_response&gt;
+</pre></div>
+</div>
+<h4>7.55.3 Example: Get the Debian package of a single credential</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_credentials credential_id="8e305b0b-260d-450d-91a8-dadf0b144e15"
+                  format="deb"/&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_credentials_response status="200"
+                           status_text="OK"&gt;
+   &lt;credential id="8e305b0b-260d-450d-91a8-dadf0b144e15"&gt;
+     &lt;name&gt;bob&lt;/name&gt;
+     &lt;login&gt;bob&lt;/login&gt;
+     &lt;comment&gt;Bob on the web server.&lt;/comment&gt;
+     &lt;creation_time&gt;2012-11-03T15:41:35+01:00&lt;/creation_time&gt;
+     &lt;modification_time&gt;2012-11-18T13:17:00+01:00&lt;/modification_time&gt;
+     &lt;writable&gt;1&lt;/writable&gt;
+     &lt;in_use&gt;1&lt;/in_use&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
+     &lt;type&gt;up&lt;/type&gt;
+     &lt;full_type&gt;username + password&lt;/full_type&gt;
+     &lt;targets&gt;
+       &lt;target id="1f28d970-17ef-4c69-ba8a-13827059f2b9"&gt;
+         &lt;name&gt;Web server&lt;/name&gt;
+       &lt;/target&gt;
+     &lt;/targets&gt;
+     &lt;package format="deb"&gt;ITxhcmNoPgpk...DmvF0AKAAACg==&lt;/package&gt;
+   &lt;/credential&gt;
+ &lt;/get_credentials_response&gt;
+</pre></div>
+</div>
+</div>
+<div>
+<div><h3 id="command_get_filters">7.56
         Command <tt>get_filters</tt>
 </h3></div>
 <p>In short: Get one or many filters.</p>
 <p>
       The client uses the get_filters command to get filter information.
     </p>
-<h4>7.55.1 Structure</h4>
+<h4>7.56.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -16936,7 +17632,7 @@ get_assets_response_asset_count_page
 </ul>
 </li>
 </ul>
-<h4>7.55.2 RNC</h4>
+<h4>7.56.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_filters
  = element get_filters
@@ -17223,7 +17919,7 @@ get_filters_response_filter_count_page
      }
 </pre></div>
 </div>
-<h4>7.55.3 Example: Get one or many filters</h4>
+<h4>7.56.3 Example: Get one or many filters</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_filters/&gt;
 </pre></div>
@@ -17246,7 +17942,7 @@ get_filters_response_filter_count_page
  &lt;/get_filters_response&gt;
 </pre></div>
 </div>
-<h4>7.55.3 Example: Get single filter, including alerts that use the filter</h4>
+<h4>7.56.3 Example: Get single filter, including alerts that use the filter</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_filters filter_id="c33864a9-d3fd-44b3-8717-972bfb01dfc0"
               tasks="1"/&gt;
@@ -17277,14 +17973,14 @@ get_filters_response_filter_count_page
 </div>
 </div>
 <div>
-<div><h3 id="command_get_groups">7.56
+<div><h3 id="command_get_groups">7.57
         Command <tt>get_groups</tt>
 </h3></div>
 <p>In short: Get one or many groups.</p>
 <p>
       The client uses the get_groups command to get group information.
     </p>
-<h4>7.56.1 Structure</h4>
+<h4>7.57.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -17509,7 +18205,7 @@ get_filters_response_filter_count_page
 </ul>
 </li>
 </ul>
-<h4>7.56.2 RNC</h4>
+<h4>7.57.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_groups
  = element get_groups
@@ -17761,7 +18457,7 @@ get_groups_response_group_count_page
      }
 </pre></div>
 </div>
-<h4>7.56.3 Example: Get one or many groups</h4>
+<h4>7.57.3 Example: Get one or many groups</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_groups/&gt;
 </pre></div>
@@ -17809,7 +18505,7 @@ get_groups_response_group_count_page
 </div>
 </div>
 <div>
-<div><h3 id="command_get_info">7.57
+<div><h3 id="command_get_info">7.58
         Command <tt>get_info</tt>
 </h3></div>
 <p>In short: Get information for items of given type.</p>
@@ -17819,7 +18515,7 @@ get_groups_response_group_count_page
       If the command sent by the client was valid, the manager will
       reply with a list of info elements of a given type to the client.
     </p>
-<h4>7.57.1 Structure</h4>
+<h4>7.58.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -18337,7 +19033,7 @@ get_groups_response_group_count_page
 </ul>
 </li>
 </ul>
-<h4>7.57.2 RNC</h4>
+<h4>7.58.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_info
  = element get_info
@@ -18957,7 +19653,7 @@ get_info_response_details
      }
 </pre></div>
 </div>
-<h4>7.57.3 Example: Get a info about cpe:/a:gnu:gzip:1.3.3 with all details</h4>
+<h4>7.58.3 Example: Get a info about cpe:/a:gnu:gzip:1.3.3 with all details</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_info type="CPE"
            name="cpe:/a:gnu:gzip:1.3.3"
@@ -19057,7 +19753,7 @@ get_info_response_details
  &lt;/get_info_response&gt;
 </pre></div>
 </div>
-<h4>7.57.3 Example: Get a info CVE-1999-0010 without details</h4>
+<h4>7.58.3 Example: Get a info CVE-1999-0010 without details</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_info name="CVE-2011-0018"
            type="cve"/&gt;
@@ -19107,691 +19803,6 @@ get_info_response_details
      &lt;page&gt;1&lt;/page&gt;
    &lt;/info_count&gt;
  &lt;/get_info_response&gt;
-</pre></div>
-</div>
-</div>
-<div>
-<div><h3 id="command_get_lsc_credentials">7.58
-        Command <tt>get_lsc_credentials</tt>
-</h3></div>
-<p>In short: Get one or many LSC credentials.</p>
-<p>
-      The client uses the get_lsc_credentials command to get LSC credentials information.
-      If the command sent by the client was valid, the manager will
-      reply with a list of LSC credentials to the client.
-    </p>
-<h4>7.58.1 Structure</h4>
-<ul style="list-style: none">
-<li>
-<i>Command</i><ul style="list-style: none">
-<li>
-          @<b>lsc_credential_id</b>
-          (<a href="#type_uuid">uuid</a>)
-          ID of single LSC credential to get.
-          </li>
-<li>
-          @<b>filter</b>
-          (<a href="#type_uuid">uuid</a>)
-          Filter term to use to filter query.
-          </li>
-<li>
-          @<b>filt_id</b>
-          (<a href="#type_uuid">uuid</a>)
-          ID of filter to use to filter query.
-          </li>
-<li>
-          @<b>trash</b>
-          (<a href="#type_boolean">boolean</a>)
-          Whether to get the trashcan LSC credentials instead.
-          </li>
-<li>
-          @<b>targets</b>
-          (<a href="#type_boolean">boolean</a>)
-          Whether to include a list of targets using the credentials.
-          </li>
-<li>
-          @<b>format</b>
-          ("key", "rpm", "deb" or "exe")
-          </li>
-</ul>
-</li>
-<li style="margin-top: 15px;">
-<i>Response</i><ul style="list-style: none">
-<li>
-          @<b>status</b>
-          (<a href="#type_status">status</a>)
-          </li>
-<li>
-          @<b>status_text</b>
-          (text)
-          </li>
-<li>
-              &lt;<b>lsc_credential</b>&gt;
-              *<ul style="list-style: none">
-<li>
-          @<b>id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li>
-<li>
-              &lt;<b>owner</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Owner of the LSC credential.</div>
-<ul style="list-style: none"><li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
-<ul style="list-style: none"></ul>
-</li></ul>
-</li>
-<li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The name of the LSC credential.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>login</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The username of the LSC credential.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>comment</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The comment on the LSC credential.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>creation_time</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Date and time the info was created.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>modification_time</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Date and time the info was last modified.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>writable</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Whether this credential is writable.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>in_use</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Whether any targets are using the LSC credential.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>permissions</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the LSC credential.</div>
-<ul style="list-style: none"><li>
-              &lt;<b>permission</b>&gt;
-              *<ul style="list-style: none"><li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
-<ul style="list-style: none"></ul>
-</li></ul>
-</li></ul>
-</li>
-<li>
-              &lt;<b>user_tags</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Info on tags attached to the credential.</div>
-<ul style="list-style: none">
-<li>
-              &lt;<b>count</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Number of attached tags.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>tag</b>&gt;
-              *<div style="margin-left: 15px; display: inline;">Short info on an individual tag (only if details were requested).</div>
-<ul style="list-style: none">
-<li>
-          @<b>id</b>
-          (<a href="#type_uuid">uuid</a>)
-          UUID of the tag.
-          </li>
-<li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Name of the tag (usually namespace:predicate).</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>value</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Value of the tag.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>comment</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Comment for the tag.</div>
-<ul style="list-style: none"></ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>
-              &lt;<b>type</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The type of the LSC credential.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>targets</b>&gt;
-              <div style="margin-left: 15px; display: inline;">All targets using this LSC credential.</div>
-<ul style="list-style: none"><li>
-              &lt;<b>target</b>&gt;
-              *<ul style="list-style: none">
-<li>
-          @<b>id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li>
-<li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The name of the target.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>permissions</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the target.</div>
-<ul style="list-style: none"></ul>
-</li>
-</ul>
-</li></ul>
-</li>
-<li>
-<i>One of</i><b></b><ul style="list-style: none">
-<li>
-              &lt;<b>public_key</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>package</b>&gt;
-              <ul style="list-style: none"><li>
-          @<b>format</b>
-          ("rpm", "deb" or "exe")
-          </li></ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>
-              &lt;<b>filters</b>&gt;
-              <ul style="list-style: none">
-<li>
-          @<b>id</b>
-          (<a href="#type_uuid">uuid</a>)
-          UUID of filter if any, else 0.
-          </li>
-<li>
-              &lt;<b>term</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Filter term.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>name</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">Filter name, if applicable.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>keywords</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
-<ul style="list-style: none"><li>
-              &lt;<b>keyword</b>&gt;
-              *<ul style="list-style: none">
-<li>
-              &lt;<b>column</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Column prefix.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>relation</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Relation operator.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>value</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The filter text.</div>
-<ul style="list-style: none"></ul>
-</li>
-</ul>
-</li></ul>
-</li>
-</ul>
-</li>
-<li>
-              &lt;<b>sort</b>&gt;
-              <ul style="list-style: none"><li>
-              &lt;<b>field</b>&gt;
-              <ul style="list-style: none"><li>
-              &lt;<b>order</b>&gt;
-              <ul style="list-style: none"></ul>
-</li></ul>
-</li></ul>
-</li>
-<li>
-              &lt;<b>lsc_credentials</b>&gt;
-              <ul style="list-style: none">
-<li>
-          @<b>start</b>
-          (<a href="#type_integer">integer</a>)
-          First LSC credential.
-          </li>
-<li>
-          @<b>max</b>
-          (<a href="#type_integer">integer</a>)
-          Maximum number of LSC credentials.
-          </li>
-</ul>
-</li>
-<li>
-              &lt;<b>lsc_credential_count</b>&gt;
-              <ul style="list-style: none">
-<li>
-              &lt;<b>filtered</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Number of LSC credentials after filtering.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>page</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Number of LSC credentials on current page.</div>
-<ul style="list-style: none"></ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h4>7.58.2 RNC</h4>
-<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>get_lsc_credentials
- = element get_lsc_credentials
-     {
-       attribute lsc_credential_id { uuid }?
-       &amp; attribute filter { uuid }?
-       &amp; attribute filt_id { uuid }?
-       &amp; attribute trash { boolean }?
-       &amp; attribute targets { boolean }?
-       &amp; attribute format { xsd:token { pattern = "key|rpm|deb|exe" } }?
-     }
-</pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>get_lsc_credentials_response
- = element get_lsc_credentials_response
-     {
-       attribute status { status }
-       &amp; attribute status_text { text }
-       &amp; get_lsc_credentials_response_lsc_credential*
-       &amp; get_lsc_credentials_response_filters
-       &amp; get_lsc_credentials_response_sort
-       &amp; get_lsc_credentials_response_lsc_credentials
-       &amp; get_lsc_credentials_response_lsc_credential_count
-     }
-
-get_lsc_credentials_response_lsc_credential
- = element lsc_credential
-     {
-       attribute id { uuid }
-       &amp; get_lsc_credentials_response_lsc_credential_owner
-       &amp; get_lsc_credentials_response_lsc_credential_name
-       &amp; get_lsc_credentials_response_lsc_credential_login
-       &amp; get_lsc_credentials_response_lsc_credential_comment
-       &amp; get_lsc_credentials_response_lsc_credential_creation_time
-       &amp; get_lsc_credentials_response_lsc_credential_modification_time
-       &amp; get_lsc_credentials_response_lsc_credential_writable
-       &amp; get_lsc_credentials_response_lsc_credential_in_use
-       &amp; get_lsc_credentials_response_lsc_credential_permissions
-       &amp; get_lsc_credentials_response_lsc_credential_user_tags
-       &amp; get_lsc_credentials_response_lsc_credential_type
-       &amp; get_lsc_credentials_response_lsc_credential_targets
-       &amp; ( get_lsc_credentials_response_lsc_credential_public_key
-           | get_lsc_credentials_response_lsc_credential_package )
-     }
-
-get_lsc_credentials_response_lsc_credential_owner
- = element owner
-     {
-       get_lsc_credentials_response_lsc_credential_owner_name
-     }
-
-get_lsc_credentials_response_lsc_credential_owner_name
- = element name
-     {
-       name
-     }
-
-get_lsc_credentials_response_lsc_credential_name
- = element name
-     {
-       name
-     }
-
-get_lsc_credentials_response_lsc_credential_login
- = element login
-     {
-       name
-     }
-
-get_lsc_credentials_response_lsc_credential_comment
- = element comment
-     {
-       text
-     }
-
-get_lsc_credentials_response_lsc_credential_creation_time
- = element creation_time
-     {
-       iso_time
-     }
-
-get_lsc_credentials_response_lsc_credential_modification_time
- = element modification_time
-     {
-       iso_time
-     }
-
-get_lsc_credentials_response_lsc_credential_writable
- = element writable
-     {
-       boolean
-     }
-
-get_lsc_credentials_response_lsc_credential_in_use
- = element in_use
-     {
-       boolean
-     }
-
-get_lsc_credentials_response_lsc_credential_permissions
- = element permissions
-     {
-       get_lsc_credentials_response_lsc_credential_permissions_permission*
-     }
-
-get_lsc_credentials_response_lsc_credential_permissions_permission
- = element permission
-     {
-       get_lsc_credentials_response_lsc_credential_permissions_permission_name
-     }
-
-get_lsc_credentials_response_lsc_credential_permissions_permission_name
- = element name
-     {
-       name
-     }
-
-get_lsc_credentials_response_lsc_credential_user_tags
- = element user_tags
-     {
-       get_lsc_credentials_response_lsc_credential_user_tags_count
-       &amp; get_lsc_credentials_response_lsc_credential_user_tags_tag*
-     }
-
-get_lsc_credentials_response_lsc_credential_user_tags_count
- = element count
-     {
-       integer
-     }
-
-get_lsc_credentials_response_lsc_credential_user_tags_tag
- = element tag
-     {
-       attribute id { uuid }
-       &amp; get_lsc_credentials_response_lsc_credential_user_tags_tag_name
-       &amp; get_lsc_credentials_response_lsc_credential_user_tags_tag_value
-       &amp; get_lsc_credentials_response_lsc_credential_user_tags_tag_comment
-     }
-
-get_lsc_credentials_response_lsc_credential_user_tags_tag_name
- = element name
-     {
-       text
-     }
-
-get_lsc_credentials_response_lsc_credential_user_tags_tag_value
- = element value
-     {
-       text
-     }
-
-get_lsc_credentials_response_lsc_credential_user_tags_tag_comment
- = element comment
-     {
-       text
-     }
-
-get_lsc_credentials_response_lsc_credential_type
- = element type
-     {
-       xsd:token { pattern = "gen|pass" }
-     }
-
-get_lsc_credentials_response_lsc_credential_targets
- = element targets
-     {
-       get_lsc_credentials_response_lsc_credential_targets_target*
-     }
-
-get_lsc_credentials_response_lsc_credential_targets_target
- = element target
-     {
-       attribute id { uuid }
-       &amp; get_lsc_credentials_response_lsc_credential_targets_target_name
-       &amp; get_lsc_credentials_response_lsc_credential_targets_target_permissions?
-     }
-
-get_lsc_credentials_response_lsc_credential_targets_target_name
- = element name
-     {
-       name
-     }
-
-get_lsc_credentials_response_lsc_credential_targets_target_permissions
- = element permissions
-     {
-       ""
-     }
-
-get_lsc_credentials_response_lsc_credential_public_key
- = element public_key
-     {
-       text
-     }
-
-get_lsc_credentials_response_lsc_credential_package
- = element package
-     {
-       base64
-       &amp; attribute format { xsd:token { pattern = "rpm|deb|exe" } }
-     }
-
-get_lsc_credentials_response_filters
- = element filters
-     {
-       attribute id { uuid }
-       &amp; get_lsc_credentials_response_filters_term
-       &amp; get_lsc_credentials_response_filters_name?
-       &amp; get_lsc_credentials_response_filters_keywords
-     }
-
-get_lsc_credentials_response_filters_term
- = element term
-     {
-       text
-     }
-
-get_lsc_credentials_response_filters_name
- = element name
-     {
-       text
-     }
-
-get_lsc_credentials_response_filters_keywords
- = element keywords
-     {
-       get_lsc_credentials_response_filters_keywords_keyword*
-     }
-
-get_lsc_credentials_response_filters_keywords_keyword
- = element keyword
-     {
-       get_lsc_credentials_response_filters_keywords_keyword_column
-       &amp; get_lsc_credentials_response_filters_keywords_keyword_relation
-       &amp; get_lsc_credentials_response_filters_keywords_keyword_value
-     }
-
-get_lsc_credentials_response_filters_keywords_keyword_column
- = element column
-     {
-       text
-     }
-
-get_lsc_credentials_response_filters_keywords_keyword_relation
- = element relation
-     {
-       
-        ERROR
-      
-     }
-
-get_lsc_credentials_response_filters_keywords_keyword_value
- = element value
-     {
-       text
-     }
-
-get_lsc_credentials_response_sort
- = element sort
-     {
-       text
-       &amp; get_lsc_credentials_response_sort_field
-     }
-
-get_lsc_credentials_response_sort_field
- = element field
-     {
-       get_lsc_credentials_response_sort_field_order
-     }
-
-get_lsc_credentials_response_sort_field_order
- = element order
-     {
-       xsd:token { pattern = "ascending|descending" }
-     }
-
-get_lsc_credentials_response_lsc_credentials
- = element lsc_credentials
-     {
-       attribute start { integer }
-       &amp; attribute max { integer }
-     }
-
-get_lsc_credentials_response_lsc_credential_count
- = element lsc_credential_count
-     {
-       get_lsc_credentials_response_lsc_credential_count_filtered
-       &amp; get_lsc_credentials_response_lsc_credential_count_page
-     }
-
-get_lsc_credentials_response_lsc_credential_count_filtered
- = element filtered
-     {
-       integer
-     }
-
-get_lsc_credentials_response_lsc_credential_count_page
- = element page
-     {
-       integer
-     }
-</pre></div>
-</div>
-<h4>7.58.3 Example: Get one or many the LSC credentials</h4>
-<div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_lsc_credentials/&gt;
-</pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_lsc_credentials_response status="200"
-                               status_text="OK"&gt;
-   &lt;lsc_credential id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"&gt;
-     &lt;name&gt;sally&lt;/name&gt;
-     &lt;login&gt;sally&lt;/login&gt;
-     &lt;comment/&gt;
-     &lt;creation_time&gt;2012-12-14T17:11:25+01:00&lt;/creation_time&gt;
-     &lt;modification_time&gt;2012-05-28T11:19:20+01:00&lt;/modification_time&gt;
-     &lt;writable&gt;1&lt;/writable&gt;
-     &lt;in_use&gt;0&lt;/in_use&gt;
-     &lt;user_tags&gt;
-       &lt;count&gt;0&lt;/count&gt;
-     &lt;/user_tags&gt;
-     &lt;type&gt;gen&lt;/type&gt;
-   &lt;/lsc_credential&gt;
-   &lt;lsc_credential id="8e305b0b-260d-450d-91a8-dadf0b144e15"&gt;
-     &lt;name&gt;bob&lt;/name&gt;
-     &lt;comment&gt;Bob on the web server.&lt;/comment&gt;
-     &lt;creation_time&gt;2013-01-03T15:49:35+01:00&lt;/creation_time&gt;
-     &lt;modification_time&gt;2013-01-18T12:07:00+01:00&lt;/modification_time&gt;
-     &lt;writable&gt;1&lt;/writable&gt;
-     &lt;in_use&gt;1&lt;/in_use&gt;
-     &lt;login&gt;bob&lt;/login&gt;
-     &lt;type&gt;pass&lt;/type&gt;
-   &lt;/lsc_credential&gt;
-   ...
- &lt;/get_lsc_credentials_response&gt;
-</pre></div>
-</div>
-<h4>7.58.3 Example: Get a single LSC credential, its public key and targets using it</h4>
-<div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_lsc_credentials lsc_credential_id="8e305b0b-260d-450d-91a8-dadf0b144e15"
-                      format="key"
-                      targets="1"/&gt;
-</pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_lsc_credentials_response status="200"
-                               status_text="OK"&gt;
-   &lt;lsc_credential id="8e305b0b-260d-450d-91a8-dadf0b144e15"&gt;
-     &lt;name&gt;bob&lt;/name&gt;
-     &lt;comment&gt;Bob on the web server.&lt;/comment&gt;
-     &lt;creation_time&gt;2012-11-03T15:41:35+01:00&lt;/creation_time&gt;
-     &lt;modification_time&gt;2012-11-18T13:17:00+01:00&lt;/modification_time&gt;
-     &lt;writable&gt;1&lt;/writable&gt;
-     &lt;in_use&gt;1&lt;/in_use&gt;
-     &lt;user_tags&gt;
-       &lt;count&gt;0&lt;/count&gt;
-     &lt;/user_tags&gt;
-     &lt;login&gt;bob&lt;/login&gt;
-     &lt;type&gt;pass&lt;/type&gt;
-     &lt;targets&gt;
-       &lt;target id="1f28d970-17ef-4c69-ba8a-13827059f2b9"&gt;
-         &lt;name&gt;Web server&lt;/name&gt;
-       &lt;/target&gt;
-     &lt;/targets&gt;
-     &lt;public_key&gt;
-       ssh-rsa AAAAB3...Z64IcQ== Key generated by OpenVAS Manager
-     &lt;/public_key&gt;
-   &lt;/lsc_credential&gt;
- &lt;/get_lsc_credentials_response&gt;
-</pre></div>
-</div>
-<h4>7.58.3 Example: Get the Debian package of a single LSC credential</h4>
-<div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_lsc_credentials lsc_credential_id="8e305b0b-260d-450d-91a8-dadf0b144e15"
-                      format="deb"/&gt;
-</pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_lsc_credentials_response status="200"
-                               status_text="OK"&gt;
-   &lt;lsc_credential id="8e305b0b-260d-450d-91a8-dadf0b144e15"&gt;
-     &lt;name&gt;bob&lt;/name&gt;
-     &lt;login&gt;bob&lt;/login&gt;
-     &lt;comment&gt;Bob on the web server.&lt;/comment&gt;
-     &lt;creation_time&gt;2012-11-03T15:41:35+01:00&lt;/creation_time&gt;
-     &lt;modification_time&gt;2012-11-18T13:17:00+01:00&lt;/modification_time&gt;
-     &lt;writable&gt;1&lt;/writable&gt;
-     &lt;in_use&gt;1&lt;/in_use&gt;
-     &lt;user_tags&gt;
-       &lt;count&gt;0&lt;/count&gt;
-     &lt;/user_tags&gt;
-     &lt;type&gt;pass&lt;/type&gt;
-     &lt;targets&gt;
-       &lt;target id="1f28d970-17ef-4c69-ba8a-13827059f2b9"&gt;
-         &lt;name&gt;Web server&lt;/name&gt;
-       &lt;/target&gt;
-     &lt;/targets&gt;
-     &lt;package format="deb"&gt;ITxhcmNoPgpk...DmvF0AKAAACg==&lt;/package&gt;
-   &lt;/lsc_credential&gt;
- &lt;/get_lsc_credentials_response&gt;
 </pre></div>
 </div>
 </div>
@@ -32187,7 +32198,7 @@ help_response_schema_protocol_command
             CREATE_CONFIG          Create a config.
             CREATE_FILTER          Create a filter.
             CREATE_GROUP           Create a group.
-            CREATE_LSC_CREDENTIAL  Create a local security check credential.
+            CREATE_CREDENTIAL      Create a credential.
             CREATE_NOTE            Create a note.
             CREATE_OVERRIDE        Create an override.
             CREATE_PERMISSION      Create a permission.
@@ -32208,7 +32219,7 @@ help_response_schema_protocol_command
             DELETE_CONFIG          Delete a config.
             DELETE_FILTER          Delete a filter.
             DELETE_GROUP           Delete a group.
-            DELETE_LSC_CREDENTIAL  Delete a local security check credential.
+            DELETE_CREDENTIAL      Delete a credential.
             DELETE_NOTE            Delete a note.
             DELETE_OVERRIDE        Delete an override.
             DELETE_PERMISSION      Delete a permission.
@@ -32235,7 +32246,7 @@ help_response_schema_protocol_command
             GET_FILTERS            Get one or many filters.
             GET_GROUPS             Get one or many groups.
             GET_INFO               Get raw information for a given item.
-            GET_LSC_CREDENTIALS    Get one or many local security check credentials.
+            GET_CREDENTIALS        Get one or many credentials.
             GET_NOTES              Get one or many notes.
             GET_NVTS               Get one or all available NVTs.
             GET_NVT_FAMILIES       Get a list of all NVT families.
@@ -32265,7 +32276,7 @@ help_response_schema_protocol_command
             MODIFY_CONFIG          Update an existing config.
             MODIFY_FILTER          Modify an existing filter.
             MODIFY_GROUP           Modify an existing group.
-            MODIFY_LSC_CREDENTIAL  Modify an existing LSC credential.
+            MODIFY_CREDENTIAL      Modify an existing credential.
             MODIFY_NOTE            Modify an existing note.
             MODIFY_OVERRIDE        Modify an existing override.
             MODIFY_PERMISSION      Modify an existing permission.
@@ -33117,14 +33128,126 @@ modify_config_nvt_selection_nvt
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_filter">7.86
+<div><h3 id="command_modify_credential">7.86
+        Command <tt>modify_credential</tt>
+</h3></div>
+<p>In short: Modify an existing credential.</p>
+<p>
+        The client uses the modify_credential command to change an
+        existing credential.
+      </p>
+<p>
+        The login and password can only be changed for password credentials.
+        Modification of login or password on package credentials is forbidden.
+      </p>
+<h4>7.86.1 Structure</h4>
+<ul style="list-style: none">
+<li>
+<i>Command</i><ul style="list-style: none">
+<li>
+          @<b>credential_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          ID of credential to modify.
+          </li>
+<li>
+              &lt;<b>comment</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">A comment on the credential.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>name</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">A name for the credential.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>password</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The password for the credential login.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>login</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The user name of the credential.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>7.86.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<i>Command</i><div style="margin-left: 5%"><pre>modify_credential
+ = element modify_credential
+     {
+       attribute credential_id { uuid }
+       &amp; modify_credential_comment?
+       &amp; modify_credential_name?
+       &amp; modify_credential_password?
+       &amp; modify_credential_login?
+     }
+
+modify_credential_name
+ = element name
+     {
+       name
+     }
+
+modify_credential_comment
+ = element comment
+     {
+       text
+     }
+
+modify_credential_login
+ = element login
+     {
+       text
+     }
+
+modify_credential_password
+ = element password
+     {
+       text
+     }
+</pre></div>
+<i>Response</i><div style="margin-left: 5%"><pre>modify_credential_response
+ = element modify_credential_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre></div>
+</div>
+<h4>7.86.3 Example: Modify the comment of an credential</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_credential credential_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
+   &lt;comment&gt;Credential for all machines in lab 4.&lt;/comment&gt;
+ &lt;/modify_credential&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_credential_response status="200"
+                             status_text="OK"/&gt;
+</pre></div>
+</div>
+</div>
+<div>
+<div><h3 id="command_modify_filter">7.87
         Command <tt>modify_filter</tt>
 </h3></div>
 <p>In short: Modify an existing filter.</p>
 <p>
         The client uses the modify_filter command to change an existing filter.
       </p>
-<h4>7.86.1 Structure</h4>
+<h4>7.87.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -33168,7 +33291,7 @@ modify_config_nvt_selection_nvt
 </ul>
 </li>
 </ul>
-<h4>7.86.2 RNC</h4>
+<h4>7.87.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_filter
  = element modify_filter
@@ -33212,7 +33335,7 @@ modify_filter_type
      }
 </pre></div>
 </div>
-<h4>7.86.3 Example: Modify the term of a filter</h4>
+<h4>7.87.3 Example: Modify the term of a filter</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_filter filter_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;term&gt;name=local&lt;/term&gt;
@@ -33224,14 +33347,14 @@ modify_filter_type
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_group">7.87
+<div><h3 id="command_modify_group">7.88
         Command <tt>modify_group</tt>
 </h3></div>
 <p>In short: Modify an existing group.</p>
 <p>
         The client uses the modify_group command to change an existing group.
       </p>
-<h4>7.87.1 Structure</h4>
+<h4>7.88.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -33270,7 +33393,7 @@ modify_filter_type
 </ul>
 </li>
 </ul>
-<h4>7.87.2 RNC</h4>
+<h4>7.88.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_group
  = element modify_group
@@ -33307,7 +33430,7 @@ modify_group_users
      }
 </pre></div>
 </div>
-<h4>7.87.3 Example: Modify the name of a group</h4>
+<h4>7.88.3 Example: Modify the name of a group</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_group group_id="d94211b6-ba40-11e3-bcb1-406186ea4fc5"&gt;
    &lt;name&gt;Line Managers&lt;/name&gt;
@@ -33315,118 +33438,6 @@ modify_group_users
 </pre></div>
 <i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_group_response status="200"
                         status_text="OK"/&gt;
-</pre></div>
-</div>
-</div>
-<div>
-<div><h3 id="command_modify_lsc_credential">7.88
-        Command <tt>modify_lsc_credential</tt>
-</h3></div>
-<p>In short: Modify an existing LSC credential.</p>
-<p>
-        The client uses the modify_lsc_credential command to change an
-        existing LSC credential.
-      </p>
-<p>
-        The login and password can only be changed for password LSC credentials.
-        Modification of login or password on package credentials is forbidden.
-      </p>
-<h4>7.88.1 Structure</h4>
-<ul style="list-style: none">
-<li>
-<i>Command</i><ul style="list-style: none">
-<li>
-          @<b>lsc_credential_id</b>
-          (<a href="#type_uuid">uuid</a>)
-          ID of LSC credential to modify.
-          </li>
-<li>
-              &lt;<b>comment</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">A comment on the LSC credential.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>name</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">A name for the LSC credential.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>password</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">The password for the credential login.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>login</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">The user name of the credential.</div>
-<ul style="list-style: none"></ul>
-</li>
-</ul>
-</li>
-<li style="margin-top: 15px;">
-<i>Response</i><ul style="list-style: none">
-<li>
-          @<b>status</b>
-          (<a href="#type_status">status</a>)
-          </li>
-<li>
-          @<b>status_text</b>
-          (text)
-          </li>
-</ul>
-</li>
-</ul>
-<h4>7.88.2 RNC</h4>
-<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>modify_lsc_credential
- = element modify_lsc_credential
-     {
-       attribute lsc_credential_id { uuid }
-       &amp; modify_lsc_credential_comment?
-       &amp; modify_lsc_credential_name?
-       &amp; modify_lsc_credential_password?
-       &amp; modify_lsc_credential_login?
-     }
-
-modify_lsc_credential_name
- = element name
-     {
-       name
-     }
-
-modify_lsc_credential_comment
- = element comment
-     {
-       text
-     }
-
-modify_lsc_credential_login
- = element login
-     {
-       text
-     }
-
-modify_lsc_credential_password
- = element password
-     {
-       text
-     }
-</pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>modify_lsc_credential_response
- = element modify_lsc_credential_response
-     {
-       attribute status { status }
-       &amp; attribute status_text { text }
-     }
-</pre></div>
-</div>
-<h4>7.88.3 Example: Modify the comment of an LSC credential</h4>
-<div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_lsc_credential lsc_credential_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
-   &lt;comment&gt;Credential for all machines in lab 4.&lt;/comment&gt;
- &lt;/modify_lsc_credential&gt;
-</pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_lsc_credential_response status="200"
-                                 status_text="OK"/&gt;
 </pre></div>
 </div>
 </div>

@@ -1499,6 +1499,38 @@ create_tables ()
        "  name text,"
        "  data text);");
 
+  sql ("CREATE TABLE IF NOT EXISTS credentials"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL,"
+       "  comment text,"
+       "  creation_time integer,"
+       "  modification_time integer,"
+       "  type text);");
+
+  sql ("CREATE TABLE IF NOT EXISTS credentials_trash"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL,"
+       "  comment text,"
+       "  creation_time integer,"
+       "  modification_time integer,"
+       "  type text);");
+
+  sql ("CREATE TABLE IF NOT EXISTS credentials_data"
+       " (id SERIAL PRIMARY KEY,"
+       "  credential INTEGER,"
+       "  type TEXT,"
+       "  value TEXT);");
+
+  sql ("CREATE TABLE IF NOT EXISTS credentials_trash_data"
+       " (id SERIAL PRIMARY KEY,"
+       "  credential INTEGER,"
+       "  type TEXT,"
+       "  value TEXT);");
+
   sql ("CREATE TABLE IF NOT EXISTS filters"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
@@ -1697,30 +1729,6 @@ create_tables ()
        "  name text,"
        "  UNIQUE (number, protocol));");
 
-  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials"
-       " (id SERIAL PRIMARY KEY,"
-       "  uuid text UNIQUE NOT NULL,"
-       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
-       "  name text NOT NULL,"
-       "  login text,"
-       "  password text,"
-       "  comment text,"
-       "  private_key text,"
-       "  creation_time integer,"
-       "  modification_time integer);");
-
-  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials_trash"
-       " (id SERIAL PRIMARY KEY,"
-       "  uuid text UNIQUE NOT NULL,"
-       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
-       "  name text NOT NULL,"
-       "  login text,"
-       "  password text,"
-       "  comment text,"
-       "  private_key text,"
-       "  creation_time integer,"
-       "  modification_time integer);");
-
   sql ("CREATE TABLE IF NOT EXISTS targets"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
@@ -1731,14 +1739,14 @@ create_tables ()
        "  reverse_lookup_only integer,"
        "  reverse_lookup_unify integer,"
        "  comment text,"
-       "  lsc_credential integer," // REFERENCES lsc_credentials (id) ON DELETE RESTRICT,"
+       "  lsc_credential integer," // REFERENCES credentials (id) ON DELETE RESTRICT,"
        "  ssh_port text,"
-       "  smb_lsc_credential integer," // REFERENCES lsc_credentials (id) ON DELETE RESTRICT,"
+       "  smb_lsc_credential integer," // REFERENCES credentials (id) ON DELETE RESTRICT,"
        "  port_range integer REFERENCES port_lists (id) ON DELETE RESTRICT,"
        "  alive_test integer,"
        "  creation_time integer,"
        "  modification_time integer,"
-       "  esxi_lsc_credential integer);"); // REFERENCES lsc_credentials (id)
+       "  esxi_lsc_credential integer);"); // REFERENCES credentials (id)
                                            // ON DELETE RESTRICT
 
   sql ("CREATE TABLE IF NOT EXISTS targets_trash"
@@ -1751,9 +1759,9 @@ create_tables ()
        "  reverse_lookup_only integer,"
        "  reverse_lookup_unify integer,"
        "  comment text,"
-       "  lsc_credential integer," // REFERENCES lsc_credentials (id) ON DELETE RESTRICT,"
+       "  lsc_credential integer," // REFERENCES credentials (id) ON DELETE RESTRICT,"
        "  ssh_port text,"
-       "  smb_lsc_credential integer," // REFERENCES lsc_credentials (id) ON DELETE RESTRICT,"
+       "  smb_lsc_credential integer," // REFERENCES credentials (id) ON DELETE RESTRICT,"
        "  port_range integer," // REFERENCES port_lists (id) ON DELETE RESTRICT,"
        "  ssh_location integer,"
        "  smb_location integer,"
@@ -1761,7 +1769,7 @@ create_tables ()
        "  alive_test integer,"
        "  creation_time integer,"
        "  modification_time integer,"
-       "  esxi_lsc_credential integer," // REFERENCES lsc_credentials (id)
+       "  esxi_lsc_credential integer," // REFERENCES credentials (id)
                                         // ON DELETE RESTRICT,"
        "  esxi_location integer);");
 

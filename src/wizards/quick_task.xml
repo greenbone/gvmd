@@ -343,7 +343,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <xsl:if test="count(/wizard/previous/response/help_response/schema/command[name = 'GET_SLAVES'])">
                 <get_slaves details="0"/>
               </xsl:if>
-              <get_lsc_credentials details="0"/>
+              <get_credentials details="0"/>
               <get_settings/>
             </commands>
           </xsl:template>

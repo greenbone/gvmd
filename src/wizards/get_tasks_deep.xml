@@ -115,14 +115,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
                 <get_targets target_id="{get_targets_response/target/@id}" details="1"/>
                 <xsl:if test="get_targets_response/target/ssh_lsc_credential/@id != ''">
-                  <get_lsc_credentials lsc_credential_id="{get_targets_response/target/ssh_lsc_credential/@id}"/>
+                  <get_credentials credential_id="{get_targets_response/target/ssh_lsc_credential/@id}"/>
                 </xsl:if>
                 <xsl:if test="get_targets_response/target/smb_lsc_credential/@id != ''">
-                  <get_lsc_credentials lsc_credential_id="{get_targets_response/target/smb_lsc_credential/@id}"/>
+                  <get_credentials credential_id="{get_targets_response/target/smb_lsc_credential/@id}"/>
                 </xsl:if>
 
                 <xsl:if test="get_tasks_response/slave/@id != ''">
-                  <get_slaves lsc_credential_id="{get_tasks_response/slave/@id}"/>
+                  <get_slaves slave_id="{get_tasks_response/slave/@id}"/>
                 </xsl:if>
 
                 <xsl:if test="get_tasks_response/schedule/@id != ''">

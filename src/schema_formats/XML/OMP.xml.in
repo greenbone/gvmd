@@ -2874,9 +2874,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>create_agent</c>
           <c>create_alert</c>
           <c>create_config</c>
+          <c>create_credential</c>
           <c>create_filter</c>
           <c>create_group</c>
-          <c>create_lsc_credential</c>
           <c>create_note</c>
           <c>create_override</c>
           <c>create_permission</c>
@@ -2894,9 +2894,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>delete_agent</c>
           <c>delete_alert</c>
           <c>delete_config</c>
+          <c>delete_credential</c>
           <c>delete_filter</c>
           <c>delete_group</c>
-          <c>delete_lsc_credential</c>
           <c>delete_note</c>
           <c>delete_override</c>
           <c>delete_permission</c>
@@ -2921,10 +2921,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>get_alerts</c>
           <c>get_assets</c>
           <c>get_configs</c>
+          <c>get_credentials</c>
           <c>get_filters</c>
           <c>get_groups</c>
           <c>get_info</c>
-          <c>get_lsc_credentials</c>
           <c>get_notes</c>
           <c>get_nvts</c>
           <c>get_nvt_families</c>
@@ -2952,9 +2952,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>modify_alert</c>
           <c>modify_auth</c>
           <c>modify_config</c>
+          <c>modify_credential</c>
           <c>modify_filter</c>
           <c>modify_group</c>
-          <c>modify_lsc_credential</c>
           <c>modify_note</c>
           <c>modify_override</c>
           <c>modify_permission</c>
@@ -3001,9 +3001,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>create_agent</r>
             <r>create_alert</r>
             <r>create_config</r>
+            <r>create_credential</r>
             <r>create_filter</r>
             <r>create_group</r>
-            <r>create_lsc_credential</r>
             <r>create_note</r>
             <r>create_override</r>
             <r>create_permission</r>
@@ -3020,9 +3020,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>delete_agent</r>
             <r>delete_alert</r>
             <r>delete_config</r>
+            <r>delete_credential</r>
             <r>delete_filter</r>
             <r>delete_group</r>
-            <r>delete_lsc_credential</r>
             <r>delete_note</r>
             <r>delete_override</r>
             <r>delete_permission</r>
@@ -3047,9 +3047,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>get_alerts</r>
             <r>get_assets</r>
             <r>get_configs</r>
+            <r>get_credentials</r>
             <r>get_groups</r>
             <r>get_info</r>
-            <r>get_lsc_credentials</r>
             <r>get_filters</r>
             <r>get_notes</r>
             <r>get_nvts</r>
@@ -3078,9 +3078,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>modify_alert</r>
             <r>modify_auth</r>
             <r>modify_config</r>
+            <r>modify_credential</r>
             <r>modify_filter</r>
             <r>modify_group</r>
-            <r>modify_lsc_credential</r>
             <r>modify_note</r>
             <r>modify_override</r>
             <r>modify_permission</r>
@@ -3493,6 +3493,121 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
+    <name>create_credential</name>
+    <summary>Create a credential</summary>
+    <description>
+      <p>
+        The client uses the create_lsc_credential command to create a new
+        credential for local security checks and other functions
+        requiring authentication.
+      </p>
+      <p>
+        If the command includes a key, then the manager creates a key-based
+        credential from the key.  If the command includes a password, then
+        the manager creates a password only credential.  Otherwise the
+        manager autogenerates a key-based credential.
+      </p>
+    </description>
+    <pattern>
+      <e>name</e>
+      <o><e>comment</e></o>
+      <o><e>copy</e></o>
+      <o><e>key</e></o>
+      <e>login</e>
+      <o><e>password</e></o>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>A name for the credential</summary>
+      <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>A comment on the credential</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>copy</name>
+      <summary>The UUID of an existing credential</summary>
+      <pattern>
+        <t>uuid</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>key</name>
+      <pattern>
+        <e>phrase</e>
+        <e>private</e>
+      </pattern>
+      <ele>
+        <name>phrase</name>
+        <summary>Key passphrase</summary>
+        <pattern>
+          text
+        </pattern>
+      </ele>
+      <ele>
+        <name>private</name>
+        <summary>Private key</summary>
+        <pattern>
+          text
+        </pattern>
+      </ele>
+    </ele>
+    <ele>
+      <name>login</name>
+      <summary>The user name of the credential</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>password</name>
+      <summary>The password for the credential login</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Create an LSC credential</summary>
+      <request>
+        <create_credential>
+          <name>cluster sally</name>
+          <login>sally</login>
+          <password>secret</password>
+          <comment>Sally's login to the cluster.</comment>
+        </create_credential>
+      </request>
+      <response>
+        <create_credential_response status="201"
+                                    status_text="OK, resource created"
+                                    id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_credential_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>create_filter</name>
     <summary>Create a filter</summary>
     <description>
@@ -3659,120 +3774,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                                status_text="OK, resource created"
                                id="d94211b6-ba40-11e3-bcb1-406186ea4fc5">
         </create_group_response>
-      </response>
-    </example>
-  </command>
-  <command>
-    <name>create_lsc_credential</name>
-    <summary>Create an LSC credential</summary>
-    <description>
-      <p>
-        The client uses the create_lsc_credential command to create a new
-        LSC credential.
-      </p>
-      <p>
-        If the command includes a key, then the manager creates a key-based
-        credential from the key.  If the command includes a password, then
-        the manager creates a password only credential.  Otherwise the
-        manager autogenerates a key-based credential.
-      </p>
-    </description>
-    <pattern>
-      <e>name</e>
-      <o><e>comment</e></o>
-      <o><e>copy</e></o>
-      <o><e>key</e></o>
-      <e>login</e>
-      <o><e>password</e></o>
-    </pattern>
-    <ele>
-      <name>name</name>
-      <summary>A name for the LSC credential</summary>
-      <pattern><t>name</t></pattern>
-    </ele>
-    <ele>
-      <name>comment</name>
-      <summary>A comment on the LSC credential</summary>
-      <pattern>
-        text
-      </pattern>
-    </ele>
-    <ele>
-      <name>copy</name>
-      <summary>The UUID of an existing LSC credential</summary>
-      <pattern>
-        <t>uuid</t>
-      </pattern>
-    </ele>
-    <ele>
-      <name>key</name>
-      <pattern>
-        <e>phrase</e>
-        <e>private</e>
-      </pattern>
-      <ele>
-        <name>phrase</name>
-        <summary>Key passphrase</summary>
-        <pattern>
-          text
-        </pattern>
-      </ele>
-      <ele>
-        <name>private</name>
-        <summary>Private key</summary>
-        <pattern>
-          text
-        </pattern>
-      </ele>
-    </ele>
-    <ele>
-      <name>login</name>
-      <summary>The user name of the credential</summary>
-      <pattern>
-        text
-      </pattern>
-    </ele>
-    <ele>
-      <name>password</name>
-      <summary>The password for the credential login</summary>
-      <pattern>
-        text
-      </pattern>
-    </ele>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>id</name>
-          <type>uuid</type>
-          <required>1</required>
-        </attrib>
-      </pattern>
-    </response>
-    <example>
-      <summary>Create an LSC credential</summary>
-      <request>
-        <create_lsc_credential>
-          <name>cluster sally</name>
-          <login>sally</login>
-          <password>secret</password>
-          <comment>Sally's login to the cluster.</comment>
-        </create_lsc_credential>
-      </request>
-      <response>
-        <create_lsc_credential_response status="201"
-                                        status_text="OK, resource created"
-                                        id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
-        </create_lsc_credential_response>
       </response>
     </example>
   </command>
@@ -5718,6 +5719,58 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
+    <name>delete_credential</name>
+    <summary>Delete a credential</summary>
+    <description>
+      <p>
+        The client uses the delete_credential command to delete an
+        existing credential.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>credential_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>ultimate</name>
+        <summary>Whether to remove entirely, or to the trashcan</summary>
+        <type>boolean</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete a credential</summary>
+      <request>
+        <delete_credential credential_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </delete_credential>
+      </request>
+      <response>
+        <delete_credential_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>delete_filter</name>
     <summary>Delete a filter</summary>
     <description>
@@ -5817,58 +5870,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </request>
       <response>
         <delete_group_response status="200" status_text="OK"/>
-      </response>
-    </example>
-  </command>
-  <command>
-    <name>delete_lsc_credential</name>
-    <summary>Delete an LSC credential</summary>
-    <description>
-      <p>
-        The client uses the delete_lsc_credential command to delete an
-        existing LSC credential.
-      </p>
-      <p>
-        Since this is a destructive command, the client is advised to ask
-        for confirmation from the user before sending this command to the
-        Manager.
-      </p>
-    </description>
-    <pattern>
-      <attrib>
-        <name>lsc_credential_id</name>
-        <type>uuid</type>
-        <required>1</required>
-      </attrib>
-      <attrib>
-        <name>ultimate</name>
-        <summary>Whether to remove entirely, or to the trashcan</summary>
-        <type>boolean</type>
-        <required>1</required>
-      </attrib>
-    </pattern>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-      </pattern>
-    </response>
-    <example>
-      <summary>Delete an LSC credential</summary>
-      <request>
-        <delete_lsc_credential lsc_credential_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
-        </delete_lsc_credential>
-      </request>
-      <response>
-        <delete_lsc_credential_response status="200" status_text="OK"/>
       </response>
     </example>
   </command>
@@ -9633,6 +9634,502 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
+    <name>get_credentials</name>
+    <summary>Get one or many credentials</summary>
+    <description>
+      The client uses the get_credentials command to get credentials information.
+      If the command sent by the client was valid, the manager will
+      reply with a list of credentials to the client.
+    </description>
+    <pattern>
+      <attrib>
+        <name>credential_id</name>
+        <summary>ID of single credential to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>trash</name>
+        <summary>Whether to get the trashcan credentials instead</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>targets</name>
+        <summary>Whether to include a list of targets using the credentials</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>format</name>
+        <type>
+          <alts>
+            <alt>key</alt>
+            <alt>rpm</alt>
+            <alt>deb</alt>
+            <alt>exe</alt>
+          </alts>
+        </type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>credential</e></any>
+        <e>filters</e>
+        <e>sort</e>
+        <e>credentials</e>
+        <e>credential_count</e>
+      </pattern>
+      <ele>
+        <name>credential</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
+          <e>name</e>
+          <e>login</e>
+          <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
+          <e>permissions</e>
+          <e>user_tags</e>
+          <e>type</e>
+          <e>targets</e>
+          <or>
+            <e>public_key</e>
+            <e>package</e>
+          </or>
+        </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the credential</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>The name of the credential</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>login</name>
+          <summary>The username of the credential</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>The comment on the credential</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <summary>Date and time the credential was created</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <summary>Date and time the credential was last modified</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>Whether this credential is writable</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether any targets are using the credential</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>
+            Permissions that the current user has on the credential
+          </summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the credential</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>type</name>
+          <summary>The type of the credential</summary>
+          <pattern>
+            <t>
+              <alts>
+                <alt>up</alt>
+                <alt>usk</alt>
+              </alts>
+            </t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>full_type</name>
+          <summary>The type of the credential written out</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>targets</name>
+          <summary>All targets using this credential</summary>
+          <pattern>
+            <any><e>target</e></any>
+          </pattern>
+          <ele>
+            <name>target</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <o><e>permissions</e></o>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the target</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>permissions</name>
+              <summary>Permissions the user has on the target</summary>
+              <pattern></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>public_key</name>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>package</name>
+          <pattern>
+            <attrib>
+              <name>format</name>
+              <type>
+                <alts>
+                  <alt>rpm</alt>
+                  <alt>deb</alt>
+                  <alt>exe</alt>
+                </alts>
+              </type>
+              <required>1</required>
+            </attrib>
+            base64
+          </pattern>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else 0</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+          <o><e>name</e></o>
+          <e>keywords</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>keywords</name>
+          <summary>Filter broken down into keywords</summary>
+          <pattern><any><e>keyword</e></any></pattern>
+          <ele>
+            <name>keyword</name>
+            <pattern>
+              <e>column</e>
+              <e>relation</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>column</name>
+              <summary>Column prefix</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>relation</name>
+              <summary>Relation operator</summary>
+              <pattern>
+                <alts>
+                  <alt>=</alt>
+                  <alt>:</alt>
+                  <alt>~</alt>
+                  <alt>&gt;</alt>
+                  <alt>&lt;</alt>
+                </alts>
+              </pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>The filter text</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <t>
+                <alts>
+                  <alt>ascending</alt>
+                  <alt>descending</alt>
+                </alts>
+              </t>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>credentials</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First credential</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of credentials</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>credential_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of credentials after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of credentials on current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get one or many the credentials</summary>
+      <request>
+        <get_credentials></get_credentials>
+      </request>
+      <response>
+        <get_credentials_response status="200" status_text="OK">
+          <credential id="c33864a9-d3fd-44b3-8717-972bfb01dfcf">
+            <name>sally</name>
+            <login>sally</login>
+            <comment></comment>
+            <creation_time>2012-12-14T17:11:25+01:00</creation_time>
+            <modification_time>2012-05-28T11:19:20+01:00</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
+            <type>usk</type>
+            <full_type>username + SSH key</full_type>
+          </credential>
+          <credential id="8e305b0b-260d-450d-91a8-dadf0b144e15">
+            <name>bob</name>
+            <comment>Bob on the web server.</comment>
+            <creation_time>2013-01-03T15:49:35+01:00</creation_time>
+            <modification_time>2013-01-18T12:07:00+01:00</modification_time>
+            <writable>1</writable>
+            <in_use>1</in_use>
+            <login>bob</login>
+            <type>up</type>
+            <full_type>username + password</full_type>
+          </credential>
+          <truncated>...</truncated>
+        </get_credentials_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get a single credential, its public key and targets using it</summary>
+      <request>
+        <get_credentials
+          credential_id="8e305b0b-260d-450d-91a8-dadf0b144e15"
+          format="key" targets="1">
+        </get_credentials>
+      </request>
+      <response>
+        <get_credentials_response status="200" status_text="OK">
+          <credential id="8e305b0b-260d-450d-91a8-dadf0b144e15">
+            <name>bob</name>
+            <comment>Bob on the web server.</comment>
+            <creation_time>2012-11-03T15:41:35+01:00</creation_time>
+            <modification_time>2012-11-18T13:17:00+01:00</modification_time>
+            <writable>1</writable>
+            <in_use>1</in_use>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
+            <login>bob</login>
+            <type>up</type>
+            <full_type>username + password</full_type>
+            <targets>
+              <target id="1f28d970-17ef-4c69-ba8a-13827059f2b9">
+                <name>Web server</name>
+              </target>
+            </targets>
+            <public_key>
+              ssh-rsa AAAAB3...Z64IcQ== Key generated by OpenVAS Manager
+            </public_key>
+          </credential>
+        </get_credentials_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get the Debian package of a single credential</summary>
+      <request>
+        <get_credentials
+          credential_id="8e305b0b-260d-450d-91a8-dadf0b144e15"
+          format="deb">
+        </get_credentials>
+      </request>
+      <response>
+        <get_credentials_response status="200" status_text="OK">
+          <credential id="8e305b0b-260d-450d-91a8-dadf0b144e15">
+            <name>bob</name>
+            <login>bob</login>
+            <comment>Bob on the web server.</comment>
+            <creation_time>2012-11-03T15:41:35+01:00</creation_time>
+            <modification_time>2012-11-18T13:17:00+01:00</modification_time>
+            <writable>1</writable>
+            <in_use>1</in_use>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
+            <type>up</type>
+            <full_type>username + password</full_type>
+            <targets>
+              <target id="1f28d970-17ef-4c69-ba8a-13827059f2b9">
+                <name>Web server</name>
+              </target>
+            </targets>
+            <package format="deb">ITxhcmNoPgpk...DmvF0AKAAACg==</package>
+          </credential>
+        </get_credentials_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_filters</name>
     <summary>Get one or many filters</summary>
     <description>
@@ -11277,491 +11774,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <page>1</page>
           </info_count>
         </get_info_response>
-      </response>
-    </example>
-  </command>
-  <command>
-    <name>get_lsc_credentials</name>
-    <summary>Get one or many LSC credentials</summary>
-    <description>
-      The client uses the get_lsc_credentials command to get LSC credentials information.
-      If the command sent by the client was valid, the manager will
-      reply with a list of LSC credentials to the client.
-    </description>
-    <pattern>
-      <attrib>
-        <name>lsc_credential_id</name>
-        <summary>ID of single LSC credential to get</summary>
-        <type>uuid</type>
-      </attrib>
-      <attrib>
-        <name>filter</name>
-        <summary>Filter term to use to filter query</summary>
-        <type>uuid</type>
-      </attrib>
-      <attrib>
-        <name>filt_id</name>
-        <summary>ID of filter to use to filter query</summary>
-        <type>uuid</type>
-      </attrib>
-      <attrib>
-        <name>trash</name>
-        <summary>Whether to get the trashcan LSC credentials instead</summary>
-        <type>boolean</type>
-      </attrib>
-      <attrib>
-        <name>targets</name>
-        <summary>Whether to include a list of targets using the credentials</summary>
-        <type>boolean</type>
-      </attrib>
-      <attrib>
-        <name>format</name>
-        <type>
-          <alts>
-            <alt>key</alt>
-            <alt>rpm</alt>
-            <alt>deb</alt>
-            <alt>exe</alt>
-          </alts>
-        </type>
-      </attrib>
-    </pattern>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-        <any><e>lsc_credential</e></any>
-        <e>filters</e>
-        <e>sort</e>
-        <e>lsc_credentials</e>
-        <e>lsc_credential_count</e>
-      </pattern>
-      <ele>
-        <name>lsc_credential</name>
-        <pattern>
-          <attrib>
-            <name>id</name>
-            <type>uuid</type>
-            <required>1</required>
-          </attrib>
-          <e>owner</e>
-          <e>name</e>
-          <e>login</e>
-          <e>comment</e>
-          <e>creation_time</e>
-          <e>modification_time</e>
-          <e>writable</e>
-          <e>in_use</e>
-          <e>permissions</e>
-          <e>user_tags</e>
-          <e>type</e>
-          <e>targets</e>
-          <or>
-            <e>public_key</e>
-            <e>package</e>
-          </or>
-        </pattern>
-        <ele>
-          <name>owner</name>
-          <summary>Owner of the LSC credential</summary>
-          <pattern>
-            <e>name</e>
-          </pattern>
-          <ele>
-            <name>name</name>
-            <summary>The name of the owner</summary>
-            <pattern><t>name</t></pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>name</name>
-          <summary>The name of the LSC credential</summary>
-          <pattern><t>name</t></pattern>
-        </ele>
-        <ele>
-          <name>login</name>
-          <summary>The username of the LSC credential</summary>
-          <pattern><t>name</t></pattern>
-        </ele>
-        <ele>
-          <name>comment</name>
-          <summary>The comment on the LSC credential</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>creation_time</name>
-          <summary>Date and time the info was created</summary>
-          <pattern><t>iso_time</t></pattern>
-        </ele>
-        <ele>
-          <name>modification_time</name>
-          <summary>Date and time the info was last modified</summary>
-          <pattern><t>iso_time</t></pattern>
-        </ele>
-        <ele>
-          <name>writable</name>
-          <summary>Whether this credential is writable</summary>
-          <pattern><t>boolean</t></pattern>
-        </ele>
-        <ele>
-          <name>in_use</name>
-          <summary>Whether any targets are using the LSC credential</summary>
-          <pattern><t>boolean</t></pattern>
-        </ele>
-        <ele>
-          <name>permissions</name>
-          <summary>
-            Permissions that the current user has on the LSC credential
-          </summary>
-          <pattern>
-            <any><e>permission</e></any>
-          </pattern>
-          <ele>
-            <name>permission</name>
-            <pattern>
-              <e>name</e>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <summary>The name of the permission</summary>
-              <pattern><t>name</t></pattern>
-            </ele>
-          </ele>
-        </ele>
-        <ele>
-          <name>user_tags</name>
-          <summary>Info on tags attached to the credential</summary>
-          <pattern>
-            <e>count</e>
-            <any><e>tag</e></any>
-          </pattern>
-          <ele>
-            <name>count</name>
-            <summary>Number of attached tags</summary>
-            <pattern><t>integer</t></pattern>
-          </ele>
-          <ele>
-            <name>tag</name>
-            <summary>
-              Short info on an individual tag
-              (only if details were requested)
-            </summary>
-            <pattern>
-              <attrib>
-                <name>id</name>
-                <type>uuid</type>
-                <summary>UUID of the tag</summary>
-                <required>1</required>
-              </attrib>
-              <e>name</e>
-              <e>value</e>
-              <e>comment</e>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <summary>Name of the tag (usually namespace:predicate)</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>value</name>
-              <summary>Value of the tag</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>comment</name>
-              <summary>Comment for the tag</summary>
-              <pattern>text</pattern>
-            </ele>
-          </ele>
-        </ele>
-        <ele>
-          <name>type</name>
-          <summary>The type of the LSC credential</summary>
-          <pattern>
-            <t>
-              <alts>
-                <alt>gen</alt>
-                <alt>pass</alt>
-              </alts>
-            </t>
-          </pattern>
-        </ele>
-        <ele>
-          <name>targets</name>
-          <summary>All targets using this LSC credential</summary>
-          <pattern>
-            <any><e>target</e></any>
-          </pattern>
-          <ele>
-            <name>target</name>
-            <pattern>
-              <attrib>
-                <name>id</name>
-                <type>uuid</type>
-                <required>1</required>
-              </attrib>
-              <e>name</e>
-              <o><e>permissions</e></o>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <summary>The name of the target</summary>
-              <pattern><t>name</t></pattern>
-            </ele>
-            <ele>
-              <name>permissions</name>
-              <summary>Permissions the user has on the target</summary>
-              <pattern></pattern>
-            </ele>
-          </ele>
-        </ele>
-        <ele>
-          <name>public_key</name>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>package</name>
-          <pattern>
-            <attrib>
-              <name>format</name>
-              <type>
-                <alts>
-                  <alt>rpm</alt>
-                  <alt>deb</alt>
-                  <alt>exe</alt>
-                </alts>
-              </type>
-              <required>1</required>
-            </attrib>
-            base64
-          </pattern>
-        </ele>
-      </ele>
-      <ele>
-        <name>filters</name>
-        <pattern>
-          <attrib>
-            <name>id</name>
-            <summary>UUID of filter if any, else 0</summary>
-            <type>uuid</type>
-            <required>1</required>
-          </attrib>
-          <e>term</e>
-          <o><e>name</e></o>
-          <e>keywords</e>
-        </pattern>
-        <ele>
-          <name>term</name>
-          <summary>Filter term</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>name</name>
-          <summary>Filter name, if applicable</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>keywords</name>
-          <summary>Filter broken down into keywords</summary>
-          <pattern><any><e>keyword</e></any></pattern>
-          <ele>
-            <name>keyword</name>
-            <pattern>
-              <e>column</e>
-              <e>relation</e>
-              <e>value</e>
-            </pattern>
-            <ele>
-              <name>column</name>
-              <summary>Column prefix</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>relation</name>
-              <summary>Relation operator</summary>
-              <pattern>
-                <alts>
-                  <alt>=</alt>
-                  <alt>:</alt>
-                  <alt>~</alt>
-                  <alt>&gt;</alt>
-                  <alt>&lt;</alt>
-                </alts>
-              </pattern>
-            </ele>
-            <ele>
-              <name>value</name>
-              <summary>The filter text</summary>
-              <pattern>text</pattern>
-            </ele>
-          </ele>
-        </ele>
-      </ele>
-      <ele>
-        <name>sort</name>
-        <pattern>
-          text
-          <e>field</e>
-        </pattern>
-        <ele>
-          <name>field</name>
-          <pattern>
-            <e>order</e>
-          </pattern>
-          <ele>
-            <name>order</name>
-            <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
-            </pattern>
-          </ele>
-        </ele>
-      </ele>
-      <ele>
-        <name>lsc_credentials</name>
-        <pattern>
-          <attrib>
-            <name>start</name>
-            <summary>First LSC credential</summary>
-            <type>integer</type>
-            <required>1</required>
-          </attrib>
-          <attrib>
-            <name>max</name>
-            <summary>Maximum number of LSC credentials</summary>
-            <type>integer</type>
-            <required>1</required>
-          </attrib>
-        </pattern>
-      </ele>
-      <ele>
-        <name>lsc_credential_count</name>
-        <pattern>
-          <e>filtered</e>
-          <e>page</e>
-        </pattern>
-        <ele>
-          <name>filtered</name>
-          <summary>Number of LSC credentials after filtering</summary>
-          <pattern><t>integer</t></pattern>
-        </ele>
-        <ele>
-          <name>page</name>
-          <summary>Number of LSC credentials on current page</summary>
-          <pattern><t>integer</t></pattern>
-        </ele>
-      </ele>
-    </response>
-    <example>
-      <summary>Get one or many the LSC credentials</summary>
-      <request>
-        <get_lsc_credentials></get_lsc_credentials>
-      </request>
-      <response>
-        <get_lsc_credentials_response status="200" status_text="OK">
-          <lsc_credential id="c33864a9-d3fd-44b3-8717-972bfb01dfcf">
-            <name>sally</name>
-            <login>sally</login>
-            <comment></comment>
-            <creation_time>2012-12-14T17:11:25+01:00</creation_time>
-            <modification_time>2012-05-28T11:19:20+01:00</modification_time>
-            <writable>1</writable>
-            <in_use>0</in_use>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
-            <type>gen</type>
-          </lsc_credential>
-          <lsc_credential id="8e305b0b-260d-450d-91a8-dadf0b144e15">
-            <name>bob</name>
-            <comment>Bob on the web server.</comment>
-            <creation_time>2013-01-03T15:49:35+01:00</creation_time>
-            <modification_time>2013-01-18T12:07:00+01:00</modification_time>
-            <writable>1</writable>
-            <in_use>1</in_use>
-            <login>bob</login>
-            <type>pass</type>
-          </lsc_credential>
-          <truncated>...</truncated>
-        </get_lsc_credentials_response>
-      </response>
-    </example>
-    <example>
-      <summary>Get a single LSC credential, its public key and targets using it</summary>
-      <request>
-        <get_lsc_credentials
-          lsc_credential_id="8e305b0b-260d-450d-91a8-dadf0b144e15"
-          format="key" targets="1">
-        </get_lsc_credentials>
-      </request>
-      <response>
-        <get_lsc_credentials_response status="200" status_text="OK">
-          <lsc_credential id="8e305b0b-260d-450d-91a8-dadf0b144e15">
-            <name>bob</name>
-            <comment>Bob on the web server.</comment>
-            <creation_time>2012-11-03T15:41:35+01:00</creation_time>
-            <modification_time>2012-11-18T13:17:00+01:00</modification_time>
-            <writable>1</writable>
-            <in_use>1</in_use>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
-            <login>bob</login>
-            <type>pass</type>
-            <targets>
-              <target id="1f28d970-17ef-4c69-ba8a-13827059f2b9">
-                <name>Web server</name>
-              </target>
-            </targets>
-            <public_key>
-              ssh-rsa AAAAB3...Z64IcQ== Key generated by OpenVAS Manager
-            </public_key>
-          </lsc_credential>
-        </get_lsc_credentials_response>
-      </response>
-    </example>
-    <example>
-      <summary>Get the Debian package of a single LSC credential</summary>
-      <request>
-        <get_lsc_credentials
-          lsc_credential_id="8e305b0b-260d-450d-91a8-dadf0b144e15"
-          format="deb">
-        </get_lsc_credentials>
-      </request>
-      <response>
-        <get_lsc_credentials_response status="200" status_text="OK">
-          <lsc_credential id="8e305b0b-260d-450d-91a8-dadf0b144e15">
-            <name>bob</name>
-            <login>bob</login>
-            <comment>Bob on the web server.</comment>
-            <creation_time>2012-11-03T15:41:35+01:00</creation_time>
-            <modification_time>2012-11-18T13:17:00+01:00</modification_time>
-            <writable>1</writable>
-            <in_use>1</in_use>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
-            <type>pass</type>
-            <targets>
-              <target id="1f28d970-17ef-4c69-ba8a-13827059f2b9">
-                <name>Web server</name>
-              </target>
-            </targets>
-            <package format="deb">ITxhcmNoPgpk...DmvF0AKAAACg==</package>
-          </lsc_credential>
-        </get_lsc_credentials_response>
       </response>
     </example>
   </command>
@@ -19883,7 +19895,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             CREATE_CONFIG          Create a config.
             CREATE_FILTER          Create a filter.
             CREATE_GROUP           Create a group.
-            CREATE_LSC_CREDENTIAL  Create a local security check credential.
+            CREATE_CREDENTIAL      Create a credential.
             CREATE_NOTE            Create a note.
             CREATE_OVERRIDE        Create an override.
             CREATE_PERMISSION      Create a permission.
@@ -19904,7 +19916,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             DELETE_CONFIG          Delete a config.
             DELETE_FILTER          Delete a filter.
             DELETE_GROUP           Delete a group.
-            DELETE_LSC_CREDENTIAL  Delete a local security check credential.
+            DELETE_CREDENTIAL      Delete a credential.
             DELETE_NOTE            Delete a note.
             DELETE_OVERRIDE        Delete an override.
             DELETE_PERMISSION      Delete a permission.
@@ -19931,7 +19943,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             GET_FILTERS            Get one or many filters.
             GET_GROUPS             Get one or many groups.
             GET_INFO               Get raw information for a given item.
-            GET_LSC_CREDENTIALS    Get one or many local security check credentials.
+            GET_CREDENTIALS        Get one or many credentials.
             GET_NOTES              Get one or many notes.
             GET_NVTS               Get one or all available NVTs.
             GET_NVT_FAMILIES       Get a list of all NVT families.
@@ -19961,7 +19973,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             MODIFY_CONFIG          Update an existing config.
             MODIFY_FILTER          Modify an existing filter.
             MODIFY_GROUP           Modify an existing group.
-            MODIFY_LSC_CREDENTIAL  Modify an existing LSC credential.
+            MODIFY_CREDENTIAL      Modify an existing credential.
             MODIFY_NOTE            Modify an existing note.
             MODIFY_OVERRIDE        Modify an existing override.
             MODIFY_PERMISSION      Modify an existing permission.
@@ -20625,6 +20637,84 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
+    <name>modify_credential</name>
+    <summary>Modify an existing credential</summary>
+    <description>
+      <p>
+        The client uses the modify_credential command to change an
+        existing credential.
+      </p>
+      <p>
+        The login and password can only be changed for password credentials.
+        Modification of login or password on package credentials is forbidden.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>credential_id</name>
+        <summary>ID of credential to modify</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <o><e>comment</e></o>
+      <o><e>name</e></o>
+      <o><e>password</e></o>
+      <o><e>login</e></o>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>A name for the credential</summary>
+      <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>A comment on the credential</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>login</name>
+      <summary>The user name of the credential</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>password</name>
+      <summary>The password for the credential login</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Modify the comment of an credential</summary>
+      <request>
+        <modify_credential credential_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+          <comment>Credential for all machines in lab 4.</comment>
+        </modify_credential>
+      </request>
+      <response>
+        <modify_credential_response status="200" status_text="OK">
+        </modify_credential_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>modify_filter</name>
     <summary>Modify an existing filter</summary>
     <description>
@@ -20749,84 +20839,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <response>
         <modify_group_response status="200" status_text="OK">
         </modify_group_response>
-      </response>
-    </example>
-  </command>
-  <command>
-    <name>modify_lsc_credential</name>
-    <summary>Modify an existing LSC credential</summary>
-    <description>
-      <p>
-        The client uses the modify_lsc_credential command to change an
-        existing LSC credential.
-      </p>
-      <p>
-        The login and password can only be changed for password LSC credentials.
-        Modification of login or password on package credentials is forbidden.
-      </p>
-    </description>
-    <pattern>
-      <attrib>
-        <name>lsc_credential_id</name>
-        <summary>ID of LSC credential to modify</summary>
-        <type>uuid</type>
-        <required>1</required>
-      </attrib>
-      <o><e>comment</e></o>
-      <o><e>name</e></o>
-      <o><e>password</e></o>
-      <o><e>login</e></o>
-    </pattern>
-    <ele>
-      <name>name</name>
-      <summary>A name for the LSC credential</summary>
-      <pattern><t>name</t></pattern>
-    </ele>
-    <ele>
-      <name>comment</name>
-      <summary>A comment on the LSC credential</summary>
-      <pattern>
-        text
-      </pattern>
-    </ele>
-    <ele>
-      <name>login</name>
-      <summary>The user name of the credential</summary>
-      <pattern>
-        text
-      </pattern>
-    </ele>
-    <ele>
-      <name>password</name>
-      <summary>The password for the credential login</summary>
-      <pattern>
-        text
-      </pattern>
-    </ele>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-      </pattern>
-    </response>
-    <example>
-      <summary>Modify the comment of an LSC credential</summary>
-      <request>
-        <modify_lsc_credential lsc_credential_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
-          <comment>Credential for all machines in lab 4.</comment>
-        </modify_lsc_credential>
-      </request>
-      <response>
-        <modify_lsc_credential_response status="200" status_text="OK">
-        </modify_lsc_credential_response>
       </response>
     </example>
   </command>
@@ -22900,6 +22912,30 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </response>
     </example>
   </command>
+  <change>
+    <command>GET_CREDENTIALS</command>
+    <summary>Credential types renamed</summary>
+    <description>
+      <p>
+        The TYPE element in the response will contain "up" instead of "pass"
+         for username + password credentials and "usk" instead of "gen" for
+         username + SSH key ones.
+      </p>
+    </description>
+    <version>7.0</version>
+  </change>
+  <change>
+    <command>CREATE_LSC_CREDENTIAL, DELETE_LSC_CREDENTIAL, GET_LSC_CREDENTIALS, MODIFY_LSC_CREDENTIAL</command>
+    <summary>Resource type and commands renamed</summary>
+    <description>
+      <p>
+        The type LSC_CREDENTIAL has been renamed to CREDENTIAL, so
+        the CREATE_LSC_CREDENTIAL command is now named CREATE_CREDENTIAL,
+        GET_LSC_CREDENTIALS is named GET_CREDENTIALS, etc.
+      </p>
+    </description>
+    <version>7.0</version>
+  </change>
   <change>
     <command>PAUSE_TASK, RESUME_PAUSED_TASK</command>
     <summary>Commands removed</summary>

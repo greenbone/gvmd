@@ -10323,6 +10323,190 @@ migrate_152_to_153 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 152 to version 153.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_153_to_154 ()
+{
+  const char *primary_key_type = sql_is_sqlite3 () ? "INTEGER" : "SERIAL";
+  iterator_t credentials;
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 153. */
+
+  if (manage_db_version () != 153)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Create new credentials tables */
+  sql ("CREATE TABLE credentials"
+       " (id %s PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL,"
+       "  comment text,"
+       "  creation_time integer,"
+       "  modification_time integer,"
+       "  type text);",
+       primary_key_type);
+
+  sql ("CREATE TABLE credentials_trash"
+       " (id %s PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL,"
+       "  comment text,"
+       "  creation_time integer,"
+       "  modification_time integer,"
+       "  type text);",
+       primary_key_type);
+
+  sql ("CREATE TABLE credentials_data"
+       " (id %s PRIMARY KEY,"
+       "  credential INTEGER,"
+       "  type TEXT,"
+       "  value TEXT);",
+       primary_key_type);
+
+  sql ("CREATE TABLE credentials_trash_data"
+       " (id %s PRIMARY KEY,"
+       "  credential INTEGER,"
+       "  type TEXT,"
+       "  value TEXT);",
+       primary_key_type);
+
+  /* Copy basic data from old tables */
+  sql ("INSERT INTO credentials"
+       " (id, uuid, owner, name, comment, creation_time, modification_time)"
+       " SELECT"
+       "   id, uuid, owner, name, comment, creation_time, modification_time"
+       " FROM lsc_credentials;");
+
+  sql ("INSERT INTO credentials_trash"
+       " (id, uuid, owner, name, comment, creation_time, modification_time)"
+       " SELECT"
+       "   id, uuid, owner, name, comment, creation_time, modification_time"
+       " FROM lsc_credentials_trash;");
+
+  /* Copy credentials data */
+  sql ("INSERT INTO credentials_data (credential, type, value)"
+       " SELECT id, 'username', login FROM lsc_credentials"
+       "  WHERE login IS NOT NULL;");
+
+  sql ("INSERT INTO credentials_trash_data (credential, type, value)"
+       " SELECT id, 'username', login FROM lsc_credentials_trash"
+       "  WHERE login IS NOT NULL;");
+
+  sql ("INSERT INTO credentials_data (credential, type, value)"
+       " SELECT id, 'password', password FROM lsc_credentials"
+       "  WHERE password IS NOT NULL AND private_key != ';;encrypted;;';");
+
+  sql ("INSERT INTO credentials_trash_data (credential, type, value)"
+       " SELECT id, 'password', password FROM lsc_credentials_trash"
+       "  WHERE password IS NOT NULL AND private_key != ';;encrypted;;';");
+
+  sql ("INSERT INTO credentials_data (credential, type, value)"
+       " SELECT id, 'private_key', private_key FROM lsc_credentials"
+       "  WHERE password IS NOT NULL AND private_key != ';;encrypted;;';");
+
+  sql ("INSERT INTO credentials_trash_data (credential, type, value)"
+       " SELECT id, 'private_key', private_key FROM lsc_credentials_trash"
+       "  WHERE password IS NOT NULL AND private_key != ';;encrypted;;';");
+
+  sql ("INSERT INTO credentials_data (credential, type, value)"
+       " SELECT id, 'secret', password FROM lsc_credentials"
+       "  WHERE password IS NOT NULL AND private_key = ';;encrypted;;';");
+
+  sql ("INSERT INTO credentials_trash_data (credential, type, value)"
+       " SELECT id, 'secret', password FROM lsc_credentials_trash"
+       "  WHERE password IS NOT NULL AND private_key = ';;encrypted;;';");
+
+  /* Set type for existing credentials */
+  init_iterator (&credentials,
+                 "SELECT id, password, private_key, 0"
+                 " FROM lsc_credentials"
+                 " UNION ALL"
+                 " SELECT id, password, private_key, 1"
+                 " FROM lsc_credentials_trash;");
+
+  while (next (&credentials))
+    {
+      credential_t credential;
+      int is_trash;
+      const char *password, *privkey;
+      const char *type;
+
+      credential = iterator_int64 (&credentials, 0);
+      password = iterator_string (&credentials, 1);
+      privkey = iterator_string (&credentials, 2);
+      is_trash = iterator_int (&credentials, 3);
+
+      if (privkey == NULL)
+        type = "up";
+      else if (strcmp (privkey, ";;encrypted;;"))
+        type = "usk";
+      else
+        {
+          if (!credentials.crypt_ctx)
+            credentials.crypt_ctx = lsc_crypt_new ();
+
+          if (lsc_crypt_get_private_key (credentials.crypt_ctx, password))
+            type = "usk";
+          else
+            type = "up";
+        }
+
+      sql ("UPDATE %s SET type = '%s' WHERE id = %llu;",
+           is_trash ? "credentials_trash" : "credentials",
+           type, credential);
+    }
+  cleanup_iterator (&credentials);
+
+  /* Remove the old tables */
+  sql ("DROP TABLE lsc_credentials;");
+  sql ("DROP TABLE lsc_credentials_trash;");
+
+  /* Update Tags */
+  sql ("UPDATE tags SET resource_type = 'credential'"
+       " WHERE resource_type = 'lsc_credential';");
+  sql ("UPDATE tags_trash SET resource_type = 'credential'"
+       " WHERE resource_type = 'lsc_credential';");
+
+  /* Update permissions */
+  sql ("UPDATE permissions SET name = 'create_credential'"
+       " WHERE name = 'create_lsc_credential';");
+  sql ("UPDATE permissions SET name = 'delete_credential'"
+       " WHERE name = 'delete_lsc_credential';");
+  sql ("UPDATE permissions SET name = 'get_credentials'"
+       " WHERE name = 'get_lsc_credentials';");
+  sql ("UPDATE permissions SET name = 'modify_credential'"
+       " WHERE name = 'modify_lsc_credential';");
+
+  sql ("UPDATE permissions_trash SET name = 'create_credential'"
+       " WHERE name = 'create_lsc_credential';");
+  sql ("UPDATE permissions_trash SET name = 'delete_credential'"
+       " WHERE name = 'delete_lsc_credential';");
+  sql ("UPDATE permissions_trash SET name = 'get_credentials'"
+       " WHERE name = 'get_lsc_credentials';");
+  sql ("UPDATE permissions_trash SET name = 'modify_credential'"
+       " WHERE name = 'modify_lsc_credential';");
+
+  /* Set the database version to 154. */
+
+  set_db_version (154);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
 #ifdef SQL_IS_SQLITE
 #define SQLITE_OR_NULL(function) function
 #else
@@ -10487,6 +10671,7 @@ static migrator_t database_migrators[]
     {151, migrate_150_to_151},
     {152, migrate_151_to_152},
     {153, migrate_152_to_153},
+    {154, migrate_153_to_154},
     /* End marker. */
     {-1, NULL}};
 

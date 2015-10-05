@@ -1,3 +1,63 @@
+2015-10-05  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Replace the LSC_CREDENTIAL type with CREDENTIAL, store credential
+	data like usernames and passwords in a separate table and add a
+	credential type field.  Hence increase database version to 154.
+	Add database migration from version 153 to 154.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 154.
+
+	* src/manage_migrators.c (migrate_153_to_154): New function.
+	(database_migrators): Add migrate_153_to_154.
+
+	* src/manage_pg.c (create_tables): Replace table "lsc_credentials" with
+	new tables "credentials" and "credentials_data". Same with the
+	corresponding trash tables. Update references comments in targets.
+	
+	* src/manage_sql.c: Replace "lsc_credential" commands, types, functions
+	and macros with "credential" ones and use new credentials types and
+	data tables. Update the commands list, target functions and iterator
+	columns, manage_restore and manage_empty_trashcan, delete_user
+	functions accordingly. Add new set_credentials_data function.
+
+	* src/manage_sql.h (target_ssh_lsc_credential)
+	(target_smb_lsc_credential, target_esxi_lsc_credential): Change
+	lsc_credential_t to credential_t.
+
+	* src/manage_sqlite3.c (create_tables): Replace table "lsc_credentials"
+	with new tables "credentials" and "credentials_data". Same with the
+	corresponding trash tables.
+
+	* src/manage_utils.c (valid_db_resource_type): Replace "lsc_credential"
+	with "credential".
+
+	* src/schema_formats/XML/OMP.xml.in (create_credential)
+	(create_lsc_credential, delete_credential, delete_lsc_credential)
+	(get_lsc_credentials, get_lsc_credentials, modify_credential)
+	(modify_lsc_credential): Replace lsc_credential commands with
+	credential ones.
+
+	* src/manage.c (slave_setup, run_slave_task, get_osp_task_options)
+	(run_task): Replace "lsc_credential" with "credential".
+	(credential_full_type): New function.
+
+	* src/manage.h (credential_t): Replace "lsc_credential" type and
+	functions "credential" ones. Update create_target accordingly.
+	Add new function prototype credential_full_type.
+
+	* src/omp.c: Change "lsc_credential" in command names and the
+	corresponding functions to "credential".
+
+	* src/wizards/quick_task.xml, src/wizards/delete_task_deep.xml,
+	src/wizards/get_tasks_deep.xml, src/wizards/quick_auth_scan.xml:
+	Replace lsc_credential commands with credential ones.
+
+	* doc/db_postgres.sql: Replace table "lsc_credentials" with new tables
+	"credentials" and "credentials_data". Same with the corresponding trash
+	tables. Update references in targets.
+
+	* doc/omp.rnc, doc/omp.html, doc/db.png: Update from source.
+
 2015-10-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (manage_session_init): Skip INSERT if uuid is NULL.

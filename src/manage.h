@@ -211,6 +211,7 @@ typedef enum scanner_type {
 
 typedef long long int agent_t;
 typedef long long int config_t;
+typedef long long int credential_t;
 typedef long long int alert_t;
 typedef long long int filter_t;
 typedef long long int group_t;
@@ -231,7 +232,6 @@ typedef long long int override_t;
 typedef long long int permission_t;
 typedef long long int port_list_t;
 typedef long long int port_range_t;
-typedef long long int lsc_credential_t;
 typedef long long int schedule_t;
 typedef long long int scanner_t;
 typedef long long int setting_t;
@@ -1366,8 +1366,8 @@ find_target_with_permission (const char *, target_t *, const char *);
 
 int
 create_target (const char*, const char*, const char*, const char*, const char*,
-               const char *, const char*, lsc_credential_t, const char*,
-               lsc_credential_t, lsc_credential_t, const char *, const char *,
+               const char *, const char*, credential_t, const char*,
+               credential_t, credential_t, const char *, const char *,
                const char *, int, target_t*);
 
 int
@@ -1870,101 +1870,109 @@ const char*
 task_role_iterator_uuid (iterator_t*);
 
 
-/* LSC credentials. */
+/* Credentials. */
 
 gboolean
-find_lsc_credential_with_permission (const char*, lsc_credential_t*,
-                                     const char*);
+find_credential_with_permission (const char*, credential_t*, const char*);
 
 int
-create_lsc_credential (const char*, const char*, const char*, const char*,
-                       const char*, lsc_credential_t*);
+create_credential (const char*, const char*, const char*, const char*,
+                   const char*, credential_t*);
 
 int
-copy_lsc_credential (const char*, const char*, const char*,
-                     lsc_credential_t*);
+copy_credential (const char*, const char*, const char*,
+                 credential_t*);
 
 int
-modify_lsc_credential (const char*, const char*, const char*, const char *,
-                       const char *);
+modify_credential (const char*, const char*, const char*, const char *,
+                   const char *);
 
 int
-delete_lsc_credential (const char *, int);
+delete_credential (const char *, int);
 
 int
-lsc_credential_count (const get_data_t *);
+credential_count (const get_data_t *);
 
 void
-set_lsc_credential_name (lsc_credential_t, const char *);
+set_credential_name (credential_t, const char *);
 
 void
-set_lsc_credential_comment (lsc_credential_t, const char *);
-
-void
-set_lsc_credential_login (lsc_credential_t, const char *);
-
-void
-set_lsc_credential_password (lsc_credential_t, const char *);
-
-void
-init_lsc_credential_iterator_one (iterator_t*, lsc_credential_t);
+set_credential_comment (credential_t, const char *);
 
 int
-init_lsc_credential_iterator (iterator_t*, const get_data_t *);
+set_credential_data (credential_t, const char*, const char*);
+
+void
+set_credential_login (credential_t, const char *);
+
+void
+set_credential_password (credential_t, const char *);
+
+void
+init_credential_iterator_one (iterator_t*, credential_t);
+
+int
+init_credential_iterator (iterator_t*, const get_data_t *);
 
 const char*
-lsc_credential_iterator_login (iterator_t*);
+credential_iterator_login (iterator_t*);
 
 const char*
-lsc_credential_iterator_private_key (iterator_t*);
+credential_iterator_private_key (iterator_t*);
+
+const char*
+credential_iterator_type (iterator_t*);
+
+const char*
+credential_full_type (const char*);
 
 char*
-lsc_credential_iterator_rpm (iterator_t*);
+credential_iterator_rpm (iterator_t*);
 
 char*
-lsc_credential_iterator_deb (iterator_t*);
+credential_iterator_deb (iterator_t*);
 
 char*
-lsc_credential_iterator_exe (iterator_t*);
+credential_iterator_exe (iterator_t*);
 
 char*
-lsc_credential_uuid (lsc_credential_t);
+credential_uuid (credential_t);
 
 char*
-trash_lsc_credential_uuid (lsc_credential_t);
+trash_credential_uuid (credential_t);
 
 char*
-lsc_credential_name (lsc_credential_t);
+credential_name (credential_t);
 
 char*
-trash_lsc_credential_name (lsc_credential_t);
+trash_credential_name (credential_t);
 
 void
-init_lsc_credential_target_iterator (iterator_t*, lsc_credential_t, int);
+init_credential_target_iterator (iterator_t*, credential_t, int);
 
 const char*
-lsc_credential_target_iterator_uuid (iterator_t*);
+credential_target_iterator_uuid (iterator_t*);
 
 const char*
-lsc_credential_target_iterator_name (iterator_t*);
+credential_target_iterator_name (iterator_t*);
 
 int
-lsc_credential_target_iterator_readable (iterator_t*);
+credential_target_iterator_readable (iterator_t*);
 
 int
-trash_lsc_credential_in_use (lsc_credential_t);
+trash_credential_in_use (credential_t);
 
 int
-lsc_credential_in_use (lsc_credential_t);
+credential_in_use (credential_t);
 
 int
-trash_lsc_credential_writable (lsc_credential_t);
+trash_credential_writable (credential_t);
 
 int
-lsc_credential_writable (lsc_credential_t);
+credential_writable (credential_t);
 
 int
-trash_lsc_credential_readable (lsc_credential_t);
+trash_credential_readable (credential_t);
 
 
 /* Agents. */

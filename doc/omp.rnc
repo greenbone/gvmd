@@ -14,9 +14,9 @@ command
     | create_agent
     | create_config
     | create_alert
+    | create_credential
     | create_filter
     | create_group
-    | create_lsc_credential
     | create_note
     | create_override
     | create_permission
@@ -35,9 +35,9 @@ command
     | delete_agent
     | delete_config
     | delete_alert
+    | delete_credential
     | delete_filter
     | delete_group
-    | delete_lsc_credential
     | delete_note
     | delete_override
     | delete_report
@@ -63,10 +63,10 @@ command
     | get_aggregates
     | get_alerts
     | get_assets
+    | get_credentials
     | get_filters
     | get_groups
     | get_info
-    | get_lsc_credentials
     | get_notes
     | get_nvts
     | get_nvt_families
@@ -94,9 +94,9 @@ command
     | modify_alert
     | modify_auth
     | modify_config
+    | modify_credential
     | modify_filter
     | modify_group
-    | modify_lsc_credential
     | modify_note
     | modify_override
     | modify_permission
@@ -131,9 +131,9 @@ response
     | create_agent_response
     | create_config_response
     | create_alert_response
+    | create_credential_response
     | create_filter_response
     | create_group_response
-    | create_lsc_credential_response
     | create_note_response
     | create_override_response
     | create_permission_response
@@ -152,9 +152,9 @@ response
     | delete_agent_response
     | delete_config_response
     | delete_alert_response
+    | delete_credential_response
     | delete_filter_response
     | delete_group_response
-    | delete_lsc_credential_response
     | delete_note_response
     | delete_override_response
     | delete_report_response
@@ -180,10 +180,10 @@ response
     | get_aggregates_response
     | get_alerts_response
     | get_assets_response
+    | get_credentials_response
     | get_filters_response
     | get_groups_response
     | get_info_response
-    | get_lsc_credentials_response
     | get_notes_response
     | get_nvts_response
     | get_nvt_families_response
@@ -211,9 +211,9 @@ response
     | modify_alert_response
     | modify_auth_response
     | modify_config_response
+    | modify_credential_response
     | modify_filter_response
     | modify_group_response
-    | modify_lsc_credential_response
     | modify_note_response
     | modify_override_response
     | modify_permission_response
@@ -3125,9 +3125,9 @@ commands
            | create_agent
            | create_alert
            | create_config
+           | create_credential
            | create_filter
            | create_group
-           | create_lsc_credential
            | create_note
            | create_override
            | create_permission
@@ -3145,9 +3145,9 @@ commands
            | delete_agent
            | delete_alert
            | delete_config
+           | delete_credential
            | delete_filter
            | delete_group
-           | delete_lsc_credential
            | delete_note
            | delete_override
            | delete_permission
@@ -3172,10 +3172,10 @@ commands
            | get_alerts
            | get_assets
            | get_configs
+           | get_credentials
            | get_filters
            | get_groups
            | get_info
-           | get_lsc_credentials
            | get_notes
            | get_nvts
            | get_nvt_families
@@ -3203,9 +3203,9 @@ commands
            | modify_alert
            | modify_auth
            | modify_config
+           | modify_credential
            | modify_filter
            | modify_group
-           | modify_lsc_credential
            | modify_note
            | modify_override
            | modify_permission
@@ -3444,6 +3444,77 @@ create_alert_filter
        attribute id { uuid }
      }
 
+## Command create_credential
+##
+## Create a credential.
+
+create_credential
+ = element create_credential
+     {
+       create_credential_name
+       & create_credential_comment?
+       & create_credential_copy?
+       & create_credential_key?
+       & create_credential_login
+       & create_credential_password?
+     }
+
+# A name for the credential.
+create_credential_name
+ = element name
+     {
+       name
+     }
+
+# A comment on the credential.
+create_credential_comment
+ = element comment
+     {
+       text
+     }
+
+# The UUID of an existing credential.
+create_credential_copy
+ = element copy
+     {
+       uuid
+     }
+
+create_credential_key
+ = element key
+     {
+       create_credential_key_phrase
+       & create_credential_key_private
+     }
+
+# Key passphrase.
+create_credential_key_phrase
+ = element phrase
+     {
+       text
+     }
+
+# Private key.
+create_credential_key_private
+ = element private
+     {
+       text
+     }
+
+# The user name of the credential.
+create_credential_login
+ = element login
+     {
+       text
+     }
+
+# The password for the credential login.
+create_credential_password
+ = element password
+     {
+       text
+     }
+
 ## Command create_filter
 ##
 ## Create a filter.
@@ -3538,77 +3609,6 @@ create_group_copy
 # Comma separated list of user names.
 create_group_users
  = element users
-     {
-       text
-     }
-
-## Command create_lsc_credential
-##
-## Create an LSC credential.
-
-create_lsc_credential
- = element create_lsc_credential
-     {
-       create_lsc_credential_name
-       & create_lsc_credential_comment?
-       & create_lsc_credential_copy?
-       & create_lsc_credential_key?
-       & create_lsc_credential_login
-       & create_lsc_credential_password?
-     }
-
-# A name for the LSC credential.
-create_lsc_credential_name
- = element name
-     {
-       name
-     }
-
-# A comment on the LSC credential.
-create_lsc_credential_comment
- = element comment
-     {
-       text
-     }
-
-# The UUID of an existing LSC credential.
-create_lsc_credential_copy
- = element copy
-     {
-       uuid
-     }
-
-create_lsc_credential_key
- = element key
-     {
-       create_lsc_credential_key_phrase
-       & create_lsc_credential_key_private
-     }
-
-# Key passphrase.
-create_lsc_credential_key_phrase
- = element phrase
-     {
-       text
-     }
-
-# Private key.
-create_lsc_credential_key_private
- = element private
-     {
-       text
-     }
-
-# The user name of the credential.
-create_lsc_credential_login
- = element login
-     {
-       text
-     }
-
-# The password for the credential login.
-create_lsc_credential_password
- = element password
      {
        text
      }
@@ -4785,6 +4785,18 @@ delete_alert
        attribute ultimate { boolean }
      }
 
+## Command delete_credential
+##
+## Delete a credential.
+
+delete_credential
+ = element delete_credential
+     {
+       attribute credential_id { uuid }
+       & # Whether to remove entirely, or to the trashcan.
+       attribute ultimate { boolean }
+     }
+
 ## Command delete_filter
 ##
 ## Delete a filter.
@@ -4805,18 +4817,6 @@ delete_group
  = element delete_group
      {
        attribute group_id { uuid }
-       & # Whether to remove entirely, or to the trashcan.
-       attribute ultimate { boolean }
-     }
-
-## Command delete_lsc_credential
-##
-## Delete an LSC credential.
-
-delete_lsc_credential
- = element delete_lsc_credential
-     {
-       attribute lsc_credential_id { uuid }
        & # Whether to remove entirely, or to the trashcan.
        attribute ultimate { boolean }
      }
@@ -5178,6 +5178,26 @@ get_assets
        attribute filt_id { uuid }?
      }
 
+## Command get_credentials
+##
+## Get one or many credentials.
+
+get_credentials
+ = element get_credentials
+     {
+       # ID of single credential to get.
+       attribute credential_id { uuid }?
+       & # Filter term to use to filter query.
+       attribute filter { uuid }?
+       & # ID of filter to use to filter query.
+       attribute filt_id { uuid }?
+       & # Whether to get the trashcan credentials instead.
+       attribute trash { boolean }?
+       & # Whether to include a list of targets using the credentials.
+       attribute targets { boolean }?
+       & attribute format { xsd:token { pattern = "key|rpm|deb|exe" } }?
+     }
+
 ## Command get_filters
 ##
 ## Get one or many filters.
@@ -5233,26 +5253,6 @@ get_info
        attribute filt_id { uuid }?
        & # Whether to include information about references to this information.
        attribute details { boolean }?
-     }
-
-## Command get_lsc_credentials
-##
-## Get one or many LSC credentials.
-
-get_lsc_credentials
- = element get_lsc_credentials
-     {
-       # ID of single LSC credential to get.
-       attribute lsc_credential_id { uuid }?
-       & # Filter term to use to filter query.
-       attribute filter { uuid }?
-       & # ID of filter to use to filter query.
-       attribute filt_id { uuid }?
-       & # Whether to get the trashcan LSC credentials instead.
-       attribute trash { boolean }?
-       & # Whether to include a list of targets using the credentials.
-       attribute targets { boolean }?
-       & attribute format { xsd:token { pattern = "key|rpm|deb|exe" } }?
      }
 
 ## Command get_notes
@@ -6002,6 +6002,49 @@ modify_config_nvt_selection_nvt
        attribute oid { oid }
      }
 
+## Command modify_credential
+##
+## Modify an existing credential.
+
+modify_credential
+ = element modify_credential
+     {
+       # ID of credential to modify.
+       attribute credential_id { uuid }
+       & modify_credential_comment?
+       & modify_credential_name?
+       & modify_credential_password?
+       & modify_credential_login?
+     }
+
+# A name for the credential.
+modify_credential_name
+ = element name
+     {
+       name
+     }
+
+# A comment on the credential.
+modify_credential_comment
+ = element comment
+     {
+       text
+     }
+
+# The user name of the credential.
+modify_credential_login
+ = element login
+     {
+       text
+     }
+
+# The password for the credential login.
+modify_credential_password
+ = element password
+     {
+       text
+     }
+
 ## Command modify_filter
 ##
 ## Modify an existing filter.
@@ -6076,49 +6119,6 @@ modify_group_comment
 # Comma separated list of user names.
 modify_group_users
  = element users
-     {
-       text
-     }
-
-## Command modify_lsc_credential
-##
-## Modify an existing LSC credential.
-
-modify_lsc_credential
- = element modify_lsc_credential
-     {
-       # ID of LSC credential to modify.
-       attribute lsc_credential_id { uuid }
-       & modify_lsc_credential_comment?
-       & modify_lsc_credential_name?
-       & modify_lsc_credential_password?
-       & modify_lsc_credential_login?
-     }
-
-# A name for the LSC credential.
-modify_lsc_credential_name
- = element name
-     {
-       name
-     }
-
-# A comment on the LSC credential.
-modify_lsc_credential_comment
- = element comment
-     {
-       text
-     }
-
-# The user name of the credential.
-modify_lsc_credential_login
- = element login
-     {
-       text
-     }
-
-# The password for the credential login.
-modify_lsc_credential_password
- = element password
      {
        text
      }
@@ -7310,9 +7310,9 @@ commands_response
            | create_agent_response
            | create_alert_response
            | create_config_response
+           | create_credential_response
            | create_filter_response
            | create_group_response
-           | create_lsc_credential_response
            | create_note_response
            | create_override_response
            | create_permission_response
@@ -7329,9 +7329,9 @@ commands_response
            | delete_agent_response
            | delete_alert_response
            | delete_config_response
+           | delete_credential_response
            | delete_filter_response
            | delete_group_response
-           | delete_lsc_credential_response
            | delete_note_response
            | delete_override_response
            | delete_permission_response
@@ -7356,9 +7356,9 @@ commands_response
            | get_alerts_response
            | get_assets_response
            | get_configs_response
+           | get_credentials_response
            | get_groups_response
            | get_info_response
-           | get_lsc_credentials_response
            | get_filters_response
            | get_notes_response
            | get_nvts_response
@@ -7387,9 +7387,9 @@ commands_response
            | modify_alert_response
            | modify_auth_response
            | modify_config_response
+           | modify_credential_response
            | modify_filter_response
            | modify_group_response
-           | modify_lsc_credential_response
            | modify_note_response
            | modify_override_response
            | modify_permission_response
@@ -7446,6 +7446,16 @@ create_alert_response
        & attribute id { uuid }
      }
 
+## Response to create_credential
+
+create_credential_response
+ = element create_credential_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
+     }
+
 ## Response to create_filter
 
 create_filter_response
@@ -7460,16 +7470,6 @@ create_filter_response
 
 create_group_response
  = element create_group_response
-     {
-       attribute status { status }
-       & attribute status_text { text }
-       & attribute id { uuid }
-     }
-
-## Response to create_lsc_credential
-
-create_lsc_credential_response
- = element create_lsc_credential_response
      {
        attribute status { status }
        & attribute status_text { text }
@@ -7653,6 +7653,15 @@ delete_alert_response
        & attribute status_text { text }
      }
 
+## Response to delete_credential
+
+delete_credential_response
+ = element delete_credential_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
 ## Response to delete_filter
 
 delete_filter_response
@@ -7666,15 +7675,6 @@ delete_filter_response
 
 delete_group_response
  = element delete_group_response
-     {
-       attribute status { status }
-       & attribute status_text { text }
-     }
-
-## Response to delete_lsc_credential
-
-delete_lsc_credential_response
- = element delete_lsc_credential_response
      {
        attribute status { status }
        & attribute status_text { text }
@@ -10061,6 +10061,337 @@ get_assets_response_asset_count_page
        integer
      }
 
+## Response to get_credentials
+
+get_credentials_response
+ = element get_credentials_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_credentials_response_credential*
+       & get_credentials_response_filters
+       & get_credentials_response_sort
+       & get_credentials_response_credentials
+       & get_credentials_response_credential_count
+     }
+
+get_credentials_response_credential
+ = element credential
+     {
+       attribute id { uuid }
+       & get_credentials_response_credential_owner
+       & get_credentials_response_credential_name
+       & get_credentials_response_credential_login
+       & get_credentials_response_credential_comment
+       & get_credentials_response_credential_creation_time
+       & get_credentials_response_credential_modification_time
+       & get_credentials_response_credential_writable
+       & get_credentials_response_credential_in_use
+       & get_credentials_response_credential_permissions
+       & get_credentials_response_credential_user_tags
+       & get_credentials_response_credential_type
+       & get_credentials_response_credential_targets
+       & ( get_credentials_response_credential_public_key
+           | get_credentials_response_credential_package )
+     }
+
+# Owner of the credential.
+get_credentials_response_credential_owner
+ = element owner
+     {
+       get_credentials_response_credential_owner_name
+     }
+
+# The name of the owner.
+get_credentials_response_credential_owner_name
+ = element name
+     {
+       name
+     }
+
+# The name of the credential.
+get_credentials_response_credential_name
+ = element name
+     {
+       name
+     }
+
+# The username of the credential.
+get_credentials_response_credential_login
+ = element login
+     {
+       name
+     }
+
+# The comment on the credential.
+get_credentials_response_credential_comment
+ = element comment
+     {
+       text
+     }
+
+# Date and time the credential was created.
+get_credentials_response_credential_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+# Date and time the credential was last modified.
+get_credentials_response_credential_modification_time
+ = element modification_time
+     {
+       iso_time
+     }
+
+# Whether this credential is writable.
+get_credentials_response_credential_writable
+ = element writable
+     {
+       boolean
+     }
+
+# Whether any targets are using the credential.
+get_credentials_response_credential_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+# Permissions that the current user has on the credential.
+get_credentials_response_credential_permissions
+ = element permissions
+     {
+       get_credentials_response_credential_permissions_permission*
+     }
+
+get_credentials_response_credential_permissions_permission
+ = element permission
+     {
+       get_credentials_response_credential_permissions_permission_name
+     }
+
+# The name of the permission.
+get_credentials_response_credential_permissions_permission_name
+ = element name
+     {
+       name
+     }
+
+# Info on tags attached to the credential.
+get_credentials_response_credential_user_tags
+ = element user_tags
+     {
+       get_credentials_response_credential_user_tags_count
+       & get_credentials_response_credential_user_tags_tag*
+     }
+
+# Number of attached tags.
+get_credentials_response_credential_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+# Short info on an individual tag (only if details were requested).
+get_credentials_response_credential_user_tags_tag
+ = element tag
+     {
+       # UUID of the tag.
+       attribute id { uuid }
+       & get_credentials_response_credential_user_tags_tag_name
+       & get_credentials_response_credential_user_tags_tag_value
+       & get_credentials_response_credential_user_tags_tag_comment
+     }
+
+# Name of the tag (usually namespace:predicate).
+get_credentials_response_credential_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+# Value of the tag.
+get_credentials_response_credential_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+# Comment for the tag.
+get_credentials_response_credential_user_tags_tag_comment
+ = element comment
+     {
+       text
+     }
+
+# The type of the credential.
+get_credentials_response_credential_type
+ = element type
+     {
+       xsd:token { pattern = "up|usk" }
+     }
+
+# The type of the credential written out.
+get_credentials_response_credential_full_type
+ = element full_type
+     {
+       text
+     }
+
+# All targets using this credential.
+get_credentials_response_credential_targets
+ = element targets
+     {
+       get_credentials_response_credential_targets_target*
+     }
+
+get_credentials_response_credential_targets_target
+ = element target
+     {
+       attribute id { uuid }
+       & get_credentials_response_credential_targets_target_name
+       & get_credentials_response_credential_targets_target_permissions?
+     }
+
+# The name of the target.
+get_credentials_response_credential_targets_target_name
+ = element name
+     {
+       name
+     }
+
+# Permissions the user has on the target.
+get_credentials_response_credential_targets_target_permissions
+ = element permissions
+     {
+       ""
+     }
+
+get_credentials_response_credential_public_key
+ = element public_key
+     {
+       text
+     }
+
+get_credentials_response_credential_package
+ = element package
+     {
+       base64
+       & attribute format { xsd:token { pattern = "rpm|deb|exe" } }
+     }
+
+get_credentials_response_filters
+ = element filters
+     {
+       # UUID of filter if any, else 0.
+       attribute id { uuid }
+       & get_credentials_response_filters_term
+       & get_credentials_response_filters_name?
+       & get_credentials_response_filters_keywords
+     }
+
+# Filter term.
+get_credentials_response_filters_term
+ = element term
+     {
+       text
+     }
+
+# Filter name, if applicable.
+get_credentials_response_filters_name
+ = element name
+     {
+       text
+     }
+
+# Filter broken down into keywords.
+get_credentials_response_filters_keywords
+ = element keywords
+     {
+       get_credentials_response_filters_keywords_keyword*
+     }
+
+get_credentials_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_credentials_response_filters_keywords_keyword_column
+       & get_credentials_response_filters_keywords_keyword_relation
+       & get_credentials_response_filters_keywords_keyword_value
+     }
+
+# Column prefix.
+get_credentials_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+# Relation operator.
+get_credentials_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+# The filter text.
+get_credentials_response_filters_keywords_keyword_value
+ = element value
+     {
+       text
+     }
+
+get_credentials_response_sort
+ = element sort
+     {
+       text
+       & get_credentials_response_sort_field
+     }
+
+get_credentials_response_sort_field
+ = element field
+     {
+       get_credentials_response_sort_field_order
+     }
+
+get_credentials_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_credentials_response_credentials
+ = element credentials
+     {
+       # First credential.
+       attribute start { integer }
+       & # Maximum number of credentials.
+       attribute max { integer }
+     }
+
+get_credentials_response_credential_count
+ = element credential_count
+     {
+       get_credentials_response_credential_count_filtered
+       & get_credentials_response_credential_count_page
+     }
+
+# Number of credentials after filtering.
+get_credentials_response_credential_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+# Number of credentials on current page.
+get_credentials_response_credential_count_page
+ = element page
+     {
+       integer
+     }
+
 ## Response to get_filters
 
 get_filters_response
@@ -11331,330 +11662,6 @@ get_info_response_info_count_page
 get_info_response_details
  = element details    # type boolean
      {
-     }
-
-## Response to get_lsc_credentials
-
-get_lsc_credentials_response
- = element get_lsc_credentials_response
-     {
-       attribute status { status }
-       & attribute status_text { text }
-       & get_lsc_credentials_response_lsc_credential*
-       & get_lsc_credentials_response_filters
-       & get_lsc_credentials_response_sort
-       & get_lsc_credentials_response_lsc_credentials
-       & get_lsc_credentials_response_lsc_credential_count
-     }
-
-get_lsc_credentials_response_lsc_credential
- = element lsc_credential
-     {
-       attribute id { uuid }
-       & get_lsc_credentials_response_lsc_credential_owner
-       & get_lsc_credentials_response_lsc_credential_name
-       & get_lsc_credentials_response_lsc_credential_login
-       & get_lsc_credentials_response_lsc_credential_comment
-       & get_lsc_credentials_response_lsc_credential_creation_time
-       & get_lsc_credentials_response_lsc_credential_modification_time
-       & get_lsc_credentials_response_lsc_credential_writable
-       & get_lsc_credentials_response_lsc_credential_in_use
-       & get_lsc_credentials_response_lsc_credential_permissions
-       & get_lsc_credentials_response_lsc_credential_user_tags
-       & get_lsc_credentials_response_lsc_credential_type
-       & get_lsc_credentials_response_lsc_credential_targets
-       & ( get_lsc_credentials_response_lsc_credential_public_key
-           | get_lsc_credentials_response_lsc_credential_package )
-     }
-
-# Owner of the LSC credential.
-get_lsc_credentials_response_lsc_credential_owner
- = element owner
-     {
-       get_lsc_credentials_response_lsc_credential_owner_name
-     }
-
-# The name of the owner.
-get_lsc_credentials_response_lsc_credential_owner_name
- = element name
-     {
-       name
-     }
-
-# The name of the LSC credential.
-get_lsc_credentials_response_lsc_credential_name
- = element name
-     {
-       name
-     }
-
-# The username of the LSC credential.
-get_lsc_credentials_response_lsc_credential_login
- = element login
-     {
-       name
-     }
-
-# The comment on the LSC credential.
-get_lsc_credentials_response_lsc_credential_comment
- = element comment
-     {
-       text
-     }
-
-# Date and time the info was created.
-get_lsc_credentials_response_lsc_credential_creation_time
- = element creation_time
-     {
-       iso_time
-     }
-
-# Date and time the info was last modified.
-get_lsc_credentials_response_lsc_credential_modification_time
- = element modification_time
-     {
-       iso_time
-     }
-
-# Whether this credential is writable.
-get_lsc_credentials_response_lsc_credential_writable
- = element writable
-     {
-       boolean
-     }
-
-# Whether any targets are using the LSC credential.
-get_lsc_credentials_response_lsc_credential_in_use
- = element in_use
-     {
-       boolean
-     }
-
-# Permissions that the current user has on the LSC credential.
-get_lsc_credentials_response_lsc_credential_permissions
- = element permissions
-     {
-       get_lsc_credentials_response_lsc_credential_permissions_permission*
-     }
-
-get_lsc_credentials_response_lsc_credential_permissions_permission
- = element permission
-     {
-       get_lsc_credentials_response_lsc_credential_permissions_permission_name
-     }
-
-# The name of the permission.
-get_lsc_credentials_response_lsc_credential_permissions_permission_name
- = element name
-     {
-       name
-     }
-
-# Info on tags attached to the credential.
-get_lsc_credentials_response_lsc_credential_user_tags
- = element user_tags
-     {
-       get_lsc_credentials_response_lsc_credential_user_tags_count
-       & get_lsc_credentials_response_lsc_credential_user_tags_tag*
-     }
-
-# Number of attached tags.
-get_lsc_credentials_response_lsc_credential_user_tags_count
- = element count
-     {
-       integer
-     }
-
-# Short info on an individual tag (only if details were requested).
-get_lsc_credentials_response_lsc_credential_user_tags_tag
- = element tag
-     {
-       # UUID of the tag.
-       attribute id { uuid }
-       & get_lsc_credentials_response_lsc_credential_user_tags_tag_name
-       & get_lsc_credentials_response_lsc_credential_user_tags_tag_value
-       & get_lsc_credentials_response_lsc_credential_user_tags_tag_comment
-     }
-
-# Name of the tag (usually namespace:predicate).
-get_lsc_credentials_response_lsc_credential_user_tags_tag_name
- = element name
-     {
-       text
-     }
-
-# Value of the tag.
-get_lsc_credentials_response_lsc_credential_user_tags_tag_value
- = element value
-     {
-       text
-     }
-
-# Comment for the tag.
-get_lsc_credentials_response_lsc_credential_user_tags_tag_comment
- = element comment
-     {
-       text
-     }
-
-# The type of the LSC credential.
-get_lsc_credentials_response_lsc_credential_type
- = element type
-     {
-       xsd:token { pattern = "gen|pass" }
-     }
-
-# All targets using this LSC credential.
-get_lsc_credentials_response_lsc_credential_targets
- = element targets
-     {
-       get_lsc_credentials_response_lsc_credential_targets_target*
-     }
-
-get_lsc_credentials_response_lsc_credential_targets_target
- = element target
-     {
-       attribute id { uuid }
-       & get_lsc_credentials_response_lsc_credential_targets_target_name
-       & get_lsc_credentials_response_lsc_credential_targets_target_permissions?
-     }
-
-# The name of the target.
-get_lsc_credentials_response_lsc_credential_targets_target_name
- = element name
-     {
-       name
-     }
-
-# Permissions the user has on the target.
-get_lsc_credentials_response_lsc_credential_targets_target_permissions
- = element permissions
-     {
-       ""
-     }
-
-get_lsc_credentials_response_lsc_credential_public_key
- = element public_key
-     {
-       text
-     }
-
-get_lsc_credentials_response_lsc_credential_package
- = element package
-     {
-       base64
-       & attribute format { xsd:token { pattern = "rpm|deb|exe" } }
-     }
-
-get_lsc_credentials_response_filters
- = element filters
-     {
-       # UUID of filter if any, else 0.
-       attribute id { uuid }
-       & get_lsc_credentials_response_filters_term
-       & get_lsc_credentials_response_filters_name?
-       & get_lsc_credentials_response_filters_keywords
-     }
-
-# Filter term.
-get_lsc_credentials_response_filters_term
- = element term
-     {
-       text
-     }
-
-# Filter name, if applicable.
-get_lsc_credentials_response_filters_name
- = element name
-     {
-       text
-     }
-
-# Filter broken down into keywords.
-get_lsc_credentials_response_filters_keywords
- = element keywords
-     {
-       get_lsc_credentials_response_filters_keywords_keyword*
-     }
-
-get_lsc_credentials_response_filters_keywords_keyword
- = element keyword
-     {
-       get_lsc_credentials_response_filters_keywords_keyword_column
-       & get_lsc_credentials_response_filters_keywords_keyword_relation
-       & get_lsc_credentials_response_filters_keywords_keyword_value
-     }
-
-# Column prefix.
-get_lsc_credentials_response_filters_keywords_keyword_column
- = element column
-     {
-       text
-     }
-
-# Relation operator.
-get_lsc_credentials_response_filters_keywords_keyword_relation
- = element relation
-     {
-       
-        ERROR
-      
-     }
-
-# The filter text.
-get_lsc_credentials_response_filters_keywords_keyword_value
- = element value
-     {
-       text
-     }
-
-get_lsc_credentials_response_sort
- = element sort
-     {
-       text
-       & get_lsc_credentials_response_sort_field
-     }
-
-get_lsc_credentials_response_sort_field
- = element field
-     {
-       get_lsc_credentials_response_sort_field_order
-     }
-
-get_lsc_credentials_response_sort_field_order
- = element order
-     {
-       xsd:token { pattern = "ascending|descending" }
-     }
-
-get_lsc_credentials_response_lsc_credentials
- = element lsc_credentials
-     {
-       # First LSC credential.
-       attribute start { integer }
-       & # Maximum number of LSC credentials.
-       attribute max { integer }
-     }
-
-get_lsc_credentials_response_lsc_credential_count
- = element lsc_credential_count
-     {
-       get_lsc_credentials_response_lsc_credential_count_filtered
-       & get_lsc_credentials_response_lsc_credential_count_page
-     }
-
-# Number of LSC credentials after filtering.
-get_lsc_credentials_response_lsc_credential_count_filtered
- = element filtered
-     {
-       integer
-     }
-
-# Number of LSC credentials on current page.
-get_lsc_credentials_response_lsc_credential_count_page
- = element page
-     {
-       integer
      }
 
 ## Response to get_notes
@@ -17573,6 +17580,15 @@ modify_config_response
        & attribute status_text { text }
      }
 
+## Response to modify_credential
+
+modify_credential_response
+ = element modify_credential_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
 ## Response to modify_filter
 
 modify_filter_response
@@ -17586,15 +17602,6 @@ modify_filter_response
 
 modify_group_response
  = element modify_group_response
-     {
-       attribute status { status }
-       & attribute status_text { text }
-     }
-
-## Response to modify_lsc_credential
-
-modify_lsc_credential_response
- = element modify_lsc_credential_response
      {
        attribute status { status }
        & attribute status_text { text }

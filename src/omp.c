@@ -1001,6 +1001,40 @@ create_alert_data_reset (create_alert_data_t *data)
 }
 
 /**
+ * @brief Command data for the create_credential command.
+ */
+typedef struct
+{
+  char *comment;           ///< Comment.
+  char *copy;              ///< UUID of resource to copy.
+  int key;                 ///< Whether the command included a key element.
+  char *key_phrase;        ///< Passphrase for key.
+  char *key_private;       ///< Private key from key.
+  char *login;             ///< Login name.
+  char *name;              ///< Credential name.
+  char *password;          ///< Password associated with login name.
+} create_credential_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+create_credential_data_reset (create_credential_data_t *data)
+{
+  free (data->comment);
+  free (data->copy);
+  free (data->key_phrase);
+  free (data->key_private);
+  free (data->login);
+  free (data->name);
+  free (data->password);
+
+  memset (data, 0, sizeof (create_credential_data_t));
+}
+
+/**
  * @brief Command data for the create_filter command.
  */
 typedef struct
@@ -1056,40 +1090,6 @@ create_group_data_reset (create_group_data_t *data)
   free (data->users);
 
   memset (data, 0, sizeof (create_group_data_t));
-}
-
-/**
- * @brief Command data for the create_lsc_credential command.
- */
-typedef struct
-{
-  char *comment;           ///< Comment.
-  char *copy;              ///< UUID of resource to copy.
-  int key;                 ///< Whether the command included a key element.
-  char *key_phrase;        ///< Passphrase for key.
-  char *key_private;       ///< Private key from key.
-  char *login;             ///< Login name.
-  char *name;              ///< LSC credential name.
-  char *password;          ///< Password associated with login name.
-} create_lsc_credential_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-create_lsc_credential_data_reset (create_lsc_credential_data_t *data)
-{
-  free (data->comment);
-  free (data->copy);
-  free (data->key_phrase);
-  free (data->key_private);
-  free (data->login);
-  free (data->name);
-  free (data->password);
-
-  memset (data, 0, sizeof (create_lsc_credential_data_t));
 }
 
 /**
@@ -1895,6 +1895,28 @@ delete_alert_data_reset (delete_alert_data_t *data)
 }
 
 /**
+ * @brief Command data for the delete_credential command.
+ */
+typedef struct
+{
+  char *credential_id;   ///< ID of Credential to delete.
+  int ultimate;      ///< Boolean.  Whether to remove entirely or to trashcan.
+} delete_credential_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+delete_credential_data_reset (delete_credential_data_t *data)
+{
+  free (data->credential_id);
+
+  memset (data, 0, sizeof (delete_credential_data_t));
+}
+
+/**
  * @brief Command data for the delete_filter command.
  */
 typedef struct
@@ -1936,28 +1958,6 @@ delete_group_data_reset (delete_group_data_t *data)
   free (data->group_id);
 
   memset (data, 0, sizeof (delete_group_data_t));
-}
-
-/**
- * @brief Command data for the delete_lsc_credential command.
- */
-typedef struct
-{
-  char *lsc_credential_id;   ///< ID of LSC credential to delete.
-  int ultimate;      ///< Boolean.  Whether to remove entirely or to trashcan.
-} delete_lsc_credential_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-delete_lsc_credential_data_reset (delete_lsc_credential_data_t *data)
-{
-  free (data->lsc_credential_id);
-
-  memset (data, 0, sizeof (delete_lsc_credential_data_t));
 }
 
 /**
@@ -2497,6 +2497,28 @@ get_alerts_data_reset (get_alerts_data_t *data)
 }
 
 /**
+ * @brief Command data for the get_credentials command.
+ */
+typedef struct
+{
+  char *format;      ///< Format requested: "key", "deb", ....
+  get_data_t get;    ///< Get Args.
+  int targets;       ///< Boolean.  Whether to return targets using credential.
+} get_credentials_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+get_credentials_data_reset (get_credentials_data_t *data)
+{
+  get_data_reset (&data->get);
+  memset (data, 0, sizeof (get_credentials_data_t));
+}
+
+/**
  * @brief Command data for the get_filters command.
  */
 typedef struct
@@ -2561,28 +2583,6 @@ get_info_data_reset (get_info_data_t *data)
   get_data_reset (&data->get);
 
   memset (data, 0, sizeof (get_info_data_t));
-}
-
-/**
- * @brief Command data for the get_lsc_credentials command.
- */
-typedef struct
-{
-  char *format;      ///< Format requested: "key", "deb", ....
-  get_data_t get;    ///< Get Args.
-  int targets;       ///< Boolean.  Whether to return targets using credential.
-} get_lsc_credentials_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-get_lsc_credentials_data_reset (get_lsc_credentials_data_t *data)
-{
-  get_data_reset (&data->get);
-  memset (data, 0, sizeof (get_lsc_credentials_data_t));
 }
 
 /**
@@ -3327,6 +3327,35 @@ modify_config_data_reset (modify_config_data_t *data)
 }
 
 /**
+ * @brief Command data for the modify_credential command.
+ */
+typedef struct
+{
+  char *credential_id;        ///< ID of credential to modify.
+  char *name;                 ///< Name.
+  char *comment;              ///< Comment.
+  char *login;                ///< Login.
+  char *password;             ///< Password.
+} modify_credential_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+modify_credential_data_reset (modify_credential_data_t *data)
+{
+  free (data->credential_id);
+  free (data->name);
+  free (data->comment);
+  free (data->login);
+  free (data->password);
+
+  memset (data, 0, sizeof (modify_credential_data_t));
+}
+
+/**
  * @brief Command data for the modify_filter command.
  */
 typedef struct
@@ -3380,35 +3409,6 @@ modify_group_data_reset (modify_group_data_t *data)
   free (data->users);
 
   memset (data, 0, sizeof (modify_group_data_t));
-}
-
-/**
- * @brief Command data for the modify_lsc_credential command.
- */
-typedef struct
-{
-  char *lsc_credential_id;    ///< ID of credential to modify.
-  char *name;                 ///< Name.
-  char *comment;              ///< Comment.
-  char *login;                ///< Login.
-  char *password;             ///< Password.
-} modify_lsc_credential_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-modify_lsc_credential_data_reset (modify_lsc_credential_data_t *data)
-{
-  free (data->lsc_credential_id);
-  free (data->name);
-  free (data->comment);
-  free (data->login);
-  free (data->password);
-
-  memset (data, 0, sizeof (modify_lsc_credential_data_t));
 }
 
 /**
@@ -4208,9 +4208,9 @@ typedef union
   create_asset_data_t create_asset;                   ///< create_asset
   create_config_data_t create_config;                 ///< create_config
   create_alert_data_t create_alert;                   ///< create_alert
+  create_credential_data_t create_credential;         ///< create_credential
   create_filter_data_t create_filter;                 ///< create_filter
   create_group_data_t create_group;                   ///< create_group
-  create_lsc_credential_data_t create_lsc_credential; ///< create_lsc_credential
   create_note_data_t create_note;                     ///< create_note
   create_override_data_t create_override;             ///< create_override
   create_permission_data_t create_permission;         ///< create_permission
@@ -4228,11 +4228,11 @@ typedef union
   create_user_data_t create_user;                     ///< create_user
   delete_agent_data_t delete_agent;                   ///< delete_agent
   delete_asset_data_t delete_asset;                   ///< delete_asset
+  delete_credential_data_t delete_credential;         ///< delete_credential
   delete_config_data_t delete_config;                 ///< delete_config
   delete_alert_data_t delete_alert;                   ///< delete_alert
   delete_filter_data_t delete_filter;                 ///< delete_filter
   delete_group_data_t delete_group;                   ///< delete_group
-  delete_lsc_credential_data_t delete_lsc_credential; ///< delete_lsc_credential
   delete_note_data_t delete_note;                     ///< delete_note
   delete_override_data_t delete_override;             ///< delete_override
   delete_permission_data_t delete_permission;         ///< delete_permission
@@ -4253,10 +4253,10 @@ typedef union
   get_configs_data_t get_configs;                     ///< get_configs
   get_alerts_data_t get_alerts;                       ///< get_alerts
   get_assets_data_t get_assets;                       ///< get_assets
+  get_credentials_data_t get_credentials;             ///< get_credentials
   get_filters_data_t get_filters;                     ///< get_filters
   get_groups_data_t get_groups;                       ///< get_groups
   get_info_data_t get_info;                           ///< get_info
-  get_lsc_credentials_data_t get_lsc_credentials;     ///< get_lsc_credentials
   get_notes_data_t get_notes;                         ///< get_notes
   get_nvts_data_t get_nvts;                           ///< get_nvts
   get_nvt_families_data_t get_nvt_families;           ///< get_nvt_families
@@ -4283,9 +4283,9 @@ typedef union
   modify_asset_data_t modify_asset;                   ///< modify_asset
   modify_auth_data_t modify_auth;                     ///< modify_auth
   modify_config_data_t modify_config;                 ///< modify_config
+  modify_credential_data_t modify_credential;         ///< modify_credential
   modify_filter_data_t modify_filter;                 ///< modify_filter
   modify_group_data_t modify_group;                   ///< modify_group
-  modify_lsc_credential_data_t modify_lsc_credential; ///< modify_lsc_credential
   modify_permission_data_t modify_permission;         ///< modify_permission
   modify_port_list_data_t modify_port_list;           ///< modify_port_list
   modify_report_data_t modify_report;                 ///< modify_report
@@ -4353,6 +4353,12 @@ create_alert_data_t *create_alert_data
  = (create_alert_data_t*) &(command_data.create_alert);
 
 /**
+ * @brief Parser callback data for CREATE_CREDENTIAL.
+ */
+create_credential_data_t *create_credential_data
+ = (create_credential_data_t*) &(command_data.create_credential);
+
+/**
  * @brief Parser callback data for CREATE_FILTER.
  */
 create_filter_data_t *create_filter_data
@@ -4363,12 +4369,6 @@ create_filter_data_t *create_filter_data
  */
 create_group_data_t *create_group_data
  = (create_group_data_t*) &(command_data.create_group);
-
-/**
- * @brief Parser callback data for CREATE_LSC_CREDENTIAL.
- */
-create_lsc_credential_data_t *create_lsc_credential_data
- = (create_lsc_credential_data_t*) &(command_data.create_lsc_credential);
 
 /**
  * @brief Parser callback data for CREATE_NOTE.
@@ -4485,6 +4485,12 @@ delete_alert_data_t *delete_alert_data
  = (delete_alert_data_t*) &(command_data.delete_alert);
 
 /**
+ * @brief Parser callback data for DELETE_CREDENTIAL.
+ */
+delete_credential_data_t *delete_credential_data
+ = (delete_credential_data_t*) &(command_data.delete_credential);
+
+/**
  * @brief Parser callback data for DELETE_FILTER.
  */
 delete_filter_data_t *delete_filter_data
@@ -4495,12 +4501,6 @@ delete_filter_data_t *delete_filter_data
  */
 delete_group_data_t *delete_group_data
  = (delete_group_data_t*) &(command_data.delete_group);
-
-/**
- * @brief Parser callback data for DELETE_LSC_CREDENTIAL.
- */
-delete_lsc_credential_data_t *delete_lsc_credential_data
- = (delete_lsc_credential_data_t*) &(command_data.delete_lsc_credential);
 
 /**
  * @brief Parser callback data for DELETE_NOTE.
@@ -4623,6 +4623,12 @@ get_assets_data_t *get_assets_data
  = &(command_data.get_assets);
 
 /**
+ * @brief Parser callback data for GET_CREDENTIALS.
+ */
+get_credentials_data_t *get_credentials_data
+ = &(command_data.get_credentials);
+
+/**
  * @brief Parser callback data for GET_FILTERS.
  */
 get_filters_data_t *get_filters_data
@@ -4639,12 +4645,6 @@ get_groups_data_t *get_groups_data
  */
 get_info_data_t *get_info_data
  = &(command_data.get_info);
-
-/**
- * @brief Parser callback data for GET_LSC_CREDENTIALS.
- */
-get_lsc_credentials_data_t *get_lsc_credentials_data
- = &(command_data.get_lsc_credentials);
 
 /**
  * @brief Parser callback data for GET_NOTES.
@@ -4809,6 +4809,12 @@ modify_auth_data_t *modify_auth_data
  = &(command_data.modify_auth);
 
 /**
+ * @brief Parser callback data for MODIFY_CREDENTIAL.
+ */
+modify_credential_data_t *modify_credential_data
+ = &(command_data.modify_credential);
+
+/**
  * @brief Parser callback data for MODIFY_FILTER.
  */
 modify_filter_data_t *modify_filter_data
@@ -4819,12 +4825,6 @@ modify_filter_data_t *modify_filter_data
  */
 modify_group_data_t *modify_group_data
  = &(command_data.modify_group);
-
-/**
- * @brief Parser callback data for MODIFY_LSC_CREDENTIAL.
- */
-modify_lsc_credential_data_t *modify_lsc_credential_data
- = &(command_data.modify_lsc_credential);
 
 /**
  * @brief Parser callback data for MODIFY_NOTE.
@@ -5070,6 +5070,15 @@ typedef enum
   CLIENT_CREATE_ASSET_ASSET_COMMENT,
   CLIENT_CREATE_ASSET_ASSET_NAME,
   CLIENT_CREATE_ASSET_ASSET_TYPE,
+  CLIENT_CREATE_CREDENTIAL,
+  CLIENT_CREATE_CREDENTIAL_COMMENT,
+  CLIENT_CREATE_CREDENTIAL_COPY,
+  CLIENT_CREATE_CREDENTIAL_KEY,
+  CLIENT_CREATE_CREDENTIAL_KEY_PHRASE,
+  CLIENT_CREATE_CREDENTIAL_KEY_PRIVATE,
+  CLIENT_CREATE_CREDENTIAL_LOGIN,
+  CLIENT_CREATE_CREDENTIAL_NAME,
+  CLIENT_CREATE_CREDENTIAL_PASSWORD,
   CLIENT_CREATE_CONFIG,
   CLIENT_CREATE_CONFIG_COMMENT,
   CLIENT_CREATE_CONFIG_COPY,
@@ -5107,15 +5116,6 @@ typedef enum
   CLIENT_CREATE_GROUP_COPY,
   CLIENT_CREATE_GROUP_NAME,
   CLIENT_CREATE_GROUP_USERS,
-  CLIENT_CREATE_LSC_CREDENTIAL,
-  CLIENT_CREATE_LSC_CREDENTIAL_COMMENT,
-  CLIENT_CREATE_LSC_CREDENTIAL_COPY,
-  CLIENT_CREATE_LSC_CREDENTIAL_KEY,
-  CLIENT_CREATE_LSC_CREDENTIAL_KEY_PHRASE,
-  CLIENT_CREATE_LSC_CREDENTIAL_KEY_PRIVATE,
-  CLIENT_CREATE_LSC_CREDENTIAL_LOGIN,
-  CLIENT_CREATE_LSC_CREDENTIAL_NAME,
-  CLIENT_CREATE_LSC_CREDENTIAL_PASSWORD,
   CLIENT_CREATE_NOTE,
   CLIENT_CREATE_NOTE_ACTIVE,
   CLIENT_CREATE_NOTE_COPY,
@@ -5359,9 +5359,9 @@ typedef enum
   CLIENT_DELETE_ALERT,
   CLIENT_DELETE_ASSET,
   CLIENT_DELETE_CONFIG,
+  CLIENT_DELETE_CREDENTIAL,
   CLIENT_DELETE_FILTER,
   CLIENT_DELETE_GROUP,
-  CLIENT_DELETE_LSC_CREDENTIAL,
   CLIENT_DELETE_NOTE,
   CLIENT_DELETE_OVERRIDE,
   CLIENT_DELETE_PERMISSION,
@@ -5389,10 +5389,10 @@ typedef enum
   CLIENT_GET_ALERTS,
   CLIENT_GET_ASSETS,
   CLIENT_GET_CONFIGS,
+  CLIENT_GET_CREDENTIALS,
   CLIENT_GET_FILTERS,
   CLIENT_GET_GROUPS,
   CLIENT_GET_INFO,
-  CLIENT_GET_LSC_CREDENTIALS,
   CLIENT_GET_NOTES,
   CLIENT_GET_NVTS,
   CLIENT_GET_NVT_FAMILIES,
@@ -5454,6 +5454,11 @@ typedef enum
   CLIENT_MODIFY_CONFIG_PREFERENCE_NAME,
   CLIENT_MODIFY_CONFIG_PREFERENCE_NVT,
   CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE,
+  CLIENT_MODIFY_CREDENTIAL,
+  CLIENT_MODIFY_CREDENTIAL_COMMENT,
+  CLIENT_MODIFY_CREDENTIAL_LOGIN,
+  CLIENT_MODIFY_CREDENTIAL_NAME,
+  CLIENT_MODIFY_CREDENTIAL_PASSWORD,
   CLIENT_MODIFY_FILTER,
   CLIENT_MODIFY_FILTER_COMMENT,
   CLIENT_MODIFY_FILTER_NAME,
@@ -5463,11 +5468,6 @@ typedef enum
   CLIENT_MODIFY_GROUP_COMMENT,
   CLIENT_MODIFY_GROUP_NAME,
   CLIENT_MODIFY_GROUP_USERS,
-  CLIENT_MODIFY_LSC_CREDENTIAL,
-  CLIENT_MODIFY_LSC_CREDENTIAL_COMMENT,
-  CLIENT_MODIFY_LSC_CREDENTIAL_LOGIN,
-  CLIENT_MODIFY_LSC_CREDENTIAL_NAME,
-  CLIENT_MODIFY_LSC_CREDENTIAL_PASSWORD,
   CLIENT_MODIFY_NOTE,
   CLIENT_MODIFY_NOTE_ACTIVE,
   CLIENT_MODIFY_NOTE_HOSTS,
@@ -6648,6 +6648,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
             set_client_state (CLIENT_CREATE_ALERT);
           }
+        else if (strcasecmp ("CREATE_CREDENTIAL", element_name) == 0)
+          {
+            openvas_append_string (&create_credential_data->comment, "");
+            openvas_append_string (&create_credential_data->login, "");
+            openvas_append_string (&create_credential_data->name, "");
+            set_client_state (CLIENT_CREATE_CREDENTIAL);
+          }
         else if (strcasecmp ("CREATE_FILTER", element_name) == 0)
           {
             openvas_append_string (&create_filter_data->comment, "");
@@ -6663,13 +6670,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             openvas_append_string (&create_role_data->users, "");
             set_client_state (CLIENT_CREATE_ROLE);
-          }
-        else if (strcasecmp ("CREATE_LSC_CREDENTIAL", element_name) == 0)
-          {
-            openvas_append_string (&create_lsc_credential_data->comment, "");
-            openvas_append_string (&create_lsc_credential_data->login, "");
-            openvas_append_string (&create_lsc_credential_data->name, "");
-            set_client_state (CLIENT_CREATE_LSC_CREDENTIAL);
           }
         else if (strcasecmp ("CREATE_NOTE", element_name) == 0)
           set_client_state (CLIENT_CREATE_NOTE);
@@ -6767,6 +6767,20 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               delete_alert_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_ALERT);
           }
+        else if (strcasecmp ("DELETE_CREDENTIAL", element_name) == 0)
+          {
+            const gchar* attribute;
+            append_attribute (attribute_names, attribute_values,
+                              "credential_id",
+                              &delete_credential_data->credential_id);
+            if (find_attribute (attribute_names, attribute_values,
+                                "ultimate", &attribute))
+              delete_credential_data->ultimate
+               = strcmp (attribute, "0");
+            else
+              delete_credential_data->ultimate = 0;
+            set_client_state (CLIENT_DELETE_CREDENTIAL);
+          }
         else if (strcasecmp ("DELETE_FILTER", element_name) == 0)
           {
             const gchar* attribute;
@@ -6790,20 +6804,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             else
               delete_group_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_GROUP);
-          }
-        else if (strcasecmp ("DELETE_LSC_CREDENTIAL", element_name) == 0)
-          {
-            const gchar* attribute;
-            append_attribute (attribute_names, attribute_values,
-                              "lsc_credential_id",
-                              &delete_lsc_credential_data->lsc_credential_id);
-            if (find_attribute (attribute_names, attribute_values,
-                                "ultimate", &attribute))
-              delete_lsc_credential_data->ultimate
-               = strcmp (attribute, "0");
-            else
-              delete_lsc_credential_data->ultimate = 0;
-            set_client_state (CLIENT_DELETE_LSC_CREDENTIAL);
           }
         else if (strcasecmp ("DELETE_NOTE", element_name) == 0)
           {
@@ -7111,6 +7111,23 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_assets_data->type = g_ascii_strdown (typebuf, -1);
             set_client_state (CLIENT_GET_ASSETS);
           }
+        else if (strcasecmp ("GET_CREDENTIALS", element_name) == 0)
+          {
+            const gchar* attribute;
+
+            get_data_parse_attributes (&get_credentials_data->get,
+                                       "credential",
+                                       attribute_names,
+                                       attribute_values);
+            if (find_attribute (attribute_names, attribute_values,
+                                "targets", &attribute))
+              get_credentials_data->targets = strcmp (attribute, "0");
+            else
+              get_credentials_data->targets = 0;
+            append_attribute (attribute_names, attribute_values, "format",
+                              &get_credentials_data->format);
+            set_client_state (CLIENT_GET_CREDENTIALS);
+          }
         else if (strcasecmp ("GET_FILTERS", element_name) == 0)
           {
             const gchar* attribute;
@@ -7130,23 +7147,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                                        attribute_names,
                                        attribute_values);
             set_client_state (CLIENT_GET_GROUPS);
-          }
-        else if (strcasecmp ("GET_LSC_CREDENTIALS", element_name) == 0)
-          {
-            const gchar* attribute;
-
-            get_data_parse_attributes (&get_lsc_credentials_data->get,
-                                       "lsc_credential",
-                                       attribute_names,
-                                       attribute_values);
-            if (find_attribute (attribute_names, attribute_values,
-                                "targets", &attribute))
-              get_lsc_credentials_data->targets = strcmp (attribute, "0");
-            else
-              get_lsc_credentials_data->targets = 0;
-            append_attribute (attribute_names, attribute_values, "format",
-                              &get_lsc_credentials_data->format);
-            set_client_state (CLIENT_GET_LSC_CREDENTIALS);
           }
         else if (strcasecmp ("GET_NOTES", element_name) == 0)
           {
@@ -7749,6 +7749,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &modify_config_data->config_id);
             set_client_state (CLIENT_MODIFY_CONFIG);
           }
+        else if (strcasecmp ("MODIFY_CREDENTIAL", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values,
+                              "credential_id",
+                              &modify_credential_data->credential_id);
+            set_client_state (CLIENT_MODIFY_CREDENTIAL);
+          }
         else if (strcasecmp ("MODIFY_FILTER", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "filter_id",
@@ -7767,13 +7774,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               "port_list_id",
                               &modify_port_list_data->port_list_id);
             set_client_state (CLIENT_MODIFY_PORT_LIST);
-          }
-        else if (strcasecmp ("MODIFY_LSC_CREDENTIAL", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values,
-                              "lsc_credential_id",
-                              &modify_lsc_credential_data->lsc_credential_id);
-            set_client_state (CLIENT_MODIFY_LSC_CREDENTIAL);
           }
         else if (strcasecmp ("MODIFY_NOTE", element_name) == 0)
           {
@@ -8247,6 +8247,25 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE);
         ELSE_ERROR ("modify_config");
 
+      case CLIENT_MODIFY_CREDENTIAL:
+        if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_CREDENTIAL_NAME);
+        else if (strcasecmp ("COMMENT", element_name) == 0)
+          {
+            openvas_free_string_var (&modify_credential_data->comment);
+            openvas_append_string (&modify_credential_data->comment, "");
+            set_client_state (CLIENT_MODIFY_CREDENTIAL_COMMENT);
+          }
+        else if (strcasecmp ("LOGIN", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_CREDENTIAL_LOGIN);
+        else if (strcasecmp ("PASSWORD", element_name) == 0)
+          {
+            openvas_free_string_var (&modify_credential_data->password);
+            openvas_append_string (&modify_credential_data->password, "");
+            set_client_state (CLIENT_MODIFY_CREDENTIAL_PASSWORD);
+          }
+        ELSE_ERROR ("modify_credential");
+
       case CLIENT_MODIFY_FILTER:
         if (strcasecmp ("COMMENT", element_name) == 0)
           {
@@ -8327,25 +8346,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state (CLIENT_MODIFY_PORT_LIST_COMMENT);
           }
         ELSE_ERROR ("modify_port_list");
-
-      case CLIENT_MODIFY_LSC_CREDENTIAL:
-        if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_LSC_CREDENTIAL_NAME);
-        else if (strcasecmp ("COMMENT", element_name) == 0)
-          {
-            openvas_free_string_var (&modify_lsc_credential_data->comment);
-            openvas_append_string (&modify_lsc_credential_data->comment, "");
-            set_client_state (CLIENT_MODIFY_LSC_CREDENTIAL_COMMENT);
-          }
-        else if (strcasecmp ("LOGIN", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_LSC_CREDENTIAL_LOGIN);
-        else if (strcasecmp ("PASSWORD", element_name) == 0)
-          {
-            openvas_free_string_var (&modify_lsc_credential_data->password);
-            openvas_append_string (&modify_lsc_credential_data->password, "");
-            set_client_state (CLIENT_MODIFY_LSC_CREDENTIAL_PASSWORD);
-          }
-        ELSE_ERROR ("modify_lsc_credential");
 
       case CLIENT_MODIFY_REPORT:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -9028,6 +9028,37 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_ALERT_METHOD_DATA_NAME);
         ELSE_ERROR ("create_alert");
 
+      case CLIENT_CREATE_CREDENTIAL:
+        if (strcasecmp ("COMMENT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_CREDENTIAL_COMMENT);
+        else if (strcasecmp ("KEY", element_name) == 0)
+          {
+            create_credential_data->key = 1;
+            set_client_state (CLIENT_CREATE_CREDENTIAL_KEY);
+          }
+        else if (strcasecmp ("LOGIN", element_name) == 0)
+          set_client_state (CLIENT_CREATE_CREDENTIAL_LOGIN);
+        else if (strcasecmp ("COPY", element_name) == 0)
+          set_client_state (CLIENT_CREATE_CREDENTIAL_COPY);
+        else if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_CREATE_CREDENTIAL_NAME);
+        else if (strcasecmp ("PASSWORD", element_name) == 0)
+          {
+            openvas_append_string (&create_credential_data->password, "");
+            set_client_state (CLIENT_CREATE_CREDENTIAL_PASSWORD);
+          }
+        ELSE_ERROR ("create_credential");
+
+      case CLIENT_CREATE_CREDENTIAL_KEY:
+        if (strcasecmp ("PHRASE", element_name) == 0)
+          {
+            openvas_append_string (&create_credential_data->key_phrase, "");
+            set_client_state (CLIENT_CREATE_CREDENTIAL_KEY_PHRASE);
+          }
+        else if (strcasecmp ("PRIVATE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_CREDENTIAL_KEY_PRIVATE);
+        ELSE_ERROR ("create_credential");
+
       case CLIENT_CREATE_FILTER:
         if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_FILTER_COMMENT);
@@ -9062,37 +9093,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("USERS", element_name) == 0)
           set_client_state (CLIENT_CREATE_GROUP_USERS);
         ELSE_ERROR ("create_group");
-
-      case CLIENT_CREATE_LSC_CREDENTIAL:
-        if (strcasecmp ("COMMENT", element_name) == 0)
-          set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_COMMENT);
-        else if (strcasecmp ("KEY", element_name) == 0)
-          {
-            create_lsc_credential_data->key = 1;
-            set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_KEY);
-          }
-        else if (strcasecmp ("LOGIN", element_name) == 0)
-          set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_LOGIN);
-        else if (strcasecmp ("COPY", element_name) == 0)
-          set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_COPY);
-        else if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_NAME);
-        else if (strcasecmp ("PASSWORD", element_name) == 0)
-          {
-            openvas_append_string (&create_lsc_credential_data->password, "");
-            set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_PASSWORD);
-          }
-        ELSE_ERROR ("create_lsc_credential");
-
-      case CLIENT_CREATE_LSC_CREDENTIAL_KEY:
-        if (strcasecmp ("PHRASE", element_name) == 0)
-          {
-            openvas_append_string (&create_lsc_credential_data->key_phrase, "");
-            set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_KEY_PHRASE);
-          }
-        else if (strcasecmp ("PRIVATE", element_name) == 0)
-          set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_KEY_PRIVATE);
-        ELSE_ERROR ("create_lsc_credential");
 
       case CLIENT_CREATE_NOTE:
         if (strcasecmp ("ACTIVE", element_name) == 0)
@@ -13273,9 +13273,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       CASE_DELETE (CONFIG, config, "Config");
+      CASE_DELETE (CREDENTIAL, credential, "Credential");
       CASE_DELETE (FILTER, filter, "Filter");
       CASE_DELETE (GROUP, group, "Group");
-      CASE_DELETE (LSC_CREDENTIAL, lsc_credential, "LSC Credential");
       CASE_DELETE (NOTE, note, "Note");
       CASE_DELETE (OVERRIDE, override, "Override");
       CASE_DELETE (PERMISSION, permission, "Permission");
@@ -14410,6 +14410,184 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
 
+      case CLIENT_GET_CREDENTIALS:
+        {
+          iterator_t credentials;
+          int count, filtered, ret, first;
+          int format;
+          char *data_format;
+
+          assert (strcasecmp ("GET_CREDENTIALS", element_name) == 0);
+
+          data_format = get_credentials_data->format;
+          if (data_format)
+            {
+              if (strlen (data_format))
+                {
+                  if (strcasecmp (data_format, "key") == 0)
+                    format = 1;
+                  else if (strcasecmp (data_format, "rpm") == 0)
+                    format = 2;
+                  else if (strcasecmp (data_format, "deb") == 0)
+                    format = 3;
+                  else if (strcasecmp (data_format, "exe") == 0)
+                    format = 4;
+                  else
+                    format = -1;
+                }
+              else
+                format = 0;
+            }
+          else
+            format = 0;
+
+          if (format == -1)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("get_credentials",
+                                "GET_CREDENTIALS format attribute should"
+                                " be 'key', 'rpm', 'deb' or 'exe'."));
+
+          INIT_GET (credential, Credential);
+
+          ret = init_credential_iterator (&credentials,
+                                          &get_credentials_data->get);
+          if (ret)
+            {
+              switch (ret)
+                {
+                  case 1:
+                    if (send_find_error_to_client ("get_credentials",
+                                                   "credential",
+                                                   get_credentials_data->get.id,
+                                                   omp_parser))
+                      {
+                        error_send_to_client (error);
+                        return;
+                      }
+                    break;
+                  case 2:
+                    if (send_find_error_to_client
+                         ("get_credentials", "credential",
+                          get_credentials_data->get.filt_id, omp_parser))
+                      {
+                        error_send_to_client (error);
+                        return;
+                      }
+                    break;
+                  case -1:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_INTERNAL_ERROR ("get_credentials"));
+                    break;
+                }
+              get_credentials_data_reset (get_credentials_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
+          SEND_GET_START("credential");
+          while (1)
+            {
+              const char *private_key, *login, *type;
+
+              ret = get_next (&credentials, &get_credentials_data->get,
+                              &first, &count, init_credential_iterator);
+              if (ret == 1)
+                break;
+              if (ret == -1)
+                {
+                  internal_error_send_to_client (error);
+                  return;
+                }
+
+              SEND_GET_COMMON (credential, &get_credentials_data->get,
+                               &credentials);
+              private_key = credential_iterator_private_key (&credentials);
+              login = credential_iterator_login (&credentials);
+              type = credential_iterator_type (&credentials);
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<login>%s</login>"
+                "<type>%s</type>"
+                "<full_type>%s</full_type>",
+                login ? login : "",
+                type ? type : "",
+                type ? credential_full_type (type) : "");
+
+              switch (format)
+                {
+                  char *package;
+
+                  case 1: /* key */
+                    {
+                      char *pub;
+                      const char *pass;
+
+                      pass = credential_iterator_password (&credentials);
+                      pub = openvas_ssh_public_from_private (private_key, pass);
+                      SENDF_TO_CLIENT_OR_FAIL
+                       ("<public_key>%s</public_key>", pub ?: "");
+                      g_free (pub);
+                      break;
+                    }
+                  case 2: /* rpm */
+                    package = credential_iterator_rpm (&credentials);
+                    SENDF_TO_CLIENT_OR_FAIL
+                     ("<package format=\"rpm\">%s</package>", package ?: "");
+                    g_free (package);
+                    break;
+                  case 3: /* deb */
+                    package = credential_iterator_deb (&credentials);
+                    SENDF_TO_CLIENT_OR_FAIL
+                     ("<package format=\"deb\">%s</package>", package ?: "");
+                    g_free (package);
+                    break;
+                  case 4: /* exe */
+                    package = credential_iterator_exe (&credentials);
+                    SENDF_TO_CLIENT_OR_FAIL
+                     ("<package format=\"exe\">%s</package>", package ?: "");
+                    g_free (package);
+                    break;
+                }
+
+              if (get_credentials_data->targets)
+                {
+                  iterator_t targets;
+
+                  SENDF_TO_CLIENT_OR_FAIL ("<targets>");
+                  init_credential_target_iterator
+                   (&targets, get_iterator_resource (&credentials), 0);
+                  while (next (&targets))
+                    {
+                      SENDF_TO_CLIENT_OR_FAIL
+                       ("<target id=\"%s\">"
+                        "<name>%s</name>",
+                        credential_target_iterator_uuid (&targets),
+                        credential_target_iterator_name (&targets));
+                      if (credential_target_iterator_readable (&targets))
+                        SEND_TO_CLIENT_OR_FAIL ("</target>");
+                      else
+                        SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                                "</target>");
+                    }
+                  cleanup_iterator (&targets);
+
+                  SEND_TO_CLIENT_OR_FAIL ("</targets>");
+                }
+
+              SEND_TO_CLIENT_OR_FAIL ("</credential>");
+              count++;
+            }
+
+          cleanup_iterator (&credentials);
+          filtered = get_credentials_data->get.id
+                      ? 1
+                      : credential_count (&get_credentials_data->get);
+          SEND_GET_END ("credential", &get_credentials_data->get,
+                        count, filtered);
+          get_credentials_data_reset (get_credentials_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+
       case CLIENT_GET_FILTERS:
         {
           iterator_t filters;
@@ -15094,180 +15272,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           write_to_client, write_to_client_data);
 
           get_info_data_reset (get_info_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
-
-      case CLIENT_GET_LSC_CREDENTIALS:
-        {
-          iterator_t credentials;
-          int count, filtered, ret, first;
-          int format;
-          char *data_format;
-
-          assert (strcasecmp ("GET_LSC_CREDENTIALS", element_name) == 0);
-
-          data_format = get_lsc_credentials_data->format;
-          if (data_format)
-            {
-              if (strlen (data_format))
-                {
-                  if (strcasecmp (data_format, "key") == 0)
-                    format = 1;
-                  else if (strcasecmp (data_format, "rpm") == 0)
-                    format = 2;
-                  else if (strcasecmp (data_format, "deb") == 0)
-                    format = 3;
-                  else if (strcasecmp (data_format, "exe") == 0)
-                    format = 4;
-                  else
-                    format = -1;
-                }
-              else
-                format = 0;
-            }
-          else
-            format = 0;
-
-          if (format == -1)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_lsc_credentials",
-                                "GET_LSC_CREDENTIALS format attribute should"
-                                " be 'key', 'rpm', 'deb' or 'exe'."));
-
-          INIT_GET (lsc_credential, Credential);
-
-          ret = init_lsc_credential_iterator (&credentials,
-                                              &get_lsc_credentials_data->get);
-          if (ret)
-            {
-              switch (ret)
-                {
-                  case 1:
-                    if (send_find_error_to_client ("get_lsc_credentials",
-                                                   "lsc_credential",
-                                                   get_lsc_credentials_data->get.id,
-                                                   omp_parser))
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
-                    break;
-                  case 2:
-                    if (send_find_error_to_client
-                         ("get_lsc_credentials", "lsc_credential",
-                          get_lsc_credentials_data->get.filt_id, omp_parser))
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
-                    break;
-                  case -1:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("get_lsc_credentials"));
-                    break;
-                }
-              get_lsc_credentials_data_reset (get_lsc_credentials_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-
-          SEND_GET_START("lsc_credential");
-          while (1)
-            {
-              const char* private_key;
-
-              ret = get_next (&credentials, &get_lsc_credentials_data->get,
-                              &first, &count, init_lsc_credential_iterator);
-              if (ret == 1)
-                break;
-              if (ret == -1)
-                {
-                  internal_error_send_to_client (error);
-                  return;
-                }
-
-              SEND_GET_COMMON (lsc_credential, &get_lsc_credentials_data->get,
-                               &credentials);
-              private_key = lsc_credential_iterator_private_key (&credentials);
-              SENDF_TO_CLIENT_OR_FAIL
-               ("<login>%s</login>"
-                "<type>%s</type>",
-                lsc_credential_iterator_login (&credentials),
-                private_key ? "gen" : "pass");
-
-              switch (format)
-                {
-                  char *package;
-
-                  case 1: /* key */
-                    {
-                      char *pub;
-                      const char *pass;
-
-                      pass = lsc_credential_iterator_password (&credentials);
-                      pub = openvas_ssh_public_from_private (private_key, pass);
-                      SENDF_TO_CLIENT_OR_FAIL
-                       ("<public_key>%s</public_key>", pub ?: "");
-                      g_free (pub);
-                      break;
-                    }
-                  case 2: /* rpm */
-                    package = lsc_credential_iterator_rpm (&credentials);
-                    SENDF_TO_CLIENT_OR_FAIL
-                     ("<package format=\"rpm\">%s</package>", package ?: "");
-                    g_free (package);
-                    break;
-                  case 3: /* deb */
-                    package = lsc_credential_iterator_deb (&credentials);
-                    SENDF_TO_CLIENT_OR_FAIL
-                     ("<package format=\"deb\">%s</package>", package ?: "");
-                    g_free (package);
-                    break;
-                  case 4: /* exe */
-                    package = lsc_credential_iterator_exe (&credentials);
-                    SENDF_TO_CLIENT_OR_FAIL
-                     ("<package format=\"exe\">%s</package>", package ?: "");
-                    g_free (package);
-                    break;
-                }
-
-              if (get_lsc_credentials_data->targets)
-                {
-                  iterator_t targets;
-
-                  SENDF_TO_CLIENT_OR_FAIL ("<targets>");
-                  init_lsc_credential_target_iterator
-                   (&targets, get_iterator_resource (&credentials), 0);
-                  while (next (&targets))
-                    {
-                      SENDF_TO_CLIENT_OR_FAIL
-                       ("<target id=\"%s\">"
-                        "<name>%s</name>",
-                        lsc_credential_target_iterator_uuid (&targets),
-                        lsc_credential_target_iterator_name (&targets));
-                      if (lsc_credential_target_iterator_readable (&targets))
-                        SEND_TO_CLIENT_OR_FAIL ("</target>");
-                      else
-                        SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
-                                                "</target>");
-                    }
-                  cleanup_iterator (&targets);
-
-                  SEND_TO_CLIENT_OR_FAIL ("</targets>");
-                }
-
-              SEND_TO_CLIENT_OR_FAIL ("</lsc_credential>");
-              count++;
-            }
-
-          cleanup_iterator (&credentials);
-          filtered = get_lsc_credentials_data->get.id
-                      ? 1
-                      : lsc_credential_count (&get_lsc_credentials_data->get);
-          SEND_GET_END ("lsc_credential", &get_lsc_credentials_data->get,
-                        count, filtered);
-          get_lsc_credentials_data_reset (get_lsc_credentials_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
@@ -18530,8 +18534,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   const char *port_list_uuid, *port_list_name, *ssh_port;
                   const char *hosts, *exclude_hosts, *reverse_lookup_only;
                   const char *reverse_lookup_unify;
-                  lsc_credential_t ssh_credential, smb_credential;
-                  lsc_credential_t esxi_credential;
+                  credential_t ssh_credential, smb_credential;
+                  credential_t esxi_credential;
                   int port_list_trash, max_hosts, port_list_available;
                   int ssh_lsc_credential_available;
                   int smb_lsc_credential_available;
@@ -18554,21 +18558,21 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   if (get_targets_data->get.trash
                       && target_iterator_ssh_trash (&targets))
                     {
-                      ssh_lsc_name = trash_lsc_credential_name (ssh_credential);
-                      ssh_lsc_uuid = trash_lsc_credential_uuid (ssh_credential);
+                      ssh_lsc_name = trash_credential_name (ssh_credential);
+                      ssh_lsc_uuid = trash_credential_uuid (ssh_credential);
                       ssh_lsc_credential_available
-                       = trash_lsc_credential_readable (ssh_credential);
+                       = trash_credential_readable (ssh_credential);
                     }
                   else if (ssh_credential)
                     {
-                      lsc_credential_t found;
+                      credential_t found;
 
-                      ssh_lsc_name = lsc_credential_name (ssh_credential);
-                      ssh_lsc_uuid = lsc_credential_uuid (ssh_credential);
-                      if (find_lsc_credential_with_permission
+                      ssh_lsc_name = credential_name (ssh_credential);
+                      ssh_lsc_uuid = credential_uuid (ssh_credential);
+                      if (find_credential_with_permission
                            (ssh_lsc_uuid,
                             &found,
-                            "get_lsc_credentials"))
+                            "get_credentials"))
                         abort ();
                       ssh_lsc_credential_available = (found > 0);
                     }
@@ -18581,21 +18585,21 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   if (get_targets_data->get.trash
                       && target_iterator_smb_trash (&targets))
                     {
-                      smb_lsc_name = trash_lsc_credential_name (smb_credential);
-                      smb_lsc_uuid = trash_lsc_credential_uuid (smb_credential);
+                      smb_lsc_name = trash_credential_name (smb_credential);
+                      smb_lsc_uuid = trash_credential_uuid (smb_credential);
                       smb_lsc_credential_available
-                       = trash_lsc_credential_readable (smb_credential);
+                       = trash_credential_readable (smb_credential);
                     }
                   else if (smb_credential)
                     {
-                      lsc_credential_t found;
+                      credential_t found;
 
-                      smb_lsc_name = lsc_credential_name (smb_credential);
-                      smb_lsc_uuid = lsc_credential_uuid (smb_credential);
-                      if (find_lsc_credential_with_permission
+                      smb_lsc_name = credential_name (smb_credential);
+                      smb_lsc_uuid = credential_uuid (smb_credential);
+                      if (find_credential_with_permission
                            (smb_lsc_uuid,
                             &found,
-                            "get_lsc_credentials"))
+                            "get_credentials"))
                         abort ();
                       smb_lsc_credential_available = (found > 0);
                     }
@@ -18609,22 +18613,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       && target_iterator_esxi_trash (&targets))
                     {
                       esxi_lsc_name
-                       = trash_lsc_credential_name (esxi_credential);
+                       = trash_credential_name (esxi_credential);
                       esxi_lsc_uuid
-                       = trash_lsc_credential_uuid (esxi_credential);
+                       = trash_credential_uuid (esxi_credential);
                       esxi_lsc_credential_available
-                       = trash_lsc_credential_readable (esxi_credential);
+                       = trash_credential_readable (esxi_credential);
                     }
                   else if (esxi_credential)
                     {
-                      lsc_credential_t found;
+                      credential_t found;
 
-                      esxi_lsc_name = lsc_credential_name (esxi_credential);
-                      esxi_lsc_uuid = lsc_credential_uuid (esxi_credential);
-                      if (find_lsc_credential_with_permission
+                      esxi_lsc_name = credential_name (esxi_credential);
+                      esxi_lsc_uuid = credential_uuid (esxi_credential);
+                      if (find_credential_with_permission
                            (esxi_lsc_uuid,
                             &found,
-                            "get_lsc_credentials"))
+                            "get_credentials"))
                         abort ();
                       esxi_lsc_credential_available = (found > 0);
                     }
@@ -20730,6 +20734,144 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         }
       CLOSE (CLIENT_CREATE_ALERT_METHOD_DATA, NAME);
 
+      case CLIENT_CREATE_CREDENTIAL:
+        {
+          credential_t new_credential;
+
+          assert (strcasecmp ("CREATE_CREDENTIAL", element_name) == 0);
+          assert (create_credential_data->name != NULL);
+          assert (create_credential_data->login != NULL);
+
+          if (create_credential_data->copy)
+            switch (copy_credential (create_credential_data->name,
+                                     create_credential_data->comment,
+                                     create_credential_data->copy,
+                                     &new_credential))
+              {
+                case 0:
+                  {
+                    char *uuid;
+                    uuid = credential_uuid (new_credential);
+                    SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_credential"),
+                                             uuid);
+                    log_event ("credential", "Credential", uuid, "created");
+                    free (uuid);
+                    break;
+                  }
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_credential",
+                                      "Credential exists already"));
+                  log_event_fail ("credential", "Credential", NULL, "created");
+                  break;
+                case 2:
+                  if (send_find_error_to_client ("create_credential",
+                                                 "credential",
+                                                 create_credential_data->copy,
+                                                 omp_parser))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  log_event_fail ("credential", "Credential", NULL, "created");
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_credential",
+                                      "Permission denied"));
+                  log_event_fail ("credential", "Credential", NULL, "created");
+                  break;
+                case -1:
+                default:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("create_credential"));
+                  log_event_fail ("credential", "Credential", NULL, "created");
+                  break;
+              }
+          else if (strlen (create_credential_data->name) == 0)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_credential",
+                                  "CREATE_CREDENTIAL name must be at"
+                                  " least one character long"));
+            }
+          else if (strlen (create_credential_data->login) == 0)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_credential",
+                                  "CREATE_CREDENTIAL login must be at"
+                                  " least one character long"));
+            }
+          else if (create_credential_data->key
+                   && create_credential_data->key_private == NULL)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_credential",
+                                  "CREATE_CREDENTIAL KEY requires a PRIVATE"
+                                  " key"));
+            }
+          else switch (create_credential
+                        (create_credential_data->name,
+                         create_credential_data->comment,
+                         create_credential_data->login,
+                         create_credential_data->key_private
+                          ? create_credential_data->key_phrase
+                          : create_credential_data->password,
+                         create_credential_data->key_private,
+                         &new_credential))
+            {
+              case 0:
+                {
+                  char *uuid = credential_uuid (new_credential);
+                  SENDF_TO_CLIENT_OR_FAIL
+                   (XML_OK_CREATED_ID ("create_credential"), uuid);
+                  log_event ("credential", "Credential", uuid, "created");
+                  free (uuid);
+                  break;
+                }
+              case 1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                    "Credential exists already"));
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                    "Login may only contain alphanumeric"
+                                    " characters if autogenerating"
+                                    " credential"));
+                break;
+              case 3:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                    "Erroneous private key or associated"
+                                    " passphrase"));
+                break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                    "Permission denied"));
+                break;
+              default:
+                assert (0);
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("create_credential"));
+                break;
+            }
+          create_credential_data_reset (create_credential_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      CLOSE (CLIENT_CREATE_CREDENTIAL, COMMENT);
+      CLOSE (CLIENT_CREATE_CREDENTIAL, COPY);
+      CLOSE (CLIENT_CREATE_CREDENTIAL, KEY);
+      CLOSE (CLIENT_CREATE_CREDENTIAL_KEY, PHRASE);
+      CLOSE (CLIENT_CREATE_CREDENTIAL_KEY, PRIVATE);
+      CLOSE (CLIENT_CREATE_CREDENTIAL, LOGIN);
+      CLOSE (CLIENT_CREATE_CREDENTIAL, NAME);
+      CLOSE (CLIENT_CREATE_CREDENTIAL, PASSWORD);
+
       case CLIENT_CREATE_FILTER:
         {
           filter_t new_filter;
@@ -20968,150 +21110,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_GROUP, COPY);
       CLOSE (CLIENT_CREATE_GROUP, NAME);
       CLOSE (CLIENT_CREATE_GROUP, USERS);
-
-      case CLIENT_CREATE_LSC_CREDENTIAL:
-        {
-          lsc_credential_t new_lsc_credential;
-
-          assert (strcasecmp ("CREATE_LSC_CREDENTIAL", element_name) == 0);
-          assert (create_lsc_credential_data->name != NULL);
-          assert (create_lsc_credential_data->login != NULL);
-
-          if (create_lsc_credential_data->copy)
-            switch (copy_lsc_credential (create_lsc_credential_data->name,
-                                         create_lsc_credential_data->comment,
-                                         create_lsc_credential_data->copy,
-                                         &new_lsc_credential))
-              {
-                case 0:
-                  {
-                    char *uuid;
-                    uuid = lsc_credential_uuid (new_lsc_credential);
-                    SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_lsc_credential"),
-                                             uuid);
-                    log_event ("lsc_credential", "LSC Credential", uuid,
-                               "created");
-                    free (uuid);
-                    break;
-                  }
-                case 1:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("create_lsc_credential",
-                                      "Credential exists already"));
-                  log_event_fail ("lsc_credential", "LSC Credential", NULL,
-                                  "created");
-                  break;
-                case 2:
-                  if (send_find_error_to_client ("create_lsc_credential",
-                                                 "lsc_credential",
-                                                 create_lsc_credential_data->copy,
-                                                 omp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  log_event_fail ("lsc_credential", "LSC Credential", NULL,
-                                  "created");
-                  break;
-                case 99:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("create_lsc_credential",
-                                      "Permission denied"));
-                  log_event_fail ("lsc_credential", "LSC Credential", NULL,
-                                  "created");
-                  break;
-                case -1:
-                default:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("create_lsc_credential"));
-                  log_event_fail ("lsc_credential", "LSC Credential", NULL,
-                                  "created");
-                  break;
-              }
-          else if (strlen (create_lsc_credential_data->name) == 0)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_lsc_credential",
-                                  "CREATE_LSC_CREDENTIAL name must be at"
-                                  " least one character long"));
-            }
-          else if (strlen (create_lsc_credential_data->login) == 0)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_lsc_credential",
-                                  "CREATE_LSC_CREDENTIAL login must be at"
-                                  " least one character long"));
-            }
-          else if (create_lsc_credential_data->key
-                   && create_lsc_credential_data->key_private == NULL)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_lsc_credential",
-                                  "CREATE_LSC_CREDENTIAL KEY requires a PRIVATE"
-                                  " key"));
-            }
-          else switch (create_lsc_credential
-                        (create_lsc_credential_data->name,
-                         create_lsc_credential_data->comment,
-                         create_lsc_credential_data->login,
-                         create_lsc_credential_data->key_private
-                          ? create_lsc_credential_data->key_phrase
-                          : create_lsc_credential_data->password,
-                         create_lsc_credential_data->key_private,
-                         &new_lsc_credential))
-            {
-              case 0:
-                {
-                  char *uuid = lsc_credential_uuid (new_lsc_credential);
-                  SENDF_TO_CLIENT_OR_FAIL
-                   (XML_OK_CREATED_ID ("create_lsc_credential"), uuid);
-                  log_event ("lsc_credential", "LSC Credential", uuid,
-                             "created");
-                  free (uuid);
-                  break;
-                }
-              case 1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_lsc_credential",
-                                    "LSC Credential exists already"));
-                break;
-              case 2:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_lsc_credential",
-                                    "Login may only contain alphanumeric"
-                                    " characters if autogenerating"
-                                    " credential"));
-                break;
-              case 3:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_lsc_credential",
-                                    "Erroneous private key or associated"
-                                    " passphrase"));
-                break;
-              case 99:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_lsc_credential",
-                                    "Permission denied"));
-                break;
-              default:
-                assert (0);
-              case -1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("create_lsc_credential"));
-                break;
-            }
-          create_lsc_credential_data_reset (create_lsc_credential_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
-      CLOSE (CLIENT_CREATE_LSC_CREDENTIAL, COMMENT);
-      CLOSE (CLIENT_CREATE_LSC_CREDENTIAL, COPY);
-      CLOSE (CLIENT_CREATE_LSC_CREDENTIAL, KEY);
-      CLOSE (CLIENT_CREATE_LSC_CREDENTIAL_KEY, PHRASE);
-      CLOSE (CLIENT_CREATE_LSC_CREDENTIAL_KEY, PRIVATE);
-      CLOSE (CLIENT_CREATE_LSC_CREDENTIAL, LOGIN);
-      CLOSE (CLIENT_CREATE_LSC_CREDENTIAL, NAME);
-      CLOSE (CLIENT_CREATE_LSC_CREDENTIAL, PASSWORD);
 
       case CLIENT_CREATE_NOTE:
         {
@@ -23144,8 +23142,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_CREATE_TARGET:
         {
-          lsc_credential_t ssh_lsc_credential = 0, smb_lsc_credential = 0;
-          lsc_credential_t esxi_lsc_credential = 0;
+          credential_t ssh_lsc_credential = 0, smb_lsc_credential = 0;
+          credential_t esxi_lsc_credential = 0;
           target_t new_target;
 
           assert (strcasecmp ("CREATE_TARGET", element_name) == 0);
@@ -23217,10 +23215,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 "CREATE_TARGET hosts must be at least one"
                                 " character long"));
           else if (create_target_data->ssh_lsc_credential_id
-                   && find_lsc_credential_with_permission
+                   && find_credential_with_permission
                        (create_target_data->ssh_lsc_credential_id,
                         &ssh_lsc_credential,
-                        "get_lsc_credentials"))
+                        "get_credentials"))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_target"));
           else if (create_target_data->ssh_lsc_credential_id
                    && ssh_lsc_credential == 0)
@@ -23234,10 +23232,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
             }
           else if (create_target_data->smb_lsc_credential_id
-                   && find_lsc_credential_with_permission
+                   && find_credential_with_permission
                        (create_target_data->smb_lsc_credential_id,
                         &smb_lsc_credential,
-                        "get_lsc_credentials"))
+                        "get_credentials"))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_target"));
           else if (create_target_data->smb_lsc_credential_id
                    && smb_lsc_credential == 0)
@@ -23251,10 +23249,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
             }
           else if (create_target_data->esxi_lsc_credential_id
-                   && find_lsc_credential_with_permission
+                   && find_credential_with_permission
                        (create_target_data->esxi_lsc_credential_id,
                         &esxi_lsc_credential,
-                        "get_lsc_credentials"))
+                        "get_credentials"))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_target"));
           else if (create_target_data->esxi_lsc_credential_id
                    && esxi_lsc_credential == 0)
@@ -24759,6 +24757,92 @@ create_task_fail:
         set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE);
         break;
 
+      case CLIENT_MODIFY_CREDENTIAL:
+        {
+          assert (strcasecmp ("MODIFY_CREDENTIAL", element_name) == 0);
+
+          switch (modify_credential
+                   (modify_credential_data->credential_id,
+                    modify_credential_data->name,
+                    modify_credential_data->comment,
+                    modify_credential_data->login,
+                    modify_credential_data->password))
+            {
+              case 0:
+                SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_credential"));
+                log_event ("credential", "Credential",
+                           modify_credential_data->credential_id,
+                           "modified");
+                break;
+              case 1:
+                if (send_find_error_to_client
+                     ("modify_credential", "credential",
+                      modify_credential_data->credential_id,
+                      omp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                log_event_fail ("credential", "Credential",
+                                modify_credential_data->credential_id,
+                                "modified");
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_credential",
+                                    "credential with new name"
+                                    " exists already"));
+                log_event_fail ("credential", "Credential",
+                                modify_credential_data->credential_id,
+                                "modified");
+                break;
+              case 3:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_credential",
+                                    "MODIFY_credential requires a"
+                                    " credential_id"));
+                log_event_fail ("credential", "Credential",
+                                modify_credential_data->credential_id,
+                                "modified");
+                break;
+              case 4:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_credential",
+                                    "Attempt to change login or password of"
+                                    " packaged credential"));
+                log_event_fail ("credential", "Credential",
+                                modify_credential_data->credential_id,
+                                "modified");
+                break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_credential",
+                                    "Permission denied"));
+                log_event_fail ("credential", "Credential",
+                                modify_credential_data->credential_id,
+                                "modified");
+                break;
+              default:
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_credential"));
+                log_event_fail ("credential", "Credential",
+                                modify_credential_data->credential_id,
+                                "modified");
+                break;
+            }
+
+          modify_credential_data_reset (modify_credential_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+        modify_credential_data_reset (modify_credential_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+      CLOSE (CLIENT_MODIFY_CREDENTIAL, NAME);
+      CLOSE (CLIENT_MODIFY_CREDENTIAL, COMMENT);
+      CLOSE (CLIENT_MODIFY_CREDENTIAL, LOGIN);
+      CLOSE (CLIENT_MODIFY_CREDENTIAL, PASSWORD);
+
       case CLIENT_MODIFY_FILTER:
         {
           assert (strcasecmp ("MODIFY_FILTER", element_name) == 0);
@@ -24916,92 +25000,6 @@ create_task_fail:
       CLOSE (CLIENT_MODIFY_GROUP, COMMENT);
       CLOSE (CLIENT_MODIFY_GROUP, NAME);
       CLOSE (CLIENT_MODIFY_GROUP, USERS);
-
-      case CLIENT_MODIFY_LSC_CREDENTIAL:
-        {
-          assert (strcasecmp ("MODIFY_LSC_CREDENTIAL", element_name) == 0);
-
-          switch (modify_lsc_credential
-                   (modify_lsc_credential_data->lsc_credential_id,
-                    modify_lsc_credential_data->name,
-                    modify_lsc_credential_data->comment,
-                    modify_lsc_credential_data->login,
-                    modify_lsc_credential_data->password))
-            {
-              case 0:
-                SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_lsc_credential"));
-                log_event ("lsc_credential", "LSC Credential",
-                           modify_lsc_credential_data->lsc_credential_id,
-                           "modified");
-                break;
-              case 1:
-                if (send_find_error_to_client
-                     ("modify_lsc_credential", "lsc_credential",
-                      modify_lsc_credential_data->lsc_credential_id,
-                      omp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                log_event_fail ("lsc_credential", "LSC Credential",
-                                modify_lsc_credential_data->lsc_credential_id,
-                                "modified");
-                break;
-              case 2:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_lsc_credential",
-                                    "lsc_credential with new name"
-                                    " exists already"));
-                log_event_fail ("lsc_credential", "LSC Credential",
-                                modify_lsc_credential_data->lsc_credential_id,
-                                "modified");
-                break;
-              case 3:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_lsc_credential",
-                                    "MODIFY_lsc_credential requires a"
-                                    " lsc_credential_id"));
-                log_event_fail ("lsc_credential", "LSC Credential",
-                                modify_lsc_credential_data->lsc_credential_id,
-                                "modified");
-                break;
-              case 4:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_lsc_credential",
-                                    "Attempt to change login or password of"
-                                    " packaged LSC credential"));
-                log_event_fail ("lsc_credential", "LSC Credential",
-                                modify_lsc_credential_data->lsc_credential_id,
-                                "modified");
-                break;
-              case 99:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_lsc_credential",
-                                    "Permission denied"));
-                log_event_fail ("lsc_credential", "LSC Credential",
-                                modify_lsc_credential_data->lsc_credential_id,
-                                "modified");
-                break;
-              default:
-              case -1:
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_lsc_credential"));
-                log_event_fail ("lsc_credential", "LSC Credential",
-                                modify_lsc_credential_data->lsc_credential_id,
-                                "modified");
-                break;
-            }
-
-          modify_lsc_credential_data_reset (modify_lsc_credential_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
-        modify_lsc_credential_data_reset (modify_lsc_credential_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-      CLOSE (CLIENT_MODIFY_LSC_CREDENTIAL, NAME);
-      CLOSE (CLIENT_MODIFY_LSC_CREDENTIAL, COMMENT);
-      CLOSE (CLIENT_MODIFY_LSC_CREDENTIAL, LOGIN);
-      CLOSE (CLIENT_MODIFY_LSC_CREDENTIAL, PASSWORD);
 
       case CLIENT_MODIFY_NOTE:
         {
@@ -28045,17 +28043,17 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
               &modify_config_data->family_selection_growing_text);
 
 
-      APPEND (CLIENT_MODIFY_LSC_CREDENTIAL_NAME,
-              &modify_lsc_credential_data->name);
+      APPEND (CLIENT_MODIFY_CREDENTIAL_NAME,
+              &modify_credential_data->name);
 
-      APPEND (CLIENT_MODIFY_LSC_CREDENTIAL_COMMENT,
-              &modify_lsc_credential_data->comment);
+      APPEND (CLIENT_MODIFY_CREDENTIAL_COMMENT,
+              &modify_credential_data->comment);
 
-      APPEND (CLIENT_MODIFY_LSC_CREDENTIAL_LOGIN,
-              &modify_lsc_credential_data->login);
+      APPEND (CLIENT_MODIFY_CREDENTIAL_LOGIN,
+              &modify_credential_data->login);
 
-      APPEND (CLIENT_MODIFY_LSC_CREDENTIAL_PASSWORD,
-              &modify_lsc_credential_data->password);
+      APPEND (CLIENT_MODIFY_CREDENTIAL_PASSWORD,
+              &modify_credential_data->password);
 
 
       APPEND (CLIENT_MODIFY_CONFIG_COMMENT,
@@ -28227,26 +28225,26 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
               &import_config_data->preference_value);
 
 
-      APPEND (CLIENT_CREATE_LSC_CREDENTIAL_COMMENT,
-              &create_lsc_credential_data->comment);
+      APPEND (CLIENT_CREATE_CREDENTIAL_COMMENT,
+              &create_credential_data->comment);
 
-      APPEND (CLIENT_CREATE_LSC_CREDENTIAL_COPY,
-              &create_lsc_credential_data->copy);
+      APPEND (CLIENT_CREATE_CREDENTIAL_COPY,
+              &create_credential_data->copy);
 
-      APPEND (CLIENT_CREATE_LSC_CREDENTIAL_KEY_PHRASE,
-              &create_lsc_credential_data->key_phrase);
+      APPEND (CLIENT_CREATE_CREDENTIAL_KEY_PHRASE,
+              &create_credential_data->key_phrase);
 
-      APPEND (CLIENT_CREATE_LSC_CREDENTIAL_KEY_PRIVATE,
-              &create_lsc_credential_data->key_private);
+      APPEND (CLIENT_CREATE_CREDENTIAL_KEY_PRIVATE,
+              &create_credential_data->key_private);
 
-      APPEND (CLIENT_CREATE_LSC_CREDENTIAL_LOGIN,
-              &create_lsc_credential_data->login);
+      APPEND (CLIENT_CREATE_CREDENTIAL_LOGIN,
+              &create_credential_data->login);
 
-      APPEND (CLIENT_CREATE_LSC_CREDENTIAL_NAME,
-              &create_lsc_credential_data->name);
+      APPEND (CLIENT_CREATE_CREDENTIAL_NAME,
+              &create_credential_data->name);
 
-      APPEND (CLIENT_CREATE_LSC_CREDENTIAL_PASSWORD,
-              &create_lsc_credential_data->password);
+      APPEND (CLIENT_CREATE_CREDENTIAL_PASSWORD,
+              &create_credential_data->password);
 
 
       APPEND (CLIENT_CREATE_ALERT_COMMENT,

@@ -44,8 +44,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               "LSC Credential for immediate scan of [hosts]"
   target_name : The name to use for the target. Defaults to
                  "Target for immediate scan of [hosts]"
-  lsc_credential_name : The name to use for the LSC credential. Defaults to
-                         "LSC Credential for immediate scan of [hosts]"
+  credential_name : The name to use for the LSC credential. Defaults to
+                     "LSC Credential for immediate scan of [hosts]"
   scanner_id : The UUID of the scanner to use, defaults to the built-in
                 OpenVAS-Scanner.
 
@@ -65,10 +65,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <xsl:template match="/">
           <commands>
             <xsl:if test="/wizard/params/param[name='username']/value != ''">
-              <create_lsc_credential>
+              <create_credential>
                 <xsl:choose>
-                  <xsl:when test="/wizard/params/param[name='lsc_credential_name']/value">
-                    <name><xsl:value-of select="/wizard/params/param[name='lsc_credential_name']/value"/></name>
+                  <xsl:when test="/wizard/params/param[name='credential_name']/value">
+                    <name><xsl:value-of select="/wizard/params/param[name='credential_name']/value"/></name>
                   </xsl:when>
                   <xsl:when test="/wizard/params/param[name='hosts']/value != ''">
                     <name>LSC Credential for immediate scan of <xsl:value-of select="/wizard/params/param[name='hosts']/value"/></name>
@@ -80,7 +80,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <comment><xsl:value-of select="/wizard/params/param[name='comment']/value"/></comment>
                 <login><xsl:value-of select="/wizard/params/param[name='username']/value"/></login>
                 <password><xsl:value-of select="/wizard/params/param[name='password']/value"/></password>
-              </create_lsc_credential>
+              </create_credential>
             </xsl:if>
           </commands>
         </xsl:template>
@@ -109,9 +109,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <name><make_unique>1</make_unique>Target for immediate scan of localhost</name>
               </xsl:otherwise>
             </xsl:choose>
-            <xsl:if test="/wizard/previous/response/commands_response/create_lsc_credential_response/@id != ''">
-              <ssh_lsc_credential id="{/wizard/previous/response/commands_response/create_lsc_credential_response/@id}"><port>22</port></ssh_lsc_credential>
-              <smb_lsc_credential id="{/wizard/previous/response/commands_response/create_lsc_credential_response/@id}"></smb_lsc_credential>
+            <xsl:if test="/wizard/previous/response/commands_response/create_credential_response/@id != ''">
+              <ssh_lsc_credential id="{/wizard/previous/response/commands_response/create_credential_response/@id}"><port>22</port></ssh_lsc_credential>
+              <smb_lsc_credential id="{/wizard/previous/response/commands_response/create_credential_response/@id}"></smb_lsc_credential>
             </xsl:if>
             <xsl:choose>
               <xsl:when test="/wizard/params/param[name='hosts']/value != ''">
