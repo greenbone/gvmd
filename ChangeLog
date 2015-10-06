@@ -1,3 +1,8 @@
+2015-10-06  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/openvasmd.c (main): Check if IPv6 is supported when setting
+	default listening address.
+
 2015-10-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Reset command data and client

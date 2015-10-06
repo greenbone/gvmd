@@ -2133,8 +2133,9 @@ main (int argc, char** argv)
   if (disable_encrypted_credentials)
     g_message ("Encryption of credentials has been disabled.");
 
-  if (manager_listen (manager_address_string ?: "::", manager_port_string,
-                      &manager_socket))
+  if (manager_listen (manager_address_string ?:
+                       ipv6_is_enabled () ? "::" : "0.0.0.0",
+                      manager_port_string, &manager_socket))
     return EXIT_FAILURE;
   if (manager_listen (manager_address_string_2, manager_port_string_2,
                       &manager_socket_2))
