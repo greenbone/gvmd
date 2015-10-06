@@ -39,7 +39,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <func:function name="openvas:max-cvss">
     <xsl:param name="current_host"/>
     <xsl:variable name="max">
-      <xsl:for-each select="/report/results/result[host/text() = $current_host]/nvt/cvss_base">
+      <xsl:for-each select="/report/results/result[host/text() = $current_host]/severity">
         <xsl:sort select="." data-type="number" order="descending"/>
         <xsl:if test="position () = 1"><xsl:value-of select="."/></xsl:if>
       </xsl:for-each>

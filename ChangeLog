@@ -1,3 +1,15 @@
+2015-10-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r23511.
+
+	* src/report_formats/CSV_Results/CSV_Results.xsl (result): Use
+	"severity" instead of "nvt" for CVSS, because "severity" has the
+	overridden value.
+
+	* src/report_formats/CSV_Hosts/CSV_Hosts.xsl (openvas:max-cvss): Use
+	"severity" instead of "nvt" for CVSS, because "severity" has the
+	overridden value.
+
 2015-10-05  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r23507.
