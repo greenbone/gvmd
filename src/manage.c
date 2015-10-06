@@ -2918,7 +2918,7 @@ get_osp_scan_report (const char *scan_id, const char *host, int port,
  * @param[in]   report    The report.
  * @param[in]   scan_id   The UUID of the scan on the scanner.
  *
- * @return 0 if success, -1 if failure.
+ * @return 0 if success, -1 if error, -2 if scan was stopped.
  */
 static int
 handle_osp_scan (task_t task, report_t report, const char *scan_id)
@@ -2936,7 +2936,15 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
   while (1)
     {
       char *report_xml = NULL;
+      int run_status;
 
+      run_status = task_run_status (task);
+      if (run_status == TASK_STATUS_STOPPED
+          || run_status == TASK_STATUS_STOP_REQUESTED)
+        {
+          rc = -2;
+          break;
+        }
       int progress = get_osp_scan_report (scan_id, host, port, ca_pub, key_pub,
                                           key_priv, 0, &report_xml);
       if (progress == -1)
@@ -3037,7 +3045,7 @@ get_osp_task_options (task_t task, target_t target)
  * @return 0 success, -1 if scanner is down.
  */
 static int
-launch_osp_task (task_t task, target_t target, char **scan_id)
+launch_osp_task (task_t task, target_t target, const char *scan_id)
 {
   osp_connection_t *connection;
   char *target_str;
@@ -3074,7 +3082,7 @@ launch_osp_task (task_t task, target_t target, char **scan_id)
 static int
 fork_osp_scan_handler (task_t task, target_t target)
 {
-  char *report_id, *scan_id, title[128];
+  char *report_id, title[128];
   int rc;
 
   assert (task);
@@ -3110,8 +3118,7 @@ fork_osp_scan_handler (task_t task, target_t target)
    */
   reinit_manage_process ();
   manage_session_init (current_credentials.uuid);
-  scan_id = NULL;
-  if (launch_osp_task (task, target, &scan_id))
+  if (launch_osp_task (task, target, report_id))
     {
       result_t result;
       const char *type;
@@ -3132,11 +3139,10 @@ fork_osp_scan_handler (task_t task, target_t target)
   set_report_scan_run_status (current_report, TASK_STATUS_RUNNING);
 
   snprintf (title, sizeof (title), "openvasmd (OSP): %s handler", report_id);
-  g_free (report_id);
   proctitle_set (title);
 
-  rc = handle_osp_scan (task, current_report, scan_id);
-  g_free (scan_id);
+  rc = handle_osp_scan (task, current_report, report_id);
+  g_free (report_id);
   if (rc == 0)
     {
       set_task_run_status (task, TASK_STATUS_DONE);
@@ -3147,8 +3153,6 @@ fork_osp_scan_handler (task_t task, target_t target)
       set_task_run_status (task, TASK_STATUS_STOPPED);
       set_report_scan_run_status (current_report, TASK_STATUS_STOPPED);
     }
-  else
-    abort ();
 
   current_report = 0;
   current_scanner_task = (task_t) 0;
@@ -4285,6 +4289,32 @@ start_task (const char *task_id, char **report_id)
   return run_task (task_id, report_id, 0, "start_task");
 }
 
+static int
+stop_osp_task (task_t task)
+{
+  osp_connection_t *connection;
+  int ret;
+  char *scan_id;
+
+  connection = osp_scanner_connect (task_scanner (task));
+  if (!connection)
+    {
+      set_task_run_status (task, TASK_STATUS_STOPPED);
+      set_report_scan_run_status (current_report, TASK_STATUS_STOPPED);
+      return -1;
+    }
+  set_task_run_status (task, TASK_STATUS_STOP_REQUESTED);
+  scan_id = report_uuid (task_running_report (task));
+  ret = osp_stop_scan (connection, scan_id, NULL);
+  osp_connection_close (connection);
+  set_task_run_status (task, TASK_STATUS_STOPPED);
+  set_report_scan_run_status (current_report, TASK_STATUS_STOPPED);
+  g_free (scan_id);
+  if (ret)
+    return -1;
+  return 0;
+}
+
 /**
  * @brief Initiate stopping a task.
  *
@@ -4348,7 +4378,7 @@ stop_task_internal (task_t task)
  *
  * @return 0 on success, 1 if stop requested, 3 failed to find task,
  *         99 permission denied, -1 if out of space in scanner output buffer,
- *         -5 scanner down, 2 if stopping the task is not supported.
+ *         -5 scanner down.
  */
 int
 stop_task (const char *task_id)
@@ -4365,7 +4395,7 @@ stop_task (const char *task_id)
     return 3;
 
   if (config_type (task_config (task)) != 0)
-    return 2;
+    return stop_osp_task (task);
 
   return stop_task_internal (task);
 }

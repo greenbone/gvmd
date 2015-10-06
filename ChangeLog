@@ -1,3 +1,17 @@
+2015-10-06  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (handle_osp_scan): While waiting for scan to finish,
+	check if it was stopped elsewhere.
+	(launch_osp_task): Adjust scan_id parameter.
+	(fork_osp_scan_handler): Use the report's ID as the OSP scan ID as it
+	may be used to later stop the OSP scan from another process. Adjust
+	accordingly.
+	(stop_osp_task): New function.
+	(stop_task): Call stop_osp_task() in OSP case.
+
+	* src/omp.c (omp_xml_handle_end_element): Remove handling of stop not
+	supported value in STOP_TASK case.
+
 2015-10-05  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Make it possible to import OSP scan configs.

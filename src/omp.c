@@ -27683,12 +27683,6 @@ create_task_fail:
                   log_event ("task", "Task", stop_task_data->task_id,
                              "requested to stop");
                   break;
-                case 2:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("stop_task", "Stopping not supported"));
-                  log_event_fail ("task", "Task", stop_task_data->task_id,
-                                  "stopped");
-                  break;
                 case 3:   /* Find failed. */
                   if (send_find_error_to_client ("stop_task", "task",
                                                  stop_task_data->task_id,
