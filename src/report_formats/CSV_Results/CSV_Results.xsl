@@ -193,7 +193,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </xsl:when>
   </xsl:choose>
   <xsl:text>,</xsl:text>
-  <xsl:value-of select="nvt/cvss_base"/>
+  <xsl:value-of select="severity"/>
   <xsl:text>,</xsl:text>
   <xsl:value-of select="threat"/>
   <xsl:text>,"</xsl:text>

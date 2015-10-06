@@ -1,3 +1,13 @@
+2015-10-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/report_formats/CSV_Results/CSV_Results.xsl (result): Use
+	"severity" instead of "nvt" for CVSS, because "severity" has the
+	overridden value.
+
+	* src/report_formats/CSV_Hosts/CSV_Hosts.xsl (openvas:max-cvss): Use
+	"severity" instead of "nvt" for CVSS, because "severity" has the
+	overridden value.
+
 2015-10-06  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (handle_osp_scan): While waiting for scan to finish,
@@ -44,7 +54,7 @@
 	* src/manage_pg.c (create_tables): Replace table "lsc_credentials" with
 	new tables "credentials" and "credentials_data". Same with the
 	corresponding trash tables. Update references comments in targets.
-	
+
 	* src/manage_sql.c: Replace "lsc_credential" commands, types, functions
 	and macros with "credential" ones and use new credentials types and
 	data tables. Update the commands list, target functions and iterator
