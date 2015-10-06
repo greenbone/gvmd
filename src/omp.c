@@ -18043,6 +18043,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   error_send_to_client (error);
                 }
+              get_assets_data_reset (get_assets_data);
+              set_client_state (CLIENT_AUTHENTIC);
               return;
             }
 

@@ -1,3 +1,8 @@
+2015-10-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): Reset command data and client
+	state when returning due to an unknown type in GET_ASSETS case.
+
 2015-10-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/report_formats/CSV_Results/CSV_Results.xsl (result): Use
