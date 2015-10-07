@@ -10333,6 +10333,7 @@ migrate_153_to_154 ()
 {
   const char *primary_key_type = sql_is_sqlite3 () ? "INTEGER" : "SERIAL";
   iterator_t credentials;
+
   sql_begin_exclusive ();
 
   /* Ensure that the database is currently version 153. */
@@ -10507,6 +10508,39 @@ migrate_153_to_154 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 154 to version 155.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_154_to_155 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 154. */
+
+  if (manage_db_version () != 154)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Reports got a new column flags. */
+  sql ("ALTER TABLE reports ADD COLUMN flags INTEGER;");
+  sql ("UPDATE reports SET flags = 0;");
+
+  /* Set the database version to 155. */
+
+  set_db_version (155);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
 #ifdef SQL_IS_SQLITE
 #define SQLITE_OR_NULL(function) function
 #else
@@ -10672,6 +10706,7 @@ static migrator_t database_migrators[]
     {152, migrate_151_to_152},
     {153, migrate_152_to_153},
     {154, migrate_153_to_154},
+    {155, migrate_154_to_155},
     /* End marker. */
     {-1, NULL}};
 

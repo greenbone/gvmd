@@ -1,3 +1,30 @@
+2015-10-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Record in each report in the db whether the task was started by the
+	scheduler.  Use this info to prevent the scheduler from stopping
+	manually started tasks.  Hence increase database version to 155.  Add
+	database migration from version 154 to 155.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 155.
+
+	* src/manage_migrators.c (migrate_154_to_155): New function.
+	(database_migrators): Add migrate_154_to_155.
+
+	* src/manage_pg.c (create_tables): Add column "flags" to reports.
+
+	* src/manage_sqlite3.c (create_tables): Add column "flags" to reports.
+
+	* src/manage_sql.c (set_report_scheduled, report_scheduled): New
+	functions.
+	(create_current_report): Record whether the report was for a scheduled
+	task.
+	(task_schedule_iterator_stop_due): If the task was started manually,
+	then simply return FALSE.
+
+	* doc/db_postgres.sql (reports): Add "flags".
+
+	* doc/db.png: Update from source.
+
 2015-10-07  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (config_insert_preferences): Correct NULL check

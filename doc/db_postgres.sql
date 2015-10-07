@@ -513,7 +513,8 @@ CREATE TABLE reports
   slave_name text,
   slave_host text,
   slave_port integer,
-  source_iface text);
+  source_iface text,
+  flags integer);
 
 CREATE TABLE report_counts
  (id SERIAL PRIMARY KEY,

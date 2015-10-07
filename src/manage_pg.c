@@ -1968,7 +1968,8 @@ create_tables ()
        "  slave_name text,"
        "  slave_host text,"
        "  slave_port integer,"
-       "  source_iface text);");
+       "  source_iface text,"
+       "  flags integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS report_counts"
        " (id SERIAL PRIMARY KEY,"
