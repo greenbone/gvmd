@@ -7979,6 +7979,14 @@ create_filter_type
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>specials</b>&gt;
+              ?<ul style="list-style: none"><li>
+              &lt;<b>full</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Create permission giving members full access to each other's resources.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>users</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">Comma separated list of user names.</div>
 <ul style="list-style: none"></ul>
@@ -8010,6 +8018,7 @@ create_filter_type
        create_group_name
        &amp; create_group_comment?
        &amp; create_group_copy?
+       &amp; create_group_specials?
        &amp; create_group_users?
      }
 
@@ -8029,6 +8038,18 @@ create_group_copy
  = element copy
      {
        uuid
+     }
+
+create_group_specials
+ = element specials
+     {
+       create_group_specials_full
+     }
+
+create_group_specials_full
+ = element full
+     {
+       ""
      }
 
 create_group_users

@@ -3582,6 +3582,7 @@ create_group
        create_group_name
        & create_group_comment?
        & create_group_copy?
+       & create_group_specials?
        & create_group_users?
      }
 
@@ -3604,6 +3605,19 @@ create_group_copy
  = element copy
      {
        uuid
+     }
+
+create_group_specials
+ = element specials
+     {
+       create_group_specials_full
+     }
+
+# Create permission giving members full access to each other's resources.
+create_group_specials_full
+ = element full
+     {
+       ""
      }
 
 # Comma separated list of user names.
