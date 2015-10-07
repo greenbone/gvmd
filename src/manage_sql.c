@@ -29566,8 +29566,9 @@ config_insert_preferences (config_t config,
             quoted_type = sql_quote (preference->type);
             quoted_value = sql_quote (value->str);
             g_string_free (value, TRUE);
-            quoted_default = preference ? sql_quote (preference->default_value)
-                                        : NULL;
+            quoted_default = preference->default_value
+                              ? sql_quote (preference->default_value)
+                              : NULL;
 
             if (config_type == NULL || strcmp (config_type, "0") == 0)
               {
