@@ -1,3 +1,8 @@
+2015-10-07  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (config_insert_preferences): Correct NULL check
+	before quoting the default value.
+
 2015-10-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.h: Adjust header for previous commit.
