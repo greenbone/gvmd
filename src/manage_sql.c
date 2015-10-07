@@ -267,6 +267,11 @@ role_is_predefined (role_t);
 int
 role_is_predefined_id (const char *);
 
+static int
+create_permission_internal (const char *, const char *, const char *,
+                            const char *, const char *, const char *,
+                            permission_t *);
+
 
 /* Variables. */
 
@@ -45520,6 +45525,8 @@ add_users (const gchar *type, resource_t resource, const char *users)
  * @param[in]   group_name       Group name.
  * @param[in]   comment          Comment on group.
  * @param[in]   users            Users group applies to.
+ * @param[in]   special_full     Whether to give group super on itself (full
+ *                               sharing between members).
  * @param[out]  group            Group return.
  *
  * @return 0 success, 1 group exists already, 2 failed to find user, 4 user
@@ -45527,7 +45534,7 @@ add_users (const gchar *type, resource_t resource, const char *users)
  */
 int
 create_group (const char *group_name, const char *comment, const char *users,
-              group_t* group)
+              int special_full, group_t* group)
 {
   int ret;
   gchar *quoted_group_name, *quoted_comment;
@@ -45569,7 +45576,23 @@ create_group (const char *group_name, const char *comment, const char *users,
   if (ret)
     sql ("ROLLBACK;");
   else
-    sql ("COMMIT;");
+    {
+      if (special_full)
+        {
+          char *group_id;
+
+          group_id = group_uuid (*group);
+          ret = create_permission_internal ("Super", NULL, "group", group_id,
+                                            "group", group_id, NULL);
+          g_free (group_id);
+          if (ret)
+            {
+              sql ("ROLLBACK;");
+              return ret;
+            }
+        }
+      sql ("COMMIT;");
+    }
 
   return ret;
 }
@@ -46261,6 +46284,8 @@ check_permission_args (const char *name_arg, const char *resource_type_arg,
 /**
  * @brief Create a permission.
  *
+ * Caller must organise the transaction.
+ *
  * @param[in]   name_arg        Name of permission.
  * @param[in]   comment         Comment on permission.
  * @param[in]   resource_type_arg  Type of resource, for special permissions.
@@ -46274,11 +46299,12 @@ check_permission_args (const char *name_arg, const char *resource_type_arg,
  *         8 permission on permission, 9 permission does not accept resource,
  *         99 permission denied, -1 internal error.
  */
-int
-create_permission (const char *name_arg, const char *comment,
-                   const char *resource_type_arg, const char *resource_id_arg,
-                   const char *subject_type, const char *subject_id,
-                   permission_t *permission)
+static int
+create_permission_internal (const char *name_arg, const char *comment,
+                            const char *resource_type_arg,
+                            const char *resource_id_arg,
+                            const char *subject_type, const char *subject_id,
+                            permission_t *permission)
 {
   int ret;
   gchar *name, *quoted_name, *quoted_comment, *resource_type;
@@ -46287,22 +46313,14 @@ create_permission (const char *name_arg, const char *comment,
 
   assert (current_credentials.uuid);
 
-  sql_begin_immediate ();
-
   if (acl_user_may ("create_permission") == 0)
-    {
-      sql ("ROLLBACK;");
-      return 99;
-    }
+    return 99;
 
   ret = check_permission_args (name_arg, resource_type_arg, resource_id_arg,
                                subject_type, subject_id, &name, &resource,
                                &resource_type, &resource_id, &subject);
   if (ret)
-    {
-      sql ("ROLLBACK;");
-      return ret;
-    }
+    return ret;
 
   assert (subject);
   assert ((resource_id == resource_id_arg) || (resource_id == NULL));
@@ -46338,9 +46356,44 @@ create_permission (const char *name_arg, const char *comment,
   if (permission)
     *permission = sql_last_insert_id ();
 
-  sql ("COMMIT;");
-
   return 0;
+}
+
+/**
+ * @brief Create a permission.
+ *
+ * @param[in]   name_arg        Name of permission.
+ * @param[in]   comment         Comment on permission.
+ * @param[in]   resource_type_arg  Type of resource, for special permissions.
+ * @param[in]   resource_id_arg    UUID of resource.
+ * @param[in]   subject_type    Type of subject.
+ * @param[in]   subject_id      UUID of subject.
+ * @param[out]  permission      Permission.
+ *
+ * @return 0 success, 2 failed to find subject, 3 failed to find resource,
+ *         5 error in resource, 6 error in subject, 7 error in name,
+ *         8 permission on permission, 9 permission does not accept resource,
+ *         99 permission denied, -1 internal error.
+ */
+int
+create_permission (const char *name_arg, const char *comment,
+                   const char *resource_type_arg, const char *resource_id_arg,
+                   const char *subject_type, const char *subject_id,
+                   permission_t *permission)
+{
+  int ret;
+
+  sql_begin_immediate ();
+
+  ret = create_permission_internal (name_arg, comment, resource_type_arg,
+                                    resource_id_arg, subject_type, subject_id,
+                                    permission);
+  if (ret)
+    sql ("ROLLBACK;");
+  else
+    sql ("COMMIT;");
+
+  return ret;
 }
 
 /**

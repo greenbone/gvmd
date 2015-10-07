@@ -1080,6 +1080,7 @@ typedef struct
   char *copy;                    ///< UUID of resource to copy.
   char *name;                    ///< Name of new group.
   char *users;                   ///< Users belonging to new group.
+  int special_full;              ///< Boolean.  Give group Super on itself.
 } create_group_data_t;
 
 /**
@@ -5124,6 +5125,8 @@ typedef enum
   CLIENT_CREATE_GROUP_COPY,
   CLIENT_CREATE_GROUP_NAME,
   CLIENT_CREATE_GROUP_USERS,
+  CLIENT_CREATE_GROUP_SPECIALS,
+  CLIENT_CREATE_GROUP_SPECIALS_FULL,
   CLIENT_CREATE_NOTE,
   CLIENT_CREATE_NOTE_ACTIVE,
   CLIENT_CREATE_NOTE_COPY,
@@ -9105,8 +9108,18 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             openvas_append_string (&create_group_data->name, "");
             set_client_state (CLIENT_CREATE_GROUP_NAME);
           }
+        else if (strcasecmp ("SPECIALS", element_name) == 0)
+          set_client_state (CLIENT_CREATE_GROUP_SPECIALS);
         else if (strcasecmp ("USERS", element_name) == 0)
           set_client_state (CLIENT_CREATE_GROUP_USERS);
+        ELSE_ERROR ("create_group");
+
+      case CLIENT_CREATE_GROUP_SPECIALS:
+        if (strcasecmp ("FULL", element_name) == 0)
+          {
+            create_group_data->special_full = 1;
+            set_client_state (CLIENT_CREATE_GROUP_SPECIALS_FULL);
+          }
         ELSE_ERROR ("create_group");
 
       case CLIENT_CREATE_NOTE:
@@ -21082,6 +21095,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         (create_group_data->name,
                          create_group_data->comment,
                          create_group_data->users,
+                         create_group_data->special_full,
                          &new_group))
             {
               case 0:
@@ -21131,6 +21145,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_GROUP, COMMENT);
       CLOSE (CLIENT_CREATE_GROUP, COPY);
       CLOSE (CLIENT_CREATE_GROUP, NAME);
+      CLOSE (CLIENT_CREATE_GROUP, SPECIALS);
+      CLOSE (CLIENT_CREATE_GROUP_SPECIALS, FULL);
       CLOSE (CLIENT_CREATE_GROUP, USERS);
 
       case CLIENT_CREATE_NOTE:

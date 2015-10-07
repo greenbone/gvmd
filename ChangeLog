@@ -1,3 +1,17 @@
+2015-10-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Extend CREATE_GROUP with option to create "super on self" permission for
+	the group, so that all member resources are shared.
+
+	* src/manage_sql.c (create_group): Add special_full arg.
+	(create_permission_internal): New function.  Body from create_permission.
+	(create_permission): Call through to create_permission_internal.
+
+	* src/omp.c (create_group_data_t): Add special_full.
+	(client_state_t): Add new states.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add SPECIALS
+	to CREATE_GROUP.
+
 2015-10-06  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/openvasmd.c (main): Check if IPv6 is supported when setting
