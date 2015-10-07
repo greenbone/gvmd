@@ -2910,7 +2910,7 @@ int
 copy_group (const char *, const char *, const char *, group_t *);
 
 int
-create_group (const char *, const char *, const char *, group_t *);
+create_group (const char *, const char *, const char *, int, group_t *);
 
 int
 delete_group (const char *, int);

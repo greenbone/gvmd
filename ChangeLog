@@ -1,4 +1,8 @@
-2015-10-06  Matthew Mundell <matthew.mundell@greenbone.net>
+2015-10-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.h: Adjust header for previous commit.
+
+2015-10-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Extend CREATE_GROUP with option to create "super on self" permission for
 	the group, so that all member resources are shared.
