@@ -13657,6 +13657,42 @@ task_run_status (task_t task)
 }
 
 /**
+ * @brief Set a report's scheduled flag.
+ *
+ * Set flag if task was scheduled, else clear flag.
+ *
+ * @param[in]   report  Report.
+ */
+static void
+set_report_scheduled (report_t report)
+{
+  /* Using unused column "nbefile" instead of adding column "flags", to avoid
+   * backporting a migrator. */
+
+  if (authenticate_allow_all)
+    /* The task was scheduled. */
+    sql ("UPDATE reports SET nbefile = 1 WHERE id = %llu;",
+         report);
+  else
+    sql ("UPDATE reports SET nbefile = 0 WHERE id = %llu;",
+         report);
+}
+
+/**
+ * @brief Get a report's scheduled flag.
+ *
+ * @param[in]   report  Report.
+ */
+static int
+report_scheduled (report_t report)
+{
+  /* Using unused column "nbefile" instead of adding column "flags", to avoid
+   * backporting a migrator. */
+  return sql_int ("SELECT nbefile FROM reports WHERE id = %llu;",
+                  report);
+}
+
+/**
  * @brief Set the run state of a task.
  *
  * @param[in]  task    Task.
@@ -15773,6 +15809,8 @@ create_current_report (task_t task, char **report_id, task_status_t status)
   /* Create the report. */
 
   current_report = make_report (task, *report_id, status);
+
+  set_report_scheduled (current_report);
 
   return 0;
 }
@@ -40401,6 +40439,14 @@ task_schedule_iterator_stop_due (iterator_t* iterator)
   period = task_schedule_iterator_period (iterator);
   period_months = task_schedule_iterator_period_months (iterator);
   duration = task_schedule_iterator_duration (iterator);
+
+  if (duration)
+    {
+      report_t report;
+      report = task_running_report (task_schedule_iterator_task (iterator));
+      if (report && (report_scheduled (report) == 0))
+        return FALSE;
+    }
 
   if (period && duration)
     {

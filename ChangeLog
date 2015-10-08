@@ -1,3 +1,19 @@
+2015-10-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r23534, but reuse an existing column in reports instead of
+	adding a new column in a migrator.
+
+	Record in each report in the db whether the task was started by the
+	scheduler.  Use this info to prevent the scheduler from stopping
+	manually started tasks.
+
+	* src/manage_sql.c (set_report_scheduled, report_scheduled): New
+	functions.
+	(create_current_report): Record whether the report was for a scheduled
+	task.
+	(task_schedule_iterator_stop_due): If the task was started manually,
+	then simply return FALSE.
+
 2015-10-07  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r23529.
