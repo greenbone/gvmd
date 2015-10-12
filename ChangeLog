@@ -1,5 +1,11 @@
 2015-10-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sqlite3.c (create_tables): Lock the db completely around
+	the drop-create view steps, so that other processes do not try to access
+	the views when they have been removed.
+
+2015-10-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml.in (create_group): Add SPECIALS.
 
 	* doc/omp.rnc, doc/omp.html: Update from source.
