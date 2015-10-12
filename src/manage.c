@@ -3048,7 +3048,7 @@ static int
 launch_osp_task (task_t task, target_t target, const char *scan_id)
 {
   osp_connection_t *connection;
-  char *target_str;
+  char *target_str, *ports_str;
   GHashTable *options;
   int ret;
 
@@ -3062,11 +3062,13 @@ launch_osp_task (task_t task, target_t target, const char *scan_id)
       return -1;
     }
   target_str = target_hosts (target);
-  ret = osp_start_scan (connection, target_str, options, scan_id);
+  ports_str = target_port_range (target);
+  ret = osp_start_scan (connection, target_str, ports_str, options, scan_id);
 
   g_hash_table_destroy (options);
   osp_connection_close (connection);
   g_free (target_str);
+  g_free (ports_str);
   return ret;
 }
 
