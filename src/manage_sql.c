@@ -52157,7 +52157,6 @@ init_host_identifier_iterator (iterator_t* iterator, host_t host,
                    "       iso_time (modification_time), creation_time,"
                    "       modification_time, owner, owner, value,"
                    "       source_type, source_id, source_data,"
-                   // FIX user
                    "       (CASE WHEN source_type LIKE 'Report%%'"
                    "        THEN NOT EXISTS (SELECT * FROM reports"
                    "                         WHERE uuid = source_id)"
@@ -52172,7 +52171,6 @@ init_host_identifier_iterator (iterator_t* iterator, host_t host,
                    "        modification_time, owner, owner,"
                    "        (SELECT name FROM oss WHERE id = os),"
                    "        source_type, source_id, source_data,"
-                   // FIX user
                    "        (CASE WHEN source_type LIKE 'Report%%'"
                    "         THEN NOT EXISTS (SELECT * FROM reports"
                    "                          WHERE uuid = source_id)"

@@ -1,3 +1,8 @@
+2015-10-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_host_identifier_iterator): Remove comments,
+	because user access does not affect whether the host is orphaned.
+
 2015-10-12  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (launch_osp_task): Adjust osp_start_scan() call to send
