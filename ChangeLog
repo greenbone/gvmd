@@ -1,3 +1,11 @@
+2015-10-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r23550.
+
+	* src/manage_sqlite3.c (create_tables): Lock the db completely around
+	the drop-create view steps, so that other processes do not try to access
+	the views when they have been removed.
+
 2015-10-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r23534, but reuse an existing column in reports instead of
