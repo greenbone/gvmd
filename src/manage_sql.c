@@ -9600,50 +9600,50 @@ append_to_task_string (task_t task, const char* field, const char* value)
      "last"                                                                 \
    },                                                                       \
    {                                                                        \
-     "CASE WHEN target IS null THEN 0 ELSE"                                 \
+     "CASE WHEN target IS null OR opts.ignore_severity THEN 0 ELSE"         \
      " report_severity_count (task_last_report (id),"                       \
      "                        opts.override, opts.min_qod,"                 \
      "                        'False Positive')"                            \
      " END",                                                                \
      "false_positive" },                                                    \
    {                                                                        \
-     "CASE WHEN target IS null THEN 0 ELSE"                                 \
+     "CASE WHEN target IS null OR opts.ignore_severity THEN 0 ELSE"         \
      " report_severity_count (task_last_report (id),"                       \
      "                        opts.override, opts.min_qod, 'Log')"          \
      " END",                                                                \
      "log" },                                                               \
    {                                                                        \
-     "CASE WHEN target IS null THEN 0 ELSE"                                 \
+     "CASE WHEN target IS null OR opts.ignore_severity THEN 0 ELSE"         \
      " report_severity_count (task_last_report (id),"                       \
      "                        opts.override, opts.min_qod, 'Low')"          \
      " END",                                                                \
      "low" },                                                               \
    {                                                                        \
-     "CASE WHEN target IS null THEN 0 ELSE"                                 \
+     "CASE WHEN target IS null OR opts.ignore_severity THEN 0 ELSE"         \
      " report_severity_count (task_last_report (id),"                       \
      "                        opts.override, opts.min_qod, 'Medium')"       \
      " END",                                                                \
      "medium" },                                                            \
    {                                                                        \
-     "CASE WHEN target IS null THEN 0 ELSE"                                 \
+     "CASE WHEN target IS null OR opts.ignore_severity THEN 0 ELSE"         \
      " report_severity_count (task_last_report (id),"                       \
      "                        opts.override, opts.min_qod, 'High')"         \
      " END",                                                                \
      "high" },                                                              \
    {                                                                        \
-     "CASE WHEN target IS null THEN 0 ELSE"                                 \
+     "CASE WHEN target IS null OR opts.ignore_severity THEN 0 ELSE"         \
      " report_host_count (task_last_report (id))"                           \
      " END",                                                                \
      "hosts"                                                                \
    },                                                                       \
    {                                                                        \
-     "CASE WHEN target IS null THEN 0 ELSE"                                 \
+     "CASE WHEN target IS null OR opts.ignore_severity THEN 0 ELSE"         \
      " report_result_host_count (task_last_report (id), opts.min_qod)"      \
      " END",                                                                \
      "result_hosts"                                                         \
    },                                                                       \
    {                                                                         \
-     "CASE WHEN target IS null THEN 0 ELSE"                                  \
+     "CASE WHEN target IS null OR opts.ignore_severity THEN 0 ELSE"         \
      " coalesce (report_severity_count (task_last_report (id),"              \
      "                                 opts.override, opts.min_qod,"         \
      "                                 'False Positive') * 1.0"              \
@@ -9653,7 +9653,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      " END",                                                                 \
      "fp_per_host" },                                                        \
    {                                                                         \
-     "CASE WHEN target IS null THEN 0 ELSE"                                  \
+     "CASE WHEN target IS null OR opts.ignore_severity THEN 0 ELSE"         \
      " coalesce (report_severity_count (task_last_report (id),"              \
      "                                 opts.override, opts.min_qod,"         \
      "                                 'Log') * 1.0"                         \
@@ -9663,7 +9663,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      " END",                                                                 \
      "log_per_host" },                                                       \
    {                                                                         \
-     "CASE WHEN target IS null THEN 0 ELSE"                                  \
+     "CASE WHEN target IS null OR opts.ignore_severity THEN 0 ELSE"         \
      " coalesce (report_severity_count (task_last_report (id),"              \
      "                                 opts.override, opts.min_qod,"         \
      "                                 'Low') * 1.0"                         \
@@ -9673,7 +9673,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      " END",                                                                 \
      "low_per_host" },                                                       \
    {                                                                         \
-     "CASE WHEN target IS null THEN 0 ELSE"                                  \
+     "CASE WHEN target IS null OR opts.ignore_severity THEN 0 ELSE"         \
      " coalesce (report_severity_count (task_last_report (id),"              \
      "                                 opts.override, opts.min_qod,"         \
      "                                 'Medium') * 1.0"                      \
@@ -9683,7 +9683,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      " END",                                                                 \
      "medium_per_host" },                                                    \
    {                                                                         \
-     "CASE WHEN target IS null THEN 0 ELSE"                                  \
+     "CASE WHEN target IS null OR opts.ignore_severity THEN 0 ELSE"         \
      " coalesce (report_severity_count (task_last_report (id),"              \
      "                                 opts.override, opts.min_qod,"         \
      "                                 'High') * 1.0"                        \
@@ -9700,17 +9700,20 @@ append_to_task_string (task_t task, const char* field, const char* value)
  *
  * @param[in]  override  Whether to apply overrides.
  * @param[in]  min_qod   Minimum QoD of results to count.
+ * @param[in]  ignore_severity  Whether to ignore severity data.
  * @return Newly allocated string with the extra_tables clause.
  */
 static gchar*
-task_iterator_opts_table (int override, int min_qod)
+task_iterator_opts_table (int override, int min_qod, int ignore_severity)
 {
   return g_strdup_printf (", (SELECT"
                           "   %d AS override,"
-                          "   %d AS min_qod)"
+                          "   %d AS min_qod,"
+                          "   %d AS ignore_severity)"
                           "  AS opts",
                           override,
-                          min_qod);
+                          min_qod,
+                          ignore_severity);
 }
 
 /**
@@ -9718,15 +9721,17 @@ task_iterator_opts_table (int override, int min_qod)
  *
  * @param[in]  iterator    Task iterator.
  * @param[in]  trash       Whether to iterate over trashcan tasks.
+ * @param[in]  ignore_severity  Whether to ignore severity data.
  */
 static void
-init_user_task_iterator (iterator_t* iterator, int trash)
+init_user_task_iterator (iterator_t* iterator, int trash, int ignore_severity)
 {
   static column_t select_columns[] = TASK_ITERATOR_COLUMNS;
   gchar *extra_tables;
   gchar *columns;
 
-  extra_tables = task_iterator_opts_table (0, MIN_QOD_DEFAULT);
+  extra_tables = task_iterator_opts_table (0, MIN_QOD_DEFAULT,
+                                           ignore_severity);
 
   columns = columns_build_select (select_columns);
 
@@ -9782,7 +9787,7 @@ init_task_iterator (iterator_t* iterator, const get_data_t *get)
   g_free (value);
   free (filter);
 
-  extra_tables = task_iterator_opts_table (overrides, min_qod);
+  extra_tables = task_iterator_opts_table (overrides, min_qod, 0);
 
   ret = init_get_iterator (iterator,
                             "task",
@@ -13581,7 +13586,7 @@ task_count (const get_data_t *get)
   g_free (value);
   free (filter);
 
-  extra_tables = task_iterator_opts_table (overrides, min_qod);
+  extra_tables = task_iterator_opts_table (overrides, min_qod, 0);
 
   ret = count ("task", get,
                 columns,
@@ -28055,7 +28060,7 @@ delete_trash_tasks ()
 {
   iterator_t tasks;
 
-  init_user_task_iterator (&tasks, 1);
+  init_user_task_iterator (&tasks, 1, 1);
   while (next (&tasks))
     {
       task_t task;
@@ -56108,7 +56113,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   current_credentials.uuid = sql_string ("SELECT uuid FROM users"
                                          " WHERE id = %llu;",
                                          user);
-  init_user_task_iterator (&tasks, 0);
+  init_user_task_iterator (&tasks, 0, 1);
   while (next (&tasks))
     switch (task_iterator_run_status (&tasks))
       {
@@ -58189,7 +58194,7 @@ type_opts_table (const char *type, int apply_overrides, int min_qod)
     return NULL;
   else if (strcasecmp (type, "TASK") == 0)
     {
-      return task_iterator_opts_table (apply_overrides, min_qod);
+      return task_iterator_opts_table (apply_overrides, min_qod, 0);
     }
   else if (strcasecmp (type, "REPORT") == 0)
     {

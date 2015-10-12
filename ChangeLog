@@ -1,3 +1,13 @@
+2015-10-12  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Ignore severity data of tasks when deleting users to avoid conflicting
+	transactions because of report counts caching.
+
+	* src/manage_sql.c (TASK_ITERATOR_COLUMNS, task_iterator_opts_table)
+	(init_user_task_iterator): Add option to ignore severity data.
+	(init_task_iterator, task_count, delete_trash_tasks, delete_user)
+	(type_opts_table): Add new parameter for task_iterator_opts_table.
+
 2015-10-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sqlite3.c (create_tables): Lock the db completely around
