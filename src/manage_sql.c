@@ -56181,10 +56181,10 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   sql ("DELETE FROM configs_trash WHERE owner = %llu;", user);
 
   sql ("DELETE FROM credentials_data WHERE credential IN"
-       " SELECT id FROM credentials WHERE owner = %llu;",
+       " (SELECT id FROM credentials WHERE owner = %llu);",
        user);
   sql ("DELETE FROM credentials_trash_data WHERE credential IN"
-       " SELECT id FROM credentials_trash WHERE owner = %llu;",
+       " (SELECT id FROM credentials_trash WHERE owner = %llu);",
        user);
 
   sql ("DELETE FROM credentials WHERE owner = %llu;", user);

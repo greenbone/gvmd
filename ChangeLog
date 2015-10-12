@@ -1,5 +1,10 @@
 2015-10-12  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (delete_user): Add missing parantheses in SQL for
+	deleting credential data.
+
+2015-10-12  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Ignore severity data of tasks when deleting users to avoid conflicting
 	transactions because of report counts caching.
 
