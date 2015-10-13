@@ -9600,50 +9600,50 @@ append_to_task_string (task_t task, const char* field, const char* value)
      "last"                                                                 \
    },                                                                       \
    {                                                                        \
-     "CASE WHEN target IS null OR opts.ignore_severity THEN 0 ELSE"         \
+     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"    \
      " report_severity_count (task_last_report (id),"                       \
      "                        opts.override, opts.min_qod,"                 \
      "                        'False Positive')"                            \
      " END",                                                                \
      "false_positive" },                                                    \
    {                                                                        \
-     "CASE WHEN target IS null OR opts.ignore_severity THEN 0 ELSE"         \
+     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"    \
      " report_severity_count (task_last_report (id),"                       \
      "                        opts.override, opts.min_qod, 'Log')"          \
      " END",                                                                \
      "log" },                                                               \
    {                                                                        \
-     "CASE WHEN target IS null OR opts.ignore_severity THEN 0 ELSE"         \
+     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"    \
      " report_severity_count (task_last_report (id),"                       \
      "                        opts.override, opts.min_qod, 'Low')"          \
      " END",                                                                \
      "low" },                                                               \
    {                                                                        \
-     "CASE WHEN target IS null OR opts.ignore_severity THEN 0 ELSE"         \
+     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"    \
      " report_severity_count (task_last_report (id),"                       \
      "                        opts.override, opts.min_qod, 'Medium')"       \
      " END",                                                                \
      "medium" },                                                            \
    {                                                                        \
-     "CASE WHEN target IS null OR opts.ignore_severity THEN 0 ELSE"         \
+     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"    \
      " report_severity_count (task_last_report (id),"                       \
      "                        opts.override, opts.min_qod, 'High')"         \
      " END",                                                                \
      "high" },                                                              \
    {                                                                        \
-     "CASE WHEN target IS null OR opts.ignore_severity THEN 0 ELSE"         \
+     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"    \
      " report_host_count (task_last_report (id))"                           \
      " END",                                                                \
      "hosts"                                                                \
    },                                                                       \
    {                                                                        \
-     "CASE WHEN target IS null OR opts.ignore_severity THEN 0 ELSE"         \
+     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"    \
      " report_result_host_count (task_last_report (id), opts.min_qod)"      \
      " END",                                                                \
      "result_hosts"                                                         \
    },                                                                       \
    {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity THEN 0 ELSE"         \
+     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
      " coalesce (report_severity_count (task_last_report (id),"              \
      "                                 opts.override, opts.min_qod,"         \
      "                                 'False Positive') * 1.0"              \
@@ -9653,7 +9653,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      " END",                                                                 \
      "fp_per_host" },                                                        \
    {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity THEN 0 ELSE"         \
+     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
      " coalesce (report_severity_count (task_last_report (id),"              \
      "                                 opts.override, opts.min_qod,"         \
      "                                 'Log') * 1.0"                         \
@@ -9663,7 +9663,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      " END",                                                                 \
      "log_per_host" },                                                       \
    {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity THEN 0 ELSE"         \
+     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
      " coalesce (report_severity_count (task_last_report (id),"              \
      "                                 opts.override, opts.min_qod,"         \
      "                                 'Low') * 1.0"                         \
@@ -9673,7 +9673,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      " END",                                                                 \
      "low_per_host" },                                                       \
    {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity THEN 0 ELSE"         \
+     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
      " coalesce (report_severity_count (task_last_report (id),"              \
      "                                 opts.override, opts.min_qod,"         \
      "                                 'Medium') * 1.0"                      \
@@ -9683,7 +9683,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      " END",                                                                 \
      "medium_per_host" },                                                    \
    {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity THEN 0 ELSE"         \
+     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
      " coalesce (report_severity_count (task_last_report (id),"              \
      "                                 opts.override, opts.min_qod,"         \
      "                                 'High') * 1.0"                        \

@@ -1,5 +1,10 @@
 2015-10-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (TASK_ITERATOR_COLUMNS): Compare opts.ignore_severity
+	to an int, for Postgres.
+
+2015-10-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_host_identifier_iterator): Remove comments,
 	because user access does not affect whether the host is orphaned.
 
