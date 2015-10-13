@@ -55480,6 +55480,7 @@ manage_create_user (GSList *log_config, const gchar *database,
  * @param[in]  log_config  Log configuration.
  * @param[in]  database    Location of manage database.
  * @param[in]  name        Name of user.
+ * @param[in]  inheritor_name  Name of user that inherits user's resources.
  *
  * @return 0 success, 2 failed to find user, 4 user has active tasks, -1 error.
  *         -2 database is wrong version, -3 database needs to be initialised
@@ -55487,7 +55488,7 @@ manage_create_user (GSList *log_config, const gchar *database,
  */
 int
 manage_delete_user (GSList *log_config, const gchar *database,
-                    const gchar *name)
+                    const gchar *name, const gchar *inheritor_name)
 {
   const gchar *db;
   int ret;
@@ -55507,7 +55508,7 @@ manage_delete_user (GSList *log_config, const gchar *database,
   /* Setup a dummy user, so that delete_user will work. */
   current_credentials.uuid = "";
 
-  switch ((ret = delete_user (NULL, name, 1, 0)))
+  switch ((ret = delete_user (NULL, name, 1, 0, NULL, inheritor_name)))
     {
       case 0:
         printf ("User deleted.\n");
@@ -55517,6 +55518,15 @@ manage_delete_user (GSList *log_config, const gchar *database,
         break;
       case 4:
         printf ("User has active tasks.\n");
+        break;
+      case 6:
+        printf ("Inheritor not found.\n");
+        break;
+      case 7:
+        printf ("Inheritor same as deleted user.\n");
+        break;
+      case 8:
+        printf ("Invalid inheritor.\n");
         break;
       default:
         printf ("Internal Error.\n");
@@ -56030,16 +56040,20 @@ copy_user (const char* name, const char* comment, const char *user_id,
  * @param[in]  name_arg     Name of user.  Overridden by user_id.
  * @param[in]  ultimate     Whether to remove entirely, or to trashcan.
  * @param[in]  forbid_super_admin  Whether to forbid removal of Super Admin.
+ * @param[in]  inheritor_id   UUID of user who will inherit owned objects.
+ * @param[in]  inheritor_name Name of user who will inherit owned objects.
  *
  * @return 0 success, 2 failed to find user, 4 user has active tasks,
- *         5 attempted suicide, 99 permission denied, -1 error.
+ *         5 attempted suicide, 6 inheritor not found, 7 inheritor same as
+ *         deleted user, 8 invalid inheritor, 99 permission denied, -1 error.
  */
 int
 delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
-             int forbid_super_admin)
+             int forbid_super_admin,
+             const char* inheritor_id, const char *inheritor_name)
 {
   iterator_t tasks;
-  user_t user;
+  user_t user, inheritor;
   get_data_t get;
   char *current_uuid;
 
@@ -56137,6 +56151,187 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   cleanup_iterator (&tasks);
   free (current_credentials.uuid);
   current_credentials.uuid = current_uuid;
+
+  /* Transfer ownership of objects to the inheritor if one is given */
+  if (inheritor_id && strcmp (inheritor_id, ""))
+    {
+      if (strcmp (inheritor_id, "self") == 0)
+        {
+          sql_int64 (&inheritor, "SELECT id FROM users WHERE uuid = '%s'",
+                     current_credentials.uuid);
+
+          if (inheritor == 0)
+            {
+              sql ("ROLLBACK;");
+              return -1;
+            }
+        }
+      else
+        {
+          if (find_user_with_permission (inheritor_id, &inheritor, "get_users"))
+            {
+              sql ("ROLLBACK;");
+              return -1;
+            }
+
+          if (inheritor == 0)
+            {
+              sql ("ROLLBACK;");
+              return 6;
+            }
+        }
+    }
+  else if (inheritor_name && strcmp (inheritor_name, ""))
+    {
+      if (find_user_by_name_with_permission (inheritor_name, &inheritor,
+                                             "get_users"))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+
+      if (inheritor == 0)
+        {
+          sql ("ROLLBACK;");
+          return 6;
+        }
+    }
+  else
+    inheritor = 0;
+
+  if (inheritor)
+    {
+      gchar *deleted_user_id, *deleted_user_name;
+      gchar *real_inheritor_id, *real_inheritor_name;
+
+      if (inheritor == user)
+        {
+          sql ("ROLLBACK;");
+          return 7;
+        }
+
+      real_inheritor_id = user_uuid (inheritor);
+
+      /* only the current user, owned users or global users may inherit */
+      if (strcmp (real_inheritor_id, current_credentials.uuid)
+          && ! acl_user_owns ("user", inheritor, 0)
+          && sql_int ("SELECT owner != 0 FROM users WHERE id = %llu",
+                      inheritor))
+        {
+          g_free (real_inheritor_id);
+          sql ("ROLLBACK;");
+          return 8;
+        }
+
+      deleted_user_id = user_uuid (user);
+      deleted_user_name = user_name (deleted_user_id);
+      real_inheritor_name = user_name (real_inheritor_id);
+
+      g_log ("event user", G_LOG_LEVEL_MESSAGE,
+             "User %s (%s) is inheriting from %s (%s)",
+             real_inheritor_name, real_inheritor_id,
+             deleted_user_name, deleted_user_id);
+
+      g_free (deleted_user_id);
+      g_free (deleted_user_name);
+      g_free (real_inheritor_id);
+      g_free (real_inheritor_name);
+
+      /* Transfer owned resources*/
+      sql ("UPDATE agents SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE agents_trash SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE alerts SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE alerts_trash SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE configs SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE configs_trash SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE credentials SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE credentials_trash SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE filters SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE filters_trash SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE notes SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE notes_trash SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+
+      sql ("UPDATE permissions SET owner = %llu WHERE owner = %llu",
+           inheritor, user);
+
+      sql ("UPDATE port_lists SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE port_lists_trash SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+
+      sql ("UPDATE report_formats SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE report_formats_trash SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+
+      sql ("UPDATE report_counts SET \"user\" = %llu WHERE \"user\" = %llu",
+           inheritor, user);
+      sql ("UPDATE reports SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+
+      sql ("UPDATE overrides SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE overrides_trash SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE permissions SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE permissions_trash SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE schedules SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE schedules_trash SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE slaves SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE slaves_trash SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE settings SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE tags SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE tags_trash SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE targets SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE targets_trash SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+
+      sql ("UPDATE tasks SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+
+      sql ("UPDATE groups SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE roles SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE users SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+
+      /* Delete user */
+      sql ("DELETE FROM group_users WHERE \"user\" = %llu;", user);
+      sql ("DELETE FROM group_users_trash WHERE \"user\" = %llu;", user);
+      sql ("DELETE FROM role_users WHERE \"user\" = %llu;", user);
+      sql ("DELETE FROM role_users_trash WHERE \"user\" = %llu;", user);
+
+      sql ("DELETE FROM users WHERE id = %llu;", user);
+
+      sql ("COMMIT;");
+
+      return 0;
+    }
+
+  /* Delete owned resources */
 
   sql ("DELETE FROM agents WHERE owner = %llu;", user);
   sql ("DELETE FROM agents_trash WHERE owner = %llu;", user);
@@ -56309,6 +56504,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   sql ("DELETE FROM role_users WHERE \"user\" = %llu;", user);
   sql ("DELETE FROM role_users_trash WHERE \"user\" = %llu;", user);
 
+  /* Delete user */
   sql ("DELETE FROM users WHERE id = %llu;", user);
 
   sql ("COMMIT;");

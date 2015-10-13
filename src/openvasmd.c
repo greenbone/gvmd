@@ -1266,6 +1266,7 @@ main (int argc, char** argv)
   static int max_email_include_size = 0;
   static gchar *create_user = NULL;
   static gchar *delete_user = NULL;
+  static gchar *inheritor = NULL;
   static gchar *user = NULL;
   static gchar *create_scanner = NULL;
   static gchar *modify_scanner = NULL;
@@ -1331,6 +1332,7 @@ main (int argc, char** argv)
         { "delete-scanner", '\0', 0, G_OPTION_ARG_STRING, &delete_scanner, "Delete scanner <scanner-uuid> and exit.", "<scanner-uuid>" },
         { "get-scanners", '\0', 0, G_OPTION_ARG_NONE, &get_scanners, "List scanners and exit.", NULL },
         { "foreground", 'f', 0, G_OPTION_ARG_NONE, &foreground, "Run in foreground.", NULL },
+        { "inheritor", '\0', 0, G_OPTION_ARG_STRING, &inheritor, "Have <username> inherit from deleted user.", "<username>" },
         { "listen", 'a', 0, G_OPTION_ARG_STRING, &manager_address_string, "Listen on <address>.", "<address>" },
         { "listen2", '\0', 0, G_OPTION_ARG_STRING, &manager_address_string_2, "Listen also on <address>.", "<address>" },
         { "max-ips-per-target", '\0', 0, G_OPTION_ARG_INT, &max_ips_per_target, "Maximum number of IPs per target.", "<number>"},
@@ -1643,7 +1645,7 @@ main (int argc, char** argv)
       infof ("   Deleting user.\n");
 
       /* Delete the user and then exit. */
-      switch (manage_delete_user (log_config, database, delete_user))
+      switch (manage_delete_user (log_config, database, delete_user, inheritor))
         {
           case 0:
             log_config_free ();
@@ -1656,6 +1658,18 @@ main (int argc, char** argv)
             return EXIT_FAILURE;
           case 4:
             g_critical ("%s: user has active tasks\n", __FUNCTION__);
+            log_config_free ();
+            return EXIT_FAILURE;
+          case 6:
+            g_critical ("%s: inheritor not found\n", __FUNCTION__);
+            log_config_free ();
+            return EXIT_FAILURE;
+          case 7:
+            g_critical ("%s: inheritor same as deleted user\n", __FUNCTION__);
+            log_config_free ();
+            return EXIT_FAILURE;
+          case 8:
+            g_critical ("%s: invalid inheritor\n", __FUNCTION__);
             log_config_free ();
             return EXIT_FAILURE;
           case -2:

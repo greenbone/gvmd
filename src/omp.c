@@ -2280,9 +2280,11 @@ delete_task_data_reset (delete_task_data_t *data)
  */
 typedef struct
 {
-  char *name;      ///< Name of user to delete.
-  char *user_id;   ///< ID of user to delete.
-  int ultimate;    ///< Boolean.  Whether to remove entirely or to trashcan.
+  char *name;         ///< Name of user to delete.
+  char *user_id;      ///< ID of user to delete.
+  int ultimate;       ///< Boolean.  Whether to remove entirely or to trashcan.
+  char *inheritor_id;   ///< ID of user that will inherit owned objects.
+  char *inheritor_name; ///< Name of user that will inherit owned objects.
 } delete_user_data_t;
 
 /**
@@ -2295,6 +2297,8 @@ delete_user_data_reset (delete_user_data_t *data)
 {
   free (data->name);
   free (data->user_id);
+  free (data->inheritor_id);
+  free (data->inheritor_name);
 
   memset (data, 0, sizeof (delete_user_data_t));
 }
@@ -6981,6 +6985,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &delete_user_data->name);
             append_attribute (attribute_names, attribute_values, "user_id",
                               &delete_user_data->user_id);
+            append_attribute (attribute_names, attribute_values,
+                              "inheritor_id",
+                              &delete_user_data->inheritor_id);
+            append_attribute (attribute_names, attribute_values,
+                              "inheritor_name",
+                              &delete_user_data->inheritor_name);
             if (find_attribute (attribute_names, attribute_values,
                                 "ultimate", &attribute))
               delete_user_data->ultimate = strcmp (attribute, "0");
@@ -13389,7 +13399,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           switch (delete_user (delete_user_data->user_id,
                                delete_user_data->name,
                                delete_user_data->ultimate,
-                               1))
+                               1,
+                               delete_user_data->inheritor_id,
+                               delete_user_data->inheritor_name))
             {
               case 0:
                 SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_user"));

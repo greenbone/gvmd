@@ -1,3 +1,24 @@
+2015-10-13  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add options to have a user inherit resources from a user being deleted.
+
+	* src/manage_sql.c (manage_delete_user, delete_user): Add params to
+	select a user that will inherit the resources of the deleted user.
+
+	* src/manage.h (manage_delete_user, delete_user): Add params.
+
+	* src/omp.c (delete_user_data_t, delete_user_data_reset): Add fields
+	inheritor_id and inheritor_name.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Handle
+	attributes inheritor_id and inheritor_name in DELETE_USER command.
+
+	* src/openvasmd.c (main): Add "inheritor" command line argument.
+
+	* src/schema_formats/XML/OMP.xml.in: Add new attributes inheritor_id
+	and inheritor_name to DELETE_USER command. List name as an attribute.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
 2015-10-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (TASK_ITERATOR_COLUMNS): Compare opts.ignore_severity

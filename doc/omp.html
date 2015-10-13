@@ -12022,14 +12022,32 @@ create_user_role
 <li>
 <i>Command</i><ul style="list-style: none">
 <li>
+<i>One of</i><b></b><ul style="list-style: none">
+<li>
           @<b>user_id</b>
           (<a href="#type_uuid">uuid</a>)
           The ID of the user to be deleted. Overrides name.
           </li>
 <li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The name of the user to be deleted.</div>
-<ul style="list-style: none"></ul>
+          @<b>name</b>
+          (text)
+          The name of the user to be deleted.
+          </li>
+</ul>
+</li>
+<li>
+<i>One of</i><b></b><ul style="list-style: none">
+<li>
+          @<b>inheritor_id</b>
+          (text)
+          The ID of the inheriting user or "self". Overrides inheritor_name.
+          </li>
+<li>
+          @<b>inheritor_name</b>
+          (text)
+          The name of the inheriting user.
+          </li>
+</ul>
 </li>
 </ul>
 </li>
@@ -12051,14 +12069,10 @@ create_user_role
 <i>Command</i><div style="margin-left: 5%"><pre>delete_user
  = element delete_user
      {
-       attribute user_id { uuid }
-       &amp; delete_user_name
-     }
-
-delete_user_name
- = element name
-     {
-       text
+       ( attribute user_id { uuid }
+           | attribute name { text } )
+       &amp; ( attribute inheritor_id { text }
+           | attribute inheritor_name { text } )
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>delete_user_response

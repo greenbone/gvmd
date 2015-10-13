@@ -5006,16 +5006,14 @@ delete_task
 delete_user
  = element delete_user
      {
-       # The ID of the user to be deleted. Overrides name.
+       ( # The ID of the user to be deleted. Overrides name.
        attribute user_id { uuid }
-       & delete_user_name
-     }
-
-# The name of the user to be deleted.
-delete_user_name
- = element name
-     {
-       text
+           | # The name of the user to be deleted.
+       attribute name { text } )
+       & ( # The ID of the inheriting user or "self". Overrides inheritor_name.
+       attribute inheritor_id { text }
+           | # The name of the inheriting user.
+       attribute inheritor_name { text } )
      }
 
 ## Command describe_auth
