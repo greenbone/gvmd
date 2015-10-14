@@ -1,3 +1,9 @@
+2015-10-14  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (get_osp_scan_report, handle_osp_scan, launc_osp_task)
+	(fork_osp_scan_handler): Adjust functions calls. Add log warnings on
+	errors.
+
 2015-10-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add new alert method "Start Task".

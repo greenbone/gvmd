@@ -2893,6 +2893,7 @@ get_osp_scan_report (const char *scan_id, const char *host, int port,
 {
   osp_connection_t *connection;
   int progress;
+  char *error = NULL;
 
   connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
   if (!connection)
@@ -2900,11 +2901,11 @@ get_osp_scan_report (const char *scan_id, const char *host, int port,
       g_warning ("Couldn't connect to OSP scanner on %s:%d\n", host, port);
       return -1;
     }
-  progress = osp_get_scan (connection, scan_id, report_xml, details);
+  progress = osp_get_scan (connection, scan_id, report_xml, details, &error);
   if (progress > 100 || progress < 0)
     {
-      g_warning ("Erroneous progress value %d in OSP report", progress);
-      g_free (*report_xml);
+      g_warning ("OSP get_scan %s: %s", scan_id, error);
+      g_free (error);
       return -1;
     }
   if (progress < 100)
@@ -2949,7 +2950,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
           break;
         }
       int progress = get_osp_scan_report (scan_id, host, port, ca_pub, key_pub,
-                                          key_priv, 0, &report_xml);
+                                          key_priv, 0, NULL);
       if (progress == -1)
         {
           result_t result = make_osp_result
@@ -2963,13 +2964,11 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
       else if (progress < 100)
         {
           set_report_slave_progress (report, progress);
-          g_free (report_xml);
           openvas_sleep (10);
         }
       else if (progress == 100)
         {
           /* Get the full OSP report. */
-          g_free (report_xml);
           progress = get_osp_scan_report (scan_id, host, port, ca_pub, key_pub,
                                           key_priv, 1, &report_xml);
           assert (progress == 100);
@@ -3048,7 +3047,8 @@ get_osp_task_options (task_t task, target_t target)
  * @return 0 success, -1 if scanner is down.
  */
 static int
-launch_osp_task (task_t task, target_t target, const char *scan_id)
+launch_osp_task (task_t task, target_t target, const char *scan_id,
+                 char **error)
 {
   osp_connection_t *connection;
   char *target_str, *ports_str;
@@ -3066,7 +3066,8 @@ launch_osp_task (task_t task, target_t target, const char *scan_id)
     }
   target_str = target_hosts (target);
   ports_str = target_port_range (target);
-  ret = osp_start_scan (connection, target_str, ports_str, options, scan_id);
+  ret = osp_start_scan (connection, target_str, ports_str, options, scan_id,
+                        error);
 
   g_hash_table_destroy (options);
   osp_connection_close (connection);
@@ -3087,7 +3088,7 @@ launch_osp_task (task_t task, target_t target, const char *scan_id)
 static int
 fork_osp_scan_handler (task_t task, target_t target)
 {
-  char *report_id, title[128];
+  char *report_id, title[128], *error = NULL;
   int rc;
 
   assert (task);
@@ -3123,19 +3124,18 @@ fork_osp_scan_handler (task_t task, target_t target)
    */
   reinit_manage_process ();
   manage_session_init (current_credentials.uuid);
-  if (launch_osp_task (task, target, report_id))
+  if (launch_osp_task (task, target, report_id, &error))
     {
       result_t result;
-      const char *type;
 
-      type = threat_message_type ("Error");
-      result = make_osp_result (task, "", "", type,
-                                "Couldn't connect to the scanner", "", "",
-                                QOD_DEFAULT);
+      g_warning ("OSP start_scan %s: %s", report_id, error);
+      result = make_osp_result (task, "", "", threat_message_type ("Error"),
+                                error, "", "", QOD_DEFAULT);
       report_add_result (current_report, result);
       set_task_run_status (task, TASK_STATUS_DONE);
       set_report_scan_run_status (current_report, TASK_STATUS_DONE);
 
+      g_free (error);
       g_free (report_id);
       exit (-1);
     }
