@@ -29144,7 +29144,9 @@ extern buffer_size_t from_client_end;
  * @param[in]  max_ips_per_target  Max number of IPs per target.
  * @param[in]  max_email_attachment_size  Max size of email attachments.
  * @param[in]  max_email_include_size     Max size of email inclusions.
- * @param[in]  progress        Function to update progress, or NULL.
+ * @param[in]  progress         Function to update progress, or NULL.
+ * @param[in]  fork_connection  Function to fork a connection to the OMP
+ *                              daemon layer, or NULL.
  *
  * @return 0 success, -1 error, -2 database is wrong version, -3 database
  *         needs to be initialized from server, -4 max_ips_per_target out of
@@ -29153,7 +29155,11 @@ extern buffer_size_t from_client_end;
 int
 init_omp (GSList *log_config, int nvt_cache_mode, const gchar *database,
           int max_ips_per_target, int max_email_attachment_size,
-          int max_email_include_size, void (*progress) ())
+          int max_email_include_size, void (*progress) (),
+          int (*fork_connection) (int *,
+                                  gnutls_session_t *,
+                                  gnutls_certificate_credentials_t *,
+                                  gchar*))
 {
   g_log_set_handler (G_LOG_DOMAIN,
                      ALL_LOG_LEVELS,
@@ -29162,7 +29168,7 @@ init_omp (GSList *log_config, int nvt_cache_mode, const gchar *database,
   command_data_init (&command_data);
   return init_manage (log_config, nvt_cache_mode, database, max_ips_per_target,
                       max_email_attachment_size, max_email_include_size,
-                      progress);
+                      progress, fork_connection);
 }
 
 /**
@@ -29184,7 +29190,10 @@ init_omp_process (int update_nvt_cache, const gchar *database,
                   void* write_to_client_data, gchar **disable)
 {
   forked = 0;
+  client_state = CLIENT_TOP;
+  command_data_init (&command_data);
   init_manage_process (update_nvt_cache, database);
+  manage_reset_currents ();
   /* Create the XML parser. */
   xml_parser.start_element = omp_xml_handle_start_element;
   xml_parser.end_element = omp_xml_handle_end_element;

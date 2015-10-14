@@ -278,6 +278,40 @@ gboolean scheduling_enabled;
  */
 char client_address[INET6_ADDRSTRLEN];
 
+/**
+ * @brief Signal mask to restore when going from blocked to normal signaling.
+ */
+sigset_t *sigmask_normal = NULL;
+
+/**
+ * @brief GnuTLS priorities.
+ */
+gchar *priorities_option = "NORMAL";
+
+/**
+ * @brief GnuTLS DH params file.
+ */
+gchar *dh_params_option = NULL;
+
+
+/* Helpers. */
+
+/**
+ * @brief Sets the GnuTLS priorities for a given session.
+ *
+ * @param[in]   session     Session for which to set the priorities.
+ * @param[in]   priority    Priority string.
+ */
+static void
+set_gnutls_priority (gnutls_session_t *session, const char *priority)
+{
+  const char *errp = NULL;
+  if (gnutls_priority_set_direct (*session, priority, &errp)
+      == GNUTLS_E_INVALID_REQUEST)
+    g_log (G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, "Invalid GnuTLS priority: %s\n",
+           errp);
+}
+
 
 /* Forking, serving the client. */
 
@@ -444,21 +478,21 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
 /**
  * @brief Fork a child connected to the Manager.
  *
- * @param[in]  client_socket       Client socket.
- * @param[in]  client_session      Client session.
- * @param[in]  client_credentials  Client credentials.
- * @param[in]  uuid                UUID of schedule user.
- * @param[in]  sigmask_current     Sigmask to restore in child.
+ * @param[in]  client_socket           Client socket.
+ * @param[in]  client_session_arg      Client session.
+ * @param[in]  client_credentials_arg  Client credentials.
+ * @param[in]  uuid                    UUID of schedule user.
+ * @param[in]  scheduler               Whether this is for the scheduler.
  *
  * @return PID parent on success, 0 child on success, -1 error.
  */
 static int
-fork_connection_for_schedular (int *client_socket,
-                               gnutls_session_t *client_session,
-                               gnutls_certificate_credentials_t
-                               *client_credentials,
-                               gchar* uuid,
-                               sigset_t *sigmask_current)
+fork_connection_internal (int *client_socket,
+                          gnutls_session_t *client_session_arg,
+                          gnutls_certificate_credentials_t
+                          *client_credentials_arg,
+                          gchar* uuid,
+                          int scheduler)
 {
   int pid, parent_client_socket, ret;
   int sockets[2];
@@ -493,7 +527,8 @@ fork_connection_for_schedular (int *client_socket,
    */
 
   /* Restore the sigmask that was blanked for pselect. */
-  pthread_sigmask (SIG_SETMASK, sigmask_current, NULL);
+  if (sigmask_normal)
+    pthread_sigmask (SIG_SETMASK, sigmask_normal, NULL);
 
   /* Create a connected pair of sockets. */
   if (socketpair (AF_UNIX, SOCK_STREAM, 0, sockets))
@@ -546,10 +581,35 @@ fork_connection_for_schedular (int *client_socket,
         /* Make any further authentications to this process succeed.  This
          * enables the schedular to login as the owner of the scheduled
          * task. */
-        manage_auth_allow_all ();
+        manage_auth_allow_all (scheduler);
         set_scheduled_user_uuid (uuid);
 
+        /* Create a new session, because the parent may have been in the middle
+         * of using the old one. */
+
+        if (openvas_server_new (GNUTLS_SERVER,
+                                CACERT,
+                                SCANNERCERT,
+                                SCANNERKEY,
+                                &client_session,
+                                &client_credentials))
+          {
+            g_critical ("%s: client server initialisation failed\n",
+                        __FUNCTION__);
+            exit (EXIT_FAILURE);
+          }
+        set_gnutls_priority (&client_session, priorities_option);
+        if (dh_params_option
+            && set_gnutls_dhparams (client_credentials, dh_params_option))
+          g_warning ("Couldn't set DH parameters from %s\n", dh_params_option);
+
+        /* Serve client. */
+
+        g_debug ("%s: serving OMP to client on socket %i",
+                 __FUNCTION__, parent_client_socket);
+
         ret = serve_client (manager_socket, parent_client_socket);
+
         /** @todo This should be done through libomp. */
         save_tasks ();
         exit (ret);
@@ -580,12 +640,15 @@ fork_connection_for_schedular (int *client_socket,
                                 CACERT,
                                 SCANNERCERT,
                                 SCANNERKEY,
-                                client_session,
-                                client_credentials))
+                                client_session_arg,
+                                client_credentials_arg))
           exit (EXIT_FAILURE);
 
-        if (openvas_server_attach (*client_socket, client_session))
+        if (openvas_server_attach (*client_socket, client_session_arg))
           exit (EXIT_FAILURE);
+
+        g_debug ("%s: all set to request OMP on socket %i",
+                 __FUNCTION__, *client_socket);
 
         return 0;
         break;
@@ -594,6 +657,48 @@ fork_connection_for_schedular (int *client_socket,
   exit (EXIT_FAILURE);
   /*@notreached@*/
   return -1;
+}
+
+/**
+ * @brief Fork a child connected to the Manager.
+ *
+ * @param[in]  client_socket       Client socket.
+ * @param[in]  client_session      Client session.
+ * @param[in]  client_credentials  Client credentials.
+ * @param[in]  uuid                UUID of schedule user.
+ *
+ * @return PID parent on success, 0 child on success, -1 error.
+ */
+static int
+fork_connection_for_schedular (int *client_socket,
+                               gnutls_session_t *client_session,
+                               gnutls_certificate_credentials_t
+                               *client_credentials,
+                               gchar* uuid)
+{
+  return fork_connection_internal (client_socket, client_session,
+                                   client_credentials, uuid, 1);
+}
+
+/**
+ * @brief Fork a child connected to the Manager.
+ *
+ * @param[in]  client_socket       Client socket.
+ * @param[in]  client_session      Client session.
+ * @param[in]  client_credentials  Client credentials.
+ * @param[in]  uuid                UUID of user.
+ *
+ * @return PID parent on success, 0 child on success, -1 error.
+ */
+static int
+fork_connection_for_event (int *client_socket,
+                           gnutls_session_t *client_session,
+                           gnutls_certificate_credentials_t
+                           *client_credentials,
+                           gchar* uuid)
+{
+  return fork_connection_internal (client_socket, client_session,
+                                   client_credentials, uuid, 0);
 }
 
 
@@ -826,7 +931,8 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
                      manage_max_hosts (),
                      0, /* Max email attachment size. */
                      0, /* Max email include size. */
-                     progress))
+                     progress,
+                     NULL))
     {
       case 0:
         break;
@@ -995,7 +1101,8 @@ static void
 serve_and_schedule ()
 {
   time_t last_schedule_time = 0;
-  sigset_t sigmask_all, sigmask_current;
+  sigset_t sigmask_all;
+  static sigset_t sigmask_current;
 
   if (sigfillset (&sigmask_all))
     {
@@ -1007,6 +1114,7 @@ serve_and_schedule ()
       g_critical ("%s: Error setting signal mask\n", __FUNCTION__);
       exit (EXIT_FAILURE);
     }
+  sigmask_normal = &sigmask_current;
   while (1)
     {
       int ret, nfds;
@@ -1033,7 +1141,7 @@ serve_and_schedule ()
           cleanup ();
           /* Raise signal again, to exit with the correct return value. */
           setup_signal_handler (termination_signal, SIG_DFL, 0);
-          pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL);
+          pthread_sigmask (SIG_SETMASK, sigmask_normal, NULL);
           raise (termination_signal);
         }
 
@@ -1049,7 +1157,7 @@ serve_and_schedule ()
         {
           if (manage_schedule (fork_connection_for_schedular,
                                scheduling_enabled,
-                               &sigmask_current)
+                               sigmask_normal)
               < 0)
             exit (EXIT_FAILURE);
 
@@ -1059,7 +1167,7 @@ serve_and_schedule ()
       timeout.tv_sec = SCHEDULE_PERIOD;
       timeout.tv_nsec = 0;
       ret = pselect (nfds, &readfds, NULL, &exceptfds, &timeout,
-                     &sigmask_current);
+                     sigmask_normal);
 
       if (ret == -1)
         {
@@ -1086,13 +1194,13 @@ serve_and_schedule ()
               exit (EXIT_FAILURE);
             }
           if (FD_ISSET (manager_socket, &readfds))
-            accept_and_maybe_fork (manager_socket, &sigmask_current);
+            accept_and_maybe_fork (manager_socket, sigmask_normal);
           if ((manager_socket_2 > -1) && FD_ISSET (manager_socket_2, &readfds))
-            accept_and_maybe_fork (manager_socket_2, &sigmask_current);
+            accept_and_maybe_fork (manager_socket_2, sigmask_normal);
         }
 
       if (manage_schedule (fork_connection_for_schedular, scheduling_enabled,
-                           &sigmask_current)
+                           sigmask_normal)
           < 0)
         exit (EXIT_FAILURE);
 
@@ -1103,7 +1211,7 @@ serve_and_schedule ()
           cleanup ();
           /* Raise signal again, to exit with the correct return value. */
           setup_signal_handler (termination_signal, SIG_DFL, 0);
-          pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL);
+          pthread_sigmask (SIG_SETMASK, sigmask_normal, NULL);
           raise (termination_signal);
         }
 
@@ -1118,22 +1226,6 @@ serve_and_schedule ()
       last_schedule_time = time (NULL);
     }
   /*@notreached@*/
-}
-
-/**
- * @brief Sets the GnuTLS priorities for a given session.
- *
- * @param[in]   session     Session for which to set the priorities.
- * @param[in]   priority    Priority string.
- */
-static void
-set_gnutls_priority (gnutls_session_t *session, const char *priority)
-{
-  const char *errp = NULL;
-  if (gnutls_priority_set_direct (*session, priority, &errp)
-      == GNUTLS_E_INVALID_REQUEST)
-    g_log (G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, "Invalid GnuTLS priority: %s\n",
-           errp);
 }
 
 /**
@@ -1278,7 +1370,7 @@ main (int argc, char** argv)
   static gchar *scanner_key_priv = NULL;
   static gchar *delete_scanner = NULL;
   static gchar *verify_scanner = NULL;
-  static gchar *gnutls_priorities = "NORMAL";
+  static gchar *priorities = "NORMAL";
   static gchar *dh_params = NULL;
   static gchar *new_password = NULL;
   static gchar *optimize = NULL;
@@ -1355,7 +1447,7 @@ main (int argc, char** argv)
         { "role", '\0', 0, G_OPTION_ARG_STRING, &role, "Role for --create-user and --get-users.", "<role>" },
         { "update", 'u', 0, G_OPTION_ARG_NONE, &update_nvt_cache, "Update the NVT cache and exit.", NULL },
         { "user", '\0', 0, G_OPTION_ARG_STRING, &user, "User for --new-password.", "<username>" },
-        { "gnutls-priorities", '\0', 0, G_OPTION_ARG_STRING, &gnutls_priorities, "Sets the GnuTLS priorities for the Manager socket.", "<priorities-string>" },
+        { "gnutls-priorities", '\0', 0, G_OPTION_ARG_STRING, &priorities, "Sets the GnuTLS priorities for the Manager socket.", "<priorities-string>" },
         { "dh-params", '\0', 0, G_OPTION_ARG_STRING, &dh_params, "Diffie-Hellman parameters file", "<file>" },
         { "verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Print tracing messages.", NULL },
         { "version", '\0', 0, G_OPTION_ARG_NONE, &print_version, "Print version and exit.", NULL },
@@ -2043,7 +2135,8 @@ main (int argc, char** argv)
   /* Initialise OMP daemon. */
 
   switch (init_ompd (log_config, 0, database, max_ips_per_target,
-                     max_email_attachment_size, max_email_include_size, NULL))
+                     max_email_attachment_size, max_email_include_size, NULL,
+                     fork_connection_for_event))
     {
       case 0:
         break;
@@ -2140,7 +2233,9 @@ main (int argc, char** argv)
                   __FUNCTION__);
       exit (EXIT_FAILURE);
     }
-  set_gnutls_priority (&client_session, gnutls_priorities);
+  priorities_option = priorities;
+  set_gnutls_priority (&client_session, priorities);
+  dh_params_option = dh_params;
   if (dh_params && set_gnutls_dhparams (client_credentials, dh_params))
     g_warning ("Couldn't set DH parameters from %s\n", dh_params);
 

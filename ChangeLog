@@ -1,3 +1,56 @@
+2015-10-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add new alert method "Start Task".
+
+	* src/openvasmd.c (sigmask_normal, priorities_option)
+	(dh_params_option): New variables.
+	(set_gnutls_priority): Move up in file.
+	(fork_connection_internal): New function.  Body from
+	fork_connection_for_schedular.  Use global sigmask.  Create new session
+	in serve_omp side of fork.  Rename args that conflict with global args.
+	(fork_connection_for_schedular): Call through to
+	fork_connection_internal.
+	(fork_connection_for_event): New function.
+	(update_or_rebuild_nvt_cache): Add init_ompd arg.
+	(serve_and_schedule): Setup sigmask_normal from sigmask_current.
+	Use sigmask_normal.
+	(main): Add init_ompd arg.  Save priorities and dh_params option to
+	global variables.
+
+	* src/manage.c (alert_method_name, alert_method_from_name): Add "Start
+	Task".
+	(authenticate_allow_all): Note values.
+	(manage_auth_allow_all): Add arg to enable marking when connection is
+	done by the scheduler.
+	(manage_schedule): Remove sigmask from fork_connection args.
+
+	* src/manage_sql.c (authenticate_allow_all): Note values.
+	(manage_fork_connection): New variable.
+	(escalate_2): Add "Start Task".  Uses manage_fork_connection to run an
+	OMP START_TASK command.
+	(init_manage_internal, init_manage, init_manage_helper): Add
+	fork_connection arg.
+	(manage_reset_currents): New function.
+	(set_report_scheduled): Update scheduled check.
+
+	* src/manage.h: Update headers accordingly.
+	(alert_method_t): Add Start Task entry.
+
+	* src/omp.c (init_omp): Add fork_connection arg.
+	(init_omp_process): Reset "omp" and "manage" states, because the process
+	may now be a child of a process that was part-way through an OMP
+	operation.
+
+	* src/ompd.c (init_ompd): Add fork_connection arg.
+	(init_ompd_process): Reset states, similar to init_ompd_process.
+
+	* src/otp.c (reset_scanner_states): New function.
+
+	* src/scanner.c (openvas_scanner_fork): New function.
+
+	* src/omp.h, src/ompd.h, src/otp.h, src/scanner.h: Update headers
+	accordingly.
+
 2015-10-13  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Add options to have a user inherit resources from a user being deleted.

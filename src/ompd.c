@@ -107,7 +107,9 @@ static int ompd_nvt_cache_mode = 0;
  * @param[in]  max_ips_per_target  Max number of IPs per target.
  * @param[in]  max_email_attachment_size  Max size of email attachments.
  * @param[in]  max_email_include_size     Max size of email inclusions.
- * @param[in]  progress        Function to update progress, or NULL.
+ * @param[in]  progress         Function to update progress, or NULL.
+ * @param[in]  fork_connection  Function to fork a connection to the OMP
+ *                              daemon layer, or NULL.
  *
  * @return 0 success, -1 error, -2 database is wrong version, -3 database
  *         needs to be initialized from server, -4 max_ips_per_target out of
@@ -116,11 +118,15 @@ static int ompd_nvt_cache_mode = 0;
 int
 init_ompd (GSList *log_config, int nvt_cache_mode, const gchar *database,
            int max_ips_per_target, int max_email_attachment_size,
-           int max_email_include_size, void (*progress) ())
+           int max_email_include_size, void (*progress) (),
+           int (*fork_connection) (int *,
+                                   gnutls_session_t *,
+                                   gnutls_certificate_credentials_t *,
+                                   gchar*))
 {
   return init_omp (log_config, nvt_cache_mode, database, max_ips_per_target,
                    max_email_attachment_size, max_email_include_size,
-                   progress);
+                   progress, fork_connection);
 }
 
 /**
@@ -132,6 +138,9 @@ init_ompd (GSList *log_config, int nvt_cache_mode, const gchar *database,
 void
 init_ompd_process (const gchar *database, gchar **disable)
 {
+  openvas_scanner_fork ();
+  from_client_start = 0;
+  from_client_end = 0;
   init_omp_process (0, database, NULL, NULL, disable);
 }
 

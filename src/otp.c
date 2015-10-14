@@ -441,6 +441,19 @@ set_scanner_init_state (scanner_init_state_t state)
   tracef ("   scanner init state set: %i\n", scanner_init_state);
 }
 
+/**
+ * @brief Set the scanner initialisation state, \ref scanner_init_state.
+ */
+void
+reset_scanner_states ()
+{
+  set_scanner_state (SCANNER_TOP);
+  set_scanner_init_state (SCANNER_INIT_TOP);
+  scanner_init_offset = 0;
+  scanner_current_loading = 0;
+  scanner_total_loading = 0;
+}
+
 
 /* OTP input processor. */
 

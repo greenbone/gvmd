@@ -40,6 +40,9 @@ openvas_scanner_wait ();
 int
 openvas_scanner_close ();
 
+void
+openvas_scanner_fork ();
+
 int
 openvas_scanner_connect ();
 

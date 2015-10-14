@@ -765,6 +765,7 @@ alert_method_name (alert_method_t method)
       case ALERT_METHOD_EMAIL:       return "Email";
       case ALERT_METHOD_HTTP_GET:    return "HTTP Get";
       case ALERT_METHOD_SOURCEFIRE:  return "Sourcefire Connector";
+      case ALERT_METHOD_START_TASK:  return "Start Task";
       case ALERT_METHOD_SYSLOG:      return "Syslog";
       case ALERT_METHOD_VERINICE:    return "verinice Connector";
       default:                       return "Internal Error";
@@ -821,6 +822,8 @@ alert_method_from_name (const char* name)
     return ALERT_METHOD_HTTP_GET;
   if (strcasecmp (name, "Sourcefire Connector") == 0)
     return ALERT_METHOD_SOURCEFIRE;
+  if (strcasecmp (name, "Start Task") == 0)
+    return ALERT_METHOD_START_TASK;
   if (strcasecmp (name, "Syslog") == 0)
     return ALERT_METHOD_SYSLOG;
   if (strcasecmp (name, "verinice Connector") == 0)
@@ -5152,6 +5155,8 @@ manage_system_report (const char *name, const char *duration,
 
 /**
  * @brief Flag for manage_auth_allow_all.
+ *
+ * 1 if set via scheduler, 2 if set via event, else 0.
  */
 int authenticate_allow_all = 0;
 
@@ -5163,11 +5168,13 @@ gchar* schedule_user_uuid = 0;
 
 /**
  * @brief Ensure that any subsequent authentications succeed.
+ *
+ * @param[in]  scheduled  Whether this is happening from the scheduler.
  */
 void
-manage_auth_allow_all ()
+manage_auth_allow_all (int scheduled)
 {
-  authenticate_allow_all = 1;
+  authenticate_allow_all = scheduled ? 1 : 2;
 }
 
 /**
@@ -5237,7 +5244,7 @@ int
 manage_schedule (int (*fork_connection) (int *,
                                          gnutls_session_t *,
                                          gnutls_certificate_credentials_t *,
-                                         gchar*, sigset_t*),
+                                         gchar*),
                  gboolean run_tasks,
                  sigset_t *sigmask_current)
 {
@@ -5438,8 +5445,7 @@ manage_schedule (int (*fork_connection) (int *,
 
       /* Run the callback to fork a child connected to the Manager. */
 
-      pid = fork_connection (&socket, &session, &credentials, owner_uuid,
-                             sigmask_current);
+      pid = fork_connection (&socket, &session, &credentials, owner_uuid);
       switch (pid)
         {
           case 0:
@@ -5612,8 +5618,7 @@ manage_schedule (int (*fork_connection) (int *,
 
       /* Run the callback to fork a child connected to the Manager. */
 
-      switch (fork_connection (&socket, &session, &credentials, owner_uuid,
-                               sigmask_current))
+      switch (fork_connection (&socket, &session, &credentials, owner_uuid))
         {
           case 0:
             /* Child.  Break, stop task, exit. */

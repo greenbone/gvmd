@@ -66,9 +66,10 @@
 #include <openvas/misc/ldap_connect_auth.h>
 #include <openvas/misc/openvas_logging.h>
 #include <openvas/misc/openvas_uuid.h>
+#include <openvas/misc/openvas_server.h>
 #include <openvas/misc/openvas_ssh.h>
 #include <openvas/base/pwpolicy.h>
-#include <openvas/omp/xml.h>
+#include <openvas/omp/omp.h>
 
 #ifdef S_SPLINT_S
 #include "splint.h"
@@ -103,7 +104,9 @@ manage_scap_loaded ();
 /* Headers for symbols defined in manage.c which are private to libmanage. */
 
 /**
- * @brief Flag to force authentication to succeed.  For scheduled tasks.
+ * @brief Flag to force authentication to succeed.
+ *
+ * 1 if set via scheduler, 2 if set via event, else 0.
  */
 int authenticate_allow_all;
 
@@ -274,6 +277,15 @@ create_permission_internal (const char *, const char *, const char *,
 
 
 /* Variables. */
+
+/**
+ * @brief Function to fork a connection that will accept OMP requests.
+ */
+int (*manage_fork_connection) (int *,
+                               gnutls_session_t *,
+                               gnutls_certificate_credentials_t *,
+                               gchar*)
+ = NULL;
 
 /**
  * @brief Function to mark progress.
@@ -9130,6 +9142,64 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
 
           return ret;
         }
+      case ALERT_METHOD_START_TASK:
+        {
+          int socket;
+          gnutls_session_t session;
+          gnutls_certificate_credentials_t credentials;
+          char *task_id, *report_id;
+
+          /* Run the callback to fork a child connected to the Manager. */
+
+          if (manage_fork_connection == NULL)
+            {
+              g_warning ("%s: no connection fork available\n", __FUNCTION__);
+              return -1;
+            }
+
+          task_id = alert_data (alert, "method", "start_task_task");
+
+          switch (manage_fork_connection (&socket, &session, &credentials,
+                                          current_credentials.uuid))
+            {
+              case 0:
+                /* Child.  Break, stop task, exit. */
+                break;
+
+              case -1:
+                /* Parent on error. */
+                g_free (task_id);
+                g_warning ("%s: fork failed\n", __FUNCTION__);
+                return -1;
+                break;
+
+              default:
+                /* Parent.  Continue with whatever lead to this escalation. */
+                g_free (task_id);
+                return 0;
+                break;
+            }
+
+          /* Start the task. */
+
+          if (omp_authenticate (&session, current_credentials.username, ""))
+            {
+              openvas_server_free (socket, session, credentials);
+              exit (EXIT_FAILURE);
+            }
+
+          if (omp_start_task_report (&session, task_id, &report_id))
+            {
+              g_free (task_id);
+              openvas_server_free (socket, session, credentials);
+              exit (EXIT_FAILURE);
+            }
+
+          g_free (task_id);
+          g_free (report_id);
+          openvas_server_free (socket, session, credentials);
+          exit (EXIT_SUCCESS);
+        }
       case ALERT_METHOD_ERROR:
       default:
         break;
@@ -12836,7 +12906,12 @@ init_manage_internal (GSList *log_config,
                       int max_email_attachment_size,
                       int max_email_include_size,
                       void (*update_progress) (),
-                      int stop_tasks)
+                      int stop_tasks,
+                      int (*fork_connection)
+                             (int *,
+                              gnutls_session_t *,
+                              gnutls_certificate_credentials_t *,
+                              gchar*))
 {
   int ret;
 
@@ -12849,6 +12924,16 @@ init_manage_internal (GSList *log_config,
    *             forks child (serve_omp)
    *                 init_ompd_process
    *                     init_manage_process
+   *                 ...
+   *                 event
+   *                   fork_connection_for_event
+   *                       fork one
+   *                           init_ompd_process
+   *                               init_manage_process
+   *                           serve_client
+   *                       fork two
+   *                           omp_auth, omp_start_task_report.
+   *                 ...
    *             manage_schedule
    *                 fork_connection_for_schedular
    *                     fork one
@@ -12926,6 +13011,8 @@ init_manage_internal (GSList *log_config,
 
   sql_close ();
   task_db_name = g_strdup (database);
+  if (fork_connection)
+    manage_fork_connection = fork_connection;
   return 0;
 }
 
@@ -12953,7 +13040,11 @@ init_manage_internal (GSList *log_config,
 int
 init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
              int max_ips_per_target, int max_email_attachment_size,
-             int max_email_include_size, void (*update_progress) ())
+             int max_email_include_size, void (*update_progress) (),
+             int (*fork_connection) (int *,
+                                     gnutls_session_t *,
+                                     gnutls_certificate_credentials_t *,
+                                     gchar*))
 {
   return init_manage_internal (log_config,
                                nvt_cache_mode,
@@ -12962,7 +13053,8 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
                                max_email_attachment_size,
                                max_email_include_size,
                                update_progress,
-                               1);  /* Stop active tasks. */
+                               1,  /* Stop active tasks. */
+                               fork_connection);
 }
 
 /**
@@ -12992,7 +13084,8 @@ init_manage_helper (GSList *log_config, const gchar *database,
                                0,   /* Default max_email_attachment_size. */
                                0,   /* Default max_email_include_size. */
                                update_progress,
-                               0);  /* Stop active tasks. */
+                               0,  /* Stop active tasks. */
+                               NULL);
 }
 
 /**
@@ -13040,6 +13133,16 @@ manage_cleanup_process_error (int signal)
         set_task_run_status (current_scanner_task, TASK_STATUS_INTERNAL_ERROR);
       sql_close ();
     }
+}
+
+/**
+ * @brief Cleanup as immediately as possible.
+ */
+void
+manage_reset_currents ()
+{
+  current_report = 0;
+  current_scanner_task = (task_t) 0;
 }
 
 /**
@@ -14056,7 +14159,7 @@ task_run_status (task_t task)
 static void
 set_report_scheduled (report_t report)
 {
-  if (authenticate_allow_all)
+  if (authenticate_allow_all == 1)
     /* The task was scheduled. */
     sql ("UPDATE reports SET flags = 1 WHERE id = %llu;",
          report);

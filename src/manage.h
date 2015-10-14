@@ -50,7 +50,9 @@ typedef struct
 } name_value_t;
 
 int
-init_manage (GSList*, int, const gchar*, int, int, int, void (*) ());
+init_manage (GSList*, int, const gchar*, int, int, int, void (*) (),
+             int (*) (int *, gnutls_session_t *,
+                      gnutls_certificate_credentials_t *, gchar*));
 
 int
 init_manage_helper (GSList *, const gchar *, int, void (*) ());
@@ -63,6 +65,9 @@ cleanup_manage_process (gboolean);
 
 void
 manage_cleanup_process_error (int);
+
+void
+manage_reset_currents ();
 
 
 /* Commands. */
@@ -357,6 +362,7 @@ typedef enum
   ALERT_METHOD_EMAIL,
   ALERT_METHOD_HTTP_GET,
   ALERT_METHOD_SOURCEFIRE,
+  ALERT_METHOD_START_TASK,
   ALERT_METHOD_SYSLOG,
   ALERT_METHOD_VERINICE
 } alert_method_t;
@@ -2514,8 +2520,7 @@ int
 manage_schedule (int (*) (int *,
                           gnutls_session_t *,
                           gnutls_certificate_credentials_t *,
-                          gchar*,
-                          sigset_t*),
+                          gchar*),
                  gboolean,
                  sigset_t *sigmask_current);
 

@@ -28,6 +28,7 @@
 
 #include "types.h"
 #include <glib.h>
+#include <gnutls/gnutls.h>
 #include <sys/types.h>
 
 /**
@@ -36,7 +37,9 @@
 #define TO_CLIENT_BUFFER_SIZE 26214400
 
 int
-init_omp (GSList*, int, const gchar*, int, int, int, void (*) ());
+init_omp (GSList*, int, const gchar*, int, int, int, void (*) (),
+          int (*) (int *, gnutls_session_t *,
+                   gnutls_certificate_credentials_t *, gchar*));
 
 void
 init_omp_process (int, const gchar*, int (*) (const char*, void*), void*,
