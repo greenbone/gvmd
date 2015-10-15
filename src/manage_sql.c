@@ -3574,6 +3574,8 @@ filter_clause (const char* type, const char* filter,
 
   if (order_return)
     *order_return = g_string_free (order, FALSE);
+  else
+    g_string_free (order, TRUE);
 
   if (max_return)
     {
@@ -5199,6 +5201,7 @@ count (const char *type, const get_data_t *get, column_t *select_columns,
 
   owned_clause = acl_where_owned (type, get, owned, owner_filter, 0, permissions);
 
+  g_free (owner_filter);
   array_free (permissions);
 
   if (get->trash && trash_select_columns)
@@ -8467,12 +8470,20 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             int overrides, int overrides_details, int first_result,
             int max_results, const char *zone)
 {
+  char *name;
+  gchar *event_desc, *alert_desc;
+  name = task_name (task);
+  event_desc = event_description (event, event_data, NULL);
+  alert_desc = alert_condition_description (condition, alert);
   g_log ("event alert", G_LOG_LEVEL_MESSAGE,
          "The alert for task %s was triggered "
          "(Event: %s, Condition: %s)",
-         task_name (task),
-         event_description (event, event_data, NULL),
-         alert_condition_description (condition, alert));
+         name,
+         event_desc,
+         alert_desc);
+  free (name);
+  free (event_desc);
+  free (alert_desc);
 
   switch (method)
     {
@@ -8619,7 +8630,6 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                       g_free (subject);
                       subject = alert_subject_print (alert_subject, event,
                                                      event_data, task);
-                      alert_subject = NULL;
                     }
                   g_free (alert_subject);
 
@@ -8748,7 +8758,6 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                       g_free (subject);
                       subject = alert_subject_print (alert_subject, event,
                                                      event_data, task);
-                      alert_subject = NULL;
                     }
                   g_free (alert_subject);
                   if (max_attach_length <= 0
@@ -8798,7 +8807,6 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                       g_free (subject);
                       subject = alert_subject_print (alert_subject, event,
                                                      event_data, task);
-                      alert_subject = NULL;
                     }
                   g_free (alert_subject);
 
@@ -8856,6 +8864,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                            type, file_name ? file_name : "openvas-report",
                            extension);
 
+              free (extension);
+              free (type);
               free (name);
               free (format_name);
               g_free (base64);
@@ -13853,7 +13863,7 @@ task_observers (task_t task)
     }
   cleanup_iterator (&users);
 
-  return observers->str;
+  return g_string_free (observers, FALSE);
 }
 
 /**
@@ -14868,7 +14878,6 @@ task_schedule_next_time_tz (task_t task)
 
   schedule = task_schedule (task);
   memset (&get, '\0', sizeof (get));
-  get.id = schedule_uuid (schedule);
 
   next_time = sql_int ("SELECT schedule_next_time FROM tasks"
                        " WHERE id = %llu;",
@@ -14876,8 +14885,9 @@ task_schedule_next_time_tz (task_t task)
   if (next_time == 0)
     return 0;
 
+  get.id = schedule_uuid (schedule);
   ret = init_schedule_iterator (&schedules, &get);
-
+  free (get.id);
   if (ret)
     return next_time;
 
@@ -26363,8 +26373,9 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
  * @param[in]  type               Type of report: NULL or "scan".
  * @param[out] output_length      NULL or location for length of return.
  * @param[out] extension          NULL or location for report format extension.
+ *                                Only defined on success.
  * @param[out] content_type       NULL or location for report format content
- *                                type.
+ *                                type.  Only defined on success.
  * @param[in]  zone               Timezone.  NULL or "" for user's timezone.
  * @param[out] filter_term_return  Filter term used in report.
  * @param[out] zone_return         Actual zone used in report.
@@ -35009,13 +35020,8 @@ task_preference_value (task_t task, const char *name)
   value = sql_string ("SELECT value FROM nvt_preferences"
                       " WHERE name = '%s';",
                       quoted_name);
-  if (value)
-    {
-      g_free (quoted_name);
-      return value;
-    }
-
-  return NULL;
+  g_free (quoted_name);
+  return value;
 }
 
 /**
@@ -41469,12 +41475,13 @@ init_task_schedule_iterator (iterator_t* iterator)
   permissions = make_array ();
   array_add (permissions, g_strdup ("start_task"));
   task_clause = acl_where_owned_user ("", "users.id", "task", &get, 1,
-                                  "any", 0, permissions);
+                                      "any", 0, permissions);
+  array_free (permissions);
 
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_schedules"));
   schedule_clause = acl_where_owned_user ("", "users.id", "schedule", &get, 1,
-                                      "any", 0, permissions);
+                                          "any", 0, permissions);
   array_free (permissions);
 
   init_iterator (iterator,

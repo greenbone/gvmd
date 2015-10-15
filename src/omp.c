@@ -471,7 +471,10 @@ init_get (gchar *command, get_data_t * get, const gchar *setting_name,
           get->filter = filter_term (user_filter);
         }
       else
-        get->filt_id = g_strdup ("0");
+        {
+          free (user_filter);
+          get->filt_id = g_strdup ("0");
+        }
     }
 
   /* Get the actual filter string. */
@@ -6237,15 +6240,20 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
       gchar *new_filter;
       new_filter = manage_clean_filter (filter ? filter : get->filter);
       g_free (filter);
-      if (((strcmp (type, "task") == 0)
-           || (strcmp (type, "report") == 0))
-          && (filter_term_value (new_filter, "apply_overrides") == NULL))
+      if ((strcmp (type, "task") == 0)
+          || (strcmp (type, "report") == 0))
         {
-          filter = new_filter;
-          new_filter = g_strdup_printf ("apply_overrides=%i %s",
-                                        APPLY_OVERRIDES_DEFAULT,
-                                        filter);
-          g_free (filter);
+          gchar *value;
+          value = filter_term_value (new_filter, "apply_overrides");
+          if (value == NULL)
+            {
+              filter = new_filter;
+              new_filter = g_strdup_printf ("apply_overrides=%i %s",
+                                            APPLY_OVERRIDES_DEFAULT,
+                                            filter);
+              g_free (filter);
+            }
+          g_free (value);
         }
       filter = new_filter;
     }
@@ -13146,8 +13154,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   tzset ();
 
                   severity = setting_severity ();
-                  pw_warning = openvas_validate_password (
-                                 current_credentials.password,
+                  pw_warning = openvas_validate_password
+                                (current_credentials.password,
                                  current_credentials.username);
 
                   if (pw_warning)
@@ -13181,6 +13189,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       timezone,
                       severity);
 
+                  free (pw_warning);
                   set_client_state (CLIENT_AUTHENTIC);
                 }
               break;
@@ -19121,6 +19130,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                         current_report_id,
                                                         timestamp,
                                                         scan_end);
+                      free (current_report_id);
                       free (scan_end);
                       g_free (timestamp);
                     }
@@ -19684,6 +19694,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   g_free (in_assets);
                   g_free (max_checks);
                   g_free (max_hosts);
+                  g_free (source_iface);
                 }
 
               count++;
@@ -29200,7 +29211,8 @@ init_omp_process (int update_nvt_cache, const gchar *database,
   xml_parser.text = omp_xml_handle_text;
   xml_parser.passthrough = NULL;
   xml_parser.error = omp_xml_handle_error;
-  if (xml_context) g_free (xml_context);
+  if (xml_context)
+    g_markup_parse_context_free (xml_context);
   xml_context = g_markup_parse_context_new
                  (&xml_parser,
                   0,

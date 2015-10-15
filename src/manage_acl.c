@@ -1084,6 +1084,10 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
                                 user_sql,
                                 user_sql,
                                 permission_or->str);
+
+          if ((strcmp (type, "report") == 0)
+              || (strcmp (type, "result") == 0))
+            g_free (clause);
           else
             permission_clause = clause;
         }
@@ -1277,6 +1281,8 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
                             user_sql,
                             user_sql,
                             permission_clause ? permission_clause : "");
+
+      g_free (permission_clause);
 
       if (get->trash && (strcasecmp (type, "task") == 0))
         {

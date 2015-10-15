@@ -1,3 +1,31 @@
+2015-10-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Remove some leaks found by valgrind.
+
+	* src/manage.c (send_ifaces_preferences): Free ifaces.
+	(send_hosts_access_preferences): Free hosts.
+
+	* src/manage_acl.c (acl_where_owned_user): Also free clause in report
+	and result cases.
+
+	* src/manage_sql.c (filter_clause): Free order when order_return was not
+	given.
+	(count): Free owner_filter.
+	(escalate_2): Free initial g_log args.  Don't set alert_subject to NULL,
+	so that it is freed.  Free extension and type.
+	(task_observers): Free GString part of observers.
+	(task_schedule_next_time_tz): Init get.id later, and free it after use.
+	(task_preference_value): Always free quoted_name.  Remove redundant
+	value check.
+	(init_task_schedule_iterator): Free permissions after first use too.
+
+	* src/omp.c (init_get): Free user_filter when it was empty.
+	(send_get_end): Store filter_term_value in variable, and free it after.
+	(omp_xml_handle_end_element): Free pw_warning, current_report_id and
+	source_iface.
+	(init_omp_process): Free xml_context with g_markup_parse_context_parse
+	intead of g_free, so that it's freed properly.
+
 2015-10-14  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (get_osp_scan_report, handle_osp_scan, launc_osp_task)
