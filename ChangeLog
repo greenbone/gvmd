@@ -1,4 +1,8 @@
-2015-10-14  Matthew Mundell <matthew.mundell@greenbone.net>
+2015-10-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/openvasmd.c (manager_listen): Init optval for setsockopt.
+
+2015-10-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Remove some leaks found by valgrind.
 

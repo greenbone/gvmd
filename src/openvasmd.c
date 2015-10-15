@@ -1298,6 +1298,7 @@ manager_listen (const char *address_str, const char *port_str, int *soc)
       return -1;
     }
 
+  optval = 1;
   if (setsockopt (*soc, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof (int)))
     {
       g_warning ("Failed to set SO_REUSEADDR on socket: %s", strerror (errno));
