@@ -34569,7 +34569,10 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
                    " WHERE (lsc_credential = %llu"
                    "        AND ssh_location = " G_STRINGIFY (LOCATION_TRASH) ")"
                    " OR (smb_lsc_credential = %llu"
-                   "     AND smb_location = " G_STRINGIFY (LOCATION_TRASH) ");",
+                   "     AND smb_location = " G_STRINGIFY (LOCATION_TRASH) ")"
+                   " OR (esxi_lsc_credential = %llu"
+                   "     AND esxi_location = " G_STRINGIFY (LOCATION_TRASH) ");",
+                   lsc_credential,
                    lsc_credential,
                    lsc_credential))
         {
