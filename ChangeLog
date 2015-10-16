@@ -1,3 +1,8 @@
+2015-10-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (delete_credential): Check if a trash target uses
+	the credential for ESXi when deleting it from trashcan.
+
 2015-10-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c (manager_listen): Init optval for setsockopt.
