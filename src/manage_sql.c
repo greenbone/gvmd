@@ -35631,9 +35631,9 @@ delete_credential (const char *credential_id, int ultimate)
       tags_set_orphans ("credential", credential,
                         LOCATION_TRASH);
 
-      sql ("DELETE FROM credentials_trash WHERE id = %llu;", credential);
       sql ("DELETE FROM credentials_trash_data WHERE credential = %llu;",
            credential);
+      sql ("DELETE FROM credentials_trash WHERE id = %llu;", credential);
       sql ("COMMIT;");
       return 0;
     }
@@ -35706,8 +35706,8 @@ delete_credential (const char *credential_id, int ultimate)
       tags_set_orphans ("credential", credential, LOCATION_TABLE);
     }
 
-  sql ("DELETE FROM credentials WHERE id = %llu;", credential);
   sql ("DELETE FROM credentials_data WHERE credential = %llu;", credential);
+  sql ("DELETE FROM credentials WHERE id = %llu;", credential);
 
   sql ("COMMIT;");
   return 0;
@@ -51572,6 +51572,7 @@ manage_empty_trashcan ()
   sql ("DELETE FROM alert_event_data_trash;");
   sql ("DELETE FROM alert_method_data_trash;");
   sql ("DELETE FROM alerts_trash;");
+  sql ("DELETE FROM credentials_trash_data;");
   sql ("DELETE FROM credentials_trash;");
   sql ("DELETE FROM filters_trash;");
   sql ("DELETE FROM notes_trash;");

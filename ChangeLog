@@ -1,5 +1,16 @@
 2015-10-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_migrators.c (migrate_153_to_154): Add foreign key
+	constraint to credential column.
+
+	* src/manage_pg.c (create_table): Add foreign key constraint to
+	credential column.
+
+	* src/manage_sql.c (delete_credential): Delete from data table first.
+	(manage_empty_trashcan): Empty the credentials_trash_data table, too.
+
+2015-10-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (delete_credential): Delete from
 	credentials_trash_data instead of credentials_data when deleting
 	a credential from trashcan.

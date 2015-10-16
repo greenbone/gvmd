@@ -1521,13 +1521,13 @@ create_tables ()
 
   sql ("CREATE TABLE IF NOT EXISTS credentials_data"
        " (id SERIAL PRIMARY KEY,"
-       "  credential INTEGER,"
+       "  credential INTEGER REFERENCES credentials (id) ON DELETE RESTRICT,"
        "  type TEXT,"
        "  value TEXT);");
 
   sql ("CREATE TABLE IF NOT EXISTS credentials_trash_data"
        " (id SERIAL PRIMARY KEY,"
-       "  credential INTEGER,"
+       "  credential INTEGER REFERENCES credentials_trash (id) ON DELETE RESTRICT,"
        "  type TEXT,"
        "  value TEXT);");
 
