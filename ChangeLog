@@ -1,5 +1,11 @@
 2015-10-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (delete_credential): Delete from
+	credentials_trash_data instead of credentials_data when deleting
+	a credential from trashcan.
+
+2015-10-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (delete_credential): Delete credentials_data entries
 	also when deleting a credential from the trashcan.
 

@@ -35632,7 +35632,8 @@ delete_credential (const char *credential_id, int ultimate)
                         LOCATION_TRASH);
 
       sql ("DELETE FROM credentials_trash WHERE id = %llu;", credential);
-      sql ("DELETE FROM credentials_data WHERE credential = %llu;", credential);
+      sql ("DELETE FROM credentials_trash_data WHERE credential = %llu;",
+           credential);
       sql ("COMMIT;");
       return 0;
     }
