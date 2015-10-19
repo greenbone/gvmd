@@ -18824,6 +18824,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   free (ssh_lsc_uuid);
                   free (smb_lsc_name);
                   free (smb_lsc_uuid);
+                  free (esxi_lsc_name);
+                  free (esxi_lsc_uuid);
                 }
               cleanup_iterator (&targets);
               filtered = get_targets_data->get.id

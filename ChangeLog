@@ -1,5 +1,10 @@
 2015-10-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In GET_TARGETS case, free
+	esxi_lsc_name and esxi_lsc_uuid.
+
+2015-10-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/omp.c (modify_target_data_reset): Free esxi_lsc_credential_id.
 
 2015-10-19  Hani Benhabiles <hani.benhabiles@greenbone.net>
