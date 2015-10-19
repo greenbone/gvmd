@@ -3777,6 +3777,7 @@ modify_target_data_reset (modify_target_data_t *data)
   free (data->ssh_lsc_credential_id);
   free (data->ssh_port);
   free (data->smb_lsc_credential_id);
+  free (data->esxi_lsc_credential_id);
   free (data->target_id);
 
   memset (data, 0, sizeof (modify_target_data_t));
