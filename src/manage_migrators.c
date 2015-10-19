@@ -10371,14 +10371,14 @@ migrate_153_to_154 ()
 
   sql ("CREATE TABLE credentials_data"
        " (id %s PRIMARY KEY,"
-       "  credential INTEGER REFERENCES credentials (id) ON DELETE RESTRICT"
+       "  credential INTEGER REFERENCES credentials (id) ON DELETE RESTRICT,"
        "  type TEXT,"
        "  value TEXT);",
        primary_key_type);
 
   sql ("CREATE TABLE credentials_trash_data"
        " (id %s PRIMARY KEY,"
-       "  credential INTEGER REFERENCES credentials_trash (id) ON DELETE RESTRICT"
+       "  credential INTEGER REFERENCES credentials_trash (id) ON DELETE RESTRICT,"
        "  type TEXT,"
        "  value TEXT);",
        primary_key_type);
