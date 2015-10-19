@@ -1,4 +1,10 @@
-2015-10-16  Hani Benhabiles <hani.benhabiles@greenbone.net>
+2015-10-19  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/omp.c (handle_get_scanners): Add OSP parameter's mandatory value.
+
+	* src/schema_formats/XML/OMP.xml.in: Update documentation.
+
+2015-10-19  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (create_config_from_scanner): Don't skip port
 	parameter, as it is not automatically sent when starting a scan.

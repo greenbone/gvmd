@@ -23246,4 +23246,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </p>
     </description>
   </change>
+  <change>
+    <command>GET_SCANNERS</command>
+    <summary>Add mandatory value for OSP parameters</summary>
+    <version>4.0</version>
+    <description>
+      <p>
+        The param element now contains a mandatory element that equals 0 if
+        false, 1 if true.
+      </p>
+    </description>
+  </change>
 </protocol>

@@ -12739,10 +12739,10 @@ handle_get_scanners (omp_parser_t *omp_parser, GError **error)
                   SENDF_TO_CLIENT_OR_FAIL
                    ("<param><id>%s</id><name>%s</name>"
                     "<default>%s</default><description>%s</description>"
-                    "<type>osp_%s</type></param>",
+                    "<type>osp_%s</type><mandatory>%d</mandatory></param>",
                     osp_param_id (param), osp_param_name (param),
                     osp_param_default (param), osp_param_desc (param),
-                    osp_param_type_str (param));
+                    osp_param_type_str (param), osp_param_mandatory (param));
 
                   osp_param_free (nodes->data);
                   nodes = nodes->next;
