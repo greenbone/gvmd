@@ -30898,10 +30898,9 @@ create_config_from_scanner (const char *scanner_id, const char *name,
 
       osp_param_t *param = element->data;
       param_id = sql_quote (osp_param_id (param));
-      /* XXX: Ignoring username, password and port parameters as these are taken
-       * from the task's LSC Credentials / Target. */
-      if (strcmp (param_id, "username") && strcmp (param_id, "password")
-          && strcmp (param_id, "port"))
+      /* Ignoring username and password parameters as these are taken from
+       * the task's LSC Credentials. */
+      if (strcmp (param_id, "username") && strcmp (param_id, "password"))
         {
           char *param_type, *param_def, *param_value = NULL;
 

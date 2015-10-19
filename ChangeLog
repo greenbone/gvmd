@@ -1,3 +1,8 @@
+2015-10-16  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (create_config_from_scanner): Don't skip port
+	parameter, as it is not automatically sent when starting a scan.
+
 2015-10-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_migrators.c (migrate_153_to_154): Add foreign key
