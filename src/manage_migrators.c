@@ -10350,38 +10350,48 @@ migrate_153_to_154 ()
   sql ("CREATE TABLE credentials"
        " (id %s PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
-       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  owner integer%s,"
        "  name text NOT NULL,"
        "  comment text,"
        "  creation_time integer,"
        "  modification_time integer,"
        "  type text);",
-       primary_key_type);
+       primary_key_type,
+       sql_is_sqlite3() ? "" : " REFERENCES users (id) ON DELETE RESTRICT"
+      );
 
   sql ("CREATE TABLE credentials_trash"
        " (id %s PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
-       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  owner integer%s,"
        "  name text NOT NULL,"
        "  comment text,"
        "  creation_time integer,"
        "  modification_time integer,"
        "  type text);",
-       primary_key_type);
+       primary_key_type,
+       sql_is_sqlite3() ? "" : " REFERENCES users (id) ON DELETE RESTRICT"
+      );
 
   sql ("CREATE TABLE credentials_data"
        " (id %s PRIMARY KEY,"
-       "  credential INTEGER REFERENCES credentials (id) ON DELETE RESTRICT,"
+       "  credential INTEGER%s,"
        "  type TEXT,"
        "  value TEXT);",
-       primary_key_type);
+       primary_key_type,
+       sql_is_sqlite3()
+        ? ""
+        : " REFERENCES credentials (id) ON DELETE RESTRICT");
 
   sql ("CREATE TABLE credentials_trash_data"
        " (id %s PRIMARY KEY,"
-       "  credential INTEGER REFERENCES credentials_trash (id) ON DELETE RESTRICT,"
+       "  credential INTEGER%s,"
        "  type TEXT,"
        "  value TEXT);",
-       primary_key_type);
+       primary_key_type,
+       sql_is_sqlite3()
+        ? ""
+        : " REFERENCES credentials_trash (id) ON DELETE RESTRICT");
 
   /* Copy basic data from old tables */
   sql ("INSERT INTO credentials"
