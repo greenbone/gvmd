@@ -205,7 +205,7 @@ sqlv (int retry, char* sql, va_list args)
 
       /* Run statement. */
 
-      while ((ret = sql_exec_internal (retry, stmt)) > 0);
+      while ((ret = sql_exec_internal (retry, stmt)) == 1);
       if (ret == -1)
         g_warning ("%s: sql_exec_internal failed\n", __FUNCTION__);
       sql_finalize (stmt);
@@ -322,7 +322,7 @@ sql_quiet (char* sql, ...)
 
       /* Run statement. */
 
-      while ((ret = sql_exec_internal (1, stmt)) > 0);
+      while ((ret = sql_exec_internal (1, stmt)) == 1);
       if (ret == -1)
         {
           g_warning ("%s: sql_exec_internal failed\n", __FUNCTION__);
