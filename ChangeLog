@@ -1,5 +1,9 @@
 2015-10-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/postgres-HOWTO: Add functions to drop script.
+
+2015-10-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/sql.c (sqlv, sql_quiet): Compare directly to 1 in the
 	sql_exec_internal "while", because sql_exec_internal will return 2
 	on SQLITE_SCHEMA and we need to return in this case (otherwise the
