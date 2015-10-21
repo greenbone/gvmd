@@ -35677,26 +35677,26 @@ delete_credential (const char *credential_id, int ultimate)
            " SET ssh_location = " G_STRINGIFY (LOCATION_TRASH) ","
            "     lsc_credential = %llu"
            " WHERE lsc_credential = %llu;",
-           sql_last_insert_id (),
+           trash_credential,
            credential);
       sql ("UPDATE targets_trash"
            " SET smb_location = " G_STRINGIFY (LOCATION_TRASH) ","
            " smb_lsc_credential = %llu"
            " WHERE smb_lsc_credential = %llu;",
-           sql_last_insert_id (),
+           trash_credential,
            credential);
       sql ("UPDATE targets_trash"
            " SET esxi_location = " G_STRINGIFY (LOCATION_TRASH) ","
            " esxi_lsc_credential = %llu"
            " WHERE esxi_lsc_credential = %llu;",
-           sql_last_insert_id (),
+           trash_credential,
            credential);
 
       permissions_set_locations ("credential", credential,
-                                 sql_last_insert_id (),
+                                 trash_credential,
                                  LOCATION_TRASH);
       tags_set_locations ("credential", credential,
-                          sql_last_insert_id (),
+                          trash_credential,
                           LOCATION_TRASH);
     }
   else
