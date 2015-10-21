@@ -1,5 +1,17 @@
 2015-10-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Ensure sequences for automatically assigning primary key ids in
+	PostgreSQL are consistent with table contents on startup.
+
+	* src/manage_sqlite3.c (check_db_sequences): New function.
+
+	* src/manage_sql.c (check_db_sequences): New function prototype.
+	(check_db): Call new check_db_sequences after table creation.
+
+	* src/manage_pg.c (check_db_sequences): New function.
+
+2015-10-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (delete_credential): Use correct id when updating
 	references to a credential moved to trashcan.
 

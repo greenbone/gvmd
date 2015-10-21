@@ -2763,6 +2763,15 @@ create_tables ()
   sql ("COMMIT;");
 }
 
+/**
+ * @brief Ensure sequences for automatic ids are in a consistent state.
+ */
+void
+check_db_sequences ()
+{
+  // Do nothing because this is only relevant for PostgreSQL.
+}
+
 
 /* SecInfo. */
 

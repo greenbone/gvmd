@@ -92,6 +92,9 @@ void
 create_tables ();
 
 void
+check_db_sequences ();
+
+void
 manage_attach_databases ();
 
 int
@@ -12726,6 +12729,7 @@ static int
 check_db ()
 {
   create_tables ();
+  check_db_sequences ();
   if (progress)
     progress ();
   set_db_version (OPENVASMD_DATABASE_VERSION);

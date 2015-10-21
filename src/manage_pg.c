@@ -2430,6 +2430,46 @@ create_tables ()
   sql ("SELECT create_index ('results_by_report', 'results', 'report');");
 }
 
+/**
+ * @brief Ensure sequences for automatic ids are in a consistent state.
+ */
+void
+check_db_sequences ()
+{
+  sql_begin_exclusive ();
+
+  iterator_t sequence_tables;
+  init_iterator(&sequence_tables,
+                "SELECT table_name, column_name,"
+                "       pg_get_serial_sequence (table_name, column_name)"
+                "  FROM information_schema.columns"
+                "  WHERE table_schema = 'public'"
+                "    AND pg_get_serial_sequence (table_name, column_name)"
+                "        IS NOT NULL;");
+
+  while (next (&sequence_tables))
+    {
+      const char* table = iterator_string (&sequence_tables, 0);
+      const char* column = iterator_string (&sequence_tables, 1);
+      const char* sequence = iterator_string (&sequence_tables, 2);
+      resource_t old_start, new_start;
+
+      sql_int64 (&old_start,
+                 "SELECT last_value + 1 FROM %s;",
+                 sequence);
+
+      sql_int64 (&new_start,
+                 "SELECT coalesce (max (%s), 0) + 1 FROM %s;",
+                 column, table);
+
+      if (old_start < new_start)
+        sql ("ALTER SEQUENCE %s RESTART WITH %llu;", sequence, new_start);
+    }
+
+  cleanup_iterator (&sequence_tables);
+  sql ("COMMIT;");
+}
+
 
 /* SecInfo. */
 
