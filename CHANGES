@@ -1,38 +1,40 @@
-openvas-manager 6.1+beta2 (2015-10-XX)
+openvas-manager 6.1+beta2 (2015-10-21)
 
-This is the second beta version of the upcoming 6.1 release of the OpenVAS
-Manager. It is the central management service between the actual security
-scanners and various user clients.
+This is the second beta version of the upcoming 6.1 release of the
+OpenVAS Manager. It is the central management service between the actual
+security scanners and various user clients.
 
-This release adds explicit asset management for hosts and operating systems,
-first OSP 1.1 features, started consolidation of Credentials - to name
-just a few of the many impovements.
+This release adds explicit asset management for hosts and operating
+systems, first OSP 1.1 features, started consolidation of Credentials -
+to name just a few of the many improvements.
 
 Many thanks to everyone who has contributed to this release:
-Benoît Allard, Hani Benhabiles, Sven Haardiek, Matthew Mundell, Timo Pollmeier,
-Jan-Oliver Wagner and Michael Wiegand.
+Benoît Allard, Hani Benhabiles, Sven Haardiek, Matthew Mundell,
+Timo Pollmeier, Jan-Oliver Wagner and Michael Wiegand.
 
 Main changes since 6.1+beta1:
-* Add asset management for hosts and operating systems via new OMP commands
-  CREATE_ASSET, GET_ASSETS, MODIFY_ASSET and DELETE_ASSET.
+* Add asset management for hosts and operating systems via new OMP
+  commands CREATE_ASSET, GET_ASSETS, MODIFY_ASSET and DELETE_ASSET.
 * Make it possible to import OSP scan configs.
 * Allow specifying multiple data columns via elements in the OMP command
   GET_AGGREGATES and change the response to list statistics grouped for
   each data_column.
 * Add new alert method "Start Task".
 * Replace the LSC_CREDENTIAL type with CREDENTIAL type.
-* Handle free-form text in Postgres sorting of hosts, instead of requiring IPs.
+* Handle free-form text in Postgres sorting of hosts, instead of
+  requiring IPs.
 * Add new OMP command MOVE_TASK to move a task to a new slave, even
   when it is running.
 * Add support for some of the upcoming OSP 1.1 features.
-* Extend CREATE_GROUP with option to create "super on self" permission for
-  the group, so that all member resources are shared.
-* Updated the HTML report format plugin with slightly lighter dessign and better
-  performance.
+* Extend CREATE_GROUP with option to create "super on self" permission
+  for the group, so that all member resources are shared.
+* Updated the HTML report format plugin with slightly lighter design and
+  better performance.
 * Add "subject" and "message" method data for email alerts, so that the
-  user can set these fields. Also add various variables for the message via
-  various variables.
-* Add options to have a user inherit resources from a user being deleted.
+  user can set these fields. Also add various variables for the message
+  via various variables.
+* Add options to have a user inherit resources from a user being
+  deleted.
 * Add new setting "Default Severity".
 * Record in each report in the db whether the task was started by the
   scheduler.  Use this info to prevent the scheduler from stopping
@@ -45,9 +47,9 @@ Main changes since 6.1+beta1:
 * Add host and result counts to task iterators and add "text columns"
   option to get_aggregates.
 * Allow dot (.) in username.
-* Give up when doing the nvti cache update check and the database is busy,
-  because this is done in the main omp service loop, so it could delay the
-  service of OMP clients.
+* Give up when doing the nvti cache update check and the database is
+  busy, because this is done in the main omp service loop, so it could
+  delay the service of OMP clients.
 * Add params ignore_pagination and schedules_only for OMP GET_TASKS.
 * Improved certificate checks.
 * Simplify project version setting. Use SVN version at build time in
