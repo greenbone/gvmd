@@ -1,3 +1,9 @@
+2015-10-22  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (stop_osp_task): Set task running status as stop
+	requested, after task_running_report() call so that it returns the
+	correct value. Improve code style.
+
 2015-10-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_complete_nvt_cache_update): Check config

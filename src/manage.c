@@ -4300,23 +4300,23 @@ static int
 stop_osp_task (task_t task)
 {
   osp_connection_t *connection;
-  int ret;
+  int ret = -1;
   char *scan_id;
 
   connection = osp_scanner_connect (task_scanner (task));
   if (!connection)
-    {
-      set_task_run_status (task, TASK_STATUS_STOPPED);
-      set_report_scan_run_status (current_report, TASK_STATUS_STOPPED);
-      return -1;
-    }
-  set_task_run_status (task, TASK_STATUS_STOP_REQUESTED);
+    goto end_stop_osp;
   scan_id = report_uuid (task_running_report (task));
+  if (!scan_id)
+    goto end_stop_osp;
+  set_task_run_status (task, TASK_STATUS_STOP_REQUESTED);
   ret = osp_stop_scan (connection, scan_id, NULL);
   osp_connection_close (connection);
+  g_free (scan_id);
+
+end_stop_osp:
   set_task_run_status (task, TASK_STATUS_STOPPED);
   set_report_scan_run_status (current_report, TASK_STATUS_STOPPED);
-  g_free (scan_id);
   if (ret)
     return -1;
   return 0;
