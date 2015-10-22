@@ -2524,7 +2524,7 @@ int
 delete_schedule (const char*, int);
 
 void
-manage_auth_allow_all ();
+manage_auth_allow_all (int);
 
 gchar*
 get_scheduled_user_uuid ();

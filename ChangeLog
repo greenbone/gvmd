@@ -1,3 +1,7 @@
+2015-10-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.h: Add missing arg.
+
 2015-10-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Move the the credentials used by targets to a separate table and
