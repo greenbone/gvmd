@@ -278,6 +278,9 @@ create_permission_internal (const char *, const char *, const char *,
                             const char *, const char *, const char *,
                             permission_t *);
 
+static int
+check_config_families ();
+
 
 /* Variables. */
 
@@ -33631,6 +33634,12 @@ manage_complete_nvt_cache_update (GList *nvts_list, int mode)
 
   if (progress)
     progress ();
+  if (check_config_families ())
+    g_warning ("%s: Error updating config families."
+               "  One or more configs refer to an outdated family of an NVT.",
+               __FUNCTION__);
+  if (progress)
+    progress ();
   update_all_config_caches ();
   if (progress)
     progress ();
@@ -34452,6 +34461,38 @@ nvt_selector_add (const char* quoted_selector,
 }
 
 /**
+ * @brief Set the family of an NVT selector.
+ *
+ * @param[in]  quoted_selector  SQL-quoted selector name.
+ * @param[in]  family_or_nvt    Family name or NVT OID of selector.
+ * @param[in]  type             Selector type to remove.
+ * @param[in]  family           New family.
+ *
+ * @return 0 success, -1 error.
+ */
+static void
+nvt_selector_set_family (const char* quoted_selector,
+                         const char* family_or_nvt,
+                         int type,
+                         const char *family)
+{
+  gchar *quoted_family_or_nvt, *quoted_family;
+
+  quoted_family_or_nvt = sql_quote (family_or_nvt);
+  quoted_family = sql_quote (family);
+  sql ("UPDATE nvt_selectors SET family = '%s'"
+       " WHERE name = '%s'"
+       " AND family_or_nvt = '%s'"
+       " AND type = %i;",
+       quoted_family,
+       quoted_selector,
+       quoted_family_or_nvt,
+       type);
+  g_free (quoted_family);
+  g_free (quoted_family_or_nvt);
+}
+
+/**
  * @brief Check whether a family is selected.
  *
  * Only works for "generating from empty" selection.
@@ -34982,6 +35023,303 @@ insert_nvt_selectors (const char *quoted_name,
         }
     }
   return 0;
+}
+
+/**
+ * @brief Change the family of an NVT in a config.
+ *
+ * This is for migrators, when an NVT family changes.
+ *
+ * @param[in]  config      Config.
+ * @param[in]  oid         NVT OID.
+ * @param[in]  old_family  Name of old family.
+ * @param[in]  new_family  Name of new family.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+config_update_nvt_family (resource_t config, const char *oid,
+                          const char *old_family, const char *new_family)
+{
+  int constraining;
+  char* selector;
+  gchar *quoted_selector;
+
+  selector = config_nvt_selector (config);
+  if (selector == NULL)
+    {
+      g_warning ("%s: Failed to get config selector", __FUNCTION__);
+      return -1;
+    }
+  quoted_selector = sql_quote (selector);
+
+  constraining = config_families_growing (config);
+
+  g_debug ("%s: Updating NVT family for selector '%s'", __FUNCTION__, selector);
+
+  if (constraining)
+    {
+      /* Constraining the universe. */
+
+      g_debug ("%s:   Selector constrains universe", __FUNCTION__);
+
+      if (nvt_selector_family_growing (selector, old_family, constraining))
+        {
+          /* Old family is growing. */
+
+          g_debug ("%s:   Old family is growing", __FUNCTION__);
+
+          if (nvt_selector_has (quoted_selector, oid, NVT_SELECTOR_TYPE_NVT,
+                                0 /* Included. */))
+            {
+              /* NVT explicitly included in old family, which is redundant, so
+               * drop selector. */
+              g_debug ("%s:   Drop selector", __FUNCTION__);
+              nvt_selector_remove_selector (quoted_selector,
+                                            oid,
+                                            NVT_SELECTOR_TYPE_NVT);
+            }
+          else if (nvt_selector_has (quoted_selector, oid,
+                                     NVT_SELECTOR_TYPE_NVT,
+                                     1 /* Excluded. */))
+            {
+              /* NVT explicitly excluded from old family. */
+
+              g_debug ("%s:   NVT excluded from old family", __FUNCTION__);
+
+              if (nvt_selector_family_growing (selector, new_family,
+                                               constraining))
+                {
+                  /* New family is growing, change NVT to new family. */
+                  g_debug ("%s:   Change family", __FUNCTION__);
+                  nvt_selector_set_family (quoted_selector,
+                                           oid,
+                                           NVT_SELECTOR_TYPE_NVT,
+                                           new_family);
+                }
+              else
+                {
+                  /* New family static, NVT excluded already, so drop NVT
+                   * selector. */
+                  g_debug ("%s:   Remove selector", __FUNCTION__);
+                  nvt_selector_remove_selector (quoted_selector,
+                                                oid,
+                                                NVT_SELECTOR_TYPE_NVT);
+                }
+            }
+        }
+      else
+        {
+          /* Old family is static. */
+
+          g_debug ("%s:   Old family is static", __FUNCTION__);
+
+          if (nvt_selector_has (quoted_selector, oid, NVT_SELECTOR_TYPE_NVT,
+                                0 /* Included. */))
+            {
+              /* NVT explicitly included in old family. */
+
+              g_debug ("%s:   NVT included in old family", __FUNCTION__);
+
+              if (nvt_selector_family_growing (selector, new_family,
+                                               constraining))
+                {
+                  /* New family is growing so it already includes the NVT.
+                   * Remove the NVT selector. */
+                  g_debug ("%s:   Remove selector", __FUNCTION__);
+                  nvt_selector_remove_selector (quoted_selector,
+                                                oid,
+                                                NVT_SELECTOR_TYPE_NVT);
+                }
+              else
+                {
+                  /* New family static, change NVT to new family. */
+                  g_debug ("%s:   Change family", __FUNCTION__);
+                  nvt_selector_set_family (quoted_selector,
+                                           oid,
+                                           NVT_SELECTOR_TYPE_NVT,
+                                           new_family);
+                }
+            }
+          else if (nvt_selector_has (quoted_selector, oid,
+                                     NVT_SELECTOR_TYPE_NVT,
+                                     1 /* Excluded. */))
+            {
+              /* NVT explicitly excluded from old family, which is redundant, so
+               * remove NVT selector. */
+              g_debug ("%s:   Remove selector", __FUNCTION__);
+              nvt_selector_remove_selector (quoted_selector,
+                                            oid,
+                                            NVT_SELECTOR_TYPE_NVT);
+            }
+        }
+    }
+  else
+    {
+      /* Generating from empty. */
+
+      g_debug ("%s:   Selector generates from empty", __FUNCTION__);
+
+      if (nvt_selector_family_growing (selector, old_family, constraining))
+        {
+          /* Old family is growing. */
+
+          g_debug ("%s:   Old family is growing", __FUNCTION__);
+
+          if (nvt_selector_has (quoted_selector, oid, NVT_SELECTOR_TYPE_NVT,
+                                0 /* Included. */))
+            {
+              /* NVT explicitly included in old family.  This is redundant, so
+               * just remove the NVT selector. */
+              g_debug ("%s:   Remove selector", __FUNCTION__);
+              nvt_selector_remove_selector (quoted_selector,
+                                            oid,
+                                            NVT_SELECTOR_TYPE_NVT);
+            }
+          else if (nvt_selector_has (quoted_selector, oid,
+                                     NVT_SELECTOR_TYPE_NVT,
+                                     1 /* Excluded. */))
+            {
+              /* NVT explicitly excluded from old family. */
+
+              g_debug ("%s:   NVT excluded from old family", __FUNCTION__);
+
+              if (nvt_selector_family_growing (selector, new_family,
+                                               constraining))
+                {
+                  /* New family is growing, change NVT to new family. */
+                  g_debug ("%s:   Change family", __FUNCTION__);
+                  nvt_selector_set_family (quoted_selector,
+                                           oid,
+                                           NVT_SELECTOR_TYPE_NVT,
+                                           new_family);
+                }
+              else
+                {
+                  /* New family static, so the NVT is already excluded from the
+                   * new family.  Remove the NVT selector. */
+                  g_debug ("%s:   Remove selector", __FUNCTION__);
+                  nvt_selector_remove_selector (quoted_selector,
+                                                oid,
+                                                NVT_SELECTOR_TYPE_NVT);
+                }
+            }
+        }
+      else
+        {
+          /* Old family is static. */
+
+          g_debug ("%s:   Old family is static", __FUNCTION__);
+
+          if (nvt_selector_has (quoted_selector, oid, NVT_SELECTOR_TYPE_NVT,
+                                0 /* Included. */))
+            {
+              /* NVT explicitly included in old family. */
+
+              g_debug ("%s:   NVT included in old family", __FUNCTION__);
+
+              if (nvt_selector_family_growing (selector, new_family,
+                                               constraining))
+                {
+                  /* New family growing, so the NVT is already in there.  Remove
+                   * the NVT selector. */
+                  g_debug ("%s:   Remove selector", __FUNCTION__);
+                  nvt_selector_remove_selector (quoted_selector,
+                                                oid,
+                                                NVT_SELECTOR_TYPE_NVT);
+                }
+              else
+                {
+                  /* New family is static, change NVT to new family. */
+                  g_debug ("%s:   Change family", __FUNCTION__);
+                  nvt_selector_set_family (quoted_selector,
+                                           oid,
+                                           NVT_SELECTOR_TYPE_NVT,
+                                           new_family);
+                }
+            }
+          else if (nvt_selector_has (quoted_selector, oid,
+                                     NVT_SELECTOR_TYPE_NVT,
+                                     1 /* Excluded. */))
+            {
+              /* NVT explicitly excluded from old family.  This is redundant,
+               * so just remove the NVT selector. */
+              g_debug ("%s:   NVT exclude from old family, remove selector",
+                       __FUNCTION__);
+              nvt_selector_remove_selector (quoted_selector,
+                                            oid,
+                                            NVT_SELECTOR_TYPE_NVT);
+            }
+        }
+    }
+
+  g_free (quoted_selector);
+  free (selector);
+  return 0;
+}
+
+/**
+ * @brief Change the family of an NVT in all configs.
+ *
+ * @param[in]  oid         NVT OID.
+ * @param[in]  old_family  Name of old family.
+ * @param[in]  new_family  Name of new family.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+update_nvt_family (const char *oid, const char *old_family,
+                   const char *new_family)
+{
+  int ret;
+  iterator_t rows;
+
+  ret = 0;
+  init_iterator (&rows, "SELECT id FROM configs;");
+  while (next (&rows))
+    if (config_update_nvt_family (iterator_int64 (&rows, 0), oid, old_family,
+                                  new_family))
+      ret = -1;
+  cleanup_iterator (&rows);
+  return ret;
+}
+
+/**
+ * @brief Ensure that all configs refer to the right NVT families.
+ *
+ * When the family of an NVT is changed in the feed, then the config
+ * refers to the wrong family.
+ *
+ * @param[in]  config      Config.
+ * @param[in]  oid         NVT OID.
+ * @param[in]  old_family  Name of old family.
+ * @param[in]  new_family  Name of new family.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+check_config_families ()
+{
+  int ret;
+  iterator_t selectors;
+
+  ret = 0;
+  /* Get all NVT selectors that have the wrong family. */
+  init_iterator (&selectors,
+                 "SELECT DISTINCT family_or_nvt, family,"
+                 "       (SELECT family FROM nvts WHERE oid = family_or_nvt)"
+                 " FROM nvt_selectors"
+                 " WHERE type = 2"
+                 " AND family != (SELECT family FROM nvts"
+                 "                WHERE oid = family_or_nvt);");
+  while (next (&selectors))
+    /* Update the family of the NVT selector. */
+    if (update_nvt_family (iterator_string (&selectors, 0),
+                           iterator_string (&selectors, 1),
+                           iterator_string (&selectors, 2)))
+      ret = -1;
+  cleanup_iterator (&selectors);
+  return ret;
 }
 
 
