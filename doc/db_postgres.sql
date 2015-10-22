@@ -326,14 +326,10 @@ CREATE TABLE targets
   reverse_lookup_only integer,
   reverse_lookup_unify integer,
   comment text,
-  lsc_credential integer REFERENCES credentials (id) ON DELETE RESTRICT, -- SSH
-  ssh_port text,
-  smb_lsc_credential integer REFERENCES credentials (id) ON DELETE RESTRICT,
-  port_range integer REFERENCES port_lists (id) ON DELETE RESTRICT,
+  port_list integer REFERENCES port_lists (id) ON DELETE RESTRICT,
   alive_test integer,
-  creation_time date,
-  modification_time date,
-  esxi_lsc_credential integer REFERENCES credentials (id) ON DELETE RESTRICT);
+  creation_time integer,
+  modification_time integer);
 
 CREATE TABLE targets_trash
  (id SERIAL PRIMARY KEY,
@@ -345,17 +341,26 @@ CREATE TABLE targets_trash
   reverse_lookup_only integer,
   reverse_lookup_unify integer,
   comment text,
-  lsc_credential integer REFERENCES credentials (id) ON DELETE RESTRICT, -- SSH
-  ssh_port text,
-  smb_lsc_credential integer REFERENCES credentials (id) ON DELETE RESTRICT,
-  port_range integer REFERENCES port_lists (id) ON DELETE RESTRICT,
-  ssh_location integer,
-  smb_location integer,
+  port_list integer REFERENCES port_lists (id) ON DELETE RESTRICT,
   port_list_location integer,
-  creation_time date,
-  modification_time date,
-  esxi_lsc_credential integer REFERENCES credentials (id) ON DELETE RESTRICT),
-  esxi_location integer;
+  alive_test integer,
+  creation_time integer,
+  modification_time integer);
+
+CREATE TABLE targets_login_data
+ (id SERIAL PRIMARY KEY,
+  target integer REFERENCES targets (id) ON DELETE RESTRICT,
+  type text,
+  credential integer REFERENCES credentials (id) ON DELETE RESTRICT,
+  port integer);
+
+CREATE TABLE targets_trash_login_data
+ (id SERIAL PRIMARY KEY,
+  target integer REFERENCES targets_trash (id) ON DELETE RESTRICT,
+  type text,
+  credential integer REFERENCES credentials (id) ON DELETE RESTRICT,
+  port integer,
+  credential_location);
 
 CREATE TABLE configs
  (id SERIAL PRIMARY KEY,

@@ -1649,6 +1649,111 @@ sql_severity_in_level (sqlite3_context *context, int argc, sqlite3_value** argv)
 }
 
 /**
+ * @brief Get a target credential.
+ *
+ * This is a callback for a scalar SQL function of two arguments.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_target_credential (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  target_t target;
+  int trash;
+  const char *type;
+
+  assert (argc == 3);
+
+  target = sqlite3_value_int64 (argv[0]);
+  trash = sqlite3_value_int (argv[1]);
+  type = (char*) sqlite3_value_text (argv[2]);
+
+  if (type == NULL)
+    {
+      sqlite3_result_null (context);
+      return;
+    }
+
+  if (trash)
+    sqlite3_result_int64 (context, trash_target_credential (target, type));
+  else
+    sqlite3_result_int64 (context, target_credential (target, type));
+
+  return;
+}
+
+/**
+ * @brief Get the location of a trash target credential.
+ *
+ * This is a callback for a scalar SQL function of two arguments.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_trash_target_credential_location (sqlite3_context *context,
+                                      int argc, sqlite3_value** argv)
+{
+  target_t target;
+  const char *type;
+
+  assert (argc == 2);
+
+  target = sqlite3_value_int64 (argv[0]);
+  type = (char*) sqlite3_value_text (argv[1]);
+
+  if (type == NULL)
+    {
+      sqlite3_result_null (context);
+      return;
+    }
+
+  sqlite3_result_int (context, trash_target_credential_location (target, type));
+
+  return;
+}
+
+/**
+ * @brief Get a target port.
+ *
+ * This is a callback for a scalar SQL function of two arguments.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_target_login_port (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  target_t target;
+  int trash;
+  const char *type;
+
+  assert (argc == 3);
+
+  target = sqlite3_value_int64 (argv[0]);
+  trash = sqlite3_value_int (argv[1]);
+  type = (char*) sqlite3_value_text (argv[2]);
+
+  if (type == NULL)
+    {
+      sqlite3_result_null (context);
+      return;
+    }
+
+  if (trash)
+    sqlite3_result_int64 (context,
+                          trash_target_login_port (target, type));
+  else
+    sqlite3_result_int64 (context, target_login_port (target, type));
+
+  return;
+}
+
+/**
  * @brief Check if a user can do anything.
  *
  * This is a callback for a scalar SQL function of one argument.
@@ -2237,6 +2342,48 @@ manage_create_sql_functions ()
     }
 
   if (sqlite3_create_function (task_db,
+                               "target_credential",
+                               3,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_target_credential,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create target_login_data", __FUNCTION__);
+      return -1;
+    }
+
+  if (sqlite3_create_function (task_db,
+                               "trash_target_credential_location",
+                               2,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_trash_target_credential_location,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create target_login_data", __FUNCTION__);
+      return -1;
+    }
+
+  if (sqlite3_create_function (task_db,
+                               "target_login_port",
+                               3,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_target_login_port,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create target_login_data", __FUNCTION__);
+      return -1;
+    }
+
+  if (sqlite3_create_function (task_db,
                                "user_can_everything",
                                1,               /* Number of args. */
                                SQLITE_UTF8,
@@ -2563,21 +2710,27 @@ create_tables ()
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
        "  creation_time, modification_time, resource_type, resource,"
        "  resource_uuid, resource_location, active, value);");
-  /* port_range in the following two is actually a port list.  Migrating a
-   * column rename is lots of work. */
   sql ("CREATE TABLE IF NOT EXISTS targets"
-       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts,"
-       "  exclude_hosts, reverse_lookup_only, reverse_lookup_unify, comment,"
-       "  lsc_credential INTEGER, ssh_port, smb_lsc_credential INTEGER,"
-       "  port_range, alive_test, creation_time, modification_time,"
-       "  esxi_lsc_credential);");
+       " (id INTEGER PRIMARY KEY, uuid text UNIQUE NOT NULL,"
+       "  owner integer, name text NOT NULL,"
+       "  hosts text, exclude_hosts text,"
+       "  reverse_lookup_only integer, reverse_lookup_unify integer,"
+       "  comment text, port_list integer, alive_test integer,"
+       "  creation_time integer, modification_time integer);");
   sql ("CREATE TABLE IF NOT EXISTS targets_trash"
-       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts,"
-       "  exclude_hosts, reverse_lookup_only, reverse_lookup_unify,"
-       "  comment, lsc_credential INTEGER, ssh_port, smb_lsc_credential"
-       "  INTEGER, port_range, ssh_location INTEGER, smb_location INTEGER,"
-       "  port_list_location INTEGER, alive_test, creation_time,"
-       "  modification_time, esxi_lsc_credential, esxi_location INTEGER);");
+       " (id INTEGER PRIMARY KEY, uuid text UNIQUE NOT NULL,"
+       "  owner integer, name text NOT NULL,"
+       "  hosts text, exclude_hosts text,"
+       "  reverse_lookup_only integer, reverse_lookup_unify integer,"
+       "  comment text, port_list integer, port_list_location integer,"
+       "  alive_test integer,"
+       "  creation_time integer, modification_time integer);");
+  sql ("CREATE TABLE IF NOT EXISTS targets_login_data"
+       " (id INTEGER PRIMARY KEY, target INTEGER, type TEXT,"
+       "  credential INTEGER, port INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS targets_trash_login_data"
+       " (id INTEGER PRIMARY KEY, target INTEGER, type TEXT,"
+       "  credential INTEGER, port INTEGER, credential_location INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS task_files"
        " (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
   sql ("CREATE TABLE IF NOT EXISTS task_alerts"

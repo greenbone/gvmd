@@ -307,9 +307,9 @@ const char *otp_pref_iterator_value (iterator_t *);
 
 port_list_t target_port_list (target_t);
 char* target_port_range (target_t);
-credential_t target_ssh_lsc_credential (target_t);
-credential_t target_smb_lsc_credential (target_t);
-credential_t target_esxi_lsc_credential (target_t);
+credential_t target_ssh_credential (target_t);
+credential_t target_smb_credential (target_t);
+credential_t target_esxi_credential (target_t);
 const char *credential_iterator_password (iterator_t *);
 
 int create_current_report (task_t, char **, task_status_t);

@@ -10551,6 +10551,214 @@ migrate_154_to_155 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 155 to version 156.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_155_to_156 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 155. */
+
+  if (manage_db_version () != 155)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  if (sql_is_sqlite3 ())
+    {
+      /* Remove and rename columns by copying tables in SQLite */
+      /* Rename old targets tables. */
+      sql ("ALTER TABLE targets RENAME TO targets_155;");
+      sql ("ALTER TABLE targets_trash RENAME TO targets_trash_155;");
+
+      /* Create new targets tables */
+      sql ("CREATE TABLE IF NOT EXISTS targets"
+           " (id INTEGER PRIMARY KEY,"
+           "  uuid text UNIQUE NOT NULL,"
+           "  owner integer,"
+           "  name text NOT NULL,"
+           "  hosts text,"
+           "  exclude_hosts text,"
+           "  reverse_lookup_only integer,"
+           "  reverse_lookup_unify integer,"
+           "  comment text,"
+           "  port_list integer,"
+           "  alive_test integer,"
+           "  creation_time integer,"
+           "  modification_time integer);");
+
+      sql ("CREATE TABLE IF NOT EXISTS targets_trash"
+           " (id INTEGER PRIMARY KEY,"
+           "  uuid text UNIQUE NOT NULL,"
+           "  owner integer,"
+           "  name text NOT NULL,"
+           "  hosts text,"
+           "  exclude_hosts text,"
+           "  reverse_lookup_only integer,"
+           "  reverse_lookup_unify integer,"
+           "  comment text,"
+           "  port_list integer,"
+           "  port_list_location integer,"
+           "  alive_test integer,"
+           "  creation_time integer,"
+           "  modification_time integer);");
+
+      sql ("CREATE TABLE IF NOT EXISTS targets_login_data"
+           " (id INTEGER PRIMARY KEY,"
+           "  target INTEGER,"
+           "  type TEXT,"
+           "  credential INTEGER,"
+           "  port INTEGER);");
+
+      sql ("CREATE TABLE IF NOT EXISTS targets_trash_login_data"
+           " (id INTEGER PRIMARY KEY,"
+           "  target INTEGER,"
+           "  type TEXT,"
+           "  credential INTEGER,"
+           "  port INTEGER,"
+           "  credential_location INTEGER);");
+
+      /* Copy existing basic data */
+      sql ("INSERT INTO targets"
+          " (id, uuid, owner, name, hosts, exclude_hosts,"
+          "  reverse_lookup_only, reverse_lookup_unify, comment,"
+          "  port_list, alive_test, creation_time, modification_time)"
+          " SELECT id, uuid, owner, name, hosts, exclude_hosts,"
+          "  reverse_lookup_only, reverse_lookup_unify, comment,"
+          "  port_range, alive_test, creation_time, modification_time"
+          " FROM targets_155;");
+
+      sql ("INSERT INTO targets_trash"
+          " (id, uuid, owner, name, hosts, exclude_hosts,"
+          "  reverse_lookup_only, reverse_lookup_unify, comment,"
+          "  port_list, alive_test, creation_time, modification_time)"
+          " SELECT id, uuid, owner, name, hosts, exclude_hosts,"
+          "  reverse_lookup_only, reverse_lookup_unify, comment,"
+          "  port_range, alive_test, creation_time, modification_time"
+          " FROM targets_trash_155;");
+
+      /* Copy existing credentials data */
+      sql ("INSERT INTO targets_login_data"
+          " (target, type, credential, port)"
+          " SELECT id, 'ssh', lsc_credential, CAST (ssh_port AS integer)"
+          " FROM targets_155 WHERE lsc_credential != 0;");
+
+      sql ("INSERT INTO targets_login_data"
+          " (target, type, credential, port)"
+          " SELECT id, 'smb', smb_lsc_credential, 0"
+          " FROM targets_155 WHERE smb_lsc_credential != 0;");
+
+      sql ("INSERT INTO targets_login_data"
+          " (target, type, credential, port)"
+          " SELECT id, 'esxi', esxi_lsc_credential, 0"
+          " FROM targets_155 WHERE esxi_lsc_credential != 0;");
+
+      /* Copy existing trash credentials data */
+      sql ("INSERT INTO targets_trash_login_data"
+          " (target, type, credential, port, credential_location)"
+          " SELECT id, 'ssh', lsc_credential, CAST (ssh_port AS integer),"
+          "        ssh_location"
+          " FROM targets_trash_155 WHERE lsc_credential != 0;");
+
+      sql ("INSERT INTO targets_trash_login_data"
+          " (target, type, credential, port, credential_location)"
+          " SELECT id, 'smb', smb_lsc_credential, 0, smb_location"
+          " FROM targets_trash_155 WHERE smb_lsc_credential != 0;");
+
+      sql ("INSERT INTO targets_trash_login_data"
+          " (target, type, credential, port, credential_location)"
+          " SELECT id, 'esxi', esxi_lsc_credential, 0, esxi_location"
+          " FROM targets_trash_155 WHERE esxi_lsc_credential != 0;");
+
+      /* Remove old tables */
+      sql ("DROP TABLE targets_155;");
+      sql ("DROP TABLE targets_trash_155;");
+    }
+  else
+    {
+      /* Use ALTER TABLE to remove and rename columns in Postgres */
+      /* Create login data tables */
+      sql ("CREATE TABLE IF NOT EXISTS targets_login_data"
+           " (id SERIAL PRIMARY KEY,"
+           "  target INTEGER REFERENCES targets (id),"
+           "  type TEXT,"
+           "  credential INTEGER REFERENCES credentials (id),"
+           "  port INTEGER);");
+
+      sql ("CREATE TABLE IF NOT EXISTS targets_trash_login_data"
+           " (id SERIAL PRIMARY KEY,"
+           "  target INTEGER REFERENCES targets_trash (id),"
+           "  type TEXT,"
+           "  credential INTEGER,"
+           "  port INTEGER,"
+           "  credential_location INTEGER);");
+
+      /* Copy existing credentials data */
+      sql ("INSERT INTO targets_login_data"
+           " (target, type, credential, port)"
+           " SELECT id, 'ssh', lsc_credential, CAST (ssh_port AS integer)"
+           " FROM targets WHERE lsc_credential != 0;");
+
+      sql ("INSERT INTO targets_login_data"
+           " (target, type, credential, port)"
+           " SELECT id, 'smb', smb_lsc_credential, 0"
+           " FROM targets WHERE smb_lsc_credential != 0;");
+
+      sql ("INSERT INTO targets_login_data"
+           " (target, type, credential, port)"
+           " SELECT id, 'esxi', esxi_lsc_credential, 0"
+           " FROM targets WHERE esxi_lsc_credential != 0;");
+
+      /* Copy existing trash credentials data */
+      sql ("INSERT INTO targets_trash_login_data"
+           " (target, type, credential, port, credential_location)"
+           " SELECT id, 'ssh', lsc_credential, CAST (ssh_port AS integer),"
+           "        ssh_location"
+           " FROM targets_trash WHERE lsc_credential != 0;");
+
+      sql ("INSERT INTO targets_trash_login_data"
+           " (target, type, credential, port, credential_location)"
+           " SELECT id, 'smb', smb_lsc_credential, 0, smb_location"
+           " FROM targets_trash WHERE smb_lsc_credential != 0;");
+
+      sql ("INSERT INTO targets_trash_login_data"
+           " (target, type, credential, port, credential_location)"
+           " SELECT id, 'esxi', esxi_lsc_credential, 0, esxi_location"
+           " FROM targets_trash WHERE esxi_lsc_credential != 0;");
+
+      /* Drop and remove now unused columns */
+      sql ("ALTER TABLE targets DROP COLUMN lsc_credential;");
+      sql ("ALTER TABLE targets DROP COLUMN ssh_port;");
+      sql ("ALTER TABLE targets DROP COLUMN smb_lsc_credential;");
+      sql ("ALTER TABLE targets DROP COLUMN esxi_lsc_credential;");
+      sql ("ALTER TABLE targets RENAME COLUMN port_range TO port_list;");
+
+      sql ("ALTER TABLE targets_trash DROP COLUMN lsc_credential;");
+      sql ("ALTER TABLE targets_trash DROP COLUMN ssh_location;");
+      sql ("ALTER TABLE targets_trash DROP COLUMN ssh_port;");
+      sql ("ALTER TABLE targets_trash DROP COLUMN smb_lsc_credential;");
+      sql ("ALTER TABLE targets_trash DROP COLUMN smb_location;");
+      sql ("ALTER TABLE targets_trash DROP COLUMN esxi_lsc_credential;");
+      sql ("ALTER TABLE targets_trash DROP COLUMN esxi_location;");
+      sql ("ALTER TABLE targets_trash RENAME COLUMN port_range TO port_list;");
+    }
+
+  /* Set the database version to 156. */
+
+  set_db_version (156);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
 #ifdef SQL_IS_SQLITE
 #define SQLITE_OR_NULL(function) function
 #else
@@ -10717,6 +10925,7 @@ static migrator_t database_migrators[]
     {153, migrate_152_to_153},
     {154, migrate_153_to_154},
     {155, migrate_154_to_155},
+    {156, migrate_155_to_156},
     /* End marker. */
     {-1, NULL}};
 

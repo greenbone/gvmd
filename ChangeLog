@@ -1,3 +1,96 @@
+2015-10-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Move the the credentials used by targets to a separate table and
+	rename the port_range column to port_list.  Hence increase database
+	version to 156.  Add database migration from version 155 to 156.
+	Also remove "lsc_" from names referencing credentials OMP and other
+	references to LSC.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 156.
+
+	* src/manage_migrators.c (migrate_155_to_156): New function.
+	(database_migrators): Add migrate_155_to_156.
+
+	* src/manage_pg.c (manage_create_sql_functions): Add functions
+	target_credential, trash_target_credential_location, target_login_port.
+	(create_tables): Remove referencing credentials from tables targets
+	and targets_trash and rename port_range to port_list there.  Add tables
+	targets_login_data and targets_trash_login_data.
+
+	* src/manage_sql.c (check_db_targets): Change port_range to port_list.
+	(set_target_login_data, target_credential, trash_target_credential)
+	(trash_target_credential_location, target_login_port)
+	(trash_target_login_port): New functions.
+	(create_target): Remove "lsc_" from credential parameter names and
+	store credentials in targets_login_data table.
+	(copy_target, delete_target): Handle credentials and login ports
+	now being stored in targets_login_data and corresponding trash table.
+	Change port_range to port_list.
+	(create_target): Remove "lsc_" from credential parameter names and
+	store credentials in targets_login_data table.
+	(TARGET_ITERATOR_COLUMNS, TARGET_ITERATOR_TRASH_COLUMNS): Get the
+	credentials and ssh port using the new login data access functions.
+	(target_ssh_lsc_credential, target_smb_lsc_credential)
+	(target_esxi_lsc_credential): Remove. Replaced by versions without
+	"lsc_" prefix.
+	(target_ssh_credential, target_smb_credential, target_esxi_credential):
+	New functions. Replacements for functions with "lsc_".
+	(target_port_list): Change port_range to port_list.
+	(find_credential_with_permission, modify_credential): Remove "LSC" from
+	doc.
+	(delete_credential, credential_in_use, trash_credential_in_use)
+	(init_credential_target_iterator): Remove "LSC" from doc and adjust to
+	targets using separate tables for credentials.
+	(delete_port_list, port_list_in_use, trash_port_list_in_use)
+	(init_port_list_target_iterator): Change port_range in targets to
+	port_list.
+	(manage_restore, manage_empty_trashcan): Adjust to targets using
+	separate tables for credentials.
+
+	* src/manage_sqlite3.c (sql_target_credential)
+	(sql_trash_target_credential_location, sql_target_login_port): New
+	functions.
+	(manage_create_sql_functions): Add functions target_credential,
+	trash_target_credential_location, target_login_port.
+	(create_tables): Remove referencing credentials from tables targets
+	and targets_trash and rename port_range to port_list there.  Add tables
+	targets_login_data and targets_trash_login_data.
+
+	(target_esxi_lsc_credential): Remove. Replaced by versions without
+	"lsc_" prefix.
+	(target_ssh_credential, target_smb_credential, target_esxi_credential):
+	New function prototypes. Replacements for functions with "lsc_".
+
+	* src/manage.c (get_osp_task_options, run_task, delete_slave_task):
+	Remove "lsc_" from variable and function names.
+
+	* src/manage.h (target_lsc_credential_name): Remove. Renamed to.
+	target_ssh_credential_name.
+	(target_ssh_credential_name): New. Renamed target_lsc_credential_name.
+	(target_credential, trash_target_credential)
+	(trash_target_credential_location, target_login_port)
+	(trash_target_login_port): New function prototypes.
+
+	* src/omp.c (create_target_data_t, create_target_data_reset)
+	(modify_target_data_t, modify_target_data_reset): Add fields
+	ssh_credential_id, ssh_lsc_port, smb_credential_id, esxi_credential_id
+	and mark the "lsc_" versions as deprecated.
+	(client_state_t, omp_xml_handle_start_element)
+	(omp_xml_handle_end_element, omp_xml_handle_text): Add cases for
+	credentials elements without "LSC_" prefix in CREATE_TARGET and
+	MODIFY_TARGET. Remove "lsc_" prefix in element, variable and function
+	names in GET_TARGETS.
+
+	* src/schema_formats/XML/OMP.xml.in (create_target, modify_credential):
+	Add elements ssh_credential, smb_credential, esxi_credential and
+	add comment to deprecate corresponding "lsc_" elements.
+	(get_targets): Remove "lsc_" from credential elements.
+
+	* doc/db_postgres.sql: Update table definition for targets and
+	targets_trash. Add targets_login_data and targets_trash_login_data.
+
+	* doc/db.png, doc/omp.rnc, doc/omp.html: Update from source.
+
 2015-10-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Ensure sequences for automatically assigning primary key ids in

@@ -1496,7 +1496,7 @@ int
 trash_target_writable (target_t);
 
 char*
-target_lsc_credential_name (const char *);
+target_ssh_credential_name (const char *);
 
 void
 init_target_task_iterator (iterator_t*, target_t);
@@ -1506,6 +1506,22 @@ target_task_iterator_name (iterator_t*);
 
 const char*
 target_task_iterator_uuid (iterator_t*);
+
+credential_t
+target_credential (target_t, const char*);
+
+credential_t
+trash_target_credential (target_t, const char*);
+
+int
+trash_target_credential_location (target_t, const char*);
+
+int
+target_login_port (target_t, const char*);
+
+int
+trash_target_login_port (target_t, const char*);
+
 
 
 /* Configs. */

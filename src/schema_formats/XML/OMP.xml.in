@@ -3497,7 +3497,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <summary>Create a credential</summary>
     <description>
       <p>
-        The client uses the create_lsc_credential command to create a new
+        The client uses the create_credential command to create a new
         credential for local security checks and other functions
         requiring authentication.
       </p>
@@ -5122,6 +5122,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>copy</e></o>
       <e>hosts</e>
       <o><e>exclude_hosts</e></o>
+      <o><e>ssh_credential</e></o>
+      <o><e>smb_credential</e></o>
+      <o><e>esxi_credential</e></o>
       <o><e>ssh_lsc_credential</e></o>
       <o><e>smb_lsc_credential</e></o>
       <o><e>esxi_lsc_credential</e></o>
@@ -5175,7 +5178,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
     </ele>
     <ele>
-      <name>ssh_lsc_credential</name>
+      <name>ssh_credential</name>
       <summary>SSH login credentials for target</summary>
       <pattern>
         <attrib>
@@ -5192,7 +5195,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </ele>
     </ele>
     <ele>
-      <name>smb_lsc_credential</name>
+      <name>smb_credential</name>
       <summary>SMB login credentials for target</summary>
       <pattern>
         <attrib>
@@ -5203,8 +5206,47 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
     </ele>
     <ele>
-      <name>esxi_lsc_credential</name>
+      <name>esxi_credential</name>
       <summary>ESXi credential to use on target</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>ssh_lsc_credential</name>
+      <summary>Deprecated: use ssh_credential. SSH credential</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+        <o><e>port</e></o>
+      </pattern>
+      <ele>
+        <name>port</name>
+        <summary>The port the LSCs will use</summary>
+        <pattern>text</pattern>
+      </ele>
+    </ele>
+    <ele>
+      <name>smb_lsc_credential</name>
+      <summary>Deprecated: use ssh_credential. SMB credential</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>esxi_lsc_credential</name>
+      <summary>Deprecated: use esxi_credential. ESXi credential</summary>
       <pattern>
         <attrib>
           <name>id</name>
@@ -9609,15 +9651,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </user_tags>
             <hosts>localhost</hosts>
             <max_hosts>1</max_hosts>
-            <ssh_lsc_credential id="">
+            <ssh_credential id="">
               <name></name>
-            </ssh_lsc_credential>
-            <smb_lsc_credential id="">
+            </ssh_credential>
+            <smb_credential id="">
               <name></name>
-            </smb_lsc_credential>
-            <esxi_lsc_credential id="">
+            </smb_credential>
+            <esxi_credential id="">
               <name></name>
-            </esxi_lsc_credential>
+            </esxi_credential>
           </asset>
           <truncated>...</truncated>
         </get_assets_response>
@@ -9643,15 +9685,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </user_tags>
             <hosts>dik.example.org</hosts>
             <max_hosts>1</max_hosts>
-            <ssh_lsc_credential id="58ff2793-2dc7-43fe-85f9-20bfac5a87e4">
+            <ssh_credential id="58ff2793-2dc7-43fe-85f9-20bfac5a87e4">
               <name>mm</name>
-            </ssh_lsc_credential>
-            <smb_lsc_credential id="">
+            </ssh_credential>
+            <smb_credential id="">
               <name></name>
-            </smb_lsc_credential>
-            <esxi_lsc_credential id="">
+            </smb_credential>
+            <esxi_credential id="">
               <name></name>
-            </esxi_lsc_credential>
+            </esxi_credential>
             <tasks>
               <task id="13bb418a-4220-4575-b35b-ec398bff7417">
                 <name>dik mm</name>
@@ -17561,9 +17603,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>hosts</e>
           <e>exclude_hosts</e>
           <e>max_hosts</e>
-          <e>ssh_lsc_credential</e>
-          <e>smb_lsc_credential</e>
-          <e>esxi_lsc_credential</e>
+          <e>ssh_credential</e>
+          <e>smb_credential</e>
+          <e>esxi_credential</e>
           <e>permissions</e>
           <e>port_range</e>
           <e>port_list</e>
@@ -17702,7 +17744,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </ele>
         </ele>
         <ele>
-          <name>ssh_lsc_credential</name>
+          <name>ssh_credential</name>
           <pattern>
             <attrib>
               <name>id</name>
@@ -17739,7 +17781,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </ele>
         </ele>
         <ele>
-          <name>smb_lsc_credential</name>
+          <name>smb_credential</name>
           <pattern>
             <attrib>
               <name>id</name>
@@ -17770,7 +17812,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </ele>
         </ele>
         <ele>
-        <name>esxi_lsc_credential</name>
+        <name>esxi_credential</name>
           <pattern>
             <attrib>
               <name>id</name>
@@ -18020,15 +18062,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </user_tags>
             <hosts>localhost</hosts>
             <max_hosts>1</max_hosts>
-            <ssh_lsc_credential id="">
+            <ssh_credential id="">
               <name></name>
-            </ssh_lsc_credential>
-            <smb_lsc_credential id="">
+            </ssh_credential>
+            <smb_credential id="">
               <name></name>
-            </smb_lsc_credential>
-            <esxi_lsc_credential id="">
+            </smb_credential>
+            <esxi_credential id="">
               <name></name>
-            </esxi_lsc_credential>
+            </esxi_credential>
           </target>
           <truncated>...</truncated>
         </get_targets_response>
@@ -18054,15 +18096,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </user_tags>
             <hosts>dik.example.org</hosts>
             <max_hosts>1</max_hosts>
-            <ssh_lsc_credential id="58ff2793-2dc7-43fe-85f9-20bfac5a87e4">
+            <ssh_credential id="58ff2793-2dc7-43fe-85f9-20bfac5a87e4">
               <name>mm</name>
-            </ssh_lsc_credential>
-            <smb_lsc_credential id="">
+            </ssh_credential>
+            <smb_credential id="">
               <name></name>
-            </smb_lsc_credential>
-            <esxi_lsc_credential id="">
+            </smb_credential>
+            <esxi_credential id="">
               <name></name>
-            </esxi_lsc_credential>
+            </esxi_credential>
             <tasks>
               <task id="13bb418a-4220-4575-b35b-ec398bff7417">
                 <name>dik mm</name>
@@ -21874,6 +21916,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>hosts</e></o>
       <o><e>hosts_ordering</e></o>
       <o><e>exclude_hosts</e></o>
+      <o><e>ssh_credential</e></o>
+      <o><e>smb_credential</e></o>
+      <o><e>esxi_credential</e></o>
       <o><e>ssh_lsc_credential</e></o>
       <o><e>smb_lsc_credential</e></o>
       <o><e>esxi_lsc_credential</e></o>
@@ -21910,7 +21955,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
     </ele>
     <ele>
-      <name>ssh_lsc_credential</name>
+      <name>ssh_credential</name>
       <summary>SSH credential to use on target</summary>
       <pattern>
         <attrib>
@@ -21921,7 +21966,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
     </ele>
     <ele>
-      <name>smb_lsc_credential</name>
+      <name>smb_credential</name>
       <summary>SMB credential to use on target</summary>
       <pattern>
         <attrib>
@@ -21932,8 +21977,41 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
     </ele>
     <ele>
-      <name>esxi_lsc_credential</name>
+      <name>esxi_credential</name>
       <summary>ESXi credential to use on target</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>ssh_lsc_credential</name>
+      <summary>Deprecated: use ssh_credential. SSH credential</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>smb_lsc_credential</name>
+      <summary>Deprecated: use ssh_credential. SMB credential</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>esxi_lsc_credential</name>
+      <summary>Deprecated: use esxi_credential. ESXi credential</summary>
       <pattern>
         <attrib>
           <name>id</name>
@@ -22962,6 +23040,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         The type LSC_CREDENTIAL has been renamed to CREDENTIAL, so
         the CREATE_LSC_CREDENTIAL command is now named CREATE_CREDENTIAL,
         GET_LSC_CREDENTIALS is named GET_CREDENTIALS, etc.
+      </p>
+    </description>
+    <version>7.0</version>
+  </change>
+  <change>
+    <command>GET_TARGETS</command>
+    <summary>&quot;lsc_&quot; removed from credential element names</summary>
+    <description>
+      <p>
+        The elements ssh_lsc_credential, smb_lsc_credential and
+        esxi_lsc_credential have been renamed to ssh_credential, smb_credential
+        and esxi_credential.
       </p>
     </description>
     <version>7.0</version>

@@ -7658,7 +7658,7 @@ create_alert_filter
 </h3></div>
 <p>In short: Create a credential.</p>
 <p>
-        The client uses the create_lsc_credential command to create a new
+        The client uses the create_credential command to create a new
         credential for local security checks and other functions
         requiring authentication.
       </p>
@@ -10036,7 +10036,7 @@ create_tag_active
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>ssh_lsc_credential</b>&gt;
+              &lt;<b>ssh_credential</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">SSH login credentials for target.</div>
 <ul style="list-style: none">
 <li>
@@ -10051,7 +10051,7 @@ create_tag_active
 </ul>
 </li>
 <li>
-              &lt;<b>smb_lsc_credential</b>&gt;
+              &lt;<b>smb_credential</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">SMB login credentials for target.</div>
 <ul style="list-style: none"><li>
           @<b>id</b>
@@ -10059,8 +10059,39 @@ create_tag_active
           </li></ul>
 </li>
 <li>
-              &lt;<b>esxi_lsc_credential</b>&gt;
+              &lt;<b>esxi_credential</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">ESXi credential to use on target.</div>
+<ul style="list-style: none"><li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li>
+<li>
+              &lt;<b>ssh_lsc_credential</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Deprecated: use ssh_credential. SSH credential.</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>port</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The port the LSCs will use.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>smb_lsc_credential</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Deprecated: use ssh_credential. SMB credential.</div>
+<ul style="list-style: none"><li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li>
+<li>
+              &lt;<b>esxi_lsc_credential</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Deprecated: use esxi_credential. ESXi credential.</div>
 <ul style="list-style: none"><li>
           @<b>id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -10123,6 +10154,9 @@ create_tag_active
        &amp; create_target_copy?
        &amp; create_target_hosts
        &amp; create_target_exclude_hosts?
+       &amp; create_target_ssh_credential?
+       &amp; create_target_smb_credential?
+       &amp; create_target_esxi_credential?
        &amp; create_target_ssh_lsc_credential?
        &amp; create_target_smb_lsc_credential?
        &amp; create_target_esxi_lsc_credential?
@@ -10168,6 +10202,31 @@ create_target_exclude_hosts
  = element exclude_hosts
      {
        text
+     }
+
+create_target_ssh_credential
+ = element ssh_credential
+     {
+       attribute id { uuid }
+       &amp; create_target_ssh_credential_port?
+     }
+
+create_target_ssh_credential_port
+ = element port
+     {
+       text
+     }
+
+create_target_smb_credential
+ = element smb_credential
+     {
+       attribute id { uuid }
+     }
+
+create_target_esxi_credential
+ = element esxi_credential
+     {
+       attribute id { uuid }
      }
 
 create_target_ssh_lsc_credential
@@ -16604,15 +16663,15 @@ get_assets_response_asset_count_page
      &lt;/user_tags&gt;
      &lt;hosts&gt;localhost&lt;/hosts&gt;
      &lt;max_hosts&gt;1&lt;/max_hosts&gt;
-     &lt;ssh_lsc_credential id=""&gt;
+     &lt;ssh_credential id=""&gt;
        &lt;name/&gt;
-     &lt;/ssh_lsc_credential&gt;
-     &lt;smb_lsc_credential id=""&gt;
+     &lt;/ssh_credential&gt;
+     &lt;smb_credential id=""&gt;
        &lt;name/&gt;
-     &lt;/smb_lsc_credential&gt;
-     &lt;esxi_lsc_credential id=""&gt;
+     &lt;/smb_credential&gt;
+     &lt;esxi_credential id=""&gt;
        &lt;name/&gt;
-     &lt;/esxi_lsc_credential&gt;
+     &lt;/esxi_credential&gt;
    &lt;/asset&gt;
    ...
  &lt;/get_assets_response&gt;
@@ -16637,15 +16696,15 @@ get_assets_response_asset_count_page
      &lt;/user_tags&gt;
      &lt;hosts&gt;dik.example.org&lt;/hosts&gt;
      &lt;max_hosts&gt;1&lt;/max_hosts&gt;
-     &lt;ssh_lsc_credential id="58ff2793-2dc7-43fe-85f9-20bfac5a87e4"&gt;
+     &lt;ssh_credential id="58ff2793-2dc7-43fe-85f9-20bfac5a87e4"&gt;
        &lt;name&gt;mm&lt;/name&gt;
-     &lt;/ssh_lsc_credential&gt;
-     &lt;smb_lsc_credential id=""&gt;
+     &lt;/ssh_credential&gt;
+     &lt;smb_credential id=""&gt;
        &lt;name/&gt;
-     &lt;/smb_lsc_credential&gt;
-     &lt;esxi_lsc_credential id=""&gt;
+     &lt;/smb_credential&gt;
+     &lt;esxi_credential id=""&gt;
        &lt;name/&gt;
-     &lt;/esxi_lsc_credential&gt;
+     &lt;/esxi_credential&gt;
      &lt;tasks&gt;
        &lt;task id="13bb418a-4220-4575-b35b-ec398bff7417"&gt;
          &lt;name&gt;dik mm&lt;/name&gt;
@@ -28486,7 +28545,7 @@ get_tags_response_tag_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>ssh_lsc_credential</b>&gt;
+              &lt;<b>ssh_credential</b>&gt;
               <ul style="list-style: none">
 <li>
           @<b>id</b>
@@ -28515,7 +28574,7 @@ get_tags_response_tag_count_page
 </ul>
 </li>
 <li>
-              &lt;<b>smb_lsc_credential</b>&gt;
+              &lt;<b>smb_credential</b>&gt;
               <ul style="list-style: none">
 <li>
           @<b>id</b>
@@ -28539,7 +28598,7 @@ get_tags_response_tag_count_page
 </ul>
 </li>
 <li>
-              &lt;<b>esxi_lsc_credential</b>&gt;
+              &lt;<b>esxi_credential</b>&gt;
               <ul style="list-style: none">
 <li>
           @<b>id</b>
@@ -28770,9 +28829,9 @@ get_targets_response_target
        &amp; get_targets_response_target_hosts
        &amp; get_targets_response_target_exclude_hosts
        &amp; get_targets_response_target_max_hosts
-       &amp; get_targets_response_target_ssh_lsc_credential
-       &amp; get_targets_response_target_smb_lsc_credential
-       &amp; get_targets_response_target_esxi_lsc_credential
+       &amp; get_targets_response_target_ssh_credential
+       &amp; get_targets_response_target_smb_credential
+       &amp; get_targets_response_target_esxi_credential
        &amp; get_targets_response_target_permissions
        &amp; get_targets_response_target_port_range
        &amp; get_targets_response_target_port_list
@@ -28906,89 +28965,89 @@ get_targets_response_target_user_tags_tag_comment
        text
      }
 
-get_targets_response_target_ssh_lsc_credential
- = element ssh_lsc_credential
+get_targets_response_target_ssh_credential
+ = element ssh_credential
      {
        attribute id { uuid_or_empty }
-       &amp; get_targets_response_target_ssh_lsc_credential_name
-       &amp; get_targets_response_target_ssh_lsc_credential_permissions?
-       &amp; get_targets_response_target_ssh_lsc_credential_port
-       &amp; get_targets_response_target_ssh_lsc_credential_trash
+       &amp; get_targets_response_target_ssh_credential_name
+       &amp; get_targets_response_target_ssh_credential_permissions?
+       &amp; get_targets_response_target_ssh_credential_port
+       &amp; get_targets_response_target_ssh_credential_trash
      }
 
-get_targets_response_target_ssh_lsc_credential_name
+get_targets_response_target_ssh_credential_name
  = element name
      {
        name
      }
 
-get_targets_response_target_ssh_lsc_credential_permissions
+get_targets_response_target_ssh_credential_permissions
  = element permissions
      {
        ""
      }
 
-get_targets_response_target_ssh_lsc_credential_port
+get_targets_response_target_ssh_credential_port
  = element port
      {
        text
      }
 
-get_targets_response_target_ssh_lsc_credential_trash
+get_targets_response_target_ssh_credential_trash
  = element trash
      {
        boolean
      }
 
-get_targets_response_target_smb_lsc_credential
- = element smb_lsc_credential
+get_targets_response_target_smb_credential
+ = element smb_credential
      {
        attribute id { uuid_or_empty }
-       &amp; get_targets_response_target_smb_lsc_credential_name
-       &amp; get_targets_response_target_smb_lsc_credential_permissions?
-       &amp; get_targets_response_target_smb_lsc_credential_trash
+       &amp; get_targets_response_target_smb_credential_name
+       &amp; get_targets_response_target_smb_credential_permissions?
+       &amp; get_targets_response_target_smb_credential_trash
      }
 
-get_targets_response_target_smb_lsc_credential_name
+get_targets_response_target_smb_credential_name
  = element name
      {
        name
      }
 
-get_targets_response_target_smb_lsc_credential_permissions
+get_targets_response_target_smb_credential_permissions
  = element permissions
      {
        ""
      }
 
-get_targets_response_target_smb_lsc_credential_trash
+get_targets_response_target_smb_credential_trash
  = element trash
      {
        boolean
      }
 
-get_targets_response_target_esxi_lsc_credential
- = element esxi_lsc_credential
+get_targets_response_target_esxi_credential
+ = element esxi_credential
      {
        attribute id { uuid_or_empty }
-       &amp; get_targets_response_target_esxi_lsc_credential_name
-       &amp; get_targets_response_target_esxi_lsc_credential_permissions?
-       &amp; get_targets_response_target_esxi_lsc_credential_trash
+       &amp; get_targets_response_target_esxi_credential_name
+       &amp; get_targets_response_target_esxi_credential_permissions?
+       &amp; get_targets_response_target_esxi_credential_trash
      }
 
-get_targets_response_target_esxi_lsc_credential_name
+get_targets_response_target_esxi_credential_name
  = element name
      {
        name
      }
 
-get_targets_response_target_esxi_lsc_credential_permissions
+get_targets_response_target_esxi_credential_permissions
  = element permissions
      {
        ""
      }
 
-get_targets_response_target_esxi_lsc_credential_trash
+get_targets_response_target_esxi_credential_trash
  = element trash
      {
        boolean
@@ -29190,15 +29249,15 @@ get_targets_response_target_count_page
      &lt;/user_tags&gt;
      &lt;hosts&gt;localhost&lt;/hosts&gt;
      &lt;max_hosts&gt;1&lt;/max_hosts&gt;
-     &lt;ssh_lsc_credential id=""&gt;
+     &lt;ssh_credential id=""&gt;
        &lt;name/&gt;
-     &lt;/ssh_lsc_credential&gt;
-     &lt;smb_lsc_credential id=""&gt;
+     &lt;/ssh_credential&gt;
+     &lt;smb_credential id=""&gt;
        &lt;name/&gt;
-     &lt;/smb_lsc_credential&gt;
-     &lt;esxi_lsc_credential id=""&gt;
+     &lt;/smb_credential&gt;
+     &lt;esxi_credential id=""&gt;
        &lt;name/&gt;
-     &lt;/esxi_lsc_credential&gt;
+     &lt;/esxi_credential&gt;
    &lt;/target&gt;
    ...
  &lt;/get_targets_response&gt;
@@ -29223,15 +29282,15 @@ get_targets_response_target_count_page
      &lt;/user_tags&gt;
      &lt;hosts&gt;dik.example.org&lt;/hosts&gt;
      &lt;max_hosts&gt;1&lt;/max_hosts&gt;
-     &lt;ssh_lsc_credential id="58ff2793-2dc7-43fe-85f9-20bfac5a87e4"&gt;
+     &lt;ssh_credential id="58ff2793-2dc7-43fe-85f9-20bfac5a87e4"&gt;
        &lt;name&gt;mm&lt;/name&gt;
-     &lt;/ssh_lsc_credential&gt;
-     &lt;smb_lsc_credential id=""&gt;
+     &lt;/ssh_credential&gt;
+     &lt;smb_credential id=""&gt;
        &lt;name/&gt;
-     &lt;/smb_lsc_credential&gt;
-     &lt;esxi_lsc_credential id=""&gt;
+     &lt;/smb_credential&gt;
+     &lt;esxi_credential id=""&gt;
        &lt;name/&gt;
-     &lt;/esxi_lsc_credential&gt;
+     &lt;/esxi_credential&gt;
      &lt;tasks&gt;
        &lt;task id="13bb418a-4220-4575-b35b-ec398bff7417"&gt;
          &lt;name&gt;dik mm&lt;/name&gt;
@@ -35001,7 +35060,7 @@ modify_slave_password
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>ssh_lsc_credential</b>&gt;
+              &lt;<b>ssh_credential</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">SSH credential to use on target.</div>
 <ul style="list-style: none"><li>
           @<b>id</b>
@@ -35009,7 +35068,7 @@ modify_slave_password
           </li></ul>
 </li>
 <li>
-              &lt;<b>smb_lsc_credential</b>&gt;
+              &lt;<b>smb_credential</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">SMB credential to use on target.</div>
 <ul style="list-style: none"><li>
           @<b>id</b>
@@ -35017,8 +35076,32 @@ modify_slave_password
           </li></ul>
 </li>
 <li>
-              &lt;<b>esxi_lsc_credential</b>&gt;
+              &lt;<b>esxi_credential</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">ESXi credential to use on target.</div>
+<ul style="list-style: none"><li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li>
+<li>
+              &lt;<b>ssh_lsc_credential</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Deprecated: use ssh_credential. SSH credential.</div>
+<ul style="list-style: none"><li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li>
+<li>
+              &lt;<b>smb_lsc_credential</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Deprecated: use ssh_credential. SMB credential.</div>
+<ul style="list-style: none"><li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li>
+<li>
+              &lt;<b>esxi_lsc_credential</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Deprecated: use esxi_credential. ESXi credential.</div>
 <ul style="list-style: none"><li>
           @<b>id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -35073,6 +35156,9 @@ modify_slave_password
        &amp; modify_target_hosts?
        &amp; modify_target_hosts_ordering?
        &amp; modify_target_exclude_hosts?
+       &amp; modify_target_ssh_credential?
+       &amp; modify_target_smb_credential?
+       &amp; modify_target_esxi_credential?
        &amp; modify_target_ssh_lsc_credential?
        &amp; modify_target_smb_lsc_credential?
        &amp; modify_target_esxi_lsc_credential?
@@ -35110,6 +35196,24 @@ modify_target_exclude_hosts
  = element exclude_hosts
      {
        text
+     }
+
+modify_target_ssh_credential
+ = element ssh_credential
+     {
+       attribute id { uuid }
+     }
+
+modify_target_smb_credential
+ = element smb_credential
+     {
+       attribute id { uuid }
+     }
+
+modify_target_esxi_credential
+ = element esxi_credential
+     {
+       attribute id { uuid }
      }
 
 modify_target_ssh_lsc_credential

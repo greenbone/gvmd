@@ -3009,7 +3009,7 @@ get_osp_task_options (task_t task, target_t target)
   if (!options)
     return NULL;
 
-  cred = target_ssh_lsc_credential (target);
+  cred = target_ssh_credential (target);
   if (cred)
     {
       ssh_port = target_ssh_port (target);
@@ -3694,7 +3694,7 @@ run_task (const char *task_id, char **report_id, int from,
   else
     return -1;
 
-  ssh_credential = target_ssh_lsc_credential (target);
+  ssh_credential = target_ssh_credential (target);
   if (ssh_credential)
     {
       char *uuid;
@@ -3717,7 +3717,7 @@ run_task (const char *task_id, char **report_id, int from,
         }
     }
 
-  smb_credential = target_smb_lsc_credential (target);
+  smb_credential = target_smb_credential (target);
   if (smb_credential)
     {
       char *uuid;
@@ -3740,7 +3740,7 @@ run_task (const char *task_id, char **report_id, int from,
         }
     }
 
-  esxi_credential = target_esxi_lsc_credential (target);
+  esxi_credential = target_esxi_credential (target);
   if (esxi_credential)
     {
       char *uuid;
@@ -6122,12 +6122,12 @@ delete_slave_task (slave_t slave, const char *slave_task_uuid)
     goto fail_free;
   slave_port_list_uuid = entity_attribute (port_list, "id");
 
-  credential = entity_child (entity, "ssh_lsc_credential");
+  credential = entity_child (entity, "ssh_credential");
   if (credential == NULL)
     goto fail_free;
   slave_ssh_credential_uuid = entity_attribute (credential, "id");
 
-  credential = entity_child (entity, "smb_lsc_credential");
+  credential = entity_child (entity, "smb_credential");
   if (credential == NULL)
     goto fail_free;
   slave_smb_credential_uuid = entity_attribute (credential, "id");

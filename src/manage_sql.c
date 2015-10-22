@@ -11046,13 +11046,13 @@ check_db_targets ()
       == 0)
     sql ("INSERT INTO targets"
          " (uuid, owner, name, hosts, creation_time, modification_time,"
-         "  port_range)"
+         "  port_list)"
          " VALUES ('" TARGET_UUID_LOCALHOST "', NULL, 'Localhost',"
          " 'localhost', m_now (), m_now (),"
          " (SELECT id FROM port_lists WHERE uuid = '" PORT_LIST_UUID_DEFAULT "'));");
   else
     /* The port list was wrong for a while, so make sure it's correct. */
-    sql ("UPDATE targets SET port_range = "
+    sql ("UPDATE targets SET port_list = "
          " (SELECT id FROM port_lists"
          "  WHERE uuid = '" PORT_LIST_UUID_DEFAULT "')"
          " WHERE uuid = '" TARGET_UUID_LOCALHOST "';");
@@ -28818,6 +28818,256 @@ alive_test_from_string (const char* alive_tests)
 }
 
 /**
+ * @brief Set login data for a target.
+ *
+ * @param[in]  target         The target.
+ * @param[in]  type           The credential type (e.g. "ssh" or "smb").
+ * @param[in]  credential     The credential or 0 to remove.
+ * @param[in]  port           The port to authenticate at with credential.
+ *
+ * @return  0 on success, -1 on error, 1 target not found, 99 permission denied.
+ */
+static int
+set_target_login_data (target_t target, const char* type,
+                       credential_t credential, int port)
+{
+  gchar *quoted_type;
+
+  if (current_credentials.uuid
+      && (acl_user_may ("modify_target") == 0))
+    return 99;
+
+  if (type == NULL)
+    return -1;
+
+  if (target == 0)
+    return 1;
+
+  quoted_type = sql_quote (type);
+
+  if (sql_int ("SELECT count (*) FROM targets_login_data"
+               " WHERE target = %llu AND type = '%s';",
+               target, quoted_type))
+    {
+      if (credential == 0)
+        {
+          sql ("DELETE FROM targets_login_data"
+               " WHERE target = '%llu' AND type = '%s';",
+               target, quoted_type);
+        }
+      else
+        {
+          sql ("UPDATE targets_login_data"
+               " SET credential = %llu, port = %d"
+               " WHERE target = %llu AND type = '%s';",
+               credential, port, target, quoted_type);
+        }
+    }
+  else if (credential)
+    {
+      sql ("INSERT INTO targets_login_data (target, type, credential, port)"
+            " VALUES (%llu, '%s', %llu, %i)",
+            target, quoted_type, credential, port);
+    }
+
+  g_free (quoted_type);
+  return 0;
+}
+
+/**
+ * @brief Get a credential from a target.
+ *
+ * @param[in]  target         The target.
+ * @param[in]  type           The credential type (e.g. "ssh" or "smb").
+ *
+ * @return  0 on success, -1 on error, 1 credential not found, 99 permission
+ *          denied.
+ */
+credential_t
+target_credential (target_t target, const char* type)
+{
+  gchar *quoted_type;
+  credential_t credential;
+
+  if (target == 0 || type == NULL)
+    return 0;
+
+  quoted_type = sql_quote (type);
+
+  if (sql_int ("SELECT NOT EXISTS"
+               " (SELECT * FROM targets_login_data"
+               "  WHERE target = %llu and type = '%s');",
+               target, quoted_type))
+    {
+      g_free (quoted_type);
+      return 0;
+    }
+
+  sql_int64 (&credential,
+             "SELECT credential FROM targets_login_data"
+             " WHERE target = %llu AND type = '%s';",
+             target, quoted_type);
+
+  g_free (quoted_type);
+
+  return credential;
+}
+
+/**
+ * @brief Get a credential from a target in the trashcan.
+ *
+ * @param[in]  target         The target.
+ * @param[in]  trash          Whether target is in trashcan.
+ * @param[in]  type           The credential type (e.g. "ssh" or "smb").
+ *
+ * @return  0 on success, -1 on error, 1 credential not found, 99 permission
+ *          denied.
+ */
+credential_t
+trash_target_credential (target_t target, const char* type)
+{
+  gchar *quoted_type;
+  credential_t credential;
+
+  if (target == 0 || type == NULL)
+    return 0;
+
+  quoted_type = sql_quote (type);
+
+  if (sql_int ("SELECT NOT EXISTS"
+               " (SELECT * FROM targets_trash_login_data"
+               "  WHERE target = %llu and type = '%s');",
+               target, quoted_type))
+    {
+      g_free (quoted_type);
+      return 0;
+    }
+
+  sql_int64 (&credential,
+             "SELECT credential FROM targets_trash_login_data"
+             " WHERE target = %llu AND type = '%s';",
+             target, quoted_type);
+
+  g_free (quoted_type);
+
+  return credential;
+}
+
+/**
+ * @brief Get whether a credential of a trash target is in trashcan.
+ *
+ * @param[in]  target         The target.
+ * @param[in]  type           The credential type (e.g. "ssh" or "smb").
+ *
+ * @return  0 on success, -1 on error, 1 credential not found, 99 permission
+ *          denied.
+ */
+int
+trash_target_credential_location (target_t target, const char* type)
+{
+  gchar *quoted_type;
+  int location;
+
+  if (target == 0 || type == NULL)
+    return 0;
+
+  quoted_type = sql_quote (type);
+
+  if (sql_int ("SELECT NOT EXISTS"
+               " (SELECT * FROM targets_trash_login_data"
+               "  WHERE target = %llu and type = '%s');",
+               target, quoted_type))
+    {
+      g_free (quoted_type);
+      return 0;
+    }
+
+  location = sql_int ("SELECT credential_location FROM targets_trash_login_data"
+                      " WHERE target = %llu AND type = '%s';",
+                      target, quoted_type);
+
+  g_free (quoted_type);
+
+  return location;
+}
+
+/**
+ * @brief Get a login port from a target.
+ *
+ * @param[in]  target         The target.
+ * @param[in]  type           The credential type (e.g. "ssh" or "smb").
+ *
+ * @return  0 on success, -1 on error, 1 credential not found, 99 permission
+ *          denied.
+ */
+int
+target_login_port (target_t target, const char* type)
+{
+  gchar *quoted_type;
+  int port;
+
+  if (target == 0 || type == NULL)
+    return 0;
+
+  quoted_type = sql_quote (type);
+
+  if (sql_int ("SELECT NOT EXISTS"
+               " (SELECT * FROM targets_login_data"
+               "  WHERE target = %llu and type = '%s');",
+               target, quoted_type))
+    {
+      g_free (quoted_type);
+      return 0;
+    }
+
+  port = sql_int ("SELECT port FROM targets_login_data"
+                  " WHERE target = %llu AND type = '%s';",
+                  target, quoted_type);
+
+  g_free (quoted_type);
+
+  return port;
+}
+
+/**
+ * @brief Get a port from a target in the trashcan.
+ *
+ * @param[in]  target         The target.
+ * @param[in]  type           The credential type (e.g. "ssh" or "smb").
+ *
+ * @return  0 on success, -1 on error, 1 credential not found, 99 permission
+ *          denied.
+ */
+int
+trash_target_login_port (target_t target, const char* type)
+{
+  gchar *quoted_type;
+  int port;
+
+  if (target == 0 || type == NULL)
+    return 0;
+
+  quoted_type = sql_quote (type);
+
+  if (sql_int ("SELECT NOT EXISTS"
+               " (SELECT * FROM targets_trash_login_data"
+               "  WHERE target = %llu and type = '%s');",
+               target, quoted_type))
+    {
+      g_free (quoted_type);
+      return 0;
+    }
+
+  port = sql_int ("SELECT port FROM targets_trash_login_data"
+                  " WHERE target = %llu AND type = '%s';",
+                  target, quoted_type);
+
+  g_free (quoted_type);
+
+  return port;
+}
+
+/**
  * @brief Create a target.
  *
  * @param[in]   name            Name of target.
@@ -28828,10 +29078,10 @@ alive_test_from_string (const char* alive_tests)
  * @param[in]   comment         Comment on target.
  * @param[in]   port_list_id    Port list of target (overrides \p port_range).
  * @param[in]   port_range      Port range of target.
- * @param[in]   ssh_lsc_credential  SSH LSC credential.
- * @param[in]   ssh_port        Port for SSH LSC login.
- * @param[in]   smb_lsc_credential  SMB LSC credential.
- * @param[in]   esxi_lsc_credential ESXi LSC credential.
+ * @param[in]   ssh_credential  SSH credential.
+ * @param[in]   ssh_port        Port for SSH login.
+ * @param[in]   smb_credential  SMB credential.
+ * @param[in]   esxi_credential ESXi credential.
  * @param[in]   reverse_lookup_only   Scanner preference reverse_lookup_only.
  * @param[in]   reverse_lookup_unify  Scanner preference reverse_lookup_unify.
  * @param[in]   alive_tests     Alive tests.
@@ -28847,9 +29097,9 @@ int
 create_target (const char* name, const char* asset_hosts_filter,
                const char* hosts, const char* exclude_hosts,
                const char* comment, const char* port_list_id,
-               const char* port_range, credential_t ssh_lsc_credential,
-               const char* ssh_port, credential_t smb_lsc_credential,
-               credential_t esxi_lsc_credential,
+               const char* port_range, credential_t ssh_credential,
+               const char* ssh_port, credential_t smb_credential,
+               credential_t esxi_credential,
                const char *reverse_lookup_only,
                const char *reverse_lookup_unify, const char *alive_tests,
                int make_name_unique, target_t* target)
@@ -28858,6 +29108,7 @@ create_target (const char* name, const char* asset_hosts_filter,
   gchar *port_list_comment, *quoted_ssh_port, *clean, *chosen_hosts;
   port_list_t port_list;
   int ret, alive_test, max;
+  target_t new_target;
 
   assert (current_credentials.uuid);
 
@@ -28985,7 +29236,7 @@ create_target (const char* name, const char* asset_hosts_filter,
         }
     }
 
-  if (ssh_lsc_credential)
+  if (ssh_credential)
     quoted_ssh_port = sql_insert (ssh_port ? ssh_port : "22");
   else
     quoted_ssh_port = g_strdup ("NULL");
@@ -29000,42 +29251,51 @@ create_target (const char* name, const char* asset_hosts_filter,
     reverse_lookup_unify = "1";
 
   if (comment)
-    {
-      quoted_comment = sql_nquote (comment, strlen (comment));
-      sql ("INSERT INTO targets"
-           " (uuid, name, owner, hosts, exclude_hosts, comment, lsc_credential,"
-           "  ssh_port, smb_lsc_credential, esxi_lsc_credential,"
-           "  port_range, reverse_lookup_only,"
-           "  reverse_lookup_unify, alive_test, creation_time,"
-           "  modification_time)"
-           " VALUES (make_uuid (), '%s',"
-           " (SELECT id FROM users WHERE users.uuid = '%s'), '%s',"
-           " '%s', '%s', %llu, %s, %llu, %llu, %llu, '%s', '%s', %i,"
-           " m_now (), m_now ());",
-           quoted_name, current_credentials.uuid, quoted_hosts,
-           quoted_exclude_hosts, quoted_comment, ssh_lsc_credential,
-           quoted_ssh_port, smb_lsc_credential, esxi_lsc_credential,
-           port_list, reverse_lookup_only, reverse_lookup_unify, alive_test);
-      g_free (quoted_comment);
-    }
+    quoted_comment = sql_quote (comment);
   else
-    sql ("INSERT INTO targets"
-         " (uuid, name, owner, hosts, exclude_hosts, comment, lsc_credential,"
-         "  ssh_port, smb_lsc_credential, esxi_lsc_credential,"
-         "  port_range, reverse_lookup_only,"
-         "  reverse_lookup_unify, alive_test, creation_time, modification_time)"
-         " VALUES (make_uuid (), '%s',"
-         " (SELECT id FROM users WHERE users.uuid = '%s'),"
-         " '%s', '%s', '', %llu, %s, %llu, %llu, %llu, '%s', '%s', %i,"
-         " m_now (), m_now ());",
-         quoted_name, current_credentials.uuid, quoted_hosts,
-         quoted_exclude_hosts, quoted_exclude_hosts, ssh_lsc_credential,
-         quoted_ssh_port, smb_lsc_credential, esxi_lsc_credential,
-         port_list, reverse_lookup_only, reverse_lookup_unify, alive_test);
+    quoted_comment = sql_quote ("");
 
+  sql ("INSERT INTO targets"
+       " (uuid, name, owner, hosts, exclude_hosts, comment, "
+       "  port_list, reverse_lookup_only, reverse_lookup_unify, alive_test,"
+       "  creation_time, modification_time)"
+       " VALUES (make_uuid (), '%s',"
+       " (SELECT id FROM users WHERE users.uuid = '%s'),"
+       " '%s', '%s', '%s', %llu, '%s', '%s', %i,"
+       " m_now (), m_now ());",
+        quoted_name, current_credentials.uuid,
+        quoted_hosts, quoted_exclude_hosts, quoted_comment, port_list,
+        reverse_lookup_only, reverse_lookup_unify, alive_test);
+
+  new_target = sql_last_insert_id ();
   if (target)
-    *target = sql_last_insert_id ();
+    *target = new_target;
 
+  if (ssh_credential)
+    {
+      sql ("INSERT INTO targets_login_data"
+           " (target, type, credential, port)"
+           " VALUES (%llu, 'ssh', %llu, %s);",
+           new_target, ssh_credential, quoted_ssh_port);
+    }
+
+  if (smb_credential)
+    {
+      sql ("INSERT INTO targets_login_data"
+           " (target, type, credential, port)"
+           " VALUES (%llu, 'smb', %llu, %s);",
+           new_target, smb_credential, "0");
+    }
+
+  if (esxi_credential)
+    {
+      sql ("INSERT INTO targets_login_data"
+           " (target, type, credential, port)"
+           " VALUES (%llu, 'esxi', %llu, %s);",
+           new_target, esxi_credential, "0");
+    }
+
+  g_free (quoted_comment);
   g_free (quoted_name);
   g_free (quoted_hosts);
   g_free (quoted_exclude_hosts);
@@ -29061,11 +29321,27 @@ int
 copy_target (const char* name, const char* comment, const char *target_id,
              target_t* new_target)
 {
-  return copy_resource ("target", name, comment, target_id,
-                        "hosts, exclude_hosts, lsc_credential, ssh_port,"
-                        " smb_lsc_credential, esxi_lsc_credential, port_range,"
-                        " reverse_lookup_only, reverse_lookup_unify",
-                        1, new_target);
+  int ret;
+  target_t target;
+  assert (new_target);
+
+  ret = copy_resource ("target", name, comment, target_id,
+                       "hosts, exclude_hosts, port_list,"
+                       " reverse_lookup_only, reverse_lookup_unify",
+                       1, new_target);
+  if (ret)
+    return ret;
+
+  if (find_resource ("target", target_id, &target))
+    return -1;
+
+  sql ("INSERT INTO targets_login_data (target, type, credential, port)"
+       " SELECT %llu, type, credential, port"
+       "   FROM targets_login_data"
+       "  WHERE target = %llu;",
+       *new_target, target);
+
+  return 0;
 }
 
 /**
@@ -29081,6 +29357,7 @@ int
 delete_target (const char *target_id, int ultimate)
 {
   target_t target = 0;
+  target_t trash_target;
 
   if (strcmp (target_id, TARGET_UUID_LOCALHOST) == 0)
     return 3;
@@ -29131,6 +29408,7 @@ delete_target (const char *target_id, int ultimate)
       permissions_set_orphans ("target", target, LOCATION_TRASH);
       tags_set_orphans ("target", target, LOCATION_TRASH);
 
+      sql ("DELETE FROM targets_trash_login_data WHERE target = %llu;", target);
       sql ("DELETE FROM targets_trash WHERE id = %llu;", target);
       sql ("COMMIT;");
       return 0;
@@ -29149,21 +29427,26 @@ delete_target (const char *target_id, int ultimate)
         }
 
       sql ("INSERT INTO targets_trash"
-           " (uuid, owner, name, hosts, exclude_hosts, comment, lsc_credential,"
-           "  ssh_port, smb_lsc_credential, port_range, ssh_location,"
-           "  smb_location, port_list_location, reverse_lookup_only,"
-           "  reverse_lookup_unify, alive_test, creation_time,"
-           "  modification_time, esxi_lsc_credential, esxi_location)"
+           " (uuid, owner, name, hosts, exclude_hosts, comment,"
+           "  port_list, port_list_location,"
+           "  reverse_lookup_only, reverse_lookup_unify, alive_test,"
+           "  creation_time, modification_time)"
            " SELECT uuid, owner, name, hosts, exclude_hosts, comment,"
-           "        lsc_credential, ssh_port, smb_lsc_credential, port_range,"
-           "      " G_STRINGIFY (LOCATION_TABLE) ","
-           "      " G_STRINGIFY (LOCATION_TABLE) ","
-           "      " G_STRINGIFY (LOCATION_TABLE) ","
+           "        port_list, " G_STRINGIFY (LOCATION_TABLE) ","
            "        reverse_lookup_only, reverse_lookup_unify, alive_test,"
-           "        creation_time, modification_time,"
-           "        esxi_lsc_credential, " G_STRINGIFY (LOCATION_TABLE)
+           "        creation_time, modification_time"
            " FROM targets WHERE id = %llu;",
            target);
+
+      trash_target = sql_last_insert_id ();
+
+      /* Copy login data */
+      sql ("INSERT INTO targets_trash_login_data"
+           " (target, type, credential, port, credential_location)"
+           " SELECT %llu, type, credential, port, "
+           G_STRINGIFY (LOCATION_TABLE)
+           "   FROM targets_login_data WHERE target = %llu;",
+           trash_target, target);
 
       /* Update the location of the target in any trashcan tasks. */
       sql ("UPDATE tasks"
@@ -29195,6 +29478,7 @@ delete_target (const char *target_id, int ultimate)
       tags_set_orphans ("target", target, LOCATION_TABLE);
     }
 
+  sql ("DELETE FROM targets_login_data WHERE target = %llu;", target);
   sql ("DELETE FROM targets WHERE id = %llu;", target);
 
   sql ("COMMIT;");
@@ -29210,10 +29494,10 @@ delete_target (const char *target_id, int ultimate)
  * @param[in]   exclude_hosts   List of hosts to exclude from \p hosts.
  * @param[in]   comment         Comment on target.
  * @param[in]   port_list_id    Port list of target (overrides \p port_range).
- * @param[in]   ssh_lsc_credential_id  SSH LSC credential.
- * @param[in]   ssh_port        Port for SSH LSC login.
- * @param[in]   smb_lsc_credential_id  SMB LSC credential.
- * @param[in]   esxi_lsc_credential_id  ESXi LSC credential.
+ * @param[in]   ssh_credential_id  SSH credential.
+ * @param[in]   ssh_port        Port for SSH login.
+ * @param[in]   smb_credential_id  SMB credential.
+ * @param[in]   esxi_credential_id  ESXi credential.
  * @param[in]   reverse_lookup_only   Scanner preference reverse_lookup_only.
  * @param[in]   reverse_lookup_unify  Scanner preference reverse_lookup_unify.
  * @param[in]   alive_tests     Alive tests.
@@ -29231,9 +29515,9 @@ delete_target (const char *target_id, int ultimate)
 int
 modify_target (const char *target_id, const char *name, const char *hosts,
                const char *exclude_hosts, const char *comment,
-               const char *port_list_id, const char *ssh_lsc_credential_id,
-               const char *ssh_port, const char *smb_lsc_credential_id,
-               const char *esxi_lsc_credential_id,
+               const char *port_list_id, const char *ssh_credential_id,
+               const char *ssh_port, const char *smb_credential_id,
+               const char *esxi_credential_id,
                const char *reverse_lookup_only,
                const char *reverse_lookup_unify, const char *alive_tests)
 {
@@ -29352,17 +29636,16 @@ modify_target (const char *target_id, const char *name, const char *hosts,
         }
 
       sql ("UPDATE targets SET"
-           " port_range = %llu,"
+           " port_list = %llu,"
            " modification_time = m_now ()"
            " WHERE id = %llu;",
            port_list,
            target);
     }
 
-  if (ssh_lsc_credential_id)
+  if (ssh_credential_id)
     {
-      credential_t ssh_lsc_credential;
-      gchar *quoted_ssh_port;
+      credential_t ssh_credential;
 
       if (target_in_use (target))
         {
@@ -29370,49 +29653,46 @@ modify_target (const char *target_id, const char *name, const char *hosts,
           return 15;
         }
 
-      ssh_lsc_credential = 0;
-      if (strcmp (ssh_lsc_credential_id, "0"))
+      ssh_credential = 0;
+      if (strcmp (ssh_credential_id, "0"))
         {
-          if (find_credential_with_permission (ssh_lsc_credential_id,
-                                               &ssh_lsc_credential,
+          int port_int;
+
+          if (find_credential_with_permission (ssh_credential_id,
+                                               &ssh_credential,
                                                "get_credentials"))
             {
               sql ("ROLLBACK;");
               return -1;
             }
 
-          if (ssh_lsc_credential == 0)
+          if (ssh_credential == 0)
             {
               sql ("ROLLBACK;");
               return 7;
             }
 
-           if (ssh_port && validate_port (ssh_port))
+          if (ssh_port && strcmp (ssh_port, "0") && strcmp (ssh_port, ""))
             {
-              sql ("ROLLBACK;");
-              return 5;
+              if (validate_port (ssh_port))
+                {
+                  sql ("ROLLBACK;");
+                  return 5;
+                }
+              port_int = atoi (ssh_port);
             }
+          else
+            port_int = 22;
 
-          quoted_ssh_port = sql_insert (ssh_port ? ssh_port : "22");
+          set_target_login_data (target, "ssh", ssh_credential, port_int);
         }
       else
-        quoted_ssh_port = g_strdup ("NULL");
-
-      sql ("UPDATE targets SET"
-           " lsc_credential = %llu,"
-           " ssh_port = %s,"
-           " modification_time = m_now ()"
-           " WHERE id = %llu;",
-           ssh_lsc_credential,
-           quoted_ssh_port,
-           target);
-
-       g_free (quoted_ssh_port);
+        set_target_login_data (target, "ssh", 0, 0);
     }
 
-  if (smb_lsc_credential_id)
+  if (smb_credential_id)
     {
-      credential_t smb_lsc_credential;
+      credential_t smb_credential;
 
       if (target_in_use (target))
         {
@@ -29420,35 +29700,32 @@ modify_target (const char *target_id, const char *name, const char *hosts,
           return 15;
         }
 
-      smb_lsc_credential = 0;
-      if (strcmp (smb_lsc_credential_id, "0"))
+      smb_credential = 0;
+      if (strcmp (smb_credential_id, "0"))
         {
-          if (find_credential_with_permission (smb_lsc_credential_id,
-                                               &smb_lsc_credential,
+          if (find_credential_with_permission (smb_credential_id,
+                                               &smb_credential,
                                                "get_credentials"))
             {
               sql ("ROLLBACK;");
               return -1;
             }
 
-          if (smb_lsc_credential == 0)
+          if (smb_credential == 0)
             {
               sql ("ROLLBACK;");
               return 7;
             }
-        }
 
-      sql ("UPDATE targets SET"
-           " smb_lsc_credential = %llu,"
-           " modification_time = m_now ()"
-           " WHERE id = %llu;",
-           smb_lsc_credential,
-           target);
+          set_target_login_data (target, "smb", smb_credential, 0);
+        }
+      else
+        set_target_login_data (target, "smb", 0, 0);
     }
 
-  if (esxi_lsc_credential_id)
+  if (esxi_credential_id)
     {
-      credential_t esxi_lsc_credential;
+      credential_t esxi_credential;
 
       if (target_in_use (target))
         {
@@ -29456,30 +29733,27 @@ modify_target (const char *target_id, const char *name, const char *hosts,
           return 15;
         }
 
-      esxi_lsc_credential = 0;
-      if (strcmp (esxi_lsc_credential_id, "0"))
+      esxi_credential = 0;
+      if (strcmp (esxi_credential_id, "0"))
         {
-          if (find_credential_with_permission (esxi_lsc_credential_id,
-                                               &esxi_lsc_credential,
+          if (find_credential_with_permission (esxi_credential_id,
+                                               &esxi_credential,
                                                "get_credentials"))
             {
               sql ("ROLLBACK;");
               return -1;
             }
 
-          if (esxi_lsc_credential == 0)
+          if (esxi_credential == 0)
             {
               sql ("ROLLBACK;");
               return 16;
             }
-        }
 
-      sql ("UPDATE targets SET"
-           " esxi_lsc_credential = %llu,"
-           " modification_time = m_now ()"
-           " WHERE id = %llu;",
-           esxi_lsc_credential,
-           target);
+          set_target_login_data (target, "esxi", esxi_credential, 0);
+        }
+      else
+        set_target_login_data (target, "esxi", 0, 0);
     }
 
   if (exclude_hosts)
@@ -29590,20 +29864,23 @@ modify_target (const char *target_id, const char *name, const char *hosts,
  {                                                          \
    GET_ITERATOR_COLUMNS (targets),                          \
    { "hosts", NULL },                                       \
-   { "lsc_credential", NULL },                              \
-   { "ssh_port", NULL },                                    \
-   { "smb_lsc_credential", NULL },                          \
-   { "port_range", NULL },                                  \
+   { "target_credential (id, 0, CAST ('ssh' AS text))",     \
+     NULL },                                                \
+   { "target_login_port (id, 0, CAST ('ssh' AS text))",     \
+     "ssh_port" },                                          \
+   { "target_credential (id, 0, CAST ('smb' AS text))",     \
+     NULL },                                                \
+   { "port_list", NULL },                                   \
    { "0", NULL },                                           \
    { "0", NULL },                                           \
    {                                                        \
      "(SELECT uuid FROM port_lists"                         \
-     " WHERE port_lists.id = port_range)",                  \
+     " WHERE port_lists.id = port_list)",                   \
      NULL                                                   \
    },                                                       \
    {                                                        \
      "(SELECT name FROM port_lists"                         \
-     " WHERE port_lists.id = port_range)",                  \
+     " WHERE port_lists.id = port_list)",                   \
      "port_list"                                            \
    },                                                       \
    { "0", NULL },                                           \
@@ -29611,21 +29888,28 @@ modify_target (const char *target_id, const char *name, const char *hosts,
    { "reverse_lookup_only", NULL },                         \
    { "reverse_lookup_unify", NULL },                        \
    { "alive_test", NULL },                                  \
-   { "esxi_lsc_credential", NULL },                         \
+   { "target_credential (id, 0, CAST ('esxi' AS text))",    \
+     NULL },                                                \
    { "0", NULL },                                           \
    {                                                        \
      "(SELECT name FROM credentials"                        \
-     " WHERE credentials.id = lsc_credential)",             \
+     " WHERE credentials.id"                                \
+     "       = target_credential (targets.id, 0,"           \
+     "                            CAST ('ssh' AS text)))",  \
      "ssh_credential"                                       \
    },                                                       \
    {                                                        \
      "(SELECT name FROM credentials"                        \
-     " WHERE credentials.id = smb_lsc_credential)",         \
+     " WHERE credentials.id"                                \
+     "       = target_credential (targets.id, 0,"           \
+     "                            CAST ('smb' AS text)))",  \
      "smb_credential"                                       \
    },                                                       \
    {                                                        \
      "(SELECT name FROM credentials"                        \
-     " WHERE credentials.id = esxi_lsc_credential)",        \
+     " WHERE credentials.id"                                \
+     "       = target_credential (targets.id, 0,"           \
+     "                            CAST ('esxi' AS text)))", \
      "esxi_credential"                                      \
    },                                                       \
    { "hosts", NULL },                                       \
@@ -29640,19 +29924,22 @@ modify_target (const char *target_id, const char *name, const char *hosts,
  {                                                                  \
    GET_ITERATOR_COLUMNS (targets_trash),                            \
    { "hosts", NULL },                                               \
-   { "lsc_credential", NULL },                                      \
-   { "ssh_port", NULL },                                            \
-   { "smb_lsc_credential", NULL },                                  \
-   { "port_range", NULL },                                          \
-   { "ssh_location", NULL },                                        \
-   { "smb_location", NULL },                                        \
+   { "target_credential (id, 1, CAST ('ssh' AS text))", NULL },     \
+   { "target_login_port (id, 1, CAST ('ssh' AS text))",             \
+     "ssh_port" },                                                  \
+   { "target_credential (id, 1, CAST ('smb' AS text))", NULL },     \
+   { "port_list", NULL },                                           \
+   { "trash_target_credential_location (id, CAST ('ssh' AS text))", \
+     NULL },                                                        \
+   { "trash_target_credential_location (id, CAST ('smb' AS text))", \
+     NULL },                                                        \
    {                                                                \
      "(CASE"                                                        \
      " WHEN port_list_location = " G_STRINGIFY (LOCATION_TRASH)     \
      " THEN (SELECT uuid FROM port_lists_trash"                     \
-     "       WHERE port_lists_trash.id = port_range)"               \
+     "       WHERE port_lists_trash.id = port_list)"                \
      " ELSE (SELECT uuid FROM port_lists"                           \
-     "       WHERE port_lists.id = port_range)"                     \
+     "       WHERE port_lists.id = port_list)"                      \
      " END)",                                                       \
      NULL                                                           \
    },                                                               \
@@ -29660,9 +29947,9 @@ modify_target (const char *target_id, const char *name, const char *hosts,
      "(CASE"                                                        \
      " WHEN port_list_location = " G_STRINGIFY (LOCATION_TRASH)     \
      " THEN (SELECT name FROM port_lists_trash"                     \
-     "       WHERE port_lists_trash.id = port_range)"               \
+     "       WHERE port_lists_trash.id = port_list)"                \
      " ELSE (SELECT name FROM port_lists"                           \
-     "       WHERE port_lists.id = port_range)"                     \
+     "       WHERE port_lists.id = port_list)"                      \
      " END)",                                                       \
      NULL                                                           \
    },                                                               \
@@ -29671,8 +29958,9 @@ modify_target (const char *target_id, const char *name, const char *hosts,
    { "reverse_lookup_only", NULL },                                 \
    { "reverse_lookup_unify", NULL },                                \
    { "alive_test", NULL },                                          \
-   { "esxi_lsc_credential", NULL },                                 \
-   { "esxi_location", NULL },                                       \
+   { "target_credential (id, 1, CAST ('esxi' AS text))", NULL },    \
+   { "trash_target_credential_location (id, CAST ('esxi' AS text))",\
+     NULL },                                                        \
    { NULL, NULL }                                                   \
  }
 
@@ -30171,28 +30459,9 @@ target_ssh_port (target_t target)
  * @return SSH credential if any, else 0.
  */
 credential_t
-target_ssh_lsc_credential (target_t target)
+target_ssh_credential (target_t target)
 {
-  credential_t lsc_credential;
-
-  switch (sql_int64 (&lsc_credential,
-                     "SELECT lsc_credential FROM targets"
-                     " WHERE id = %llu;",
-                     target))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        return 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        /** @todo Move return to arg; return -1. */
-        return 0;
-        break;
-    }
-  return lsc_credential;
+  return target_credential (target, "ssh");
 }
 
 /**
@@ -30203,28 +30472,9 @@ target_ssh_lsc_credential (target_t target)
  * @return SMB credential if any, else 0.
  */
 credential_t
-target_smb_lsc_credential (target_t target)
+target_smb_credential (target_t target)
 {
-  credential_t lsc_credential;
-
-  switch (sql_int64 (&lsc_credential,
-                     "SELECT smb_lsc_credential FROM targets"
-                     " WHERE id = %llu;",
-                     target))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        return 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        /** @todo Move return to arg; return -1. */
-        return 0;
-        break;
-    }
-  return lsc_credential;
+  return target_credential (target, "smb");
 }
 
 /**
@@ -30235,28 +30485,9 @@ target_smb_lsc_credential (target_t target)
  * @return ESXi credential if any, else 0.
  */
 credential_t
-target_esxi_lsc_credential (target_t target)
+target_esxi_credential (target_t target)
 {
-  credential_t lsc_credential;
-
-  switch (sql_int64 (&lsc_credential,
-                     "SELECT esxi_lsc_credential FROM targets"
-                     " WHERE id = %llu;",
-                     target))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        return 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        /** @todo Move return to arg; return -1. */
-        return 0;
-        break;
-    }
-  return lsc_credential;
+  return target_credential (target, "esxi");
 }
 
 /**
@@ -30272,7 +30503,7 @@ target_port_list (target_t target)
   port_list_t port_list;
 
   switch (sql_int64 (&port_list,
-                     "SELECT port_range FROM targets"
+                     "SELECT port_list FROM targets"
                      " WHERE id = %llu;",
                      target))
     {
@@ -35096,14 +35327,14 @@ set_task_preferences (task_t task, array_t *preferences)
 /* Credentials. */
 
 /**
- * @brief Find an LSC credential for a specific permission, given a UUID.
+ * @brief Find a credential for a specific permission, given a UUID.
  *
- * @param[in]   uuid            UUID of lsc_credential.
+ * @param[in]   uuid            UUID of credential.
  * @param[out]  credential      Credential return, 0 if succesfully failed
  *                              to find Credential.
  * @param[in]   permission      Permission.
  *
- * @return FALSE on success (including if failed to find lsc_credential), TRUE
+ * @return FALSE on success (including if failed to find credential), TRUE
  *         on error.
  */
 gboolean
@@ -35495,7 +35726,7 @@ credential_packaged (const char *cred_id)
  * @param[in]   password            Password of Credential.
  *
  * @return 0 success, 1 failed to find credential, 2 credential with new name
- *         exists, 3 lsc_credential_id required, 4 attempt to modify login/pass
+ *         exists, 3 credential_id required, 4 attempt to modify login/pass
  *         of packaged lsc credential, 99 permission denied, -1 internal error.
  */
 int
@@ -35512,7 +35743,7 @@ modify_credential (const char *credential_id,
 
   assert (current_credentials.uuid);
 
-  if (acl_user_may ("modify_lsc_credential") == 0)
+  if (acl_user_may ("modify_credential") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -35536,7 +35767,7 @@ modify_credential (const char *credential_id,
   if ((login || password) && credential_packaged (credential_id))
     return 4;
 
-  /* Check whether a lsc_credential with the same name exists already. */
+  /* Check whether a credential with the same name exists already. */
   if (name)
     {
       if (resource_with_name_exists (name, "credential", credential))
@@ -35571,7 +35802,7 @@ modify_credential (const char *credential_id,
  * @param[in]  credential_id      UUID of Credential.
  * @param[in]  ultimate           Whether to remove entirely, or to trashcan.
  *
- * @return 0 success, 1 fail because the LSC credential is in use, 99 permission
+ * @return 0 success, 1 fail because the credential is in use, 99 permission
  *         denied, -1 error.
  */
 int
@@ -35614,16 +35845,9 @@ delete_credential (const char *credential_id, int ultimate)
         }
 
       /* Check if it's in use by a target in the trashcan. */
-      if (sql_int ("SELECT count(*) FROM targets_trash"
-                   " WHERE (lsc_credential = %llu"
-                   "        AND ssh_location = " G_STRINGIFY (LOCATION_TRASH) ")"
-                   " OR (smb_lsc_credential = %llu"
-                   "     AND smb_location = " G_STRINGIFY (LOCATION_TRASH) ")"
-                   " OR (esxi_lsc_credential = %llu"
-                   "     AND esxi_location = " G_STRINGIFY (LOCATION_TRASH) ");",
-                   credential,
-                   credential,
-                   credential))
+      if (sql_int ("SELECT count(*) FROM targets_trash_login_data"
+                   " WHERE credential = %llu AND credential_location = %s;",
+                   credential, G_STRINGIFY (LOCATION_TRASH)))
         {
           sql ("ROLLBACK;");
           return 1;
@@ -35642,12 +35866,8 @@ delete_credential (const char *credential_id, int ultimate)
     }
 
 
-  if (sql_int ("SELECT count(*) FROM targets"
-               " WHERE lsc_credential = %llu"
-               " OR smb_lsc_credential = %llu"
-               " OR esxi_lsc_credential = %llu",
-               credential,
-               credential,
+  if (sql_int ("SELECT count(*) FROM targets_login_data"
+               " WHERE credential = %llu;",
                credential))
     {
       sql ("ROLLBACK;");
@@ -35677,22 +35897,11 @@ delete_credential (const char *credential_id, int ultimate)
       /* Update the credential references in any trashcan targets.  This
        * situation is possible if the user restores the credential when the
        * target is in the trashcan. */
-      sql ("UPDATE targets_trash"
-           " SET ssh_location = " G_STRINGIFY (LOCATION_TRASH) ","
-           "     lsc_credential = %llu"
-           " WHERE lsc_credential = %llu;",
-           trash_credential,
-           credential);
-      sql ("UPDATE targets_trash"
-           " SET smb_location = " G_STRINGIFY (LOCATION_TRASH) ","
-           " smb_lsc_credential = %llu"
-           " WHERE smb_lsc_credential = %llu;",
-           trash_credential,
-           credential);
-      sql ("UPDATE targets_trash"
-           " SET esxi_location = " G_STRINGIFY (LOCATION_TRASH) ","
-           " esxi_lsc_credential = %llu"
-           " WHERE esxi_lsc_credential = %llu;",
+      sql ("UPDATE targets_trash_login_data"
+           " SET credential_location = " G_STRINGIFY (LOCATION_TRASH) ","
+           "     credential = %llu"
+           " WHERE credential = %llu"
+           "   AND credential_location = " G_STRINGIFY (LOCATION_TABLE) ";",
            trash_credential,
            credential);
 
@@ -35799,12 +36008,8 @@ credential_count (const get_data_t *get)
 int
 credential_in_use (credential_t credential)
 {
-  return !!sql_int ("SELECT count (*) FROM targets"
-                    " WHERE lsc_credential = %llu"
-                    " OR smb_lsc_credential = %llu"
-                    " OR esxi_lsc_credential = %llu;",
-                    credential,
-                    credential,
+  return !!sql_int ("SELECT count (*) FROM targets_login_data"
+                    " WHERE credential = %llu;",
                     credential);
 }
 
@@ -35818,15 +36023,10 @@ credential_in_use (credential_t credential)
 int
 trash_credential_in_use (credential_t credential)
 {
-  return !!sql_int ("SELECT count (*) FROM targets_trash"
-                    " WHERE (lsc_credential = %llu"
-                    " AND ssh_location = " G_STRINGIFY (LOCATION_TRASH)")"
-                    " OR (smb_lsc_credential = %llu"
-                    " AND smb_location = " G_STRINGIFY (LOCATION_TRASH) ")"
-                    " OR (esxi_lsc_credential = %llu"
-                    " AND esxi_location = " G_STRINGIFY (LOCATION_TRASH) ");",
-                    credential,
-                    credential,
+  return !!sql_int ("SELECT count (*) FROM targets_trash_login_data"
+                    " WHERE credential = %llu"
+                    " AND credential_location"
+                    "      = " G_STRINGIFY (LOCATION_TRASH) ";",
                     credential);
 }
 
@@ -36281,7 +36481,7 @@ trash_credential_readable (credential_t credential)
  * Iterates over all targets that use the credential.
  *
  * @param[in]  iterator        Iterator.
- * @param[in]  credential      Name of LSC credential.
+ * @param[in]  credential      Name of credential.
  * @param[in]  ascending       Whether to sort ascending or descending.
  */
 void
@@ -36303,13 +36503,11 @@ init_credential_target_iterator (iterator_t* iterator,
 
   init_iterator (iterator,
                  "SELECT uuid, name, %s FROM targets"
-                 " WHERE lsc_credential = %llu"
-                 " OR smb_lsc_credential = %llu"
-                 " OR esxi_lsc_credential = %llu"
+                 " WHERE id IN"
+                 "   (SELECT target FROM targets_login_data"
+                 "    WHERE credential = %llu)"
                  " ORDER BY name %s;",
                  available,
-                 credential,
-                 credential,
                  credential,
                  ascending ? "ASC" : "DESC");
 
@@ -48298,7 +48496,7 @@ delete_port_list (const char *port_list_id, int ultimate)
 
       /* Check if it's in use by a target in the trashcan. */
       if (sql_int ("SELECT count(*) FROM targets_trash"
-                   " WHERE port_range = %llu"
+                   " WHERE port_list = %llu"
                    " AND port_list_location"
                    " = " G_STRINGIFY (LOCATION_TRASH) ";",
                    port_list))
@@ -48317,7 +48515,7 @@ delete_port_list (const char *port_list_id, int ultimate)
     }
 
   if (sql_int ("SELECT count(*) FROM targets"
-               " WHERE port_range = %llu;",
+               " WHERE port_list = %llu;",
                port_list))
     {
       sql ("ROLLBACK;");
@@ -48346,9 +48544,9 @@ delete_port_list (const char *port_list_id, int ultimate)
 
       /* Update the location of the port_list in any trashcan targets. */
       sql ("UPDATE targets_trash"
-           " SET port_range = %llu,"
+           " SET port_list = %llu,"
            "     port_list_location = " G_STRINGIFY (LOCATION_TRASH)
-           " WHERE port_range = %llu"
+           " WHERE port_list = %llu"
            " AND port_list_location = " G_STRINGIFY (LOCATION_TABLE) ";",
            trash_port_list,
            port_list);
@@ -48671,7 +48869,7 @@ port_list_in_use (port_list_t port_list)
     return 1;
 
   return sql_int ("SELECT count(*) FROM targets"
-                  " WHERE port_range = %llu",
+                  " WHERE port_list = %llu",
                   port_list);
 }
 
@@ -48686,7 +48884,7 @@ int
 trash_port_list_in_use (port_list_t port_list)
 {
   return (sql_int ("SELECT count (*) FROM targets_trash"
-                   " WHERE port_range = %llu"
+                   " WHERE port_list = %llu"
                    " AND port_list_location = "
                    G_STRINGIFY (LOCATION_TRASH) ";",
                    port_list) > 0);
@@ -48915,7 +49113,7 @@ init_port_list_target_iterator (iterator_t* iterator, port_list_t port_list,
 
   init_iterator (iterator,
                  "SELECT uuid, name, %s FROM targets"
-                 " WHERE port_range = %llu"
+                 " WHERE port_list = %llu"
                  " ORDER BY name %s;",
                  available,
                  port_list,
@@ -50854,25 +51052,11 @@ manage_restore (const char *id)
            resource);
 
       /* Update the credentials in any trashcan targets. */
-      sql ("UPDATE targets_trash"
-           " SET ssh_location = " G_STRINGIFY (LOCATION_TABLE) ","
-           "     lsc_credential = %llu"
-           " WHERE lsc_credential = %llu"
-           " AND ssh_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-           credential,
-           resource);
-      sql ("UPDATE targets_trash"
-           " SET smb_location = " G_STRINGIFY (LOCATION_TABLE) ","
-           "     smb_lsc_credential = %llu"
-           " WHERE smb_lsc_credential = %llu"
-           " AND smb_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-           credential,
-           resource);
-      sql ("UPDATE targets_trash"
-           " SET esxi_location = " G_STRINGIFY (LOCATION_TABLE) ","
-           "     esxi_lsc_credential = %llu"
-           " WHERE esxi_lsc_credential = %llu"
-           " AND esxi_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+      sql ("UPDATE targets_trash_login_data"
+           " SET credential_location = " G_STRINGIFY (LOCATION_TABLE) ","
+           "     credential = %llu"
+           " WHERE credential = %llu"
+           " AND credential_location = " G_STRINGIFY (LOCATION_TRASH) ";",
            credential,
            resource);
 
@@ -50881,9 +51065,9 @@ manage_restore (const char *id)
       tags_set_locations ("credential", resource, credential,
                           LOCATION_TABLE);
 
-      sql ("DELETE FROM credentials_trash WHERE id = %llu;", resource);
       sql ("DELETE FROM credentials_trash_data WHERE credential = %llu;",
            resource);
+      sql ("DELETE FROM credentials_trash WHERE id = %llu;", resource);
       sql ("COMMIT;");
       return 0;
     }
@@ -51020,9 +51204,9 @@ manage_restore (const char *id)
 
       /* Update the port_list in any trashcan targets. */
       sql ("UPDATE targets_trash"
-           " SET port_range = %llu,"
+           " SET port_list = %llu,"
            "     port_list_location = " G_STRINGIFY (LOCATION_TABLE)
-           " WHERE port_range = %llu"
+           " WHERE port_list = %llu"
            " AND port_list_location = " G_STRINGIFY (LOCATION_TRASH),
            table_port_list,
            resource);
@@ -51423,6 +51607,8 @@ manage_restore (const char *id)
 
   if (resource)
     {
+      target_t restored_target;
+
       if (sql_int ("SELECT count(*) FROM targets"
                    " WHERE name ="
                    " (SELECT name FROM targets_trash WHERE id = %llu)"
@@ -51435,27 +51621,40 @@ manage_restore (const char *id)
         }
 
       /* Check if it uses a credential or port list in the trashcan. */
-      if (sql_int ("SELECT ssh_location = " G_STRINGIFY (LOCATION_TRASH)
-                   " OR smb_location = " G_STRINGIFY (LOCATION_TRASH)
-                   " OR port_list_location = " G_STRINGIFY (LOCATION_TRASH)
+      if (sql_int ("SELECT port_list_location = " G_STRINGIFY (LOCATION_TRASH)
+                   " OR EXISTS ("
+                   "  SELECT *"
+                   "  FROM targets_trash_login_data WHERE target = %llu"
+                   "  AND credential_location = " G_STRINGIFY (LOCATION_TRASH)
+                   " )"
                    " FROM targets_trash WHERE id = %llu;",
-                   resource))
+                   resource, resource))
         {
           sql ("ROLLBACK;");
           return 1;
         }
 
       sql ("INSERT INTO targets"
-           " (uuid, owner, name, hosts, exclude_hosts, comment, lsc_credential,"
-           "  ssh_port, smb_lsc_credential, esxi_lsc_credential,"
-           "  port_range, reverse_lookup_only, reverse_lookup_unify,"
+           " (uuid, owner, name, hosts, exclude_hosts, comment,"
+           "  port_list, reverse_lookup_only, reverse_lookup_unify,"
            "  alive_test, creation_time, modification_time)"
-           " SELECT uuid, owner, name, hosts, exclude_hosts, comment, "
-           "        lsc_credential, ssh_port, smb_lsc_credential,"
-           "        esxi_lsc_credential, port_range,"
-           "        reverse_lookup_only, reverse_lookup_unify, alive_test,"
-           "        creation_time, modification_time"
+           " SELECT uuid, owner, name, hosts, exclude_hosts, comment,"
+           "        port_list, reverse_lookup_only, reverse_lookup_unify,"
+           "        alive_test, creation_time, modification_time"
            " FROM targets_trash WHERE id = %llu;",
+           resource);
+
+      restored_target = sql_last_insert_id ();
+
+      /* Copy login data */
+      sql ("INSERT INTO targets_login_data"
+           " (target, type, credential, port)"
+           "  SELECT %llu, type, credential, port"
+           "   FROM targets_trash_login_data WHERE target = %llu;",
+           restored_target, resource);
+
+      sql ("DELETE FROM targets_trash_login_data"
+           " WHERE target = %llu;",
            resource);
 
       /* Update the target in any trashcan tasks. */
@@ -51464,7 +51663,7 @@ manage_restore (const char *id)
            "     target_location = " G_STRINGIFY (LOCATION_TABLE)
            " WHERE target = %llu"
            " AND target_location = " G_STRINGIFY (LOCATION_TRASH),
-           sql_last_insert_id (),
+           restored_target,
            resource);
 
       permissions_set_locations ("target", resource,
@@ -51593,6 +51792,7 @@ manage_empty_trashcan ()
   sql ("DELETE FROM schedules_trash;");
   sql ("DELETE FROM slaves_trash;");
   sql ("DELETE FROM tags_trash;");
+  sql ("DELETE FROM targets_trash_login_data;");
   sql ("DELETE FROM targets_trash;");
   if (delete_trash_tasks ())
     {

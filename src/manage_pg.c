@@ -1358,6 +1358,50 @@ manage_create_sql_functions ()
            "$$ LANGUAGE SQL;");
     }
 
+  if (sql_int ("SELECT (EXISTS (SELECT * FROM information_schema.tables"
+               "               WHERE table_catalog = '%s'"
+               "               AND table_schema = 'public'"
+               "               AND table_name = 'targets_login_data')"
+               "   AND EXISTS (SELECT * FROM information_schema.tables"
+               "               WHERE table_catalog = '%s'"
+               "               AND table_schema = 'public'"
+               "               AND table_name = 'targets_trash_login_data'))"
+               " ::integer;",
+               sql_database (), sql_database ()))
+    {
+      sql ("CREATE OR REPLACE FUNCTION target_credential (integer, integer, text)"
+          " RETURNS integer AS $$"
+          "  SELECT CASE"
+          "         WHEN $2 != 0"
+          "         THEN"
+          "           (SELECT credential FROM targets_trash_login_data"
+          "            WHERE target = $1 AND type = $3)"
+          "         ELSE"
+          "           (SELECT credential FROM targets_login_data"
+          "             WHERE target = $1 AND type = $3)"
+          "         END;"
+          "$$ LANGUAGE SQL;");
+
+      sql ("CREATE OR REPLACE FUNCTION trash_target_credential_location (integer, text)"
+          " RETURNS integer AS $$"
+          "  SELECT credential_location FROM targets_trash_login_data"
+          "   WHERE target = $1 AND type = $2"
+          "$$ LANGUAGE SQL;");
+
+      sql ("CREATE OR REPLACE FUNCTION target_login_port (integer, integer, text)"
+          " RETURNS integer AS $$"
+          "  SELECT CASE"
+          "         WHEN $2 != 0"
+          "         THEN"
+          "           (SELECT port FROM targets_trash_login_data"
+          "            WHERE target = $1 AND type = $3)"
+          "         ELSE"
+          "           (SELECT port FROM targets_login_data"
+          "            WHERE target = $1 AND type = $3)"
+          "         END;"
+          "$$ LANGUAGE SQL;");
+    }
+
   sql ("CREATE OR REPLACE FUNCTION lower (integer)"
        " RETURNS integer AS $$"
        "  SELECT $1;"
@@ -1739,15 +1783,10 @@ create_tables ()
        "  reverse_lookup_only integer,"
        "  reverse_lookup_unify integer,"
        "  comment text,"
-       "  lsc_credential integer," // REFERENCES credentials (id) ON DELETE RESTRICT,"
-       "  ssh_port text,"
-       "  smb_lsc_credential integer," // REFERENCES credentials (id) ON DELETE RESTRICT,"
-       "  port_range integer REFERENCES port_lists (id) ON DELETE RESTRICT,"
+       "  port_list integer REFERENCES port_lists (id) ON DELETE RESTRICT,"
        "  alive_test integer,"
        "  creation_time integer,"
-       "  modification_time integer,"
-       "  esxi_lsc_credential integer);"); // REFERENCES credentials (id)
-                                           // ON DELETE RESTRICT
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS targets_trash"
        " (id SERIAL PRIMARY KEY,"
@@ -1759,19 +1798,26 @@ create_tables ()
        "  reverse_lookup_only integer,"
        "  reverse_lookup_unify integer,"
        "  comment text,"
-       "  lsc_credential integer," // REFERENCES credentials (id) ON DELETE RESTRICT,"
-       "  ssh_port text,"
-       "  smb_lsc_credential integer," // REFERENCES credentials (id) ON DELETE RESTRICT,"
-       "  port_range integer," // REFERENCES port_lists (id) ON DELETE RESTRICT,"
-       "  ssh_location integer,"
-       "  smb_location integer,"
+       "  port_list integer," // REFERENCES port_lists (id) ON DELETE RESTRICT,"
        "  port_list_location integer,"
        "  alive_test integer,"
        "  creation_time integer,"
-       "  modification_time integer,"
-       "  esxi_lsc_credential integer," // REFERENCES credentials (id)
-                                        // ON DELETE RESTRICT,"
-       "  esxi_location integer);");
+       "  modification_time integer);");
+
+  sql ("CREATE TABLE IF NOT EXISTS targets_login_data"
+       " (id SERIAL PRIMARY KEY,"
+       "  target INTEGER REFERENCES targets (id) ON DELETE RESTRICT,"
+       "  type TEXT,"
+       "  credential INTEGER REFERENCES credentials (id) ON DELETE RESTRICT,"
+       "  port INTEGER);");
+
+  sql ("CREATE TABLE IF NOT EXISTS targets_trash_login_data"
+       " (id SERIAL PRIMARY KEY,"
+       "  target INTEGER REFERENCES targets_trash (id) ON DELETE RESTRICT,"
+       "  type TEXT,"
+       "  credential INTEGER,"//REFERENCES credentials (id) ON DELETE RESTRICT,"
+       "  port INTEGER,"
+       "  credential_location INTEGER);");
 
   sql ("CREATE TABLE IF NOT EXISTS configs"
        " (id SERIAL PRIMARY KEY,"
