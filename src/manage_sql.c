@@ -30450,8 +30450,8 @@ trash_target_exclude_hosts (target_t target)
 char*
 target_ssh_port (target_t target)
 {
-  return sql_string ("SELECT ssh_port FROM targets WHERE id = %llu;",
-                     target);
+  int port = target_login_port (target, "ssh");
+  return port ? g_strdup_printf ("%d", port) : NULL;
 }
 
 /**

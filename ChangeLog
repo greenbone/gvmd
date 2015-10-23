@@ -1,5 +1,9 @@
 2015-10-23  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (target_ssh_port): Use target_login_port function.
+
+2015-10-23  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (create_credential): Add parameter to specify
 	the type of credential and allow autogenerating username + password
 	credentials.
