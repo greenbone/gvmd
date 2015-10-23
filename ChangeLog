@@ -1,3 +1,13 @@
+2015-10-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r23680.
+
+	* src/manage_sql.c (manage_complete_nvt_cache_update): Check config
+	families.  This updates the NVT selectors when the family of an NVT
+	changes in the feed.
+	(nvt_selector_set_family, config_update_nvt_family, update_nvt_family)
+	(check_config_families): New functions.
+
 2015-10-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r23639.
