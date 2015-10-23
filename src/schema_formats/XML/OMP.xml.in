@@ -3515,6 +3515,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>key</e></o>
       <e>login</e>
       <o><e>password</e></o>
+      <o><e>type</e></o>
     </pattern>
     <ele>
       <name>name</name>
@@ -3568,6 +3569,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>The password for the credential login</summary>
       <pattern>
         text
+      </pattern>
+    </ele>
+    <ele>
+      <name>type</name>
+      <summary>The type of credential to create</summary>
+      <pattern>
+        <t>
+          <alts>
+            <alt>up</alt>
+            <alt>usk</alt>
+          </alts>
+        </t>
       </pattern>
     </ele>
     <response>

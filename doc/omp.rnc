@@ -3457,6 +3457,7 @@ create_credential
        & create_credential_key?
        & create_credential_login
        & create_credential_password?
+       & create_credential_type?
      }
 
 # A name for the credential.
@@ -3513,6 +3514,13 @@ create_credential_password
  = element password
      {
        text
+     }
+
+# The type of credential to create.
+create_credential_type
+ = element type
+     {
+       xsd:token { pattern = "up|usk" }
      }
 
 ## Command create_filter

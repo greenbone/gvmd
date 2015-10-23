@@ -35761,16 +35761,19 @@ set_credential_data (credential_t credential,
  * @param[in]  given_password  Password for password-only credential, NULL to
  *                             generate credentials.
  * @param[in]  key_private     Private key, or NULL.
+ * @param[in]  given_type      Credential type or NULL.
  * @param[out] credential      Created Credential.
  *
  * @return 0 success, 1 LSC credential exists already, 2 name contains space,
  *         3 Failed to create public key from private key/password,
- *         99 permission denied, -1 error.
+ *         4 Invalid credential type, 5 login username missing,
+ *         6 password missing, 7 private key missing, 99 permission denied,
+ *         -1 error.
  */
 int
 create_credential (const char* name, const char* comment, const char* login,
                    const char* given_password, const char* key_private,
-                   credential_t *credential)
+                   const char* given_type, credential_t *credential)
 {
   gchar *quoted_name, *quoted_comment, *quoted_type;
   int i;
@@ -35779,6 +35782,7 @@ create_credential (const char* name, const char* comment, const char* login,
   gchar *generated_private_key;
   const char *s = login;
   credential_t new_credential;
+  int auto_generate;
 
   assert (name && strlen (name) > 0);
   assert (login && strlen (login) > 0);
@@ -35799,7 +35803,18 @@ create_credential (const char* name, const char* comment, const char* login,
       return 1;
     }
 
-  if (login && key_private)
+  if (given_type && strcmp (given_type, ""))
+    {
+      if (strcmp (given_type, "up")
+          && strcmp (given_type, "usk"))
+        {
+          sql ("ROLLBACK;");
+          return 4;
+        }
+      else
+        quoted_type = g_strdup (given_type);
+    }
+  else if (login && key_private)
     quoted_type = g_strdup ("usk");
   else if (login && given_password)
     quoted_type = g_strdup ("up");
@@ -35832,10 +35847,17 @@ create_credential (const char* name, const char* comment, const char* login,
 
   new_credential = sql_last_insert_id ();
 
+  auto_generate = ((given_password == NULL) && (key_private == NULL));
+
   /* Add non-secret data */
   if (login)
     {
       set_credential_data (new_credential, "username", login);
+    }
+  else
+    {
+      sql ("ROLLBACK;");
+      return 5;
     }
 
   /* Add secret data like passwords and private keys */
@@ -35879,6 +35901,12 @@ create_credential (const char* name, const char* comment, const char* login,
       sql ("COMMIT;");
       return 0;
     }
+  else if (given_type && strcmp (given_type, "usk") == 0
+           && auto_generate == 0)
+    {
+      sql ("ROLLBACK;");
+      return 7;
+    }
 
   /* Password only */
   if (given_password)
@@ -35914,6 +35942,12 @@ create_credential (const char* name, const char* comment, const char* login,
       sql ("COMMIT;");
       return 0;
     }
+  else if (given_type && strcmp (given_type, "up") == 0
+           && auto_generate == 0)
+    {
+      sql ("ROLLBACK;");
+      return 6;
+    }
 
   /*
    * Auto-generate credential
@@ -35943,11 +35977,16 @@ create_credential (const char* name, const char* comment, const char* login,
   generated_password[PASSWORD_LENGTH - 1] = '\0';
   g_rand_free (rand);
 
-  if (lsc_user_keys_create (generated_password, &generated_private_key))
+  if (given_type == NULL || strcmp (given_type, "usk") == 0)
     {
-      sql ("ROLLBACK;");
-      return -1;
+      if (lsc_user_keys_create (generated_password, &generated_private_key))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
     }
+  else
+    generated_private_key = NULL;
 
   {
     lsc_crypt_ctx_t crypt_ctx;
@@ -35958,10 +35997,16 @@ create_credential (const char* name, const char* comment, const char* login,
       {
         gchar *secret;
         crypt_ctx = lsc_crypt_new ();
-        secret = lsc_crypt_encrypt (crypt_ctx,
-                                    "password", generated_password,
-                                    "private_key", generated_private_key,
-                                    NULL);
+        if (generated_private_key)
+          secret = lsc_crypt_encrypt (crypt_ctx,
+                                      "password", generated_password,
+                                      "private_key", generated_private_key,
+                                      NULL);
+        else
+          secret = lsc_crypt_encrypt (crypt_ctx,
+                                      "password", generated_password,
+                                      NULL);
+
         if (!secret)
           {
             lsc_crypt_release (crypt_ctx);
@@ -35974,8 +36019,9 @@ create_credential (const char* name, const char* comment, const char* login,
     else
       {
         set_credential_data (new_credential, "password", generated_password);
-        set_credential_data (new_credential,
-                             "private_key", generated_private_key);
+        if (generated_private_key)
+          set_credential_data (new_credential,
+                               "private_key", generated_private_key);
         crypt_ctx = NULL;
       }
     lsc_crypt_release (crypt_ctx);

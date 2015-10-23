@@ -1,3 +1,20 @@
+2015-10-23  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (create_credential): Add parameter to specify
+	the type of credential and allow autogenerating username + password
+	credentials.
+
+	* src/manage.h (create_credential): Add parameter.
+
+	* src/omp.c (client_state_t, omp_xml_handle_start_element)
+	(omp_xml_handle_end_element, omp_xml_handle_text): Add "type" element
+	to CREATE_CREDENTIAL command.
+
+	* src/schema_formats/XML/OMP.xml.in (create_credential): Add "type"
+	element to command.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
 2015-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (config_update_nvt_family): Remove note about

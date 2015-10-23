@@ -1900,7 +1900,7 @@ find_credential_with_permission (const char*, credential_t*, const char*);
 
 int
 create_credential (const char*, const char*, const char*, const char*,
-                   const char*, credential_t*);
+                   const char*, const char*, credential_t*);
 
 int
 copy_credential (const char*, const char*, const char*,

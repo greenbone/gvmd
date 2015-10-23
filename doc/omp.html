@@ -7712,6 +7712,11 @@ create_alert_filter
               ?<div style="margin-left: 15px; display: inline;">The password for the credential login.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>type</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The type of credential to create.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li>
 <li style="margin-top: 15px;">
@@ -7742,6 +7747,7 @@ create_alert_filter
        &amp; create_credential_key?
        &amp; create_credential_login
        &amp; create_credential_password?
+       &amp; create_credential_type?
      }
 
 create_credential_name
@@ -7791,6 +7797,12 @@ create_credential_password
  = element password
      {
        text
+     }
+
+create_credential_type
+ = element type
+     {
+       xsd:token { pattern = "up|usk" }
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>create_credential_response

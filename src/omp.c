@@ -1022,6 +1022,7 @@ typedef struct
   char *login;             ///< Login name.
   char *name;              ///< Credential name.
   char *password;          ///< Password associated with login name.
+  char *type;              ///< Type of credential.
 } create_credential_data_t;
 
 /**
@@ -1039,6 +1040,7 @@ create_credential_data_reset (create_credential_data_t *data)
   free (data->login);
   free (data->name);
   free (data->password);
+  free (data->type);
 
   memset (data, 0, sizeof (create_credential_data_t));
 }
@@ -5110,6 +5112,7 @@ typedef enum
   CLIENT_CREATE_CREDENTIAL_LOGIN,
   CLIENT_CREATE_CREDENTIAL_NAME,
   CLIENT_CREATE_CREDENTIAL_PASSWORD,
+  CLIENT_CREATE_CREDENTIAL_TYPE,
   CLIENT_CREATE_CONFIG,
   CLIENT_CREATE_CONFIG_COMMENT,
   CLIENT_CREATE_CONFIG_COPY,
@@ -9131,6 +9134,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             openvas_append_string (&create_credential_data->password, "");
             set_client_state (CLIENT_CREATE_CREDENTIAL_PASSWORD);
           }
+        else if (strcasecmp ("TYPE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_CREDENTIAL_TYPE);
         ELSE_ERROR ("create_credential");
 
       case CLIENT_CREATE_CREDENTIAL_KEY:
@@ -20949,6 +20954,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           ? create_credential_data->key_phrase
                           : create_credential_data->password,
                          create_credential_data->key_private,
+                         create_credential_data->type,
                          &new_credential))
             {
               case 0:
@@ -20978,6 +20984,26 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     "Erroneous private key or associated"
                                     " passphrase"));
                 break;
+              case 4:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                    "Erroneous credential type"));
+                break;
+              case 5:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                    "Selected type requires a login username"));
+                break;
+              case 6:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                    "Selected type requires a password"));
+                break;
+              case 7:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                    "Selected type requires a private key"));
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_credential",
@@ -21002,6 +21028,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_CREDENTIAL, LOGIN);
       CLOSE (CLIENT_CREATE_CREDENTIAL, NAME);
       CLOSE (CLIENT_CREATE_CREDENTIAL, PASSWORD);
+      CLOSE (CLIENT_CREATE_CREDENTIAL, TYPE);
 
       case CLIENT_CREATE_FILTER:
         {
@@ -28438,6 +28465,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_CREDENTIAL_PASSWORD,
               &create_credential_data->password);
+
+      APPEND (CLIENT_CREATE_CREDENTIAL_TYPE,
+              &create_credential_data->type);
 
 
       APPEND (CLIENT_CREATE_ALERT_COMMENT,
