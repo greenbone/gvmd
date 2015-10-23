@@ -35028,8 +35028,6 @@ insert_nvt_selectors (const char *quoted_name,
 /**
  * @brief Change the family of an NVT in a config.
  *
- * This is for migrators, when an NVT family changes.
- *
  * @param[in]  config      Config.
  * @param[in]  oid         NVT OID.
  * @param[in]  old_family  Name of old family.
