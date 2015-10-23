@@ -293,6 +293,11 @@ gchar *priorities_option = "NORMAL";
  */
 gchar *dh_params_option = NULL;
 
+/**
+ * @brief Whether a SIGHUP initiated NVT update is in progress.
+ */
+int update_in_progress = 0;
+
 
 /* Helpers. */
 
@@ -775,6 +780,37 @@ setup_signal_handler (int signal, void (*handler) (int), int block)
     }
 }
 
+/**
+ * @brief Setup signal handler.
+ *
+ * Exit on failure.
+ *
+ * @param[in]  signal   Signal.
+ * @param[in]  handler  Handler.
+ * @param[in]  block    Whether to block all other signals during handler.
+ */
+void
+setup_signal_handler_info (int signal,
+                           void (*handler) (int, siginfo_t *, void *),
+                           int block)
+{
+  struct sigaction action;
+
+  memset (&action, '\0', sizeof (action));
+  if (block)
+    sigfillset (&action.sa_mask);
+  else
+    sigemptyset (&action.sa_mask);
+  action.sa_flags |= SA_SIGINFO;
+  action.sa_sigaction = handler;
+  if (sigaction (signal, &action, NULL) == -1)
+    {
+      g_critical ("%s: failed to register %s handler\n",
+                  __FUNCTION__, sys_siglist[signal]);
+      exit (EXIT_FAILURE);
+    }
+}
+
 #ifndef NDEBUG
 #include <execinfo.h>
 #define BA_SIZE 100
@@ -854,6 +890,21 @@ handle_sigsegv (/*@unused@*/ int given_signal)
   /* Raise signal again, to exit with the correct return value. */
   setup_signal_handler (given_signal, SIG_DFL, 0);
   raise (given_signal);
+}
+
+/**
+ * @brief Handle a SIGCHLD signal.
+ *
+ * @param[in]  given_signal  The signal that caused this function to run.
+ */
+void
+handle_sigchld (/*@unused@*/ int given_signal, siginfo_t *info, void *ucontext)
+{
+  int status;
+  while (waitpid (info->si_pid, &status, 0) == -1);
+  if (update_in_progress == info->si_pid)
+    /* This was the NVT update child, so allow updates again. */
+    update_in_progress = 0;
 }
 
 
@@ -1043,12 +1094,35 @@ rebuild_nvt_cache_retry (int update_or_rebuild, int register_cleanup,
 /**
  * @brief Update the NVT cache in a child process.
  *
- * @return 0 success, -1 error.  Always exits with EXIT_SUCCESS in child.
+ * @return 0 success, 1 update in progress, -1 error.  Always exits with
+ *         EXIT_SUCCESS in child.
  */
 static int
 fork_update_nvt_cache ()
 {
   int pid;
+  sigset_t sigmask_all, sigmask_current;
+
+  if (update_in_progress)
+    {
+      tracef ("%s: Update skipped because an update is in progress",
+              __FUNCTION__);
+      return 1;
+    }
+
+  update_in_progress = 1;
+
+  /* Block SIGCHLD until parent records the value of the child PID. */
+  if (sigemptyset (&sigmask_all))
+    {
+      g_critical ("%s: Error emptying signal set\n", __FUNCTION__);
+      return -1;
+    }
+  if (pthread_sigmask (SIG_BLOCK, &sigmask_all, &sigmask_current))
+    {
+      g_critical ("%s: Error setting signal mask\n", __FUNCTION__);
+      return -1;
+    }
 
   pid = fork ();
   switch (pid)
@@ -1058,6 +1132,7 @@ fork_update_nvt_cache ()
 
         /* Clean up the process. */
 
+        pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL);
         /** @todo This should happen via omp, maybe with "cleanup_omp ();". */
         cleanup_manage_process (FALSE);
         if (manager_socket > -1) close (manager_socket);
@@ -1081,10 +1156,16 @@ fork_update_nvt_cache ()
       case -1:
         /* Parent when error. */
         g_warning ("%s: fork: %s\n", __FUNCTION__, strerror (errno));
+        update_in_progress = 0;
+        if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
+          g_warning ("%s: Error resetting signal mask\n", __FUNCTION__);
         return -1;
 
       default:
-        /* Parent.  Continue. */
+        /* Parent.  Unblock signals and continue. */
+        update_in_progress = pid;
+        if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
+          g_warning ("%s: Error resetting signal mask\n", __FUNCTION__);
         return 0;
     }
 }
@@ -2219,7 +2300,7 @@ main (int argc, char** argv)
   setup_signal_handler (SIGHUP, handle_sighup_update, 0);
   setup_signal_handler (SIGQUIT, handle_termination_signal, 0);
   setup_signal_handler (SIGSEGV, handle_sigsegv, 1);
-  setup_signal_handler (SIGCHLD, SIG_IGN, 0);
+  setup_signal_handler_info (SIGCHLD, handle_sigchld, 0);
 
   /* Setup security. */
 
