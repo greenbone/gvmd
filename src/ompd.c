@@ -108,6 +108,7 @@ static int ompd_nvt_cache_mode = 0;
  * @param[in]  max_email_attachment_size  Max size of email attachments.
  * @param[in]  max_email_include_size     Max size of email inclusions.
  * @param[in]  progress        Function to update progress, or NULL.
+ * @param[in]  skip_db_check   Skip DB check.
  *
  * @return 0 success, -1 error, -2 database is wrong version, -3 database
  *         needs to be initialized from server, -4 max_ips_per_target out of
@@ -116,11 +117,11 @@ static int ompd_nvt_cache_mode = 0;
 int
 init_ompd (GSList *log_config, int nvt_cache_mode, const gchar *database,
            int max_ips_per_target, int max_email_attachment_size,
-           int max_email_include_size, void (*progress) ())
+           int max_email_include_size, void (*progress) (), int skip_db_check)
 {
   return init_omp (log_config, nvt_cache_mode, database, max_ips_per_target,
                    max_email_attachment_size, max_email_include_size,
-                   progress);
+                   progress, skip_db_check);
 }
 
 /**
