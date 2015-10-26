@@ -900,11 +900,11 @@ handle_sigsegv (/*@unused@*/ int given_signal)
 void
 handle_sigchld (/*@unused@*/ int given_signal, siginfo_t *info, void *ucontext)
 {
-  int status;
-  while (waitpid (info->si_pid, &status, 0) == -1);
-  if (update_in_progress == info->si_pid)
-    /* This was the NVT update child, so allow updates again. */
-    update_in_progress = 0;
+  int status, pid;
+  while ((pid = waitpid (-1, &status, WNOHANG)) > 0)
+    if (update_in_progress == pid)
+      /* This was the NVT update child, so allow updates again. */
+      update_in_progress = 0;
 }
 
 

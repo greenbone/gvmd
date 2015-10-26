@@ -1,5 +1,10 @@
 2015-10-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c (handle_sigchld): Wait for all waitable children,
+	because there may not be a signal for each one.
+
+2015-10-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Avoid SQLITE_SCHEMA errors that happen when a rebuild runs, by
 	preventing the views from being dropped.  This only addresses SIGHUP
 	initiated rebuilds, --rebuild will still result in any active database
