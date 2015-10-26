@@ -1,3 +1,24 @@
+2015-10-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Avoid SQLITE_SCHEMA errors that happen when a rebuild runs, by
+	preventing the views from being dropped.  This only addresses SIGHUP
+	initiated rebuilds, --rebuild will still result in any active database
+	connections getting the SQLITE_SCHEMA return.
+
+	* src/openvasmd.c (update_or_rebuild_nvt_cache): Pass flag to init_ompd
+	to prevent create_tables from running.
+	(main): Update init_ompd call.
+
+	* src/manage_sql.c (init_manage_internal): Add arg skip_db_check, which
+	controls whether DB check and cleanup are done.  Update callers.
+	(init_manage): Add arg skip_db_check.
+
+	* src/omp.c (init_omp): Add arg skip_db_check.
+
+	* src/ompd.c (init_ompd): Add arg skip_db_check.
+
+	* src/ompd.h, src/omp.h, src/manage.h: Update headers accordingly.
+
 2015-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Prevent concurrent NVT cache updates from being initiated via SIGHUP.

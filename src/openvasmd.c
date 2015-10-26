@@ -963,6 +963,7 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
                              void (*progress) ())
 {
   int ret;
+
   /* Initialise OMP daemon. */
 
   if (update_nvt_cache == 0)
@@ -983,7 +984,10 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
                      0, /* Max email attachment size. */
                      0, /* Max email include size. */
                      progress,
-                     NULL))
+                     NULL,
+                     /* Skip create_tables, to avoid schema changes caused by
+                      * dropping the views. */
+                     1))
     {
       case 0:
         break;
@@ -2218,7 +2222,7 @@ main (int argc, char** argv)
 
   switch (init_ompd (log_config, 0, database, max_ips_per_target,
                      max_email_attachment_size, max_email_include_size, NULL,
-                     fork_connection_for_event))
+                     fork_connection_for_event, 0))
     {
       case 0:
         break;

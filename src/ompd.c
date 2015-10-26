@@ -110,6 +110,7 @@ static int ompd_nvt_cache_mode = 0;
  * @param[in]  progress         Function to update progress, or NULL.
  * @param[in]  fork_connection  Function to fork a connection to the OMP
  *                              daemon layer, or NULL.
+ * @param[in]  skip_db_check    Skip DB check.
  *
  * @return 0 success, -1 error, -2 database is wrong version, -3 database
  *         needs to be initialized from server, -4 max_ips_per_target out of
@@ -122,11 +123,12 @@ init_ompd (GSList *log_config, int nvt_cache_mode, const gchar *database,
            int (*fork_connection) (int *,
                                    gnutls_session_t *,
                                    gnutls_certificate_credentials_t *,
-                                   gchar*))
+                                   gchar*),
+           int skip_db_check)
 {
   return init_omp (log_config, nvt_cache_mode, database, max_ips_per_target,
                    max_email_attachment_size, max_email_include_size,
-                   progress, fork_connection);
+                   progress, fork_connection, skip_db_check);
 }
 
 /**

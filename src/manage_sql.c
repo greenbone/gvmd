@@ -12911,6 +12911,7 @@ cleanup_tables ()
  * @param[in]  max_email_include_size     Max size of email inclusions.
  * @param[in]  update_progress     Function to update progress, or NULL. *
  * @param[in]  stop_tasks          Stop any active tasks.
+ * @param[in]  skip_db_check       Skip DB check.
  *
  * @return 0 success, -1 error, -2 database is wrong version, -3 database needs
  *         to be initialised from server, -4 max_ips_per_target out of range.
@@ -12928,7 +12929,8 @@ init_manage_internal (GSList *log_config,
                              (int *,
                               gnutls_session_t *,
                               gnutls_certificate_credentials_t *,
-                              gchar*))
+                              gchar*),
+                      int skip_db_check)
 {
   int ret;
 
@@ -13011,11 +13013,14 @@ init_manage_internal (GSList *log_config,
    * date.  This is relevant because the caller may be a command option process
    * like a --create-user process.  */
 
-  ret = check_db ();
-  if (ret)
-    return ret;
+  if (skip_db_check == 0)
+    {
+      ret = check_db ();
+      if (ret)
+        return ret;
 
-  cleanup_tables ();
+      cleanup_tables ();
+    }
 
   if (stop_tasks && (nvt_cache_mode == 0))
     /* Stop any active tasks. */
@@ -13050,6 +13055,7 @@ init_manage_internal (GSList *log_config,
  * @param[in]  max_email_attachment_size  Max size of email attachments.
  * @param[in]  max_email_include_size     Max size of email inclusions.
  * @param[in]  update_progress     Function to update progress, or NULL. *
+ * @param[in]  skip_db_check       Skip DB check.
  *
  * @return 0 success, -1 error, -2 database is wrong version, -3 database needs
  *         to be initialised from server, -4 max_ips_per_target out of range.
@@ -13061,7 +13067,8 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
              int (*fork_connection) (int *,
                                      gnutls_session_t *,
                                      gnutls_certificate_credentials_t *,
-                                     gchar*))
+                                     gchar*),
+             int skip_db_check)
 {
   return init_manage_internal (log_config,
                                nvt_cache_mode,
@@ -13071,7 +13078,8 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
                                max_email_include_size,
                                update_progress,
                                1,  /* Stop active tasks. */
-                               fork_connection);
+                               fork_connection,
+                               skip_db_check);
 }
 
 /**
@@ -13101,8 +13109,9 @@ init_manage_helper (GSList *log_config, const gchar *database,
                                0,   /* Default max_email_attachment_size. */
                                0,   /* Default max_email_include_size. */
                                update_progress,
-                               0,  /* Stop active tasks. */
-                               NULL);
+                               0,   /* Stop active tasks. */
+                               NULL,
+                               0);  /* Skip DB check. */
 }
 
 /**

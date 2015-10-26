@@ -59,7 +59,8 @@ extern struct sockaddr_in scanner_address;
 int
 init_ompd (GSList*, int, const gchar*, int, int, int, void (*) (),
            int (*) (int *, gnutls_session_t *,
-                    gnutls_certificate_credentials_t *, gchar*));
+                    gnutls_certificate_credentials_t *, gchar*),
+           int);
 
 void
 init_ompd_process (const gchar *, gchar **);

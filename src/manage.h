@@ -52,7 +52,8 @@ typedef struct
 int
 init_manage (GSList*, int, const gchar*, int, int, int, void (*) (),
              int (*) (int *, gnutls_session_t *,
-                      gnutls_certificate_credentials_t *, gchar*));
+                      gnutls_certificate_credentials_t *, gchar*),
+             int);
 
 int
 init_manage_helper (GSList *, const gchar *, int, void (*) ());
