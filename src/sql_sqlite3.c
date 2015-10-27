@@ -283,8 +283,8 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
   sqlite_stmt = NULL;
   while (1)
     {
-      ret = sqlite3_prepare (task_db, (char*) formatted, -1, &sqlite_stmt,
-                             &tail);
+      ret = sqlite3_prepare_v2 (task_db, (char*) formatted, -1, &sqlite_stmt,
+                                &tail);
       if (ret == SQLITE_BUSY || ret == SQLITE_LOCKED)
         {
           if (retry)
@@ -358,36 +358,12 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
         }
       if (ret == SQLITE_DONE)
         return 0;
-      if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-        {
-          if (ret == SQLITE_ERROR)
-            {
-              ret = sqlite3_reset (stmt->stmt);
-              if (ret == SQLITE_BUSY || ret == SQLITE_LOCKED)
-                {
-                  if (retry)
-                    {
-                      if ((retries > 10) && (OPENVAS_SQLITE_SLEEP_MAX > 0))
-                        openvas_usleep (MIN ((retries - 10) * 10000,
-                                             OPENVAS_SQLITE_SLEEP_MAX));
-                      retries++;
-                      continue;
-                    }
-                  if (retries++ < 10)
-                    continue;
-                  return -2;
-                }
-              if (ret == SQLITE_SCHEMA)
-                /* Schema has changed, caller must rerun prepare. */
-                return 2;
-            }
-          g_warning ("%s: sqlite3_step failed: %s\n",
-                     __FUNCTION__,
-                     sqlite3_errmsg (task_db));
-          return -1;
-        }
-      assert (ret == SQLITE_ROW);
-      return 1;
+      if (ret == SQLITE_ROW)
+        return 1;
+      g_warning ("%s: sqlite3_step failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
+      return -1;
     }
 }
 
