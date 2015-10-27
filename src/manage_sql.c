@@ -443,6 +443,7 @@ command_t omp_commands[]
     {"START_TASK", "Manually start an existing task."},
     {"STOP_TASK", "Stop a running task."},
     {"SYNC_CERT", "Synchronize with a CERT feed."},
+    {"SYNC_CONFIG", "Synchronize a config with a scanner."},
     {"SYNC_FEED", "Synchronize with an NVT feed."},
     {"SYNC_SCAP", "Synchronize with a SCAP feed."},
     {"TEST_ALERT", "Run an alert."},
@@ -31221,6 +31222,35 @@ config_type (config_t config)
 }
 
 /**
+ * @brief Return the scanner associated with a config, if any.
+ *
+ * @param[in]  config   Config.
+ *
+ * @return Scanner ID if found, 0 otherwise.
+ */
+scanner_t
+config_scanner (config_t config)
+{
+  scanner_t scanner;
+
+  /* XXX: Each config should have its own scanner. */
+  switch (sql_int64 (&scanner,
+                     "SELECT id FROM scanners WHERE type = %i LIMIT 1;",
+                     SCANNER_TYPE_OSP))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        return 0;
+      case -1:
+        return 0;
+      default:       /* Programming error. */
+        assert (0);
+    }
+  return scanner;
+}
+
+/**
  * @brief Get the timeout value for an NVT in a config.
  *
  * @param[in]  config  Config.
@@ -31630,6 +31660,73 @@ delete_config (const char *config_id, int ultimate)
   sql ("DELETE FROM configs WHERE id = %llu;", config);
 
   sql ("COMMIT;");
+  return 0;
+}
+
+/**
+ * @brief Synchronize a config.
+ *
+ * @param[in]  config_id  UUID of config.
+ *
+ * @return 0 success, 1 failed to find config, 2 config not of OSP type,
+ *         3 config has no scanner, 4 couldn't get params from scanner,
+ *         99 permission denied, -1 error.
+ */
+int
+sync_config (const char *config_id)
+{
+  config_t config = 0;
+  GSList *params, *element;
+  scanner_t scanner;
+
+  assert (config_id);
+  assert (current_credentials.uuid);
+
+  sql_begin_immediate ();
+
+  if (acl_user_may ("modify_config") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
+  if (find_config_with_permission (config_id, &config, "modify_config"))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+  if (config == 0)
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
+  if (config_type (config) != SCANNER_TYPE_OSP)
+    {
+      sql ("ROLLBACK;");
+      return 2;
+    }
+  scanner = config_scanner (config);
+  if (!scanner)
+    {
+      sql ("ROLLBACK;");
+      return 3;
+    }
+  params = element = get_scanner_params (scanner);
+  if (!params)
+    {
+      sql ("ROLLBACK;");
+      return 4;
+    }
+
+  sql ("DELETE FROM config_prefrences WHERE config = %llu", config);
+  while (element)
+    {
+      insert_osp_parameter (element->data, config);
+      osp_param_free (element->data);
+      element = element->next;
+    }
+
+  sql ("COMMIT;");
+  g_slist_free (params);
   return 0;
 }
 

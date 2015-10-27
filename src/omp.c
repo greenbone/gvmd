@@ -4107,6 +4107,27 @@ stop_task_data_reset (stop_task_data_t *data)
 }
 
 /**
+ * @brief Command data for the modify_target command.
+ */
+typedef struct
+{
+  char *config_id;               ///< Config UUID.
+} sync_config_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+sync_config_data_reset (sync_config_data_t *data)
+{
+  g_free (data->config_id);
+
+  memset (data, 0, sizeof (sync_config_data_t));
+}
+
+/**
  * @brief Command data for the test_alert command.
  */
 typedef struct
@@ -4337,6 +4358,7 @@ typedef union
   resume_task_data_t resume_task;                     ///< resume_task
   start_task_data_t start_task;                       ///< start_task
   stop_task_data_t stop_task;                         ///< stop_task
+  sync_config_data_t sync_config;                     ///< sync_config
   test_alert_data_t test_alert;                       ///< test_alert
   verify_agent_data_t verify_agent;                   ///< verify_agent
   verify_report_format_data_t verify_report_format;   ///< verify_report_format
@@ -4976,6 +4998,12 @@ start_task_data_t *start_task_data
  */
 stop_task_data_t *stop_task_data
  = (stop_task_data_t*) &(command_data.stop_task);
+
+/**
+ * @brief Parser callback data for SYNC_CONFIG.
+ */
+sync_config_data_t *sync_config_data
+ = (sync_config_data_t*) &(command_data.delete_target);
 
 /**
  * @brief Parser callback data for TEST_ALERT.
@@ -5653,6 +5681,7 @@ typedef enum
   CLIENT_START_TASK,
   CLIENT_STOP_TASK,
   CLIENT_SYNC_CERT,
+  CLIENT_SYNC_CONFIG,
   CLIENT_SYNC_FEED,
   CLIENT_SYNC_SCAP,
   CLIENT_TEST_ALERT,
@@ -7963,6 +7992,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("SYNC_CERT", element_name) == 0)
           set_client_state (CLIENT_SYNC_CERT);
+        else if (strcasecmp ("SYNC_CONFIG", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "config_id",
+                              &sync_config_data->config_id);
+            set_client_state (CLIENT_SYNC_CONFIG);
+          }
         else if (strcasecmp ("SYNC_FEED", element_name) == 0)
           set_client_state (CLIENT_SYNC_FEED);
         else if (strcasecmp ("SYNC_SCAP", element_name) == 0)
@@ -12926,6 +12961,81 @@ check_scanner_private (const char *key_str)
   g_free (data.data);
   gnutls_x509_privkey_deinit (key);
   return 0;
+}
+
+/**
+ * @brief Handle end of SYNC_CONFIG element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_sync_config (omp_parser_t *omp_parser, GError **error)
+{
+  assert (current_credentials.username);
+  if (!sync_config_data->config_id)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("sync_config",
+                          "SYNC_CONFIG requires a config_id attribute"));
+      sync_config_data_reset (sync_config_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+  switch (sync_config (sync_config_data->config_id))
+    {
+      case 0:
+        log_event ("config", "config", sync_config_data->config_id,
+                   "synchronized");
+        SEND_TO_CLIENT_OR_FAIL (XML_OK ("sync_config"));
+        break;
+      case 1:
+        if (send_find_error_to_client
+             ("sync_config", "config", sync_config_data->config_id, omp_parser))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        log_event_fail ("config", "Config", sync_config_data->config_id,
+                        "synchronized");
+        break;
+      case 2:
+        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
+                                 ("sync_config", "Config not of type OSP"));
+        log_event_fail ("config", "Config", sync_config_data->config_id,
+                        "synchronized");
+        break;
+      case 3:
+        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
+                                 ("sync_config", "Config has no scanner"));
+        log_event_fail ("config", "Config", sync_config_data->config_id,
+                        "synchronized");
+        break;
+      case 4:
+        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
+                                 ("sync_config",
+                                  "Couldn't get parameters from scanner"));
+        log_event_fail ("config", "Config", sync_config_data->config_id,
+                        "synchronized");
+        break;
+      case 99:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("sync_config", "Permission denied"));
+        log_event_fail ("config", "Config", sync_config_data->config_id,
+                        "synchronized");
+        break;
+      case -1:
+        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("sync_config"));
+        log_event_fail ("config", "Config", sync_config_data->config_id,
+                        "synchronized");
+        break;
+      default:
+        abort ();
+        break;
+    }
+
+  sync_config_data_reset (sync_config_data);
+  set_client_state (CLIENT_AUTHENTIC);
 }
 
 /**
@@ -28019,6 +28129,10 @@ create_task_fail:
             }
         set_client_state (CLIENT_AUTHENTIC);
         break;
+
+      case CLIENT_SYNC_CONFIG:
+        assert (strcasecmp ("SYNC_CONFIG", element_name) == 0);
+        return handle_sync_config (omp_parser, error);
 
       case CLIENT_SYNC_SCAP:
         assert (current_credentials.username);

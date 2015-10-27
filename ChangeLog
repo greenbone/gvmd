@@ -1,5 +1,20 @@
 2015-10-27  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (osp_commands): Add SYNC_CONFIG OMP command.
+	(config_scanner, sync_config): New functions.
+
+	* src/omp.c (sync_config_data_t): New struct.
+	(sync_config_data_reset, handle_sync_config): New function.
+	(command_data_t): Add sync_config command.
+	(sync_config_data): New variable.
+	(client_state_t): Add CLIENT_SYNC_CONFIG state.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Handle
+	sync_config command.
+
+	* src/manage.h: Add function header.
+
+2015-10-27  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (insert_osp_parameter): New function.
 	(create_config_from_scanner): Use new function accordingly.
 
