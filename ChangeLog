@@ -1,3 +1,8 @@
+2015-10-27  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (insert_osp_parameter): New function.
+	(create_config_from_scanner): Use new function accordingly.
+
 2015-10-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/sql_sqlite3.c (sql_prepare_internal, sql_exec_internal): Use

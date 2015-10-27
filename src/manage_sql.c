@@ -31071,6 +31071,43 @@ get_scanner_params (scanner_t scanner)
 }
 
 /**
+ * @brief Insert an OSP parameter into a config.
+ *
+ * @param[in]   param   OSP parameter to insert.
+ * @param[in]   config  Config to insert parameter into.
+ */
+static void
+insert_osp_parameter (osp_param_t *param, config_t config)
+{
+  char *param_id, *param_type, *param_def, *param_value = NULL;
+
+  if (!param)
+    return;
+  param_id = sql_quote (osp_param_id (param));
+  /* Ignoring username and password parameters as these are taken from
+   * the task's LSC Credentials. */
+  if (!strcmp (param_id, "username") || !strcmp (param_id, "password"))
+    return;
+  param_type = sql_quote (osp_param_type_str (param));
+  if (!strcmp (param_type, "selection"))
+    {
+      char **strarray = g_strsplit (osp_param_default (param), "|", 2);
+
+      param_value = sql_quote (strarray[0] ?: "");
+      param_def = sql_quote (strarray[1] ?: param_value);
+      g_strfreev (strarray);
+    }
+  else
+    param_def = sql_quote (osp_param_default (param));
+  sql ("INSERT INTO config_preferences (config, name, type, value,"
+       " default_value) VALUES (%llu, '%s', '%s', '%s', '%s')",
+       config , param_id, param_type, param_value ?: param_def, param_def);
+  g_free (param_type);
+  g_free (param_def);
+  g_free (param_value);
+}
+
+/**
  * @brief Create a config from an OSP scanner.
  *
  * @param[in]   scanner_id  UUID of scanner to create config from.
@@ -31141,36 +31178,7 @@ create_config_from_scanner (const char *scanner_id, const char *name,
   element = params;
   while (element)
     {
-      char *param_id;
-
-      osp_param_t *param = element->data;
-      param_id = sql_quote (osp_param_id (param));
-      /* Ignoring username and password parameters as these are taken from
-       * the task's LSC Credentials. */
-      if (strcmp (param_id, "username") && strcmp (param_id, "password"))
-        {
-          char *param_type, *param_def, *param_value = NULL;
-
-          param_type = sql_quote (osp_param_type_str (param));
-          if (!strcmp (param_type, "selection"))
-            {
-              char **strarray = g_strsplit (osp_param_default (param), "|", 2);
-
-              param_value = sql_quote (strarray[0] ?: "");
-              param_def = sql_quote (strarray[1] ?: param_value);
-              g_strfreev (strarray);
-            }
-          else
-            param_def = sql_quote (osp_param_default (param));
-          sql ("INSERT INTO config_preferences (config, name, type, value,"
-               " default_value) VALUES (%llu, '%s', '%s', '%s', '%s')",
-               config , param_id, param_type, param_value ?: param_def,
-               param_def);
-          g_free (param_type);
-          g_free (param_def);
-          g_free (param_value);
-        }
-      g_free (param_id);
+      insert_osp_parameter (element->data, config);
       osp_param_free (element->data);
       element = element->next;
     }
