@@ -1,3 +1,9 @@
+2015-10-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/sql_sqlite3.c (sql_prepare_internal, sql_exec_internal): Use
+	sqlite3_prepare_v2 instead of sqlite3_prepare, as it handles schema
+	changes better.
+
 2015-10-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c (handle_sigchld): Wait for all waitable children,
