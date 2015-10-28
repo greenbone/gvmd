@@ -53149,6 +53149,20 @@ manage_report_host_details (report_t report, const char *ip, entity_t entity)
               array_add (identifiers, identifier);
               array_add_new_string (identifier_hosts, g_strdup (ip));
             }
+          if (strcmp (entity_text (name), "ssh-key") == 0)
+            {
+              identifier_t *identifier;
+
+              identifier = g_malloc (sizeof (identifier_t));
+              identifier->ip = g_strdup (ip);
+              identifier->name = g_strdup ("ssh-key");
+              identifier->value = g_strdup (entity_text (value));
+              identifier->source_id = g_strdup (uuid);
+              identifier->source_type = g_strdup ("Report Host Detail");
+              identifier->source_data = g_strdup (entity_text (source_name));
+              array_add (identifiers, identifier);
+              array_add_new_string (identifier_hosts, g_strdup (ip));
+            }
         }
       details = next_entities (details);
     }
@@ -53773,7 +53787,8 @@ identifier_name (const char *name)
   return (strcmp ("hostname", name) == 0)
          || (strcmp ("MAC", name) == 0)
          || (strcmp ("DNS-via-TargetDefinition", name) == 0)
-         || (strcmp ("OS", name) == 0);
+         || (strcmp ("OS", name) == 0)
+         || (strcmp ("ssh-key", name) == 0);
 }
 
 /**

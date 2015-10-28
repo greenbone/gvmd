@@ -1,3 +1,8 @@
+2015-10-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (manage_report_host_details, identifier_name): Add
+	"ssh-key" as a host identifier.
+
 2015-10-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Replace the login and password fields in slaves with credentials.
@@ -33,7 +38,7 @@
 	(manage_restore): Update slaves in trash when restoring a credential.
 	Check if credential is still in trash before restoring a slave.
 	Replace login and password of slaves with credential.
-	
+
 	* src/manage_sqlite3.c (sql_credential_value): New function.
 	(manage_create_sql_functions): Add new function credential_value.
 	(create_tables): Replace login and password columns with credential
