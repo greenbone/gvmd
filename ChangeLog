@@ -1,5 +1,14 @@
 2015-10-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r23713.
+
+	* src/html/XML/OMP.xml: Add compatiblity change about risk factor.
+	(note, override, get_reports, get_results): Remove risk factor.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
+2015-10-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r23598.
 
 	Remove some leaks found by valgrind.

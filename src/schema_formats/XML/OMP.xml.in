@@ -685,7 +685,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </attrib>
           <e>name</e>
           <e>cvss_base</e>
-          <e>risk_factor</e>
           <o><e>cve</e></o>
           <o><e>bid</e></o>
         </pattern>
@@ -695,10 +694,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </ele>
         <ele>
           <name>cvss_base</name>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>risk_factor</name>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -1014,7 +1009,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </attrib>
           <e>name</e>
           <e>cvss_base</e>
-          <e>risk_factor</e>
           <o><e>cve</e></o>
           <o><e>bid</e></o>
         </pattern>
@@ -1024,10 +1018,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </ele>
         <ele>
           <name>cvss_base</name>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>risk_factor</name>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -11336,7 +11326,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <nvt oid="1.3.6.1.4.1.25623.1.0.77">
                 <name>Test NVT: control chars in report result</name>
                 <cvss_base></cvss_base>
-                <risk_factor></risk_factor>
                 <cve></cve>
                 <bid></bid>
               </nvt>
@@ -13663,7 +13652,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                   <nvt oid="1.3.6.1.4.1.25623.1.0.74">
                     <name>Test NVT: fields with ISO-8859-1 chars ()</name>
                     <cvss_base>5.0</cvss_base>
-                    <risk_factor>Medium</risk_factor>
                     <cve>CVE-2013-1406</cve>
                     <bid>51702</bid>
                     <tags>NOTAGS</tags>
@@ -14489,7 +14477,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <nvt oid="1.3.6.1.4.1.25623.1.0.74">
               <name>Test NVT: fields with ISO-8859-1 chars</name>
               <cvss_base>5.0</cvss_base>
-              <risk_factor>Medium</risk_factor>
               <cve>CVE-2009-3095</cve>
               <bid>36254</bid>
               <tags>NOTAGS</tags>
@@ -14552,7 +14539,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <nvt oid="1.3.6.1.4.1.25623.1.0.75">
               <name>Test NVT: long lines</name>
               <cvss_base>9</cvss_base>
-              <risk_factor>High</risk_factor>
               <cve>CVE-2009-3095</cve>
               <bid>36254</bid>
               <tags>NOTAGS</tags>
@@ -22118,6 +22104,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <p>
         The task pausing feature has been removed and thus, the PAUSE_TASK and
         RESUME_PAUSED_TASK commands don't exist anymore.
+      </p>
+    </description>
+    <version>6.0</version>
+  </change>
+  <change>
+    <command>GET_NOTES, GET_OVERRIDES, GET_REPORTS, GET_RESULTS</command>
+    <summary>Element RISK_FACTOR removed from element NVT</summary>
+    <description>
+      <p>
+        Risk factors have been replaced by CVSS scores in all NVTs, so the
+        RISK_FACTOR element has been removed from the NVT elements in
+        various commands.
       </p>
     </description>
     <version>6.0</version>

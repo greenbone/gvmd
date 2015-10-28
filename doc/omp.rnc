@@ -793,7 +793,6 @@ note_result_nvt
        attribute oid { oid }
        & note_result_nvt_name
        & note_result_nvt_cvss_base
-       & note_result_nvt_risk_factor
        & note_result_nvt_cve?
        & note_result_nvt_bid?
      }
@@ -806,12 +805,6 @@ note_result_nvt_name
 
 note_result_nvt_cvss_base
  = element cvss_base
-     {
-       text
-     }
-
-note_result_nvt_risk_factor
- = element risk_factor
      {
        text
      }
@@ -1138,7 +1131,6 @@ override_result_nvt
        attribute oid { oid }
        & override_result_nvt_name
        & override_result_nvt_cvss_base
-       & override_result_nvt_risk_factor
        & override_result_nvt_cve?
        & override_result_nvt_bid?
      }
@@ -1151,12 +1143,6 @@ override_result_nvt_name
 
 override_result_nvt_cvss_base
  = element cvss_base
-     {
-       text
-     }
-
-override_result_nvt_risk_factor
- = element risk_factor
      {
        text
      }
