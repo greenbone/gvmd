@@ -1,5 +1,11 @@
 2015-10-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/html/XML/OMP.xml: Convert tabs to spaces.
+
+	* doc/omp.html: Update from source.
+
+2015-10-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/html/XML/OMP.xml: Add compatiblity change about risk factor.
 	(note, override, get_reports, get_results): Remove risk factor.
 

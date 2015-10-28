@@ -208,29 +208,29 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <type>
     <name>timezone</name>
     <summary>A timezone</summary>
-	<description>
-	  <p>
-		The format of a timezone is the same as that of the TZ environment
-    	variable on GNU/Linux systems.  That is, the same value accepted by the
-		tzset C function.  There are three versions of the format.  Note the lack
-		of spaces in the examples.
-	  </p>
+    <description>
+      <p>
+        The format of a timezone is the same as that of the TZ environment
+        variable on GNU/Linux systems.  That is, the same value accepted by the
+        tzset C function.  There are three versions of the format.  Note the lack
+        of spaces in the examples.
+      </p>
 
-	  <p>
-		"std offset" defines a simple timezone.  For example,
-		"FOO+2" defines a timezone FOO which is 2 hours behind UTC.
-	  </p>
-	  <p>
-		"std offset dst [offset],start[/time],end[/time]" defines a timezone,
-		including daylight savings time.  For example,
-		"NZST-12.00:00NZDT-13:00:00,M10.1.0,M3.3.0".
-	  </p>
-	  <p>
-		":[filespec]" refers to a predefined timezone.  For example,
-		":Africa/Johannesburg".  Note that the colon is optional.  Certain
-		acronyms are predefined, such as GB, NZ and CET.
-	  </p>
-	</description>
+      <p>
+        "std offset" defines a simple timezone.  For example,
+        "FOO+2" defines a timezone FOO which is 2 hours behind UTC.
+      </p>
+      <p>
+        "std offset dst [offset],start[/time],end[/time]" defines a timezone,
+        including daylight savings time.  For example,
+        "NZST-12.00:00NZDT-13:00:00,M10.1.0,M3.3.0".
+      </p>
+      <p>
+        ":[filespec]" refers to a predefined timezone.  For example,
+        ":Africa/Johannesburg".  Note that the colon is optional.  Certain
+        acronyms are predefined, such as GB, NZ and CET.
+      </p>
+    </description>
     <pattern>text</pattern>
   </type>
   <type>
@@ -699,11 +699,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>name</name>
           <pattern><t>name</t></pattern>
         </ele>
-		<ele>
-		  <name>type</name>
-		  <summary>The type of the NVT: nvt, cve, ovaldef, ...</summary>
-		  <pattern>text</pattern>
-		</ele>
+        <ele>
+          <name>type</name>
+          <summary>The type of the NVT: nvt, cve, ovaldef, ...</summary>
+          <pattern>text</pattern>
+        </ele>
         <ele>
           <name>cvss_base</name>
           <pattern>text</pattern>
@@ -1035,11 +1035,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>name</name>
           <pattern><t>name</t></pattern>
         </ele>
-		<ele>
-		  <name>type</name>
-		  <summary>The type of the NVT: nvt, cve, ovaldef, ...</summary>
-		  <pattern>text</pattern>
-		</ele>
+        <ele>
+          <name>type</name>
+          <summary>The type of the NVT: nvt, cve, ovaldef, ...</summary>
+          <pattern>text</pattern>
+        </ele>
         <ele>
           <name>cvss_base</name>
           <pattern>text</pattern>
@@ -2266,11 +2266,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <summary>The name of the task</summary>
           <pattern><t>name</t></pattern>
         </ele>
-		<ele>
-		  <name>comment</name>
-		  <summary>Comment for the task</summary>
-		  <pattern>text</pattern>
-		</ele>
+        <ele>
+          <name>comment</name>
+          <summary>Comment for the task</summary>
+          <pattern>text</pattern>
+        </ele>
         <ele>
           <name>target</name>
           <summary>The target of the task</summary>
@@ -8946,11 +8946,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>The name of the filter</summary>
             <pattern><t>name</t></pattern>
           </ele>
-		  <ele>
-			<name>permissions</name>
-			<summary>Permissions the user has on the filter</summary>
-			<pattern></pattern>
-		  </ele>
+          <ele>
+            <name>permissions</name>
+            <summary>Permissions the user has on the filter</summary>
+            <pattern></pattern>
+          </ele>
           <ele>
             <name>trash</name>
             <summary>Whether the filter is in the trashcan</summary>
@@ -8979,11 +8979,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <summary>The name of the task</summary>
               <pattern><t>name</t></pattern>
             </ele>
-			<ele>
-			  <name>permissions</name>
-			  <summary>Permissions the user has on the task</summary>
-			  <pattern></pattern>
-			</ele>
+            <ele>
+              <name>permissions</name>
+              <summary>Permissions the user has on the task</summary>
+              <pattern></pattern>
+            </ele>
           </ele>
         </ele>
       </ele>
@@ -17425,11 +17425,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>Whether the resource is in the trashcan</summary>
             <pattern><t>boolean</t></pattern>
           </ele>
-		  <ele>
-			<name>permissions</name>
-			<summary>Permissions the user has on the resource</summary>
-			<pattern></pattern>
-		  </ele>
+          <ele>
+            <name>permissions</name>
+            <summary>Permissions the user has on the resource</summary>
+            <pattern></pattern>
+          </ele>
         </ele>
         <ele>
           <name>value</name>
@@ -17826,11 +17826,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>The name of the SSH LSC credential</summary>
             <pattern><t>name</t></pattern>
           </ele>
-		  <ele>
-			<name>permissions</name>
-			<summary>Permissions the user has on the task</summary>
-			<pattern></pattern>
-		  </ele>
+          <ele>
+            <name>permissions</name>
+            <summary>Permissions the user has on the task</summary>
+            <pattern></pattern>
+          </ele>
           <ele>
             <name>port</name>
             <summary>The port the LSCs will use</summary>
@@ -17862,11 +17862,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>The name of the SMB LSC credential</summary>
             <pattern><t>name</t></pattern>
           </ele>
-		  <ele>
-			<name>permissions</name>
-			<summary>Permissions the user has on the task</summary>
-			<pattern></pattern>
-		  </ele>
+          <ele>
+            <name>permissions</name>
+            <summary>Permissions the user has on the task</summary>
+            <pattern></pattern>
+          </ele>
           <ele>
             <name>trash</name>
             <summary>Whether the LSC credential is in the trashcan</summary>
@@ -17893,11 +17893,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>The name of the ESXi LSC credential</summary>
             <pattern><t>name</t></pattern>
           </ele>
-		  <ele>
-			<name>permissions</name>
-			<summary>Permissions the user has on the task</summary>
-			<pattern></pattern>
-		  </ele>
+          <ele>
+            <name>permissions</name>
+            <summary>Permissions the user has on the task</summary>
+            <pattern></pattern>
+          </ele>
           <ele>
             <name>trash</name>
             <summary>Whether the LSC credential is in the trashcan</summary>
@@ -17926,11 +17926,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>The name of the port_list</summary>
             <pattern><t>name</t></pattern>
           </ele>
-		  <ele>
-			<name>permissions</name>
-			<summary>Permissions the user has on the task</summary>
-			<pattern></pattern>
-		  </ele>
+          <ele>
+            <name>permissions</name>
+            <summary>Permissions the user has on the task</summary>
+            <pattern></pattern>
+          </ele>
           <ele>
             <name>trash</name>
             <summary>Whether the port_list is in the trashcan</summary>
@@ -18459,11 +18459,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>The name of the config</summary>
             <pattern><t>name</t></pattern>
           </ele>
-		  <ele>
-			<name>permissions</name>
-			<summary>Permissions the user has on the config</summary>
-			<pattern></pattern>
-		  </ele>
+          <ele>
+            <name>permissions</name>
+            <summary>Permissions the user has on the config</summary>
+            <pattern></pattern>
+          </ele>
           <ele>
             <name>trash</name>
             <summary>Whether the config is in the trashcan</summary>
@@ -18488,11 +18488,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>The name of the target</summary>
             <pattern><t>name</t></pattern>
           </ele>
-		  <ele>
-			<name>permissions</name>
-			<summary>Permissions the user has on the target</summary>
-			<pattern></pattern>
-		  </ele>
+          <ele>
+            <name>permissions</name>
+            <summary>Permissions the user has on the target</summary>
+            <pattern></pattern>
+          </ele>
           <ele>
             <name>trash</name>
             <summary>Whether the target is in the trashcan</summary>
@@ -18527,11 +18527,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>Type of the scanner</summary>
             <pattern><t>integer</t></pattern>
           </ele>
-		  <ele>
-			<name>permissions</name>
-			<summary>Permissions the user has on the task</summary>
-			<pattern></pattern>
-		  </ele>
+          <ele>
+            <name>permissions</name>
+            <summary>Permissions the user has on the task</summary>
+            <pattern></pattern>
+          </ele>
         </ele>
         <ele>
           <name>alert</name>
@@ -18551,11 +18551,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>The name of the alert</summary>
             <pattern><t>name</t></pattern>
           </ele>
-		  <ele>
-			<name>permissions</name>
-			<summary>Permissions the user has on the alert</summary>
-			<pattern></pattern>
-		  </ele>
+          <ele>
+            <name>permissions</name>
+            <summary>Permissions the user has on the alert</summary>
+            <pattern></pattern>
+          </ele>
           <ele>
             <name>trash</name>
             <summary>Whether the alert is in the trashcan</summary>
@@ -18691,11 +18691,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>The name of the slave</summary>
             <pattern><t>name</t></pattern>
           </ele>
-		  <ele>
-			<name>permissions</name>
-			<summary>Permissions the user has on the slave</summary>
-			<pattern></pattern>
-		  </ele>
+          <ele>
+            <name>permissions</name>
+            <summary>Permissions the user has on the slave</summary>
+            <pattern></pattern>
+          </ele>
           <ele>
             <name>trash</name>
             <summary>Whether the slave is in the trashcan</summary>
@@ -19546,11 +19546,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>Name of role</summary>
             <pattern><t>name</t></pattern>
           </ele>
-		  <ele>
-			<name>permissions</name>
-			<summary>Permissions the user has on the role</summary>
-			<pattern></pattern>
-		  </ele>
+          <ele>
+            <name>permissions</name>
+            <summary>Permissions the user has on the role</summary>
+            <pattern></pattern>
+          </ele>
         </ele>
         <ele>
           <name>groups</name>
@@ -23143,8 +23143,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <description>
       <p>
         The resuming of tasks is now done via the new command RESUME_TASK,
-	which is the former RESUME_STOPPED_TASK. There is no other resumable
-	status than "stopped" anymore and thus the command names are
+    which is the former RESUME_STOPPED_TASK. There is no other resumable
+    status than "stopped" anymore and thus the command names are
         consolidated for consistency and to avoid confusion.
       </p>
     </description>
@@ -23156,7 +23156,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <description>
       <p>
         As part of the consolidation of the start/resume handling of tasks,
-	the command RESUME_OR_START_TASK was removed. Use a combination of
+        the command RESUME_OR_START_TASK was removed. Use a combination of
         START_TASK and RESUME_TASK to establish the same functionality.
       </p>
     </description>

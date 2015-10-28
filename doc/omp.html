@@ -1097,25 +1097,25 @@ ested|Stopped|Internal Error" }
 </h3></div>
 <p>In short: A timezone.</p>
 <p>
-		The format of a timezone is the same as that of the TZ environment
-    	variable on GNU/Linux systems.  That is, the same value accepted by the
-		tzset C function.  There are three versions of the format.  Note the lack
-		of spaces in the examples.
-	  </p>
+        The format of a timezone is the same as that of the TZ environment
+        variable on GNU/Linux systems.  That is, the same value accepted by the
+        tzset C function.  There are three versions of the format.  Note the lack
+        of spaces in the examples.
+      </p>
 <p>
-		"std offset" defines a simple timezone.  For example,
-		"FOO+2" defines a timezone FOO which is 2 hours behind UTC.
-	  </p>
+        "std offset" defines a simple timezone.  For example,
+        "FOO+2" defines a timezone FOO which is 2 hours behind UTC.
+      </p>
 <p>
-		"std offset dst [offset],start[/time],end[/time]" defines a timezone,
-		including daylight savings time.  For example,
-		"NZST-12.00:00NZDT-13:00:00,M10.1.0,M3.3.0".
-	  </p>
+        "std offset dst [offset],start[/time],end[/time]" defines a timezone,
+        including daylight savings time.  For example,
+        "NZST-12.00:00NZDT-13:00:00,M10.1.0,M3.3.0".
+      </p>
 <p>
-		":[filespec]" refers to a predefined timezone.  For example,
-		":Africa/Johannesburg".  Note that the colon is optional.  Certain
-		acronyms are predefined, such as GB, NZ and CET.
-	  </p>
+        ":[filespec]" refers to a predefined timezone.  For example,
+        ":Africa/Johannesburg".  Note that the colon is optional.  Certain
+        acronyms are predefined, such as GB, NZ and CET.
+      </p>
 <h4>5.21.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>timezone = text
 </pre></div>
@@ -36711,8 +36711,8 @@ start_task_response_report_id
 <p>In short: RESUME_STOPPED_TASK renamed to RESUME_TASK.</p>
 <p>
         The resuming of tasks is now done via the new command RESUME_TASK,
-	which is the former RESUME_STOPPED_TASK. There is no other resumable
-	status than "stopped" anymore and thus the command names are
+    which is the former RESUME_STOPPED_TASK. There is no other resumable
+    status than "stopped" anymore and thus the command names are
         consolidated for consistency and to avoid confusion.
       </p>
 </div>
@@ -36723,7 +36723,7 @@ start_task_response_report_id
 <p>In short: Command removed.</p>
 <p>
         As part of the consolidation of the start/resume handling of tasks,
-		the command RESUME_OR_START_TASK was removed. Use a combination of
+        the command RESUME_OR_START_TASK was removed. Use a combination of
         START_TASK and RESUME_TASK to establish the same functionality.
       </p>
 </div>
