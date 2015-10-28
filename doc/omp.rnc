@@ -4322,8 +4322,7 @@ create_slave
        & create_slave_copy?
        & create_slave_host
        & create_slave_port
-       & create_slave_login
-       & create_slave_password?
+       & create_slave_credential
      }
 
 # A name for the slave.
@@ -4361,18 +4360,12 @@ create_slave_port
        text
      }
 
-# Login name on the slave Manager.
-create_slave_login
- = element login
+# Login credential for the slave Manager.
+create_slave_credential
+ = element credential
      {
-       text
-     }
-
-# Password for login on the slave Manager.
-create_slave_password
- = element password
-     {
-       text
+       # UUID of the credential.
+       attribute id { uuid }
      }
 
 ## Command create_tag
@@ -5243,6 +5236,8 @@ get_credentials
        attribute filter { uuid }?
        & # ID of filter to use to filter query.
        attribute filt_id { uuid }?
+       & # Whether to include a list of slaves using the credentials.
+       attribute slaves { boolean }?
        & # Whether to get the trashcan credentials instead.
        attribute trash { boolean }?
        & # Whether to include a list of targets using the credentials.
@@ -6759,8 +6754,7 @@ modify_slave
        & modify_slave_comment?
        & modify_slave_host
        & modify_slave_port
-       & modify_slave_login
-       & modify_slave_password
+       & modify_slave_credential
      }
 
 # A name for the slave.
@@ -6791,18 +6785,12 @@ modify_slave_port
        text
      }
 
-# Login name on the slave Manager.
-modify_slave_login
- = element login
+# Login credential for the slave Manager.
+modify_slave_credential
+ = element credential
      {
-       text
-     }
-
-# Password for login on the slave Manager.
-modify_slave_password
- = element password
-     {
-       text
+       # UUID of the credential.
+       attribute id { uuid }
      }
 
 ## Command modify_target
@@ -10166,7 +10154,8 @@ get_credentials_response_credential
        & get_credentials_response_credential_permissions
        & get_credentials_response_credential_user_tags
        & get_credentials_response_credential_type
-       & get_credentials_response_credential_targets
+       & get_credentials_response_credential_slaves?
+       & get_credentials_response_credential_targets?
        & ( get_credentials_response_credential_public_key
            | get_credentials_response_credential_package )
      }
@@ -10313,6 +10302,35 @@ get_credentials_response_credential_full_type
  = element full_type
      {
        text
+     }
+
+# All slaves using this credential.
+get_credentials_response_credential_slaves
+ = element slaves
+     {
+       get_credentials_response_credential_slaves_slave*
+     }
+
+get_credentials_response_credential_slaves_slave
+ = element slave
+     {
+       attribute id { uuid }
+       & get_credentials_response_credential_slaves_slave_name
+       & get_credentials_response_credential_slaves_slave_permissions?
+     }
+
+# The name of the slave.
+get_credentials_response_credential_slaves_slave_name
+ = element name
+     {
+       name
+     }
+
+# Permissions the user has on the slave.
+get_credentials_response_credential_slaves_slave_permissions
+ = element permissions
+     {
+       ""
      }
 
 # All targets using this credential.
@@ -15026,7 +15044,7 @@ get_slaves_response_slave
        & get_slaves_response_slave_user_tags
        & get_slaves_response_slave_host
        & get_slaves_response_slave_port
-       & get_slaves_response_slave_login
+       & get_slaves_response_slave_credential
        & get_slaves_response_slave_tasks?
      }
 
@@ -15165,11 +15183,35 @@ get_slaves_response_slave_port
        text
      }
 
-# Login name on the slave Manager.
-get_slaves_response_slave_login
+# Credential for login on the slave Manager.
+get_slaves_response_slave_credential
+ = element credential
+     {
+       attribute id { uuid }
+       & get_slaves_response_slave_credential_name
+       & get_slaves_response_slave_credential_login
+       & get_slaves_response_slave_credential_trash
+     }
+
+# Name of the credential.
+get_slaves_response_slave_credential_name
+ = element name
+     {
+       text
+     }
+
+# Username from credential used to login.
+get_slaves_response_slave_credential_login
  = element login
      {
        text
+     }
+
+# Whether the credential is in the trashcan.
+get_slaves_response_slave_credential_trash
+ = element trash
+     {
+       boolean
      }
 
 get_slaves_response_slave_tasks

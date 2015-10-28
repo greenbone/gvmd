@@ -9738,14 +9738,13 @@ create_schedule_timezone
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>login</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Login name on the slave Manager.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>password</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">Password for login on the slave Manager.</div>
-<ul style="list-style: none"></ul>
+              &lt;<b>credential</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Login credential for the slave Manager.</div>
+<ul style="list-style: none"><li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the credential.
+          </li></ul>
 </li>
 </ul>
 </li>
@@ -9776,8 +9775,7 @@ create_schedule_timezone
        &amp; create_slave_copy?
        &amp; create_slave_host
        &amp; create_slave_port
-       &amp; create_slave_login
-       &amp; create_slave_password?
+       &amp; create_slave_credential
      }
 
 create_slave_name
@@ -9810,16 +9808,10 @@ create_slave_port
        text
      }
 
-create_slave_login
- = element login
+create_slave_credential
+ = element credential
      {
-       text
-     }
-
-create_slave_password
- = element password
-     {
-       text
+       attribute id { uuid }
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>create_slave_response
@@ -9837,8 +9829,7 @@ create_slave_password
    &lt;name&gt;Bangkok&lt;/name&gt;
    &lt;comment&gt;Manager in Bangkok department.&lt;/comment&gt;
    &lt;host&gt;192.0.32.10&lt;/host&gt;
-   &lt;login&gt;sally&lt;/login&gt;
-   &lt;password&gt;secret&lt;/password&gt;
+   &lt;credential id="892a90ec-cb72-4cd7-9c85-ccef955a2316"/&gt;
  &lt;/create_slave&gt;
 </pre></div>
 <i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_slave_response status="201"
@@ -16758,6 +16749,11 @@ get_assets_response_asset_count_page
           ID of filter to use to filter query.
           </li>
 <li>
+          @<b>slaves</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to include a list of slaves using the credentials.
+          </li>
+<li>
           @<b>trash</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to get the trashcan credentials instead.
@@ -16889,8 +16885,31 @@ get_assets_response_asset_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>slaves</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">All slaves using this credential.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>slave</b>&gt;
+              *<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the slave.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the slave.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>targets</b>&gt;
-              <div style="margin-left: 15px; display: inline;">All targets using this credential.</div>
+              ?<div style="margin-left: 15px; display: inline;">All targets using this credential.</div>
 <ul style="list-style: none"><li>
               &lt;<b>target</b>&gt;
               *<ul style="list-style: none">
@@ -17023,6 +17042,7 @@ get_assets_response_asset_count_page
        attribute credential_id { uuid }?
        &amp; attribute filter { uuid }?
        &amp; attribute filt_id { uuid }?
+       &amp; attribute slaves { boolean }?
        &amp; attribute trash { boolean }?
        &amp; attribute targets { boolean }?
        &amp; attribute format { xsd:token { pattern = "key|rpm|deb|exe" } }?
@@ -17055,7 +17075,8 @@ get_credentials_response_credential
        &amp; get_credentials_response_credential_permissions
        &amp; get_credentials_response_credential_user_tags
        &amp; get_credentials_response_credential_type
-       &amp; get_credentials_response_credential_targets
+       &amp; get_credentials_response_credential_slaves?
+       &amp; get_credentials_response_credential_targets?
        &amp; ( get_credentials_response_credential_public_key
            | get_credentials_response_credential_package )
      }
@@ -17182,6 +17203,32 @@ get_credentials_response_credential_full_type
  = element full_type
      {
        text
+     }
+
+get_credentials_response_credential_slaves
+ = element slaves
+     {
+       get_credentials_response_credential_slaves_slave*
+     }
+
+get_credentials_response_credential_slaves_slave
+ = element slave
+     {
+       attribute id { uuid }
+       &amp; get_credentials_response_credential_slaves_slave_name
+       &amp; get_credentials_response_credential_slaves_slave_permissions?
+     }
+
+get_credentials_response_credential_slaves_slave_name
+ = element name
+     {
+       name
+     }
+
+get_credentials_response_credential_slaves_slave_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_credentials_response_credential_targets
@@ -27259,9 +27306,29 @@ get_settings_response_setting_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>login</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Login name on the slave Manager.</div>
+              &lt;<b>credential</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Credential for login on the slave Manager.</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the credential.</div>
 <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>login</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Username from credential used to login.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>trash</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the credential is in the trashcan.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
 </li>
 <li>
               &lt;<b>tasks</b>&gt;
@@ -27413,7 +27480,7 @@ get_slaves_response_slave
        &amp; get_slaves_response_slave_user_tags
        &amp; get_slaves_response_slave_host
        &amp; get_slaves_response_slave_port
-       &amp; get_slaves_response_slave_login
+       &amp; get_slaves_response_slave_credential
        &amp; get_slaves_response_slave_tasks?
      }
 
@@ -27535,10 +27602,31 @@ get_slaves_response_slave_port
        text
      }
 
-get_slaves_response_slave_login
+get_slaves_response_slave_credential
+ = element credential
+     {
+       attribute id { uuid }
+       &amp; get_slaves_response_slave_credential_name
+       &amp; get_slaves_response_slave_credential_login
+       &amp; get_slaves_response_slave_credential_trash
+     }
+
+get_slaves_response_slave_credential_name
+ = element name
+     {
+       text
+     }
+
+get_slaves_response_slave_credential_login
  = element login
      {
        text
+     }
+
+get_slaves_response_slave_credential_trash
+ = element trash
+     {
+       boolean
      }
 
 get_slaves_response_slave_tasks
@@ -27685,7 +27773,11 @@ get_slaves_response_slave_count_page
        &lt;count&gt;0&lt;/count&gt;
      &lt;/user_tags&gt;
      &lt;host&gt;192.0.32.10&lt;/host&gt;
-     &lt;login&gt;sally&lt;/login&gt;
+     &lt;credential id="892a90ec-cb72-4cd7-9c85-ccef955a2316"&gt;
+       &lt;name&gt;Sally on Bangkok Manager&lt;/name&gt;
+       &lt;login&gt;sally&lt;/login&gt;
+       &lt;trash&gt;0&lt;/trash&gt;
+     &lt;/credential&gt;
      &lt;tasks&gt;
        &lt;task id="c33864a9-d3fd-44b3-8717-972bfb01dfc0"&gt;
          &lt;name&gt;Debian desktops&lt;/name&gt;
@@ -34931,14 +35023,13 @@ modify_setting_value
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>login</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Login name on the slave Manager.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>password</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Password for login on the slave Manager.</div>
-<ul style="list-style: none"></ul>
+              &lt;<b>credential</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Login credential for the slave Manager.</div>
+<ul style="list-style: none"><li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the credential.
+          </li></ul>
 </li>
 </ul>
 </li>
@@ -34965,8 +35056,7 @@ modify_setting_value
        &amp; modify_slave_comment?
        &amp; modify_slave_host
        &amp; modify_slave_port
-       &amp; modify_slave_login
-       &amp; modify_slave_password
+       &amp; modify_slave_credential
      }
 
 modify_slave_name
@@ -34993,16 +35083,10 @@ modify_slave_port
        text
      }
 
-modify_slave_login
- = element login
+modify_slave_credential
+ = element credential
      {
-       text
-     }
-
-modify_slave_password
- = element password
-     {
-       text
+       attribute id { uuid }
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>modify_slave_response
@@ -35020,8 +35104,7 @@ modify_slave_password
    &lt;comment&gt;Bangkok Manager 1&lt;/comment&gt;
    &lt;host&gt;bk1.example.com&lt;/host&gt;
    &lt;port&gt;9390&lt;/port&gt;
-   &lt;login&gt;user1&lt;/login&gt;
-   &lt;password&gt;pass&lt;/password&gt;
+   &lt;credential id="892a90ec-cb72-4cd7-9c85-ccef955a2316"/&gt;
  &lt;/modify_slave&gt;
 </pre></div>
 <i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_slave_response status="200"

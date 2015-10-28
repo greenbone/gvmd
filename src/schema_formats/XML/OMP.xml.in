@@ -4930,8 +4930,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>copy</e></o>
       <e>host</e>
       <e>port</e>
-      <e>login</e>
-      <o><e>password</e></o>
+      <e>credential</e>
     </pattern>
     <ele>
       <name>name</name>
@@ -4967,17 +4966,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
     </ele>
     <ele>
-      <name>login</name>
-      <summary>Login name on the slave Manager</summary>
+      <name>credential</name>
+      <summary>Login credential for the slave Manager</summary>
       <pattern>
-        text
-      </pattern>
-    </ele>
-    <ele>
-      <name>password</name>
-      <summary>Password for login on the slave Manager</summary>
-      <pattern>
-        text
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <summary>UUID of the credential</summary>
+          <required>1</required>
+        </attrib>
       </pattern>
     </ele>
     <response>
@@ -5006,8 +5003,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>Bangkok</name>
           <comment>Manager in Bangkok department.</comment>
           <host>192.0.32.10</host>
-          <login>sally</login>
-          <password>secret</password>
+          <credential id="892a90ec-cb72-4cd7-9c85-ccef955a2316"/>
         </create_slave>
       </request>
       <response>
@@ -9743,6 +9739,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
+        <name>slaves</name>
+        <summary>Whether to include a list of slaves using the credentials</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
         <name>trash</name>
         <summary>Whether to get the trashcan credentials instead</summary>
         <type>boolean</type>
@@ -9801,7 +9802,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>permissions</e>
           <e>user_tags</e>
           <e>type</e>
-          <e>targets</e>
+          <o><e>slaves</e></o>
+          <o><e>targets</e></o>
           <or>
             <e>public_key</e>
             <e>package</e>
@@ -9938,6 +9940,35 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>
             text
           </pattern>
+        </ele>
+        <ele>
+          <name>slaves</name>
+          <summary>All slaves using this credential</summary>
+          <pattern>
+            <any><e>slave</e></any>
+          </pattern>
+          <ele>
+            <name>slave</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <o><e>permissions</e></o>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the slave</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>permissions</name>
+              <summary>Permissions the user has on the slave</summary>
+              <pattern></pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>targets</name>
@@ -16765,7 +16796,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>user_tags</e>
           <e>host</e>
           <e>port</e>
-          <e>login</e>
+          <e>credential</e>
           <o><e>tasks</e></o>
         </pattern>
         <ele>
@@ -16891,11 +16922,39 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </pattern>
         </ele>
         <ele>
-          <name>login</name>
-          <summary>Login name on the slave Manager</summary>
+          <name>credential</name>
+          <summary>Credential for login on the slave Manager</summary>
           <pattern>
-            text
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
+            <e>login</e>
+            <e>trash</e>
           </pattern>
+          <ele>
+            <name>name</name>
+            <summary>Name of the credential</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>login</name>
+            <summary>Username from credential used to login</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>trash</name>
+            <summary>Whether the credential is in the trashcan</summary>
+            <pattern>
+              <t>boolean</t>
+            </pattern>
+          </ele>
         </ele>
         <ele>
           <name>tasks</name>
@@ -17063,7 +17122,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <count>0</count>
             </user_tags>
             <host>192.0.32.10</host>
-            <login>sally</login>
+            <credential id="892a90ec-cb72-4cd7-9c85-ccef955a2316">
+              <name>Sally on Bangkok Manager</name>
+              <login>sally</login>
+              <trash>0</trash>
+            </credential>
             <tasks>
               <task id="c33864a9-d3fd-44b3-8717-972bfb01dfc0">
                 <name>Debian desktops</name>
@@ -21834,8 +21897,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>comment</e></o>
       <e>host</e>
       <e>port</e>
-      <e>login</e>
-      <e>password</e>
+      <e>credential</e>
     </pattern>
     <ele>
       <name>name</name>
@@ -21864,17 +21926,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
     </ele>
     <ele>
-      <name>login</name>
-      <summary>Login name on the slave Manager</summary>
+      <name>credential</name>
+      <summary>Login credential for the slave Manager</summary>
       <pattern>
-        text
-      </pattern>
-    </ele>
-    <ele>
-      <name>password</name>
-      <summary>Password for login on the slave Manager</summary>
-      <pattern>
-        text
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <summary>UUID of the credential</summary>
+          <required>1</required>
+        </attrib>
       </pattern>
     </ele>
     <response>
@@ -21899,8 +21959,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <comment>Bangkok Manager 1</comment>
           <host>bk1.example.com</host>
           <port>9390</port>
-          <login>user1</login>
-          <password>pass</password>
+          <credential id="892a90ec-cb72-4cd7-9c85-ccef955a2316"/>
         </modify_slave>
       </request>
       <response>

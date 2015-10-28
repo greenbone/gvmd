@@ -1603,12 +1603,11 @@ create_schedule_data_reset (create_schedule_data_t *data)
  */
 typedef struct
 {
+  char *credential_id;           ///< UUID of Credential for login.
   char *comment;                 ///< Comment.
   char *host;                    ///< Host for new slave.
   char *copy;                    ///< UUID of slave to copy.
-  char *login;                   ///< Login on slave.
   char *name;                    ///< Name of new slave.
-  char *password;                ///< Password for login.
   char *port;                    ///< Port on host.
 } create_slave_data_t;
 
@@ -1620,12 +1619,11 @@ typedef struct
 static void
 create_slave_data_reset (create_slave_data_t *data)
 {
+  free (data->credential_id);
   free (data->comment);
   free (data->copy);
   free (data->host);
-  free (data->login);
   free (data->name);
-  free (data->password);
   free (data->port);
 
   memset (data, 0, sizeof (create_slave_data_t));
@@ -2527,6 +2525,7 @@ typedef struct
 {
   char *format;      ///< Format requested: "key", "deb", ....
   get_data_t get;    ///< Get Args.
+  int slaves;        ///< Boolean.  Whether to return slaves using credential.
   int targets;       ///< Boolean.  Whether to return targets using credential.
 } get_credentials_data_t;
 
@@ -3666,8 +3665,7 @@ typedef struct
   char *slave_id;                ///< Slave UUID.
   char *host;                    ///< Slave hostname.
   char *port;                    ///< Slave port.
-  char *login;                   ///< Slave login.
-  char *password;                ///< Slave password.
+  char *credential_id;           ///< Slave login credential.
 } modify_slave_data_t;
 
 /**
@@ -3683,8 +3681,7 @@ modify_slave_data_reset (modify_slave_data_t *data)
   free (data->slave_id);
   free (data->host);
   free (data->port);
-  free (data->login);
-  free (data->password);
+  free (data->credential_id);
 
   memset (data, 0, sizeof (modify_slave_data_t));
 }
@@ -5361,10 +5358,9 @@ typedef enum
   CLIENT_CREATE_SLAVE,
   CLIENT_CREATE_SLAVE_COMMENT,
   CLIENT_CREATE_SLAVE_COPY,
+  CLIENT_CREATE_SLAVE_CREDENTIAL,
   CLIENT_CREATE_SLAVE_HOST,
-  CLIENT_CREATE_SLAVE_LOGIN,
   CLIENT_CREATE_SLAVE_NAME,
-  CLIENT_CREATE_SLAVE_PASSWORD,
   CLIENT_CREATE_SLAVE_PORT,
   CLIENT_CREATE_TAG,
   CLIENT_CREATE_TAG_ACTIVE,
@@ -5609,10 +5605,9 @@ typedef enum
   CLIENT_MODIFY_SETTING_VALUE,
   CLIENT_MODIFY_SLAVE,
   CLIENT_MODIFY_SLAVE_COMMENT,
+  CLIENT_MODIFY_SLAVE_CREDENTIAL,
   CLIENT_MODIFY_SLAVE_HOST,
-  CLIENT_MODIFY_SLAVE_LOGIN,
   CLIENT_MODIFY_SLAVE_NAME,
-  CLIENT_MODIFY_SLAVE_PASSWORD,
   CLIENT_MODIFY_SLAVE_PORT,
   CLIENT_MODIFY_TAG,
   CLIENT_MODIFY_TAG_ACTIVE,
@@ -6773,7 +6768,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("CREATE_SLAVE", element_name) == 0)
           {
             openvas_append_string (&create_slave_data->comment, "");
-            openvas_append_string (&create_slave_data->password, "");
             set_client_state (CLIENT_CREATE_SLAVE);
           }
         else if (strcasecmp ("CREATE_SCHEDULE", element_name) == 0)
@@ -7205,11 +7199,19 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                                        "credential",
                                        attribute_names,
                                        attribute_values);
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "slaves", &attribute))
+              get_credentials_data->slaves = strcmp (attribute, "0");
+            else
+              get_credentials_data->slaves = 0;
+
             if (find_attribute (attribute_names, attribute_values,
                                 "targets", &attribute))
               get_credentials_data->targets = strcmp (attribute, "0");
             else
               get_credentials_data->targets = 0;
+
             append_attribute (attribute_names, attribute_values, "format",
                               &get_credentials_data->format);
             set_client_state (CLIENT_GET_CREDENTIALS);
@@ -8585,6 +8587,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             openvas_append_string (&modify_slave_data->comment, "");
             set_client_state (CLIENT_MODIFY_SLAVE_COMMENT);
           }
+        else if (strcasecmp ("CREDENTIAL", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &modify_slave_data->credential_id);
+            set_client_state (CLIENT_MODIFY_SLAVE_CREDENTIAL);
+          }
         else if (strcasecmp ("NAME", element_name) == 0)
           {
             openvas_append_string (&modify_slave_data->name, "");
@@ -8599,16 +8607,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             openvas_append_string (&modify_slave_data->port, "");
             set_client_state (CLIENT_MODIFY_SLAVE_PORT);
-          }
-        else if (strcasecmp ("LOGIN", element_name) == 0)
-          {
-            openvas_append_string (&modify_slave_data->login, "");
-            set_client_state (CLIENT_MODIFY_SLAVE_LOGIN);
-          }
-        else if (strcasecmp ("PASSWORD", element_name) == 0)
-          {
-            openvas_append_string (&modify_slave_data->password, "");
-            set_client_state (CLIENT_MODIFY_SLAVE_PASSWORD);
           }
         ELSE_ERROR ("modify_slave");
 
@@ -9883,14 +9881,16 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_SLAVE_COMMENT);
         else if (strcasecmp ("COPY", element_name) == 0)
           set_client_state (CLIENT_CREATE_SLAVE_COPY);
+        else if (strcasecmp ("CREDENTIAL", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_slave_data->credential_id);
+            set_client_state (CLIENT_CREATE_SLAVE_CREDENTIAL);
+          }
         else if (strcasecmp ("HOST", element_name) == 0)
           set_client_state (CLIENT_CREATE_SLAVE_HOST);
-        else if (strcasecmp ("LOGIN", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SLAVE_LOGIN);
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_SLAVE_NAME);
-        else if (strcasecmp ("PASSWORD", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SLAVE_PASSWORD);
         else if (strcasecmp ("PORT", element_name) == 0)
           set_client_state (CLIENT_CREATE_SLAVE_PORT);
         ELSE_ERROR ("create_slave");
@@ -14783,6 +14783,31 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     break;
                 }
 
+              if (get_credentials_data->slaves)
+                {
+                  iterator_t slaves;
+
+                  SENDF_TO_CLIENT_OR_FAIL ("<slaves>");
+                  init_credential_slave_iterator
+                   (&slaves, get_iterator_resource (&credentials), 0);
+                  while (next (&slaves))
+                    {
+                      SENDF_TO_CLIENT_OR_FAIL
+                       ("<slave id=\"%s\">"
+                        "<name>%s</name>",
+                        credential_slave_iterator_uuid (&slaves),
+                        credential_slave_iterator_name (&slaves));
+                      if (credential_slave_iterator_readable (&slaves))
+                        SEND_TO_CLIENT_OR_FAIL ("</slave>");
+                      else
+                        SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                                "</slave>");
+                    }
+                  cleanup_iterator (&slaves);
+
+                  SEND_TO_CLIENT_OR_FAIL ("</slaves>");
+                }
+
               if (get_credentials_data->targets)
                 {
                   iterator_t targets;
@@ -17898,6 +17923,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SEND_GET_START ("slave");
               while (1)
                 {
+                  credential_t credential;
+                  const char *credential_name;
+                  gchar *credential_id;
 
                   ret = get_next (&slaves, &get_slaves_data->get, &first,
                                   &count, init_slave_iterator);
@@ -17911,12 +17939,28 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                   SEND_GET_COMMON (slave, &get_slaves_data->get, &slaves);
 
+                  credential = slave_iterator_credential (&slaves);
+                  credential_id = slave_iterator_credential_trash (&slaves)
+                                    ? trash_credential_uuid (credential)
+                                    : credential_uuid (credential);
+                  credential_name = slave_iterator_credential_name (&slaves);
+
                   SENDF_TO_CLIENT_OR_FAIL ("<host>%s</host>"
                                            "<port>%s</port>"
-                                           "<login>%s</login>",
+                                           "<credential id=\"%s\">"
+                                           "<name>%s</name>"
+                                           "<login>%s</login>"
+                                           "<trash>%d</trash>"
+                                           "</credential>",
                                            slave_iterator_host (&slaves),
                                            slave_iterator_port (&slaves),
-                                           slave_iterator_login (&slaves));
+                                           credential_id ? credential_id : "",
+                                           credential_name
+                                            ? credential_name : "",
+                                           slave_iterator_login (&slaves),
+                                           slave_iterator_credential_trash
+                                            (&slaves));
+
 
                   if (get_slaves_data->tasks)
                     {
@@ -23185,6 +23229,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   log_event_fail ("slave", "Slave", NULL, "created");
                   break;
               }
+          else if (create_slave_data->credential_id == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_slave",
+                                "CREATE_SLAVE requires a CREDENTIAL"
+                                " with ID attribute"));
           else if (create_slave_data->host == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_slave",
@@ -23193,15 +23242,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_slave",
                                 "CREATE_SLAVE HOST must be at"
-                                " least one character long"));
-          else if (create_slave_data->login == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_slave",
-                                "CREATE_SLAVE requires a LOGIN"));
-          else if (strlen (create_slave_data->login) == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_slave",
-                                "CREATE_SLAVE LOGIN must be at"
                                 " least one character long"));
           else if (create_slave_data->name == NULL)
             SEND_TO_CLIENT_OR_FAIL
@@ -23227,8 +23267,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                          create_slave_data->comment,
                          create_slave_data->host,
                          create_slave_data->port,
-                         create_slave_data->login,
-                         create_slave_data->password,
+                         create_slave_data->credential_id,
                          &new_slave))
             {
               case 0:
@@ -23244,6 +23283,25 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_slave",
                                     "Slave exists already"));
+                log_event_fail ("slave", "Slave", NULL, "created");
+                break;
+              case 2:
+                if (send_find_error_to_client ("create_slave", "credential",
+                                               modify_slave_data->credential_id,
+                                               omp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                log_event_fail ("slave", "Slave",
+                                modify_slave_data->slave_id,
+                                "modified");
+                break;
+              case 3:
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_ERROR_SYNTAX ("create_slave",
+                                    "Credential must be of type 'up'"
+                                    " (username + password)"));
                 log_event_fail ("slave", "Slave", NULL, "created");
                 break;
               case 99:
@@ -23266,10 +23324,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         }
       CLOSE (CLIENT_CREATE_SLAVE, COMMENT);
       CLOSE (CLIENT_CREATE_SLAVE, COPY);
+      CLOSE (CLIENT_CREATE_SLAVE, CREDENTIAL);
       CLOSE (CLIENT_CREATE_SLAVE, HOST);
-      CLOSE (CLIENT_CREATE_SLAVE, LOGIN);
       CLOSE (CLIENT_CREATE_SLAVE, NAME);
-      CLOSE (CLIENT_CREATE_SLAVE, PASSWORD);
       CLOSE (CLIENT_CREATE_SLAVE, PORT);
 
       case CLIENT_CREATE_TAG:
@@ -26238,8 +26295,7 @@ create_task_fail:
                     modify_slave_data->comment,
                     modify_slave_data->host,
                     modify_slave_data->port,
-                    modify_slave_data->login,
-                    modify_slave_data->password))
+                    modify_slave_data->credential_id))
             {
               case 0:
                 SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_slave"));
@@ -26274,6 +26330,33 @@ create_task_fail:
                                 modify_slave_data->slave_id,
                                 "modified");
                 break;
+              case 4:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_slave",
+                                    "MODIFY_SLAVE requires a credential_id"));
+                log_event_fail ("slave", "Slave",
+                                modify_slave_data->credential_id,
+                                "modified");
+                break;
+              case 5:
+                if (send_find_error_to_client ("modify_slave", "credential",
+                                               modify_slave_data->credential_id,
+                                               omp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                log_event_fail ("slave", "Slave",
+                                modify_slave_data->slave_id,
+                                "modified");
+                break;
+              case 6:
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_ERROR_SYNTAX ("modify_slave",
+                                     "Credential must be of type 'up'"
+                                     " (username + password)"));
+                log_event_fail ("slave", "Slave", NULL, "modified");
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_slave",
@@ -26296,11 +26379,10 @@ create_task_fail:
           break;
         }
       CLOSE (CLIENT_MODIFY_SLAVE, COMMENT);
+      CLOSE (CLIENT_MODIFY_SLAVE, CREDENTIAL);
       CLOSE (CLIENT_MODIFY_SLAVE, NAME);
       CLOSE (CLIENT_MODIFY_SLAVE, HOST);
       CLOSE (CLIENT_MODIFY_SLAVE, PORT);
-      CLOSE (CLIENT_MODIFY_SLAVE, LOGIN);
-      CLOSE (CLIENT_MODIFY_SLAVE, PASSWORD);
 
       case CLIENT_MODIFY_TAG:
         {
@@ -28977,14 +29059,8 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_SLAVE_COPY,
               &create_slave_data->copy);
 
-      APPEND (CLIENT_CREATE_SLAVE_LOGIN,
-              &create_slave_data->login);
-
       APPEND (CLIENT_CREATE_SLAVE_NAME,
               &create_slave_data->name);
-
-      APPEND (CLIENT_CREATE_SLAVE_PASSWORD,
-              &create_slave_data->password);
 
       APPEND (CLIENT_CREATE_SLAVE_PORT,
               &create_slave_data->port);
@@ -29329,12 +29405,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_SLAVE_PORT,
               &modify_slave_data->port);
-
-      APPEND (CLIENT_MODIFY_SLAVE_LOGIN,
-              &modify_slave_data->login);
-
-      APPEND (CLIENT_MODIFY_SLAVE_PASSWORD,
-              &modify_slave_data->password);
 
 
       APPEND (CLIENT_MODIFY_TAG_ACTIVE,

@@ -813,6 +813,51 @@ sql_common_cve (sqlite3_context *context, int argc, sqlite3_value** argv)
 }
 
 /**
+ * @brief Get a value from the data of a credential.
+ *
+ * This is a callback for a scalar SQL function of one argument.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_credential_value (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  credential_t credential;
+  int trash;
+  const unsigned char* type;
+  gchar *quoted_type, *result;
+
+  assert (argc == 3);
+
+  credential = sqlite3_value_int64 (argv[0]);
+  trash = sqlite3_value_int (argv[1]);
+  type = sqlite3_value_text (argv[2]);
+
+  quoted_type = sql_quote ((const char*) type);
+  if (trash)
+    {
+      result = sql_string ("SELECT value FROM credentials_trash_data"
+                           " WHERE credential = %llu AND type = '%s';",
+                           credential, quoted_type);
+    }
+  else
+    {
+      result = sql_string ("SELECT value FROM credentials_data"
+                           " WHERE credential = %llu AND type = '%s';",
+                           credential, quoted_type);
+    }
+
+  if (result)
+    sqlite3_result_text (context, result, -1, SQLITE_TRANSIENT);
+  else
+    sqlite3_result_null (context);
+
+  g_free (result);
+}
+
+/**
  * @brief Get the offset from UTC of the current time for a timezone.
  *
  * This is a callback for a scalar SQL function of one argument.
@@ -2076,6 +2121,20 @@ manage_create_sql_functions ()
     }
 
   if (sqlite3_create_function (task_db,
+                               "credential_value",
+                               3,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_credential_value,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create credential_value", __FUNCTION__);
+      return -1;
+    }
+
+  if (sqlite3_create_function (task_db,
                                "current_offset",
                                1,               /* Number of args. */
                                SQLITE_UTF8,
@@ -2690,10 +2749,11 @@ create_tables ()
        "  initial_offset, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS slaves"
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, host,"
-       "  port, login, password, creation_time, modification_time);");
+       "  port, creation_time, modification_time, credential INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS slaves_trash"
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, host,"
-       "  port, login, password, creation_time, modification_time);");
+       "  port, creation_time, modification_time, credential INTEGER,"
+       "  credential_location INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS settings"
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, value);");
   sql ("CREATE TABLE IF NOT EXISTS tags"

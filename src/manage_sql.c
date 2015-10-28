@@ -36340,10 +36340,13 @@ delete_credential (const char *credential_id, int ultimate)
           return 0;
         }
 
-      /* Check if it's in use by a target in the trashcan. */
+      /* Check if it's in use by a target or slave in the trashcan. */
       if (sql_int ("SELECT count(*) FROM targets_trash_login_data"
                    " WHERE credential = %llu AND credential_location = %s;",
-                   credential, G_STRINGIFY (LOCATION_TRASH)))
+                   credential, G_STRINGIFY (LOCATION_TRASH))
+          || sql_int ("SELECT count(*) FROM slaves_trash"
+                      " WHERE credential = %llu AND credential_location = %s;",
+                      credential, G_STRINGIFY (LOCATION_TRASH)))
         {
           sql ("ROLLBACK;");
           return 1;
@@ -36361,10 +36364,13 @@ delete_credential (const char *credential_id, int ultimate)
       return 0;
     }
 
-
+  /* Check if it's in use by a target or slave */
   if (sql_int ("SELECT count(*) FROM targets_login_data"
                " WHERE credential = %llu;",
-               credential))
+               credential)
+      || sql_int ("SELECT count(*) FROM slaves"
+                  " WHERE credential = %llu;",
+                  credential))
     {
       sql ("ROLLBACK;");
       return 1;
@@ -36390,10 +36396,17 @@ delete_credential (const char *credential_id, int ultimate)
            " WHERE credential = %llu",
            trash_credential, credential);
 
-      /* Update the credential references in any trashcan targets.  This
-       * situation is possible if the user restores the credential when the
-       * target is in the trashcan. */
+      /* Update the credential references in any trashcan targets or slaves.
+       * This situation is possible if the user deletes the credential when
+       * the target or slave is in the trashcan. */
       sql ("UPDATE targets_trash_login_data"
+           " SET credential_location = " G_STRINGIFY (LOCATION_TRASH) ","
+           "     credential = %llu"
+           " WHERE credential = %llu"
+           "   AND credential_location = " G_STRINGIFY (LOCATION_TABLE) ";",
+           trash_credential,
+           credential);
+      sql ("UPDATE slaves_trash"
            " SET credential_location = " G_STRINGIFY (LOCATION_TRASH) ","
            "     credential = %llu"
            " WHERE credential = %llu"
@@ -36504,9 +36517,12 @@ credential_count (const get_data_t *get)
 int
 credential_in_use (credential_t credential)
 {
-  return !!sql_int ("SELECT count (*) FROM targets_login_data"
-                    " WHERE credential = %llu;",
-                    credential);
+  return !!(sql_int ("SELECT count (*) FROM targets_login_data"
+                     " WHERE credential = %llu;",
+                     credential)
+            || sql_int ("SELECT count (*) FROM slaves"
+                        " WHERE credential = %llu;",
+                        credential));
 }
 
 /**
@@ -36519,11 +36535,16 @@ credential_in_use (credential_t credential)
 int
 trash_credential_in_use (credential_t credential)
 {
-  return !!sql_int ("SELECT count (*) FROM targets_trash_login_data"
-                    " WHERE credential = %llu"
-                    " AND credential_location"
-                    "      = " G_STRINGIFY (LOCATION_TRASH) ";",
-                    credential);
+  return !!(sql_int ("SELECT count (*) FROM targets_trash_login_data"
+                     " WHERE credential = %llu"
+                     " AND credential_location"
+                     "      = " G_STRINGIFY (LOCATION_TRASH) ";",
+                     credential)
+            || sql_int ("SELECT count (*) FROM slaves_trash"
+                        " WHERE credential = %llu"
+                        " AND credential_location"
+                        "      = " G_STRINGIFY (LOCATION_TRASH) ";",
+                        credential));
 }
 
 /**
@@ -37039,6 +37060,79 @@ DEF_ACCESS (credential_target_iterator_name, 1);
  */
 int
 credential_target_iterator_readable (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, 2);
+}
+
+/**
+ * @brief Initialise a Credential slave iterator.
+ *
+ * Iterates over all slaves that use the credential.
+ *
+ * @param[in]  iterator        Iterator.
+ * @param[in]  credential      Name of credential.
+ * @param[in]  ascending       Whether to sort ascending or descending.
+ */
+void
+init_credential_slave_iterator (iterator_t* iterator,
+                                credential_t credential,
+                                int ascending)
+{
+  gchar *available;
+  get_data_t get;
+  array_t *permissions;
+
+  assert (credential);
+
+  get.trash = 0;
+  permissions = make_array ();
+  array_add (permissions, g_strdup ("get_slaves"));
+  available = acl_where_owned ("slave", &get, 1, "any", 0, permissions);
+  array_free (permissions);
+
+  init_iterator (iterator,
+                 "SELECT uuid, name, %s FROM slaves"
+                 " WHERE id IN"
+                 "   (SELECT id FROM slaves"
+                 "    WHERE credential = %llu)"
+                 " ORDER BY name %s;",
+                 available,
+                 credential,
+                 ascending ? "ASC" : "DESC");
+
+  g_free (available);
+}
+
+/**
+ * @brief Get the uuid from an Credential Slave iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Uuid, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (credential_slave_iterator_uuid, 0);
+
+/**
+ * @brief Get the name from an Credential Slave iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (credential_slave_iterator_name, 1);
+
+/**
+ * @brief Get the read permission status from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if may read, else 0.
+ */
+int
+credential_slave_iterator_readable (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return iterator_int (iterator, 2);
@@ -45353,25 +45447,23 @@ find_slave_with_permission (const char* uuid, slave_t* slave,
  * @param[in]   comment         Comment on slave.
  * @param[in]   host            Host of slave.
  * @param[in]   port            Port on host.
- * @param[in]   login           Host login name.
- * @param[in]   password        Password for \p login.
+ * @param[in]   credential_id   UUID of credential used for login.
  * @param[out]  slave           NULL, or address for created slave.
  *
- * @return 0 success, 1 slave exists already, 99 permission denied, -1 error.
+ * @return 0 success, 1 slave exists already, 2 credential not found,
+ *         3 credentials is wrong type, 99 permission denied, -1 error.
  */
 int
 create_slave (const char* name, const char* comment, const char* host,
-              const char* port, const char* login, const char* password,
-              slave_t* slave)
+              const char* port, const char* credential_id, slave_t* slave)
 {
-  gchar *quoted_name, *quoted_host, *quoted_port, *quoted_login;
-  gchar *quoted_password;
+  gchar *quoted_name, *quoted_host, *quoted_port;
+  credential_t credential;
 
   assert (name);
   assert (host);
   assert (port);
-  assert (login);
-  assert (password);
+  assert (credential_id);
   assert (current_credentials.uuid);
 
   sql_begin_immediate ();
@@ -45390,23 +45482,42 @@ create_slave (const char* name, const char* comment, const char* host,
       return 1;
     }
 
+  credential = 0;
+  if (find_credential_with_permission (credential_id, &credential,
+                                       "get_credentials"))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (credential == 0)
+    {
+      sql ("ROLLBACK;");
+      return 2;
+    }
+
+  if (sql_int ("SELECT type != 'up' FROM credentials WHERE id = %llu",
+               credential))
+    {
+      sql ("ROLLBACK;");
+      return 3;
+    }
+
   quoted_name = sql_quote (name);
   quoted_host = sql_quote (host);
   quoted_port = sql_quote (port);
-  quoted_login = sql_quote (login);
-  quoted_password = sql_quote (password);
 
   if (comment)
     {
       gchar *quoted_comment = sql_quote (comment);
       sql ("INSERT INTO slaves"
-           " (uuid, name, owner, comment, host, port, login, password,"
+           " (uuid, name, owner, comment, host, port, credential,"
            "  creation_time, modification_time)"
            " VALUES (make_uuid (), '%s',"
            " (SELECT id FROM users WHERE users.uuid = '%s'),"
-           " '%s', '%s', '%s', '%s', '%s', m_now (), m_now ());",
+           " '%s', '%s', '%s', %llu, m_now (), m_now ());",
            quoted_name, current_credentials.uuid, quoted_comment, quoted_host,
-           quoted_port, quoted_login, quoted_password);
+           quoted_port, credential);
       g_free (quoted_comment);
     }
   else
@@ -45415,9 +45526,9 @@ create_slave (const char* name, const char* comment, const char* host,
          " creation_time, modification_time)"
          " VALUES (make_uuid (), '%s',"
          " (SELECT id FROM users WHERE users.uuid = '%s'),"
-         " '%s', '', '%s', '%s', '%s', m_now (), m_now ());",
+         " '%s', '', '%s', %llu, m_now (), m_now ());",
          quoted_name, current_credentials.uuid, quoted_host, quoted_port,
-         quoted_login, quoted_password);
+         credential);
 
   if (slave)
     *slave = sql_last_insert_id ();
@@ -45425,8 +45536,6 @@ create_slave (const char* name, const char* comment, const char* host,
   g_free (quoted_name);
   g_free (quoted_host);
   g_free (quoted_port);
-  g_free (quoted_login);
-  g_free (quoted_password);
 
   sql ("COMMIT;");
 
@@ -45450,7 +45559,7 @@ copy_slave (const char* name, const char* comment, const char *slave_id,
              slave_t* new_slave)
 {
   return copy_resource ("slave", name, comment, slave_id,
-                        "host, port, login, password",
+                        "host, port, credential",
                         1, new_slave);
 }
 
@@ -45462,23 +45571,26 @@ copy_slave (const char* name, const char* comment, const char *slave_id,
  * @param[in]   comment         Comment on slave.
  * @param[in]   host            Host of slave.
  * @param[in]   port            Port on host.
- * @param[in]   login           Host login name.
- * @param[in]   password        Password for \p login.
+ * @param[in]   credential_id   UUID of credential for login.
  *
  * @return 0 success, 1 failed to find slave, 2 slave with new name exists,
- *         3 slave_id required, 99 permission denied, -1 internal error.
+ *         3 slave_id required, 4 credential_id required,
+ *         5 credential not found, 6 credential is of wrong type,
+ *         99 permission denied, -1 internal error.
  */
 int
 modify_slave (const char *slave_id, const char *name, const char *comment,
-              const char *host, const char *port, const char *login,
-              const char *password)
+              const char *host, const char *port, const char* credential_id)
 {
   gchar *quoted_name, *quoted_comment, *quoted_host, *quoted_port;
-  gchar *quoted_login, *quoted_password;
   slave_t slave;
+  credential_t credential;
 
   if (slave_id == NULL)
     return 3;
+
+  if (credential_id == NULL)
+    return 4;
 
   sql_begin_immediate ();
 
@@ -45503,6 +45615,27 @@ modify_slave (const char *slave_id, const char *name, const char *comment,
       return 1;
     }
 
+  credential = 0;
+  if (find_credential_with_permission (credential_id, &credential,
+                                       "get_credentials"))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (credential == 0)
+    {
+      sql ("ROLLBACK;");
+      return 5;
+    }
+
+  if (sql_int ("SELECT type != 'up' FROM credentials WHERE id = %llu",
+               credential))
+    {
+      sql ("ROLLBACK;");
+      return 6;
+    }
+
   /* Check whether a slave with the same name exists already. */
   if (name)
     {
@@ -45517,32 +45650,26 @@ modify_slave (const char *slave_id, const char *name, const char *comment,
   quoted_comment = sql_quote (comment ? comment : "");
   quoted_host = sql_quote (host ? host : "");
   quoted_port = sql_quote (port ? port : "");
-  quoted_login = sql_quote (login ? login : "");
-  quoted_password = sql_quote (password ? password : "");
 
   sql ("UPDATE slaves SET"
        " name = '%s',"
        " comment = '%s',"
        " host = '%s',"
        " port = '%s',"
-       " login = '%s',"
-       " password = '%s',"
+       " credential = %llu,"
        " modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_name,
        quoted_comment,
        quoted_host,
        quoted_port,
-       quoted_login,
-       quoted_password,
+       credential,
        slave);
 
   g_free (quoted_comment);
   g_free (quoted_name);
   g_free (quoted_host);
   g_free (quoted_port);
-  g_free (quoted_login);
-  g_free (quoted_password);
 
   sql ("COMMIT;");
 
@@ -45627,10 +45754,12 @@ delete_slave (const char *slave_id, int ultimate)
         }
 
       sql ("INSERT INTO slaves_trash"
-           "  (uuid, owner, name, comment, host, port, login, password,"
+           "  (uuid, owner, name, comment, host, port, credential,"
+           "   credential_location,"
            "   creation_time, modification_time)"
            " SELECT"
-           "  uuid, owner, name, comment, host, port, login, password,"
+           "  uuid, owner, name, comment, host, port, credential,"
+           "  " G_STRINGIFY (LOCATION_TABLE) ","
            "  creation_time, modification_time"
            " FROM slaves WHERE id = %llu;",
            slave);
@@ -45725,7 +45854,8 @@ trash_slave_readable (slave_t slave)
  * @brief Filter columns for slave iterator.
  */
 #define SLAVE_ITERATOR_FILTER_COLUMNS                                         \
- { GET_ITERATOR_FILTER_COLUMNS, "host", "port", "login", NULL }
+ { GET_ITERATOR_FILTER_COLUMNS, "host", "port", "login", "credential",        \
+   NULL }
 
 /**
  * @brief Slave iterator columns.
@@ -45735,7 +45865,13 @@ trash_slave_readable (slave_t slave)
    GET_ITERATOR_COLUMNS (slaves),                                       \
    { "host", NULL },                                                    \
    { "port", NULL },                                                    \
-   { "login", NULL },                                                   \
+   { "credential_value (credential, 0, 'username')",                    \
+     "login" },                                                         \
+   {                                                                    \
+     "(SELECT name FROM credentials WHERE id = credential)",            \
+     "credential"                                                       \
+   },                                                                   \
+   { "credential", NULL },                                              \
    { NULL, NULL }                                                       \
  }
 
@@ -45747,7 +45883,18 @@ trash_slave_readable (slave_t slave)
    GET_ITERATOR_COLUMNS (slaves_trash),                                 \
    { "host", NULL },                                                    \
    { "port", NULL },                                                    \
-   { "login", NULL },                                                   \
+   { "credential_value (credential, credential_location, 'username')",  \
+     "login" },                                                         \
+   {                                                                    \
+     "(SELECT CASE"                                                     \
+     " WHEN credential_location = " G_STRINGIFY (LOCATION_TABLE)        \
+     " THEN (SELECT name FROM credentials WHERE id = credential)"       \
+     " ELSE (SELECT name FROM credentials_trash WHERE id = credential)" \
+     " END)",                                                           \
+     "credential"                                                       \
+   },                                                                   \
+   { "credential", NULL },                                              \
+   { "credential_location", NULL },                                     \
    { NULL, NULL }                                                       \
  }
 
@@ -45823,6 +45970,47 @@ DEF_ACCESS (slave_iterator_port, GET_ITERATOR_COLUMN_COUNT + 1);
  * @return Login of the slave or NULL if iteration is complete.
  */
 DEF_ACCESS (slave_iterator_login, GET_ITERATOR_COLUMN_COUNT + 2);
+
+/**
+ * @brief Get the credential name of the slave from a slave iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Credential name of the slave or NULL if iteration is complete.
+ */
+DEF_ACCESS (slave_iterator_credential_name, GET_ITERATOR_COLUMN_COUNT + 3);
+
+/**
+ * @brief Get the credential of the slave from a slave iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Credential of the slave or 0 if iteration is complete.
+ */
+credential_t
+slave_iterator_credential (iterator_t *iterator)
+{
+  if (iterator->done)
+    return 0;
+  else
+    return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
+}
+
+/**
+ * @brief Get the credential location of the slave from a slave iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Location of the slave or NULL if iteration is complete.
+ */
+int
+slave_iterator_credential_trash (iterator_t *iterator)
+{
+  if (iterator->done)
+    return 0;
+  else
+    return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
+}
 
 /**
  * @brief Return the UUID of a slave.
@@ -45904,7 +46092,11 @@ slave_host (slave_t slave)
 char*
 slave_login (slave_t slave)
 {
-  return sql_string ("SELECT login FROM slaves WHERE id = %llu;",
+  return sql_string ("SELECT credentials_data.value"
+                     " FROM slaves, credentials_data"
+                     " WHERE slaves.id = %llu"
+                     "   AND credentials_data.credential = slaves.credential"
+                     "   AND credentials_data.type = 'username';",
                      slave);
 }
 
@@ -45918,8 +46110,36 @@ slave_login (slave_t slave)
 char*
 slave_password (slave_t slave)
 {
-  return sql_string ("SELECT password FROM slaves WHERE id = %llu;",
-                     slave);
+  gchar *password;
+
+  password = sql_string ("SELECT credentials_data.value"
+                         " FROM slaves, credentials_data"
+                         " WHERE slaves.id = %llu"
+                         "   AND credentials_data.credential"
+                         "         = slaves.credential"
+                         "   AND credentials_data.type = 'password';",
+                         slave);
+
+  if (password == NULL)
+    {
+      gchar *secret;
+      lsc_crypt_ctx_t crypt_ctx;
+      crypt_ctx = lsc_crypt_new ();
+
+      secret = sql_string ("SELECT credentials_data.value"
+                           " FROM slaves, credentials_data"
+                           " WHERE slaves.id = %llu"
+                           "   AND credentials_data.credential"
+                           "         = slaves.credential"
+                           "   AND credentials_data.type = 'secret';",
+                           slave);
+
+      password = g_strdup (lsc_crypt_get_password (crypt_ctx, secret));
+      lsc_crypt_release (crypt_ctx);
+      g_free (secret);
+    }
+
+  return password;
 }
 
 /**
@@ -51555,6 +51775,13 @@ manage_restore (const char *id)
            " AND credential_location = " G_STRINGIFY (LOCATION_TRASH) ";",
            credential,
            resource);
+      sql ("UPDATE slaves_trash"
+           " SET credential_location = " G_STRINGIFY (LOCATION_TABLE) ","
+           "     credential = %llu"
+           " WHERE credential = %llu"
+           " AND credential_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+           credential,
+           resource);
 
       permissions_set_locations ("credential", resource, credential,
                                  LOCATION_TABLE);
@@ -52034,11 +52261,20 @@ manage_restore (const char *id)
           return 3;
         }
 
+      /* Check if it uses a credential in the trashcan. */
+      if (sql_int ("SELECT credential_location = " G_STRINGIFY (LOCATION_TRASH)
+                   " FROM slaves_trash WHERE id = %llu;",
+                   resource))
+        {
+          sql ("ROLLBACK;");
+          return 1;
+        }
+
       sql ("INSERT INTO slaves"
-           "  (uuid, owner, name, comment, host, port, login, password,"
+           "  (uuid, owner, name, comment, host, port, credential,"
            "   creation_time, modification_time)"
            " SELECT"
-           "  uuid, owner, name, comment, host, port, login, password,"
+           "  uuid, owner, name, comment, host, port, credential,"
            "  creation_time, modification_time"
            " FROM slaves_trash WHERE id = %llu;",
            resource);

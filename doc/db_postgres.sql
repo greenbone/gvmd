@@ -854,8 +854,7 @@ CREATE TABLE slaves
   comment text,
   host text,
   port text,
-  login text,
-  password text,
+  credential integer REFERENCES credentials (id) ON DELETE RESTRICT,
   creation_time date,
   modification_time date);
 
@@ -867,8 +866,8 @@ CREATE TABLE slaves_trash
   comment text,
   host text,
   port text,
-  login text,
-  password text,
+  credential integer,
+  credential_location integer,
   creation_time date,
   modification_time date);
 

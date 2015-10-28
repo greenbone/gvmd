@@ -1361,6 +1361,31 @@ manage_create_sql_functions ()
   if (sql_int ("SELECT (EXISTS (SELECT * FROM information_schema.tables"
                "               WHERE table_catalog = '%s'"
                "               AND table_schema = 'public'"
+               "               AND table_name = 'credentials_data')"
+               "   AND EXISTS (SELECT * FROM information_schema.tables"
+               "               WHERE table_catalog = '%s'"
+               "               AND table_schema = 'public'"
+               "               AND table_name = 'credentials_trash_data'))"
+               " ::integer;",
+               sql_database (), sql_database ()))
+    {
+      sql ("CREATE OR REPLACE FUNCTION credential_value (integer, integer, text)"
+           " RETURNS text AS $$"
+           "  SELECT CASE"
+           "         WHEN $2 != 0"
+           "         THEN"
+           "           (SELECT value FROM credentials_trash_data"
+           "            WHERE credential = $1 AND type = $3)"
+           "         ELSE"
+           "           (SELECT value FROM credentials_data"
+           "            WHERE credential = $1 AND type = $3)"
+           "         END;"
+           "$$ LANGUAGE SQL;");
+    }
+
+  if (sql_int ("SELECT (EXISTS (SELECT * FROM information_schema.tables"
+               "               WHERE table_catalog = '%s'"
+               "               AND table_schema = 'public'"
                "               AND table_name = 'targets_login_data')"
                "   AND EXISTS (SELECT * FROM information_schema.tables"
                "               WHERE table_catalog = '%s'"
@@ -1902,8 +1927,7 @@ create_tables ()
        "  comment text,"
        "  host text,"
        "  port text,"
-       "  login text,"
-       "  password text,"
+       "  credential integer REFERENCES credentials (id),"
        "  creation_time integer,"
        "  modification_time integer);");
 
@@ -1915,8 +1939,8 @@ create_tables ()
        "  comment text,"
        "  host text,"
        "  port text,"
-       "  login text,"
-       "  password text,"
+       "  credential integer,"
+       "  credential_location integer,"
        "  creation_time integer,"
        "  modification_time integer);");
 

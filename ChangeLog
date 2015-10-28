@@ -1,3 +1,71 @@
+2015-10-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Replace the login and password fields in slaves with credentials.
+	Hence increase database version to 157.  Add database migration from
+	version 156 to 157.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 157.
+
+	* src/manage_migrators.c (migrate_156_to_157): New function.
+	(database_migrators): Add migrate_156_to_157.
+
+	* src/manage_pg.c (manage_create_sql_functions): Add new function
+	credential_value.
+	(create_tables): Replace login and password columns with credential
+	in slaves table and with credential and credential_location in
+	slaves_trash.
+
+	* src/manage_sql.c (delete_credential): Add checks if credential is in
+	use by a slave and update slaves in trashcan.
+	(credential_in_use, trash_credential_in_use): Add checks if credential
+	is in use by a slave.
+	(init_credential_slave_iterator, credential_slave_iterator_uuid)
+	(credential_slave_iterator_name, credential_slave_iterator_readable):
+	New functions.
+	(create_slave, copy_slave, modify_slave, delete_slave): Replace login
+	and password with credential_id.
+	(SLAVE_ITERATOR_FILTER_COLUMNS, SLAVE_ITERATOR_COLUMNS)
+	(SLAVE_ITERATOR_TRASH_COLUMNS): Get login from credential and add
+	credential columns.
+	(slave_iterator_credential_name, slave_iterator_credential)
+	(slave_iterator_credential_trash): New functions.
+	(slave_login, slave_password): Get data from credential.
+	(manage_restore): Update slaves in trash when restoring a credential.
+	Check if credential is still in trash before restoring a slave.
+	Replace login and password of slaves with credential.
+	
+	* src/manage_sqlite3.c (sql_credential_value): New function.
+	(manage_create_sql_functions): Add new function credential_value.
+	(create_tables): Replace login and password columns with credential
+	in slaves table and with credential and credential_location in
+	slaves_trash.
+
+	* src/omp.c (create_slave_data_t, create_slave_data_reset): Replace
+	login and password fields with credential_id.
+	(get_credentials_data_t): Add field "slaves".
+	(modify_slave_data_t, modify_slave_data_reset): Replace login and
+	password fields with credential_id.
+	(client_state_t, omp_xml_handle_start_element)
+	(omp_xml_handle_end_element, omp_xml_handle_text): Replace login and
+	password elements in create_slave, get_slaves and modify_slave
+	and modify_slave elements with a credential one.  Add option to
+	get_credentials for listing slaves using a credential.
+
+	* src/manage.h (init_credential_slave_iterator)
+	(credential_slave_iterator_uuid, credential_slave_iterator_name)
+	(credential_slave_iterator_readable): New function prototypes.
+	(create_slave, modify_slave): Adjust parameters.
+	(slave_iterator_credential_name, slave_iterator_credential)
+	(slave_iterator_credential_trash): New function prototypes.
+
+	* src/schema_formats/XML/OMP.xml.in (create_slave, get_slaves)
+	(get_credentials, modify_slaves): Update commands and responses.
+
+	* doc/db_postgres.sql: Update table definition for slaves and
+	slaves_trash.
+
+	* doc/db.png, doc/omp.rnc, doc/omp.html: Update from source.
+
 2015-10-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_tag, modify_tag)

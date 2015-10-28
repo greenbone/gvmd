@@ -1986,6 +1986,18 @@ credential_target_iterator_name (iterator_t*);
 int
 credential_target_iterator_readable (iterator_t*);
 
+void
+init_credential_slave_iterator (iterator_t*, credential_t, int);
+
+const char*
+credential_slave_iterator_uuid (iterator_t*);
+
+const char*
+credential_slave_iterator_name (iterator_t*);
+
+int
+credential_slave_iterator_readable (iterator_t*);
+
 int
 trash_credential_in_use (credential_t);
 
@@ -2847,14 +2859,14 @@ find_slave_with_permission (const char*, slave_t*, const char *);
 
 int
 create_slave (const char*, const char*, const char*, const char*,
-              const char*, const char*, slave_t*);
+              const char*, slave_t*);
 
 int
 copy_slave (const char*, const char*, const char *, slave_t *);
 
 int
 modify_slave (const char*, const char*, const char*, const char*, const char*,
-              const char*, const char*);
+              const char*);
 
 int
 delete_slave (const char*, int);
@@ -2870,6 +2882,15 @@ slave_iterator_port (iterator_t*);
 
 const char*
 slave_iterator_login (iterator_t*);
+
+const char*
+slave_iterator_credential_name (iterator_t*);
+
+credential_t
+slave_iterator_credential (iterator_t*);
+
+int
+slave_iterator_credential_trash (iterator_t*);
 
 char*
 slave_uuid (slave_t);
