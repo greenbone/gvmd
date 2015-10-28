@@ -1193,6 +1193,7 @@ send_ifaces_access_preferences (void)
           return -1;
         }
     }
+  g_free (ifaces);
   return 0;
 }
 
@@ -1232,6 +1233,7 @@ send_hosts_access_preferences (void)
           return -1;
         }
     }
+  g_free (hosts);
   return 0;
 }
 
