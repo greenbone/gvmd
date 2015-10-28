@@ -1803,10 +1803,6 @@ command_definition_ele
               <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>risk_factor</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
               &lt;<b>cve</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">CVE value associated with the NVT.</div>
 <ul style="list-style: none"></ul>
@@ -2083,7 +2079,6 @@ note_result_nvt
        &amp; note_result_nvt_name
        &amp; note_result_nvt_type
        &amp; note_result_nvt_cvss_base
-       &amp; note_result_nvt_risk_factor
        &amp; note_result_nvt_cve?
        &amp; note_result_nvt_bid?
      }
@@ -2102,12 +2097,6 @@ note_result_nvt_type
 
 note_result_nvt_cvss_base
  = element cvss_base
-     {
-       text
-     }
-
-note_result_nvt_risk_factor
- = element risk_factor
      {
        text
      }
@@ -2376,10 +2365,6 @@ note_result_description
 </li>
 <li>
               &lt;<b>cvss_base</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>risk_factor</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -2674,7 +2659,6 @@ override_result_nvt
        &amp; override_result_nvt_name
        &amp; override_result_nvt_type
        &amp; override_result_nvt_cvss_base
-       &amp; override_result_nvt_risk_factor
        &amp; override_result_nvt_cve?
        &amp; override_result_nvt_bid?
      }
@@ -2693,12 +2677,6 @@ override_result_nvt_type
 
 override_result_nvt_cvss_base
  = element cvss_base
-     {
-       text
-     }
-
-override_result_nvt_risk_factor
- = element risk_factor
      {
        text
      }
@@ -20319,7 +20297,6 @@ get_notes_response_note
        &lt;nvt oid="1.3.6.1.4.1.25623.1.0.77"&gt;
          &lt;name&gt;Test NVT: control chars in report result&lt;/name&gt;
          &lt;cvss_base/&gt;
-         &lt;risk_factor/&gt;
          &lt;cve/&gt;
          &lt;bid/&gt;
        &lt;/nvt&gt;
@@ -23738,7 +23715,6 @@ get_reports_response_report_count_page
            &lt;nvt oid="1.3.6.1.4.1.25623.1.0.74"&gt;
              &lt;name&gt;Test NVT: fields with ISO-8859-1 chars ()&lt;/name&gt;
              &lt;cvss_base&gt;5.0&lt;/cvss_base&gt;
-             &lt;risk_factor&gt;Medium&lt;/risk_factor&gt;
              &lt;cve&gt;CVE-2013-1406&lt;/cve&gt;
              &lt;bid&gt;51702&lt;/bid&gt;
              &lt;tags&gt;NOTAGS&lt;/tags&gt;
@@ -24978,7 +24954,6 @@ get_results_response_result_count_page
      &lt;nvt oid="1.3.6.1.4.1.25623.1.0.74"&gt;
        &lt;name&gt;Test NVT: fields with ISO-8859-1 chars&lt;/name&gt;
        &lt;cvss_base&gt;5.0&lt;/cvss_base&gt;
-       &lt;risk_factor&gt;Medium&lt;/risk_factor&gt;
        &lt;cve&gt;CVE-2009-3095&lt;/cve&gt;
        &lt;bid&gt;36254&lt;/bid&gt;
        &lt;tags&gt;NOTAGS&lt;/tags&gt;
@@ -25040,7 +25015,6 @@ get_results_response_result_count_page
      &lt;nvt oid="1.3.6.1.4.1.25623.1.0.75"&gt;
        &lt;name&gt;Test NVT: long lines&lt;/name&gt;
        &lt;cvss_base&gt;9&lt;/cvss_base&gt;
-       &lt;risk_factor&gt;High&lt;/risk_factor&gt;
        &lt;cve&gt;CVE-2009-3095&lt;/cve&gt;
        &lt;bid&gt;36254&lt;/bid&gt;
        &lt;tags&gt;NOTAGS&lt;/tags&gt;
@@ -36721,6 +36695,17 @@ start_task_response_report_id
 </div>
 <div>
 <div><h3>8.2
+          Change in <tt>GET_NOTES, GET_OVERRIDES, GET_REPORTS, GET_RESULTS</tt>
+</h3></div>
+<p>In short: Element RISK_FACTOR removed from element NVT.</p>
+<p>
+        Risk factors have been replaced by CVSS scores in all NVTs, so the
+        RISK_FACTOR element has been removed from the NVT elements in
+        various commands.
+      </p>
+</div>
+<div>
+<div><h3>8.3
           Change in <tt>RESUME_STOPPED_TASK, RESUME_TASK</tt>
 </h3></div>
 <p>In short: RESUME_STOPPED_TASK renamed to RESUME_TASK.</p>
@@ -36732,18 +36717,18 @@ start_task_response_report_id
       </p>
 </div>
 <div>
-<div><h3>8.3
+<div><h3>8.4
           Change in <tt>RESUME_OR_START_TASK</tt>
 </h3></div>
 <p>In short: Command removed.</p>
 <p>
         As part of the consolidation of the start/resume handling of tasks,
-	the command RESUME_OR_START_TASK was removed. Use a combination of
+		the command RESUME_OR_START_TASK was removed. Use a combination of
         START_TASK and RESUME_TASK to establish the same functionality.
       </p>
 </div>
 <div>
-<div><h3>8.4
+<div><h3>8.5
           Change in <tt>CREATE_TARGET, MODIFY_TARGET</tt>
 </h3></div>
 <p>In short: Element TARGET_LOCATOR removed.</p>
@@ -36753,7 +36738,7 @@ start_task_response_report_id
       </p>
 </div>
 <div>
-<div><h3>8.5
+<div><h3>8.6
           Change in <tt>GET_RESULTS</tt>
 </h3></div>
 <p>In short: "result" elements moved to response root element.</p>
@@ -36765,7 +36750,7 @@ start_task_response_report_id
       </p>
 </div>
 <div>
-<div><h3>8.6
+<div><h3>8.7
           Change in <tt>GET_TARGET_LOCATORS</tt>
 </h3></div>
 <p>In short: Command removed.</p>
@@ -36774,7 +36759,7 @@ start_task_response_report_id
       </p>
 </div>
 <div>
-<div><h3>8.7
+<div><h3>8.8
           Change in <tt>GET_TASKS</tt>
 </h3></div>
 <p>In short: Attribute "rcfile" and associate RCFILE removed.</p>
@@ -36786,7 +36771,7 @@ start_task_response_report_id
       </p>
 </div>
 <div>
-<div><h3>8.8
+<div><h3>8.9
           Change in <tt>CREATE_CONFIG, CREATE_TASK, MODIFY_TASK</tt>
 </h3></div>
 <p>In short: RCFILE removed.</p>
@@ -36798,7 +36783,7 @@ start_task_response_report_id
       </p>
 </div>
 <div>
-<div><h3>8.9
+<div><h3>8.10
           Change in <tt>CREATE_LSC_CREDENTIAL</tt>
 </h3></div>
 <p>In short: KEY/PUBLIC removed.</p>

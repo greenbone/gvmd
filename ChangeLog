@@ -1,5 +1,12 @@
 2015-10-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/html/XML/OMP.xml: Add compatiblity change about risk factor.
+	(note, override, get_reports, get_results): Remove risk factor.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
+2015-10-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_report_host_details, identifier_name): Add
 	"ssh-key" as a host identifier.
 
