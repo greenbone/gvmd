@@ -31072,23 +31072,27 @@ get_scanner_params (scanner_t scanner)
 }
 
 /**
- * @brief Insert an OSP parameter into a config.
+ * @brief Insert an OSP parameter into a config if not already present.
  *
  * @param[in]   param   OSP parameter to insert.
  * @param[in]   config  Config to insert parameter into.
+ * @param[in]   log     Add log message if parameter wasn't present.
+ *
+ * @return 1 if added, 0 otherwise.
  */
-static void
+static int
 insert_osp_parameter (osp_param_t *param, config_t config)
 {
   char *param_id, *param_type, *param_def, *param_value = NULL;
+  int ret = 0;
 
   if (!param)
-    return;
+    return ret;
   param_id = sql_quote (osp_param_id (param));
   /* Ignoring username and password parameters as these are taken from
    * the task's LSC Credentials. */
   if (!strcmp (param_id, "username") || !strcmp (param_id, "password"))
-    return;
+    return ret;
   param_type = sql_quote (osp_param_type_str (param));
   if (!strcmp (param_type, "selection"))
     {
@@ -31100,12 +31104,20 @@ insert_osp_parameter (osp_param_t *param, config_t config)
     }
   else
     param_def = sql_quote (osp_param_default (param));
-  sql ("INSERT INTO config_preferences (config, name, type, value,"
-       " default_value) VALUES (%llu, '%s', '%s', '%s', '%s')",
-       config , param_id, param_type, param_value ?: param_def, param_def);
+  if (sql_int ("SELECT count(*) FROM config_preferences"
+               " WHERE config = %llu AND name = '%s' AND type = '%s'"
+               " AND default_value = '%s';",
+               config, param_id, param_type, param_def) == 0)
+    {
+      sql ("INSERT INTO config_preferences (config, name, type, value,"
+           " default_value) VALUES (%llu, '%s', '%s', '%s', '%s')",
+           config , param_id, param_type, param_value ?: param_def, param_def);
+      ret = 1;
+    }
   g_free (param_type);
   g_free (param_def);
   g_free (param_value);
+  return ret;
 }
 
 /**
@@ -31664,6 +31676,71 @@ delete_config (const char *config_id, int ultimate)
 }
 
 /**
+ * @brief Update a config with a list of parameters.
+ *
+ * @param[in]  config       Config ID.
+ * @param[in]  config_id    Config UUID.
+ * @param[in]  params       List of new config parameters.
+ *
+ */
+static void
+update_config_params (config_t config, const char *config_id, GSList *params)
+{
+  GSList *element;
+  iterator_t iterator;
+
+  /* Remove parameters not used anymore. */
+  init_iterator (&iterator,
+                 "SELECT id, name, type, default_value FROM config_preferences"
+                 " WHERE config = %llu;", config);
+  while (next (&iterator))
+    {
+      int found = 0;
+
+      element = params;
+      while (element)
+        {
+          const char *name, *type, *def;
+
+          name = osp_param_id (element->data);
+          type = osp_param_type_str (element->data);
+          def = osp_param_default (element->data);
+          if (!strcmp (name,  iterator_string (&iterator, 1))
+              && !strcmp (type, iterator_string (&iterator, 2)))
+            {
+              const char *iter_def = iterator_string (&iterator, 3);
+
+              if (!strcmp (type, "selection")
+                  && !strcmp (strchr (def, '|') + 1, iter_def))
+                found = 1;
+              else if (strcmp (type, "selection") && !strcmp (def, iter_def))
+                found = 1;
+              if (found)
+                break;
+            }
+          element = element->next;
+        }
+      if (!found)
+        {
+          g_message ("Removing config preference %s from config '%s'",
+                     iterator_string (&iterator, 1), config_id);
+          sql ("DELETE FROM config_preferences WHERE id = %llu;",
+               iterator_int64 (&iterator, 0));
+        }
+    }
+  cleanup_iterator (&iterator);
+  /* Insert new parameters. */
+  element = params;
+  while (element)
+    {
+      if (insert_osp_parameter (element->data, config))
+        g_message ("Adding config preference %s to config '%s'",
+                   osp_param_id (element->data), config_id);
+      element = element->next;
+    }
+}
+
+/**
  * @brief Synchronize a config.
  *
  * @param[in]  config_id  UUID of config.
@@ -31676,7 +31753,7 @@ int
 sync_config (const char *config_id)
 {
   config_t config = 0;
-  GSList *params, *element;
+  GSList *params;
   scanner_t scanner;
 
   assert (config_id);
@@ -31710,23 +31787,20 @@ sync_config (const char *config_id)
       sql ("ROLLBACK;");
       return 3;
     }
-  params = element = get_scanner_params (scanner);
+  params = get_scanner_params (scanner);
   if (!params)
     {
       sql ("ROLLBACK;");
       return 4;
     }
-
-  sql ("DELETE FROM config_prefrences WHERE config = %llu", config);
-  while (element)
-    {
-      insert_osp_parameter (element->data, config);
-      osp_param_free (element->data);
-      element = element->next;
-    }
+  update_config_params (config, config_id, params);
 
   sql ("COMMIT;");
-  g_slist_free (params);
+  while (params)
+    {
+      osp_param_free (params->data);
+      params = g_slist_remove_link (params, params);
+    }
   return 0;
 }
 

@@ -1,3 +1,10 @@
+2015-10-28  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (insert_osp_parameter): Check if parameter already
+	exists before inserting. Return value accordingly.
+	(update_config_params): New function.
+	(sync_config): Adjust to call update_config_params() accordingly.
+
 2015-10-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/html/XML/OMP.xml: Convert tabs to spaces.
