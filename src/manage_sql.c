@@ -58196,6 +58196,9 @@ create_tag (const char * name, const char * comment, const char * value,
       || (strcmp (lc_resource_type, "cert_bund_adv") == 0)
       || (strcmp (lc_resource_type, "dfn_cert_adv") == 0))
     resource_permission = g_strdup ("get_info");
+  else if ((strcmp (lc_resource_type, "host") == 0)
+           || (strcmp (lc_resource_type, "os") == 0))
+    resource_permission = g_strdup ("get_assets");
   else
     resource_permission = g_strdup_printf ("get_%ss", resource_type);
 
@@ -58211,6 +58214,8 @@ create_tag (const char * name, const char * comment, const char * value,
            && (strcmp (lc_resource_type, "nvt"))
            && (strcmp (lc_resource_type, "cve"))
            && (strcmp (lc_resource_type, "cpe"))
+           && (strcmp (lc_resource_type, "host"))
+           && (strcmp (lc_resource_type, "os"))
            && (strcmp (lc_resource_type, "ovaldef"))
            && (strcmp (lc_resource_type, "cert_bund_adv"))
            && (strcmp (lc_resource_type, "dfn_cert_adv"))
@@ -58451,6 +58456,9 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
           || (strcmp (lc_resource_type, "cert_bund_adv") == 0)
           || (strcmp (lc_resource_type, "dfn_cert_adv") == 0))
         resource_permission = g_strdup ("get_info");
+      else if ((strcmp (lc_resource_type, "host") == 0)
+               || (strcmp (lc_resource_type, "os") == 0))
+        resource_permission = g_strdup ("get_assets");
       else
         resource_permission = g_strdup_printf ("get_%ss", resource_type);
 
@@ -58466,6 +58474,8 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
               && (strcmp (lc_resource_type, "nvt"))
               && (strcmp (lc_resource_type, "cve"))
               && (strcmp (lc_resource_type, "cpe"))
+              && (strcmp (lc_resource_type, "host"))
+              && (strcmp (lc_resource_type, "os"))
               && (strcmp (lc_resource_type, "ovaldef"))
               && (strcmp (lc_resource_type, "cert_bund_adv"))
               && (strcmp (lc_resource_type, "dfn_cert_adv"))
@@ -58713,6 +58723,9 @@ tag_iterator_resource_readable (iterator_t* iterator)
       || (strcmp (type, "cert_bund_adv") == 0)
       || (strcmp (type, "dfn_cert_adv") == 0))
     permission = g_strdup ("get_info");
+  else if ((strcmp (type, "host") == 0)
+           || (strcmp (type, "os") == 0))
+    permission = g_strdup ("get_assets");
   else
     permission = g_strdup_printf ("get_%ss", type);
 

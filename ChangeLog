@@ -1,3 +1,10 @@
+2015-10-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (create_tag, modify_tag)
+	(tag_iterator_resource_readable): Add host and OS cases.
+
+	* src/manage_utils.c (db_resource_type): Add host and OS.
+
 2015-10-27  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (osp_commands): Add SYNC_CONFIG OMP command.
