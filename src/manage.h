@@ -661,6 +661,12 @@ set_task_groups (task_t, array_t*, gchar**);
 int
 set_task_schedule (task_t, schedule_t, int);
 
+int
+set_task_schedule_periods (const gchar *, int);
+
+int
+set_task_schedule_periods_id (task_t, int);
+
 unsigned int
 task_report_count (task_t);
 

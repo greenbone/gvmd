@@ -4995,7 +4995,7 @@ manage_schedule (int (*fork_connection) (int *,
                               {
                                 /* Last run of a task restricted to a certain
                                  * number of scheduled runs. */
-                                set_task_schedule_uuid (task_uuid, 0, 0);
+                                set_task_schedule_uuid (task_uuid, 0, 1);
                               }
                             else if (periods == 1)
                               /* Flag that the task has started, for

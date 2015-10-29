@@ -22038,6 +22038,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                */
               set_task_schedule (create_task_data->task, schedule, periods);
             }
+          else if (create_task_data->schedule_periods
+                   && strlen (create_task_data->schedule_periods))
+            set_task_schedule_periods_id
+             (create_task_data->task,
+              atoi (create_task_data->schedule_periods));
 
           /* Set any observers. */
 
@@ -24968,7 +24973,7 @@ create_task_fail:
 
                     if (strcmp (modify_task_data->schedule_id, "0") == 0)
                       {
-                        set_task_schedule (task, 0, 0);
+                        set_task_schedule (task, 0, periods);
                       }
                     else if ((fail = find_schedule_with_permission
                                       (modify_task_data->schedule_id,

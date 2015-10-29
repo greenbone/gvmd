@@ -273,8 +273,6 @@ void set_task_schedule_next_time (task_t, time_t);
 
 void set_task_schedule_next_time_uuid (const gchar *, time_t);
 
-int set_task_schedule_periods (const gchar *, int);
-
 void init_otp_pref_iterator (iterator_t *, config_t, const char *);
 const char *otp_pref_iterator_name (iterator_t *);
 const char *otp_pref_iterator_value (iterator_t *);
