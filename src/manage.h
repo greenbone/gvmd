@@ -1587,6 +1587,9 @@ config_uuid (config_t);
 int
 config_type (config_t);
 
+scanner_t
+config_scanner (config_t);
+
 char *
 config_nvt_timeout (config_t, const char *);
 

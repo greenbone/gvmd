@@ -1,5 +1,13 @@
 2015-10-29  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
+	* src/manage.h: Add function header.
+
+	* src/omp.c (omp_xml_handle_end_element): Call handle_get_configs().
+	(handle_get_configs): New function. Add scanner element for
+	OSP configs.
+
+2015-10-29  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (update_nvt_family): Specify config type for
 	iterator.
 
