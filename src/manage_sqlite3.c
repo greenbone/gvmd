@@ -2505,13 +2505,13 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS configs"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name,"
        "  nvt_selector, comment, family_count INTEGER, nvt_count INTEGER,"
-       "  families_growing INTEGER, nvts_growing INTEGER, type, creation_time,"
-       "  modification_time);");
+       "  families_growing INTEGER, nvts_growing INTEGER, type, scanner,"
+       "  creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS configs_trash"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name,"
        "  nvt_selector, comment, family_count INTEGER, nvt_count INTEGER,"
-       "  families_growing INTEGER, nvts_growing INTEGER, type, creation_time,"
-       "  modification_time);");
+       "  families_growing INTEGER, nvts_growing INTEGER, type, scanner,"
+       "  creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS alert_condition_data"
        " (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
   sql ("CREATE TABLE IF NOT EXISTS alert_condition_data_trash"

@@ -1,3 +1,27 @@
+2015-10-29  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	Add scanner column for configs and configs_trash. Hence increase
+	database version to 158. Add database migration from version 157 to 158.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 158.
+
+	* src/manage_migrators.c (migrate_157_to_158): New function.
+	(database_migrators): Add migrate_157_to_158.
+
+	* src/manage_sql.c (create_config_from_scanner): Add scanner ID to newly
+	create config.
+	(config_scanner): Get the config's scanner.
+	(copy_scanner, delete_scanner, manage_restore): Handle the scanner
+	column too.
+
+	* doc/db_postgres.sql: Update table definition for configs and
+	configs_trash.
+
+	* doc/db.png: Update from source.
+
+	* src/manage_pg.c (create_tables), src/manage_sqlite3.c (create_tables):
+	Add scanner column to configs and configs_trash tables.
+
 2015-10-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_TASK set the

@@ -1856,6 +1856,7 @@ create_tables ()
        "  families_growing integer,"
        "  nvts_growing integer,"
        "  type integer,"
+       "  scanner integer REFERENCES scanners (id) ON DELETE RESTRICT,"
        "  creation_time integer,"
        "  modification_time integer);");
 
@@ -1871,6 +1872,7 @@ create_tables ()
        "  families_growing integer,"
        "  nvts_growing integer,"
        "  type integer,"
+       "  scanner integer REFERENCES scanners (id) ON DELETE RESTRICT,"
        "  creation_time integer,"
        "  modification_time integer);");
 

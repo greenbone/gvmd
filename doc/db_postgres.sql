@@ -374,6 +374,7 @@ CREATE TABLE configs
   families_growing integer,
   nvts_growing integer,
   type integer,
+  scanner integer REFERENCES scanners (id) ON DELETE RESTRICT,
   creation_time date,
   modification_time date);
 
@@ -389,6 +390,7 @@ CREATE TABLE configs_trash
   families_growing integer,
   nvts_growing integer,
   type integer,
+  scanner integer REFERENCES scanners (id) ON DELETE RESTRICT,
   creation_time date,
   modification_time date);
 

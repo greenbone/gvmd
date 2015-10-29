@@ -31197,11 +31197,11 @@ create_config_from_scanner (const char *scanner_id, const char *name,
   quoted_comment = sql_quote (comment ?: "");
   /* Create new OSP config. */
   sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
-       " type, creation_time, modification_time)"
+       " type, scanner, creation_time, modification_time)"
        " VALUES (make_uuid (), '%s',"
        " (SELECT id FROM users WHERE users.uuid = '%s'),"
-       " '', '%s', 1, m_now (), m_now ());",
-       quoted_name, current_credentials.uuid, quoted_comment);
+       " '', '%s', 1, %llu, m_now (), m_now ());",
+       quoted_name, current_credentials.uuid, quoted_comment, scanner);
   g_free (quoted_name);
   g_free (quoted_comment);
   config = sql_last_insert_id ();
@@ -31264,10 +31264,8 @@ config_scanner (config_t config)
 {
   scanner_t scanner;
 
-  /* XXX: Each config should have its own scanner. */
   switch (sql_int64 (&scanner,
-                     "SELECT id FROM scanners WHERE type = %i LIMIT 1;",
-                     SCANNER_TYPE_OSP))
+                     "SELECT scanner FROM configs WHERE id = %llu;", config))
     {
       case 0:
         break;
@@ -31490,8 +31488,7 @@ copy_config (const char* name, const char* comment, const char *config_id,
 
   ret = copy_resource_lock ("config", name, comment, config_id,
                             " family_count, nvt_count, families_growing,"
-                            " nvts_growing, type",
-                            1, &new, &old);
+                            " nvts_growing, type, scanner", 1, &new, &old);
   if (ret)
     {
       sql ("ROLLBACK;");
@@ -31655,11 +31652,11 @@ delete_config (const char *config_id, int ultimate)
 
       sql ("INSERT INTO configs_trash"
            " (uuid, owner, name, nvt_selector, comment, family_count, nvt_count,"
-           "  families_growing, nvts_growing, type,"
+           "  families_growing, nvts_growing, type, scanner,"
            "  creation_time, modification_time)"
            " SELECT uuid, owner, name, nvt_selector, comment, family_count,"
            "        nvt_count, families_growing, nvts_growing,"
-           "        type, creation_time, modification_time"
+           "        type, scanner, creation_time, modification_time"
            " FROM configs WHERE id = %llu;",
            config);
 
@@ -51626,11 +51623,11 @@ manage_restore (const char *id)
 
       sql ("INSERT INTO configs"
            " (uuid, owner, name, nvt_selector, comment, family_count, nvt_count,"
-           "  families_growing, nvts_growing, type, creation_time,"
+           "  families_growing, nvts_growing, type, scanner, creation_time,"
            "  modification_time)"
            " SELECT uuid, owner, name, nvt_selector, comment, family_count,"
            "        nvt_count, families_growing, nvts_growing,"
-           "        type, creation_time, modification_time"
+           "        type, scanner, creation_time, modification_time"
            " FROM configs_trash WHERE id = %llu;",
            resource);
 

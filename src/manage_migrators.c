@@ -11092,6 +11092,54 @@ migrate_156_to_157 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 157 to version 158.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_157_to_158 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 157. */
+
+  if (manage_db_version () != 157)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Add new column to configs tables */
+  if (sql_is_sqlite3 ())
+    {
+      sql ("ALTER TABLE configs ADD COLUMN scanner INTEGER;");
+      sql ("ALTER TABLE configs_trash ADD COLUMN scanner INTEGER;");
+    }
+  else
+    {
+      sql ("ALTER TABLE configs ADD COLUMN scanner INTEGER"
+           " REFERENCES scanners (id) ON DELETE RESTRICT;");
+      sql ("ALTER TABLE configs_trash ADD COLUMN scanner INTEGER"
+           " REFERENCES scanners (id) ON DELETE RESTRICT;");
+    }
+
+  /* Add first OSP scanner in scanners table, as scanner of OSP configs. */
+  sql ("UPDATE configs"
+       " SET scanner = (SELECT id FROM scanners WHERE type = %d LIMIT 1)"
+       " WHERE type = 1;", SCANNER_TYPE_OSP);
+
+  /* Set the database version to 158. */
+
+  set_db_version (158);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
 #ifdef SQL_IS_SQLITE
 #define SQLITE_OR_NULL(function) function
 #else
@@ -11260,6 +11308,7 @@ static migrator_t database_migrators[]
     {155, migrate_154_to_155},
     {156, migrate_155_to_156},
     {157, migrate_156_to_157},
+    {158, migrate_157_to_158},
     /* End marker. */
     {-1, NULL}};
 
