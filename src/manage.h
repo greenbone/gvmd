@@ -1904,7 +1904,7 @@ find_credential_with_permission (const char*, credential_t*, const char*);
 
 int
 create_credential (const char*, const char*, const char*, const char*,
-                   const char*, const char*, credential_t*);
+                   const char*, const char*, const char*, credential_t*);
 
 int
 copy_credential (const char*, const char*, const char*,
@@ -1961,6 +1961,9 @@ credential_iterator_deb (iterator_t*);
 
 char*
 credential_iterator_exe (iterator_t*);
+
+const char*
+credential_iterator_certificate (iterator_t*);
 
 char*
 credential_uuid (credential_t);

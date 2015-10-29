@@ -1,3 +1,29 @@
+2015-10-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add credential type "client certificate".
+
+	* src/manage_sql.c (create_credential): Add certificate param and
+	handle new type "cc".
+	(CREDENTIAL_ITERATOR_COLUMNS): Add column for certificate.
+	(credential_iterator_certificate): New function.
+
+	* src/manage.c (credential_full_type): Add case for "cc".
+
+	* src/manage.h (create_credential): Add parameter
+	(credential_iterator_certificate): New function prototype.
+
+	* src/omp.c (create_credential_data_t, create_credential_data_reset):
+	Add certificate field.
+	(client_state_t): Add CLIENT_CREATE_CREDENTIAL_CERTIFICATE.
+	(omp_xml_handle_start_element): In CREATE_CREDENTIAL case, do not init
+	login field with empty string and add case for CERTIFICATE subelement.
+	(omp_xml_handle_start_element): In GET_CREDENTIALS case, add new
+	format option "pem" for certificate credentials.  In CREATE_CREDENTIAL
+	case, accept NULL login. Add certificate param to create_credential
+	function call and handle new return codes.  Add CLOSE for CERTIFICATE
+	in CREATE_CREDENTIAL.
+	(omp_xml_handle_text): Add case for CERTIFICATE in CREATE_CREDENTIAL.
+
 2015-10-28  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (insert_osp_parameter): Check if parameter already

@@ -1014,6 +1014,7 @@ create_alert_data_reset (create_alert_data_t *data)
  */
 typedef struct
 {
+  char *certificate;       ///< Certificate for client certificate auth.
   char *comment;           ///< Comment.
   char *copy;              ///< UUID of resource to copy.
   int key;                 ///< Whether the command included a key element.
@@ -1033,6 +1034,7 @@ typedef struct
 static void
 create_credential_data_reset (create_credential_data_t *data)
 {
+  free (data->certificate);
   free (data->comment);
   free (data->copy);
   free (data->key_phrase);
@@ -5129,6 +5131,7 @@ typedef enum
   CLIENT_CREATE_ASSET_ASSET_NAME,
   CLIENT_CREATE_ASSET_ASSET_TYPE,
   CLIENT_CREATE_CREDENTIAL,
+  CLIENT_CREATE_CREDENTIAL_CERTIFICATE,
   CLIENT_CREATE_CREDENTIAL_COMMENT,
   CLIENT_CREATE_CREDENTIAL_COPY,
   CLIENT_CREATE_CREDENTIAL_KEY,
@@ -6726,7 +6729,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("CREATE_CREDENTIAL", element_name) == 0)
           {
             openvas_append_string (&create_credential_data->comment, "");
-            openvas_append_string (&create_credential_data->login, "");
             openvas_append_string (&create_credential_data->name, "");
             set_client_state (CLIENT_CREATE_CREDENTIAL);
           }
@@ -9149,7 +9151,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         ELSE_ERROR ("create_alert");
 
       case CLIENT_CREATE_CREDENTIAL:
-        if (strcasecmp ("COMMENT", element_name) == 0)
+        if (strcasecmp ("CERTIFICATE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_CREDENTIAL_CERTIFICATE);
+        else if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_CREDENTIAL_COMMENT);
         else if (strcasecmp ("KEY", element_name) == 0)
           {
@@ -14667,6 +14671,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     format = 3;
                   else if (strcasecmp (data_format, "exe") == 0)
                     format = 4;
+                  else if (strcasecmp (data_format, "pem") == 0)
+                    format = 5;
                   else
                     format = -1;
                 }
@@ -14680,7 +14686,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("get_credentials",
                                 "GET_CREDENTIALS format attribute should"
-                                " be 'key', 'rpm', 'deb' or 'exe'."));
+                                " be 'key', 'rpm', 'deb', 'exe' or 'pem'."));
 
           INIT_GET (credential, Credential);
 
@@ -14781,6 +14787,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                      ("<package format=\"exe\">%s</package>", package ?: "");
                     g_free (package);
                     break;
+                  case 5:
+                    {
+                      const char *cert;
+                      cert = credential_iterator_certificate (&credentials);
+                      SENDF_TO_CLIENT_OR_FAIL
+                       ("<certificate>%s</certificate>", cert ?: "");
+                      break;
+                    }
                 }
 
               if (get_credentials_data->slaves)
@@ -21030,7 +21044,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("CREATE_CREDENTIAL", element_name) == 0);
           assert (create_credential_data->name != NULL);
-          assert (create_credential_data->login != NULL);
 
           if (create_credential_data->copy)
             switch (copy_credential (create_credential_data->name,
@@ -21085,7 +21098,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   "CREATE_CREDENTIAL name must be at"
                                   " least one character long"));
             }
-          else if (strlen (create_credential_data->login) == 0)
+          else if (create_credential_data->login
+                   && strlen (create_credential_data->login) == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_credential",
@@ -21108,6 +21122,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           ? create_credential_data->key_phrase
                           : create_credential_data->password,
                          create_credential_data->key_private,
+                         create_credential_data->certificate,
                          create_credential_data->type,
                          &new_credential))
             {
@@ -21158,6 +21173,23 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                  (XML_ERROR_SYNTAX ("create_credential",
                                     "Selected type requires a private key"));
                 break;
+              case 8:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                    "Selected type requires a certificate"));
+                break;
+              case 9:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                    "Selected type requires a username"
+                                    " or certificate"));
+                break;
+              case 10:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                    "Selected type cannot be generated"
+                                    " automatically"));
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_credential",
@@ -21174,6 +21206,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
+      CLOSE (CLIENT_CREATE_CREDENTIAL, CERTIFICATE);
       CLOSE (CLIENT_CREATE_CREDENTIAL, COMMENT);
       CLOSE (CLIENT_CREATE_CREDENTIAL, COPY);
       CLOSE (CLIENT_CREATE_CREDENTIAL, KEY);
@@ -28640,6 +28673,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       APPEND (CLIENT_C_C_GCR_CONFIG_TYPE,
               &import_config_data->type);
 
+
+      APPEND (CLIENT_CREATE_CREDENTIAL_CERTIFICATE,
+              &create_credential_data->certificate);
 
       APPEND (CLIENT_CREATE_CREDENTIAL_COMMENT,
               &create_credential_data->comment);

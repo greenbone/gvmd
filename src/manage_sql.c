@@ -35949,18 +35949,21 @@ set_credential_data (credential_t credential,
  * @param[in]  given_password  Password for password-only credential, NULL to
  *                             generate credentials.
  * @param[in]  key_private     Private key, or NULL.
+ * @param[in]  certificate     Certificate, or NULL.
  * @param[in]  given_type      Credential type or NULL.
  * @param[out] credential      Created Credential.
  *
  * @return 0 success, 1 LSC credential exists already, 2 name contains space,
  *         3 Failed to create public key from private key/password,
  *         4 Invalid credential type, 5 login username missing,
- *         6 password missing, 7 private key missing, 99 permission denied,
- *         -1 error.
+ *         6 password missing, 7 private key missing, 8 certificate missing,
+ *         9 username or certificate missing, 10 autogenerate not
+ *         supported, 99 permission denied, -1 error.
  */
 int
 create_credential (const char* name, const char* comment, const char* login,
                    const char* given_password, const char* key_private,
+                   const char* certificate,
                    const char* given_type, credential_t *credential)
 {
   gchar *quoted_name, *quoted_comment, *quoted_type;
@@ -35973,7 +35976,6 @@ create_credential (const char* name, const char* comment, const char* login,
   int auto_generate;
 
   assert (name && strlen (name) > 0);
-  assert (login && strlen (login) > 0);
   assert (current_credentials.uuid);
   assert (comment);
 
@@ -35993,7 +35995,8 @@ create_credential (const char* name, const char* comment, const char* login,
 
   if (given_type && strcmp (given_type, ""))
     {
-      if (strcmp (given_type, "up")
+      if (strcmp (given_type, "cc")
+          && strcmp (given_type, "up")
           && strcmp (given_type, "usk"))
         {
           sql ("ROLLBACK;");
@@ -36002,6 +36005,8 @@ create_credential (const char* name, const char* comment, const char* login,
       else
         quoted_type = g_strdup (given_type);
     }
+  else if (certificate && key_private)
+    quoted_type = g_strdup ("cc");
   else if (login && key_private)
     quoted_type = g_strdup ("usk");
   else if (login && given_password)
@@ -36035,17 +36040,27 @@ create_credential (const char* name, const char* comment, const char* login,
 
   new_credential = sql_last_insert_id ();
 
-  auto_generate = ((given_password == NULL) && (key_private == NULL));
+  auto_generate = ((given_password == NULL) && (key_private == NULL)
+                   && (certificate == NULL));
 
   /* Add non-secret data */
   if (login)
     {
       set_credential_data (new_credential, "username", login);
     }
-  else
+  else if (certificate)
+    {
+      set_credential_data (new_credential, "certificate", certificate);
+    }
+  else if (auto_generate == 0)
     {
       sql ("ROLLBACK;");
-      return 5;
+      if (given_type == NULL)
+        return 9;
+      else if (strcmp (given_type, "up") == 0)
+        return 5;
+      else if (strcmp (given_type, "cc") == 0 && auto_generate == 0)
+        return 5;
     }
 
   /* Add secret data like passwords and private keys */
@@ -36140,6 +36155,9 @@ create_credential (const char* name, const char* comment, const char* login,
   /*
    * Auto-generate credential
    */
+
+  if (given_type && strcmp (given_type, "cc") == 0)
+    return 10;
 
   /* Ensure the login is alphanumeric, to help the package generation. */
 
@@ -36536,6 +36554,9 @@ delete_credential (const char *credential_id, int ultimate)
    { "(SELECT value FROM credentials_data"                                    \
      " WHERE credential = credentials.id AND type = 'private_key')",          \
      "private_key" },                                                         \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id AND type = 'certificate')",          \
+     NULL },                                                                  \
    { NULL, NULL }                                                             \
  }
 
@@ -36981,6 +37002,20 @@ credential_iterator_exe (iterator_t *iterator)
           : g_strdup ("");
   free (exe);
   return exe64;
+}
+
+/**
+ * @brief Get the certificate from a Credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Certificate, or NULL if iteration is complete. Freed by
+ *          cleanup_iterator.
+ */
+const char*
+credential_iterator_certificate (iterator_t *iterator)
+{
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
 }
 
 /**
