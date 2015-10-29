@@ -14743,7 +14743,7 @@ set_task_schedule_uuid (const gchar *task_id, schedule_t schedule, int periods)
 }
 
 /**
- * @brief Set the schedule periods of a task.
+ * @brief Set the schedule periods of a task, given a UUID.
  *
  * The task modification time stays the same.
  *
@@ -14764,6 +14764,26 @@ set_task_schedule_periods (const gchar *task_id, int periods)
        periods, quoted_task_id);
   g_free (quoted_task_id);
 
+  return 0;
+}
+
+/**
+ * @brief Set the schedule periods of a task, given an ID.
+ *
+ * The task modification time stays the same.
+ *
+ * @param[in]  task      Task UUID.
+ * @param[in]  periods   Schedule periods.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+set_task_schedule_periods_id (task_t task, int periods)
+{
+  sql ("UPDATE tasks"
+       " SET schedule_periods = %i"
+       " WHERE id = %llu;",
+       periods, task);
   return 0;
 }
 
@@ -15266,7 +15286,6 @@ clear_duration_schedules (task_t task)
   sql ("UPDATE tasks"
        " SET schedule = 0,"
        " schedule_next_time = 0,"
-       " schedule_periods = 0,"
        " modification_time = m_now ()"
        " WHERE schedule > 0"
        "%s"
@@ -15315,7 +15334,6 @@ update_duration_schedule_periods (task_t task)
   sql ("UPDATE tasks"
        " SET schedule = 0,"
        " schedule_next_time = 0,"
-       " schedule_periods = 0,"
        " modification_time = m_now ()"
        " WHERE schedule > 0"
        "%s"
@@ -27816,10 +27834,11 @@ copy_task (const char* name, const char* comment, const char *task_id,
 
   // FIX task names are allowed to clash
   ret = copy_resource_lock ("task", name, comment, task_id,
-                            "config, target, schedule, scanner,"
-                            " schedule_next_time, slave, config_location,"
-                            " target_location, schedule_location,"
-                            " scanner_location, slave_location, hosts_ordering",
+                            "config, target, schedule, schedule_periods,"
+                            " scanner, schedule_next_time, slave,"
+                            " config_location, target_location,"
+                            " schedule_location, scanner_location,"
+                            " slave_location, hosts_ordering",
                             1, &new, &old);
   if (ret)
     {

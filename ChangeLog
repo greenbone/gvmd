@@ -1,3 +1,22 @@
+2015-10-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_TASK set the
+	schedule periods even if the schedule is not given.  In
+	CLIENT_MODIFY_TASK use the given periods value even when the schedule
+	is "0".
+
+	* src/manage.c (manage_schedule): At the end of the task leave schedule
+	periods on 1 if it was 1.
+
+	* src/manage_sql.c (set_task_schedule_periods_id): New function.
+	(clear_duration_schedules, update_duration_schedule_periods): Leave
+	schedule periods on 1.  It's enough that the schedule is cleared.
+	(copy_task): Copy schedule period too, so that once flag is copied.
+
+	* src/manage_sql.h (set_task_schedule_periods): Move to manage.h.
+
+	* src/manage.h: Update headers accordingly.
+
 2015-10-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Add credential type "client certificate".
