@@ -1,5 +1,10 @@
 2015-10-29  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (update_nvt_family): Specify config type for
+	iterator.
+
+2015-10-29  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
 	Add scanner column for configs and configs_trash. Hence increase
 	database version to 158. Add database migration from version 157 to 158.
 

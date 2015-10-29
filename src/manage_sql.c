@@ -35477,7 +35477,7 @@ update_nvt_family (const char *oid, const char *old_family,
   iterator_t rows;
 
   ret = 0;
-  init_iterator (&rows, "SELECT id FROM configs;");
+  init_iterator (&rows, "SELECT id FROM configs WHERE type = 0;");
   while (next (&rows))
     if (config_update_nvt_family (iterator_int64 (&rows, 0), oid, old_family,
                                   new_family))
