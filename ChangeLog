@@ -1,3 +1,8 @@
+2015-10-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (HOST_ITERATOR_FILTER_COLUMNS)
+	(HOST_ITERATOR_COLUMNS): ): Add columns "hostname" and "ip".
+
 2015-10-29  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.h: Add function header.
@@ -36,6 +41,9 @@
 	Add scanner column to configs and configs_trash tables.
 
 2015-10-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Keep the task's "schedule periods" value whenever possible, so that the
+	"Once" checkbox stays active even when the schedule is cleared.
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_TASK set the
 	schedule periods even if the schedule is not given.  In

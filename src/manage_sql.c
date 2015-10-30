@@ -53470,8 +53470,9 @@ DEF_ACCESS (host_identifier_iterator_os_title,
 /**
  * @brief Filter columns for host iterator.
  */
-#define HOST_ITERATOR_FILTER_COLUMNS                                  \
- { GET_ITERATOR_FILTER_COLUMNS, "severity", "os", "oss", NULL }
+#define HOST_ITERATOR_FILTER_COLUMNS                                        \
+ { GET_ITERATOR_FILTER_COLUMNS, "severity", "os", "oss", "hostname", "ip",  \
+   NULL }
 
 /**
  * @brief Host iterator columns.
@@ -53529,6 +53530,24 @@ DEF_ACCESS (host_identifier_iterator_os_title,
      "  WHERE id IN (SELECT distinct os FROM host_oss"                \
      "               WHERE host = hosts.id))",                        \
      "oss"                                                            \
+   },                                                                 \
+   {                                                                  \
+     "(SELECT value"                                                  \
+     " FROM host_identifiers"                                         \
+     " WHERE host = hosts.id"                                         \
+     " AND (name = 'hostname' or name = 'DNS-via-TargetDefinition')"  \
+     " ORDER by creation_time DESC"                                   \
+     " LIMIT 1)",                                                     \
+     "hostname"                                                       \
+   },                                                                 \
+   {                                                                  \
+     "(SELECT value"                                                  \
+     " FROM host_identifiers"                                         \
+     " WHERE host = hosts.id"                                         \
+     " AND name = 'ip'"                                               \
+     " ORDER by creation_time DESC"                                   \
+     " LIMIT 1)",                                                     \
+     "ip"                                                             \
    },                                                                 \
    { NULL, NULL }                                                     \
  }
