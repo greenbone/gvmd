@@ -1,7 +1,8 @@
 2015-10-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/manage_sql.c (HOST_ITERATOR_FILTER_COLUMNS)
-	(HOST_ITERATOR_COLUMNS): ): Add columns "hostname" and "ip".
+	* src/html/XML/OMP.xml (create_report): Correct example.
+
+	* doc/omp.html: Update from source.
 
 2015-10-29  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
