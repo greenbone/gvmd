@@ -1,3 +1,11 @@
+2015-11-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r23737.
+
+	* src/html/XML/OMP.xml (create_report): Correct example.
+
+	* doc/omp.html: Update from source.
+
 2015-10-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r23723.

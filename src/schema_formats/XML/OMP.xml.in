@@ -4405,25 +4405,23 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>Create a report in a new task</summary>
       <request>
         <create_report>
-          <get_reports_response>
-            <report id="a0704abb-2120-489f-959f-251c9f4ffebd">
-              <name>CPE</name>
-              <extension>csv</extension>
-              <content_type>text/csv</content_type>
-              <summary>Common Product Enumeration CSV table.</summary>
-              <description>
-                CPE stands for Common Product Enumeration.  It is a
-                <truncated>...</truncated>
-              </description>
-              <global>1</global>
-              <predefined>1</predefined>
-              <trust>
-                yes
-                <time>Thu Dec  2 13:22:26 2010</time>
-              </trust>
-              <active>1</active>
-            </report>
-          </get_reports_response>
+		  <report id="a0704abb-2120-489f-959f-251c9f4ffebd">
+			<name>CPE</name>
+			<extension>csv</extension>
+			<content_type>text/csv</content_type>
+			<summary>Common Product Enumeration CSV table.</summary>
+			<description>
+			  CPE stands for Common Product Enumeration.  It is a
+			  <truncated>...</truncated>
+			</description>
+			<global>1</global>
+			<predefined>1</predefined>
+			<trust>
+			  yes
+			  <time>Thu Dec  2 13:22:26 2010</time>
+			</trust>
+			<active>1</active>
+		  </report>
           <task>
             <name>Imported reports</name>
           </task>
