@@ -9318,14 +9318,13 @@ create_role_users
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>key_pub</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Certificate to authenticate with to the Scanner..</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>key_priv</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Private key to authenticate with to the Scanner.</div>
-<ul style="list-style: none"></ul>
+              &lt;<b>credential</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Client certificate credential for the Scanner.</div>
+<ul style="list-style: none"><li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the credential.
+          </li></ul>
 </li>
 </ul>
 </li>
@@ -9358,8 +9357,7 @@ create_role_users
        &amp; create_scanner_port
        &amp; create_scanner_type
        &amp; create_scanner_ca_pub
-       &amp; create_scanner_key_pub
-       &amp; create_scanner_key_priv
+       &amp; create_scanner_credential
      }
 
 create_scanner_name
@@ -9404,16 +9402,10 @@ create_scanner_ca_pub
        text
      }
 
-create_scanner_key_pub
- = element key_pub
+create_scanner_credential
+ = element credential
      {
-       text
-     }
-
-create_scanner_key_priv
- = element key_priv
-     {
-       text
+       attribute id { uuid }
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>create_scanner_response
@@ -9433,8 +9425,7 @@ create_scanner_key_priv
    &lt;port&gt;9391&lt;/port&gt;
    &lt;type&gt;2&lt;/type&gt;
    &lt;ca_pub&gt;...&lt;/ca_pub&gt;
-   &lt;key_pub&gt;...&lt;/key_pub&gt;
-   &lt;key_priv&gt;...&lt;/key_priv&gt;
+   &lt;credential id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
  &lt;/create_scanner&gt;
 </pre></div>
 <i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_scanner_response status="201"
@@ -16725,6 +16716,11 @@ get_assets_response_asset_count_page
           ID of filter to use to filter query.
           </li>
 <li>
+          @<b>scanners</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to include a list of scanners using the credentials.
+          </li>
+<li>
           @<b>slaves</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to include a list of slaves using the credentials.
@@ -16859,6 +16855,29 @@ get_assets_response_asset_count_page
               &lt;<b>type</b>&gt;
               <div style="margin-left: 15px; display: inline;">The type of the credential.</div>
 <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>scanners</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">All scanners using this credential.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>scanner</b>&gt;
+              *<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the scanner.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the scanner.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
 </li>
 <li>
               &lt;<b>slaves</b>&gt;
@@ -17018,6 +17037,7 @@ get_assets_response_asset_count_page
        attribute credential_id { uuid }?
        &amp; attribute filter { uuid }?
        &amp; attribute filt_id { uuid }?
+       &amp; attribute scanners { boolean }?
        &amp; attribute slaves { boolean }?
        &amp; attribute trash { boolean }?
        &amp; attribute targets { boolean }?
@@ -17051,6 +17071,7 @@ get_credentials_response_credential
        &amp; get_credentials_response_credential_permissions
        &amp; get_credentials_response_credential_user_tags
        &amp; get_credentials_response_credential_type
+       &amp; get_credentials_response_credential_scanners?
        &amp; get_credentials_response_credential_slaves?
        &amp; get_credentials_response_credential_targets?
        &amp; ( get_credentials_response_credential_public_key
@@ -17179,6 +17200,32 @@ get_credentials_response_credential_full_type
  = element full_type
      {
        text
+     }
+
+get_credentials_response_credential_scanners
+ = element scanners
+     {
+       get_credentials_response_credential_scanners_scanner*
+     }
+
+get_credentials_response_credential_scanners_scanner
+ = element scanner
+     {
+       attribute id { uuid }
+       &amp; get_credentials_response_credential_scanners_scanner_name
+       &amp; get_credentials_response_credential_scanners_scanner_permissions?
+     }
+
+get_credentials_response_credential_scanners_scanner_name
+ = element name
+     {
+       name
+     }
+
+get_credentials_response_credential_scanners_scanner_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_credentials_response_credential_slaves
@@ -25757,9 +25804,24 @@ get_roles_response_role_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>key_pub</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Certificate of credentials to authenticate with.</div>
+              &lt;<b>credential</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Client certificate credential for the Scanner.</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the credential.</div>
 <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>trash</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the credential is in the trashcan.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
 </li>
 <li>
               &lt;<b>tasks</b>&gt;
@@ -25913,7 +25975,7 @@ get_scanners_response_scanner
        &amp; get_scanners_response_scanner_port
        &amp; get_scanners_response_scanner_type
        &amp; get_scanners_response_scanner_ca_pub
-       &amp; get_scanners_response_scanner_key_pub
+       &amp; get_scanners_response_scanner_credential
        &amp; get_scanners_response_scanner_tasks?
      }
 
@@ -26047,10 +26109,30 @@ get_scanners_response_scanner_ca_pub
        text
      }
 
-get_scanners_response_scanner_key_pub
- = element key_pub
+get_scanners_response_scanner_credential
+ = element credential
+     {
+       attribute id { uuid }
+       &amp; get_scanners_response_scanner_credential_name
+       &amp; get_scanners_response_scanner_credential_trash
+     }
+
+get_scanners_response_scanner_credential_name
+ = element name
      {
        text
+     }
+
+get_scanners_response_scanner_credential_login
+ = element login
+     {
+       text
+     }
+
+get_scanners_response_scanner_credential_trash
+ = element trash
+     {
+       boolean
      }
 
 get_scanners_response_scanner_tasks
@@ -34558,14 +34640,13 @@ modify_role_users
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>key_pub</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">Certificate of credentials to authenticate with to scanner.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>key_priv</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">Private key of credentials to authenticate with to scanner.</div>
-<ul style="list-style: none"></ul>
+              &lt;<b>credential</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Client certificate credential for the Scanner.</div>
+<ul style="list-style: none"><li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the credential.
+          </li></ul>
 </li>
 </ul>
 </li>
@@ -34594,8 +34675,7 @@ modify_role_users
        &amp; modify_scanner_port
        &amp; modify_scanner_type
        &amp; modify_scanner_ca_pub?
-       &amp; modify_scanner_key_pub?
-       &amp; modify_scanner_key_priv?
+       &amp; modify_scanner_credential?
      }
 
 modify_scanner_comment
@@ -34634,16 +34714,10 @@ modify_scanner_ca_pub
        text
      }
 
-modify_scanner_key_pub
- = element key_pub
+modify_scanner_credential
+ = element credential
      {
-       text
-     }
-
-modify_scanner_key_priv
- = element key_priv
-     {
-       text
+       attribute id { uuid }
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>modify_scanner_response

@@ -1999,6 +1999,18 @@ int
 credential_target_iterator_readable (iterator_t*);
 
 void
+init_credential_scanner_iterator (iterator_t*, credential_t, int);
+
+const char*
+credential_scanner_iterator_uuid (iterator_t*);
+
+const char*
+credential_scanner_iterator_name (iterator_t*);
+
+int
+credential_scanner_iterator_readable (iterator_t*);
+
+void
 init_credential_slave_iterator (iterator_t*, credential_t, int);
 
 const char*
@@ -2422,16 +2434,14 @@ find_scanner (const char *, scanner_t *);
 
 int
 create_scanner (const char*, const char *, const char *, const char *,
-                const char *, scanner_t *, const char *, const char *,
-                const char *);
+                const char *, scanner_t *, const char *, const char *);
 
 int
 copy_scanner (const char*, const char*, const char *, scanner_t *);
 
 int
 modify_scanner (const char*, const char*, const char*, const char *,
-                const char *, const char *, const char *, const char *,
-                const char *);
+                const char *, const char *, const char *, const char *);
 
 int
 delete_scanner (const char *, int);
@@ -2489,6 +2499,15 @@ scanner_iterator_port (iterator_t*);
 
 int
 scanner_iterator_type (iterator_t*);
+
+const char*
+scanner_iterator_credential_name (iterator_t *);
+
+credential_t
+scanner_iterator_credential (iterator_t *);
+
+int
+scanner_iterator_credential_trash (iterator_t*);
 
 const char*
 scanner_iterator_ca_pub (iterator_t *);

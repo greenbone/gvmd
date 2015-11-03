@@ -418,8 +418,7 @@ CREATE TABLE scanners
   port integer,
   type integer,
   ca_pub text,
-  key_pub text,
-  key_priv text,
+  credential integer REFERENCES credentials (id) ON DELETE RESTRICT,
   creation_time date,
   modification_time date);
 
@@ -433,8 +432,8 @@ CREATE TABLE scanners_trash
   port integer,
   type integer,
   ca_pub text,
-  key_pub text,
-  key_priv text,
+  credential integer,
+  credential_location integer,
   creation_time date,
   modification_time date);
 

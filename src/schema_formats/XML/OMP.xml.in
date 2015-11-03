@@ -4667,8 +4667,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>port</e>
       <e>type</e>
       <e>ca_pub</e>
-      <e>key_pub</e>
-      <e>key_priv</e>
+      <e>credential</e>
     </pattern>
     <ele>
       <name>name</name>
@@ -4709,14 +4708,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <pattern>text</pattern>
     </ele>
     <ele>
-      <name>key_pub</name>
-      <summary>Certificate to authenticate with to the Scanner.</summary>
-      <pattern>text</pattern>
-    </ele>
-    <ele>
-      <name>key_priv</name>
-      <summary>Private key to authenticate with to the Scanner</summary>
-      <pattern>text</pattern>
+      <name>credential</name>
+      <summary>Client certificate credential for the Scanner</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <summary>UUID of the credential</summary>
+          <required>1</required>
+        </attrib>
+      </pattern>
     </ele>
     <response>
       <pattern>
@@ -4746,8 +4747,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <port>9391</port>
           <type>2</type>
           <ca_pub>...</ca_pub>
-          <key_pub>...</key_pub>
-          <key_priv>...</key_priv>
+          <credential id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/>
         </create_scanner>
       </request>
       <response>
@@ -9727,6 +9727,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
+        <name>scanners</name>
+        <summary>Whether to include a list of scanners using the credentials</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
         <name>slaves</name>
         <summary>Whether to include a list of slaves using the credentials</summary>
         <type>boolean</type>
@@ -9790,6 +9795,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>permissions</e>
           <e>user_tags</e>
           <e>type</e>
+          <o><e>scanners</e></o>
           <o><e>slaves</e></o>
           <o><e>targets</e></o>
           <or>
@@ -9928,6 +9934,35 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>
             text
           </pattern>
+        </ele>
+        <ele>
+          <name>scanners</name>
+          <summary>All scanners using this credential</summary>
+          <pattern>
+            <any><e>scanner</e></any>
+          </pattern>
+          <ele>
+            <name>scanner</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <o><e>permissions</e></o>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the scanner</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>permissions</name>
+              <summary>Permissions the user has on the scanner</summary>
+              <pattern></pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>slaves</name>
@@ -15818,7 +15853,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>port</e>
           <e>type</e>
           <e>ca_pub</e>
-          <e>key_pub</e>
+          <e>credential</e>
           <o><e>tasks</e></o>
         </pattern>
         <ele>
@@ -15948,9 +15983,38 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>text</pattern>
         </ele>
         <ele>
-          <name>key_pub</name>
-          <summary>Certificate of credentials to authenticate with</summary>
-          <pattern>text</pattern>
+          <name>credential</name>
+          <summary>Client certificate credential for the Scanner</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
+            <e>trash</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>Name of the credential</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>login</name>
+            <summary>Username from credential used to login</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>trash</name>
+            <summary>Whether the credential is in the trashcan</summary>
+            <pattern>
+              <t>boolean</t>
+            </pattern>
+          </ele>
         </ele>
         <ele>
           <name>tasks</name>
@@ -21612,8 +21676,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>port</e>
       <e>type</e>
       <o><e>ca_pub</e></o>
-      <o><e>key_pub</e></o>
-      <o><e>key_priv</e></o>
+      <o><e>credential</e></o>
     </pattern>
     <ele>
       <name>comment</name>
@@ -21646,14 +21709,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <pattern>text</pattern>
     </ele>
     <ele>
-      <name>key_pub</name>
-      <summary>Certificate of credentials to authenticate with to scanner</summary>
-      <pattern>text</pattern>
-    </ele>
-    <ele>
-      <name>key_priv</name>
-      <summary>Private key of credentials to authenticate with to scanner</summary>
-      <pattern>text</pattern>
+      <name>credential</name>
+      <summary>Client certificate credential for the Scanner</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <summary>UUID of the credential</summary>
+          <required>1</required>
+        </attrib>
+      </pattern>
     </ele>
     <response>
       <pattern>
@@ -23096,6 +23161,28 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         The type LSC_CREDENTIAL has been renamed to CREDENTIAL, so
         the CREATE_LSC_CREDENTIAL command is now named CREATE_CREDENTIAL,
         GET_LSC_CREDENTIALS is named GET_CREDENTIALS, etc.
+      </p>
+    </description>
+    <version>7.0</version>
+  </change>
+  <change>
+    <command>CREATE_SCANNER, GET_SCANNERS, MODIFY_SCANNER</command>
+    <summary>key_priv and key_pub replaced by credential</summary>
+    <description>
+      <p>
+        The key_priv and key_pub elements have been replaced by a credential
+        one referencing a "cc" (client certificate) type credential.
+      </p>
+    </description>
+    <version>7.0</version>
+  </change>
+  <change>
+    <command>CREATE_SLAVE, GET_SLAVES, MODIFY_SLAVE</command>
+    <summary>username and password replaced by credential</summary>
+    <description>
+      <p>
+        The username and password elements have been replaced by a credential
+        one referencing a "up" (username + password) type credential.
       </p>
     </description>
     <version>7.0</version>

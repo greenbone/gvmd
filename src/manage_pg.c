@@ -1956,8 +1956,7 @@ create_tables ()
        "  port integer,"
        "  type integer,"
        "  ca_pub text,"
-       "  key_pub text,"
-       "  key_priv text,"
+       "  credential integer REFERENCES credentials (id) ON DELETE RESTRICT,"
        "  creation_time integer,"
        "  modification_time integer);");
 
@@ -1971,8 +1970,8 @@ create_tables ()
        "  port integer,"
        "  type integer,"
        "  ca_pub text,"
-       "  key_pub text,"
-       "  key_priv text,"
+       "  credential integer,"
+       "  credential_location integer,"
        "  creation_time integer,"
        "  modification_time integer);");
 

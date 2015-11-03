@@ -4116,8 +4116,7 @@ create_scanner
        & create_scanner_port
        & create_scanner_type
        & create_scanner_ca_pub
-       & create_scanner_key_pub
-       & create_scanner_key_priv
+       & create_scanner_credential
      }
 
 # A name for the scanner.
@@ -4169,18 +4168,12 @@ create_scanner_ca_pub
        text
      }
 
-# Certificate to authenticate with to the Scanner..
-create_scanner_key_pub
- = element key_pub
+# Client certificate credential for the Scanner.
+create_scanner_credential
+ = element credential
      {
-       text
-     }
-
-# Private key to authenticate with to the Scanner.
-create_scanner_key_priv
- = element key_priv
-     {
-       text
+       # UUID of the credential.
+       attribute id { uuid }
      }
 
 ## Command create_schedule
@@ -5222,6 +5215,8 @@ get_credentials
        attribute filter { uuid }?
        & # ID of filter to use to filter query.
        attribute filt_id { uuid }?
+       & # Whether to include a list of scanners using the credentials.
+       attribute scanners { boolean }?
        & # Whether to include a list of slaves using the credentials.
        attribute slaves { boolean }?
        & # Whether to get the trashcan credentials instead.
@@ -6534,8 +6529,7 @@ modify_scanner
        & modify_scanner_port
        & modify_scanner_type
        & modify_scanner_ca_pub?
-       & modify_scanner_key_pub?
-       & modify_scanner_key_priv?
+       & modify_scanner_credential?
      }
 
 # Comment on scanner.
@@ -6580,18 +6574,12 @@ modify_scanner_ca_pub
        text
      }
 
-# Certificate of credentials to authenticate with to scanner.
-modify_scanner_key_pub
- = element key_pub
+# Client certificate credential for the Scanner.
+modify_scanner_credential
+ = element credential
      {
-       text
-     }
-
-# Private key of credentials to authenticate with to scanner.
-modify_scanner_key_priv
- = element key_priv
-     {
-       text
+       # UUID of the credential.
+       attribute id { uuid }
      }
 
 ## Command modify_schedule
@@ -10140,6 +10128,7 @@ get_credentials_response_credential
        & get_credentials_response_credential_permissions
        & get_credentials_response_credential_user_tags
        & get_credentials_response_credential_type
+       & get_credentials_response_credential_scanners?
        & get_credentials_response_credential_slaves?
        & get_credentials_response_credential_targets?
        & ( get_credentials_response_credential_public_key
@@ -10288,6 +10277,35 @@ get_credentials_response_credential_full_type
  = element full_type
      {
        text
+     }
+
+# All scanners using this credential.
+get_credentials_response_credential_scanners
+ = element scanners
+     {
+       get_credentials_response_credential_scanners_scanner*
+     }
+
+get_credentials_response_credential_scanners_scanner
+ = element scanner
+     {
+       attribute id { uuid }
+       & get_credentials_response_credential_scanners_scanner_name
+       & get_credentials_response_credential_scanners_scanner_permissions?
+     }
+
+# The name of the scanner.
+get_credentials_response_credential_scanners_scanner_name
+ = element name
+     {
+       name
+     }
+
+# Permissions the user has on the scanner.
+get_credentials_response_credential_scanners_scanner_permissions
+ = element permissions
+     {
+       ""
      }
 
 # All slaves using this credential.
@@ -14244,7 +14262,7 @@ get_scanners_response_scanner
        & get_scanners_response_scanner_port
        & get_scanners_response_scanner_type
        & get_scanners_response_scanner_ca_pub
-       & get_scanners_response_scanner_key_pub
+       & get_scanners_response_scanner_credential
        & get_scanners_response_scanner_tasks?
      }
 
@@ -14397,11 +14415,34 @@ get_scanners_response_scanner_ca_pub
        text
      }
 
-# Certificate of credentials to authenticate with.
-get_scanners_response_scanner_key_pub
- = element key_pub
+# Client certificate credential for the Scanner.
+get_scanners_response_scanner_credential
+ = element credential
+     {
+       attribute id { uuid }
+       & get_scanners_response_scanner_credential_name
+       & get_scanners_response_scanner_credential_trash
+     }
+
+# Name of the credential.
+get_scanners_response_scanner_credential_name
+ = element name
      {
        text
+     }
+
+# Username from credential used to login.
+get_scanners_response_scanner_credential_login
+ = element login
+     {
+       text
+     }
+
+# Whether the credential is in the trashcan.
+get_scanners_response_scanner_credential_trash
+ = element trash
+     {
+       boolean
      }
 
 get_scanners_response_scanner_tasks

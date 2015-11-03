@@ -553,6 +553,76 @@ init_get (gchar *command, get_data_t * get, const gchar *setting_name,
   return 0;
 }
 
+/**
+ * @brief Check that a string represents a valid Certificate.
+ *
+ * @param[in]  cert_str     Certificate string.
+ *
+ * @return 0 if valid, 1 otherwise.
+ */
+static int
+check_certificate (const char *cert_str)
+{
+  gnutls_x509_crt_t crt;
+  gnutls_datum_t data;
+  int ret = 0;
+
+  assert (cert_str);
+  if (gnutls_x509_crt_init (&crt))
+    return 1;
+  data.size = strlen (cert_str);
+  data.data = (void *) g_strdup (cert_str);
+  if (gnutls_x509_crt_import (crt, &data, GNUTLS_X509_FMT_PEM))
+    {
+      gnutls_x509_crt_deinit (crt);
+      g_free (data.data);
+      return 1;
+    }
+
+  if (time (NULL) > gnutls_x509_crt_get_expiration_time (crt))
+    {
+      g_warning ("Certificate expiration time passed");
+      ret = 1;
+    }
+  if (time (NULL) < gnutls_x509_crt_get_activation_time (crt))
+    {
+      g_warning ("Certificate activation time in the future");
+      ret = 1;
+    }
+  g_free (data.data);
+  gnutls_x509_crt_deinit (crt);
+  return ret;
+}
+
+/**
+ * @brief Check that a string represents a valid Private Key.
+ *
+ * @param[in]  cert_str     Private Key string.
+ *
+ * @return 0 if valid, 1 otherwise.
+ */
+static int
+check_private_key (const char *key_str)
+{
+  gnutls_x509_privkey_t key;
+  gnutls_datum_t data;
+
+  assert (key_str);
+  if (gnutls_x509_privkey_init (&key))
+    return 1;
+  data.size = strlen (key_str);
+  data.data = (void *) g_strdup (key_str);
+  if (gnutls_x509_privkey_import (key, &data, GNUTLS_X509_FMT_PEM))
+    {
+      gnutls_x509_privkey_deinit (key);
+      g_free (data.data);
+      return 1;
+    }
+  g_free (data.data);
+  gnutls_x509_privkey_deinit (key);
+  return 0;
+}
+
 
 /* Status codes. */
 
@@ -1530,8 +1600,7 @@ typedef struct
   char *port;               ///< Port of new scanner.
   char *type;               ///< Type of new scanner.
   char *ca_pub;             ///< CA Certificate of new scanner.
-  char *key_pub;            ///< Certificate of new scanner.
-  char *key_priv;           ///< Private key of new scanner.
+  char *credential_id;      ///< UUID of credential for new scanner.
 } create_scanner_data_t;
 
 /**
@@ -1549,8 +1618,7 @@ create_scanner_data_reset (create_scanner_data_t *data)
   free (data->port);
   free (data->type);
   free (data->ca_pub);
-  free (data->key_pub);
-  free (data->key_priv);
+  free (data->credential_id);
 
   memset (data, 0, sizeof (create_scanner_data_t));
 }
@@ -2527,6 +2595,7 @@ typedef struct
 {
   char *format;      ///< Format requested: "key", "deb", ....
   get_data_t get;    ///< Get Args.
+  int scanners;      ///< Boolean.  Whether to return scanners using credential.
   int slaves;        ///< Boolean.  Whether to return slaves using credential.
   int targets;       ///< Boolean.  Whether to return targets using credential.
 } get_credentials_data_t;
@@ -3587,8 +3656,7 @@ typedef struct
   char *type;               ///< Type of scanner.
   char *scanner_id;         ///< scanner UUID.
   char *ca_pub;             ///< CA Certificate of scanner.
-  char *key_pub;            ///< Certificate of scanner.
-  char *key_priv;           ///< Private key of scanner.
+  char *credential_id;      ///< UUID of credential of scanner.
 } modify_scanner_data_t;
 
 /**
@@ -3606,8 +3674,7 @@ modify_scanner_data_reset (modify_scanner_data_t *data)
   g_free (data->type);
   g_free (data->scanner_id);
   free (data->ca_pub);
-  free (data->key_pub);
-  free (data->key_priv);
+  free (data->credential_id);
 
   memset (data, 0, sizeof (modify_scanner_data_t));
 }
@@ -5341,8 +5408,7 @@ typedef enum
   CLIENT_CREATE_SCANNER_PORT,
   CLIENT_CREATE_SCANNER_TYPE,
   CLIENT_CREATE_SCANNER_CA_PUB,
-  CLIENT_CREATE_SCANNER_KEY_PUB,
-  CLIENT_CREATE_SCANNER_KEY_PRIV,
+  CLIENT_CREATE_SCANNER_CREDENTIAL,
   CLIENT_CREATE_SCHEDULE,
   CLIENT_CREATE_SCHEDULE_COMMENT,
   CLIENT_CREATE_SCHEDULE_COPY,
@@ -5587,8 +5653,7 @@ typedef enum
   CLIENT_MODIFY_SCANNER_PORT,
   CLIENT_MODIFY_SCANNER_TYPE,
   CLIENT_MODIFY_SCANNER_CA_PUB,
-  CLIENT_MODIFY_SCANNER_KEY_PUB,
-  CLIENT_MODIFY_SCANNER_KEY_PRIV,
+  CLIENT_MODIFY_SCANNER_CREDENTIAL,
   CLIENT_MODIFY_SCHEDULE,
   CLIENT_MODIFY_SCHEDULE_COMMENT,
   CLIENT_MODIFY_SCHEDULE_DURATION,
@@ -7203,6 +7268,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                                        attribute_values);
 
             if (find_attribute (attribute_names, attribute_values,
+                                "scanners", &attribute))
+              get_credentials_data->scanners = strcmp (attribute, "0");
+            else
+              get_credentials_data->scanners = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
                                 "slaves", &attribute))
               get_credentials_data->slaves = strcmp (attribute, "0");
             else
@@ -8078,10 +8149,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_SCANNER_TYPE);
         else if (strcasecmp ("CA_PUB", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCANNER_CA_PUB);
-        else if (strcasecmp ("KEY_PUB", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SCANNER_KEY_PUB);
-        else if (strcasecmp ("KEY_PRIV", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SCANNER_KEY_PRIV);
+        else if (strcasecmp ("CREDENTIAL", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_scanner_data->credential_id);
+            set_client_state (CLIENT_CREATE_SCANNER_CREDENTIAL);
+          }
         ELSE_ERROR ("create_scanner");
 
       case CLIENT_CREATE_SCHEDULE:
@@ -8515,15 +8588,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             openvas_append_string (&modify_scanner_data->ca_pub, "");
             set_client_state (CLIENT_MODIFY_SCANNER_CA_PUB);
           }
-        else if (strcasecmp ("KEY_PUB", element_name) == 0)
+        else if (strcasecmp ("CREDENTIAL", element_name) == 0)
           {
-            openvas_append_string (&modify_scanner_data->key_pub, "");
-            set_client_state (CLIENT_MODIFY_SCANNER_KEY_PUB);
-          }
-        else if (strcasecmp ("KEY_PRIV", element_name) == 0)
-          {
-            openvas_append_string (&modify_scanner_data->key_priv, "");
-            set_client_state (CLIENT_MODIFY_SCANNER_KEY_PRIV);
+            append_attribute (attribute_names, attribute_values, "id",
+                              &modify_scanner_data->credential_id);
+            set_client_state (CLIENT_MODIFY_SCANNER_CREDENTIAL);
           }
         ELSE_ERROR ("modify_scanner");
 
@@ -13079,6 +13148,7 @@ handle_get_scanners (omp_parser_t *omp_parser, GError **error)
   SEND_GET_START ("scanner");
   while (1)
     {
+      gchar *credential_id;
       ret = get_next (&scanners, &get_scanners_data->get, &first, &count,
                       init_scanner_iterator);
       if (ret == 1)
@@ -13090,17 +13160,25 @@ handle_get_scanners (omp_parser_t *omp_parser, GError **error)
         }
 
       SEND_GET_COMMON (scanner, &get_scanners_data->get, &scanners);
+
+      credential_id = credential_uuid (scanner_iterator_credential (&scanners));
       SENDF_TO_CLIENT_OR_FAIL
        ("<host>%s</host>"
         "<port>%d</port>"
         "<type>%d</type>"
         "<ca_pub>%s</ca_pub>"
-        "<key_pub>%s</key_pub>",
+        "<credential id=\"%s\">"
+        "<name>%s</name>"
+        "<trash>%d</trash>"
+        "</credential>",
         scanner_iterator_host (&scanners) ?: "",
         scanner_iterator_port (&scanners) ?: 0,
         scanner_iterator_type (&scanners),
         scanner_iterator_ca_pub (&scanners) ?: "",
-        scanner_iterator_key_pub (&scanners) ?: "");
+        credential_id ? credential_id : "",
+        scanner_iterator_credential_name (&scanners) ?: "",
+        scanner_iterator_credential_trash (&scanners));
+      g_free (credential_id);
       count++;
       if (get_scanners_data->get.details)
         {
@@ -13195,76 +13273,6 @@ handle_get_scanners (omp_parser_t *omp_parser, GError **error)
   SEND_GET_END ("scanner", &get_scanners_data->get, count, filtered);
   get_scanners_data_reset (get_scanners_data);
   set_client_state (CLIENT_AUTHENTIC);
-}
-
-/**
- * @brief Check that a string represents a valid Certificate.
- *
- * @param[in]  cert_str     Certificate string.
- *
- * @return 0 if valid, 1 otherwise.
- */
-static int
-check_scanner_cert (const char *cert_str)
-{
-  gnutls_x509_crt_t crt;
-  gnutls_datum_t data;
-  int ret = 0;
-
-  assert (cert_str);
-  if (gnutls_x509_crt_init (&crt))
-    return 1;
-  data.size = strlen (cert_str);
-  data.data = (void *) g_strdup (cert_str);
-  if (gnutls_x509_crt_import (crt, &data, GNUTLS_X509_FMT_PEM))
-    {
-      gnutls_x509_crt_deinit (crt);
-      g_free (data.data);
-      return 1;
-    }
-
-  if (time (NULL) > gnutls_x509_crt_get_expiration_time (crt))
-    {
-      g_warning ("Certificate expiration time passed");
-      ret = 1;
-    }
-  if (time (NULL) < gnutls_x509_crt_get_activation_time (crt))
-    {
-      g_warning ("Certificate activation time in the future");
-      ret = 1;
-    }
-  g_free (data.data);
-  gnutls_x509_crt_deinit (crt);
-  return ret;
-}
-
-/**
- * @brief Check that a string represents a valid Private Key.
- *
- * @param[in]  cert_str     Private Key string.
- *
- * @return 0 if valid, 1 otherwise.
- */
-static int
-check_scanner_private (const char *key_str)
-{
-  gnutls_x509_privkey_t key;
-  gnutls_datum_t data;
-
-  assert (key_str);
-  if (gnutls_x509_privkey_init (&key))
-    return 1;
-  data.size = strlen (key_str);
-  data.data = (void *) g_strdup (key_str);
-  if (gnutls_x509_privkey_import (key, &data, GNUTLS_X509_FMT_PEM))
-    {
-      gnutls_x509_privkey_deinit (key);
-      g_free (data.data);
-      return 1;
-    }
-  g_free (data.data);
-  gnutls_x509_privkey_deinit (key);
-  return 0;
 }
 
 /**
@@ -13397,38 +13405,24 @@ handle_create_scanner (omp_parser_t *omp_parser, GError **error)
 
   if (!create_scanner_data->name || !create_scanner_data->host
       || !create_scanner_data->port || !create_scanner_data->type
-      || !create_scanner_data->ca_pub || !create_scanner_data->key_pub
-      || !create_scanner_data->key_priv)
+      || !create_scanner_data->ca_pub || !create_scanner_data->credential_id)
     {
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("create_scanner", "Missing entity"));
       goto create_scanner_leave;
     }
 
-  if (check_scanner_cert (create_scanner_data->ca_pub))
+  if (check_certificate (create_scanner_data->ca_pub))
     {
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("create_scanner", "Erroneous CA Certificate."));
-      goto create_scanner_leave;
-    }
-  if (check_scanner_cert (create_scanner_data->key_pub))
-    {
-      SEND_TO_CLIENT_OR_FAIL
-       (XML_ERROR_SYNTAX ("create_scanner", "Erroneous Certificate."));
-      goto create_scanner_leave;
-    }
-  if (check_scanner_private (create_scanner_data->key_priv))
-    {
-      SEND_TO_CLIENT_OR_FAIL
-       (XML_ERROR_SYNTAX ("create_scanner", "Erroneous Private Key."));
       goto create_scanner_leave;
     }
   switch (create_scanner
            (create_scanner_data->name, create_scanner_data->comment,
             create_scanner_data->host, create_scanner_data->port,
             create_scanner_data->type, &new_scanner,
-            create_scanner_data->ca_pub, create_scanner_data->key_pub,
-            create_scanner_data->key_priv))
+            create_scanner_data->ca_pub, create_scanner_data->credential_id))
     {
       case 0:
         {
@@ -13447,6 +13441,23 @@ handle_create_scanner (omp_parser_t *omp_parser, GError **error)
       case 2:
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("create_scanner", "Invalid entity value"));
+        log_event_fail ("scanner", "Scanner", NULL, "created");
+        break;
+      case 3:
+        if (send_find_error_to_client ("create_scanner", "credential",
+                                       create_scanner_data->credential_id,
+                                       omp_parser))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        log_event_fail ("scanner", "Scanner", NULL, "created");
+        break;
+      case 4:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("create_scanner",
+                            "Credential must be of type 'cc'"
+                            " (client certificate)"));
         log_event_fail ("scanner", "Scanner", NULL, "created");
         break;
       case 99:
@@ -13480,32 +13491,18 @@ static void
 handle_modify_scanner (omp_parser_t *omp_parser, GError **error)
 {
   if (modify_scanner_data->ca_pub && *modify_scanner_data->ca_pub
-      && check_scanner_cert (modify_scanner_data->ca_pub))
+      && check_certificate (modify_scanner_data->ca_pub))
     {
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("modify_scanner", "Erroneous CA Certificate."));
       goto modify_scanner_leave;
     }
-  if (modify_scanner_data->key_pub && *modify_scanner_data->key_pub
-      && check_scanner_cert (modify_scanner_data->key_pub))
-    {
-      SEND_TO_CLIENT_OR_FAIL
-       (XML_ERROR_SYNTAX ("modify_scanner", "Erroneous Certificate."));
-      goto modify_scanner_leave;
-    }
-  if (modify_scanner_data->key_priv && *modify_scanner_data->key_priv
-      && check_scanner_private (modify_scanner_data->key_priv))
-    {
-      SEND_TO_CLIENT_OR_FAIL
-       (XML_ERROR_SYNTAX ("modify_scanner", "Erroneous Private Key."));
-      goto modify_scanner_leave;
-    }
+
   switch (modify_scanner
            (modify_scanner_data->scanner_id, modify_scanner_data->name,
             modify_scanner_data->comment, modify_scanner_data->host,
             modify_scanner_data->port, modify_scanner_data->type,
-            modify_scanner_data->ca_pub, modify_scanner_data->key_pub,
-            modify_scanner_data->key_priv))
+            modify_scanner_data->ca_pub, modify_scanner_data->credential_id))
     {
       case 0:
         SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_scanner"));
@@ -13539,6 +13536,25 @@ handle_modify_scanner (omp_parser_t *omp_parser, GError **error)
       case 4:
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("modify_scanner", "Invalid value"));
+        log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
+                        "modified");
+        break;
+      case 5:
+        if (send_find_error_to_client ("create_scanner", "credential",
+                                       modify_scanner_data->credential_id,
+                                       omp_parser))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
+                        "modified");
+        break;
+      case 6:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("modify_scanner",
+                            "Credential must be of type 'cc'"
+                            " (client certificate)"));
         log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
                         "modified");
         break;
@@ -14792,6 +14808,31 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                        ("<certificate>%s</certificate>", cert ?: "");
                       break;
                     }
+                }
+
+              if (get_credentials_data->scanners)
+                {
+                  iterator_t scanners;
+
+                  SENDF_TO_CLIENT_OR_FAIL ("<scanners>");
+                  init_credential_scanner_iterator
+                   (&scanners, get_iterator_resource (&credentials), 0);
+                  while (next (&scanners))
+                    {
+                      SENDF_TO_CLIENT_OR_FAIL
+                       ("<scanner id=\"%s\">"
+                        "<name>%s</name>",
+                        credential_scanner_iterator_uuid (&scanners),
+                        credential_scanner_iterator_name (&scanners));
+                      if (credential_scanner_iterator_readable (&scanners))
+                        SEND_TO_CLIENT_OR_FAIL ("</scanner>");
+                      else
+                        SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                                "</scanner>");
+                    }
+                  cleanup_iterator (&scanners);
+
+                  SEND_TO_CLIENT_OR_FAIL ("</scanners>");
                 }
 
               if (get_credentials_data->slaves)
@@ -21111,6 +21152,21 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   "CREATE_CREDENTIAL KEY requires a PRIVATE"
                                   " key"));
             }
+          else if (create_credential_data->key
+                   && create_credential_data->key_private == NULL
+                   && check_private_key (create_credential_data->key_private))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+              (XML_ERROR_SYNTAX ("create_credential",
+                                 "Erroneous Private Key."));
+            }
+          else if (create_credential_data->certificate
+                   && check_certificate (create_credential_data->certificate))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+              (XML_ERROR_SYNTAX ("create_credential",
+                                 "Erroneous Certificate."));
+            }
           else switch (create_credential
                         (create_credential_data->name,
                          create_credential_data->comment,
@@ -23033,8 +23089,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_SCANNER, PORT);
       CLOSE (CLIENT_CREATE_SCANNER, TYPE);
       CLOSE (CLIENT_CREATE_SCANNER, CA_PUB);
-      CLOSE (CLIENT_CREATE_SCANNER, KEY_PUB);
-      CLOSE (CLIENT_CREATE_SCANNER, KEY_PRIV);
+      CLOSE (CLIENT_CREATE_SCANNER, CREDENTIAL);
 
       case CLIENT_CREATE_SCHEDULE:
         {
@@ -26104,8 +26159,7 @@ create_task_fail:
       CLOSE (CLIENT_MODIFY_SCANNER, COMMENT);
       CLOSE (CLIENT_MODIFY_SCANNER, NAME);
       CLOSE (CLIENT_MODIFY_SCANNER, CA_PUB);
-      CLOSE (CLIENT_MODIFY_SCANNER, KEY_PUB);
-      CLOSE (CLIENT_MODIFY_SCANNER, KEY_PRIV);
+      CLOSE (CLIENT_MODIFY_SCANNER, CREDENTIAL);
 
       case CLIENT_MODIFY_SCHEDULE:
         {
@@ -29042,12 +29096,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_SCANNER_CA_PUB,
               &create_scanner_data->ca_pub);
 
-      APPEND (CLIENT_CREATE_SCANNER_KEY_PUB,
-              &create_scanner_data->key_pub);
-
-      APPEND (CLIENT_CREATE_SCANNER_KEY_PRIV,
-              &create_scanner_data->key_priv);
-
       APPEND (CLIENT_CREATE_SCHEDULE_COMMENT,
               &create_schedule_data->comment);
 
@@ -29387,12 +29435,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_SCANNER_CA_PUB,
               &modify_scanner_data->ca_pub);
-
-      APPEND (CLIENT_MODIFY_SCANNER_KEY_PUB,
-              &modify_scanner_data->key_pub);
-
-      APPEND (CLIENT_MODIFY_SCANNER_KEY_PRIV,
-              &modify_scanner_data->key_priv);
 
 
       APPEND (CLIENT_MODIFY_SCHEDULE_COMMENT,
