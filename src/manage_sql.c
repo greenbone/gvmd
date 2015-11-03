@@ -41920,7 +41920,7 @@ scanner_key_pub (scanner_t scanner)
   if (scanner == 0)
     return NULL;
 
-  return sql_string ("SELECT value FROM credentials"
+  return sql_string ("SELECT value FROM credentials_data"
                      " WHERE credential = (SELECT credential FROM scanners"
                      "                     WHERE id = %llu)"
                      "   AND type = 'certificate';",
@@ -41939,7 +41939,7 @@ scanner_key_priv (scanner_t scanner)
 {
   gchar *key;
 
-  key = sql_string ("SELECT value FROM credentials"
+  key = sql_string ("SELECT value FROM credentials_data"
                     " WHERE credential = (SELECT credential FROM scanners"
                     "                     WHERE id = %llu)"
                     "   AND type = 'private_key';",
@@ -41951,7 +41951,7 @@ scanner_key_priv (scanner_t scanner)
       lsc_crypt_ctx_t crypt_ctx;
       crypt_ctx = lsc_crypt_new ();
 
-      secret = sql_string ("SELECT value FROM credentials"
+      secret = sql_string ("SELECT value FROM credentials_data"
                            " WHERE credential"
                            "         = (SELECT credential FROM scanners"
                            "            WHERE id = %llu)"
