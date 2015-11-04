@@ -41652,21 +41652,21 @@ DEF_ACCESS (scanner_iterator_key_pub, GET_ITERATOR_COLUMN_COUNT + 7);
  */
 const char* scanner_iterator_key_priv (iterator_t* iterator)
 {
-  const char *password;
+  const char *private_key;
 
-  password = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
+  private_key = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
 
-  if (password == NULL)
+  if (private_key == NULL)
     {
       const char *secret;
       if (!iterator->crypt_ctx)
         iterator->crypt_ctx = lsc_crypt_new ();
 
       secret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 9);
-      password = lsc_crypt_get_password (iterator->crypt_ctx, secret);
+      private_key = lsc_crypt_get_private_key (iterator->crypt_ctx, secret);
     }
 
-  return password;
+  return private_key;
 }
 
 /**
