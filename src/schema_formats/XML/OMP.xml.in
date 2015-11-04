@@ -2966,6 +2966,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>start_task</c>
           <c>stop_task</c>
           <c>sync_feed</c>
+          <c>sync_config</c>
           <c>sync_scap</c>
           <c>sync_cert</c>
           <c>test_alert</c>
@@ -3092,6 +3093,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>start_task</r>
             <r>stop_task</r>
             <r>sync_feed</r>
+            <r>sync_config</r>
             <r>sync_scap</r>
             <r>sync_cert</r>
             <r>test_alert</r>
@@ -20192,6 +20194,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             STOP_TASK              Stop a running task.
             SYNC_CERT              Synchronize with a CERT feed.
             SYNC_FEED              Synchronize with an NVT feed.
+            SYNC_CONFIG            Synchronize a config with a scanner.
             SYNC_SCAP              Synchronize with a SCAP feed.
             TEST_ALERT             Run an alert.
             VERIFY_AGENT           Verify an agent.
@@ -20633,6 +20636,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <or>
         <e>name</e>
         <e>comment</e>
+        <e>scanner</e>
         <e>preference</e>
         <e>family_selection</e>
         <e>nvt_selection</e>
@@ -20646,6 +20650,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <ele>
       <name>comment</name>
       <summary>New comment for the config</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>scanner</name>
+      <summary>New scanner's UUID for the config</summary>
       <pattern>text</pattern>
     </ele>
     <ele>
@@ -22967,6 +22976,43 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </request>
       <response>
         <sync_feed_response status="202" status_text="OK, request submitted"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>sync_config</name>
+    <summary>Synchronize a config with a scanner</summary>
+    <description>
+      <p>
+        The client uses the "sync_config" command to request an OSP
+        config synchronization with a scanner, adding new parameters and
+        removing old ones.
+      </p>
+    </description>
+    <pattern>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Sync the config</summary>
+      <request>
+        <sync_config>
+        </sync_config>
+      </request>
+      <response>
+        <sync_config_response status="202" status_text="OK, request submitted"/>
       </response>
     </example>
   </command>

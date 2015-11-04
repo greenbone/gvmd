@@ -120,6 +120,7 @@ command
     | stop_task
     | sync_cert
     | sync_feed
+    | sync_config
     | sync_scap
     | test_alert
     | verify_agent
@@ -237,6 +238,7 @@ response
     | stop_task_response
     | sync_cert_response
     | sync_feed_response
+    | sync_config_response
     | sync_scap_response
     | test_alert_response
     | verify_agent_response
@@ -3213,6 +3215,7 @@ commands
            | start_task
            | stop_task
            | sync_feed
+           | sync_config
            | sync_scap
            | sync_cert
            | test_alert )*
@@ -5920,6 +5923,7 @@ modify_config
        attribute config_id { uuid }
        & ( modify_config_name
            | modify_config_comment
+           | modify_config_scanner
            | modify_config_preference
            | modify_config_family_selection
            | modify_config_nvt_selection )
@@ -5935,6 +5939,13 @@ modify_config_name
 # New comment for the config.
 modify_config_comment
  = element comment
+     {
+       text
+     }
+
+# New scanner's UUID for the config.
+modify_config_scanner
+ = element scanner
      {
        text
      }
@@ -7270,6 +7281,16 @@ sync_feed
        ""
      }
 
+## Command sync_config
+##
+## Synchronize a config with a scanner.
+
+sync_config
+ = element sync_config
+     {
+       ""
+     }
+
 ## Command sync_scap
 ##
 ## Synchronize with a SCAP feed.
@@ -7449,6 +7470,7 @@ commands_response
            | start_task_response
            | stop_task_response
            | sync_feed_response
+           | sync_config_response
            | sync_scap_response
            | sync_cert_response
            | test_alert_response )*
@@ -17978,6 +18000,15 @@ sync_cert_response
 
 sync_feed_response
  = element sync_feed_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to sync_config
+
+sync_config_response
+ = element sync_config_response
      {
        attribute status { status }
        & attribute status_text { text }

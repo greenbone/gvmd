@@ -615,6 +615,10 @@
 <td id="index"><div style="margin-left: 15px;">Synchronize with an NVT feed.</div></td>
 </tr>
 <tr id="index">
+<td id="index"><a href="#command_sync_config">sync_config</a></td>
+<td id="index"><div style="margin-left: 15px;">Synchronize a config with a scanner.</div></td>
+</tr>
+<tr id="index">
 <td id="index"><a href="#command_sync_scap">sync_scap</a></td>
 <td id="index"><div style="margin-left: 15px;">Synchronize with a SCAP feed.</div></td>
 </tr>
@@ -748,6 +752,7 @@ command
     | stop_task
     | sync_cert
     | sync_feed
+    | sync_config
     | sync_scap
     | test_alert
     | verify_agent
@@ -865,6 +870,7 @@ response
     | stop_task_response
     | sync_cert_response
     | sync_feed_response
+    | sync_config_response
     | sync_scap_response
     | test_alert_response
     | verify_agent_response
@@ -6296,6 +6302,11 @@ authenticate_response_timezone
           </div>
 </li>
 <li>
+          &lt;<b>sync_config&gt;</b><div style="margin-left: 15px; display: inline;">
+<a href="#command_sync_config">sync_config</a> command.
+          </div>
+</li>
+<li>
           &lt;<b>sync_scap&gt;</b><div style="margin-left: 15px; display: inline;">
 <a href="#command_sync_scap">sync_scap</a> command.
           </div>
@@ -6856,6 +6867,11 @@ authenticate_response_timezone
           </div>
 </li>
 <li>
+          &lt;<b>sync_config_response&gt;</b><div style="margin-left: 15px; display: inline;">
+            Response to <a href="#command_sync_config">sync_config</a> command.
+          </div>
+</li>
+<li>
           &lt;<b>sync_scap_response&gt;</b><div style="margin-left: 15px; display: inline;">
             Response to <a href="#command_sync_scap">sync_scap</a> command.
           </div>
@@ -6987,6 +7003,7 @@ authenticate_response_timezone
            | start_task
            | stop_task
            | sync_feed
+           | sync_config
            | sync_scap
            | sync_cert
            | test_alert )*
@@ -7103,6 +7120,7 @@ authenticate_response_timezone
            | start_task_response
            | stop_task_response
            | sync_feed_response
+           | sync_config_response
            | sync_scap_response
            | sync_cert_response
            | test_alert_response )*
@@ -32551,6 +32569,7 @@ help_response_schema_protocol_command
             STOP_TASK              Stop a running task.
             SYNC_CERT              Synchronize with a CERT feed.
             SYNC_FEED              Synchronize with an NVT feed.
+            SYNC_CONFIG            Synchronize a config with a scanner.
             SYNC_SCAP              Synchronize with a SCAP feed.
             TEST_ALERT             Run an alert.
             VERIFY_AGENT           Verify an agent.
@@ -33106,6 +33125,11 @@ modify_auth_group_auth_conf_setting
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>scanner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">New scanner's UUID for the config.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>preference</b>&gt;
               <ul style="list-style: none">
 <li>
@@ -33199,6 +33223,7 @@ modify_auth_group_auth_conf_setting
        attribute config_id { uuid }
        &amp; ( modify_config_name
            | modify_config_comment
+           | modify_config_scanner
            | modify_config_preference
            | modify_config_family_selection
            | modify_config_nvt_selection )
@@ -33212,6 +33237,12 @@ modify_config_name
 
 modify_config_comment
  = element comment
+     {
+       text
+     }
+
+modify_config_scanner
+ = element scanner
      {
        text
      }
@@ -36524,13 +36555,14 @@ start_task_response_report_id
 </div>
 </div>
 <div>
-<div><h3 id="command_sync_scap">7.112
-        Command <tt>sync_scap</tt>
+<div><h3 id="command_sync_config">7.112
+        Command <tt>sync_config</tt>
 </h3></div>
-<p>In short: Synchronize with a SCAP feed.</p>
+<p>In short: Synchronize a config with a scanner.</p>
 <p>
-        The client uses the "sync_scap" command to request a
-        synchronization with the SCAP feed service the Manager uses.
+        The client uses the "sync_config" command to request an OSP
+        config synchronization with a scanner, adding new parameters and
+        removing old ones.
       </p>
 <h4>7.112.1 Structure</h4>
 <ul style="list-style: none">
@@ -36552,6 +36584,58 @@ start_task_response_report_id
 </ul>
 <h4>7.112.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<i>Command</i><div style="margin-left: 5%"><pre>sync_config
+ = element sync_config
+     {
+       ""
+     }
+</pre></div>
+<i>Response</i><div style="margin-left: 5%"><pre>sync_config_response
+ = element sync_config_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre></div>
+</div>
+<h4>7.112.3 Example: Sync the config</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;sync_config/&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;sync_config_response status="202"
+                       status_text="OK, request submitted"/&gt;
+</pre></div>
+</div>
+</div>
+<div>
+<div><h3 id="command_sync_scap">7.113
+        Command <tt>sync_scap</tt>
+</h3></div>
+<p>In short: Synchronize with a SCAP feed.</p>
+<p>
+        The client uses the "sync_scap" command to request a
+        synchronization with the SCAP feed service the Manager uses.
+      </p>
+<h4>7.113.1 Structure</h4>
+<ul style="list-style: none">
+<li>
+<i>Command</i><ul style="list-style: none"><i>Empty single element.</i></ul>
+</li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>7.113.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>sync_scap
  = element sync_scap
      {
@@ -36566,7 +36650,7 @@ start_task_response_report_id
      }
 </pre></div>
 </div>
-<h4>7.112.3 Example: Sync the feed</h4>
+<h4>7.113.3 Example: Sync the feed</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;sync_scap/&gt;
 </pre></div>
@@ -36576,7 +36660,7 @@ start_task_response_report_id
 </div>
 </div>
 <div>
-<div><h3 id="command_test_alert">7.113
+<div><h3 id="command_test_alert">7.114
         Command <tt>test_alert</tt>
 </h3></div>
 <p>In short: Run an alert.</p>
@@ -36584,7 +36668,7 @@ start_task_response_report_id
         The client uses the test_alert command to invoke a test run of
         an alert.
       </p>
-<h4>7.113.1 Structure</h4>
+<h4>7.114.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none"><li>
@@ -36605,7 +36689,7 @@ start_task_response_report_id
 </ul>
 </li>
 </ul>
-<h4>7.113.2 RNC</h4>
+<h4>7.114.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>test_alert
  = element test_alert
@@ -36621,7 +36705,7 @@ start_task_response_report_id
      }
 </pre></div>
 </div>
-<h4>7.113.3 Example: Test an alert</h4>
+<h4>7.114.3 Example: Test an alert</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;test_alert alert_id="97390ade-e075-11df-9973-002264764cea"/&gt;
 </pre></div>
@@ -36631,7 +36715,7 @@ start_task_response_report_id
 </div>
 </div>
 <div>
-<div><h3 id="command_verify_agent">7.114
+<div><h3 id="command_verify_agent">7.115
         Command <tt>verify_agent</tt>
 </h3></div>
 <p>In short: Verify an agent.</p>
@@ -36645,7 +36729,7 @@ start_task_response_report_id
         The Manager searches for the signature first in the feed, then
         in the agent itself.
       </p>
-<h4>7.114.1 Structure</h4>
+<h4>7.115.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none"><li>
@@ -36666,7 +36750,7 @@ start_task_response_report_id
 </ul>
 </li>
 </ul>
-<h4>7.114.2 RNC</h4>
+<h4>7.115.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>verify_agent
  = element verify_agent
@@ -36682,7 +36766,7 @@ start_task_response_report_id
      }
 </pre></div>
 </div>
-<h4>7.114.3 Example: Verify an agent</h4>
+<h4>7.115.3 Example: Verify an agent</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;verify_agent agent_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
@@ -36692,7 +36776,7 @@ start_task_response_report_id
 </div>
 </div>
 <div>
-<div><h3 id="command_verify_report_format">7.115
+<div><h3 id="command_verify_report_format">7.116
         Command <tt>verify_report_format</tt>
 </h3></div>
 <p>In short: Verify a report format.</p>
@@ -36706,7 +36790,7 @@ start_task_response_report_id
         to generate reports of this format.  The Manager searches for the
         signature first in the feed, then in the report format itself.
       </p>
-<h4>7.115.1 Structure</h4>
+<h4>7.116.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none"><li>
@@ -36727,7 +36811,7 @@ start_task_response_report_id
 </ul>
 </li>
 </ul>
-<h4>7.115.2 RNC</h4>
+<h4>7.116.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>verify_report_format
  = element verify_report_format
@@ -36743,7 +36827,7 @@ start_task_response_report_id
      }
 </pre></div>
 </div>
-<h4>7.115.3 Example: Verify a report format</h4>
+<h4>7.116.3 Example: Verify a report format</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;verify_report_format report_format_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
