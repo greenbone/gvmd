@@ -1676,13 +1676,7 @@ const char*
 preference_iterator_default (iterator_t *);
 
 int
-manage_set_config_comment (config_t, const char*);
-
-int
-manage_set_config_name (config_t, const char*);
-
-int
-manage_set_config_name_comment (config_t, const char*, const char*);
+manage_set_config (config_t, const char*, const char *, const char *);
 
 int
 manage_set_config_nvts (config_t, const char*, GPtrArray*);

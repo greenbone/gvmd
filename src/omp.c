@@ -3187,6 +3187,7 @@ typedef struct
   int family_selection_growing;        ///< Whether families in selection grow.
   char *family_selection_growing_text; ///< Text version of above.
   char *name;                          ///< New name for config.
+  char *scanner_id;                    ///< New scanner UUID for config.
   array_t *nvt_selection;              ///< OID array. New NVT set for config.
   char *nvt_selection_family;          ///< Family of NVT selection.
   char *nvt_selection_nvt_oid;         ///< OID during NVT_selection/NVT.
@@ -3410,6 +3411,7 @@ modify_config_data_reset (modify_config_data_t *data)
   free (data->family_selection_family_name);
   free (data->family_selection_growing_text);
   free (data->name);
+  free (data->scanner_id);
   array_free (data->nvt_selection);
   free (data->nvt_selection_family);
   free (data->nvt_selection_nvt_oid);
@@ -5582,6 +5584,7 @@ typedef enum
   CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_NAME,
   CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_GROWING,
   CLIENT_MODIFY_CONFIG_NAME,
+  CLIENT_MODIFY_CONFIG_SCANNER,
   CLIENT_MODIFY_CONFIG_NVT_SELECTION,
   CLIENT_MODIFY_CONFIG_NVT_SELECTION_FAMILY,
   CLIENT_MODIFY_CONFIG_NVT_SELECTION_NVT,
@@ -8342,6 +8345,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             openvas_free_string_var (&modify_config_data->comment);
             openvas_append_string (&modify_config_data->comment, "");
             set_client_state (CLIENT_MODIFY_CONFIG_COMMENT);
+          }
+        else if (strcasecmp ("SCANNER", element_name) == 0)
+          {
+            openvas_free_string_var (&modify_config_data->scanner_id);
+            openvas_append_string (&modify_config_data->scanner_id, "");
+            set_client_state (CLIENT_MODIFY_CONFIG_SCANNER);
           }
         else if (strcasecmp ("FAMILY_SELECTION", element_name) == 0)
           {
@@ -13579,6 +13588,183 @@ handle_modify_scanner (omp_parser_t *omp_parser, GError **error)
     }
 modify_scanner_leave:
   modify_scanner_data_reset (modify_scanner_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
+ * @brief Handle end of MODIFY_CONFIG element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_modify_config (omp_parser_t *omp_parser, GError **error)
+{
+  config_t config;
+
+  if (acl_user_may ("modify_config") == 0)
+    {
+      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_config",
+                                                "Permission denied"));
+      set_client_state (CLIENT_AUTHENTIC);
+      goto modify_config_leave;
+    }
+
+  if (modify_config_data->config_id == NULL
+      || strlen (modify_config_data->config_id) == 0)
+    SEND_TO_CLIENT_OR_FAIL
+     (XML_ERROR_SYNTAX ("modify_config",
+                        "MODIFY_CONFIG requires a config_id attribute"));
+  else if ((modify_config_data->nvt_selection_family
+            /* This array implies FAMILY_SELECTION. */
+            && modify_config_data->families_static_all)
+           || ((modify_config_data->nvt_selection_family
+                || modify_config_data->families_static_all)
+               && (modify_config_data->preference_name
+                   || modify_config_data->preference_value
+                   || modify_config_data->preference_nvt_oid)))
+    SEND_TO_CLIENT_OR_FAIL
+     (XML_ERROR_SYNTAX ("modify_config",
+                        "MODIFY_CONFIG requires either a PREFERENCE or"
+                        " an NVT_SELECTION or a FAMILY_SELECTION"));
+  else if (find_config (modify_config_data->config_id, &config))
+    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
+  else if (config == 0)
+    {
+      if (send_find_error_to_client ("modify_config", "config",
+                                     modify_config_data->config_id, omp_parser))
+        {
+          error_send_to_client (error);
+          return;
+        }
+    }
+  else if (modify_config_data->nvt_selection_family)
+    {
+      switch (manage_set_config_nvts
+               (config, modify_config_data->nvt_selection_family,
+                modify_config_data->nvt_selection))
+        {
+          case 0:
+            SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
+            log_event ("config", "Scan config",
+                       modify_config_data->config_id, "modified");
+            goto modify_config_leave;
+          case 1:
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
+            log_event_fail ("config", "Scan Config",
+                            modify_config_data->config_id, "modified");
+            goto modify_config_leave;
+
+          case -1:
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_config",
+                                "MODIFY_CONFIG PREFERENCE requires at"
+                                " least one of the VALUE and NVT elements"));
+            goto modify_config_leave;
+
+          default:
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_INTERNAL_ERROR ("modify_config"));
+            log_event_fail ("config", "Scan Config",
+                            modify_config_data->config_id, "modified");
+            goto modify_config_leave;
+        }
+    }
+  else if (modify_config_data->families_static_all)
+    {
+      /* There was a FAMILY_SELECTION. */
+
+      switch (manage_set_config_families
+               (config, modify_config_data->families_growing_all,
+                modify_config_data->families_static_all,
+                modify_config_data->families_growing_empty,
+                modify_config_data->family_selection_growing))
+        {
+          case 0:
+            SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
+            log_event ("config", "Scan config",
+                       modify_config_data->config_id, "modified");
+            goto modify_config_leave;
+          case 1:
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
+            log_event_fail ("config", "Scan Config",
+                            modify_config_data->config_id, "modified");
+            goto modify_config_leave;
+
+          case -1:
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_config",
+                                "MODIFY_CONFIG PREFERENCE requires at"
+                                " least one of the VALUE and NVT elements"));
+            goto modify_config_leave;
+
+          default:
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_INTERNAL_ERROR ("modify_config"));
+            log_event_fail ("config", "Scan Config",
+                            modify_config_data->config_id, "modified");
+            goto modify_config_leave;
+        }
+    }
+  else if (modify_config_data->name || modify_config_data->comment
+           || modify_config_data->scanner_id)
+    switch (manage_set_config
+             (config, modify_config_data->name, modify_config_data->comment,
+              modify_config_data->scanner_id))
+      {
+        case 0:
+          SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
+          goto modify_config_leave;
+        case 1:
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("modify_config",
+                              "MODIFY_CONFIG name must be unique"));
+          goto modify_config_leave;
+        case 2:
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("modify_config",
+                              "MODIFY_CONFIG scanner not found"));
+          goto modify_config_leave;
+        case -1:
+          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
+          goto modify_config_leave;
+        default:
+          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
+          goto modify_config_leave;
+      }
+  else if (modify_config_data->preference_name == NULL
+           || strlen (modify_config_data->preference_name) == 0)
+    SEND_TO_CLIENT_OR_FAIL
+     (XML_ERROR_SYNTAX ("modify_config",
+                        "MODIFY_CONFIG PREFERENCE requires a NAME element"));
+  else switch (manage_set_config_preference
+                (config, modify_config_data->preference_nvt_oid,
+                 modify_config_data->preference_name,
+                 modify_config_data->preference_value))
+    {
+      case 0:
+        SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
+        goto modify_config_leave;
+      case 1:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
+        goto modify_config_leave;
+      case 2:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("modify_config", "Empty radio value"));
+        goto modify_config_leave;
+      case -1:
+        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
+        goto modify_config_leave;
+      default:
+        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
+        goto modify_config_leave;
+    }
+
+modify_config_leave:
+  modify_config_data_reset (modify_config_data);
   set_client_state (CLIENT_AUTHENTIC);
 }
 
@@ -24906,214 +25092,11 @@ create_task_fail:
         }
 
       case CLIENT_MODIFY_CONFIG:
-        {
-          config_t config;
-
-          if (acl_user_may ("modify_config") == 0)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("modify_config",
-                                  "Permission denied"));
-              modify_config_data_reset (modify_config_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-
-          if (modify_config_data->config_id == NULL
-              || strlen (modify_config_data->config_id) == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_config",
-                                "MODIFY_CONFIG requires a config_id"
-                                " attribute"));
-          else if ((modify_config_data->nvt_selection_family
-                    /* This array implies FAMILY_SELECTION. */
-                    && modify_config_data->families_static_all)
-                   || ((modify_config_data->nvt_selection_family
-                        || modify_config_data->families_static_all)
-                       && (modify_config_data->preference_name
-                           || modify_config_data->preference_value
-                           || modify_config_data->preference_nvt_oid)))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_config",
-                                "MODIFY_CONFIG requires either a PREFERENCE or"
-                                " an NVT_SELECTION or a FAMILY_SELECTION"));
-          else if (find_config (modify_config_data->config_id, &config))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
-          else if (config == 0)
-            {
-              if (send_find_error_to_client ("modify_config", "config",
-                                             modify_config_data->config_id,
-                                             omp_parser))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else if (modify_config_data->nvt_selection_family)
-            {
-              switch (manage_set_config_nvts
-                       (config,
-                        modify_config_data->nvt_selection_family,
-                        modify_config_data->nvt_selection))
-                {
-                  case 0:
-                    SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
-                    log_event ("config", "Scan config",
-                               modify_config_data->config_id, "modified");
-                    break;
-                  case 1:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
-                    log_event_fail ("config", "Scan Config",
-                                    modify_config_data->config_id, "modified");
-                    break;
-#if 0
-                  case -1:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("modify_config",
-                                        "MODIFY_CONFIG PREFERENCE requires at"
-                                        " least one of the VALUE and NVT"
-                                        " elements"));
-                    break;
-#endif
-                  default:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("modify_config"));
-                    log_event_fail ("config", "Scan Config",
-                                    modify_config_data->config_id, "modified");
-                    break;
-                }
-            }
-          else if (modify_config_data->families_static_all)
-            {
-              /* There was a FAMILY_SELECTION. */
-
-              switch (manage_set_config_families
-                       (config,
-                        modify_config_data->families_growing_all,
-                        modify_config_data->families_static_all,
-                        modify_config_data->families_growing_empty,
-                        modify_config_data->family_selection_growing))
-                {
-                  case 0:
-                    SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
-                    log_event ("config", "Scan config",
-                               modify_config_data->config_id, "modified");
-                    break;
-                  case 1:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
-                    log_event_fail ("config", "Scan Config",
-                                    modify_config_data->config_id, "modified");
-                    break;
-#if 0
-                  case -1:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("modify_config",
-                                        "MODIFY_CONFIG PREFERENCE requires at"
-                                        " least one of the VALUE and NVT"
-                                        " elements"));
-                    break;
-#endif
-                  default:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("modify_config"));
-                    log_event_fail ("config", "Scan Config",
-                                    modify_config_data->config_id, "modified");
-                    break;
-                }
-            }
-          else if (modify_config_data->name && modify_config_data->comment)
-            switch (manage_set_config_name_comment (config,
-                                                    modify_config_data->name,
-                                                    modify_config_data->comment))
-              {
-                case 0:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
-                  break;
-                case 1:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("modify_config",
-                                      "MODIFY_CONFIG name must be unique"));
-                  break;
-                case -1:
-                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
-                  break;
-                default:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("modify_config"));
-                  break;
-              }
-          else if (modify_config_data->name)
-            switch (manage_set_config_name (config, modify_config_data->name))
-              {
-                case 0:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
-                  break;
-                case 1:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("modify_config",
-                                      "MODIFY_CONFIG name must be unique"));
-                  break;
-                case -1:
-                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
-                  break;
-                default:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("modify_config"));
-                  break;
-              }
-          else if (modify_config_data->comment)
-            switch (manage_set_config_comment (config,
-                                               modify_config_data->comment))
-              {
-                case 0:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
-                  break;
-                case -1:
-                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
-                  break;
-                default:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("modify_config"));
-                  break;
-              }
-          else if (modify_config_data->preference_name == NULL
-                   || strlen (modify_config_data->preference_name) == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_config",
-                                "MODIFY_CONFIG PREFERENCE requires a NAME"
-                                " element"));
-          else switch (manage_set_config_preference
-                        (config,
-                         modify_config_data->preference_nvt_oid,
-                         modify_config_data->preference_name,
-                         modify_config_data->preference_value))
-            {
-              case 0:
-                SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
-                break;
-              case 1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
-                break;
-              case 2:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_config", "Empty radio value"));
-                break;
-              case -1:
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
-                break;
-              default:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("modify_config"));
-                break;
-            }
-        }
-        modify_config_data_reset (modify_config_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
+        assert (strcasecmp ("MODIFY_CONFIG", element_name) == 0);
+        return handle_modify_config (omp_parser, error);
       CLOSE (CLIENT_MODIFY_CONFIG, COMMENT);
+      CLOSE (CLIENT_MODIFY_CONFIG, SCANNER);
+
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION:
         assert (strcasecmp ("FAMILY_SELECTION", element_name) == 0);
         assert (modify_config_data->families_growing_all);
@@ -28563,6 +28546,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_CONFIG_COMMENT,
               &modify_config_data->comment);
+
+      APPEND (CLIENT_MODIFY_CONFIG_SCANNER,
+              &modify_config_data->scanner_id);
 
       APPEND (CLIENT_MODIFY_CONFIG_NAME,
               &modify_config_data->name);

@@ -1,5 +1,22 @@
 2015-11-04  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (manage_set_config): New function.
+	(manage_set_config_name, manage_set_config_comment)
+	(manage_set_config_name_comment): Delete functions.
+
+	* src/manage.h: Add and remove function prototypes.
+
+	* src/omp.c (modify_config_data_t): Add scanner_id element.
+	(modify_config_data_reset): Free scanner_id too.
+	(client_state_t): Add CLIENT_MODIFY_CONFIG_SCANNER state.
+	(omp_xml_handle_start_element): Handle SCANNER element in
+	CLIENT_MODIFY_CONFIG case.
+	(handle_modify_config): New function, handle editing a config's scanner.
+	(omp_xml_handle_end_element): Call handle_modify_config() accordingly.
+	(omp_xml_handle_text_element): Handle modify_config's scanner element.
+
+2015-11-04  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
 	* src/omp.c (handle_get_configs): Send the config's scanner name too.
 
 2015-11-04  Timo Pollmeier <timo.pollmeier@greenbone.net>

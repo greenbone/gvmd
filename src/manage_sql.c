@@ -32522,62 +32522,56 @@ manage_set_config_comment (config_t config, const char* comment)
 }
 
 /**
- * @brief Set the name of a config.
+ * @brief Set the name, comment and scanner of a config.
  *
- * @param[in]  config  Config.
- * @param[in]  name    New name.
+ * @param[in]  config       Config.
+ * @param[in]  name         New name, not updated if NULL.
+ * @param[in]  comment      New comment, not updated if NULL.
+ * @param[in]  scanner_id   UUID of new scanner, not updated if NULL.
  *
- * @return 0 success, 1 config with new name exists already, -1 error.
+ * @return 0 success, 1 config with new name exists already, 2 scanner doesn't
+ *         exist, -1 error.
  */
 int
-manage_set_config_name (config_t config, const char* name)
+manage_set_config (config_t config, const char*name, const char *comment,
+                   const char *scanner_id)
 {
-  gchar *quoted_name;
   assert (current_credentials.uuid);
   sql_begin_immediate ();
-  if (resource_with_name_exists (name, "config", config))
+  if (name)
     {
-      sql ("ROLLBACK;");
-      return 1;
+      gchar *quoted_name;
+      if (resource_with_name_exists (name, "config", config))
+        {
+          sql ("ROLLBACK;");
+          return 1;
+        }
+      quoted_name = sql_quote (name);
+      sql ("UPDATE configs SET name = '%s', modification_time = m_now ()"
+           " WHERE id = %llu;", quoted_name, config);
+      g_free (quoted_name);
     }
-  quoted_name = sql_quote (name);
-  sql ("UPDATE configs SET name = '%s', modification_time = m_now ()"
-       " WHERE id = %llu;",
-       quoted_name, config);
-  g_free (quoted_name);
-  sql ("COMMIT;");
-  return 0;
-}
+  if (comment)
+    {
+      gchar *quoted_comment;
+      quoted_comment = sql_quote (comment);
+      sql ("UPDATE configs SET comment = '%s', modification_time = m_now ()"
+           " WHERE id = %llu;", quoted_comment, config);
+      g_free (quoted_comment);
+    }
+  if (scanner_id)
+    {
+      scanner_t scanner = 0;
 
-/**
- * @brief Set the name of a config.
- *
- * @param[in]  config   Config.
- * @param[in]  name     New name.
- * @param[in]  comment  New comment.
- *
- * @return 0 success, 1 config with new name exists already, -1 error.
- */
-int
-manage_set_config_name_comment (config_t config, const char* name,
-                                const char* comment)
-{
-  gchar *quoted_name, *quoted_comment;
-  assert (current_credentials.uuid);
-  sql_begin_immediate ();
-  if (resource_with_name_exists (name, "config", config))
-    {
-      sql ("ROLLBACK;");
-      return 1;
+      if (find_scanner_with_permission (scanner_id, &scanner, "modify_config")
+          || scanner == 0)
+        {
+          sql ("ROLLBACK;");
+          return 2;
+        }
+      sql ("UPDATE configs SET scanner = %llu, modification_time = m_now ()"
+           " WHERE id = %llu;", scanner, config);
     }
-  quoted_name = sql_quote (name);
-  quoted_comment = sql_quote (comment);
-  sql ("UPDATE configs SET name = '%s', comment = '%s',"
-       " modification_time = m_now ()"
-       " WHERE id = %llu;",
-       quoted_name, quoted_comment, config);
-  g_free (quoted_name);
-  g_free (quoted_comment);
   sql ("COMMIT;");
   return 0;
 }
