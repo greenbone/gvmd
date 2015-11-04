@@ -12954,10 +12954,19 @@ handle_get_configs (omp_parser_t *omp_parser, GError **error)
       if (config_type > 0)
         {
           iterator_t prefs;
+          scanner_t scanner;
           config_t config = get_iterator_resource (&configs);
+          char *s_uuid, *s_name;
 
           assert (config);
 
+          scanner = config_scanner (config);
+          s_uuid = scanner_uuid (scanner);
+          s_name = scanner_name (scanner);
+          SENDF_TO_CLIENT_OR_FAIL ("<scanner id='%s'>%s</scanner>",
+                                   s_uuid, s_name);
+          g_free (s_uuid);
+          g_free (s_name);
           SEND_TO_CLIENT_OR_FAIL ("<preferences>");
 
           init_preference_iterator (&prefs, config);
@@ -12980,10 +12989,7 @@ handle_get_configs (omp_parser_t *omp_parser, GError **error)
               g_free (ovaldi_files);
             }
           cleanup_iterator (&prefs);
-
           SEND_TO_CLIENT_OR_FAIL ("</preferences>");
-          SENDF_TO_CLIENT_OR_FAIL ("<scanner>%s</scanner>",
-                                   scanner_uuid (config_scanner (config)));
         }
       else if (get_configs_data->preferences
                || get_configs_data->get.details)
