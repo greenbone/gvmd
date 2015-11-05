@@ -1,3 +1,12 @@
+2015-11-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r23750.
+
+	* src/openvasmd.c (update_or_rebuild_nvt_cache)
+	(rebuild_nvt_cache_retry): Add arg skip_create_tables.
+	(fork_update_nvt_cache): Prevent table creation for SIGHUP rebuild.
+	(main): Request table creation for --rebuild.
+
 2015-11-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r23737.
