@@ -955,12 +955,13 @@ handle_sigabrt_simple (int signal)
  *                                     (1) or rebuilt (0).
  * @param[in]  register_cleanup        Whether to register cleanup with atexit.
  * @param[in]  progress                Function to update progress, or NULL.
+ * @param[in]  skip_create_tables      Whether to skip table creation.
  *
  * @return If this function did not exit itself, returns exit code.
  */
 static int
 update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
-                             void (*progress) ())
+                             void (*progress) (), int skip_create_tables)
 {
   int ret;
 
@@ -985,9 +986,7 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
                      0, /* Max email include size. */
                      progress,
                      NULL,
-                     /* Skip create_tables, to avoid schema changes caused by
-                      * dropping the views. */
-                     1))
+                     skip_create_tables))
     {
       case 0:
         break;
@@ -1054,12 +1053,13 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
  *                                     (1) or rebuilt (0).
  * @param[in]  register_cleanup        Whether to register cleanup with atexit.
  * @param[in]  progress                Function to update progress, or NULL.
+ * @param[in]  skip_create_tables      Whether to skip table creation.
  *
  * @return Exit status of child spawned to do rebuild.
  */
 static int
 rebuild_nvt_cache_retry (int update_or_rebuild, int register_cleanup,
-                         void (*progress) ())
+                         void (*progress) (), int skip_create_tables)
 {
   proctitle_set ("openvasmd: Reloading");
   infof ("%s: Reloading NVT cache\n", __FUNCTION__);
@@ -1087,7 +1087,8 @@ rebuild_nvt_cache_retry (int update_or_rebuild, int register_cleanup,
         {
           /* Child: Try reload. */
           int ret = update_or_rebuild_nvt_cache (update_or_rebuild,
-                                                 register_cleanup, progress);
+                                                 register_cleanup, progress,
+                                                 skip_create_tables);
 
           exit (ret);
         }
@@ -1147,7 +1148,7 @@ fork_update_nvt_cache ()
 
         infof ("   internal NVT cache update\n");
 
-        rebuild_nvt_cache_retry (0, 0, NULL);
+        rebuild_nvt_cache_retry (0, 0, NULL, 1);
 
         /* Exit. */
 
@@ -2178,7 +2179,8 @@ main (int argc, char** argv)
           fflush (stdout);
         }
       ret = rebuild_nvt_cache_retry (update_nvt_cache, 1,
-                                     progress ? spin_progress : NULL);
+                                     progress ? spin_progress : NULL,
+                                     0);
       if (progress)
         {
           putchar ('\b');

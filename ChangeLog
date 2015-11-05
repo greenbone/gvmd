@@ -1,3 +1,10 @@
+2015-11-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/openvasmd.c (update_or_rebuild_nvt_cache)
+	(rebuild_nvt_cache_retry): Add arg skip_create_tables.
+	(fork_update_nvt_cache): Prevent table creation for SIGHUP rebuild.
+	(main): Request table creation for --rebuild.
+
 2015-11-04  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* doc/omp.html, doc/omp.rnc, src/schema_formats/XML/OMP.xml.in: Update
@@ -102,7 +109,7 @@
 	Add option to GET_CREDENTIALS to list scanners using a credential.
 	(check_scanner_cert, check_scanner_private): Remove. Replaced by
 	check_certificate and check_private_key.
-	
+
 	* src/schema_formats/XML/OMP.xml.in (create_scanner): Replace key_pub
 	and key_priv with credential.
 	(get_credentials): Add scanners attribute and response element.
