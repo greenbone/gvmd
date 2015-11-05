@@ -1,5 +1,9 @@
 2015-11-05  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (manage_create_scanner): Free name_for_credential.
+
+2015-11-05  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (manage_create_scanner): Use name of scanner in
 	credential name as in manage_modify_scanner. Correct indentation.
 	(manage_modify_scanner): Also quote scanner name in name_for_credential

@@ -40704,6 +40704,8 @@ manage_create_scanner (GSList *log_config, const gchar *database,
          "  m_now (), m_now ());",
          name_for_credential);
 
+  g_free (name_for_credential);
+
   new_credential = sql_last_insert_id();
 
   set_credential_data (new_credential, "certificate", key_pub);
