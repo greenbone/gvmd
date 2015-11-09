@@ -659,6 +659,10 @@ alert_condition_name (alert_condition_t condition)
     {
       case ALERT_CONDITION_ALWAYS:
         return "Always";
+      case ALERT_CONDITION_FILTER_COUNT_AT_LEAST:
+        return "Filter count at least";
+      case ALERT_CONDITION_FILTER_COUNT_CHANGED:
+        return "Filter count changed";
       case ALERT_CONDITION_SEVERITY_AT_LEAST:
         return "Severity at least";
       case ALERT_CONDITION_SEVERITY_CHANGED:
@@ -701,6 +705,19 @@ alert_condition_description (alert_condition_t condition,
     {
       case ALERT_CONDITION_ALWAYS:
         return g_strdup ("Always");
+      case ALERT_CONDITION_FILTER_COUNT_AT_LEAST:
+        {
+          char *level;
+          gchar *ret;
+
+          level = alert_data (alert, "condition", "severity");
+          ret = g_strdup_printf ("Filter count at least %s",
+                                 level ? level : "0");
+          free (level);
+          return ret;
+        }
+      case ALERT_CONDITION_FILTER_COUNT_CHANGED:
+        return g_strdup ("Filter count changed");
       case ALERT_CONDITION_SEVERITY_AT_LEAST:
         {
           char *level = alert_data (alert, "condition", "severity");
@@ -784,6 +801,10 @@ alert_condition_from_name (const char* name)
 {
   if (strcasecmp (name, "Always") == 0)
     return ALERT_CONDITION_ALWAYS;
+  if (strcasecmp (name, "Filter count at least") == 0)
+    return ALERT_CONDITION_FILTER_COUNT_AT_LEAST;
+  if (strcasecmp (name, "Filter count changed") == 0)
+    return ALERT_CONDITION_FILTER_COUNT_CHANGED;
   if (strcasecmp (name, "Severity at least") == 0)
     return ALERT_CONDITION_SEVERITY_AT_LEAST;
   if (strcasecmp (name, "Severity changed") == 0)

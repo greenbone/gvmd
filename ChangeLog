@@ -1,3 +1,16 @@
+2015-11-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add new alert conditions "Filter count at least" and "Filter count
+	changed".
+
+	* src/manage.h (alert_condition_t): Add filter conditions.
+
+	* src/manage.c (alert_condition_name, alert_condition_description)
+	(alert_condition_from_name, alert_condition_t): Add filter conditions.
+
+	* src/manage_sql.c (init_alert_data_iterator): Align arg.
+	(condition_met): Add filter cases.
+
 2015-11-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_migrators.c (migrate_156_to_157): Check correct table
