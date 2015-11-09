@@ -1,3 +1,8 @@
+2015-11-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_migrators.c (migrate_156_to_157): Check correct table
+	to see if credential for slave exists.
+
 2015-11-05  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (manage_create_scanner): Free name_for_credential.

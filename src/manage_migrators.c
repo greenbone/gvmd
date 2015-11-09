@@ -10814,7 +10814,7 @@ migrate_156_to_157 ()
       quoted_name = sql_quote (name);
       quoted_login = sql_quote (login);
 
-      if (sql_int ("SELECT count(*) FROM slaves"
+      if (sql_int ("SELECT count(*) FROM credentials"
                    " WHERE name = 'Credential for Slave %s'"
                    "   AND owner = %llu;",
                    quoted_name, owner))
