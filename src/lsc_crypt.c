@@ -674,8 +674,26 @@ lsc_crypt_encrypt (lsc_crypt_ctx_t ctx, const char *first_name, ...)
 }
 
 
-/* Fixme: Shall we turn this into a public function? */
-static const char *
+/**
+ * @brief Return an encrypted value in the clear.
+ *
+ * This function returns the encrypted value in the clear.  The
+ * clear value may also be NULL , if no value is available.  If a
+ * decryption has not yet been done, the passed \a ciphertext value is
+ * first decrypted.  Thus a changed value of ciphertext may not have
+ * an effect.  To force a decryption a call to \ref lsc_crypt_flush is
+ * required.
+ *
+ * @param[in]  ctx  The context
+ * @param[in]  ciphertext  The base64 encoded ciphertext.
+ * @param[in]  name  Name of the value to get.
+ *
+ * @return A const pointer to a string object.  This pointer is valid
+ *         as long as the context is valid and \ref lsc_crypt_flush
+ *         has not been called.  If no value is available NULL is
+ *         returned.
+ */
+const char *
 lsc_crypt_decrypt (lsc_crypt_ctx_t ctx, const char *ciphertext,
                    const char *name)
 {
@@ -815,7 +833,7 @@ lsc_crypt_decrypt (lsc_crypt_ctx_t ctx, const char *ciphertext,
  * required.
  *
  * @param[in]  ctx  The context
- * @param[in]  ciphertext  The base64 encoded ciphertest.
+ * @param[in]  ciphertext  The base64 encoded ciphertext.
  *
  * @return A const pointer to a string object.  This pointer is valid
  *         as long as the context is valid and \ref lsc_crypt_flush
@@ -828,7 +846,24 @@ lsc_crypt_get_password (lsc_crypt_ctx_t ctx, const char *ciphertext)
   return lsc_crypt_decrypt (ctx, ciphertext, "password");
 }
 
-
+/**
+ * @brief Return an encrypted private key in the clear.
+ *
+ * This function returns the encrypted private key in the clear.  The
+ * clear value may also be NULL , if no private key is available.  If a
+ * decryption has not yet been done, the passed \a ciphertext value is
+ * first decrypted.  Thus a changed value of ciphertext may not have
+ * an effect.  To force a decryption a call to \ref lsc_crypt_flush is
+ * required.
+ *
+ * @param[in]  ctx  The context
+ * @param[in]  ciphertext  The base64 encoded ciphertext.
+ *
+ * @return A const pointer to a string object.  This pointer is valid
+ *         as long as the context is valid and \ref lsc_crypt_flush
+ *         has not been called.  If no private key is available NULL is
+ *         returned.
+ */
 const char *
 lsc_crypt_get_private_key (lsc_crypt_ctx_t ctx, const char *ciphertext)
 {

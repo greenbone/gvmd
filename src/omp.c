@@ -1093,6 +1093,10 @@ typedef struct
   char *login;             ///< Login name.
   char *name;              ///< Credential name.
   char *password;          ///< Password associated with login name.
+  char *community;         ///< SNMP Community string.
+  char *auth_algorithm;    ///< SNMP Authentication algorithm.
+  char *privacy_password;  ///< SNMP Privacy password.
+  char *privacy_algorithm; ///< SNMP Privacy algorithm.
   char *type;              ///< Type of credential.
 } create_credential_data_t;
 
@@ -1112,6 +1116,10 @@ create_credential_data_reset (create_credential_data_t *data)
   free (data->login);
   free (data->name);
   free (data->password);
+  free (data->community);
+  free (data->auth_algorithm);
+  free (data->privacy_password);
+  free (data->privacy_algorithm);
   free (data->type);
 
   memset (data, 0, sizeof (create_credential_data_t));
@@ -5200,8 +5208,10 @@ typedef enum
   CLIENT_CREATE_ASSET_ASSET_NAME,
   CLIENT_CREATE_ASSET_ASSET_TYPE,
   CLIENT_CREATE_CREDENTIAL,
+  CLIENT_CREATE_CREDENTIAL_AUTH_ALGORITHM,
   CLIENT_CREATE_CREDENTIAL_CERTIFICATE,
   CLIENT_CREATE_CREDENTIAL_COMMENT,
+  CLIENT_CREATE_CREDENTIAL_COMMUNITY,
   CLIENT_CREATE_CREDENTIAL_COPY,
   CLIENT_CREATE_CREDENTIAL_KEY,
   CLIENT_CREATE_CREDENTIAL_KEY_PHRASE,
@@ -5209,6 +5219,9 @@ typedef enum
   CLIENT_CREATE_CREDENTIAL_LOGIN,
   CLIENT_CREATE_CREDENTIAL_NAME,
   CLIENT_CREATE_CREDENTIAL_PASSWORD,
+  CLIENT_CREATE_CREDENTIAL_PRIVACY,
+  CLIENT_CREATE_CREDENTIAL_PRIVACY_ALGORITHM,
+  CLIENT_CREATE_CREDENTIAL_PRIVACY_PASSWORD,
   CLIENT_CREATE_CREDENTIAL_TYPE,
   CLIENT_CREATE_CONFIG,
   CLIENT_CREATE_CONFIG_COMMENT,
@@ -9229,10 +9242,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         ELSE_ERROR ("create_alert");
 
       case CLIENT_CREATE_CREDENTIAL:
-        if (strcasecmp ("CERTIFICATE", element_name) == 0)
+        if (strcasecmp ("AUTH_ALGORITHM", element_name) == 0)
+          set_client_state (CLIENT_CREATE_CREDENTIAL_AUTH_ALGORITHM);
+        else if (strcasecmp ("CERTIFICATE", element_name) == 0)
           set_client_state (CLIENT_CREATE_CREDENTIAL_CERTIFICATE);
         else if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_CREDENTIAL_COMMENT);
+        else if (strcasecmp ("COMMUNITY", element_name) == 0)
+          set_client_state (CLIENT_CREATE_CREDENTIAL_COMMUNITY);
         else if (strcasecmp ("KEY", element_name) == 0)
           {
             create_credential_data->key = 1;
@@ -9249,6 +9266,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             openvas_append_string (&create_credential_data->password, "");
             set_client_state (CLIENT_CREATE_CREDENTIAL_PASSWORD);
           }
+        else if (strcasecmp ("PRIVACY", element_name) == 0)
+          set_client_state (CLIENT_CREATE_CREDENTIAL_PRIVACY);
         else if (strcasecmp ("TYPE", element_name) == 0)
           set_client_state (CLIENT_CREATE_CREDENTIAL_TYPE);
         ELSE_ERROR ("create_credential");
@@ -9261,6 +9280,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("PRIVATE", element_name) == 0)
           set_client_state (CLIENT_CREATE_CREDENTIAL_KEY_PRIVATE);
+        ELSE_ERROR ("create_credential");
+
+      case CLIENT_CREATE_CREDENTIAL_PRIVACY:
+        if (strcasecmp ("ALGORITHM", element_name) == 0)
+          set_client_state (CLIENT_CREATE_CREDENTIAL_PRIVACY_ALGORITHM);
+        else if (strcasecmp ("PASSWORD", element_name) == 0)
+          set_client_state (CLIENT_CREATE_CREDENTIAL_PRIVACY_PASSWORD);
         ELSE_ERROR ("create_credential");
 
       case CLIENT_CREATE_FILTER:
@@ -14957,6 +14983,21 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 login ? login : "",
                 type ? type : "",
                 type ? credential_full_type (type) : "");
+
+              if (strcmp (type, "snmp") == 0)
+                {
+                  const char *auth_algorithm, *privacy_algorithm;
+                  auth_algorithm
+                    = credential_iterator_auth_algorithm (&credentials);
+                  privacy_algorithm
+                    = credential_iterator_privacy_algorithm (&credentials);
+
+                  SENDF_TO_CLIENT_OR_FAIL
+                    ("<auth_algorithm>%s</auth_algorithm>"
+                     "<privacy><algorithm>%s</algorithm></privacy>",
+                     auth_algorithm ? auth_algorithm : "",
+                     privacy_algorithm ? privacy_algorithm : "");
+                }
 
               switch (format)
                 {
@@ -21368,6 +21409,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           : create_credential_data->password,
                          create_credential_data->key_private,
                          create_credential_data->certificate,
+                         create_credential_data->community,
+                         create_credential_data->auth_algorithm,
+                         create_credential_data->privacy_password,
+                         create_credential_data->privacy_algorithm,
                          create_credential_data->type,
                          &new_credential))
             {
@@ -21423,18 +21468,40 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                  (XML_ERROR_SYNTAX ("create_credential",
                                     "Selected type requires a certificate"));
                 break;
-              case 9:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Selected type requires a username"
-                                    " or certificate"));
-                break;
               case 10:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_credential",
                                     "Selected type cannot be generated"
                                     " automatically"));
                 break;
+              case 11:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                    "Selected type requires a community"));
+              case 12:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                    "Selected type requires an"
+                                    " auth_algorithm"));
+              case 13:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                    "Selected type requires a"
+                                    " password in a privacy element"));
+              case 14:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                    "Selected type requires an"
+                                    " algorithm in a privacy element"));
+              case 15:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                    "auth algorithm must be 'md5' or 'sha1'"));
+              case 16:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                    "privacy algorithm must be 'aes'"
+                                    " or 'des'"));
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_credential",
@@ -21451,8 +21518,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
+      CLOSE (CLIENT_CREATE_CREDENTIAL, AUTH_ALGORITHM);
       CLOSE (CLIENT_CREATE_CREDENTIAL, CERTIFICATE);
       CLOSE (CLIENT_CREATE_CREDENTIAL, COMMENT);
+      CLOSE (CLIENT_CREATE_CREDENTIAL, COMMUNITY);
       CLOSE (CLIENT_CREATE_CREDENTIAL, COPY);
       CLOSE (CLIENT_CREATE_CREDENTIAL, KEY);
       CLOSE (CLIENT_CREATE_CREDENTIAL_KEY, PHRASE);
@@ -21460,6 +21529,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_CREDENTIAL, LOGIN);
       CLOSE (CLIENT_CREATE_CREDENTIAL, NAME);
       CLOSE (CLIENT_CREATE_CREDENTIAL, PASSWORD);
+      CLOSE (CLIENT_CREATE_CREDENTIAL, PRIVACY);
+      CLOSE (CLIENT_CREATE_CREDENTIAL_PRIVACY, ALGORITHM);
+      CLOSE (CLIENT_CREATE_CREDENTIAL_PRIVACY, PASSWORD);
       CLOSE (CLIENT_CREATE_CREDENTIAL, TYPE);
 
       case CLIENT_CREATE_FILTER:
@@ -28722,11 +28794,17 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
               &import_config_data->type);
 
 
+      APPEND (CLIENT_CREATE_CREDENTIAL_AUTH_ALGORITHM,
+              &create_credential_data->auth_algorithm);
+
       APPEND (CLIENT_CREATE_CREDENTIAL_CERTIFICATE,
               &create_credential_data->certificate);
 
       APPEND (CLIENT_CREATE_CREDENTIAL_COMMENT,
               &create_credential_data->comment);
+
+      APPEND (CLIENT_CREATE_CREDENTIAL_COMMUNITY,
+              &create_credential_data->community);
 
       APPEND (CLIENT_CREATE_CREDENTIAL_COPY,
               &create_credential_data->copy);
@@ -28745,6 +28823,12 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_CREDENTIAL_PASSWORD,
               &create_credential_data->password);
+
+      APPEND (CLIENT_CREATE_CREDENTIAL_PRIVACY_ALGORITHM,
+              &create_credential_data->privacy_algorithm);
+
+      APPEND (CLIENT_CREATE_CREDENTIAL_PRIVACY_PASSWORD,
+              &create_credential_data->privacy_password);
 
       APPEND (CLIENT_CREATE_CREDENTIAL_TYPE,
               &create_credential_data->type);

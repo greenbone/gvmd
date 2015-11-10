@@ -1909,6 +1909,7 @@ find_credential_with_permission (const char*, credential_t*, const char*);
 
 int
 create_credential (const char*, const char*, const char*, const char*,
+                   const char*, const char*, const char*, const char*,
                    const char*, const char*, const char*, credential_t*);
 
 int
@@ -1948,6 +1949,18 @@ init_credential_iterator (iterator_t*, const get_data_t *);
 
 const char*
 credential_iterator_login (iterator_t*);
+
+const char*
+credential_iterator_auth_algorithm (iterator_t*);
+
+const char*
+credential_iterator_privacy_algorithm (iterator_t*);
+
+const char*
+credential_iterator_community (iterator_t*);
+
+const char*
+credential_iterator_privacy_password (iterator_t*);
 
 const char*
 credential_iterator_private_key (iterator_t*);

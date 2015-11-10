@@ -1,3 +1,54 @@
+2015-11-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add SNMP credential type and restructure some internal credential data
+	handling. Small fixes to related documentation.
+
+	* src/lsc_crypt.c (lsc_crypt_decrypt): Make non-static and add doc.
+	(lsc_crypt_get_password): Fix typo in documentation.
+	(lsc_crypt_get_private_key): Add documentation.
+
+	* src/lsc_crypt.h (lsc_crypt_decrypt): New function prototype.
+
+	* src/manage_sql.c (create_credential): Add params community,
+	auth_algorithm, privacy_password, privacy_algorithm to handle new SNMP
+	type. Restructure parameter checks.
+	(CREDENTIAL_ITERATOR_COLUMNS, CREDENTIAL_ITERATOR_TRASH_COLUMNS): Move
+	certificate to other public columns. Add columns auth_algorithm,
+	privacy_algorithm, community and privacy_password.
+	(credential_value, credential_encrypted_value): New functions.
+	(credential_iterator_pass_or_priv): Remove, replaced with
+	credential_iterator_encrypted_data.
+	(credential_iterator_encrypted_data): New. More generic version of
+	credential_iterator_pass_or_priv.
+	(credential_iterator_certificate): Move and update column index.
+	(credential_iterator_auth_algorithm)
+	(credential_iterator_privacy_algorithm): New functions.
+	(credential_iterator_password, credential_iterator_private_key): Use
+	new function credential_iterator_encrypted_data.
+	(credential_iterator_community, credential_iterator_privacy_password):
+	New functions.
+
+	* src/manage.c (credential_full_type): Add case for SNMP.
+
+	* src/manage.h (create_credential): Add parameters.
+	(credential_iterator_auth_algorithm)
+	(credential_iterator_privacy_algorithm, credential_iterator_community)
+	(credential_iterator_privacy_password): New function prototypes.
+
+	* src/omp.c (create_credential_data_t, create_credential_data_reset):
+	Add fields community, auth_algorithm, privacy_password and
+	privacy_algorithm.
+	(client_state_t, omp_xml_handle_start_element)
+	(omp_xml_handle_end_element, omp_xml_handle_text): Add new elements
+	for SNMP credential type to CREATE_CREDENTIAL and GET_CREDENTIALS.
+
+	* src/schema_formats/XML/OMP.xml.in: Add new elements for SNMP
+	credential type to create_credential command and get_credentials
+	response. Add missing "cc" type alt for type in create_credential and
+	full_type element in get_credentials response.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
 2015-11-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add new alert conditions "Filter count at least" and "Filter count

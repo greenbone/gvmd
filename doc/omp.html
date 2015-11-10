@@ -7709,6 +7709,31 @@ create_alert_filter
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>auth_algorithm</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Authentication algorithm for SNMP, either md5 or sha1.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>community</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The SNMP community.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>privacy</b>&gt;
+              ?<ul style="list-style: none">
+<li>
+              &lt;<b>algorithm</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The SNMP privacy algorithm, either aes or des.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>password</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The SNMP privacy password.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
               &lt;<b>type</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">The type of credential to create.</div>
 <ul style="list-style: none"></ul>
@@ -7743,6 +7768,9 @@ create_alert_filter
        &amp; create_credential_key?
        &amp; create_credential_login
        &amp; create_credential_password?
+       &amp; create_credential_auth_algorithm?
+       &amp; create_credential_community?
+       &amp; create_credential_privacy?
        &amp; create_credential_type?
      }
 
@@ -7795,10 +7823,41 @@ create_credential_password
        text
      }
 
+create_credential_community
+ = element community
+     {
+       text
+     }
+
+create_credential_auth_algorithm
+ = element auth_algorithm
+     {
+       xsd:token { pattern = "md5|sha1" }
+     }
+
+create_credential_privacy
+ = element privacy
+     {
+       create_credential_privacy_algorithm
+       &amp; create_credential_privacy_password
+     }
+
+create_credential_privacy_algorithm
+ = element algorithm
+     {
+       xsd:token { pattern = "aes|des" }
+     }
+
+create_credential_privacy_password
+ = element password
+     {
+       text
+     }
+
 create_credential_type
  = element type
      {
-       xsd:token { pattern = "up|usk" }
+       xsd:token { pattern = "cc|snmp|up|usk" }
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>create_credential_response
@@ -16875,6 +16934,24 @@ get_assets_response_asset_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>full_type</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The type of the credential written out.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>auth_algorithm</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The SNMP authentication algorithm.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>privacy</b>&gt;
+              ?<ul style="list-style: none"><li>
+              &lt;<b>algorithm</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The SNMP privacy algorithm.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>scanners</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">All scanners using this credential.</div>
 <ul style="list-style: none"><li>
@@ -17089,6 +17166,9 @@ get_credentials_response_credential
        &amp; get_credentials_response_credential_permissions
        &amp; get_credentials_response_credential_user_tags
        &amp; get_credentials_response_credential_type
+       &amp; get_credentials_response_credential_full_type
+       &amp; get_credentials_response_credential_auth_algorithm?
+       &amp; get_credentials_response_credential_privacy?
        &amp; get_credentials_response_credential_scanners?
        &amp; get_credentials_response_credential_slaves?
        &amp; get_credentials_response_credential_targets?
@@ -17218,6 +17298,24 @@ get_credentials_response_credential_full_type
  = element full_type
      {
        text
+     }
+
+get_credentials_response_credential_auth_algorithm
+ = element auth_algorithm
+     {
+       xsd:token { pattern = "md5|sha1" }
+     }
+
+get_credentials_response_credential_privacy
+ = element privacy
+     {
+       get_credentials_response_credential_privacy_algorithm
+     }
+
+get_credentials_response_credential_privacy_algorithm
+ = element algorithm
+     {
+       xsd:token { pattern = "aes|des" }
      }
 
 get_credentials_response_credential_scanners

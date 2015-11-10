@@ -3507,6 +3507,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>key</e></o>
       <e>login</e>
       <o><e>password</e></o>
+      <o><e>auth_algorithm</e></o>
+      <o><e>community</e></o>
+      <o><e>privacy</e></o>
       <o><e>type</e></o>
     </pattern>
     <ele>
@@ -3564,11 +3567,58 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
     </ele>
     <ele>
+      <name>community</name>
+      <summary>The SNMP community</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>auth_algorithm</name>
+      <summary>Authentication algorithm for SNMP, either md5 or sha1</summary>
+      <pattern>
+        <t>
+          <alts>
+            <alt>md5</alt>
+            <alt>sha1</alt>
+          </alts>
+        </t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>privacy</name>
+      <pattern>
+        <e>algorithm</e>
+        <e>password</e>
+      </pattern>
+      <ele>
+        <name>algorithm</name>
+        <summary>The SNMP privacy algorithm, either aes or des</summary>
+        <pattern>
+          <t>
+            <alts>
+              <alt>aes</alt>
+              <alt>des</alt>
+            </alts>
+          </t>
+        </pattern>
+      </ele>
+      <ele>
+        <name>password</name>
+        <summary>The SNMP privacy password</summary>
+        <pattern>
+          text
+        </pattern>
+      </ele>
+    </ele>
+    <ele>
       <name>type</name>
       <summary>The type of credential to create</summary>
       <pattern>
         <t>
           <alts>
+            <alt>cc</alt>
+            <alt>snmp</alt>
             <alt>up</alt>
             <alt>usk</alt>
           </alts>
@@ -9797,6 +9847,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>permissions</e>
           <e>user_tags</e>
           <e>type</e>
+          <e>full_type</e>
+          <o><e>auth_algorithm</e></o>
+          <o><e>privacy</e></o>
           <o><e>scanners</e></o>
           <o><e>slaves</e></o>
           <o><e>targets</e></o>
@@ -9936,6 +9989,36 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>
             text
           </pattern>
+        </ele>
+        <ele>
+          <name>auth_algorithm</name>
+          <summary>The SNMP authentication algorithm</summary>
+          <pattern>
+            <t>
+              <alts>
+                <alt>md5</alt>
+                <alt>sha1</alt>
+              </alts>
+            </t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>privacy</name>
+          <pattern>
+            <e>algorithm</e>
+          </pattern>
+          <ele>
+            <name>algorithm</name>
+            <summary>The SNMP privacy algorithm</summary>
+            <pattern>
+              <t>
+                <alts>
+                  <alt>aes</alt>
+                  <alt>des</alt>
+                </alts>
+              </t>
+            </pattern>
+          </ele>
         </ele>
         <ele>
           <name>scanners</name>

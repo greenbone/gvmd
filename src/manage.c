@@ -4677,6 +4677,8 @@ credential_full_type (const char* abbreviation)
     return NULL;
   else if (strcasecmp (abbreviation, "cc") == 0)
     return "client certificate";
+  else if (strcasecmp (abbreviation, "snmp") == 0)
+    return "SNMP";
   else if (strcasecmp (abbreviation, "up") == 0)
     return "username + password";
   else if (strcasecmp (abbreviation, "usk") == 0)

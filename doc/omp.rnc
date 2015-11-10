@@ -3446,6 +3446,9 @@ create_credential
        & create_credential_key?
        & create_credential_login
        & create_credential_password?
+       & create_credential_auth_algorithm?
+       & create_credential_community?
+       & create_credential_privacy?
        & create_credential_type?
      }
 
@@ -3505,11 +3508,46 @@ create_credential_password
        text
      }
 
+# The SNMP community.
+create_credential_community
+ = element community
+     {
+       text
+     }
+
+# Authentication algorithm for SNMP, either md5 or sha1.
+create_credential_auth_algorithm
+ = element auth_algorithm
+     {
+       xsd:token { pattern = "md5|sha1" }
+     }
+
+create_credential_privacy
+ = element privacy
+     {
+       create_credential_privacy_algorithm
+       & create_credential_privacy_password
+     }
+
+# The SNMP privacy algorithm, either aes or des.
+create_credential_privacy_algorithm
+ = element algorithm
+     {
+       xsd:token { pattern = "aes|des" }
+     }
+
+# The SNMP privacy password.
+create_credential_privacy_password
+ = element password
+     {
+       text
+     }
+
 # The type of credential to create.
 create_credential_type
  = element type
      {
-       xsd:token { pattern = "up|usk" }
+       xsd:token { pattern = "cc|snmp|up|usk" }
      }
 
 ## Command create_filter
@@ -10150,6 +10188,9 @@ get_credentials_response_credential
        & get_credentials_response_credential_permissions
        & get_credentials_response_credential_user_tags
        & get_credentials_response_credential_type
+       & get_credentials_response_credential_full_type
+       & get_credentials_response_credential_auth_algorithm?
+       & get_credentials_response_credential_privacy?
        & get_credentials_response_credential_scanners?
        & get_credentials_response_credential_slaves?
        & get_credentials_response_credential_targets?
@@ -10299,6 +10340,26 @@ get_credentials_response_credential_full_type
  = element full_type
      {
        text
+     }
+
+# The SNMP authentication algorithm.
+get_credentials_response_credential_auth_algorithm
+ = element auth_algorithm
+     {
+       xsd:token { pattern = "md5|sha1" }
+     }
+
+get_credentials_response_credential_privacy
+ = element privacy
+     {
+       get_credentials_response_credential_privacy_algorithm
+     }
+
+# The SNMP privacy algorithm.
+get_credentials_response_credential_privacy_algorithm
+ = element algorithm
+     {
+       xsd:token { pattern = "aes|des" }
      }
 
 # All scanners using this credential.
