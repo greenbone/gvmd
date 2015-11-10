@@ -1,5 +1,12 @@
 2015-11-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (delete_filter): Check if the filter is in use by an
+	alert condition.
+	(init_filter_alert_iterator): Include alerts that use the filter in a
+	condition.
+
+2015-11-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Validate filter condition data for CREATE_ALERT and MODIFY_ALERT.
 
 	* src/manage_sql.c (validate_alert_condition_data): Add filter cases.
