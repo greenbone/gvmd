@@ -1,3 +1,13 @@
+2015-11-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Validate filter condition data for CREATE_ALERT and MODIFY_ALERT.
+
+	* src/manage_sql.c (validate_alert_condition_data): Add filter cases.
+	(create_alert): Handle new validation returns.
+
+	* src/omp.c (omp_xml_handle_end_element): Handle new validation returns.
+	Correct commands in log calls.
+
 2015-11-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Add SNMP credential type and restructure some internal credential data

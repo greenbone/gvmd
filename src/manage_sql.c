@@ -6005,7 +6005,7 @@ validate_email_list (const char *list)
  * @param[in]  condition The condition.
  *
  * @return 0 on success, 1 unexpected data name, 2 syntax error in data,
- *         -1 internal error.
+ *         3 failed to find filter for condition, -1 internal error.
  */
 static int
 validate_alert_condition_data (gchar *name, gchar* data,
@@ -6037,6 +6037,51 @@ validate_alert_condition_data (gchar *name, gchar* data,
           == 0)
         return 2;
     }
+  else if (condition == ALERT_CONDITION_FILTER_COUNT_AT_LEAST)
+    {
+      if (strcmp (name, "filter_id") == 0)
+        {
+          filter_t filter;
+          if (data == NULL)
+            return 3;
+          filter = 0;
+          if (find_filter_with_permission (data, &filter, "get_filters"))
+            return -1;
+          if (filter == 0)
+            return 3;
+          return 0;
+        }
+
+      if (strcmp (name, "count"))
+        return 1;
+    }
+  else if (condition == ALERT_CONDITION_FILTER_COUNT_CHANGED)
+    {
+      if (strcmp (name, "filter_id") == 0)
+        {
+          filter_t filter;
+          if (data == NULL)
+            return 3;
+          filter = 0;
+          if (find_filter_with_permission (data, &filter, "get_filters"))
+            return -1;
+          if (filter == 0)
+            return 3;
+          return 0;
+        }
+
+      if (strcmp (name, "direction")
+          && strcmp (name, "count"))
+        return 1;
+
+      if (strcmp (name, "direction") == 0
+          && g_regex_match_simple ("^(increased|decreased|changed)$",
+                                   data ? data : "",
+                                   0,
+                                   0)
+             == 0)
+        return 2;
+    }
 
 
   return 0;
@@ -6059,8 +6104,8 @@ validate_alert_condition_data (gchar *name, gchar* data,
  * @return 0 success, 1 escalation exists already, 2 validation of email failed,
  *         3 failed to find filter, 4 type must be "result" if specified,
  *         5 unexpected condition data name, 6 syntax error in condition data,
- *         7 email subject too long, 8 email message too long,
- *         99 permission denied, -1 error.
+ *         7 email subject too long, 8 email message too long, 9 failed to find
+ *         filter for condition, 99 permission denied, -1 error.
  */
 int
 create_alert (const char* name, const char* comment, const char* filter_id,
@@ -6161,6 +6206,8 @@ create_alert (const char* name, const char* comment, const char* filter_id,
                 return 5;
               case 2:
                 return 6;
+              case 3:
+                return 9;
               default:
                 return -1;
             }
@@ -6328,8 +6375,8 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
  *         3 alert_id required, 4 failed to find filter, 5 filter type must be
  *         result if specified, 6 Provided email address not valid,
  *         7 unexpected condition data name, 8 syntax error in condition data,
- *         9 email subject too long, 10 email message too long,
- *         99 permission denied, -1 internal error.
+ *         9 email subject too long, 10 email message too long, 11 failed to
+ *         find filter for condition, 99 permission denied, -1 internal error.
  */
 int
 modify_alert (const char *alert_id, const char *name, const char *comment,
@@ -6472,6 +6519,8 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
                     return 7;
                   case 2:
                     return 8;
+                  case 3:
+                    return 11;
                   default:
                     return -1;
                 }
