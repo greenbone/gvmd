@@ -21210,6 +21210,25 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         "Failed to find filter for condition"));
                     log_event_fail ("alert", "Alert", NULL, "created");
                     break;
+                  case 12:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_alert",
+                                        "Error in Send host"));
+                    log_event_fail ("alert", "Alert", NULL, "created");
+                    break;
+                  case 13:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_alert",
+                                        "Error in Send port"));
+                    log_event_fail ("alert", "Alert", NULL, "created");
+                    break;
+                  case 14:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_alert",
+                                        "Failed to find report format for Send"
+                                        " method"));
+                    log_event_fail ("alert", "Alert", NULL, "created");
+                    break;
                   case 99:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_alert",
@@ -24915,6 +24934,25 @@ create_task_fail:
                  (XML_ERROR_SYNTAX ("modify_alert",
                                     "Failed to find filter for condition"));
                 log_event_fail ("alert", "Alert", NULL, "modified");
+                break;
+              case 12:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_alert",
+                                    "Error in Send host"));
+                log_event_fail ("alert", "Alert", NULL, "modify");
+                break;
+              case 13:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_alert",
+                                    "Error in Send port"));
+                log_event_fail ("alert", "Alert", NULL, "modify");
+                break;
+              case 14:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_alert",
+                                    "Failed to find report format for Send"
+                                    " method"));
+                log_event_fail ("alert", "Alert", NULL, "modify");
                 break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL

@@ -1,3 +1,19 @@
+2015-11-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add alert method "Send", for sending the report to a TCP listener.
+
+	* src/manage_sql.c (validate_send_data): New function.
+	(create_alert, modify_alert): Validate data for Send method.
+	(send_to_host): New function.
+	(escalate_2): Add Send method.
+
+	* src/manage.h (alert_method_t): Add Send.
+
+	* src/manage.c (alert_method_name, alert_method_from_name): Add Send.
+
+	* src/omp.c (omp_xml_handle_end_element): Handle new returns from
+	create_alert and modify_alert.
+
 2015-11-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (delete_filter): Check if the filter is in use by an

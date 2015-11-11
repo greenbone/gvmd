@@ -6088,6 +6088,67 @@ validate_alert_condition_data (gchar *name, gchar* data,
 }
 
 /**
+ * @brief Validate method data for the Send method.
+ *
+ * @param[in]  method          Method that data corresponds to.
+ * @param[in]  name            Name of data.
+ * @param[in]  data            The data.
+ *
+ * @return 0 valid, 12 error in Send host, 13 error in Send port, 14 failed
+ *         to find report format for Send method, -1 error.
+ */
+int
+validate_send_data (alert_method_t method, const gchar *name, gchar **data)
+{
+  if (method == ALERT_METHOD_SEND
+      && strcmp (name, "send_host") == 0)
+    {
+      int type;
+      gchar *stripped;
+
+      stripped = g_strstrip (g_strdup (*data));
+      type = openvas_get_host_type (stripped);
+      g_free (stripped);
+      if ((type != HOST_TYPE_IPV4)
+          && (type != HOST_TYPE_IPV6)
+          && (type != HOST_TYPE_NAME))
+        return 12;
+    }
+
+  if (method == ALERT_METHOD_SEND
+      && strcmp (name, "send_port") == 0)
+    {
+      int port;
+      gchar *stripped, *end;
+
+      stripped = g_strstrip (g_strdup (*data));
+      port = strtol (stripped, &end, 10);
+      g_free (stripped);
+      if (*end != '\0')
+        return 13;
+
+      g_free (*data);
+      *data = g_strdup_printf ("%i", port);
+    }
+
+  if (method == ALERT_METHOD_SEND
+      && strcmp (name, "send_report_format") == 0)
+    {
+      report_format_t report_format;
+
+      report_format = 0;
+      if (find_report_format_with_permission (*data,
+                                              &report_format,
+                                              "get_report_formats"))
+        return -1;
+      if (report_format == 0)
+        return 14;
+    }
+
+  return 0;
+}
+
+/**
  * @brief Create an alert.
  *
  * @param[in]  name            Name of alert.
@@ -6105,7 +6166,9 @@ validate_alert_condition_data (gchar *name, gchar* data,
  *         3 failed to find filter, 4 type must be "result" if specified,
  *         5 unexpected condition data name, 6 syntax error in condition data,
  *         7 email subject too long, 8 email message too long, 9 failed to find
- *         filter for condition, 99 permission denied, -1 error.
+ *         filter for condition, 12 error in Send host, 13 error in Send port,
+ *         14 failed to find report format for Send method, 99 permission
+ *         denied, -1 error.
  */
 int
 create_alert (const char* name, const char* comment, const char* filter_id,
@@ -6239,8 +6302,11 @@ create_alert (const char* name, const char* comment, const char* filter_id,
   index = 0;
   while ((item = (gchar*) g_ptr_array_index (method_data, index++)))
     {
-      gchar *name = sql_quote (item);
-      gchar *data = sql_quote (item + strlen (item) + 1);
+      int ret;
+      gchar *name, *data;
+
+      name = sql_quote (item);
+      data = sql_quote (item + strlen (item) + 1);
 
       if (method == ALERT_METHOD_EMAIL
           && strcmp (name, "to_address") == 0
@@ -6280,6 +6346,15 @@ create_alert (const char* name, const char* comment, const char* filter_id,
           g_free (data);
           sql ("ROLLBACK;");
           return 8;
+        }
+
+      ret = validate_send_data (method, name, &data);
+      if (ret)
+        {
+          g_free (name);
+          g_free (data);
+          sql ("ROLLBACK;");
+          return ret;
         }
 
       sql ("INSERT INTO alert_method_data (alert, name, data)"
@@ -6376,7 +6451,9 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
  *         result if specified, 6 Provided email address not valid,
  *         7 unexpected condition data name, 8 syntax error in condition data,
  *         9 email subject too long, 10 email message too long, 11 failed to
- *         find filter for condition, 99 permission denied, -1 internal error.
+ *         find filter for condition, 12 error in Send host, 13 error in Send
+ *         port, 14 failed to find report format for Send method, 99 permission
+ *         denied, -1 internal error.
  */
 int
 modify_alert (const char *alert_id, const char *name, const char *comment,
@@ -6544,8 +6621,11 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
       index = 0;
       while ((item = (gchar*) g_ptr_array_index (method_data, index++)))
         {
-          gchar *name = sql_quote (item);
-          gchar *data = sql_quote (item + strlen (item) + 1);
+          int ret;
+          gchar *name, *data;
+
+          name = sql_quote (item);
+          data = sql_quote (item + strlen (item) + 1);
 
           if (method == ALERT_METHOD_EMAIL
               && strcmp (name, "to_address") == 0
@@ -6585,6 +6665,15 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
               g_free (data);
               sql ("ROLLBACK;");
               return 10;
+            }
+
+          ret = validate_send_data (method, name, &data);
+          if (ret)
+            {
+              g_free (name);
+              g_free (data);
+              sql ("ROLLBACK;");
+              return ret;
             }
 
           sql ("INSERT INTO alert_method_data (alert, name, data)"
@@ -7546,6 +7635,318 @@ http_get (const char *url)
   g_free (standard_out);
   g_free (standard_err);
   return ret;
+}
+
+/**
+ * @brief Send a report to a host via TCP.
+ *
+ * @param[in]  host         Address of host.
+ * @param[in]  port         Port of host.
+ * @param[in]  report      Report that should be sent.
+ * @param[in]  report_size Size of the report.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+send_to_host (const char *host, const char *port,
+              const char *report, int report_size)
+{
+  gchar *script, *script_dir;
+  gchar *report_file;
+  gchar *clean_host, *clean_port;
+  char report_dir[] = "/tmp/openvasmd_alert_XXXXXX";
+  GError *error;
+
+  if ((report == NULL) || (host == NULL))
+    return -1;
+
+  tracef ("send to host: %s:%s", host, port);
+  tracef ("report: %s", report);
+
+  /* Setup files. */
+
+  if (mkdtemp (report_dir) == NULL)
+    {
+      g_warning ("%s: mkdtemp failed\n", __FUNCTION__);
+      return -1;
+    }
+
+  report_file = g_strdup_printf ("%s/report", report_dir);
+
+  error = NULL;
+  g_file_set_contents (report_file, report, report_size, &error);
+  if (error)
+    {
+      g_warning ("%s", error->message);
+      g_error_free (error);
+      g_free (report_file);
+      return -1;
+    }
+
+  /* Setup file names. */
+  script_dir = g_build_filename (OPENVAS_DATA_DIR,
+                                 "openvasmd",
+                                 "global_alert_methods",
+                                 "4a398d42-87c0-11e5-a1c0-28d24461215b",
+                                 NULL);
+
+  script = g_build_filename (script_dir, "alert", NULL);
+
+  if (!g_file_test (script, G_FILE_TEST_EXISTS))
+    {
+      g_warning ("%s: Failed to find alert script: %s\n",
+           __FUNCTION__,
+           script);
+      g_free (report_file);
+      g_free (script);
+      g_free (script_dir);
+      return -1;
+    }
+
+  {
+    gchar *command;
+    char *previous_dir;
+    int ret;
+
+    /* Change into the script directory. */
+
+    /** @todo NULL arg is glibc extension. */
+    previous_dir = getcwd (NULL, 0);
+    if (previous_dir == NULL)
+      {
+        g_warning ("%s: Failed to getcwd: %s\n",
+                   __FUNCTION__,
+                   strerror (errno));
+        g_free (report_file);
+        g_free (previous_dir);
+        g_free (script);
+        g_free (script_dir);
+        return -1;
+      }
+
+    if (chdir (script_dir))
+      {
+        g_warning ("%s: Failed to chdir: %s\n",
+                   __FUNCTION__,
+                   strerror (errno));
+        g_free (report_file);
+        g_free (previous_dir);
+        g_free (script);
+        g_free (script_dir);
+        return -1;
+      }
+    g_free (script_dir);
+
+    /* Call the script. */
+
+    clean_host = g_shell_quote (host);
+    clean_port = g_shell_quote (port);
+
+    command = g_strdup_printf ("%s %s %s %s > /dev/null"
+                               " 2> /dev/null",
+                               script,
+                               clean_host,
+                               clean_port,
+                               report_file);
+    g_free (script);
+    g_free (clean_host);
+    g_free (clean_port);
+
+    g_debug ("   command: %s\n", command);
+
+    if (geteuid () == 0)
+      {
+        pid_t pid;
+        struct passwd *nobody;
+
+        /* Run the command with lower privileges in a fork. */
+
+        nobody = getpwnam ("nobody");
+        if ((nobody == NULL)
+            || chown (report_dir, nobody->pw_uid, nobody->pw_gid)
+            || chown (report_file, nobody->pw_uid, nobody->pw_gid))
+          {
+            g_warning ("%s: Failed to set permissions for user nobody: %s\n",
+                       __FUNCTION__,
+                       strerror (errno));
+            g_free (previous_dir);
+            g_free (report_file);
+            g_free (command);
+            return -1;
+          }
+        g_free (report_file);
+
+        pid = fork ();
+        switch (pid)
+          {
+            case 0:
+              {
+                /* Child.  Drop privileges, run command, exit. */
+
+                cleanup_manage_process (FALSE);
+
+                if (setgroups (0,NULL))
+                  {
+                    g_warning ("%s (child): setgroups: %s\n",
+                               __FUNCTION__, strerror (errno));
+                    exit (EXIT_FAILURE);
+                  }
+                if (setgid (nobody->pw_gid))
+                  {
+                    g_warning ("%s (child): setgid: %s\n",
+                               __FUNCTION__,
+                               strerror (errno));
+                    exit (EXIT_FAILURE);
+                  }
+                if (setuid (nobody->pw_uid))
+                  {
+                    g_warning ("%s (child): setuid: %s\n",
+                               __FUNCTION__,
+                               strerror (errno));
+                    exit (EXIT_FAILURE);
+                  }
+
+                /* RATS: ignore, command is defined above. */
+                ret = system (command);
+                /* Ignore the shell command exit status, because we've not
+                 * specified what it must be in the past. */
+                if (ret == -1)
+                  {
+                    g_warning ("%s (child):"
+                               " system failed with ret %i, %i, %s\n",
+                               __FUNCTION__,
+                               ret,
+                               WEXITSTATUS (ret),
+                               command);
+                    exit (EXIT_FAILURE);
+                  }
+
+                exit (EXIT_SUCCESS);
+              }
+
+            case -1:
+              /* Parent when error. */
+
+              g_warning ("%s: Failed to fork: %s\n",
+                         __FUNCTION__,
+                         strerror (errno));
+              if (chdir (previous_dir))
+                g_warning ("%s: and chdir failed\n",
+                           __FUNCTION__);
+              g_free (previous_dir);
+              g_free (command);
+              g_free (command);
+              return -1;
+              break;
+
+            default:
+              {
+                int status;
+
+                /* Parent on success.  Wait for child, and check result. */
+
+                while (waitpid (pid, &status, 0) < 0)
+                  {
+                    if (errno == ECHILD)
+                      {
+                        g_warning ("%s: Failed to get child exit status",
+                                   __FUNCTION__);
+                        if (chdir (previous_dir))
+                          g_warning ("%s: and chdir failed\n",
+                                     __FUNCTION__);
+                        g_free (previous_dir);
+                        return -1;
+                      }
+                    if (errno == EINTR)
+                      continue;
+                    g_warning ("%s: wait: %s",
+                               __FUNCTION__,
+                               strerror (errno));
+                    if (chdir (previous_dir))
+                      g_warning ("%s: and chdir failed\n",
+                                 __FUNCTION__);
+                    g_free (previous_dir);
+                    return -1;
+                  }
+                if (WIFEXITED (status))
+                  switch (WEXITSTATUS (status))
+                    {
+                    case EXIT_SUCCESS:
+                      break;
+                    case EXIT_FAILURE:
+                    default:
+                      g_warning ("%s: child failed, %s\n",
+                                 __FUNCTION__,
+                                 command);
+                      if (chdir (previous_dir))
+                        g_warning ("%s: and chdir failed\n",
+                                   __FUNCTION__);
+                      g_free (previous_dir);
+                      return -1;
+                    }
+                else
+                  {
+                    g_warning ("%s: child failed, %s\n",
+                               __FUNCTION__,
+                               command);
+                    if (chdir (previous_dir))
+                      g_warning ("%s: and chdir failed\n",
+                                 __FUNCTION__);
+                    g_free (previous_dir);
+                    return -1;
+                  }
+
+                /* Child succeeded, continue to process result. */
+
+                break;
+              }
+          }
+      }
+    else
+      {
+        /* Just run the command as the current user. */
+        g_free (report_file);
+
+        /* RATS: ignore, command is defined above. */
+        ret = system (command);
+        /* Ignore the shell command exit status, because we've not
+         * specified what it must be in the past. */
+        if (ret == -1)
+          {
+            g_warning ("%s: system failed with ret %i, %i, %s\n",
+                       __FUNCTION__,
+                       ret,
+                       WEXITSTATUS (ret),
+                       command);
+            if (chdir (previous_dir))
+              g_warning ("%s: and chdir failed\n",
+                         __FUNCTION__);
+            g_free (previous_dir);
+            g_free (command);
+            return -1;
+          }
+      }
+
+    g_free (command);
+
+    /* Change back to the previous directory. */
+
+    if (chdir (previous_dir))
+      {
+        g_warning ("%s: Failed to chdir back: %s\n",
+                   __FUNCTION__,
+                   strerror (errno));
+        g_free (previous_dir);
+        return -1;
+      }
+    g_free (previous_dir);
+
+    /* Remove the directory. */
+
+    openvas_file_remove_recurse (report_dir);
+
+    return 0;
+  }
 }
 
 /**
@@ -9007,6 +9408,113 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               return ret;
             }
           return -1;
+        }
+      case ALERT_METHOD_SEND:
+        {
+          char *host, *port, *filt_id;
+          gchar *report_content, *format_uuid;
+          gsize content_length;
+          report_format_t report_format;
+          int ret;
+          filter_t filter;
+
+          format_uuid = alert_data (alert,
+                                    "method",
+                                    "send_report_format");
+          if (format_uuid && strlen (format_uuid))
+            {
+              if (find_report_format_with_permission (format_uuid,
+                                                      &report_format,
+                                                      "get_report_formats")
+                  || (report_format == 0))
+                {
+                  g_warning ("%s: Could not find Send RFP '%s'", __FUNCTION__,
+                             format_uuid);
+                  g_free (format_uuid);
+                  return -2;
+                }
+              g_free (format_uuid);
+            }
+          else
+            {
+              g_free (format_uuid);
+              if (find_report_format_with_permission
+                   ("a994b278-1f62-11e1-96ac-406186ea4fc5",
+                    &report_format,
+                    "get_report_formats")
+                  || (report_format == 0))
+                {
+                  g_warning ("%s: Could not find XML RFP for Send",
+                             __FUNCTION__);
+                  return -2;
+                }
+            }
+
+          if (report == 0)
+            switch (sql_int64 (&report,
+                               "SELECT max (id) FROM reports"
+                               " WHERE task = %llu",
+                               task))
+              {
+                case 0:
+                  if (report)
+                    break;
+                case 1:        /* Too few rows in result of query. */
+                case -1:
+                  return -1;
+                  break;
+                default:       /* Programming error. */
+                  assert (0);
+                  return -1;
+              }
+
+          filt_id = alert_filter_id (alert);
+          if (filt_id)
+            {
+              if (find_filter_with_permission (filt_id, &filter, "get_filters"))
+                return -1;
+              if (filter == 0)
+                return -3;
+            }
+
+          report_content = manage_report (report, report_format,
+                                          filt_id,
+                                          sort_order, sort_field,
+                                          result_hosts_only,
+                                          min_cvss_base, min_qod, levels,
+                                          delta_states, apply_overrides,
+                                          search_phrase, autofp,
+                                          notes, notes_details, overrides,
+                                          overrides_details,
+                                          first_result, max_results,
+                                          NULL, /* Type. */
+                                          &content_length,
+                                          NULL,    /* Extension. */
+                                          NULL,    /* Content type. */
+                                          zone,
+                                          NULL,
+                                          NULL,
+                                          NULL);
+          free (filt_id);
+          if (report_content == NULL)
+            {
+              g_warning ("%s: Empty Report", __FUNCTION__);
+              return -1;
+            }
+
+          host = alert_data (alert, "method", "send_host");
+          port = alert_data (alert, "method", "send_port");
+
+          tracef ("send host: %s", host);
+          tracef ("send port: %s", port);
+
+          ret = send_to_host (host, port, report_content, content_length);
+
+          free (host);
+          free (port);
+          g_free (report_content);
+
+          return ret;
         }
       case ALERT_METHOD_SOURCEFIRE:
         {
