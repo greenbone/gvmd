@@ -1,3 +1,8 @@
+2015-11-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (scanner_writable): Always return 1, because some
+	field may always be modified.
+
 2015-11-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Forgotten part of last commit.

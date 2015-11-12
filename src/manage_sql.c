@@ -42760,7 +42760,7 @@ trash_scanner_in_use (scanner_t scanner)
 int
 scanner_writable (scanner_t scanner)
 {
-  return (scanner_in_use (scanner) == 0);
+  return 1;
 }
 
 /**
