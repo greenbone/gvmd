@@ -1,3 +1,14 @@
+2015-11-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r23777.
+
+	Forgotten part of last commit.
+
+	* CMakeLists.txt: Install Send alert file.
+
+	* src/alert_methods/Send/, src/alert_methods/Send/alert: New directory
+	and file.
+
 2015-11-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r23775.
