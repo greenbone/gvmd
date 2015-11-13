@@ -685,6 +685,7 @@ event_name (event_t event)
   switch (event)
     {
       case EVENT_TASK_RUN_STATUS_CHANGED: return "Task run status changed";
+      case EVENT_NEW_NVTS:                return "New NVTs arrived";
       default:                            return "Internal Error";
     }
 }
@@ -762,6 +763,9 @@ event_description (event_t event, const void *event_data, const char *task_name)
         return g_strdup_printf ("Task status changed to '%s'",
                                 run_status_name ((task_status_t) event_data));
         break;
+      case EVENT_NEW_NVTS:
+        return g_strdup_printf ("New NVTs arrived");
+        break;
       default:
         return g_strdup ("Internal Error");
     }
@@ -825,6 +829,8 @@ event_from_name (const char* name)
 {
   if (strcasecmp (name, "Task run status changed") == 0)
     return EVENT_TASK_RUN_STATUS_CHANGED;
+  if (strcasecmp (name, "New NVTs arrived") == 0)
+    return EVENT_NEW_NVTS;
   return EVENT_ERROR;
 }
 

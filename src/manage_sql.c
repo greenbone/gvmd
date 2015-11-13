@@ -6911,6 +6911,20 @@ alert_method (alert_t alert)
 }
 
 /**
+ * @brief Return the event associated with an alert.
+ *
+ * @param[in]  alert  Alert.
+ *
+ * @return Event.
+ */
+static event_t
+alert_event (alert_t alert)
+{
+  return sql_int ("SELECT event FROM alerts WHERE id = %llu;",
+                  alert);
+}
+
+/**
  * @brief Filter columns for alert iterator.
  */
 #define ALERT_ITERATOR_FILTER_COLUMNS                                         \
@@ -7313,7 +7327,7 @@ init_task_alert_iterator (iterator_t* iterator, task_t task, event_t event)
   owned_clause = acl_where_owned ("alert", &get, 0, "any", 0, permissions);
   array_free (permissions);
 
-  if (event)
+  if (task && event)
     init_iterator (iterator,
                    "SELECT alerts.id, alerts.uuid, alerts.name"
                    " FROM alerts, task_alerts"
@@ -7323,7 +7337,7 @@ init_task_alert_iterator (iterator_t* iterator, task_t task, event_t event)
                    task,
                    event,
                    owned_clause);
-  else
+  else if (task)
     init_iterator (iterator,
                    "SELECT alerts.id, alerts.uuid, alerts.name"
                    " FROM alerts, task_alerts"
@@ -7331,6 +7345,20 @@ init_task_alert_iterator (iterator_t* iterator, task_t task, event_t event)
                    " AND task_alerts.alert = alerts.id"
                    " AND %s;",
                    task,
+                   owned_clause);
+  else if (event)
+    init_iterator (iterator,
+                   "SELECT alerts.id, alerts.uuid, alerts.name"
+                   " FROM alerts"
+                   " WHERE event = %i"
+                   " AND %s;",
+                   event,
+                   owned_clause);
+  else
+    init_iterator (iterator,
+                   "SELECT alerts.id, alerts.uuid, alerts.name"
+                   " FROM alerts"
+                   " WHERE %s;",
                    owned_clause);
 
   g_free (owned_clause);
@@ -8968,8 +8996,21 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               extension = NULL;
 
               from_address = alert_data (alert,
-                                             "method",
-                                             "from_address");
+                                         "method",
+                                         "from_address");
+
+              if (event == EVENT_NEW_NVTS)
+                {
+                  const gchar *message;
+
+                  message = (const gchar*) event_data;
+                  ret = email (to_address, from_address,
+                               "[OpenVAS-Manager] New NVTs arrived",
+                               message, NULL, NULL, NULL, NULL);
+                  free (to_address);
+                  free (from_address);
+                  return ret;
+                }
 
               notice = alert_data (alert, "method", "notice");
               filt_id = alert_filter_id (alert);
@@ -9346,6 +9387,14 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
         {
           char *url;
 
+          if (event == EVENT_NEW_NVTS)
+            {
+              g_warning ("%s: Event \"New NVTs arrived\" with method"
+                         " \"HTTP Get\" not support",
+                         __FUNCTION__);
+              return -1;
+            }
+
           url = alert_data (alert, "method", "URL");
 
           if (url)
@@ -9417,6 +9466,25 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           report_format_t report_format;
           int ret;
           filter_t filter;
+
+          if (event == EVENT_NEW_NVTS)
+            {
+              gchar *message;
+
+              message = (gchar*) event_data;
+              host = alert_data (alert, "method", "send_host");
+              port = alert_data (alert, "method", "send_port");
+
+              tracef ("send host: %s", host);
+              tracef ("send port: %s", port);
+
+              ret = send_to_host (host, port, message, strlen (message));
+
+              free (host);
+              free (port);
+
+              return ret;
+            }
 
           format_uuid = alert_data (alert,
                                     "method",
@@ -9525,6 +9593,14 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           int ret;
           filter_t filter;
 
+          if (event == EVENT_NEW_NVTS)
+            {
+              g_warning ("%s: Event \"New NVTs arrived\" with method"
+                         " \"Sourcefire\" not support",
+                         __FUNCTION__);
+              return -1;
+            }
+
           if (lookup_report_format ("Sourcefire", &report_format)
               || (report_format == 0))
             return -2;
@@ -9629,6 +9705,14 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           int ret;
           filter_t filter;
 
+          if (event == EVENT_NEW_NVTS)
+            {
+              g_warning ("%s: Event \"New NVTs arrived\" with method"
+                         " \"Verinice\" not support",
+                         __FUNCTION__);
+              return -1;
+            }
+
           format_uuid = alert_data (alert,
                                     "method",
                                     "verinice_server_report_format");
@@ -9725,6 +9809,14 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           gnutls_session_t session;
           gnutls_certificate_credentials_t credentials;
           char *task_id, *report_id;
+
+          if (event == EVENT_NEW_NVTS)
+            {
+              g_warning ("%s: Event \"New NVTs arrived\" with method"
+                         " \"Start Task\" not support",
+                         __FUNCTION__);
+              return -1;
+            }
 
           /* Run the callback to fork a child connected to the Manager. */
 
@@ -9852,14 +9944,54 @@ manage_alert (const char *alert_id, const char *task_id, event_t event,
   if (alert == 0)
     return 1;
 
-  if (find_task_with_permission (task_id, &task, NULL))
-    return -1;
-  if (task == 0)
-    return 2;
+  if (task_id == NULL || strcmp (task_id, "0") == 0)
+    task = 0;
+  else
+    {
+      if (find_task_with_permission (task_id, &task, NULL))
+        return -1;
+      if (task == 0)
+        return 2;
+    }
 
   condition = alert_condition (alert);
   method = alert_method (alert);
   return escalate_1 (alert, task, event, event_data, method, condition);
+}
+
+/**
+ * @brief Test an alert.
+ *
+ * @param[in]  alert_id    Alert UUID.
+ *
+ * @return 0 success, 1 failed to find alert, 2 failed to find task,
+ *         99 permission denied, -1 error, -2 failed to find report format
+ *         for alert, -3 failed to find filter for alert.
+ */
+int
+manage_test_alert (const char *alert_id)
+{
+  alert_t alert;
+
+  if (acl_user_may ("test_alert") == 0)
+    return 99;
+
+  if (find_alert_with_permission (alert_id, &alert, "test_alert"))
+    return -1;
+  if (alert == 0)
+    return 1;
+
+  if (alert_event (alert) == EVENT_NEW_NVTS)
+    return manage_alert (alert_id,
+                         "0",
+                         EVENT_NEW_NVTS,
+                         "Warning: This is an example alert only.\n"
+                         "2 new NVTs appeared in the feed:\n\n"
+                         "1.3.6.1.4.1.25623.1.0.94066 ...\n");
+  return manage_alert (alert_id,
+                       MANAGE_EXAMPLE_TASK_UUID,
+                       EVENT_TASK_RUN_STATUS_CHANGED,
+                       (void*) TASK_STATUS_DONE);
 }
 
 /**
@@ -9894,6 +10026,8 @@ event_applies (event_t event, const void *event_data, task_t task,
           free (alert_event_data);
           return ret;
         }
+      case EVENT_NEW_NVTS:
+        return 1;
       default:
         return 0;
     }
@@ -10226,7 +10360,7 @@ event (task_t task, event_t event, void* event_data)
     }
   cleanup_iterator (&alerts);
 
-  /* Run the alerts outside the iterator, because they make take some
+  /* Run the alerts outside the iterator, because they may take some
    * time and the iterator would prevent update processes (OMP MODIFY_XXX,
    * CREATE_XXX, ...) from locking the database. */
   index = alerts_triggered->len;
@@ -10887,6 +11021,8 @@ init_manage_process (int update_nvt_cache, const gchar *database)
 
   if (update_nvt_cache)
     {
+      sql ("CREATE TEMPORARY TABLE old_nvts (oid);");
+      sql ("INSERT INTO old_nvts (oid) SELECT oid FROM nvts;");
       if (update_nvt_cache == -2)
         {
           if (progress)
@@ -34608,6 +34744,56 @@ insert_nvts_list (GList *nvts_list)
 }
 
 /**
+ * @brief Header for New NVT alert message.
+ */
+#define NEW_NVT_HEADER                                                       \
+/* 1.3.6.1.4.1.25623.1.0.9999992  NoneAvailable       0.0 100%  IT-Gru... */ \
+  "                          OID  Solution Type  Severity  QOD  Name\n"
+
+/**
+ * @brief Check for new NVTS after an update.
+ */
+static void
+check_for_new_nvts ()
+{
+  iterator_t rows;
+  GString *buffer;
+  int count;
+
+  count = 0;
+  buffer = g_string_new (NEW_NVT_HEADER);
+  init_iterator (&rows,
+                 "SELECT oid, name, solution_type, cvss_base, qod FROM nvts"
+                 " WHERE oid NOT IN (SELECT oid FROM old_nvts);");
+  while (next (&rows))
+    {
+      g_string_append_printf (buffer,
+                              "%29s  %13s  %8s %3s%%  %s\n",
+                              iterator_string (&rows, 0),
+                              iterator_string (&rows, 2),
+                              iterator_string (&rows, 3),
+                              iterator_string (&rows, 4),
+                              iterator_string (&rows, 1));
+      count++;
+    }
+  cleanup_iterator (&rows);
+
+  if (count)
+    {
+      gchar *message;
+
+      message = g_strdup_printf ("%i new NVTs appeared in the feed:\n\n%s",
+                                 count,
+                                 buffer->str);
+      g_warning ("would alert: %i new nvts: [%s]", count, message);
+      event (0, EVENT_NEW_NVTS, (void*) message);
+      g_free (message);
+    }
+
+  g_string_free (buffer, TRUE);
+}
+
+/**
  * @brief Complete an update of the NVT cache.
  *
  * @param[in]  nvts_list    List of nvti_t to insert.
@@ -34648,6 +34834,8 @@ manage_complete_nvt_cache_update (GList *nvts_list, int mode)
   if (progress)
     progress ();
   refresh_nvt_cves ();
+
+  check_for_new_nvts ();
 
   if (mode == -2) sql ("COMMIT;");
 

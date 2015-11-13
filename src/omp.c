@@ -27681,10 +27681,7 @@ create_task_fail:
       case CLIENT_TEST_ALERT:
         if (test_alert_data->alert_id)
           {
-            switch (manage_alert (test_alert_data->alert_id,
-                                  MANAGE_EXAMPLE_TASK_UUID,
-                                  EVENT_TASK_RUN_STATUS_CHANGED,
-                                  (void*) TASK_STATUS_DONE))
+            switch (manage_test_alert (test_alert_data->alert_id))
               {
                 case 0:
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("test_alert"));

@@ -1,7 +1,27 @@
 2015-11-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/manage_sql.c (scanner_writable): Always return 1, because some
-	field may always be modified.
+	Add alert event "New NVTs arrived".
+
+	* src/manage.c (event_name, event_description, event_from_name): Add
+	EVENT_NEW_NVTS case.
+
+	* src/manage_sql.c (alert_event): New function.
+	(init_task_alert_iterator): If task is 0 skip the task clause.
+	(escalate_2): Add EVENT_NEW_NVTS handling.
+	(manage_alert): Handle task being "0".
+	(manage_test_alert): New function.
+	(event_applies): Add EVENT_NEW_NVTS case.
+	(init_manage_process): Create temporary table to record previous NVTs.
+	(NEW_NVT_HEADER): New define.
+	(check_for_new_nvts): New function.
+	(manage_complete_nvt_cache_update): Check for new NVTs.
+
+	* src/manage.h: Update headers accordingly.
+	(event_t): Add EVENT_NEW_NVTS.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_TEST_ALERT call
+	manage_test_alert instead of manage_alert, because it does the event
+	checks.
 
 2015-11-11  Matthew Mundell <matthew.mundell@greenbone.net>
 

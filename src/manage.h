@@ -351,7 +351,8 @@ trash_id_exists (const char *, const char *);
 typedef enum
 {
   EVENT_ERROR,
-  EVENT_TASK_RUN_STATUS_CHANGED
+  EVENT_TASK_RUN_STATUS_CHANGED,
+  EVENT_NEW_NVTS
 } event_t;
 
 /**
@@ -406,6 +407,9 @@ find_alert_with_permission (const char *, alert_t *, const char *);
 
 int
 manage_alert (const char *, const char *, event_t, const void*);
+
+int
+manage_test_alert (const char *);
 
 int
 alert_in_use (alert_t);
