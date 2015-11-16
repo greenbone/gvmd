@@ -2540,9 +2540,15 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
   omp_delete_config_ext (session, slave_config_uuid, del_opts);
   omp_delete_target_ext (session, slave_target_uuid, del_opts);
   omp_delete_port_list_ext (session, slave_port_list_uuid, del_opts);
-  omp_delete_lsc_credential_ext (session, slave_ssh_credential_uuid, del_opts);
-  omp_delete_lsc_credential_ext (session, slave_smb_credential_uuid, del_opts);
-  omp_delete_lsc_credential_ext (session, slave_esxi_credential_uuid, del_opts);
+  if (slave_ssh_credential_uuid)
+    omp_delete_lsc_credential_ext (session, slave_ssh_credential_uuid,
+                                   del_opts);
+  if (slave_smb_credential_uuid)
+    omp_delete_lsc_credential_ext (session, slave_smb_credential_uuid,
+                                   del_opts);
+  if (slave_esxi_credential_uuid)
+    omp_delete_lsc_credential_ext (session, slave_esxi_credential_uuid,
+                                   del_opts);
  succeed_stopped:
   free (slave_task_uuid);
   slave_task_uuid = NULL;
