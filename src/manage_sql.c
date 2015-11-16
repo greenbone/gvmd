@@ -6149,6 +6149,34 @@ validate_send_data (alert_method_t method, const gchar *name, gchar **data)
 }
 
 /**
+ * @brief Check alert params.
+ *
+ * @param[in]  event           Type of event.
+ * @param[in]  condition       Event condition.
+ * @param[in]  method          Escalation method.
+ *
+ * @return 0 success, 20 method does not match event, 21 condition does not
+ *         match event.
+ */
+static int
+check_alert_params (event_t event, alert_condition_t condition,
+                    alert_method_t method)
+{
+  if (event == EVENT_NEW_NVTS)
+    {
+      if (method == ALERT_METHOD_HTTP_GET
+          || method == ALERT_METHOD_SOURCEFIRE
+          || method == ALERT_METHOD_START_TASK
+          || method == ALERT_METHOD_VERINICE)
+        return 20;
+
+      if (condition != ALERT_CONDITION_ALWAYS)
+        return 21;
+    }
+  return 0;
+}
+
+/**
  * @brief Create an alert.
  *
  * @param[in]  name            Name of alert.
@@ -6167,8 +6195,9 @@ validate_send_data (alert_method_t method, const gchar *name, gchar **data)
  *         5 unexpected condition data name, 6 syntax error in condition data,
  *         7 email subject too long, 8 email message too long, 9 failed to find
  *         filter for condition, 12 error in Send host, 13 error in Send port,
- *         14 failed to find report format for Send method, 99 permission
- *         denied, -1 error.
+ *         14 failed to find report format for Send method, 20 method does not
+ *         match event, 21 condition does not match event, 99 permission denied,
+ *         -1 error.
  */
 int
 create_alert (const char* name, const char* comment, const char* filter_id,
@@ -6177,7 +6206,7 @@ create_alert (const char* name, const char* comment, const char* filter_id,
               alert_method_t method, GPtrArray* method_data,
               alert_t *alert)
 {
-  int index;
+  int index, ret;
   gchar *item, *quoted_comment;
   gchar *quoted_name;
   filter_t filter;
@@ -6190,6 +6219,13 @@ create_alert (const char* name, const char* comment, const char* filter_id,
     {
       sql ("ROLLBACK;");
       return 99;
+    }
+
+  ret = check_alert_params (event, condition, method);
+  if (ret)
+    {
+      sql ("ROLLBACK");
+      return ret;
     }
 
   filter = 0;
@@ -6452,8 +6488,9 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
  *         7 unexpected condition data name, 8 syntax error in condition data,
  *         9 email subject too long, 10 email message too long, 11 failed to
  *         find filter for condition, 12 error in Send host, 13 error in Send
- *         port, 14 failed to find report format for Send method, 99 permission
- *         denied, -1 internal error.
+ *         port, 14 failed to find report format for Send method, 20 method
+ *         does not match event, 21 condition does not match event,
+ *         99 permission denied, -1 internal error.
  */
 int
 modify_alert (const char *alert_id, const char *name, const char *comment,
@@ -6461,7 +6498,7 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
               alert_condition_t condition, GPtrArray *condition_data,
               alert_method_t method, GPtrArray *method_data)
 {
-  int index;
+  int index, ret;
   gchar *quoted_name, *quoted_comment, *item;
   alert_t alert;
   filter_t filter;
@@ -6477,6 +6514,13 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
     {
       sql ("ROLLBACK;");
       return 99;
+    }
+
+  ret = check_alert_params (event, condition, method);
+  if (ret)
+    {
+      sql ("ROLLBACK");
+      return ret;
     }
 
   alert = 0;
@@ -9960,6 +10004,22 @@ manage_alert (const char *alert_id, const char *task_id, event_t event,
 }
 
 /**
+ * @brief Header for New NVT alert message.
+ */
+#define NEW_NVT_HEADER                                                       \
+/* 1.3.6.1.4.1.25623.1.0.9999992  NoneAvailable       0.0 100%  IT-Gru... */ \
+  "                          OID  Solution Type  Severity  QOD  Name\n"
+
+/**
+ * @brief Example text for New NVT alert message.
+ */
+#define NEW_NVT_EXAMPLE_TEXT                                                 \
+  "  1.3.6.1.4.1.25623.1.0.94066                      0.0  75%  IT-Grundschutz M4.227: Einsatz eines lokalen NTP-Servers zur Zeitsynchronisation (Win)\n" \
+  " 1.3.6.1.4.1.25623.1.0.805581  NoneAvailable       5.0 100%  Anima Gallery Multiple Vulnerabilities\n"         \
+  "1.3.6.1.4.1.25623.1.0.9999992      VendorFix       7.8  70%  Asterisk PBX SDP Header Overflow Vulnerability\n" \
+  "  1.3.6.1.4.1.25623.1.0.66598      VendorFix      10.0  97%  Debian Security Advisory DSA 1957-1 (aria2)\n"
+
+/**
  * @brief Test an alert.
  *
  * @param[in]  alert_id    Alert UUID.
@@ -9982,12 +10042,21 @@ manage_test_alert (const char *alert_id)
     return 1;
 
   if (alert_event (alert) == EVENT_NEW_NVTS)
-    return manage_alert (alert_id,
-                         "0",
-                         EVENT_NEW_NVTS,
-                         "Warning: This is an example alert only.\n"
-                         "2 new NVTs appeared in the feed:\n\n"
-                         "1.3.6.1.4.1.25623.1.0.94066 ...\n");
+    {
+      GString *buffer;
+      int ret;
+
+      buffer = g_string_new ("Warning: This is an example alert only.\n\n"
+                             "4 new NVTs appeared in the feed:\n\n");
+      g_string_append (buffer, NEW_NVT_HEADER);
+      g_string_append (buffer, NEW_NVT_EXAMPLE_TEXT);
+      ret = manage_alert (alert_id,
+                          "0",
+                          EVENT_NEW_NVTS,
+                          buffer->str);
+      g_string_free (buffer, TRUE);
+      return ret;
+    }
   return manage_alert (alert_id,
                        MANAGE_EXAMPLE_TASK_UUID,
                        EVENT_TASK_RUN_STATUS_CHANGED,
@@ -34742,13 +34811,6 @@ insert_nvts_list (GList *nvts_list)
 {
   g_list_foreach (nvts_list, insert_nvt_from_nvti, NULL);
 }
-
-/**
- * @brief Header for New NVT alert message.
- */
-#define NEW_NVT_HEADER                                                       \
-/* 1.3.6.1.4.1.25623.1.0.9999992  NoneAvailable       0.0 100%  IT-Gru... */ \
-  "                          OID  Solution Type  Severity  QOD  Name\n"
 
 /**
  * @brief Check for new NVTS after an update.

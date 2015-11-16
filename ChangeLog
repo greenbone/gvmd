@@ -1,3 +1,13 @@
+2015-11-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (check_alert_params): New function.
+	(create_alert, modify_alert): Check that alert event, method and condition match.
+	(NEW_NVT_HEADER): Move up in file.
+	(NEW_NVT_EXAMPLE_TEXT): New define.
+	(manage_test_alert): Improve message.
+
+	* src/omp.c (omp_xml_handle_end_element): Handle new returns.
+
 2015-11-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add alert event "New NVTs arrived".

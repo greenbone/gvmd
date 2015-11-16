@@ -21229,6 +21229,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         " method"));
                     log_event_fail ("alert", "Alert", NULL, "created");
                     break;
+                  case 20:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_alert",
+                                        "Method does not match event type"));
+                    log_event_fail ("alert", "Alert", NULL, "created");
+                    break;
+                  case 21:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_alert",
+                                        "Condition does not match event type"));
+                    log_event_fail ("alert", "Alert", NULL, "created");
+                    break;
                   case 99:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_alert",
@@ -24952,6 +24964,18 @@ create_task_fail:
                  (XML_ERROR_SYNTAX ("modify_alert",
                                     "Failed to find report format for Send"
                                     " method"));
+                log_event_fail ("alert", "Alert", NULL, "modify");
+                break;
+              case 20:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_alert",
+                                    "Method does not match event type"));
+                log_event_fail ("alert", "Alert", NULL, "modify");
+                break;
+              case 21:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_alert",
+                                    "Condition does not match event type"));
                 log_event_fail ("alert", "Alert", NULL, "modify");
                 break;
               case 99:
