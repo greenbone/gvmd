@@ -10114,6 +10114,14 @@ create_tag_active
           </li></ul>
 </li>
 <li>
+              &lt;<b>snmp_credential</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">SNMP credentials to use on target.</div>
+<ul style="list-style: none"><li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li>
+<li>
               &lt;<b>ssh_lsc_credential</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">Deprecated: use ssh_credential. SSH credential.</div>
 <ul style="list-style: none">
@@ -10204,6 +10212,7 @@ create_tag_active
        &amp; create_target_ssh_credential?
        &amp; create_target_smb_credential?
        &amp; create_target_esxi_credential?
+       &amp; create_target_snmp_credential?
        &amp; create_target_ssh_lsc_credential?
        &amp; create_target_smb_lsc_credential?
        &amp; create_target_esxi_lsc_credential?
@@ -10272,6 +10281,12 @@ create_target_smb_credential
 
 create_target_esxi_credential
  = element esxi_credential
+     {
+       attribute id { uuid }
+     }
+
+create_target_snmp_credential
+ = element snmp_credential
      {
        attribute id { uuid }
      }
@@ -28896,6 +28911,30 @@ get_tags_response_tag_count_page
 </ul>
 </li>
 <li>
+              &lt;<b>snmp_credential</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid_or_empty">uuid_or_empty</a>)
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the SNMP credential.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the credential.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>trash</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the credential is in the trashcan.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
               &lt;<b>permissions</b>&gt;
               <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the target.</div>
 <ul style="list-style: none"><li>
@@ -29106,6 +29145,7 @@ get_targets_response_target
        &amp; get_targets_response_target_ssh_credential
        &amp; get_targets_response_target_smb_credential
        &amp; get_targets_response_target_esxi_credential
+       &amp; get_targets_response_target_snmp_credential
        &amp; get_targets_response_target_permissions
        &amp; get_targets_response_target_port_range
        &amp; get_targets_response_target_port_list
@@ -29322,6 +29362,33 @@ get_targets_response_target_esxi_credential_permissions
      }
 
 get_targets_response_target_esxi_credential_trash
+ = element trash
+     {
+       boolean
+     }
+
+get_targets_response_target_snmp_credential
+ = element snmp_credential
+     {
+       attribute id { uuid_or_empty }
+       &amp; get_targets_response_target_snmp_credential_name
+       &amp; get_targets_response_target_snmp_credential_permissions?
+       &amp; get_targets_response_target_snmp_credential_trash
+     }
+
+get_targets_response_target_snmp_credential_name
+ = element name
+     {
+       name
+     }
+
+get_targets_response_target_snmp_credential_permissions
+ = element permissions
+     {
+       ""
+     }
+
+get_targets_response_target_snmp_credential_trash
  = element trash
      {
        boolean
@@ -35354,6 +35421,14 @@ modify_slave_credential
           </li></ul>
 </li>
 <li>
+              &lt;<b>snmp_credential</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">SNMP credential to use on target.</div>
+<ul style="list-style: none"><li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li>
+<li>
               &lt;<b>ssh_lsc_credential</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">Deprecated: use ssh_credential. SSH credential.</div>
 <ul style="list-style: none"><li>
@@ -35429,6 +35504,7 @@ modify_slave_credential
        &amp; modify_target_ssh_credential?
        &amp; modify_target_smb_credential?
        &amp; modify_target_esxi_credential?
+       &amp; modify_target_snmp_credential?
        &amp; modify_target_ssh_lsc_credential?
        &amp; modify_target_smb_lsc_credential?
        &amp; modify_target_esxi_lsc_credential?
@@ -35482,6 +35558,12 @@ modify_target_smb_credential
 
 modify_target_esxi_credential
  = element esxi_credential
+     {
+       attribute id { uuid }
+     }
+
+modify_target_snmp_credential
+ = element snmp_credential
      {
        attribute id { uuid }
      }

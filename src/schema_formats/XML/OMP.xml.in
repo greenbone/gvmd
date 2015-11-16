@@ -5174,6 +5174,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>ssh_credential</e></o>
       <o><e>smb_credential</e></o>
       <o><e>esxi_credential</e></o>
+      <o><e>snmp_credential</e></o>
       <o><e>ssh_lsc_credential</e></o>
       <o><e>smb_lsc_credential</e></o>
       <o><e>esxi_lsc_credential</e></o>
@@ -5257,6 +5258,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <ele>
       <name>esxi_credential</name>
       <summary>ESXi credential to use on target</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>snmp_credential</name>
+      <summary>SNMP credentials to use on target</summary>
       <pattern>
         <attrib>
           <name>id</name>
@@ -17815,6 +17827,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>ssh_credential</e>
           <e>smb_credential</e>
           <e>esxi_credential</e>
+          <e>snmp_credential</e>
           <e>permissions</e>
           <e>port_range</e>
           <e>port_list</e>
@@ -18048,6 +18061,37 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <ele>
             <name>trash</name>
             <summary>Whether the LSC credential is in the trashcan</summary>
+            <pattern><t>boolean</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>snmp_credential</name>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <comment>
+                A UUID if there is a credential, otherwise the empty string
+              </comment>
+              <type>uuid_or_empty</type>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
+            <o><e>permissions</e></o>
+            <e>trash</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the SNMP credential</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+          <ele>
+            <name>permissions</name>
+            <summary>Permissions the user has on the credential</summary>
+            <pattern></pattern>
+          </ele>
+          <ele>
+            <name>trash</name>
+            <summary>Whether the credential is in the trashcan</summary>
             <pattern><t>boolean</t></pattern>
           </ele>
         </ele>
@@ -22132,6 +22176,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>ssh_credential</e></o>
       <o><e>smb_credential</e></o>
       <o><e>esxi_credential</e></o>
+      <o><e>snmp_credential</e></o>
       <o><e>ssh_lsc_credential</e></o>
       <o><e>smb_lsc_credential</e></o>
       <o><e>esxi_lsc_credential</e></o>
@@ -22192,6 +22237,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <ele>
       <name>esxi_credential</name>
       <summary>ESXi credential to use on target</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>snmp_credential</name>
+      <summary>SNMP credential to use on target</summary>
       <pattern>
         <attrib>
           <name>id</name>

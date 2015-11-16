@@ -1730,6 +1730,7 @@ typedef struct
   char *smb_lsc_credential_id;   ///< SMB credential (deprecated).
   char *esxi_credential_id;      ///< ESXi credential for new target.
   char *esxi_lsc_credential_id;  ///< ESXi credential (deprecated).
+  char *snmp_credential_id;      ///< SNMP credential for new target.
   char *make_name_unique;        ///< Boolean.  Whether to make name unique.
   char *name;                    ///< Name of new target.
 } create_target_data_t;
@@ -1760,6 +1761,7 @@ create_target_data_reset (create_target_data_t *data)
   free (data->smb_lsc_credential_id);
   free (data->esxi_credential_id);
   free (data->esxi_lsc_credential_id);
+  free (data->snmp_credential_id);
   free (data->make_name_unique);
   free (data->name);
 
@@ -3845,6 +3847,7 @@ typedef struct
   char *smb_lsc_credential_id;   ///< SMB credential for target (deprecated).
   char *esxi_credential_id;      ///< ESXi credential for target.
   char *esxi_lsc_credential_id;  ///< ESXi credential for target (deprecated).
+  char *snmp_credential_id;      ///< SNMP credential for target.
   char *target_id;               ///< Target UUID.
 } modify_target_data_t;
 
@@ -3872,6 +3875,7 @@ modify_target_data_reset (modify_target_data_t *data)
   free (data->smb_lsc_credential_id);
   free (data->esxi_credential_id);
   free (data->esxi_lsc_credential_id);
+  free (data->snmp_credential_id);
   free (data->target_id);
 
   memset (data, 0, sizeof (modify_target_data_t));
@@ -5470,6 +5474,7 @@ typedef enum
   CLIENT_CREATE_TARGET_PORT_LIST,
   CLIENT_CREATE_TARGET_PORT_RANGE,
   CLIENT_CREATE_TARGET_SMB_CREDENTIAL,
+  CLIENT_CREATE_TARGET_SNMP_CREDENTIAL,
   CLIENT_CREATE_TARGET_SSH_CREDENTIAL,
   CLIENT_CREATE_TARGET_SSH_CREDENTIAL_PORT,
   CLIENT_CREATE_TARGET_SMB_LSC_CREDENTIAL,
@@ -5712,6 +5717,7 @@ typedef enum
   CLIENT_MODIFY_TARGET_NAME,
   CLIENT_MODIFY_TARGET_PORT_LIST,
   CLIENT_MODIFY_TARGET_SMB_CREDENTIAL,
+  CLIENT_MODIFY_TARGET_SNMP_CREDENTIAL,
   CLIENT_MODIFY_TARGET_SSH_CREDENTIAL,
   CLIENT_MODIFY_TARGET_SSH_CREDENTIAL_PORT,
   CLIENT_MODIFY_TARGET_SMB_LSC_CREDENTIAL,
@@ -8804,6 +8810,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &modify_target_data->smb_lsc_credential_id);
             set_client_state (CLIENT_MODIFY_TARGET_SMB_LSC_CREDENTIAL);
           }
+        else if (strcasecmp ("SNMP_CREDENTIAL", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &modify_target_data->snmp_credential_id);
+            set_client_state (CLIENT_MODIFY_TARGET_SNMP_CREDENTIAL);
+          }
         else if (strcasecmp ("NAME", element_name) == 0)
           {
             openvas_append_string (&modify_target_data->name, "");
@@ -10112,6 +10124,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "id",
                               &create_target_data->smb_lsc_credential_id);
             set_client_state (CLIENT_CREATE_TARGET_SMB_LSC_CREDENTIAL);
+          }
+        else if (strcasecmp ("SNMP_CREDENTIAL", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_target_data->snmp_credential_id);
+            set_client_state (CLIENT_CREATE_TARGET_SNMP_CREDENTIAL);
           }
         else if (strcasecmp ("NAME", element_name) == 0)
           {
@@ -19096,16 +19114,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               while (1)
                 {
                   char *ssh_name, *ssh_uuid, *smb_name, *smb_uuid;
-                  char *esxi_name, *esxi_uuid;
+                  char *esxi_name, *esxi_uuid, *snmp_name, *snmp_uuid;
                   const char *port_list_uuid, *port_list_name, *ssh_port;
                   const char *hosts, *exclude_hosts, *reverse_lookup_only;
                   const char *reverse_lookup_unify;
                   credential_t ssh_credential, smb_credential;
-                  credential_t esxi_credential;
+                  credential_t esxi_credential, snmp_credential;
                   int port_list_trash, max_hosts, port_list_available;
                   int ssh_credential_available;
                   int smb_credential_available;
                   int esxi_credential_available;
+                  int snmp_credential_available;
 
                   ret = get_next (&targets, &get_targets_data->get, &first,
                                   &count, init_target_iterator);
@@ -19120,6 +19139,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   ssh_credential = target_iterator_ssh_credential (&targets);
                   smb_credential = target_iterator_smb_credential (&targets);
                   esxi_credential = target_iterator_esxi_credential (&targets);
+                  snmp_credential = target_iterator_snmp_credential (&targets);
                   ssh_credential_available = 1;
                   if (get_targets_data->get.trash
                       && target_iterator_ssh_trash (&targets))
@@ -19202,6 +19222,35 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     {
                       esxi_name = NULL;
                       esxi_uuid = NULL;
+                    }
+                  snmp_credential_available = 1;
+                  if (get_targets_data->get.trash
+                      && target_iterator_snmp_trash (&targets))
+                    {
+                      snmp_name
+                       = trash_credential_name (snmp_credential);
+                      snmp_uuid
+                       = trash_credential_uuid (snmp_credential);
+                      snmp_credential_available
+                       = trash_credential_readable (snmp_credential);
+                    }
+                  else if (snmp_credential)
+                    {
+                      credential_t found;
+
+                      snmp_name = credential_name (snmp_credential);
+                      snmp_uuid = credential_uuid (snmp_credential);
+                      if (find_credential_with_permission
+                           (snmp_uuid,
+                            &found,
+                            "get_credentials"))
+                        abort ();
+                      snmp_credential_available = (found > 0);
+                    }
+                  else
+                    {
+                      snmp_name = NULL;
+                      snmp_uuid = NULL;
                     }
                   port_list_uuid = target_iterator_port_list_uuid (&targets);
                   port_list_name = target_iterator_port_list_name (&targets);
@@ -19290,6 +19339,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     SEND_TO_CLIENT_OR_FAIL ("<permissions/>");
 
                   SENDF_TO_CLIENT_OR_FAIL ("</esxi_credential>"
+                                           "<snmp_credential id=\"%s\">"
+                                           "<name>%s</name>"
+                                           "<trash>%i</trash>",
+                                           snmp_uuid ? snmp_uuid : "",
+                                           snmp_name ? snmp_name : "",
+                                           (get_targets_data->get.trash
+                                             && target_iterator_snmp_trash
+                                                 (&targets)));
+
+                  if (snmp_credential_available == 0)
+                    SEND_TO_CLIENT_OR_FAIL ("<permissions/>");
+
+                  SENDF_TO_CLIENT_OR_FAIL ("</snmp_credential>"
                                            "<reverse_lookup_only>"
                                            "%s"
                                            "</reverse_lookup_only>"
@@ -23857,7 +23919,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_TARGET:
         {
           credential_t ssh_credential = 0, smb_credential = 0;
-          credential_t esxi_credential = 0;
+          credential_t esxi_credential = 0, snmp_credential = 0;
           target_t new_target;
 
           assert (strcasecmp ("CREATE_TARGET", element_name) == 0);
@@ -24012,6 +24074,24 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   return;
                 }
             }
+          else if (create_target_data->snmp_credential_id
+                   && find_credential_with_permission
+                       (create_target_data->snmp_credential_id,
+                        &snmp_credential,
+                        "get_credentials"))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_target"));
+          else if (create_target_data->snmp_credential_id
+                   && snmp_credential == 0)
+            {
+              if (send_find_error_to_client
+                   ("create_target", "Credential",
+                    create_target_data->snmp_credential_id,
+                    omp_parser))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
           /* Create target from host string. */
           else switch (create_target
                         (create_target_data->name,
@@ -24027,6 +24107,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           : create_target_data->ssh_lsc_port,
                          smb_credential,
                          esxi_credential,
+                         snmp_credential,
                          create_target_data->reverse_lookup_only,
                          create_target_data->reverse_lookup_unify,
                          create_target_data->alive_tests,
@@ -24124,6 +24205,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_TARGET, SSH_LSC_CREDENTIAL);
       CLOSE (CLIENT_CREATE_TARGET, SMB_CREDENTIAL);
       CLOSE (CLIENT_CREATE_TARGET, SMB_LSC_CREDENTIAL);
+      CLOSE (CLIENT_CREATE_TARGET, SNMP_CREDENTIAL);
 
       CLOSE (CLIENT_CREATE_TARGET_NAME, MAKE_UNIQUE);
 
@@ -26730,6 +26812,7 @@ create_task_fail:
                          modify_target_data->esxi_credential_id
                           ? modify_target_data->esxi_credential_id
                           : modify_target_data->esxi_lsc_credential_id,
+                         modify_target_data->snmp_credential_id,
                          modify_target_data->reverse_lookup_only,
                          modify_target_data->reverse_lookup_unify,
                          modify_target_data->alive_tests))
@@ -26938,6 +27021,7 @@ create_task_fail:
       CLOSE (CLIENT_MODIFY_TARGET, SSH_LSC_CREDENTIAL);
       CLOSE (CLIENT_MODIFY_TARGET, SMB_CREDENTIAL);
       CLOSE (CLIENT_MODIFY_TARGET, SMB_LSC_CREDENTIAL);
+      CLOSE (CLIENT_MODIFY_TARGET, SNMP_CREDENTIAL);
 
       CLOSE (CLIENT_MODIFY_TARGET_SSH_CREDENTIAL, PORT);
 

@@ -1,3 +1,31 @@
+2015-11-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add SNMP credentials to targets.
+
+	* src/manage_sql.c (create_target): Add snmp_credential parameter.
+	(modify_target): Add snmp_credential_id parameter.
+	(TARGET_ITERATOR_FILTER_COLUMNS, TARGET_ITERATOR_COLUMNS)
+	(TARGET_ITERATOR_TRASH_COLUMNS): Add columns for SNMP credential.
+	(target_iterator_snmp_credential, target_iterator_snmp_trash): New
+	functions.
+	(modify_setting): Add "Default SNMP Credential" setting.
+
+	* src/manage.h (create_target, modify_target): Add new parameters.
+	(target_iterator_snmp_credential, target_iterator_snmp_trash): New
+	function prototypes.
+
+	* src/omp.c (create_target_data_t, create_target_data_reset)
+	(modify_target_data_t, modify_target_data_reset): Add new field
+	snmp_credential_id.
+	(client_state_t, omp_xml_handle_start_element)
+	(omp_xml_handle_end_element): Add new SNMP_CREDENTIAL element to the
+	commands CREATE_TARGET, GET_TARGETS and MODIFY_TARGET.
+
+	* src/schema_formats/XML/OMP.xml.in: Add new SNMP_CREDENTIAL element to
+	the commands CREATE_TARGET, GET_TARGETS and MODIFY_TARGET.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
 2015-11-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (check_alert_params): New function.

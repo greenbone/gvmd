@@ -30125,6 +30125,7 @@ trash_target_login_port (target_t target, const char* type)
  * @param[in]   ssh_port        Port for SSH login.
  * @param[in]   smb_credential  SMB credential.
  * @param[in]   esxi_credential ESXi credential.
+ * @param[in]   snmp_credential SNMP credential.
  * @param[in]   reverse_lookup_only   Scanner preference reverse_lookup_only.
  * @param[in]   reverse_lookup_unify  Scanner preference reverse_lookup_unify.
  * @param[in]   alive_tests     Alive tests.
@@ -30142,7 +30143,7 @@ create_target (const char* name, const char* asset_hosts_filter,
                const char* comment, const char* port_list_id,
                const char* port_range, credential_t ssh_credential,
                const char* ssh_port, credential_t smb_credential,
-               credential_t esxi_credential,
+               credential_t esxi_credential, credential_t snmp_credential,
                const char *reverse_lookup_only,
                const char *reverse_lookup_unify, const char *alive_tests,
                int make_name_unique, target_t* target)
@@ -30336,6 +30337,14 @@ create_target (const char* name, const char* asset_hosts_filter,
            " (target, type, credential, port)"
            " VALUES (%llu, 'esxi', %llu, %s);",
            new_target, esxi_credential, "0");
+    }
+
+  if (snmp_credential)
+    {
+      sql ("INSERT INTO targets_login_data"
+           " (target, type, credential, port)"
+           " VALUES (%llu, 'snmp', %llu, %s);",
+           new_target, snmp_credential, "0");
     }
 
   g_free (quoted_comment);
@@ -30541,6 +30550,7 @@ delete_target (const char *target_id, int ultimate)
  * @param[in]   ssh_port        Port for SSH login.
  * @param[in]   smb_credential_id  SMB credential.
  * @param[in]   esxi_credential_id  ESXi credential.
+ * @param[in]   snmp_credential_id  SNMP credential.
  * @param[in]   reverse_lookup_only   Scanner preference reverse_lookup_only.
  * @param[in]   reverse_lookup_unify  Scanner preference reverse_lookup_unify.
  * @param[in]   alive_tests     Alive tests.
@@ -30552,7 +30562,7 @@ delete_target (const char *target_id, int ultimate)
  *         11 zero length name, 12 exclude hosts requires hosts
  *         13 hosts requires exclude hosts,
  *         14 hosts must be at least one character, 15 target is in use,
- *         16 failed to find ESXi cred,
+ *         16 failed to find ESXi cred, 17 failed to find SNMP cred,
  *         99 permission denied, -1 error.
  */
 int
@@ -30560,7 +30570,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
                const char *exclude_hosts, const char *comment,
                const char *port_list_id, const char *ssh_credential_id,
                const char *ssh_port, const char *smb_credential_id,
-               const char *esxi_credential_id,
+               const char *esxi_credential_id, const char* snmp_credential_id,
                const char *reverse_lookup_only,
                const char *reverse_lookup_unify, const char *alive_tests)
 {
@@ -30799,6 +30809,39 @@ modify_target (const char *target_id, const char *name, const char *hosts,
         set_target_login_data (target, "esxi", 0, 0);
     }
 
+  if (snmp_credential_id)
+    {
+      credential_t snmp_credential;
+
+      if (target_in_use (target))
+        {
+          sql ("ROLLBACK;");
+          return 15;
+        }
+
+      snmp_credential = 0;
+      if (strcmp (snmp_credential_id, "0"))
+        {
+          if (find_credential_with_permission (snmp_credential_id,
+                                               &snmp_credential,
+                                               "get_credentials"))
+            {
+              sql ("ROLLBACK;");
+              return -1;
+            }
+
+          if (snmp_credential == 0)
+            {
+              sql ("ROLLBACK;");
+              return 17;
+            }
+
+          set_target_login_data (target, "snmp", snmp_credential, 0);
+        }
+      else
+        set_target_login_data (target, "snmp", 0, 0);
+    }
+
   if (exclude_hosts)
     {
       gchar *quoted_exclude_hosts, *quoted_hosts, *clean;
@@ -30898,7 +30941,8 @@ modify_target (const char *target_id, const char *name, const char *hosts,
  */
 #define TARGET_ITERATOR_FILTER_COLUMNS                                         \
  { GET_ITERATOR_FILTER_COLUMNS, "hosts", "exclude_hosts", "ips", "port_list",  \
-   "ssh_credential", "smb_credential", "esxi_credential", NULL }
+   "ssh_credential", "smb_credential", "esxi_credential", "snmp_credential",   \
+   NULL }
 
 /**
  * @brief Target iterator columns.
@@ -30934,6 +30978,9 @@ modify_target (const char *target_id, const char *name, const char *hosts,
    { "target_credential (id, 0, CAST ('esxi' AS text))",    \
      NULL },                                                \
    { "0", NULL },                                           \
+   { "target_credential (id, 0, CAST ('snmp' AS text))",    \
+     NULL },                                                \
+   { "0", NULL },                                           \
    {                                                        \
      "(SELECT name FROM credentials"                        \
      " WHERE credentials.id"                                \
@@ -30954,6 +31001,13 @@ modify_target (const char *target_id, const char *name, const char *hosts,
      "       = target_credential (targets.id, 0,"           \
      "                            CAST ('esxi' AS text)))", \
      "esxi_credential"                                      \
+   },                                                       \
+   {                                                        \
+     "(SELECT name FROM credentials"                        \
+     " WHERE credentials.id"                                \
+     "       = target_credential (targets.id, 0,"           \
+     "                            CAST ('snmp' AS text)))", \
+     "snmp_credential"                                      \
    },                                                       \
    { "hosts", NULL },                                       \
    { "max_hosts (hosts, exclude_hosts)", "ips" },           \
@@ -31003,6 +31057,9 @@ modify_target (const char *target_id, const char *name, const char *hosts,
    { "alive_test", NULL },                                          \
    { "target_credential (id, 1, CAST ('esxi' AS text))", NULL },    \
    { "trash_target_credential_location (id, CAST ('esxi' AS text))",\
+     NULL },                                                        \
+   { "target_credential (id, 1, CAST ('snmp' AS text))", NULL },    \
+   { "trash_target_credential_location (id, CAST ('snmp' AS text))",\
      NULL },                                                        \
    { NULL, NULL }                                                   \
  }
@@ -31293,6 +31350,38 @@ target_iterator_esxi_trash (iterator_t* iterator)
   int ret;
   if (iterator->done) return -1;
   ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 15);
+  return ret;
+}
+
+/**
+ * @brief Get the SNMP LSC credential from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return ESXi LSC credential.
+ */
+int
+target_iterator_snmp_credential (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 16);
+  return ret;
+}
+
+/**
+ * @brief Get the SNMP LSC credential location from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return ESXi LSC credential.
+ */
+int
+target_iterator_snmp_trash (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 17);
   return ret;
 }
 
@@ -56847,6 +56936,8 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("Default SMB Credential");
       else if (strcmp (uuid, "83545bcf-0c49-4b4c-abbf-63baf82cc2a7") == 0)
         setting_name = g_strdup ("Default ESXi Credential");
+      else if (strcmp (uuid, "024550b8-868e-4b3c-98bf-99bb732f6a0d") == 0)
+        setting_name = g_strdup ("Default SNMP Credential");
 
       else if (strcmp (uuid, "d74a9ee8-7d35-4879-9485-ab23f1bd45bc") == 0)
         setting_name = g_strdup ("Default Port List");

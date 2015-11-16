@@ -4469,6 +4469,7 @@ create_target
        & create_target_ssh_credential?
        & create_target_smb_credential?
        & create_target_esxi_credential?
+       & create_target_snmp_credential?
        & create_target_ssh_lsc_credential?
        & create_target_smb_lsc_credential?
        & create_target_esxi_lsc_credential?
@@ -4547,6 +4548,13 @@ create_target_smb_credential
 # ESXi credential to use on target.
 create_target_esxi_credential
  = element esxi_credential
+     {
+       attribute id { uuid }
+     }
+
+# SNMP credentials to use on target.
+create_target_snmp_credential
+ = element snmp_credential
      {
        attribute id { uuid }
      }
@@ -6833,6 +6841,7 @@ modify_target
        & modify_target_ssh_credential?
        & modify_target_smb_credential?
        & modify_target_esxi_credential?
+       & modify_target_snmp_credential?
        & modify_target_ssh_lsc_credential?
        & modify_target_smb_lsc_credential?
        & modify_target_esxi_lsc_credential?
@@ -6894,6 +6903,13 @@ modify_target_smb_credential
 # ESXi credential to use on target.
 modify_target_esxi_credential
  = element esxi_credential
+     {
+       attribute id { uuid }
+     }
+
+# SNMP credential to use on target.
+modify_target_snmp_credential
+ = element snmp_credential
      {
        attribute id { uuid }
      }
@@ -15818,6 +15834,7 @@ get_targets_response_target
        & get_targets_response_target_ssh_credential
        & get_targets_response_target_smb_credential
        & get_targets_response_target_esxi_credential
+       & get_targets_response_target_snmp_credential
        & get_targets_response_target_permissions
        & get_targets_response_target_port_range
        & get_targets_response_target_port_list
@@ -16064,6 +16081,36 @@ get_targets_response_target_esxi_credential_permissions
 
 # Whether the LSC credential is in the trashcan.
 get_targets_response_target_esxi_credential_trash
+ = element trash
+     {
+       boolean
+     }
+
+get_targets_response_target_snmp_credential
+ = element snmp_credential
+     {
+       attribute id { uuid_or_empty }
+       & get_targets_response_target_snmp_credential_name
+       & get_targets_response_target_snmp_credential_permissions?
+       & get_targets_response_target_snmp_credential_trash
+     }
+
+# The name of the SNMP credential.
+get_targets_response_target_snmp_credential_name
+ = element name
+     {
+       name
+     }
+
+# Permissions the user has on the credential.
+get_targets_response_target_snmp_credential_permissions
+ = element permissions
+     {
+       ""
+     }
+
+# Whether the credential is in the trashcan.
+get_targets_response_target_snmp_credential_trash
  = element trash
      {
        boolean
