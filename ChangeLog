@@ -1,3 +1,10 @@
+2015-11-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r23803.
+
+	* src/manage.c (slave_setup): Test if credentials on slave are NULL
+	before trying to delete them at the end of a scan.
+
 2015-11-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r23777.
