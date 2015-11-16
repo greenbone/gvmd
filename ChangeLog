@@ -1,3 +1,8 @@
+2015-11-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (create_alert, modify_alert): Ignore the filter if
+	the event is EVENT_NEW_NVTS.
+
 2015-11-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (delete_credential): Also test non-trash scanners

@@ -6229,7 +6229,7 @@ create_alert (const char* name, const char* comment, const char* filter_id,
     }
 
   filter = 0;
-  if (filter_id && strcmp (filter_id, "0"))
+  if (event != EVENT_NEW_NVTS && filter_id && strcmp (filter_id, "0"))
     {
       char *type;
 
@@ -6545,7 +6545,7 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
 
   /* Check filter. */
   filter = 0;
-  if (filter_id && strcmp (filter_id, "0"))
+  if (event != EVENT_NEW_NVTS && filter_id && strcmp (filter_id, "0"))
     {
       char *type;
 
