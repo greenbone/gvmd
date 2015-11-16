@@ -37701,6 +37701,9 @@ delete_credential (const char *credential_id, int ultimate)
   if (sql_int ("SELECT count(*) FROM targets_login_data"
                " WHERE credential = %llu;",
                credential)
+      || sql_int ("SELECT count(*) FROM scanners"
+                  " WHERE credential = %llu;",
+                  credential)
       || sql_int ("SELECT count(*) FROM slaves"
                   " WHERE credential = %llu;",
                   credential))

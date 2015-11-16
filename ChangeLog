@@ -1,5 +1,10 @@
 2015-11-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (delete_credential): Also test non-trash scanners
+	if they are using the credential.
+
+2015-11-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Add SNMP credentials to targets.
 
 	* src/manage_sql.c (create_target): Add snmp_credential parameter.
