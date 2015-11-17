@@ -1,3 +1,8 @@
+2015-11-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_manage_process): Add type to column, for
+	Postgres.
+
 2015-11-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage.c (slave_setup): Test if credentials on slave are NULL

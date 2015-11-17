@@ -11090,7 +11090,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
 
   if (update_nvt_cache)
     {
-      sql ("CREATE TEMPORARY TABLE old_nvts (oid);");
+      sql ("CREATE TEMPORARY TABLE old_nvts (oid TEXT);");
       sql ("INSERT INTO old_nvts (oid) SELECT oid FROM nvts;");
       if (update_nvt_cache == -2)
         {
