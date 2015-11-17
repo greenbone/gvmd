@@ -1,3 +1,13 @@
+2015-11-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (truncate_certificate, truncate_private_key): New
+	static functions.
+	(create_credential): Truncate redundant data from certificates and
+	private keys.
+
+	* src/omp.c (omp_xml_handle_end_element): Handle new response code
+	from create_credential.
+
 2015-11-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_manage_process): Add type to column, for

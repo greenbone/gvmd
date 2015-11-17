@@ -37094,6 +37094,63 @@ set_credential_data (credential_t credential,
 #define PASSWORD_LENGTH 10
 
 /**
+ * @brief Truncate a certificate, removing extra data.
+ *
+ * @param[in]  private_key    The private key.
+ *
+ * @return  The truncated private key as a newly allocated string or NULL.
+ */
+static gchar *
+truncate_certificate (const gchar* private_key)
+{
+  gchar *cert_start, *cert_end;
+  cert_start = strstr (private_key, "-----BEGIN CERTIFICATE-----\n");
+  if (cert_start)
+    {
+      cert_end = strstr (cert_start, "-----END CERTIFICATE-----\n")
+                  + strlen ("-----END CERTIFICATE-----\n");
+    }
+  else
+    return NULL;
+
+  if (cert_end == NULL)
+    return NULL;
+  else
+    return g_strndup (cert_start, cert_end - cert_start);
+}
+
+/**
+ * @brief Truncate a private key, removing extra data.
+ *
+ * @param[in]  private_key    The private key.
+ * 
+ * @return  The truncated private key as a newly allocated string or NULL.
+ */
+static gchar *
+truncate_private_key (const gchar* private_key)
+{
+  gchar *key_start, *key_end;
+  key_start = strstr (private_key, "-----BEGIN RSA PRIVATE KEY-----\n");
+  if (key_start)
+    {
+      key_end = strstr (key_start, "-----END RSA PRIVATE KEY-----\n")
+                  + strlen ("-----END RSA PRIVATE KEY-----\n");
+    }
+  else
+    {
+      key_start = strstr (private_key, "-----BEGIN DSA PRIVATE KEY-----\n");
+      if (key_start)
+        key_end = strstr (key_start, "-----END DSA PRIVATE KEY-----\n")
+                    + strlen ("-----END DSA PRIVATE KEY-----\n");
+    }
+
+  if (key_start == NULL || key_end == NULL)
+    return NULL;
+  else
+    return g_strndup (key_start, key_end - key_start);
+}
+
+/**
  * @brief Create a Credential.
  *
  * @param[in]  name            Name of LSC credential.  Must be at least one
@@ -37119,7 +37176,7 @@ set_credential_data (credential_t credential,
  *         10 autogenerate not supported, 11 community missing,
  *         12 auth algorithm missing, 13 privacy password missing, 14 privacy
  *         algorithm missing, 15 invalid auth algorithm, 16 invalid privacy
- *         algorithm, 99 permission denied, -1 error.
+ *         algorithm, 17 invalid certificate, 99 permission denied, -1 error.
  */
 int
 create_credential (const char* name, const char* comment, const char* login,
@@ -37262,8 +37319,16 @@ create_credential (const char* name, const char* comment, const char* login,
     set_credential_data (new_credential,
                          "username", login);
   if (certificate)
-    set_credential_data (new_credential,
-                         "certificate", certificate);
+    {
+      gchar *certificate_truncated;
+      certificate_truncated = truncate_certificate (certificate);
+      if (certificate_truncated)
+        set_credential_data (new_credential,
+                             "certificate", certificate_truncated);
+      else
+        return 17;
+      g_free (certificate_truncated);
+    }
   if (auth_algorithm)
     set_credential_data (new_credential,
                          "auth_algorithm", auth_algorithm);
@@ -37278,8 +37343,16 @@ create_credential (const char* name, const char* comment, const char* login,
   if (key_private)
     {
       lsc_crypt_ctx_t crypt_ctx;
+      gchar *key_private_truncated;
 
-      if (!openvas_ssh_public_from_private (key_private, given_password))
+      if (key_private)
+        key_private_truncated = truncate_private_key (key_private);
+      else
+        key_private_truncated = NULL;
+
+      if (key_private_truncated == NULL
+          || openvas_ssh_public_from_private (key_private_truncated,
+                                              given_password) == NULL)
         return 3;
 
       /* Encrypt password and private key.  Note that we do not need
@@ -37291,7 +37364,9 @@ create_credential (const char* name, const char* comment, const char* login,
           crypt_ctx = lsc_crypt_new ();
           secret = lsc_crypt_encrypt (crypt_ctx,
                                       "password", given_password,
-                                      "private_key", key_private, NULL);
+                                      "private_key", key_private_truncated,
+                                      NULL);
+          g_free (key_private_truncated);
           if (!secret)
             {
               lsc_crypt_release (crypt_ctx);
@@ -37306,6 +37381,7 @@ create_credential (const char* name, const char* comment, const char* login,
           crypt_ctx = NULL;
           set_credential_data (new_credential, "password", given_password);
           set_credential_data (new_credential, "private_key", key_private);
+          g_free (key_private_truncated);
         }
       lsc_crypt_release (crypt_ctx);
 
