@@ -60391,6 +60391,70 @@ manage_set_ldap_info (int enabled, gchar *host, gchar *authdn,
   sql ("COMMIT;");
 }
 
+/**
+ * @brief Get RADIUS info.
+ *
+ * @param[out]  enabled     Whether RADIUS is enabled.
+ * @param[out]  host        Freshly allocated RADIUS host.
+ * @param[out]  key         Freshly allocated RADIUS secret key.
+ */
+void
+manage_get_radius_info (int *enabled, char **host, char **key)
+{
+  if (enabled)
+    *enabled = 1;
+
+  *host = sql_string ("SELECT value FROM meta WHERE name = 'radius_host';");
+  if (!*host)
+    *host = g_strdup ("127.0.0.1");
+
+  *key = sql_string ("SELECT value FROM meta WHERE name = 'radius_key';");
+  if (!*key)
+    *key = g_strdup ("testing123");
+}
+
+/**
+ * @brief Set RADIUS info.
+ *
+ * @param[out]  enabled    Whether RADIUS is enabled. -1 to keep current value.
+ * @param[out]  host       RADIUS host. NULL to keep current value.
+ * @param[out]  key        Secret key.  NULL to keep current value.
+ */
+void
+manage_set_radius_info (int enabled, gchar *host, gchar *key)
+{
+  char *quoted;
+
+  sql_begin_immediate ();
+
+  if (enabled >= 0)
+    {
+      sql ("DELETE FROM meta WHERE name LIKE 'radius_enable';");
+      sql ("INSERT INTO meta (name, value) VALUES ('radius_enable', %i);",
+           enabled);
+    }
+
+  if (host)
+    {
+      sql ("DELETE FROM meta WHERE name LIKE 'radius_host';");
+      quoted = sql_quote (host);
+      sql ("INSERT INTO meta (name, value) VALUES ('radius_host', '%s');",
+           quoted);
+      g_free (quoted);
+    }
+
+  if (key)
+    {
+      sql ("DELETE FROM meta WHERE name LIKE 'radius_key';");
+      quoted = sql_quote (key);
+      sql ("INSERT INTO meta (name, value) VALUES ('radius_key', '%s');",
+           quoted);
+      g_free (quoted);
+    }
+
+  sql ("COMMIT;");
+}
+
 
 /* Tags */
 

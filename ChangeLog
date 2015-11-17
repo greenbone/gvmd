@@ -1,3 +1,13 @@
+2015-11-17  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (manage_get_radius_info, manage_set_radius_info): New
+	functions.
+
+	* src/manage.h: Add function prototype.
+
+	* src/omp.c (omp_xml_handle_end_element): Handle method:radius_connect
+	authentication method in DESCRIBE_AUTH and MODIFY_AUTH cases.
+
 2015-11-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (truncate_certificate, truncate_private_key): New

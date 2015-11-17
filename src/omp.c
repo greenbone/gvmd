@@ -14250,6 +14250,23 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               g_free (ldap_authdn);
             }
 
+          if (openvas_auth_radius_enabled ())
+            {
+              char *radius_host, *radius_key;
+              int radius_enabled;
+              manage_get_radius_info (&radius_enabled, &radius_host,
+                                      &radius_key);
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<group name=\"method:radius_connect\">"
+                "<auth_conf_setting key=\"enable\" value=\"%s\"/>"
+                "<auth_conf_setting key=\"radiushost\" value=\"%s\"/>"
+                "<auth_conf_setting key=\"radiuskey\" value=\"%s\"/>"
+                "</group>",
+                radius_enabled ? "true" : "false", radius_host, radius_key);
+              g_free (radius_host);
+              g_free (radius_key);
+            }
+
           SEND_TO_CLIENT_OR_FAIL ("</describe_auth_response>");
 
           set_client_state (CLIENT_AUTHENTIC);
@@ -25288,6 +25305,35 @@ create_task_fail:
 
                   manage_set_ldap_info (ldap_enabled, ldap_host, ldap_authdn,
                                         ldap_plaintext);
+                }
+              if (strcmp (group, "method:radius_connect") == 0)
+                {
+                  GSList *setting;
+                  char *radius_host, *radius_key;
+                  int radius_enabled;
+
+                  radius_enabled = -1;
+                  radius_host = radius_key = NULL;
+                  setting = auth_group->settings;
+                  while (setting)
+                    {
+                      auth_conf_setting_t *kvp =
+                        (auth_conf_setting_t *) setting->data;
+
+                      if (kvp->key == NULL || kvp->value == NULL)
+                        /* Skip this one. */;
+                      else if (strcmp (kvp->key, "enable") == 0)
+                        radius_enabled = (strcmp (kvp->value, "true") == 0);
+                      else if (strcmp (kvp->key, "radiushost") == 0)
+                        radius_host = g_strdup (kvp->value);
+                      else if (strcmp (kvp->key, "radiuskey") == 0)
+                        radius_key = g_strdup (kvp->value);
+
+                      setting = g_slist_next (setting);
+                    }
+
+                  manage_set_radius_info (radius_enabled, radius_host,
+                                          radius_key);
                 }
               item = g_slist_next (item);
             }

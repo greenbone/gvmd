@@ -3807,6 +3807,12 @@ manage_get_ldap_info (int *, gchar **, gchar **, int *);
 void
 manage_set_ldap_info (int, gchar *, gchar *, int);
 
+void
+manage_get_radius_info (int *, char **, char **);
+
+void
+manage_set_radius_info (int, gchar *, gchar *);
+
 
 /* Tags */
 
