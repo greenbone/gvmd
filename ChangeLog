@@ -1,3 +1,10 @@
+2015-11-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r23813.
+
+	* src/manage.c (slave_setup): Add TYPE to CREATE_CONFIG command, because
+	this is now required.
+
 2015-11-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r23803.
