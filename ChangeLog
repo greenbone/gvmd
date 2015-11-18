@@ -1,3 +1,7 @@
+2015-11-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (manage_modify_scanner): Quote correct variable.
+
 2015-11-17  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (manage_get_radius_info, manage_set_radius_info): New

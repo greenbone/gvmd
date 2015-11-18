@@ -42277,7 +42277,7 @@ manage_modify_scanner (GSList *log_config, const gchar *database,
   else
     {
       gchar *current_scanner_name = scanner_name (scanner);
-      name_for_credential = sql_quote (name);
+      name_for_credential = sql_quote (current_scanner_name);
       g_free (current_scanner_name);
     }
 
