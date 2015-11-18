@@ -1,5 +1,10 @@
 2015-11-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (slave_setup): Add TYPE to CREATE_CONFIG command, because
+	this is now required.
+
+2015-11-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_modify_scanner): Quote correct variable.
 
 2015-11-17  Hani Benhabiles <hani.benhabiles@greenbone.net>

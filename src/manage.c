@@ -2184,6 +2184,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
                                   " status=\"200\""
                                   " status_text=\"OK\">"
                                   "<config id=\"XXX\">"
+                                  "<type>0</type>"
                                   "<name>%s</name>"
                                   "<comment>"
                                   "Slave config created by Master"
