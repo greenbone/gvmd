@@ -1,5 +1,12 @@
 2015-11-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (get_tasks_last_report): New function.
+	(slave_setup): If the task is running or complete on the slave, then use
+	the existing report from the slave's task, instead of starting the task
+	from the beginning again.
+
+2015-11-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (slave_setup): Add TYPE to CREATE_CONFIG command, because
 	this is now required.
 

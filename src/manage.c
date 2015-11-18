@@ -1855,6 +1855,45 @@ cleanup_slave ()
 }
 
 /**
+ * @brief Get last report fro GET_TASKS response.
+ *
+ * @param[in]  get_tasks  GET_TASKS response.
+ *
+ * @return Freshly allocated UUID of last report, or NULL.
+ */
+static gchar *
+get_tasks_last_report (entity_t get_tasks)
+{
+  entity_t task;
+  task = entity_child (get_tasks, "task");
+  if (task)
+    {
+      entity_t current_report;
+      current_report = entity_child (task, "current_report");
+      if (current_report)
+        {
+          entity_t report;
+          report = entity_child (current_report, "report");
+          if (report && entity_attribute (report, "id"))
+            return g_strdup (entity_attribute (report, "id"));
+        }
+      else
+        {
+          entity_t last_report;
+          last_report = entity_child (task, "last_report");
+          if (last_report)
+            {
+              entity_t report;
+              report = entity_child (last_report, "report");
+              if (report && entity_attribute (report, "id"))
+                return g_strdup (entity_attribute (report, "id"));
+            }
+        }
+    }
+  return NULL;
+}
+
+/**
  * @brief Setup a task on a slave.
  *
  * @param[in]   slave       Slave.
@@ -1909,28 +1948,86 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           trim_report (last_stopped_report);
           last_stopped_report = 0;
         }
-      else switch (omp_resume_task_report (session, slave_task_uuid,
-                                           &slave_report_uuid))
+      else
         {
-          case 0:
-            if (slave_report_uuid == NULL)
-              goto fail;
-            set_task_run_status (task, TASK_STATUS_REQUESTED);
-            break;
-          case 1:
-            /* The resume may have failed because the task slave changed or
-             * because someone removed the task on the slave.  Clear all the
-             * report results and start the task from the beginning.
-             *
-             * This and the if above both "leak" the resources on the slave,
-             * because on the report these resources are replaced with the new
-             * resources. */
-            trim_report (last_stopped_report);
-            last_stopped_report = 0;
-            break;
-          default:
-            free (slave_task_uuid);
-            goto fail;
+          int ret;
+          entity_t get_tasks;
+          const char *status;
+
+          /* Check if the task is running or complete on the slave. */
+
+          while ((ret = omp_get_tasks (session, slave_task_uuid, 0, 0, &get_tasks)))
+            {
+              if (ret == 404)
+                {
+                  /* Task missing.  Perhaps someone removed the task on the slave.
+                   * Clear all the report results and start the task from the
+                   * beginning. */
+                  trim_report (last_stopped_report);
+                  last_stopped_report = 0;
+                  break;
+                }
+              else if (ret)
+                {
+                  openvas_server_close (*socket, *session);
+                  ret = slave_sleep_connect (slave, host, port, task, socket, session);
+                  if (ret == 3)
+                    goto giveup;
+                }
+            }
+
+          if (ret == 0)
+            {
+              status = omp_task_status (get_tasks);
+              if (status == NULL)
+                {
+                  /* An error somewhere.  Clear all the report results and
+                   * start the task from the beginning. */
+                  trim_report (last_stopped_report);
+                  last_stopped_report = 0;
+                }
+              else if ((strcmp (status, "Running") == 0)
+                       || (strcmp (status, "Done") == 0))
+                {
+                  /* Task on slave is Running or Done, continue using it as
+                   * is. */
+
+                  slave_report_uuid = get_tasks_last_report (get_tasks);
+                  if (slave_report_uuid == NULL)
+                    {
+                      g_warning ("%s: slave report %s missing UUID\n", __FUNCTION__,
+                                 slave_task_uuid);
+                      goto fail;
+                    }
+                }
+              else
+                {
+                  /* Task is there, try resume it. */
+                  switch (omp_resume_task_report (session, slave_task_uuid,
+                                                  &slave_report_uuid))
+                    {
+                      case 0:
+                        if (slave_report_uuid == NULL)
+                          goto fail;
+                        set_task_run_status (task, TASK_STATUS_REQUESTED);
+                        break;
+                      case 1:
+                        /* The resume may have failed because the task slave changed or
+                         * because someone removed the task on the slave.  Clear all the
+                         * report results and start the task from the beginning.
+                         *
+                         * This and the if above both "leak" the resources on the slave,
+                         * because on the report these resources are replaced with the new
+                         * resources. */
+                        trim_report (last_stopped_report);
+                        last_stopped_report = 0;
+                        break;
+                      default:
+                        free (slave_task_uuid);
+                        goto fail;
+                    }
+                }
+            }
         }
     }
 
