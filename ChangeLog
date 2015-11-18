@@ -1,3 +1,8 @@
+2015-11-18  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (radius_auth_enabled): New function.
+	(manage_get_radius_info): Use new function accordingly.
+
 2015-11-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (get_tasks_last_report): New function.

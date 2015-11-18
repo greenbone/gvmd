@@ -14242,6 +14242,22 @@ ldap_auth_enabled ()
 }
 
 /**
+ * @brief Check whether RADIUS is enabled.
+ *
+ * @return 0 no, else yes.
+ */
+static int
+radius_auth_enabled ()
+{
+  if (openvas_auth_radius_enabled ())
+    return sql_int ("SELECT coalesce ((SELECT CAST (value AS INTEGER) FROM meta"
+                    "                  WHERE name = 'radius_enable'),"
+                    "                 0);");
+  return 0;
+}
+
+
+/**
  * @brief Check if user exists.
  *
  * @param[in]  name    User name.
@@ -60402,7 +60418,7 @@ void
 manage_get_radius_info (int *enabled, char **host, char **key)
 {
   if (enabled)
-    *enabled = 1;
+    *enabled = radius_auth_enabled ();
 
   *host = sql_string ("SELECT value FROM meta WHERE name = 'radius_host';");
   if (!*host)
