@@ -1573,6 +1573,11 @@ gchar *slave_smb_credential_uuid = NULL;
 gchar *slave_esxi_credential_uuid = NULL;
 
 /**
+ * @brief Slave credential UUID.
+ */
+gchar *slave_snmp_credential_uuid = NULL;
+
+/**
  * @brief Slave target UUID.
  */
 gchar *slave_target_uuid = NULL;
@@ -1906,6 +1911,8 @@ get_tasks_last_report (entity_t get_tasks)
  * @param[out]  target      Task target.
  * @param[out]  target_ssh_credential    Target SSH credential.
  * @param[out]  target_smb_credential    Target SMB credential.
+ * @param[out]  target_esxi_credential    Target ESXi credential.
+ * @param[out]  target_snmp_credential    Target SNMP credential.
  * @param[out]  last_stopped_report  Last stopped report if any, else 0.
  *
  * @return 0 success, 1 retry, 3 giveup.
@@ -1916,6 +1923,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
              target_t target, credential_t target_ssh_credential,
              credential_t target_smb_credential,
              credential_t target_esxi_credential,
+             credential_t target_snmp_credential,
              report_t last_stopped_report)
 {
   int ret, next_result;
@@ -2123,7 +2131,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
       if (target_esxi_credential)
         {
           init_credential_iterator_one (&credentials,
-                                            target_esxi_credential);
+                                        target_esxi_credential);
           if (next (&credentials))
             {
               const char *user, *password;
@@ -2136,7 +2144,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
               if (user == NULL || password == NULL)
                 {
                   cleanup_iterator (&credentials);
-                  goto fail_ssh_credential;
+                  goto fail_smb_credential;
                 }
 
               user_copy = g_strdup (user);
@@ -2160,6 +2168,70 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
             }
         }
 
+      if (target_snmp_credential)
+        {
+          init_credential_iterator_one (&credentials,
+                                        target_snmp_credential);
+          if (next (&credentials))
+            {
+              const char *community, *user, *password, *auth_algorithm;
+              const char *privacy_password, *privacy_algorithm;
+              gchar *community_copy, *user_copy, *password_copy;
+              gchar *auth_algorithm_copy, *privacy_password_copy;
+              gchar *privacy_algorithm_copy, *snmp_name;
+              omp_create_lsc_credential_opts_t opts;
+
+              community = credential_iterator_community (&credentials);
+              user = credential_iterator_login (&credentials);
+              password = credential_iterator_password (&credentials);
+              auth_algorithm
+                = credential_iterator_auth_algorithm (&credentials);
+              privacy_password
+                = credential_iterator_privacy_password (&credentials);
+              privacy_algorithm
+                = credential_iterator_privacy_algorithm (&credentials);
+
+              if (community == NULL || user == NULL || password == NULL
+                  || auth_algorithm == NULL || privacy_password == NULL
+                  || privacy_algorithm == NULL)
+                {
+                  cleanup_iterator (&credentials);
+                  goto fail_esxi_credential;
+                }
+
+              community_copy = g_strdup (community);
+              user_copy = g_strdup (user);
+              password_copy = g_strdup (password);
+              auth_algorithm_copy = g_strdup (auth_algorithm);
+              privacy_password_copy = g_strdup (privacy_password);
+              privacy_algorithm_copy = g_strdup (privacy_algorithm);
+              cleanup_iterator (&credentials);
+
+              opts = omp_create_lsc_credential_opts_defaults;
+              snmp_name = g_strdup_printf ("%ssnmp", name);
+              opts.name = snmp_name;
+              opts.community = community_copy;
+              opts.login = user_copy;
+              opts.passphrase = password_copy;
+              opts.auth_algorithm = auth_algorithm_copy;
+              opts.privacy_password = privacy_password_copy;
+              opts.privacy_algorithm = privacy_algorithm_copy;
+              opts.comment = "Slave SNMP credential created by Master";
+
+              ret = omp_create_lsc_credential_ext (session, opts,
+                                                   &slave_snmp_credential_uuid);
+              g_free (snmp_name);
+              g_free (community_copy);
+              g_free (user_copy);
+              g_free (password_copy);
+              g_free (auth_algorithm_copy);
+              g_free (privacy_password_copy);
+              g_free (privacy_algorithm_copy);
+              if (ret)
+                goto fail_esxi_credential;
+            }
+        }
+
       tracef ("   %s: slave SSH credential uuid: %s\n", __FUNCTION__,
               slave_ssh_credential_uuid);
 
@@ -2168,6 +2240,9 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
 
       tracef ("   %s: slave ESXi credential uuid: %s\n", __FUNCTION__,
               slave_esxi_credential_uuid);
+
+      tracef ("   %s: slave SNMP credential uuid: %s\n", __FUNCTION__,
+              slave_snmp_credential_uuid);
 
       /* Create the target on the slave. */
 
@@ -2193,7 +2268,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           if (hosts == NULL)
             {
               cleanup_iterator (&targets);
-              goto fail_esxi_credential;
+              goto fail_snmp_credential;
             }
 
           port = target_iterator_ssh_port (&targets);
@@ -2216,6 +2291,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           opts.ssh_credential_port = ssh_port;
           opts.smb_credential_id = slave_smb_credential_uuid;
           opts.esxi_credential_id = slave_esxi_credential_uuid;
+          opts.snmp_credential_id = slave_snmp_credential_uuid;
           opts.port_range = port_range;
           opts.name = name;
           opts.comment = "Slave target created by Master";
@@ -2230,7 +2306,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           g_free (alive_tests_copy);
           g_free (port_range);
           if (ret)
-            goto fail_esxi_credential;
+            goto fail_snmp_credential;
 
           if (omp_get_targets (session, slave_target_uuid, 0, 0, &get_targets))
             goto fail_esxi_credential;
@@ -2647,6 +2723,9 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
   if (slave_esxi_credential_uuid)
     omp_delete_lsc_credential_ext (session, slave_esxi_credential_uuid,
                                    del_opts);
+  if (slave_snmp_credential_uuid)
+    omp_delete_lsc_credential_ext (session, slave_snmp_credential_uuid,
+                                   del_opts);
  succeed_stopped:
   free (slave_task_uuid);
   slave_task_uuid = NULL;
@@ -2658,6 +2737,8 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
   slave_target_uuid = NULL;
   free (slave_port_list_uuid);
   slave_port_list_uuid = NULL;
+  free (slave_snmp_credential_uuid);
+  slave_snmp_credential_uuid = NULL;
   free (slave_esxi_credential_uuid);
   slave_esxi_credential_uuid = NULL;
   free (slave_smb_credential_uuid);
@@ -2684,6 +2765,9 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
   free (slave_target_uuid);
   omp_delete_port_list_ext (session, slave_port_list_uuid, del_opts);
   free (slave_port_list_uuid);
+ fail_snmp_credential:
+  omp_delete_lsc_credential_ext (session, slave_snmp_credential_uuid, del_opts);
+  free (slave_snmp_credential_uuid);
  fail_esxi_credential:
   omp_delete_lsc_credential_ext (session, slave_esxi_credential_uuid, del_opts);
   free (slave_esxi_credential_uuid);
@@ -2713,6 +2797,8 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
  * @param[out]  target      Task target.
  * @param[out]  target_ssh_credential    Target SSH credential.
  * @param[out]  target_smb_credential    Target SMB credential.
+ * @param[out]  target_esxi_credential   Target ESXi credential.
+ * @param[out]  target_snmp_credential   Target SNMP credential.
  * @param[out]  last_stopped_report  Last stopped report if any, else 0.
  *
  * @return 0 success, -1 error.
@@ -2722,6 +2808,7 @@ run_slave_task (task_t task, target_t target,
                 credential_t target_ssh_credential,
                 credential_t target_smb_credential,
                 credential_t target_esxi_credential,
+                credential_t target_snmp_credential,
                 report_t last_stopped_report)
 {
   slave_t slave;
@@ -2796,7 +2883,8 @@ run_slave_task (task_t task, target_t target,
     {
       ret = slave_setup (slave, &session, &socket, name, host, port, task,
                          target, target_ssh_credential, target_smb_credential,
-                         target_esxi_credential, last_stopped_report);
+                         target_esxi_credential, target_snmp_credential,
+                         last_stopped_report);
       if (ret == 1)
         {
           ret = slave_sleep_connect (slave, host, port, task, &socket, &session);
@@ -3679,7 +3767,7 @@ run_task (const char *task_id, char **report_id, int from,
   GPtrArray *preference_files;
   task_status_t run_status;
   config_t config;
-  credential_t ssh_credential, smb_credential, esxi_credential;
+  credential_t ssh_credential, smb_credential, esxi_credential, snmp_credential;
   report_t last_stopped_report;
   port_list_t port_list;
 
@@ -3897,6 +3985,29 @@ run_task (const char *task_id, char **report_id, int from,
         }
     }
 
+  snmp_credential = target_credential (target, "snmp");
+  if (snmp_credential)
+    {
+      char *uuid;
+      credential_t found;
+
+      uuid = credential_uuid (snmp_credential);
+      if (find_credential_with_permission (uuid,
+                                           &found,
+                                           "get_credentials"))
+        {
+          g_free (uuid);
+          set_task_run_status (task, run_status);
+          return -1;
+        }
+      g_free (uuid);
+      if (found == 0)
+        {
+          set_task_run_status (task, run_status);
+          return 99;
+        }
+    }
+
   hosts = target_hosts (target);
   if (hosts == NULL)
     {
@@ -4014,7 +4125,8 @@ run_task (const char *task_id, char **report_id, int from,
   if (slave)
     {
       if (run_slave_task (task, target, ssh_credential, smb_credential,
-                          esxi_credential, last_stopped_report))
+                          esxi_credential, snmp_credential,
+                          last_stopped_report))
         {
           free (hosts);
           set_task_run_status (task, run_status);
@@ -4056,6 +4168,8 @@ run_task (const char *task_id, char **report_id, int from,
             g_string_append (auth_plugins, "1.3.6.1.4.1.25623.1.0.90023;");
           if (esxi_credential)
             g_string_append (auth_plugins, "1.3.6.1.4.1.25623.1.0.105058;");
+          if (snmp_credential)
+            g_string_append (auth_plugins, "1.3.6.1.4.1.25623.1.0.105076;");
 
           fail = sendf_to_server ("plugin_set <|> %s%s\n",
                                   auth_plugins->str,
@@ -4274,6 +4388,60 @@ run_task (const char *task_id, char **report_id, int from,
               || sendf_to_server ("ESXi Authorization[password]:ESXi login password:"
                                   " <|> %s\n",
                                   password))
+            {
+              free (hosts);
+              cleanup_iterator (&credentials);
+              g_ptr_array_add (preference_files, NULL);
+              array_free (preference_files);
+              slist_free (files);
+              set_task_run_status (task, run_status);
+              set_report_scan_run_status (current_report, run_status);
+              current_report = (report_t) 0;
+              return -10;
+            }
+        }
+      cleanup_iterator (&credentials);
+    }
+
+  if (snmp_credential)
+    {
+      iterator_t credentials;
+
+      init_credential_iterator_one (&credentials, snmp_credential);
+      if (next (&credentials))
+        {
+          const char *community = credential_iterator_community (&credentials);
+          const char *user = credential_iterator_login (&credentials);
+          const char *password = credential_iterator_password (&credentials);
+          const char *auth_algorithm
+            = credential_iterator_auth_algorithm (&credentials);
+          const char *privacy_password
+            = credential_iterator_privacy_password (&credentials);
+          const char *privacy_algorithm
+            = credential_iterator_privacy_algorithm (&credentials);
+
+          if (sendf_to_server ("SNMP Authorization[password]:SNMP Community:"
+                               " <|> %s\n",
+                               community)
+              || sendf_to_server ("SNMP Authorization[entry]:SNMPv3 Username:"
+                                  " <|> %s\n",
+                                  user)
+              || sendf_to_server ("SNMP Authorization[password]:"
+                                  "SNMPv3 Password:"
+                                  " <|> %s\n",
+                                  password)
+              || sendf_to_server ("SNMP Authorization[radio]:"
+                                  "SNMPv3 Authentication Algorithm:"
+                                  " <|> %s\n",
+                                  auth_algorithm)
+              || sendf_to_server ("SNMP Authorization[password]:"
+                                  "SNMPv3 Privacy Password:"
+                                  " <|> %s\n",
+                                  privacy_password)
+              || sendf_to_server ("SNMP Authorization[radio]:"
+                                  "SNMPv3 Privacy Algorithm:"
+                                  " <|> %s\n",
+                                  privacy_algorithm))
             {
               free (hosts);
               cleanup_iterator (&credentials);

@@ -1,3 +1,10 @@
+2015-11-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage.c (slave_snmp_credential_uuid): New variable.
+	(slave_setup, run_slave_task): Add target_snmp_credential parameter.
+	(run_task): Use SNMP credential from target when setting up slave or
+	sending auth NVTs and preferences.
+
 2015-11-18  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (radius_auth_enabled): New function.
