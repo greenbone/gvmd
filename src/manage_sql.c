@@ -64,6 +64,7 @@
 #include <openvas/base/openvas_hosts.h>
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/misc/ldap_connect_auth.h>
+#include <openvas/misc/radius.h>
 #include <openvas/misc/openvas_logging.h>
 #include <openvas/misc/openvas_uuid.h>
 #include <openvas/misc/openvas_server.h>
@@ -14271,7 +14272,7 @@ radius_auth_enabled ()
  * @param[in]  name    User name.
  * @param[in]  method  Auth method.
  *
- * @return 0 yes, 1 no.
+ * @return 1 yes, 0 no.
  */
 static int
 user_exists_method (const gchar *name, auth_method_t method)
@@ -14301,14 +14302,12 @@ user_exists_method (const gchar *name, auth_method_t method)
 gchar *
 user_uuid_any_method (const gchar *name)
 {
-  if (ldap_auth_enabled ())
-    {
-      if (user_exists_method (name, AUTHENTICATION_METHOD_LDAP_CONNECT))
-        return user_uuid_method (name, AUTHENTICATION_METHOD_LDAP_CONNECT);
-      if (user_exists_method (name, AUTHENTICATION_METHOD_FILE))
-        return user_uuid_method (name, AUTHENTICATION_METHOD_FILE);
-      return NULL;
-    }
+  if (ldap_auth_enabled ()
+      && user_exists_method (name, AUTHENTICATION_METHOD_LDAP_CONNECT))
+    return user_uuid_method (name, AUTHENTICATION_METHOD_LDAP_CONNECT);
+  if (radius_auth_enabled ()
+      && user_exists_method (name, AUTHENTICATION_METHOD_RADIUS_CONNECT))
+    return user_uuid_method (name, AUTHENTICATION_METHOD_RADIUS_CONNECT);
   if (user_exists_method (name, AUTHENTICATION_METHOD_FILE))
     return user_uuid_method (name, AUTHENTICATION_METHOD_FILE);
   return NULL;
@@ -14369,14 +14368,17 @@ user_ensure_in_db (const gchar *name, const gchar *method)
  *
  * @param[in]  name    User name.
  *
- * @return 0 yes, 1 no.
+ * @return 1 yes, 0 no.
  */
 int
 user_exists (const gchar *name)
 {
-  if (ldap_auth_enabled ())
-    return user_exists_method (name, AUTHENTICATION_METHOD_LDAP_CONNECT)
-           || user_exists_method (name, AUTHENTICATION_METHOD_FILE);
+  if (ldap_auth_enabled ()
+      && user_exists_method (name, AUTHENTICATION_METHOD_LDAP_CONNECT))
+    return 1;
+  if (radius_auth_enabled ()
+      && user_exists_method (name, AUTHENTICATION_METHOD_RADIUS_CONNECT))
+    return 1;
   return user_exists_method (name, AUTHENTICATION_METHOD_FILE);
 }
 
@@ -14535,6 +14537,19 @@ authenticate_any_method (const gchar *username, const gchar *password,
       g_free (authdn);
       ret = ldap_connect_authenticate (username, password, info);
       ldap_auth_info_free (info);
+      return ret;
+    }
+  if (openvas_auth_radius_enabled ()
+      && radius_auth_enabled ()
+      && user_exists_method (username, AUTHENTICATION_METHOD_RADIUS_CONNECT))
+    {
+      char *key = NULL, *host = NULL;
+
+      *auth_method = AUTHENTICATION_METHOD_RADIUS_CONNECT;
+      manage_get_radius_info (NULL, &host, &key);
+      ret = radius_authenticate (host, key, username, password);
+      g_free (host);
+      g_free (key);
       return ret;
     }
   *auth_method = AUTHENTICATION_METHOD_FILE;
@@ -58926,8 +58941,9 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
       return -1;
     }
 
-  if (allowed_methods
-      && strcmp (g_ptr_array_index (allowed_methods, 0), "ldap_connect") == 0)
+  if (allowed_methods &&
+      (!strcmp (g_ptr_array_index (allowed_methods, 0), "ldap_connect")
+       || !strcmp (g_ptr_array_index (allowed_methods, 0), "radius_connect")))
     password = generated = openvas_uuid_make ();
   else
     generated = NULL;

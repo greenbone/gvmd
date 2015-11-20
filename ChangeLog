@@ -1,3 +1,10 @@
+2015-11-20  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (user_uuid_any_method, user_exists): Adjust to handle
+	RADIUS authentication method.
+	(authenticate_any_method): Support RADIUS authentication method.
+	(create_user): Accept radius_connect authentication method.
+
 2015-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (create_tables): Create scanners before configs,
