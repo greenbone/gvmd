@@ -3437,11 +3437,19 @@ modify_config_data_reset (modify_config_data_t *data)
  */
 typedef struct
 {
-  char *credential_id;        ///< ID of credential to modify.
-  char *name;                 ///< Name.
+  char *auth_algorithm;       ///< SNMP Authentication algorithm.
+  char *certificate;          ///< Certificate.
   char *comment;              ///< Comment.
-  char *login;                ///< Login.
-  char *password;             ///< Password.
+  char *community;            ///< SNMP Community string.
+  char *credential_id;        ///< ID of credential to modify.
+  int key;                    ///< Whether the command included a key element.
+  char *key_phrase;           ///< Passphrase for key.
+  char *key_private;          ///< Private key from key.
+  char *login;                ///< Login name.
+  char *name;                 ///< Name.
+  char *password;             ///< Password associated with login name.
+  char *privacy_algorithm;    ///< SNMP Privacy algorithm.
+  char *privacy_password;     ///< SNMP Privacy password.
 } modify_credential_data_t;
 
 /**
@@ -3452,11 +3460,18 @@ typedef struct
 static void
 modify_credential_data_reset (modify_credential_data_t *data)
 {
-  free (data->credential_id);
-  free (data->name);
+  free (data->auth_algorithm);
+  free (data->certificate);
   free (data->comment);
+  free (data->community);
+  free (data->credential_id);
+  free (data->key_phrase);
+  free (data->key_private);
   free (data->login);
+  free (data->name);
   free (data->password);
+  free (data->privacy_algorithm);
+  free (data->privacy_password);
 
   memset (data, 0, sizeof (modify_credential_data_t));
 }
@@ -5611,10 +5626,19 @@ typedef enum
   CLIENT_MODIFY_CONFIG_PREFERENCE_NVT,
   CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE,
   CLIENT_MODIFY_CREDENTIAL,
+  CLIENT_MODIFY_CREDENTIAL_AUTH_ALGORITHM,
+  CLIENT_MODIFY_CREDENTIAL_CERTIFICATE,
   CLIENT_MODIFY_CREDENTIAL_COMMENT,
+  CLIENT_MODIFY_CREDENTIAL_COMMUNITY,
+  CLIENT_MODIFY_CREDENTIAL_KEY,
+  CLIENT_MODIFY_CREDENTIAL_KEY_PHRASE,
+  CLIENT_MODIFY_CREDENTIAL_KEY_PRIVATE,
   CLIENT_MODIFY_CREDENTIAL_LOGIN,
   CLIENT_MODIFY_CREDENTIAL_NAME,
   CLIENT_MODIFY_CREDENTIAL_PASSWORD,
+  CLIENT_MODIFY_CREDENTIAL_PRIVACY,
+  CLIENT_MODIFY_CREDENTIAL_PRIVACY_ALGORITHM,
+  CLIENT_MODIFY_CREDENTIAL_PRIVACY_PASSWORD,
   CLIENT_MODIFY_FILTER,
   CLIENT_MODIFY_FILTER_COMMENT,
   CLIENT_MODIFY_FILTER_NAME,
@@ -8445,13 +8469,31 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         ELSE_ERROR ("modify_config");
 
       case CLIENT_MODIFY_CREDENTIAL:
-        if (strcasecmp ("NAME", element_name) == 0)
+        if (strcasecmp ("AUTH_ALGORITHM", element_name) == 0)
+          {
+            set_client_state (CLIENT_MODIFY_CREDENTIAL_AUTH_ALGORITHM);
+          }
+        else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_MODIFY_CREDENTIAL_NAME);
         else if (strcasecmp ("COMMENT", element_name) == 0)
           {
             openvas_free_string_var (&modify_credential_data->comment);
             openvas_append_string (&modify_credential_data->comment, "");
             set_client_state (CLIENT_MODIFY_CREDENTIAL_COMMENT);
+          }
+        else if (strcasecmp ("CERTIFICATE", element_name) == 0)
+          {
+            set_client_state (CLIENT_MODIFY_CREDENTIAL_CERTIFICATE);
+          }
+        else if (strcasecmp ("COMMUNITY", element_name) == 0)
+          {
+            openvas_append_string (&modify_credential_data->community, "");
+            set_client_state (CLIENT_MODIFY_CREDENTIAL_COMMUNITY);
+          }
+        else if (strcasecmp ("KEY", element_name) == 0)
+          {
+            modify_credential_data->key = 1;
+            set_client_state (CLIENT_MODIFY_CREDENTIAL_KEY);
           }
         else if (strcasecmp ("LOGIN", element_name) == 0)
           set_client_state (CLIENT_MODIFY_CREDENTIAL_LOGIN);
@@ -8460,6 +8502,37 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             openvas_free_string_var (&modify_credential_data->password);
             openvas_append_string (&modify_credential_data->password, "");
             set_client_state (CLIENT_MODIFY_CREDENTIAL_PASSWORD);
+          }
+        else if (strcasecmp ("PRIVACY", element_name) == 0)
+          {
+            set_client_state (CLIENT_MODIFY_CREDENTIAL_PRIVACY);
+          }
+        ELSE_ERROR ("modify_credential");
+
+      case CLIENT_MODIFY_CREDENTIAL_KEY:
+        if (strcasecmp ("PHRASE", element_name) == 0)
+          {
+            openvas_free_string_var (&modify_credential_data->key_phrase);
+            openvas_append_string (&modify_credential_data->key_phrase, "");
+            set_client_state (CLIENT_MODIFY_CREDENTIAL_KEY_PHRASE);
+          }
+        else if (strcasecmp ("PRIVATE", element_name) == 0)
+          {
+            set_client_state (CLIENT_MODIFY_CREDENTIAL_KEY_PRIVATE);
+          }
+        ELSE_ERROR ("modify_credential");
+
+      case CLIENT_MODIFY_CREDENTIAL_PRIVACY:
+        if (strcasecmp ("ALGORITHM", element_name) == 0)
+          {
+            set_client_state (CLIENT_MODIFY_CREDENTIAL_PRIVACY_ALGORITHM);
+          }
+        else if (strcasecmp ("PASSWORD", element_name) == 0)
+          {
+            openvas_free_string_var (&modify_credential_data->privacy_password);
+            openvas_append_string (&modify_credential_data->privacy_password,
+                                   "");
+            set_client_state (CLIENT_MODIFY_CREDENTIAL_PRIVACY_PASSWORD);
           }
         ELSE_ERROR ("modify_credential");
 
@@ -25492,7 +25565,16 @@ create_task_fail:
                     modify_credential_data->name,
                     modify_credential_data->comment,
                     modify_credential_data->login,
-                    modify_credential_data->password))
+                    (modify_credential_data->key_phrase
+                     || modify_credential_data->key_private)
+                      ? modify_credential_data->key_phrase
+                      : modify_credential_data->password,
+                    modify_credential_data->key_private,
+                    modify_credential_data->certificate,
+                    modify_credential_data->community,
+                    modify_credential_data->auth_algorithm,
+                    modify_credential_data->privacy_password,
+                    modify_credential_data->privacy_algorithm))
             {
               case 0:
                 SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_credential"));
@@ -25564,10 +25646,19 @@ create_task_fail:
         modify_credential_data_reset (modify_credential_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, NAME);
+      CLOSE (CLIENT_MODIFY_CREDENTIAL, AUTH_ALGORITHM);
+      CLOSE (CLIENT_MODIFY_CREDENTIAL, CERTIFICATE);
       CLOSE (CLIENT_MODIFY_CREDENTIAL, COMMENT);
+      CLOSE (CLIENT_MODIFY_CREDENTIAL, COMMUNITY);
+      CLOSE (CLIENT_MODIFY_CREDENTIAL, KEY);
+      CLOSE (CLIENT_MODIFY_CREDENTIAL_KEY, PHRASE);
+      CLOSE (CLIENT_MODIFY_CREDENTIAL_KEY, PRIVATE);
       CLOSE (CLIENT_MODIFY_CREDENTIAL, LOGIN);
+      CLOSE (CLIENT_MODIFY_CREDENTIAL, NAME);
       CLOSE (CLIENT_MODIFY_CREDENTIAL, PASSWORD);
+      CLOSE (CLIENT_MODIFY_CREDENTIAL, PRIVACY);
+      CLOSE (CLIENT_MODIFY_CREDENTIAL_PRIVACY, ALGORITHM);
+      CLOSE (CLIENT_MODIFY_CREDENTIAL_PRIVACY, PASSWORD);
 
       case CLIENT_MODIFY_FILTER:
         {
@@ -28809,17 +28900,38 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
               &modify_config_data->family_selection_growing_text);
 
 
-      APPEND (CLIENT_MODIFY_CREDENTIAL_NAME,
-              &modify_credential_data->name);
+      APPEND (CLIENT_MODIFY_CREDENTIAL_AUTH_ALGORITHM,
+              &modify_credential_data->auth_algorithm);
+
+      APPEND (CLIENT_MODIFY_CREDENTIAL_CERTIFICATE,
+              &modify_credential_data->certificate);
 
       APPEND (CLIENT_MODIFY_CREDENTIAL_COMMENT,
               &modify_credential_data->comment);
 
+      APPEND (CLIENT_MODIFY_CREDENTIAL_COMMUNITY,
+              &modify_credential_data->community);
+
+      APPEND (CLIENT_MODIFY_CREDENTIAL_KEY_PHRASE,
+              &modify_credential_data->key_phrase);
+
+      APPEND (CLIENT_MODIFY_CREDENTIAL_KEY_PRIVATE,
+              &modify_credential_data->key_private);
+
       APPEND (CLIENT_MODIFY_CREDENTIAL_LOGIN,
               &modify_credential_data->login);
 
+      APPEND (CLIENT_MODIFY_CREDENTIAL_NAME,
+              &modify_credential_data->name);
+
       APPEND (CLIENT_MODIFY_CREDENTIAL_PASSWORD,
               &modify_credential_data->password);
+
+      APPEND (CLIENT_MODIFY_CREDENTIAL_PRIVACY_ALGORITHM,
+              &modify_credential_data->privacy_algorithm);
+
+      APPEND (CLIENT_MODIFY_CREDENTIAL_PRIVACY_PASSWORD,
+              &modify_credential_data->privacy_password);
 
 
       APPEND (CLIENT_MODIFY_CONFIG_COMMENT,

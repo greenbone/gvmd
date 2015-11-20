@@ -1928,8 +1928,9 @@ copy_credential (const char*, const char*, const char*,
                  credential_t*);
 
 int
-modify_credential (const char*, const char*, const char*, const char *,
-                   const char *);
+modify_credential (const char*, const char*, const char*, const char*,
+                   const char*, const char*, const char*, const char*,
+                   const char*, const char*, const char*);
 
 int
 delete_credential (const char *, int);
@@ -1950,7 +1951,23 @@ void
 set_credential_login (credential_t, const char *);
 
 void
+set_credential_certificate (credential_t, const char *);
+
+void
+set_credential_auth_algorithm (credential_t, const char *);
+
+void
+set_credential_privacy_algorithm (credential_t, const char *);
+
+void
 set_credential_password (credential_t, const char *);
+
+void
+set_credential_private_key (credential_t, const char *, const char *);
+
+void
+set_credential_snmp_secret (credential_t, const char *, const char *,
+                            const char *);
 
 void
 init_credential_iterator_one (iterator_t*, credential_t);

@@ -1,3 +1,34 @@
+2015-11-20  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Allow modifying credentials of all types with MODIFY_CREDENTIAL. Make
+	small corrections to CREATE_CREDENTIAL doc.
+
+	* src/manage_sql.c (credential_packaged): Remove because restrictions
+	no longer apply.
+	(modify_credential): Add parameters for credential types other than
+	username and password.
+	(set_credential_certificate, set_credential_auth_algorithm)
+	(set_credential_privacy_algorithm, set_credential_private_key)
+	(set_credential_snmp_secret): New functions.
+
+	* src/manage.h (modify_credential): Add parameters.
+	(set_credential_certificate, set_credential_auth_algorithm)
+	(set_credential_privacy_algorithm, set_credential_private_key)
+	(set_credential_snmp_secret): New functions.
+
+	* src/omp.c (modify_credential_data_t, modify_credential_data_reset):
+	Add new fields for credential types other than username + password.
+	(client_state_t, omp_xml_handle_start_element)
+	(omp_xml_handle_end_element, omp_xml_handle_text): Add elements for
+	modifying credential types other than username + password in
+	MODIFY_CREDENTIAL.
+
+	* src/schema_formats/XML/OMP.xml.in: Add missing "certificate" element
+	and mark "login" as optional in CREATE_CREDENTIAL. Add new elements to
+	MODIFY_CREDENTIAL command.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
 2015-11-20  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (user_uuid_any_method, user_exists): Adjust to handle

@@ -37634,48 +37634,34 @@ copy_credential (const char* name, const char* comment,
 }
 
 /**
- * @brief Return whether a Credential is the packaged type.
- *
- * @param[in]  cred_id  The Credential uuid.
- *
- * @return 0 false, 1 true.
- */
-static int
-credential_packaged (const char *cred_id)
-{
-  get_data_t get;
-  iterator_t iter;
-  const char *key;
-
-  memset (&get, '\0', sizeof (get));
-  get.id = g_strdup (cred_id);
-  if (init_credential_iterator (&iter, &get) || !next (&iter))
-    return 0;
-
-  key = credential_iterator_private_key (&iter);
-  cleanup_iterator (&iter);
-  return key ? 1 : 0;
-}
-
-/**
  * @brief Modify a Credential.
  *
  * @param[in]   credential_id       UUID of Credential.
  * @param[in]   name                Name of Credential.
  * @param[in]   comment             Comment on Credential.
  * @param[in]   login               Login of Credential.
- * @param[in]   password            Password of Credential.
+ * @param[in]   password            Password or passphrase of Credential.
+ * @param[in]   key_private         Private key of Credential.
+ * @param[in]   certificate         Certificate of Credential.
+ * @param[in]   community           SNMP Community of Credential.
+ * @param[in]   auth_algorithm      Authentication algorithm of Credential.
+ * @param[in]   privacy_password    Privacy password of Credential.
+ * @param[in]   privacy_algorithm   Privacy algorithm of Credential.
  *
  * @return 0 success, 1 failed to find credential, 2 credential with new name
- *         exists, 3 credential_id required, 4 attempt to modify login/pass
- *         of packaged lsc credential, 99 permission denied, -1 internal error.
+ *         exists, 3 credential_id required, 99 permission denied,
+ *         -1 internal error.
  */
 int
 modify_credential (const char *credential_id,
                    const char *name, const char *comment,
-                   const char *login, const char *password)
+                   const char *login, const char* password,
+                   const char* key_private, const char* certificate,
+                   const char* community, const char* auth_algorithm,
+                   const char* privacy_password, const char* privacy_algorithm)
 {
   credential_t credential;
+  iterator_t iterator;
 
   if (credential_id == NULL)
     return 3;
@@ -37704,10 +37690,6 @@ modify_credential (const char *credential_id,
       return 1;
     }
 
-  /* Check attempt to change login or password of packaged LSC credential */
-  if ((login || password) && credential_packaged (credential_id))
-    return 4;
-
   /* Check whether a credential with the same name exists already. */
   if (name)
     {
@@ -37729,8 +37711,76 @@ modify_credential (const char *credential_id,
   if (login)
     set_credential_login (credential, login);
 
-  if (password)
-    set_credential_password (credential, password);
+  if (certificate)
+    set_credential_certificate (credential, certificate);
+
+  if (auth_algorithm)
+    set_credential_auth_algorithm (credential, auth_algorithm);
+
+  if (privacy_algorithm)
+    set_credential_privacy_algorithm (credential, privacy_algorithm);
+
+  init_credential_iterator_one (&iterator, credential);
+  if (next (&iterator))
+    {
+      const char* type = credential_iterator_type (&iterator);
+      if (strcmp (type, "cc") == 0)
+        {
+          if (key_private)
+            set_credential_private_key (credential, key_private, NULL);
+        }
+      else if (strcmp (type, "up") == 0)
+        {
+          if (password)
+            set_credential_password (credential, password);
+        }
+      else if (strcmp (type, "usk") == 0)
+        {
+          if (key_private || password)
+            {
+              set_credential_private_key
+                (credential,
+                 key_private
+                  ? key_private
+                  : credential_iterator_private_key (&iterator),
+                password
+                  ? password
+                  : credential_iterator_password (&iterator));
+            }
+        }
+      else if (strcmp (type, "snmp") == 0)
+        {
+          if (community || password || privacy_password)
+            {
+              set_credential_snmp_secret
+                (credential,
+                 community
+                  ? community
+                  : credential_iterator_community (&iterator),
+                 password
+                  ? password
+                  : credential_iterator_password (&iterator),
+                 privacy_password
+                  ? privacy_password
+                  : credential_iterator_privacy_password (&iterator));
+            }
+        }
+      else
+        {
+          g_warning ("%s: Unknown credential type: %s", __FUNCTION__, type);
+          sql ("ROLLBACK;");
+          cleanup_iterator (&iterator);
+        }
+    }
+  else
+    {
+      g_warning ("%s: credential iterator next() failed", __FUNCTION__);
+      sql ("ROLLBACK;");
+      cleanup_iterator (&iterator);
+      return -1;
+    }
+
+  cleanup_iterator (&iterator);
 
   sql ("COMMIT;");
 
@@ -38179,6 +38229,55 @@ set_credential_login (credential_t credential, const char *login)
 }
 
 /**
+ * @brief Set the certificate of a Credential.
+ *
+ * @param[in]  credential      The Credential.
+ * @param[in]  certificate     Certificate.
+ */
+void
+set_credential_certificate (credential_t credential, const char *certificate)
+{
+  set_credential_data (credential, "certificate", certificate);
+  sql ("UPDATE credentials SET"
+       " modification_time = m_now ()"
+       " WHERE id = %llu;",
+       credential);
+}
+
+/**
+ * @brief Set the auth_algorithm of a Credential.
+ *
+ * @param[in]  credential      The Credential.
+ * @param[in]  algorithm       Authentication algorithm.
+ */
+void
+set_credential_auth_algorithm (credential_t credential, const char *algorithm)
+{
+  set_credential_data (credential, "auth_algorithm", algorithm);
+  sql ("UPDATE credentials SET"
+       " modification_time = m_now ()"
+       " WHERE id = %llu;",
+       credential);
+}
+
+/**
+ * @brief Set the privacy_algorithm of a Credential.
+ *
+ * @param[in]  credential      The Credential.
+ * @param[in]  algorithm       Privacy algorithm.
+ */
+void
+set_credential_privacy_algorithm (credential_t credential,
+                                  const char *algorithm)
+{
+  set_credential_data (credential, "privacy_algorithm", algorithm);
+  sql ("UPDATE credentials SET"
+       " modification_time = m_now ()"
+       " WHERE id = %llu;",
+       credential);
+}
+
+/**
  * @brief Set the password of a Credential.
  *
  * @param[in]  credential      The Credential.
@@ -38212,6 +38311,102 @@ set_credential_password (credential_t credential, const char *password)
       set_credential_data (credential, "secret", NULL);
       set_credential_data (credential, "password", password);
       set_credential_data (credential, "private_key", NULL);
+    }
+
+  sql ("UPDATE credentials SET modification_time = m_now ()"
+       " WHERE id = %llu;",
+       credential);
+  lsc_crypt_release (crypt_ctx);
+}
+
+/**
+ * @brief Set the private key and passphrase of a Credential.
+ *
+ * @param[in]  credential      The Credential.
+ * @param[in]  private_key     Private key.
+ * @param[in]  passphrase      Passphrase.
+ */
+void
+set_credential_private_key (credential_t credential,
+                            const char *private_key, const char *passphrase)
+{
+  lsc_crypt_ctx_t crypt_ctx;
+
+  if (!disable_encrypted_credentials)
+    {
+      gchar *encrypted_blob;
+      crypt_ctx = lsc_crypt_new ();
+      encrypted_blob = lsc_crypt_encrypt (crypt_ctx,
+                                          "private_key", private_key,
+                                          "password", passphrase,
+                                          NULL);
+      if (!encrypted_blob)
+        {
+          g_critical ("%s: encryption failed", G_STRFUNC);
+          lsc_crypt_release (crypt_ctx);
+          return;
+        }
+      set_credential_data (credential, "secret", encrypted_blob);
+      set_credential_data (credential, "password", NULL);
+      set_credential_data (credential, "private_key", NULL);
+      g_free (encrypted_blob);
+    }
+  else
+    {
+      crypt_ctx = NULL;
+      set_credential_data (credential, "secret", NULL);
+      set_credential_data (credential, "password", passphrase);
+      set_credential_data (credential, "private_key", private_key);
+    }
+
+  sql ("UPDATE credentials SET modification_time = m_now ()"
+       " WHERE id = %llu;",
+       credential);
+  lsc_crypt_release (crypt_ctx);
+}
+
+/**
+ * @brief Set the community, password and privacy password of a Credential.
+ *
+ * @param[in]  credential         The Credential.
+ * @param[in]  community          SNMP community.
+ * @param[in]  password           Authentication password.
+ * @param[in]  privacy_password   Privacy password.
+ */
+void
+set_credential_snmp_secret (credential_t credential, const char* community,
+                            const char *password, const char *privacy_password)
+{
+  lsc_crypt_ctx_t crypt_ctx;
+
+  if (!disable_encrypted_credentials)
+    {
+      gchar *encrypted_blob;
+      crypt_ctx = lsc_crypt_new ();
+      encrypted_blob = lsc_crypt_encrypt (crypt_ctx,
+                                          "community", community,
+                                          "password", password,
+                                          "privacy_password", privacy_password,
+                                          NULL);
+      if (!encrypted_blob)
+        {
+          g_critical ("%s: encryption failed", G_STRFUNC);
+          lsc_crypt_release (crypt_ctx);
+          return;
+        }
+      set_credential_data (credential, "secret", encrypted_blob);
+      set_credential_data (credential, "community", NULL);
+      set_credential_data (credential, "password", NULL);
+      set_credential_data (credential, "privacy_password", NULL);
+      g_free (encrypted_blob);
+    }
+  else
+    {
+      crypt_ctx = NULL;
+      set_credential_data (credential, "secret", NULL);
+      set_credential_data (credential, "community", community);
+      set_credential_data (credential, "password", password);
+      set_credential_data (credential, "privacy_password", privacy_password);
     }
 
   sql ("UPDATE credentials SET modification_time = m_now ()"

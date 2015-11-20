@@ -3504,8 +3504,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>name</e>
       <o><e>comment</e></o>
       <o><e>copy</e></o>
+      <o><e>certificate</e></o>
       <o><e>key</e></o>
-      <e>login</e>
+      <o><e>login</e></o>
       <o><e>password</e></o>
       <o><e>auth_algorithm</e></o>
       <o><e>community</e></o>
@@ -3529,6 +3530,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>The UUID of an existing credential</summary>
       <pattern>
         <t>uuid</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>certificate</name>
+      <summary>The certificate of the credential</summary>
+      <pattern>
+        text
       </pattern>
     </ele>
     <ele>
@@ -20990,8 +20998,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </attrib>
       <o><e>comment</e></o>
       <o><e>name</e></o>
-      <o><e>password</e></o>
+      <o><e>certificate</e></o>
+      <o><e>key</e></o>
       <o><e>login</e></o>
+      <o><e>password</e></o>
+      <o><e>community</e></o>
+      <o><e>auth_algorithm</e></o>
+      <o><e>privacy</e></o>
     </pattern>
     <ele>
       <name>name</name>
@@ -21006,6 +21019,34 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
     </ele>
     <ele>
+      <name>certificate</name>
+      <summary>The certificate for the credential</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>key</name>
+      <pattern>
+        <e>phrase</e>
+        <e>private</e>
+      </pattern>
+      <ele>
+        <name>phrase</name>
+        <summary>Key passphrase</summary>
+        <pattern>
+          text
+        </pattern>
+      </ele>
+      <ele>
+        <name>private</name>
+        <summary>Private key</summary>
+        <pattern>
+          text
+        </pattern>
+      </ele>
+    </ele>
+    <ele>
       <name>login</name>
       <summary>The user name of the credential</summary>
       <pattern>
@@ -21018,6 +21059,51 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <pattern>
         text
       </pattern>
+    </ele>
+    <ele>
+      <name>community</name>
+      <summary>The SNMP community</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>auth_algorithm</name>
+      <summary>Authentication algorithm for SNMP, either md5 or sha1</summary>
+      <pattern>
+        <t>
+          <alts>
+            <alt>md5</alt>
+            <alt>sha1</alt>
+          </alts>
+        </t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>privacy</name>
+      <pattern>
+        <e>algorithm</e>
+        <e>password</e>
+      </pattern>
+      <ele>
+        <name>algorithm</name>
+        <summary>The SNMP privacy algorithm, either aes or des</summary>
+        <pattern>
+          <t>
+            <alts>
+              <alt>aes</alt>
+              <alt>des</alt>
+            </alts>
+          </t>
+        </pattern>
+      </ele>
+      <ele>
+        <name>password</name>
+        <summary>The SNMP privacy password</summary>
+        <pattern>
+          text
+        </pattern>
+      </ele>
     </ele>
     <response>
       <pattern>

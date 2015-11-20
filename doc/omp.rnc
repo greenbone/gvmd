@@ -3443,8 +3443,9 @@ create_credential
        create_credential_name
        & create_credential_comment?
        & create_credential_copy?
+       & create_credential_certificate?
        & create_credential_key?
-       & create_credential_login
+       & create_credential_login?
        & create_credential_password?
        & create_credential_auth_algorithm?
        & create_credential_community?
@@ -3471,6 +3472,13 @@ create_credential_copy
  = element copy
      {
        uuid
+     }
+
+# The certificate of the credential.
+create_credential_certificate
+ = element certificate
+     {
+       text
      }
 
 create_credential_key
@@ -6098,8 +6106,13 @@ modify_credential
        attribute credential_id { uuid }
        & modify_credential_comment?
        & modify_credential_name?
-       & modify_credential_password?
+       & modify_credential_certificate?
+       & modify_credential_key?
        & modify_credential_login?
+       & modify_credential_password?
+       & modify_credential_community?
+       & modify_credential_auth_algorithm?
+       & modify_credential_privacy?
      }
 
 # A name for the credential.
@@ -6116,6 +6129,34 @@ modify_credential_comment
        text
      }
 
+# The certificate for the credential.
+modify_credential_certificate
+ = element certificate
+     {
+       text
+     }
+
+modify_credential_key
+ = element key
+     {
+       modify_credential_key_phrase
+       & modify_credential_key_private
+     }
+
+# Key passphrase.
+modify_credential_key_phrase
+ = element phrase
+     {
+       text
+     }
+
+# Private key.
+modify_credential_key_private
+ = element private
+     {
+       text
+     }
+
 # The user name of the credential.
 modify_credential_login
  = element login
@@ -6125,6 +6166,41 @@ modify_credential_login
 
 # The password for the credential login.
 modify_credential_password
+ = element password
+     {
+       text
+     }
+
+# The SNMP community.
+modify_credential_community
+ = element community
+     {
+       text
+     }
+
+# Authentication algorithm for SNMP, either md5 or sha1.
+modify_credential_auth_algorithm
+ = element auth_algorithm
+     {
+       xsd:token { pattern = "md5|sha1" }
+     }
+
+modify_credential_privacy
+ = element privacy
+     {
+       modify_credential_privacy_algorithm
+       & modify_credential_privacy_password
+     }
+
+# The SNMP privacy algorithm, either aes or des.
+modify_credential_privacy_algorithm
+ = element algorithm
+     {
+       xsd:token { pattern = "aes|des" }
+     }
+
+# The SNMP privacy password.
+modify_credential_privacy_password
  = element password
      {
        text
