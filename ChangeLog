@@ -1,3 +1,21 @@
+2015-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add missing "Verinice ISM" report format param.  Hence increase database
+	version to 160.  Add database migration from version 159 to 160.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 160.
+
+	* src/manage_migrators.c (migrate_159_to_160): New function.
+	(database_migrators): Add migrate_159_to_160.
+
+	* src/manage_sql.c (check_db_report_formats): Create param.
+
+	* doc/db.png: Update for version change.
+
+2015-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (get_tasks_last_report): New function.
+
 2015-11-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage.c (slave_snmp_credential_uuid): New variable.

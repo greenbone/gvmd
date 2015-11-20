@@ -11520,6 +11520,44 @@ migrate_158_to_159 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 158 to version 159.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_159_to_160 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 159. */
+
+  if (manage_db_version () != 159)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Report format "Verinice ISM" was missing a param. */
+
+  sql ("INSERT INTO report_format_params (report_format, name, type, value,"
+       " type_min, type_max, type_regex, fallback)"
+       " VALUES ((SELECT id FROM report_formats"
+       "          WHERE uuid = 'c15ad349-bd8d-457a-880a-c7056532ee15'),"
+       "         'Attach HTML report', %i, 1, 0, 1, '', 1);",
+       REPORT_FORMAT_PARAM_TYPE_BOOLEAN);
+
+  /* Set the database version to 160. */
+
+  set_db_version (160);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
 #ifdef SQL_IS_SQLITE
 #define SQLITE_OR_NULL(function) function
 #else
@@ -11690,6 +11728,7 @@ static migrator_t database_migrators[]
     {157, migrate_156_to_157},
     {158, migrate_157_to_158},
     {159, migrate_158_to_159},
+    {160, migrate_159_to_160},
     /* End marker. */
     {-1, NULL}};
 

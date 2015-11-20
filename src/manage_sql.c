@@ -13399,6 +13399,14 @@ check_db_report_formats ()
            " 'vna', 'application/zip', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_id ();
+
+      /* Create report "Attach HTML report" format parameter */
+      sql ("INSERT INTO report_format_params (report_format, name, type, value,"
+           " type_min, type_max, type_regex, fallback)"
+           " VALUES (%lli, 'Attach HTML report', %i, 1, 0, 1, '', 1);",
+           report_format,
+           REPORT_FORMAT_PARAM_TYPE_BOOLEAN);
+
       report_format_verify (report_format);
     }
 
@@ -37139,7 +37147,7 @@ truncate_certificate (const gchar* private_key)
  * @brief Truncate a private key, removing extra data.
  *
  * @param[in]  private_key    The private key.
- * 
+ *
  * @return  The truncated private key as a newly allocated string or NULL.
  */
 static gchar *
