@@ -1844,6 +1844,20 @@ create_tables ()
        "  port INTEGER,"
        "  credential_location INTEGER);");
 
+  sql ("CREATE TABLE IF NOT EXISTS scanners"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text,"
+       "  comment text,"
+       "  host text,"
+       "  port integer,"
+       "  type integer,"
+       "  ca_pub text,"
+       "  credential integer REFERENCES credentials (id) ON DELETE RESTRICT,"
+       "  creation_time integer,"
+       "  modification_time integer);");
+
   sql ("CREATE TABLE IF NOT EXISTS configs"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
@@ -1943,20 +1957,6 @@ create_tables ()
        "  port text,"
        "  credential integer,"
        "  credential_location integer,"
-       "  creation_time integer,"
-       "  modification_time integer);");
-
-  sql ("CREATE TABLE IF NOT EXISTS scanners"
-       " (id SERIAL PRIMARY KEY,"
-       "  uuid text UNIQUE NOT NULL,"
-       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
-       "  name text,"
-       "  comment text,"
-       "  host text,"
-       "  port integer,"
-       "  type integer,"
-       "  ca_pub text,"
-       "  credential integer REFERENCES credentials (id) ON DELETE RESTRICT,"
        "  creation_time integer,"
        "  modification_time integer);");
 

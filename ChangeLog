@@ -1,5 +1,10 @@
 2015-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_pg.c (create_tables): Create scanners before configs,
+	because configs refers to scanners.
+
+2015-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add missing "Verinice ISM" report format param.  Hence increase database
 	version to 160.  Add database migration from version 159 to 160.
 
