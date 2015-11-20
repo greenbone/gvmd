@@ -12494,7 +12494,30 @@ check_db_report_formats ()
            " 'vna', 'application/zip', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_id ();
+
+      /* Create report "Attach HTML report" format parameter */
+      sql ("INSERT INTO report_format_params (report_format, name, type, value,"
+           " type_min, type_max, type_regex, fallback)"
+           " VALUES (%lli, 'Attach HTML report', %i, 1, 0, 1, '', 1);",
+           report_format,
+           REPORT_FORMAT_PARAM_TYPE_BOOLEAN);
+
       report_format_verify (report_format);
+    }
+  else if (sql_int
+            ("SELECT count(*) FROM report_format_params"
+             " WHERE report_format"
+             "       = (SELECT id FROM report_formats"
+             "          WHERE uuid = 'c15ad349-bd8d-457a-880a-c7056532ee15');")
+           == 0)
+    {
+      /* Create report "Attach HTML report" format parameter */
+      sql ("INSERT INTO report_format_params (report_format, name, type, value,"
+           " type_min, type_max, type_regex, fallback)"
+           " VALUES ((SELECT id FROM report_formats"
+           "          WHERE uuid = 'c15ad349-bd8d-457a-880a-c7056532ee15'),"
+           "         'Attach HTML report', %i, 1, 0, 1, '', 1);",
+           REPORT_FORMAT_PARAM_TYPE_BOOLEAN);
     }
 
   if (sql_int ("SELECT count(*) FROM report_formats"
