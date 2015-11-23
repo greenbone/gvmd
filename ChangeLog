@@ -1,3 +1,17 @@
+2015-11-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Improve the speed of the GET iterator by doing a "pre-SELECT" with a
+	reduced number of columns.
+
+	* src/manage_sql.c (columns_build_select): Correct doc.
+	(columns_build_select_used): New function.
+	(filter_clause): Add arg filter_columns_used.
+	(init_get_iterator): When getting multiple resources from the regular
+	table, use a subselect to select over the entire table with only the
+	columns required by the filter.  This is faster, notably for the Tasks
+	page in GSA, because the full set of columns is only selected for the
+	rows that will appear on the page.
+
 2015-11-20  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Allow modifying credentials of all types with MODIFY_CREDENTIAL. Make
@@ -54,10 +68,6 @@
 	* src/manage_sql.c (check_db_report_formats): Create param.
 
 	* doc/db.png: Update for version change.
-
-2015-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
-
-	* src/manage.c (get_tasks_last_report): New function.
 
 2015-11-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
