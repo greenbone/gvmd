@@ -1,3 +1,10 @@
+2015-11-24  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Backport part of r23850.
+
+	* src/report_formats/Verinice_ISM/Verinice_ISM.xsl
+	(extract_organization): Use 'Verinice Source ID' tag if available.
+
 2015-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (check_db_report_formats): Ensure "Verinice ISM"
