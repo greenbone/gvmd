@@ -2620,46 +2620,6 @@ columns_build_select (column_t *select_columns)
 }
 
 /**
- * @brief Return column list for SELECT statement.
- *
- * @param[in]  select_columns       SELECT columns.
- * @param[in]  filter_columns_used  Columns used in filter.
- *
- * @return Column list for the SELECT statement, or NULL.
- */
-static gchar *
-columns_build_select_used (column_t *select_columns,
-                           array_t *filter_columns_used)
-{
-  if (select_columns == NULL)
-    return NULL;
-
-  if (filter_columns_used == NULL)
-    return NULL;
-
-  if ((*select_columns).select)
-    {
-      column_t *columns;
-      GString *select;
-
-      columns = select_columns;
-      select = g_string_new ("id");
-      while ((*columns).select)
-        {
-          if ((*columns).filter
-              && array_find_string (filter_columns_used, (*columns).filter))
-            {
-              g_string_append_printf (select, ", %s", (*columns).select);
-              g_string_append_printf (select, " AS %s", (*columns).filter);
-            }
-          columns++;
-        }
-      return g_string_free (select, FALSE);
-    }
-  return g_strdup ("id");
-}
-
-/**
  * @brief Return SQL WHERE clause for restricting a SELECT to a filter term.
  *
  * @param[in]  type     Resource type.
@@ -2671,7 +2631,6 @@ columns_build_select_used (column_t *select_columns,
  * @param[out] max_return    If given then max rows.
  * @param[out] permissions   When given then permissions string vector.
  * @param[out] owner_filter  When given then value of owner keyword.
- * @param[out] filter_columns_used  Filter columns used by the filter.
  *
  * @return WHERE clause for filter if one is required, else NULL.
  */
@@ -2679,8 +2638,7 @@ static gchar *
 filter_clause (const char* type, const char* filter,
                const char **filter_columns, column_t *select_columns,
                int trash, gchar **order_return, int *first_return,
-               int *max_return, array_t **permissions, gchar **owner_filter,
-               array_t **filter_columns_used)
+               int *max_return, array_t **permissions, gchar **owner_filter)
 {
   GString *clause, *order;
   keyword_t **point;
@@ -2694,9 +2652,6 @@ filter_clause (const char* type, const char* filter,
 
   if (permissions)
     *permissions = make_array ();
-
-  if (filter_columns_used)
-    *filter_columns_used = make_array ();
 
   if (owner_filter)
     *owner_filter = NULL;
@@ -2896,14 +2851,10 @@ filter_clause (const char* type, const char* filter,
               first_order = 0;
             }
           else
-            /* To help the client, split_filter restricts the filter to one
+            /* To help the client split_filter restricts the filter to one
              * sorting term, preventing this from happening. */
             g_string_append_printf (order, ", %s ASC",
                                     keyword->string);
-
-          if (keyword->string && filter_columns_used)
-            array_add (*filter_columns_used, g_strdup (keyword->string));
-
           point++;
           continue;
         }
@@ -3035,10 +2986,6 @@ filter_clause (const char* type, const char* filter,
              * sorting term, preventing this from happening. */
             g_string_append_printf (order, ", %s DESC",
                                     keyword->string);
-
-          if (keyword->string && filter_columns_used)
-            array_add (*filter_columns_used, g_strdup (keyword->string));
-
           point++;
           continue;
         }
@@ -3481,8 +3428,6 @@ filter_clause (const char* type, const char* filter,
 
           /* Keyword like "=example". */
 
-          // FIX add all columns
-
           g_string_append_printf (clause,
                                   "%s(",
                                   (first_keyword
@@ -3570,8 +3515,6 @@ filter_clause (const char* type, const char* filter,
         {
           const char *filter_column;
 
-      // FIX add all
-
           g_string_append_printf (clause,
                                   "%s(",
                                   (first_keyword
@@ -3625,9 +3568,6 @@ filter_clause (const char* type, const char* filter,
                                         last_was_re ? "" : "%%");
               }
         }
-
-      if (keyword->column && filter_columns_used)
-        array_add (*filter_columns_used, g_strdup (keyword->column));
 
       if (skip == 0)
         {
@@ -4484,14 +4424,12 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    const char *extra_tables,
                    const char *extra_where, int owned)
 {
-  int first, max, index;
+  int first, max;
   gchar *clause, *order, *filter, *owned_clause;
-  array_t *permissions, *filter_columns_used;
+  array_t *permissions;
   resource_t resource = 0;
   gchar *owner_filter;
-  gchar *columns, *inner_columns;
-
-  tracef ("   %s: type: %s", __FUNCTION__, type);
+  gchar *columns;
 
   assert (get);
 
@@ -4555,14 +4493,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
                            ? trash_select_columns
                            : select_columns,
                           get->trash, &order, &first, &max, &permissions,
-                          &owner_filter, &filter_columns_used);
-  tracef ("   %s: filter_columns_used:", __FUNCTION__);
-  for (index = 0; index < filter_columns_used->len; index++)
-    {
-      gchar *column;
-      column = (gchar*) g_ptr_array_index (filter_columns_used, index);
-      tracef ("      %s", column);
-    }
+                          &owner_filter);
 
   g_free (filter);
 
@@ -4580,17 +4511,6 @@ init_get_iterator (iterator_t* iterator, const char *type,
     columns = columns_build_select (trash_select_columns);
   else
     columns = columns_build_select (select_columns);
-
-  if (filter_columns_used == NULL)
-    inner_columns = NULL;
-  else if (get->trash && trash_select_columns)
-    inner_columns = columns_build_select_used (trash_select_columns,
-                                               filter_columns_used);
-  else
-    inner_columns = columns_build_select_used (select_columns,
-                                               filter_columns_used);
-
-  array_free (filter_columns_used);
 
   if (get->ignore_pagination
       && (strcmp (type, "task") == 0))
@@ -4641,37 +4561,6 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    resource,
                    owned_clause,
                    order);
-  else if ((distinct == 0) && inner_columns)
-    /* The idea with "inner_columns" is to use only the columns required
-     * by the filter when considering the whole table.  Once the filtering
-     * has reduced the selection to the rows that will appear on the page, then
-     * select with all columns. */
-    init_iterator (iterator,
-                   "SELECT %s"
-                   " FROM %ss %s"
-                   " WHERE id IN (SELECT id"
-                   "              FROM (SELECT %s"
-                   "                    FROM %ss %s"
-                   "                    WHERE %s"
-                   "                    %s%s%s%s%s"
-                   "                    LIMIT %s OFFSET %i)"
-                   "                   AS filter_subquery)"
-                   "%s;",
-                   columns,
-                   type,
-                   extra_tables ? extra_tables : "",
-                   inner_columns,
-                   type,
-                   extra_tables ? extra_tables : "",
-                   owned_clause,
-                   clause ? " AND (" : "",
-                   clause ? clause : "",
-                   clause ? ")" : "",
-                   extra_where ? extra_where : "",
-                   order,
-                   sql_select_limit (max),
-                   first,
-                   order);
   else
     {
       init_iterator (iterator,
@@ -4696,7 +4585,6 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    distinct ? ") AS subquery_for_distinct" : "");
     }
 
-  g_free (inner_columns);
   g_free (columns);
   g_free (owned_clause);
   g_free (order);
@@ -4852,7 +4740,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
 
   clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
                           select_columns, get->trash, &filter_order,
-                          &first, &max, &permissions, &owner_filter, NULL);
+                          &first, &max, &permissions, &owner_filter);
 
   g_free (filter);
 
@@ -5318,7 +5206,7 @@ count (const char *type, const get_data_t *get, column_t *select_columns,
                            ? trash_select_columns
                            : select_columns,
                           get->trash, NULL, NULL, NULL, &permissions,
-                          &owner_filter, NULL);
+                          &owner_filter);
 
   g_free (filter);
 
@@ -56745,7 +56633,7 @@ setting_count (const char *filter)
   assert (current_credentials.uuid);
 
   clause = filter_clause ("setting", filter, filter_columns, select_columns,
-                          0, NULL, NULL, NULL, NULL, NULL, NULL);
+                          0, NULL, NULL, NULL, NULL, NULL);
 
   ret = sql_int ("SELECT count (*)"
                  " FROM settings"
@@ -56860,7 +56748,7 @@ init_setting_iterator (iterator_t *iterator, const char *uuid,
     max = -1;
 
   clause = filter_clause ("setting", filter, filter_columns, select_columns,
-                          0, NULL, NULL, NULL, NULL, NULL, NULL);
+                          0, NULL, NULL, NULL, NULL, NULL);
 
   quoted_uuid = uuid ? sql_quote (uuid) : NULL;
   columns = columns_build_select (select_columns);
@@ -58725,7 +58613,7 @@ total_info_count (const get_data_t *get, int filtered)
 
       clause = filter_clause ("allinfo", filter ? filter : get->filter,
                               filter_columns, select_columns, get->trash,
-                              NULL, NULL, NULL, NULL, NULL, NULL);
+                              NULL, NULL, NULL, NULL, NULL);
       if (clause)
         return sql_int ("SELECT count (id) FROM"
                         ALL_INFO_UNION_COLUMNS
@@ -58772,7 +58660,7 @@ init_all_info_iterator (iterator_t* iterator, get_data_t *get,
 
   clause = filter_clause ("allinfo", filter ? filter : get->filter,
                           filter_columns, select_columns, get->trash,
-                          &order, &first, &max, NULL, NULL, NULL);
+                          &order, &first, &max, NULL, NULL);
   columns = columns_build_select (select_columns);
 
   init_iterator (iterator,

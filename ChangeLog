@@ -1,3 +1,11 @@
+2015-11-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Revert r23848.
+
+	* src/manage_sql.c (columns_build_select_used): Remove.
+	(filter_clause): Remove arg filter_columns_used.
+	(init_get_iterator): Remove "inner_columns" case.
+
 2015-11-24  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/report_formats/Verinice_ISM/Verinice_ISM.xsl
@@ -11,7 +19,7 @@
 
 	* src/manage_sql.c (columns_build_select): Correct doc.
 	(columns_build_select_used): New function.
-	(filter_clause): Add arg filter_columns_used.
+	(filter_clause): Add arg filter_columns_used.  Update callers.
 	(init_get_iterator): When getting multiple resources from the regular
 	table, use a subselect to select over the entire table with only the
 	columns required by the filter.  This is faster, notably for the Tasks
