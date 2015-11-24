@@ -105,12 +105,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <xsl:template name="extract_organization">
       <xsl:choose>
-          <!-- TODO enter here the real path of the organization tag -->
-          <xsl:when test="string-length(report/task/tags/organization) &gt; 0">
-              <xsl:value-of select="report/task/tags/ogranization"/>
-          </xsl:when>
-          <xsl:when test="string-length(report/task/comment) &gt; 0">
-              <xsl:value-of select="report/task/comment"/>
+          <xsl:when test="string-length(report/task/user_tags/tag[name='Verinice Source ID']/value) &gt; 0">
+            <xsl:value-of select="report/task/user_tags/tag[name='Verinice Source ID']/value/text()"/>
           </xsl:when>
           <xsl:otherwise>
               <xsl:value-of select="report/task/name"/>

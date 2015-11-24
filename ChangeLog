@@ -1,3 +1,9 @@
+2015-11-24  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/report_formats/Verinice_ISM/Verinice_ISM.xsl
+	(extract_organization): Use 'Verinice Source ID' tag if available,
+	remove workaround using the task comment.
+
 2015-11-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Improve the speed of the GET iterator by doing a "pre-SELECT" with a
