@@ -1,3 +1,13 @@
+2015-11-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r23854.
+
+	Improve the speed of the GET iterator by doing a "pre-SELECT" with
+	only the ID as a column.
+
+	* src/manage_sql.c (init_get_iterator): Add inner SELECT when getting
+	multiple rows without DISTINCT.
+
 2015-11-24  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Backport part of r23850.
@@ -6,6 +16,8 @@
 	(extract_organization): Use 'Verinice Source ID' tag if available.
 
 2015-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r23823.
 
 	* src/manage_sql.c (check_db_report_formats): Ensure "Verinice ISM"
 	report format has the "Attach HTML report" param.

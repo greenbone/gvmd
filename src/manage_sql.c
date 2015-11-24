@@ -4476,6 +4476,34 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    resource,
                    owned_clause,
                    order);
+  else if (distinct == 0)
+    /* The purpose of the inner SELECT is to use the minimum number of columns
+     * when considering the whole table.  Once the filtering has reduced the
+     * selection to the rows that will appear on the page, then the outer SELECT
+     * includes all the requested columns. */
+    init_iterator (iterator,
+                   "SELECT %s"
+                   " FROM %ss %s"
+                   " WHERE id IN (SELECT id"
+                   "              FROM %ss %s"
+                   "              WHERE %s"
+                   "              %s%s%s%s%s"
+                   "              LIMIT %s OFFSET %i)"
+                   "%s;",
+                   columns,
+                   type,
+                   extra_tables ? extra_tables : "",
+                   type,
+                   extra_tables ? extra_tables : "",
+                   owned_clause,
+                   clause ? " AND (" : "",
+                   clause ? clause : "",
+                   clause ? ")" : "",
+                   extra_where ? extra_where : "",
+                   order,
+                   sql_select_limit (max),
+                   first,
+                   order);
   else
     {
       init_iterator (iterator,
