@@ -1,5 +1,13 @@
 2015-11-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Improve the speed of the GET iterator by doing a "pre-SELECT" with
+	only the ID as a column.
+
+	* src/manage_sql.c (init_get_iterator): Add inner SELECT when getting
+	multiple rows without DISTINCT.
+
+2015-11-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Revert r23848.
 
 	* src/manage_sql.c (columns_build_select_used): Remove.
