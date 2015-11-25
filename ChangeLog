@@ -1,3 +1,12 @@
+2015-11-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (config_writable): Always show configs as writable
+	as changing name and comment is allowed even if a config is in use.
+	(manage_set_config): Prevent changing scanner when config is in use.
+
+	* src/omp.c (handle_modify_config): Handle new manage_set_config
+	return when config is in use.
+
 2015-11-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Improve the speed of the GET iterator by doing a "pre-SELECT" with

@@ -13844,6 +13844,12 @@ handle_modify_config (omp_parser_t *omp_parser, GError **error)
            (XML_ERROR_SYNTAX ("modify_config",
                               "MODIFY_CONFIG scanner not found"));
           goto modify_config_leave;
+        case 3:
+          SEND_TO_CLIENT_OR_FAIL
+            (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
+          log_event_fail ("config", "Scan Config",
+                          modify_config_data->config_id, "modified");
+          goto modify_config_leave;
         case -1:
           SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
           goto modify_config_leave;

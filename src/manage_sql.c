@@ -33239,16 +33239,16 @@ config_in_use (config_t config)
 }
 
 /**
- * @brief Return whether a config is referenced by a task outside the trashcan.
+ * @brief Return whether a config can be modified.
  *
  * @param[in]  config  Config.
  *
- * @return 1 if in use, else 0.
+ * @return Always 1.
  */
 int
 config_writable (config_t config)
 {
-  return !config_in_use (config);
+  return 1;
 }
 
 /**
@@ -33647,7 +33647,7 @@ manage_set_config_comment (config_t config, const char* comment)
  * @param[in]  scanner_id   UUID of new scanner, not updated if NULL.
  *
  * @return 0 success, 1 config with new name exists already, 2 scanner doesn't
- *         exist, -1 error.
+ *         exist, 3 modification not allowed while config is in use, -1 error.
  */
 int
 manage_set_config (config_t config, const char*name, const char *comment,
@@ -33678,6 +33678,11 @@ manage_set_config (config_t config, const char*name, const char *comment,
     }
   if (scanner_id)
     {
+      if (config_in_use (config))
+        {
+          sql ("ROLLBACK;");
+          return 3;
+        }
       scanner_t scanner = 0;
 
       if (find_scanner_with_permission (scanner_id, &scanner, "modify_config")
