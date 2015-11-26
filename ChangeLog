@@ -1,3 +1,9 @@
+2015-11-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r23873.
+
+	* src/manage_sql.c (check_db_settings): Escape % in format string.
+
 2015-11-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r23854.

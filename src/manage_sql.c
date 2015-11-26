@@ -11563,7 +11563,7 @@ check_db_settings ()
          " ('a6ac88c5-729c-41ba-ac0a-deea4a3441f2', NULL,"
          "  'Details Export File Name',"
          "  'File name format string for the export of resource details.',"
-         "  '%T-%U');");
+         "  '%%T-%%U');");
 
   if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = '0872a6ed-4f85-48c5-ac3f-a5ef5e006745'"
@@ -11574,7 +11574,7 @@ check_db_settings ()
          " ('0872a6ed-4f85-48c5-ac3f-a5ef5e006745', NULL,"
          "  'List Export File Name',"
          "  'File name format string for the export of resource lists.',"
-         "  '%T-%D');");
+         "  '%%T-%%D');");
 
   if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = 'e1a2ae0b-736e-4484-b029-330c9e15b900'"
@@ -11585,7 +11585,7 @@ check_db_settings ()
          " ('e1a2ae0b-736e-4484-b029-330c9e15b900', NULL,"
          "  'Report Export File Name',"
          "  'File name format string for the export of reports.',"
-         "  '%T-%U');");
+         "  '%%T-%%U');");
 
 }
 
