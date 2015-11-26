@@ -4722,6 +4722,51 @@ column_t *
 type_where_columns (const char *type, int);
 
 /**
+ * @brief Append expression for a column to an array.
+ *
+ * @param[in]  columns         Array.
+ * @param[in]  column_name     Name of column.
+ * @param[in]  select_columns  Definition of "SELECT" columns.
+ * @param[in]  select_columns  Definition of "WHERE" columns.
+ */
+static void
+append_column (GArray *columns, const gchar *column_name,
+               column_t *select_columns, column_t *where_columns)
+{
+  int i = 0;
+  while (select_columns[i].select != NULL)
+    {
+      gchar *select = NULL;
+      if (strcmp (select_columns[i].select, column_name) == 0
+          || (select_columns[i].filter
+              && strcmp (select_columns[i].filter, column_name) == 0))
+        {
+          select = g_strdup (select_columns[i].select);
+          g_array_append_val (columns, select);
+          break;
+        }
+      i++;
+    }
+  if (select_columns[i].select == NULL && where_columns)
+    {
+      i = 0;
+      while (where_columns[i].select != NULL)
+        {
+          gchar *select = NULL;
+          if (strcmp (where_columns[i].select, column_name) == 0
+              || (where_columns[i].filter
+                  && strcmp (where_columns[i].filter, column_name) == 0))
+            {
+              select = g_strdup (where_columns[i].select);
+              g_array_append_val (columns, select);
+              break;
+            }
+          i++;
+        }
+    }
+}
+
+/**
  * @brief Initialise a GET_AGGREGATES iterator, including observed resources.
  *
  * @param[in]  iterator        Iterator.
@@ -4923,58 +4968,41 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
             }
           i++;
         }
+      if ((select_group_column == NULL) && where_columns)
+        {
+          i = 0;
+          while (where_columns[i].select != NULL)
+            {
+              if (strcmp (where_columns[i].select, group_column) == 0
+                  || (where_columns[i].filter
+                      && strcmp (where_columns[i].filter, group_column) == 0))
+                {
+                  select_group_column = g_strdup (where_columns[i].select);
+                  break;
+                }
+              i++;
+            }
+        }
     }
 
   if (data_columns && data_columns->len > 0)
     {
       int column_index;
       for (column_index = 0; column_index < data_columns->len; column_index++)
-        {
-          gchar *data_column_name = g_array_index (data_columns, gchar*,
-                                                   column_index);
-          int i = 0;
-          while (select_columns[i].select != NULL)
-            {
-              gchar *select = NULL;
-              if (strcmp (select_columns[i].select, data_column_name) == 0
-                  || (select_columns[i].filter
-                      && strcmp (select_columns[i].filter,
-                                 data_column_name)
-                         == 0))
-                {
-                  select = g_strdup (select_columns[i].select);
-                  g_array_append_val (select_data_columns, select);
-                  break;
-                }
-              i++;
-            }
-        }
+        append_column (select_data_columns,
+                       g_array_index (data_columns, gchar*, column_index),
+                       select_columns,
+                       where_columns);
     }
 
   if (text_columns && text_columns->len > 0)
     {
       int column_index;
       for (column_index = 0; column_index < text_columns->len; column_index++)
-        {
-          gchar *text_column_name = g_array_index (text_columns, gchar*,
-                                                   column_index);
-          int i = 0;
-          while (select_columns[i].select != NULL)
-            {
-              gchar *select = NULL;
-              if (strcmp (select_columns[i].select, text_column_name) == 0
-                  || (select_columns[i].filter
-                      && strcmp (select_columns[i].filter,
-                                 text_column_name)
-                         == 0))
-                {
-                  select = g_strdup (select_columns[i].select);
-                  g_array_append_val (select_text_columns, select);
-                  break;
-                }
-              i++;
-            }
-        }
+        append_column (select_text_columns,
+                       g_array_index (text_columns, gchar*, column_index),
+                       select_columns,
+                       where_columns);
     }
 
   /* Round time fields to the next day to reduce amount of rows returned
