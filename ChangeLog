@@ -1,5 +1,9 @@
 2015-11-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (check_db_settings): Escape % in format string.
+
+2015-11-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (append_column): New function.
 	(init_aggregate_iterator): Also consider WHERE columns when finding the
 	SELECT expressions for columns.
