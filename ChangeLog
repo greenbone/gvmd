@@ -1,12 +1,19 @@
 2015-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (TASK_ITERATOR_WHERE_COLUMNS_INNER): Format more
+	uniformly.
+	(init_result_get_iterator, result_count, init_result_iterator): Add
+	space before arg list.
+
+2015-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (TASK_ITERATOR_FILTER_COLUMNS)
 	(TASK_ITERATOR_WHERE_COLUMNS_INNER): Add target, so that the client can
 	filter container tasks.
 
 2015-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	Use a minimal set of columns for the GET_TASKS iterator is
+	Use a minimal set of columns for the GET_TASKS iterator if
 	schedules_only is true, because having all the columns is expensive
 	when there are many tasks.
 

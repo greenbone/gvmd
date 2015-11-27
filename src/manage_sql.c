@@ -10810,80 +10810,85 @@ append_to_task_string (task_t task, const char* field, const char* value)
 /**
  * @brief Task iterator WHERE columns.
  */
-#define TASK_ITERATOR_WHERE_COLUMNS_INNER                                   \
-   {                                                                        \
-     "(SELECT schedules.name FROM schedules"                                \
-     " WHERE schedules.id = tasks.schedule)",                               \
-     "schedule"                                                             \
-   },                                                                       \
-   {                                                                        \
-     "(CASE WHEN schedule_next_time IS NULL"                                \
-     " THEN -1"                                                             \
-     " WHEN schedule_next_time = 0 AND tasks.schedule > 0"                  \
-     " THEN (SELECT first_time"                                             \
-     "       FROM schedules"                                                \
-     "       WHERE schedules.id = tasks.schedule)"                          \
-     " ELSE schedule_next_time"                                             \
-     " END)",                                                               \
-     "next_due"                                                             \
-   },                                                                       \
-   {                                                                        \
-     "(SELECT date FROM reports WHERE task = tasks.id"                      \
-     /* TODO 1 == TASK_STATUS_DONE */                                       \
-     " AND scan_run_status = 1"                                             \
-     " ORDER BY date ASC LIMIT 1)",                                         \
-     "first"                                                                \
-   },                                                                       \
-   {                                                                        \
-     "(SELECT date FROM reports WHERE task = tasks.id"                      \
-     /* TODO 1 == TASK_STATUS_DONE */                                       \
-     " AND scan_run_status = 1"                                             \
-     " ORDER BY date DESC LIMIT 1)",                                        \
-     "last"                                                                 \
-   },                                                                       \
-   {                                                                        \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"    \
-     " report_severity_count (task_last_report (id),"                       \
-     "                        opts.override, opts.min_qod,"                 \
-     "                        'False Positive')"                            \
-     " END",                                                                \
-     "false_positive" },                                                    \
-   {                                                                        \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"    \
-     " report_severity_count (task_last_report (id),"                       \
-     "                        opts.override, opts.min_qod, 'Log')"          \
-     " END",                                                                \
-     "log" },                                                               \
-   {                                                                        \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"    \
-     " report_severity_count (task_last_report (id),"                       \
-     "                        opts.override, opts.min_qod, 'Low')"          \
-     " END",                                                                \
-     "low" },                                                               \
-   {                                                                        \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"    \
-     " report_severity_count (task_last_report (id),"                       \
-     "                        opts.override, opts.min_qod, 'Medium')"       \
-     " END",                                                                \
-     "medium" },                                                            \
-   {                                                                        \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"    \
-     " report_severity_count (task_last_report (id),"                       \
-     "                        opts.override, opts.min_qod, 'High')"         \
-     " END",                                                                \
-     "high" },                                                              \
-   {                                                                        \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"    \
-     " report_host_count (task_last_report (id))"                           \
-     " END",                                                                \
-     "hosts"                                                                \
-   },                                                                       \
-   {                                                                        \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"    \
-     " report_result_host_count (task_last_report (id), opts.min_qod)"      \
-     " END",                                                                \
-     "result_hosts"                                                         \
-   },                                                                       \
+#define TASK_ITERATOR_WHERE_COLUMNS_INNER                                    \
+   {                                                                         \
+     "(SELECT schedules.name FROM schedules"                                 \
+     " WHERE schedules.id = tasks.schedule)",                                \
+     "schedule"                                                              \
+   },                                                                        \
+   {                                                                         \
+     "(CASE WHEN schedule_next_time IS NULL"                                 \
+     " THEN -1"                                                              \
+     " WHEN schedule_next_time = 0 AND tasks.schedule > 0"                   \
+     " THEN (SELECT first_time"                                              \
+     "       FROM schedules"                                                 \
+     "       WHERE schedules.id = tasks.schedule)"                           \
+     " ELSE schedule_next_time"                                              \
+     " END)",                                                                \
+     "next_due"                                                              \
+   },                                                                        \
+   {                                                                         \
+     "(SELECT date FROM reports WHERE task = tasks.id"                       \
+     /* TODO 1 == TASK_STATUS_DONE */                                        \
+     " AND scan_run_status = 1"                                              \
+     " ORDER BY date ASC LIMIT 1)",                                          \
+     "first"                                                                 \
+   },                                                                        \
+   {                                                                         \
+     "(SELECT date FROM reports WHERE task = tasks.id"                       \
+     /* TODO 1 == TASK_STATUS_DONE */                                        \
+     " AND scan_run_status = 1"                                              \
+     " ORDER BY date DESC LIMIT 1)",                                         \
+     "last"                                                                  \
+   },                                                                        \
+   {                                                                         \
+     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     " report_severity_count (task_last_report (id),"                        \
+     "                        opts.override, opts.min_qod,"                  \
+     "                        'False Positive')"                             \
+     " END",                                                                 \
+     "false_positive"                                                        \
+   },                                                                        \
+   {                                                                         \
+     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     " report_severity_count (task_last_report (id),"                        \
+     "                        opts.override, opts.min_qod, 'Log')"           \
+     " END",                                                                 \
+     "log"                                                                   \
+   },                                                                        \
+   {                                                                         \
+     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     " report_severity_count (task_last_report (id),"                        \
+     "                        opts.override, opts.min_qod, 'Low')"           \
+     " END",                                                                 \
+     "low"                                                                   \
+   },                                                                        \
+   {                                                                         \
+     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     " report_severity_count (task_last_report (id),"                        \
+     "                        opts.override, opts.min_qod, 'Medium')"        \
+     " END",                                                                 \
+     "medium"                                                                \
+   },                                                                        \
+   {                                                                         \
+     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     " report_severity_count (task_last_report (id),"                        \
+     "                        opts.override, opts.min_qod, 'High')"          \
+     " END",                                                                 \
+     "high"                                                                  \
+   },                                                                        \
+   {                                                                         \
+     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     " report_host_count (task_last_report (id))"                            \
+     " END",                                                                 \
+     "hosts"                                                                 \
+   },                                                                        \
+   {                                                                         \
+     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     " report_result_host_count (task_last_report (id), opts.min_qod)"       \
+     " END",                                                                 \
+     "result_hosts"                                                          \
+   },                                                                        \
    {                                                                         \
      "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
      " coalesce (report_severity_count (task_last_report (id),"              \
@@ -10893,7 +10898,8 @@ append_to_task_string (task_t task, const char* field, const char* value)
      "                                                opts.min_qod), 0),"    \
      "          0)"                                                          \
      " END",                                                                 \
-     "fp_per_host" },                                                        \
+     "fp_per_host"                                                           \
+   },                                                                        \
    {                                                                         \
      "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
      " coalesce (report_severity_count (task_last_report (id),"              \
@@ -10903,7 +10909,8 @@ append_to_task_string (task_t task, const char* field, const char* value)
      "                                                opts.min_qod), 0),"    \
      "          0)"                                                          \
      " END",                                                                 \
-     "log_per_host" },                                                       \
+     "log_per_host"                                                          \
+   },                                                                        \
    {                                                                         \
      "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
      " coalesce (report_severity_count (task_last_report (id),"              \
@@ -10913,7 +10920,8 @@ append_to_task_string (task_t task, const char* field, const char* value)
      "                                                opts.min_qod), 0),"    \
      "          0)"                                                          \
      " END",                                                                 \
-     "low_per_host" },                                                       \
+     "low_per_host"                                                          \
+   },                                                                        \
    {                                                                         \
      "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
      " coalesce (report_severity_count (task_last_report (id),"              \
@@ -10923,7 +10931,8 @@ append_to_task_string (task_t task, const char* field, const char* value)
      "                                                opts.min_qod), 0),"    \
      "          0)"                                                          \
      " END",                                                                 \
-     "medium_per_host" },                                                    \
+     "medium_per_host"                                                       \
+   },                                                                        \
    {                                                                         \
      "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
      " coalesce (report_severity_count (task_last_report (id),"              \
@@ -19487,24 +19496,24 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   min_qod_clause = where_qod (min_qod_str);
   g_free (min_qod_str);
 
-  extra_where = g_strdup_printf("%s%s",
-                                min_qod_clause,
-                                get->trash
+  extra_where = g_strdup_printf ("%s%s",
+                                 min_qod_clause,
+                                 get->trash
                                   ? "AND ((SELECT (hidden = 2) FROM tasks"
                                     "      WHERE tasks.id = task))"
                                   : "AND ((SELECT (hidden = 0) FROM tasks"
                                     "      WHERE tasks.id = task))");
 
   ret = init_get_iterator (iterator,
-                            "result",
-                            get,
-                            columns,
-                            columns,
-                            filter_columns,
-                            0,
-                            extra_tables,
-                            extra_where,
-                            TRUE);
+                           "result",
+                           get,
+                           columns,
+                           columns,
+                           filter_columns,
+                           0,
+                           extra_tables,
+                           extra_where,
+                           TRUE);
   g_free (extra_tables);
   g_free (extra_where);
   return ret;
@@ -19535,9 +19544,9 @@ result_count (const get_data_t *get,
   min_qod_clause = where_qod (min_qod_str);
   g_free (min_qod_str);
 
-  extra_where = g_strdup_printf("%s%s",
-                                min_qod_clause,
-                                get->trash
+  extra_where = g_strdup_printf ("%s%s",
+                                 min_qod_clause,
+                                 get->trash
                                   ? "AND ((SELECT (hidden = 2) FROM tasks"
                                     "      WHERE tasks.id = task))"
                                   : "AND ((SELECT (hidden = 0) FROM tasks"
@@ -19626,16 +19635,16 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
       qod_sql = where_qod (min_qod);
 
       new_severity_sql
-        = g_strdup_printf("(SELECT new_severity FROM result_new_severities"
-                          " WHERE result_new_severities.result = results.id"
-                          " AND result_new_severities.user"
-                          "     = (SELECT id FROM users WHERE uuid = '%s')"
-                          " AND override = %d"
-                          " AND dynamic = %d"
-                          " LIMIT 1)",
-                          current_credentials.uuid,
-                          override,
-                          dynamic_severity);
+        = g_strdup_printf ("(SELECT new_severity FROM result_new_severities"
+                           " WHERE result_new_severities.result = results.id"
+                           " AND result_new_severities.user"
+                           "     = (SELECT id FROM users WHERE uuid = '%s')"
+                           " AND override = %d"
+                           " AND dynamic = %d"
+                           " LIMIT 1)",
+                           current_credentials.uuid,
+                           override,
+                           dynamic_severity);
 
       switch (autofp)
         {
@@ -19873,16 +19882,16 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
       gchar *new_severity_sql, *auto_type_sql;
 
       new_severity_sql
-        = g_strdup_printf("(SELECT new_severity FROM result_new_severities"
-                          " WHERE result_new_severities.result = results.id"
-                          " AND result_new_severities.user"
-                          "     = (SELECT id FROM users WHERE uuid = '%s')"
-                          " AND override = %d"
-                          " AND dynamic = %d"
-                          " LIMIT 1)",
-                          current_credentials.uuid,
-                          override,
-                          dynamic_severity);
+        = g_strdup_printf ("(SELECT new_severity FROM result_new_severities"
+                           " WHERE result_new_severities.result = results.id"
+                           " AND result_new_severities.user"
+                           "     = (SELECT id FROM users WHERE uuid = '%s')"
+                           " AND override = %d"
+                           " AND dynamic = %d"
+                           " LIMIT 1)",
+                           current_credentials.uuid,
+                           override,
+                           dynamic_severity);
 
       switch (autofp)
         {
