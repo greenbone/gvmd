@@ -10773,9 +10773,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
 /**
  * @brief Task iterator columns.
  */
-#define TASK_ITERATOR_COLUMNS                                               \
- {                                                                          \
-   GET_ITERATOR_COLUMNS (tasks),                                            \
+#define TASK_ITERATOR_COLUMNS_INNER                                         \
    { "run_status", NULL },                                                  \
    {                                                                        \
      "(SELECT count(*) FROM reports"                                        \
@@ -10807,15 +10805,12 @@ append_to_task_string (task_t task, const char* field, const char* value)
      NULL                                                                   \
    },                                                                       \
    { "hosts_ordering", NULL },                                              \
-   { "scanner", NULL },                                                     \
-   { NULL, NULL }                                                           \
- }
+   { "scanner", NULL }
 
 /**
  * @brief Task iterator WHERE columns.
  */
-#define TASK_ITERATOR_WHERE_COLUMNS                                         \
- {                                                                          \
+#define TASK_ITERATOR_WHERE_COLUMNS_INNER                                   \
    {                                                                        \
      "(SELECT schedules.name FROM schedules"                                \
      " WHERE schedules.id = tasks.schedule)",                               \
@@ -10938,7 +10933,44 @@ append_to_task_string (task_t task, const char* field, const char* value)
      "                                                opts.min_qod), 0),"    \
      "          0)"                                                          \
      " END",                                                                 \
-     "high_per_host" },                                                      \
+     "high_per_host"                                                         \
+   }
+
+/**
+ * @brief Task iterator WHERE columns.
+ */
+#define TASK_ITERATOR_WHERE_COLUMNS                                         \
+ {                                                                          \
+   TASK_ITERATOR_WHERE_COLUMNS_INNER,                                       \
+   { NULL, NULL }                                                           \
+ }
+
+/**
+ * @brief Task iterator columns.
+ */
+#define TASK_ITERATOR_COLUMNS                                               \
+ {                                                                          \
+   GET_ITERATOR_COLUMNS (tasks),                                            \
+   TASK_ITERATOR_COLUMNS_INNER,                                             \
+   { NULL, NULL }                                                           \
+ }
+
+/**
+ * @brief Task iterator minimal columns.
+ */
+#define TASK_ITERATOR_COLUMNS_MIN                                           \
+ {                                                                          \
+   GET_ITERATOR_COLUMNS (tasks),                                            \
+   { NULL, NULL }                                                           \
+ }
+
+/**
+ * @brief Task iterator minimal WHERE columns.
+ */
+#define TASK_ITERATOR_WHERE_COLUMNS_MIN                                     \
+ {                                                                          \
+   TASK_ITERATOR_COLUMNS_INNER,                                             \
+   TASK_ITERATOR_WHERE_COLUMNS_INNER,                                       \
    { NULL, NULL }                                                           \
  }
 
@@ -11011,6 +11043,8 @@ init_task_iterator (iterator_t* iterator, const get_data_t *get)
   static const char *filter_columns[] = TASK_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = TASK_ITERATOR_COLUMNS;
   static column_t where_columns[] = TASK_ITERATOR_WHERE_COLUMNS;
+  static column_t columns_min[] = TASK_ITERATOR_COLUMNS_MIN;
+  static column_t where_columns_min[] = TASK_ITERATOR_WHERE_COLUMNS_MIN;
   char *filter;
   gchar *value;
   int overrides, min_qod;
@@ -11041,11 +11075,11 @@ init_task_iterator (iterator_t* iterator, const get_data_t *get)
                             "task",
                             get,
                             /* SELECT columns. */
-                            columns,
-                            columns,
+                            get->minimal ? columns_min : columns,
+                            get->minimal ? columns_min : columns,
                             /* Filterable columns not in SELECT columns. */
-                            where_columns,
-                            where_columns,
+                            get->minimal ? where_columns_min : where_columns,
+                            get->minimal ? where_columns_min : where_columns,
                             filter_columns,
                             0,
                             extra_tables,

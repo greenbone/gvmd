@@ -19531,6 +19531,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           INIT_GET (task, Task);
 
+          get_tasks_data->get.minimal = get_tasks_data->schedules_only;
           ret = init_task_iterator (&tasks, &get_tasks_data->get);
           if (ret)
             {

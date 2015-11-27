@@ -263,6 +263,7 @@ typedef struct
   gchar *type;         ///< Type of resource.
   gchar *subtype;      ///< Subtype, or NULL.
   int ignore_pagination; ///< Whether to ignore the pagination (first and max).
+  int minimal;         ///< Whether to respond with minimal information.
 } get_data_t;
 
 resource_t
