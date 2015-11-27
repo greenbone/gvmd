@@ -2491,7 +2491,7 @@ typedef struct
 } column_t;
 
 /**
- * @brief Get the SELECT column for a filter column.
+ * @brief Get the column expression for a filter column.
  *
  * @param[in]  select_columns  SELECT columns.
  * @param[in]  filter_column   Filter column.
@@ -2499,9 +2499,12 @@ typedef struct
  * @return Column for the SELECT statement.
  */
 static gchar *
-columns_select_column (column_t *select_columns, const char *filter_column)
+columns_select_column_single (column_t *select_columns,
+                              const char *filter_column)
 {
   column_t *columns;
+  if (select_columns == NULL)
+    return NULL;
   columns = select_columns;
   while ((*columns).select)
     {
@@ -2523,6 +2526,27 @@ columns_select_column (column_t *select_columns, const char *filter_column)
       columns++;
     }
   return NULL;
+}
+
+/**
+ * @brief Get the selection term for a filter column.
+ *
+ * @param[in]  select_columns  SELECT columns.
+ * @param[in]  where_columns   WHERE "columns".
+ * @param[in]  filter_column   Filter column.
+ *
+ * @return Column for the SELECT statement.
+ */
+static gchar *
+columns_select_column (column_t *select_columns,
+                       column_t *where_columns,
+                       const char *filter_column)
+{
+  gchar *column;
+  column = columns_select_column_single (select_columns, filter_column);
+  if (column)
+    return column;
+  return columns_select_column_single (where_columns, filter_column);
 }
 
 /**
@@ -2568,6 +2592,7 @@ columns_build_select (column_t *select_columns)
  * @param[in]  filter   Filter term.
  * @param[out] trash    Whether the trash table is being queried.
  * @param[in]  columns  Columns in the SQL statement.
+ * @param[in]  where_columns Columns in SQL that only appear in WHERE clause.
  * @param[out] order_return  If given then order clause.
  * @param[out] first_return  If given then first row.
  * @param[out] max_return    If given then max rows.
@@ -2579,8 +2604,9 @@ columns_build_select (column_t *select_columns)
 static gchar *
 filter_clause (const char* type, const char* filter,
                const char **filter_columns, column_t *select_columns,
-               int trash, gchar **order_return, int *first_return,
-               int *max_return, array_t **permissions, gchar **owner_filter)
+               column_t *where_columns, int trash, gchar **order_return,
+               int *first_return, int *max_return, array_t **permissions,
+               gchar **owner_filter)
 {
   GString *clause, *order;
   keyword_t **point;
@@ -2691,6 +2717,7 @@ filter_clause (const char* type, const char* filter,
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
+                                                  where_columns,
                                                   keyword->string);
                   assert (column);
                   g_string_append_printf (order,
@@ -2705,6 +2732,7 @@ filter_clause (const char* type, const char* filter,
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
+                                                  where_columns,
                                                   keyword->string);
                   g_string_append_printf (order,
                                           " ORDER BY CASE CAST (%s AS text)"
@@ -2717,6 +2745,7 @@ filter_clause (const char* type, const char* filter,
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
+                                                  where_columns,
                                                   keyword->string);
                   assert (column);
                   g_string_append_printf (order,
@@ -2742,6 +2771,7 @@ filter_clause (const char* type, const char* filter,
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
+                                                  where_columns,
                                                   keyword->string);
                   assert (column);
                   g_string_append_printf (order,
@@ -2755,6 +2785,7 @@ filter_clause (const char* type, const char* filter,
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
+                                                  where_columns,
                                                   keyword->string);
                   assert (column);
                   g_string_append_printf (order,
@@ -2768,6 +2799,7 @@ filter_clause (const char* type, const char* filter,
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
+                                                  where_columns,
                                                   keyword->string);
                   assert (column);
                   g_string_append_printf (order, " ORDER BY lower (%s) ASC",
@@ -2812,6 +2844,7 @@ filter_clause (const char* type, const char* filter,
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
+                                                  where_columns,
                                                   keyword->string);
                   assert (column);
                   g_string_append_printf (order,
@@ -2826,6 +2859,7 @@ filter_clause (const char* type, const char* filter,
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
+                                                  where_columns,
                                                   keyword->string);
                   g_string_append_printf (order,
                                           " ORDER BY CASE CAST (%s AS text)"
@@ -2838,6 +2872,7 @@ filter_clause (const char* type, const char* filter,
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
+                                                  where_columns,
                                                   keyword->string);
                   assert (column);
                   g_string_append_printf (order,
@@ -2863,6 +2898,7 @@ filter_clause (const char* type, const char* filter,
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
+                                                  where_columns,
                                                   keyword->string);
                   assert (column);
                   g_string_append_printf (order,
@@ -2876,6 +2912,7 @@ filter_clause (const char* type, const char* filter,
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
+                                                  where_columns,
                                                   keyword->string);
                   assert (column);
                   g_string_append_printf (order,
@@ -2888,7 +2925,11 @@ filter_clause (const char* type, const char* filter,
                            && strcmp (keyword->string, "name")))
                 {
                   gchar *column;
+                  tracef ("   %s: select_columns: %p", __FUNCTION__, select_columns);
+                  tracef ("   %s: where_columns: %p", __FUNCTION__, where_columns);
+                  tracef ("   %s: keyword->string: %p", __FUNCTION__, keyword->string);
                   column = columns_select_column (select_columns,
+                                                  where_columns,
                                                   keyword->string);
                   assert (column);
                   g_string_append_printf (order, " ORDER BY lower (%s) DESC",
@@ -3185,7 +3226,9 @@ filter_clause (const char* type, const char* filter,
             {
               gchar *column;
               quoted_keyword = sql_quote (keyword->string);
-              column = columns_select_column (select_columns, keyword->column);
+              column = columns_select_column (select_columns,
+                                              where_columns,
+                                              keyword->column);
               assert (column);
               if (keyword->type == KEYWORD_TYPE_INTEGER)
                 g_string_append_printf (clause,
@@ -3238,7 +3281,9 @@ filter_clause (const char* type, const char* filter,
             }
 
           quoted_keyword = sql_quote (keyword->string);
-          column = columns_select_column (select_columns, keyword->column);
+          column = columns_select_column (select_columns,
+                                          where_columns,
+                                          keyword->column);
           assert (column);
           g_string_append_printf (clause,
                                   "%s(CAST (%s AS TEXT) LIKE '%%%%%s%%%%'",
@@ -3260,7 +3305,9 @@ filter_clause (const char* type, const char* filter,
             }
 
           quoted_keyword = sql_quote (keyword->string);
-          column = columns_select_column (select_columns, keyword->column);
+          column = columns_select_column (select_columns,
+                                          where_columns,
+                                          keyword->column);
           assert (column);
           if (keyword->type == KEYWORD_TYPE_INTEGER)
             g_string_append_printf (clause,
@@ -3297,7 +3344,9 @@ filter_clause (const char* type, const char* filter,
             }
 
           quoted_keyword = sql_quote (keyword->string);
-          column = columns_select_column (select_columns, keyword->column);
+          column = columns_select_column (select_columns,
+                                          where_columns,
+                                          keyword->column);
           assert (column);
           if (keyword->type == KEYWORD_TYPE_INTEGER)
             g_string_append_printf (clause,
@@ -3334,7 +3383,9 @@ filter_clause (const char* type, const char* filter,
             }
 
           quoted_keyword = sql_quote (keyword->string);
-          column = columns_select_column (select_columns, keyword->column);
+          column = columns_select_column (select_columns,
+                                          where_columns,
+                                          keyword->column);
           assert (column);
           g_string_append_printf (clause,
                                   "%s(CAST (%s AS TEXT) %s '%s'",
@@ -3365,6 +3416,7 @@ filter_clause (const char* type, const char* filter,
                 gchar *select_column;
 
                 select_column = columns_select_column (select_columns,
+                                                       where_columns,
                                                        filter_column);
                 assert (select_column);
 
@@ -3407,6 +3459,7 @@ filter_clause (const char* type, const char* filter,
                 gchar *select_column;
 
                 select_column = columns_select_column (select_columns,
+                                                       where_columns,
                                                        filter_column);
                 assert (select_column);
 
@@ -3452,6 +3505,7 @@ filter_clause (const char* type, const char* filter,
                 gchar *select_column;
 
                 select_column = columns_select_column (select_columns,
+                                                       where_columns,
                                                        filter_column);
                 assert (select_column);
 
@@ -3476,6 +3530,7 @@ filter_clause (const char* type, const char* filter,
                 gchar *select_column;
 
                 select_column = columns_select_column (select_columns,
+                                                       where_columns,
                                                        filter_column);
                 assert (select_column);
 
@@ -4327,6 +4382,8 @@ resource_name (const char *type, const char *uuid, int location, char **name)
  * @param[in]  get             GET data.
  * @param[in]  select_columns         Columns for SQL.
  * @param[in]  trash_select_columns   Columns for SQL trash case.
+ * @param[in]  where_columns          WHERE columns.
+ * @param[in]  trash_where_columns    WHERE columns for trashcan.
  * @param[in]  filter_columns  Columns for filter.
  * @param[in]  distinct        Whether the query should be distinct.  Skipped
  *                             for trash and single resource.
@@ -4339,12 +4396,14 @@ resource_name (const char *type, const char *uuid, int location, char **name)
  *         error.
  */
 static int
-init_get_iterator (iterator_t* iterator, const char *type,
-                   const get_data_t *get, column_t *select_columns,
-                   column_t *trash_select_columns,
-                   const char **filter_columns, int distinct,
-                   const char *extra_tables,
-                   const char *extra_where, int owned)
+init_get_iterator2 (iterator_t* iterator, const char *type,
+                    const get_data_t *get, column_t *select_columns,
+                    column_t *trash_select_columns,
+                    column_t *where_columns,
+                    column_t *trash_where_columns,
+                    const char **filter_columns, int distinct,
+                    const char *extra_tables,
+                    const char *extra_where, int owned)
 {
   int first, max;
   gchar *clause, *order, *filter, *owned_clause;
@@ -4411,9 +4470,12 @@ init_get_iterator (iterator_t* iterator, const char *type,
     filter = NULL;
 
   clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
-                          get->trash && trash_select_columns
+                          (get->trash && trash_select_columns)
                            ? trash_select_columns
                            : select_columns,
+                          (get->trash && trash_where_columns)
+                           ? trash_where_columns
+                           : where_columns,
                           get->trash, &order, &first, &max, &permissions,
                           &owner_filter);
 
@@ -4535,6 +4597,38 @@ init_get_iterator (iterator_t* iterator, const char *type,
   return 0;
 }
 
+/**
+ * @brief Initialise a GET iterator, including observed resources.
+ *
+ * @param[in]  iterator        Iterator.
+ * @param[in]  type            Type of resource.
+ * @param[in]  get             GET data.
+ * @param[in]  select_columns         Columns for SQL.
+ * @param[in]  trash_select_columns   Columns for SQL trash case.
+ * @param[in]  filter_columns  Columns for filter.
+ * @param[in]  distinct        Whether the query should be distinct.  Skipped
+ *                             for trash and single resource.
+ * @param[in]  extra_tables    Extra tables to join in FROM clause.
+ * @param[in]  extra_where     Extra WHERE clauses.  Skipped for single
+ *                             resource.
+ * @param[in]  owned           Only get items owned by the current user.
+ *
+ * @return 0 success, 1 failed to find resource, 2 failed to find filter, -1
+ *         error.
+ */
+static int
+init_get_iterator (iterator_t* iterator, const char *type,
+                   const get_data_t *get, column_t *select_columns,
+                   column_t *trash_select_columns,
+                   const char **filter_columns, int distinct,
+                   const char *extra_tables,
+                   const char *extra_where, int owned)
+{
+  return init_get_iterator2 (iterator, type, get, select_columns,
+                             trash_select_columns, NULL, NULL, filter_columns,
+                             distinct, extra_tables, extra_where, owned);
+}
+
 // FIX
 column_t *
 type_select_columns (const char *type, int);
@@ -4650,7 +4744,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
     }
 
   clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
-                          select_columns, get->trash, &filter_order,
+                          select_columns, NULL, get->trash, &filter_order,
                           &first, &max, &permissions, &owner_filter);
 
   g_free (filter);
@@ -4922,9 +5016,11 @@ aggregate_iterator_value (iterator_t* iterator)
  *
  * @param[in]  type              Type of resource.
  * @param[in]  get               GET params.
- * @param[in]  iterator_columns  Iterator columns.
- * @param[in]  trash_columns     Iterator columns for trashcan.
- * @param[in]  extra_columns     Extra columns.
+ * @param[in]  select_columns    SELECT columns.
+ * @param[in]  trash_select_columns  SELECT columns for trashcan.
+ * @param[in]  where_columns     WHERE columns.
+ * @param[in]  trash_where_columns   WHERE columns for trashcan.
+ * @param[in]  filter_columns        Extra columns.
  * @param[in]  distinct          Whether the query should be distinct.  Skipped
  *                               for trash and single resource.
  * @param[in]  extra_tables      Join tables.  Skipped for trash and single
@@ -4936,9 +5032,10 @@ aggregate_iterator_value (iterator_t* iterator)
  * @return Total number of resources in filtered set.
  */
 static int
-count (const char *type, const get_data_t *get, column_t *select_columns,
-       column_t *trash_select_columns, const char **filter_columns, int distinct,
-       const char *extra_tables, const char *extra_where, int owned)
+count2 (const char *type, const get_data_t *get, column_t *select_columns,
+        column_t *trash_select_columns, column_t *where_columns,
+        column_t *trash_where_columns, const char **filter_columns, int distinct,
+        const char *extra_tables, const char *extra_where, int owned)
 {
   int ret;
   gchar *clause, *owned_clause, *owner_filter, *columns, *filter;
@@ -4960,6 +5057,9 @@ count (const char *type, const get_data_t *get, column_t *select_columns,
                           get->trash && trash_select_columns
                            ? trash_select_columns
                            : select_columns,
+                          get->trash && trash_where_columns
+                           ? trash_where_columns
+                           : where_columns,
                           get->trash, NULL, NULL, NULL, &permissions,
                           &owner_filter);
 
@@ -5005,6 +5105,34 @@ count (const char *type, const get_data_t *get, column_t *select_columns,
   g_free (owned_clause);
   g_free (clause);
   return ret;
+}
+
+/**
+ * @brief Count number of a particular resource.
+ *
+ * @param[in]  type              Type of resource.
+ * @param[in]  get               GET params.
+ * @param[in]  select_columns    SELECT columns.
+ * @param[in]  trash_select_columns  SELECT columns for trashcan.
+ * @param[in]  filter_columns        Extra columns.
+ * @param[in]  distinct          Whether the query should be distinct.  Skipped
+ *                               for trash and single resource.
+ * @param[in]  extra_tables      Join tables.  Skipped for trash and single
+ *                               resource.
+ * @param[in]  extra_where       Extra WHERE clauses.  Skipped for trash and
+ *                               single resource.
+ * @param[in]  owned             Only count items owned by current user.
+ *
+ * @return Total number of resources in filtered set.
+ */
+static int
+count (const char *type, const get_data_t *get, column_t *select_columns,
+       column_t *trash_select_columns, const char **filter_columns,
+       int distinct, const char *extra_tables, const char *extra_where,
+       int owned)
+{
+  return count2 (type, get, select_columns, trash_select_columns, NULL, NULL,
+                 filter_columns, distinct, extra_tables, extra_where, owned);
 }
 
 /**
@@ -9825,6 +9953,9 @@ append_to_task_string (task_t task, const char* field, const char* value)
    "last_report", "threat", "trend", "severity", "schedule", "next_due",      \
    "first", "last", NULL }
 
+/**
+ * @brief Task iterator columns.
+ */
 #define TASK_ITERATOR_COLUMNS                                               \
  {                                                                          \
    GET_ITERATOR_COLUMNS (tasks),                                            \
@@ -9860,6 +9991,14 @@ append_to_task_string (task_t task, const char* field, const char* value)
    },                                                                       \
    { "hosts_ordering", NULL },                                              \
    { "scanner", NULL },                                                     \
+   { NULL, NULL }                                                           \
+ }
+
+/**
+ * @brief Task iterator WHERE columns.
+ */
+#define TASK_ITERATOR_WHERE_COLUMNS                                         \
+ {                                                                          \
    {                                                                        \
      "(SELECT schedules.name FROM schedules"                                \
      " WHERE schedules.id = tasks.schedule)",                               \
@@ -9958,6 +10097,7 @@ init_task_iterator (iterator_t* iterator, const get_data_t *get)
 {
   static const char *filter_columns[] = TASK_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = TASK_ITERATOR_COLUMNS;
+  static column_t where_columns[] = TASK_ITERATOR_WHERE_COLUMNS;
   char *filter;
   gchar *value;
   int overrides, min_qod;
@@ -9984,13 +10124,15 @@ init_task_iterator (iterator_t* iterator, const get_data_t *get)
 
   extra_tables = task_iterator_opts_table (overrides, min_qod);
 
-  ret = init_get_iterator (iterator,
+  ret = init_get_iterator2 (iterator,
                             "task",
                             get,
-                            /* Columns. */
+                            /* SELECT columns. */
                             columns,
-                            /* Columns for trashcan. */
                             columns,
+                            /* Filterable columns not in SELECT columns. */
+                            where_columns,
+                            where_columns,
                             filter_columns,
                             0,
                             extra_tables,
@@ -13767,6 +13909,7 @@ task_count (const get_data_t *get)
 {
   static const char *extra_columns[] = TASK_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = TASK_ITERATOR_COLUMNS;
+  static column_t where_columns[] = TASK_ITERATOR_WHERE_COLUMNS;
   char *filter;
   gchar *value;
   int overrides, min_qod;
@@ -13793,9 +13936,11 @@ task_count (const get_data_t *get)
 
   extra_tables = task_iterator_opts_table (overrides, min_qod);
 
-  ret = count ("task", get,
+  ret = count2 ("task", get,
                 columns,
                 columns,
+                where_columns,
+                where_columns,
                 extra_columns, 0,
                 extra_tables,
                 (get->id
@@ -17044,6 +17189,14 @@ report_add_result (report_t report, result_t result)
    { "start_time", "created" },                                              \
    { "end_time", "modified" },                                               \
    { "''", NULL },                                                           \
+   { NULL, NULL }                                                            \
+ }
+
+/**
+ * @brief Report iterator columns.
+ */
+#define REPORT_ITERATOR_WHERE_COLUMNS                                        \
+ {                                                                           \
    { "run_status_name (scan_run_status)", "status" },                        \
    { "(SELECT uuid FROM tasks WHERE tasks.id = task)", "task_id" },          \
    { "date", NULL },                                                         \
@@ -17110,12 +17263,13 @@ report_count (const get_data_t *get)
 {
   static const char *filter_columns[] = REPORT_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = REPORT_ITERATOR_COLUMNS;
+  static column_t where_columns[] = REPORT_ITERATOR_WHERE_COLUMNS;
   gchar *extra_tables;
   int ret;
 
   extra_tables = report_iterator_opts_table (0, MIN_QOD_DEFAULT);
 
-  ret = count ("report", get, columns, NULL,
+  ret = count2 ("report", get, columns, NULL, where_columns, NULL,
                 filter_columns, 0,
                 extra_tables,
                 get->trash
@@ -17145,6 +17299,7 @@ init_report_iterator (iterator_t* iterator, const get_data_t *get)
 {
   static const char *filter_columns[] = REPORT_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = REPORT_ITERATOR_COLUMNS;
+  static column_t where_columns[] = REPORT_ITERATOR_WHERE_COLUMNS;
   char *filter;
   gchar *value;
   int overrides, min_qod;
@@ -17171,12 +17326,14 @@ init_report_iterator (iterator_t* iterator, const get_data_t *get)
 
   extra_tables = report_iterator_opts_table (overrides, min_qod);
 
-  ret = init_get_iterator (iterator,
+  ret = init_get_iterator2 (iterator,
                             "report",
                             get,
                             /* Columns. */
                             columns,
-                            /* Columns for trashcan. */
+                            NULL,
+                            /* Filterable columns not in SELECT columns. */
+                            where_columns,
                             NULL,
                             filter_columns,
                             0,
@@ -51304,7 +51461,7 @@ setting_count (const char *filter)
   assert (current_credentials.uuid);
 
   clause = filter_clause ("setting", filter, filter_columns, select_columns,
-                          0, NULL, NULL, NULL, NULL, NULL);
+                          NULL, 0, NULL, NULL, NULL, NULL, NULL);
 
   ret = sql_int ("SELECT count (*)"
                  " FROM settings"
@@ -51410,7 +51567,7 @@ init_setting_iterator (iterator_t *iterator, const char *uuid,
     max = -1;
 
   clause = filter_clause ("setting", filter, filter_columns, select_columns,
-                          0, NULL, NULL, NULL, NULL, NULL);
+                          NULL, 0, NULL, NULL, NULL, NULL, NULL);
 
   quoted_uuid = uuid ? sql_quote (uuid) : NULL;
   columns = columns_build_select (select_columns);
@@ -53252,7 +53409,7 @@ total_info_count (const get_data_t *get, int filtered)
         filter = NULL;
 
       clause = filter_clause ("allinfo", filter ? filter : get->filter,
-                              filter_columns, select_columns, get->trash,
+                              filter_columns, select_columns, NULL, get->trash,
                               NULL, NULL, NULL, NULL, NULL);
       if (clause)
         return sql_int ("SELECT count (id) FROM"
@@ -53299,7 +53456,7 @@ init_all_info_iterator (iterator_t* iterator, get_data_t *get,
     filter = NULL;
 
   clause = filter_clause ("allinfo", filter ? filter : get->filter,
-                          filter_columns, select_columns, get->trash,
+                          filter_columns, select_columns, NULL, get->trash,
                           &order, &first, &max, NULL, NULL);
   columns = columns_build_select (select_columns);
 

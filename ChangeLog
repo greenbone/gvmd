@@ -1,3 +1,33 @@
+2015-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r23870.
+
+	Add second versions of the GET iterator and count functions, that allow
+	the caller to specify columns that may appear in the WHERE clause for
+	filtering, but that must not appear in the SELECT columns.
+
+	Specify such columns for the task and report iterators.
+
+	* src/manage_sql.c (columns_select_column_single): New function.  Body
+	from columns_select_column.
+	(columns_select_column): Call through to columns_select_column_single.
+	(filter_clause): Add arg where_columns.  Pass through to
+	columns_select_column.
+	(init_get_iterator2, count2): New function.  Body from existing version,
+	with where column args.
+	(init_get_iterator, count): Call through to "2" version.
+	(TASK_ITERATOR_COLUMNS, REPORT_ITERATOR_COLUMNS): Reduce to columns that
+	are required as SELECT columns, that is, columns used by the accessor
+	functions.
+	(TASK_ITERATOR_WHERE_COLUMNS, REPORT_ITERATOR_WHERE_COLUMNS): New
+	defines.  Rest of columns from TASK_ITERATOR_COLUMNS, the "WHERE
+	columns".
+	(init_task_iterator, init_report_iterator): Use WHERE columns in
+	iterator.
+	(init_aggregate_iterator, setting_count, init_setting_iterator)
+	(total_info_count, init_all_info_iterator): Add NULL arg for WHERE
+	columns.
+
 2015-11-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r23873.
