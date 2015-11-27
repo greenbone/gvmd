@@ -1,5 +1,13 @@
 2015-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r23871.
+
+	* src/manage_sql.c (init_aggregate_iterator): Pass where columns to
+	filter_clause, because the select columns may be for reports or tasks.
+	(type_where_columns): New function.
+
+2015-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r23870.
 
 	Add second versions of the GET iterator and count functions, that allow

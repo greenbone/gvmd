@@ -4633,6 +4633,9 @@ init_get_iterator (iterator_t* iterator, const char *type,
 column_t *
 type_select_columns (const char *type, int);
 
+column_t *
+type_where_columns (const char *type, int);
+
 /**
  * @brief Initialise a GET_AGGREGATES iterator, including observed resources.
  *
@@ -4666,7 +4669,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   int owned;
   gchar *apply_overrides_str, *min_qod_str;
   int apply_overrides, min_qod;
-  column_t *select_columns;
+  column_t *select_columns, *where_columns;
   gchar *columns;
   gchar *trash_columns;
   gchar *opts_table;
@@ -4712,6 +4715,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   select_columns = type_select_columns (type, apply_overrides);
   columns = type_columns (type, apply_overrides);
   trash_columns = type_trash_columns (type, apply_overrides);
+  where_columns = type_where_columns (type, apply_overrides);
   filter_columns = type_filter_columns (type, apply_overrides);
   opts_table = type_opts_table (type, apply_overrides, min_qod);
 
@@ -4744,8 +4748,9 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
     }
 
   clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
-                          select_columns, NULL, get->trash, &filter_order,
-                          &first, &max, &permissions, &owner_filter);
+                          select_columns, where_columns, get->trash,
+                          &filter_order, &first, &max, &permissions,
+                          &owner_filter);
 
   g_free (filter);
 
@@ -56123,6 +56128,29 @@ type_select_columns (const char *type, int apply_overrides)
     return ovaldef_columns;
   else if (strcasecmp (type, "ALERT") == 0)
     return alert_columns;
+  return NULL;
+}
+
+/**
+ * @brief Return the columns for a resource iterator.
+ *
+ * @param[in]  type             Resource type to get columns of.
+ * @param[in]  apply_overrides  Whether to apply overrides.
+ *
+ * @return The columns.
+ */
+column_t *
+type_where_columns (const char *type, int apply_overrides)
+{
+  static column_t task_columns[] = TASK_ITERATOR_WHERE_COLUMNS;
+  static column_t report_columns[] = REPORT_ITERATOR_WHERE_COLUMNS;
+
+  if (type == NULL)
+    return NULL;
+  else if (strcasecmp (type, "TASK") == 0)
+    return task_columns;
+  else if (strcasecmp (type, "REPORT") == 0)
+    return report_columns;
   return NULL;
 }
 
