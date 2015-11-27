@@ -4795,6 +4795,21 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
             }
           i++;
         }
+      if ((select_group_column == NULL) && where_columns)
+        {
+          i = 0;
+          while (where_columns[i].select != NULL)
+            {
+              if (strcmp (where_columns[i].select, group_column) == 0
+                  || (where_columns[i].filter
+                      && strcmp (where_columns[i].filter, group_column) == 0))
+                {
+                  select_group_column = g_strdup (where_columns[i].select);
+                  break;
+                }
+              i++;
+            }
+        }
     }
 
   if (stat_column == NULL)
@@ -4812,6 +4827,21 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
               break;
             }
           i++;
+        }
+      if ((select_stat_column == NULL) && where_columns)
+        {
+          i = 0;
+          while (where_columns[i].select != NULL)
+            {
+              if (strcmp (where_columns[i].select, stat_column) == 0
+                  || (where_columns[i].filter
+                      && strcmp (where_columns[i].filter, stat_column) == 0))
+                {
+                  select_stat_column = g_strdup (where_columns[i].select);
+                  break;
+                }
+              i++;
+            }
         }
     }
 

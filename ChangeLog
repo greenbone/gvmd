@@ -1,5 +1,12 @@
 2015-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r23872.
+
+	* src/manage_sql.c (init_aggregate_iterator): Also consider WHERE
+	columns when finding the SELECT expressions for columns.
+
+2015-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r23871.
 
 	* src/manage_sql.c (init_aggregate_iterator): Pass where columns to
