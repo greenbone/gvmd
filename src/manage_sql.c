@@ -10768,7 +10768,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
    "last_report", "threat", "trend", "severity", "schedule", "next_due",      \
    "first", "last", "false_positive", "log", "low", "medium", "high",         \
    "hosts", "result_hosts", "fp_per_host", "log_per_host", "low_per_host",    \
-   "medium_per_host", "high_per_host", NULL }
+   "medium_per_host", "high_per_host", "target", NULL }
 
 /**
  * @brief Task iterator columns.
@@ -10934,6 +10934,10 @@ append_to_task_string (task_t task, const char* field, const char* value)
      "          0)"                                                          \
      " END",                                                                 \
      "high_per_host"                                                         \
+   },                                                                        \
+   {                                                                         \
+     "(SELECT name FROM targets WHERE id = target)",                         \
+     "target"                                                                \
    }
 
 /**
