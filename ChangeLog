@@ -1,4 +1,13 @@
-2015-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
+2015-12-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): Pass min_qod to
+	task_result_count.
+
+	* src/manage_sql.c (task_result_count): Add arg min_qod.
+
+	* src/manage.h: Update header accordingly.
+
+2015-12-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Add RESULT_COUNT to GET_TASKS.
 

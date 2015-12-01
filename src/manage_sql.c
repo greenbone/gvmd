@@ -15583,19 +15583,20 @@ set_task_requested (task_t task, task_status_t *status)
 /**
  * @brief Return number of results in a task.
  *
- * @param[in]  task  Task.
+ * @param[in]  task     Task.
+ * @param[in]  min_qod  Minimum QOD.
  *
  * @return Result count.
  */
 int
-task_result_count (task_t task)
+task_result_count (task_t task, int min_qod)
 {
   return sql_int ("SELECT count (*) FROM results"
                   " WHERE task = %llu"
                   " AND qod > %i"
                   " AND severity > " G_STRINGIFY (SEVERITY_ERROR) ";",
                   task,
-                  MIN_QOD_DEFAULT);
+                  min_qod);
 }
 
 /**
