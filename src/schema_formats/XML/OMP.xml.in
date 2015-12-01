@@ -18493,6 +18493,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <o><e>last_report</e></o>
               <o><e>second_last_report</e></o>
               <any><e>reports</e></any>
+              <e>result_count</e>
               <e>preferences</e>
             </g>
             <g>
@@ -19220,6 +19221,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <summary>Maximum severity of the report</summary>
             </ele>
           </ele>
+        </ele>
+        <ele>
+          <name>result_count</name>
+          <summary>Result count for the entire task</summary>
+          <pattern>text</pattern>
         </ele>
         <ele>
           <name>preferences</name>

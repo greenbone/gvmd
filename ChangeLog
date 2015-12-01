@@ -1,5 +1,17 @@
 2015-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Add RESULT_COUNT to GET_TASKS.
+
+	* src/manage_sql.c (task_result_count): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/schema_formats/XML/OMP.xml.in (get_tasks): Add RESULT_COUNT.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
+2015-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (TASK_ITERATOR_WHERE_COLUMNS_INNER): Format more
 	uniformly.
 	(init_result_get_iterator, result_count, init_result_iterator): Add

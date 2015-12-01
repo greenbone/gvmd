@@ -30320,6 +30320,11 @@ get_targets_response_target_count_page
 </li></ul>
 </li>
 <li>
+              &lt;<b>result_count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Result count for the entire task.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>preferences</b>&gt;
               <ul style="list-style: none"><li>
               &lt;<b>preference</b>&gt;
@@ -30563,6 +30568,7 @@ get_tasks_response_task
            &amp; get_tasks_response_task_last_report?
            &amp; get_tasks_response_task_second_last_report?
            &amp; get_tasks_response_task_reports*
+           &amp; get_tasks_response_task_result_count
            &amp; get_tasks_response_task_preferences )
            | ( get_tasks_response_task_name
            &amp; get_tasks_response_task_schedule
@@ -31317,6 +31323,12 @@ get_tasks_response_task_reports_report_severity
  = element severity
      {
        severity
+     }
+
+get_tasks_response_task_result_count
+ = element result_count
+     {
+       text
      }
 
 get_tasks_response_task_preferences

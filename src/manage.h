@@ -649,6 +649,9 @@ task_run_status (task_t);
 void
 set_task_run_status (task_t, task_status_t);
 
+int
+task_result_count (task_t);
+
 report_t
 task_running_report (task_t);
 
