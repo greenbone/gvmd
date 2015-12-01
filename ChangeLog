@@ -1,5 +1,9 @@
 2015-12-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* ChangeLog: Remove stray entry.
+
+2015-12-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r23902.
 
 	* src/omp.c (omp_xml_handle_end_element): Pass min_qod to
@@ -22,28 +26,6 @@
 	* src/schema_formats/XML/OMP.xml.in (get_tasks): Add RESULT_COUNT.
 
 	* doc/omp.rnc, doc/omp.html: Update from source.
-
-2015-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
-
-	Backport r23881.
-
-	Use a minimal set of columns for the GET_TASKS iterator if
-	schedules_only is true, because having all the columns is expensive
-	when there are many tasks.
-
-	* src/manage_sql.c (TASK_ITERATOR_COLUMNS_INNER)
-	(TASK_ITERATOR_WHERE_COLUMNS_INNER): New defines.
-	(TASK_ITERATOR_COLUMNS, TASK_ITERATOR_WHERE_COLUMNS): Include most
-	columns via INNER define.
-	(TASK_ITERATOR_COLUMNS_MIN, TASK_ITERATOR_WHERE_COLUMNS_MIN): New
-	defines.
-	(init_task_iterator): Use minimal number of columns if get->minimal is
-	true.
-
-	* src/omp.c (omp_xml_handle_end_element): Set get.minimal if
-	schedules_only is true.
-
-	* src/manage.h (get_data_t): Add "minimal".
 
 2015-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
