@@ -15452,6 +15452,7 @@ get_tasks_response_task
        & get_tasks_response_task_last_report?
        & get_tasks_response_task_second_last_report?
        & get_tasks_response_task_reports*
+       & get_tasks_response_task_result_count
        & get_tasks_response_task_preferences
      }
 
@@ -16231,6 +16232,13 @@ get_tasks_response_task_reports_report_severity
  = element severity
      {
        severity
+     }
+
+# Result count for the entire task.
+get_tasks_response_task_result_count
+ = element result_count
+     {
+       text
      }
 
 get_tasks_response_task_preferences

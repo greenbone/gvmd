@@ -14522,6 +14522,24 @@ set_task_requested (task_t task, task_status_t *status)
 }
 
 /**
+ * @brief Return number of results in a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Result count.
+ */
+int
+task_result_count (task_t task)
+{
+  return sql_int ("SELECT count (*) FROM results"
+                  " WHERE task = %llu"
+                  " AND qod > %i"
+                  " AND severity > " G_STRINGIFY (SEVERITY_ERROR) ";",
+                  task,
+                  MIN_QOD_DEFAULT);
+}
+
+/**
  * @brief Return the running report of a task.
  *
  * @param[in]  task  Task.

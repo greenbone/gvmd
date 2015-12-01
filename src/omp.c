@@ -18142,6 +18142,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 write_to_client_data);
                 }
 
+              SENDF_TO_CLIENT_OR_FAIL ("<result_count>%i</result_count>",
+                                       task_result_count (index));
+
               in_assets = task_preference_value (index, "in_assets");
               max_checks = task_preference_value (index, "max_checks");
               max_hosts = task_preference_value (index, "max_hosts");
