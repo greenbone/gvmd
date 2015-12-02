@@ -3693,7 +3693,7 @@ filter_clause (const char* type, const char* filter,
                                           last_was_re ? "" : "%%");
                 else
                   g_string_append_printf (clause,
-                                          "%snot t ()",
+                                          "%s t ()",
                                           (index ? " AND " : ""));
               }
           else
