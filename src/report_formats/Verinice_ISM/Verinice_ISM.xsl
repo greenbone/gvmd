@@ -83,6 +83,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 </xsl:text>
   </xsl:template>
 
+  <xsl:template name="lowercase-string">
+    <xsl:param name="string"/>
+    <xsl:variable name="uppercase" select="'ABCDEFGHIJKLMNOPQRSTUVWXYZ'"/>
+    <xsl:variable name="lowercase" select="'abcdefghijklmnopqrstuvwxyz'"/>
+
+    <xsl:value-of select="translate($string, $uppercase, $lowercase)"/>
+  </xsl:template>
+
   <xsl:template name="prognostic-description">
     <xsl:param name="string"/>
 
@@ -153,7 +161,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <syncAttribute>
           <name>gsm_hostname</name>
           <value>
-              <xsl:value-of name="string" select="/report/host[ip=$addr]/detail[name='hostname']/value/text()"/>
+            <xsl:call-template name="lowercase-string"><xsl:with-param name="string" select="/report/host[ip=$addr]/detail[name='hostname']/value/text()"/></xsl:call-template>
           </value>
       </syncAttribute>
       <!-- Scan started -->
@@ -469,6 +477,23 @@ CIS</value>
     <xsl:variable name="addr">
       <xsl:value-of select="host"/>
     </xsl:variable>
+    <xsl:variable name="extid">
+      <xsl:choose>
+        <xsl:when test="/report/host[ip=$addr]/detail[name='MAC']/value/text()">
+          <xsl:value-of select="/report/host[ip=$addr]/detail[name='MAC']/value/text()"/>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:choose>
+            <xsl:when test="/report/host[ip=$addr]/detail[name='hostname']/value/text()">
+              <xsl:value-of select="/report/host[ip=$addr]/detail[name='hostname']/value/text()"/>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:value-of select="$addr"/>
+            </xsl:otherwise>
+          </xsl:choose>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
     <children>
       <syncAttribute>
         <name>gsm_ism_asset_abbr</name>
@@ -482,7 +507,7 @@ CIS</value>
         <value><!-- Warning can be empty -->
           <xsl:choose>
               <xsl:when test="/report/host[ip=$addr]/detail[name='hostname']/value/text()">
-                  <xsl:value-of select="/report/host[ip=$addr]/detail[name='hostname']/value/text()"/>
+                <xsl:call-template name="lowercase-string"><xsl:with-param name="string" select="/report/host[ip=$addr]/detail[name='hostname']/value/text()"/></xsl:call-template>
               </xsl:when>
               <xsl:otherwise>
                   <xsl:value-of select="$addr"/>
@@ -510,7 +535,7 @@ CIS</value>
         <name>gsm_ism_asset_description</name>
         <value></value>
       </syncAttribute>
-      <extId><xsl:value-of select="$task_id"/>-<xsl:value-of select="$addr"/></extId>
+      <extId><xsl:call-template name="lowercase-string"><xsl:with-param name="string" select="$extid"/></xsl:call-template></extId>
       <extObjectType>gsm_ism_asset</extObjectType>
     </children>
   </xsl:template>
@@ -848,7 +873,27 @@ CIS</value>
       </syncLink>
       <syncLink>
         <dependant><xsl:value-of select="$task_id"/>-<xsl:value-of select="$cur_oid"/>-scenario</dependant>
-        <dependency><xsl:value-of select="$task_id"/>-<xsl:value-of select="host"/></dependency>
+        <xsl:variable name="addr">
+          <xsl:value-of select="host"/>
+        </xsl:variable>
+        <xsl:variable name="extid">
+          <xsl:choose>
+            <xsl:when test="/report/host[ip=$addr]/detail[name='MAC']/value/text()">
+              <xsl:value-of select="/report/host[ip=$addr]/detail[name='MAC']/value/text()"/>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:choose>
+                <xsl:when test="/report/host[ip=$addr]/detail[name='hostname']/value/text()">
+                  <xsl:value-of select="/report/host[ip=$addr]/detail[name='hostname']/value/text()"/>
+                </xsl:when>
+                <xsl:otherwise>
+                  <xsl:value-of select="$addr"/>
+                </xsl:otherwise>
+              </xsl:choose>
+            </xsl:otherwise>
+          </xsl:choose>
+        </xsl:variable>
+        <dependency><xsl:call-template name="lowercase-string"><xsl:with-param name="string" select="$extid"/></xsl:call-template></dependency>
         <relationId>rel_incscen_asset</relationId>
       </syncLink>
     </xsl:for-each>

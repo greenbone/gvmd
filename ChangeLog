@@ -1,3 +1,9 @@
+2015-12-02  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/report_formats/Verinice_ISM/Verinice_ISM.xsl: Make asset IDs
+	more consistent and use MAC address or hostname if available. Make
+	hostnames more consistent by lowercasing them.
+
 2015-12-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Pass min_qod to
