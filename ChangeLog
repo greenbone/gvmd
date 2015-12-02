@@ -1,5 +1,15 @@
 2015-12-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Leave the threat, trend and status clauses out of the SQL filtering
+	clause if they don't make sense for the filter term.
+
+	* src/manage_sql.c (keyword_applies_to_column): New function.  Only
+	checks threat, trend and status so far.
+	(filter_clause): Check if it's possible for the keyword to actually
+	match the column, before adding the clause for the column.
+
+2015-12-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (filter_clause): Remove "not" from NOT case, added
 	in last commit.
 
