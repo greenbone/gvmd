@@ -1,3 +1,23 @@
+2015-12-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	When generating SQL filter clauses, skip the SQL WHERE clause for
+	numeric columns when the filter term is known to not be numeric.
+	This helps reduce the number of clauses for GET_TASKS, especially
+	removing the expensive columns like severity, when the filter contains
+	a term that does not have many matches.
+
+	* src/manage.h (keyword_type_t): Add KEYWORD_TYPE_UNKNOWN.
+
+	* src/manage_sql.c (column_t): Add type.
+	(columns_select_column_single): Add type arg.  Skip numeric columns when
+	the type is not numeric (except when type is unknown).
+	(columns_select_column): Prevent type check.
+	(columns_select_column_with_type, keyword_type_from_string): New
+	functions.
+	(filter_clause): For terms that may match any column, skip the clause if
+	the term is not numeric and the column type is numeric, because they can
+	never match.
+
 2015-12-02  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/report_formats/Verinice_ISM/Verinice_ISM.xsl: Make asset IDs

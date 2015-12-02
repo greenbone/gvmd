@@ -3287,6 +3287,7 @@ modify_role (const char *, const char *, const char *, const char *);
  */
 typedef enum
 {
+  KEYWORD_TYPE_UNKNOWN,
   KEYWORD_TYPE_INTEGER,
   KEYWORD_TYPE_DOUBLE,
   KEYWORD_TYPE_STRING
