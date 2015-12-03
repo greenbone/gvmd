@@ -2486,8 +2486,9 @@ get_join (int first, int last_was_and, int last_was_not)
  */
 typedef struct
 {
-  gchar *select;    ///< Column for SELECT.
-  gchar *filter;    ///< Filter column name.  NULL to use select_column.
+  gchar *select;       ///< Column for SELECT.
+  gchar *filter;       ///< Filter column name.  NULL to use select_column.
+  keyword_type_t type; ///< Type of column.
 } column_t;
 
 /**
@@ -2495,12 +2496,18 @@ typedef struct
  *
  * @param[in]  select_columns  SELECT columns.
  * @param[in]  filter_column   Filter column.
+ * @param[in]  type            Type of filter column.  The type is not given,
+ *                             instead this is whether the filter term can be
+ *                             unambiguously parsed as integer (e.g. 14) or a
+ *                             double (e.g. 8.0).  Skip type shortcuts if value
+ *                             is KEYWORD_TYPE_UNKNOWN.
  *
  * @return Column for the SELECT statement.
  */
 static gchar *
 columns_select_column_single (column_t *select_columns,
-                              const char *filter_column)
+                              const char *filter_column,
+                              keyword_type_t type)
 {
   column_t *columns;
   if (select_columns == NULL)
@@ -2510,12 +2517,30 @@ columns_select_column_single (column_t *select_columns,
     {
       if ((*columns).filter
           && strcmp ((*columns).filter, filter_column) == 0)
-        return (*columns).select;
+        {
+          /* Only include numeric columns when the filter term is numeric. */
+          if (type == KEYWORD_TYPE_UNKNOWN
+              || type == KEYWORD_TYPE_INTEGER
+              || type == KEYWORD_TYPE_DOUBLE)
+            return (*columns).select;
+          if ((*columns).type != KEYWORD_TYPE_INTEGER
+              && (*columns).type != KEYWORD_TYPE_DOUBLE)
+            return (*columns).select;
+        }
       if ((*columns).filter
           && *((*columns).filter)
           && *((*columns).filter) == '_'
           && strcmp (((*columns).filter) + 1, filter_column) == 0)
-        return (*columns).select;
+        {
+          /* Only include numeric columns when the filter term is numeric. */
+          if (type == KEYWORD_TYPE_UNKNOWN
+              || type == KEYWORD_TYPE_INTEGER
+              || type == KEYWORD_TYPE_DOUBLE)
+            return (*columns).select;
+          if ((*columns).type != KEYWORD_TYPE_INTEGER
+              && (*columns).type != KEYWORD_TYPE_DOUBLE)
+            return (*columns).select;
+        }
       columns++;
     }
   columns = select_columns;
@@ -2543,10 +2568,35 @@ columns_select_column (column_t *select_columns,
                        const char *filter_column)
 {
   gchar *column;
-  column = columns_select_column_single (select_columns, filter_column);
+  column = columns_select_column_single (select_columns, filter_column,
+                                         KEYWORD_TYPE_UNKNOWN);
   if (column)
     return column;
-  return columns_select_column_single (where_columns, filter_column);
+  return columns_select_column_single (where_columns, filter_column,
+                                       KEYWORD_TYPE_UNKNOWN);
+}
+
+/**
+ * @brief Get the selection term for a filter column.
+ *
+ * @param[in]  select_columns  SELECT columns.
+ * @param[in]  where_columns   WHERE "columns".
+ * @param[in]  filter_column   Filter column.
+ * @param[in]  type            Type of the filter column.
+ *
+ * @return Column for the SELECT statement.
+ */
+static gchar *
+columns_select_column_with_type (column_t *select_columns,
+                                 column_t *where_columns,
+                                 const char *filter_column,
+                                 keyword_type_t type)
+{
+  gchar *column;
+  column = columns_select_column_single (select_columns, filter_column, type);
+  if (column)
+    return column;
+  return columns_select_column_single (where_columns, filter_column, type);
 }
 
 /**
@@ -2583,6 +2633,40 @@ columns_build_select (column_t *select_columns)
       return g_string_free (select, FALSE);
     }
   return g_strdup ("''");
+}
+
+/**
+ * @brief Return keyword type of a string.
+ *
+ * @param[in]  string  String.
+ *
+ * @return Type.
+ */
+static keyword_type_t
+keyword_type_from_string (const char* string)
+{
+  gchar *stripped, *stripped_end;
+  double value;
+  int end;
+
+  stripped = g_strstrip (g_strdup (string));
+  strtol (stripped, &stripped_end, 10);
+  if (*stripped_end == '\0')
+    {
+      g_free (stripped);
+      return KEYWORD_TYPE_INTEGER;
+    }
+
+  end = 0;
+  if ((sscanf (stripped, "%lf%n", &value, &end) == 1)
+      && (end == strlen (stripped)))
+    {
+      g_free (stripped);
+      return KEYWORD_TYPE_DOUBLE;
+    }
+
+  g_free (stripped);
+  return KEYWORD_TYPE_STRING;
 }
 
 /**
@@ -3489,6 +3573,7 @@ filter_clause (const char* type, const char* filter,
       else
         {
           const char *filter_column;
+          keyword_type_t type;
 
           g_string_append_printf (clause,
                                   "%s(",
@@ -3497,6 +3582,10 @@ filter_clause (const char* type, const char* filter,
                                     : (last_was_and ? " AND " : " OR ")));
 
           quoted_keyword = sql_quote (keyword->string);
+          type = last_was_re
+                  /* Prevent type-based shortcuts when term is a regex. */
+                  ? KEYWORD_TYPE_UNKNOWN
+                  : keyword_type_from_string (keyword->string);
           if (last_was_not)
             for (index = 0;
                  (filter_column = filter_columns[index]) != NULL;
@@ -3504,23 +3593,30 @@ filter_clause (const char* type, const char* filter,
               {
                 gchar *select_column;
 
-                select_column = columns_select_column (select_columns,
-                                                       where_columns,
-                                                       filter_column);
-                assert (select_column);
+                select_column = columns_select_column_with_type (select_columns,
+                                                                 where_columns,
+                                                                 filter_column,
+                                                                 type);
 
-                g_string_append_printf (clause,
-                                        "%s"
-                                        "(%s IS NULL"
-                                        " OR CAST (%s AS TEXT)"
-                                        " NOT %s '%s%s%s')",
-                                        (index ? " AND " : ""),
-                                        select_column,
-                                        select_column,
-                                        last_was_re ? sql_regexp_op () : "LIKE",
-                                        last_was_re ? "" : "%%",
-                                        quoted_keyword,
-                                        last_was_re ? "" : "%%");
+                if (select_column)
+                  g_string_append_printf (clause,
+                                          "%s"
+                                          "(%s IS NULL"
+                                          " OR CAST (%s AS TEXT)"
+                                          " NOT %s '%s%s%s')",
+                                          (index ? " AND " : ""),
+                                          select_column,
+                                          select_column,
+                                          last_was_re
+                                           ? sql_regexp_op ()
+                                           : "LIKE",
+                                          last_was_re ? "" : "%%",
+                                          quoted_keyword,
+                                          last_was_re ? "" : "%%");
+                else
+                  g_string_append_printf (clause,
+                                          "%snot t ()",
+                                          (index ? " AND " : ""));
               }
           else
             for (index = 0;
@@ -3529,20 +3625,27 @@ filter_clause (const char* type, const char* filter,
               {
                 gchar *select_column;
 
-                select_column = columns_select_column (select_columns,
-                                                       where_columns,
-                                                       filter_column);
-                assert (select_column);
+                select_column = columns_select_column_with_type (select_columns,
+                                                                 where_columns,
+                                                                 filter_column,
+                                                                 type);
 
-                g_string_append_printf (clause,
-                                        "%sCAST (%s AS TEXT)"
-                                        " %s '%s%s%s'",
-                                        (index ? " OR " : ""),
-                                        select_column,
-                                        last_was_re ? sql_regexp_op () : "LIKE",
-                                        last_was_re ? "" : "%%",
-                                        quoted_keyword,
-                                        last_was_re ? "" : "%%");
+                if (select_column)
+                  g_string_append_printf (clause,
+                                          "%sCAST (%s AS TEXT)"
+                                          " %s '%s%s%s'",
+                                          (index ? " OR " : ""),
+                                          select_column,
+                                          last_was_re
+                                           ? sql_regexp_op ()
+                                           : "LIKE",
+                                          last_was_re ? "" : "%%",
+                                          quoted_keyword,
+                                          last_was_re ? "" : "%%");
+                else
+                  g_string_append_printf (clause,
+                                          "%snot t ()",
+                                          (index ? " OR " : ""));
               }
         }
 
@@ -9998,7 +10101,8 @@ append_to_task_string (task_t task, const char* field, const char* value)
    {                                                                        \
      "(SELECT count(*) FROM reports"                                        \
      " WHERE task = tasks.id)",                                             \
-     "total"                                                                \
+     "total",                                                               \
+     KEYWORD_TYPE_INTEGER                                                   \
    },                                                                       \
    {                                                                        \
      "(SELECT uuid FROM reports WHERE task = tasks.id"                      \
@@ -10017,12 +10121,17 @@ append_to_task_string (task_t task, const char* field, const char* value)
      " ORDER BY date DESC LIMIT 1)",                                        \
      "last_report"                                                          \
    },                                                                       \
-   { "task_severity (id, opts.override, opts.min_qod)", "severity" },       \
+   {                                                                        \
+     "task_severity (id, opts.override, opts.min_qod)",                     \
+     "severity",                                                            \
+     KEYWORD_TYPE_DOUBLE                                                    \
+   },                                                                       \
    {                                                                        \
      "(SELECT count(*) FROM reports"                                        \
      /* TODO 1 == TASK_STATUS_DONE */                                       \
      " WHERE task = tasks.id AND scan_run_status = 1)",                     \
-     NULL                                                                   \
+     NULL,                                                                  \
+     KEYWORD_TYPE_INTEGER                                                   \
    },                                                                       \
    { "hosts_ordering", NULL },                                              \
    { "scanner", NULL },                                                     \
