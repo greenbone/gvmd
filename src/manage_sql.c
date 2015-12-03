@@ -2670,6 +2670,48 @@ keyword_type_from_string (const char* string)
 }
 
 /**
+ * @brief Check whether a keyword applies to a column.
+ *
+ * @param[in]  keyword  Keyword.
+ * @param[in]  column   Column.
+ *
+ * @return 1 if applies, else 0.
+ */
+static int
+keyword_applies_to_column (keyword_t *keyword, const char* column)
+{
+  if ((strcmp (column, "threat") == 0)
+      && (strstr ("None", keyword->string) == NULL)
+      && (strstr ("False Positive", keyword->string) == NULL)
+      && (strstr ("Debug", keyword->string) == NULL)
+      && (strstr ("Error", keyword->string) == NULL)
+      && (strstr ("Alarm", keyword->string) == NULL)
+      && (strstr ("High", keyword->string) == NULL)
+      && (strstr ("Medium", keyword->string) == NULL)
+      && (strstr ("Low", keyword->string) == NULL)
+      && (strstr ("Log", keyword->string) == NULL))
+    return 0;
+  if ((strcmp (column, "trend") == 0)
+      && (strstr ("more", keyword->string) == NULL)
+      && (strstr ("less", keyword->string) == NULL)
+      && (strstr ("up", keyword->string) == NULL)
+      && (strstr ("down", keyword->string) == NULL)
+      && (strstr ("same", keyword->string) == NULL))
+    return 0;
+  if ((strcmp (column, "status") == 0)
+      && (strstr ("Delete Requested", keyword->string) == NULL)
+      && (strstr ("Ultimate Delete Requested", keyword->string) == NULL)
+      && (strstr ("Done", keyword->string) == NULL)
+      && (strstr ("New", keyword->string) == NULL)
+      && (strstr ("Running", keyword->string) == NULL)
+      && (strstr ("Stop Requested", keyword->string) == NULL)
+      && (strstr ("Stopped", keyword->string) == NULL)
+      && (strstr ("Internal Error", keyword->string) == NULL))
+    return 0;
+  return 1;
+}
+
+/**
  * @brief Return SQL WHERE clause for restricting a SELECT to a filter term.
  *
  * @param[in]  type     Resource type.
@@ -3598,7 +3640,8 @@ filter_clause (const char* type, const char* filter,
                                                                  filter_column,
                                                                  type);
 
-                if (select_column)
+                if (keyword_applies_to_column (keyword, filter_column)
+                    && select_column)
                   g_string_append_printf (clause,
                                           "%s"
                                           "(%s IS NULL"
@@ -3630,7 +3673,8 @@ filter_clause (const char* type, const char* filter,
                                                                  filter_column,
                                                                  type);
 
-                if (select_column)
+                if (keyword_applies_to_column (keyword, filter_column)
+                    && select_column)
                   g_string_append_printf (clause,
                                           "%sCAST (%s AS TEXT)"
                                           " %s '%s%s%s'",
