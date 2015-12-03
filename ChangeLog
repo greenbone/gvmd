@@ -1,5 +1,12 @@
 2015-12-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r23920.
+
+	* src/manage_sql.c (filter_clause): Remove "not" from NOT case, added
+	in last commit.
+
+2015-12-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r23919.
 
 	When generating SQL filter clauses, skip the SQL WHERE clause for
