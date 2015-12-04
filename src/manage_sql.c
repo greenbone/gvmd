@@ -17408,7 +17408,11 @@ report_add_result (report_t report, result_t result)
    { "(SELECT uuid FROM tasks WHERE tasks.id = task)", "task_id" },          \
    { "date", NULL },                                                         \
    { "(SELECT name FROM tasks WHERE tasks.id = task)", "task" },             \
-   { "report_severity (id, opts.override, opts.min_qod)", "severity" },      \
+   {                                                                         \
+     "report_severity (id, opts.override, opts.min_qod)",                    \
+     "severity",                                                             \
+     KEYWORD_TYPE_DOUBLE                                                     \
+   },                                                                        \
    {                                                                         \
      "(CASE WHEN (SELECT target IS NULL FROM tasks WHERE tasks.id = task)"   \
      "  THEN 'Container'"                                                    \
@@ -17421,17 +17425,31 @@ report_add_result (report_t report, result_t result)
      "status"                                                                \
    },                                                                        \
    {                                                                         \
-     " report_severity_count (id, opts.override, opts.min_qod,"              \
-     "                        'False Positive')",                            \
-     "false_positive" },                                                     \
-   { "report_severity_count (id, opts.override, opts.min_qod, 'Log')",       \
-     "log" },                                                                \
-   { "report_severity_count (id, opts.override, opts.min_qod, 'Low')",       \
-     "low" },                                                                \
-   { "report_severity_count (id, opts.override, opts.min_qod, 'Medium')",    \
-     "medium" },                                                             \
-   { "report_severity_count (id, opts.override, opts.min_qod, 'High')",      \
-     "high" },                                                               \
+     "report_severity_count (id, opts.override, opts.min_qod,"               \
+     "                       'False Positive')",                             \
+     "false_positive",                                                       \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
+     "report_severity_count (id, opts.override, opts.min_qod, 'Log')",       \
+     "log",                                                                  \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
+     "report_severity_count (id, opts.override, opts.min_qod, 'Low')",       \
+     "low",                                                                  \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
+     "report_severity_count (id, opts.override, opts.min_qod, 'Medium')",    \
+     "medium",                                                               \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
+     "report_severity_count (id, opts.override, opts.min_qod, 'High')",      \
+     "high",                                                                 \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
    {                                                                         \
      "(SELECT name FROM users WHERE users.id = reports.owner)",              \
      "_owner"                                                                \
