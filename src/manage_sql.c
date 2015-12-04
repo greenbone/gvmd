@@ -14390,7 +14390,7 @@ init_manage_internal (GSList *log_config,
    *                           omp_auth, omp_start_task_report.
    *                 ...
    *             manage_schedule
-   *                 fork_connection_for_schedular
+   *                 fork_connection_for_scheduler
    *                     fork one
    *                         init_ompd_process
    *                             init_manage_process

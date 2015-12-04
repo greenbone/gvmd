@@ -1,7 +1,17 @@
 2015-12-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Spell "scheduler" right.
+
+	* src/manage_sql.c (init_manage_internal): Correct spelling.
+
+	* src/openvasmd.c (fork_connection_internal): Correct spelling.
+	(fork_connection_for_schedular): Remove.  Renamed.  Update callers.
+	(fork_connection_for_scheduler): New function.  From rename.
+
+2015-12-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (REPORT_ITERATOR_WHERE_COLUMNS): Add numeric types,
-	to speed up filtering when the term is known to not be numberic.
+	to speed up filtering when the term is known to not be numeric.
 
 2015-12-02  Matthew Mundell <matthew.mundell@greenbone.net>
 

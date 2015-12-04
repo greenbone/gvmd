@@ -478,7 +478,7 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
 }
 
 
-/* Connection forker for schedular. */
+/* Connection forker for scheduler. */
 
 /**
  * @brief Fork a child connected to the Manager.
@@ -503,7 +503,7 @@ fork_connection_internal (int *client_socket,
   int sockets[2];
   struct sigaction action;
 
-  /* Fork a child to use as schedular client and server. */
+  /* Fork a child to use as scheduler client and server. */
 
   pid = fork ();
   switch (pid)
@@ -542,7 +542,7 @@ fork_connection_internal (int *client_socket,
       exit (EXIT_FAILURE);
     }
 
-  /* Split into a Manager client for the schedular, and a Manager serving
+  /* Split into a Manager client for the scheduler, and a Manager serving
    * OMP to that client. */
 
   is_parent = 0;
@@ -551,7 +551,7 @@ fork_connection_internal (int *client_socket,
   switch (pid)
     {
       case 0:
-        /* Child.  Serve the schedular OMP, then exit. */
+        /* Child.  Serve the scheduler OMP, then exit. */
 
         parent_client_socket = sockets[0];
 
@@ -584,7 +584,7 @@ fork_connection_internal (int *client_socket,
         init_ompd_process (database, disabled_commands);
 
         /* Make any further authentications to this process succeed.  This
-         * enables the schedular to login as the owner of the scheduled
+         * enables the scheduler to login as the owner of the scheduled
          * task. */
         manage_auth_allow_all (scheduler);
         set_scheduled_user_uuid (uuid);
@@ -633,7 +633,7 @@ fork_connection_internal (int *client_socket,
         g_debug ("%s: %i forked %i", __FUNCTION__, getpid (), pid);
 
         /* This process is returned as the child of
-         * fork_connection_for_schedular so that the returned parent can wait
+         * fork_connection_for_scheduler so that the returned parent can wait
          * on this process. */
 
         /** @todo Give the parent time to prepare. */
@@ -675,7 +675,7 @@ fork_connection_internal (int *client_socket,
  * @return PID parent on success, 0 child on success, -1 error.
  */
 static int
-fork_connection_for_schedular (int *client_socket,
+fork_connection_for_scheduler (int *client_socket,
                                gnutls_session_t *client_session,
                                gnutls_certificate_credentials_t
                                *client_credentials,
@@ -1181,7 +1181,7 @@ fork_update_nvt_cache ()
  * Enter an infinite loop, waiting for connections and passing the work to
  * `accept_and_maybe_fork'.
  *
- * Periodically, call the manage schedular to start and stop scheduled tasks.
+ * Periodically, call the manage scheduler to start and stop scheduled tasks.
  */
 static void
 serve_and_schedule ()
@@ -1241,7 +1241,7 @@ serve_and_schedule ()
 
       if ((time (NULL) - last_schedule_time) > SCHEDULE_PERIOD)
         {
-          if (manage_schedule (fork_connection_for_schedular,
+          if (manage_schedule (fork_connection_for_scheduler,
                                scheduling_enabled,
                                sigmask_normal)
               < 0)
@@ -1285,7 +1285,7 @@ serve_and_schedule ()
             accept_and_maybe_fork (manager_socket_2, sigmask_normal);
         }
 
-      if (manage_schedule (fork_connection_for_schedular, scheduling_enabled,
+      if (manage_schedule (fork_connection_for_scheduler, scheduling_enabled,
                            sigmask_normal)
           < 0)
         exit (EXIT_FAILURE);
