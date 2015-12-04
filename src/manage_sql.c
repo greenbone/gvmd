@@ -12796,17 +12796,6 @@ check_db_settings ()
          "  10);");
 
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = '20f3034c-e709-11e1-87e7-406186ea4fc5'"
-               " AND " ACL_IS_GLOBAL () ";")
-      == 0)
-    sql ("INSERT into settings (uuid, owner, name, comment, value)"
-         " VALUES"
-         " ('20f3034c-e709-11e1-87e7-406186ea4fc5', NULL, 'Wizard Rows',"
-         "  'If the number of rows in a listing is above this any wizard"
-         " be hidden.',"
-         "  3);");
-
-  if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = 'f16bb236-a32d-4cd5-a880-e0fcf2599f59'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
@@ -57436,7 +57425,6 @@ modify_setting (const gchar *uuid, const gchar *name,
 
   if (uuid && (strcmp (uuid, "5f5a8712-8017-11e1-8556-406186ea4fc5") == 0
                || strcmp (uuid, "f16bb236-a32d-4cd5-a880-e0fcf2599f59") == 0
-               || strcmp (uuid, "20f3034c-e709-11e1-87e7-406186ea4fc5") == 0
                || strcmp (uuid, "6765549a-934e-11e3-b358-406186ea4fc5") == 0
                || strcmp (uuid, "77ec2444-e7f2-4a80-a59b-f4237782d93f") == 0
                || strcmp (uuid, "7eda49c5-096c-4bef-b1ab-d080d87300df") == 0
