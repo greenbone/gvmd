@@ -18768,7 +18768,11 @@ report_add_result (report_t report, result_t result)
    { "(SELECT uuid FROM tasks WHERE tasks.id = task)", "task_id" },          \
    { "date", NULL },                                                         \
    { "(SELECT name FROM tasks WHERE tasks.id = task)", "task" },             \
-   { "report_severity (id, opts.override, opts.min_qod)", "severity" },      \
+   {                                                                         \
+     "report_severity (id, opts.override, opts.min_qod)",                    \
+     "severity",                                                             \
+     KEYWORD_TYPE_DOUBLE                                                     \
+   },                                                                        \
    {                                                                         \
      "(CASE WHEN (SELECT target IS NULL FROM tasks WHERE tasks.id = task)"   \
      "  THEN 'Container'"                                                    \
@@ -18781,59 +18785,85 @@ report_add_result (report_t report, result_t result)
      "status"                                                                \
    },                                                                        \
    {                                                                         \
-     " report_severity_count (id, opts.override, opts.min_qod,"              \
-     "                        'False Positive')",                            \
-     "false_positive" },                                                     \
-   { "report_severity_count (id, opts.override, opts.min_qod, 'Log')",       \
-     "log" },                                                                \
-   { "report_severity_count (id, opts.override, opts.min_qod, 'Low')",       \
-     "low" },                                                                \
-   { "report_severity_count (id, opts.override, opts.min_qod, 'Medium')",    \
-     "medium" },                                                             \
-   { "report_severity_count (id, opts.override, opts.min_qod, 'High')",      \
-     "high" },                                                               \
+     "report_severity_count (id, opts.override, opts.min_qod,"               \
+     "                       'False Positive')",                             \
+     "false_positive",                                                       \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
+     "report_severity_count (id, opts.override, opts.min_qod, 'Log')",       \
+     "log",                                                                  \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
+     "report_severity_count (id, opts.override, opts.min_qod, 'Low')",       \
+     "low",                                                                  \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
+     "report_severity_count (id, opts.override, opts.min_qod, 'Medium')",    \
+     "medium",                                                               \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
+     "report_severity_count (id, opts.override, opts.min_qod, 'High')",      \
+     "high",                                                                 \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
    {                                                                         \
      "(SELECT name FROM users WHERE users.id = reports.owner)",              \
      "_owner"                                                                \
    },                                                                        \
    {                                                                         \
      "report_host_count (id)",                                               \
-     "hosts"                                                                 \
+     "hosts",                                                                \
+     KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
      "report_result_host_count (id, opts.min_qod)",                          \
-     "result_hosts"                                                          \
+     "result_hosts",                                                         \
+     KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
      "coalesce (report_severity_count (id, opts.override, opts.min_qod,"     \
      "                                 'False Positive') * 1.0"              \
      "            / nullif (report_result_host_count (id, opts.min_qod), 0),"\
      "          0)",                                                         \
-     "fp_per_host" },                                                        \
+     "fp_per_host",                                                          \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
    {                                                                         \
      "coalesce (report_severity_count (id, opts.override, opts.min_qod,"     \
      "                                 'Log') * 1.0"                         \
      "            / nullif (report_result_host_count (id, opts.min_qod), 0),"\
      "          0)",                                                         \
-     "log_per_host" },                                                       \
+     "log_per_host",                                                         \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
    {                                                                         \
      "coalesce (report_severity_count (id, opts.override, opts.min_qod,"     \
      "                                 'Low') * 1.0"                         \
      "            / nullif (report_result_host_count (id, opts.min_qod), 0),"\
      "          0)",                                                         \
-     "low_per_host" },                                                       \
+     "low_per_host",                                                         \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
    {                                                                         \
      "coalesce (report_severity_count (id, opts.override, opts.min_qod,"     \
      "                                 'Medium') * 1.0"                      \
      "            / nullif (report_result_host_count (id, opts.min_qod), 0),"\
      "          0)",                                                         \
-     "medium_per_host" },                                                    \
+     "medium_per_host",                                                      \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
    {                                                                         \
      "coalesce (report_severity_count (id, opts.override, opts.min_qod,"     \
      "                                 'High') * 1.0"                        \
      "            / nullif (report_result_host_count (id, opts.min_qod), 0),"\
      "          0)",                                                         \
-     "high_per_host" },                                                      \
+     "high_per_host",                                                        \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
    { NULL, NULL }                                                            \
  }
 

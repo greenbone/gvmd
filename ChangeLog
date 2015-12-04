@@ -1,3 +1,8 @@
+2015-12-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (REPORT_ITERATOR_WHERE_COLUMNS): Add numeric types,
+	to speed up filtering when the term is known to not be numberic.
+
 2015-12-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Leave the threat, trend and status clauses out of the SQL filtering
@@ -32,6 +37,8 @@
 	(filter_clause): For terms that may match any column, skip the clause if
 	the term is not numeric and the column type is numeric, because they can
 	never match.
+	(TASK_ITERATOR_COLUMNS_INNER, TASK_ITERATOR_WHERE_COLUMNS_INNER): Add
+	types for integer columns.
 
 2015-12-02  Michael Wiegand <michael.wiegand@greenbone.net>
 
