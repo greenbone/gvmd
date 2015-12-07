@@ -1,3 +1,8 @@
+2015-12-07  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_migrators.c (migrate_156_to_157, migrate_158_to_159):
+	Correct type names for uniquify.
+
 2015-12-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_tables): Add index
