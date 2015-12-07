@@ -2344,6 +2344,8 @@ create_tables ()
        " ON results (report, host);");
   sql ("CREATE INDEX IF NOT EXISTS results_by_task"
        " ON results (task);");
+  sql ("CREATE INDEX IF NOT EXISTS results_by_task_qod_severity"
+       " ON results (task, qod, severity);");
   sql ("CREATE INDEX IF NOT EXISTS results_by_type"
        " ON results (type);");
   sql ("CREATE TABLE IF NOT EXISTS roles"
