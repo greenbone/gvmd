@@ -1,4 +1,10 @@
-2015-12-04  Matthew Mundell <matthew.mundell@greenbone.net>
+2015-12-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (create_tables): Add index
+	results_by_task_qod_severity.  This speeds up the count of all a task's
+	results for GET_TASKS.
+
+2015-12-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (TASK_ITERATOR_COLUMNS_INNER): Remove columns only
 	used for filtering.
