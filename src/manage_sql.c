@@ -10935,8 +10935,6 @@ append_to_task_string (task_t task, const char* field, const char* value)
      " ORDER BY date ASC LIMIT 1)",                                         \
      "first_report"                                                         \
    },                                                                       \
-   { "task_threat_level (id, opts.override, opts.min_qod)", "threat" },     \
-   { "task_trend (id, opts.override, opts.min_qod)", "trend" },             \
    { "run_status_name (run_status)", "status" },                            \
    {                                                                        \
      "(SELECT uuid FROM reports WHERE task = tasks.id"                      \
@@ -10944,11 +10942,6 @@ append_to_task_string (task_t task, const char* field, const char* value)
      " AND scan_run_status = 1"                                             \
      " ORDER BY date DESC LIMIT 1)",                                        \
      "last_report"                                                          \
-   },                                                                       \
-   {                                                                        \
-     "task_severity (id, opts.override, opts.min_qod)",                     \
-     "severity",                                                            \
-     KEYWORD_TYPE_DOUBLE                                                    \
    },                                                                       \
    {                                                                        \
      "(SELECT count(*) FROM reports"                                        \
@@ -10964,6 +10957,13 @@ append_to_task_string (task_t task, const char* field, const char* value)
  * @brief Task iterator WHERE columns.
  */
 #define TASK_ITERATOR_WHERE_COLUMNS_INNER                                    \
+   { "task_threat_level (id, opts.override, opts.min_qod)", "threat" },      \
+   { "task_trend (id, opts.override, opts.min_qod)", "trend" },              \
+   {                                                                         \
+     "task_severity (id, opts.override, opts.min_qod)",                      \
+     "severity",                                                             \
+     KEYWORD_TYPE_DOUBLE                                                     \
+   },                                                                        \
    {                                                                         \
      "(SELECT schedules.name FROM schedules"                                 \
      " WHERE schedules.id = tasks.schedule)",                                \
@@ -11329,7 +11329,7 @@ const char *
 task_iterator_run_status_name (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
 }
 
 /**
@@ -11343,7 +11343,7 @@ const char *
 task_iterator_last_report (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
 }
 
 /**
@@ -11357,7 +11357,7 @@ int
 task_iterator_finished_reports (iterator_t *iterator)
 {
   if (iterator->done) return 0;
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
 }
 
 /**
@@ -11371,7 +11371,7 @@ const char *
 task_iterator_hosts_ordering (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 9);
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
 }
 
 /**
@@ -11385,7 +11385,7 @@ scanner_t
 task_iterator_scanner (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 10);
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
 }
 
 /**

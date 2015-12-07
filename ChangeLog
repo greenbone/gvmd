@@ -1,3 +1,12 @@
+2015-12-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (TASK_ITERATOR_COLUMNS_INNER): Remove columns only
+	used for filtering.
+	(TASK_ITERATOR_WHERE_COLUMNS_INNER): Add those columns.
+	(task_iterator_run_status_name, task_iterator_last_report)
+	(task_iterator_finished_reports, task_iterator_hosts_ordering)
+	(task_iterator_scanner): Adjust offset.
+
 2015-12-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (check_db_settings, modify_setting): Remove setting
