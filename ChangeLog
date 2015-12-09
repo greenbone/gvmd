@@ -1,5 +1,11 @@
 2015-12-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Add case for SNMP credential
+	not being found in modify_target and use correct command name in
+	credential type error messages.
+
+2015-12-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Enforce correct credential types in targets and create
 	username + password copies of existing ssh key credentials used for
 	SMB and ESXi.  Hence increase database version to 161.  Add database

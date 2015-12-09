@@ -27159,9 +27159,22 @@ create_task_fail:
                     return;
                   }
                 break;
+              case 17:
+                log_event_fail ("target", "Target",
+                                modify_target_data->target_id,
+                                "modified");
+                if (send_find_error_to_client
+                     ("modify_target", "Credential",
+                      modify_target_data->snmp_credential_id,
+                      omp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
               case 18:
                 SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_target",
+                 (XML_ERROR_SYNTAX ("modify_target",
                                     "SSH credential must be of type"
                                     " 'up' or 'usk'"));
                 log_event_fail ("target", "Target",
@@ -27169,7 +27182,7 @@ create_task_fail:
                 break;
               case 19:
                 SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_target",
+                 (XML_ERROR_SYNTAX ("modify_target",
                                     "SMB credential must be of type"
                                     " 'up'"));
                 log_event_fail ("target", "Target",
@@ -27177,7 +27190,7 @@ create_task_fail:
                 break;
               case 20:
                 SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_target",
+                 (XML_ERROR_SYNTAX ("modify_target",
                                     "ESXi credential must be of type"
                                     " 'up'"));
                 log_event_fail ("target", "Target",
@@ -27185,7 +27198,7 @@ create_task_fail:
                 break;
               case 21:
                 SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_target",
+                 (XML_ERROR_SYNTAX ("modify_target",
                                     "SNMP credential must be of type"
                                     " 'snmp'"));
                 log_event_fail ("target", "Target",
