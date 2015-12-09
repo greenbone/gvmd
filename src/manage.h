@@ -2027,6 +2027,9 @@ credential_name (credential_t);
 char*
 trash_credential_name (credential_t);
 
+char*
+credential_type (credential_t);
+
 void
 init_credential_target_iterator (iterator_t*, credential_t, int);
 

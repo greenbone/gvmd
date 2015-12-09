@@ -1,3 +1,24 @@
+2015-12-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Enforce correct credential types in targets and create
+	username + password copies of existing ssh key credentials used for
+	SMB and ESXi.  Hence increase database version to 161.  Add database
+	migration from version 160 to 161.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 161.
+
+	* src/manage_migrators.c (migrate_160_to_161): New function.
+	(database_migrators): Add migrate_160_to_161.
+
+	* src/manage_sql.c (create_target, modify_target): Check if credentials
+	are of the correct type.
+	(credential_type): New function.
+
+	* src/manage.h (credential_type): New function prototype.
+
+	* src/omp.c (omp_xml_handle_end_element): Handle new return codes of
+	create_target and modify_target.
+
 2015-12-07  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_migrators.c (migrate_156_to_157, migrate_158_to_159):

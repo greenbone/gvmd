@@ -24268,6 +24268,34 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     "Error in alive test"));
                 log_event_fail ("target", "Target", NULL, "created");
                 break;
+              case 8:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_target",
+                                    "SSH credential must be of type"
+                                    " 'up' or 'usk'"));
+                log_event_fail ("target", "Target", NULL, "created");
+                break;
+              case 9:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_target",
+                                    "SMB credential must be of type"
+                                    " 'up'"));
+                log_event_fail ("target", "Target", NULL, "created");
+                break;
+              case 10:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_target",
+                                    "ESXi credential must be of type"
+                                    " 'up'"));
+                log_event_fail ("target", "Target", NULL, "created");
+                break;
+              case 11:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_target",
+                                    "SNMP credential must be of type"
+                                    " 'snmp'"));
+                log_event_fail ("target", "Target", NULL, "created");
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_target",
@@ -27130,6 +27158,38 @@ create_task_fail:
                     error_send_to_client (error);
                     return;
                   }
+                break;
+              case 18:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_target",
+                                    "SSH credential must be of type"
+                                    " 'up' or 'usk'"));
+                log_event_fail ("target", "Target",
+                                modify_target_data->target_id, "modified");
+                break;
+              case 19:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_target",
+                                    "SMB credential must be of type"
+                                    " 'up'"));
+                log_event_fail ("target", "Target",
+                                modify_target_data->target_id, "modified");
+                break;
+              case 20:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_target",
+                                    "ESXi credential must be of type"
+                                    " 'up'"));
+                log_event_fail ("target", "Target",
+                                modify_target_data->target_id, "modified");
+                break;
+              case 21:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_target",
+                                    "SNMP credential must be of type"
+                                    " 'snmp'"));
+                log_event_fail ("target", "Target",
+                                modify_target_data->target_id, "modified");
                 break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL

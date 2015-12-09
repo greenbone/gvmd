@@ -30642,6 +30642,8 @@ trash_target_login_port (target_t target, const char* type)
  * @return 0 success, 1 target exists already, 2 error in host specification,
  *         3 too many hosts, 4 error in port range, 5 error in SSH port,
  *         6 failed to find port list, 7 error in alive tests,
+ *         8 invalid SSH credential type, 9 invalid SMB credential type,
+ *         10 invalid ESXi credential type, 11 invalid SNMP credential type,
  *         99 permission denied, -1 error.
  */
 int
@@ -30822,16 +30824,39 @@ create_target (const char* name, const char* asset_hosts_filter,
   if (target)
     *target = new_target;
 
+  g_free (quoted_comment);
+  g_free (quoted_name);
+  g_free (quoted_hosts);
+  g_free (quoted_exclude_hosts);
+
   if (ssh_credential)
     {
+      gchar *type = credential_type (ssh_credential);
+      if (strcmp (type, "usk") && strcmp (type, "up"))
+        {
+          sql ("ROLLBACK;");
+          g_free (quoted_ssh_port);
+          return 8;
+        }
+      g_free (type);
+
       sql ("INSERT INTO targets_login_data"
            " (target, type, credential, port)"
            " VALUES (%llu, 'ssh', %llu, %s);",
            new_target, ssh_credential, quoted_ssh_port);
     }
+  g_free (quoted_ssh_port);
 
   if (smb_credential)
     {
+      gchar *type = credential_type (smb_credential);
+      if (strcmp (type, "up"))
+        {
+          sql ("ROLLBACK;");
+          return 9;
+        }
+      g_free (type);
+
       sql ("INSERT INTO targets_login_data"
            " (target, type, credential, port)"
            " VALUES (%llu, 'smb', %llu, %s);",
@@ -30840,6 +30865,14 @@ create_target (const char* name, const char* asset_hosts_filter,
 
   if (esxi_credential)
     {
+      gchar *type = credential_type (esxi_credential);
+      if (strcmp (type, "up"))
+        {
+          sql ("ROLLBACK;");
+          return 10;
+        }
+      g_free (type);
+
       sql ("INSERT INTO targets_login_data"
            " (target, type, credential, port)"
            " VALUES (%llu, 'esxi', %llu, %s);",
@@ -30848,17 +30881,19 @@ create_target (const char* name, const char* asset_hosts_filter,
 
   if (snmp_credential)
     {
+      gchar *type = credential_type (snmp_credential);
+      if (strcmp (type, "snmp"))
+        {
+          sql ("ROLLBACK;");
+          return 11;
+        }
+      g_free (type);
+
       sql ("INSERT INTO targets_login_data"
            " (target, type, credential, port)"
            " VALUES (%llu, 'snmp', %llu, %s);",
            new_target, snmp_credential, "0");
     }
-
-  g_free (quoted_comment);
-  g_free (quoted_name);
-  g_free (quoted_hosts);
-  g_free (quoted_exclude_hosts);
-  g_free (quoted_ssh_port);
 
   sql ("COMMIT;");
 
@@ -31070,6 +31105,8 @@ delete_target (const char *target_id, int ultimate)
  *         13 hosts requires exclude hosts,
  *         14 hosts must be at least one character, 15 target is in use,
  *         16 failed to find ESXi cred, 17 failed to find SNMP cred,
+ *         18 invalid SSH credential type, 19 invalid SMB credential type,
+ *         20 invalid ESXi credential type, 21 invalid SNMP credential type,
  *         99 permission denied, -1 error.
  */
 int
@@ -31217,6 +31254,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       if (strcmp (ssh_credential_id, "0"))
         {
           int port_int;
+          gchar *type;
 
           if (find_credential_with_permission (ssh_credential_id,
                                                &ssh_credential,
@@ -31244,6 +31282,14 @@ modify_target (const char *target_id, const char *name, const char *hosts,
           else
             port_int = 22;
 
+          type = credential_type (ssh_credential);
+          if (strcmp (type, "up") && strcmp (type, "usk"))
+            {
+              sql ("ROLLBACK;");
+              return 18;
+            }
+          g_free (type);
+
           set_target_login_data (target, "ssh", ssh_credential, port_int);
         }
       else
@@ -31263,6 +31309,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       smb_credential = 0;
       if (strcmp (smb_credential_id, "0"))
         {
+          gchar *type;
           if (find_credential_with_permission (smb_credential_id,
                                                &smb_credential,
                                                "get_credentials"))
@@ -31276,6 +31323,14 @@ modify_target (const char *target_id, const char *name, const char *hosts,
               sql ("ROLLBACK;");
               return 7;
             }
+
+          type = credential_type (smb_credential);
+          if (strcmp (type, "up"))
+            {
+              sql ("ROLLBACK;");
+              return 19;
+            }
+          g_free (type);
 
           set_target_login_data (target, "smb", smb_credential, 0);
         }
@@ -31296,6 +31351,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       esxi_credential = 0;
       if (strcmp (esxi_credential_id, "0"))
         {
+          gchar *type;
           if (find_credential_with_permission (esxi_credential_id,
                                                &esxi_credential,
                                                "get_credentials"))
@@ -31309,6 +31365,14 @@ modify_target (const char *target_id, const char *name, const char *hosts,
               sql ("ROLLBACK;");
               return 16;
             }
+
+          type = credential_type (esxi_credential);
+          if (strcmp (type, "up"))
+            {
+              sql ("ROLLBACK;");
+              return 20;
+            }
+          g_free (type);
 
           set_target_login_data (target, "esxi", esxi_credential, 0);
         }
@@ -31329,6 +31393,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       snmp_credential = 0;
       if (strcmp (snmp_credential_id, "0"))
         {
+          gchar *type;
           if (find_credential_with_permission (snmp_credential_id,
                                                &snmp_credential,
                                                "get_credentials"))
@@ -31342,6 +31407,14 @@ modify_target (const char *target_id, const char *name, const char *hosts,
               sql ("ROLLBACK;");
               return 17;
             }
+
+          type = credential_type (snmp_credential);
+          if (strcmp (type, "snmp"))
+            {
+              sql ("ROLLBACK;");
+              return 21;
+            }
+          g_free (type);
 
           set_target_login_data (target, "snmp", snmp_credential, 0);
         }
@@ -39257,6 +39330,20 @@ trash_credential_name (credential_t credential)
 {
   return sql_string ("SELECT name FROM credentials_trash"
                      " WHERE id = %llu;",
+                     credential);
+}
+
+/**
+ * @brief Get the type of a Credential.
+ *
+ * @param[in]  credential  Credential.
+ *
+ * @return Credential type.
+ */
+char*
+credential_type (credential_t credential)
+{
+  return sql_string ("SELECT type FROM credentials WHERE id = %llu;",
                      credential);
 }
 
