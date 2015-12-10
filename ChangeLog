@@ -1,5 +1,10 @@
 2015-12-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_migrators.c (migrate_161_to_162): Fix credential_location
+	test for trash case in iterator query.
+
+2015-12-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Add allow_insecure property to credentials.  Hence increase database
 	version to 162.  Add database migration from version 161 to 162.
 

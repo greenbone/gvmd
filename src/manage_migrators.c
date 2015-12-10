@@ -11616,8 +11616,8 @@ migrate_160_to_161 ()
                  "    AND id IN (SELECT credential"
                  "               FROM targets_trash_login_data"
                  "               WHERE (type='smb' OR type='esxi')"
-                 "                        = " G_STRINGIFY (LOCATION_TRASH)
-                 "               );");
+                 "                 AND credential_location"
+                 "                     = " G_STRINGIFY (LOCATION_TRASH) ");");
 
   while (next (&iter))
     {
