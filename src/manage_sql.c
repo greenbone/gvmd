@@ -6499,7 +6499,7 @@ static int
 check_alert_params (event_t event, alert_condition_t condition,
                     alert_method_t method)
 {
-  if (event == EVENT_NEW_NVTS)
+  if (event == EVENT_NEW_NVTS || event == EVENT_UPDATED_NVTS)
     {
       if (method == ALERT_METHOD_HTTP_GET
           || method == ALERT_METHOD_SOURCEFIRE
@@ -6566,7 +6566,8 @@ create_alert (const char* name, const char* comment, const char* filter_id,
     }
 
   filter = 0;
-  if (event != EVENT_NEW_NVTS && filter_id && strcmp (filter_id, "0"))
+  if (event != EVENT_NEW_NVTS && event != EVENT_UPDATED_NVTS && filter_id
+      && strcmp (filter_id, "0"))
     {
       char *type;
 
@@ -6882,7 +6883,8 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
 
   /* Check filter. */
   filter = 0;
-  if (event != EVENT_NEW_NVTS && filter_id && strcmp (filter_id, "0"))
+  if (event != EVENT_NEW_NVTS && event != EVENT_UPDATED_NVTS && filter_id
+      && strcmp (filter_id, "0"))
     {
       char *type;
 
@@ -9380,13 +9382,15 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                          "method",
                                          "from_address");
 
-              if (event == EVENT_NEW_NVTS)
+              if (event == EVENT_NEW_NVTS || event == EVENT_UPDATED_NVTS)
                 {
                   const gchar *message;
 
                   message = (const gchar*) event_data;
                   ret = email (to_address, from_address,
-                               "[OpenVAS-Manager] New NVTs arrived",
+                               event == EVENT_NEW_NVTS
+                                ? "[OpenVAS-Manager] New NVTs arrived"
+                                : "[OpenVAS-Manager] Updated NVTs arrived",
                                message, NULL, NULL, NULL, NULL);
                   free (to_address);
                   free (from_address);
@@ -9768,11 +9772,12 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
         {
           char *url;
 
-          if (event == EVENT_NEW_NVTS)
+          if (event == EVENT_NEW_NVTS || event == EVENT_UPDATED_NVTS)
             {
-              g_warning ("%s: Event \"New NVTs arrived\" with method"
+              g_warning ("%s: Event \"%s NVTs arrived\" with method"
                          " \"HTTP Get\" not support",
-                         __FUNCTION__);
+                         __FUNCTION__,
+                         event == EVENT_NEW_NVTS ? "New" : "Updated");
               return -1;
             }
 
@@ -9848,7 +9853,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           int ret;
           filter_t filter;
 
-          if (event == EVENT_NEW_NVTS)
+          if (event == EVENT_NEW_NVTS || event == EVENT_UPDATED_NVTS)
             {
               gchar *message;
 
@@ -9974,11 +9979,12 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           int ret;
           filter_t filter;
 
-          if (event == EVENT_NEW_NVTS)
+          if (event == EVENT_NEW_NVTS || event == EVENT_UPDATED_NVTS)
             {
-              g_warning ("%s: Event \"New NVTs arrived\" with method"
+              g_warning ("%s: Event \"%s NVTs arrived\" with method"
                          " \"Sourcefire\" not support",
-                         __FUNCTION__);
+                         __FUNCTION__,
+                         event == EVENT_NEW_NVTS ? "New" : "Updated");
               return -1;
             }
 
@@ -10086,11 +10092,12 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           int ret;
           filter_t filter;
 
-          if (event == EVENT_NEW_NVTS)
+          if (event == EVENT_NEW_NVTS || event == EVENT_UPDATED_NVTS)
             {
-              g_warning ("%s: Event \"New NVTs arrived\" with method"
+              g_warning ("%s: Event \"%s NVTs arrived\" with method"
                          " \"Verinice\" not support",
-                         __FUNCTION__);
+                         __FUNCTION__,
+                         event == EVENT_NEW_NVTS ? "New" : "Updated");
               return -1;
             }
 
@@ -10191,11 +10198,12 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           gnutls_certificate_credentials_t credentials;
           char *task_id, *report_id;
 
-          if (event == EVENT_NEW_NVTS)
+          if (event == EVENT_NEW_NVTS || event == EVENT_UPDATED_NVTS)
             {
-              g_warning ("%s: Event \"New NVTs arrived\" with method"
+              g_warning ("%s: Event \"%s NVTs arrived\" with method"
                          " \"Start Task\" not support",
-                         __FUNCTION__);
+                         __FUNCTION__,
+                         event == EVENT_NEW_NVTS ? "New" : "Updated");
               return -1;
             }
 
@@ -10341,16 +10349,32 @@ manage_alert (const char *alert_id, const char *task_id, event_t event,
 }
 
 /**
- * @brief Header for New NVT alert message.
+ * @brief Header for New NVTs alert message.
  */
-#define NEW_NVT_HEADER                                                       \
+#define NEW_NVTS_HEADER                                                       \
 /* 1.3.6.1.4.1.25623.1.0.9999992  NoneAvailable       0.0 100%  IT-Gru... */ \
   "                          OID  Solution Type  Severity  QOD  Name\n"
 
 /**
- * @brief Example text for New NVT alert message.
+ * @brief Example text for New NVTs alert message.
  */
-#define NEW_NVT_EXAMPLE_TEXT                                                 \
+#define NEW_NVTS_EXAMPLE_TEXT                                                 \
+  "  1.3.6.1.4.1.25623.1.0.94066                      0.0  75%  IT-Grundschutz M4.227: Einsatz eines lokalen NTP-Servers zur Zeitsynchronisation (Win)\n" \
+  " 1.3.6.1.4.1.25623.1.0.805581  NoneAvailable       5.0 100%  Anima Gallery Multiple Vulnerabilities\n"         \
+  "1.3.6.1.4.1.25623.1.0.9999992      VendorFix       7.8  70%  Asterisk PBX SDP Header Overflow Vulnerability\n" \
+  "  1.3.6.1.4.1.25623.1.0.66598      VendorFix      10.0  97%  Debian Security Advisory DSA 1957-1 (aria2)\n"
+
+/**
+ * @brief Header for Updated NVTs alert message.
+ */
+#define UPDATED_NVTS_HEADER                                                       \
+/* 1.3.6.1.4.1.25623.1.0.9999992  NoneAvailable       0.0 100%  IT-Gru... */ \
+  "                          OID  Solution Type  Severity  QOD  Name\n"
+
+/**
+ * @brief Example text for Updated NVTs alert message.
+ */
+#define UPDATED_NVTS_EXAMPLE_TEXT                                                 \
   "  1.3.6.1.4.1.25623.1.0.94066                      0.0  75%  IT-Grundschutz M4.227: Einsatz eines lokalen NTP-Servers zur Zeitsynchronisation (Win)\n" \
   " 1.3.6.1.4.1.25623.1.0.805581  NoneAvailable       5.0 100%  Anima Gallery Multiple Vulnerabilities\n"         \
   "1.3.6.1.4.1.25623.1.0.9999992      VendorFix       7.8  70%  Asterisk PBX SDP Header Overflow Vulnerability\n" \
@@ -10385,11 +10409,27 @@ manage_test_alert (const char *alert_id)
 
       buffer = g_string_new ("Warning: This is an example alert only.\n\n"
                              "4 new NVTs appeared in the feed:\n\n");
-      g_string_append (buffer, NEW_NVT_HEADER);
-      g_string_append (buffer, NEW_NVT_EXAMPLE_TEXT);
+      g_string_append (buffer, NEW_NVTS_HEADER);
+      g_string_append (buffer, NEW_NVTS_EXAMPLE_TEXT);
       ret = manage_alert (alert_id,
                           "0",
                           EVENT_NEW_NVTS,
+                          buffer->str);
+      g_string_free (buffer, TRUE);
+      return ret;
+    }
+  if (alert_event (alert) == EVENT_UPDATED_NVTS)
+    {
+      GString *buffer;
+      int ret;
+
+      buffer = g_string_new ("Warning: This is an example alert only.\n\n"
+                             "4 NVTs were updated in the feed:\n\n");
+      g_string_append (buffer, UPDATED_NVTS_HEADER);
+      g_string_append (buffer, UPDATED_NVTS_EXAMPLE_TEXT);
+      ret = manage_alert (alert_id,
+                          "0",
+                          EVENT_UPDATED_NVTS,
                           buffer->str);
       g_string_free (buffer, TRUE);
       return ret;
@@ -10433,6 +10473,7 @@ event_applies (event_t event, const void *event_data, task_t task,
           return ret;
         }
       case EVENT_NEW_NVTS:
+      case EVENT_UPDATED_NVTS:
         return 1;
       default:
         return 0;
@@ -11506,8 +11547,9 @@ init_manage_process (int update_nvt_cache, const gchar *database)
 
   if (update_nvt_cache)
     {
-      sql ("CREATE TEMPORARY TABLE old_nvts (oid TEXT);");
-      sql ("INSERT INTO old_nvts (oid) SELECT oid FROM nvts;");
+      sql ("CREATE TEMPORARY TABLE old_nvts (oid TEXT, modification_time);");
+      sql ("INSERT INTO old_nvts (oid, modification_time)"
+           " SELECT oid, modification_time FROM nvts;");
       if (update_nvt_cache == -2)
         {
           if (progress)
@@ -35497,7 +35539,7 @@ check_for_new_nvts ()
   int count;
 
   count = 0;
-  buffer = g_string_new (NEW_NVT_HEADER);
+  buffer = g_string_new (NEW_NVTS_HEADER);
   init_iterator (&rows,
                  "SELECT oid, name, solution_type, cvss_base, qod FROM nvts"
                  " WHERE oid NOT IN (SELECT oid FROM old_nvts);");
@@ -35523,6 +35565,51 @@ check_for_new_nvts ()
                                  buffer->str);
       g_warning ("would alert: %i new nvts: [%s]", count, message);
       event (0, EVENT_NEW_NVTS, (void*) message);
+      g_free (message);
+    }
+
+  g_string_free (buffer, TRUE);
+}
+
+/**
+ * @brief Check for updated NVTS after an update.
+ */
+static void
+check_for_updated_nvts ()
+{
+  iterator_t rows;
+  GString *buffer;
+  int count;
+
+  count = 0;
+  buffer = g_string_new (UPDATED_NVTS_HEADER);
+  init_iterator (&rows,
+                 "SELECT oid, name, solution_type, cvss_base, qod FROM nvts"
+                 " WHERE modification_time > (SELECT modification_time"
+                 "                            FROM old_nvts"
+                 "                            WHERE old_nvts.oid = nvts.oid);");
+  while (next (&rows))
+    {
+      g_string_append_printf (buffer,
+                              "%29s  %13s  %8s %3s%%  %s\n",
+                              iterator_string (&rows, 0),
+                              iterator_string (&rows, 2),
+                              iterator_string (&rows, 3),
+                              iterator_string (&rows, 4),
+                              iterator_string (&rows, 1));
+      count++;
+    }
+  cleanup_iterator (&rows);
+
+  if (count)
+    {
+      gchar *message;
+
+      message = g_strdup_printf ("%i NVTs were updated in the feed:\n\n%s",
+                                 count,
+                                 buffer->str);
+      g_warning ("would alert: %i updated nvts: [%s]", count, message); // FIX
+      event (0, EVENT_UPDATED_NVTS, (void*) message);
       g_free (message);
     }
 
@@ -35572,6 +35659,7 @@ manage_complete_nvt_cache_update (GList *nvts_list, int mode)
   refresh_nvt_cves ();
 
   check_for_new_nvts ();
+  check_for_updated_nvts ();
 
   if (mode == -2) sql ("COMMIT;");
 

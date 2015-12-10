@@ -1,3 +1,25 @@
+2015-12-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add event type "Updated NVTs arrived".
+
+	* src/manage.c (event_name, event_description, event_from_name): Add
+	EVENT_UPDATED_NVTS.
+
+	* src/manage.h (event_t): Add EVENT_UPDATED_NVTS.
+
+	* src/manage_sql.c (check_alert_params): Check EVENT_UPDATED_NVTS too.
+	(create_alert, modify_alert): Add EVENT_UPDATED_NVTS to check.
+	(escalate_2): Add EVENT_UPDATED_NVTS.
+	(NEW_NVT_HEADER, NEW_NVT_EXAMPLE_TEXT): Remove.  Renamed.
+	(NEW_NVTS_HEADER, NEW_NVTS_EXAMPLE_TEXT): New defines.  From rename.
+	(UPDATED_NVTS_HEADER, UPDATED_NVTS_EXAMPLE_TEXT): New defines.
+	(manage_test_alert): Update names.  Add EVENT_UPDATED_NVTS case.
+	(event_applies): Add EVENT_UPDATED_NVTS case.
+	(init_manage_process): Store modification time too.
+	(check_for_new_nvts): Update name.
+	(check_for_updated_nvts): New function.
+	(manage_complete_nvt_cache_update): Check for updated NVTs.
+
 2015-12-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* ChangeLog: Correct function name in last entry.
@@ -48,7 +70,7 @@
 
 	* doc/db_postgres.sql: Add allow_insecure column to tables credentials
 	and credentials_trash.
-	
+
 	* doc/db.png, doc/omp.rnc, doc/omp.html: Update from source.
 
 2015-12-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
