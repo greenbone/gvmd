@@ -1,6 +1,10 @@
 2015-12-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
-	* src/manage_migrators.c (migrate_161_to_162): Fix credential_location
+	* ChangeLog: Correct function name in last entry.
+
+2015-12-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_migrators.c (migrate_160_to_161): Fix credential_location
 	test for trash case in iterator query.
 
 2015-12-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
