@@ -1576,7 +1576,8 @@ create_tables ()
        "  comment text,"
        "  creation_time integer,"
        "  modification_time integer,"
-       "  type text);");
+       "  type text,"
+       "  allow_insecure integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS credentials_trash"
        " (id SERIAL PRIMARY KEY,"
@@ -1586,7 +1587,8 @@ create_tables ()
        "  comment text,"
        "  creation_time integer,"
        "  modification_time integer,"
-       "  type text);");
+       "  type text,"
+       "  allow_insecure integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS credentials_data"
        " (id SERIAL PRIMARY KEY,"

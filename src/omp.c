@@ -1084,6 +1084,7 @@ create_alert_data_reset (create_alert_data_t *data)
  */
 typedef struct
 {
+  char *allow_insecure;    ///< Whether to allow insecure use.
   char *certificate;       ///< Certificate for client certificate auth.
   char *comment;           ///< Comment.
   char *copy;              ///< UUID of resource to copy.
@@ -1108,6 +1109,7 @@ typedef struct
 static void
 create_credential_data_reset (create_credential_data_t *data)
 {
+  free (data->allow_insecure);
   free (data->certificate);
   free (data->comment);
   free (data->copy);
@@ -3437,6 +3439,7 @@ modify_config_data_reset (modify_config_data_t *data)
  */
 typedef struct
 {
+  char *allow_insecure;       ///< Whether to allow insecure use.
   char *auth_algorithm;       ///< SNMP Authentication algorithm.
   char *certificate;          ///< Certificate.
   char *comment;              ///< Comment.
@@ -3460,6 +3463,7 @@ typedef struct
 static void
 modify_credential_data_reset (modify_credential_data_t *data)
 {
+  free (data->allow_insecure);
   free (data->auth_algorithm);
   free (data->certificate);
   free (data->comment);
@@ -5227,6 +5231,7 @@ typedef enum
   CLIENT_CREATE_ASSET_ASSET_NAME,
   CLIENT_CREATE_ASSET_ASSET_TYPE,
   CLIENT_CREATE_CREDENTIAL,
+  CLIENT_CREATE_CREDENTIAL_ALLOW_INSECURE,
   CLIENT_CREATE_CREDENTIAL_AUTH_ALGORITHM,
   CLIENT_CREATE_CREDENTIAL_CERTIFICATE,
   CLIENT_CREATE_CREDENTIAL_COMMENT,
@@ -5626,6 +5631,7 @@ typedef enum
   CLIENT_MODIFY_CONFIG_PREFERENCE_NVT,
   CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE,
   CLIENT_MODIFY_CREDENTIAL,
+  CLIENT_MODIFY_CREDENTIAL_ALLOW_INSECURE,
   CLIENT_MODIFY_CREDENTIAL_AUTH_ALGORITHM,
   CLIENT_MODIFY_CREDENTIAL_CERTIFICATE,
   CLIENT_MODIFY_CREDENTIAL_COMMENT,
@@ -8469,7 +8475,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         ELSE_ERROR ("modify_config");
 
       case CLIENT_MODIFY_CREDENTIAL:
-        if (strcasecmp ("AUTH_ALGORITHM", element_name) == 0)
+        if (strcasecmp ("ALLOW_INSECURE", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_CREDENTIAL_ALLOW_INSECURE);
+        else if (strcasecmp ("AUTH_ALGORITHM", element_name) == 0)
           {
             set_client_state (CLIENT_MODIFY_CREDENTIAL_AUTH_ALGORITHM);
           }
@@ -9327,7 +9335,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         ELSE_ERROR ("create_alert");
 
       case CLIENT_CREATE_CREDENTIAL:
-        if (strcasecmp ("AUTH_ALGORITHM", element_name) == 0)
+        if (strcasecmp ("ALLOW_INSECURE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_CREDENTIAL_ALLOW_INSECURE);
+        else if (strcasecmp ("AUTH_ALGORITHM", element_name) == 0)
           set_client_state (CLIENT_CREATE_CREDENTIAL_AUTH_ALGORITHM);
         else if (strcasecmp ("CERTIFICATE", element_name) == 0)
           set_client_state (CLIENT_CREATE_CREDENTIAL_CERTIFICATE);
@@ -15091,9 +15101,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               login = credential_iterator_login (&credentials);
               type = credential_iterator_type (&credentials);
               SENDF_TO_CLIENT_OR_FAIL
-               ("<login>%s</login>"
+               ("<allow_insecure>%d</allow_insecure>"
+                "<login>%s</login>"
                 "<type>%s</type>"
                 "<full_type>%s</full_type>",
+                credential_iterator_allow_insecure (&credentials),
                 login ? login : "",
                 type ? type : "",
                 type ? credential_full_type (type) : "");
@@ -21613,6 +21625,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                          create_credential_data->privacy_password,
                          create_credential_data->privacy_algorithm,
                          create_credential_data->type,
+                         create_credential_data->allow_insecure,
                          &new_credential))
             {
               case 0:
@@ -21722,6 +21735,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
+      CLOSE (CLIENT_CREATE_CREDENTIAL, ALLOW_INSECURE);
       CLOSE (CLIENT_CREATE_CREDENTIAL, AUTH_ALGORITHM);
       CLOSE (CLIENT_CREATE_CREDENTIAL, CERTIFICATE);
       CLOSE (CLIENT_CREATE_CREDENTIAL, COMMENT);
@@ -25612,7 +25626,8 @@ create_task_fail:
                     modify_credential_data->community,
                     modify_credential_data->auth_algorithm,
                     modify_credential_data->privacy_password,
-                    modify_credential_data->privacy_algorithm))
+                    modify_credential_data->privacy_algorithm,
+                    modify_credential_data->allow_insecure))
             {
               case 0:
                 SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_credential"));
@@ -25684,6 +25699,7 @@ create_task_fail:
         modify_credential_data_reset (modify_credential_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
+      CLOSE (CLIENT_MODIFY_CREDENTIAL, ALLOW_INSECURE);
       CLOSE (CLIENT_MODIFY_CREDENTIAL, AUTH_ALGORITHM);
       CLOSE (CLIENT_MODIFY_CREDENTIAL, CERTIFICATE);
       CLOSE (CLIENT_MODIFY_CREDENTIAL, COMMENT);
@@ -28983,6 +28999,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
               &modify_config_data->family_selection_growing_text);
 
 
+      APPEND (CLIENT_MODIFY_CREDENTIAL_ALLOW_INSECURE,
+              &modify_credential_data->allow_insecure);
+
       APPEND (CLIENT_MODIFY_CREDENTIAL_AUTH_ALGORITHM,
               &modify_credential_data->auth_algorithm);
 
@@ -29194,6 +29213,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       APPEND (CLIENT_C_C_GCR_CONFIG_TYPE,
               &import_config_data->type);
 
+
+      APPEND (CLIENT_CREATE_CREDENTIAL_ALLOW_INSECURE,
+              &create_credential_data->allow_insecure);
 
       APPEND (CLIENT_CREATE_CREDENTIAL_AUTH_ALGORITHM,
               &create_credential_data->auth_algorithm);

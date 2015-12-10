@@ -37752,6 +37752,7 @@ truncate_private_key (const gchar* private_key)
  * @param[in]  privacy_password   SNMP privacy password.
  * @param[in]  privacy_algorithm  SNMP privacy algorithm.
  * @param[in]  given_type      Credential type or NULL.
+ * @param[in]  allow_insecure  Whether to allow insecure uses.
  * @param[out] credential      Created Credential.
  *
  * @return 0 success, 1 LSC credential exists already, 2 name contains space,
@@ -37769,7 +37770,8 @@ create_credential (const char* name, const char* comment, const char* login,
                    const char* certificate, const char* community,
                    const char* auth_algorithm, const char* privacy_password,
                    const char* privacy_algorithm,
-                   const char* given_type, credential_t *credential)
+                   const char* given_type, const char* allow_insecure,
+                   credential_t *credential)
 {
   gchar *quoted_name, *quoted_comment, *quoted_type;
   int i;
@@ -37778,7 +37780,7 @@ create_credential (const char* name, const char* comment, const char* login,
   gchar *generated_private_key;
   const char *s = login;
   credential_t new_credential;
-  int auto_generate;
+  int auto_generate, allow_insecure_int;
   int ret;
 
   assert (name && strlen (name) > 0);
@@ -37798,6 +37800,13 @@ create_credential (const char* name, const char* comment, const char* login,
       sql ("ROLLBACK;");
       return 1;
     }
+
+  if (allow_insecure
+      && strcmp (allow_insecure, "")
+      && strcmp (allow_insecure, "0"))
+    allow_insecure_int = 1;
+  else
+    allow_insecure_int = 0;
 
   if (given_type && strcmp (given_type, ""))
     {
@@ -37884,15 +37893,16 @@ create_credential (const char* name, const char* comment, const char* login,
 
   sql ("INSERT INTO credentials"
        " (uuid, name, owner, comment, creation_time, modification_time,"
-       "  type)"
+       "  type, allow_insecure)"
        " VALUES"
        " (make_uuid (), '%s',"
        "  (SELECT id FROM users WHERE users.uuid = '%s'),"
-       "   '%s', m_now (), m_now (), '%s');",
+       "   '%s', m_now (), m_now (), '%s', %d);",
        quoted_name,
        current_credentials.uuid,
        quoted_comment,
-       quoted_type);
+       quoted_type,
+       allow_insecure_int);
 
   g_free (quoted_name);
   g_free (quoted_comment);
@@ -38193,6 +38203,7 @@ copy_credential (const char* name, const char* comment,
  * @param[in]   auth_algorithm      Authentication algorithm of Credential.
  * @param[in]   privacy_password    Privacy password of Credential.
  * @param[in]   privacy_algorithm   Privacy algorithm of Credential.
+ * @param[in]   allow_insecure      Whether to allow insecure use.
  *
  * @return 0 success, 1 failed to find credential, 2 credential with new name
  *         exists, 3 credential_id required, 99 permission denied,
@@ -38204,7 +38215,8 @@ modify_credential (const char *credential_id,
                    const char *login, const char* password,
                    const char* key_private, const char* certificate,
                    const char* community, const char* auth_algorithm,
-                   const char* privacy_password, const char* privacy_algorithm)
+                   const char* privacy_password, const char* privacy_algorithm,
+                   const char* allow_insecure)
 {
   credential_t credential;
   iterator_t iterator;
@@ -38253,6 +38265,16 @@ modify_credential (const char *credential_id,
 
   if (comment)
     set_credential_comment (credential, comment);
+
+  if (allow_insecure)
+    {
+      if (strcmp (allow_insecure, "") && strcmp (allow_insecure, "0"))
+        sql ("UPDATE credentials SET allow_insecure = 1 WHERE id = %llu;",
+             credential);
+      else
+        sql ("UPDATE credentials SET allow_insecure = 0 WHERE id = %llu;",
+             credential);
+    }
 
   if (login)
     set_credential_login (credential, login);
@@ -38492,7 +38514,7 @@ delete_credential (const char *credential_id, int ultimate)
  * @brief Filter columns for LSC Credential iterator.
  */
 #define CREDENTIAL_ITERATOR_FILTER_COLUMNS                                    \
- { GET_ITERATOR_FILTER_COLUMNS, "login", "type", NULL }
+ { GET_ITERATOR_FILTER_COLUMNS, "login", "type", "allow_insecure", NULL }
 
 /**
  * @brief LSC Credential iterator columns.
@@ -38502,6 +38524,7 @@ delete_credential (const char *credential_id, int ultimate)
    GET_ITERATOR_COLUMNS (credentials),                                        \
    /* public generic data */                                                  \
    { "type", NULL },                                                          \
+   { "allow_insecure", NULL },                                                \
    /* public type specific data */                                            \
    { "(SELECT value FROM credentials_data"                                    \
      " WHERE credential = credentials.id AND type = 'username')",             \
@@ -38542,6 +38565,7 @@ delete_credential (const char *credential_id, int ultimate)
    GET_ITERATOR_COLUMNS (credentials_trash),                                  \
    /* public generic data */                                                  \
    { "type", NULL },                                                          \
+   { "allow_insecure", NULL },                                                \
    /* public type specific data */                                            \
    { "(SELECT value FROM credentials_trash_data"                              \
      " WHERE credential = credentials_trash.id AND type = 'username')",       \
@@ -39020,20 +39044,20 @@ credential_iterator_encrypted_data (iterator_t* iterator, const char* type)
 
   if (iterator->done)
     return NULL;
-  secret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
+  secret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
   if (type == NULL)
     {
       g_warning ("%s: NULL data type given", __FUNCTION__);
       return NULL;
     }
   else if (strcmp (type, "password") == 0)
-    unencrypted = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
+    unencrypted = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
   else if (strcmp (type, "private_key") == 0)
-    unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
-  else if (strcmp (type, "community") == 0)
     unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
-  else if (strcmp (type, "privacy_password") == 0)
+  else if (strcmp (type, "community") == 0)
     unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 9);
+  else if (strcmp (type, "privacy_password") == 0)
+    unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 10);
   else
     {
       g_warning ("%s: unknown data type \"%s\"", __FUNCTION__, type);
@@ -39066,6 +39090,19 @@ credential_iterator_encrypted_data (iterator_t* iterator, const char* type)
 DEF_ACCESS (credential_iterator_type, GET_ITERATOR_COLUMN_COUNT);
 
 /**
+ * @brief Get the login from a Credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Login, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+int credential_iterator_allow_insecure (iterator_t* iterator)
+{
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 1);
+}
+
+/**
  * @brief Get the credential type abbreviation from an LSC credential iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -39073,7 +39110,7 @@ DEF_ACCESS (credential_iterator_type, GET_ITERATOR_COLUMN_COUNT);
  * @return Credential type, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (credential_iterator_login, GET_ITERATOR_COLUMN_COUNT + 1);
+DEF_ACCESS (credential_iterator_login, GET_ITERATOR_COLUMN_COUNT + 2);
 
 /**
  * @brief Get the certificate from a Credential iterator.
@@ -39083,7 +39120,7 @@ DEF_ACCESS (credential_iterator_login, GET_ITERATOR_COLUMN_COUNT + 1);
  * @return Certificate, or NULL if iteration is complete. Freed by
  *          cleanup_iterator.
  */
-DEF_ACCESS (credential_iterator_certificate, GET_ITERATOR_COLUMN_COUNT + 2);
+DEF_ACCESS (credential_iterator_certificate, GET_ITERATOR_COLUMN_COUNT + 3);
 
 /**
  * @brief Get the authentication algorithm from an LSC credential iterator.
@@ -39093,7 +39130,7 @@ DEF_ACCESS (credential_iterator_certificate, GET_ITERATOR_COLUMN_COUNT + 2);
  * @return Auth algorithm, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (credential_iterator_auth_algorithm, GET_ITERATOR_COLUMN_COUNT + 3);
+DEF_ACCESS (credential_iterator_auth_algorithm, GET_ITERATOR_COLUMN_COUNT + 4);
 
 /**
  * @brief Get the authentication algorithm from an LSC credential iterator.
@@ -39104,7 +39141,7 @@ DEF_ACCESS (credential_iterator_auth_algorithm, GET_ITERATOR_COLUMN_COUNT + 3);
  *         cleanup_iterator.
  */
 DEF_ACCESS (credential_iterator_privacy_algorithm,
-            GET_ITERATOR_COLUMN_COUNT + 4);
+            GET_ITERATOR_COLUMN_COUNT + 5);
 
 /**
  * @brief Get the password from a Credential iterator.

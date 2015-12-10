@@ -2534,10 +2534,12 @@ create_tables ()
        "  filter_location INTEGER, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS credentials"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
-       "  creation_time, modification_time, type TEXT);");
+       "  creation_time, modification_time, type TEXT,"
+       "  allow_insecure integer);");
   sql ("CREATE TABLE IF NOT EXISTS credentials_trash"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
-       "  creation_time, modification_time, type TEXT);");
+       "  creation_time, modification_time, type TEXT,"
+       "  allow_insecure integer);");
   sql ("CREATE TABLE IF NOT EXISTS credentials_data"
        " (id INTEGER PRIMARY KEY, credential INTEGER, type TEXT, value TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS credentials_trash_data"

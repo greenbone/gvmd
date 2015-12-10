@@ -118,7 +118,8 @@ CREATE TABLE credentials
   modification_time date,
     -- The type abbreviation of the credential,
     --  e.g. "up" for "username + password"
-  type text);
+  type text,
+  allow_insecure integer);
 
 --
 -- Trashcan for credentials.
@@ -131,7 +132,8 @@ CREATE TABLE credentials_trash
   comment text,
   creation_time date,
   modification_time date,
-  type text);
+  type text,
+  allow_insecure integer);
 
 --
 -- Data table for credentials

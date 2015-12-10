@@ -1,3 +1,47 @@
+2015-12-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add allow_insecure property to credentials.  Hence increase database
+	version to 162.  Add database migration from version 161 to 162.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 162.
+
+	* src/manage_migrators.c (migrate_161_to_162): New function.
+	(database_migrators): Add migrate_161_to_162.
+
+	* src/manage_pg (create_tables): Add allow_insecure column to tables
+	credentials and credentials_trash.
+
+	* src/manage_sql.c (create_credential, modify_credential): Add
+	allow_insecure parameter.
+	(CREDENTIAL_ITERATOR_FILTER_COLUMNS, CREDENTIAL_ITERATOR_COLUMNS)
+	(CREDENTIAL_ITERATOR_TRASH_COLUMNS): Add allow_insecure column.
+	(credential_iterator_encrypted_data): Update column numbers.
+	(credential_iterator_allow_insecure): New function.
+	(credential_iterator_login, credential_iterator_certificate)
+	(credential_iterator_auth_algorithm)
+	(credential_iterator_privacy_algorithm): Update column numbers.
+
+	* src/manage_sqlite3 (create_tables): Add allow_insecure column to
+	tables credentials and credentials_trash.
+
+	* src/manage.h (create_credential, modify_credential): Add parameter.
+	(credential_iterator_allow_insecure): New function prototype.
+
+	* src/omp.c (create_credential_data_t, create_credential_data_reset)
+	(modify_credential_data_t, modify_credential_data_reset): Add field
+	allow_insecure.
+	(client_state_t, omp_xml_handle_start_element)
+	(omp_xml_handle_end_element, omp_xml_handle_text): Add ALLOW_INSECURE
+	element in CREATE_CREDENTIAL, GET_CREDENTIALS and MODIFY_CREDENTIAL.
+
+	* src/schema_formats/XML/OMP.xml.in (create_credential)
+	(get_credentials, modify_credential): Add allow_insecure element.
+
+	* doc/db_postgres.sql: Add allow_insecure column to tables credentials
+	and credentials_trash.
+	
+	* doc/db.png, doc/omp.rnc, doc/omp.html: Update from source.
+
 2015-12-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Add case for SNMP credential

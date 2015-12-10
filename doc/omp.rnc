@@ -3443,6 +3443,7 @@ create_credential
        create_credential_name
        & create_credential_comment?
        & create_credential_copy?
+       & create_credential_allow_insecure?
        & create_credential_certificate?
        & create_credential_key?
        & create_credential_login?
@@ -3472,6 +3473,13 @@ create_credential_copy
  = element copy
      {
        uuid
+     }
+
+# Whether to allow insecure use of the credential.
+create_credential_allow_insecure
+ = element allow_insecure
+     {
+       boolean
      }
 
 # The certificate of the credential.
@@ -6106,6 +6114,7 @@ modify_credential
        attribute credential_id { uuid }
        & modify_credential_comment?
        & modify_credential_name?
+       & modify_credential_allow_insecure?
        & modify_credential_certificate?
        & modify_credential_key?
        & modify_credential_login?
@@ -6127,6 +6136,13 @@ modify_credential_comment
  = element comment
      {
        text
+     }
+
+# Whether to allow insecure use of the credential.
+modify_credential_allow_insecure
+ = element allow_insecure
+     {
+       boolean
      }
 
 # The certificate for the credential.
@@ -10271,6 +10287,7 @@ get_credentials_response_credential
        attribute id { uuid }
        & get_credentials_response_credential_owner
        & get_credentials_response_credential_name
+       & get_credentials_response_credential_allow_insecure
        & get_credentials_response_credential_login
        & get_credentials_response_credential_comment
        & get_credentials_response_credential_creation_time
@@ -10309,6 +10326,13 @@ get_credentials_response_credential_name
  = element name
      {
        name
+     }
+
+# Whether insecure use of the credential is allowed.
+get_credentials_response_credential_allow_insecure
+ = element allow_insecure
+     {
+       boolean
      }
 
 # The username of the credential.

@@ -3504,6 +3504,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>name</e>
       <o><e>comment</e></o>
       <o><e>copy</e></o>
+      <o><e>allow_insecure</e></o>
       <o><e>certificate</e></o>
       <o><e>key</e></o>
       <o><e>login</e></o>
@@ -3530,6 +3531,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>The UUID of an existing credential</summary>
       <pattern>
         <t>uuid</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>allow_insecure</name>
+      <summary>Whether to allow insecure use of the credential</summary>
+      <pattern>
+        <t>boolean</t>
       </pattern>
     </ele>
     <ele>
@@ -9858,6 +9866,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </attrib>
           <e>owner</e>
           <e>name</e>
+          <e>allow_insecure</e>
           <e>login</e>
           <e>comment</e>
           <e>creation_time</e>
@@ -9894,6 +9903,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>name</name>
           <summary>The name of the credential</summary>
           <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>allow_insecure</name>
+          <summary>Whether insecure use of the credential is allowed</summary>
+          <pattern>
+            <t>boolean</t>
+          </pattern>
         </ele>
         <ele>
           <name>login</name>
@@ -21004,6 +21020,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </attrib>
       <o><e>comment</e></o>
       <o><e>name</e></o>
+      <o><e>allow_insecure</e></o>
       <o><e>certificate</e></o>
       <o><e>key</e></o>
       <o><e>login</e></o>
@@ -21022,6 +21039,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>A comment on the credential</summary>
       <pattern>
         text
+      </pattern>
+    </ele>
+    <ele>
+      <name>allow_insecure</name>
+      <summary>Whether to allow insecure use of the credential</summary>
+      <pattern>
+        <t>boolean</t>
       </pattern>
     </ele>
     <ele>

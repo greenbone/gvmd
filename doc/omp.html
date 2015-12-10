@@ -7684,6 +7684,11 @@ create_alert_filter
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>allow_insecure</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Whether to allow insecure use of the credential.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>certificate</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">The certificate of the credential.</div>
 <ul style="list-style: none"></ul>
@@ -7770,6 +7775,7 @@ create_alert_filter
        create_credential_name
        &amp; create_credential_comment?
        &amp; create_credential_copy?
+       &amp; create_credential_allow_insecure?
        &amp; create_credential_certificate?
        &amp; create_credential_key?
        &amp; create_credential_login?
@@ -7796,6 +7802,12 @@ create_credential_copy
  = element copy
      {
        uuid
+     }
+
+create_credential_allow_insecure
+ = element allow_insecure
+     {
+       boolean
      }
 
 create_credential_certificate
@@ -16877,6 +16889,11 @@ get_assets_response_asset_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>allow_insecure</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether insecure use of the credential is allowed.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>login</b>&gt;
               <div style="margin-left: 15px; display: inline;">The username of the credential.</div>
 <ul style="list-style: none"></ul>
@@ -17184,6 +17201,7 @@ get_credentials_response_credential
        attribute id { uuid }
        &amp; get_credentials_response_credential_owner
        &amp; get_credentials_response_credential_name
+       &amp; get_credentials_response_credential_allow_insecure
        &amp; get_credentials_response_credential_login
        &amp; get_credentials_response_credential_comment
        &amp; get_credentials_response_credential_creation_time
@@ -17219,6 +17237,12 @@ get_credentials_response_credential_name
  = element name
      {
        name
+     }
+
+get_credentials_response_credential_allow_insecure
+ = element allow_insecure
+     {
+       boolean
      }
 
 get_credentials_response_credential_login
@@ -33632,6 +33656,11 @@ modify_config_nvt_selection_nvt
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>allow_insecure</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Whether to allow insecure use of the credential.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>certificate</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">The certificate for the credential.</div>
 <ul style="list-style: none"></ul>
@@ -33709,6 +33738,7 @@ modify_config_nvt_selection_nvt
        attribute credential_id { uuid }
        &amp; modify_credential_comment?
        &amp; modify_credential_name?
+       &amp; modify_credential_allow_insecure?
        &amp; modify_credential_certificate?
        &amp; modify_credential_key?
        &amp; modify_credential_login?
@@ -33728,6 +33758,12 @@ modify_credential_comment
  = element comment
      {
        text
+     }
+
+modify_credential_allow_insecure
+ = element allow_insecure
+     {
+       boolean
      }
 
 modify_credential_certificate

@@ -11751,6 +11751,43 @@ migrate_160_to_161 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 161 to version 162.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_161_to_162 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 161. */
+
+  if (manage_db_version () != 161)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Add allow_insecure column to credentials and credentials_trash */
+  sql ("ALTER TABLE credentials ADD COLUMN allow_insecure INTEGER;");
+  sql ("ALTER TABLE credentials_trash ADD COLUMN allow_insecure INTEGER;");
+
+  /* Set the value of the new column */
+  sql ("UPDATE credentials SET allow_insecure = 0;");
+  sql ("UPDATE credentials_trash SET allow_insecure = 0;");
+
+  /* Set the database version to 162. */
+
+  set_db_version (162);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
 #ifdef SQL_IS_SQLITE
 #define SQLITE_OR_NULL(function) function
 #else
@@ -11923,6 +11960,7 @@ static migrator_t database_migrators[]
     {159, migrate_158_to_159},
     {160, migrate_159_to_160},
     {161, migrate_160_to_161},
+    {162, migrate_161_to_162},
     /* End marker. */
     {-1, NULL}};
 
