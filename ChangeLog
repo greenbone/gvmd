@@ -1,3 +1,22 @@
+2015-12-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Rearrange the New NVTs alert message columns.  Add an alert parameter
+	"Details URL" that provides for a link to the NVT in the message.
+	Generate this message for the test alert from the actual NVT table, so
+	that it automatically gets any changes.
+
+	* src/manage_sql.c (escalate_2): Use new_nvts_message to generate the
+	New NVTs messages.
+	(NEW_NVTS_HEADER): Rearrange.  Add line.
+	(NEW_NVTS_EXAMPLE_TEXT, UPDATED_NVTS_EXAMPLE_TEXT): Remove.  Now
+	generated.
+	(NEW_NVTS_HEADER_OID): New define.
+	(UPDATED_NVTS_HEADER): Remove.
+	(manage_test_alert, check_for_new_nvts, check_for_updated_nvts): Skip
+	the message generation for the New NVTs cases, because that's done in
+	manage_alert now.
+	(alert_url_print, new_nvts_message): New functions.
+
 2015-12-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add event type "Updated NVTs arrived".
