@@ -5497,7 +5497,6 @@ count2 (const char *type, const get_data_t *get, column_t *select_columns,
   gchar *clause, *owned_clause, *owner_filter, *columns, *filter;
   array_t *permissions;
 
-  assert (current_credentials.uuid);
   assert (get);
 
   if (get->filt_id && strcmp (get->filt_id, "0"))
@@ -6510,7 +6509,9 @@ check_alert_params (event_t event, alert_condition_t condition,
           || method == ALERT_METHOD_VERINICE)
         return 20;
 
-      if (condition != ALERT_CONDITION_ALWAYS)
+      if (condition == ALERT_CONDITION_SEVERITY_AT_LEAST
+          || condition == ALERT_CONDITION_SEVERITY_CHANGED
+          || condition == ALERT_CONDITION_FILTER_COUNT_CHANGED)
         return 21;
     }
   return 0;
@@ -10487,6 +10488,20 @@ condition_met (task_t task, alert_t alert,
             }
           else
             count = 0;
+
+          if (task == 0)
+            {
+              get_data_t get;
+
+              /* NVT event. */
+
+              memset (&get, '\0', sizeof (get));
+              if (filter_id && strlen (filter_id) && strcmp (filter_id, "0"))
+                get.filt_id = filter_id;
+              if (nvt_info_count (&get) >= count)
+                return 1;
+              break;
+            }
 
           if (filter_id && strlen (filter_id) && strcmp (filter_id, "0"))
             filter = filter_term (filter_id);

@@ -1,3 +1,11 @@
+2015-12-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (count2): Remove assertion, because acl_where_owned
+	allows credential.uuid to be NULL.
+	(check_alert_params): Allow "Filter count at least" for NVT alerts.
+	(condition_met): Add case for NVT event with condition "Filter count at
+	least".
+
 2015-12-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Rearrange the New NVTs alert message columns.  Add an alert parameter
