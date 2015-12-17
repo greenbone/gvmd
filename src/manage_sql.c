@@ -11555,7 +11555,8 @@ init_manage_process (int update_nvt_cache, const gchar *database)
 
   if (update_nvt_cache)
     {
-      sql ("CREATE TEMPORARY TABLE old_nvts (oid TEXT, modification_time);");
+      sql ("CREATE TEMPORARY TABLE old_nvts"
+           " (oid TEXT, modification_time INTEGER);");
       sql ("INSERT INTO old_nvts (oid, modification_time)"
            " SELECT oid, modification_time FROM nvts;");
       if (update_nvt_cache == -2)
