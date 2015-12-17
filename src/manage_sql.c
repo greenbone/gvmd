@@ -7248,6 +7248,21 @@ alert_uuid (alert_t alert)
 }
 
 /**
+ * @brief Return the UUID of the owner of an alert.
+ *
+ * @param[in]  alert  Alert.
+ *
+ * @return UUID of owner.
+ */
+char *
+alert_owner_uuid (alert_t alert)
+{
+  return sql_string ("SELECT uuid FROM users"
+                     " WHERE id = (SELECT owner FROM alerts WHERE id = %llu);",
+                     alert);
+}
+
+/**
  * @brief Return the UUID of the filter of an alert.
  *
  * @param[in]  alert  Alert.
@@ -10492,13 +10507,28 @@ condition_met (task_t task, alert_t alert,
           if (task == 0)
             {
               get_data_t get;
+              int db_count, uuid_was_null;
 
               /* NVT event. */
+
+              if (current_credentials.uuid == NULL)
+                {
+                  current_credentials.uuid = alert_owner_uuid (alert);
+                  uuid_was_null = 1;
+                }
+              else
+                uuid_was_null = 0;
 
               memset (&get, '\0', sizeof (get));
               if (filter_id && strlen (filter_id) && strcmp (filter_id, "0"))
                 get.filt_id = filter_id;
-              if (nvt_info_count (&get) >= count)
+              db_count = nvt_info_count (&get);
+              if (uuid_was_null)
+                {
+                  free (current_credentials.uuid);
+                  current_credentials.uuid = NULL;
+                }
+              if (db_count >= count)
                 return 1;
               break;
             }

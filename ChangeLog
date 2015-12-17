@@ -1,5 +1,11 @@
 2015-12-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (alert_owner_uuid): New function.
+	(condition_met): Set the owner UUID in current_credentials, so that the
+	filter is found.
+
+2015-12-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (count2): Remove assertion, because acl_where_owned
 	allows credential.uuid to be NULL.
 	(check_alert_params): Allow "Filter count at least" for NVT alerts.
