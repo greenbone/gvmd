@@ -1,5 +1,9 @@
 2015-12-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c: Add doc page asset_rules.
+
+2015-12-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_manage_process): Add column type for Postgres.
 
 2015-12-17  Matthew Mundell <matthew.mundell@greenbone.net>

@@ -55582,6 +55582,51 @@ manage_empty_trashcan ()
 /* Assets. */
 
 /**
+ * \page asset_rules Ruleset for updating assets from scan detections
+ *
+ * During a scan various assets are identfied. The findings are by default
+ * used to update the asset database. Since assets may already be present in
+ * the database or even be present with contradictive properties, a ruleset
+ * defines how the asset database is updated upon findings.
+ *
+ * Hosts
+ * -----
+ *
+ * When a host is detected, and there is at least one asset host that has the
+ * same name and owner as the detected host, and whose identifiers all have
+ * the same values as the identifiers of the detected host, then the most
+ * recent such asset host is used. Otherwise a new asset host is created.
+ * Either way the identifiers are added to the asset host. It does not matter
+ * if the asset host has fewer identifiers than detected, as long as the
+ * existing identifiers match.
+ *
+ * Host identifiers can be ip, hostname, MAC, DNS-via-TargetDefinition, OS or
+ * ssh-key.
+ *
+ * Detection                    | Asset State                                                                 |     Asset Update
+ * ---------------------------- | --------------------------------------------------------------------------- | -----------------------------
+ * IP address X.                | No host with Name=X or any ip=X.                                            | Create host with Name=X and ip=X.
+ * IP address X.                | Host A with Name=X.                                                         | Add ip=X to host A.
+ * IP address X.                | (Host A with Name=X and ip=X) and (Host B with Name=X and ip=X).            | Add ip=X to host (Newest(A,B)).
+ * IP addess X with Hostname Y. | Host A with Name=X and ip=X.                                                | Add ip=X and hostname=Y to host A.
+ * IP addess X with Hostname Y. | Host A with Name=X and ip=X and hostname=Y.                                 | Add ip=X and hostname=Y to host A.
+ * IP addess X with Hostname Y. | Host A with Name=X and ip=X and hostname<>Y.                                | Create host with Name=X, ip=X and hostname=Y.
+ * IP addess X with Hostname Y. | Host A with Name=X and ip=X and hostname=Y and host B with Name=X and ip=X. | Add ip=X and hostname=Y to host (Newst(A,B)).
+ *
+ * Follow up action: If a MAC, DNS-via-TargetDefinition, OS or ssh-key was
+ * detected, then the respective identifiers are added to the asset host
+ * selected during asset update.
+ *
+ * Operating Systems
+ * -----------------
+ *
+ * Detection | Asset State        | Asset Update
+ * --------- | ------------------ | ------------------------
+ * OS X.     | No OS with Name=X. | Create OS with Name=X.
+ * OS X.     | OS with Name=X.    | No action.
+ */
+
+/**
  * @brief Return the UUID of the asset associated with a result host.
  *
  * @param[in]  host    Host value from result.
