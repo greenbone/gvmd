@@ -50045,6 +50045,21 @@ delete_filter (const char *filter_id, int ultimate)
           return 1;
         }
 
+      /* Check if it's in use by the condition of an alert in the trashcan. */
+      if (sql_int ("SELECT count(*) FROM alert_condition_data_trash"
+                   " WHERE name = 'filter_id'"
+                   " AND data = (SELECT uuid FROM filters_trash"
+                   "             WHERE id = %llu)"
+                   " AND (SELECT condition = %i OR condition = %i"
+                   "      FROM alerts_trash WHERE id = alert);",
+                   filter,
+                   ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
+                   ALERT_CONDITION_FILTER_COUNT_CHANGED))
+        {
+          sql ("ROLLBACK;");
+          return 1;
+        }
+
       permissions_set_orphans ("filter", filter, LOCATION_TRASH);
       tags_set_orphans ("filter", filter, LOCATION_TRASH);
 
@@ -50053,12 +50068,46 @@ delete_filter (const char *filter_id, int ultimate)
       return 0;
     }
 
+  /* Check if it's in use by an alert. */
   if (sql_int ("SELECT count(*) FROM alerts"
                " WHERE filter = %llu;",
                filter))
     {
       sql ("ROLLBACK;");
       return 1;
+    }
+
+  /* Check if it's in use by the condition of an alert. */
+  if (sql_int ("SELECT count(*) FROM alert_condition_data"
+               " WHERE name = 'filter_id'"
+               " AND data = (SELECT uuid FROM filters"
+               "             WHERE id = %llu)"
+               " AND (SELECT condition = %i OR condition = %i"
+               "      FROM alerts WHERE id = alert);",
+               filter,
+               ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
+               ALERT_CONDITION_FILTER_COUNT_CHANGED))
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
+
+  if (ultimate)
+    {
+      /* Check if it's in use by the condition of an alert in the trashcan. */
+      if (sql_int ("SELECT count(*) FROM alert_condition_data_trash"
+                   " WHERE name = 'filter_id'"
+                   " AND data = (SELECT uuid FROM filters"
+                   "             WHERE id = %llu)"
+                   " AND (SELECT condition = %i OR condition = %i"
+                   "      FROM alerts_trash WHERE id = alert);",
+                   filter,
+                   ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
+                   ALERT_CONDITION_FILTER_COUNT_CHANGED))
+        {
+          sql ("ROLLBACK;");
+          return 1;
+        }
     }
 
   quoted_filter_id = sql_quote (filter_id);
@@ -50286,9 +50335,18 @@ init_filter_alert_iterator (iterator_t* iterator, filter_t filter)
   init_iterator (iterator,
                  "SELECT name, uuid, %s FROM alerts"
                  " WHERE filter = %llu"
+                 " OR (EXISTS (SELECT * FROM alert_condition_data"
+                 "             WHERE name = 'filter_id'"
+                 "             AND data = (SELECT uuid FROM filters"
+                 "                         WHERE id = %llu)"
+                 "             AND alert = alerts.id)"
+                 "     AND (condition = %i OR condition = %i))"
                  " ORDER BY name ASC;",
                  available,
-                 filter);
+                 filter,
+                 filter,
+                 ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
+                 ALERT_CONDITION_FILTER_COUNT_CHANGED);
 
   g_free (available);
 }

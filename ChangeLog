@@ -1,5 +1,14 @@
 2015-12-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r23774.
+
+	* src/manage_sql.c (delete_filter): Check if the filter is in use by an
+	alert condition.
+	(init_filter_alert_iterator): Include alerts that use the filter in a
+	condition.
+
+2015-11-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r23771.
 
 	Validate filter condition data for CREATE_ALERT and MODIFY_ALERT.
