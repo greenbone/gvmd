@@ -1,5 +1,17 @@
 2015-12-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r23771.
+
+	Validate filter condition data for CREATE_ALERT and MODIFY_ALERT.
+
+	* src/manage_sql.c (validate_alert_condition_data): Add filter cases.
+	(create_alert): Handle new validation returns.
+
+	* src/omp.c (omp_xml_handle_end_element): Handle new validation returns.
+	Correct commands in log calls.
+
+2015-12-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r23764.
 
 	Add new alert conditions "Filter count at least" and "Filter count

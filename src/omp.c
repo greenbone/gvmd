@@ -19103,6 +19103,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         " method"));
                     log_event_fail ("alert", "Alert", NULL, "created");
                     break;
+                  case 9:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_alert",
+                                        "Failed to find filter for condition"));
+                    log_event_fail ("alert", "Alert", NULL, "created");
+                    break;
                   case 99:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_alert",
@@ -22618,25 +22624,31 @@ create_task_fail:
                   (XML_ERROR_SYNTAX ("modify_alert",
                                     "Invalid or unexpected condition data"
                                     " name"));
-                log_event_fail ("alert", "Alert", NULL, "created");
+                log_event_fail ("alert", "Alert", NULL, "modified");
                 break;
               case 8:
                 SEND_TO_CLIENT_OR_FAIL
                   (XML_ERROR_SYNTAX ("modify_alert",
                                     "Syntax error in condition data"));
-                log_event_fail ("alert", "Alert", NULL, "created");
+                log_event_fail ("alert", "Alert", NULL, "modified");
                 break;
               case 9:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_alert",
                                     "Email subject too long"));
-                log_event_fail ("alert", "Alert", NULL, "created");
+                log_event_fail ("alert", "Alert", NULL, "modified");
                 break;
               case 10:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_alert",
                                     "Email message too long"));
-                log_event_fail ("alert", "Alert", NULL, "created");
+                log_event_fail ("alert", "Alert", NULL, "modified");
+                break;
+              case 11:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_alert",
+                                    "Failed to find filter for condition"));
+                log_event_fail ("alert", "Alert", NULL, "modified");
                 break;
               case 12:
                 SEND_TO_CLIENT_OR_FAIL
