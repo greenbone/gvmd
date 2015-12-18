@@ -1,3 +1,18 @@
+2015-12-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r23764.
+
+	Add new alert conditions "Filter count at least" and "Filter count
+	changed".
+
+	* src/manage.h (alert_condition_t): Add filter conditions.
+
+	* src/manage.c (alert_condition_name, alert_condition_description)
+	(alert_condition_from_name, alert_condition_t): Add filter conditions.
+
+	* src/manage_sql.c (init_alert_data_iterator): Align arg.
+	(condition_met): Add filter cases.
+
 2015-12-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r23955.

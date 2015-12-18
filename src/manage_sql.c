@@ -295,6 +295,9 @@ static struct timeval last_msg;
 static int
 check_config_families ();
 
+static int
+task_second_last_report (task_t, report_t *);
+
 
 /* OMP commands. */
 
@@ -7232,7 +7235,7 @@ alert_iterator_filter_readable (iterator_t* iterator)
  */
 void
 init_alert_data_iterator (iterator_t *iterator, alert_t alert,
-                              int trash, const char *table)
+                          int trash, const char *table)
 {
   init_iterator (iterator,
                  "SELECT name, data FROM alert_%s_data%s"
@@ -9873,6 +9876,202 @@ condition_met (task_t task, alert_t alert,
       case ALERT_CONDITION_ALWAYS:
         return 1;
         break;
+      case ALERT_CONDITION_FILTER_COUNT_AT_LEAST:
+        {
+          char *filter_id, *count_string;
+          report_t last_report;
+          int first_result, max_results, sort_order, result_hosts_only;
+          int autofp, notes, overrides;
+          gchar *filter, *zone;
+          gchar *sort_field, *levels, *search_phrase;
+          gchar *min_cvss_base, *min_qod;
+          gchar *delta_states;
+          int debugs, holes, infos, logs, warnings, false_positives;
+          int search_phrase_exact, apply_overrides, count;
+          double severity;
+
+          /* True if there are at least the given number of results matched by
+           * the given filter in the last finished report. */
+
+          filter_id = alert_data (alert, "condition", "filter_id");
+          count_string = alert_data (alert, "condition", "count");
+          if (count_string)
+            {
+              count = atoi (count_string);
+              free (count_string);
+            }
+          else
+            count = 0;
+
+          if (filter_id && strlen (filter_id) && strcmp (filter_id, "0"))
+            filter = filter_term (filter_id);
+          else
+            filter = NULL;
+          free (filter_id);
+
+          /* Set the filter parameters from the filter term. */
+          manage_report_filter_controls (filter ? filter : "",
+                                         &first_result, &max_results, &sort_field,
+                                         &sort_order, &result_hosts_only,
+                                         &min_cvss_base, &min_qod, &levels,
+                                         &delta_states,
+                                         &search_phrase, &search_phrase_exact,
+                                         &autofp, &notes, &overrides,
+                                         &apply_overrides, &zone);
+          g_free (filter);
+
+          last_report = 0;
+          if (task_last_report (task, &last_report))
+            g_warning ("%s: failed to get last report\n", __FUNCTION__);
+
+          tracef ("%s: last_report: %llu", __FUNCTION__, last_report);
+          if (last_report)
+            {
+              report_counts_id (last_report, &debugs, &holes, &infos, &logs,
+                                &warnings, &false_positives, &severity, 1, NULL,
+                                0, min_qod);
+
+              tracef ("%s: count: %i vs %i", __FUNCTION__,
+                      debugs + holes + infos + logs + warnings
+                      + false_positives,
+                      count);
+              if ((debugs + holes + infos + logs + warnings + false_positives)
+                  >= count)
+                return 1;
+            }
+          break;
+        }
+      case ALERT_CONDITION_FILTER_COUNT_CHANGED:
+        {
+          char *direction, *filter_id, *count_string;
+          report_t last_report;
+          int first_result, max_results, sort_order, result_hosts_only;
+          int autofp, notes, overrides;
+          gchar *filter, *zone;
+          gchar *sort_field, *levels, *search_phrase;
+          gchar *min_cvss_base, *min_qod;
+          gchar *delta_states;
+          int debugs, holes, infos, logs, warnings, false_positives;
+          int search_phrase_exact, apply_overrides, count;
+          double severity;
+
+          /* True if the number of results matched by the given filter in the
+           * last finished report changed in the given direction with respect
+           * to the second last finished report. */
+
+          direction = alert_data (alert, "condition", "direction");
+          filter_id = alert_data (alert, "condition", "filter_id");
+          count_string = alert_data (alert, "condition", "count");
+          if (count_string)
+            {
+              count = atoi (count_string);
+              free (count_string);
+            }
+          else
+            count = 0;
+
+          if (filter_id && strlen (filter_id) && strcmp (filter_id, "0"))
+            filter = filter_term (filter_id);
+          else
+            filter = NULL;
+          free (filter_id);
+
+          /* Set the filter parameters from the filter term. */
+          manage_report_filter_controls (filter ? filter : "",
+                                         &first_result, &max_results, &sort_field,
+                                         &sort_order, &result_hosts_only,
+                                         &min_cvss_base, &min_qod, &levels,
+                                         &delta_states,
+                                         &search_phrase, &search_phrase_exact,
+                                         &autofp, &notes, &overrides,
+                                         &apply_overrides, &zone);
+          free (filter);
+
+          last_report = 0;
+          if (task_last_report (task, &last_report))
+            g_warning ("%s: failed to get last report\n", __FUNCTION__);
+
+          if (last_report)
+            {
+              report_t second_last_report;
+              int last_count;
+
+              report_counts_id (last_report, &debugs, &holes, &infos, &logs,
+                                &warnings, &false_positives, &severity, 1, NULL,
+                                0, min_qod);
+
+              last_count = debugs + holes + infos + logs + warnings
+                           + false_positives;
+
+              second_last_report = 0;
+              if (task_second_last_report (task, &second_last_report))
+                g_warning ("%s: failed to get second last report\n", __FUNCTION__);
+
+              if (second_last_report)
+                {
+                  int cmp, second_last_count;
+
+                  report_counts_id (second_last_report, &debugs, &holes, &infos,
+                                    &logs, &warnings, &false_positives,
+                                    &severity, 1, NULL, 0, min_qod);
+
+                  second_last_count = debugs + holes + infos + logs + warnings
+                                      + false_positives;
+
+                  cmp = last_count - second_last_count;
+                  tracef ("cmp: %i\n", cmp);
+                  tracef ("direction: %s\n", direction);
+                  tracef ("last_count: %i\n", last_count);
+                  tracef ("second_last_count: %i\n", second_last_count);
+                  if (count < 0)
+                    {
+                      count = -count;
+                      if (direction == NULL
+                          || strcasecmp (direction, "increased") == 0)
+                        {
+                          free (direction);
+                          direction = g_strdup ("decreased");
+                        }
+                      else if (strcasecmp (direction, "decreased") == 0)
+                        {
+                          free (direction);
+                          direction = g_strdup ("increased");
+                        }
+                    }
+                  if (direction == NULL)
+                    {
+                      /* Same as "increased". */
+                      if (cmp > count)
+                        return 1;
+                    }
+                  else if (((strcasecmp (direction, "changed") == 0)
+                            && (abs (cmp) > count))
+                           || ((strcasecmp (direction, "increased") == 0)
+                               && (cmp > count))
+                           || ((strcasecmp (direction, "decreased") == 0)
+                               && (cmp < count)))
+                    {
+                      free (direction);
+                      return 1;
+                    }
+                }
+              else
+                {
+                  tracef ("direction: %s\n", direction);
+                  tracef ("last_count: %i\n", last_count);
+                  tracef ("second_last_count NULL\n");
+                  if (((strcasecmp (direction, "changed") == 0)
+                       || (strcasecmp (direction, "increased") == 0))
+                      && (last_count > 0))
+                    {
+                      free (direction);
+                      return 1;
+                    }
+                }
+            }
+          free (direction);
+          break;
+        }
       case ALERT_CONDITION_SEVERITY_AT_LEAST:
         {
           char *condition_severity_str;
