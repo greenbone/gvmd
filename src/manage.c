@@ -3364,6 +3364,8 @@ fork_osp_scan_handler (task_t task, target_t target)
       report_add_result (current_report, result);
       set_task_run_status (task, TASK_STATUS_DONE);
       set_report_scan_run_status (current_report, TASK_STATUS_DONE);
+      set_task_end_time_epoch (task, time (NULL));
+      set_scan_end_time_epoch (current_report, time (NULL));
 
       g_free (error);
       g_free (report_id);
@@ -3389,6 +3391,8 @@ fork_osp_scan_handler (task_t task, target_t target)
       set_report_scan_run_status (current_report, TASK_STATUS_STOPPED);
     }
 
+  set_task_end_time_epoch (task, time (NULL));
+  set_scan_end_time_epoch (current_report, time (NULL));
   current_report = 0;
   current_scanner_task = (task_t) 0;
   exit (rc);
@@ -4623,6 +4627,8 @@ stop_osp_task (task_t task)
   g_free (scan_id);
 
 end_stop_osp:
+  set_task_end_time_epoch (task, time (NULL));
+  set_scan_end_time_epoch (current_report, time (NULL));
   set_task_run_status (task, TASK_STATUS_STOPPED);
   set_report_scan_run_status (current_report, TASK_STATUS_STOPPED);
   if (ret)
