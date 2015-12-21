@@ -1,3 +1,53 @@
+openvas-manager 6.0.7 (2015-12-21)
+
+This is the seventh maintenance release of the openvas-manager 6.0 module for
+the Open Vulnerability Assessment System release 8 (OpenVAS-8).
+
+This release addresses a number of issues discovered after the release of
+OpenVAS Manager 6.0.6 and incorporates several improvements from the development
+branch of OpenVAS. Please see below for a comprehensive list of changes.
+
+Many thanks to everyone who contributed to this release:
+Hani Benhabiles, Matthew Mundell, Timo Pollmeier and Michael Wiegand.
+
+Main changes compared to 6.0.6:
+* A new alert method "Send" has been added, for sending the report to a TCP
+  listener.
+* Support for using the 'Verinice Source ID' tag in the Verinice_ISM report
+  format has been added.
+* Support for triggering and alert when a powerfilter matches a certain number
+  of results has been added.
+* Support for importing OSP scan configs has been added.
+* OSP support has been improved.
+* An issue which caused a master to attempt to clean up non-existent
+  credentials on its slave has been fixed.
+* An issue which caused prognostic reports to be unavailable in the NBE report
+  format has been fixed.
+* An issue which caused a database migration to fail under certain
+  circumstances has been fixed.
+* An issue which caused overrides to not be applied in the CSV report format
+  has been fixed.
+* An issue which caused the internal scheduler to stop manually started tasks
+  under certain circumstances has been fixed.
+* An issue which made it possible to delete ESXi credentials while they were
+  still be used by a task has been addressed.
+* An issue which caused rebuild processes to hang under certain circumstances
+  has been fixed.
+* An issue which caused incorrect NVT counts under certain circumstances has
+  been fixed.
+* An issue which caused the "Attach HTML report" parameter to be absent from
+  the Verinice_ISM report format has been fixed.
+* The handling of slave task after a connection loss between master and slave
+  has been improved.
+* The handling of the "once" schedule has been improved.
+* Database locking when rebuilding has been improved to prevent processes from
+  accessing the database in an inconsistent state.
+* Improved handling of signals during an active rebuild.
+* A number of memory leaks have been removed.
+* Documentation has been updated.
+* Several performance improvements.
+
+
 openvas-manager 6.0.6 (2015-09-28)
 
 This is the sixth maintenance release of the openvas-manager 6.0 module for
