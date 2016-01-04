@@ -32839,10 +32839,6 @@ insert_osp_parameter (osp_param_t *param, config_t config)
   if (!param)
     return ret;
   param_id = sql_quote (osp_param_id (param));
-  /* Ignoring username and password parameters as these are taken from
-   * the task's LSC Credentials. */
-  if (!strcmp (param_id, "username") || !strcmp (param_id, "password"))
-    return ret;
   param_type = sql_quote (osp_param_type_str (param));
   if (!strcmp (param_type, "selection"))
     {

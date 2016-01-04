@@ -1,3 +1,8 @@
+2016-01-04  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (isnert_osp_parameter): Remove special case handling
+	of username and password parameters.
+
 2015-12-21  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (fork_osp_scan_handler, stop_osp_task): Set task and
