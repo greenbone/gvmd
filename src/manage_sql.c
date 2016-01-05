@@ -55620,6 +55620,8 @@ manage_empty_trashcan ()
  * if the asset host has fewer identifiers than detected, as long as the
  * existing identifiers match.
  *
+ * This decision about which asset host to use is made in \ref hosts_set_identifiers.
+ *
  * Host identifiers can be ip, hostname, MAC, DNS-via-TargetDefinition, OS or
  * ssh-key.
  *
@@ -55775,6 +55777,10 @@ identifier_free (identifier_t *identifier)
 
 /**
  * @brief Setup hosts and their identifiers after a scan, from host details.
+ *
+ * This makes the decision about which asset host is used for the host
+ * identifiers that were gathered during the scan.  The rules for this decision
+ * are described in \ref asset_rules.
  */
 void
 hosts_set_identifiers ()
@@ -55800,7 +55806,10 @@ hosts_set_identifiers ()
           select = g_string_new ("");
 
           /* Select the most recent host whose identifiers all match the given
-           * identifiers, even if the host has fewer identifiers than given. */
+           * identifiers, even if the host has fewer identifiers than given.
+           *
+           * This implements the ruleset described on the asset_rules doc page
+           * above. */
 
           g_string_append_printf (select,
                                   "SELECT id FROM hosts"

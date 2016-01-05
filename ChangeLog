@@ -1,5 +1,10 @@
 2016-01-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c: Refer to hosts_set_identifiers in the asset_rules
+	doc page, and vice versa.
+
+2016-01-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/report_formats/Verinice_ISM/Verinice_ISM.xsl (info-control): Use
 	new 'ISM Control Description' param.
 
