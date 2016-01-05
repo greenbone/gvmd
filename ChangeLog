@@ -1,5 +1,10 @@
 2016-01-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/report_formats/Verinice_ISM/Verinice_ISM.xsl (info-control): Use
+	new 'ISM Control Description' param.
+
+2016-01-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add "ISM Control Description" parameter to "Verinice ISM" report format.
 	Hence increase database version to 163.  Add database migration from
 	version 162 to 163.

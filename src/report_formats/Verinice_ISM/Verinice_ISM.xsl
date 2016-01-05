@@ -398,7 +398,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </syncAttribute>
       <syncAttribute>
         <name>gsm_ism_control_description</name>
-        <value>Dear IS Coordinator,
+        <xsl:choose>
+          <xsl:when test="string-length(report/report_format/param[name='ISM Control Description']/value) &gt; 0">
+            <value><xsl:value-of select="report/report_format/param[name='ISM Control Description']/value/text()"/></value>
+          </xsl:when>
+          <xsl:otherwise>
+            <value>Dear IS Coordinator,
+
 A new scan has been carried out and the results are now available in Verinice.
 If responsible persons are linked to the asset groups, the tasks are already created.
 
@@ -406,6 +412,8 @@ Please check the results in a timely manner.
 
 Best regards
 CIS</value>
+          </xsl:otherwise>
+        </xsl:choose>
       </syncAttribute>
       <syncAttribute>
         <name>gsm_ism_control_tag</name>
