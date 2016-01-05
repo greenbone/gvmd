@@ -1,5 +1,12 @@
 2016-01-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r24037.
+
+	* src/report_formats/Verinice_ISM/Verinice_ISM.xsl (info-control): Use
+	new 'ISM Control Description' param.
+
+2016-01-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r24036.
 
 	Add "ISM Control Description" parameter to "Verinice ISM" report format.
