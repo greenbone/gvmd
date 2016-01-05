@@ -13569,6 +13569,20 @@ make_report_format_uuids_unique ()
 }
 
 /**
+ * @brief Description for Verinice ISM report format.
+ */
+#define VERINICE_ISM_CONTROL_DESCRIPTION                                        \
+ "Dear IS Coordinator,\n"                                                       \
+ "\n"                                                                           \
+ "A new scan has been carried out and the results are now available in Verinice.\n"        \
+ "If responsible persons are linked to the asset groups, the tasks are already created.\n" \
+ "\n"                                                                           \
+ "Please check the results in a timely manner.\n"                               \
+ "\n"                                                                           \
+ "Best regards\n"                                                               \
+ "CIS"
+
+/**
  * @brief Ensure the predefined report formats exist.
  *
  * @return 0 success, -1 error.
@@ -13862,6 +13876,16 @@ check_db_report_formats ()
            " VALUES (%lli, 'Attach HTML report', %i, 1, 0, 1, '', 1);",
            report_format,
            REPORT_FORMAT_PARAM_TYPE_BOOLEAN);
+
+      /* Create "ISM Control Description" parameter */
+      sql ("INSERT INTO report_format_params (report_format, name, type, value,"
+           " type_min, type_max, type_regex, fallback)"
+           " VALUES (%lli, 'ISM Control Description', %i, '%s', 0, 100000, '',"
+           "         '%s');",
+           report_format,
+           REPORT_FORMAT_PARAM_TYPE_TEXT,
+           VERINICE_ISM_CONTROL_DESCRIPTION,
+           VERINICE_ISM_CONTROL_DESCRIPTION);
 
       report_format_verify (report_format);
     }

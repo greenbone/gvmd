@@ -1,3 +1,21 @@
+2016-01-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add "ISM Control Description" parameter to "Verinice ISM" report format.
+	Hence increase database version to 163.  Add database migration from
+	version 162 to 163.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 163.
+
+	* src/manage_migrators.c (MIGRATE_162_TO_163_CONTROL_DESCRIPTION): New
+	define.
+	(migrate_162_to_163): New function.
+	(database_migrators): Add migrate_162_to_163.
+
+	* src/manage_sql.c (VERINICE_ISM_CONTROL_DESCRIPTION): New define.
+	(check_db_report_formats): Add parameter to Verinice ISM report format.
+
+	* doc/db.png: Update for version change.
+
 2016-01-04  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (isnert_osp_parameter): Remove special case handling

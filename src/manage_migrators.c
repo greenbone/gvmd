@@ -11788,6 +11788,60 @@ migrate_161_to_162 ()
   return 0;
 }
 
+/**
+ * @brief Description for Verinice ISM report format.
+ */
+#define MIGRATE_162_TO_163_CONTROL_DESCRIPTION                                  \
+ "Dear IS Coordinator,\n"                                                       \
+ "\n"                                                                           \
+ "A new scan has been carried out and the results are now available in Verinice.\n"        \
+ "If responsible persons are linked to the asset groups, the tasks are already created.\n" \
+ "\n"                                                                           \
+ "Please check the results in a timely manner.\n"                               \
+ "\n"                                                                           \
+ "Best regards\n"                                                               \
+ "CIS"
+
+/**
+ * @brief Migrate the database from version 158 to version 162.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_162_to_163 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 162. */
+
+  if (manage_db_version () != 162)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Report format "Verinice ISM" got a new param. */
+
+  sql ("INSERT INTO report_format_params (report_format, name, type, value,"
+       " type_min, type_max, type_regex, fallback)"
+       " VALUES ((SELECT id FROM report_formats"
+       "          WHERE uuid = 'c15ad349-bd8d-457a-880a-c7056532ee15'),"
+       "         'ISM Control Description', %i, '%s', 0, 100000, '', '%s');",
+       REPORT_FORMAT_PARAM_TYPE_TEXT,
+       MIGRATE_162_TO_163_CONTROL_DESCRIPTION,
+       MIGRATE_162_TO_163_CONTROL_DESCRIPTION);
+
+  /* Set the database version to 163. */
+
+  set_db_version (163);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
 #ifdef SQL_IS_SQLITE
 #define SQLITE_OR_NULL(function) function
 #else
@@ -11961,6 +12015,7 @@ static migrator_t database_migrators[]
     {160, migrate_159_to_160},
     {161, migrate_160_to_161},
     {162, migrate_161_to_162},
+    {163, migrate_162_to_163},
     /* End marker. */
     {-1, NULL}};
 
