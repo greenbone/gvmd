@@ -12816,6 +12816,20 @@ make_report_format_uuids_unique ()
 }
 
 /**
+ * @brief Description for Verinice ISM report format.
+ */
+#define VERINICE_ISM_CONTROL_DESCRIPTION                                        \
+ "Dear IS Coordinator,\n"                                                       \
+ "\n"                                                                           \
+ "A new scan has been carried out and the results are now available in Verinice.\n"        \
+ "If responsible persons are linked to the asset groups, the tasks are already created.\n" \
+ "\n"                                                                           \
+ "Please check the results in a timely manner.\n"                               \
+ "\n"                                                                           \
+ "Best regards\n"                                                               \
+ "CIS"
+
+/**
  * @brief Ensure the predefined report formats exist.
  *
  * @return 0 success, -1 error.
@@ -13110,22 +13124,52 @@ check_db_report_formats ()
            report_format,
            REPORT_FORMAT_PARAM_TYPE_BOOLEAN);
 
-      report_format_verify (report_format);
-    }
-  else if (sql_int
-            ("SELECT count(*) FROM report_format_params"
-             " WHERE report_format"
-             "       = (SELECT id FROM report_formats"
-             "          WHERE uuid = 'c15ad349-bd8d-457a-880a-c7056532ee15');")
-           == 0)
-    {
-      /* Create report "Attach HTML report" format parameter */
+      /* Create "ISM Control Description" parameter */
       sql ("INSERT INTO report_format_params (report_format, name, type, value,"
            " type_min, type_max, type_regex, fallback)"
-           " VALUES ((SELECT id FROM report_formats"
-           "          WHERE uuid = 'c15ad349-bd8d-457a-880a-c7056532ee15'),"
-           "         'Attach HTML report', %i, 1, 0, 1, '', 1);",
-           REPORT_FORMAT_PARAM_TYPE_BOOLEAN);
+           " VALUES (%lli, 'ISM Control Description', %i, '%s', 0, 100000, '',"
+           "         '%s');",
+           report_format,
+           REPORT_FORMAT_PARAM_TYPE_TEXT,
+           VERINICE_ISM_CONTROL_DESCRIPTION,
+           VERINICE_ISM_CONTROL_DESCRIPTION);
+
+      report_format_verify (report_format);
+    }
+  else
+    {
+      if (sql_int
+           ("SELECT count(*) FROM report_format_params"
+            " WHERE report_format"
+            "       = (SELECT id FROM report_formats"
+            "          WHERE uuid = 'c15ad349-bd8d-457a-880a-c7056532ee15')"
+            " AND name = 'Attach HTML report';")
+          == 0)
+        /* Create report "Attach HTML report" format parameter */
+        sql ("INSERT INTO report_format_params (report_format, name, type, value,"
+             " type_min, type_max, type_regex, fallback)"
+             " VALUES ((SELECT id FROM report_formats"
+             "          WHERE uuid = 'c15ad349-bd8d-457a-880a-c7056532ee15'),"
+             "         'Attach HTML report', %i, 1, 0, 1, '', 1);",
+             REPORT_FORMAT_PARAM_TYPE_BOOLEAN);
+
+      if (sql_int
+           ("SELECT count(*) FROM report_format_params"
+            " WHERE report_format"
+            "       = (SELECT id FROM report_formats"
+            "          WHERE uuid = 'c15ad349-bd8d-457a-880a-c7056532ee15')"
+            " AND name = 'ISM Control Description';")
+          == 0)
+        /* Create report "Attach HTML report" format parameter */
+        sql ("INSERT INTO report_format_params (report_format, name, type, value,"
+             " type_min, type_max, type_regex, fallback)"
+             " VALUES ((SELECT id FROM report_formats"
+             "          WHERE uuid = 'c15ad349-bd8d-457a-880a-c7056532ee15'),"
+             "         'ISM Control Description', %i, '%s', 0, 100000, '',"
+             "         '%s');",
+             REPORT_FORMAT_PARAM_TYPE_TEXT,
+             VERINICE_ISM_CONTROL_DESCRIPTION,
+             VERINICE_ISM_CONTROL_DESCRIPTION);
     }
 
   if (sql_int ("SELECT count(*) FROM report_formats"
