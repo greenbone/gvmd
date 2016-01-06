@@ -55633,6 +55633,22 @@ manage_empty_trashcan ()
  * Host identifiers can be ip, hostname, MAC, DNS-via-TargetDefinition, OS or
  * ssh-key.
  *
+ * This documentation includes some pseudo-code and tabular definition.
+ * Eventually one of them will repalce the other.
+ *
+ * Name    : The assigned name (usually the IP)
+ * IP      : The detected IP
+ * Hostname: The detected Hostname
+ * OS:     : The detected OS
+ *
+ * If IP And Not Hostname:
+ *   If Not Assets.Host(id=Name) And Not Assets.Host(attrib=IP, IP):
+ *     Assets.Host.New(id=Name, ip=IP)
+ *   If Assets.Host(id=Name) == 1:
+ *     Assets.Host.Add(id=Name, ip=IP)
+ * 
+ * This pseudo-code is equivalent to the first two rows of:
+ *
  * Detection                    | Asset State                                                                 |     Asset Update
  * ---------------------------- | --------------------------------------------------------------------------- | -----------------------------
  * IP address X.                | No host with Name=X or any ip=X.                                            | Create host with Name=X and ip=X.
@@ -55649,6 +55665,12 @@ manage_empty_trashcan ()
  *
  * Operating Systems
  * -----------------
+ *
+ * If OS:
+ *   If Not Assets.OS(id=OS):
+ *     Assets.OS.New(id=OS)
+ *
+ * This pseudo-code is equivalent to:
  *
  * Detection | Asset State        | Asset Update
  * --------- | ------------------ | ------------------------
