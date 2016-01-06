@@ -1,3 +1,10 @@
+2016-01-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (host_notice): Add a note about how this fits into
+	the asset rules, with a link to the asset_rules doc page.
+	(asset_rules, hosts_set_identifiers): Clarify that decision is made in
+	two steps, linking to host_notice.
+
 2016-01-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c: Refer to hosts_set_identifiers in the asset_rules

@@ -17142,6 +17142,11 @@ host_identify (const char *host_name, const char *identifier_name,
 /**
  * @brief Notice a host.
  *
+ * When a host is detected during a scan, this makes the decision about which
+ * asset host is used for the host, as decribed in \ref asset_rules.  This
+ * decision is revised at the end of the scan by \ref hosts_set_identifiers if
+ * there are any identifiers for the host.
+ *
  * @param[in]  host_name         Name of host.
  * @param[in]  identifier_type   Type of host identifier.
  * @param[in]  identifier_value  Value of host identifier.
@@ -55620,7 +55625,10 @@ manage_empty_trashcan ()
  * if the asset host has fewer identifiers than detected, as long as the
  * existing identifiers match.
  *
- * This decision about which asset host to use is made in \ref hosts_set_identifiers.
+ * At the beginning of a scan, when a host is first detected, the decision
+ * about which asset host to use is made by \ref host_notice.  At the end
+ * of the scan, if the host has identifiers, then this decision is revised
+ * by \ref hosts_set_identifiers to take the identifiers into account.
  *
  * Host identifiers can be ip, hostname, MAC, DNS-via-TargetDefinition, OS or
  * ssh-key.
@@ -55778,9 +55786,9 @@ identifier_free (identifier_t *identifier)
 /**
  * @brief Setup hosts and their identifiers after a scan, from host details.
  *
- * This makes the decision about which asset host is used for the host
- * identifiers that were gathered during the scan.  The rules for this decision
- * are described in \ref asset_rules.
+ * At the end of a scan this revises the decision about which asset host to use
+ * for each host that has identifiers.  The rules for this decision are described
+ * in \ref asset_rules.  (The initial decision is made by \ref host_notice.)
  */
 void
 hosts_set_identifiers ()
@@ -55806,10 +55814,7 @@ hosts_set_identifiers ()
           select = g_string_new ("");
 
           /* Select the most recent host whose identifiers all match the given
-           * identifiers, even if the host has fewer identifiers than given.
-           *
-           * This implements the ruleset described on the asset_rules doc page
-           * above. */
+           * identifiers, even if the host has fewer identifiers than given. */
 
           g_string_append_printf (select,
                                   "SELECT id FROM hosts"
