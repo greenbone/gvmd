@@ -1,3 +1,10 @@
+2016-01-08  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (task_scanner_options): Correctly handle
+	credential_username and credential_password osp parameter types.
+
+	* src/manage.h: Add function prototype.
+
 2016-01-06  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/manage_sql.c: Extend the docuemntation of asset_rules

@@ -2932,8 +2932,45 @@ task_scanner_options (task_t task)
   while (next (&prefs))
     {
       char *name, *value;
+      const char *type;
+
       name = g_strdup (preference_iterator_name (&prefs));
-      if (!strcmp (name, "definitions_file"))
+      type = preference_iterator_type (&prefs);
+
+      if (g_str_has_prefix (type, "credential_"))
+        {
+          credential_t credential = 0;
+          iterator_t iter;
+          const char *uuid = preference_iterator_value (&prefs);
+
+          if (find_resource ("credential", uuid, &credential))
+            {
+              g_warning ("No credential for osp parameter %s", name);
+              g_free (name);
+              continue;
+            }
+          init_credential_iterator_one (&iter, credential);
+          if (!next (&iter))
+            {
+              g_warning ("No credential for credential_id %llu", credential);
+              g_free (name);
+              continue;
+            }
+          if (!strcmp (type, "credential_username"))
+            value = g_strdup (credential_iterator_login (&iter));
+          else if (!strcmp (type, "credential_password"))
+            value = g_strdup (credential_iterator_password (&iter));
+          else
+            abort ();
+          cleanup_iterator (&iter);
+          if (!value)
+            {
+              g_warning ("No adequate %s for parameter %s", type, name);
+              g_free (name);
+              continue;
+            }
+        }
+      else if (!strcmp (name, "definitions_file"))
         {
           char *fname;
 

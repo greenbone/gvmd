@@ -302,6 +302,9 @@ resource_id_exists (const char *, const char *);
 int
 trash_id_exists (const char *, const char *);
 
+gboolean
+find_resource (const char*, const char*, resource_t*);
+
 
 /* Events and Alerts. */
 
