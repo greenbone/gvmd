@@ -11842,6 +11842,189 @@ migrate_162_to_163 ()
   return 0;
 }
 
+
+#define UPDATE_CHART_SETTINGS(type, default, left_uuid, right_uuid)          \
+  sql ("INSERT INTO settings (owner, uuid, value)"                           \
+       " SELECT owner, '%s', 'left-' || '%s' FROM settings"                  \
+       " WHERE uuid = '%s'"                                                  \
+       " AND NOT EXISTS (SELECT * FROM settings AS old_settings"             \
+       "                 WHERE old_settings.uuid = '%s'"                     \
+       "                   AND old_settings.owner = settings.owner);",       \
+       left_uuid, default, right_uuid, left_uuid);                           \
+  sql ("UPDATE settings"                                                     \
+       " SET name = '%s Top Dashboard Components',"                          \
+       "     value = coalesce ((SELECT substr (old_settings.value, 6)"       \
+       "                        FROM settings AS old_settings"               \
+       "                        WHERE old_settings.uuid = '%s'"              \
+       "                          AND old_settings.owner = settings.owner)," \
+       "                       '" default "')"                               \
+       "             || '|'"                                                 \
+       "             || coalesce ((SELECT substr (old_settings.value, 7)"    \
+       "                           FROM settings AS old_settings"            \
+       "                           WHERE old_settings.uuid = '%s'"           \
+       "                           AND old_settings.owner = settings.owner),"\
+       "                          '" default "')"                            \
+       " WHERE uuid = '%s';",                                                \
+       type, left_uuid, right_uuid, left_uuid);                              \
+  sql ("DELETE FROM settings"                                                \
+       " WHERE uuid = '%s';",                                                \
+       right_uuid);
+
+#define UPDATE_DASHBOARD_SETTINGS(type, default,                             \
+                                  uuid_1, uuid_2, uuid_3, uuid_4,            \
+                                  filter_1, filter_2, filter_3, filter_4)    \
+  sql ("INSERT INTO settings (owner, uuid, value)"                           \
+       " SELECT DISTINCT owner, '%s', '%s' FROM settings"                    \
+       " WHERE uuid IN ('%s', '%s', '%s')"                                   \
+       " AND NOT EXISTS (SELECT * FROM settings AS old_settings"             \
+       "                 WHERE uuid = '%s'"                                  \
+       "                   AND old_settings.owner = settings.owner);",       \
+       uuid_1, default, uuid_2, uuid_3, uuid_4, uuid_1);                     \
+  sql ("UPDATE settings"                                                     \
+       " SET name = '%s Dashboard Components',"                              \
+       "     value = coalesce ((SELECT substr (old_settings.value,"          \
+       "                                      length ('" type "') + 4)"      \
+       "                       FROM settings AS old_settings"                \
+       "                       WHERE old_settings.uuid = '%s'"               \
+       "                       AND old_settings.owner = settings.owner),"    \
+       "                       '" default "')"                               \
+       "             || '|'"                                                 \
+       "             || coalesce ((SELECT substr (old_settings.value,"       \
+       "                                          length ('" type "') + 4)"  \
+       "                           FROM settings AS old_settings"            \
+       "                           WHERE old_settings.uuid = '%s'"           \
+       "                           AND old_settings.owner = settings.owner),"\
+       "                          '" default "')"                            \
+       "             || '#'"                                                 \
+       "             || coalesce ((SELECT substr (old_settings.value,"       \
+       "                                          length ('" type "') + 4)"  \
+       "                           FROM settings AS old_settings"            \
+       "                           WHERE old_settings.uuid = '%s'"           \
+       "                           AND old_settings.owner = settings.owner),"\
+       "                          '" default "')"                            \
+       "             || '|'"                                                 \
+       "             || coalesce ((SELECT substr (old_settings.value,"       \
+       "                                          length ('" type "') + 4)"  \
+       "                           FROM settings AS old_settings"            \
+       "                           WHERE old_settings.uuid = '%s'"           \
+       "                           AND old_settings.owner = settings.owner),"\
+       "                          '" default "')"                            \
+       " WHERE uuid = '%s';",                                                \
+       type, uuid_1, uuid_2, uuid_3, uuid_4, uuid_1);                        \
+  sql ("INSERT INTO settings (owner, uuid, value)"                           \
+       " SELECT DISTINCT owner, '%s', '' FROM settings"                      \
+       " WHERE uuid IN ('%s', '%s', '%s')"                                   \
+       " AND NOT EXISTS (SELECT * FROM settings AS old_settings"             \
+       "                 WHERE uuid = '%s'"                                  \
+       "                   AND old_settings.owner = settings.owner);",       \
+       filter_1, filter_2, filter_3, filter_4, filter_1);                    \
+  sql ("UPDATE settings"                                                     \
+       " SET name = '%s Dashboard Filters',"                                 \
+       "     value = coalesce ((SELECT old_settings.value"                   \
+       "                        FROM settings AS old_settings"               \
+       "                        WHERE old_settings.uuid = '%s'"              \
+       "                        AND old_settings.owner = settings.owner),"   \
+       "                       '')"                                          \
+       "             || '|'"                                                 \
+       "             || coalesce ((SELECT old_settings.value"                \
+       "                           FROM settings AS old_settings"            \
+       "                           WHERE old_settings.uuid = '%s'"           \
+       "                           AND old_settings.owner = settings.owner),"\
+       "                          '')"                                       \
+       "             || '#'"                                                 \
+       "             || coalesce ((SELECT old_settings.value"                \
+       "                           FROM settings AS old_settings"            \
+       "                           WHERE old_settings.uuid = '%s'"           \
+       "                           AND old_settings.owner = settings.owner),"\
+       "                          '')"                                       \
+       "             || '|'"                                                 \
+       "             || coalesce ((SELECT old_settings.value"                \
+       "                           FROM settings AS old_settings"            \
+       "                           WHERE old_settings.uuid = '%s'"           \
+       "                           AND old_settings.owner = settings.owner),"\
+       "                          '')"                                       \
+       " WHERE uuid = '%s';",                                                \
+       type, filter_1, filter_2, filter_3, filter_4, filter_1);              \
+  sql ("DELETE FROM settings"                                                \
+       " WHERE uuid IN ('%s', '%s', '%s', '%s', '%s', '%s');",               \
+       uuid_2, uuid_3, uuid_4, filter_2, filter_3, filter_4);
+
+/**
+ * @brief Migrate the database from version 163 to version 164.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_163_to_164 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 163. */
+
+  if (manage_db_version () != 163)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Change top chart settings to new format */
+  UPDATE_CHART_SETTINGS ("Tasks", "by-cvss",
+                         "3d5db3c7-5208-4b47-8c28-48efc621b1e0",
+                         "ce8608af-7e66-45a8-aa8a-76def4f9f838")
+  UPDATE_CHART_SETTINGS ("Reports", "by-cvss",
+                         "e599bb6b-b95a-4bb2-a6bb-fe8ac69bc071",
+                         "fc875cd4-16bf-42d1-98ed-c0c9bd6015cd")
+  UPDATE_CHART_SETTINGS ("Results", "by-cvss",
+                         "0b8ae70d-d8fc-4418-8a72-e65ac8d2828e",
+                         "cb7db2fe-3fe4-4704-9fa1-efd4b9e522a8")
+
+  UPDATE_CHART_SETTINGS ("NVTs", "by-cvss",
+                         "f68d9369-1945-477b-968f-121c6029971b",
+                         "af89a84a-d3ec-43a8-97a8-aa688bf093bc")
+  UPDATE_CHART_SETTINGS ("CVEs", "by-cvss",
+                         "815ddd2e-8654-46c7-a05b-d73224102240",
+                         "418a5746-d68a-4a2d-864a-0da993b32220")
+  UPDATE_CHART_SETTINGS ("CPEs", "by-cvss",
+                         "9cff9b4d-b164-43ce-8687-f2360afc7500",
+                         "629fdb73-35fa-4247-9018-338c202f7c03")
+  UPDATE_CHART_SETTINGS ("OVAL Definitions", "by-cvss",
+                         "9563efc0-9f4e-4d1f-8f8d-0205e32b90a4",
+                         "fe1610a3-4e87-4b0d-9b7a-f0f66fef586b")
+  UPDATE_CHART_SETTINGS ("CERT Bund Advisories", "by-cvss",
+                         "a6946f44-480f-4f37-8a73-28a4cd5310c4",
+                         "469d50da-880a-4bfc-88ed-22e53764c683")
+  UPDATE_CHART_SETTINGS ("DFN CERT Advisories", "by-cvss",
+                         "9812ea49-682d-4f99-b3cc-eca051d1ce59",
+                         "72014b52-4389-435d-9438-8c13601ecbd2")
+  UPDATE_CHART_SETTINGS ("All SecInfo", "by-cvss",
+                         "4c7b1ea7-b7e6-4d12-9791-eb9f72b6f864",
+                         "985f38eb-1a30-4a35-abb6-3eec05b5d54a")
+
+  /* Update standalone dashboard */
+  UPDATE_DASHBOARD_SETTINGS ("SecInfo", "nvts-by-cvss",
+                             "84ab32da-fe69-44d8-8a8f-70034cf28d4e",
+                             "42d48049-3153-43bf-b30d-72ca5ab1eb49",
+                             "76f34fe0-254a-4481-97aa-c6f1da2f842b",
+                             "71106ed7-b677-414e-bf67-2e7716441db3",
+                             "517d0efe-426e-49a9-baa7-eda2832c93e8",
+                             "3c693fb2-4f87-4b1f-a09e-cb9aa66440f4",
+                             "bffa72a5-8110-49f9-aa5e-f431ce834826",
+                             "268079c6-f353-414f-9b7c-43f5419edf2d")
+
+  /* Set the database version to 164. */
+
+  set_db_version (164);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+#undef UPDATE_CHART_SETTINGS
+#undef UPDATE_DASHBOARD_SETTINGS
+
 #ifdef SQL_IS_SQLITE
 #define SQLITE_OR_NULL(function) function
 #else
@@ -12016,6 +12199,7 @@ static migrator_t database_migrators[]
     {161, migrate_160_to_161},
     {162, migrate_161_to_162},
     {163, migrate_162_to_163},
+    {164, migrate_163_to_164},
     /* End marker. */
     {-1, NULL}};
 

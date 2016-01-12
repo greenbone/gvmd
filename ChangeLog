@@ -1,3 +1,19 @@
+2016-01-12  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Change dashboard settings to a new format and remove unused ones.
+	Hence increase database version to 164.  Add database migration from
+	version 163 to 164.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 164.
+
+	* src/manage_migrators.c (UPDATE_CHART_SETTINGS)
+	(UPDATE_DASHBOARD_SETTINGS): New defines.
+	(migrate_163_to_164): New function.
+	(database_migrators): Add migrate_163_to_164.
+
+	* src/manage_sql.c (modify_setting): Change chart setting names and
+	remove unused chart settings.
+
 2016-01-11  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Make a better distinction between hardening flags for compiling and
