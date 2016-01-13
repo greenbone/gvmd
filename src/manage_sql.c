@@ -35716,45 +35716,51 @@ check_for_new_secinfo ()
                "  WHERE oid NOT IN (SELECT oid FROM old_nvts));"))
     event (0, EVENT_NEW_SECINFO, "nvt");
 
-  if (sql_int ("SELECT EXISTS"
-               " (SELECT * FROM cves"
-               "  WHERE creation_time"
-               "        > coalesce ((SELECT value FROM meta"
-               "                     WHERE name = 'secinfo_check_time'),"
-               "                    0));"))
-    event (0, EVENT_NEW_SECINFO, "cve");
+  if (manage_scap_loaded ())
+    {
+      if (sql_int ("SELECT EXISTS"
+                   " (SELECT * FROM cves"
+                   "  WHERE creation_time"
+                   "        > coalesce ((SELECT value FROM meta"
+                   "                     WHERE name = 'secinfo_check_time'),"
+                   "                    0));"))
+        event (0, EVENT_NEW_SECINFO, "cve");
 
-  if (sql_int ("SELECT EXISTS"
-               " (SELECT * FROM cpes"
-               "  WHERE creation_time"
-               "        > coalesce ((SELECT value FROM meta"
-               "                     WHERE name = 'secinfo_check_time'),"
-               "                    0));"))
-    event (0, EVENT_NEW_SECINFO, "cpe");
+      if (sql_int ("SELECT EXISTS"
+                   " (SELECT * FROM cpes"
+                   "  WHERE creation_time"
+                   "        > coalesce ((SELECT value FROM meta"
+                   "                     WHERE name = 'secinfo_check_time'),"
+                   "                    0));"))
+        event (0, EVENT_NEW_SECINFO, "cpe");
 
-  if (sql_int ("SELECT EXISTS"
-               " (SELECT * FROM ovaldefs"
-               "  WHERE creation_time"
-               "        > coalesce ((SELECT value FROM meta"
-               "                     WHERE name = 'secinfo_check_time'),"
-               "                    0));"))
-    event (0, EVENT_NEW_SECINFO, "ovaldef");
+      if (sql_int ("SELECT EXISTS"
+                   " (SELECT * FROM ovaldefs"
+                   "  WHERE creation_time"
+                   "        > coalesce ((SELECT value FROM meta"
+                   "                     WHERE name = 'secinfo_check_time'),"
+                   "                    0));"))
+        event (0, EVENT_NEW_SECINFO, "ovaldef");
+    }
 
-  if (sql_int ("SELECT EXISTS"
-               " (SELECT * FROM cert_bund_advs"
-               "  WHERE creation_time"
-               "        > coalesce ((SELECT value FROM meta"
-               "                     WHERE name = 'secinfo_check_time'),"
-               "                    0));"))
-    event (0, EVENT_NEW_SECINFO, "cert_bund_adv");
+  if (manage_cert_loaded ())
+    {
+      if (sql_int ("SELECT EXISTS"
+                   " (SELECT * FROM cert_bund_advs"
+                   "  WHERE creation_time"
+                   "        > coalesce ((SELECT value FROM meta"
+                   "                     WHERE name = 'secinfo_check_time'),"
+                   "                    0));"))
+        event (0, EVENT_NEW_SECINFO, "cert_bund_adv");
 
-  if (sql_int ("SELECT EXISTS"
-               " (SELECT * FROM dfn_cert_advs"
-               "  WHERE creation_time"
-               "        > coalesce ((SELECT value FROM meta"
-               "                     WHERE name = 'secinfo_check_time'),"
-               "                    0));"))
-    event (0, EVENT_NEW_SECINFO, "dfn_cert_adv");
+      if (sql_int ("SELECT EXISTS"
+                   " (SELECT * FROM dfn_cert_advs"
+                   "  WHERE creation_time"
+                   "        > coalesce ((SELECT value FROM meta"
+                   "                     WHERE name = 'secinfo_check_time'),"
+                   "                    0));"))
+        event (0, EVENT_NEW_SECINFO, "dfn_cert_adv");
+    }
 }
 
 /**
@@ -36366,45 +36372,51 @@ check_for_updated_secinfo ()
                "                             WHERE old_nvts.oid = nvts.oid));"))
     event (0, EVENT_UPDATED_SECINFO, "nvt");
 
-  if (sql_int ("SELECT EXISTS"
-               " (SELECT * FROM cves"
-               "  WHERE modification_time"
-               "        > coalesce ((SELECT value FROM meta"
-               "                     WHERE name = 'secinfo_check_time'),"
-               "                    0));"))
-    event (0, EVENT_UPDATED_SECINFO, "cve");
+  if (manage_scap_loaded ())
+    {
+      if (sql_int ("SELECT EXISTS"
+                   " (SELECT * FROM cves"
+                   "  WHERE modification_time"
+                   "        > coalesce ((SELECT value FROM meta"
+                   "                     WHERE name = 'secinfo_check_time'),"
+                   "                    0));"))
+        event (0, EVENT_UPDATED_SECINFO, "cve");
 
-  if (sql_int ("SELECT EXISTS"
-               " (SELECT * FROM cpes"
-               "  WHERE modification_time"
-               "        > coalesce ((SELECT value FROM meta"
-               "                     WHERE name = 'secinfo_check_time'),"
-               "                    0));"))
-    event (0, EVENT_UPDATED_SECINFO, "cpe");
+      if (sql_int ("SELECT EXISTS"
+                   " (SELECT * FROM cpes"
+                   "  WHERE modification_time"
+                   "        > coalesce ((SELECT value FROM meta"
+                   "                     WHERE name = 'secinfo_check_time'),"
+                   "                    0));"))
+        event (0, EVENT_UPDATED_SECINFO, "cpe");
 
-  if (sql_int ("SELECT EXISTS"
-               " (SELECT * FROM ovaldefs"
-               "  WHERE modification_time"
-               "        > coalesce ((SELECT value FROM meta"
-               "                     WHERE name = 'secinfo_check_time'),"
-               "                    0));"))
-    event (0, EVENT_NEW_SECINFO, "ovaldef");
+      if (sql_int ("SELECT EXISTS"
+                   " (SELECT * FROM ovaldefs"
+                   "  WHERE modification_time"
+                   "        > coalesce ((SELECT value FROM meta"
+                   "                     WHERE name = 'secinfo_check_time'),"
+                   "                    0));"))
+        event (0, EVENT_NEW_SECINFO, "ovaldef");
+    }
 
-  if (sql_int ("SELECT EXISTS"
-               " (SELECT * FROM cert_bund_advs"
-               "  WHERE modification_time"
-               "        > coalesce ((SELECT value FROM meta"
-               "                     WHERE name = 'secinfo_check_time'),"
-               "                    0));"))
-    event (0, EVENT_NEW_SECINFO, "cert_bund_adv");
+  if (manage_cert_loaded ())
+    {
+      if (sql_int ("SELECT EXISTS"
+                   " (SELECT * FROM cert_bund_advs"
+                   "  WHERE modification_time"
+                   "        > coalesce ((SELECT value FROM meta"
+                   "                     WHERE name = 'secinfo_check_time'),"
+                   "                    0));"))
+        event (0, EVENT_NEW_SECINFO, "cert_bund_adv");
 
-  if (sql_int ("SELECT EXISTS"
-               " (SELECT * FROM dfn_cert_advs"
-               "  WHERE modification_time"
-               "        > coalesce ((SELECT value FROM meta"
-               "                     WHERE name = 'secinfo_check_time'),"
-               "                    0));"))
-    event (0, EVENT_NEW_SECINFO, "dfn_cert_adv");
+      if (sql_int ("SELECT EXISTS"
+                   " (SELECT * FROM dfn_cert_advs"
+                   "  WHERE modification_time"
+                   "        > coalesce ((SELECT value FROM meta"
+                   "                     WHERE name = 'secinfo_check_time'),"
+                   "                    0));"))
+        event (0, EVENT_NEW_SECINFO, "dfn_cert_adv");
+    }
 }
 
 /**

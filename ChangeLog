@@ -1,5 +1,11 @@
 2016-01-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (check_for_new_secinfo)
+	(check_for_updated_secinfo): Check if SecInfo databases are loaded
+	before accessing them.
+
+2016-01-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add support for SecInfo type in SecInfo alerts.
 
 	* src/manage.c (type_name_plural): New function.
