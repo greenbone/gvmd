@@ -305,6 +305,9 @@ trash_id_exists (const char *, const char *);
 gboolean
 find_resource (const char*, const char*, resource_t*);
 
+const char *
+type_name_plural (const char*);
+
 
 /* Events and Alerts. */
 
@@ -356,8 +359,8 @@ typedef enum
 {
   EVENT_ERROR,
   EVENT_TASK_RUN_STATUS_CHANGED,
-  EVENT_NEW_NVTS,
-  EVENT_UPDATED_NVTS
+  EVENT_NEW_SECINFO,
+  EVENT_UPDATED_SECINFO
 } event_t;
 
 /**

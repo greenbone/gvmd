@@ -14848,7 +14848,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               iterator_t data;
               char *filter_uuid;
-              int notice, message;
+              int notice, message, has_secinfo_type;
               const char *method;
 
               ret = get_next (&alerts, &get_alerts_data->get, &first,
@@ -14906,16 +14906,29 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               SENDF_TO_CLIENT_OR_FAIL ("<event>%s",
                                        event_name (alert_iterator_event
-                                        (&alerts)));
+                                                    (&alerts)));
               init_alert_data_iterator (&data, get_iterator_resource (&alerts),
                                         get_alerts_data->get.trash, "event");
+              has_secinfo_type = 0;
               while (next (&data))
+                {
+                  if (strcmp (alert_data_iterator_name (&data), "secinfo_type")
+                      == 0)
+                    has_secinfo_type = 1;
+                  SENDF_TO_CLIENT_OR_FAIL ("<data>"
+                                           "<name>%s</name>"
+                                           "%s"
+                                           "</data>",
+                                           alert_data_iterator_name (&data),
+                                           alert_data_iterator_data (&data));
+                }
+              if ((alert_iterator_event (&alerts) == EVENT_NEW_SECINFO
+                   || alert_iterator_event (&alerts) == EVENT_UPDATED_SECINFO)
+                  && (has_secinfo_type == 0))
                 SENDF_TO_CLIENT_OR_FAIL ("<data>"
-                                         "<name>%s</name>"
-                                         "%s"
-                                         "</data>",
-                                         alert_data_iterator_name (&data),
-                                         alert_data_iterator_data (&data));
+                                         "<name>secinfo_type</name>"
+                                         "NVT"
+                                         "</data>");
               cleanup_iterator (&data);
               SEND_TO_CLIENT_OR_FAIL ("</event>");
 

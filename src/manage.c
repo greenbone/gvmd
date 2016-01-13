@@ -182,6 +182,35 @@ slist_free (GSList* list)
   g_slist_free (head);
 }
 
+/**
+ * @brief Return the plural name of a resource type.
+ *
+ * @param[in]  type  Resource type.
+ *
+ * @return Plural name of type.
+ */
+const char *
+type_name_plural (const char* type)
+{
+  if (type == NULL)
+    return "ERROR";
+
+  if (strcasecmp (type, "cpe") == 0)
+    return "CPEs";
+  if (strcasecmp (type, "cve") == 0)
+    return "CVEs";
+  if (strcasecmp (type, "cert_bund_adv") == 0)
+    return "CERT-Bund Advisories";
+  if (strcasecmp (type, "dfn_cert_adv") == 0)
+    return "DFN-CERT Advisories";
+  if (strcasecmp (type, "nvt") == 0)
+    return "NVTs";
+  if (strcasecmp (type, "ovaldef") == 0)
+    return "OVAL Definitions";
+
+  return "ERROR";
+}
+
 
 /* Severity related functions. */
 
@@ -685,8 +714,8 @@ event_name (event_t event)
   switch (event)
     {
       case EVENT_TASK_RUN_STATUS_CHANGED: return "Task run status changed";
-      case EVENT_NEW_NVTS:                return "New NVTs arrived";
-      case EVENT_UPDATED_NVTS:            return "Updated NVTs arrived";
+      case EVENT_NEW_SECINFO:             return "New SecInfo arrived";
+      case EVENT_UPDATED_SECINFO:         return "Updated SecInfo arrived";
       default:                            return "Internal Error";
     }
 }
@@ -764,11 +793,11 @@ event_description (event_t event, const void *event_data, const char *task_name)
         return g_strdup_printf ("Task status changed to '%s'",
                                 run_status_name ((task_status_t) event_data));
         break;
-      case EVENT_NEW_NVTS:
-        return g_strdup_printf ("New NVTs arrived");
+      case EVENT_NEW_SECINFO:
+        return g_strdup_printf ("New SecInfo arrived");
         break;
-      case EVENT_UPDATED_NVTS:
-        return g_strdup_printf ("Updated NVTs arrived");
+      case EVENT_UPDATED_SECINFO:
+        return g_strdup_printf ("Updated SecInfo arrived");
         break;
       default:
         return g_strdup ("Internal Error");
@@ -833,10 +862,10 @@ event_from_name (const char* name)
 {
   if (strcasecmp (name, "Task run status changed") == 0)
     return EVENT_TASK_RUN_STATUS_CHANGED;
-  if (strcasecmp (name, "New NVTs arrived") == 0)
-    return EVENT_NEW_NVTS;
-  if (strcasecmp (name, "Updated NVTs arrived") == 0)
-    return EVENT_UPDATED_NVTS;
+  if (strcasecmp (name, "New SecInfo arrived") == 0)
+    return EVENT_NEW_SECINFO;
+  if (strcasecmp (name, "Updated SecInfo arrived") == 0)
+    return EVENT_UPDATED_SECINFO;
   return EVENT_ERROR;
 }
 

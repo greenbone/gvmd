@@ -1,3 +1,42 @@
+2016-01-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add support for SecInfo type in SecInfo alerts.
+
+	* src/manage.c (type_name_plural): New function.
+	(event_name, event_description, event_from_name): Update event names.
+
+	* src/manage.h: Add header accordingly.
+	(event_t): Update event names.
+
+	* src/manage_sql.c (validate_alert_event_data): New function.
+	(check_alert_params): Update event names.
+	(create_alert, modify_alert): Update event names.  Validate event data.
+	(escalate_2): Update event names.  Adjust message for task-less alerts.
+	Get message with new_secinfo_message.
+	(NEW_CVES_HEADER, NEW_CPES_HEADER, NEW_CERT_BUNDS_HEADER)
+	(NEW_DFN_CERTS_HEADER, NEW_OVAL_DEFS_HEADER): New defines.
+	(manage_test_alert): Send type to manage_alert instead of integer flag.
+	(event_applies): For SecInfo events, check that event type matches alert
+	type.
+	(init_manage_process): Attach SCAP and CERT dbs when rebuilding too, so
+	that the SecInfo alerts can check these dbs.
+	(check_for_new_nvts, check_for_updated_nvts): Remove.  Renamed with
+	"_secinfo".
+	(check_for_new_secinfo, check_for_updated_secinfo): New functions.  From
+	rename.
+	(alert_url_print): Add $t for secinfo type.
+	(new_nvts_message): Update event names.  Check example via flag.  Pass
+	type to alert_url_print.
+	(new_cves_message, new_cpes_message, new_cert_bunds_message)
+	(new_dfn_certs_message, new_oval_defs_message):
+	(new_secinfo_message): New functions.
+	(manage_complete_nvt_cache_update): Update names.  Set
+	'secinfo_check_time' in meta, to record last time SecInfo was checked
+	for new/updated entries.
+
+	* src/omp.c (omp_xml_handle_end_element): In GET_ALERTS if SecInfo event
+	does not have a "secinfo_type" data element, add one.
+
 2016-01-12  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Change dashboard settings to a new format and remove unused ones.
