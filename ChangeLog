@@ -1,3 +1,11 @@
+2016-01-13  Sven Haardiek <sven.haardiek@greenbone.net>
+
+	* tools/greenbone-certdata-sync.in: Use gos-state-manager
+	instead of the ezcli.state, split ipv6:port correctly
+
+	* tools/greenbone-scapdata-sync.in: Use gos-state-manager
+	instead of the ezcli.state, split ipv6:port correctly
+
 2016-01-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (check_for_new_secinfo)
