@@ -7324,6 +7324,19 @@ alert_uuid (alert_t alert)
 }
 
 /**
+ * @brief Return the name of an alert.
+ *
+ * @param[in]  alert  Alert.
+ *
+ * @return Name of alert.
+ */
+char *
+alert_name (alert_t alert)
+{
+  return sql_string ("SELECT name FROM alerts WHERE id = %llu;", alert);
+}
+
+/**
  * @brief Return the UUID of the owner of an alert.
  *
  * @param[in]  alert  Alert.
@@ -35818,6 +35831,51 @@ alert_url_print (const gchar *url, const gchar *oid, const gchar *type)
 }
 
 /**
+ * @brief Create message for SecInfo alert.
+ *
+ * @param[in]  type         SecInfo type name.
+ * @param[in]  type_plural  SecInfo type name, in plural form.
+ * @param[in]  event        Event.
+ * @param[in]  alert        Alert.
+ * @param[in]  example      Whether the message is an example only.
+ * @param[in]  count        Number of rows.
+ * @param[in]  rows         Rows part of message.
+ *
+ * @return Freshly allocated message.
+ */
+static gchar *
+secinfo_message_print (const gchar *type, const gchar *type_plural,
+                       event_t event, alert_t alert, int example, int count,
+                       const char *rows)
+{
+  gchar *message;
+  char *name;
+
+  assert (count > 0);
+
+  name = alert_name (alert);
+  message = g_strdup_printf ("%s%i%s%s%s%s, according to the\nalert \"%s\":\n\n%s",
+                             example
+                              ? "Warning: This is an example alert only.\n\n"
+                              : "",
+                             count,
+                             event == EVENT_NEW_SECINFO
+                              ? " new "
+                              : " ",
+                             count == 1 ? type : type_plural,
+                             event == EVENT_NEW_SECINFO
+                              ? ""
+                              : (count == 1 ? " was" : " were"),
+                             event == EVENT_NEW_SECINFO
+                              ? " appeared in the feed"
+                              : " updated in the feed",
+                             name,
+                             rows);
+  free (name);
+  return message;
+}
+
+/**
  * @brief Create message for New NVTs event.
  *
  * @param[in]  event    Event.
@@ -35888,16 +35946,8 @@ new_nvts_message (event_t event, const void* event_data, alert_t alert,
     }
   cleanup_iterator (&rows);
 
-  message = g_strdup_printf ("%s%i%s:\n\n%s",
-                             example
-                              ? "Warning: This is an example alert only.\n\n"
-                              : "",
-                             count,
-                             event == EVENT_NEW_SECINFO
-                              ? " new NVTs appeared in the feed"
-                              : " NVTs were updated in the feed",
-                             buffer->str);
-
+  message = secinfo_message_print ("NVT", "NVTs", event, alert, example, count,
+                                   buffer->str);
   g_string_free (buffer, TRUE);
   return message;
 }
@@ -35968,16 +36018,8 @@ new_cves_message (event_t event, const void* event_data, alert_t alert,
     }
   cleanup_iterator (&rows);
 
-  message = g_strdup_printf ("%s%i%s:\n\n%s",
-                             example
-                              ? "Warning: This is an example alert only.\n\n"
-                              : "",
-                             count,
-                             event == EVENT_NEW_SECINFO
-                              ? " new CVEs appeared in the feed"
-                              : " CVEs were updated in the feed",
-                             buffer->str);
-
+  message = secinfo_message_print ("CVE", "CVEs", event, alert, example, count,
+                                   buffer->str);
   g_string_free (buffer, TRUE);
   return message;
 }
@@ -36053,16 +36095,8 @@ new_cpes_message (event_t event, const void* event_data, alert_t alert,
     }
   cleanup_iterator (&rows);
 
-  message = g_strdup_printf ("%s%i%s:\n\n%s",
-                             example
-                              ? "Warning: This is an example alert only.\n\n"
-                              : "",
-                             count,
-                             event == EVENT_NEW_SECINFO
-                              ? " new CPEs appeared in the feed"
-                              : " CPEs were updated in the feed",
-                             buffer->str);
-
+  message = secinfo_message_print ("CPE", "CPEs", event, alert, example, count,
+                                   buffer->str);
   g_string_free (buffer, TRUE);
   return message;
 }
@@ -36135,22 +36169,14 @@ new_cert_bunds_message (event_t event, const void* event_data, alert_t alert,
     }
   cleanup_iterator (&rows);
 
-  message = g_strdup_printf ("%s%i%s:\n\n%s",
-                             example
-                              ? "Warning: This is an example alert only.\n\n"
-                              : "",
-                             count,
-                             event == EVENT_NEW_SECINFO
-                              ? " new CERT-Bund Advisories appeared in the feed"
-                              : " CERT-Bund Advisories were updated in the feed",
-                             buffer->str);
-
+  message = secinfo_message_print ("CERT-Bund Advisory", "CERT-Bund Advisories",
+                                   event, alert, example, count, buffer->str);
   g_string_free (buffer, TRUE);
   return message;
 }
 
 /**
- * @brief Create message for New "DFN-CERT Advisories" event.
+ * @brief Create message for "New DFN-CERT Advisories" event.
  *
  * @param[in]  event    Event.
  * @param[in]  alert    Alert.
@@ -36217,22 +36243,14 @@ new_dfn_certs_message (event_t event, const void* event_data, alert_t alert,
     }
   cleanup_iterator (&rows);
 
-  message = g_strdup_printf ("%s%i%s:\n\n%s",
-                             example
-                              ? "Warning: This is an example alert only.\n\n"
-                              : "",
-                             count,
-                             event == EVENT_NEW_SECINFO
-                              ? " new DFN-CERT Advisories appeared in the feed"
-                              : " DFN-CERT Advisories were updated in the feed",
-                             buffer->str);
-
+  message = secinfo_message_print ("DFN-CERT Advisory", "DFN-CERT Advisories",
+                                   event, alert, example, count, buffer->str);
   g_string_free (buffer, TRUE);
   return message;
 }
 
 /**
- * @brief Create message for New "OVAL Definitions" event.
+ * @brief Create message for "New OVAL Definitions" event.
  *
  * @param[in]  event    Event.
  * @param[in]  alert    Alert.
@@ -36299,16 +36317,8 @@ new_oval_defs_message (event_t event, const void* event_data, alert_t alert,
     }
   cleanup_iterator (&rows);
 
-  message = g_strdup_printf ("%s%i%s:\n\n%s",
-                             example
-                              ? "Warning: This is an example alert only.\n\n"
-                              : "",
-                             count,
-                             event == EVENT_NEW_SECINFO
-                              ? " new OVAL Definitions appeared in the feed"
-                              : " OVAL Definitions were updated in the feed",
-                             buffer->str);
-
+  message = secinfo_message_print ("OVAL Definition", "OVAL Definitions",
+                                   event, alert, example, count, buffer->str);
   g_string_free (buffer, TRUE);
   return message;
 }
@@ -56356,7 +56366,7 @@ manage_empty_trashcan ()
  *     Assets.Host.New(id=Name, ip=IP)
  *   If Assets.Host(id=Name) == 1:
  *     Assets.Host.Add(id=Name, ip=IP)
- * 
+ *
  * This pseudo-code is equivalent to the first two rows of:
  *
  * Detection                    | Asset State                                                                 |     Asset Update

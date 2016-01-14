@@ -1,3 +1,12 @@
+2016-01-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (alert_name): New function.
+	(secinfo_message_print): New function.  Prints email message, including
+	name of alert.
+	(new_nvts_message, new_cves_message, new_cpes_message)
+	(new_cert_bunds_message, new_dfn_certs_message, new_oval_defs_message): Use
+	secinfo_message_print.
+
 2016-01-13  Sven Haardiek <sven.haardiek@greenbone.net>
 
 	* tools/greenbone-certdata-sync.in: Use gos-state-manager
