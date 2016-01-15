@@ -1,3 +1,10 @@
+2016-01-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r24149.
+
+	* src/manage_sql.c (WHERE_OWNER): New define.
+	(manage_empty_trashcan): Only remove resources owned by current user.
+
 2016-01-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r24037.
