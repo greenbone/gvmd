@@ -1,3 +1,8 @@
+2016-01-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (WHERE_OWNER): New define.
+	(manage_empty_trashcan): Only remove resources owned by current user.
+
 2016-01-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (alert_name): New function.

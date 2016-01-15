@@ -56223,6 +56223,10 @@ manage_restore (const char *id)
   return 2;
 }
 
+#define WHERE_OWNER                                          \
+ " WHERE owner = (SELECT id FROM users WHERE uuid = '%s')",  \
+ current_credentials.uuid
+
 /**
  * @brief Empty the trashcan.
  *
@@ -56231,7 +56235,9 @@ manage_restore (const char *id)
 int
 manage_empty_trashcan ()
 {
-  gchar *dir;
+  iterator_t rows;
+  GArray *report_formats;
+  int index, length;
 
   sql_begin_immediate ();
 
@@ -56241,41 +56247,86 @@ manage_empty_trashcan ()
       return 99;
     }
 
-  sql ("DELETE FROM agents_trash;");
+  sql ("DELETE FROM agents_trash" WHERE_OWNER);
   sql ("DELETE FROM nvt_selectors WHERE name IN"
-       " (SELECT nvt_selector FROM configs_trash);");
-  sql ("DELETE FROM config_preferences_trash;");
-  sql ("DELETE FROM configs_trash;");
+       " (SELECT nvt_selector FROM configs_trash"
+       "  WHERE owner = (SELECT id FROM users"
+       "                 WHERE uuid = '%s'));",
+       current_credentials.uuid);
+  sql ("DELETE FROM config_preferences_trash"
+       " WHERE config IN (SELECT id FROM configs_trash"
+       "                  WHERE owner = (SELECT id FROM users"
+       "                                 WHERE uuid = '%s'));",
+       current_credentials.uuid);
+  sql ("DELETE FROM configs_trash" WHERE_OWNER);
   sql ("DELETE FROM permissions"
        " WHERE subject_type = 'group'"
-       " AND subject IN (SELECT id from groups_trash)"
-       " AND subject_location = " G_STRINGIFY (LOCATION_TRASH) ";");
-  sql ("DELETE FROM group_users_trash;");
-  sql ("DELETE FROM groups_trash;");
-  sql ("DELETE FROM alert_condition_data_trash;");
-  sql ("DELETE FROM alert_event_data_trash;");
-  sql ("DELETE FROM alert_method_data_trash;");
-  sql ("DELETE FROM alerts_trash;");
-  sql ("DELETE FROM credentials_trash_data;");
-  sql ("DELETE FROM credentials_trash;");
-  sql ("DELETE FROM filters_trash;");
-  sql ("DELETE FROM notes_trash;");
-  sql ("DELETE FROM overrides_trash;");
-  sql ("DELETE FROM permissions_trash;");
-  sql ("DELETE FROM port_ranges_trash;");
-  sql ("DELETE FROM port_lists_trash;");
+       " AND subject IN (SELECT id from groups_trash"
+       "                 WHERE owner = (SELECT id FROM users"
+       "                                WHERE uuid = '%s'))"
+       " AND subject_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+       current_credentials.uuid);
+  sql ("DELETE FROM group_users_trash"
+       " WHERE \"group\" IN (SELECT id from groups_trash"
+       "                     WHERE owner = (SELECT id FROM users"
+       "                                    WHERE uuid = '%s'));",
+       current_credentials.uuid);
+  sql ("DELETE FROM groups_trash" WHERE_OWNER);
+  sql ("DELETE FROM alert_condition_data_trash"
+       " WHERE alert IN (SELECT id from alerts_trash"
+       "                 WHERE owner = (SELECT id FROM users"
+       "                                WHERE uuid = '%s'));",
+       current_credentials.uuid);
+  sql ("DELETE FROM alert_event_data_trash"
+       " WHERE alert IN (SELECT id from alerts_trash"
+       "                 WHERE owner = (SELECT id FROM users"
+       "                                WHERE uuid = '%s'));",
+       current_credentials.uuid);
+  sql ("DELETE FROM alert_method_data_trash"
+       " WHERE alert IN (SELECT id from alerts_trash"
+       "                 WHERE owner = (SELECT id FROM users"
+       "                                WHERE uuid = '%s'));",
+       current_credentials.uuid);
+  sql ("DELETE FROM alerts_trash" WHERE_OWNER);
+  sql ("DELETE FROM credentials_trash_data"
+       " WHERE credential IN (SELECT id from credentials_trash"
+       "                      WHERE owner = (SELECT id FROM users"
+       "                                     WHERE uuid = '%s'));",
+       current_credentials.uuid);
+  sql ("DELETE FROM credentials_trash" WHERE_OWNER);
+  sql ("DELETE FROM filters_trash" WHERE_OWNER);
+  sql ("DELETE FROM notes_trash" WHERE_OWNER);
+  sql ("DELETE FROM overrides_trash" WHERE_OWNER);
+  sql ("DELETE FROM permissions_trash" WHERE_OWNER);
+  sql ("DELETE FROM port_ranges_trash"
+       " WHERE port_list IN (SELECT id from port_lists_trash"
+       "                     WHERE owner = (SELECT id FROM users"
+       "                                    WHERE uuid = '%s'));",
+       current_credentials.uuid);
+  sql ("DELETE FROM port_lists_trash" WHERE_OWNER);
   sql ("DELETE FROM permissions"
        " WHERE subject_type = 'role'"
-       " AND subject IN (SELECT id from roles_trash)"
-       " AND subject_location = " G_STRINGIFY (LOCATION_TRASH) ";");
-  sql ("DELETE FROM role_users_trash;");
-  sql ("DELETE FROM roles_trash;");
-  sql ("DELETE FROM scanners_trash;");
-  sql ("DELETE FROM schedules_trash;");
-  sql ("DELETE FROM slaves_trash;");
-  sql ("DELETE FROM tags_trash;");
-  sql ("DELETE FROM targets_trash_login_data;");
-  sql ("DELETE FROM targets_trash;");
+       " AND subject IN (SELECT id from roles_trash"
+       "                 WHERE owner = (SELECT id FROM users"
+       "                                WHERE uuid = '%s'))"
+       " AND subject_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+       current_credentials.uuid);
+  sql ("DELETE FROM role_users_trash"
+       " WHERE role IN (SELECT id from roles_trash"
+       "                WHERE owner = (SELECT id FROM users"
+       "                               WHERE uuid = '%s'));",
+       current_credentials.uuid);
+  sql ("DELETE FROM roles_trash" WHERE_OWNER);
+  sql ("DELETE FROM scanners_trash" WHERE_OWNER);
+  sql ("DELETE FROM schedules_trash" WHERE_OWNER);
+  sql ("DELETE FROM slaves_trash" WHERE_OWNER);
+  sql ("DELETE FROM tags_trash" WHERE_OWNER);
+  sql ("DELETE FROM targets_trash_login_data"
+       " WHERE target IN (SELECT id from targets_trash"
+       "                  WHERE owner = (SELECT id FROM users"
+       "                                 WHERE uuid = '%s'));",
+       current_credentials.uuid);
+  sql ("DELETE FROM targets_trash" WHERE_OWNER);
   if (delete_trash_tasks ())
     {
       sql ("ROLLBACK;");
@@ -56285,39 +56336,72 @@ manage_empty_trashcan ()
   sql ("UPDATE permissions"
        " SET resource = -1"
        " WHERE resource > 0"
-       " AND resource_location = " G_STRINGIFY (LOCATION_TRASH) ";");
+       " AND resource_location = " G_STRINGIFY (LOCATION_TRASH)
+       " AND owner = (SELECT id FROM users WHERE uuid = '%s');",
+       current_credentials.uuid);
   sql ("UPDATE tags"
        " SET resource = 0, resource_location = " G_STRINGIFY (LOCATION_TABLE)
-       " WHERE resource_location = " G_STRINGIFY (LOCATION_TRASH) ";");
+       " WHERE resource_location = " G_STRINGIFY (LOCATION_TRASH)
+       " AND owner = (SELECT id FROM users WHERE uuid = '%s');",
+       current_credentials.uuid);
 
-  sql ("DELETE FROM report_format_param_options_trash;");
-  sql ("DELETE FROM report_format_params_trash;");
-  sql ("DELETE FROM report_formats_trash;");
+  sql ("DELETE FROM report_format_param_options_trash"
+       " WHERE report_format_param"
+       "       IN (SELECT id from report_format_params_trash"
+       "           WHERE report_format"
+       "                 IN (SELECT id FROM report_formats_trash"
+       "                     WHERE owner = (SELECT id FROM users"
+       "                                    WHERE uuid = '%s')));",
+       current_credentials.uuid);
+  sql ("DELETE FROM report_format_params_trash"
+       " WHERE report_format IN (SELECT id from report_formats_trash"
+       "                         WHERE owner = (SELECT id FROM users"
+       "                                        WHERE uuid = '%s'));",
+       current_credentials.uuid);
 
-  /* Remove the report formats dir last, in case any SQL rolls back. */
-
-  dir = g_build_filename (OPENVAS_DATA_DIR,
-                          "openvasmd",
-                          "report_formats_trash",
-                          NULL);
-
-  if (g_file_test (dir, G_FILE_TEST_EXISTS) && openvas_file_remove_recurse (dir))
+  init_iterator (&rows, "SELECT id FROM report_formats_trash" WHERE_OWNER);
+  report_formats = g_array_new (FALSE, FALSE, sizeof (report_format_t));
+  length = 0;
+  while (next (&rows))
     {
-      g_warning ("%s: failed to remove trash dir %s", __FUNCTION__, dir);
+      report_format_t id;
+      id = iterator_int64 (&rows, 0);
+      g_array_append_val (report_formats, id);
+      length++;
+    }
+  cleanup_iterator (&rows);
+
+  sql ("DELETE FROM report_formats_trash" WHERE_OWNER);
+
+  /* Remove the report formats dirs last, in case any SQL rolls back. */
+
+  for (index = 0; index < length; index++)
+    {
+      gchar *dir, *name;
+
+      name = g_strdup_printf ("%llu",
+                              g_array_index (report_formats,
+                                             report_format_t,
+                                             index));
+      dir = g_build_filename (OPENVAS_DATA_DIR,
+                              "openvasmd",
+                              "report_formats_trash",
+                              name,
+                              NULL);
+      g_free (name);
+
+      if (g_file_test (dir, G_FILE_TEST_EXISTS) && openvas_file_remove_recurse (dir))
+        {
+          g_warning ("%s: failed to remove trash dir %s", __FUNCTION__, dir);
+          g_free (dir);
+          sql ("ROLLBACK;");
+          return -1;
+        }
+
       g_free (dir);
-      sql ("ROLLBACK;");
-      return -1;
     }
 
-  if (g_mkdir_with_parents (dir, 0755 /* "rwxr-xr-x" */))
-    {
-      g_warning ("%s: failed to create trash dir %s", __FUNCTION__, dir);
-      g_free (dir);
-      sql ("ROLLBACK;");
-      return -1;
-    }
-
-  g_free (dir);
+  g_array_free (report_formats, TRUE);
 
   sql ("COMMIT;");
   return 0;
