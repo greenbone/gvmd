@@ -11999,15 +11999,16 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
  * @param[out] text_columns      data_column_list copied to a GArray.
  * @param[out] c_sums            Array for calculating cumulative sums.
  */
-void init_aggregate_lists (const gchar* group_column,
-                           GList *data_column_list,
-                           GList *text_column_list,
-                           gchar **group_column_type,
-                           GArray **data_column_types,
-                           GArray **data_columns,
-                           GArray **text_column_types,
-                           GArray **text_columns,
-                           GArray **c_sums)
+void
+init_aggregate_lists (const gchar* group_column,
+                      GList *data_column_list,
+                      GList *text_column_list,
+                      gchar **group_column_type,
+                      GArray **data_column_types,
+                      GArray **data_columns,
+                      GArray **text_column_types,
+                      GArray **text_columns,
+                      GArray **c_sums)
 {
   if (group_column == NULL)
     *group_column_type = "";

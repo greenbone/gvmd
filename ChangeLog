@@ -1,8 +1,15 @@
-2016-01-15  Matthew Mundell <matthew.mundell@greenbone.net>
+2016-01-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/manage_sql.c (
+	* src/omp.c (init_aggregate_lists): Move return declaration up.
 
-2016-01-15  Matthew Mundell <matthew.mundell@greenbone.net>
+2016-01-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (check_for_new_secinfo, new_cves_message)
+	(new_cpes_message, new_cert_bunds_message, new_dfn_certs_message)
+	(new_oval_defs_message, check_for_updated_secinfo): Cast
+	secinfo_check_time in coalesce, for Postgres.
+
+2016-01-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_migrators.c (migrate_162_to_163): Add a dummy value for the
 	non-NULL "value" column, for Postgres.
