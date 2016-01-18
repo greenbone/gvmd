@@ -35734,24 +35734,30 @@ check_for_new_secinfo ()
       if (sql_int ("SELECT EXISTS"
                    " (SELECT * FROM cves"
                    "  WHERE creation_time"
-                   "        > coalesce ((SELECT value FROM meta"
-                   "                     WHERE name = 'secinfo_check_time'),"
+                   "        > coalesce (CAST ((SELECT value FROM meta"
+                   "                           WHERE name"
+                   "                                 = 'secinfo_check_time')"
+                   "                          AS INTEGER),"
                    "                    0));"))
         event (0, EVENT_NEW_SECINFO, "cve");
 
       if (sql_int ("SELECT EXISTS"
                    " (SELECT * FROM cpes"
                    "  WHERE creation_time"
-                   "        > coalesce ((SELECT value FROM meta"
-                   "                     WHERE name = 'secinfo_check_time'),"
+                   "        > coalesce (CAST ((SELECT value FROM meta"
+                   "                           WHERE name"
+                   "                                 = 'secinfo_check_time')"
+                   "                          AS INTEGER),"
                    "                    0));"))
         event (0, EVENT_NEW_SECINFO, "cpe");
 
       if (sql_int ("SELECT EXISTS"
                    " (SELECT * FROM ovaldefs"
                    "  WHERE creation_time"
-                   "        > coalesce ((SELECT value FROM meta"
-                   "                     WHERE name = 'secinfo_check_time'),"
+                   "        > coalesce (CAST ((SELECT value FROM meta"
+                   "                           WHERE name"
+                   "                                 = 'secinfo_check_time')"
+                   "                          AS INTEGER),"
                    "                    0));"))
         event (0, EVENT_NEW_SECINFO, "ovaldef");
     }
@@ -35761,16 +35767,20 @@ check_for_new_secinfo ()
       if (sql_int ("SELECT EXISTS"
                    " (SELECT * FROM cert_bund_advs"
                    "  WHERE creation_time"
-                   "        > coalesce ((SELECT value FROM meta"
-                   "                     WHERE name = 'secinfo_check_time'),"
+                   "        > coalesce (CAST ((SELECT value FROM meta"
+                   "                           WHERE name"
+                   "                                 = 'secinfo_check_time')"
+                   "                          AS INTEGER),"
                    "                    0));"))
         event (0, EVENT_NEW_SECINFO, "cert_bund_adv");
 
       if (sql_int ("SELECT EXISTS"
                    " (SELECT * FROM dfn_cert_advs"
                    "  WHERE creation_time"
-                   "        > coalesce ((SELECT value FROM meta"
-                   "                     WHERE name = 'secinfo_check_time'),"
+                   "        > coalesce (CAST ((SELECT value FROM meta"
+                   "                           WHERE name"
+                   "                                 = 'secinfo_check_time')"
+                   "                          AS INTEGER),"
                    "                    0));"))
         event (0, EVENT_NEW_SECINFO, "dfn_cert_adv");
     }
@@ -35986,15 +35996,19 @@ new_cves_message (event_t event, const void* event_data, alert_t alert,
     init_iterator (&rows,
                    "SELECT uuid, name FROM cves"
                    " WHERE creation_time"
-                   "       > coalesce ((SELECT value FROM meta"
-                   "                    WHERE name = 'secinfo_check_time'),"
+                   "       > coalesce (CAST ((SELECT value FROM meta"
+                   "                          WHERE name"
+                   "                                = 'secinfo_check_time')"
+                   "                         AS INTEGER),"
                    "                   0);");
   else
     init_iterator (&rows,
                    "SELECT uuid, name FROM cves"
                    " WHERE modification_time"
-                   "       > coalesce ((SELECT value FROM meta"
-                   "                    WHERE name = 'secinfo_check_time'),"
+                   "       > coalesce (CAST ((SELECT value FROM meta"
+                   "                          WHERE name"
+                   "                                = 'secinfo_check_time')"
+                   "                         AS INTEGER),"
                    "                   0);");
 
   while (next (&rows))
@@ -36058,15 +36072,19 @@ new_cpes_message (event_t event, const void* event_data, alert_t alert,
     init_iterator (&rows,
                    "SELECT uuid, name, title FROM cpes"
                    " WHERE creation_time"
-                   "       > coalesce ((SELECT value FROM meta"
-                   "                    WHERE name = 'secinfo_check_time'),"
+                   "       > coalesce (CAST ((SELECT value FROM meta"
+                   "                          WHERE name"
+                   "                                = 'secinfo_check_time')"
+                   "                         AS INTEGER),"
                    "                   0);");
   else
     init_iterator (&rows,
                    "SELECT uuid, name, title FROM cpes"
                    " WHERE modification_time"
-                   "       > coalesce ((SELECT value FROM meta"
-                   "                    WHERE name = 'secinfo_check_time'),"
+                   "       > coalesce (CAST ((SELECT value FROM meta"
+                   "                          WHERE name"
+                   "                                = 'secinfo_check_time')"
+                   "                         AS INTEGER),"
                    "                   0);");
 
   while (next (&rows))
@@ -36135,15 +36153,19 @@ new_cert_bunds_message (event_t event, const void* event_data, alert_t alert,
     init_iterator (&rows,
                    "SELECT uuid, name, title FROM cert_bund_advs"
                    " WHERE creation_time"
-                   "       > coalesce ((SELECT value FROM meta"
-                   "                    WHERE name = 'secinfo_check_time'),"
+                   "       > coalesce (CAST ((SELECT value FROM meta"
+                   "                          WHERE name"
+                   "                                = 'secinfo_check_time')"
+                   "                         AS INTEGER),"
                    "                   0);");
   else
     init_iterator (&rows,
                    "SELECT uuid, name, title FROM cert_bund_advs"
                    " WHERE modification_time"
-                   "       > coalesce ((SELECT value FROM meta"
-                   "                    WHERE name = 'secinfo_check_time'),"
+                   "       > coalesce (CAST ((SELECT value FROM meta"
+                   "                          WHERE name"
+                   "                                = 'secinfo_check_time')"
+                   "                         AS INTEGER),"
                    "                   0);");
 
   while (next (&rows))
@@ -36209,15 +36231,19 @@ new_dfn_certs_message (event_t event, const void* event_data, alert_t alert,
     init_iterator (&rows,
                    "SELECT uuid, name, title FROM dfn_cert_advs"
                    " WHERE creation_time"
-                   "       > coalesce ((SELECT value FROM meta"
-                   "                    WHERE name = 'secinfo_check_time'),"
+                   "       > coalesce (CAST ((SELECT value FROM meta"
+                   "                          WHERE name"
+                   "                                = 'secinfo_check_time')"
+                   "                         AS INTEGER),"
                    "                   0);");
   else
     init_iterator (&rows,
                    "SELECT uuid, name, title FROM dfn_cert_advs"
                    " WHERE modification_time"
-                   "       > coalesce ((SELECT value FROM meta"
-                   "                    WHERE name = 'secinfo_check_time'),"
+                   "       > coalesce (CAST ((SELECT value FROM meta"
+                   "                          WHERE name"
+                   "                                = 'secinfo_check_time')"
+                   "                         AS INTEGER),"
                    "                   0);");
 
   while (next (&rows))
@@ -36283,15 +36309,19 @@ new_oval_defs_message (event_t event, const void* event_data, alert_t alert,
     init_iterator (&rows,
                    "SELECT uuid, name, title FROM ovaldefs"
                    " WHERE creation_time"
-                   "       > coalesce ((SELECT value FROM meta"
-                   "                    WHERE name = 'secinfo_check_time'),"
+                   "       > coalesce (CAST ((SELECT value FROM meta"
+                   "                          WHERE name"
+                   "                                = 'secinfo_check_time')"
+                   "                         AS INTEGER),"
                    "                   0);");
   else
     init_iterator (&rows,
                    "SELECT uuid, name, title FROM ovaldefs"
                    " WHERE modification_time"
-                   "       > coalesce ((SELECT value FROM meta"
-                   "                    WHERE name = 'secinfo_check_time'),"
+                   "       > coalesce (CAST ((SELECT value FROM meta"
+                   "                          WHERE name"
+                   "                                = 'secinfo_check_time')"
+                   "                         AS INTEGER),"
                    "                   0);");
 
   while (next (&rows))
@@ -36387,24 +36417,30 @@ check_for_updated_secinfo ()
       if (sql_int ("SELECT EXISTS"
                    " (SELECT * FROM cves"
                    "  WHERE modification_time"
-                   "        > coalesce ((SELECT value FROM meta"
-                   "                     WHERE name = 'secinfo_check_time'),"
+                   "        > coalesce (CAST ((SELECT value FROM meta"
+                   "                           WHERE name"
+                   "                                 = 'secinfo_check_time')"
+                   "                          AS INTEGER),"
                    "                    0));"))
         event (0, EVENT_UPDATED_SECINFO, "cve");
 
       if (sql_int ("SELECT EXISTS"
                    " (SELECT * FROM cpes"
                    "  WHERE modification_time"
-                   "        > coalesce ((SELECT value FROM meta"
-                   "                     WHERE name = 'secinfo_check_time'),"
+                   "        > coalesce (CAST ((SELECT value FROM meta"
+                   "                           WHERE name"
+                   "                                 = 'secinfo_check_time')"
+                   "                          AS INTEGER),"
                    "                    0));"))
         event (0, EVENT_UPDATED_SECINFO, "cpe");
 
       if (sql_int ("SELECT EXISTS"
                    " (SELECT * FROM ovaldefs"
                    "  WHERE modification_time"
-                   "        > coalesce ((SELECT value FROM meta"
-                   "                     WHERE name = 'secinfo_check_time'),"
+                   "        > coalesce (CAST ((SELECT value FROM meta"
+                   "                           WHERE name"
+                   "                                 = 'secinfo_check_time')"
+                   "                          AS INTEGER),"
                    "                    0));"))
         event (0, EVENT_NEW_SECINFO, "ovaldef");
     }
@@ -36414,16 +36450,20 @@ check_for_updated_secinfo ()
       if (sql_int ("SELECT EXISTS"
                    " (SELECT * FROM cert_bund_advs"
                    "  WHERE modification_time"
-                   "        > coalesce ((SELECT value FROM meta"
-                   "                     WHERE name = 'secinfo_check_time'),"
+                   "        > coalesce (CAST ((SELECT value FROM meta"
+                   "                           WHERE name"
+                   "                                 = 'secinfo_check_time')"
+                   "                          AS INTEGER),"
                    "                    0));"))
         event (0, EVENT_NEW_SECINFO, "cert_bund_adv");
 
       if (sql_int ("SELECT EXISTS"
                    " (SELECT * FROM dfn_cert_advs"
                    "  WHERE modification_time"
-                   "        > coalesce ((SELECT value FROM meta"
-                   "                     WHERE name = 'secinfo_check_time'),"
+                   "        > coalesce (CAST ((SELECT value FROM meta"
+                   "                           WHERE name"
+                   "                                 = 'secinfo_check_time')"
+                   "                          AS INTEGER),"
                    "                    0));"))
         event (0, EVENT_NEW_SECINFO, "dfn_cert_adv");
     }
