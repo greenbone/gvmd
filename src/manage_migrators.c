@@ -1709,20 +1709,22 @@ migrate_16_to_17 ()
   init_iterator (&rows, "SELECT id, tag FROM nvts;");
   while (next (&rows))
     {
-      gchar *tags, *cvss_base, *risk_factor;
+      gchar *tags, *cvss_base;
 
-      parse_tags (iterator_string (&rows, 1), &tags, &cvss_base, &risk_factor);
+      /* With db version 83, the risk_factor is dropped anyway, so
+       * the value can be ignored already here.
+       */
+      parse_tags (iterator_string (&rows, 1), &tags, &cvss_base);
 
       sql ("UPDATE nvts SET cvss_base = '%s', risk_factor = '%s', tag = '%s'"
            " WHERE id = %llu;",
            cvss_base ? cvss_base : "",
-           risk_factor ? risk_factor : "",
+           "",
            tags ? tags : "",
            iterator_int64 (&rows, 0));
 
       g_free (tags);
       g_free (cvss_base);
-      g_free (risk_factor);
     }
   cleanup_iterator (&rows);
 

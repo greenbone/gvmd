@@ -6357,11 +6357,9 @@ file_iterator_content_64 (file_iterator_t* iterator)
  * @param[in]  scanner_tags  The tags sent by the scanner.
  * @param[out] tags          Tags.
  * @param[out] cvss_base     CVSS base.
- * @param[out] risk_factor   Risk factor.
  */
 void
-parse_tags (const char *scanner_tags, gchar **tags, gchar **cvss_base,
-            gchar **risk_factor)
+parse_tags (const char *scanner_tags, gchar **tags, gchar **cvss_base)
 {
   gchar **split, **point;
   GString *tags_buffer;
@@ -6371,7 +6369,6 @@ parse_tags (const char *scanner_tags, gchar **tags, gchar **cvss_base,
   split = g_strsplit (scanner_tags, "|", 0);
   point = split;
   *cvss_base = NULL;
-  *risk_factor = NULL;
   first = TRUE;
 
   while (*point)
@@ -6395,11 +6392,6 @@ parse_tags (const char *scanner_tags, gchar **tags, gchar **cvss_base,
           else
             g_string_append_c (tags_buffer, '|');
           g_string_append (tags_buffer, *point);
-        }
-      else if (strncmp (*point, "risk_factor=", strlen ("risk_factor=")) == 0)
-        {
-          if (*risk_factor == NULL)
-            *risk_factor = g_strdup (*point + strlen ("risk_factor="));
         }
       else
         {

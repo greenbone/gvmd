@@ -649,13 +649,12 @@ parse_scanner_plugin_list_tags (char** messages)
         }
       if (current_plugin)
         {
-          gchar *tags, *cvss_base, *risk_factor;
-          parse_tags (value, &tags, &cvss_base, &risk_factor);
+          gchar *tags, *cvss_base;
+          parse_tags (value, &tags, &cvss_base);
           nvti_set_tag (current_plugin, tags);
           nvti_set_cvss_base (current_plugin, cvss_base);
           g_free (tags);
           g_free (cvss_base);
-          g_free (risk_factor);
 
           /* Add the plugin to scanner_plugins_list which will be bulk-inserted
            * in DB later in manage_complete_nvt_cache_update. */
