@@ -11873,8 +11873,8 @@ migrate_162_to_163 ()
 #define UPDATE_DASHBOARD_SETTINGS(type, default,                             \
                                   uuid_1, uuid_2, uuid_3, uuid_4,            \
                                   filter_1, filter_2, filter_3, filter_4)    \
-  sql ("INSERT INTO settings (owner, uuid, value)"                           \
-       " SELECT DISTINCT owner, '%s', '%s' FROM settings"                    \
+  sql ("INSERT INTO settings (owner, uuid, name, value)"                     \
+       " SELECT DISTINCT owner, '%s', 'dummy', '%s' FROM settings"           \
        " WHERE uuid IN ('%s', '%s', '%s')"                                   \
        " AND NOT EXISTS (SELECT * FROM settings AS old_settings"             \
        "                 WHERE uuid = '%s'"                                  \
@@ -11911,8 +11911,8 @@ migrate_162_to_163 ()
        "                          '" default "')"                            \
        " WHERE uuid = '%s';",                                                \
        type, uuid_1, uuid_2, uuid_3, uuid_4, uuid_1);                        \
-  sql ("INSERT INTO settings (owner, uuid, value)"                           \
-       " SELECT DISTINCT owner, '%s', '' FROM settings"                      \
+  sql ("INSERT INTO settings (owner, uuid, name, value)"                     \
+       " SELECT DISTINCT owner, '%s', 'dummy', '' FROM settings"             \
        " WHERE uuid IN ('%s', '%s', '%s')"                                   \
        " AND NOT EXISTS (SELECT * FROM settings AS old_settings"             \
        "                 WHERE uuid = '%s'"                                  \

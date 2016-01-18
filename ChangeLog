@@ -1,5 +1,10 @@
 2016-01-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_migrators.c (migrate_162_to_163): Add a dummy value for the
+	non-NULL "value" column, for Postgres.
+
+2016-01-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (WHERE_OWNER): New define.
 	(manage_empty_trashcan): Only remove resources owned by current user.
 
