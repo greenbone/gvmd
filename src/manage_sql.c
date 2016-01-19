@@ -10483,10 +10483,10 @@ manage_alert (const char *alert_id, const char *task_id, event_t event,
 /**
  * @brief Header for "New CVEs" alert message.
  */
-#define NEW_CVES_HEADER                                                       \
-/* CVE-2015-1013  */                                                          \
-  "Name\n"                                                                    \
-  "---------------\n"
+#define NEW_CVES_HEADER                                                         \
+/* CVE-2014-100001       6.8  Cross-site request forgery (CSRF) vulnerability in... */ \
+  "Name             Severity  Description\n"                                    \
+  "--------------------------------------------------------------------------------\n"
 
 /**
  * @brief Header for "New CPEs" alert message.
@@ -35992,11 +35992,11 @@ new_cves_message (event_t event, const void* event_data, alert_t alert,
   count = 0;
   if (example)
     init_iterator (&rows,
-                   "SELECT uuid, name FROM cves"
+                   "SELECT uuid, name, cvss, description FROM cves"
                    " LIMIT 4;");
   else if (event == EVENT_NEW_SECINFO)
     init_iterator (&rows,
-                   "SELECT uuid, name FROM cves"
+                   "SELECT uuid, name, cvss, description FROM cves"
                    " WHERE creation_time"
                    "       > coalesce (CAST ((SELECT value FROM meta"
                    "                          WHERE name"
@@ -36006,7 +36006,7 @@ new_cves_message (event_t event, const void* event_data, alert_t alert,
                    " ORDER BY creation_time DESC;");
   else
     init_iterator (&rows,
-                   "SELECT uuid, name FROM cves"
+                   "SELECT uuid, name, cvss, description FROM cves"
                    " WHERE modification_time"
                    "       > coalesce (CAST ((SELECT value FROM meta"
                    "                          WHERE name"
@@ -36018,16 +36018,22 @@ new_cves_message (event_t event, const void* event_data, alert_t alert,
   while (next (&rows))
     {
       gchar *url;
-      const char *name;
+      const char *name, *desc;
 
       name = iterator_string (&rows, 1);
       if (details_url && strlen (details_url))
         url = alert_url_print (details_url, iterator_string (&rows, 0), type);
       else
         url = NULL;
+      desc = iterator_string (&rows, 3);
       g_string_append_printf (buffer,
-                              "%-1.17s%s%s%s",
+                              "%-15.15s  %8s  %50.50s%s%s%s%s",
                               name,
+                              iterator_string (&rows, 2),
+                              desc,
+                              strlen (desc) > 53
+                               ? "..."
+                               : (strlen (desc) > 50 ? desc + 50 : "   "),
                               url ? "\n  " : "",
                               url ? url : "",
                               url ? "\n\n" : "\n");

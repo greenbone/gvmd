@@ -1,5 +1,10 @@
 2016-01-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (NEW_CVES_HEADER, new_cves_message): Add severity and
+	description columns.
+
+2016-01-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (new_nvts_message, new_cves_message)
 	(new_cpes_message, new_cert_bunds_message, new_dfn_certs_message)
 	(new_oval_defs_message): Order by creation/modification time.
