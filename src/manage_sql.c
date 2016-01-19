@@ -35921,13 +35921,15 @@ new_nvts_message (event_t event, const void* event_data, alert_t alert,
   else if (event == EVENT_NEW_SECINFO)
     init_iterator (&rows,
                    "SELECT oid, name, solution_type, cvss_base, qod FROM nvts"
-                   " WHERE oid NOT IN (SELECT oid FROM old_nvts);");
+                   " WHERE oid NOT IN (SELECT oid FROM old_nvts)"
+                   " ORDER BY creation_time DESC;");
   else
     init_iterator (&rows,
                    "SELECT oid, name, solution_type, cvss_base, qod FROM nvts"
                    " WHERE modification_time > (SELECT modification_time"
                    "                            FROM old_nvts"
-                   "                            WHERE old_nvts.oid = nvts.oid);");
+                   "                            WHERE old_nvts.oid = nvts.oid)"
+                   " ORDER BY modification_time DESC;");
 
   while (next (&rows))
     {
@@ -36000,7 +36002,8 @@ new_cves_message (event_t event, const void* event_data, alert_t alert,
                    "                          WHERE name"
                    "                                = 'secinfo_check_time')"
                    "                         AS INTEGER),"
-                   "                   0);");
+                   "                   0)"
+                   " ORDER BY creation_time DESC;");
   else
     init_iterator (&rows,
                    "SELECT uuid, name FROM cves"
@@ -36009,7 +36012,8 @@ new_cves_message (event_t event, const void* event_data, alert_t alert,
                    "                          WHERE name"
                    "                                = 'secinfo_check_time')"
                    "                         AS INTEGER),"
-                   "                   0);");
+                   "                   0)"
+                   " ORDER BY modification_time DESC;");
 
   while (next (&rows))
     {
@@ -36076,7 +36080,8 @@ new_cpes_message (event_t event, const void* event_data, alert_t alert,
                    "                          WHERE name"
                    "                                = 'secinfo_check_time')"
                    "                         AS INTEGER),"
-                   "                   0);");
+                   "                   0)"
+                   " ORDER BY creation_time DESC;");
   else
     init_iterator (&rows,
                    "SELECT uuid, name, title FROM cpes"
@@ -36085,7 +36090,8 @@ new_cpes_message (event_t event, const void* event_data, alert_t alert,
                    "                          WHERE name"
                    "                                = 'secinfo_check_time')"
                    "                         AS INTEGER),"
-                   "                   0);");
+                   "                   0)"
+                   " ORDER BY modification_time DESC;");
 
   while (next (&rows))
     {
@@ -36157,7 +36163,8 @@ new_cert_bunds_message (event_t event, const void* event_data, alert_t alert,
                    "                          WHERE name"
                    "                                = 'secinfo_check_time')"
                    "                         AS INTEGER),"
-                   "                   0);");
+                   "                   0)"
+                   " ORDER BY creation_time DESC;");
   else
     init_iterator (&rows,
                    "SELECT uuid, name, title FROM cert_bund_advs"
@@ -36166,7 +36173,8 @@ new_cert_bunds_message (event_t event, const void* event_data, alert_t alert,
                    "                          WHERE name"
                    "                                = 'secinfo_check_time')"
                    "                         AS INTEGER),"
-                   "                   0);");
+                   "                   0)"
+                   " ORDER BY modification_time DESC;");
 
   while (next (&rows))
     {
@@ -36235,7 +36243,8 @@ new_dfn_certs_message (event_t event, const void* event_data, alert_t alert,
                    "                          WHERE name"
                    "                                = 'secinfo_check_time')"
                    "                         AS INTEGER),"
-                   "                   0);");
+                   "                   0)"
+                   " ORDER BY creation_time DESC;");
   else
     init_iterator (&rows,
                    "SELECT uuid, name, title FROM dfn_cert_advs"
@@ -36244,7 +36253,8 @@ new_dfn_certs_message (event_t event, const void* event_data, alert_t alert,
                    "                          WHERE name"
                    "                                = 'secinfo_check_time')"
                    "                         AS INTEGER),"
-                   "                   0);");
+                   "                   0)"
+                   " ORDER BY modification_time DESC;");
 
   while (next (&rows))
     {
@@ -36313,7 +36323,8 @@ new_oval_defs_message (event_t event, const void* event_data, alert_t alert,
                    "                          WHERE name"
                    "                                = 'secinfo_check_time')"
                    "                         AS INTEGER),"
-                   "                   0);");
+                   "                   0)"
+                   " ORDER BY creation_time DESC;");
   else
     init_iterator (&rows,
                    "SELECT uuid, name, title FROM ovaldefs"
@@ -36322,7 +36333,8 @@ new_oval_defs_message (event_t event, const void* event_data, alert_t alert,
                    "                          WHERE name"
                    "                                = 'secinfo_check_time')"
                    "                         AS INTEGER),"
-                   "                   0);");
+                   "                   0)"
+                   " ORDER BY modification_time DESC;");
 
   while (next (&rows))
     {

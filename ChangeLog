@@ -1,5 +1,11 @@
 2016-01-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (new_nvts_message, new_cves_message)
+	(new_cpes_message, new_cert_bunds_message, new_dfn_certs_message)
+	(new_oval_defs_message): Order by creation/modification time.
+
+2016-01-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_complete_nvt_cache_update): Skip the SecInfo
 	alert checks when 'secinfo_check_time' is missing or 0, but do update
 	the time.  This prevents all the secinfo from being considered
