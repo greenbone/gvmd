@@ -1,3 +1,22 @@
+2016-01-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Allow the user to specify the message and subject used for a SecInfo
+	alert.
+
+	* src/manage.c (type_name): New function.
+
+	* src/manage.h: Add header accordingly.
+	(SECINFO_ALERT_MESSAGE_INCLUDE, SECINFO_ALERT_MESSAGE_ATTACH): New
+	define.
+
+	* src/manage_sql.c (SECINFO_SIMPLE_NOTICE_FORMAT): New define.
+	(alert_subject_print): Add q, s and S for SecInfo.
+	(email_secinfo): New function.
+	(escalate_2): Use email_secinfo to send email.
+	(secinfo_message_print): Remove rows.
+	(new_nvts_list, new_cert_bunds_list, new_dfn_certs_list)
+	(new_secinfo_list): New functions.
+
 2016-01-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (NEW_CVES_HEADER, new_cves_message): Add severity and

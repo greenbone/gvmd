@@ -308,6 +308,9 @@ find_resource (const char*, const char*, resource_t*);
 const char *
 type_name_plural (const char*);
 
+const char *
+type_name (const char*);
+
 
 /* Events and Alerts. */
 
@@ -334,9 +337,50 @@ type_name_plural (const char*);
  "should not have received it.\n"
 
 /**
+ * @brief Default format string for SecInfo alert email, when including report.
+ */
+#define SECINFO_ALERT_MESSAGE_INCLUDE                                         \
+ "Task '$n': $e\n"                                                            \
+ "\n"                                                                         \
+ "After the event $e,\n"                                                      \
+ "the following condition was met: $c\n"                                      \
+ "\n"                                                                         \
+ "This email escalation is configured to apply report format '$r'.\n"         \
+ "Full details and other report formats are available on the scan engine.\n"  \
+ "\n"                                                                         \
+ "$t"                                                                         \
+ "\n"                                                                         \
+ "$i"                                                                         \
+ "\n"                                                                         \
+ "\n"                                                                         \
+ "Note:\n"                                                                    \
+ "This email was sent to you as a configured security scan escalation.\n"     \
+ "Please contact your local system administrator if you think you\n"          \
+ "should not have received it.\n"
+
+/**
  * @brief Default format string for alert email, when attaching report.
  */
 #define ALERT_MESSAGE_ATTACH                                                  \
+ "Task '$n': $e\n"                                                            \
+ "\n"                                                                         \
+ "After the event $e,\n"                                                      \
+ "the following condition was met: $c\n"                                      \
+ "\n"                                                                         \
+ "This email escalation is configured to attach report format '$r'.\n"        \
+ "Full details and other report formats are available on the scan engine.\n"  \
+ "\n"                                                                         \
+ "$t"                                                                         \
+ "\n"                                                                         \
+ "Note:\n"                                                                    \
+ "This email was sent to you as a configured security scan escalation.\n"     \
+ "Please contact your local system administrator if you think you\n"          \
+ "should not have received it.\n"
+
+/**
+ * @brief Default format string for SecInfo alert email, when attaching report.
+ */
+#define SECINFO_ALERT_MESSAGE_ATTACH                                          \
  "Task '$n': $e\n"                                                            \
  "\n"                                                                         \
  "After the event $e,\n"                                                      \

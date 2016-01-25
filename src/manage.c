@@ -211,6 +211,35 @@ type_name_plural (const char* type)
   return "ERROR";
 }
 
+/**
+ * @brief Return the name of a resource type.
+ *
+ * @param[in]  type  Resource type.
+ *
+ * @return Name of type.
+ */
+const char *
+type_name (const char* type)
+{
+  if (type == NULL)
+    return "ERROR";
+
+  if (strcasecmp (type, "cpe") == 0)
+    return "CPE";
+  if (strcasecmp (type, "cve") == 0)
+    return "CVE";
+  if (strcasecmp (type, "cert_bund_adv") == 0)
+    return "CERT-Bund Advisory";
+  if (strcasecmp (type, "dfn_cert_adv") == 0)
+    return "DFN-CERT Advisory";
+  if (strcasecmp (type, "nvt") == 0)
+    return "NVT";
+  if (strcasecmp (type, "ovaldef") == 0)
+    return "OVAL Definition";
+
+  return "ERROR";
+}
+
 
 /* Severity related functions. */
 
