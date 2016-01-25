@@ -36178,6 +36178,86 @@ new_nvts_list (event_t event, const void* event_data, alert_t alert,
 }
 
 /**
+ * @brief Create list for New CVEs event.
+ *
+ * @param[in]  event  Event.
+ * @param[in]  alert  Alert.
+ * @param[in]  example  Whether the message is an example only.
+ *
+ * @return Freshly allocated message.
+ */
+static gchar *
+new_cves_list (event_t event, const void* event_data, alert_t alert,
+               int example)
+{
+  iterator_t rows;
+  GString *buffer;
+  int count;
+  char *details_url;
+  const gchar *type;
+
+  details_url = alert_data (alert, "method", "details_url");
+  type = (gchar*) event_data;
+
+  buffer = g_string_new (NEW_CVES_HEADER);
+
+  count = 0;
+  if (example)
+    init_iterator (&rows,
+                   "SELECT uuid, name, cvss, description FROM cves"
+                   " LIMIT 4;");
+  else if (event == EVENT_NEW_SECINFO)
+    init_iterator (&rows,
+                   "SELECT uuid, name, cvss, description FROM cves"
+                   " WHERE creation_time"
+                   "       > coalesce (CAST ((SELECT value FROM meta"
+                   "                          WHERE name"
+                   "                                = 'secinfo_check_time')"
+                   "                         AS INTEGER),"
+                   "                   0)"
+                   " ORDER BY creation_time DESC;");
+  else
+    init_iterator (&rows,
+                   "SELECT uuid, name, cvss, description FROM cves"
+                   " WHERE modification_time"
+                   "       > coalesce (CAST ((SELECT value FROM meta"
+                   "                          WHERE name"
+                   "                                = 'secinfo_check_time')"
+                   "                         AS INTEGER),"
+                   "                   0)"
+                   " ORDER BY modification_time DESC;");
+
+  while (next (&rows))
+    {
+      gchar *url;
+      const char *name, *desc;
+
+      name = iterator_string (&rows, 1);
+      if (details_url && strlen (details_url))
+        url = alert_url_print (details_url, iterator_string (&rows, 0), type);
+      else
+        url = NULL;
+      desc = iterator_string (&rows, 3);
+      g_string_append_printf (buffer,
+                              "%-15.15s  %8s  %50.50s%s%s%s%s",
+                              name,
+                              iterator_string (&rows, 2),
+                              desc,
+                              strlen (desc) > 53
+                               ? "..."
+                               : (strlen (desc) > 50 ? desc + 50 : "   "),
+                              url ? "\n  " : "",
+                              url ? url : "",
+                              url ? "\n\n" : "\n");
+      g_free (url);
+      count++;
+    }
+  cleanup_iterator (&rows);
+
+  return g_string_free (buffer, FALSE);
+}
+
+/**
  * @brief Create message for New CVEs event.
  *
  * @param[in]  event  Event.
@@ -36342,6 +36422,85 @@ new_cpes_message (event_t event, const void* event_data, alert_t alert,
                                    buffer->str);
   g_string_free (buffer, TRUE);
   return message;
+}
+
+/**
+ * @brief Create list for New CPEs event.
+ *
+ * @param[in]  event    Event.
+ * @param[in]  alert    Alert.
+ * @param[in]  example  Whether the message is an example only.
+ *
+ * @return Freshly allocated list.
+ */
+static gchar *
+new_cpes_list (event_t event, const void* event_data, alert_t alert,
+               int example)
+{
+  iterator_t rows;
+  GString *buffer;
+  int count;
+  char *details_url;
+  const gchar *type;
+
+  details_url = alert_data (alert, "method", "details_url");
+  type = (gchar*) event_data;
+
+  buffer = g_string_new (NEW_CPES_HEADER);
+
+  count = 0;
+  if (example)
+    init_iterator (&rows,
+                   "SELECT uuid, name, title FROM cpes"
+                   " LIMIT 4;");
+  else if (event == EVENT_NEW_SECINFO)
+    init_iterator (&rows,
+                   "SELECT uuid, name, title FROM cpes"
+                   " WHERE creation_time"
+                   "       > coalesce (CAST ((SELECT value FROM meta"
+                   "                          WHERE name"
+                   "                                = 'secinfo_check_time')"
+                   "                         AS INTEGER),"
+                   "                   0)"
+                   " ORDER BY creation_time DESC;");
+  else
+    init_iterator (&rows,
+                   "SELECT uuid, name, title FROM cpes"
+                   " WHERE modification_time"
+                   "       > coalesce (CAST ((SELECT value FROM meta"
+                   "                          WHERE name"
+                   "                                = 'secinfo_check_time')"
+                   "                         AS INTEGER),"
+                   "                   0)"
+                   " ORDER BY modification_time DESC;");
+
+  while (next (&rows))
+    {
+      gchar *url;
+      const char *name, *title;
+
+      name = iterator_string (&rows, 1);
+      title = iterator_string (&rows, 2);
+      if (details_url && strlen (details_url))
+        url = alert_url_print (details_url, iterator_string (&rows, 0), type);
+      else
+        url = NULL;
+      g_string_append_printf (buffer,
+                              "%-57.57s%-3s  %-s%s%s%s",
+                              name,
+                              strlen (name) > 60
+                               ? "..."
+                               : (strlen (name) > 57 ? name + 57 : "   "),
+                              title,
+                              url ? "\n  " : "",
+                              url ? url : "",
+                              url ? "\n\n" : "\n");
+      g_free (url);
+      count++;
+    }
+  cleanup_iterator (&rows);
+
+  return g_string_free (buffer, FALSE);
 }
 
 /**
@@ -36737,6 +36896,82 @@ new_oval_defs_message (event_t event, const void* event_data, alert_t alert,
 }
 
 /**
+ * @brief Create list for "New OVAL Definitions" event.
+ *
+ * @param[in]  event    Event.
+ * @param[in]  alert    Alert.
+ * @param[in]  example  Whether the message is an example only.
+ *
+ * @return Freshly allocated list.
+ */
+static gchar *
+new_oval_defs_list (event_t event, const void* event_data, alert_t alert,
+                    int example)
+{
+  iterator_t rows;
+  GString *buffer;
+  int count;
+  char *details_url;
+  const gchar *type;
+
+  details_url = alert_data (alert, "method", "details_url");
+  type = (gchar*) event_data;
+
+  buffer = g_string_new (NEW_OVAL_DEFS_HEADER);
+
+  count = 0;
+  if (example)
+    init_iterator (&rows,
+                   "SELECT uuid, name, title FROM ovaldefs"
+                   " LIMIT 4;");
+  else if (event == EVENT_NEW_SECINFO)
+    init_iterator (&rows,
+                   "SELECT uuid, name, title FROM ovaldefs"
+                   " WHERE creation_time"
+                   "       > coalesce (CAST ((SELECT value FROM meta"
+                   "                          WHERE name"
+                   "                                = 'secinfo_check_time')"
+                   "                         AS INTEGER),"
+                   "                   0)"
+                   " ORDER BY creation_time DESC;");
+  else
+    init_iterator (&rows,
+                   "SELECT uuid, name, title FROM ovaldefs"
+                   " WHERE modification_time"
+                   "       > coalesce (CAST ((SELECT value FROM meta"
+                   "                          WHERE name"
+                   "                                = 'secinfo_check_time')"
+                   "                         AS INTEGER),"
+                   "                   0)"
+                   " ORDER BY modification_time DESC;");
+
+  while (next (&rows))
+    {
+      gchar *url;
+      const char *name, *title;
+
+      name = iterator_string (&rows, 1);
+      title = iterator_string (&rows, 2);
+      if (details_url && strlen (details_url))
+        url = alert_url_print (details_url, iterator_string (&rows, 0), type);
+      else
+        url = NULL;
+      g_string_append_printf (buffer,
+                              "%-30s  %-s%s%s%s",
+                              name,
+                              title,
+                              url ? "\n  " : "",
+                              url ? url : "",
+                              url ? "\n\n" : "\n");
+      g_free (url);
+      count++;
+    }
+  cleanup_iterator (&rows);
+
+  return g_string_free (buffer, FALSE);
+}
+
+/**
  * @brief Create message for New NVTs event.
  *
  * @param[in]  event  Event.
@@ -36754,7 +36989,6 @@ new_secinfo_list (event_t event, const void* event_data, alert_t alert)
   if (strcasecmp (event_data, "nvt") == 0)
     return new_nvts_list (event, "nvt", alert, 0);
 
-#if 0
   if (strcasecmp (event_data, "cve_example") == 0)
     return new_cves_list (event, "cve", alert, 1);
   if (strcasecmp (event_data, "cve") == 0)
@@ -36764,7 +36998,6 @@ new_secinfo_list (event_t event, const void* event_data, alert_t alert)
     return new_cpes_list (event, "cpe", alert, 1);
   if (strcasecmp (event_data, "cpe") == 0)
     return new_cpes_list (event, "cpe", alert, 0);
-#endif
 
   if (strcasecmp (event_data, "cert_bund_adv_example") == 0)
     return new_cert_bunds_list (event, "cert_bund_adv", alert, 1);
@@ -36776,12 +37009,10 @@ new_secinfo_list (event_t event, const void* event_data, alert_t alert)
   if (strcasecmp (event_data, "dfn_cert_adv") == 0)
     return new_dfn_certs_list (event, "dfn_cert_adv", alert, 0);
 
-#if 0
   if (strcasecmp (event_data, "ovaldef_example") == 0)
     return new_oval_defs_list (event, "ovaldef", alert, 1);
   if (strcasecmp (event_data, "ovaldef") == 0)
     return new_oval_defs_list (event, "ovaldef", alert, 0);
-#endif
 
   return g_strdup ("ERROR generating list");
 }

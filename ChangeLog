@@ -1,5 +1,11 @@
 2016-01-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (new_cves_list, new_cpes_list)
+	(new_oval_defs_list): New functions.
+	(new_secinfo_list): Enable missing cases.
+
+2016-01-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Allow the user to specify the message and subject used for a SecInfo
 	alert.
 
