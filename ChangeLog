@@ -1,5 +1,20 @@
 2016-01-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Make the "Send" SecInfo alert method use more of the functions used by
+	the "Email" method.
+
+	* src/manage_sql.c (email_secinfo): Add count arg.
+	(secinfo_message_print, new_nvts_message, new_cves_message)
+	(new_cpes_message, new_cert_bunds_message, new_dfn_certs_message)
+	(new_oval_defs_message): Remove.  No longer used.
+	(new_nvts_list, new_cves_list, new_cpes_list, new_cert_bunds_list)
+	(new_dfn_certs_list, new_oval_defs_list, new_secinfo_list): Add count
+	arg.
+	(new_secinfo_message): Use new_secinfo_list and print the message by
+	hand, instead of calling all the old per-type functions.
+
+2016-01-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (new_cves_list, new_cpes_list)
 	(new_oval_defs_list): New functions.
 	(new_secinfo_list): Enable missing cases.

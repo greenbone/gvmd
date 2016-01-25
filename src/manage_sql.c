@@ -289,7 +289,7 @@ static gchar *
 new_secinfo_message (event_t, const void*, alert_t);
 
 static gchar *
-new_secinfo_list (event_t, const void*, alert_t);
+new_secinfo_list (event_t, const void*, alert_t, int*);
 
 
 /* Variables. */
@@ -9460,7 +9460,7 @@ email_secinfo (alert_t alert, task_t task, event_t event,
   char *notice;
   int ret;
 
-  list = new_secinfo_list (event, event_data, alert);
+  list = new_secinfo_list (event, event_data, alert, NULL);
 
   type = g_strdup (event_data);
   if (type && (example = strstr (type, "_example")))
@@ -35980,140 +35980,18 @@ alert_url_print (const gchar *url, const gchar *oid, const gchar *type)
 }
 
 /**
- * @brief Create message for SecInfo alert.
- *
- * @param[in]  type         SecInfo type name.
- * @param[in]  type_plural  SecInfo type name, in plural form.
- * @param[in]  event        Event.
- * @param[in]  alert        Alert.
- * @param[in]  example      Whether the message is an example only.
- * @param[in]  count        Number of rows.
- * @param[in]  rows         Rows part of message.
- *
- * @return Freshly allocated message.
- */
-static gchar *
-secinfo_message_print (const gchar *type, const gchar *type_plural,
-                       event_t event, alert_t alert, int example, int count,
-                       const char *rows)
-{
-  gchar *message;
-  char *name;
-
-  assert (count > 0);
-
-  name = alert_name (alert);
-  message = g_strdup_printf ("%s%i%s%s%s%s, according to the\nalert \"%s\":\n\n",
-                             example
-                              ? "Warning: This is an example alert only.\n\n"
-                              : "",
-                             count,
-                             event == EVENT_NEW_SECINFO
-                              ? " new "
-                              : " ",
-                             count == 1 ? type : type_plural,
-                             event == EVENT_NEW_SECINFO
-                              ? ""
-                              : (count == 1 ? " was" : " were"),
-                             event == EVENT_NEW_SECINFO
-                              ? " appeared in the feed"
-                              : " updated in the feed",
-                             name);
-  free (name);
-  return message;
-}
-
-/**
- * @brief Create message for New NVTs event.
- *
- * @param[in]  event    Event.
- * @param[in]  alert    Alert.
- * @param[in]  example  Whether the message is an example only.
- *
- * @return Freshly allocated message.
- */
-static gchar *
-new_nvts_message (event_t event, const void* event_data, alert_t alert,
-                  int example)
-{
-  iterator_t rows;
-  GString *buffer;
-  int count;
-  char *details_url;
-  gchar *message;
-  const gchar *type;
-
-  details_url = alert_data (alert, "method", "details_url");
-  type = (gchar*) event_data;
-
-  if (details_url && strlen (details_url))
-    buffer = g_string_new (NEW_NVTS_HEADER);
-  else
-    buffer = g_string_new (NEW_NVTS_HEADER_OID);
-
-  count = 0;
-  if (example)
-    init_iterator (&rows,
-                   "SELECT oid, name, solution_type, cvss_base, qod FROM nvts"
-                   " LIMIT 4;");
-  else if (event == EVENT_NEW_SECINFO)
-    init_iterator (&rows,
-                   "SELECT oid, name, solution_type, cvss_base, qod FROM nvts"
-                   " WHERE oid NOT IN (SELECT oid FROM old_nvts)"
-                   " ORDER BY creation_time DESC;");
-  else
-    init_iterator (&rows,
-                   "SELECT oid, name, solution_type, cvss_base, qod FROM nvts"
-                   " WHERE modification_time > (SELECT modification_time"
-                   "                            FROM old_nvts"
-                   "                            WHERE old_nvts.oid = nvts.oid)"
-                   " ORDER BY modification_time DESC;");
-
-  while (next (&rows))
-    {
-      gchar *url;
-      const char *name;
-
-      name = iterator_string (&rows, 1);
-      if (details_url && strlen (details_url))
-        url = alert_url_print (details_url, iterator_string (&rows, 0), type);
-      else
-        url = NULL;
-      g_string_append_printf (buffer,
-                              "%-57.57s%-3s  %13s  %8s %3s%%%s%s%s",
-                              name,
-                              strlen (name) > 60
-                               ? "..."
-                               : (strlen (name) > 57 ? name + 57 : "   "),
-                              iterator_string (&rows, 2),
-                              iterator_string (&rows, 3),
-                              iterator_string (&rows, 4),
-                              url ? "\n  " : "  ",
-                              url ? url : iterator_string (&rows, 0),
-                              url ? "\n\n" : "\n");
-      g_free (url);
-      count++;
-    }
-  cleanup_iterator (&rows);
-
-  message = secinfo_message_print ("NVT", "NVTs", event, alert, example, count,
-                                   buffer->str);
-  g_string_free (buffer, TRUE);
-  return message;
-}
-
-/**
  * @brief Create list for New NVTs event.
  *
  * @param[in]  event    Event.
  * @param[in]  alert    Alert.
  * @param[in]  example  Whether the message is an example only.
+ * @param[out] count_return  NULL, or address for row count.
  *
  * @return Freshly allocated list.
  */
 static gchar *
 new_nvts_list (event_t event, const void* event_data, alert_t alert,
-               int example)
+               int example, int *count_return)
 {
   iterator_t rows;
   GString *buffer;
@@ -36173,6 +36051,9 @@ new_nvts_list (event_t event, const void* event_data, alert_t alert,
       count++;
     }
   cleanup_iterator (&rows);
+
+  if (count_return)
+    *count_return = count;
 
   return g_string_free (buffer, FALSE);
 }
@@ -36183,12 +36064,13 @@ new_nvts_list (event_t event, const void* event_data, alert_t alert,
  * @param[in]  event  Event.
  * @param[in]  alert  Alert.
  * @param[in]  example  Whether the message is an example only.
+ * @param[out] count_return  NULL, or address for row count.
  *
  * @return Freshly allocated message.
  */
 static gchar *
 new_cves_list (event_t event, const void* event_data, alert_t alert,
-               int example)
+               int example, int *count_return)
 {
   iterator_t rows;
   GString *buffer;
@@ -36253,175 +36135,11 @@ new_cves_list (event_t event, const void* event_data, alert_t alert,
       count++;
     }
   cleanup_iterator (&rows);
+
+  if (count_return)
+    *count_return = count;
 
   return g_string_free (buffer, FALSE);
-}
-
-/**
- * @brief Create message for New CVEs event.
- *
- * @param[in]  event  Event.
- * @param[in]  alert  Alert.
- * @param[in]  example  Whether the message is an example only.
- *
- * @return Freshly allocated message.
- */
-static gchar *
-new_cves_message (event_t event, const void* event_data, alert_t alert,
-                  int example)
-{
-  iterator_t rows;
-  GString *buffer;
-  int count;
-  char *details_url;
-  gchar *message;
-  const gchar *type;
-
-  details_url = alert_data (alert, "method", "details_url");
-  type = (gchar*) event_data;
-
-  buffer = g_string_new (NEW_CVES_HEADER);
-
-  count = 0;
-  if (example)
-    init_iterator (&rows,
-                   "SELECT uuid, name, cvss, description FROM cves"
-                   " LIMIT 4;");
-  else if (event == EVENT_NEW_SECINFO)
-    init_iterator (&rows,
-                   "SELECT uuid, name, cvss, description FROM cves"
-                   " WHERE creation_time"
-                   "       > coalesce (CAST ((SELECT value FROM meta"
-                   "                          WHERE name"
-                   "                                = 'secinfo_check_time')"
-                   "                         AS INTEGER),"
-                   "                   0)"
-                   " ORDER BY creation_time DESC;");
-  else
-    init_iterator (&rows,
-                   "SELECT uuid, name, cvss, description FROM cves"
-                   " WHERE modification_time"
-                   "       > coalesce (CAST ((SELECT value FROM meta"
-                   "                          WHERE name"
-                   "                                = 'secinfo_check_time')"
-                   "                         AS INTEGER),"
-                   "                   0)"
-                   " ORDER BY modification_time DESC;");
-
-  while (next (&rows))
-    {
-      gchar *url;
-      const char *name, *desc;
-
-      name = iterator_string (&rows, 1);
-      if (details_url && strlen (details_url))
-        url = alert_url_print (details_url, iterator_string (&rows, 0), type);
-      else
-        url = NULL;
-      desc = iterator_string (&rows, 3);
-      g_string_append_printf (buffer,
-                              "%-15.15s  %8s  %50.50s%s%s%s%s",
-                              name,
-                              iterator_string (&rows, 2),
-                              desc,
-                              strlen (desc) > 53
-                               ? "..."
-                               : (strlen (desc) > 50 ? desc + 50 : "   "),
-                              url ? "\n  " : "",
-                              url ? url : "",
-                              url ? "\n\n" : "\n");
-      g_free (url);
-      count++;
-    }
-  cleanup_iterator (&rows);
-
-  message = secinfo_message_print ("CVE", "CVEs", event, alert, example, count,
-                                   buffer->str);
-  g_string_free (buffer, TRUE);
-  return message;
-}
-
-/**
- * @brief Create message for New CPEs event.
- *
- * @param[in]  event    Event.
- * @param[in]  alert    Alert.
- * @param[in]  example  Whether the message is an example only.
- *
- * @return Freshly allocated message.
- */
-static gchar *
-new_cpes_message (event_t event, const void* event_data, alert_t alert,
-                  int example)
-{
-  iterator_t rows;
-  GString *buffer;
-  int count;
-  char *details_url;
-  gchar *message;
-  const gchar *type;
-
-  details_url = alert_data (alert, "method", "details_url");
-  type = (gchar*) event_data;
-
-  buffer = g_string_new (NEW_CPES_HEADER);
-
-  count = 0;
-  if (example)
-    init_iterator (&rows,
-                   "SELECT uuid, name, title FROM cpes"
-                   " LIMIT 4;");
-  else if (event == EVENT_NEW_SECINFO)
-    init_iterator (&rows,
-                   "SELECT uuid, name, title FROM cpes"
-                   " WHERE creation_time"
-                   "       > coalesce (CAST ((SELECT value FROM meta"
-                   "                          WHERE name"
-                   "                                = 'secinfo_check_time')"
-                   "                         AS INTEGER),"
-                   "                   0)"
-                   " ORDER BY creation_time DESC;");
-  else
-    init_iterator (&rows,
-                   "SELECT uuid, name, title FROM cpes"
-                   " WHERE modification_time"
-                   "       > coalesce (CAST ((SELECT value FROM meta"
-                   "                          WHERE name"
-                   "                                = 'secinfo_check_time')"
-                   "                         AS INTEGER),"
-                   "                   0)"
-                   " ORDER BY modification_time DESC;");
-
-  while (next (&rows))
-    {
-      gchar *url;
-      const char *name, *title;
-
-      name = iterator_string (&rows, 1);
-      title = iterator_string (&rows, 2);
-      if (details_url && strlen (details_url))
-        url = alert_url_print (details_url, iterator_string (&rows, 0), type);
-      else
-        url = NULL;
-      g_string_append_printf (buffer,
-                              "%-57.57s%-3s  %-s%s%s%s",
-                              name,
-                              strlen (name) > 60
-                               ? "..."
-                               : (strlen (name) > 57 ? name + 57 : "   "),
-                              title,
-                              url ? "\n  " : "",
-                              url ? url : "",
-                              url ? "\n\n" : "\n");
-      g_free (url);
-      count++;
-    }
-  cleanup_iterator (&rows);
-
-  message = secinfo_message_print ("CPE", "CPEs", event, alert, example, count,
-                                   buffer->str);
-  g_string_free (buffer, TRUE);
-  return message;
 }
 
 /**
@@ -36430,12 +36148,13 @@ new_cpes_message (event_t event, const void* event_data, alert_t alert,
  * @param[in]  event    Event.
  * @param[in]  alert    Alert.
  * @param[in]  example  Whether the message is an example only.
+ * @param[out] count_return  NULL, or address for row count.
  *
  * @return Freshly allocated list.
  */
 static gchar *
 new_cpes_list (event_t event, const void* event_data, alert_t alert,
-               int example)
+               int example, int *count_return)
 {
   iterator_t rows;
   GString *buffer;
@@ -36499,6 +36218,9 @@ new_cpes_list (event_t event, const void* event_data, alert_t alert,
       count++;
     }
   cleanup_iterator (&rows);
+
+  if (count_return)
+    *count_return = count;
 
   return g_string_free (buffer, FALSE);
 }
@@ -36509,12 +36231,13 @@ new_cpes_list (event_t event, const void* event_data, alert_t alert,
  * @param[in]  event    Event.
  * @param[in]  alert    Alert.
  * @param[in]  example  Whether the message is an example only.
+ * @param[out] count_return  NULL, or address for row count.
  *
  * @return Freshly allocated string.
  */
 static gchar *
 new_cert_bunds_list (event_t event, const void* event_data, alert_t alert,
-                     int example)
+                     int example, int *count_return)
 {
   iterator_t rows;
   GString *buffer;
@@ -36575,88 +36298,11 @@ new_cert_bunds_list (event_t event, const void* event_data, alert_t alert,
       count++;
     }
   cleanup_iterator (&rows);
+
+  if (count_return)
+    *count_return = count;
 
   return g_string_free (buffer, FALSE);
-}
-
-/**
- * @brief Create message for "New CERT-Bund Advisories" event.
- *
- * @param[in]  event    Event.
- * @param[in]  alert    Alert.
- * @param[in]  example  Whether the message is an example only.
- *
- * @return Freshly allocated message.
- */
-static gchar *
-new_cert_bunds_message (event_t event, const void* event_data, alert_t alert,
-                        int example)
-{
-  iterator_t rows;
-  GString *buffer;
-  int count;
-  char *details_url;
-  gchar *message;
-  const gchar *type;
-
-  details_url = alert_data (alert, "method", "details_url");
-  type = (gchar*) event_data;
-
-  buffer = g_string_new (NEW_CERT_BUNDS_HEADER);
-
-  count = 0;
-  if (example)
-    init_iterator (&rows,
-                   "SELECT uuid, name, title FROM cert_bund_advs"
-                   " LIMIT 4;");
-  else if (event == EVENT_NEW_SECINFO)
-    init_iterator (&rows,
-                   "SELECT uuid, name, title FROM cert_bund_advs"
-                   " WHERE creation_time"
-                   "       > coalesce (CAST ((SELECT value FROM meta"
-                   "                          WHERE name"
-                   "                                = 'secinfo_check_time')"
-                   "                         AS INTEGER),"
-                   "                   0)"
-                   " ORDER BY creation_time DESC;");
-  else
-    init_iterator (&rows,
-                   "SELECT uuid, name, title FROM cert_bund_advs"
-                   " WHERE modification_time"
-                   "       > coalesce (CAST ((SELECT value FROM meta"
-                   "                          WHERE name"
-                   "                                = 'secinfo_check_time')"
-                   "                         AS INTEGER),"
-                   "                   0)"
-                   " ORDER BY modification_time DESC;");
-
-  while (next (&rows))
-    {
-      gchar *url;
-      const char *name, *title;
-
-      name = iterator_string (&rows, 1);
-      title = iterator_string (&rows, 2);
-      if (details_url && strlen (details_url))
-        url = alert_url_print (details_url, iterator_string (&rows, 0), type);
-      else
-        url = NULL;
-      g_string_append_printf (buffer,
-                              "%-11s  %-s%s%s%s",
-                              name,
-                              title,
-                              url ? "\n  " : "",
-                              url ? url : "",
-                              url ? "\n\n" : "\n");
-      g_free (url);
-      count++;
-    }
-  cleanup_iterator (&rows);
-
-  message = secinfo_message_print ("CERT-Bund Advisory", "CERT-Bund Advisories",
-                                   event, alert, example, count, buffer->str);
-  g_string_free (buffer, TRUE);
-  return message;
 }
 
 /**
@@ -36665,12 +36311,13 @@ new_cert_bunds_message (event_t event, const void* event_data, alert_t alert,
  * @param[in]  event    Event.
  * @param[in]  alert    Alert.
  * @param[in]  example  Whether the message is an example only.
+ * @param[out] count_return  NULL, or address for row count.
  *
  * @return Freshly allocated string.
  */
 static gchar *
 new_dfn_certs_list (event_t event, const void* event_data, alert_t alert,
-                    int example)
+                    int example, int *count_return)
 {
   iterator_t rows;
   GString *buffer;
@@ -36731,168 +36378,11 @@ new_dfn_certs_list (event_t event, const void* event_data, alert_t alert,
       count++;
     }
   cleanup_iterator (&rows);
+
+  if (count_return)
+    *count_return = count;
 
   return g_string_free (buffer, FALSE);
-}
-
-/**
- * @brief Create message for "New DFN-CERT Advisories" event.
- *
- * @param[in]  event    Event.
- * @param[in]  alert    Alert.
- * @param[in]  example  Whether the message is an example only.
- *
- * @return Freshly allocated message.
- */
-static gchar *
-new_dfn_certs_message (event_t event, const void* event_data, alert_t alert,
-                       int example)
-{
-  iterator_t rows;
-  GString *buffer;
-  int count;
-  char *details_url;
-  gchar *message;
-  const gchar *type;
-
-  details_url = alert_data (alert, "method", "details_url");
-  type = (gchar*) event_data;
-
-  buffer = g_string_new (NEW_DFN_CERTS_HEADER);
-
-  count = 0;
-  if (example)
-    init_iterator (&rows,
-                   "SELECT uuid, name, title FROM dfn_cert_advs"
-                   " LIMIT 4;");
-  else if (event == EVENT_NEW_SECINFO)
-    init_iterator (&rows,
-                   "SELECT uuid, name, title FROM dfn_cert_advs"
-                   " WHERE creation_time"
-                   "       > coalesce (CAST ((SELECT value FROM meta"
-                   "                          WHERE name"
-                   "                                = 'secinfo_check_time')"
-                   "                         AS INTEGER),"
-                   "                   0)"
-                   " ORDER BY creation_time DESC;");
-  else
-    init_iterator (&rows,
-                   "SELECT uuid, name, title FROM dfn_cert_advs"
-                   " WHERE modification_time"
-                   "       > coalesce (CAST ((SELECT value FROM meta"
-                   "                          WHERE name"
-                   "                                = 'secinfo_check_time')"
-                   "                         AS INTEGER),"
-                   "                   0)"
-                   " ORDER BY modification_time DESC;");
-
-  while (next (&rows))
-    {
-      gchar *url;
-      const char *name, *title;
-
-      name = iterator_string (&rows, 1);
-      title = iterator_string (&rows, 2);
-      if (details_url && strlen (details_url))
-        url = alert_url_print (details_url, iterator_string (&rows, 0), type);
-      else
-        url = NULL;
-      g_string_append_printf (buffer,
-                              "%-18s  %-s%s%s%s",
-                              name,
-                              title,
-                              url ? "\n  " : "",
-                              url ? url : "",
-                              url ? "\n\n" : "\n");
-      g_free (url);
-      count++;
-    }
-  cleanup_iterator (&rows);
-
-  message = secinfo_message_print ("DFN-CERT Advisory", "DFN-CERT Advisories",
-                                   event, alert, example, count, buffer->str);
-  g_string_free (buffer, TRUE);
-  return message;
-}
-
-/**
- * @brief Create message for "New OVAL Definitions" event.
- *
- * @param[in]  event    Event.
- * @param[in]  alert    Alert.
- * @param[in]  example  Whether the message is an example only.
- *
- * @return Freshly allocated message.
- */
-static gchar *
-new_oval_defs_message (event_t event, const void* event_data, alert_t alert,
-                       int example)
-{
-  iterator_t rows;
-  GString *buffer;
-  int count;
-  char *details_url;
-  gchar *message;
-  const gchar *type;
-
-  details_url = alert_data (alert, "method", "details_url");
-  type = (gchar*) event_data;
-
-  buffer = g_string_new (NEW_OVAL_DEFS_HEADER);
-
-  count = 0;
-  if (example)
-    init_iterator (&rows,
-                   "SELECT uuid, name, title FROM ovaldefs"
-                   " LIMIT 4;");
-  else if (event == EVENT_NEW_SECINFO)
-    init_iterator (&rows,
-                   "SELECT uuid, name, title FROM ovaldefs"
-                   " WHERE creation_time"
-                   "       > coalesce (CAST ((SELECT value FROM meta"
-                   "                          WHERE name"
-                   "                                = 'secinfo_check_time')"
-                   "                         AS INTEGER),"
-                   "                   0)"
-                   " ORDER BY creation_time DESC;");
-  else
-    init_iterator (&rows,
-                   "SELECT uuid, name, title FROM ovaldefs"
-                   " WHERE modification_time"
-                   "       > coalesce (CAST ((SELECT value FROM meta"
-                   "                          WHERE name"
-                   "                                = 'secinfo_check_time')"
-                   "                         AS INTEGER),"
-                   "                   0)"
-                   " ORDER BY modification_time DESC;");
-
-  while (next (&rows))
-    {
-      gchar *url;
-      const char *name, *title;
-
-      name = iterator_string (&rows, 1);
-      title = iterator_string (&rows, 2);
-      if (details_url && strlen (details_url))
-        url = alert_url_print (details_url, iterator_string (&rows, 0), type);
-      else
-        url = NULL;
-      g_string_append_printf (buffer,
-                              "%-30s  %-s%s%s%s",
-                              name,
-                              title,
-                              url ? "\n  " : "",
-                              url ? url : "",
-                              url ? "\n\n" : "\n");
-      g_free (url);
-      count++;
-    }
-  cleanup_iterator (&rows);
-
-  message = secinfo_message_print ("OVAL Definition", "OVAL Definitions",
-                                   event, alert, example, count, buffer->str);
-  g_string_free (buffer, TRUE);
-  return message;
 }
 
 /**
@@ -36901,12 +36391,13 @@ new_oval_defs_message (event_t event, const void* event_data, alert_t alert,
  * @param[in]  event    Event.
  * @param[in]  alert    Alert.
  * @param[in]  example  Whether the message is an example only.
+ * @param[out] count_return  NULL, or address for row count.
  *
  * @return Freshly allocated list.
  */
 static gchar *
 new_oval_defs_list (event_t event, const void* event_data, alert_t alert,
-                    int example)
+                    int example, int *count_return)
 {
   iterator_t rows;
   GString *buffer;
@@ -36968,51 +36459,63 @@ new_oval_defs_list (event_t event, const void* event_data, alert_t alert,
     }
   cleanup_iterator (&rows);
 
+  if (count_return)
+    *count_return = count;
+
   return g_string_free (buffer, FALSE);
 }
 
 /**
  * @brief Create message for New NVTs event.
  *
- * @param[in]  event  Event.
- * @param[in]  alert  Alert.
+ * @param[in]  event       Event.
+ * @param[in]  event_data  Event data.
+ * @param[in]  alert       Alert.
+ * @param[out] count_return  NULL, or address for row count.
  *
  * @return Freshly allocated list.
  */
 static gchar *
-new_secinfo_list (event_t event, const void* event_data, alert_t alert)
+new_secinfo_list (event_t event, const void* event_data, alert_t alert,
+                  int *count_return)
 {
   tracef ("%s: event_data: %s", __FUNCTION__, (gchar*) event_data);
 
   if (strcasecmp (event_data, "nvt_example") == 0)
-    return new_nvts_list (event, "nvt", alert, 1);
+    return new_nvts_list (event, "nvt", alert, 1, count_return);
   if (strcasecmp (event_data, "nvt") == 0)
-    return new_nvts_list (event, "nvt", alert, 0);
+    return new_nvts_list (event, "nvt", alert, 0, count_return);
 
   if (strcasecmp (event_data, "cve_example") == 0)
-    return new_cves_list (event, "cve", alert, 1);
+    return new_cves_list (event, "cve", alert, 1, count_return);
   if (strcasecmp (event_data, "cve") == 0)
-    return new_cves_list (event, "cve", alert, 0);
+    return new_cves_list (event, "cve", alert, 0, count_return);
 
   if (strcasecmp (event_data, "cpe_example") == 0)
-    return new_cpes_list (event, "cpe", alert, 1);
+    return new_cpes_list (event, "cpe", alert, 1, count_return);
   if (strcasecmp (event_data, "cpe") == 0)
-    return new_cpes_list (event, "cpe", alert, 0);
+    return new_cpes_list (event, "cpe", alert, 0, count_return);
 
   if (strcasecmp (event_data, "cert_bund_adv_example") == 0)
-    return new_cert_bunds_list (event, "cert_bund_adv", alert, 1);
+    return new_cert_bunds_list (event, "cert_bund_adv", alert, 1, count_return);
   if (strcasecmp (event_data, "cert_bund_adv") == 0)
-    return new_cert_bunds_list (event, "cert_bund_adv", alert, 0);
+    return new_cert_bunds_list (event, "cert_bund_adv", alert, 0, count_return);
 
   if (strcasecmp (event_data, "dfn_cert_adv_example") == 0)
-    return new_dfn_certs_list (event, "dfn_cert_adv", alert, 1);
+    return new_dfn_certs_list (event, "dfn_cert_adv", alert, 1, count_return);
   if (strcasecmp (event_data, "dfn_cert_adv") == 0)
-    return new_dfn_certs_list (event, "dfn_cert_adv", alert, 0);
+    return new_dfn_certs_list (event, "dfn_cert_adv", alert, 0, count_return);
 
   if (strcasecmp (event_data, "ovaldef_example") == 0)
-    return new_oval_defs_list (event, "ovaldef", alert, 1);
+    return new_oval_defs_list (event, "ovaldef", alert, 1, count_return);
   if (strcasecmp (event_data, "ovaldef") == 0)
-    return new_oval_defs_list (event, "ovaldef", alert, 0);
+    return new_oval_defs_list (event, "ovaldef", alert, 0, count_return);
+
+  if (count_return)
+    {
+      g_warning ("%s: Type error: %s", __FUNCTION__, (char *) event_data);
+      *count_return = 0;
+    }
 
   return g_strdup ("ERROR generating list");
 }
@@ -37028,39 +36531,45 @@ new_secinfo_list (event_t event, const void* event_data, alert_t alert)
 static gchar *
 new_secinfo_message (event_t event, const void* event_data, alert_t alert)
 {
-  tracef ("%s: event_data: %s", __FUNCTION__, (gchar*) event_data);
+  gchar *type, *list, *message, *name, *point;
+  int count, example;
 
-  if (strcasecmp (event_data, "nvt_example") == 0)
-    return new_nvts_message (event, "nvt", alert, 1);
-  if (strcasecmp (event_data, "nvt") == 0)
-    return new_nvts_message (event, "nvt", alert, 0);
+  list = new_secinfo_list (event, event_data, alert, &count);
 
-  if (strcasecmp (event_data, "cve_example") == 0)
-    return new_cves_message (event, "cve", alert, 1);
-  if (strcasecmp (event_data, "cve") == 0)
-    return new_cves_message (event, "cve", alert, 0);
+  assert (count > 0);
 
-  if (strcasecmp (event_data, "cpe_example") == 0)
-    return new_cpes_message (event, "cpe", alert, 1);
-  if (strcasecmp (event_data, "cpe") == 0)
-    return new_cpes_message (event, "cpe", alert, 0);
+  type = g_strdup (event_data);
+  if (type && (point = strstr (type, "_example")))
+    {
+      example = 1;
+      point[0] = '\0';
+    }
+  else
+    example = 0;
 
-  if (strcasecmp (event_data, "cert_bund_adv_example") == 0)
-    return new_cert_bunds_message (event, "cert_bund_adv", alert, 1);
-  if (strcasecmp (event_data, "cert_bund_adv") == 0)
-    return new_cert_bunds_message (event, "cert_bund_adv", alert, 0);
-
-  if (strcasecmp (event_data, "dfn_cert_adv_example") == 0)
-    return new_dfn_certs_message (event, "dfn_cert_adv", alert, 1);
-  if (strcasecmp (event_data, "dfn_cert_adv") == 0)
-    return new_dfn_certs_message (event, "dfn_cert_adv", alert, 0);
-
-  if (strcasecmp (event_data, "ovaldef_example") == 0)
-    return new_oval_defs_message (event, "ovaldef", alert, 1);
-  if (strcasecmp (event_data, "ovaldef") == 0)
-    return new_oval_defs_message (event, "ovaldef", alert, 0);
-
-  return g_strdup ("ERROR generating message");
+  name = alert_name (alert);
+  message = g_strdup_printf ("%s%i%s%s%s%s, according to the\nalert \"%s\":\n\n%s",
+                             example
+                              ? "Warning: This is an example alert only.\n\n"
+                              : "",
+                             count,
+                             event == EVENT_NEW_SECINFO
+                              ? " new "
+                              : " ",
+                             count == 1
+                              ? type_name (type)
+                              : type_name_plural (type),
+                             event == EVENT_NEW_SECINFO
+                              ? ""
+                              : (count == 1 ? " was" : " were"),
+                             event == EVENT_NEW_SECINFO
+                              ? " appeared in the feed"
+                              : " updated in the feed",
+                             name,
+                             list);
+  free (name);
+  g_free (list);
+  return message;
 }
 
 /**
