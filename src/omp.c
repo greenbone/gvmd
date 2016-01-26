@@ -775,7 +775,7 @@ process_omp (omp_parser_t *, const gchar *, gchar **);
  *
  * @param[in]  write_to_client       Function to write to client.
  * @param[in]  write_to_client_data  Argument to \p write_to_client.
- * @param[in]  disable               Commands to disable.  Freed by
+ * @param[in]  disable               Commands to disable.  Copied, and freed by
  *                                   omp_parser_free.
  *
  * @return An OMP parser.
@@ -788,7 +788,7 @@ omp_parser_new (int (*write_to_client) (const char*, void*), void* write_to_clie
   omp_parser->client_writer = write_to_client;
   omp_parser->client_writer_data = write_to_client_data;
   omp_parser->read_over = 0;
-  omp_parser->disabled_commands = disable;
+  omp_parser->disabled_commands = g_strdupv (disable);
   return omp_parser;
 }
 

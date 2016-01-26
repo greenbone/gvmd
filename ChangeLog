@@ -1,3 +1,9 @@
+2016-01-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_parser_new): Copy the disabled command array, because
+	they will be freed by omp_parser_free, and this may happen multiple
+	times in a process that is forked to handle OMP for the schedular.
+
 2016-01-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Make the "Send" SecInfo alert method use more of the functions used by
