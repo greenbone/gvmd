@@ -4142,6 +4142,8 @@ find_resource_with_permission (const char* type, const char* uuid,
   gchar *quoted_uuid;
   if (uuid == NULL)
     return TRUE;
+  if ((type == NULL) || (valid_type (type) == 0))
+    return TRUE;
   quoted_uuid = sql_quote (uuid);
   if (acl_user_has_access_uuid (type, quoted_uuid, permission, trash) == 0)
     {
@@ -4149,7 +4151,6 @@ find_resource_with_permission (const char* type, const char* uuid,
       *resource = 0;
       return FALSE;
     }
-  // TODO should really check type
   switch (sql_int64 (resource,
                      "SELECT id FROM %ss%s WHERE uuid = '%s'%s;",
                      type,
@@ -5188,8 +5189,9 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   else if (sort_stat && strcmp (sort_stat, "value") == 0)
     order_column = g_strdup ("outer_group_column");
   else if (sort_field
-      && strcmp (sort_field, "")
-      && strcmp (sort_field, group_column))
+           && group_column
+           && strcmp (sort_field, "")
+           && strcmp (sort_field, group_column))
     {
       int index;
       order_column = NULL;
@@ -38905,7 +38907,6 @@ create_credential (const char* name, const char* comment, const char* login,
   GRand *rand;
   gchar generated_password[PASSWORD_LENGTH];
   gchar *generated_private_key;
-  const char *s = login;
   credential_t new_credential;
   int auto_generate, allow_insecure_int;
   int ret;
@@ -39197,15 +39198,20 @@ create_credential (const char* name, const char* comment, const char* login,
 
   /* Ensure the login is alphanumeric, to help the package generation. */
 
-  while (*s)
-    if (isalnum (*s))
-      s++;
-    else
-      {
-        g_free (quoted_name);
-        sql ("ROLLBACK;");
-        return 2;
-      }
+  if (login)
+    {
+      const char *s;
+      s = login;
+      while (*s)
+        if (isalnum (*s))
+          s++;
+        else
+          {
+            g_free (quoted_name);
+            sql ("ROLLBACK;");
+            return 2;
+          }
+    }
 
   /* Create the keys and packages. */
 

@@ -4887,6 +4887,8 @@ move_task (const char *task_id, const char *slave_id)
       if (slave == 0)
         return 3;
     }
+  else
+    slave = 0;
 
   task_scanner_type = scanner_type (task_scanner (task));
   if (task_scanner_type != SCANNER_TYPE_OPENVAS)
@@ -4943,7 +4945,7 @@ move_task (const char *task_id, const char *slave_id)
     }
 
   sql ("UPDATE tasks SET slave = %llu WHERE id = %llu",
-       strcmp (slave_id, "") ? slave : 0, task);
+       (slave_id && strcmp (slave_id, "")) ? slave : 0, task);
 
   if (should_resume_task)
     {

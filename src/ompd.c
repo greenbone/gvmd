@@ -660,16 +660,14 @@ serve_omp (gnutls_session_t* client_session,
               /* to_scanner buffer full. */
               tracef ("   client input stalled 1\n");
               client_input_stalled = 1;
-              /* Break to write to_scanner. */
-              break;
+              /* Carry on to write to_scanner. */
             }
           else if (ret == -3)
             {
               /* to_client buffer full. */
               tracef ("   client input stalled 2\n");
               client_input_stalled = 2;
-              /* Break to write to_client. */
-              break;
+              /* Carry on to write to_client. */
             }
           else
             {

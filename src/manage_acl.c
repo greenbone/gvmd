@@ -946,7 +946,8 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
     {
       gchar *permission_clause, *filter_owned_clause;
       GString *permission_or;
-      int index, table_trash, permissions_include_get;
+      int table_trash, permissions_include_get;
+      guint index;
 
       permissions_include_get = 0;
       permission_or = g_string_new ("");
@@ -986,6 +987,7 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
 
       /* Check on index is because default is owner and global, for backward
        * compatibility. */
+      permission_clause = NULL;
       if (user_id && index)
         {
           gchar *clause;
@@ -1091,8 +1093,6 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
           else
             permission_clause = clause;
         }
-      else
-        permission_clause = NULL;
 
       g_string_free (permission_or, TRUE);
 

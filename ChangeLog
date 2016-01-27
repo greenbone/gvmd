@@ -1,3 +1,24 @@
+2016-01-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Solve a few small issues found by Clang.
+
+	* src/manage.c (move_task): Init slave to keep Clang happy.  Check
+	slave_id before using it.
+
+	* src/manage_acl.c (acl_where_owned_user): Use guint for index, because
+	permission_clause->len is unsigned. Init permission_clause beforehand,
+	to make sure it is always initialised.
+
+	* src/manage_sql.c (find_resource_with_permission): Check type before
+	using it.
+	(init_aggregate_iterator): Add group_column check.
+	(create_credential): Skip the alphanumeric check if login is NULL, which
+	it can be.
+
+	* src/ompd.c (serve_omp): Carry on instead of breaking, because breaking
+	exits the function entirely but the intention is write the buffers.
+	Probably these breaks are left over from a previous case statement.
+
 2016-01-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_parser_new): Copy the disabled command array, because
