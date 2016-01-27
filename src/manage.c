@@ -3003,10 +3003,17 @@ task_scanner_options (task_t task)
 
           if (find_resource ("credential", uuid, &credential))
             {
+              g_warning ("Error getting credential for osp parameter %s", name);
+              g_free (name);
+              continue;
+            }
+          if (credential == 0)
+            {
               g_warning ("No credential for osp parameter %s", name);
               g_free (name);
               continue;
             }
+
           init_credential_iterator_one (&iter, credential);
           if (!next (&iter))
             {
