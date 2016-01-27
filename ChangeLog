@@ -1,5 +1,10 @@
 2016-01-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (create_alert, modify_alert): Use event instead of
+	condition for event validation.
+
+2016-01-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Solve a few small issues found by Clang.
 
 	* src/manage.c (move_task): Init slave to keep Clang happy.  Check

@@ -6707,7 +6707,7 @@ create_alert (const char* name, const char* comment, const char* filter_id,
       gchar *name = sql_quote (item);
       gchar *data = sql_quote (item + strlen (item) + 1);
 
-      validation_result = validate_alert_event_data (name, data, condition);
+      validation_result = validate_alert_event_data (name, data, event);
 
       if (validation_result)
         {
@@ -7005,8 +7005,7 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
           gchar *name = sql_quote (item);
           gchar *data = sql_quote (item + strlen (item) + 1);
 
-          validation_result = validate_alert_event_data (name, data,
-                                                         condition);
+          validation_result = validate_alert_event_data (name, data, event);
 
           if (validation_result)
             {
