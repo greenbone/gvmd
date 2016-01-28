@@ -1424,6 +1424,24 @@ check_min_cvss_base (const char* min_cvss_base)
   return "0.0";
 }
 
+/**
+ * @brief Complete an update of the NVT cache.
+ *
+ * @param[in]  nvts_list    List of nvti_t to insert.
+ * @param[in]  mode         -1 updating, -2 rebuilding.
+ */
+static int
+secinfo_check_time ()
+{
+  return sql_int ("SELECT"
+                  " CASE WHEN EXISTS (SELECT * FROM meta"
+                  "                   WHERE name = 'secinfo_check_time')"
+                  "      THEN (SELECT value FROM meta"
+                  "            WHERE name = 'secinfo_check_time')"
+                  "      ELSE 0"
+                  "      END;");
+}
+
 
 /* Filter utilities. */
 
@@ -9332,6 +9350,21 @@ alert_message_print (const gchar *message, event_t event,
                 g_free (condition_desc);
                 break;
               }
+            case 'd':
+              /* Date that the check was last performed. */
+              if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
+                {
+                  char time_string[100];
+                  time_t date;
+                  struct tm *tm;
+
+                  date = secinfo_check_time ();
+                  tm = localtime (&date);
+                  if (strftime (time_string, 98, "%F", tm) == 0)
+                    break;
+                  g_string_append (new_message, time_string);
+                }
+              break;
             case 'e':
               {
                 gchar *event_desc;
