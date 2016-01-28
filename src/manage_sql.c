@@ -9291,7 +9291,8 @@ alert_subject_print (const gchar *subject, event_t event,
  * @param[in]  content      The report, for inlining.
  * @param[in]  content_length  Length of content.
  * @param[in]  truncated       Whether the report was truncated.
- * @param[in]  max_length      Max allowed length of content.
+ * @param[in]  total        Total number of resources.
+ * @param[in]  max_length   Max allowed length of content.
  *
  * @return Freshly allocated message.
  */
@@ -9302,7 +9303,8 @@ alert_message_print (const gchar *message, event_t event,
                      gchar *format_name, filter_t filter,
                      const gchar *term, const gchar *zone,
                      const gchar *host_summary, const gchar *content,
-                     gsize content_length, int truncated, int max_length)
+                     gsize content_length, int truncated, int total,
+                     int max_length)
 {
   int formatting;
   const gchar *point, *end;
@@ -9402,6 +9404,24 @@ alert_message_print (const gchar *message, event_t event,
                 g_string_append (new_message, term ? term : "N/A");
                 break;
               }
+            case 'q':
+              {
+                if (event == EVENT_NEW_SECINFO)
+                  g_string_append (new_message, "New");
+                else if (event == EVENT_UPDATED_SECINFO)
+                  g_string_append (new_message, "Updated");
+                break;
+              }
+            case 's':
+              /* Type. */
+              if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
+                g_string_append (new_message, type_name (event_data));
+              break;
+            case 'S':
+              /* Type, plural. */
+              if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
+                g_string_append (new_message, type_name_plural (event_data));
+              break;
             case 't':
               {
                 if (truncated)
@@ -9411,6 +9431,11 @@ alert_message_print (const gchar *message, event_t event,
                                           " and thus\n"
                                           "was truncated.\n",
                                           max_length);
+                break;
+              }
+            case 'T':
+              {
+                g_string_append_printf (new_message, "%i", total);
                 break;
               }
             case 'z':
@@ -9459,9 +9484,9 @@ email_secinfo (alert_t alert, task_t task, event_t event,
   gchar *alert_subject, *message, *subject, *example, *list, *type, *base64;
   gchar *body;
   char *notice;
-  int ret;
+  int ret, count;
 
-  list = new_secinfo_list (event, event_data, alert, NULL);
+  list = new_secinfo_list (event, event_data, alert, &count);
 
   type = g_strdup (event_data);
   if (type && (example = strstr (type, "_example")))
@@ -9512,12 +9537,12 @@ email_secinfo (alert_t alert, task_t task, event_t event,
     }
 
   if (message && strlen (message))
-    body = alert_message_print (message, event, event_data,
+    body = alert_message_print (message, event, type,
                                 task, alert, condition,
                                 NULL, 0, NULL, NULL, NULL,
                                 list,
                                 list ? strlen (list) : 0,
-                                0, 0);
+                                0, count, 0);
   else
     {
       gchar *event_desc, *condition_desc;
@@ -9788,6 +9813,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                               content_length,
                                               content_length
                                               > max_content_length,
+                                              0,
                                               max_content_length);
                   g_free (message);
                   g_free (report_content);
@@ -9918,6 +9944,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                               term, report_zone,
                                               host_summary, NULL, 0,
                                               base64 == NULL,
+                                              0,
                                               max_attach_length);
                   g_free (message);
                   g_free (event_desc);
@@ -9956,7 +9983,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                     body = alert_message_print (message, event, event_data,
                                                 task, alert, condition,
                                                 NULL, 0, NULL, NULL, NULL,
-                                                NULL, 0, 0, 0);
+                                                NULL, 0, 0, 0, 0);
                   else
                     body = g_strdup_printf (SIMPLE_NOTICE_FORMAT,
                                             event_desc,

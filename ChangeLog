@@ -1,5 +1,11 @@
 2016-01-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (alert_message_print): Add q, s, S and T.
+	(email_secinfo): Pass count to alert_message_print for T.
+	(escalate_2): Pass 0 to alert_message_print for T.
+
+2016-01-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (task_scanner_options): Check find_resource return
 	correctly.
 
