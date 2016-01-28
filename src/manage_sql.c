@@ -9421,12 +9421,13 @@ alert_message_print (const gchar *message, event_t event,
                 break;
               }
             case 'n':
-              {
-                char *name = task_name (task);
-                g_string_append (new_message, name);
-                free (name);
-                break;
-              }
+              if (task)
+                {
+                  char *name = task_name (task);
+                  g_string_append (new_message, name);
+                  free (name);
+                }
+              break;
             case 'r':
               {
                 /* Report format name. */

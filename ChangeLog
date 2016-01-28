@@ -1,5 +1,10 @@
 2016-01-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (alert_message_print): Only print task name when
+	there's a task.
+
+2016-01-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (alert_subject_print): Add d and T to match
 	alert_message_print.  In s and S, only print type for SecInfo alerts.
 	(alert_message_print): Clarify total arg in doc.
