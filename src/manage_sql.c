@@ -9222,12 +9222,13 @@ static int max_attach_length = MAX_ATTACH_LENGTH;
  * @param[in]  event       Event.
  * @param[in]  event_data  Event data.
  * @param[in]  task        Task.
+ * @param[in]  total       Total number of resources (for SecInfo alerts).
  *
  * @return Freshly allocated subject.
  */
 static gchar *
 alert_subject_print (const gchar *subject, event_t event,
-                     const void *event_data, task_t task)
+                     const void *event_data, task_t task, int total)
 {
   int formatting;
   const gchar *point, *end;
@@ -9256,6 +9257,21 @@ alert_subject_print (const gchar *subject, event_t event,
                   }
                 break;
               }
+            case 'd':
+              /* Date that the check was last performed. */
+              if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
+                {
+                  char time_string[100];
+                  time_t date;
+                  struct tm *tm;
+
+                  date = secinfo_check_time ();
+                  tm = localtime (&date);
+                  if (strftime (time_string, 98, "%F", tm) == 0)
+                    break;
+                  g_string_append (new_subject, time_string);
+                }
+              break;
             case 'e':
               {
                 gchar *event_desc;
@@ -9266,20 +9282,23 @@ alert_subject_print (const gchar *subject, event_t event,
                 break;
               }
             case 'q':
-              {
-                if (event == EVENT_NEW_SECINFO)
-                  g_string_append (new_subject, "New");
-                else if (event == EVENT_UPDATED_SECINFO)
-                  g_string_append (new_subject, "Updated");
-                break;
-              }
+              if (event == EVENT_NEW_SECINFO)
+                g_string_append (new_subject, "New");
+              else if (event == EVENT_UPDATED_SECINFO)
+                g_string_append (new_subject, "Updated");
+              break;
             case 's':
               /* Type. */
-              g_string_append (new_subject, type_name (event_data));
+              if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
+                g_string_append (new_subject, type_name (event_data));
               break;
             case 'S':
               /* Type, plural. */
-              g_string_append (new_subject, type_name_plural (event_data));
+              if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
+                g_string_append (new_subject, type_name_plural (event_data));
+              break;
+            case 'T':
+              g_string_append_printf (new_subject, "%i", total);
               break;
             default:
               g_string_append_c (new_subject, '$');
@@ -9309,7 +9328,7 @@ alert_subject_print (const gchar *subject, event_t event,
  * @param[in]  content      The report, for inlining.
  * @param[in]  content_length  Length of content.
  * @param[in]  truncated       Whether the report was truncated.
- * @param[in]  total        Total number of resources.
+ * @param[in]  total        Total number of resources (for SecInfo alerts).
  * @param[in]  max_length   Max allowed length of content.
  *
  * @return Freshly allocated message.
@@ -9536,7 +9555,7 @@ email_secinfo (alert_t alert, task_t task, event_t event,
     {
       g_free (subject);
       subject = alert_subject_print (alert_subject, event,
-                                     type, task);
+                                     type, task, count);
     }
   g_free (alert_subject);
 
@@ -9828,7 +9847,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                     {
                       g_free (subject);
                       subject = alert_subject_print (alert_subject, event,
-                                                     event_data, task);
+                                                     event_data, task, 0);
                     }
                   g_free (alert_subject);
 
@@ -9957,7 +9976,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                     {
                       g_free (subject);
                       subject = alert_subject_print (alert_subject, event,
-                                                     event_data, task);
+                                                     event_data, task, 0);
                     }
                   g_free (alert_subject);
                   if (max_attach_length <= 0
@@ -10007,7 +10026,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                     {
                       g_free (subject);
                       subject = alert_subject_print (alert_subject, event,
-                                                     event_data, task);
+                                                     event_data, task, 0);
                     }
                   g_free (alert_subject);
 

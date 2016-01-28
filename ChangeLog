@@ -1,5 +1,13 @@
 2016-01-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (alert_subject_print): Add d and T to match
+	alert_message_print.  In s and S, only print type for SecInfo alerts.
+	(alert_message_print): Clarify total arg in doc.
+	(email_secinfo): Pass count to alert_subject_print for T.
+	(escalate_2): Pass 0 to alert_subject_print for T.
+
+2016-01-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (secinfo_check_time): New function.
 	(alert_message_print): Add d, for last SecInfo check date.
 
