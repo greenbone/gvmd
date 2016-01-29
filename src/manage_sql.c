@@ -36770,7 +36770,7 @@ manage_complete_nvt_cache_update (GList *nvts_list, int mode)
                "                   WHERE name = 'secinfo_check_time')"))
     sql ("INSERT INTO meta (name, value)"
          " VALUES ('secinfo_check_time', m_now ());");
-  else if (sql_int ("SELECT value = 0 FROM meta"
+  else if (sql_int ("SELECT value = '0' FROM meta"
                     " WHERE name = 'secinfo_check_time';"))
     sql ("UPDATE meta SET value = m_now ()"
          " WHERE name = 'secinfo_check_time';");
