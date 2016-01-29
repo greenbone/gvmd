@@ -1,3 +1,9 @@
+2016-01-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (secinfo_check_time): Cast value so that cases have
+	the same type, for Postgres.
+	(manage_complete_nvt_cache_update): Use == instead of =, for Postgres.
+
 2016-01-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (alert_message_print): Only print task name when
