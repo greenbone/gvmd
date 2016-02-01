@@ -1,3 +1,7 @@
+2016-02-01  Benoît Allard  <benoit.allard@greenbone.net>
+
+	* doc/postgres-HOWTO: Fix typos.
+
 2016-01-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_complete_nvt_cache_update): Compare meta

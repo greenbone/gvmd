@@ -31,7 +31,7 @@ Debian GNU/Linux 'Jessie' 8.
 
 6 Make Postgres aware of the openvas libraries if not installed
   in a ld-aware directory. For example create file /etc/ld.so.conf.d/openvas.conf
-  with apropriate path and then run ldconfig.
+  with appropriate path and then run ldconfig.
 
 7 Run Manager as usual.
 
@@ -44,12 +44,12 @@ Migrating from SQLite to PostgreSQL
 -----------------------------------
 
 1 Run "openvas-migrate-to-postgres" into a clean newly created
-  PostgreSQL database like described above. It is esentially important
+  PostgreSQL database like described above. It is essentially important
   that you do not run "--rebuild" before the migration as it would
   create a fresh one and therefore prevent migration.
 
-  If you accidently already rebuild the database or for other reasons
-  want to start from scratch, apply the dopping of all data as
+  If you accidentally already rebuild the database or for other reasons
+  want to start from scratch, apply the dropping of all data as
   described below.
 
 2 Run "openvasmd --rebuild".
