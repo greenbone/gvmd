@@ -8082,7 +8082,7 @@ email (const char *to_address, const char *from_address, const char *subject,
                    "Content-Disposition: attachment;"
                    " filename=\"%s.%s\"\n"
                    "Content-Transfer-Encoding: base64\n"
-                   "Content-Description: OpenVAS report\n\n",
+                   "Content-Description: Report\n\n",
                    attachment_type,
                    attachment_name,
                    attachment_extension)
