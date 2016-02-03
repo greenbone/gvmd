@@ -1427,6 +1427,7 @@ main (int argc, char** argv)
   /* Process options. */
 
   static gboolean backup_database = FALSE;
+  static gboolean check_alerts = FALSE;
   static gboolean migrate_database = FALSE;
   static gboolean encrypt_all_credentials = FALSE;
   static gboolean decrypt_all_credentials = FALSE;
@@ -1474,6 +1475,7 @@ main (int argc, char** argv)
   static GOptionEntry option_entries[]
     = {
         { "backup", '\0', 0, G_OPTION_ARG_NONE, &backup_database, "Backup the database.", NULL },
+        { "check-alerts", '\0', 0, G_OPTION_ARG_NONE, &check_alerts, "Check SecInfo alerts.", NULL },
         { "database", 'd', 0, G_OPTION_ARG_STRING, &database, "Use <file/name> as database for SQLite/Postgres.", "<file/name>" },
         { "disable-cmds", '\0', 0, G_OPTION_ARG_STRING, &disable, "Disable comma-separated <commands>.", "<commands>" },
         { "disable-encrypted-credentials", '\0', 0, G_OPTION_ARG_NONE,
@@ -1785,6 +1787,25 @@ main (int argc, char** argv)
             g_warning ("%s: internal error\n", __FUNCTION__);
             return EXIT_FAILURE;
           default:
+            return EXIT_FAILURE;
+        }
+      return EXIT_SUCCESS;
+    }
+
+  if (check_alerts)
+    {
+      infof ("   Creating admin user.\n");
+
+      /* Check the alerts and then exit. */
+      switch (manage_check_alerts (log_config, database, create_user, role))
+        {
+          case 0:
+            log_config_free ();
+            return EXIT_SUCCESS;
+          case -1:
+          default:
+            g_critical ("%s: internal error\n", __FUNCTION__);
+            log_config_free ();
             return EXIT_FAILURE;
         }
       return EXIT_SUCCESS;

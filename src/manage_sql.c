@@ -291,6 +291,12 @@ new_secinfo_message (event_t, const void*, alert_t);
 static gchar *
 new_secinfo_list (event_t, const void*, alert_t, int*);
 
+static void
+check_for_new_secinfo ();
+
+static void
+check_for_updated_secinfo ();
+
 
 /* Variables. */
 
@@ -1425,7 +1431,26 @@ check_min_cvss_base (const char* min_cvss_base)
 }
 
 /**
- * @brief Complete an update of the NVT cache.
+ * @brief Get last time NVT alerts were checked.
+ *
+ * @param[in]  nvts_list    List of nvti_t to insert.
+ * @param[in]  mode         -1 updating, -2 rebuilding.
+ */
+static int
+nvts_check_time ()
+{
+  return sql_int ("SELECT"
+                  " CASE WHEN EXISTS (SELECT * FROM meta"
+                  "                   WHERE name = 'nvts_check_time')"
+                  "      THEN CAST ((SELECT value FROM meta"
+                  "                  WHERE name = 'nvts_check_time')"
+                  "                 AS INTEGER)"
+                  "      ELSE 0"
+                  "      END;");
+}
+
+/**
+ * @brief Get last time SecInfo alerts were checked.
  *
  * @param[in]  nvts_list    List of nvti_t to insert.
  * @param[in]  mode         -1 updating, -2 rebuilding.
@@ -6245,6 +6270,63 @@ DEF_ACCESS (task_role_iterator_uuid, 4);
 /* Events and Alerts. */
 
 /**
+ * @brief Check if any SecInfo alers are due.
+ *
+ * @param[in]  log_config  Log configuration.
+ * @param[in]  database    Location of manage database.
+ * @param[in]  name        Name of user.
+ * @param[in]  role_name   Role of user.  Admin if NULL.
+ *
+ * @return 0 success, -1 error,
+ *         -2 database is wrong version, -3 database needs to be initialised
+ *         from server.
+ */
+int
+manage_check_alerts (GSList *log_config, const gchar *database,
+                     const gchar *name, const gchar *role_name)
+{
+  const gchar *db;
+  int ret;
+
+  if (openvas_auth_init ())
+    return -1;
+
+  db = database ? database : sql_default_database ();
+
+  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
+  assert (ret != -4);
+  if (ret)
+    return ret;
+
+  init_manage_process (0, db);
+
+  /* Setup a dummy user, so that create_user will work. */
+  current_credentials.uuid = "";
+
+  if (sql_int ("SELECT NOT EXISTS (SELECT * FROM meta"
+               "                   WHERE name = 'secinfo_check_time')"))
+    sql ("INSERT INTO meta (name, value)"
+         " VALUES ('secinfo_check_time', m_now ());");
+  else if (sql_int ("SELECT value = '0' FROM meta"
+                    " WHERE name = 'secinfo_check_time';"))
+    sql ("UPDATE meta SET value = m_now ()"
+         " WHERE name = 'secinfo_check_time';");
+  else
+    {
+      check_for_new_secinfo ();
+      check_for_updated_secinfo ();
+      sql ("UPDATE meta SET value = m_now ()"
+           " WHERE name = 'secinfo_check_time';");
+    }
+
+  current_credentials.uuid = NULL;
+
+  cleanup_manage_process (TRUE);
+
+  return ret;
+}
+
+/**
  * @brief Find a alert for a specific permission, given a UUID.
  *
  * @param[in]   uuid        UUID of alert.
@@ -9266,7 +9348,10 @@ alert_subject_print (const gchar *subject, event_t event,
                   time_t date;
                   struct tm *tm;
 
-                  date = secinfo_check_time ();
+                  if (event_data && (strcasecmp (event_data, "nvt") == 0))
+                    date = nvts_check_time ();
+                  else
+                    date = secinfo_check_time ();
                   tm = localtime (&date);
                   if (strftime (time_string, 98, "%F", tm) == 0)
                     break;
@@ -9378,7 +9463,10 @@ alert_message_print (const gchar *message, event_t event,
                   time_t date;
                   struct tm *tm;
 
-                  date = secinfo_check_time ();
+                  if (event_data && (strcasecmp (event_data, "nvt") == 0))
+                    date = nvts_check_time ();
+                  else
+                    date = secinfo_check_time ();
                   tm = localtime (&date);
                   if (strftime (time_string, 98, "%F", tm) == 0)
                     break;
@@ -35940,16 +36028,23 @@ insert_nvts_list (GList *nvts_list)
 }
 
 /**
- * @brief Check for new SecInfo after an update.
+ * @brief Check for new NVTs after an update.
  */
 static void
-check_for_new_secinfo ()
+check_for_new_nvts ()
 {
   if (sql_int ("SELECT EXISTS"
                " (SELECT * FROM nvts"
                "  WHERE oid NOT IN (SELECT oid FROM old_nvts));"))
     event (0, EVENT_NEW_SECINFO, "nvt");
+}
 
+/**
+ * @brief Check for new SecInfo after an update.
+ */
+static void
+check_for_new_secinfo ()
+{
   if (manage_scap_loaded ())
     {
       if (sql_int ("SELECT EXISTS"
@@ -36658,7 +36753,7 @@ new_secinfo_message (event_t event, const void* event_data, alert_t alert)
  * @brief Check for updated NVTS after an update.
  */
 static void
-check_for_updated_secinfo ()
+check_for_updated_nvts ()
 {
   if (sql_int ("SELECT EXISTS"
                " (SELECT * FROM nvts"
@@ -36666,7 +36761,14 @@ check_for_updated_secinfo ()
                "                             FROM old_nvts"
                "                             WHERE old_nvts.oid = nvts.oid));"))
     event (0, EVENT_UPDATED_SECINFO, "nvt");
+}
 
+/**
+ * @brief Check for updated SecInfo after an update.
+ */
+static void
+check_for_updated_secinfo ()
+{
   if (manage_scap_loaded ())
     {
       if (sql_int ("SELECT EXISTS"
@@ -36767,19 +36869,19 @@ manage_complete_nvt_cache_update (GList *nvts_list, int mode)
   refresh_nvt_cves ();
 
   if (sql_int ("SELECT NOT EXISTS (SELECT * FROM meta"
-               "                   WHERE name = 'secinfo_check_time')"))
+               "                   WHERE name = 'nvts_check_time')"))
     sql ("INSERT INTO meta (name, value)"
-         " VALUES ('secinfo_check_time', m_now ());");
+         " VALUES ('nvts_check_time', m_now ());");
   else if (sql_int ("SELECT value = '0' FROM meta"
-                    " WHERE name = 'secinfo_check_time';"))
+                    " WHERE name = 'nvts_check_time';"))
     sql ("UPDATE meta SET value = m_now ()"
-         " WHERE name = 'secinfo_check_time';");
+         " WHERE name = 'nvts_check_time';");
   else
     {
-      check_for_new_secinfo ();
-      check_for_updated_secinfo ();
+      check_for_new_nvts ();
+      check_for_updated_nvts ();
       sql ("UPDATE meta SET value = m_now ()"
-           " WHERE name = 'secinfo_check_time';");
+           " WHERE name = 'nvts_check_time';");
     }
 
   if (mode == -2) sql ("COMMIT;");

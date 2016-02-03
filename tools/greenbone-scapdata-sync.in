@@ -1423,6 +1423,11 @@ do_self_test () {
   fi
 }
 
+check_alerts (){
+  log_info "Calling openvasmd to check for alerts"
+  openvasmd --check-alerts
+}
+
 psql_setup "tasks"
 while test $# -gt 0; do
  case "$1" in
@@ -1522,5 +1527,6 @@ else
   fi
 fi
 sync_scapdata
+check_alerts
 
 exit 0

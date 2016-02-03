@@ -1,3 +1,27 @@
+2016-02-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add --check-alerts, which runs any SecInfo alerts that are due (except
+	NVT alerts, which are still run in --rebuild).
+
+	Call "openvasmd --check-alerts" from the SCAP and CERT sync scripts,
+	after syncing.
+
+	* src/manage_sql.c (nvts_check_time, manage_check_alerts): New
+	functions.
+	(alert_subject_print, alert_message_print): For 'd', use nvts_check_time
+	for NVTs, because NVTs have a separate timestamp now.
+	(check_for_new_nvts, check_for_updated_nvts): New functions.
+	(check_for_new_secinfo, check_for_updated_secinfo): Remove the NVT case.
+	(manage_complete_nvt_cache_update): Only check NVTs.  Other SecInfo
+	types are checked via --check-alerts.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/openvasmd.c (main): Add --check-alerts.
+
+	* tools/greenbone-certdata-sync.in,
+	tools/greenbone-scapdata-sync.in: Call --check-alerts after sync.
+
 2016-02-01  Benoît Allard  <benoit.allard@greenbone.net>
 
 	* doc/postgres-HOWTO: Fix typos.
