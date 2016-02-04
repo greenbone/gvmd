@@ -53204,10 +53204,10 @@ create_port_range (const char *port_list_id, const char *type,
   if (sql_int ("SELECT count (*) FROM port_ranges"
                " WHERE port_list = %llu"
                " AND type = %i"
-               " AND ((start <= %i AND end >= %i)"
-               "      OR (start <= %i AND end >= %i)"
+               " AND ((start <= %i AND \"end\" >= %i)"
+               "      OR (start <= %i AND \"end\" >= %i)"
                "      OR (start >= %i AND start <= %i)"
-               "      OR (end >= %i AND end <= %i))",
+               "      OR (\"end\" >= %i AND \"end\" <= %i))",
                port_list,
                port_type,
                first,

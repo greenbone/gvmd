@@ -1,5 +1,9 @@
 2016-02-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_port_range): Quote "end" for Postgres.
+
+2016-02-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (email): Add Content headers when there's no
 	attachment, so that clients know it's UTF8.
 
