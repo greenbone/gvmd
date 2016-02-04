@@ -8054,7 +8054,8 @@ email (const char *to_address, const char *from_address, const char *subject,
                  ? "MIME-Version: 1.0\n"
                    "Content-Type: multipart/mixed;"
                    " boundary=\""
-                 : ""),
+                 : "Content-Type: text/plain; charset=utf-8\n"
+                   "Content-Transfer-Encoding: 8bit"),
                /* @todo Future callers may give email containing this string. */
                (attachment ? "=-=-=-=-=" : ""),
                (attachment ? "\"\n" : ""),
