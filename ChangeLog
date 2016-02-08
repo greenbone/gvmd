@@ -1,3 +1,7 @@
+2016-02-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (check_for_updated_secinfo): Use correct event.
+
 2016-02-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_port_range): Quote "end" for Postgres.

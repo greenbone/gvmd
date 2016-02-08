@@ -36800,7 +36800,7 @@ check_for_updated_secinfo ()
                    "                                 = 'secinfo_check_time')"
                    "                          AS INTEGER),"
                    "                    0));"))
-        event (0, EVENT_NEW_SECINFO, "ovaldef");
+        event (0, EVENT_UPDATED_SECINFO, "ovaldef");
     }
 
   if (manage_cert_loaded ())
@@ -36813,7 +36813,7 @@ check_for_updated_secinfo ()
                    "                                 = 'secinfo_check_time')"
                    "                          AS INTEGER),"
                    "                    0));"))
-        event (0, EVENT_NEW_SECINFO, "cert_bund_adv");
+        event (0, EVENT_UPDATED_SECINFO, "cert_bund_adv");
 
       if (sql_int ("SELECT EXISTS"
                    " (SELECT * FROM dfn_cert_advs"
@@ -36823,7 +36823,7 @@ check_for_updated_secinfo ()
                    "                                 = 'secinfo_check_time')"
                    "                          AS INTEGER),"
                    "                    0));"))
-        event (0, EVENT_NEW_SECINFO, "dfn_cert_adv");
+        event (0, EVENT_UPDATED_SECINFO, "dfn_cert_adv");
     }
 }
 
