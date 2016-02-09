@@ -12360,6 +12360,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
+        <name>preferences_config_id</name>
+        <summary>ID of config to use for preference values</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
         <name>family</name>
         <summary>Family to which to limit NVT listing</summary>
         <type>text</type>

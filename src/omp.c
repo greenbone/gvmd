@@ -2724,6 +2724,7 @@ get_notes_data_reset (get_notes_data_t *data)
 typedef struct
 {
   char *config_id;       ///< ID of config to which to limit NVT selection.
+  char *preferences_config_id;  ///< ID of config to get preference values from.
   int details;           ///< Boolean.  Whether to include full NVT details.
   char *family;          ///< Name of family to which to limit NVT selection.
   char *nvt_oid;         ///< Name of single NVT to get.
@@ -2743,6 +2744,7 @@ static void
 get_nvts_data_reset (get_nvts_data_t *data)
 {
   free (data->config_id);
+  free (data->preferences_config_id);
   free (data->family);
   free (data->nvt_oid);
   free (data->sort_field);
@@ -7395,6 +7397,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &get_nvts_data->nvt_oid);
             append_attribute (attribute_names, attribute_values, "config_id",
                               &get_nvts_data->config_id);
+            append_attribute (attribute_names, attribute_values,
+                              "preferences_config_id",
+                              &get_nvts_data->preferences_config_id);
             if (find_attribute (attribute_names, attribute_values,
                                 "details", &attribute))
               get_nvts_data->details = strcmp (attribute, "0");
@@ -16110,8 +16115,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           feed_version = nvts_feed_version ();
           if (feed_version)
             {
-              config_t config = (config_t) 0;
+              config_t config, preferences_config;
               nvt_t nvt = 0;
+
+              config = preferences_config = 0;
 
               free (feed_version);
 
@@ -16132,7 +16139,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     "GET_NVTS preferences attribute"
                                     " requires the details attribute"));
               else if (((get_nvts_data->details == 0)
-                        || (get_nvts_data->config_id == NULL))
+                        || ((get_nvts_data->config_id == NULL)
+                            && (get_nvts_data->preferences_config_id == NULL)))
                        && get_nvts_data->timeout)
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("get_nvts",
@@ -16154,6 +16162,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     }
                 }
               else if (get_nvts_data->config_id
+                       && get_nvts_data->preferences_config_id)
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("get_nvts",
+                                    "GET_NVTS config_id and"
+                                    " preferences_config_id both given"));
+              else if (get_nvts_data->config_id
                        && find_config_with_permission (get_nvts_data->config_id,
                                                        &config,
                                                        NULL))
@@ -16163,6 +16177,25 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   if (send_find_error_to_client
                        ("get_nvts", "config", get_nvts_data->config_id,
+                        omp_parser))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                }
+              else if (get_nvts_data->preferences_config_id
+                       && find_config_with_permission
+                           (get_nvts_data->preferences_config_id,
+                            &preferences_config,
+                            NULL))
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("get_nvts"));
+              else if (get_nvts_data->preferences_config_id
+                       && (preferences_config == 0))
+                {
+                  if (send_find_error_to_client
+                       ("get_nvts", "config",
+                        get_nvts_data->preferences_config_id,
                         omp_parser))
                     {
                       error_send_to_client (error);
@@ -16189,6 +16222,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                      NULL,
                                      get_nvts_data->sort_order,
                                      get_nvts_data->sort_field);
+                  if (preferences_config)
+                    config = preferences_config;
                   if (get_nvts_data->details)
                     while (next (&nvts))
                       {

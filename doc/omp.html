@@ -20590,6 +20590,11 @@ get_notes_response_note
           ID of config to which to limit the NVT listing.
           </li>
 <li>
+          @<b>preferences_config_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          ID of config to use for preference values.
+          </li>
+<li>
           @<b>family</b>
           (text)
           Family to which to limit NVT listing.
@@ -20852,6 +20857,7 @@ get_notes_response_note
        &amp; attribute preference_count { boolean }?
        &amp; attribute timeout { boolean }?
        &amp; attribute config_id { uuid }?
+       &amp; attribute preferences_config_id { uuid }?
        &amp; attribute family { text }?
        &amp; attribute sort_order { sort_order }?
        &amp; attribute sort_field { text }?

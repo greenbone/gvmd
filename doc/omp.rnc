@@ -5386,6 +5386,8 @@ get_nvts
        attribute timeout { boolean }?
        & # ID of config to which to limit the NVT listing.
        attribute config_id { uuid }?
+       & # ID of config to use for preference values.
+       attribute preferences_config_id { uuid }?
        & # Family to which to limit NVT listing.
        attribute family { text }?
        & attribute sort_order { sort_order }?

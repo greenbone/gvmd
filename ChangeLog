@@ -1,3 +1,16 @@
+2016-02-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add attribute preferences_config to GET_NVTS.
+
+	* src/omp.c (get_nvts_data_t, get_nvts_data_reset)
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add
+	preferences_config_id to GET_NVTS.  If given, then set it as the config
+	used for the values of the preferences.
+
+	* src/schema_formats/XML/OMP.xml.in (get_nvts): Add preferences_config.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
 2016-02-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (valid_type): Add "host" and "os".
