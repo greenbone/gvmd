@@ -14157,12 +14157,22 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </attrib>
       <attrib>
         <name>filter</name>
-        <summary>Filter term to use to filter query</summary>
+        <summary>Filter term to use to filter results, when getting a single report</summary>
         <type>uuid</type>
       </attrib>
       <attrib>
         <name>filt_id</name>
-        <summary>ID of filter to use to filter query</summary>
+        <summary>ID of filter to use to filter results, when getting a single report</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>report_filter</name>
+        <summary>Filter term to use to filter reports</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>report_filt_id</name>
+        <summary>ID of filter to use to filter reports</summary>
         <type>uuid</type>
       </attrib>
       <attrib>

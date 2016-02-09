@@ -5491,10 +5491,14 @@ get_reports
      {
        # ID of single report to get.
        attribute report_id { uuid }?
-       & # Filter term to use to filter query.
+       & # Filter term to use to filter results, when getting a single report.
        attribute filter { uuid }?
-       & # ID of filter to use to filter query.
+       & # ID of filter to use to filter results, when getting a single report.
        attribute filt_id { uuid }?
+       & # Filter term to use to filter reports.
+       attribute report_filter { uuid }?
+       & # ID of filter to use to filter reports.
+       attribute report_filt_id { uuid }?
        & # Type of report to get.
        attribute type { xsd:token { pattern = "scan|assets|prognostic" } }?
        & # ID of required report format.
