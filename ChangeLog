@@ -1,3 +1,12 @@
+2016-02-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r24338.
+
+	* src/schema_formats/XML/OMP.xml.in (get_reports): Clarify what filter
+	attributes are for.  Add report_filter and report_filt_id attributes.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
 2016-01-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r24225.

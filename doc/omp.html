@@ -21903,12 +21903,22 @@ get_preferences_response_preference_default
 <li>
           @<b>filter</b>
           (<a href="#type_uuid">uuid</a>)
-          Filter term to use to filter query.
+          Filter term to use to filter results, when getting a single report.
           </li>
 <li>
           @<b>filt_id</b>
           (<a href="#type_uuid">uuid</a>)
-          ID of filter to use to filter query.
+          ID of filter to use to filter results, when getting a single report.
+          </li>
+<li>
+          @<b>report_filter</b>
+          (<a href="#type_uuid">uuid</a>)
+          Filter term to use to filter reports.
+          </li>
+<li>
+          @<b>report_filt_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          ID of filter to use to filter reports.
           </li>
 <li>
           @<b>type</b>
@@ -22170,6 +22180,8 @@ get_preferences_response_preference_default
        attribute report_id { uuid }?
        &amp; attribute filter { uuid }?
        &amp; attribute filt_id { uuid }?
+       &amp; attribute report_filter { uuid }?
+       &amp; attribute report_filt_id { uuid }?
        &amp; attribute type { xsd:token { pattern = "scan|assets|prognostic" } }?
        &amp; attribute format_id { uuid }?
        &amp; attribute alert_id { uuid }?
