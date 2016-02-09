@@ -3931,8 +3931,10 @@ valid_type (const char* type)
          || (strcasecmp (type, "credential") == 0)
          || (strcasecmp (type, "filter") == 0)
          || (strcasecmp (type, "group") == 0)
+         || (strcasecmp (type, "host") == 0)
          || (strcasecmp (type, "info") == 0)
          || (strcasecmp (type, "note") == 0)
+         || (strcasecmp (type, "os") == 0)
          || (strcasecmp (type, "override") == 0)
          || (strcasecmp (type, "permission") == 0)
          || (strcasecmp (type, "port_list") == 0)
@@ -4723,7 +4725,15 @@ init_get_iterator2 (iterator_t* iterator, const char *type,
       /* For now assume that the permission is "get_<type>".  Callers wishing
        * to iterate over a single resource with other permissions can use
        * uuid= in the filter (instead of passing get->id). */
-      if (find_resource_with_permission (type, get->id, &resource, NULL,
+      const char* permission;
+      /* Special case: "get_assets" subtypes */
+      if (strcasecmp (type, "host") == 0
+          || strcasecmp (type, "os") == 0)
+        permission = "get_assets";
+      else
+        permission = NULL;
+
+      if (find_resource_with_permission (type, get->id, &resource, permission,
                                          get->trash))
         return -1;
       if (resource == 0)

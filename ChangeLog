@@ -1,3 +1,9 @@
+2016-02-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (valid_type): Add "host" and "os".
+	(init_get_iterator2): Use "get_assets" permission for types "host" and
+	"os" when calling find_resource_with_permission.
+
 2016-02-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/XML/OMP.xml.in (get_reports): Clarify what filter
