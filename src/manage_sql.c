@@ -39142,8 +39142,8 @@ create_credential (const char* name, const char* comment, const char* login,
       else
         quoted_type = g_strdup (given_type);
     }
-  else if (login && given_password && community && auth_algorithm
-           && privacy_password && privacy_algorithm)
+  else if (community
+           || (login && given_password && auth_algorithm))
     quoted_type = g_strdup ("snmp");
   else if (certificate && key_private)
     quoted_type = g_strdup ("cc");
@@ -39170,11 +39170,11 @@ create_credential (const char* name, const char* comment, const char* login,
     ret = 10; // Type does not support autogenerate
 
   if (login == NULL
-      && strcmp (quoted_type, "cc"))
+      && strcmp (quoted_type, "cc")
+      && strcmp (quoted_type, "snmp"))
     ret = 5;
   else if (given_password == NULL && auto_generate == 0
-           && (strcmp (quoted_type, "up") == 0
-               || strcmp (quoted_type, "snmp") == 0))
+           && strcmp (quoted_type, "up"))
     ret = 6;
   else if (key_private == NULL && auto_generate == 0
            && (strcmp (quoted_type, "cc") == 0
@@ -39185,18 +39185,28 @@ create_credential (const char* name, const char* comment, const char* login,
     ret = 8;
   else if (strcmp (quoted_type, "snmp") == 0)
     {
+      int using_snmp_v3 = 0;
+      if (login || given_password || auth_algorithm
+          || privacy_password || privacy_algorithm)
+        using_snmp_v3 = 1;
+
       if (community == NULL)
-        ret = 11;
-      else if (auth_algorithm == NULL)
+        {
+          if (login == NULL || given_password == NULL)
+            ret = 11;
+        }
+      else if (auth_algorithm == NULL && using_snmp_v3)
         ret = 12;
-      else if (privacy_password == NULL)
+      else if (privacy_password == NULL && privacy_algorithm)
         ret = 13;
-      else if (privacy_algorithm == NULL)
+      else if (privacy_algorithm == NULL && privacy_password)
         ret = 14;
-      else if (strcmp (auth_algorithm, "md5")
+      else if (auth_algorithm
+               && strcmp (auth_algorithm, "md5")
                && strcmp (auth_algorithm, "sha1"))
         ret = 15;
-      else if (strcmp (privacy_algorithm, "aes")
+      else if (privacy_algorithm
+               && strcmp (privacy_algorithm, "aes")
                && strcmp (privacy_algorithm, "des"))
         ret = 16;
     }

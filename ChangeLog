@@ -1,3 +1,13 @@
+2016-02-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (create_credential): Allow creating SNMP credentials
+	that contain only v1/v2 or v3 data and make privacy params optional.
+
+	* src/omp.c (omp_xml_handle_start_element): Allow empty string for
+	privacy_algorithm in create_credential.
+	(omp_xml_handle_end_element): Change create_credential error message
+	to say community or username + password are required.
+
 2016-02-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add attribute preferences_config to GET_NVTS.

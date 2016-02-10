@@ -8519,6 +8519,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("PRIVACY", element_name) == 0)
           {
             set_client_state (CLIENT_MODIFY_CREDENTIAL_PRIVACY);
+            openvas_append_string (&modify_credential_data->privacy_algorithm,
+                                   "");
           }
         ELSE_ERROR ("modify_credential");
 
@@ -21738,7 +21740,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               case 11:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_credential",
-                                    "Selected type requires a community"));
+                                    "Selected type requires a community and/or"
+                                    " username + password"));
               case 12:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_credential",
