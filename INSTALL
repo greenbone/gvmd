@@ -187,6 +187,13 @@ cleanup-port-names
   format "telnet (23/tcp)", reducing it to the new format "23/tcp".
   This makes filtering results and delta reports more consistent.
 
+cleanup-result-severities
+  This cleans up results with no severity by assigning the default
+  severity set by the user owning the result.
+  All new results should have a severity assigned but this was not ensured in
+  older versions, so this function can be used to correct missing severity
+  scores in older reports.
+
 rebuild-report-cache
   This clears the cache containing the unfiltered result counts of all reports
   and fully rebuilds it.

@@ -1,3 +1,11 @@
+2016-02-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* INSTALL, README, src/openvasmd.c (main): Add new --optimize option
+	cleanup-result-severities.
+
+	* src/manage_sql.c (manage_optimize): Add cleanup-result-severities
+	case, filling in missing severity scores, e.g. in older OSP reports.
+
 2016-02-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (create_credential): Allow creating SNMP credentials
