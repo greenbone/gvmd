@@ -11479,7 +11479,9 @@ append_to_task_string (task_t task, const char* field, const char* value)
      KEYWORD_TYPE_INTEGER                                                   \
    },                                                                       \
    { "hosts_ordering", NULL },                                              \
-   { "scanner", NULL }
+   { "scanner", NULL },                                                     \
+   { "auto_delete", NULL },                                                 \
+   { "auto_delete_data", NULL }
 
 /**
  * @brief Task iterator WHERE columns.
@@ -17376,6 +17378,86 @@ update_duration_schedule_periods (task_t task)
        TASK_STATUS_RUNNING,
        TASK_STATUS_REQUESTED);
   g_free (task_element);
+}
+
+/**
+ * @brief Auto delete reports.
+ */
+void
+auto_delete_reports ()
+{
+  iterator_t tasks;
+  get_data_t get;
+
+  tracef ("%s", __FUNCTION__);
+
+  if (sql_begin_exclusive_giveup ())
+    return;
+
+  assert (current_credentials.uuid == NULL);
+  memset (&get, '\0', sizeof (get));
+  init_task_iterator (&tasks, &get);
+  while (next (&tasks))
+    {
+      task_t task;
+      const char *auto_delete;
+
+      task = get_iterator_resource (&tasks);
+
+      auto_delete = task_preference_value (task, "auto_delete");
+      if (auto_delete && (strcmp (auto_delete, "keep") == 0))
+        {
+          iterator_t reports;
+          char *keep_string;
+          int keep;
+
+          keep_string = task_preference_value (task, "auto_delete_data");
+          if (keep_string == NULL)
+            continue;
+          keep = atoi (keep_string);
+          if (keep < 5 || keep > 1200)
+            continue;
+
+          tracef ("%s: %s (%i)", __FUNCTION__,
+                  get_iterator_name (&tasks),
+                  keep);
+
+          init_iterator (&reports,
+                         "SELECT id FROM reports"
+                         " WHERE task = %llu"
+                         " AND start_time IS NOT NULL"
+                         " AND start_time > 0"
+                         " ORDER BY start_time DESC LIMIT -1 OFFSET %i;",
+                         get_iterator_resource (&tasks),
+                         keep);
+          while (next (&reports))
+            {
+              int ret;
+              report_t report;
+
+              report = iterator_int64 (&reports, 0);
+              assert (report);
+
+              tracef ("%s: delete %llu", __FUNCTION__, report);
+              ret = delete_report_internal (report);
+              if (ret == 2)
+                {
+                  /* Report is in use. */
+                  tracef ("%s: %llu is in use", __FUNCTION__, report);
+                  continue;
+                }
+              if (ret)
+                {
+                  g_warning ("%s: failed to delete %llu (%i)\n",
+                             __FUNCTION__, report, ret);
+                  sql ("ROLLBACK;");
+                }
+            }
+          cleanup_iterator (&reports);
+        }
+    }
+  cleanup_iterator (&tasks);
+  sql ("COMMIT;");
 }
 
 
@@ -38852,8 +38934,11 @@ task_preference_value (task_t task, const char *name)
  *
  * @param[in]  task         Task.
  * @param[in]  preferences  Preferences.
+ *
+ * @return 0 success, 1 invalid auto_delete value, 2 auto_delete_data out of
+ *         range.
  */
-void
+int
 set_task_preferences (task_t task, array_t *preferences)
 {
   if (preferences)
@@ -38870,6 +38955,22 @@ set_task_preferences (task_t task, array_t *preferences)
               if (pair->value)
                 {
                   gchar *quoted_value;
+
+                  if ((strcmp (pair->name, "auto_delete") == 0)
+                      && (strcmp (pair->value, "keep"))
+                      && (strcmp (pair->value, "no")))
+                    {
+                      return 1;
+                    }
+
+                  if (strcmp (pair->name, "auto_delete_data") == 0)
+                    {
+                      int keep;
+                      keep = atoi (pair->value);
+                      if (keep < 5 || keep > 1200)
+                        return 2;
+                    }
+
                   if ((strcmp (pair->name, "in_assets") == 0)
                       && scanner_type (task_scanner (task)) == SCANNER_TYPE_CVE)
                     quoted_value = g_strdup ("no");
@@ -38907,6 +39008,7 @@ set_task_preferences (task_t task, array_t *preferences)
             }
         }
     }
+  return 0;
 }
 
 

@@ -374,4 +374,6 @@ int valid_omp_command (const char *);
 
 void check_generate_scripts ();
 
+void auto_delete_reports ();
+
 #endif /* not OPENVAS_MANAGER_MANAGE_SQL_H */
