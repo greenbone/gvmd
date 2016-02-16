@@ -1,4 +1,9 @@
-2016-02-12  Matthew Mundell <matthew.mundell@greenbone.net>
+2016-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (auto_delete_reports): Use SQL lib to generate LIMIT
+	term.
+
+2016-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (TASK_ITERATOR_COLUMNS_INNER): Remove columns left in
 	during Auto Delete developement.

@@ -17428,8 +17428,9 @@ auto_delete_reports ()
                      " WHERE task = %llu"
                      " AND start_time IS NOT NULL"
                      " AND start_time > 0"
-                     " ORDER BY start_time DESC LIMIT -1 OFFSET %i;",
+                     " ORDER BY start_time DESC LIMIT %s OFFSET %i;",
                      task,
+                     sql_select_limit (-1),
                      keep);
       while (next (&reports))
         {
