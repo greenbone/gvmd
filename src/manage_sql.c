@@ -10704,8 +10704,9 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
 /**
  * @brief Escalate an event with preset report filtering.
  *
- * @param[in]  alert   Alert.
+ * @param[in]  alert       Alert.
  * @param[in]  task        Task.
+ * @param[in]  report      Report.
  * @param[in]  event       Event.
  * @param[in]  event_data  Event data.
  * @param[in]  method      Method from alert.
@@ -10715,11 +10716,11 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
  *         -3 failed to find filter for alert.
  */
 static int
-escalate_1 (alert_t alert, task_t task, event_t event,
+escalate_1 (alert_t alert, task_t task, report_t report, event_t event,
             const void* event_data, alert_method_t method,
             alert_condition_t condition)
 {
-  return escalate_2 (alert, task, 0, event, event_data, method, condition,
+  return escalate_2 (alert, task, report, event, event_data, method, condition,
                      1,       /* Ascending. */
                      NULL,    /* Sort field. */
                      0,       /* Result hosts only. */
@@ -10781,7 +10782,7 @@ manage_alert (const char *alert_id, const char *task_id, event_t event,
 
   condition = alert_condition (alert);
   method = alert_method (alert);
-  return escalate_1 (alert, task, event, event_data, method, condition);
+  return escalate_1 (alert, task, 0, event, event_data, method, condition);
 }
 
 /**
@@ -10942,13 +10943,14 @@ event_applies (event_t event, const void *event_data, task_t task,
  * @brief Return whether the condition of an alert is met by a task.
  *
  * @param[in]  task       Task.
- * @param[in]  alert  Alert.
+ * @param[in]  report     Report.
+ * @param[in]  alert      Alert.
  * @param[in]  condition  Condition.
  *
  * @return 1 if met, else 0.
  */
 static int
-condition_met (task_t task, alert_t alert,
+condition_met (task_t task, report_t report, alert_t alert,
                alert_condition_t condition)
 {
   switch (condition)
@@ -11029,9 +11031,14 @@ condition_met (task_t task, alert_t alert,
                                          &apply_overrides, &zone);
           g_free (filter);
 
-          last_report = 0;
-          if (task_last_report (task, &last_report))
-            g_warning ("%s: failed to get last report\n", __FUNCTION__);
+          if (report)
+            last_report = report;
+          else
+            {
+              last_report = 0;
+              if (task_last_report (task, &last_report))
+                g_warning ("%s: failed to get last report\n", __FUNCTION__);
+            }
 
           tracef ("%s: last_report: %llu", __FUNCTION__, last_report);
           if (last_report)
@@ -11096,9 +11103,14 @@ condition_met (task_t task, alert_t alert,
                                          &apply_overrides, &zone);
           free (filter);
 
-          last_report = 0;
-          if (task_last_report (task, &last_report))
-            g_warning ("%s: failed to get last report\n", __FUNCTION__);
+          if (report)
+            last_report = report;
+          else
+            {
+              last_report = 0;
+              if (task_last_report (task, &last_report))
+                g_warning ("%s: failed to get last report\n", __FUNCTION__);
+            }
 
           if (last_report)
             {
@@ -11265,11 +11277,12 @@ condition_met (task_t task, alert_t alert,
  * @brief Produce an event.
  *
  * @param[in]  task        Task.
+ * @param[in]  report      Report.
  * @param[in]  event       Event.
  * @param[in]  event_data  Event type specific details.
  */
 static void
-event (task_t task, event_t event, void* event_data)
+event (task_t task, report_t report, event_t event, void* event_data)
 {
   iterator_t alerts;
   GArray *alerts_triggered;
@@ -11288,7 +11301,7 @@ event (task_t task, event_t event, void* event_data)
           alert_condition_t condition;
 
           condition = alert_condition (alert);
-          if (condition_met (task, alert, condition))
+          if (condition_met (task, report, alert, condition))
             g_array_append_val (alerts_triggered, alert);
         }
     }
@@ -11307,6 +11320,7 @@ event (task_t task, event_t event, void* event_data)
       condition = alert_condition (alert);
       escalate_1 (alert,
                   task,
+                  report,
                   event,
                   event_data,
                   alert_method (alert),
@@ -16243,7 +16257,9 @@ set_task_run_status (task_t task, task_status_t status)
   free (uuid);
   free (name);
 
-  event (task, EVENT_TASK_RUN_STATUS_CHANGED, (void*) status);
+  event (task,
+         (task == current_scanner_task) ? current_report : 0,
+         EVENT_TASK_RUN_STATUS_CHANGED, (void*) status);
 }
 
 /**
@@ -29883,7 +29899,7 @@ make_task_complete (const char *uuid)
   if (task == 0)
     return;
 
-  event (task, EVENT_TASK_RUN_STATUS_CHANGED, (void*) TASK_STATUS_NEW);
+  event (task, 0, EVENT_TASK_RUN_STATUS_CHANGED, (void*) TASK_STATUS_NEW);
 }
 
 #ifdef S_SPLINT_S
@@ -36130,7 +36146,7 @@ check_for_new_nvts ()
   if (sql_int ("SELECT EXISTS"
                " (SELECT * FROM nvts"
                "  WHERE oid NOT IN (SELECT oid FROM old_nvts));"))
-    event (0, EVENT_NEW_SECINFO, "nvt");
+    event (0, 0, EVENT_NEW_SECINFO, "nvt");
 }
 
 /**
@@ -36149,7 +36165,7 @@ check_for_new_secinfo ()
                    "                                 = 'secinfo_check_time')"
                    "                          AS INTEGER),"
                    "                    0));"))
-        event (0, EVENT_NEW_SECINFO, "cve");
+        event (0, 0, EVENT_NEW_SECINFO, "cve");
 
       if (sql_int ("SELECT EXISTS"
                    " (SELECT * FROM cpes"
@@ -36159,7 +36175,7 @@ check_for_new_secinfo ()
                    "                                 = 'secinfo_check_time')"
                    "                          AS INTEGER),"
                    "                    0));"))
-        event (0, EVENT_NEW_SECINFO, "cpe");
+        event (0, 0, EVENT_NEW_SECINFO, "cpe");
 
       if (sql_int ("SELECT EXISTS"
                    " (SELECT * FROM ovaldefs"
@@ -36169,7 +36185,7 @@ check_for_new_secinfo ()
                    "                                 = 'secinfo_check_time')"
                    "                          AS INTEGER),"
                    "                    0));"))
-        event (0, EVENT_NEW_SECINFO, "ovaldef");
+        event (0, 0, EVENT_NEW_SECINFO, "ovaldef");
     }
 
   if (manage_cert_loaded ())
@@ -36182,7 +36198,7 @@ check_for_new_secinfo ()
                    "                                 = 'secinfo_check_time')"
                    "                          AS INTEGER),"
                    "                    0));"))
-        event (0, EVENT_NEW_SECINFO, "cert_bund_adv");
+        event (0, 0, EVENT_NEW_SECINFO, "cert_bund_adv");
 
       if (sql_int ("SELECT EXISTS"
                    " (SELECT * FROM dfn_cert_advs"
@@ -36192,7 +36208,7 @@ check_for_new_secinfo ()
                    "                                 = 'secinfo_check_time')"
                    "                          AS INTEGER),"
                    "                    0));"))
-        event (0, EVENT_NEW_SECINFO, "dfn_cert_adv");
+        event (0, 0, EVENT_NEW_SECINFO, "dfn_cert_adv");
     }
 }
 
@@ -36854,7 +36870,7 @@ check_for_updated_nvts ()
                "  WHERE modification_time > (SELECT modification_time"
                "                             FROM old_nvts"
                "                             WHERE old_nvts.oid = nvts.oid));"))
-    event (0, EVENT_UPDATED_SECINFO, "nvt");
+    event (0, 0, EVENT_UPDATED_SECINFO, "nvt");
 }
 
 /**
@@ -36873,7 +36889,7 @@ check_for_updated_secinfo ()
                    "                                 = 'secinfo_check_time')"
                    "                          AS INTEGER),"
                    "                    0));"))
-        event (0, EVENT_UPDATED_SECINFO, "cve");
+        event (0, 0, EVENT_UPDATED_SECINFO, "cve");
 
       if (sql_int ("SELECT EXISTS"
                    " (SELECT * FROM cpes"
@@ -36883,7 +36899,7 @@ check_for_updated_secinfo ()
                    "                                 = 'secinfo_check_time')"
                    "                          AS INTEGER),"
                    "                    0));"))
-        event (0, EVENT_UPDATED_SECINFO, "cpe");
+        event (0, 0, EVENT_UPDATED_SECINFO, "cpe");
 
       if (sql_int ("SELECT EXISTS"
                    " (SELECT * FROM ovaldefs"
@@ -36893,7 +36909,7 @@ check_for_updated_secinfo ()
                    "                                 = 'secinfo_check_time')"
                    "                          AS INTEGER),"
                    "                    0));"))
-        event (0, EVENT_UPDATED_SECINFO, "ovaldef");
+        event (0, 0, EVENT_UPDATED_SECINFO, "ovaldef");
     }
 
   if (manage_cert_loaded ())
@@ -36906,7 +36922,7 @@ check_for_updated_secinfo ()
                    "                                 = 'secinfo_check_time')"
                    "                          AS INTEGER),"
                    "                    0));"))
-        event (0, EVENT_UPDATED_SECINFO, "cert_bund_adv");
+        event (0, 0, EVENT_UPDATED_SECINFO, "cert_bund_adv");
 
       if (sql_int ("SELECT EXISTS"
                    " (SELECT * FROM dfn_cert_advs"
@@ -36916,7 +36932,7 @@ check_for_updated_secinfo ()
                    "                                 = 'secinfo_check_time')"
                    "                          AS INTEGER),"
                    "                    0));"))
-        event (0, EVENT_UPDATED_SECINFO, "dfn_cert_adv");
+        event (0, 0, EVENT_UPDATED_SECINFO, "dfn_cert_adv");
     }
 }
 
