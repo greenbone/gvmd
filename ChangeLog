@@ -1,3 +1,19 @@
+2016-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r24375.
+
+	Pass report with task when running an alert, instead of assuming that
+	the alert applies to the most recent "Done" report.
+
+	* src/manage_sql.c (escalate_1): Add report arg.
+	(manage_alert): Add escalate_1 arg.
+	(condition_met): Add report arg.
+	(event): Add report arg.  Pass to condition_met and escalate_1.
+	(set_task_run_status): Pass report to event.
+	(make_task_complete, check_for_new_nvts, check_for_new_secinfo)
+	(check_for_updated_nvts, check_for_updated_secinfo): Pass 0 report to
+	event.
+
 2016-02-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r24338.
