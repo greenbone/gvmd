@@ -1,5 +1,10 @@
 2016-02-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (TASK_ITERATOR_COLUMNS_INNER): Remove columns left in
+	during Auto Delete developement.
+
+2016-02-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (auto_delete_reports): Use a custom iterator, instead
 	of doing lots of SQL to get the preference values in the loop.
 

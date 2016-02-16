@@ -11479,9 +11479,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      KEYWORD_TYPE_INTEGER                                                   \
    },                                                                       \
    { "hosts_ordering", NULL },                                              \
-   { "scanner", NULL },                                                     \
-   { "auto_delete", NULL },                                                 \
-   { "auto_delete_data", NULL }
+   { "scanner", NULL }
 
 /**
  * @brief Task iterator WHERE columns.
