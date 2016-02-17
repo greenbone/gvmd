@@ -16081,74 +16081,76 @@ void
 auto_delete_reports ()
 {
   iterator_t tasks;
-  get_data_t get;
 
   tracef ("%s", __FUNCTION__);
 
   if (sql_begin_exclusive_giveup ())
     return;
 
-  assert (current_credentials.uuid == NULL);
-  memset (&get, '\0', sizeof (get));
-  init_task_iterator (&tasks, &get);
+  init_iterator (&tasks,
+                 "SELECT id, name,"
+                 "       (SELECT value FROM task_preferences"
+                 "        WHERE name = 'auto_delete_data'"
+                 "        AND task = tasks.id)"
+                 " FROM tasks"
+                 " WHERE owner is NOT NULL"
+                 " AND hidden = 0"
+                 " AND EXISTS (SELECT * FROM task_preferences"
+                 "             WHERE task = tasks.id"
+                 "             AND name = 'auto_delete'"
+                 "             AND value = 'keep');");
   while (next (&tasks))
     {
       task_t task;
-      const char *auto_delete;
+      iterator_t reports;
+      const char *keep_string;
+      int keep;
 
-      task = get_iterator_resource (&tasks);
+      task = iterator_int64 (&tasks, 0);
 
-      auto_delete = task_preference_value (task, "auto_delete");
-      if (auto_delete && (strcmp (auto_delete, "keep") == 0))
+      keep_string = iterator_string (&tasks, 2);
+      if (keep_string == NULL)
+        continue;
+      keep = atoi (keep_string);
+      if (keep < 5 || keep > 1200)
+        continue;
+
+      tracef ("%s: %s (%i)", __FUNCTION__,
+              iterator_string (&tasks, 1),
+              keep);
+
+      init_iterator (&reports,
+                     "SELECT id FROM reports"
+                     " WHERE task = %llu"
+                     " AND start_time IS NOT NULL"
+                     " AND start_time > 0"
+                     " ORDER BY start_time DESC LIMIT -1 OFFSET %i;",
+                     task,
+                     keep);
+      while (next (&reports))
         {
-          iterator_t reports;
-          char *keep_string;
-          int keep;
+          int ret;
+          report_t report;
 
-          keep_string = task_preference_value (task, "auto_delete_data");
-          if (keep_string == NULL)
-            continue;
-          keep = atoi (keep_string);
-          if (keep < 5 || keep > 1200)
-            continue;
+          report = iterator_int64 (&reports, 0);
+          assert (report);
 
-          tracef ("%s: %s (%i)", __FUNCTION__,
-                  get_iterator_name (&tasks),
-                  keep);
-
-          init_iterator (&reports,
-                         "SELECT id FROM reports"
-                         " WHERE task = %llu"
-                         " AND start_time IS NOT NULL"
-                         " AND start_time > 0"
-                         " ORDER BY start_time DESC LIMIT -1 OFFSET %i;",
-                         get_iterator_resource (&tasks),
-                         keep);
-          while (next (&reports))
+          tracef ("%s: delete %llu", __FUNCTION__, report);
+          ret = delete_report_internal (report);
+          if (ret == 2)
             {
-              int ret;
-              report_t report;
-
-              report = iterator_int64 (&reports, 0);
-              assert (report);
-
-              tracef ("%s: delete %llu", __FUNCTION__, report);
-              ret = delete_report_internal (report);
-              if (ret == 2)
-                {
-                  /* Report is in use. */
-                  tracef ("%s: %llu is in use", __FUNCTION__, report);
-                  continue;
-                }
-              if (ret)
-                {
-                  g_warning ("%s: failed to delete %llu (%i)\n",
-                             __FUNCTION__, report, ret);
-                  sql ("ROLLBACK;");
-                }
+              /* Report is in use. */
+              tracef ("%s: %llu is in use", __FUNCTION__, report);
+              continue;
             }
-          cleanup_iterator (&reports);
+          if (ret)
+            {
+              g_warning ("%s: failed to delete %llu (%i)\n",
+                         __FUNCTION__, report, ret);
+              sql ("ROLLBACK;");
+            }
         }
+      cleanup_iterator (&reports);
     }
   cleanup_iterator (&tasks);
   sql ("COMMIT;");
