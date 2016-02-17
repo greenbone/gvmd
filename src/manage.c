@@ -5269,6 +5269,8 @@ manage_schedule (int (*fork_connection) (int *,
   clear_duration_schedules (0);
   update_duration_schedule_periods (0);
 
+  auto_delete_reports ();
+
   return 0;
 }
 

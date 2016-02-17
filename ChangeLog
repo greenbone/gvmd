@@ -1,3 +1,22 @@
+2016-02-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r24365.
+
+	Add task preference for auto deleting reports.
+
+	* src/manage_sql.c (auto_delete_reports): New function.
+	(set_task_preferences): Add Auto Delete validation.
+
+	* src/manage.h: Adjust header accordingly.
+
+	* src/manage_sql.h: Add header accordingly.
+
+	* src/manage.c (manage_schedule): Delete reports.
+
+	* src/omp.c (omp_xml_handle_end_element): Include Auto Delete prefs in
+	GET_TASKS.  Handle new set_task_preferences return in CREATE_TASK and
+	MODIFY_TASK.
+
 2016-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r24375.

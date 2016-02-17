@@ -17571,6 +17571,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               gchar *response;
               iterator_t alerts, groups, roles;
               gchar *in_assets, *max_checks, *max_hosts, *source_iface;
+              gchar *auto_delete, *auto_delete_data;
 
               ret = get_next (&tasks, &get_tasks_data->get, &first, &count,
                               init_task_iterator);
@@ -18149,6 +18150,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               max_checks = task_preference_value (index, "max_checks");
               max_hosts = task_preference_value (index, "max_hosts");
               source_iface = task_preference_value (index, "source_iface");
+              auto_delete = task_preference_value (index, "auto_delete");
+              auto_delete_data = task_preference_value (index, "auto_delete_data");
 
               SENDF_TO_CLIENT_OR_FAIL
                ("<preferences>"
@@ -18180,12 +18183,28 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 "<scanner_name>in_assets</scanner_name>"
                 "<value>%s</value>"
                 "</preference>"
+                "<preference>"
+                "<name>"
+                "Auto Delete Reports"
+                "</name>"
+                "<scanner_name>auto_delete</scanner_name>"
+                "<value>%s</value>"
+                "</preference>"
+                "<preference>"
+                "<name>"
+                "Auto Delete Reports Data"
+                "</name>"
+                "<scanner_name>auto_delete_data</scanner_name>"
+                "<value>%s</value>"
+                "</preference>"
                 "</preferences>"
                 "</task>",
                 max_checks ? max_checks : "4",
                 max_hosts ? max_hosts : "20",
                 source_iface ? source_iface : "",
-                in_assets ? in_assets : "yes");
+                in_assets ? in_assets : "yes",
+                auto_delete ? auto_delete : "0",
+                auto_delete_data ? auto_delete_data : "0");
 
               g_free (in_assets);
               g_free (max_checks);
@@ -22215,8 +22234,27 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_task_hosts_ordering (create_task_data->task,
                                    create_task_data->hosts_ordering);
           if (create_task_data->preferences)
-            set_task_preferences (create_task_data->task,
-                                  create_task_data->preferences);
+            switch (set_task_preferences (create_task_data->task,
+                                          create_task_data->preferences))
+              {
+                case 0:
+                  break;
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_task",
+                                      "Invalid auto_delete value"));
+                  goto create_task_fail;
+                case 2:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_task",
+                                      "Auto Delete count out of range"
+                                      " (must be from 5 to 1200)"));
+                  goto create_task_fail;
+                default:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("create_task"));
+                  goto create_task_fail;
+              }
 
           /* Send success response. */
 
@@ -25161,13 +25199,31 @@ create_task_fail:
                   }
 
                 if (fail == 0 && modify_task_data->preferences)
-                  set_task_preferences (task,
-                                        modify_task_data->preferences);
+                  switch (set_task_preferences (task,
+                                                modify_task_data->preferences))
+                    {
+                      case 0:
+                        break;
+                      case 1:
+                        SEND_TO_CLIENT_OR_FAIL
+                         (XML_ERROR_SYNTAX ("modify_task",
+                                            "Invalid auto_delete value"));
+                        fail = 1;
+                      case 2:
+                        SEND_TO_CLIENT_OR_FAIL
+                         (XML_ERROR_SYNTAX ("modify_task",
+                                            "Auto Delete count out of range"
+                                            " (must be from 5 to 1200)"));
+                        fail = 1;
+                      default:
+                        SEND_TO_CLIENT_OR_FAIL
+                         (XML_INTERNAL_ERROR ("modify_task"));
+                        fail = 1;
+                    }
 
                 if (fail == 0 && modify_task_data->hosts_ordering)
                   set_task_hosts_ordering (task,
                                            modify_task_data->hosts_ordering);
-
 
                 if (fail == 0)
                   {

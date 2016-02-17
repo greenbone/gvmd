@@ -1814,7 +1814,7 @@ get_nvti_xml (iterator_t*, int, int, int, const char*, config_t, int);
 char*
 task_preference_value (task_t, const char *);
 
-void
+int
 set_task_preferences (task_t, array_t *);
 
 void
