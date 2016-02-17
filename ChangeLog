@@ -1,6 +1,11 @@
 2016-02-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	Backport r24367.
+	Backport r24371.
+
+	* src/manage_sql.c (auto_delete_reports): Use SQL lib to generate LIMIT
+	term.
+
+2016-02-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (auto_delete_reports): Use a custom iterator, instead
 	of doing lots of SQL to get the preference values in the loop.
