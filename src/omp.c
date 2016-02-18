@@ -2401,7 +2401,7 @@ delete_user_data_reset (delete_user_data_t *data)
  *
  * @param[in]  data  Command data.
  */
-static void
+void
 get_data_reset (get_data_t *data)
 {
   free (data->id);
@@ -10952,11 +10952,17 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
           if (include_result && note_iterator_result (notes))
             {
               iterator_t results;
+              get_data_t result_get;
+              result_get.type = g_strdup ("result");
+              result_uuid (note_iterator_result (notes), &(result_get.id));
+              result_get.first = 0;
+              result_get.max = 1;
+              init_result_get_iterator (&results, &result_get,
+                                        1,  /* apply_overides */
+                                        0,  /* autofp */
+                                        0); /* No report restriction */
+              get_data_reset (&result_get);
 
-              init_result_iterator (&results, 0,
-                                    note_iterator_result (notes),
-                                    0, 1, 1, NULL, NULL, 1, NULL, 0, NULL,
-                                    NULL, 0);
               while (next (&results))
                 buffer_results_xml (buffer,
                                     &results,
@@ -11212,11 +11218,18 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
           if (include_result && override_iterator_result (overrides))
             {
               iterator_t results;
+              get_data_t result_get;
+              result_get.type = g_strdup ("result");
+              result_uuid (override_iterator_result (overrides),
+                           &(result_get.id));
+              result_get.first = 0;
+              result_get.max = 1;
+              init_result_get_iterator (&results, &result_get,
+                                        1,  /* apply_overides */
+                                        0,  /* autofp */
+                                        0); /* No report restriction */
+              get_data_reset (&result_get);
 
-              init_result_iterator (&results, 0,
-                                    override_iterator_result (overrides),
-                                    0, 1, 1, NULL, NULL, 1, NULL, 0, NULL,
-                                    NULL, 0);
               while (next (&results))
                 buffer_results_xml (buffer,
                                     &results,
@@ -17851,44 +17864,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           else
             {
               iterator_t results;
-              gchar *min_qod_str;
               int max;
-              int autofp, apply_overrides, min_qod, dynamic_severity;
-
-              if (get_results_data->autofp)
-                autofp = get_results_data->autofp;
-              else if (filter_term_value (get_results_data->get.filter,
-                                          "autofp"))
-                autofp = atoi (filter_term_value (get_results_data->get.filter,
-                                                  "autofp"));
-              else
-                autofp = 0;
-
-              if (autofp < 0 || autofp > 2)
-                SEND_TO_CLIENT_OR_FAIL
-                (XML_ERROR_SYNTAX ("get_results",
-                                    "autofp in GET_RESULTS must be either"
-                                    " 0, 1 or 2"));
-
-              if (get_results_data->apply_overrides_set)
-                apply_overrides = get_results_data->apply_overrides;
-              else if (filter_term_value (get_results_data->get.filter,
-                                          "apply_overrides"))
-                apply_overrides
-                  = atoi (filter_term_value (get_results_data->get.filter,
-                                             "apply_overrides"))
-                    ? 1 : 0;
-              else
-                apply_overrides = 1;
-
-              min_qod_str = filter_term_value (get_results_data->get.filter,
-                                               "min_qod");
-              if (min_qod_str == NULL
-                  || sscanf (min_qod_str, "%d", &min_qod) != 1)
-                min_qod = MIN_QOD_DEFAULT;
-              g_free (min_qod_str);
-
-              dynamic_severity = setting_dynamic_severity_int ();
 
               SEND_TO_CLIENT_OR_FAIL ("<get_results_response"
                                       " status=\"" STATUS_OK "\""
@@ -17897,10 +17873,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
 
               init_result_get_iterator (&results, &get_results_data->get,
-                                        autofp,
-                                        apply_overrides,
-                                        min_qod,
-                                        dynamic_severity);
+                                        1,  /* apply_overides */
+                                        0,  /* autofp */
+                                        0); /* No report restriction */
 
               if (next (&results))
                 {
@@ -17949,9 +17924,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               filtered = get_results_data->get.id
                           ? 1 : result_count (&get_results_data->get,
-                                              autofp, apply_overrides,
-                                              min_qod,
-                                              dynamic_severity);
+                                              0 /* No report */);
 
               SEND_GET_END("result", &get_results_data->get, count, filtered);
             }

@@ -4694,6 +4694,7 @@ resource_name (const char *type, const char *uuid, int location, char **name)
  * @param[in]  extra_where     Extra WHERE clauses.  Skipped for single
  *                             resource.
  * @param[in]  owned           Only get items owned by the current user.
+ * @param[in]  ignore_id       Whether to ignore id (e.g. for report results).
  *
  * @return 0 success, 1 failed to find resource, 2 failed to find filter, -1
  *         error.
@@ -4706,7 +4707,8 @@ init_get_iterator2 (iterator_t* iterator, const char *type,
                     column_t *trash_where_columns,
                     const char **filter_columns, int distinct,
                     const char *extra_tables,
-                    const char *extra_where, int owned)
+                    const char *extra_where, int owned,
+                    int ignore_id)
 {
   int first, max;
   gchar *clause, *order, *filter, *owned_clause;
@@ -4723,7 +4725,11 @@ init_get_iterator2 (iterator_t* iterator, const char *type,
       return -1;
     }
 
-  if (get->id && owned && (current_credentials.uuid == NULL))
+  if (ignore_id)
+    {
+      resource = 0;
+    }
+  else if (get->id && owned && (current_credentials.uuid == NULL))
     {
       gchar *quoted_uuid = sql_quote (get->id);
       switch (sql_int64 (&resource,
@@ -4808,7 +4814,9 @@ init_get_iterator2 (iterator_t* iterator, const char *type,
     columns = columns_build_select (select_columns);
 
   if (get->ignore_pagination
-      && (strcmp (type, "task") == 0))
+      && ((strcmp (type, "task") == 0)
+          || (strcmp (type, "report") == 0)
+          || (strcmp (type, "result") == 0)))
     {
       first = 0;
       max = -1;
@@ -4944,7 +4952,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
 {
   return init_get_iterator2 (iterator, type, get, select_columns,
                              trash_select_columns, NULL, NULL, filter_columns,
-                             distinct, extra_tables, extra_where, owned);
+                             distinct, extra_tables, extra_where, owned, FALSE);
 }
 
 // FIX
@@ -9806,32 +9814,9 @@ email_secinfo (alert_t alert, task_t task, event_t event,
  * @param[in]  event_data  Event data.
  * @param[in]  method      Method from alert.
  * @param[in]  condition   Condition from alert, which was met by event.
- * @param[in]  sort_order         Whether to sort ascending or descending.
- * @param[in]  sort_field         Field to sort on, or NULL for "type".
- * @param[in]  result_hosts_only  Whether to show only hosts with results.
- * @param[in]  min_cvss_base      Minimum CVSS base of included results.  All
- *                                results if NULL.
- * @param[in]  min_qod        Minimum QoD of included results.  All
- *                            results if NULL.
- * @param[in]  levels         String describing threat levels (message types)
- *                            to include in count (for example, "hmlgd" for
- *                            High, Medium, Low, loG and Debug).  All levels if
- *                            NULL.
- * @param[in]  delta_states       Delta states.  Allows caller to specify the
- *                                value for the delta_states param in the filter
- *                                string.
- * @param[in]  apply_overrides    Whether to apply overrides.
- * @param[in]  search_phrase      Phrase that results must include.  All results
- *                                if NULL or "".
- * @param[in]  autofp             Whether to apply auto FP filter.
- * @param[in]  notes              Whether to include notes.
+ * @param[in]  get         GET data for report.
  * @param[in]  notes_details      If notes, Whether to include details.
- * @param[in]  overrides          Whether to include overrides.
  * @param[in]  overrides_details  If overrides, Whether to include details.
- * @param[in]  first_result       The result to start from.  The results are 0
- *                                indexed.
- * @param[in]  max_results        The maximum number of results returned.
- * @param[in]  zone               Timezone.
  *
  * @return 0 success, -1 error, -2 failed to find report format, -3 failed to
  *         find filter.
@@ -9840,14 +9825,7 @@ static int
 escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             const void* event_data, alert_method_t method,
             alert_condition_t condition,
-            /* Report filtering. */
-            int sort_order, const char* sort_field,
-            int result_hosts_only, const char *min_cvss_base,
-            const char *min_qod,
-            const char *levels, const char *delta_states, int apply_overrides,
-            const char *search_phrase, int autofp, int notes, int notes_details,
-            int overrides, int overrides_details, int first_result,
-            int max_results, const char *zone)
+            const get_data_t *get, int notes_details, int overrides_details)
 {
   char *name;
   gchar *event_desc, *alert_desc;
@@ -9974,23 +9952,13 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   term = NULL;
                   report_zone = NULL;
                   host_summary = NULL;
-                  report_content = manage_report (report, report_format,
-                                                  filt_id,
-                                                  sort_order, sort_field,
-                                                  result_hosts_only,
-                                                  min_cvss_base, min_qod,
-                                                  levels, delta_states,
-                                                  apply_overrides,
-                                                  search_phrase, autofp,
-                                                  notes, notes_details,
-                                                  overrides,
+                  report_content = manage_report (report, get, report_format,
+                                                  notes_details,
                                                   overrides_details,
-                                                  first_result, max_results,
                                                   NULL, /* Type. */
                                                   &content_length,
                                                   NULL,    /* Extension. */
                                                   NULL,   /* Content type. */
-                                                  zone,
                                                   &term,
                                                   &report_zone,
                                                   &host_summary);
@@ -10107,22 +10075,13 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   term = NULL;
                   report_zone = NULL;
                   host_summary = NULL;
-                  report_content = manage_report (report, report_format,
-                                                  filt_id,
-                                                  sort_order, sort_field,
-                                                  result_hosts_only,
-                                                  min_cvss_base, min_qod,
-                                                  levels, delta_states,
-                                                  apply_overrides,
-                                                  search_phrase, autofp,
-                                                  notes, notes_details,
-                                                  overrides, overrides_details,
-                                                  first_result, max_results,
+                  report_content = manage_report (report, get, report_format,
+                                                  notes_details,
+                                                  overrides_details,
                                                   NULL, /* Type. */
                                                   &content_length,
                                                   &extension,
                                                   &type,
-                                                  zone,
                                                   &term,
                                                   &report_zone,
                                                   &host_summary);
@@ -10437,21 +10396,12 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                 return -3;
             }
 
-          report_content = manage_report (report, report_format,
-                                          filt_id,
-                                          sort_order, sort_field,
-                                          result_hosts_only,
-                                          min_cvss_base, min_qod, levels,
-                                          delta_states, apply_overrides,
-                                          search_phrase, autofp,
-                                          notes, notes_details, overrides,
-                                          overrides_details,
-                                          first_result, max_results,
+          report_content = manage_report (report, get, report_format,
+                                          notes_details, overrides_details,
                                           NULL, /* Type. */
                                           &content_length,
                                           NULL,    /* Extension. */
                                           NULL,    /* Content type. */
-                                          zone,
                                           NULL,
                                           NULL,
                                           NULL);
@@ -10525,21 +10475,12 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                 return -3;
             }
 
-          report_content = manage_report (report, report_format,
-                                          filt_id,
-                                          sort_order, sort_field,
-                                          result_hosts_only,
-                                          min_cvss_base, min_qod, levels,
-                                          delta_states, apply_overrides,
-                                          search_phrase, autofp,
-                                          notes, notes_details, overrides,
-                                          overrides_details, first_result,
-                                          max_results,
+          report_content = manage_report (report, get, report_format,
+                                          notes_details, overrides_details,
                                           NULL, /* Type. */
                                           &content_length,
                                           NULL,    /* Extension. */
                                           NULL,    /* Content type. */
-                                          zone,
                                           NULL,
                                           NULL,
                                           NULL);
@@ -10657,21 +10598,12 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                 return -3;
             }
 
-          report_content = manage_report (report, report_format,
-                                          filt_id,
-                                          sort_order, sort_field,
-                                          result_hosts_only,
-                                          min_cvss_base, min_qod, levels,
-                                          delta_states, apply_overrides,
-                                          search_phrase, autofp,
-                                          notes, notes_details, overrides,
-                                          overrides_details,
-                                          first_result, max_results,
+          report_content = manage_report (report, get, report_format,
+                                          notes_details, overrides_details,
                                           NULL, /* Type. */
                                           &content_length,
                                           NULL,    /* Extension. */
                                           NULL,    /* Content type. */
-                                          zone,
                                           NULL,
                                           NULL,
                                           NULL);
@@ -10790,25 +10722,15 @@ escalate_1 (alert_t alert, task_t task, report_t report, event_t event,
             const void* event_data, alert_method_t method,
             alert_condition_t condition)
 {
-  return escalate_2 (alert, task, report, event, event_data, method, condition,
-                     1,       /* Ascending. */
-                     NULL,    /* Sort field. */
-                     0,       /* Result hosts only. */
-                     NULL,    /* Min CVSS base. */
-                     NULL,    /* Min QoD. */
-                     NULL,    /* Levels. */
-                     NULL,    /* Delta states. */
-                     1,       /* Apply overrides. */
-                     NULL,    /* Search phrase. */
-                     0,       /* Auto FP. */
-                     1,       /* Notes. */
-                     1,       /* Notes details. */
-                     1,       /* Overrides. */
-                     1,       /* Overrides details. */
-                     0,       /* First results. */
-                     /* Max results. */
-                     (method == ALERT_METHOD_EMAIL ? 1000 : -1),
-                     NULL);   /* Timezone. */
+  int ret;
+  get_data_t get;
+  memset (&get, 0, sizeof (get_data_t));
+  get.filter = g_strdup_printf ("notes=1 overrides=1 rows=%d",
+                                method == ALERT_METHOD_EMAIL ? 1000 : -1);
+
+  ret = escalate_2 (alert, task, report, event, event_data, method, condition,
+                    &get, 1, 1);
+  return ret;
 }
 
 /**
@@ -11880,7 +11802,8 @@ init_task_iterator (iterator_t* iterator, const get_data_t *get)
                              : (get->trash
                                  ? " AND hidden = 2"
                                  : " AND hidden = 0"),
-                            current_credentials.uuid ? TRUE : FALSE);
+                            current_credentials.uuid ? TRUE : FALSE,
+                            FALSE);
 
   g_free (extra_tables);
   return ret;
@@ -16472,9 +16395,12 @@ task_upload_progress (task_t task)
   if (report)
     {
       int count;
-      if (report_scan_result_count (report, NULL, NULL, 0, NULL, NULL,
-                                    0, 0, &count))
-        return -1;
+      get_data_t get;
+      memset (&get, 0, sizeof (get_data_t));
+      get.filter = g_strdup ("min_qod=0");
+      count = result_count (&get, report);
+      get_data_reset (&get);
+
       return sql_int ("SELECT"
                       " max (min (((%i * 100) / upload_result_count), 100), -1)"
                       " FROM tasks"
@@ -19694,7 +19620,8 @@ init_report_iterator (iterator_t* iterator, const get_data_t *get)
                              : " AND (SELECT hidden FROM tasks"
                                "      WHERE tasks.id = task)"
                                "     = 0",
-                            TRUE);
+                            TRUE,
+                            FALSE);
   g_free (extra_tables);
   return ret;
 }
@@ -20070,125 +19997,18 @@ where_levels_auto (const char *levels, const char *new_severity_sql,
 }
 
 /**
- * @brief Return SQL WHERE for restricting a SELECT to levels.
- *
- * @param[in]  levels  String describing threat levels (message types)
- *                     to include in report (for example, "hmlgd" for
- *                     High, Medium, Low, loG and Debug).  All levels if
- *                     NULL.
- *
- * @return WHERE clause for levels if one is required, else NULL.
- */
-static GString *
-where_levels_type (const char* levels)
-{
-  int count;
-  GString *levels_sql;
-
-  /* Generate SQL for constraints on message type, according to levels. */
-
-  if (levels == NULL || strlen (levels) == 0)
-    return g_string_new (" AND severity != " G_STRINGIFY (SEVERITY_ERROR));
-
-  levels_sql = NULL;
-  count = 0;
-
-  /* High. */
-  if (strchr (levels, 'h'))
-    {
-      count = 1;
-      // FIX handles dynamic "severity" in caller?
-      levels_sql = g_string_new (" AND (severity_in_level (severity, 'high')");
-    }
-
-  /* Medium. */
-  if (strchr (levels, 'm'))
-    {
-      if (count == 0)
-        levels_sql = g_string_new (" AND (severity_in_level (severity, 'medium')");
-      else
-        levels_sql = g_string_append (levels_sql,
-                                      " OR severity_in_level (severity, 'medium')");
-      count++;
-    }
-
-  /* Low. */
-  if (strchr (levels, 'l'))
-    {
-      if (count == 0)
-        levels_sql = g_string_new (" AND (severity_in_level (severity, 'low')");
-      else
-        levels_sql = g_string_append (levels_sql,
-                                      " OR severity_in_level (severity, 'low')");
-      count++;
-    }
-
-  /* loG. */
-  if (strchr (levels, 'g'))
-    {
-      if (count == 0)
-        levels_sql = g_string_new (" AND (severity_in_level (severity, 'log')");
-      else
-        levels_sql = g_string_append (levels_sql,
-                                      " OR severity_in_level (severity, 'log')");
-    }
-
-  /* Debug. */
-  if (strchr (levels, 'd'))
-    {
-      if (count == 0)
-        levels_sql = g_string_new (" AND ((severity"
-                                   "       = " G_STRINGIFY
-                                                (SEVERITY_DEBUG) ")");
-      else
-        levels_sql = g_string_append (levels_sql,
-                                      " OR (severity"
-                                      "     = " G_STRINGIFY
-                                                 (SEVERITY_DEBUG) ")");
-      count++;
-    }
-
-  /* False Positive. */
-  if (strchr (levels, 'f'))
-    {
-      if (count == 0)
-        levels_sql = g_string_new (" AND ((severity"
-                                   "       = " G_STRINGIFY
-                                                (SEVERITY_FP) "))");
-      else
-        levels_sql = g_string_append (levels_sql,
-                                      " OR (severity"
-                                      "     = " G_STRINGIFY
-                                                 (SEVERITY_FP) "))");
-      count++;
-    }
-  else if (count)
-    levels_sql = g_string_append (levels_sql, ")");
-
-  if (count == 6)
-    {
-      /* All levels. */
-      g_string_free (levels_sql, TRUE);
-      levels_sql = g_string_new (" AND severity != "
-                                 G_STRINGIFY (SEVERITY_ERROR));
-    }
-
-  return levels_sql;
-}
-
-/**
  * @brief Return SQL WHERE for restricting a SELECT to a minimum CVSS base.
  *
  * @param[in]  min_cvss_base  Minimum value for CVSS.
  *
  * @return WHERE clause if one is required, else NULL.
  */
-static GString *
+static gchar*
 where_cvss_base (const char* min_cvss_base)
 {
   if (min_cvss_base)
     {
-      GString *cvss_sql;
+      gchar *cvss_sql;
       gchar *quoted_min_cvss_base;
 
       if (strlen (min_cvss_base) == 0)
@@ -20196,11 +20016,11 @@ where_cvss_base (const char* min_cvss_base)
 
       min_cvss_base = check_min_cvss_base (min_cvss_base);
       quoted_min_cvss_base = sql_quote (min_cvss_base);
-      cvss_sql = g_string_new ("");
-      g_string_append_printf (cvss_sql,
-                              " AND CAST ((SELECT cvss_base FROM nvts WHERE nvts.oid = results.nvt) AS REAL)"
-                              " >= CAST ('%s' AS REAL)",
-                              quoted_min_cvss_base);
+      cvss_sql = g_strdup_printf (" AND CAST ((SELECT cvss_base FROM nvts"
+                                  "            WHERE nvts.oid = results.nvt)"
+                                  "           AS REAL)"
+                                  " >= CAST ('%s' AS REAL)",
+                                  quoted_min_cvss_base);
       g_free (quoted_min_cvss_base);
 
       return cvss_sql;
@@ -20231,72 +20051,6 @@ where_qod (const char* min_qod)
                                MIN_QOD_DEFAULT);
 
   return qod_sql;
-}
-
-/**
- * @brief Return SQL WHERE for restricting a SELECT to a search phrase.
- *
- * @param[in]  search_phrase  Phrase that results must include.  All results if
- *                            NULL or "".
- * @param[in]  exact          Whether match must be exact.
- *
- * @return WHERE clause for search phrase if one is required, else NULL.
- */
-static GString *
-where_search_phrase (const char* search_phrase, int exact)
-{
-  if (search_phrase)
-    {
-      GString *phrase_sql;
-      gchar *quoted_search_phrase;
-
-      if (strlen (search_phrase) == 0)
-        return NULL;
-
-      /* Changing these SQL terms may require a change in report_counts_match. */
-      quoted_search_phrase = sql_quote (search_phrase);
-      phrase_sql = g_string_new ("");
-      if (exact)
-        g_string_append_printf (phrase_sql,
-                                " AND (port = '%s'"
-                                " OR host = '%s'"
-                                " OR nvt = '%s'"
-                                " OR nvt IN (SELECT oid FROM nvts"
-                                "            WHERE name = '%s'"
-                                "             OR tag LIKE '%%%%=%s|%%%%'"
-                                "             OR tag LIKE '%%%%=%s'"
-                                "             OR cve LIKE '%%%%%s%%%%')"
-                                " OR description = '%s')",
-                                quoted_search_phrase,
-                                quoted_search_phrase,
-                                quoted_search_phrase,
-                                quoted_search_phrase,
-                                quoted_search_phrase,
-                                quoted_search_phrase,
-                                quoted_search_phrase,
-                                quoted_search_phrase);
-      else
-        g_string_append_printf (phrase_sql,
-                                " AND (port LIKE '%%%%%s%%%%'"
-                                " OR host LIKE '%%%%%s%%%%'"
-                                " OR nvt LIKE '%%%%%s%%%%'"
-                                " OR nvt IN (SELECT oid FROM nvts"
-                                "            WHERE name LIKE '%%%%%s%%%%'"
-                                "             OR tag LIKE '%%%%=%%%%%s%%%%'"
-                                "             OR cve LIKE '%%%%%s%%%%')"
-                                " OR description LIKE '%%%%%s%%%%')",
-                                quoted_search_phrase,
-                                quoted_search_phrase,
-                                quoted_search_phrase,
-                                quoted_search_phrase,
-                                quoted_search_phrase,
-                                quoted_search_phrase,
-                                quoted_search_phrase);
-      g_free (quoted_search_phrase);
-
-      return phrase_sql;
-    }
-  return NULL;
 }
 
 /**
@@ -20398,50 +20152,176 @@ result_iterator_opts_table (int autofp, int override, int dynamic)
 }
 
 /**
+ * @brief Get extra_where string for a result iterator or count.
+ *
+ * @param[in]  get              GET data.
+ * @param[in]  report           Report to restrict returned results to.
+ * @param[in]  autofp           Whether to apply auto FP filter.
+ * @param[in]  apply_overrides  Whether to apply overrides.
+ * @param[in]  dynamic_severity Whether to use dynamic severity.
+ * @param[in]  filter           Filter string.
+ *
+ * @return     Newly allocated extra_where string.
+ */
+static gchar*
+results_extra_where (const get_data_t *get, report_t report,
+                     int autofp, int apply_overrides, int dynamic_severity,
+                     const gchar *filter)
+{
+  gchar *extra_where;
+  gchar *levels, *min_cvss_base, *min_qod;
+  gchar *report_clause, *min_qod_clause, *min_cvss_base_clause;
+  GString *levels_clause;
+  gchar *new_severity_sql, *auto_type_sql;
+
+  // Get filter values
+  min_qod = filter_term_value (filter, "min_qod");
+
+  levels = filter_term_value (filter, "levels");
+  if (levels == NULL)
+    levels = g_strdup ("hmlgdf");
+
+  min_cvss_base
+    = filter_term_value (filter, "min_cvss_base");
+
+  // Build clause fragments
+
+  switch (autofp)
+    {
+      case 1:
+        auto_type_sql = g_strdup_printf
+          ("(SELECT autofp FROM results_autofp"
+            " WHERE result = results.id"
+            " AND autofp_selection = 1)");
+        break;
+      case 2:
+        auto_type_sql = g_strdup_printf
+          ("(SELECT autofp FROM results_autofp"
+            " WHERE result = results.id"
+            " AND autofp_selection = 2)");
+          break;
+
+      default:
+        auto_type_sql = g_strdup ("NULL");
+        break;
+    }
+
+  new_severity_sql
+    = g_strdup_printf("(SELECT new_severity FROM result_new_severities"
+                      " WHERE result_new_severities.result = results.id"
+                      " AND result_new_severities.user"
+                      "     = (SELECT id FROM users WHERE uuid = '%s')"
+                      " AND override = %d"
+                      " AND dynamic = %d"
+                      " LIMIT 1)",
+                      current_credentials.uuid,
+                      apply_overrides,
+                      dynamic_severity);
+
+  // Build filter clauses
+
+  report_clause = report ? g_strdup_printf (" AND (report = %llu) ", report)
+                         : NULL;
+
+  min_qod_clause = where_qod (min_qod);
+  g_free (min_qod);
+
+  levels_clause = where_levels_auto (levels ? levels : "hmlgdf",
+                                     new_severity_sql, auto_type_sql);
+
+  min_cvss_base_clause = NULL;
+  if (min_cvss_base)
+    min_cvss_base_clause = where_cvss_base (min_cvss_base);
+
+  extra_where = g_strdup_printf("%s%s%s%s%s",
+                                report_clause ? report_clause : "",
+                                levels_clause->str,
+                                min_qod_clause ? min_qod_clause : "",
+                                min_cvss_base_clause
+                                  ? min_cvss_base_clause
+                                  : "",
+                                get->trash
+                                  ? " AND ((SELECT (hidden = 2) FROM tasks"
+                                    "       WHERE tasks.id = task))"
+                                  : " AND ((SELECT (hidden = 0) FROM tasks"
+                                    "       WHERE tasks.id = task))");
+
+  g_free (new_severity_sql);
+  g_free (auto_type_sql);
+  g_string_free (levels_clause, TRUE);
+  g_free (report_clause);
+
+  return extra_where;
+}
+
+
+
+/**
  * @brief Initialise a result iterator.
  *
  * @param[in]  iterator    Iterator.
  * @param[in]  get         GET data.
+ * @param[in]  given_apply_overrides  Fallback apply_overrides if not in filter.
+ * @param[in]  given_autofp  Fallback autofp if it is not in the filter.
+ * @param[in]  report      Report to restrict returned results to.
  *
  * @return 0 success, 1 failed to find result, failed to find filter (filt_id),
  *         -1 error.
  */
 int
 init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
-                          int autofp, int override, int min_qod,
-                          int dynamic_severity)
+                          int given_apply_overrides, int given_autofp,
+                          report_t report)
 {
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
   int ret;
-  gchar *min_qod_str, *min_qod_clause;
+  gchar *filter, *value;
+  int autofp, apply_overrides, dynamic_severity;
+
   gchar *extra_tables, *extra_where;
 
+  if (get->filt_id && strcmp (get->filt_id, "0"))
+    {
+      filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        return 2;
+    }
+  else
+    filter = NULL;
+
+  value = filter_term_value (filter ? filter : get->filter, "apply_overrides");
+  apply_overrides = value ? strcmp (value, "0") : given_apply_overrides;
+  g_free (value);
+
+  value = filter_term_value (filter ? filter : get->filter, "autofp");
+  autofp = value ? atoi (value) : given_autofp;
+  g_free (value);
+
+  dynamic_severity = setting_dynamic_severity_int ();
+
   extra_tables
-    = result_iterator_opts_table (autofp, override, dynamic_severity);
+    = result_iterator_opts_table (autofp, apply_overrides, dynamic_severity);
 
-  min_qod_str = g_strdup_printf ("%d", min_qod);
-  min_qod_clause = where_qod (min_qod_str);
-  g_free (min_qod_str);
+  extra_where = results_extra_where (get, report,
+                                     autofp, apply_overrides, dynamic_severity,
+                                     filter ? filter : get->filter);
 
-  extra_where = g_strdup_printf ("%s%s",
-                                 min_qod_clause,
-                                 get->trash
-                                  ? "AND ((SELECT (hidden = 2) FROM tasks"
-                                    "      WHERE tasks.id = task))"
-                                  : "AND ((SELECT (hidden = 0) FROM tasks"
-                                    "      WHERE tasks.id = task))");
+  free (filter);
 
-  ret = init_get_iterator (iterator,
-                           "result",
-                           get,
-                           columns,
-                           columns,
-                           filter_columns,
-                           0,
-                           extra_tables,
-                           extra_where,
-                           TRUE);
+  ret = init_get_iterator2 (iterator,
+                            "result",
+                            get,
+                            columns,
+                            NULL,
+                            columns,
+                            NULL,
+                            filter_columns,
+                            0,
+                            extra_tables,
+                            extra_where,
+                            TRUE,
+                            report ? TRUE : FALSE);
   g_free (extra_tables);
   g_free (extra_where);
   return ret;
@@ -20450,36 +20330,46 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
 /**
  * @brief Count the number of results.
  *
- * @param[in]  get  GET params.
+ * @param[in]  get     GET params.
+ * @param[in]  report  Report to limit results to.
  *
  * @return Total number of results in filtered set.
  */
 int
-result_count (const get_data_t *get,
-              int autofp, int override, int min_qod,
-              int dynamic_severity)
+result_count (const get_data_t *get, report_t report)
 {
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
   int ret;
-  gchar *min_qod_str, *min_qod_clause;
+  gchar *filter, *value;
+  int apply_overrides, autofp, dynamic_severity;
   gchar *extra_tables, *extra_where;
 
+  if (get->filt_id && strcmp (get->filt_id, "0"))
+    {
+      filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        return 2;
+    }
+  else
+    filter = NULL;
+
+  value = filter_term_value (filter, "apply_overrides");
+  apply_overrides = value && strcmp (value, "0");
+  g_free (value);
+
+  value = filter_term_value (filter, "autofp");
+  autofp = value ? atoi (value) : 0;
+  g_free (value);
+
+  dynamic_severity = setting_dynamic_severity_int ();
+
   extra_tables
-    = result_iterator_opts_table (autofp, override, dynamic_severity);
+    = result_iterator_opts_table (autofp, apply_overrides, dynamic_severity);
 
-  min_qod_str = g_strdup_printf ("%d", min_qod);
-  min_qod_clause = where_qod (min_qod_str);
-  g_free (min_qod_str);
-
-  extra_where = g_strdup_printf ("%s%s",
-                                 min_qod_clause,
-                                 get->trash
-                                  ? "AND ((SELECT (hidden = 2) FROM tasks"
-                                    "      WHERE tasks.id = task))"
-                                  : "AND ((SELECT (hidden = 0) FROM tasks"
-                                    "      WHERE tasks.id = task))");
-
+  extra_where = results_extra_where (get, report,
+                                     autofp, apply_overrides, dynamic_severity,
+                                     filter ? filter : get->filter);
 
   ret = count ("result", get,
                 columns,
@@ -20491,434 +20381,6 @@ result_count (const get_data_t *get,
   g_free (extra_tables);
   g_free (extra_where);
   return ret;
-}
-
-/**
- * @brief Initialise a result iterator.
- *
- * The results are ordered by host, then port and type (severity) according
- * to sort_field.
- *
- * @param[in]  iterator       Iterator.
- * @param[in]  report         Report whose results the iterator loops over,
- *                            or 0 to use result.
- * @param[in]  result         Single result to iterate over.  0 for all.
- *                            Overridden by report.
- * @param[in]  first_result   The result to start from.  The results are 0
- *                            indexed.
- * @param[in]  max_results    The maximum number of results returned.
- * @param[in]  ascending      Whether to sort ascending or descending.
- * @param[in]  sort_field     Field to sort on, or NULL for "type".
- * @param[in]  levels         String describing threat levels (message types)
- *                            to include in report (for example, "hmlgdf" for
- *                            High, Medium, Low, loG, Debug and False positive).
- *                            All levels if NULL.
- * @param[in]  autofp         Whether to apply auto FP filter.
- * @param[in]  search_phrase  Phrase that results must include.  All results if
- *                            NULL or "".
- * @param[in]  search_phrase_exact  Whether search phrase is exact.
- * @param[in]  min_cvss_base  Minimum value for CVSS.  All results if NULL.
- * @param[in]  min_qod        Minimum value for QoD.  All results if NULL.
- * @param[in]  override       Whether to override the threat and CVSS.
- */
-void
-init_result_iterator (iterator_t* iterator, report_t report, result_t result,
-                      int first_result, int max_results,
-                      int ascending, const char* sort_field, const char* levels,
-                      int autofp, const char* search_phrase,
-                      int search_phrase_exact, const char* min_cvss_base,
-                      const char* min_qod, int override)
-{
-  int dynamic_severity = setting_dynamic_severity_int (); // TODO: Add parameter
-
-  GString *levels_sql, *phrase_sql, *cvss_sql;
-  gchar *severity_sql, *qod_sql, *order_sql, *sql;
-
-  assert ((report && result) == 0);
-
-  /* TODO: The generated SQL is now out of hand. */
-
-  if (dynamic_severity)
-    severity_sql = g_strdup ("CASE WHEN results.severity"
-                             "          > " G_STRINGIFY (SEVERITY_LOG)
-                             " THEN (SELECT CAST (" CVSS_BASE_SQL " AS REAL)"
-                             "       FROM nvts"
-                             "       WHERE nvts.oid = results.nvt)"
-                             " ELSE results.severity END");
-  else
-    severity_sql = g_strdup ("results.severity");
-
-  /* Allocate the query. */
-
-  if (report)
-    {
-      gchar *new_severity_sql, *auto_type_sql;
-
-      if (sort_field == NULL) sort_field = "type";
-      if (levels == NULL) levels = "hmlgdf";
-      if (strcmp (sort_field, "location") == 0) sort_field = "port";
-
-      phrase_sql = where_search_phrase (search_phrase, search_phrase_exact);
-      cvss_sql = where_cvss_base (min_cvss_base);
-      qod_sql = where_qod (min_qod);
-
-      new_severity_sql
-        = g_strdup_printf ("(SELECT new_severity FROM result_new_severities"
-                           " WHERE result_new_severities.result = results.id"
-                           " AND result_new_severities.user"
-                           "     = (SELECT id FROM users WHERE uuid = '%s')"
-                           " AND override = %d"
-                           " AND dynamic = %d"
-                           " LIMIT 1)",
-                           current_credentials.uuid,
-                           override,
-                           dynamic_severity);
-
-      switch (autofp)
-        {
-          case 1:
-            auto_type_sql = g_strdup_printf
-              ("(SELECT autofp FROM results_autofp"
-               " WHERE result = results.id"
-               " AND autofp_selection = 1)");
-            break;
-
-          case 2:
-            auto_type_sql = g_strdup_printf
-              ("(SELECT autofp FROM results_autofp"
-               " WHERE result = results.id"
-               " AND autofp_selection = 2)");
-             break;
-
-           default:
-             auto_type_sql = g_strdup ("NULL");
-             break;
-         }
-
-      if (strcmp (sort_field, "ROWID") == 0)
-        order_sql = g_strdup_printf (" ORDER BY results.id %s",
-                                     ascending ? "ASC" : "DESC");
-      else if (strcmp (sort_field, "port") == 0)
-        order_sql = g_strdup_printf (" ORDER BY"
-                                     " order_port (port) %s,"
-                                     " order_inet (host),"
-                                     " (CASE WHEN %s IS NULL"
-                                     "  THEN CAST (%s AS REAL)"
-                                     "  ELSE " G_STRINGIFY (SEVERITY_FP)
-                                     "  END)"
-                                     " DESC,"
-                                     " (CASE WHEN %s IS NULL"
-                                     "  THEN %s"
-                                     "  ELSE %s"
-                                     "  END)"
-                                     " DESC,"
-                                     " nvt,"
-                                     " description",
-                                     ascending ? "ASC" : "DESC",
-                                     auto_type_sql,
-                                     new_severity_sql,
-                                     auto_type_sql,
-                                     new_severity_sql,
-                                     auto_type_sql);
-      else if (strcmp (sort_field, "host") == 0)
-        order_sql = g_strdup_printf (" ORDER BY"
-                                     " order_inet (host) %s,"
-                                     " (CASE WHEN %s IS NULL"
-                                     "  THEN CAST (%s AS REAL)"
-                                     "  ELSE " G_STRINGIFY (SEVERITY_FP)
-                                     "  END)"
-                                     " DESC,"
-                                     " (CASE WHEN %s IS NULL"
-                                     "  THEN %s"
-                                     "  ELSE %s"
-                                     "  END)"
-                                     " DESC,"
-                                     " nvt,"
-                                     " description",
-                                     ascending ? "ASC" : "DESC",
-                                     auto_type_sql,
-                                     new_severity_sql,
-                                     auto_type_sql,
-                                     new_severity_sql,
-                                     auto_type_sql);
-      else if (strcmp (sort_field, "vulnerability") == 0)
-        order_sql = g_strdup_printf (" ORDER BY"
-                                     " vulnerability %s,"
-                                     " order_port (port),"
-                                     " order_inet (host),"
-                                     " (CASE WHEN %s IS NULL"
-                                     "  THEN CAST (%s AS REAL)"
-                                     "  ELSE " G_STRINGIFY (SEVERITY_FP)
-                                     "  END)"
-                                     " DESC,"
-                                     " (CASE WHEN %s IS NULL"
-                                     "  THEN %s"
-                                     "  ELSE %s"
-                                     "  END)"
-                                     " DESC,"
-                                     " nvt,"
-                                     " description",
-                                     ascending ? "ASC" : "DESC",
-                                     auto_type_sql,
-                                     new_severity_sql,
-                                     auto_type_sql,
-                                     new_severity_sql,
-                                     auto_type_sql);
-      else if (strcmp (sort_field, "solution_type") == 0)
-        order_sql = g_strdup_printf (" ORDER BY"
-                                     " solution_type %s,"
-                                     " vulnerability,"
-                                     " order_port (port),"
-                                     " order_inet (host),"
-                                     " (CASE WHEN %s IS NULL"
-                                     "  THEN CAST (%s AS REAL)"
-                                     "  ELSE " G_STRINGIFY (SEVERITY_FP)
-                                     "  END)"
-                                     " DESC,"
-                                     " (CASE WHEN %s IS NULL"
-                                     "  THEN %s"
-                                     "  ELSE %s"
-                                     "  END)"
-                                     " DESC,"
-                                     " nvt,"
-                                     " description",
-                                     ascending ? "ASC" : "DESC",
-                                     auto_type_sql,
-                                     new_severity_sql,
-                                     auto_type_sql,
-                                     new_severity_sql,
-                                     auto_type_sql);
-      else if (strcmp (sort_field, "qod") == 0)
-        order_sql = g_strdup_printf (" ORDER BY"
-                                     " qod %s,"
-                                     " vulnerability,"
-                                     " order_port (port),"
-                                     " order_inet (host),"
-                                     " (CASE WHEN %s IS NULL"
-                                     "  THEN CAST (%s AS REAL)"
-                                     "  ELSE " G_STRINGIFY (SEVERITY_FP)
-                                     "  END)"
-                                     " DESC,"
-                                     " (CASE WHEN %s IS NULL"
-                                     "  THEN %s"
-                                     "  ELSE %s"
-                                     "  END)"
-                                     " DESC,"
-                                     " nvt,"
-                                     " description",
-                                     ascending ? "ASC" : "DESC",
-                                     auto_type_sql,
-                                     new_severity_sql,
-                                     auto_type_sql,
-                                     new_severity_sql,
-                                     auto_type_sql);
-      else
-        order_sql = g_strdup_printf (" ORDER BY "
-                                     " (CASE WHEN %s IS NULL"
-                                     "  THEN CAST (%s AS REAL)"
-                                     "  ELSE " G_STRINGIFY (SEVERITY_FP)
-                                     "  END)"
-                                     " %s,"
-                                     " (CASE WHEN %s IS NULL"
-                                     "  THEN %s"
-                                     "  ELSE %s"
-                                     "  END)"
-                                     " DESC,"
-                                     " order_port (port),"
-                                     " order_inet (host),"
-                                     " (CASE"
-                                     "  WHEN CAST (" CVSS_BASE_SQL " AS REAL)"
-                                     "       >= 0.0"
-                                     "  THEN CAST (" CVSS_BASE_SQL " AS REAL)"
-                                     "  ELSE 0.0"
-                                     "  END) DESC,"
-                                     " nvt,"
-                                     " description",
-                                     auto_type_sql,
-                                     new_severity_sql,
-                                     ascending ? "ASC" : "DESC",
-                                     auto_type_sql,
-                                     new_severity_sql,
-                                     auto_type_sql);
-
-      levels_sql = where_levels_auto (levels, new_severity_sql, auto_type_sql);
-
-      sql = g_strdup_printf ("SELECT results.id, uuid,"
-                             " (SELECT name FROM nvts"
-                             "  WHERE nvts.oid = results.nvt)"
-                             "  AS name,"
-                             " '' as comment,"
-                             " iso_time (date),"
-                             " iso_time (date),"
-                             " date AS created,"
-                             " date AS modified,"
-                             " (SELECT name FROM users WHERE users.id"
-                             "  = results.owner) AS _owner,"
-                             " owner, host, port, nvt,"
-                             " severity_to_type (%s) AS type,"
-                             " severity_to_type (%s) AS new_type,"
-                             " %s AS auto_type,"
-                             " results.description,"
-                             " results.task,"
-                             " results.report,"
-                             " " CVSS_BASE_SQL " AS cvss_base,"
-                             " nvt_version,"
-                             " %s AS severity,"
-                             " %s AS new_severity,"
-                             " (SELECT name FROM nvts"
-                             "  WHERE nvts.oid = results.nvt)"
-                             "  AS vulnerability,"
-                             " date,"
-                             " (SELECT uuid FROM reports"
-                             "  WHERE id = results.report) AS report_id,"
-                             " (SELECT solution_type FROM nvts"
-                             "  WHERE oid = nvt) AS solution_type,"
-                             " qod,"
-                             " qod_type"
-                             " FROM results"
-                             " WHERE results.report = %llu"
-                             "%s"
-                             "%s"
-                             "%s"
-                             "%s"
-                             "%s"
-                             " LIMIT %s OFFSET %i;",
-                             severity_sql,
-                             new_severity_sql,
-                             auto_type_sql,
-                             severity_sql,
-                             new_severity_sql,
-                             report,
-                             levels_sql ? levels_sql->str : "",
-                             phrase_sql ? phrase_sql->str : "",
-                             cvss_sql ? cvss_sql->str : "",
-                             qod_sql ? qod_sql : "",
-                             order_sql,
-                             sql_select_limit (max_results),
-                             first_result > 0 ? first_result : 0);
-
-      if (levels_sql) g_string_free (levels_sql, TRUE);
-      if (phrase_sql) g_string_free (phrase_sql, TRUE);
-      if (cvss_sql) g_string_free (cvss_sql, TRUE);
-      g_free (qod_sql);
-      g_free (auto_type_sql);
-      g_free (new_severity_sql);
-      g_free (order_sql);
-    }
-  else if (result)
-    {
-      gchar *new_severity_sql, *auto_type_sql;
-
-      new_severity_sql
-        = g_strdup_printf ("(SELECT new_severity FROM result_new_severities"
-                           " WHERE result_new_severities.result = results.id"
-                           " AND result_new_severities.user"
-                           "     = (SELECT id FROM users WHERE uuid = '%s')"
-                           " AND override = %d"
-                           " AND dynamic = %d"
-                           " LIMIT 1)",
-                           current_credentials.uuid,
-                           override,
-                           dynamic_severity);
-
-      switch (autofp)
-        {
-          case 1:
-            auto_type_sql = g_strdup_printf
-              ("(SELECT autofp FROM results_autofp"
-               " WHERE result = results.id"
-               " AND autofp_selection = 1)");
-            break;
-
-          case 2:
-            auto_type_sql = g_strdup_printf
-              ("(SELECT autofp FROM results_autofp"
-               " WHERE result = results.id"
-               " AND autofp_selection = 2)");
-             break;
-
-           default:
-             auto_type_sql = g_strdup ("NULL");
-             break;
-         }
-
-      sql = g_strdup_printf ("SELECT results.id, uuid,"
-                             " (SELECT name FROM nvts"
-                             "  WHERE nvts.oid = results.nvt)"
-                             "  AS name,"
-                             " '' as comment,"
-                             " iso_time (date),"
-                             " iso_time (date),"
-                             " date AS created,"
-                             " date AS modified,"
-                             " (SELECT name FROM users WHERE users.id"
-                             "  = results.owner) AS _owner,"
-                             " owner, host, port, nvt,"
-                             " severity_to_type (%s), severity_to_type (%s),"
-                             " %s, description,"
-                             " results.task,"
-                             " results.report,"
-                             " NULL,"
-                             " results.nvt_version,"
-                             " %s,"
-                             " %s,"
-                             " (SELECT name FROM nvts"
-                             "  WHERE nvts.oid = results.nvt)"
-                             "  AS vulnerability,"
-                             " date,"
-                             " (SELECT uuid FROM reports"
-                             "  WHERE id = results.report) AS report_id,"
-                             " (SELECT solution_type FROM nvts"
-                             "  WHERE oid = nvt) AS solution_type,"
-                             " qod,"
-                             " qod_type"
-                             " FROM results"
-                             " WHERE id = %llu;",
-                             severity_sql,
-                             new_severity_sql,
-                             auto_type_sql,
-                             severity_sql,
-                             new_severity_sql,
-                             result);
-
-      g_free (auto_type_sql);
-      g_free (new_severity_sql);
-    }
-  else
-    sql = g_strdup_printf ("SELECT results.id, uuid,"
-                           " (SELECT name FROM nvts"
-                           "  WHERE nvts.oid = results.nvt)"
-                           "  AS name,"
-                           " '' as comment,"
-                           " iso_time (date),"
-                           " iso_time (date),"
-                           " date AS created,"
-                           " date AS modified,"
-                           " (SELECT name FROM users WHERE users.id"
-                           "  = results.owner) AS _owner,"
-                           " results.owner, host, port, nvt,"
-                           " severity_to_type (%s), severity_to_type (%s),"
-                           " severity_to_type (%s), description,"
-                           " results.task, results.report, NULL,"
-                           " nvt_version, %s, %s,"
-                           " (SELECT name FROM nvts"
-                           "  WHERE nvts.oid = results.nvt)"
-                           "  AS vulnerability,"
-                           " date"
-                           " FROM results, reports"
-                           " WHERE results.report = reports.id"
-                           " AND reports.owner ="
-                           " (SELECT id FROM users WHERE uuid = '%s');",
-                           severity_sql,
-                           severity_sql,
-                           severity_sql,
-                           severity_sql,
-                           severity_sql,
-                           current_credentials.uuid);
-
-  init_iterator (iterator, sql);
-  g_free (severity_sql);
-  g_free (sql);
 }
 
 /**
@@ -22368,227 +21830,6 @@ set_report_scan_run_status (report_t report, task_status_t status)
   sql ("UPDATE reports SET scan_run_status = %u WHERE id = %llu;",
        status,
        report);
-  return 0;
-}
-
-/**
- * @brief Return SQL for the auto_type column.
- *
- * @param[in]  report     Report.
- * @param[in]  autofp     Whether to apply the auto FP filter.
- *
- * @return Message count.
- */
-static gchar *
-column_auto_type (report_t report, int autofp)
-{
-  gchar *auto_type_sql;
-  switch (autofp)
-    {
-      case 1:
-        auto_type_sql = g_strdup_printf
-          ("  (CASE WHEN"
-           "   (((SELECT family FROM nvts WHERE oid = results.nvt)"
-           "     IN (" LSC_FAMILY_LIST "))"
-           "    OR results.nvt = '0'" /* Open ports previously had 0 NVT. */
-           "    OR EXISTS"
-           "    (SELECT id FROM nvts"
-           "     WHERE oid = results.nvt"
-           "     AND"
-           "     (cve = 'NOCVE'"
-           "      OR cve NOT IN (SELECT cve FROM nvts"
-           "                     WHERE oid IN (SELECT source_name"
-           "                                   FROM report_host_details"
-           "                                   WHERE report_host"
-           "                                   = (SELECT id"
-           "                                      FROM report_hosts"
-           "                                      WHERE report = %llu"
-           "                                      AND host = results.host)"
-           "                                   AND name = 'EXIT_CODE'"
-           "                                   AND value = 'EXIT_NOTVULN')"
-           "                     AND family IN (" LSC_FAMILY_LIST ")))))"
-           "   THEN NULL"
-           "   ELSE 1 END)",
-           report);
-         break;
-
-      case 2:
-        auto_type_sql = g_strdup_printf
-          ("  (CASE WHEN"
-           "   ((SELECT family FROM nvts WHERE oid = results.nvt)"
-           "    IN (" LSC_FAMILY_LIST ")"
-           "    OR results.nvt = '0'" /* Open ports previously had 0 NVT. */
-           "    OR EXISTS"
-           "    (SELECT id FROM nvts AS outer_nvts"
-           "     WHERE oid = results.nvt"
-           "     AND"
-           "     (cve = 'NOCVE'"
-           "      OR NOT EXISTS"
-           "         (SELECT cve FROM nvts"
-           "          WHERE oid IN (SELECT source_name"
-           "                        FROM report_host_details"
-           "                        WHERE report_host"
-           "                        = (SELECT id"
-           "                           FROM report_hosts"
-           "                           WHERE report = %llu"
-           "                           AND host = results.host)"
-           "                        AND name = 'EXIT_CODE'"
-           "                        AND value = 'EXIT_NOTVULN')"
-           "          AND family IN (" LSC_FAMILY_LIST ")"
-           /* The CVE of the result NVT is outer_nvts.cve.  The CVE of the
-            * NVT that has registered the "closed" host detail is nvts.cve.
-            * Either can be a list of CVEs. */
-           "          AND common_cve (nvts.cve, outer_nvts.cve)))))"
-           "   THEN NULL"
-           "   ELSE 1 END)",
-           report);
-         break;
-
-       default:
-         auto_type_sql = g_strdup (" NULL");
-         break;
-     }
-  return auto_type_sql;
-}
-
-/**
- * @brief Get the number of results in the scan associated with a report.
- *
- * @param[in]   report         Report.
- * @param[in]   levels         String describing threat levels (message types)
- *                             to include in count (for example, "hmlgd" for
- *                             High, Medium, Low, loG and Debug).  All levels if
- *                             NULL.
- * @param[in]   search_phrase  Phrase that results must include.  All results if
- *                             NULL or "".
- * @param[in]   search_phrase_exact  Whether search phrase is exact.
- * @param[in]   min_cvss_base  Minimum QoD of included results.  All
- *                             results if NULL.
- * @param[in]   min_cvss_base  Minimum CVSS base of included results.  All
- *                             results if NULL.
- * @param[in]   override       Whether to override threats.
- * @param[in]   autofp         Whether to apply the auto FP filter.
- * @param[out]  count          Total number of results in the scan.
- *
- * @return 0 on success, -1 on error.
- */
-int
-report_scan_result_count (report_t report, const char* levels,
-                          const char* search_phrase, int search_phrase_exact,
-                          const char* min_cvss_base, const char* min_qod,
-                          int override, int autofp, int* count)
-{
-  GString *levels_sql, *phrase_sql, *cvss_sql;
-  gchar *qod_sql;
-  gchar *new_severity_sql = NULL;
-  int min_qod_int;
-
-  phrase_sql = where_search_phrase (search_phrase, search_phrase_exact);
-  cvss_sql = where_cvss_base (min_cvss_base);
-  qod_sql = where_qod (min_qod);
-
-  if (min_qod == NULL || sscanf (min_qod, "%d", &min_qod_int) != 1)
-    min_qod_int = MIN_QOD_DEFAULT;
-
-  if (report_counts_cache_exists (report, override, min_qod_int)
-      && autofp == 0
-      && (min_cvss_base == NULL || strcmp (min_cvss_base, "") == 0)
-      && (search_phrase == NULL || strcmp (search_phrase, "") == 0))
-    {
-      *count = sql_int ("SELECT sum (count)"
-                        " FROM report_counts"
-                        " WHERE report = %llu"
-                        "   AND override = %d"
-                        "   AND \"user\" = (SELECT id FROM users"
-                        "                   WHERE users.uuid = '%s')"
-                        "   AND min_qod = %d"
-                        "   AND severity >= " G_STRINGIFY (SEVERITY_FP) ";",
-                        report, override, current_credentials.uuid,
-                        min_qod_int);
-      return 0;
-    }
-
-  if (override)
-    {
-      gchar *severity_sql, *ov, *auto_type_sql;
-      gchar *owned_clause;
-
-      auto_type_sql = NULL;
-      if (setting_dynamic_severity_int ())
-        severity_sql = g_strdup ("CASE WHEN results.severity"
-                                 "          > " G_STRINGIFY (SEVERITY_LOG)
-                                 " THEN coalesce ((SELECT CAST (cvss_base"
-                                 "                              AS REAL)"
-                                 "                 FROM nvts"
-                                 "                 WHERE nvts.oid"
-                                 "                         = results.nvt),"
-                                 "                results.severity)"
-                                 " ELSE results.severity END");
-      else
-        severity_sql = g_strdup ("results.severity");
-
-      owned_clause = acl_where_owned_for_get ("override", NULL);
-
-      ov = g_strdup_printf
-            ("SELECT overrides.new_severity"
-             " FROM overrides"
-             " WHERE overrides.nvt = results.nvt"
-             " AND %s"
-             " AND ((overrides.end_time = 0)"
-             "      OR (overrides.end_time >= m_now ()))"
-             " AND (overrides.task = results.task"
-             "      OR overrides.task = 0)"
-             " AND (overrides.result = results.id"
-             "      OR overrides.result = 0)"
-             " AND (overrides.hosts is NULL"
-             "      OR overrides.hosts = ''"
-             "      OR hosts_contains (overrides.hosts, results.host))"
-             " AND (overrides.port is NULL"
-             "      OR overrides.port = ''"
-             "      OR overrides.port = results.port)"
-             " AND severity_matches_ov (%s, overrides.severity)"
-             " ORDER BY overrides.result DESC, overrides.task DESC,"
-             " overrides.port DESC, overrides.severity ASC,"
-             " overrides.creation_time DESC"
-             " LIMIT 1",
-             owned_clause,
-             severity_sql);
-
-      g_free (owned_clause);
-
-      new_severity_sql = g_strdup_printf ("coalesce ((%s), %s)",
-                                          ov,
-                                          severity_sql);
-
-      auto_type_sql = column_auto_type (report, autofp);
-      levels_sql = where_levels_auto (levels, new_severity_sql, auto_type_sql);
-
-      g_free (auto_type_sql);
-      g_free (severity_sql);
-      g_free (ov);
-    }
-  else
-    levels_sql = where_levels_type (levels);
-
-  *count = sql_int ("SELECT count(results.id)"
-                    " FROM results"
-                    " WHERE results.report = %llu"
-                    " AND (CAST (%s AS REAL)"
-                    "       >= " G_STRINGIFY (SEVERITY_FP) ")"
-                    "%s%s%s%s;",
-                    report,
-                    new_severity_sql ? new_severity_sql : "severity",
-                    levels_sql ? levels_sql->str : "",
-                    phrase_sql ? phrase_sql->str : "",
-                    cvss_sql ? cvss_sql->str : "",
-                    qod_sql ? qod_sql : "");
-
-  if (levels_sql) g_string_free (levels_sql, TRUE);
-  if (phrase_sql) g_string_free (phrase_sql, TRUE);
-  if (cvss_sql) g_string_free (cvss_sql, TRUE);
-  g_free (qod_sql);
-  g_free (new_severity_sql);
-
   return 0;
 }
 
@@ -25334,82 +24575,6 @@ free_buffer (array_t *buffer)
 }
 
 /**
- * @brief Get filter term corresponding to report filtering.
- *
- * @param[in]  sort_order  Whether to sort ascending or descending.
- * @param[in]  sort_field  Field to sort on, or NULL for "type".
- * @param[in]  result_hosts_only  Whether to show only hosts with results.
- * @param[in]  min_cvss_base      Minimum CVSS base of included results.  All
- *                                results if NULL.
- * @param[in]  min_qod        Minimum QoD of included results.  All
- *                            results if NULL.
- * @param[in]  levels         String describing threat levels (message types)
- *                            to include in count (for example, "hmlgd" for
- *                            High, Medium, Low, loG and Debug).  All levels if
- *                            NULL.
- * @param[in]  delta_states   String describing delta states to include in count
- *                            (for example, "sngc" Same, New, Gone and Changed).
- *                            All levels if NULL.
- * @param[in]  search_phrase      Phrase that results must include.  All results
- *                                if NULL or "".
- * @param[in]  search_phrase_exact  Whether search phrase is exact.
- * @param[in]  autofp             Whether to apply the auto FP filter.
- * @param[in]  notes              Whether to include notes.
- * @param[in]  overrides          Whether to include overrides.
- * @param[in]  first_result       The result to start from.  The results are 0
- *                                indexed.
- * @param[in]  max_results        The maximum number of results returned.
- *
- * @return Filter term.
- */
-static gchar *
-report_filter_term (int sort_order, const char* sort_field,
-                    int result_hosts_only,
-                    const char *min_cvss_base, const char *min_qod,
-                    const char *levels, const char *delta_states,
-                    const char *search_phrase, int search_phrase_exact,
-                    int autofp, int notes, int overrides,
-                    int first_result, int max_results, const char *zone)
-{
-  return g_strdup_printf ("%s%s%s"
-                          "%s%s=%s"
-                          " result_hosts_only=%i"
-                          " min_cvss_base=%s"
-                          " min_qod=%s"
-                          " levels=%s"
-                          " autofp=%i"
-                          " notes=%i"
-                          " overrides=%i"
-                          " first=%i"
-                          " rows=%i"
-                          " delta_states=%s"
-                          "%s%s%s",
-                          (search_phrase
-                           && strlen (search_phrase)
-                           && search_phrase_exact)
-                            ? "=" : "",
-                          search_phrase && strlen (search_phrase) ? "\"" : "",
-                          search_phrase ? search_phrase : "",
-                          search_phrase && strlen (search_phrase) ? "\" " : "",
-                          sort_order ? "sort" : "sort-reverse",
-                          // FIX "id" is no longer a sort option
-                          sort_field ? sort_field : "id",
-                          result_hosts_only,
-                          min_cvss_base ? min_cvss_base : "",
-                          min_qod ? min_qod : "",
-                          levels ? levels : "hmlgd",
-                          autofp,
-                          notes,
-                          overrides,
-                          first_result + 1,
-                          max_results,
-                          delta_states ? delta_states : "cgns",
-                          (zone && strlen (zone)) ? " timezone=\"" : "",
-                          (zone && strlen (zone)) ? zone : "",
-                          (zone && strlen (zone)) ? "\"" : "");
-}
-
-/**
  * @brief Count a report's total number of hosts.
  *
  * @return Host count.
@@ -26005,22 +25170,26 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
   result_buffer_t *last_item;
   GArray *ports = g_array_new (TRUE, FALSE, sizeof (gchar*));
 
-  init_result_iterator
-   (&results, report, 0,
-    first_result,
-    max_results,
-    /* Sort by the requested field in the requested order, in case there is
-     * a first_result and/or max_results (these are applied after the
-     * sorting). */
-    sort_order,
-    sort_field,
-    levels,
-    autofp,
-    search_phrase,
-    search_phrase_exact,
-    min_cvss_base,
-    min_qod,
-    apply_overrides);
+  get_data_t result_get;
+  memset (&result_get, 0, sizeof (result_get));
+  result_get.type = g_strdup ("result");
+  result_get.first = first_result;
+  result_get.max = max_results;
+
+  result_get.filter = g_strdup_printf ("sort%s=%s first=%d rows=%d"
+                                       " levels=%s %s\"%s\""
+                                       " min_cvss_base=%s",
+                                       sort_order ? "" : "-reverse",
+                                       sort_field, first_result, max_results,
+                                       levels ? levels : "hmlgdf",
+                                       search_phrase_exact ? "=" : "",
+                                       search_phrase ? search_phrase : "",
+                                       min_cvss_base ? min_cvss_base : "");
+
+  init_result_get_iterator (&results, &result_get, apply_overrides, autofp,
+                            report);
+
+  get_data_reset (&result_get);
 
   /* Buffer the results, removing duplicates. */
 
@@ -26905,33 +26074,10 @@ host_summary_append (GString *host_summary_buffer, const char *host,
  * @param[in]  task        Task associated with report.
  * @param[in]  xml_file    File name.
  * @param[in]  get         GET command data.
- * @param[in]  sort_order  Whether to sort ascending or descending.
- * @param[in]  given_sort_field   Field to sort on, or NULL for "type".
- * @param[in]  result_hosts_only  Whether to show only hosts with results.
- * @param[in]  given_min_cvss_base  Minimum CVSS base of included results.  All
- *                                  results if NULL.
- * @param[in]  given_min_qod  Minimum QoD of included results.  All results
- *                            if NULL.
  * @param[in]  report_format  Format of report that will be created from XML.
- * @param[in]  given_levels   String describing threat levels (message types)
- *                            to include in count (for example, "hmlgd" for
- *                            High, Medium, Low, loG and Debug).  All levels if
- *                            NULL.
- * @param[in]  given_delta_states  String describing delta states to include in
- *                                 count (for example, "sngc" Same, New, Gone
- *                                 and Changed).  All levels if NULL.
- * @param[in]  given_apply_overrides  Whether to apply overrides.
- * @param[in]  given_search_phrase  Phrase that results must include.  All
- *                                  results if NULL or "".
- * @param[in]  autofp             Whether to apply the auto FP filter.
- * @param[in]  notes              Whether to include notes.
- * @param[in]  notes_details      If notes, Whether to include details.
- * @param[in]  overrides          Whether to include overrides.
- * @param[in]  overrides_details  If overrides, Whether to include details.
- * @param[in]  first_result       The result to start from.  The results are 0
- *                                indexed.
- * @param[in]  max_results        The maximum number of results returned.
  * @param[in]  type               Type of report, NULL, "scan" or "assets".
+ * @param[in]  notes_details      If notes, Whether to include details.
+ * @param[in]  overrides_details  If overrides, Whether to include details.
  * @param[in]  host               Host or NULL, when type "assets".
  * @param[in]  pos                Position of report from end, when type
  *                                "assets".
@@ -26945,7 +26091,6 @@ host_summary_append (GString *host_summary_buffer, const char *host,
  *                                 are 0 indexed.
  * @param[in]  host_max_results    The host maximum number of results returned.
  * @param[in]  ignore_pagination   Whether to ignore pagination data.
- * @param[in]  given_zone          Timezone.  NULL or "" for user's timezone.
  * @param[out] filter_term_return  Filter term used in report.
  * @param[out] zone_return         Actual zone used in report.
  * @param[out] host_summary    Summary of results per host.
@@ -26954,27 +26099,26 @@ host_summary_append (GString *host_summary_buffer, const char *host,
  */
 static int
 print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
-                  const get_data_t *get,
-                  int sort_order, const char *given_sort_field, int result_hosts_only,
-                  const char *given_min_cvss_base, const char *given_min_qod,
-                  report_format_t report_format,
-                  const char *given_levels, const char *given_delta_states,
-                  int given_apply_overrides, const char *given_search_phrase,
-                  int autofp, int notes, int notes_details, int overrides,
-                  int overrides_details, int first_result, int max_results,
-                  const char *type, const char *host, int pos,
+                  const get_data_t *get, report_format_t report_format,
+                  const char *type, int notes_details, int overrides_details,
+                  const char *host, int pos,
                   const char *host_search_phrase, const char *host_levels,
                   int host_first_result, int host_max_results,
-                  int ignore_pagination, const char *given_zone,
-                  gchar **filter_term_return, gchar **zone_return,
-                  gchar **host_summary)
+                  int ignore_pagination, gchar **filter_term_return,
+                  gchar **zone_return, gchar **host_summary)
 {
+  int result_hosts_only;
+  int notes, overrides;
+
+  int first_result, max_results, sort_order, autofp;
+
   FILE *out;
   gchar *clean, *term, *sort_field, *levels, *search_phrase;
   gchar *min_cvss_base, *min_qod;
   gchar *delta_states, *timestamp;
+  int min_qod_int;
   char *uuid, *tsk_uuid = NULL, *start_time, *end_time;
-  int result_count, filtered_result_count, run_status;
+  int total_result_count, filtered_result_count, run_status;
   array_t *result_hosts;
   iterator_t results, delta_results, params;
   int debugs, holes, infos, logs, warnings, false_positives;
@@ -26987,6 +26131,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   GString *host_summary_buffer;
 
   /* Init some vars to prevent warnings from older compilers. */
+  total_result_count = filtered_result_count = 0;
   orig_filtered_result_count = 0;
   orig_f_false_positives = orig_f_warnings = orig_f_logs = orig_f_infos = 0;
   orig_f_holes = orig_f_debugs = 0;
@@ -27055,22 +26200,23 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     }
   else
     {
-      sort_field = g_strdup (given_sort_field);
-      levels = g_strdup (given_levels);
-      search_phrase = g_strdup (given_search_phrase);
+      term = NULL;
+      first_result = 0;
+      max_results = -1;
+      sort_field = NULL;
+      sort_order = 1;
+      result_hosts_only = 1;
+      min_cvss_base = NULL;
+      min_qod = NULL;
+      levels = NULL;
+      delta_states = NULL;
+      search_phrase = NULL;
       search_phrase_exact = 0;
-      min_cvss_base = g_strdup (given_min_cvss_base);
-      min_qod = g_strdup (given_min_qod);
-      delta_states = g_strdup (given_delta_states);
-      apply_overrides = given_apply_overrides;
-      zone = given_zone ? g_strdup (given_zone) : NULL;
-
-      /* Build the filter term from the old style GET attributes. */
-      term = report_filter_term (sort_order, sort_field, result_hosts_only,
-                                 min_cvss_base, min_qod, levels, delta_states,
-                                 search_phrase, search_phrase_exact, autofp,
-                                 notes, overrides, first_result, max_results,
-                                 zone);
+      autofp = 0;
+      notes = 0;
+      overrides = 0;
+      apply_overrides = 0;
+      zone = NULL;
     }
 
   levels = levels ? levels : g_strdup ("hmlgd");
@@ -27193,19 +26339,12 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     {
       if (delta == 0)
         {
-          report_scan_result_count (report, NULL, NULL, 0, NULL, "0",
-                                    apply_overrides, autofp,
-                                    &result_count);
+          get_data_t all_results_get;
+          memset (&all_results_get, 0, sizeof (get_data_t));
+          total_result_count = result_count (&all_results_get, report);
+          get_data_reset (&all_results_get);
         }
-      report_scan_result_count (report,
-                                levels,
-                                search_phrase,
-                                search_phrase_exact,
-                                min_cvss_base,
-                                min_qod,
-                                apply_overrides,
-                                autofp,
-                                &filtered_result_count);
+      filtered_result_count = result_count (get, report);
       report_scan_run_status (report, &run_status);
     }
 
@@ -27642,47 +26781,31 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
   /* Results. */
 
+  if (min_qod == NULL || sscanf (min_qod, "%d", &min_qod_int) != 1)
+    min_qod_int = MIN_QOD_DEFAULT;
+
   if (delta && get->details)
     {
-      init_result_iterator (&results, report, 0,
-                            0,
-                            -1,
-                            sort_order,
-                            sort_field,
-                            levels,
-                            autofp,
-                            search_phrase,
-                            search_phrase_exact,
-                            min_cvss_base,
-                            min_qod,
-                            apply_overrides);
+      int res;
 
-      init_result_iterator (&delta_results, delta, 0,
-                            0,
-                            -1,
-                            sort_order,
-                            sort_field,
-                            levels,
-                            autofp,
-                            search_phrase,
-                            search_phrase_exact,
-                            min_cvss_base,
-                            min_qod,
-                            apply_overrides);
+      res = init_result_get_iterator (&results, get,
+                                      apply_overrides, autofp, report);
+      if (res)
+        return -1;
+
+      res = init_result_get_iterator (&delta_results, get,
+                                      apply_overrides, autofp, delta);
+      if (res)
+        return -1;
     }
   else if (get->details)
-    init_result_iterator (&results, report, 0,
-                          ignore_pagination ? 0 : first_result,
-                          ignore_pagination ? -1 : max_results,
-                          sort_order,
-                          sort_field,
-                          levels,
-                          autofp,
-                          search_phrase,
-                          search_phrase_exact,
-                          min_cvss_base,
-                          min_qod,
-                          apply_overrides);
+    {
+      int res;
+      res = init_result_get_iterator (&results, get,
+                                      apply_overrides, autofp, report);
+      if (res)
+        return -1;
+    }
 
   if (get->details)
     PRINT (out,
@@ -28422,8 +27545,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
              "<filtered>%i</filtered>"
              "</false_positive>"
              "</result_count>",
-             result_count,
-             result_count,
+             total_result_count,
+             total_result_count,
              filtered_result_count,
              debugs,
              (strchr (levels, 'd') ? f_debugs : 0),
@@ -28621,40 +27744,16 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
  * @brief Generate a report.
  *
  * @param[in]  report             Report.
+ * @param[in]  get                GET data for report.
  * @param[in]  report_format      Report format.
- * @param[in]  filt_id            ID of filter or NULL, overrides other args.
- * @param[in]  sort_order         Whether to sort ascending or descending.
- * @param[in]  sort_field         Field to sort on, or NULL for "type".
- * @param[in]  result_hosts_only  Whether to show only hosts with results.
- * @param[in]  min_cvss_base      Minimum CVSS base of included results.  All
- *                                results if NULL.
- * @param[in]  min_qod            Minimum QoD of included results.  All
- *                                results if NULL.
- * @param[in]  levels         String describing threat levels (message types)
- *                            to include in count (for example, "hmlgd" for
- *                            High, Medium, Low, loG and Debug).  All levels if
- *                            NULL.
- * @param[in] delta_states       Delta states.  Allows caller to specify the
- *                               value for the delta_states param in the filter
- *                               string.
- * @param[in]  apply_overrides    Whether to apply overrides.
- * @param[in]  search_phrase      Phrase that results must include.  All results
- *                                if NULL or "".
- * @param[in]  autofp             Whether to apply auto FP filter.
- * @param[in]  notes              Whether to include notes.
  * @param[in]  notes_details      If notes, Whether to include details.
- * @param[in]  overrides          Whether to include overrides.
  * @param[in]  overrides_details  If overrides, Whether to include details.
- * @param[in]  first_result       The result to start from.  The results are 0
- *                                indexed.
- * @param[in]  max_results        The maximum number of results returned.
  * @param[in]  type               Type of report: NULL or "scan".
  * @param[out] output_length      NULL or location for length of return.
  * @param[out] extension          NULL or location for report format extension.
  *                                Only defined on success.
  * @param[out] content_type       NULL or location for report format content
  *                                type.  Only defined on success.
- * @param[in]  zone               Timezone.  NULL or "" for user's timezone.
  * @param[out] filter_term_return  Filter term used in report.
  * @param[out] zone_return         Actual zone used in report.
  * @param[out] host_summary    Summary of results per host.
@@ -28662,17 +27761,10 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
  * @return Contents of report on success, NULL on error.
  */
 gchar *
-manage_report (report_t report, report_format_t report_format,
-               const char *filt_id, int sort_order,
-               const char* sort_field, int result_hosts_only,
-               const char *min_cvss_base, const char *min_qod,
-               const char *levels,
-               const char *delta_states, int apply_overrides,
-               const char *search_phrase, int autofp,
-               int notes, int notes_details, int overrides,
-               int overrides_details, int first_result,
-               int max_results, const char *type, gsize *output_length,
-               gchar **extension, gchar **content_type, const char *zone,
+manage_report (report_t report, const get_data_t *get,
+               const report_format_t report_format,
+               int notes_details, int overrides_details, const char *type,
+               gsize *output_length, gchar **extension, gchar **content_type,
                gchar **filter_term_return, gchar **zone_return,
                gchar **host_summary)
 {
@@ -28680,9 +27772,6 @@ manage_report (report_t report, report_format_t report_format,
   gchar *xml_file;
   char xml_dir[] = "/tmp/openvasmd_XXXXXX";
   int ret;
-  get_data_t get;
-
-  memset (&get, 0, sizeof (get));
 
   if (type && strcmp (type, "scan"))
     return NULL;
@@ -28703,18 +27792,11 @@ manage_report (report_t report, report_format_t report_format,
     }
 
   xml_file = g_strdup_printf ("%s/report.xml", xml_dir);
-  get.filt_id = filt_id ? g_strdup (filt_id) : NULL;
-  get.details = 1;
-  ret = print_report_xml (report, 0, task, xml_file, &get,
-                          sort_order, sort_field,
-                          result_hosts_only, min_cvss_base, min_qod,
-                          report_format,
-                          levels, delta_states, apply_overrides, search_phrase,
-                          autofp, notes, notes_details, overrides,
-                          overrides_details, first_result, max_results, type,
-                          NULL, 0, NULL, NULL, 0, 0, 0, zone,
+  ret = print_report_xml (report, 0, task, xml_file, get,
+                          report_format, type, notes_details, overrides_details,
+                          NULL, 0, NULL, NULL, 0, 0, /* host params */
+                          0 /* ignore_pagination */,
                           filter_term_return, zone_return, host_summary);
-  g_free (get.filt_id);
   if (ret)
     {
       g_free (xml_file);
@@ -29209,13 +28291,7 @@ manage_send_report (report_t report, report_t delta_report,
 
       ret = escalate_2 (alert, task, report, EVENT_TASK_RUN_STATUS_CHANGED,
                         (void*) TASK_STATUS_DONE, method, condition,
-                        /* Report filtering. */
-                        sort_order, sort_field, result_hosts_only,
-                        min_cvss_base, min_qod, levels, delta_states,
-                        apply_overrides, search_phrase, autofp,
-                        notes, notes_details, overrides,
-                        overrides_details, first_result, max_results,
-                        zone);
+                        get, notes_details, overrides_details);
       if (ret == -3)
         return -4;
       if (ret == -1)
@@ -29238,14 +28314,11 @@ manage_send_report (report_t report, report_t delta_report,
     }
 
   xml_file = g_strdup_printf ("%s/report.xml", xml_dir);
-  ret = print_report_xml (report, delta_report, task, xml_file, get, sort_order,
-                          sort_field, result_hosts_only, min_cvss_base, min_qod,
-                          report_format, levels, delta_states, apply_overrides,
-                          search_phrase, autofp, notes, notes_details,
-                          overrides, overrides_details, first_result,
-                          max_results, type, host, pos, host_search_phrase,
+  ret = print_report_xml (report, delta_report, task, xml_file, get,
+                          report_format, type, notes_details, overrides_details,
+                          host, pos, host_search_phrase,
                           host_levels, host_first_result, host_max_results,
-                          ignore_pagination, zone, NULL, NULL, NULL);
+                          ignore_pagination, NULL, NULL, NULL);
   if (ret)
     {
       g_free (xml_file);

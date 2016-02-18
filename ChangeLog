@@ -1,3 +1,48 @@
+2016-02-18  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Make GET_REPORTS command use the normal powerfilter and remove some
+	redundant command attributes and now unused functions.
+
+	* src/manage_sql.c (init_get_iterator2): Add parameter ignore_id.
+	Allow ignore_pagination for types "report" and "result".
+	(init_get_iterator): Add ignore_id parameter value.
+	(escalate_2): Replace parameters covered by filter keywords with a get
+	data struct.
+	(escalate_1): Update params for escalate_2.
+	(init_task_iterator, task_upload_progress, init_report_iterator): Give
+	new params for init_get_iterator2 and result_count.
+	(where_levels_type): Remove. No longer used.
+	(where_cvss_base): Change return type to gchar*.
+	(where_search_phrase): Remove. No longer used.
+	(results_extra_where): New function.
+	(init_result_get_iterator): Replace params autofp, override, min_qod
+	and dynamic_severity with given_apply_overrides, given_autofp and
+	report. Get options from filter by default using given_apply_overrides
+	and given_autofp only as fallback.
+	(result_count): Remove params autofp, override, min_qod,
+	dynamic_severity and add report instead. Get special filter options
+	directly from filter or from report param.
+	(init_result_iterator, column_auto_type, report_scan_result_count)
+	(report_filter_term): Remove. No longer used.
+	(print_report_port_xml): Give new init_result_get_iterator params.
+	(print_report_xml, manage_report): Remove params where values can be
+	gotten from the filter in get instead.
+	
+	* src/manage.h (get_data_reset): New function prototype.
+	(result_count, init_result_get_iterator): Update parameters.
+	(init_result_iterator): Remove.
+
+	* src/omp.c (get_data_reset): Make function non-static.
+	(buffer_notes_xml, buffer_overrides_xml): Use init_result_get_iterator
+	to get results.
+	(omp_xml_handle_end_element [CLIENT_GET_RESULTS]): Do not get filter
+	keywords apply_overrides, autofp and min_qod here. Do not get setting
+	dynamic_severity here. Update init_result_get_iterator and result_count
+	parameters.
+
+	* src/schema_formats/XML/OMP.xml.in (get_reports): Update command
+	attributes and add change note.
+
 2016-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Use separate flags for the SCAP and CERT alert checks, otherwise changes

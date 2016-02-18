@@ -14208,71 +14208,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
-        <name>first_result</name>
-        <summary>First result to get</summary>
-        <type>integer</type>
-      </attrib>
-      <attrib>
-        <name>max_results</name>
-        <summary>Maximum number of results to get</summary>
-        <type>integer</type>
-      </attrib>
-      <attrib>
-        <name>sort_order</name>
-        <type>sort_order</type>
-      </attrib>
-      <attrib>
-        <name>sort_field</name>
-        <type>text</type>
-      </attrib>
-      <attrib>
-        <name>apply_overrides</name>
-        <summary>Whether to apply overrides to the results</summary>
-        <type>boolean</type>
-      </attrib>
-      <attrib>
-        <name>levels</name>
-        <summary>Which threat levels to include in the report</summary>
-        <type>levels</type>
-      </attrib>
-      <attrib>
-        <name>search_phrase</name>
-        <summary>A string that all results in the report must contain</summary>
-        <type>text</type>
-      </attrib>
-      <attrib>
-        <name>min_cvss_base</name>
-        <summary>Minimum CVSS base of results in report</summary>
-        <type>integer</type>
-      </attrib>
-      <attrib>
-        <name>min_qod</name>
-        <summary>Minimum QoD of results in report</summary>
-        <type>integer</type>
-      </attrib>
-      <attrib>
-        <name>notes</name>
-        <summary>Whether to include notes in the report</summary>
-        <type>boolean</type>
-      </attrib>
-      <attrib>
         <name>note_details</name>
         <summary>If notes are included, whether to include note details</summary>
         <type>boolean</type>
       </attrib>
       <attrib>
-        <name>overrides</name>
-        <summary>Whether to include overrides in the report</summary>
-        <type>boolean</type>
-      </attrib>
-      <attrib>
         <name>override_details</name>
         <summary>If overrides are included, whether to include override details</summary>
-        <type>boolean</type>
-      </attrib>
-      <attrib>
-        <name>result_hosts_only</name>
-        <summary>Whether to include only those hosts that have results</summary>
         <type>boolean</type>
       </attrib>
       <attrib>
@@ -14317,44 +14259,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
-        <name>delta_states</name>
-        <summary>
-          Letters for results to include: c)hanged, g)one, n)ew, s)ame
-        </summary>
-        <pattern>xsd:token { pattern = "c?g?n?s?" }</pattern>
-      </attrib>
-      <attrib>
-        <name>autofp</name>
-        <summary>
-          Whether to trust vendor security updates.  1 full match, 2 partial
-        </summary>
-        <type>
-          <alts>
-            <alt>0</alt>
-            <alt>1</alt>
-            <alt>2</alt>
-          </alts>
-        </type>
-      </attrib>
-      <attrib>
-        <name>result_hosts_only</name>
-        <summary>
-          Whether to include only hosts with results
-        </summary>
-        <type>boolean</type>
-      </attrib>
-      <attrib>
         <name>ignore_pagination</name>
         <summary>
           Whether to ignore info used to split the report into pages
           like the filter terms "first" and "rows".
         </summary>
         <type>boolean</type>
-      </attrib>
-      <attrib>
-        <name>timezone</name>
-        <summary>The timezone to use for dates in the report</summary>
-        <type>timezone</type>
       </attrib>
     </pattern>
     <response>
@@ -23457,6 +23367,21 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </response>
     </example>
   </command>
+  <change>
+    <command>GET_REPORTS</command>
+    <summary>Redundant filtering attributes removed</summary>
+    <description>
+      <p>
+        The command attributes "first_result", "max_results", "sort_order",
+        "sort_field", "apply_overrides", "levels", "search_phrase",
+        "min_cvss_base", "min_qod", "notes", "overrides", "delta_states",
+        "autofp", "result_hosts_only" and "timezone" were removed.
+        Equivalent functionality is available using filters
+        (with the filter and filt_id attributes).
+      </p>
+    </description>
+    <version>7.0</version>
+  </change>
   <change>
     <command>GET_CREDENTIALS</command>
     <summary>Credential types renamed</summary>

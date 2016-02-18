@@ -266,6 +266,9 @@ typedef struct
   int minimal;         ///< Whether to respond with minimal information.
 } get_data_t;
 
+void
+get_data_reset (get_data_t*);
+
 resource_t
 get_iterator_resource (iterator_t*);
 
@@ -1250,15 +1253,10 @@ const char*
 report_iterator_uuid (iterator_t*);
 
 int
-result_count (const get_data_t *, int, int, int, int);
+result_count (const get_data_t *, report_t);
 
 int
-init_result_get_iterator (iterator_t*, const get_data_t *, int, int, int, int);
-
-void
-init_result_iterator (iterator_t*, task_t, result_t, int, int, int,
-                      const char *, const char *, int, const char *, int,
-                      const char *, const char *, int);
+init_result_get_iterator (iterator_t*, const get_data_t *, int, int, report_t);
 
 gboolean
 next_report (iterator_t*, report_t*);
@@ -1366,11 +1364,9 @@ int
 report_progress (report_t, task_t, gchar **);
 
 gchar *
-manage_report (report_t, report_format_t, const char *, int, const char*, int,
-               const char *, const char *, const char *, const char *, int,
-               const char *, int, int, int, int, int, int, int, const char *,
-               gsize *, gchar **, gchar **, const char *, gchar **, gchar **,
-               gchar **);
+manage_report (report_t, const get_data_t *, report_format_t,
+               int, int, const char *,
+               gsize *, gchar **, gchar **, gchar **, gchar **, gchar **);
 
 int
 manage_send_report (report_t, report_t, report_format_t, const get_data_t *,
