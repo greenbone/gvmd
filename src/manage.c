@@ -240,6 +240,21 @@ type_name (const char* type)
   return "ERROR";
 }
 
+/**
+ * @brief Check if a type is a SCAP type.
+ *
+ * @param[in]  type  Resource type.
+ *
+ * @return Name of type.
+ */
+int
+type_is_scap (const char* type)
+{
+  return (strcasecmp (type, "cpe") == 0)
+         || (strcasecmp (type, "cve") == 0)
+         || (strcasecmp (type, "ovaldef") == 0);
+}
+
 
 /* Severity related functions. */
 

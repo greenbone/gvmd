@@ -69,6 +69,9 @@ const char *
 sql_schema ();
 
 const char *
+sql_greatest ();
+
+const char *
 sql_select_limit (int);
 
 const char *

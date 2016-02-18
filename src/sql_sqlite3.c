@@ -85,6 +85,17 @@ sql_schema ()
 }
 
 /**
+ * @brief Get keyword for "greatest" SQL function.
+ *
+ * @return Keyword.
+ */
+const char *
+sql_greatest ()
+{
+  return "max";
+}
+
+/**
  * @brief Setup a LIMIT argument.
  *
  * @param[in]  max  Max.

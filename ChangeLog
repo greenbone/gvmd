@@ -1,5 +1,36 @@
 2016-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Use separate flags for the SCAP and CERT alert checks, otherwise changes
+	from a sync in one may be missed if the sync comes after the other is
+	checked.  Also use the highest creation/modification time instead of
+	the current time for the timestamp, because with the current time a sync
+	may introduce changes that happened before the timestamp.
+
+	* src/manage.c (type_is_scap): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/manage_sql.c (scap_check_time, cert_check_time): New functions.
+	(secinfo_check_time): Remove.
+	(manage_check_alerts): Separate SCAP and CERT checks.  Use max creation
+	or modification time for flag.
+	(alert_subject_print, alert_message_print): Get SCAP and CERT check
+	times separately.
+	(check_for_new_secinfo): Remove.
+	(check_for_new_scap, check_for_new_cert): New functions.  From
+	check_for_new_secinfo.
+	(new_cves_list, new_cpes_list, new_cert_bunds_list, new_dfn_certs_list)
+	(new_oval_defs_list): Use SCAP/CERT flag.
+	(check_for_updated_secinfo): Remove.
+	(check_for_updated_scap, check_for_updated_cert): New functions.
+	From check_for_updated_secinfo.
+
+	* src/sql_sqlite3.c, src/sql_pg.c (sql_greatest): New function.
+
+	* src/sql.h: Add header accordingly.
+
+2016-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Pass report with task when running an alert, instead of assuming that
 	the alert applies to the most recent "Done" report.
 

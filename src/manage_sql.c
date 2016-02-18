@@ -292,10 +292,16 @@ static gchar *
 new_secinfo_list (event_t, const void*, alert_t, int*);
 
 static void
-check_for_new_secinfo ();
+check_for_new_scap ();
 
 static void
-check_for_updated_secinfo ();
+check_for_new_cert ();
+
+static void
+check_for_updated_scap ();
+
+static void
+check_for_updated_cert ();
 
 
 /* Variables. */
@@ -1450,19 +1456,38 @@ nvts_check_time ()
 }
 
 /**
+ * @brief Get last time SCAP SecInfo alerts were checked.
+ *
+ * @param[in]  nvts_list    List of nvti_t to insert.
+ * @param[in]  mode         -1 updating, -2 rebuilding.
+ */
+static int
+scap_check_time ()
+{
+  return sql_int ("SELECT"
+                  " CASE WHEN EXISTS (SELECT * FROM meta"
+                  "                   WHERE name = 'scap_check_time')"
+                  "      THEN CAST ((SELECT value FROM meta"
+                  "                  WHERE name = 'scap_check_time')"
+                  "                 AS INTEGER)"
+                  "      ELSE 0"
+                  "      END;");
+}
+
+/**
  * @brief Get last time SecInfo alerts were checked.
  *
  * @param[in]  nvts_list    List of nvti_t to insert.
  * @param[in]  mode         -1 updating, -2 rebuilding.
  */
 static int
-secinfo_check_time ()
+cert_check_time ()
 {
   return sql_int ("SELECT"
                   " CASE WHEN EXISTS (SELECT * FROM meta"
-                  "                   WHERE name = 'secinfo_check_time')"
+                  "                   WHERE name = 'cert_check_time')"
                   "      THEN CAST ((SELECT value FROM meta"
-                  "                  WHERE name = 'secinfo_check_time')"
+                  "                  WHERE name = 'cert_check_time')"
                   "                 AS INTEGER)"
                   "      ELSE 0"
                   "      END;");
@@ -6296,7 +6321,7 @@ manage_check_alerts (GSList *log_config, const gchar *database,
                      const gchar *name, const gchar *role_name)
 {
   const gchar *db;
-  int ret;
+  int ret, max_time;
 
   if (openvas_auth_init ())
     return -1;
@@ -6313,20 +6338,61 @@ manage_check_alerts (GSList *log_config, const gchar *database,
   /* Setup a dummy user, so that create_user will work. */
   current_credentials.uuid = "";
 
+  max_time
+   = sql_int ("SELECT %s"
+              "        ((SELECT max (modification_time) FROM scap.cves),"
+              "         (SELECT max (modification_time) FROM scap.cpes),"
+              "         (SELECT max (modification_time) FROM scap.ovaldefs),"
+              "         (SELECT max (creation_time) FROM scap.cves),"
+              "         (SELECT max (creation_time) FROM scap.cpes),"
+              "         (SELECT max (creation_time) FROM scap.ovaldefs));",
+              sql_greatest ());
+
   if (sql_int ("SELECT NOT EXISTS (SELECT * FROM meta"
-               "                   WHERE name = 'secinfo_check_time')"))
+               "                   WHERE name = 'scap_check_time')"))
     sql ("INSERT INTO meta (name, value)"
-         " VALUES ('secinfo_check_time', m_now ());");
+         " VALUES ('scap_check_time', %i);",
+         max_time);
   else if (sql_int ("SELECT value = '0' FROM meta"
-                    " WHERE name = 'secinfo_check_time';"))
-    sql ("UPDATE meta SET value = m_now ()"
-         " WHERE name = 'secinfo_check_time';");
+                    " WHERE name = 'scap_check_time';"))
+    sql ("UPDATE meta SET value = %i"
+         " WHERE name = 'scap_check_time';",
+         max_time);
   else
     {
-      check_for_new_secinfo ();
-      check_for_updated_secinfo ();
-      sql ("UPDATE meta SET value = m_now ()"
-           " WHERE name = 'secinfo_check_time';");
+      check_for_new_scap ();
+      check_for_updated_scap ();
+      sql ("UPDATE meta SET value = %i"
+           " WHERE name = 'scap_check_time';",
+           max_time);
+    }
+
+  max_time
+   = sql_int ("SELECT"
+              " %s"
+              "  ((SELECT max (modification_time) FROM cert.cert_bund_advs),"
+              "   (SELECT max (modification_time) FROM cert.dfn_cert_advs),"
+              "   (SELECT max (creation_time) FROM cert.cert_bund_advs),"
+              "   (SELECT max (creation_time) FROM cert.dfn_cert_advs));",
+              sql_greatest ());
+
+  if (sql_int ("SELECT NOT EXISTS (SELECT * FROM meta"
+               "                   WHERE name = 'cert_check_time')"))
+    sql ("INSERT INTO meta (name, value)"
+         " VALUES ('cert_check_time', %i);",
+         max_time);
+  else if (sql_int ("SELECT value = '0' FROM meta"
+                    " WHERE name = 'cert_check_time';"))
+    sql ("UPDATE meta SET value = %i"
+         " WHERE name = 'cert_check_time';",
+         max_time);
+  else
+    {
+      check_for_new_cert ();
+      check_for_updated_cert ();
+      sql ("UPDATE meta SET value = %i"
+           " WHERE name = 'cert_check_time';",
+           max_time);
     }
 
   current_credentials.uuid = NULL;
@@ -9361,8 +9427,10 @@ alert_subject_print (const gchar *subject, event_t event,
 
                   if (event_data && (strcasecmp (event_data, "nvt") == 0))
                     date = nvts_check_time ();
+                  else if (type_is_scap (event_data))
+                    date = scap_check_time ();
                   else
-                    date = secinfo_check_time ();
+                    date = cert_check_time ();
                   tm = localtime (&date);
                   if (strftime (time_string, 98, "%F", tm) == 0)
                     break;
@@ -9476,8 +9544,10 @@ alert_message_print (const gchar *message, event_t event,
 
                   if (event_data && (strcasecmp (event_data, "nvt") == 0))
                     date = nvts_check_time ();
+                  else if (type_is_scap (event_data))
+                    date = scap_check_time ();
                   else
-                    date = secinfo_check_time ();
+                    date = cert_check_time ();
                   tm = localtime (&date);
                   if (strftime (time_string, 98, "%F", tm) == 0)
                     break;
@@ -36150,10 +36220,10 @@ check_for_new_nvts ()
 }
 
 /**
- * @brief Check for new SecInfo after an update.
+ * @brief Check for new SCAP SecInfo after an update.
  */
 static void
-check_for_new_secinfo ()
+check_for_new_scap ()
 {
   if (manage_scap_loaded ())
     {
@@ -36162,7 +36232,7 @@ check_for_new_secinfo ()
                    "  WHERE creation_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
-                   "                                 = 'secinfo_check_time')"
+                   "                                 = 'scap_check_time')"
                    "                          AS INTEGER),"
                    "                    0));"))
         event (0, 0, EVENT_NEW_SECINFO, "cve");
@@ -36172,7 +36242,7 @@ check_for_new_secinfo ()
                    "  WHERE creation_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
-                   "                                 = 'secinfo_check_time')"
+                   "                                 = 'scap_check_time')"
                    "                          AS INTEGER),"
                    "                    0));"))
         event (0, 0, EVENT_NEW_SECINFO, "cpe");
@@ -36182,12 +36252,19 @@ check_for_new_secinfo ()
                    "  WHERE creation_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
-                   "                                 = 'secinfo_check_time')"
+                   "                                 = 'scap_check_time')"
                    "                          AS INTEGER),"
                    "                    0));"))
         event (0, 0, EVENT_NEW_SECINFO, "ovaldef");
     }
+}
 
+/**
+ * @brief Check for new CERT SecInfo after an update.
+ */
+static void
+check_for_new_cert ()
+{
   if (manage_cert_loaded ())
     {
       if (sql_int ("SELECT EXISTS"
@@ -36195,7 +36272,7 @@ check_for_new_secinfo ()
                    "  WHERE creation_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
-                   "                                 = 'secinfo_check_time')"
+                   "                                 = 'cert_check_time')"
                    "                          AS INTEGER),"
                    "                    0));"))
         event (0, 0, EVENT_NEW_SECINFO, "cert_bund_adv");
@@ -36205,7 +36282,7 @@ check_for_new_secinfo ()
                    "  WHERE creation_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
-                   "                                 = 'secinfo_check_time')"
+                   "                                 = 'cert_check_time')"
                    "                          AS INTEGER),"
                    "                    0));"))
         event (0, 0, EVENT_NEW_SECINFO, "dfn_cert_adv");
@@ -36381,7 +36458,7 @@ new_cves_list (event_t event, const void* event_data, alert_t alert,
                    " WHERE creation_time"
                    "       > coalesce (CAST ((SELECT value FROM meta"
                    "                          WHERE name"
-                   "                                = 'secinfo_check_time')"
+                   "                                = 'scap_check_time')"
                    "                         AS INTEGER),"
                    "                   0)"
                    " ORDER BY creation_time DESC;");
@@ -36391,7 +36468,7 @@ new_cves_list (event_t event, const void* event_data, alert_t alert,
                    " WHERE modification_time"
                    "       > coalesce (CAST ((SELECT value FROM meta"
                    "                          WHERE name"
-                   "                                = 'secinfo_check_time')"
+                   "                                = 'scap_check_time')"
                    "                         AS INTEGER),"
                    "                   0)"
                    " ORDER BY modification_time DESC;");
@@ -36465,7 +36542,7 @@ new_cpes_list (event_t event, const void* event_data, alert_t alert,
                    " WHERE creation_time"
                    "       > coalesce (CAST ((SELECT value FROM meta"
                    "                          WHERE name"
-                   "                                = 'secinfo_check_time')"
+                   "                                = 'scap_check_time')"
                    "                         AS INTEGER),"
                    "                   0)"
                    " ORDER BY creation_time DESC;");
@@ -36475,7 +36552,7 @@ new_cpes_list (event_t event, const void* event_data, alert_t alert,
                    " WHERE modification_time"
                    "       > coalesce (CAST ((SELECT value FROM meta"
                    "                          WHERE name"
-                   "                                = 'secinfo_check_time')"
+                   "                                = 'scap_check_time')"
                    "                         AS INTEGER),"
                    "                   0)"
                    " ORDER BY modification_time DESC;");
@@ -36548,7 +36625,7 @@ new_cert_bunds_list (event_t event, const void* event_data, alert_t alert,
                    " WHERE creation_time"
                    "       > coalesce (CAST ((SELECT value FROM meta"
                    "                          WHERE name"
-                   "                                = 'secinfo_check_time')"
+                   "                                = 'cert_check_time')"
                    "                         AS INTEGER),"
                    "                   0)"
                    " ORDER BY creation_time DESC;");
@@ -36558,7 +36635,7 @@ new_cert_bunds_list (event_t event, const void* event_data, alert_t alert,
                    " WHERE modification_time"
                    "       > coalesce (CAST ((SELECT value FROM meta"
                    "                          WHERE name"
-                   "                                = 'secinfo_check_time')"
+                   "                                = 'cert_check_time')"
                    "                         AS INTEGER),"
                    "                   0)"
                    " ORDER BY modification_time DESC;");
@@ -36628,7 +36705,7 @@ new_dfn_certs_list (event_t event, const void* event_data, alert_t alert,
                    " WHERE creation_time"
                    "       > coalesce (CAST ((SELECT value FROM meta"
                    "                          WHERE name"
-                   "                                = 'secinfo_check_time')"
+                   "                                = 'cert_check_time')"
                    "                         AS INTEGER),"
                    "                   0)"
                    " ORDER BY creation_time DESC;");
@@ -36638,7 +36715,7 @@ new_dfn_certs_list (event_t event, const void* event_data, alert_t alert,
                    " WHERE modification_time"
                    "       > coalesce (CAST ((SELECT value FROM meta"
                    "                          WHERE name"
-                   "                                = 'secinfo_check_time')"
+                   "                                = 'cert_check_time')"
                    "                         AS INTEGER),"
                    "                   0)"
                    " ORDER BY modification_time DESC;");
@@ -36708,7 +36785,7 @@ new_oval_defs_list (event_t event, const void* event_data, alert_t alert,
                    " WHERE creation_time"
                    "       > coalesce (CAST ((SELECT value FROM meta"
                    "                          WHERE name"
-                   "                                = 'secinfo_check_time')"
+                   "                                = 'scap_check_time')"
                    "                         AS INTEGER),"
                    "                   0)"
                    " ORDER BY creation_time DESC;");
@@ -36718,7 +36795,7 @@ new_oval_defs_list (event_t event, const void* event_data, alert_t alert,
                    " WHERE modification_time"
                    "       > coalesce (CAST ((SELECT value FROM meta"
                    "                          WHERE name"
-                   "                                = 'secinfo_check_time')"
+                   "                                = 'scap_check_time')"
                    "                         AS INTEGER),"
                    "                   0)"
                    " ORDER BY modification_time DESC;");
@@ -36874,10 +36951,10 @@ check_for_updated_nvts ()
 }
 
 /**
- * @brief Check for updated SecInfo after an update.
+ * @brief Check for updated SCAP SecInfo after an update.
  */
 static void
-check_for_updated_secinfo ()
+check_for_updated_scap ()
 {
   if (manage_scap_loaded ())
     {
@@ -36886,7 +36963,7 @@ check_for_updated_secinfo ()
                    "  WHERE modification_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
-                   "                                 = 'secinfo_check_time')"
+                   "                                 = 'scap_check_time')"
                    "                          AS INTEGER),"
                    "                    0));"))
         event (0, 0, EVENT_UPDATED_SECINFO, "cve");
@@ -36896,7 +36973,7 @@ check_for_updated_secinfo ()
                    "  WHERE modification_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
-                   "                                 = 'secinfo_check_time')"
+                   "                                 = 'scap_check_time')"
                    "                          AS INTEGER),"
                    "                    0));"))
         event (0, 0, EVENT_UPDATED_SECINFO, "cpe");
@@ -36906,12 +36983,19 @@ check_for_updated_secinfo ()
                    "  WHERE modification_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
-                   "                                 = 'secinfo_check_time')"
+                   "                                 = 'scap_check_time')"
                    "                          AS INTEGER),"
                    "                    0));"))
         event (0, 0, EVENT_UPDATED_SECINFO, "ovaldef");
     }
+}
 
+/**
+ * @brief Check for updated CERT SecInfo after an update.
+ */
+static void
+check_for_updated_cert ()
+{
   if (manage_cert_loaded ())
     {
       if (sql_int ("SELECT EXISTS"
@@ -36919,7 +37003,7 @@ check_for_updated_secinfo ()
                    "  WHERE modification_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
-                   "                                 = 'secinfo_check_time')"
+                   "                                 = 'cert_check_time')"
                    "                          AS INTEGER),"
                    "                    0));"))
         event (0, 0, EVENT_UPDATED_SECINFO, "cert_bund_adv");
@@ -36929,7 +37013,7 @@ check_for_updated_secinfo ()
                    "  WHERE modification_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
-                   "                                 = 'secinfo_check_time')"
+                   "                                 = 'cert_check_time')"
                    "                          AS INTEGER),"
                    "                    0));"))
         event (0, 0, EVENT_UPDATED_SECINFO, "dfn_cert_adv");

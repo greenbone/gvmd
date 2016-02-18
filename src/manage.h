@@ -311,6 +311,9 @@ type_name_plural (const char*);
 const char *
 type_name (const char*);
 
+int
+type_is_scap (const char*);
+
 
 /* Events and Alerts. */
 
