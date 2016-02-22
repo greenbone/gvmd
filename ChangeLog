@@ -1,3 +1,9 @@
+2016-02-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (new_cves_list, new_cpes_list, new_cert_bunds_list)
+	(new_dfn_certs_list, new_oval_defs_list, check_for_updated_scap)
+	(check_for_updated_cert): Do not include new items with updated items.
+
 2016-02-18  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Make GET_REPORTS command use the normal powerfilter and remove some
@@ -27,7 +33,7 @@
 	(print_report_port_xml): Give new init_result_get_iterator params.
 	(print_report_xml, manage_report): Remove params where values can be
 	gotten from the filter in get instead.
-	
+
 	* src/manage.h (get_data_reset): New function prototype.
 	(result_count, init_result_get_iterator): Update parameters.
 	(init_result_iterator): Remove.
