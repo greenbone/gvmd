@@ -1,3 +1,11 @@
+2016-02-22  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	Backport r23464.
+
+	* src/manage.c (handle_osp_scan): Add error result for erroneous scan
+	progress value.
+	(fork_osp_scan_handler): Fix return value check.
+
 2016-02-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r24371.

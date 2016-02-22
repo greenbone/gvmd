@@ -3021,6 +3021,10 @@ handle_osp_scan (task_t task, report_t report, const char *report_id)
                                           key_pub, key_priv, 0, &report_xml);
       if (progress == -1)
         {
+          result_t result = make_osp_result
+                             (task, "", "", threat_message_type ("Error"),
+                              "Erroneous scan progress value", "", "");
+          report_add_result (report, result);
           rc = -1;
           break;
         }
@@ -3189,7 +3193,7 @@ fork_osp_scan_handler (task_t task, target_t target)
       set_task_run_status (task, TASK_STATUS_DONE);
       set_report_scan_run_status (report, TASK_STATUS_DONE);
     }
-  else if (rc == 1)
+  else if (rc == -1)
     {
       set_task_run_status (task, TASK_STATUS_STOPPED);
       set_report_scan_run_status (report, TASK_STATUS_STOPPED);
