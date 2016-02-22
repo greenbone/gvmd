@@ -3502,7 +3502,7 @@ fork_osp_scan_handler (task_t task, target_t target)
       set_task_run_status (task, TASK_STATUS_DONE);
       set_report_scan_run_status (current_report, TASK_STATUS_DONE);
     }
-  else if (rc == -1)
+  else if (rc == -1 || rc == -2)
     {
       set_task_run_status (task, TASK_STATUS_STOPPED);
       set_report_scan_run_status (current_report, TASK_STATUS_STOPPED);

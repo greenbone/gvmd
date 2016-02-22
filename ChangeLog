@@ -1,3 +1,8 @@
+2016-02-22  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (fork_osp_scan_handler): Handle stopped scan return code
+	correctly.
+
 2016-02-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (new_cves_list, new_cpes_list, new_cert_bunds_list)
