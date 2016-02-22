@@ -3398,6 +3398,10 @@ split_filter (const gchar*);
 
 /* Filters. */
 
+int
+buffer_get_filter_xml (GString *, const char*, const get_data_t*, const char*,
+                       const char*);
+
 gboolean
 find_filter (const char*, filter_t*);
 

@@ -5507,32 +5507,10 @@ get_reports
        attribute format_id { uuid }?
        & # ID of alert to pass generated report to.
        attribute alert_id { uuid }?
-       & # First result to get.
-       attribute first_result { integer }?
-       & # Maximum number of results to get.
-       attribute max_results { integer }?
-       & attribute sort_order { sort_order }?
-       & attribute sort_field { text }?
-       & # Whether to apply overrides to the results.
-       attribute apply_overrides { boolean }?
-       & # Which threat levels to include in the report.
-       attribute levels { levels }?
-       & # A string that all results in the report must contain.
-       attribute search_phrase { text }?
-       & # Minimum CVSS base of results in report.
-       attribute min_cvss_base { integer }?
-       & # Minimum QoD of results in report.
-       attribute min_qod { integer }?
-       & # Whether to include notes in the report.
-       attribute notes { boolean }?
        & # If notes are included, whether to include note details.
        attribute note_details { boolean }?
-       & # Whether to include overrides in the report.
-       attribute overrides { boolean }?
        & # If overrides are included, whether to include override details.
        attribute override_details { boolean }?
-       & # Whether to include only those hosts that have results.
-       attribute result_hosts_only { boolean }?
        & # For "assets" or "prognostic", single host to retrieve.
        attribute host { text }?
        & # For "assets" or "prognostic", first host to retrieve.
@@ -5547,16 +5525,8 @@ get_reports
        attribute pos { integer }?
        & # ID of second report, for producing a delta report.
        attribute delta_report_id { uuid }?
-       & # Letters for results to include: c)hanged, g)one, n)ew, s)ame.
-       attribute delta_states {  }?
-       & # Whether to trust vendor security updates. 1 full match, 2 partial.
-       attribute autofp { xsd:token { pattern = "0|1|2" } }?
-       & # Whether to include only hosts with results.
-       attribute result_hosts_only { boolean }?
        & # Whether to ignore info used to split the report into pages like the filter terms "first" and "rows"..
        attribute ignore_pagination { boolean }?
-       & # The timezone to use for dates in the report.
-       attribute timezone { timezone }?
      }
 
 ## Command get_report_formats
@@ -13470,6 +13440,9 @@ get_reports_response_filters
        attribute id { uuid }
        & get_reports_response_filters_term
        & get_reports_response_filters_name?
+       & get_reports_response_filters_filter*
+       & get_reports_response_filters_host?
+       & get_reports_response_filters_delta?
        & get_reports_response_filters_keywords
      }
 
@@ -13485,6 +13458,66 @@ get_reports_response_filters_name
  = element name
      {
        text
+     }
+
+# A severity level that is included in the report.
+get_reports_response_filters_filter
+ = element filter
+     {
+       xsd:token { pattern = "High|Medium|Low|Log|Debug" }
+     }
+
+# Single host selected for prognostic or delta report.
+get_reports_response_filters_host
+ = element host
+     {
+       get_reports_response_filters_host_ip
+     }
+
+# IP address of the host.
+get_reports_response_filters_host_ip
+ = element ip
+     {
+       text
+     }
+
+# Delta states.
+get_reports_response_filters_delta
+ = element delta
+     {
+       text
+       & get_reports_response_filters_delta_changed
+       & get_reports_response_filters_delta_gone
+       & get_reports_response_filters_delta_new
+       & get_reports_response_filters_delta_same
+     }
+
+# Whether changed results are included.
+get_reports_response_filters_delta_changed
+ = element changed
+     {
+       boolean
+     }
+
+# Whether results that have vanished are included.
+get_reports_response_filters_delta_gone
+ = element gone
+     {
+       boolean
+     }
+
+# Whether new results are included.
+get_reports_response_filters_delta_new
+ = element new
+     {
+       boolean
+     }
+
+# Whether results that are equal are included.
+get_reports_response_filters_delta_same
+ = element same
+     {
+       boolean
      }
 
 # Filter broken down into keywords.

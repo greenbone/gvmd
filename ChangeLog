@@ -1,3 +1,26 @@
+2016-02-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Make the filter keywords output in the get_reports response more
+	consistent with other OMP get_... commands.  Update the OMP
+	documentation accordingly.
+
+	* src/omp.c (buffer_get_filter_xml): Add param extra_xml for inserting
+	additional XML.
+	(send_get_end, omp_xml_handle_end_element [CLIENT_GET_AGGREGATES]):
+	Update buffer_get_filter_xml parameters.
+
+	* src/manage_sql.c (print_report_xml): Use common syntax for most
+	keywords in filters element and add special elements only for
+	individual severity levels and delta states and the host for prognostic
+	reports.
+
+	* src/manage.h (buffer_get_filter_xml): Add parameter.
+
+	* src/schema_formats/XML/OMP.xml.in (get_reports): Update filter syntax
+	in response, update example accordingly and add change entry.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
 2016-02-22  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (fork_osp_scan_handler): Handle stopped scan return code

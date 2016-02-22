@@ -6317,7 +6317,8 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
  */
 int
 buffer_get_filter_xml (GString *msg, const char* type,
-                       get_data_t *get, const char* filter_term)
+                       const get_data_t *get, const char* filter_term,
+                       const char *extra_xml)
 {
   keyword_t **point;
   array_t *split;
@@ -6336,6 +6337,9 @@ buffer_get_filter_xml (GString *msg, const char* type,
     buffer_xml_append_printf (msg,
                               "<name>%s</name>",
                               filter_name (filter));
+
+  if (extra_xml)
+    g_string_append (msg, extra_xml);
 
   buffer_xml_append_printf (msg,
                             "<keywords>");
@@ -6441,7 +6445,7 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
 
   msg = g_string_new ("");
 
-  buffer_get_filter_xml (msg, type, get, filter);
+  buffer_get_filter_xml (msg, type, get, filter, NULL);
 
   buffer_xml_append_printf (msg,
                             "<sort>"
@@ -18632,7 +18636,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           if (strcmp (type, "info") != 0)
             g_string_append (type_many, "s");
 
-          buffer_get_filter_xml (xml, type, get, filter);
+          buffer_get_filter_xml (xml, type, get, filter, NULL);
 
           g_string_append (xml, "</get_aggregates_response>");
 

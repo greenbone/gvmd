@@ -23409,72 +23409,14 @@ get_preferences_response_preference_default
           ID of alert to pass generated report to.
           </li>
 <li>
-          @<b>first_result</b>
-          (<a href="#type_integer">integer</a>)
-          First result to get.
-          </li>
-<li>
-          @<b>max_results</b>
-          (<a href="#type_integer">integer</a>)
-          Maximum number of results to get.
-          </li>
-<li>
-          @<b>sort_order</b>
-          (<a href="#type_sort_order">sort_order</a>)
-          </li>
-<li>
-          @<b>sort_field</b>
-          (text)
-          </li>
-<li>
-          @<b>apply_overrides</b>
-          (<a href="#type_boolean">boolean</a>)
-          Whether to apply overrides to the results.
-          </li>
-<li>
-          @<b>levels</b>
-          (<a href="#type_levels">levels</a>)
-          Which threat levels to include in the report.
-          </li>
-<li>
-          @<b>search_phrase</b>
-          (text)
-          A string that all results in the report must contain.
-          </li>
-<li>
-          @<b>min_cvss_base</b>
-          (<a href="#type_integer">integer</a>)
-          Minimum CVSS base of results in report.
-          </li>
-<li>
-          @<b>min_qod</b>
-          (<a href="#type_integer">integer</a>)
-          Minimum QoD of results in report.
-          </li>
-<li>
-          @<b>notes</b>
-          (<a href="#type_boolean">boolean</a>)
-          Whether to include notes in the report.
-          </li>
-<li>
           @<b>note_details</b>
           (<a href="#type_boolean">boolean</a>)
           If notes are included, whether to include note details.
           </li>
 <li>
-          @<b>overrides</b>
-          (<a href="#type_boolean">boolean</a>)
-          Whether to include overrides in the report.
-          </li>
-<li>
           @<b>override_details</b>
           (<a href="#type_boolean">boolean</a>)
           If overrides are included, whether to include override details.
-          </li>
-<li>
-          @<b>result_hosts_only</b>
-          (<a href="#type_boolean">boolean</a>)
-          Whether to include only those hosts that have results.
           </li>
 <li>
           @<b>host</b>
@@ -23512,29 +23454,9 @@ get_preferences_response_preference_default
           ID of second report, for producing a delta report.
           </li>
 <li>
-          @<b>delta_states</b>
-          ()
-          Letters for results to include: c)hanged, g)one, n)ew, s)ame.
-          </li>
-<li>
-          @<b>autofp</b>
-          ("0", "1" or "2")
-          Whether to trust vendor security updates. 1 full match, 2 partial.
-          </li>
-<li>
-          @<b>result_hosts_only</b>
-          (<a href="#type_boolean">boolean</a>)
-          Whether to include only hosts with results.
-          </li>
-<li>
           @<b>ignore_pagination</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to ignore info used to split the report into pages like the filter terms "first" and "rows"..
-          </li>
-<li>
-          @<b>timezone</b>
-          (<a href="#type_timezone">timezone</a>)
-          The timezone to use for dates in the report.
           </li>
 </ul>
 </li>
@@ -23573,6 +23495,46 @@ get_preferences_response_preference_default
               &lt;<b>name</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">Filter name, if applicable.</div>
 <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>filter</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">A severity level that is included in the report.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>host</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Single host selected for prognostic or delta report.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>ip</b>&gt;
+              <div style="margin-left: 15px; display: inline;">IP address of the host.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>delta</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Delta states.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>changed</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether changed results are included.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>gone</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether results that have vanished are included.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>new</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether new results are included.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>same</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether results that are equal are included.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
 </li>
 <li>
               &lt;<b>keywords</b>&gt;
@@ -23658,20 +23620,8 @@ get_preferences_response_preference_default
        &amp; attribute type { xsd:token { pattern = "scan|assets|prognostic" } }?
        &amp; attribute format_id { uuid }?
        &amp; attribute alert_id { uuid }?
-       &amp; attribute first_result { integer }?
-       &amp; attribute max_results { integer }?
-       &amp; attribute sort_order { sort_order }?
-       &amp; attribute sort_field { text }?
-       &amp; attribute apply_overrides { boolean }?
-       &amp; attribute levels { levels }?
-       &amp; attribute search_phrase { text }?
-       &amp; attribute min_cvss_base { integer }?
-       &amp; attribute min_qod { integer }?
-       &amp; attribute notes { boolean }?
        &amp; attribute note_details { boolean }?
-       &amp; attribute overrides { boolean }?
        &amp; attribute override_details { boolean }?
-       &amp; attribute result_hosts_only { boolean }?
        &amp; attribute host { text }?
        &amp; attribute host_first_result { integer }?
        &amp; attribute host_max_results { integer }?
@@ -23679,11 +23629,7 @@ get_preferences_response_preference_default
        &amp; attribute host_search_phrase { text }?
        &amp; attribute pos { integer }?
        &amp; attribute delta_report_id { uuid }?
-       &amp; attribute delta_states {  }?
-       &amp; attribute autofp { xsd:token { pattern = "0|1|2" } }?
-       &amp; attribute result_hosts_only { boolean }?
        &amp; attribute ignore_pagination { boolean }?
-       &amp; attribute timezone { timezone }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_reports_response
@@ -23725,6 +23671,9 @@ get_reports_response_filters
        attribute id { uuid }
        &amp; get_reports_response_filters_term
        &amp; get_reports_response_filters_name?
+       &amp; get_reports_response_filters_filter*
+       &amp; get_reports_response_filters_host?
+       &amp; get_reports_response_filters_delta?
        &amp; get_reports_response_filters_keywords
      }
 
@@ -23738,6 +23687,58 @@ get_reports_response_filters_name
  = element name
      {
        text
+     }
+
+get_reports_response_filters_filter
+ = element filter
+     {
+       xsd:token { pattern = "High|Medium|Low|Log|Debug" }
+     }
+
+get_reports_response_filters_host
+ = element host
+     {
+       get_reports_response_filters_host_ip
+     }
+
+get_reports_response_filters_host_ip
+ = element ip
+     {
+       text
+     }
+
+get_reports_response_filters_delta
+ = element delta
+     {
+       text
+       &amp; get_reports_response_filters_delta_changed
+       &amp; get_reports_response_filters_delta_gone
+       &amp; get_reports_response_filters_delta_new
+       &amp; get_reports_response_filters_delta_same
+     }
+
+get_reports_response_filters_delta_changed
+ = element changed
+     {
+       boolean
+     }
+
+get_reports_response_filters_delta_gone
+ = element gone
+     {
+       boolean
+     }
+
+get_reports_response_filters_delta_new
+ = element new
+     {
+       boolean
+     }
+
+get_reports_response_filters_delta_same
+ = element same
+     {
+       boolean
      }
 
 get_reports_response_filters_keywords
@@ -23855,21 +23856,29 @@ get_reports_response_report_count_page
          &lt;/field&gt;
        &lt;/sort&gt;
        &lt;filters id="0"&gt;
-         hmlgd
-         &lt;term/&gt;
-         &lt;phrase/&gt;
-         &lt;notes&gt;0&lt;/notes&gt;
-         &lt;overrides&gt;0&lt;/overrides&gt;
-         &lt;apply_overrides&gt;0&lt;/apply_overrides&gt;
-         &lt;result_hosts_only&gt;1&lt;/result_hosts_only&gt;
-         &lt;min_cvss_base/&gt;
-         &lt;autofp&gt;0&lt;/autofp&gt;
-         &lt;result_hosts_only&gt;1&lt;/result_hosts_only&gt;
+         &lt;term&gt;first=1 rows=-1 sort=name&lt;/term&gt;
          &lt;filter&gt;High&lt;/filter&gt;
          &lt;filter&gt;Medium&lt;/filter&gt;
          &lt;filter&gt;Low&lt;/filter&gt;
          &lt;filter&gt;Log&lt;/filter&gt;
          &lt;filter&gt;Debug&lt;/filter&gt;
+         &lt;keywords&gt;
+           &lt;keyword&gt;
+             &lt;column&gt;first&lt;/column&gt;
+             &lt;relation&gt;=&lt;/relation&gt;
+             &lt;value&gt;1&lt;/value&gt;
+           &lt;/keyword&gt;
+           &lt;keyword&gt;
+             &lt;column&gt;rows&lt;/column&gt;
+             &lt;relation&gt;=&lt;/relation&gt;
+             &lt;value&gt;-1&lt;/value&gt;
+           &lt;/keyword&gt;
+           &lt;keyword&gt;
+             &lt;column&gt;sort&lt;/column&gt;
+             &lt;relation&gt;=&lt;/relation&gt;
+             &lt;value&gt;name&lt;/value&gt;
+           &lt;/keyword&gt;
+         &lt;/keywords&gt;
        &lt;/filters&gt;
        &lt;user_tags&gt;
          &lt;count&gt;0&lt;/count&gt;

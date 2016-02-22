@@ -26128,7 +26128,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   int search_phrase_exact, apply_overrides;
   double severity, f_severity;
   gchar *tz, *zone;
-  GString *host_summary_buffer;
+  GString *filters_buffer, *filters_extra_buffer, *host_summary_buffer;
 
   /* Init some vars to prevent warnings from older compilers. */
   total_result_count = filtered_result_count = 0;
@@ -26359,73 +26359,63 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
   PRINT
    (out,
-    "<sort><field>%s<order>%s</order></field></sort>"
-    "<filters id=\"%s\">"
-    "<term>%s</term>"
-    "%s"
-    "<phrase>%s</phrase>"
-    "<autofp>%i</autofp>"
-    "<notes>%i</notes>"
-    "<overrides>%i</overrides>"
-    "<apply_overrides>%i</apply_overrides>"
-    "<result_hosts_only>%i</result_hosts_only>"
-    "<min_cvss_base>%s</min_cvss_base>"
-    "<min_qod>%s</min_qod>"
-    "<timezone>%s</timezone>",
+    "<sort><field>%s<order>%s</order></field></sort>",
     sort_field ? sort_field : "type",
-    sort_order ? "ascending" : "descending",
-    get->filt_id ? get->filt_id : "0",
-    term,
-    levels,
-    search_phrase ? search_phrase : "",
-    autofp,
-    notes ? 1 : 0,
-    overrides ? 1 : 0,
-    apply_overrides ? 1 : 0,
-    result_hosts_only ? 1 : 0,
-    min_cvss_base ? min_cvss_base : "",
-    min_qod ? min_qod : "",
-    zone ? zone : "");
+    sort_order ? "ascending" : "descending");
 
-  g_free (term);
+  filters_extra_buffer = g_string_new ("");
 
   if (strchr (levels, 'h'))
-    PRINT (out, "<filter>High</filter>");
+    g_string_append (filters_extra_buffer, "<filter>High</filter>");
   if (strchr (levels, 'm'))
-    PRINT (out, "<filter>Medium</filter>");
+    g_string_append (filters_extra_buffer, "<filter>Medium</filter>");
   if (strchr (levels, 'l'))
-    PRINT (out, "<filter>Low</filter>");
+    g_string_append (filters_extra_buffer, "<filter>Low</filter>");
   if (strchr (levels, 'g'))
-    PRINT (out, "<filter>Log</filter>");
+    g_string_append (filters_extra_buffer, "<filter>Log</filter>");
   if (strchr (levels, 'd'))
-    PRINT (out, "<filter>Debug</filter>");
+    g_string_append (filters_extra_buffer, "<filter>Debug</filter>");
   if (strchr (levels, 'f'))
-    PRINT (out, "<filter>False Positive</filter>");
+    g_string_append (filters_extra_buffer, "<filter>False Positive</filter>");
 
   if (delta)
     {
-      PRINT (out,
-             "<host><ip>%s</ip></host>"
-             "<delta>"
-             "%s"
-             "<changed>%i</changed>"
-             "<gone>%i</gone>"
-             "<new>%i</new>"
-             "<same>%i</same>"
-             "</delta>",
-             host ? host : "",
-             delta_states,
-             strchr (delta_states, 'c') != NULL,
-             strchr (delta_states, 'g') != NULL,
-             strchr (delta_states, 'n') != NULL,
-             strchr (delta_states, 's') != NULL);
+      gchar *escaped_host = g_markup_escape_text (host, -1);
+      gchar *escaped_delta_states = g_markup_escape_text (delta_states, -1);
+      g_string_append_printf (filters_extra_buffer,
+                              "<host><ip>%s</ip></host>"
+                              "<delta>"
+                              "%s"
+                              "<changed>%i</changed>"
+                              "<gone>%i</gone>"
+                              "<new>%i</new>"
+                              "<same>%i</same>"
+                              "</delta>",
+                              escaped_host ? escaped_host : "",
+                              escaped_delta_states,
+                              strchr (delta_states, 'c') != NULL,
+                              strchr (delta_states, 'g') != NULL,
+                              strchr (delta_states, 'n') != NULL,
+                              strchr (delta_states, 's') != NULL);
+      g_free (escaped_host);
+      g_free (escaped_delta_states);
     }
   else if (type && (strcmp (type, "prognostic") == 0))
-    PRINT (out,
-           "<host><ip>%s</ip></host>",
-           host ? host : "");
+    {
+      gchar *escaped_host = g_markup_escape_text (host, -1);
+      g_string_append_printf (filters_extra_buffer,
+                              "<host><ip>%s</ip></host>",
+                              escaped_host ? escaped_host : "");
+      g_free (escaped_host);
+    }
 
-  PRINT (out, "</filters>");
+  filters_buffer = g_string_new ("");
+  buffer_get_filter_xml (filters_buffer, "result", get, clean,
+                         filters_extra_buffer->str);
+  g_string_free (filters_extra_buffer, TRUE);
+
+  PRINT_XML (out, filters_buffer->str);
+  g_string_free (filters_buffer, TRUE);
 
   {
     const char *severity_setting;
