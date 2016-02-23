@@ -303,6 +303,9 @@ check_for_updated_scap ();
 static void
 check_for_updated_cert ();
 
+static gchar*
+results_extra_where (const get_data_t*, report_t, int, int, int, const gchar*);
+
 
 /* Variables. */
 
@@ -5042,8 +5045,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                          const char *extra_tables, const char *extra_where)
 {
   int owned;
-  gchar *apply_overrides_str, *min_qod_str;
-  int apply_overrides, min_qod;
+  gchar *autofp_str, *apply_overrides_str, *min_qod_str;
+  int autofp, apply_overrides, min_qod;
   column_t *select_columns, *where_columns;
   gchar *columns;
   gchar *trash_columns;
@@ -5082,7 +5085,11 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   else
     filter = NULL;
 
-  apply_overrides_str = filter_term_value (filter ? filter : get->filter, "apply_overrides");
+  autofp_str = filter_term_value (filter ? filter : get->filter,
+                                           "apply_overrides");
+  autofp = autofp_str ? atoi (autofp_str) : 0;
+  apply_overrides_str = filter_term_value (filter ? filter : get->filter,
+                                           "apply_overrides");
   apply_overrides = apply_overrides_str ? atoi (apply_overrides_str) : 1;
   min_qod_str = filter_term_value (filter ? filter : get->filter, "min_qod");
   min_qod = min_qod_str ? atoi (min_qod_str) : MIN_QOD_DEFAULT;
@@ -5094,7 +5101,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   trash_columns = type_trash_columns (type, apply_overrides);
   where_columns = type_where_columns (type, apply_overrides);
   filter_columns = type_filter_columns (type, apply_overrides);
-  opts_table = type_opts_table (type, apply_overrides, min_qod);
+  opts_table = type_opts_table (type, autofp, apply_overrides, min_qod);
 
   if (columns == NULL || filter_columns == NULL)
     {
@@ -5171,8 +5178,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
       else
         trash_extra = g_strdup (" AND hidden = 0");
     }
-  else if (strcasecmp (type, "REPORT") == 0
-           || strcasecmp (type, "RESULT") == 0)
+  else if (strcasecmp (type, "REPORT") == 0)
     {
       if (get->trash)
         trash_extra = g_strdup (" AND (SELECT hidden FROM tasks"
@@ -5182,6 +5188,12 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
         trash_extra = g_strdup (" AND (SELECT hidden FROM tasks"
                                 "      WHERE tasks.id = task)"
                                 "     = 0");
+    }
+  else if (strcasecmp (type, "RESULT") == 0)
+    {
+      trash_extra = results_extra_where (get, 0, autofp, apply_overrides,
+                                         setting_dynamic_severity_int (),
+                                         filter ? filter : get->filter);
     }
   else
     trash_extra = g_strdup ("");
@@ -63223,12 +63235,14 @@ type_trash_columns (const char *type, int apply_overrides)
  * @brief Return the subquery definition for a resource type.
  *
  * @param[in]  type             Resource type to get columns of.
+ * @param[in]  autofp           Whether to apply auto FP filter.
  * @param[in]  apply_overrides  Whether to apply overrides.
+ * @param[in]  min_qod          Minimum QoD.
  *
  * @return The SQL subquery definition.
  */
 gchar*
-type_opts_table (const char *type, int apply_overrides, int min_qod)
+type_opts_table (const char *type, int autofp, int apply_overrides, int min_qod)
 {
   if (type == NULL)
     return NULL;
@@ -63242,7 +63256,7 @@ type_opts_table (const char *type, int apply_overrides, int min_qod)
     }
   else if (strcasecmp (type, "RESULT") == 0)
     {
-      return result_iterator_opts_table (apply_overrides, min_qod,
+      return result_iterator_opts_table (autofp, apply_overrides,
                                          setting_dynamic_severity_int ());
     }
   else

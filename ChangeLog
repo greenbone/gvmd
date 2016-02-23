@@ -1,3 +1,16 @@
+2016-02-23  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Fix filtering of results with special keywords in get_aggregates.
+
+	* src/manage_sql.c (results_extra_where): Add function prototype.
+	(init_aggregate_iterator): Use results_extra_where to get extra
+	conditions for results for filter keywords like min_qod or levels.
+	Add autofp parameter to type_opts_table.
+	(type_opts_table): Add autofp parameter and pass correct values to
+	result_iterator_opts_table.
+
+	* src/manage.h (type_opts_table): Add parameter.
+
 2016-02-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (count2): Put parens around clause, because it may

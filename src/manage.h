@@ -4078,7 +4078,7 @@ char*
 type_trash_columns (const char *, int);
 
 gchar*
-type_opts_table (const char *, int, int);
+type_opts_table (const char *, int, int, int);
 
 gchar*
 type_table (const char *, int);
