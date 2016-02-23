@@ -1,3 +1,8 @@
+2016-02-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (count2): Put parens around clause, because it may
+	be made up of multiple terms.
+
 2016-02-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Make the filter keywords output in the get_reports response more
