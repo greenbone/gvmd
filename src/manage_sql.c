@@ -5273,7 +5273,7 @@ count2 (const char *type, const get_data_t *get, column_t *select_columns,
                    " FROM (SELECT %ss%s.id AS count_id, %s"
                    "       FROM %ss%s%s"
                    "       WHERE %s"
-                   "       %s%s%s) AS subquery;",
+                   "       %s%s%s%s) AS subquery;",
                    distinct ? "DISTINCT " : "",
                    type,
                    get->trash && strcmp (type, "task") ? "_trash" : "",
@@ -5282,8 +5282,9 @@ count2 (const char *type, const get_data_t *get, column_t *select_columns,
                    get->trash && strcmp (type, "task") ? "_trash" : "",
                    extra_tables ? extra_tables : "",
                    owned_clause,
-                   clause ? " AND " : "",
+                   clause ? " AND (" : "",
                    clause ? clause : "",
+                   clause ? ") " : "",
                    extra_where ? extra_where : "");
 
   g_free (columns);

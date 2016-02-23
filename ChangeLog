@@ -1,3 +1,10 @@
+2016-02-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r24455.
+
+	* src/manage_sql.c (count2): Put parens around clause, because it may
+	be made up of multiple terms.
+
 2016-02-22  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	Backport r23464.
