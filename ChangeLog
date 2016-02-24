@@ -1,3 +1,9 @@
+2016-02-24  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (task_scanner_options): Use credential_up in osp
+	parameters type names. Check that the used credential is of type
+	username+password. Handle use target credentials case.
+
 2016-02-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (filter_clause, prognosis_where_search_phrase)

@@ -2989,11 +2989,12 @@ run_slave_task (task_t task, target_t target,
  * @brief Give a task's OSP scan options in a hash table.
  *
  * @param[in]   task        The task.
+ * @param[in]   target      The target.
  *
  * @return Hash table with options names and their values.
  */
 static GHashTable *
-task_scanner_options (task_t task)
+task_scanner_options (task_t task, target_t target)
 {
   GHashTable *table;
   config_t config;
@@ -3004,7 +3005,7 @@ task_scanner_options (task_t task)
   table = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
   while (next (&prefs))
     {
-      char *name, *value;
+      char *name, *value = NULL;
       const char *type;
 
       name = g_strdup (preference_iterator_name (&prefs));
@@ -3016,7 +3017,9 @@ task_scanner_options (task_t task)
           iterator_t iter;
           const char *uuid = preference_iterator_value (&prefs);
 
-          if (find_resource ("credential", uuid, &credential))
+          if (!strcmp (preference_iterator_value (&prefs), "0"))
+            credential = target_ssh_credential (target);
+          else if (find_resource ("credential", uuid, &credential))
             {
               g_warning ("Error getting credential for osp parameter %s", name);
               g_free (name);
@@ -3036,10 +3039,17 @@ task_scanner_options (task_t task)
               g_free (name);
               continue;
             }
-          if (!strcmp (type, "credential_username"))
-            value = g_strdup (credential_iterator_login (&iter));
-          else if (!strcmp (type, "credential_password"))
-            value = g_strdup (credential_iterator_password (&iter));
+          if (!strcmp (type, "credential_up")
+              && !strcmp (credential_iterator_type (&iter), "up"))
+            value = g_strdup_printf ("%s:%s", credential_iterator_login (&iter),
+                                     credential_iterator_password (&iter));
+          else if (!strcmp (type, "credential_up"))
+            {
+              g_warning ("OSP Parameter %s requires credentials of type"
+                         " username+password", name);
+              g_free (name);
+              continue;
+            }
           else
             abort ();
           cleanup_iterator (&iter);
@@ -3349,7 +3359,7 @@ get_osp_task_options (task_t task, target_t target)
   const char *user, *pass;
   iterator_t iter;
   credential_t cred;
-  GHashTable *options = task_scanner_options (task);
+  GHashTable *options = task_scanner_options (task, target);
 
   if (!options)
     return NULL;
