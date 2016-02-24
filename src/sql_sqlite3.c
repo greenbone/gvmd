@@ -118,6 +118,17 @@ sql_select_limit (int max)
 }
 
 /**
+ * @brief Get case insensitive LIKE operator.
+ *
+ * @return Like operator.
+ */
+const char *
+sql_ilike_op ()
+{
+  return "LIKE";
+}
+
+/**
  * @brief Get regular expression operator.
  *
  * @return Regexp operator.

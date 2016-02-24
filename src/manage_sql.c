@@ -3359,32 +3359,36 @@ filter_clause (const char* type, const char* filter,
                                         "%s"
                                         "(EXISTS"
                                         "  (SELECT * FROM tags"
-                                        "   WHERE tags.name LIKE '%%%%%s%%%%'"
+                                        "   WHERE tags.name %s '%%%%%s%%%%'"
                                         "   AND tags.active != 0"
                                         "   AND tags.resource_uuid"
                                         "         = allinfo.uuid"
                                         "   AND tags.resource_type"
                                         "         = allinfo.type"
-                                        "   AND tags.value LIKE '%%%%%s%%%%'))",
+                                        "   AND tags.value %s '%%%%%s%%%%'))",
                                         get_join (first_keyword, last_was_and,
                                                   last_was_not),
+                                        sql_ilike_op (),
                                         tag_name,
+                                        sql_ilike_op (),
                                         tag_value);
               else
                 g_string_append_printf (clause,
                                         "%s"
                                         "(EXISTS"
                                         "  (SELECT * FROM tags"
-                                        "   WHERE tags.name LIKE '%%%%%s%%%%'"
+                                        "   WHERE tags.name %s '%%%%%s%%%%'"
                                         "   AND tags.active != 0"
                                         "   AND tags.resource_uuid = %ss.uuid"
                                         "   AND tags.resource_type = '%s'"
-                                        "   AND tags.value LIKE '%%%%%s%%%%'))",
+                                        "   AND tags.value %s '%%%%%s%%%%'))",
                                         get_join (first_keyword, last_was_and,
                                                   last_was_not),
+                                        sql_ilike_op (),
                                         tag_name,
                                         type,
                                         type,
+                                        sql_ilike_op (),
                                         tag_value);
             }
           else if (keyword->relation == KEYWORD_RELATION_COLUMN_REGEXP)
@@ -3568,10 +3572,11 @@ filter_clause (const char* type, const char* filter,
                                           keyword->column);
           assert (column);
           g_string_append_printf (clause,
-                                  "%s(CAST (%s AS TEXT) LIKE '%%%%%s%%%%'",
+                                  "%s(CAST (%s AS TEXT) %s '%%%%%s%%%%'",
                                   get_join (first_keyword, last_was_and,
                                             last_was_not),
                                   column,
+                                  sql_ilike_op (),
                                   quoted_keyword);
         }
       else if (keyword->relation == KEYWORD_RELATION_COLUMN_ABOVE)
@@ -3808,7 +3813,7 @@ filter_clause (const char* type, const char* filter,
                                           select_column,
                                           last_was_re
                                            ? sql_regexp_op ()
-                                           : "LIKE",
+                                           : sql_ilike_op (),
                                           last_was_re ? "" : "%%",
                                           quoted_keyword,
                                           last_was_re ? "" : "%%");
@@ -3838,7 +3843,7 @@ filter_clause (const char* type, const char* filter,
                                           select_column,
                                           last_was_re
                                            ? sql_regexp_op ()
-                                           : "LIKE",
+                                           : sql_ilike_op (),
                                           last_was_re ? "" : "%%",
                                           quoted_keyword,
                                           last_was_re ? "" : "%%");
@@ -18246,11 +18251,14 @@ prognosis_where_search_phrase (const char* search_phrase)
       quoted_search_phrase = sql_quote (search_phrase);
       phrase_sql = g_string_new ("");
       g_string_append_printf (phrase_sql,
-                              " AND (cves.description LIKE '%%%%%s%%%%'"
-                              " OR cves.name LIKE '%%%%%s%%%%'"
-                              " OR cpes.name LIKE '%%%%%s%%%%')",
+                              " AND (cves.description %s '%%%%%s%%%%'"
+                              " OR cves.name %s '%%%%%s%%%%'"
+                              " OR cpes.name %s '%%%%%s%%%%')",
+                              sql_ilike_op (),
                               quoted_search_phrase,
+                              sql_ilike_op (),
                               quoted_search_phrase,
+                              sql_ilike_op (),
                               quoted_search_phrase);
       g_free (quoted_search_phrase);
 
@@ -21349,7 +21357,7 @@ init_classic_asset_iterator (iterator_t* iterator, int first_result,
             "       ORDER BY order_inet (host))"
             "      AS distinct_host_subquery"
             /* Search IP. */
-            " WHERE (distinct_host LIKE '%%%s%%%'"
+            " WHERE (distinct_host %s '%%%s%%%'"
             /* Search hostname. */
             "        OR EXISTS"
             "        (SELECT * FROM report_host_details"
@@ -21362,7 +21370,7 @@ init_classic_asset_iterator (iterator_t* iterator, int first_result,
             "              OR name = 'best_os_cpe' OR name = 'App'"
             "              OR name = 'ports')"
             "         AND source_type = 'nvt'"
-            "         AND value LIKE '%%%s%%'))"
+            "         AND value %s '%%%s%%'))"
             /* Filter levels. */
             " AND EXISTS (SELECT results.id"
             "             FROM results"
@@ -21371,8 +21379,10 @@ init_classic_asset_iterator (iterator_t* iterator, int first_result,
             "             AND qod >= " G_STRINGIFY (MIN_QOD_DEFAULT)
             "             %s)"
             " LIMIT %s OFFSET %i;",
+            sql_ilike_op (),
             quoted_search_phrase,
             last_report_sql,
+            sql_ilike_op (),
             quoted_search_phrase,
             last_report_sql,
             levels_sql ? levels_sql->str : "",
@@ -21430,7 +21440,7 @@ init_classic_asset_iterator (iterator_t* iterator, int first_result,
                      "     = 'yes'"
                      " AND report_hosts.end_time IS NOT NULL"
                      " GROUP BY host"
-                     " HAVING host LIKE '%%%s%%'"
+                     " HAVING host %s '%%%s%%'"
                      " OR EXISTS"
                      " (SELECT * FROM report_host_details"
                      "  WHERE report_hosts.id = report_host"
@@ -21438,10 +21448,12 @@ init_classic_asset_iterator (iterator_t* iterator, int first_result,
                      "       OR name = 'best_os_cpe' OR name = 'App'"
                      "       OR name = 'ports')"
                      "  AND source_type = 'nvt'"
-                     "  AND value LIKE '%%%s%%')"
+                     "  AND value %s '%%%s%%')"
                      " ORDER BY order_inet (host)"
                      " LIMIT %s OFFSET %i;",
+                     sql_ilike_op (),
                      quoted_search_phrase,
+                     sql_ilike_op (),
                      quoted_search_phrase,
                      sql_select_limit (max_results),
                      first_result);
@@ -21961,13 +21973,16 @@ report_counts_match (iterator_t *results, const char *search_phrase,
           || sql_int ("SELECT EXISTS (SELECT 1 FROM nvts"
                       "               WHERE oid = '%s'"
                       "               AND (name = '%s'"
-                      "                    OR tag LIKE '%%%%=%s|%%%%'"
-                      "                    OR tag LIKE '%%%%=%s'"
-                      "                    OR cve LIKE '%%%%%s%%%%'))",
+                      "                    OR tag %s '%%%%=%s|%%%%'"
+                      "                    OR tag %s '%%%%=%s'"
+                      "                    OR cve %s '%%%%%s%%%%'))",
                       iterator_string (results, 1),
                       search_phrase,
+                      sql_ilike_op (),
                       search_phrase,
+                      sql_ilike_op (),
                       search_phrase,
+                      sql_ilike_op (),
                       search_phrase))
         {
           if (min_cvss_base && iterator_int (results, 1))
@@ -22008,12 +22023,15 @@ report_counts_match (iterator_t *results, const char *search_phrase,
           /* NVT Name, Tag or CVE. */
           || sql_int ("SELECT EXISTS (SELECT 1 FROM nvts"
                       "               WHERE oid = '%s'"
-                      "               AND (name LIKE '%%%%%s%%%%'"
-                      "                    OR tag LIKE '%%%%=%%%%%s%%%%'"
-                      "                    OR cve LIKE '%%%%%s%%%%'))",
+                      "               AND (name %s '%%%%%s%%%%'"
+                      "                    OR tag %s '%%%%=%%%%%s%%%%'"
+                      "                    OR cve %s '%%%%%s%%%%'))",
                       iterator_string (results, 1),
+                      sql_ilike_op (),
                       search_phrase,
+                      sql_ilike_op (),
                       search_phrase,
+                      sql_ilike_op (),
                       search_phrase))
         {
           if (min_cvss_base && iterator_int (results, 1))
@@ -24451,7 +24469,7 @@ filtered_host_count (const char *levels, const char *search_phrase,
                   "       FROM report_hosts)"
                   "      AS distinct_host_subquery"
                   /* Search IP. */
-                  " WHERE (distinct_host LIKE '%%%s%%%'"
+                  " WHERE (distinct_host %s '%%%s%%%'"
                   /* Search hostname. */
                   "        OR EXISTS"
                   "        (SELECT * FROM report_host_details"
@@ -24464,14 +24482,16 @@ filtered_host_count (const char *levels, const char *search_phrase,
                   "              OR name = 'best_os_cpe' OR name = 'App'"
                   "              OR name = 'ports')"
                   "         AND source_type = 'nvt'"
-                  "         AND value LIKE '%%%s%%'))"
+                  "         AND value %s '%%%s%%'))"
                   " AND EXISTS (SELECT results.id, %s AS new_severity"
                   "             FROM results"
                   "             WHERE results.report = %s"
                   "             AND results.host = distinct_host"
                   "             AND qod >= " G_STRINGIFY (MIN_QOD_DEFAULT)
                   "             %s);",
+                  sql_ilike_op (),
                   quoted_search_phrase,
+                  sql_ilike_op (),
                   last_report_sql,
                   quoted_search_phrase,
                   last_report_sql,
@@ -24521,7 +24541,7 @@ filtered_host_count (const char *levels, const char *search_phrase,
                       "      = 0"
                       "  AND report_hosts.end_time IS NOT NULL"
                       "  GROUP BY host"
-                      "  HAVING host LIKE '%%%s%%'"
+                      "  HAVING host %s '%%%s%%'"
                       "  OR EXISTS"
                       "  (SELECT * FROM report_host_details"
                       "   WHERE report_hosts.id = report_host"
@@ -24529,9 +24549,11 @@ filtered_host_count (const char *levels, const char *search_phrase,
                       "        OR name = 'best_os_cpe' OR name = 'App'"
                       "        OR name = 'ports')"
                       "   AND source_type = 'nvt'"
-                      "   AND value LIKE '%%%s%%')"
+                      "   AND value %s '%%%s%%')"
                       "  ORDER BY order_inet (host);",
+                      sql_ilike_op (),
                       quoted_search_phrase,
+                      sql_ilike_op (),
                       quoted_search_phrase);
       g_free (quoted_search_phrase);
       return retn;
@@ -24631,8 +24653,9 @@ report_port_count (report_t report)
 {
   return sql_int ("SELECT count (DISTINCT port) FROM results"
                   " WHERE report = %llu AND port != ''"
-                  "  AND port NOT LIKE 'general/%';",
-                  report);
+                  "  AND port NOT %s 'general/%';",
+                  report,
+                  sql_ilike_op ());
 }
 
 /**
@@ -24646,9 +24669,10 @@ prognostic_host_port_count (report_t report, const char *host)
 {
   return sql_int ("SELECT count (DISTINCT port) FROM results"
                   " WHERE report = %llu AND host = '%s'"
-                  "  AND port NOT LIKE 'general/%';",
+                  "  AND port NOT %s 'general/%';",
                   report,
-                  host);
+                  host,
+                  sql_ilike_op ());
 }
 
 /**
@@ -34947,9 +34971,10 @@ init_cve_nvt_iterator (iterator_t* iterator, const char *cve, int ascending,
   init_iterator (iterator,
                  "SELECT %s"
                  " FROM nvts"
-                 " WHERE cve LIKE '%%%s%%'"
+                 " WHERE cve %s '%%%s%%'"
                  " ORDER BY %s %s;",
                  nvt_iterator_columns (),
+                 sql_ilike_op (),
                  cve ? cve : "",
                  sort_field ? sort_field : "name",
                  ascending ? "ASC" : "DESC");
@@ -37950,18 +37975,20 @@ init_nvt_preference_iterator (iterator_t* iterator, const char *name)
       gchar *quoted_name = sql_quote (name);
       init_iterator (iterator,
                      "SELECT name, value FROM nvt_preferences"
-                     " WHERE name LIKE '%s[%%'"
+                     " WHERE name %s '%s[%%'"
                      " AND name != 'cache_folder'"
                      " AND name != 'include_folders'"
                      " AND name != 'nasl_no_signature_check'"
                      " AND name != 'network_targets'"
                      " AND name != 'ntp_save_sessions'"
-                     " AND name NOT LIKE 'server_info_%%'"
+                     " AND name NOT %s 'server_info_%%'"
                      /* Task preferences. */
                      " AND name != 'max_checks'"
                      " AND name != 'max_hosts'"
                      " ORDER BY name ASC",
-                     quoted_name);
+                     sql_ilike_op (),
+                     quoted_name,
+                     sql_ilike_op ());
       g_free (quoted_name);
     }
   else
@@ -37972,11 +37999,12 @@ init_nvt_preference_iterator (iterator_t* iterator, const char *name)
                    " AND name != 'nasl_no_signature_check'"
                    " AND name != 'network_targets'"
                    " AND name != 'ntp_save_sessions'"
-                   " AND name NOT LIKE 'server_info_%%'"
+                   " AND name NOT %s 'server_info_%%'"
                    /* Task preferences. */
                    " AND name != 'max_checks'"
                    " AND name != 'max_hosts'"
-                   " ORDER BY name ASC");
+                   " ORDER BY name ASC",
+                   sql_ilike_op ());
 }
 
 /**
@@ -38125,7 +38153,8 @@ nvt_preference_count (const char *name)
 {
   gchar *quoted_name = sql_quote (name);
   int ret = sql_int ("SELECT COUNT(*) FROM nvt_preferences"
-                     " WHERE name LIKE '%s[%%';",
+                     " WHERE name %s '%s[%%';",
+                     sql_ilike_op (),
                      quoted_name);
   g_free (quoted_name);
   return ret;
@@ -54313,7 +54342,8 @@ delete_filter (const char *filter_id, int ultimate)
     }
 
   quoted_filter_id = sql_quote (filter_id);
-  sql ("DELETE FROM settings WHERE name LIKE '%% Filter' AND value = '%s';",
+  sql ("DELETE FROM settings WHERE name %s '%% Filter' AND value = '%s';",
+       sql_ilike_op (),
        quoted_filter_id);
   g_free (quoted_filter_id);
 

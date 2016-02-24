@@ -156,6 +156,17 @@ sql_stmt_init (sql_stmt_t *stmt)
 }
 
 /**
+ * @brief Get case insensitive LIKE operator.
+ *
+ * @return Like operator.
+ */
+const char *
+sql_ilike_op ()
+{
+  return "ILIKE";
+}
+
+/**
  * @brief Get regular expression operator.
  *
  * @return Regexp operator.

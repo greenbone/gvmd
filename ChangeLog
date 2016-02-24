@@ -1,3 +1,15 @@
+2016-02-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (filter_clause, prognosis_where_search_phrase)
+	(init_classic_asset_iterator, report_counts_match, filtered_host_count)
+	(report_port_count, prognostic_host_port_count, init_cve_nvt_iterator)
+	(init_nvt_preference_iterator, nvt_preference_count, delete_filter): Use
+	case insensitive LIKE.
+
+	* src/sql_sqlite3.c, src/sql_pg.c (sql_ilike_op): New function.
+
+	* src/sql.h: Add header accordingly.
+
 2016-02-23  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Fix filtering of results with special keywords in get_aggregates.

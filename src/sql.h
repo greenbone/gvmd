@@ -78,6 +78,9 @@ const char *
 sql_regexp_op ();
 
 const char *
+sql_ilike_op ();
+
+const char *
 sql_database ();
 
 const char *
