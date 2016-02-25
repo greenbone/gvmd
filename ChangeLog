@@ -1,5 +1,10 @@
 2016-02-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_complete_nvt_cache_update): Use truncate to
+	empty tables with Postgres.
+
+2016-02-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Start the --rebuild transaction after receiving NVT info from scanner.
 	Also get --update working with Postgres.
 

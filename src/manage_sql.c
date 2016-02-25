@@ -36216,11 +36216,19 @@ manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list,
   if (mode == -2)
     {
       sql_begin_exclusive ();
-      sql ("DELETE FROM nvt_cves;");
-      sql ("DELETE FROM nvts;");
+      if (sql_is_sqlite3 ())
+        {
+          sql ("DELETE FROM nvt_cves;");
+          sql ("DELETE FROM nvts;");
+          sql ("DELETE FROM nvt_preferences;");
+        }
+      else
+        {
+          sql ("TRUNCATE nvts CASCADE;");
+          sql ("TRUNCATE nvt_preferences;");
+        }
       if (progress)
         progress ();
-      sql ("DELETE FROM nvt_preferences;");
     }
 
   /* NVTs and preferences are buffered, insert them into DB. */
