@@ -1854,7 +1854,7 @@ int
 family_nvt_count (const char *);
 
 void
-manage_complete_nvt_cache_update (GList *, int);
+manage_complete_nvt_cache_update (GList *, GList *, int);
 
 
 /* NVT selectors. */

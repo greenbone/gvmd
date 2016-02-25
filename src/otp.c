@@ -335,6 +335,11 @@ static nvti_t* current_plugin = NULL;
  */
 GList* scanner_plugins_list = NULL;
 
+/**
+ * @brief The full preferences list, during reading of scanner plugin list.
+ */
+GList* scanner_preferences_list = NULL;
+
 
 /* Scanner state. */
 
@@ -600,12 +605,17 @@ parse_scanner_preference_value (char** messages, void (*progress) ())
       blank_control_chars (value);
       if (current_scanner_preference)
         {
+          preference_t *preference;
+
           if (progress)
             progress ();
-          if (scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE)
-            manage_nvt_preference_add (current_scanner_preference, value, 0);
-          else if (scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE_UPDATE)
-            manage_nvt_preference_add (current_scanner_preference, value, 1);
+          preference = g_malloc0 (sizeof (preference_t));
+          preference->name = g_strdup (current_scanner_preference);
+          preference->value = g_strdup (value);
+          /* Add the preference to the_list which will be bulk-inserted
+           * in DB later in manage_complete_nvt_cache_update. */
+          scanner_preferences_list = g_list_prepend (scanner_preferences_list,
+                                                     preference);
         }
       set_scanner_state (SCANNER_PREFERENCE_NAME);
       from_scanner_start += match + 1 - *messages;
@@ -776,7 +786,8 @@ parse_scanner_loading (char *messages)
  *
  * This includes updating the scanner state with \ref set_scanner_state
  * and \ref set_scanner_init_state, and updating scanner records with functions
- * like \ref manage_nvt_preference_add.
+ * like \ref manage_nvt_preference_add (via
+ * \ref manage_complete_nvt_cache_update).
  *
  * \endif
  *
@@ -1338,6 +1349,7 @@ process_otp_scanner_input (void (*progress) ())
                         {
                           manage_complete_nvt_cache_update
                            (scanner_plugins_list,
+                            scanner_preferences_list,
                             scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE
                             ? -2 : -1);
                           set_scanner_init_state (SCANNER_INIT_DONE);

@@ -1,3 +1,29 @@
+2016-02-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Start the --rebuild transaction after receiving NVT info from scanner.
+	Also get --update working with Postgres.
+
+	* src/manage_sql.c (init_manage_process): Remove cache mode transaction
+	and DELETEs.  Done in manage_complete_nvt_cache_update now.
+	(make_nvt_from_nvti): Delete nvt_cves in the --update case.  Do not
+	delete them in the general case because --rebuild deletes them all
+	beforehand.  This was preventing --update with Postgres.
+	(insert_nvt_from_nvti): Make dummy arg mode_pointer and pass on to
+	make_nvt_from_nvti so that it knows to do the DELETE for --update.
+	(insert_nvt_preference, insert_nvt_preferences_list): New functions.
+	(insert_nvts_list): Add mode arg.
+	(manage_complete_nvt_cache_update): Add nvt_preferences_list arg.
+	Insert preferences after NVTs.  Setup transaction and DELETE old NVT
+	info in --rebuild case.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/otp.c (scanner_preferences_list): New variable.
+	(parse_scanner_preference_value): Add preference to list instead of
+	inserting immediately.
+	(process_otp_scanner_input): Pass preference list to
+	manage_complete_nvt_cache_update.
+
 2016-02-24  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (task_scanner_options): Use credential_up in osp

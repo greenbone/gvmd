@@ -12035,20 +12035,7 @@ void
 init_manage_process (int update_nvt_cache, const gchar *database)
 {
   if (sql_is_open ())
-    {
-      if (update_nvt_cache == -2)
-        {
-          if (progress)
-            progress ();
-          sql_begin_exclusive ();
-          sql ("DELETE FROM nvt_cves;");
-          sql ("DELETE FROM nvts;");
-          if (progress)
-            progress ();
-          sql ("DELETE FROM nvt_preferences;");
-        }
-      return;
-    }
+    return;
 
   /* Open the database. */
   if (sql_open (database))
@@ -12066,17 +12053,6 @@ init_manage_process (int update_nvt_cache, const gchar *database)
            " (oid TEXT, modification_time INTEGER);");
       sql ("INSERT INTO old_nvts (oid, modification_time)"
            " SELECT oid, modification_time FROM nvts;");
-      if (update_nvt_cache == -2)
-        {
-          if (progress)
-            progress ();
-          sql_begin_exclusive ();
-          sql ("DELETE FROM nvt_cves;");
-          sql ("DELETE FROM nvts;");
-          if (progress)
-            progress ();
-          sql ("DELETE FROM nvt_preferences;");
-        }
     }
 
   /* Define functions for SQL. */
@@ -34540,6 +34516,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   if (remove)
     {
       sql_begin_exclusive ();
+      sql ("DELETE FROM nvt_cves where oid = '%s';", nvti_oid (nvti));
       sql ("DELETE FROM nvts WHERE oid = '%s';", nvti_oid (nvti));
     }
 
@@ -34675,7 +34652,6 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   else
     quoted_solution_type = g_strdup ("");
 
-  sql ("DELETE FROM nvts WHERE oid = '%s';", nvti_oid (nvti));
   sql ("INSERT into nvts (oid, version, name, summary, copyright,"
        " cve, bid, xref, tag, category, family, cvss_base,"
        " creation_time, modification_time, uuid, solution_type,"
@@ -35280,32 +35256,75 @@ update_config_cache_init (const char *uuid)
 }
 
 /**
- * @brief Inserts a nvt from nvti structure.
+ * @brief Insert an NVT from an nvti structure.
  *
- * @param[in] nvti  nvti_t to insert in nvts table.
- * @param[in] dummy dummy pointer to match GFunc prototype.
+ * @param[in] nvti          nvti_t to insert in nvts table.
+ * @param[in] mode_pointer  Mode.  -1 updating, -2 rebuilding.
  *
  */
 static void
-insert_nvt_from_nvti (gpointer nvti, gpointer dummy)
+insert_nvt_from_nvti (gpointer nvti, gpointer mode_pointer)
 {
+  int mode;
+
   if (nvti == NULL)
     return;
 
   if (progress)
     progress ();
-  make_nvt_from_nvti (nvti, 0);
+
+  mode = GPOINTER_TO_INT (mode_pointer);
+
+  make_nvt_from_nvti (nvti, mode == -1);
+}
+
+/**
+ * @brief Insert a NVT preferences.
+ *
+ * @param[in] nvti          nvti_t to insert in nvts table.
+ * @param[in] mode_pointer  Mode.  -1 updating, -2 rebuilding.
+ *
+ */
+static void
+insert_nvt_preference (gpointer nvt_preference, gpointer mode_pointer)
+{
+  int mode;
+  preference_t *preference;
+
+  if (nvt_preference == NULL)
+    return;
+
+  if (progress)
+    progress ();
+
+  mode = GPOINTER_TO_INT (mode_pointer);
+  preference = (preference_t*) nvt_preference;
+  manage_nvt_preference_add (preference->name, preference->value, mode == -1);
 }
 
 /**
  * @brief Inserts NVTs in DB from a list of nvti_t structures.
  *
- * @param[in] nvts_list     List of nvts to be inserted.
+ * @param[in]  nvts_list     List of nvts to be inserted.
+ * @param[in]  mode          -1 updating, -2 rebuilding.
  */
 static void
-insert_nvts_list (GList *nvts_list)
+insert_nvts_list (GList *nvts_list, int mode)
 {
-  g_list_foreach (nvts_list, insert_nvt_from_nvti, NULL);
+  g_list_foreach (nvts_list, insert_nvt_from_nvti, GINT_TO_POINTER (mode));
+}
+
+/**
+ * @brief Inserts NVT preferences in DB from a list of nvt_preference_t structures.
+ *
+ * @param[in]  nvt_preferences_list     List of nvts to be inserted.
+ * @param[in]  mode                     -1 updating, -2 rebuilding.
+ */
+static void
+insert_nvt_preferences_list (GList *nvt_preferences_list, int mode)
+{
+  g_list_foreach (nvt_preferences_list, insert_nvt_preference,
+                  GINT_TO_POINTER (mode));
 }
 
 /**
@@ -36184,18 +36203,29 @@ check_for_updated_cert ()
 /**
  * @brief Complete an update of the NVT cache.
  *
- * @param[in]  nvts_list    List of nvti_t to insert.
- * @param[in]  mode         -1 updating, -2 rebuilding.
+ * @param[in]  nvts_list             List of nvti_t to insert.
+ * @param[in]  nvt_preferences_list  List of preference_t to insert.
+ * @param[in]  mode                  -1 updating, -2 rebuilding.
  */
 void
-manage_complete_nvt_cache_update (GList *nvts_list, int mode)
+manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list,
+                                  int mode)
 {
   iterator_t configs;
 
-  /* In the case of rebuild, nvti's are in scanner_plugins_list, insert
-   * them into DB.
-   */
-  insert_nvts_list (nvts_list);
+  if (mode == -2)
+    {
+      sql_begin_exclusive ();
+      sql ("DELETE FROM nvt_cves;");
+      sql ("DELETE FROM nvts;");
+      if (progress)
+        progress ();
+      sql ("DELETE FROM nvt_preferences;");
+    }
+
+  /* NVTs and preferences are buffered, insert them into DB. */
+  insert_nvts_list (nvts_list, mode);
+  insert_nvt_preferences_list (nvt_preferences_list, mode);
 
   /* Remove preferences from configs where the preference has vanished from
    * the associated NVT. */
