@@ -1,5 +1,17 @@
 2016-02-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Do more of --update in transactions.
+
+	* src/manage_sql.c (chunk_count): New variable.
+	(CHUNK_SIZE): New define.
+	(make_nvt_from_nvti): For --update, group chunks of SQL in transactions.
+	(insert_nvts_list): Init chunk counter.  Commit transaction afterwards
+	if necessary.
+	(manage_complete_nvt_cache_update): Do refresh_nvt_cves in a transaction
+	in the --update case.  Format last "if" like others.
+
+2016-02-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_complete_nvt_cache_update): Use truncate to
 	empty tables with Postgres.
 

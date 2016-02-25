@@ -34494,6 +34494,16 @@ find_nvt (const char* oid, nvt_t* nvt)
 }
 
 /**
+ * @brief Counter for chunking in insert_nvts_list (--update).
+ */
+int chunk_count = 0;
+
+/**
+ * @brief Size of chunk for insert_nvts_list (--update).
+ */
+#define CHUNK_SIZE 100
+
+/**
  * @brief Make an nvt from an nvti.
  *
  * @param[in]  nvti    NVTI.
@@ -34515,7 +34525,15 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
 
   if (remove)
     {
-      sql_begin_exclusive ();
+      if (chunk_count == 0)
+        {
+          sql_begin_exclusive ();
+          chunk_count++;
+        }
+      else if (chunk_count == CHUNK_SIZE)
+        chunk_count = 0;
+      else
+        chunk_count++;
       sql ("DELETE FROM nvt_cves where oid = '%s';", nvti_oid (nvti));
       sql ("DELETE FROM nvts WHERE oid = '%s';", nvti_oid (nvti));
     }
@@ -34664,7 +34682,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
        modification_time, nvti_oid (nvti), quoted_solution_type,
        qod, quoted_qod_type);
 
-  if (remove)
+  if (remove && (chunk_count == 0))
     sql ("COMMIT;");
 
   g_free (quoted_version);
@@ -35311,7 +35329,10 @@ insert_nvt_preference (gpointer nvt_preference, gpointer mode_pointer)
 static void
 insert_nvts_list (GList *nvts_list, int mode)
 {
+  chunk_count = 0;
   g_list_foreach (nvts_list, insert_nvt_from_nvti, GINT_TO_POINTER (mode));
+  if ((mode == -1) && (chunk_count > 0))
+    sql ("COMMIT;");
 }
 
 /**
@@ -36259,7 +36280,12 @@ manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list,
   update_all_config_caches ();
   if (progress)
     progress ();
+
+  if (mode == -1)
+    sql_begin_exclusive ();
   refresh_nvt_cves ();
+  if (mode == -1)
+    sql ("COMMIT;");
 
   if (sql_int ("SELECT NOT EXISTS (SELECT * FROM meta"
                "                   WHERE name = 'nvts_check_time')"))
@@ -36277,7 +36303,8 @@ manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list,
            " WHERE name = 'nvts_check_time';");
     }
 
-  if (mode == -2) sql ("COMMIT;");
+  if (mode == -2)
+    sql ("COMMIT;");
 
   if (progress)
     progress ();
