@@ -1,3 +1,29 @@
+openvas-manager 6.0.8 (2016-02-26)
+
+This is the eighth maintenance release of the openvas-manager 6.0 module for
+the Open Vulnerability Assessment System release 8 (OpenVAS-8).
+
+This release addresses a number of issues discovered after the release of
+OpenVAS Manager 6.0.7 and incorporates several improvements from the development
+branch of OpenVAS. Please see below for a comprehensive list of changes.
+
+Many thanks to everyone who contributed to this release:
+Hani Benhabiles and Matthew Mundell.
+
+Main changes compared to 6.0.7:
+* An issue which caused the trashcans of other users to be emptied as well when
+  one user emptied their trashcan has been fixed.
+* An issue which caused some scheduled tasks to sometimes not be executed when
+  the Manager was started with disabled commands has been addressed.
+* An issue which caused incorrect task counts under certain conditions has been
+  addressed.
+* The Verinice_ISM report format now support setting an "ISM Control
+  Description" parameter.
+* Support for automatically deleting older reports has been added.
+* Handling of OSP errors has been improved.
+* Documentation has been updated.
+
+
 openvas-manager 6.0.7 (2015-12-21)
 
 This is the seventh maintenance release of the openvas-manager 6.0 module for
