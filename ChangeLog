@@ -1,5 +1,9 @@
 2016-02-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* ChangeLog: Restore overwritten entry.
+
+2016-02-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Do more of --update in transactions.
 
 	* src/manage_sql.c (chunk_count): New variable.
@@ -278,6 +282,10 @@
 	attributes are for.  Add report_filter and report_filt_id attributes.
 
 	* doc/omp.rnc, doc/omp.html: Update from source.
+
+2016-02-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (check_for_updated_secinfo): Use correct event.
 
 2016-02-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
