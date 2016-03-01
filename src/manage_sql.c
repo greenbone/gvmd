@@ -11178,7 +11178,7 @@ condition_met (task_t task, report_t report, alert_t alert,
                                          ? false_positives : 0);
 
                   cmp = last_count - second_last_count;
-                  tracef ("cmp: %i\n", cmp);
+                  tracef ("cmp: %i (vs %i)\n", cmp, count);
                   tracef ("direction: %s\n", direction);
                   tracef ("last_count: %i\n", last_count);
                   tracef ("second_last_count: %i\n", second_last_count);
@@ -11200,15 +11200,15 @@ condition_met (task_t task, report_t report, alert_t alert,
                   if (direction == NULL)
                     {
                       /* Same as "increased". */
-                      if (cmp > count)
+                      if (cmp >= count)
                         return 1;
                     }
                   else if (((strcasecmp (direction, "changed") == 0)
-                            && (abs (cmp) > count))
+                            && (abs (cmp) >= count))
                            || ((strcasecmp (direction, "increased") == 0)
-                               && (cmp > count))
+                               && (cmp >= count))
                            || ((strcasecmp (direction, "decreased") == 0)
-                               && (cmp < count)))
+                               && (cmp <= count)))
                     {
                       free (direction);
                       return 1;

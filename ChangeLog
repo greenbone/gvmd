@@ -1,5 +1,11 @@
 2016-03-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (condition_met): In the "filter changed" case, compare
+	cmp and count with <= and >=, because it's supposed to be "matches at
+	least/most N more results".
+
+2016-03-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (condition_met): For the filter conditions, pass all
 	the filter terms into the count function, so that they are considered in
 	the count.
