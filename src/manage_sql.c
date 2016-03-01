@@ -306,6 +306,12 @@ check_for_updated_cert ();
 static gchar*
 results_extra_where (const get_data_t*, report_t, int, int, int, const gchar*);
 
+static int
+report_counts_id_filt (report_t, int *, int *, int *, int *, int *, int *,
+                       double *, int, const char *, const char *, const char *,
+                       const char *, int, int, int *, int *, int *, int *,
+                       int *, int *, double *);
+
 
 /* Variables. */
 
@@ -11053,16 +11059,23 @@ condition_met (task_t task, report_t report, alert_t alert,
           tracef ("%s: last_report: %llu", __FUNCTION__, last_report);
           if (last_report)
             {
-              report_counts_id (last_report, &debugs, &holes, &infos, &logs,
-                                &warnings, &false_positives, &severity, 1, NULL,
-                                0, min_qod);
+              int db_count;
 
-              tracef ("%s: count: %i vs %i", __FUNCTION__,
-                      debugs + holes + infos + logs + warnings
-                      + false_positives,
-                      count);
-              if ((debugs + holes + infos + logs + warnings + false_positives)
-                  >= count)
+              report_counts_id_filt (last_report, NULL, NULL, NULL, NULL, NULL,
+                                     NULL, NULL, apply_overrides,
+                                     NULL, min_cvss_base, min_qod,
+                                     search_phrase, search_phrase_exact, autofp,
+                                     &debugs, &holes, &infos, &logs, &warnings,
+                                     &false_positives, &severity);
+              db_count = (strchr (levels, 'd') ? debugs : 0)
+                         + (strchr (levels, 'h') ? holes : 0)
+                         + (strchr (levels, 'l') ? infos : 0)
+                         + (strchr (levels, 'g') ? logs : 0)
+                         + (strchr (levels, 'm') ? warnings : 0)
+                         + (strchr (levels, 'f') ? false_positives : 0);
+
+              tracef ("%s: count: %i vs %i", __FUNCTION__, db_count, count);
+              if (db_count >= count)
                 return 1;
             }
           break;
@@ -11127,12 +11140,18 @@ condition_met (task_t task, report_t report, alert_t alert,
               report_t second_last_report;
               int last_count;
 
-              report_counts_id (last_report, &debugs, &holes, &infos, &logs,
-                                &warnings, &false_positives, &severity, 1, NULL,
-                                0, min_qod);
-
-              last_count = debugs + holes + infos + logs + warnings
-                           + false_positives;
+              report_counts_id_filt (last_report, NULL, NULL, NULL, NULL, NULL,
+                                     NULL, NULL, apply_overrides,
+                                     NULL, min_cvss_base, min_qod,
+                                     search_phrase, search_phrase_exact, autofp,
+                                     &debugs, &holes, &infos, &logs, &warnings,
+                                     &false_positives, &severity);
+              last_count = (strchr (levels, 'd') ? debugs : 0)
+                           + (strchr (levels, 'h') ? holes : 0)
+                           + (strchr (levels, 'l') ? infos : 0)
+                           + (strchr (levels, 'g') ? logs : 0)
+                           + (strchr (levels, 'm') ? warnings : 0)
+                           + (strchr (levels, 'f') ? false_positives : 0);
 
               second_last_report = 0;
               if (task_second_last_report (task, &second_last_report))
@@ -11142,12 +11161,21 @@ condition_met (task_t task, report_t report, alert_t alert,
                 {
                   int cmp, second_last_count;
 
-                  report_counts_id (second_last_report, &debugs, &holes, &infos,
-                                    &logs, &warnings, &false_positives,
-                                    &severity, 1, NULL, 0, min_qod);
-
-                  second_last_count = debugs + holes + infos + logs + warnings
-                                      + false_positives;
+                  report_counts_id_filt (second_last_report, NULL, NULL, NULL,
+                                         NULL, NULL, NULL, NULL,
+                                         apply_overrides,
+                                         NULL, min_cvss_base, min_qod,
+                                         search_phrase, search_phrase_exact,
+                                         autofp, &debugs, &holes, &infos, &logs,
+                                         &warnings, &false_positives,
+                                         &severity);
+                  second_last_count = (strchr (levels, 'd') ? debugs : 0)
+                                      + (strchr (levels, 'h') ? holes : 0)
+                                      + (strchr (levels, 'l') ? infos : 0)
+                                      + (strchr (levels, 'g') ? logs : 0)
+                                      + (strchr (levels, 'm') ? warnings : 0)
+                                      + (strchr (levels, 'f')
+                                         ? false_positives : 0);
 
                   cmp = last_count - second_last_count;
                   tracef ("cmp: %i\n", cmp);
