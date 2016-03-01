@@ -7226,7 +7226,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
-        <type>uuid</type>
+        <type>text</type>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -7659,7 +7659,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
-        <type>uuid</type>
+        <type>text</type>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -8294,7 +8294,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>filter</name>
         <summary>Filter term to use to filter query of the resources to aggregate</summary>
-        <type>uuid</type>
+        <type>text</type>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -8770,7 +8770,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
-        <type>uuid</type>
+        <type>text</type>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -9251,7 +9251,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
-        <type>uuid</type>
+        <type>text</type>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -9799,7 +9799,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
-        <type>uuid</type>
+        <type>text</type>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -10404,7 +10404,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
-        <type>uuid</type>
+        <type>text</type>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -10800,7 +10800,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
-        <type>uuid</type>
+        <type>text</type>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -11161,7 +11161,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
-        <type>uuid</type>
+        <type>text</type>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -12054,7 +12054,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
-        <type>uuid</type>
+        <type>text</type>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -12876,7 +12876,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
-        <type>uuid</type>
+        <type>text</type>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -13122,7 +13122,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
-        <type>uuid</type>
+        <type>text</type>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -13546,7 +13546,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
-        <type>uuid</type>
+        <type>text</type>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -14163,7 +14163,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>filter</name>
         <summary>Filter term to use to filter results, when getting a single report</summary>
-        <type>uuid</type>
+        <type>text</type>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -14655,7 +14655,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
-        <type>uuid</type>
+        <type>text</type>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -15218,7 +15218,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
-        <type>uuid</type>
+        <type>text</type>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -15562,7 +15562,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
-        <type>uuid</type>
+        <type>text</type>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -15911,7 +15911,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
-        <type>uuid</type>
+        <type>text</type>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -16330,7 +16330,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
-        <type>uuid</type>
+        <type>text</type>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -16904,7 +16904,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
-        <type>uuid</type>
+        <type>text</type>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -17786,7 +17786,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
-        <type>uuid</type>
+        <type>text</type>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -18409,7 +18409,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
-        <type>uuid</type>
+        <type>text</type>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -19652,7 +19652,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
-        <type>uuid</type>
+        <type>text</type>
       </attrib>
       <attrib>
         <name>filt_id</name>

@@ -5153,7 +5153,7 @@ get_agents
        # ID of single agent to get.
        attribute agent_id { uuid }?
        & # Filter term to use to filter query.
-       attribute filter { uuid }?
+       attribute filter { text }?
        & # ID of filter to use to filter query.
        attribute filt_id { uuid }?
        & # Whether to get the trashcan agents instead.
@@ -5173,7 +5173,7 @@ get_configs
        # ID of single config to get.
        attribute config_id { uuid }?
        & # Filter term to use to filter query.
-       attribute filter { uuid }?
+       attribute filter { text }?
        & # ID of filter to use to filter query.
        attribute filt_id { uuid }?
        & # Whether to get the trashcan configs instead.
@@ -5196,7 +5196,7 @@ get_aggregates
  = element get_aggregates
      {
        # Filter term to use to filter query of the resources to aggregate.
-       attribute filter { uuid }?
+       attribute filter { text }?
        & # ID of filter to use to filter query of the resources to aggregate.
        attribute filt_id { uuid }?
        & # The OMP resource type to gather data from.
@@ -5243,7 +5243,7 @@ get_alerts
        # ID of single alert to get.
        attribute alert_id { uuid }?
        & # Filter term to use to filter query.
-       attribute filter { uuid }?
+       attribute filter { text }?
        & # ID of filter to use to filter query.
        attribute filt_id { uuid }?
        & # Whether to get the trashcan alerts instead.
@@ -5262,7 +5262,7 @@ get_assets
        # ID of single asset to get.
        attribute asset_id { uuid }?
        & # Filter term to use to filter query.
-       attribute filter { uuid }?
+       attribute filter { text }?
        & # ID of filter to use to filter query.
        attribute filt_id { uuid }?
      }
@@ -5277,7 +5277,7 @@ get_credentials
        # ID of single credential to get.
        attribute credential_id { uuid }?
        & # Filter term to use to filter query.
-       attribute filter { uuid }?
+       attribute filter { text }?
        & # ID of filter to use to filter query.
        attribute filt_id { uuid }?
        & # Whether to include a list of scanners using the credentials.
@@ -5301,7 +5301,7 @@ get_filters
        # ID of single filter to get.
        attribute filter_id { uuid }?
        & # Filter term to use to filter query.
-       attribute filter { uuid }?
+       attribute filter { text }?
        & # ID of filter to use to filter query.
        attribute filt_id { uuid }?
        & # Whether to get the trashcan filters instead.
@@ -5320,7 +5320,7 @@ get_groups
        # ID of single group to get.
        attribute group_id { uuid }?
        & # Filter term to use to filter query.
-       attribute filter { uuid }?
+       attribute filter { text }?
        & # ID of filter to use to filter query.
        attribute filt_id { uuid }?
        & # Whether to get the trashcan groups instead.
@@ -5341,7 +5341,7 @@ get_info
        & # ID of single info to get. Conflicts with name.
        attribute info_id { text }?
        & # Filter term to use to filter query.
-       attribute filter { uuid }?
+       attribute filter { text }?
        & # ID of filter to use to filter query.
        attribute filt_id { uuid }?
        & # Whether to include information about references to this information.
@@ -5358,7 +5358,7 @@ get_notes
        # ID of single note to get.
        attribute note_id { uuid }?
        & # Filter term to use to filter query.
-       attribute filter { uuid }?
+       attribute filter { text }?
        & # ID of filter to use to filter query.
        attribute filt_id { uuid }?
        & attribute nvt_oid { oid }?
@@ -5423,7 +5423,7 @@ get_overrides
        # ID of single override to get.
        attribute override_id { uuid }?
        & # Filter term to use to filter query.
-       attribute filter { uuid }?
+       attribute filter { text }?
        & # ID of filter to use to filter query.
        attribute filt_id { uuid }?
        & attribute nvt_oid { oid }?
@@ -5442,7 +5442,7 @@ get_permissions
        # ID of single permission to get.
        attribute permission_id { uuid }?
        & # Filter term to use to filter query.
-       attribute filter { uuid }?
+       attribute filter { text }?
        & # ID of filter to use to filter query.
        attribute filt_id { uuid }?
        & # Whether to get the trashcan permissions instead.
@@ -5459,7 +5459,7 @@ get_port_lists
        # ID of single port list to get.
        attribute port_list_id { uuid }?
        & # Filter term to use to filter query.
-       attribute filter { uuid }?
+       attribute filter { text }?
        & # ID of filter to use to filter query.
        attribute filt_id { uuid }?
        & # Whether to include full port list details.
@@ -5494,7 +5494,7 @@ get_reports
        # ID of single report to get.
        attribute report_id { uuid }?
        & # Filter term to use to filter results, when getting a single report.
-       attribute filter { uuid }?
+       attribute filter { text }?
        & # ID of filter to use to filter results, when getting a single report.
        attribute filt_id { uuid }?
        & # Filter term to use to filter reports.
@@ -5539,7 +5539,7 @@ get_report_formats
        # ID of single report format to get.
        attribute report_format_id { uuid }?
        & # Filter term to use to filter query.
-       attribute filter { uuid }?
+       attribute filter { text }?
        & # ID of filter to use to filter query.
        attribute filt_id { uuid }?
        & # Whether to get the trashcan report formats instead.
@@ -5562,7 +5562,7 @@ get_results
        # ID of single result to get.
        attribute result_id { uuid }?
        & # Filter term to use to filter query.
-       attribute filter { uuid }?
+       attribute filter { text }?
        & # ID of filter to use to filter query.
        attribute filt_id { uuid }?
        & # ID of task for note and override handling.
@@ -5593,7 +5593,7 @@ get_roles
        # ID of single role to get.
        attribute role_id { uuid }?
        & # Filter term to use to filter query.
-       attribute filter { uuid }?
+       attribute filter { text }?
        & # ID of filter to use to filter query.
        attribute filt_id { uuid }?
        & # Whether to get the trashcan roles instead.
@@ -5610,7 +5610,7 @@ get_scanners
        # ID of single scanner to get.
        attribute scanner_id { uuid }?
        & # Filter term to use to filter query.
-       attribute filter { uuid }?
+       attribute filter { text }?
        & # ID of filter to use to filter query.
        attribute filt_id { uuid }?
        & # Whether to get the trashcan scanners instead.
@@ -5629,7 +5629,7 @@ get_schedules
        # ID of single schedule to get.
        attribute schedule_id { uuid }?
        & # Filter term to use to filter query.
-       attribute filter { uuid }?
+       attribute filter { text }?
        & # ID of filter to use to filter query.
        attribute filt_id { uuid }?
        & # Whether to get the trashcan schedules instead.
@@ -5667,7 +5667,7 @@ get_slaves
        # ID of single slave to get.
        attribute slave_id { uuid }?
        & # Filter term to use to filter query.
-       attribute filter { uuid }?
+       attribute filter { text }?
        & # ID of filter to use to filter query.
        attribute filt_id { uuid }?
        & # Whether to get the trashcan slaves instead.
@@ -5722,7 +5722,7 @@ get_targets
        # ID of single target to get.
        attribute target_id { uuid }?
        & # Filter term to use to filter query.
-       attribute filter { uuid }?
+       attribute filter { text }?
        & # ID of filter to use to filter query.
        attribute filt_id { uuid }?
        & # Whether to get the trashcan targets instead.
@@ -5741,7 +5741,7 @@ get_tasks
        # ID of single task to get.
        attribute task_id { uuid }?
        & # Filter term to use to filter query.
-       attribute filter { uuid }?
+       attribute filter { text }?
        & # ID of filter to use to filter query.
        attribute filt_id { uuid }?
        & # Whether to get the trashcan tasks instead.
@@ -5764,7 +5764,7 @@ get_users
        # ID of single user to get.
        attribute user_id { uuid }?
        & # Filter term to use to filter query.
-       attribute filter { uuid }?
+       attribute filter { text }?
        & # ID of filter to use to filter query.
        attribute filt_id { uuid }?
      }

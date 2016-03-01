@@ -12921,7 +12921,7 @@ describe_scap_response_scap_currently_syncing_user
           </li>
 <li>
           @<b>filter</b>
-          (<a href="#type_uuid">uuid</a>)
+          (text)
           Filter term to use to filter query.
           </li>
 <li>
@@ -13170,7 +13170,7 @@ describe_scap_response_scap_currently_syncing_user
  = element get_agents
      {
        attribute agent_id { uuid }?
-       &amp; attribute filter { uuid }?
+       &amp; attribute filter { text }?
        &amp; attribute filt_id { uuid }?
        &amp; attribute trash { boolean }?
        &amp; attribute details { boolean }?
@@ -13542,7 +13542,7 @@ get_agents_response_agent_count_page
           </li>
 <li>
           @<b>filter</b>
-          (<a href="#type_uuid">uuid</a>)
+          (text)
           Filter term to use to filter query.
           </li>
 <li>
@@ -13941,7 +13941,7 @@ get_agents_response_agent_count_page
  = element get_configs
      {
        attribute config_id { uuid }?
-       &amp; attribute filter { uuid }?
+       &amp; attribute filter { text }?
        &amp; attribute filt_id { uuid }?
        &amp; attribute trash { boolean }?
        &amp; attribute details { boolean }?
@@ -14516,7 +14516,7 @@ get_configs_response_config_count_page
 <i>Command</i><ul style="list-style: none">
 <li>
           @<b>filter</b>
-          (<a href="#type_uuid">uuid</a>)
+          (text)
           Filter term to use to filter query of the resources to aggregate.
           </li>
 <li>
@@ -14807,7 +14807,7 @@ get_configs_response_config_count_page
 <i>Command</i><div style="margin-left: 5%"><pre>get_aggregates
  = element get_aggregates
      {
-       attribute filter { uuid }?
+       attribute filter { text }?
        &amp; attribute filt_id { uuid }?
        &amp; attribute type { text }
        &amp; attribute data_column { text }?
@@ -15221,7 +15221,7 @@ get_aggregates_response_filters_keywords_keyword_value
           </li>
 <li>
           @<b>filter</b>
-          (<a href="#type_uuid">uuid</a>)
+          (text)
           Filter term to use to filter query.
           </li>
 <li>
@@ -15527,7 +15527,7 @@ get_aggregates_response_filters_keywords_keyword_value
  = element get_alerts
      {
        attribute alert_id { uuid }?
-       &amp; attribute filter { uuid }?
+       &amp; attribute filter { text }?
        &amp; attribute filt_id { uuid }?
        &amp; attribute trash { boolean }?
        &amp; attribute tasks { boolean }?
@@ -15955,7 +15955,7 @@ get_alerts_response_alert_count_page
           </li>
 <li>
           @<b>filter</b>
-          (<a href="#type_uuid">uuid</a>)
+          (text)
           Filter term to use to filter query.
           </li>
 <li>
@@ -16318,7 +16318,7 @@ get_alerts_response_alert_count_page
  = element get_assets
      {
        attribute asset_id { uuid }?
-       &amp; attribute filter { uuid }?
+       &amp; attribute filter { text }?
        &amp; attribute filt_id { uuid }?
      }
 </pre></div>
@@ -16823,7 +16823,7 @@ get_assets_response_asset_count_page
           </li>
 <li>
           @<b>filter</b>
-          (<a href="#type_uuid">uuid</a>)
+          (text)
           Filter term to use to filter query.
           </li>
 <li>
@@ -17174,7 +17174,7 @@ get_assets_response_asset_count_page
  = element get_credentials
      {
        attribute credential_id { uuid }?
-       &amp; attribute filter { uuid }?
+       &amp; attribute filter { text }?
        &amp; attribute filt_id { uuid }?
        &amp; attribute scanners { boolean }?
        &amp; attribute slaves { boolean }?
@@ -17679,7 +17679,7 @@ get_credentials_response_credential_count_page
           </li>
 <li>
           @<b>filter</b>
-          (<a href="#type_uuid">uuid</a>)
+          (text)
           Filter term to use to filter query.
           </li>
 <li>
@@ -17981,7 +17981,7 @@ get_credentials_response_credential_count_page
  = element get_filters
      {
        attribute filter_id { uuid }?
-       &amp; attribute filter { uuid }?
+       &amp; attribute filter { text }?
        &amp; attribute filt_id { uuid }?
        &amp; attribute trash { boolean }?
        &amp; attribute alerts { boolean }?
@@ -18334,7 +18334,7 @@ get_filters_response_filter_count_page
           </li>
 <li>
           @<b>filter</b>
-          (<a href="#type_uuid">uuid</a>)
+          (text)
           Filter term to use to filter query.
           </li>
 <li>
@@ -18554,7 +18554,7 @@ get_filters_response_filter_count_page
  = element get_groups
      {
        attribute group_id { uuid }?
-       &amp; attribute filter { uuid }?
+       &amp; attribute filter { text }?
        &amp; attribute filt_id { uuid }?
        &amp; attribute trash { boolean }?
      }
@@ -18879,7 +18879,7 @@ get_groups_response_group_count_page
           </li>
 <li>
           @<b>filter</b>
-          (<a href="#type_uuid">uuid</a>)
+          (text)
           Filter term to use to filter query.
           </li>
 <li>
@@ -19384,7 +19384,7 @@ get_groups_response_group_count_page
        attribute type { text }
        &amp; attribute name { text }?
        &amp; attribute info_id { text }?
-       &amp; attribute filter { uuid }?
+       &amp; attribute filter { text }?
        &amp; attribute filt_id { uuid }?
        &amp; attribute details { boolean }?
      }
@@ -20170,7 +20170,7 @@ get_info_response_details
           </li>
 <li>
           @<b>filter</b>
-          (<a href="#type_uuid">uuid</a>)
+          (text)
           Filter term to use to filter query.
           </li>
 <li>
@@ -20304,7 +20304,7 @@ get_info_response_details
  = element get_notes
      {
        attribute note_id { uuid }?
-       &amp; attribute filter { uuid }?
+       &amp; attribute filter { text }?
        &amp; attribute filt_id { uuid }?
        &amp; attribute nvt_oid { oid }?
        &amp; attribute task_id { uuid }?
@@ -21410,7 +21410,7 @@ get_nvt_feed_version_response_version
           </li>
 <li>
           @<b>filter</b>
-          (<a href="#type_uuid">uuid</a>)
+          (text)
           Filter term to use to filter query.
           </li>
 <li>
@@ -21544,7 +21544,7 @@ get_nvt_feed_version_response_version
  = element get_overrides
      {
        attribute override_id { uuid }?
-       &amp; attribute filter { uuid }?
+       &amp; attribute filter { text }?
        &amp; attribute filt_id { uuid }?
        &amp; attribute nvt_oid { oid }?
        &amp; attribute task_id { uuid }?
@@ -21775,7 +21775,7 @@ get_overrides_response_override
           </li>
 <li>
           @<b>filter</b>
-          (<a href="#type_uuid">uuid</a>)
+          (text)
           Filter term to use to filter query.
           </li>
 <li>
@@ -22055,7 +22055,7 @@ get_overrides_response_override
  = element get_permissions
      {
        attribute permission_id { uuid }?
-       &amp; attribute filter { uuid }?
+       &amp; attribute filter { text }?
        &amp; attribute filt_id { uuid }?
        &amp; attribute trash { boolean }?
      }
@@ -22444,7 +22444,7 @@ get_permissions_response_permission_count_page
           </li>
 <li>
           @<b>filter</b>
-          (<a href="#type_uuid">uuid</a>)
+          (text)
           Filter term to use to filter query.
           </li>
 <li>
@@ -22742,7 +22742,7 @@ get_permissions_response_permission_count_page
  = element get_port_lists
      {
        attribute port_list_id { uuid }?
-       &amp; attribute filter { uuid }?
+       &amp; attribute filter { text }?
        &amp; attribute filt_id { uuid }?
        &amp; attribute details { boolean }?
        &amp; attribute targets { boolean }?
@@ -23375,7 +23375,7 @@ get_preferences_response_preference_default
           </li>
 <li>
           @<b>filter</b>
-          (<a href="#type_uuid">uuid</a>)
+          (text)
           Filter term to use to filter results, when getting a single report.
           </li>
 <li>
@@ -23613,7 +23613,7 @@ get_preferences_response_preference_default
  = element get_reports
      {
        attribute report_id { uuid }?
-       &amp; attribute filter { uuid }?
+       &amp; attribute filter { text }?
        &amp; attribute filt_id { uuid }?
        &amp; attribute report_filter { uuid }?
        &amp; attribute report_filt_id { uuid }?
@@ -24006,7 +24006,7 @@ get_reports_response_report_count_page
           </li>
 <li>
           @<b>filter</b>
-          (<a href="#type_uuid">uuid</a>)
+          (text)
           Filter term to use to filter query.
           </li>
 <li>
@@ -24359,7 +24359,7 @@ get_reports_response_report_count_page
  = element get_report_formats
      {
        attribute report_format_id { uuid }?
-       &amp; attribute filter { uuid }?
+       &amp; attribute filter { text }?
        &amp; attribute filt_id { uuid }?
        &amp; attribute trash { boolean }?
        &amp; attribute alerts { boolean }?
@@ -24860,7 +24860,7 @@ get_report_formats_response_report_format_count_page
           </li>
 <li>
           @<b>filter</b>
-          (<a href="#type_uuid">uuid</a>)
+          (text)
           Filter term to use to filter query.
           </li>
 <li>
@@ -25018,7 +25018,7 @@ get_report_formats_response_report_format_count_page
  = element get_results
      {
        attribute result_id { uuid }?
-       &amp; attribute filter { uuid }?
+       &amp; attribute filter { text }?
        &amp; attribute filt_id { uuid }?
        &amp; attribute task_id { uuid }?
        &amp; attribute notes { boolean }?
@@ -25322,7 +25322,7 @@ get_results_response_result_count_page
           </li>
 <li>
           @<b>filter</b>
-          (<a href="#type_uuid">uuid</a>)
+          (text)
           Filter term to use to filter query.
           </li>
 <li>
@@ -25542,7 +25542,7 @@ get_results_response_result_count_page
  = element get_roles
      {
        attribute role_id { uuid }?
-       &amp; attribute filter { uuid }?
+       &amp; attribute filter { text }?
        &amp; attribute filt_id { uuid }?
        &amp; attribute trash { boolean }?
      }
@@ -25854,7 +25854,7 @@ get_roles_response_role_count_page
           </li>
 <li>
           @<b>filter</b>
-          (<a href="#type_uuid">uuid</a>)
+          (text)
           Filter term to use to filter query.
           </li>
 <li>
@@ -26134,7 +26134,7 @@ get_roles_response_role_count_page
  = element get_scanners
      {
        attribute scanner_id { uuid }?
-       &amp; attribute filter { uuid }?
+       &amp; attribute filter { text }?
        &amp; attribute filt_id { uuid }?
        &amp; attribute trash { boolean }?
        &amp; attribute details { boolean }?
@@ -26509,7 +26509,7 @@ get_scanners_response_scanner_count_page
           </li>
 <li>
           @<b>filter</b>
-          (<a href="#type_uuid">uuid</a>)
+          (text)
           Filter term to use to filter query.
           </li>
 <li>
@@ -26800,7 +26800,7 @@ get_scanners_response_scanner_count_page
  = element get_schedules
      {
        attribute schedule_id { uuid }?
-       &amp; attribute filter { uuid }?
+       &amp; attribute filter { text }?
        &amp; attribute filt_id { uuid }?
        &amp; attribute trash { boolean }?
        &amp; attribute tasks { boolean }?
@@ -27420,7 +27420,7 @@ get_settings_response_setting_count_page
           </li>
 <li>
           @<b>filter</b>
-          (<a href="#type_uuid">uuid</a>)
+          (text)
           Filter term to use to filter query.
           </li>
 <li>
@@ -27695,7 +27695,7 @@ get_settings_response_setting_count_page
  = element get_slaves
      {
        attribute slave_id { uuid }?
-       &amp; attribute filter { uuid }?
+       &amp; attribute filter { text }?
        &amp; attribute filt_id { uuid }?
        &amp; attribute trash { boolean }?
        &amp; attribute tasks { boolean }?
@@ -28756,7 +28756,7 @@ get_tags_response_tag_count_page
           </li>
 <li>
           @<b>filter</b>
-          (<a href="#type_uuid">uuid</a>)
+          (text)
           Filter term to use to filter query.
           </li>
 <li>
@@ -29171,7 +29171,7 @@ get_tags_response_tag_count_page
  = element get_targets
      {
        attribute target_id { uuid }?
-       &amp; attribute filter { uuid }?
+       &amp; attribute filter { text }?
        &amp; attribute filt_id { uuid }?
        &amp; attribute trash { boolean }?
        &amp; attribute tasks { boolean }?
@@ -29730,7 +29730,7 @@ get_targets_response_target_count_page
           </li>
 <li>
           @<b>filter</b>
-          (<a href="#type_uuid">uuid</a>)
+          (text)
           Filter term to use to filter query.
           </li>
 <li>
@@ -30560,7 +30560,7 @@ get_targets_response_target_count_page
  = element get_tasks
      {
        attribute task_id { uuid }?
-       &amp; attribute filter { uuid }?
+       &amp; attribute filter { text }?
        &amp; attribute filt_id { uuid }?
        &amp; attribute trash { boolean }?
        &amp; attribute details { boolean }?
@@ -31796,7 +31796,7 @@ get_tasks_response_task_count_page
           </li>
 <li>
           @<b>filter</b>
-          (<a href="#type_uuid">uuid</a>)
+          (text)
           Filter term to use to filter query.
           </li>
 <li>
@@ -32074,7 +32074,7 @@ get_tasks_response_task_count_page
  = element get_users
      {
        attribute user_id { uuid }?
-       &amp; attribute filter { uuid }?
+       &amp; attribute filter { text }?
        &amp; attribute filt_id { uuid }?
      }
 </pre></div>
