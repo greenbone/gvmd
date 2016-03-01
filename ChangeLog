@@ -1,5 +1,14 @@
 2016-03-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_pg.c (create_tables): Add missing default_value column to
+	config_preferences_trash.
+
+	* doc/db_postgres.sql: Add default_value columns.
+
+	* doc/db.png: Update from source.
+
+2016-03-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml.in: Change the type of attribute
 	"filter" from "uuid" to "text".
 

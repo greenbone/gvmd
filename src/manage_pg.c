@@ -1905,7 +1905,8 @@ create_tables ()
        "  config integer REFERENCES configs_trash (id) ON DELETE RESTRICT,"
        "  type text,"
        "  name text,"
-       "  value text);");
+       "  value text,"
+       "  default_value text);");
 
   sql ("CREATE TABLE IF NOT EXISTS schedules"
        " (id SERIAL PRIMARY KEY,"
