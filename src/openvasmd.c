@@ -1148,7 +1148,7 @@ fork_update_nvt_cache ()
 
         infof ("   internal NVT cache update\n");
 
-        rebuild_nvt_cache_retry (0, 0, NULL, 1);
+        rebuild_nvt_cache_retry (1, 0, NULL, 1);
 
         /* Exit. */
 

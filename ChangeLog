@@ -1,5 +1,10 @@
 2016-03-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c (fork_update_nvt_cache): Run an update instead of a
+	rebuild on SIGHUP.
+
+2016-03-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (create_tables): Add missing default_value column to
 	config_preferences_trash.
 
