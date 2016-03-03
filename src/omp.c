@@ -10962,10 +10962,11 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
               result_get.first = 0;
               result_get.max = 1;
               init_result_get_iterator (&results, &result_get,
-                                        1,  /* apply_overides */
-                                        0,  /* autofp */
-                                        0,  /* No report restriction */
-                                        NULL);  /* No extra order SQL. */
+                                        1,     /* apply_overides */
+                                        0,     /* autofp */
+                                        0,     /* No report restriction */
+                                        NULL,  /* No host restriction */
+                                        NULL); /* No extra order SQL. */
               get_data_reset (&result_get);
 
               while (next (&results))
@@ -11233,6 +11234,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                         1,  /* apply_overides */
                                         0,  /* autofp */
                                         0,  /* No report restriction */
+                                        NULL, /* No host restriction */
                                         NULL);  /* No extra order SQL. */
               get_data_reset (&result_get);
 
@@ -17882,6 +17884,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         1,  /* apply_overides */
                                         0,  /* autofp */
                                         0,  /* No report restriction */
+                                        NULL, /* No host restriction */
                                         NULL);  /* No extra order SQL. */
 
               if (next (&results))
@@ -17931,7 +17934,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               filtered = get_results_data->get.id
                           ? 1 : result_count (&get_results_data->get,
-                                              0 /* No report */);
+                                              0 /* No report */,
+                                              NULL /* No host */);
 
               SEND_GET_END("result", &get_results_data->get, count, filtered);
             }

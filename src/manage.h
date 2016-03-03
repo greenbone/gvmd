@@ -1180,8 +1180,18 @@ report_counts (const char*, int*, int*, int*, int*, int*, int*, double*,
                int, int, int);
 
 int
-report_counts_id (report_t, int*, int*, int*, int*, int*, int*, double*, int,
-                  const char*, int, const char*);
+report_counts_id (report_t, int*, int*, int*, int*, int*, int*, double*,
+                  const get_data_t*, const char*);
+
+int
+report_counts_id_no_filt (report_t, int*, int*, int*, int*, int*, int*,
+                          double*, const get_data_t*, const char*);
+
+gchar*
+report_results_filter_term (int, int, int, int, int);
+
+get_data_t*
+report_results_get_data (int, int, int, int, int);
 
 char*
 scan_start_time (report_t);
@@ -1253,11 +1263,11 @@ const char*
 report_iterator_uuid (iterator_t*);
 
 int
-result_count (const get_data_t *, report_t);
+result_count (const get_data_t *, report_t, const char*);
 
 int
 init_result_get_iterator (iterator_t*, const get_data_t *, int, int, report_t,
-                          const gchar *);
+                          const char*, const gchar *);
 
 gboolean
 next_report (iterator_t*, report_t*);

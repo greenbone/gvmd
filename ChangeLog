@@ -1,3 +1,55 @@
+2016-03-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Replace old report results filtering with full powerfilter in various
+	places, e.g. to show the correct number of results in summaries and
+	for classic assets reports.
+
+	* src/manage_sql.c (keyword_applies): Remove duplicates of "autofp",
+	"delta_states", "levels", "min_qod", "notes", "overrides",
+	"result_hosts_only" and "timezone".
+	(init_aggregate_iterator): Add host param for results_extra_where.
+	(condition_met, task_upload_progress, reports_build_count_cache)
+	(report_cache_counts): Update report_counts_id and report_severity_data
+	params to use get_data_t structs.
+	(results_extra_where, init_result_get_iterator, result_count): Add new
+	parameter "host".
+	(report_counts_autofp_match, report_counts_match): Remove. No longer
+	used.
+	(report_severity_data): Replace filtering parameters with get_data_t
+	struct.
+	(report_counts): Update params for report_counts_id.
+	(report_counts_id_filt): Remove. Renamed to report_counts_id_full.
+	(report_counts_id_full): New function. Renamed report_counts_id_filt.
+	Update test if counts with filter can be cached, update params of
+	report_severity_data params and allow getting only filtered counts.
+	(report_counts_id_no_filt): New function. Gets unfiltered report result
+	counts.
+	(report_counts_id): Replace filtering params with get_data_t struct.
+	Change to get filtered result counts.
+	(report_severity, print_report_assets_xml): Update report_counts_id
+	params.
+	(print_report_port_xml): Add host param for init_result_get_iterator.
+	(print_report_prognostic_xml): Update report_counts_id params.
+	(print_report_xml): Update params for result_count and
+	init_result_get_iterator. Use report_counts_id_full instead of
+	report_counts_id_filt.
+	(task_trend): Update report_counts_id params.
+
+	* src/manage_sqlite3.c (report_severity_count): Update report_counts_id
+	params.
+	
+	* src/manage.c (report_results_filter_term, report_results_get_data):
+	New functions for basic filtering of report results.
+
+	* src/manage.h (report_counts_id): Update params.
+	(report_counts_id_no_filt, report_results_filter_term)
+	(report_results_get_data): New function prototypes.
+	(result_count, init_result_get_iterator): Update params.
+
+	* src/omp.c (buffer_notes_xml, buffer_overrides_xml)
+	(omp_xml_handle_end_element [CLIENT_GET_RESULTS]): Add host param
+	for init_result_get_iterator and result_count.
+
 2016-03-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Sort results more precisely for delta reports, because the delta

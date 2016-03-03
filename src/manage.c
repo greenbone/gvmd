@@ -488,6 +488,36 @@ delete_reports (task_t task)
   return 0;
 }
 
+/**
+ * @brief Create a basic filter term to get report results.
+ */
+gchar *
+report_results_filter_term (int first, int rows,
+                            int apply_overrides, int autofp, int min_qod)
+{
+  return g_strdup_printf ("first=%d rows=%d"
+                          " apply_overrides=%d autofp=%d min_qod=%d",
+                          first, rows,
+                          apply_overrides, autofp, min_qod);
+}
+
+
+/**
+ * @brief Create a new basic get_data_t struct to get report results.
+ */
+get_data_t*
+report_results_get_data (int first, int rows,
+                         int apply_overrides, int autofp, int min_qod)
+{
+  get_data_t* get = malloc (sizeof (get_data_t));
+  memset (get, 0, sizeof (get_data_t));
+  get->type = g_strdup ("result");
+  get->filter = report_results_filter_term (first, rows,
+                                            apply_overrides, autofp, min_qod);
+
+  return get;
+}
+
 /* Array index of severity 0.0 in the severity_data_t.counts array */
 #define ZERO_SEVERITY_INDEX 4
 

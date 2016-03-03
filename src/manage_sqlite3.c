@@ -1161,16 +1161,20 @@ report_severity_count (report_t report, int overrides, int min_qod,
                        char *level)
 {
   int debugs, false_positives, logs, lows, mediums, highs;
+  get_data_t *get;
 
   if (current_credentials.uuid == NULL
       || strcmp (current_credentials.uuid, "") == 0)
     return 0;
-
-  gchar *min_qod_str = g_strdup_printf ("%d", min_qod);
+  get = report_results_get_data (1   /* first */,
+                                 -1, /* rows */
+                                 overrides,
+                                 0,  /* autofp */
+                                 min_qod);
   report_counts_id (report, &debugs, &highs, &lows, &logs, &mediums,
-                    &false_positives, NULL, overrides, NULL, 0,
-                    min_qod_str);
-  g_free (min_qod_str);
+                    &false_positives, NULL, get, NULL);
+  get_data_reset (get);
+  g_free (get);
 
   if (strcasecmp (level, "Debug") == 0)
     return debugs;
