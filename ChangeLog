@@ -1,5 +1,10 @@
 2016-03-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/omp.c (buffer_get_filter_xml): Output "=" as relation if the
+	"equal" flag is set on a keyword.
+
+2016-03-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Replace old report results filtering with full powerfilter in various
 	places, e.g. to show the correct number of results in summaries and
 	for classic assets reports.

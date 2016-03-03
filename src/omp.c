@@ -6357,7 +6357,9 @@ buffer_get_filter_xml (GString *msg, const char* type,
                                 "<value>%s%s%s</value>"
                                 "</keyword>",
                                 keyword->column ? keyword->column : "",
-                                keyword_relation_symbol (keyword->relation),
+                                keyword->equal
+                                  ? "="
+                                  : keyword_relation_symbol (keyword->relation),
                                 keyword->quoted ? "\"" : "",
                                 keyword->string ? keyword->string : "",
                                 keyword->quoted ? "\"" : "");
