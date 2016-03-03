@@ -1256,7 +1256,8 @@ int
 result_count (const get_data_t *, report_t);
 
 int
-init_result_get_iterator (iterator_t*, const get_data_t *, int, int, report_t);
+init_result_get_iterator (iterator_t*, const get_data_t *, int, int, report_t,
+                          const gchar *);
 
 gboolean
 next_report (iterator_t*, report_t*);

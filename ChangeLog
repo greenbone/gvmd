@@ -1,3 +1,23 @@
+2016-03-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Sort results more precisely for delta reports, because the delta
+	comparison depends on both reports being in the same order.
+
+	* src/manage_sql.c (init_get_iterator2): Add extra_order arg, for extra
+	ORDER clause terms.  Update callers.
+	(init_result_get_iterator): Add extra_order arg.  Update callers.
+	(result_cmp): Combine the ascending and descending cases.  Add a case
+	for sorting by NVT name ("Vulnerability" column in GSA).
+	(print_report_xml): Restrict the sort columns accepted for delta
+	reports, because the comparison depends on the sorting.  In the delta
+	case pass extra sorting columns to init_result_get_iterator, because
+	subsorting is required to do the comparison.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (buffer_notes_xml, buffer_overrides_xml)
+	(omp_xml_handle_end_element): Add dummy extra_order arg.
+
 2016-03-01  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (truncate_private_key): Remove function.

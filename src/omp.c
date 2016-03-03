@@ -10964,7 +10964,8 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
               init_result_get_iterator (&results, &result_get,
                                         1,  /* apply_overides */
                                         0,  /* autofp */
-                                        0); /* No report restriction */
+                                        0,  /* No report restriction */
+                                        NULL);  /* No extra order SQL. */
               get_data_reset (&result_get);
 
               while (next (&results))
@@ -11231,7 +11232,8 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
               init_result_get_iterator (&results, &result_get,
                                         1,  /* apply_overides */
                                         0,  /* autofp */
-                                        0); /* No report restriction */
+                                        0,  /* No report restriction */
+                                        NULL);  /* No extra order SQL. */
               get_data_reset (&result_get);
 
               while (next (&results))
@@ -17879,7 +17881,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               init_result_get_iterator (&results, &get_results_data->get,
                                         1,  /* apply_overides */
                                         0,  /* autofp */
-                                        0); /* No report restriction */
+                                        0,  /* No report restriction */
+                                        NULL);  /* No extra order SQL. */
 
               if (next (&results))
                 {

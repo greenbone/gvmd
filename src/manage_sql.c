@@ -4709,6 +4709,7 @@ resource_name (const char *type, const char *uuid, int location, char **name)
  *                             resource.
  * @param[in]  owned           Only get items owned by the current user.
  * @param[in]  ignore_id       Whether to ignore id (e.g. for report results).
+ * @param[in]  extra_order     Extra ORDER clauses.
  *
  * @return 0 success, 1 failed to find resource, 2 failed to find filter, -1
  *         error.
@@ -4722,7 +4723,8 @@ init_get_iterator2 (iterator_t* iterator, const char *type,
                     const char **filter_columns, int distinct,
                     const char *extra_tables,
                     const char *extra_where, int owned,
-                    int ignore_id)
+                    int ignore_id,
+                    const char *extra_order)
 {
   int first, max;
   gchar *clause, *order, *filter, *owned_clause;
@@ -4842,14 +4844,15 @@ init_get_iterator2 (iterator_t* iterator, const char *type,
                    " FROM %ss%s %s"
                    " WHERE id = %llu"
                    " AND %s"
-                   "%s;",
+                   "%s%s;",
                    columns,
                    type,
                    type_trash_in_table (type) ? "" : "_trash",
                    extra_tables ? extra_tables : "",
                    resource,
                    owned_clause,
-                   order);
+                   order,
+                   extra_order ? extra_order : "");
   else if (get->trash)
     init_iterator (iterator,
                    "SELECT %s"
@@ -4857,27 +4860,29 @@ init_get_iterator2 (iterator_t* iterator, const char *type,
                    " WHERE"
                    "%s"
                    "%s"
-                   "%s;",
+                   "%s%s;",
                    columns,
                    type,
                    type_trash_in_table (type) ? "" : "_trash",
                    extra_tables ? extra_tables : "",
                    owned_clause,
                    extra_where ? extra_where : "",
-                   order);
+                   order,
+                   extra_order ? extra_order : "");
   else if (resource)
     init_iterator (iterator,
                    "SELECT %s"
                    " FROM %ss %s"
                    " WHERE id = %llu"
                    " AND %s"
-                   "%s;",
+                   "%s%s;",
                    columns,
                    type,
                    extra_tables ? extra_tables : "",
                    resource,
                    owned_clause,
-                   order);
+                   order,
+                   extra_order ? extra_order : "");
   else if (distinct == 0)
     /* The purpose of the inner SELECT is to use the minimum number of columns
      * when considering the whole table.  Once the filtering has reduced the
@@ -4891,7 +4896,7 @@ init_get_iterator2 (iterator_t* iterator, const char *type,
                    "              WHERE %s"
                    "              %s%s%s%s%s"
                    "              LIMIT %s OFFSET %i)"
-                   "%s;",
+                   "%s%s;",
                    columns,
                    type,
                    extra_tables ? extra_tables : "",
@@ -4905,7 +4910,8 @@ init_get_iterator2 (iterator_t* iterator, const char *type,
                    order,
                    sql_select_limit (max),
                    first,
-                   order);
+                   order,
+                   extra_order ? extra_order : "");
   else
     {
       init_iterator (iterator,
@@ -4913,7 +4919,7 @@ init_get_iterator2 (iterator_t* iterator, const char *type,
                    " FROM %ss %s"
                    " WHERE"
                    " %s"
-                   "%s%s%s%s%s"
+                   "%s%s%s%s%s%s"
                    " LIMIT %s OFFSET %i%s;",
                    distinct ? "SELECT DISTINCT * FROM (" : "",
                    columns,
@@ -4925,6 +4931,7 @@ init_get_iterator2 (iterator_t* iterator, const char *type,
                    clause ? ")" : "",
                    extra_where ? extra_where : "",
                    order,
+                   extra_order ? extra_order : "",
                    sql_select_limit (max),
                    first,
                    distinct ? ") AS subquery_for_distinct" : "");
@@ -4966,7 +4973,8 @@ init_get_iterator (iterator_t* iterator, const char *type,
 {
   return init_get_iterator2 (iterator, type, get, select_columns,
                              trash_select_columns, NULL, NULL, filter_columns,
-                             distinct, extra_tables, extra_where, owned, FALSE);
+                             distinct, extra_tables, extra_where, owned, FALSE,
+                             NULL);
 }
 
 // FIX
@@ -11849,7 +11857,8 @@ init_task_iterator (iterator_t* iterator, const get_data_t *get)
                                  ? " AND hidden = 2"
                                  : " AND hidden = 0"),
                             current_credentials.uuid ? TRUE : FALSE,
-                            FALSE);
+                            FALSE,
+                            NULL);
 
   g_free (extra_tables);
   return ret;
@@ -19646,7 +19655,8 @@ init_report_iterator (iterator_t* iterator, const get_data_t *get)
                                "      WHERE tasks.id = task)"
                                "     = 0",
                             TRUE,
-                            FALSE);
+                            FALSE,
+                            NULL);
   g_free (extra_tables);
   return ret;
 }
@@ -20279,8 +20289,6 @@ results_extra_where (const get_data_t *get, report_t report,
   return extra_where;
 }
 
-
-
 /**
  * @brief Initialise a result iterator.
  *
@@ -20289,6 +20297,7 @@ results_extra_where (const get_data_t *get, report_t report,
  * @param[in]  given_apply_overrides  Fallback apply_overrides if not in filter.
  * @param[in]  given_autofp  Fallback autofp if it is not in the filter.
  * @param[in]  report      Report to restrict returned results to.
+ * @param[in]  extra_order Extra text for ORDER term in SQL.
  *
  * @return 0 success, 1 failed to find result, failed to find filter (filt_id),
  *         -1 error.
@@ -20296,7 +20305,7 @@ results_extra_where (const get_data_t *get, report_t report,
 int
 init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
                           int given_apply_overrides, int given_autofp,
-                          report_t report)
+                          report_t report, const gchar *extra_order)
 {
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
@@ -20346,7 +20355,8 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
                             extra_tables,
                             extra_where,
                             TRUE,
-                            report ? TRUE : FALSE);
+                            report ? TRUE : FALSE,
+                            extra_order);
   g_free (extra_tables);
   g_free (extra_where);
   return ret;
@@ -23511,11 +23521,14 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
             const char* sort_field)
 {
   const char *host, *delta_host, *port, *delta_port, *type, *delta_type;
-  const char *nvt, *delta_nvt;
+  const char *nvt, *delta_nvt, *name, *delta_name;
   int ret;
   double severity, delta_severity;
 
   if (sort_field == NULL) sort_field = "type";
+
+  tracef ("   delta: %s: sort_order: %i", __FUNCTION__, sort_order);
+  tracef ("   delta: %s: sort_field: %s", __FUNCTION__, sort_field);
 
   host = result_iterator_host (results);
   delta_host = result_iterator_host (delta_results);
@@ -23532,64 +23545,42 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
   nvt = result_iterator_nvt_oid (results);
   delta_nvt = result_iterator_nvt_oid (delta_results);
 
-  if (sort_order == 0)
+  name = result_iterator_nvt_name (results);
+  delta_name = result_iterator_nvt_name (delta_results);
+
+  /* sort_order 0 is descending. */
+
+  if (strcmp (sort_field, "ROWID") == 0)
     {
-      /* Descending. */
-
-      tracef ("   delta: %s: descending", __FUNCTION__);
-
-      if (strcmp (sort_field, "ROWID") == 0)
+      if (sort_order)
         return result_iterator_result (results)
-                < result_iterator_result (delta_results);
+                > result_iterator_result (delta_results);
+      return result_iterator_result (results)
+              < result_iterator_result (delta_results);
+    }
 
-      ret = collate_ip (NULL, strlen (host), host, strlen (delta_host), delta_host);
-      tracef ("   delta: %s: host: %s VS %s (%i)",
-              __FUNCTION__, host, delta_host, ret);
+  ret = collate_ip (NULL, strlen (host), host, strlen (delta_host), delta_host);
+  tracef ("   delta: %s: host: %s VS %s (%i)",
+          __FUNCTION__, host, delta_host, ret);
+  if (ret)
+    return ret;
+
+  if ((strcmp (sort_field, "port") == 0)
+      || (strcmp (sort_field, "location") == 0))
+    {
+      /* Sorting port first. */
+
+      tracef ("   delta: %s: port first", __FUNCTION__);
+
+      ret = strcmp (port, delta_port);
+      tracef ("   delta: %s: port: %s VS %s (%i)",
+              __FUNCTION__, port, delta_port, ret);
       if (ret)
-        return ret;
-
-      if (strcmp (sort_field, "port") == 0)
         {
-          /* Sorting port first. */
-
-          tracef ("   delta: %s: port first", __FUNCTION__);
-
-          ret = strcmp (port, delta_port);
-          tracef ("   delta: %s: port: %s VS %s (%i)",
-                  __FUNCTION__, port, delta_port, ret);
-          if (ret)
-            return -ret;
-
-          tracef ("   delta: %s: severity: %e VS %e",
-                  __FUNCTION__, severity, delta_severity);
-          if (severity >= 0 && delta_severity >= 0)
-            {
-              if (severity > delta_severity)
-                return -1;
-              if (severity < delta_severity)
-                return 1;
-            }
-
-          ret = collate_message_type (NULL,
-                                      strlen (type), type,
-                                      strlen (delta_type), delta_type);
-          tracef ("   delta: %s: threat: %s VS %s (%i)",
-                  __FUNCTION__, type, delta_type, ret);
-          if (ret)
-            return -ret;
-
-          ret = strcmp (nvt, delta_nvt);
-          tracef ("   delta: %s: NVT: %s VS %s (%i)",
-                  __FUNCTION__, nvt, delta_nvt, ret);
-          if (ret)
+          if (sort_order)
             return ret;
-
-          return 0;
+          return -ret;
         }
-
-      /* Sorting severity first. */
-
-      tracef ("   delta: %s: severity first", __FUNCTION__);
 
       tracef ("   delta: %s: severity: %e VS %e",
               __FUNCTION__, severity, delta_severity);
@@ -23609,12 +23600,6 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       if (ret)
         return -ret;
 
-      ret = strcmp (port, delta_port);
-      tracef ("   delta: %s: port: %s VS %s (%i)",
-              __FUNCTION__, port, delta_port, ret);
-      if (ret)
-        return ret;
-
       ret = strcmp (nvt, delta_nvt);
       tracef ("   delta: %s: NVT: %s VS %s (%i)",
               __FUNCTION__, nvt, delta_nvt, ret);
@@ -23624,25 +23609,26 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       return 0;
     }
 
-  /* Ascending. */
-
-  tracef ("   delta: %s: ascending", __FUNCTION__);
-
-  if (strcmp (sort_field, "ROWID") == 0)
-    return result_iterator_result (results)
-            > result_iterator_result (delta_results);
-
-  ret = collate_ip (NULL, strlen (host), host, strlen (delta_host), delta_host);
-  if (ret)
-    return ret;
-
-  if (strcmp (sort_field, "port") == 0)
+  if ((strcmp (sort_field, "name") == 0)
+      || (strcmp (sort_field, "vulnerability") == 0))
     {
-      /* Sorting by port. */
+      /* Sorting NVT name first. */
 
-      tracef ("   delta: %s: port first", __FUNCTION__);
+      tracef ("   delta: %s: name first", __FUNCTION__);
+
+      ret = strcasecmp (name, delta_name);
+      tracef ("   delta: %s: name: %s VS %s (%i)",
+              __FUNCTION__, name, delta_name, ret);
+      if (ret)
+        {
+          if (sort_order)
+            return ret;
+          return -ret;
+        }
 
       ret = strcmp (port, delta_port);
+      tracef ("   delta: %s: port: %s VS %s (%i)",
+              __FUNCTION__, port, delta_port, ret);
       if (ret)
         return ret;
 
@@ -23659,6 +23645,8 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       ret = collate_message_type (NULL,
                                   strlen (type), type,
                                   strlen (delta_type), delta_type);
+      tracef ("   delta: %s: threat: %s VS %s (%i)",
+              __FUNCTION__, type, delta_type, ret);
       if (ret)
         return -ret;
 
@@ -23671,7 +23659,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       return 0;
     }
 
-  /* Sorting by severity */
+  /* Sorting severity first. */
 
   tracef ("   delta: %s: severity first", __FUNCTION__);
 
@@ -23680,18 +23668,22 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
   if (severity >= 0 && delta_severity >= 0)
     {
       if (severity > delta_severity)
-        return 1;
-      if (severity < delta_severity)
         return -1;
+      if (severity < delta_severity)
+        return 1;
     }
 
   ret = collate_message_type (NULL,
                               strlen (type), type,
                               strlen (delta_type), delta_type);
+  tracef ("   delta: %s: threat: %s VS %s (%i)",
+          __FUNCTION__, type, delta_type, ret);
   if (ret)
-    return ret;
+    return -ret;
 
   ret = strcmp (port, delta_port);
+  tracef ("   delta: %s: port: %s VS %s (%i)",
+          __FUNCTION__, port, delta_port, ret);
   if (ret)
     return ret;
 
@@ -25228,7 +25220,7 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
                                        min_cvss_base ? min_cvss_base : "");
 
   init_result_get_iterator (&results, &result_get, apply_overrides, autofp,
-                            report);
+                            report, NULL);
 
   get_data_reset (&result_get);
 
@@ -26260,6 +26252,28 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       zone = NULL;
     }
 
+  if (delta
+      && sort_field
+      && strcmp (sort_field, "name")
+      && strcmp (sort_field, "vulnerability")
+      && strcmp (sort_field, "host")
+      && strcmp (sort_field, "port")
+      && strcmp (sort_field, "location")
+      && strcmp (sort_field, "severity"))
+    {
+      tracef ("   delta: %s: exit because sort_field: %s", __FUNCTION__,
+              sort_field);
+      fclose (out);
+      g_free (term);
+      g_free (sort_field);
+      g_free (levels);
+      g_free (search_phrase);
+      g_free (min_cvss_base);
+      g_free (min_qod);
+      g_free (delta_states);
+      return -1;
+    }
+
   levels = levels ? levels : g_strdup ("hmlgd");
 
   if (task && task_uuid (task, &tsk_uuid))
@@ -26818,22 +26832,84 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   if (delta && get->details)
     {
       int res;
+      gchar *order;
+
+      if ((strcmp (sort_field, "name") == 0)
+          || (strcmp (sort_field, "vulnerability") == 0))
+        order = g_strdup (", host, port, severity, nvt, description");
+      else if (strcmp (sort_field, "host") == 0)
+        order = g_strdup (", port, severity, nvt, description");
+      else if ((strcmp (sort_field, "port") == 0)
+               || (strcmp (sort_field, "location") == 0))
+        order = g_strdup (", host, severity, nvt, description");
+      else if (strcmp (sort_field, "severity") == 0)
+        order = g_strdup (", host, port, nvt, description");
+      else if (strcmp (sort_field, "nvt") == 0)
+        order = g_strdup (", host, port, severity, description");
+      else
+        order = g_strdup (", host, port, severity, description");
+
+#if 0
+      iterator_t results2;
 
       res = init_result_get_iterator (&results, get,
-                                      apply_overrides, autofp, report);
+                                      apply_overrides, autofp, report, order);
       if (res)
         return -1;
 
-      res = init_result_get_iterator (&delta_results, get,
-                                      apply_overrides, autofp, delta);
+      res = init_result_get_iterator (&results2, get,
+                                      apply_overrides, autofp, delta, order);
       if (res)
         return -1;
+
+      tracef ("   delta: %s: REPORT 1:", __FUNCTION__);
+      while (next (&results))
+        tracef ("   delta: %s: %s   %s   %s   %s   %.30s",
+                __FUNCTION__,
+                result_iterator_nvt_name (&results),
+                result_iterator_host (&results),
+                result_iterator_type (&results),
+                result_iterator_port (&results),
+                result_iterator_descr (&results));
+      cleanup_iterator (&results);
+      tracef ("   delta: %s: REPORT 1 END", __FUNCTION__);
+
+      tracef ("   delta: %s: REPORT 2:", __FUNCTION__);
+      while (next (&results2))
+        tracef ("   delta: %s: %s   %s   %s   %s   %.30s",
+                __FUNCTION__,
+                result_iterator_nvt_name (&results2),
+                result_iterator_host (&results2),
+                result_iterator_type (&results2),
+                result_iterator_port (&results2),
+                result_iterator_descr (&results2));
+      cleanup_iterator (&results2);
+      tracef ("   delta: %s: REPORT 2 END", __FUNCTION__);
+#endif
+
+      res = init_result_get_iterator (&results, get,
+                                      apply_overrides, autofp, report, order);
+      if (res)
+        {
+          g_free (order);
+          return -1;
+        }
+
+      res = init_result_get_iterator (&delta_results, get,
+                                      apply_overrides, autofp, delta, order);
+      if (res)
+        {
+          g_free (order);
+          return -1;
+        }
+
+      g_free (order);
     }
   else if (get->details)
     {
       int res;
       res = init_result_get_iterator (&results, get,
-                                      apply_overrides, autofp, report);
+                                      apply_overrides, autofp, report, NULL);
       if (res)
         return -1;
     }
@@ -26878,6 +26954,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       /* Compare the results in the two iterators, which are sorted. */
 
       tracef ("   delta: %s: start", __FUNCTION__);
+      tracef ("   delta: %s: sort_field: %s", __FUNCTION__, sort_field);
       done = !next (&results);
       delta_done = !next (&delta_results);
       while (1)
