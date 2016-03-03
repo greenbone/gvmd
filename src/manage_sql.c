@@ -18902,6 +18902,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                      "  ELSE %s"
                                      "  END)"
                                      " DESC,"
+                                     " order_port (port),"
                                      " nvt,"
                                      " description",
                                      ascending ? "ASC" : "DESC",
@@ -22405,6 +22406,28 @@ typedef enum
 } compare_results_t;
 
 /**
+ * @brief Convert port to int for order comparison.
+ *
+ * @param[in]  port  Port, as text.
+ *
+ * @return Port, as integer.
+ */
+static int
+port_order (const char* port)
+{
+  int port_num;
+
+  /* Must match order_port SQL function. */
+
+  port_num = atoi (port);
+  if (port_num > 0)
+    return port_num;
+  if (sscanf (port, "%*s (%i/%*s)", &port_num) == 1)
+    return port_num;
+  return 0;
+}
+
+/**
  * @brief Return the sort order of two results.
  *
  * @param[in]  results        Iterator containing first result.
@@ -22420,11 +22443,14 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
             const char* sort_field)
 {
   const char *host, *delta_host, *port, *delta_port, *type, *delta_type;
-  const char *nvt, *delta_nvt;
+  const char *nvt, *delta_nvt, *name, *delta_name;
   int ret;
   double severity, delta_severity;
 
   if (sort_field == NULL) sort_field = "type";
+
+  tracef ("   delta: %s: sort_order: %i", __FUNCTION__, sort_order);
+  tracef ("   delta: %s: sort_field: %s", __FUNCTION__, sort_field);
 
   host = result_iterator_host (results);
   delta_host = result_iterator_host (delta_results);
@@ -22441,64 +22467,42 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
   nvt = result_iterator_nvt_oid (results);
   delta_nvt = result_iterator_nvt_oid (delta_results);
 
-  if (sort_order == 0)
+  name = result_iterator_nvt_name (results);
+  delta_name = result_iterator_nvt_name (delta_results);
+
+  /* sort_order 0 is descending. */
+
+  if (strcmp (sort_field, "ROWID") == 0)
     {
-      /* Descending. */
-
-      tracef ("   delta: %s: descending", __FUNCTION__);
-
-      if (strcmp (sort_field, "ROWID") == 0)
+      if (sort_order)
         return result_iterator_result (results)
-                < result_iterator_result (delta_results);
+                > result_iterator_result (delta_results);
+      return result_iterator_result (results)
+              < result_iterator_result (delta_results);
+    }
 
-      ret = collate_ip (NULL, strlen (host), host, strlen (delta_host), delta_host);
-      tracef ("   delta: %s: host: %s VS %s (%i)",
-              __FUNCTION__, host, delta_host, ret);
+  ret = collate_ip (NULL, strlen (host), host, strlen (delta_host), delta_host);
+  tracef ("   delta: %s: host: %s VS %s (%i)",
+          __FUNCTION__, host, delta_host, ret);
+  if (ret)
+    return ret;
+
+  if ((strcmp (sort_field, "port") == 0)
+      || (strcmp (sort_field, "location") == 0))
+    {
+      /* Sorting port first. */
+
+      tracef ("   delta: %s: port first", __FUNCTION__);
+
+      ret = port_order (port) - port_order (delta_port);
+      tracef ("   delta: %s: port: %s VS %s (%i)",
+              __FUNCTION__, port, delta_port, ret);
       if (ret)
-        return ret;
-
-      if (strcmp (sort_field, "port") == 0)
         {
-          /* Sorting port first. */
-
-          tracef ("   delta: %s: port first", __FUNCTION__);
-
-          ret = strcmp (port, delta_port);
-          tracef ("   delta: %s: port: %s VS %s (%i)",
-                  __FUNCTION__, port, delta_port, ret);
-          if (ret)
-            return -ret;
-
-          tracef ("   delta: %s: severity: %e VS %e",
-                  __FUNCTION__, severity, delta_severity);
-          if (severity >= 0 && delta_severity >= 0)
-            {
-              if (severity > delta_severity)
-                return -1;
-              if (severity < delta_severity)
-                return 1;
-            }
-
-          ret = collate_message_type (NULL,
-                                      strlen (type), type,
-                                      strlen (delta_type), delta_type);
-          tracef ("   delta: %s: threat: %s VS %s (%i)",
-                  __FUNCTION__, type, delta_type, ret);
-          if (ret)
-            return -ret;
-
-          ret = strcmp (nvt, delta_nvt);
-          tracef ("   delta: %s: NVT: %s VS %s (%i)",
-                  __FUNCTION__, nvt, delta_nvt, ret);
-          if (ret)
+          if (sort_order)
             return ret;
-
-          return 0;
+          return -ret;
         }
-
-      /* Sorting severity first. */
-
-      tracef ("   delta: %s: severity first", __FUNCTION__);
 
       tracef ("   delta: %s: severity: %e VS %e",
               __FUNCTION__, severity, delta_severity);
@@ -22518,12 +22522,6 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       if (ret)
         return -ret;
 
-      ret = strcmp (port, delta_port);
-      tracef ("   delta: %s: port: %s VS %s (%i)",
-              __FUNCTION__, port, delta_port, ret);
-      if (ret)
-        return ret;
-
       ret = strcmp (nvt, delta_nvt);
       tracef ("   delta: %s: NVT: %s VS %s (%i)",
               __FUNCTION__, nvt, delta_nvt, ret);
@@ -22533,25 +22531,26 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       return 0;
     }
 
-  /* Ascending. */
-
-  tracef ("   delta: %s: ascending", __FUNCTION__);
-
-  if (strcmp (sort_field, "ROWID") == 0)
-    return result_iterator_result (results)
-            > result_iterator_result (delta_results);
-
-  ret = collate_ip (NULL, strlen (host), host, strlen (delta_host), delta_host);
-  if (ret)
-    return ret;
-
-  if (strcmp (sort_field, "port") == 0)
+  if ((strcmp (sort_field, "name") == 0)
+      || (strcmp (sort_field, "vulnerability") == 0))
     {
-      /* Sorting by port. */
+      /* Sorting NVT name first. */
 
-      tracef ("   delta: %s: port first", __FUNCTION__);
+      tracef ("   delta: %s: name first", __FUNCTION__);
 
-      ret = strcmp (port, delta_port);
+      ret = strcmp (name, delta_name);
+      tracef ("   delta: %s: name: %s VS %s (%i)",
+              __FUNCTION__, name, delta_name, ret);
+      if (ret)
+        {
+          if (sort_order)
+            return ret;
+          return -ret;
+        }
+
+      ret = port_order (port) - port_order (delta_port);
+      tracef ("   delta: %s: port: %s VS %s (%i)",
+              __FUNCTION__, port, delta_port, ret);
       if (ret)
         return ret;
 
@@ -22568,6 +22567,8 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       ret = collate_message_type (NULL,
                                   strlen (type), type,
                                   strlen (delta_type), delta_type);
+      tracef ("   delta: %s: threat: %s VS %s (%i)",
+              __FUNCTION__, type, delta_type, ret);
       if (ret)
         return -ret;
 
@@ -22580,7 +22581,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       return 0;
     }
 
-  /* Sorting by severity */
+  /* Sorting severity first. */
 
   tracef ("   delta: %s: severity first", __FUNCTION__);
 
@@ -22589,18 +22590,22 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
   if (severity >= 0 && delta_severity >= 0)
     {
       if (severity > delta_severity)
-        return 1;
-      if (severity < delta_severity)
         return -1;
+      if (severity < delta_severity)
+        return 1;
     }
 
   ret = collate_message_type (NULL,
                               strlen (type), type,
                               strlen (delta_type), delta_type);
+  tracef ("   delta: %s: threat: %s VS %s (%i)",
+          __FUNCTION__, type, delta_type, ret);
   if (ret)
     return ret;
 
-  ret = strcmp (port, delta_port);
+  ret = port_order (port) - port_order (delta_port);
+  tracef ("   delta: %s: port: %s VS %s (%i)",
+          __FUNCTION__, port, delta_port, ret);
   if (ret)
     return ret;
 
@@ -25224,6 +25229,28 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
   levels = levels ? levels : g_strdup ("hmlgd");
 
+  if (delta
+      && sort_field
+      && strcmp (sort_field, "name")
+      && strcmp (sort_field, "vulnerability")
+      && strcmp (sort_field, "host")
+      && strcmp (sort_field, "port")
+      && strcmp (sort_field, "location")
+      && strcmp (sort_field, "severity"))
+    {
+      tracef ("   delta: %s: exit because sort_field: %s", __FUNCTION__,
+              sort_field);
+      fclose (out);
+      g_free (term);
+      g_free (sort_field);
+      g_free (levels);
+      g_free (search_phrase);
+      g_free (min_cvss_base);
+      g_free (min_qod);
+      g_free (delta_states);
+      return -1;
+    }
+
   if (task && task_uuid (task, &tsk_uuid))
     {
       fclose (out);
@@ -25793,6 +25820,58 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
   if (delta && get->details)
     {
+#if 0
+      init_result_iterator (&results, report, 0,
+                            0,
+                            -1,
+                            sort_order,
+                            sort_field,
+                            levels,
+                            autofp,
+                            search_phrase,
+                            search_phrase_exact,
+                            min_cvss_base,
+                            min_qod,
+                            apply_overrides);
+
+      init_result_iterator (&delta_results, delta, 0,
+                            0,
+                            -1,
+                            sort_order,
+                            sort_field,
+                            levels,
+                            autofp,
+                            search_phrase,
+                            search_phrase_exact,
+                            min_cvss_base,
+                            min_qod,
+                            apply_overrides);
+
+      tracef ("   delta: %s: REPORT 1:", __FUNCTION__);
+      while (next (&results))
+        tracef ("   delta: %s: %s   %s   %s   %s   %.30s",
+                __FUNCTION__,
+                result_iterator_nvt_name (&results),
+                result_iterator_host (&results),
+                result_iterator_type (&results),
+                result_iterator_port (&results),
+                result_iterator_descr (&results));
+      cleanup_iterator (&results);
+      tracef ("   delta: %s: REPORT 1 END", __FUNCTION__);
+
+      tracef ("   delta: %s: REPORT 2:", __FUNCTION__);
+      while (next (&delta_results))
+        tracef ("   delta: %s: %s   %s   %s   %s   %.30s",
+                __FUNCTION__,
+                result_iterator_nvt_name (&delta_results),
+                result_iterator_host (&delta_results),
+                result_iterator_type (&delta_results),
+                result_iterator_port (&delta_results),
+                result_iterator_descr (&delta_results));
+      cleanup_iterator (&delta_results);
+      tracef ("   delta: %s: REPORT 2 END", __FUNCTION__);
+#endif
+
       init_result_iterator (&results, report, 0,
                             0,
                             -1,
@@ -25873,6 +25952,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       /* Compare the results in the two iterators, which are sorted. */
 
       tracef ("   delta: %s: start", __FUNCTION__);
+      tracef ("   delta: %s: sort_field: %s", __FUNCTION__, sort_field);
       done = !next (&results);
       delta_done = !next (&delta_results);
       while (1)
