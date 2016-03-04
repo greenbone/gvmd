@@ -1,3 +1,9 @@
+2016-03-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (filtered_host_count): Correct order of sql_int
+	parameters and add missing closing parenthesis in cases with
+	search phrase.
+
 2016-03-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/omp.c (buffer_get_filter_xml): Output "=" as relation if the

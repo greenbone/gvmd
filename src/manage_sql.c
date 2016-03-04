@@ -24132,11 +24132,11 @@ filtered_host_count (const char *levels, const char *search_phrase,
                   "             %s);",
                   sql_ilike_op (),
                   quoted_search_phrase,
+                  last_report_sql,
                   sql_ilike_op (),
-                  last_report_sql,
                   quoted_search_phrase,
-                  last_report_sql,
                   new_severity_sql,
+                  last_report_sql,
                   levels_sql ? levels_sql->str : "");
           g_free (quoted_search_phrase);
         }
@@ -24191,7 +24191,7 @@ filtered_host_count (const char *levels, const char *search_phrase,
                       "        OR name = 'ports')"
                       "   AND source_type = 'nvt'"
                       "   AND value %s '%%%s%%')"
-                      "  ORDER BY order_inet (host);",
+                      "  ORDER BY order_inet (host));",
                       sql_ilike_op (),
                       quoted_search_phrase,
                       sql_ilike_op (),
