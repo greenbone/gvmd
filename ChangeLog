@@ -1,5 +1,10 @@
 2016-03-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (print_report_assets_xml): Use ip instead of host
+	in report_counts_id call.
+
+2016-03-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (filtered_host_count): Correct order of sql_int
 	parameters and add missing closing parenthesis in cases with
 	search phrase.

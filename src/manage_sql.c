@@ -24644,7 +24644,7 @@ print_report_assets_xml (FILE *out, const char *host, int first_result, int
 
               report_counts_id (report, NULL, &holes, &infos, &logs,
                                 &warnings, &false_positives, &severity,
-                                get, host);
+                                get, ip);
 
               PRINT (out,
                      "<detail>"
