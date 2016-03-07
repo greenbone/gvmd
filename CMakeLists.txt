@@ -130,7 +130,6 @@ set (CPACK_SOURCE_IGNORE_FILES
 "tools/greenbone-scapdata-sync$"
 "tools/greenbone-certdata-sync$"
 "tools/openvas-scapdata-sync$"
-"tools/openvas-certdata-sync$"
 "tools/openvas-portnames-update$"
 "tools/openvas-migrate-to-postgres$"
 "OMP.xml$"
@@ -299,7 +298,6 @@ configure_file (tools/greenbone-scapdata-sync.in tools/greenbone-scapdata-sync @
 configure_file (tools/greenbone-certdata-sync.in tools/greenbone-certdata-sync @ONLY)
 configure_file (tools/openvas-scapdata-sync.in tools/openvas-scapdata-sync @ONLY)
 configure_file (tools/openvas-portnames-update.in tools/openvas-portnames-update @ONLY)
-configure_file (tools/openvas-certdata-sync.in tools/openvas-certdata-sync @ONLY)
 configure_file (tools/openvas-migrate-to-postgres.in tools/openvas-migrate-to-postgres @ONLY)
 
 ## Program
@@ -565,11 +563,6 @@ install (FILES ${CMAKE_BINARY_DIR}/tools/openvas-scapdata-sync
                      GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 install (FILES ${CMAKE_BINARY_DIR}/tools/openvas-portnames-update
-         DESTINATION ${SBINDIR}
-         PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
-                     GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-
-install (FILES ${CMAKE_BINARY_DIR}/tools/openvas-certdata-sync
          DESTINATION ${SBINDIR}
          PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
                      GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)

@@ -5184,7 +5184,7 @@ static const gchar *scap_script = SBINDIR "/openvas-scapdata-sync";
 /**
  * @brief The CERT synchronization script for this daemon.
  */
-static const gchar *cert_script = SBINDIR "/openvas-certdata-sync";
+static const gchar *cert_script = SBINDIR "/greenbone-certdata-sync";
 
 
 /* Client state. */
