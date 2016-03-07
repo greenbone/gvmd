@@ -23463,7 +23463,7 @@ filtered_host_count (const char *levels, const char *search_phrase,
                       "        OR name = 'ports')"
                       "   AND source_type = 'nvt'"
                       "   AND value LIKE '%%%s%%')"
-                      "  ORDER BY inet (host);",
+                      "  ORDER BY inet (host));",
                       quoted_search_phrase,
                       quoted_search_phrase);
       g_free (quoted_search_phrase);

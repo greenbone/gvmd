@@ -1,3 +1,10 @@
+2016-03-07  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport applicable part of r24607.
+
+	* src/manage_sql.c (filtered_host_count): Add missing closing
+	parenthesis in sql_int query in case with search phrase and no levels.
+
 2016-03-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport some of r24577.
