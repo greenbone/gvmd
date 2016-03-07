@@ -943,5 +943,5 @@ make_config_discovery (char *const uuid, char *const selector_name)
        uuid);
 
 
-  sql ("COMMIT;");
+  sql_commit ();
 }

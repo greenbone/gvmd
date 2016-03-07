@@ -251,7 +251,7 @@ migrate_0_to_1 ()
 
   if (manage_db_version () != 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -286,7 +286,7 @@ migrate_0_to_1 ()
 
   set_db_version (1);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -307,7 +307,7 @@ migrate_1_to_2 ()
 
   if (manage_db_version () != 1)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -336,7 +336,7 @@ migrate_1_to_2 ()
 
   set_db_version (2);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -355,7 +355,7 @@ migrate_2_to_3 ()
 
   if (manage_db_version () != 2)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -388,7 +388,7 @@ migrate_2_to_3 ()
 
   set_db_version (3);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -409,7 +409,7 @@ migrate_3_to_4 ()
 
   if (manage_db_version () != 3)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -437,7 +437,7 @@ migrate_3_to_4 ()
 
   set_db_version (4);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -909,7 +909,7 @@ migrate_4_to_5 ()
 
   if (manage_db_version () != 4)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -960,7 +960,7 @@ migrate_4_to_5 ()
 
   set_db_version (5);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   /* All the moving may have left much empty space, so vacuum. */
 
@@ -1008,7 +1008,7 @@ migrate_5_to_6_move_other_config (const char *predefined_config_name,
                          predefined_config_id);
       if (name == NULL)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           abort ();
         }
       quoted_name = sql_quote (name);
@@ -1037,7 +1037,7 @@ migrate_5_to_6 ()
 
   if (manage_db_version () != 5)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -1073,7 +1073,7 @@ migrate_5_to_6 ()
       g_warning ("%s: a predefined config has moved from the standard location,"
                  " giving up\n",
                  __FUNCTION__);
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -1090,7 +1090,7 @@ migrate_5_to_6 ()
 
   set_db_version (6);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -1109,7 +1109,7 @@ migrate_6_to_7 ()
 
   if (manage_db_version () != 6)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -1123,7 +1123,7 @@ migrate_6_to_7 ()
 
   set_db_version (7);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -1142,7 +1142,7 @@ migrate_7_to_8 ()
 
   if (manage_db_version () != 7)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -1157,7 +1157,7 @@ migrate_7_to_8 ()
 
   set_db_version (8);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -1176,7 +1176,7 @@ migrate_8_to_9 ()
 
   if (manage_db_version () != 8)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -1225,7 +1225,7 @@ migrate_8_to_9 ()
 
   set_db_version (9);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -1283,7 +1283,7 @@ migrate_9_to_10 ()
 
   if (manage_db_version () != 9)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -1311,7 +1311,7 @@ migrate_9_to_10 ()
           if (uuid == NULL)
             {
               cleanup_iterator (&rows);
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return -1;
             }
         }
@@ -1335,7 +1335,7 @@ migrate_9_to_10 ()
 
   set_db_version (10);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -1354,7 +1354,7 @@ migrate_10_to_11 ()
 
   if (manage_db_version () != 10)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -1390,7 +1390,7 @@ migrate_10_to_11 ()
 
   set_db_version (11);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -1409,7 +1409,7 @@ migrate_11_to_12 ()
 
   if (manage_db_version () != 11)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -1471,7 +1471,7 @@ migrate_11_to_12 ()
 
   set_db_version (12);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -1492,7 +1492,7 @@ migrate_12_to_13 ()
 
   if (manage_db_version () != 12)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -1517,7 +1517,7 @@ migrate_12_to_13 ()
       if (uuid == NULL)
         {
           cleanup_iterator (&rows);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
 
@@ -1552,7 +1552,7 @@ migrate_12_to_13 ()
 
   set_db_version (13);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -1571,7 +1571,7 @@ migrate_13_to_14 ()
 
   if (manage_db_version () != 13)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -1588,7 +1588,7 @@ migrate_13_to_14 ()
 
   set_db_version (14);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -1607,7 +1607,7 @@ migrate_14_to_15 ()
 
   if (manage_db_version () != 14)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -1625,7 +1625,7 @@ migrate_14_to_15 ()
 
   set_db_version (15);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -1644,7 +1644,7 @@ migrate_15_to_16 ()
 
   if (manage_db_version () != 15)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -1670,7 +1670,7 @@ migrate_15_to_16 ()
 
   set_db_version (16);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -1691,7 +1691,7 @@ migrate_16_to_17 ()
 
   if (manage_db_version () != 16)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -1732,7 +1732,7 @@ migrate_16_to_17 ()
 
   set_db_version (17);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -1773,7 +1773,7 @@ migrate_17_to_18 ()
 
   if (manage_db_version () != 17)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -1810,7 +1810,7 @@ migrate_17_to_18 ()
 
   set_db_version (18);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -1829,7 +1829,7 @@ migrate_18_to_19 ()
 
   if (manage_db_version () != 18)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -1949,7 +1949,7 @@ migrate_18_to_19 ()
 
   set_db_version (19);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -1970,7 +1970,7 @@ migrate_19_to_20 ()
 
   if (manage_db_version () != 19)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -2013,7 +2013,7 @@ migrate_19_to_20 ()
         {
           g_warning ("%s: sql_prepare failed\n", __FUNCTION__);
           cleanup_iterator (&rows);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
 
@@ -2031,7 +2031,7 @@ migrate_19_to_20 ()
         {
           g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
           cleanup_iterator (&rows);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           g_free (installer);
           return -1;
         }
@@ -2044,7 +2044,7 @@ migrate_19_to_20 ()
         {
           g_warning ("%s: sql_exec failed\n", __FUNCTION__);
           cleanup_iterator (&rows);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
 
@@ -2056,7 +2056,7 @@ migrate_19_to_20 ()
 
   set_db_version (20);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -2075,7 +2075,7 @@ migrate_20_to_21 ()
 
   if (manage_db_version () != 20)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -2091,7 +2091,7 @@ migrate_20_to_21 ()
 
   set_db_version (21);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -2112,7 +2112,7 @@ migrate_21_to_22 ()
 
   if (manage_db_version () != 21)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -2275,7 +2275,7 @@ migrate_21_to_22 ()
             {
               g_warning ("%s: owner missing from users table\n", __FUNCTION__);
               cleanup_iterator (&rows);
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return -1;
             }
           old_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
@@ -2315,7 +2315,7 @@ migrate_21_to_22 ()
           g_free (old_dir);
           g_free (new_dir);
           cleanup_iterator (&rows);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
       g_free (old_dir);
@@ -2326,7 +2326,7 @@ migrate_21_to_22 ()
 
   set_db_version (22);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -2345,7 +2345,7 @@ migrate_22_to_23 ()
 
   if (manage_db_version () != 22)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -2365,7 +2365,7 @@ migrate_22_to_23 ()
 
   set_db_version (23);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -2384,7 +2384,7 @@ migrate_23_to_24 ()
 
   if (manage_db_version () != 23)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -2400,7 +2400,7 @@ migrate_23_to_24 ()
 
   set_db_version (24);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -2421,7 +2421,7 @@ migrate_24_to_25 ()
 
   if (manage_db_version () != 24)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -2530,7 +2530,7 @@ migrate_24_to_25 ()
 
   set_db_version (25);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -2549,7 +2549,7 @@ migrate_25_to_26 ()
 
   if (manage_db_version () != 25)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -2564,7 +2564,7 @@ migrate_25_to_26 ()
 
   set_db_version (26);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -2583,7 +2583,7 @@ migrate_26_to_27 ()
 
   if (manage_db_version () != 26)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -2602,7 +2602,7 @@ migrate_26_to_27 ()
 
   set_db_version (27);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -2621,7 +2621,7 @@ migrate_27_to_28 ()
 
   if (manage_db_version () != 27)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -2636,7 +2636,7 @@ migrate_27_to_28 ()
 
   set_db_version (28);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -2655,7 +2655,7 @@ migrate_28_to_29 ()
 
   if (manage_db_version () != 28)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -2670,7 +2670,7 @@ migrate_28_to_29 ()
 
   set_db_version (29);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -2689,7 +2689,7 @@ migrate_29_to_30 ()
 
   if (manage_db_version () != 29)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -2704,7 +2704,7 @@ migrate_29_to_30 ()
 
   set_db_version (30);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -2723,7 +2723,7 @@ migrate_30_to_31 ()
 
   if (manage_db_version () != 30)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -2738,7 +2738,7 @@ migrate_30_to_31 ()
 
   set_db_version (31);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -2757,7 +2757,7 @@ migrate_31_to_32 ()
 
   if (manage_db_version () != 31)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -2777,7 +2777,7 @@ migrate_31_to_32 ()
 
   set_db_version (32);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -2796,7 +2796,7 @@ migrate_32_to_33 ()
 
   if (manage_db_version () != 32)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -2820,7 +2820,7 @@ migrate_32_to_33 ()
 
   set_db_version (33);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -2860,7 +2860,7 @@ migrate_33_to_34 ()
 
   if (manage_db_version () != 33)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -2879,7 +2879,7 @@ migrate_33_to_34 ()
 
   set_db_version (34);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -2898,7 +2898,7 @@ migrate_34_to_35 ()
 
   if (manage_db_version () != 34)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -2916,7 +2916,7 @@ migrate_34_to_35 ()
 
   set_db_version (35);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -2962,7 +2962,7 @@ migrate_35_to_36 ()
 
   if (manage_db_version () != 35)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -3057,7 +3057,7 @@ migrate_35_to_36 ()
 
   set_db_version (36);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -3076,7 +3076,7 @@ migrate_36_to_37 ()
 
   if (manage_db_version () != 36)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -3095,7 +3095,7 @@ migrate_36_to_37 ()
 
   set_db_version (37);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -3116,7 +3116,7 @@ migrate_37_to_38 ()
 
   if (manage_db_version () != 37)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -3145,7 +3145,7 @@ migrate_37_to_38 ()
     {
       g_warning ("%s: failed to create dir %s", __FUNCTION__, new_dir);
       g_free (new_dir);
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -3195,7 +3195,7 @@ migrate_37_to_38 ()
         g_free (new_dir);
         g_free (cmd[0]);
         g_free (cmd);
-        sql ("ROLLBACK;");
+        sql_rollback ();
         return -1;
       }
 
@@ -3210,7 +3210,7 @@ migrate_37_to_38 ()
 
   set_db_version (38);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -3229,7 +3229,7 @@ migrate_38_to_39 ()
 
   if (manage_db_version () != 38)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -3262,7 +3262,7 @@ migrate_38_to_39 ()
 
   set_db_version (39);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -3296,7 +3296,7 @@ migrate_39_to_40 ()
 
   if (manage_db_version () != 39)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -3316,7 +3316,7 @@ migrate_39_to_40 ()
 
   set_db_version (40);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -3335,7 +3335,7 @@ migrate_40_to_41 ()
 
   if (manage_db_version () != 40)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -3368,7 +3368,7 @@ migrate_40_to_41 ()
 
   set_db_version (41);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -3387,7 +3387,7 @@ migrate_41_to_42 ()
 
   if (manage_db_version () != 41)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -3421,7 +3421,7 @@ migrate_41_to_42 ()
 
   set_db_version (42);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -3440,7 +3440,7 @@ migrate_42_to_43 ()
 
   if (manage_db_version () != 42)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -3468,7 +3468,7 @@ migrate_42_to_43 ()
 
   set_db_version (43);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -3487,7 +3487,7 @@ migrate_43_to_44 ()
 
   if (manage_db_version () != 43)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -3503,7 +3503,7 @@ migrate_43_to_44 ()
                  task_db_name ? task_db_name
                               : OPENVAS_STATE_DIR "/mgr/tasks.db",
                  strerror (errno));
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -3511,7 +3511,7 @@ migrate_43_to_44 ()
 
   set_db_version (44);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -3530,7 +3530,7 @@ migrate_44_to_45 ()
 
   if (manage_db_version () != 44)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -3545,7 +3545,7 @@ migrate_44_to_45 ()
 
   set_db_version (45);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -3564,7 +3564,7 @@ migrate_45_to_46 ()
 
   if (manage_db_version () != 45)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -3579,7 +3579,7 @@ migrate_45_to_46 ()
 
   set_db_version (46);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -3598,7 +3598,7 @@ migrate_46_to_47 ()
 
   if (manage_db_version () != 46)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -3621,7 +3621,7 @@ migrate_46_to_47 ()
 
   set_db_version (47);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -3640,7 +3640,7 @@ migrate_47_to_48 ()
 
   if (manage_db_version () != 47)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -3659,7 +3659,7 @@ migrate_47_to_48 ()
 
   set_db_version (48);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -3678,7 +3678,7 @@ migrate_48_to_49 ()
 
   if (manage_db_version () != 48)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -3703,7 +3703,7 @@ migrate_48_to_49 ()
 
   set_db_version (49);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -3722,7 +3722,7 @@ migrate_49_to_50 ()
 
   if (manage_db_version () != 49)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -3755,7 +3755,7 @@ migrate_49_to_50 ()
 
   set_db_version (50);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -3774,7 +3774,7 @@ migrate_50_to_51 ()
 
   if (manage_db_version () != 50)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -3789,7 +3789,7 @@ migrate_50_to_51 ()
 
   set_db_version (51);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -3808,7 +3808,7 @@ migrate_51_to_52 ()
 
   if (manage_db_version () != 51)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -3816,7 +3816,7 @@ migrate_51_to_52 ()
 
   if (manage_create_migrate_51_to_52_convert ())
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       g_critical ("%s: failed to create convert", __FUNCTION__);
       return -1;
     }
@@ -3836,7 +3836,7 @@ migrate_51_to_52 ()
 
   set_db_version (52);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -3855,7 +3855,7 @@ migrate_52_to_53 ()
 
   if (manage_db_version () != 52)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -3876,7 +3876,7 @@ migrate_52_to_53 ()
 
   set_db_version (53);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -3895,7 +3895,7 @@ migrate_53_to_54 ()
 
   if (manage_db_version () != 53)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -3916,7 +3916,7 @@ migrate_53_to_54 ()
 
   set_db_version (54);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -3971,7 +3971,7 @@ migrate_54_to_55 ()
 
   if (manage_db_version () != 54)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -3986,56 +3986,56 @@ migrate_54_to_55 ()
   if (migrate_54_to_55_format ("a0704abb-2120-489f-959f-251c9f4ffebd",
                                "5ceff8ba-1f62-11e1-ab9f-406186ea4fc5"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (migrate_54_to_55_format ("b993b6f5-f9fb-4e6e-9c94-dd46c00e058d",
                                "6c248850-1f62-11e1-b082-406186ea4fc5"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (migrate_54_to_55_format ("929884c6-c2c4-41e7-befb-2f6aa163b458",
                                "77bd6c4a-1f62-11e1-abf0-406186ea4fc5"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (migrate_54_to_55_format ("9f1ab17b-aaaa-411a-8c57-12df446f5588",
                                "7fcc3a1a-1f62-11e1-86bf-406186ea4fc5"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (migrate_54_to_55_format ("f5c2a364-47d2-4700-b21d-0a7693daddab",
                                "9ca6fe72-1f62-11e1-9e7c-406186ea4fc5"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (migrate_54_to_55_format ("1a60a67e-97d0-4cbf-bc77-f71b08e7043d",
                                "a0b5bfb2-1f62-11e1-85db-406186ea4fc5"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (migrate_54_to_55_format ("19f6f1b3-7128-4433-888c-ccc764fe6ed5",
                                "a3810a62-1f62-11e1-9219-406186ea4fc5"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (migrate_54_to_55_format ("d5da9f67-8551-4e51-807b-b6a873d70e34",
                                "a994b278-1f62-11e1-96ac-406186ea4fc5"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -4043,7 +4043,7 @@ migrate_54_to_55 ()
 
   set_db_version (55);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -4732,7 +4732,7 @@ migrate_55_to_56 ()
 
   if (manage_db_version () != 55)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -4994,7 +4994,7 @@ migrate_55_to_56 ()
 
   set_db_version (56);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -5013,7 +5013,7 @@ migrate_56_to_57 ()
 
   if (manage_db_version () != 56)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -5113,7 +5113,7 @@ migrate_56_to_57 ()
 
   set_db_version (57);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -5132,7 +5132,7 @@ migrate_57_to_58 ()
 
   if (manage_db_version () != 57)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -5170,7 +5170,7 @@ migrate_57_to_58 ()
 
   set_db_version (58);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -5189,7 +5189,7 @@ migrate_58_to_59 ()
 
   if (manage_db_version () != 58)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -5236,7 +5236,7 @@ migrate_58_to_59 ()
 
   set_db_version (59);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -5255,7 +5255,7 @@ migrate_59_to_60 ()
 
   if (manage_db_version () != 59)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -5272,7 +5272,7 @@ migrate_59_to_60 ()
 
   set_db_version (60);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -5291,7 +5291,7 @@ migrate_60_to_61 ()
 
   if (manage_db_version () != 60)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -5314,7 +5314,7 @@ migrate_60_to_61 ()
 
   set_db_version (61);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -5333,7 +5333,7 @@ migrate_61_to_62 ()
 
   if (manage_db_version () != 61)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -5360,7 +5360,7 @@ migrate_61_to_62 ()
 
   set_db_version (62);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -5379,7 +5379,7 @@ migrate_62_to_63 ()
 
   if (manage_db_version () != 62)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -5418,7 +5418,7 @@ migrate_62_to_63 ()
 
   set_db_version (63);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -5437,7 +5437,7 @@ migrate_63_to_64 ()
 
   if (manage_db_version () != 63)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -5459,7 +5459,7 @@ migrate_63_to_64 ()
 
   set_db_version (64);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -5478,7 +5478,7 @@ migrate_64_to_65 ()
 
   if (manage_db_version () != 64)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -5497,7 +5497,7 @@ migrate_64_to_65 ()
 
   set_db_version (65);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -5516,7 +5516,7 @@ migrate_65_to_66 ()
 
   if (manage_db_version () != 65)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -5538,7 +5538,7 @@ migrate_65_to_66 ()
 
   set_db_version (66);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -5557,7 +5557,7 @@ migrate_66_to_67 ()
 
   if (manage_db_version () != 66)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -5575,7 +5575,7 @@ migrate_66_to_67 ()
 
   set_db_version (67);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -5594,7 +5594,7 @@ migrate_67_to_68 ()
 
   if (manage_db_version () != 67)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -5622,7 +5622,7 @@ migrate_67_to_68 ()
 
   set_db_version (68);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -5641,7 +5641,7 @@ migrate_68_to_69 ()
 
   if (manage_db_version () != 68)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -5671,7 +5671,7 @@ migrate_68_to_69 ()
 
   set_db_version (69);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -5690,7 +5690,7 @@ migrate_69_to_70 ()
 
   if (manage_db_version () != 69)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -5713,7 +5713,7 @@ migrate_69_to_70 ()
 
   set_db_version (70);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -5732,7 +5732,7 @@ migrate_70_to_71 ()
 
   if (manage_db_version () != 70)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -5755,7 +5755,7 @@ migrate_70_to_71 ()
 
   set_db_version (71);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -5774,7 +5774,7 @@ migrate_71_to_72 ()
 
   if (manage_db_version () != 71)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -5804,7 +5804,7 @@ migrate_71_to_72 ()
 
   set_db_version (72);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -5823,7 +5823,7 @@ migrate_72_to_73 ()
 
   if (manage_db_version () != 72)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -5852,7 +5852,7 @@ migrate_72_to_73 ()
 
   set_db_version (73);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -5871,7 +5871,7 @@ migrate_73_to_74 ()
 
   if (manage_db_version () != 73)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -5897,7 +5897,7 @@ migrate_73_to_74 ()
 
   set_db_version (74);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -5916,7 +5916,7 @@ migrate_74_to_75 ()
 
   if (manage_db_version () != 74)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -5954,7 +5954,7 @@ migrate_74_to_75 ()
 
   set_db_version (75);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -5973,7 +5973,7 @@ migrate_75_to_76 ()
 
   if (manage_db_version () != 75)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -5992,7 +5992,7 @@ migrate_75_to_76 ()
 
   set_db_version (76);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -6011,7 +6011,7 @@ migrate_76_to_77 ()
 
   if (manage_db_version () != 76)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -6040,7 +6040,7 @@ migrate_76_to_77 ()
 
   set_db_version (77);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -6058,7 +6058,7 @@ migrate_77_to_78 ()
   /* Ensure that the database is currently version 77. */
   if (manage_db_version () != 77)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -6086,7 +6086,7 @@ migrate_77_to_78 ()
 
   set_db_version (78);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -6105,7 +6105,7 @@ migrate_78_to_79 ()
 
   if (manage_db_version () != 78)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -6143,7 +6143,7 @@ migrate_78_to_79 ()
 
   set_db_version (79);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -6424,7 +6424,7 @@ migrate_79_to_80 ()
 
   if (manage_db_version () != 79)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -6493,7 +6493,7 @@ migrate_79_to_80 ()
                  __FUNCTION__,
                  OPENVAS_STATE_DIR,
                  strerror (errno));
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -6581,7 +6581,7 @@ migrate_79_to_80 ()
           g_free (remote_dir);
           g_free (uuid_file);
           g_error_free (error);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
       g_free (uuid_file);
@@ -6596,7 +6596,7 @@ migrate_79_to_80 ()
           g_free (classic_dir);
           g_free (remote_dir);
           g_free (uuid);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
       tracef ("          uuid: %s\n", uuid);
@@ -6646,7 +6646,7 @@ migrate_79_to_80 ()
             g_free (quoted_uuid);
             g_free (classic_dir);
             g_free (remote_dir);
-            sql ("ROLLBACK;");
+            sql_rollback ();
             return -1;
             break;
         }
@@ -6672,7 +6672,7 @@ migrate_79_to_80 ()
               g_free (quoted_uuid);
               g_free (file);
               g_error_free (error);
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return -1;
             }
           assert (hash);
@@ -6695,7 +6695,7 @@ migrate_79_to_80 ()
           g_free (remote_dir);
           g_free (quoted_uuid);
           g_error_free (error);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
 
@@ -6778,7 +6778,7 @@ migrate_79_to_80 ()
 
   set_db_version (80);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -6797,7 +6797,7 @@ migrate_80_to_81 ()
 
   if (manage_db_version () != 80)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -6843,7 +6843,7 @@ migrate_80_to_81 ()
 
   set_db_version (81);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -6862,7 +6862,7 @@ migrate_81_to_82 ()
 
   if (manage_db_version () != 81)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -6872,7 +6872,7 @@ migrate_81_to_82 ()
 
   set_db_version (82);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -6891,7 +6891,7 @@ migrate_82_to_83 ()
 
   if (manage_db_version () != 82)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -6931,7 +6931,7 @@ migrate_82_to_83 ()
 
   set_db_version (83);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -6950,7 +6950,7 @@ migrate_83_to_84 ()
 
   if (manage_db_version () != 83)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -6963,7 +6963,7 @@ migrate_83_to_84 ()
 
   set_db_version (84);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -6982,7 +6982,7 @@ migrate_84_to_85 ()
 
   if (manage_db_version () != 84)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -6999,7 +6999,7 @@ migrate_84_to_85 ()
 
   set_db_version (85);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -7018,7 +7018,7 @@ migrate_85_to_86 ()
 
   if (manage_db_version () != 85)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -7034,7 +7034,7 @@ migrate_85_to_86 ()
 
   set_db_version (86);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -7053,7 +7053,7 @@ migrate_86_to_87 ()
 
   if (manage_db_version () != 86)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -7084,7 +7084,7 @@ migrate_86_to_87 ()
 
   set_db_version (87);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -7103,7 +7103,7 @@ migrate_87_to_88 ()
 
   if (manage_db_version () != 87)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -7136,7 +7136,7 @@ migrate_87_to_88 ()
 
   set_db_version (88);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -7155,7 +7155,7 @@ migrate_88_to_89 ()
 
   if (manage_db_version () != 88)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -7246,7 +7246,7 @@ migrate_88_to_89 ()
 
   set_db_version (89);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -7265,7 +7265,7 @@ migrate_89_to_90 ()
 
   if (manage_db_version () != 89)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -7281,7 +7281,7 @@ migrate_89_to_90 ()
 
   set_db_version (90);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -7300,7 +7300,7 @@ migrate_90_to_91 ()
 
   if (manage_db_version () != 90)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -7367,7 +7367,7 @@ migrate_90_to_91 ()
 
   set_db_version (91);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 
@@ -7387,7 +7387,7 @@ migrate_91_to_92 ()
 
   if (manage_db_version () != 91)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -7411,7 +7411,7 @@ migrate_91_to_92 ()
 
   set_db_version (92);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -7430,7 +7430,7 @@ migrate_92_to_93 ()
 
   if (manage_db_version () != 92)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -7445,7 +7445,7 @@ migrate_92_to_93 ()
 
   set_db_version (93);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -7464,7 +7464,7 @@ migrate_93_to_94 ()
 
   if (manage_db_version () != 93)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -7477,7 +7477,7 @@ migrate_93_to_94 ()
 
   set_db_version (94);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -7496,7 +7496,7 @@ migrate_94_to_95 ()
 
   if (manage_db_version () != 94)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -7511,7 +7511,7 @@ migrate_94_to_95 ()
 
   set_db_version (95);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -7530,7 +7530,7 @@ migrate_95_to_96 ()
 
   if (manage_db_version () != 95)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -7549,7 +7549,7 @@ migrate_95_to_96 ()
 
   set_db_version (96);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -7568,7 +7568,7 @@ migrate_96_to_97 ()
 
   if (manage_db_version () != 96)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -7581,7 +7581,7 @@ migrate_96_to_97 ()
 
   set_db_version (97);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -7600,7 +7600,7 @@ migrate_97_to_98 ()
 
   if (manage_db_version () != 97)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -7614,7 +7614,7 @@ migrate_97_to_98 ()
 
   set_db_version (98);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -7633,7 +7633,7 @@ migrate_98_to_99 ()
 
   if (manage_db_version () != 98)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -7652,7 +7652,7 @@ migrate_98_to_99 ()
 
   set_db_version (99);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -7671,7 +7671,7 @@ migrate_99_to_100 ()
 
   if (manage_db_version () != 99)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -7699,7 +7699,7 @@ migrate_99_to_100 ()
 
   set_db_version (100);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -7718,7 +7718,7 @@ migrate_100_to_101 ()
 
   if (manage_db_version () != 100)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -7753,7 +7753,7 @@ migrate_100_to_101 ()
 
   set_db_version (101);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -7772,7 +7772,7 @@ migrate_101_to_102 ()
 
   if (manage_db_version () != 101)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -7805,7 +7805,7 @@ migrate_101_to_102 ()
 
   set_db_version (102);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -7824,7 +7824,7 @@ migrate_102_to_103 ()
 
   if (manage_db_version () != 102)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -7849,7 +7849,7 @@ migrate_102_to_103 ()
 
   set_db_version (103);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -7868,7 +7868,7 @@ migrate_103_to_104 ()
 
   if (manage_db_version () != 103)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -7882,7 +7882,7 @@ migrate_103_to_104 ()
 
   set_db_version (104);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -7901,7 +7901,7 @@ migrate_104_to_105 ()
 
   if (manage_db_version () != 104)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -7931,7 +7931,7 @@ migrate_104_to_105 ()
 
   set_db_version (105);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -7950,7 +7950,7 @@ migrate_105_to_106 ()
 
   if (manage_db_version () != 105)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -7964,7 +7964,7 @@ migrate_105_to_106 ()
 
   set_db_version (106);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -7983,7 +7983,7 @@ migrate_106_to_107 ()
 
   if (manage_db_version () != 106)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -7997,7 +7997,7 @@ migrate_106_to_107 ()
 
   set_db_version (107);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -8016,7 +8016,7 @@ migrate_107_to_108 ()
 
   if (manage_db_version () != 107)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -8032,7 +8032,7 @@ migrate_107_to_108 ()
 
   set_db_version (108);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -8051,7 +8051,7 @@ migrate_108_to_109 ()
 
   if (manage_db_version () != 108)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -8079,7 +8079,7 @@ migrate_108_to_109 ()
 
   set_db_version (109);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -8098,7 +8098,7 @@ migrate_109_to_110 ()
 
   if (manage_db_version () != 109)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -8116,7 +8116,7 @@ migrate_109_to_110 ()
 
   set_db_version (110);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -8135,7 +8135,7 @@ migrate_110_to_111 ()
 
   if (manage_db_version () != 110)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -8153,7 +8153,7 @@ migrate_110_to_111 ()
 
   set_db_version (111);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -8172,7 +8172,7 @@ migrate_111_to_112 ()
 
   if (manage_db_version () != 111)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -8195,7 +8195,7 @@ migrate_111_to_112 ()
 
   set_db_version (112);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -8214,7 +8214,7 @@ migrate_112_to_113 ()
 
   if (manage_db_version () != 112)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -8229,7 +8229,7 @@ migrate_112_to_113 ()
 
   set_db_version (113);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -8248,7 +8248,7 @@ migrate_113_to_114 ()
 
   if (manage_db_version () != 113)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -8266,7 +8266,7 @@ migrate_113_to_114 ()
 
   set_db_version (114);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -8285,7 +8285,7 @@ migrate_114_to_115 ()
 
   if (manage_db_version () != 114)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -8315,7 +8315,7 @@ migrate_114_to_115 ()
 
   set_db_version (115);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -8334,7 +8334,7 @@ migrate_115_to_116 ()
 
   if (manage_db_version () != 115)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -8351,7 +8351,7 @@ migrate_115_to_116 ()
 
   set_db_version (116);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -8394,7 +8394,7 @@ migrate_116_to_117 ()
 
   if (manage_db_version () != 116)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -8606,7 +8606,7 @@ migrate_116_to_117 ()
 
   set_db_version (117);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -8637,7 +8637,7 @@ migrate_117_to_118 ()
 
   if (manage_db_version () != 117)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -8738,7 +8738,7 @@ migrate_117_to_118 ()
 
   set_db_version (118);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -8758,7 +8758,7 @@ migrate_118_to_119 ()
 
   if (manage_db_version () != 118)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -8781,7 +8781,7 @@ migrate_118_to_119 ()
 
   set_db_version (119);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -8800,7 +8800,7 @@ migrate_119_to_120 ()
 
   if (manage_db_version () != 119)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -8823,7 +8823,7 @@ migrate_119_to_120 ()
 
   set_db_version (120);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -8842,7 +8842,7 @@ migrate_120_to_121 ()
 
   if (manage_db_version () != 120)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -8859,7 +8859,7 @@ migrate_120_to_121 ()
 
   set_db_version (121);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -8878,7 +8878,7 @@ migrate_121_to_122 ()
 
   if (manage_db_version () != 121)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -8895,7 +8895,7 @@ migrate_121_to_122 ()
 
   set_db_version (122);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -8917,7 +8917,7 @@ migrate_122_to_123 ()
 
   if (manage_db_version () != 122)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -8945,7 +8945,7 @@ migrate_122_to_123 ()
 
   set_db_version (123);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -8964,7 +8964,7 @@ migrate_123_to_124 ()
 
   if (manage_db_version () != 123)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -9007,7 +9007,7 @@ migrate_123_to_124 ()
 
   set_db_version (124);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -9026,7 +9026,7 @@ migrate_124_to_125 ()
 
   if (manage_db_version () != 124)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -9044,7 +9044,7 @@ migrate_124_to_125 ()
 
   set_db_version (125);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -9063,7 +9063,7 @@ migrate_125_to_126 ()
 
   if (manage_db_version () != 125)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -9114,7 +9114,7 @@ migrate_125_to_126 ()
 
   set_db_version (126);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -9133,7 +9133,7 @@ migrate_126_to_127 ()
 
   if (manage_db_version () != 126)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -9152,7 +9152,7 @@ migrate_126_to_127 ()
 
   set_db_version (127);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -9171,7 +9171,7 @@ migrate_127_to_128 ()
 
   if (manage_db_version () != 127)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -9186,7 +9186,7 @@ migrate_127_to_128 ()
 
   set_db_version (128);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -9205,7 +9205,7 @@ migrate_128_to_129 ()
 
   if (manage_db_version () != 128)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -9238,7 +9238,7 @@ migrate_128_to_129 ()
 
   set_db_version (129);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -9261,7 +9261,7 @@ migrate_129_to_130 ()
 
   if (manage_db_version () != 129)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -9318,7 +9318,7 @@ migrate_129_to_130 ()
   /* Set the database version to 130. */
   set_db_version (130);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -9337,7 +9337,7 @@ migrate_130_to_131 ()
 
   if (manage_db_version () != 130)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -9359,7 +9359,7 @@ migrate_130_to_131 ()
 
   set_db_version (131);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -9378,7 +9378,7 @@ migrate_131_to_132 ()
 
   if (manage_db_version () != 131)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -9458,7 +9458,7 @@ migrate_131_to_132 ()
 
   set_db_version (132);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -9477,7 +9477,7 @@ migrate_132_to_133 ()
 
   if (manage_db_version () != 132)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -9503,7 +9503,7 @@ migrate_132_to_133 ()
 
   set_db_version (133);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -9522,7 +9522,7 @@ migrate_133_to_134 ()
 
   if (manage_db_version () != 133)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -9548,7 +9548,7 @@ migrate_133_to_134 ()
 
   set_db_version (134);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -9567,7 +9567,7 @@ migrate_134_to_135 ()
 
   if (manage_db_version () != 134)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -9581,7 +9581,7 @@ migrate_134_to_135 ()
 
   set_db_version (135);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -9600,7 +9600,7 @@ migrate_135_to_136 ()
 
   if (manage_db_version () != 135)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -9623,7 +9623,7 @@ migrate_135_to_136 ()
 
   set_db_version (136);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -9642,7 +9642,7 @@ migrate_136_to_137 ()
 
   if (manage_db_version () != 136)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -9660,7 +9660,7 @@ migrate_136_to_137 ()
 
   set_db_version (137);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -9679,7 +9679,7 @@ migrate_137_to_138 ()
 
   if (manage_db_version () != 137)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -9735,7 +9735,7 @@ migrate_137_to_138 ()
 
   set_db_version (138);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -9756,7 +9756,7 @@ migrate_138_to_139 ()
 
   if (manage_db_version () != 138)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -9787,7 +9787,7 @@ migrate_138_to_139 ()
 
   set_db_version (139);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -9806,7 +9806,7 @@ migrate_139_to_140 ()
 
   if (manage_db_version () != 139)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -9824,7 +9824,7 @@ migrate_139_to_140 ()
 
   set_db_version (140);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -9843,7 +9843,7 @@ migrate_140_to_141 ()
 
   if (manage_db_version () != 140)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -9855,7 +9855,7 @@ migrate_140_to_141 ()
 
   set_db_version (141);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -9874,7 +9874,7 @@ migrate_141_to_142 ()
 
   if (manage_db_version () != 141)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -9890,7 +9890,7 @@ migrate_141_to_142 ()
 
   set_db_version (142);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -9909,7 +9909,7 @@ migrate_142_to_143 ()
 
   if (manage_db_version () != 142)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -9925,7 +9925,7 @@ migrate_142_to_143 ()
 
   set_db_version (143);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -9945,7 +9945,7 @@ migrate_143_to_144 ()
 
   if (manage_db_version () != 143)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -9986,7 +9986,7 @@ migrate_143_to_144 ()
 
   set_db_version (144);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -10005,7 +10005,7 @@ migrate_144_to_145 ()
 
   if (manage_db_version () != 144)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -10019,7 +10019,7 @@ migrate_144_to_145 ()
 
   set_db_version (145);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -10038,7 +10038,7 @@ migrate_145_to_146 ()
 
   if (manage_db_version () != 145)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -10053,7 +10053,7 @@ migrate_145_to_146 ()
 
   set_db_version (146);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -10072,7 +10072,7 @@ migrate_146_to_147 ()
 
   if (manage_db_version () != 146)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -10086,7 +10086,7 @@ migrate_146_to_147 ()
 
   set_db_version (147);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -10105,7 +10105,7 @@ migrate_147_to_148 ()
 
   if (manage_db_version () != 147)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -10119,7 +10119,7 @@ migrate_147_to_148 ()
 
   set_db_version (148);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -10138,7 +10138,7 @@ migrate_148_to_149 ()
 
   if (manage_db_version () != 148)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -10152,7 +10152,7 @@ migrate_148_to_149 ()
 
   set_db_version (149);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -10183,7 +10183,7 @@ migrate_149_to_150 ()
 
   if (manage_db_version () != 149)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -10196,7 +10196,7 @@ migrate_149_to_150 ()
 
   set_db_version (150);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -10215,7 +10215,7 @@ migrate_150_to_151 ()
 
   if (manage_db_version () != 150)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -10236,7 +10236,7 @@ migrate_150_to_151 ()
 
   set_db_version (151);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -10255,7 +10255,7 @@ migrate_151_to_152 ()
 
   if (manage_db_version () != 151)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -10271,7 +10271,7 @@ migrate_151_to_152 ()
 
   set_db_version (152);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -10298,7 +10298,7 @@ migrate_152_to_153 ()
 
   if (manage_db_version () != 152)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -10320,7 +10320,7 @@ migrate_152_to_153 ()
 
   set_db_version (153);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -10342,7 +10342,7 @@ migrate_153_to_154 ()
 
   if (manage_db_version () != 153)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -10515,7 +10515,7 @@ migrate_153_to_154 ()
 
   set_db_version (154);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -10534,7 +10534,7 @@ migrate_154_to_155 ()
 
   if (manage_db_version () != 154)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -10548,7 +10548,7 @@ migrate_154_to_155 ()
 
   set_db_version (155);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -10567,7 +10567,7 @@ migrate_155_to_156 ()
 
   if (manage_db_version () != 155)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -10756,7 +10756,7 @@ migrate_155_to_156 ()
 
   set_db_version (156);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -10776,7 +10776,7 @@ migrate_156_to_157 ()
 
   if (manage_db_version () != 156)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -10872,7 +10872,7 @@ migrate_156_to_157 ()
               g_free (quoted_name);
               g_free (quoted_login);
               cleanup_iterator (&slaves);
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return -1;
             }
           quoted_secret = sql_quote (secret);
@@ -10990,7 +10990,7 @@ migrate_156_to_157 ()
               g_free (quoted_name);
               g_free (quoted_login);
               cleanup_iterator (&slaves);
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return -1;
             }
           quoted_secret = sql_quote (secret);
@@ -11089,7 +11089,7 @@ migrate_156_to_157 ()
 
   set_db_version (157);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -11108,7 +11108,7 @@ migrate_157_to_158 ()
 
   if (manage_db_version () != 157)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -11137,7 +11137,7 @@ migrate_157_to_158 ()
 
   set_db_version (158);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -11157,7 +11157,7 @@ migrate_158_to_159 ()
 
   if (manage_db_version () != 158)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -11287,7 +11287,7 @@ migrate_158_to_159 ()
               g_free (quoted_name);
               g_free (quoted_key_pub);
               cleanup_iterator (&scanners);
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return -1;
             }
           quoted_secret = sql_quote (secret);
@@ -11419,7 +11419,7 @@ migrate_158_to_159 ()
               g_free (quoted_name);
               g_free (quoted_key_pub);
               cleanup_iterator (&scanners);
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return -1;
             }
           quoted_secret = sql_quote (secret);
@@ -11519,7 +11519,7 @@ migrate_158_to_159 ()
 
   set_db_version (159);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -11538,7 +11538,7 @@ migrate_159_to_160 ()
 
   if (manage_db_version () != 159)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -11557,7 +11557,7 @@ migrate_159_to_160 ()
 
   set_db_version (160);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -11579,7 +11579,7 @@ migrate_160_to_161 ()
 
   if (manage_db_version () != 160)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -11748,7 +11748,7 @@ migrate_160_to_161 ()
 
   set_db_version (161);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -11767,7 +11767,7 @@ migrate_161_to_162 ()
 
   if (manage_db_version () != 161)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -11785,7 +11785,7 @@ migrate_161_to_162 ()
 
   set_db_version (162);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -11818,7 +11818,7 @@ migrate_162_to_163 ()
 
   if (manage_db_version () != 162)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -11839,7 +11839,7 @@ migrate_162_to_163 ()
 
   set_db_version (163);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -11965,7 +11965,7 @@ migrate_163_to_164 ()
 
   if (manage_db_version () != 163)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -12019,7 +12019,7 @@ migrate_163_to_164 ()
 
   set_db_version (164);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }

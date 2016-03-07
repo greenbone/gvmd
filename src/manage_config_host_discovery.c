@@ -97,7 +97,7 @@ make_config_host_discovery (char *const uuid, char *const selector_name)
        "         'no');",
        config);
 
-  sql ("COMMIT;");
+  sql_commit ();
 }
 
 /**
@@ -159,7 +159,7 @@ check_config_host_discovery (char *const uuid)
   if (update)
     update_config_cache_init (uuid);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }

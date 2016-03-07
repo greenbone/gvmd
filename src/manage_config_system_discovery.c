@@ -182,5 +182,5 @@ make_config_system_discovery (char *const uuid, char *const selector_name)
        nvt_selector_nvt_count (selector_name, NULL, 0),
        config);
 
-  sql ("COMMIT;");
+  sql_commit ();
 }

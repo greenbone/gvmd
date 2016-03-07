@@ -4692,9 +4692,9 @@ copy_resource (const char *type, const char *name, const char *comment,
                             make_name_unique, new_resource, NULL);
 
   if (ret)
-    sql ("ROLLBACK;");
+    sql_rollback ();
   else
-    sql ("COMMIT;");
+    sql_commit ();
 
   return ret;
 }
@@ -6159,7 +6159,7 @@ encrypt_all_credentials (gboolean decrypt_flag)
 
           if (!encblob)
             {
-              sql ("ROLLBACK;");
+              sql_rollback ();
               cleanup_iterator (&iterator);
               return -1;
             }
@@ -6173,7 +6173,7 @@ encrypt_all_credentials (gboolean decrypt_flag)
         }
     }
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   if (decrypt_flag)
     g_message ("%lu out of %lu credentials decrypted",
@@ -6946,14 +6946,14 @@ create_alert (const char* name, const char* comment, const char* filter_id,
 
   if (acl_user_may ("create_alert") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   ret = check_alert_params (event, condition, method);
   if (ret)
     {
-      sql ("ROLLBACK");
+      sql_rollback ();
       return ret;
     }
 
@@ -6965,13 +6965,13 @@ create_alert (const char* name, const char* comment, const char* filter_id,
 
       if (find_filter_with_permission (filter_id, &filter, "get_filters"))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
 
       if (filter == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 3;
         }
 
@@ -6982,7 +6982,7 @@ create_alert (const char* name, const char* comment, const char* filter_id,
       if (type && strcasecmp (type, "result"))
         {
           free (type);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 4;
         }
       free (type);
@@ -6990,7 +6990,7 @@ create_alert (const char* name, const char* comment, const char* filter_id,
 
   if (resource_with_name_exists (name, "alert", 0))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
   quoted_name = sql_quote (name);
@@ -7027,7 +7027,7 @@ create_alert (const char* name, const char* comment, const char* filter_id,
         {
           g_free (name);
           g_free (data);
-          sql ("ROLLBACK;");
+          sql_rollback ();
 
           switch (validation_result)
             {
@@ -7064,7 +7064,7 @@ create_alert (const char* name, const char* comment, const char* filter_id,
         {
           g_free (name);
           g_free (data);
-          sql ("ROLLBACK;");
+          sql_rollback ();
 
           switch (validation_result)
             {
@@ -7101,7 +7101,7 @@ create_alert (const char* name, const char* comment, const char* filter_id,
         {
           g_free (name);
           g_free (data);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 2;
         }
 
@@ -7111,7 +7111,7 @@ create_alert (const char* name, const char* comment, const char* filter_id,
         {
           g_free (name);
           g_free (data);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 2;
         }
 
@@ -7121,7 +7121,7 @@ create_alert (const char* name, const char* comment, const char* filter_id,
         {
           g_free (name);
           g_free (data);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 7;
         }
 
@@ -7131,7 +7131,7 @@ create_alert (const char* name, const char* comment, const char* filter_id,
         {
           g_free (name);
           g_free (data);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 8;
         }
 
@@ -7140,7 +7140,7 @@ create_alert (const char* name, const char* comment, const char* filter_id,
         {
           g_free (name);
           g_free (data);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return ret;
         }
 
@@ -7153,7 +7153,7 @@ create_alert (const char* name, const char* comment, const char* filter_id,
       g_free (data);
     }
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -7189,7 +7189,7 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
                             1, &new, &old);
   if (ret)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return ret;
     }
 
@@ -7214,7 +7214,7 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
        new,
        old);
 
-  sql ("COMMIT;");
+  sql_commit ();
   if (new_alert) *new_alert = new;
   return 0;
 }
@@ -7264,34 +7264,34 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
 
   if (acl_user_may ("modify_alert") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   ret = check_alert_params (event, condition, method);
   if (ret)
     {
-      sql ("ROLLBACK");
+      sql_rollback ();
       return ret;
     }
 
   alert = 0;
   if (find_alert_with_permission (alert_id, &alert, "modify_alert"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (alert == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
   /* Check whether an alert with the same name exists already. */
   if (resource_with_name_exists (name, "alert", alert))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 2;
     }
 
@@ -7304,13 +7304,13 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
 
       if (find_filter_with_permission (filter_id, &filter, "get_filters"))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
 
       if (filter == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 4;
         }
 
@@ -7321,7 +7321,7 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
       if (type && strcasecmp (type, "result"))
         {
           free (type);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 5;
         }
       free (type);
@@ -7362,7 +7362,7 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
             {
               g_free (name);
               g_free (data);
-              sql ("ROLLBACK;");
+              sql_rollback ();
 
               switch (validation_result)
                 {
@@ -7406,7 +7406,7 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
             {
               g_free (name);
               g_free (data);
-              sql ("ROLLBACK;");
+              sql_rollback ();
 
               switch (validation_result)
                 {
@@ -7451,7 +7451,7 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
             {
               g_free (name);
               g_free (data);
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return 6;
             }
 
@@ -7461,7 +7461,7 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
             {
               g_free (name);
               g_free (data);
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return 6;
             }
 
@@ -7471,7 +7471,7 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
             {
               g_free (name);
               g_free (data);
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return 9;
             }
 
@@ -7481,7 +7481,7 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
             {
               g_free (name);
               g_free (data);
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return 10;
             }
 
@@ -7490,7 +7490,7 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
             {
               g_free (name);
               g_free (data);
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return ret;
             }
 
@@ -7504,7 +7504,7 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
         }
     }
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -7527,13 +7527,13 @@ delete_alert (const char *alert_id, int ultimate)
 
   if (acl_user_may ("delete_alert") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   if (find_alert_with_permission (alert_id, &alert, "delete_alert"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -7541,18 +7541,18 @@ delete_alert (const char *alert_id, int ultimate)
     {
       if (find_trash ("alert", alert_id, &alert))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
       if (alert == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 2;
         }
       if (ultimate == 0)
         {
           /* It's already in the trashcan. */
-          sql ("COMMIT;");
+          sql_commit ();
           return 0;
         }
 
@@ -7562,7 +7562,7 @@ delete_alert (const char *alert_id, int ultimate)
                    " AND alert_location = " G_STRINGIFY (LOCATION_TRASH) ";",
                    alert))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
@@ -7576,7 +7576,7 @@ delete_alert (const char *alert_id, int ultimate)
       sql ("DELETE FROM alert_method_data_trash WHERE alert = %llu;",
            alert);
       sql ("DELETE FROM alerts_trash WHERE id = %llu;", alert);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -7591,7 +7591,7 @@ delete_alert (const char *alert_id, int ultimate)
                    "      WHERE id = task_alerts.task);",
                    alert))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
@@ -7646,7 +7646,7 @@ delete_alert (const char *alert_id, int ultimate)
                     " AND alert_location = " G_STRINGIFY (LOCATION_TABLE) ";",
                     alert))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
   else
@@ -7660,7 +7660,7 @@ delete_alert (const char *alert_id, int ultimate)
   sql ("DELETE FROM alert_event_data WHERE alert = %llu;", alert);
   sql ("DELETE FROM alert_method_data WHERE alert = %llu;", alert);
   sql ("DELETE FROM alerts WHERE id = %llu;", alert);
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 }
 
@@ -12330,7 +12330,7 @@ manage_update_nvti_cache ()
       sql ("UPDATE %s.meta SET value = 0 WHERE name = 'update_nvti_cache';",
            sql_schema ());
     }
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 }
 
@@ -13815,7 +13815,7 @@ check_db_nvts ()
     {
       sql_begin_immediate ();
       refresh_nvt_cves ();
-      sql ("COMMIT;");
+      sql_commit ();
     }
 }
 
@@ -14133,7 +14133,7 @@ make_report_format_uuids_unique ()
                 {
                   g_free (dir);
                   g_free (new_dir);
-                  sql ("ROLLBACK;");
+                  sql_rollback ();
                   return -1;
                 }
             }
@@ -14156,7 +14156,7 @@ make_report_format_uuids_unique ()
 
   sql ("DROP TABLE duplicates;");
 
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 }
 
@@ -14637,7 +14637,7 @@ check_db_permissions ()
       add_role_permission (ROLE_UUID_GUEST, "GET_INFO");
       add_role_permission (ROLE_UUID_GUEST, "GET_NVTS");
       add_role_permission (ROLE_UUID_GUEST, "GET_SETTINGS");
-      sql ("COMMIT;");
+      sql_commit ();
     }
 
   if (sql_int ("SELECT count(*) FROM permissions"
@@ -14660,7 +14660,7 @@ check_db_permissions ()
       add_role_permission (ROLE_UUID_INFO, "GET_NVTS");
       add_role_permission (ROLE_UUID_INFO, "GET_SETTINGS");
       add_role_permission (ROLE_UUID_INFO, "MODIFY_SETTING");
-      sql ("COMMIT;");
+      sql_commit ();
     }
 
   if (sql_int ("SELECT count(*) FROM permissions"
@@ -14680,7 +14680,7 @@ check_db_permissions ()
       add_role_permission (ROLE_UUID_MONITOR, "GET_SETTINGS");
       add_role_permission (ROLE_UUID_MONITOR, "GET_SYSTEM_REPORTS");
       add_role_permission (ROLE_UUID_MONITOR, "HELP");
-      sql ("COMMIT;");
+      sql_commit ();
     }
 
   if (sql_int ("SELECT count(*) FROM permissions"
@@ -14709,7 +14709,7 @@ check_db_permissions ()
             add_role_permission (ROLE_UUID_USER, command[0].name);
           command++;
         }
-      sql ("COMMIT;");
+      sql_commit ();
     }
 
   if (sql_int ("SELECT count(*) FROM permissions"
@@ -14740,7 +14740,7 @@ check_db_permissions ()
       add_role_permission (ROLE_UUID_OBSERVER, "HELP");
       add_role_permission (ROLE_UUID_OBSERVER, "GET_SETTINGS");
       add_role_permission (ROLE_UUID_OBSERVER, "MODIFY_SETTING");
-      sql ("COMMIT;");
+      sql_commit ();
     }
 }
 
@@ -16392,14 +16392,14 @@ set_task_requested (task_t task, task_status_t *status)
       || run_status == TASK_STATUS_DELETE_ULTIMATE_WAITING
       || run_status == TASK_STATUS_DELETE_WAITING)
     {
-      sql ("COMMIT;");
+      sql_commit ();
       *status = run_status;
       return 1;
     }
 
   set_task_run_status (task, TASK_STATUS_REQUESTED);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   *status = run_status;
   return 0;
@@ -16730,13 +16730,13 @@ set_task_alerts (task_t task, array_t *alerts, gchar **alert_id_return)
 
       if (find_alert_with_permission (alert_id, &alert, "get_alerts"))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
 
       if (alert == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           if (alert_id_return) *alert_id_return = alert_id;
           return 1;
         }
@@ -16747,7 +16747,7 @@ set_task_alerts (task_t task, array_t *alerts, gchar **alert_id_return)
            alert);
     }
 
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 }
 
@@ -16803,13 +16803,13 @@ set_task_groups (task_t task, array_t *groups, gchar **group_id_return)
 
       if (find_group (group_id, &group))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
 
       if (group == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           if (group_id_return) *group_id_return = group_id;
           return 1;
         }
@@ -16830,7 +16830,7 @@ set_task_groups (task_t task, array_t *groups, gchar **group_id_return)
       index++;
     }
 
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 }
 
@@ -17325,7 +17325,7 @@ set_task_observers (task_t task, const gchar *observers)
         {
           g_list_free (added);
           g_strfreev (split);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 2;
         }
 
@@ -17333,7 +17333,7 @@ set_task_observers (task_t task, const gchar *observers)
         {
           g_list_free (added);
           g_strfreev (split);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
 
@@ -17346,7 +17346,7 @@ set_task_observers (task_t task, const gchar *observers)
             {
               g_list_free (added);
               g_strfreev (split);
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return 1;
             }
 
@@ -17356,7 +17356,7 @@ set_task_observers (task_t task, const gchar *observers)
             {
               g_list_free (added);
               g_strfreev (split);
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return -1;
             }
 
@@ -17383,7 +17383,7 @@ set_task_observers (task_t task, const gchar *observers)
               g_free (uuid);
               g_list_free (added);
               g_strfreev (split);
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return -1;
             }
 
@@ -17408,7 +17408,7 @@ set_task_observers (task_t task, const gchar *observers)
 
   g_list_free (added);
   g_strfreev (split);
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 }
 
@@ -17575,13 +17575,13 @@ auto_delete_reports ()
             {
               g_warning ("%s: failed to delete %llu (%i)\n",
                          __FUNCTION__, report, ret);
-              sql ("ROLLBACK;");
+              sql_rollback ();
             }
         }
       cleanup_iterator (&reports);
     }
   cleanup_iterator (&tasks);
-  sql ("COMMIT;");
+  sql_commit ();
 }
 
 
@@ -18969,7 +18969,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
         rc = -5;
       if (rc)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return rc;
         }
     }
@@ -19006,7 +19006,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
   sql ("UPDATE tasks SET upload_result_count = %llu WHERE id = %llu;",
        results->len,
        task);
-  sql ("COMMIT;");
+  sql_commit ();
 
   /* Fork a child to import the results while the parent responds to the
    * client. */
@@ -19136,7 +19136,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
        (report, detail->ip, detail->source_type ?: "",
         detail->source_name ?: "", detail->source_desc ?: "", detail->name,
         detail->value ?: "");
-  sql ("COMMIT;");
+  sql_commit ();
 
   current_scanner_task = task;
   current_report = report;
@@ -22262,7 +22262,7 @@ cache_report_counts (report_t report, int override, int min_qod,
   if (ret)
     {
       if (make_transaction)
-        sql ("ROLLBACK;");
+        sql_rollback ();
       return ret;
     }
 
@@ -22281,7 +22281,7 @@ cache_report_counts (report_t report, int override, int min_qod,
       if (ret)
         {
           if (make_transaction)
-            sql ("ROLLBACK;");
+            sql_rollback ();
           return ret;
         }
     }
@@ -22318,7 +22318,7 @@ cache_report_counts (report_t report, int override, int min_qod,
               if (ret)
                 {
                   if (make_transaction)
-                    sql ("ROLLBACK;");
+                    sql_rollback ();
                   return ret;
                 }
             }
@@ -22331,7 +22331,7 @@ cache_report_counts (report_t report, int override, int min_qod,
       ret = sql_giveup ("COMMIT;");
       if (ret)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return ret;
         }
     }
@@ -22760,20 +22760,20 @@ modify_report (const char *report_id, const char *comment)
 
   if (acl_user_may ("modify_report") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   report = 0;
   if (find_report_with_permission (report_id, &report, "modify_report"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (report == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
@@ -22787,7 +22787,7 @@ modify_report (const char *report_id, const char *comment)
 
   g_free (quoted_comment);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -22811,31 +22811,31 @@ delete_report (const char *report_id, int dummy)
 
   if (acl_user_may ("delete_report") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   report = 0;
   if (find_report_with_permission (report_id, &report, "delete_report"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (report == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
   ret = delete_report_internal (report);
   if (ret)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return ret;
     }
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -28933,7 +28933,7 @@ copy_task (const char* name, const char* comment, const char *task_id,
                             1, &new, &old);
   if (ret)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return ret;
     }
 
@@ -28977,11 +28977,11 @@ copy_task (const char* name, const char* comment, const char *task_id,
 
   if (ret)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return ret;
     }
 
-  sql ("COMMIT;");
+  sql_commit ();
   if (new_task) *new_task = new;
   return 0;
 }
@@ -29073,13 +29073,13 @@ request_delete_task_uuid (const char *task_id, int ultimate)
 
   if (acl_user_may ("delete_task") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   if (find_task_with_permission (task_id, &task, "delete_task"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -29087,24 +29087,24 @@ request_delete_task_uuid (const char *task_id, int ultimate)
     {
       if (find_trash_task (task_id, &task))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
       if (task == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 3;
         }
       if (ultimate == 0)
         {
           /* It's already in the trashcan. */
-          sql ("COMMIT;");
+          sql_commit ();
           return 0;
         }
 
       if (delete_reports (task))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
 
@@ -29116,7 +29116,7 @@ request_delete_task_uuid (const char *task_id, int ultimate)
       sql ("DELETE FROM task_files WHERE task = %llu;", task);
       sql ("DELETE FROM task_preferences WHERE task = %llu;", task);
       sql ("DELETE FROM tasks WHERE id = %llu;", task);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -29124,13 +29124,13 @@ request_delete_task_uuid (const char *task_id, int ultimate)
                task)
       == 1)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 2;
     }
 
   if (current_credentials.uuid == NULL)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -29141,9 +29141,9 @@ request_delete_task_uuid (const char *task_id, int ultimate)
           int ret;
           ret = delete_task (task, ultimate);
           if (ret)
-            sql ("ROLLBACK;");
+            sql_rollback ();
           else
-            sql ("COMMIT;");
+            sql_commit ();
           return ret;
         }
       case 1:    /* Stop requested. */
@@ -29153,22 +29153,22 @@ request_delete_task_uuid (const char *task_id, int ultimate)
         else
           set_task_run_status (task,
                                TASK_STATUS_DELETE_REQUESTED);
-        sql ("COMMIT;");
+        sql_commit ();
         return 1;
       default:   /* Programming error. */
         assert (0);
       case -1:   /* Error. */
-        sql ("ROLLBACK;");
+        sql_rollback ();
         return -1;
         break;
       case -5:   /* Scanner down. */
-        sql ("ROLLBACK;");
+        sql_rollback ();
         return -5;
         break;
     }
 
   /*@notreached@*/
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 }
 
@@ -29270,22 +29270,22 @@ delete_task_lock (task_t task, int ultimate)
 
   if (sql_int ("SELECT hidden FROM tasks WHERE id = %llu;", task))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   /** @todo Many other places just assert this. */
   if (current_credentials.uuid == NULL)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   ret = delete_task (task, ultimate);
   if (ret)
-    sql ("ROLLBACK;");
+    sql_rollback ();
   else
-    sql ("COMMIT;");
+    sql_commit ();
   return ret;
 }
 
@@ -29825,7 +29825,7 @@ manage_transaction_stop (gboolean force_commit)
   gettimeofday (&now, NULL);
   if (force_commit || TIMEVAL_SUBTRACT_MS (now, last_msg) >= 500)
     {
-      sql ("COMMIT;");
+      sql_commit ();
       in_transaction = FALSE;
     }
 }
@@ -30252,7 +30252,7 @@ create_target (const char* name, const char* asset_hosts_filter,
 
   if (acl_user_may ("create_target") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
@@ -30275,7 +30275,7 @@ create_target (const char* name, const char* asset_hosts_filter,
     {
       if (resource_with_name_exists (name, "target", 0))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
     }
@@ -30323,7 +30323,7 @@ create_target (const char* name, const char* asset_hosts_filter,
       g_free (chosen_hosts);
       g_free (quoted_exclude_hosts);
       g_free (quoted_name);
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 2;
     }
   clean = clean_hosts (chosen_hosts, &max);
@@ -30332,7 +30332,7 @@ create_target (const char* name, const char* asset_hosts_filter,
     {
       g_free (quoted_exclude_hosts);
       g_free (quoted_name);
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 3;
     }
   quoted_hosts = sql_quote (clean);
@@ -30357,7 +30357,7 @@ create_target (const char* name, const char* asset_hosts_filter,
       if (ret)
         {
           g_free (quoted_name);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return ret;
         }
     }
@@ -30407,7 +30407,7 @@ create_target (const char* name, const char* asset_hosts_filter,
       gchar *type = credential_type (ssh_credential);
       if (strcmp (type, "usk") && strcmp (type, "up"))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           g_free (quoted_ssh_port);
           return 8;
         }
@@ -30425,7 +30425,7 @@ create_target (const char* name, const char* asset_hosts_filter,
       gchar *type = credential_type (smb_credential);
       if (strcmp (type, "up"))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 9;
         }
       g_free (type);
@@ -30441,7 +30441,7 @@ create_target (const char* name, const char* asset_hosts_filter,
       gchar *type = credential_type (esxi_credential);
       if (strcmp (type, "up"))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 10;
         }
       g_free (type);
@@ -30457,7 +30457,7 @@ create_target (const char* name, const char* asset_hosts_filter,
       gchar *type = credential_type (snmp_credential);
       if (strcmp (type, "snmp"))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 11;
         }
       g_free (type);
@@ -30468,7 +30468,7 @@ create_target (const char* name, const char* asset_hosts_filter,
            new_target, snmp_credential, "0");
     }
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -30533,13 +30533,13 @@ delete_target (const char *target_id, int ultimate)
 
   if (acl_user_may ("delete_target") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   if (find_target_with_permission (target_id, &target, "delete_target"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -30547,18 +30547,18 @@ delete_target (const char *target_id, int ultimate)
     {
       if (find_trash ("target", target_id, &target))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
       if (target == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 2;
         }
       if (ultimate == 0)
         {
           /* It's already in the trashcan. */
-          sql ("COMMIT;");
+          sql_commit ();
           return 0;
         }
 
@@ -30568,7 +30568,7 @@ delete_target (const char *target_id, int ultimate)
                    " AND target_location = " G_STRINGIFY (LOCATION_TRASH) ";",
                    target))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
@@ -30577,7 +30577,7 @@ delete_target (const char *target_id, int ultimate)
 
       sql ("DELETE FROM targets_trash_login_data WHERE target = %llu;", target);
       sql ("DELETE FROM targets_trash WHERE id = %llu;", target);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -30589,7 +30589,7 @@ delete_target (const char *target_id, int ultimate)
                    " AND (hidden = 0 OR hidden = 1);",
                    target))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
@@ -30636,7 +30636,7 @@ delete_target (const char *target_id, int ultimate)
                     " AND target_location = " G_STRINGIFY (LOCATION_TABLE),
                     target))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
   else
@@ -30648,7 +30648,7 @@ delete_target (const char *target_id, int ultimate)
   sql ("DELETE FROM targets_login_data WHERE target = %llu;", target);
   sql ("DELETE FROM targets WHERE id = %llu;", target);
 
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 }
 
@@ -30701,26 +30701,26 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
   if (acl_user_may ("modify_target") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   if (hosts && (exclude_hosts == NULL))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 13;
     }
 
   target = 0;
   if (find_target_with_permission (target_id, &target, "modify_target"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (target == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 9;
     }
 
@@ -30730,12 +30730,12 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
       if (strlen (name) == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 11;
         }
       if (resource_with_name_exists (name, "target", target))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
@@ -30770,7 +30770,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       alive_test = alive_test_from_string (alive_tests);
       if (alive_test <= -1)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 10;
         }
       sql ("UPDATE targets SET"
@@ -30787,7 +30787,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
       if (target_in_use (target))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 15;
         }
 
@@ -30795,13 +30795,13 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       if (find_port_list_with_permission (port_list_id, &port_list,
                                           "get_port_lists"))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
 
       if (port_list == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 6;
         }
 
@@ -30819,7 +30819,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
       if (target_in_use (target))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 15;
         }
 
@@ -30833,13 +30833,13 @@ modify_target (const char *target_id, const char *name, const char *hosts,
                                                &ssh_credential,
                                                "get_credentials"))
             {
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return -1;
             }
 
           if (ssh_credential == 0)
             {
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return 7;
             }
 
@@ -30847,7 +30847,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
             {
               if (validate_port (ssh_port))
                 {
-                  sql ("ROLLBACK;");
+                  sql_rollback ();
                   return 5;
                 }
               port_int = atoi (ssh_port);
@@ -30858,7 +30858,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
           type = credential_type (ssh_credential);
           if (strcmp (type, "up") && strcmp (type, "usk"))
             {
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return 18;
             }
           g_free (type);
@@ -30875,7 +30875,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
       if (target_in_use (target))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 15;
         }
 
@@ -30887,20 +30887,20 @@ modify_target (const char *target_id, const char *name, const char *hosts,
                                                &smb_credential,
                                                "get_credentials"))
             {
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return -1;
             }
 
           if (smb_credential == 0)
             {
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return 7;
             }
 
           type = credential_type (smb_credential);
           if (strcmp (type, "up"))
             {
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return 19;
             }
           g_free (type);
@@ -30917,7 +30917,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
       if (target_in_use (target))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 15;
         }
 
@@ -30929,20 +30929,20 @@ modify_target (const char *target_id, const char *name, const char *hosts,
                                                &esxi_credential,
                                                "get_credentials"))
             {
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return -1;
             }
 
           if (esxi_credential == 0)
             {
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return 16;
             }
 
           type = credential_type (esxi_credential);
           if (strcmp (type, "up"))
             {
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return 20;
             }
           g_free (type);
@@ -30959,7 +30959,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
       if (target_in_use (target))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 15;
         }
 
@@ -30971,20 +30971,20 @@ modify_target (const char *target_id, const char *name, const char *hosts,
                                                &snmp_credential,
                                                "get_credentials"))
             {
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return -1;
             }
 
           if (snmp_credential == 0)
             {
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return 17;
             }
 
           type = credential_type (snmp_credential);
           if (strcmp (type, "snmp"))
             {
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return 21;
             }
           g_free (type);
@@ -31002,7 +31002,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
       if (target_in_use (target))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 15;
         }
 
@@ -31011,14 +31011,14 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       if (hosts == NULL)
         {
           g_free (quoted_exclude_hosts);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 12;
         }
 
       if (strlen (hosts) == 0)
         {
           g_free (quoted_exclude_hosts);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 14;
         }
 
@@ -31026,14 +31026,14 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       if (max <= 0)
         {
           g_free (quoted_exclude_hosts);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 2;
         }
       clean = clean_hosts (hosts, &max);
       if (max > max_hosts)
         {
           g_free (quoted_exclude_hosts);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 3;
         }
       quoted_hosts = sql_quote (clean);
@@ -31056,7 +31056,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
     {
       if (target_in_use (target))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 15;
         }
 
@@ -31072,7 +31072,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
     {
       if (target_in_use (target))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 15;
         }
 
@@ -31084,7 +31084,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
            target);
     }
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -32242,7 +32242,7 @@ create_config (const char* proposed_name, const char* comment,
 
   if (acl_user_may ("create_config") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       free (selector_uuid);
       return 99;
     }
@@ -32297,7 +32297,7 @@ create_config (const char* proposed_name, const char* comment,
     {
       if ((ret = insert_nvt_selectors (selector_uuid, selectors)))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           free (selector_uuid);
           return ret;
         }
@@ -32308,7 +32308,7 @@ create_config (const char* proposed_name, const char* comment,
 
   if ((ret = config_insert_preferences (*config, preferences, config_type)))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return ret;
     }
 
@@ -32316,7 +32316,7 @@ create_config (const char* proposed_name, const char* comment,
 
   update_config_caches (*config);
 
-  sql ("COMMIT;");
+  sql_commit ();
   *name = candidate_name;
   return 0;
 }
@@ -32412,34 +32412,34 @@ create_config_from_scanner (const char *scanner_id, const char *name,
 
   if (acl_user_may ("create_config") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
   if (find_scanner_with_permission (scanner_id, &scanner, "create_config"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
   if (scanner == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
   if (scanner_type (scanner) != SCANNER_TYPE_OSP)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 2;
     }
   if (resource_with_name_exists (name, "config", 0))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 3;
     }
 
   params = get_scanner_params (scanner);
   if (!params)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 4;
     }
   quoted_name = sql_quote (name ?: "");
@@ -32464,7 +32464,7 @@ create_config_from_scanner (const char *scanner_id, const char *name,
       element = element->next;
     }
   g_slist_free (params);
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 }
 
@@ -32740,7 +32740,7 @@ copy_config (const char* name, const char* comment, const char *config_id,
                             " nvts_growing, type, scanner", 1, &new, &old);
   if (ret)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return ret;
     }
 
@@ -32755,7 +32755,7 @@ copy_config (const char* name, const char* comment, const char *config_id,
       /* Don't create nvt_selector etc,. for non-standard configs
        * (eg. OSP config.) Only config preferences are copied.
        */
-      sql ("COMMIT;");
+      sql_commit ();
       if (new_config) *new_config = new;
       return 0;
     }
@@ -32766,7 +32766,7 @@ copy_config (const char* name, const char* comment, const char *config_id,
   config_selector = config_nvt_selector (old);
   if (config_selector == NULL)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
   quoted_config_selector = sql_quote (config_selector);
@@ -32781,7 +32781,7 @@ copy_config (const char* name, const char* comment, const char *config_id,
        quoted_config_selector);
   g_free (quoted_config_selector);
 
-  sql ("COMMIT;");
+  sql_commit ();
   if (new_config) *new_config = new;
   return 0;
 }
@@ -32814,13 +32814,13 @@ delete_config (const char *config_id, int ultimate)
 
   if (acl_user_may ("delete_config") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   if (find_config_with_permission (config_id, &config, "delete_config"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -32828,18 +32828,18 @@ delete_config (const char *config_id, int ultimate)
     {
       if (find_trash ("config", config_id, &config))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
       if (config == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 2;
         }
       if (ultimate == 0)
         {
           /* It's already in the trashcan. */
-          sql ("COMMIT;");
+          sql_commit ();
           return 0;
         }
 
@@ -32849,7 +32849,7 @@ delete_config (const char *config_id, int ultimate)
                    " AND config_location = " G_STRINGIFY (LOCATION_TRASH) ";",
                    config))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
@@ -32863,7 +32863,7 @@ delete_config (const char *config_id, int ultimate)
            config);
       sql ("DELETE FROM configs_trash WHERE id = %llu;",
            config);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -32874,7 +32874,7 @@ delete_config (const char *config_id, int ultimate)
                    " AND config_location = " G_STRINGIFY (LOCATION_TABLE),
                    config))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
@@ -32895,7 +32895,7 @@ delete_config (const char *config_id, int ultimate)
                    " AND (hidden = 0 OR hidden = 1);",
                    config))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
@@ -32936,7 +32936,7 @@ delete_config (const char *config_id, int ultimate)
   sql ("DELETE FROM config_preferences WHERE config = %llu;", config);
   sql ("DELETE FROM configs WHERE id = %llu;", config);
 
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 }
 
@@ -33028,39 +33028,39 @@ sync_config (const char *config_id)
 
   if (acl_user_may ("modify_config") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
   if (find_config_with_permission (config_id, &config, "modify_config"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
   if (config == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
   if (config_type (config) != SCANNER_TYPE_OSP)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 2;
     }
   scanner = config_scanner (config);
   if (!scanner)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 3;
     }
   params = get_scanner_params (scanner);
   if (!params)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 4;
     }
   update_config_params (config, config_id, params);
 
-  sql ("COMMIT;");
+  sql_commit ();
   while (params)
     {
       osp_param_free (params->data);
@@ -33554,7 +33554,7 @@ manage_set_config_preference (config_t config, const char* nvt, const char* name
                    " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",
                    config))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
@@ -33575,7 +33575,7 @@ manage_set_config_preference (config_t config, const char* nvt, const char* name
            config,
            quoted_name);
 
-      sql ("COMMIT;");
+      sql_commit ();
 
       g_free (quoted_name);
       return 0;
@@ -33587,7 +33587,7 @@ manage_set_config_preference (config_t config, const char* nvt, const char* name
                " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",
                config))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
@@ -33615,7 +33615,7 @@ manage_set_config_preference (config_t config, const char* nvt, const char* name
             {
               g_free (quoted_name);
               g_free (value);
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return 2;
             }
 
@@ -33646,7 +33646,7 @@ manage_set_config_preference (config_t config, const char* nvt, const char* name
                       g_strfreev (split);
                       g_free (value);
                       g_string_free (string, TRUE);
-                      sql ("ROLLBACK;");
+                      sql_rollback ();
                       return -1;
                     }
 
@@ -33693,7 +33693,7 @@ manage_set_config_preference (config_t config, const char* nvt, const char* name
            quoted_value);
     }
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   g_free (quoted_name);
   g_free (quoted_value);
@@ -33742,7 +33742,7 @@ manage_set_config (config_t config, const char*name, const char *comment,
       gchar *quoted_name;
       if (resource_with_name_exists (name, "config", config))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
       quoted_name = sql_quote (name);
@@ -33762,7 +33762,7 @@ manage_set_config (config_t config, const char*name, const char *comment,
     {
       if (config_in_use (config))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 3;
         }
       scanner_t scanner = 0;
@@ -33770,13 +33770,13 @@ manage_set_config (config_t config, const char*name, const char *comment,
       if (find_scanner_with_permission (scanner_id, &scanner, "modify_config")
           || scanner == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 2;
         }
       sql ("UPDATE configs SET scanner = %llu, modification_time = m_now ()"
            " WHERE id = %llu;", scanner, config);
     }
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 }
 
@@ -33803,7 +33803,7 @@ manage_set_config_nvts (config_t config, const char* family,
                " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",
                config))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
@@ -33921,7 +33921,7 @@ manage_set_config_nvts (config_t config, const char* family,
        MAX (new_nvt_count, 0),
        config);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   g_free (quoted_family);
   g_free (quoted_selector);
@@ -34455,7 +34455,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
        qod, quoted_qod_type);
 
   if (remove && (chunk_count == 0))
-    sql ("COMMIT;");
+    sql_commit ();
 
   g_free (quoted_version);
   g_free (quoted_name);
@@ -35104,7 +35104,7 @@ insert_nvts_list (GList *nvts_list, int mode)
   chunk_count = 0;
   g_list_foreach (nvts_list, insert_nvt_from_nvti, GINT_TO_POINTER (mode));
   if ((mode == -1) && (chunk_count > 0))
-    sql ("COMMIT;");
+    sql_commit ();
 }
 
 /**
@@ -36057,7 +36057,7 @@ manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list,
     sql_begin_exclusive ();
   refresh_nvt_cves ();
   if (mode == -1)
-    sql ("COMMIT;");
+    sql_commit ();
 
   if (sql_int ("SELECT NOT EXISTS (SELECT * FROM meta"
                "                   WHERE name = 'nvts_check_time')"))
@@ -36076,7 +36076,7 @@ manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list,
     }
 
   if (mode == -2)
-    sql ("COMMIT;");
+    sql_commit ();
 
   if (progress)
     progress ();
@@ -37002,13 +37002,13 @@ manage_set_config_families (config_t config,
                " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",
                config))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
   if (config_type (config) > 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 0;
     }
   constraining = config_families_growing (config);
@@ -37017,7 +37017,7 @@ manage_set_config_families (config_t config,
     {
       if (switch_representation (config, constraining))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
       constraining = constraining == 0;
@@ -37027,7 +37027,7 @@ manage_set_config_families (config_t config,
   if (selector == NULL)
     {
       /* The config should always have a selector. */
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
   quoted_selector = sql_quote (selector);
@@ -37327,7 +37327,7 @@ manage_set_config_families (config_t config,
     }
   cleanup_iterator (&families);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   g_free (quoted_selector);
   free (selector);
@@ -37779,7 +37779,7 @@ manage_nvt_preference_add (const char* name, const char* value, int remove)
          quoted_name, quoted_value);
 
   if (remove)
-    sql ("COMMIT;");
+    sql_commit ();
 
   g_free (quoted_name);
   g_free (quoted_value);
@@ -38098,7 +38098,7 @@ set_task_preferences (task_t task, array_t *preferences)
                          task,
                          quoted_name,
                          quoted_value);
-                  sql ("COMMIT;");
+                  sql_commit ();
                   g_free (quoted_value);
                 }
               else
@@ -38138,10 +38138,10 @@ check_db_encryption_key ()
   lsc_crypt_release (crypt_ctx);
   if (secret == NULL)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
-  sql ("COMMIT");
+  sql_commit ();
   g_free (secret);
   return 0;
 }
@@ -38315,13 +38315,13 @@ create_credential (const char* name, const char* comment, const char* login,
 
   if (acl_user_may ("create_credential") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   if (resource_with_name_exists (name, "credential", 0))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
@@ -38339,7 +38339,7 @@ create_credential (const char* name, const char* comment, const char* login,
           && strcmp (given_type, "up")
           && strcmp (given_type, "usk"))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 4;
         }
       else
@@ -38417,7 +38417,7 @@ create_credential (const char* name, const char* comment, const char* login,
   if (ret)
     {
       g_free (quoted_type);
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return ret;
     }
 
@@ -38493,7 +38493,7 @@ create_credential (const char* name, const char* comment, const char* login,
           if (!secret)
             {
               lsc_crypt_release (crypt_ctx);
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return -1;
             }
           set_credential_data (new_credential, "secret", secret);
@@ -38510,7 +38510,7 @@ create_credential (const char* name, const char* comment, const char* login,
       if (credential)
         *credential = new_credential;
 
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -38534,7 +38534,7 @@ create_credential (const char* name, const char* comment, const char* login,
           if (!secret)
             {
               lsc_crypt_release (crypt_ctx);
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return -1;
             }
           set_credential_data (new_credential, "secret", secret);
@@ -38552,7 +38552,7 @@ create_credential (const char* name, const char* comment, const char* login,
       if (credential)
         *credential = new_credential;
 
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -38572,7 +38572,7 @@ create_credential (const char* name, const char* comment, const char* login,
           if (!secret)
             {
               lsc_crypt_release (crypt_ctx);
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return -1;
             }
           set_credential_data (new_credential, "secret", secret);
@@ -38587,7 +38587,7 @@ create_credential (const char* name, const char* comment, const char* login,
       if (credential)
         *credential = new_credential;
 
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -38607,7 +38607,7 @@ create_credential (const char* name, const char* comment, const char* login,
         else
           {
             g_free (quoted_name);
-            sql ("ROLLBACK;");
+            sql_rollback ();
             return 2;
           }
     }
@@ -38628,7 +38628,7 @@ create_credential (const char* name, const char* comment, const char* login,
     {
       if (lsc_user_keys_create (generated_password, &generated_private_key))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
     }
@@ -38657,7 +38657,7 @@ create_credential (const char* name, const char* comment, const char* login,
         if (!secret)
           {
             lsc_crypt_release (crypt_ctx);
-            sql ("ROLLBACK;");
+            sql_rollback ();
             return -1;
           }
         set_credential_data (new_credential, "secret", secret);
@@ -38678,7 +38678,7 @@ create_credential (const char* name, const char* comment, const char* login,
   if (credential)
     *credential = new_credential;
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -38762,7 +38762,7 @@ modify_credential (const char *credential_id,
 
   if (acl_user_may ("modify_credential") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
@@ -38770,13 +38770,13 @@ modify_credential (const char *credential_id,
   if (find_credential_with_permission (credential_id, &credential,
                                        "modify_credential"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (credential == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
@@ -38785,7 +38785,7 @@ modify_credential (const char *credential_id,
     {
       if (resource_with_name_exists (name, "credential", credential))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 2;
         }
     }
@@ -38868,21 +38868,21 @@ modify_credential (const char *credential_id,
       else
         {
           g_warning ("%s: Unknown credential type: %s", __FUNCTION__, type);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           cleanup_iterator (&iterator);
         }
     }
   else
     {
       g_warning ("%s: credential iterator next() failed", __FUNCTION__);
-      sql ("ROLLBACK;");
+      sql_rollback ();
       cleanup_iterator (&iterator);
       return -1;
     }
 
   cleanup_iterator (&iterator);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -38905,14 +38905,14 @@ delete_credential (const char *credential_id, int ultimate)
 
   if (acl_user_may ("delete_credential") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   if (find_credential_with_permission (credential_id, &credential,
                                        "delete_credential"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -38920,18 +38920,18 @@ delete_credential (const char *credential_id, int ultimate)
     {
       if (find_trash ("credential", credential_id, &credential))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
       if (credential == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 2;
         }
       if (ultimate == 0)
         {
           /* It's already in the trashcan. */
-          sql ("COMMIT;");
+          sql_commit ();
           return 0;
         }
 
@@ -38946,7 +38946,7 @@ delete_credential (const char *credential_id, int ultimate)
                       " WHERE credential = %llu AND credential_location = %s;",
                       credential, G_STRINGIFY (LOCATION_TRASH)))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
@@ -38958,7 +38958,7 @@ delete_credential (const char *credential_id, int ultimate)
       sql ("DELETE FROM credentials_trash_data WHERE credential = %llu;",
            credential);
       sql ("DELETE FROM credentials_trash WHERE id = %llu;", credential);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -38973,7 +38973,7 @@ delete_credential (const char *credential_id, int ultimate)
                   " WHERE credential = %llu;",
                   credential))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
@@ -39038,7 +39038,7 @@ delete_credential (const char *credential_id, int ultimate)
   sql ("DELETE FROM credentials_data WHERE credential = %llu;", credential);
   sql ("DELETE FROM credentials WHERE id = %llu;", credential);
 
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 }
 
@@ -40521,7 +40521,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
 
   if (acl_user_may ("create_agent") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
@@ -40529,7 +40529,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
     {
       g_free (installer);
       g_free (installer_signature);
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
@@ -40576,7 +40576,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
             g_warning ("%s: sql_prepare failed\n", __FUNCTION__);
             g_free (installer);
             g_free (installer_signature);
-            sql ("ROLLBACK;");
+            sql_rollback ();
             return -1;
           }
 
@@ -40585,7 +40585,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
         if (sql_bind_text (stmt, 1, installer, installer_size))
           {
             g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
-            sql ("ROLLBACK;");
+            sql_rollback ();
             g_free (installer);
             g_free (installer_signature);
             return -1;
@@ -40595,7 +40595,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
         if (sql_bind_text (stmt, 2, installer_64, strlen (installer_64)))
           {
             g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
-            sql ("ROLLBACK;");
+            sql_rollback ();
             g_free (installer_signature);
             return -1;
           }
@@ -40605,21 +40605,21 @@ create_agent (const char* name, const char* comment, const char* installer_64,
                            strlen (installer_signature_64)))
           {
             g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
-            sql ("ROLLBACK;");
+            sql_rollback ();
             return -1;
           }
 
         if (sql_bind_text (stmt, 4, howto_install, strlen (howto_install)))
           {
             g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
-            sql ("ROLLBACK;");
+            sql_rollback ();
             return -1;
           }
 
         if (sql_bind_blob (stmt, 5, howto_use, strlen (howto_use)))
           {
             g_warning ("%s: sql_bind_blob failed\n", __FUNCTION__);
-            sql ("ROLLBACK;");
+            sql_rollback ();
             return -1;
           }
 
@@ -40635,7 +40635,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
         if (ret < 0)
           {
             g_warning ("%s: sql_exec failed\n", __FUNCTION__);
-            sql ("ROLLBACK;");
+            sql_rollback ();
             return -1;
           }
         break;
@@ -40647,7 +40647,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
   if (agent)
     *agent = sql_last_insert_id ();
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -40699,27 +40699,27 @@ modify_agent (const char *agent_id, const char *name, const char *comment)
 
   if (acl_user_may ("modify_agent") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   agent = 0;
   if (find_agent_with_permission (agent_id, &agent, "modify_agent"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (agent == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
   /* Check whether a agent with the same name exists already. */
   if (resource_with_name_exists (name, "agent", agent))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 2;
     }
   quoted_name = sql_quote (name ?: "");
@@ -40735,7 +40735,7 @@ modify_agent (const char *agent_id, const char *name, const char *comment)
   g_free (quoted_comment);
   g_free (quoted_name);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -40757,13 +40757,13 @@ delete_agent (const char *agent_id, int ultimate)
 
   if (acl_user_may ("delete_agent") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   if (find_agent_with_permission (agent_id, &agent, "delete_agent"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -40771,18 +40771,18 @@ delete_agent (const char *agent_id, int ultimate)
     {
       if (find_trash ("agent", agent_id, &agent))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
       if (agent == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 2;
         }
       if (ultimate == 0)
         {
           /* It's already in the trashcan. */
-          sql ("COMMIT;");
+          sql_commit ();
           return 0;
         }
 
@@ -40790,7 +40790,7 @@ delete_agent (const char *agent_id, int ultimate)
       tags_set_orphans ("agent", agent, LOCATION_TRASH);
 
       sql ("DELETE FROM agents_trash WHERE id = %llu;", agent);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -40823,7 +40823,7 @@ delete_agent (const char *agent_id, int ultimate)
     }
 
   sql ("DELETE FROM agents WHERE id = %llu;", agent);
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 }
 
@@ -40898,7 +40898,7 @@ verify_agent (const char *agent_id)
 
   if (acl_user_may ("verify_agent") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
@@ -40952,7 +40952,7 @@ verify_agent (const char *agent_id)
                   g_warning ("%s: verify_signature error\n", __FUNCTION__);
                   cleanup_iterator (&agents);
                   g_free (agent_signature);
-                  sql ("ROLLBACK;");
+                  sql_rollback ();
                   return -1;
                 }
             }
@@ -40970,7 +40970,7 @@ verify_agent (const char *agent_id)
                   g_warning ("%s: verify_signature error\n", __FUNCTION__);
                   cleanup_iterator (&agents);
                   g_free (agent_signature);
-                  sql ("ROLLBACK;");
+                  sql_rollback ();
                   return -1;
                 }
 
@@ -40997,7 +40997,7 @@ verify_agent (const char *agent_id)
     {
       g_warning ("%s: agent iterator empty\n", __FUNCTION__);
       cleanup_iterator (&agents);
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
   cleanup_iterator (&agents);
@@ -41007,7 +41007,7 @@ verify_agent (const char *agent_id)
        agent_trust,
        time (NULL),
        agent);
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -41529,13 +41529,13 @@ delete_note (const char *note_id, int ultimate)
 
   if (acl_user_may ("delete_note") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   if (find_note_with_permission (note_id, &note, "delete_note"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -41543,18 +41543,18 @@ delete_note (const char *note_id, int ultimate)
     {
       if (find_trash ("note", note_id, &note))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
       if (note == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 2;
         }
       if (ultimate == 0)
         {
           /* It's already in the trashcan. */
-          sql ("COMMIT;");
+          sql_commit ();
           return 0;
         }
 
@@ -41562,7 +41562,7 @@ delete_note (const char *note_id, int ultimate)
       tags_set_orphans ("note", note, LOCATION_TRASH);
 
       sql ("DELETE FROM notes_trash WHERE id = %llu;", note);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -41591,7 +41591,7 @@ delete_note (const char *note_id, int ultimate)
 
   sql ("DELETE FROM notes WHERE id = %llu;", note);
 
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 }
 
@@ -42531,7 +42531,7 @@ delete_override (const char *override_id, int ultimate)
 
   if (acl_user_may ("delete_override") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
@@ -42539,7 +42539,7 @@ delete_override (const char *override_id, int ultimate)
 
   if (find_override_with_permission (override_id, &override, "delete_override"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -42547,18 +42547,18 @@ delete_override (const char *override_id, int ultimate)
     {
       if (find_trash ("override", override_id, &override))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
       if (override == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 2;
         }
       if (ultimate == 0)
         {
           /* It's already in the trashcan. */
-          sql ("COMMIT;");
+          sql_commit ();
           return 0;
         }
 
@@ -42566,7 +42566,7 @@ delete_override (const char *override_id, int ultimate)
       tags_set_orphans ("override", override, LOCATION_TRASH);
 
       sql ("DELETE FROM overrides_trash WHERE id = %llu;", override);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -42598,7 +42598,7 @@ delete_override (const char *override_id, int ultimate)
 
   reports_clear_count_cache (1);
 
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 }
 
@@ -43888,7 +43888,7 @@ create_scanner (const char* name, const char *comment, const char *host,
 
   if (acl_user_may ("create_scanner") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
@@ -43904,27 +43904,27 @@ create_scanner (const char* name, const char *comment, const char *host,
     return 2;
   if (resource_with_name_exists (name, "scanner", 0))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
   if (find_credential_with_permission (credential_id, &credential,
                                        "get_credentials"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (credential == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 3;
     }
 
   if (sql_int ("SELECT type != 'cc' FROM credentials WHERE id = %llu;",
                credential))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 4;
     }
 
@@ -43944,7 +43944,7 @@ create_scanner (const char* name, const char *comment, const char *host,
   if (new_scanner)
     *new_scanner = sql_last_insert_id ();
 
-  sql ("COMMIT;");
+  sql_commit ();
   g_free (quoted_host);
   g_free (quoted_comment);
   g_free (quoted_name);
@@ -44048,18 +44048,18 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
 
   if (acl_user_may ("modify_scanner") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   if (find_scanner_with_permission (scanner_id, &scanner, "modify_scanner"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
   if (scanner == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
@@ -44068,7 +44068,7 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
     {
       if (resource_with_name_exists (name, "scanner", scanner))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 2;
         }
     }
@@ -44110,7 +44110,7 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
       sql ("UPDATE scanners SET credential = %llu WHERE id = %llu;",
            credential, scanner);
     }
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 }
 
@@ -44135,13 +44135,13 @@ delete_scanner (const char *scanner_id, int ultimate)
 
   if (acl_user_may ("delete_scanner") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   if (find_scanner_with_permission (scanner_id, &scanner, "delete_scanner"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -44149,18 +44149,18 @@ delete_scanner (const char *scanner_id, int ultimate)
     {
       if (find_trash ("scanner", scanner_id, &scanner))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
       if (scanner == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 2;
         }
       if (ultimate == 0)
         {
           /* It's already in the trashcan. */
-          sql ("COMMIT;");
+          sql_commit ();
           return 0;
         }
 
@@ -44170,7 +44170,7 @@ delete_scanner (const char *scanner_id, int ultimate)
                    " AND scanner_location = " G_STRINGIFY (LOCATION_TRASH) ";",
                    scanner))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
@@ -44178,7 +44178,7 @@ delete_scanner (const char *scanner_id, int ultimate)
       tags_set_orphans ("scanner", scanner, LOCATION_TRASH);
 
       sql ("DELETE FROM scanners_trash WHERE id = %llu;", scanner);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -44190,7 +44190,7 @@ delete_scanner (const char *scanner_id, int ultimate)
                    " AND (hidden = 0 OR hidden = 1);",
                    scanner))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
@@ -44224,7 +44224,7 @@ delete_scanner (const char *scanner_id, int ultimate)
     }
 
   sql ("DELETE FROM scanners WHERE id = %llu;", scanner);
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 }
 
@@ -44997,14 +44997,14 @@ create_schedule (const char* name, const char *comment, time_t first_time,
 
   if (acl_user_may ("create_schedule") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
 
   if (resource_with_name_exists (name, "schedule", 0))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
   quoted_name = sql_quote (name);
@@ -45069,7 +45069,7 @@ create_schedule (const char* name, const char *comment, time_t first_time,
   g_free (insert_timezone);
   g_free (quoted_timezone);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -45114,13 +45114,13 @@ delete_schedule (const char *schedule_id, int ultimate)
 
   if (acl_user_may ("delete_schedule") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   if (find_schedule_with_permission (schedule_id, &schedule, "delete_schedule"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -45128,18 +45128,18 @@ delete_schedule (const char *schedule_id, int ultimate)
     {
       if (find_trash ("schedule", schedule_id, &schedule))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
       if (schedule == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 2;
         }
       if (ultimate == 0)
         {
           /* It's already in the trashcan. */
-          sql ("COMMIT;");
+          sql_commit ();
           return 0;
         }
 
@@ -45149,7 +45149,7 @@ delete_schedule (const char *schedule_id, int ultimate)
                    " AND schedule_location = " G_STRINGIFY (LOCATION_TRASH) ";",
                    schedule))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
@@ -45157,7 +45157,7 @@ delete_schedule (const char *schedule_id, int ultimate)
       tags_set_orphans ("schedule", schedule, LOCATION_TRASH);
 
       sql ("DELETE FROM schedules_trash WHERE id = %llu;", schedule);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -45169,7 +45169,7 @@ delete_schedule (const char *schedule_id, int ultimate)
                    " AND (hidden = 0 OR hidden = 1);",
                    schedule))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
@@ -45204,7 +45204,7 @@ delete_schedule (const char *schedule_id, int ultimate)
                     " AND schedule_location = " G_STRINGIFY (LOCATION_TABLE),
                     schedule))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
   else
@@ -45215,7 +45215,7 @@ delete_schedule (const char *schedule_id, int ultimate)
 
   sql ("DELETE FROM schedules WHERE id = %llu;", schedule);
 
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 }
 
@@ -45617,7 +45617,7 @@ void
 cleanup_task_schedule_iterator (iterator_t* iterator)
 {
   cleanup_iterator (iterator);
-  sql ("COMMIT;");
+  sql_commit ();
 }
 
 /**
@@ -45985,20 +45985,20 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
 
   if (acl_user_may ("modify_schedule") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   schedule = 0;
   if (find_schedule_with_permission (schedule_id, &schedule, "modify_schedule"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (schedule == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
@@ -46007,7 +46007,7 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
     {
       if (resource_with_name_exists (name, "schedule", schedule))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 2;
         }
       quoted_name = sql_quote (name);
@@ -46100,7 +46100,7 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
   g_free (quoted_name);
   g_free (quoted_timezone);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -46350,7 +46350,7 @@ create_report_format (const char *uuid, const char *name,
 
   if (acl_user_may ("create_report_format") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
@@ -46368,7 +46368,7 @@ create_report_format (const char *uuid, const char *name,
       new_uuid = openvas_uuid_make ();
       if (new_uuid == NULL)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
 
@@ -46414,7 +46414,7 @@ create_report_format (const char *uuid, const char *name,
               if (count < 0 || count > state.st_size)
                 {
                   g_warning ("%s: readlink failed", __FUNCTION__);
-                  sql ("ROLLBACK;");
+                  sql_rollback ();
                   return -1;
                 }
 
@@ -46433,7 +46433,7 @@ create_report_format (const char *uuid, const char *name,
       if (symlink (old, new))
         {
           g_warning ("%s: symlink failed: %s", __FUNCTION__, strerror (errno));
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
     }
@@ -46480,7 +46480,7 @@ create_report_format (const char *uuid, const char *name,
       g_free (dir);
       g_free (quoted_name);
       g_free (new_uuid);
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -46490,7 +46490,7 @@ create_report_format (const char *uuid, const char *name,
       g_free (dir);
       g_free (quoted_name);
       g_free (new_uuid);
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -46515,7 +46515,7 @@ create_report_format (const char *uuid, const char *name,
           g_free (report_dir);
           g_free (quoted_name);
           g_free (new_uuid);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
 
@@ -46531,7 +46531,7 @@ create_report_format (const char *uuid, const char *name,
       g_free (dir);
       g_free (quoted_name);
       g_free (new_uuid);
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -46549,7 +46549,7 @@ create_report_format (const char *uuid, const char *name,
           g_free (dir);
           g_free (quoted_name);
           g_free (new_uuid);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 2;
         }
 
@@ -46576,7 +46576,7 @@ create_report_format (const char *uuid, const char *name,
           g_free (dir);
           g_free (quoted_name);
           g_free (new_uuid);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
 
@@ -46594,7 +46594,7 @@ create_report_format (const char *uuid, const char *name,
           g_free (dir);
           g_free (quoted_name);
           g_free (new_uuid);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
 
@@ -46668,7 +46668,7 @@ create_report_format (const char *uuid, const char *name,
         {
           openvas_file_remove_recurse (dir);
           g_free (dir);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 7;
         }
 
@@ -46677,7 +46677,7 @@ create_report_format (const char *uuid, const char *name,
         {
           openvas_file_remove_recurse (dir);
           g_free (dir);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 9;
         }
 
@@ -46693,7 +46693,7 @@ create_report_format (const char *uuid, const char *name,
             {
               openvas_file_remove_recurse (dir);
               g_free (dir);
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return 6;
             }
         }
@@ -46707,7 +46707,7 @@ create_report_format (const char *uuid, const char *name,
             {
               openvas_file_remove_recurse (dir);
               g_free (dir);
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return 6;
             }
         }
@@ -46718,7 +46718,7 @@ create_report_format (const char *uuid, const char *name,
         {
           openvas_file_remove_recurse (dir);
           g_free (dir);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 5;
         }
 
@@ -46732,7 +46732,7 @@ create_report_format (const char *uuid, const char *name,
           g_free (quoted_param_name);
           openvas_file_remove_recurse (dir);
           g_free (dir);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 8;
         }
 
@@ -46768,7 +46768,7 @@ create_report_format (const char *uuid, const char *name,
             g_warning ("%s: options was NULL", __FUNCTION__);
             openvas_file_remove_recurse (dir);
             g_free (dir);
-            sql ("ROLLBACK;");
+            sql_rollback ();
             return -1;
           }
         option_index = 0;
@@ -46790,7 +46790,7 @@ create_report_format (const char *uuid, const char *name,
         {
           openvas_file_remove_recurse (dir);
           g_free (dir);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 3;
         }
 
@@ -46799,7 +46799,7 @@ create_report_format (const char *uuid, const char *name,
         {
           openvas_file_remove_recurse (dir);
           g_free (dir);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 4;
         }
     }
@@ -46809,7 +46809,7 @@ create_report_format (const char *uuid, const char *name,
 
   g_free (dir);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -46844,7 +46844,7 @@ copy_report_format (const char* name, const char* source_uuid,
                             1, &new, &old);
   if (ret)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return ret;
     }
 
@@ -46889,14 +46889,14 @@ copy_report_format (const char* name, const char* source_uuid,
       g_warning ("%s: report format directory %s not found",
                  __FUNCTION__, source_dir);
       g_free (source_dir);
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   copy_uuid = report_format_uuid (new);
   if (copy_uuid == NULL)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -46916,7 +46916,7 @@ copy_report_format (const char* name, const char* source_uuid,
       g_free (source_dir);
       g_free (copy_dir);
       g_free (copy_uuid);
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -46926,7 +46926,7 @@ copy_report_format (const char* name, const char* source_uuid,
       g_free (source_dir);
       g_free (copy_dir);
       g_free (copy_uuid);
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -46948,7 +46948,7 @@ copy_report_format (const char* name, const char* source_uuid,
       g_free (copy_dir);
       g_free (copy_uuid);
       g_free (tmp_dir);
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
   g_free (tmp_dir);
@@ -46970,7 +46970,7 @@ copy_report_format (const char* name, const char* source_uuid,
       g_free (copy_dir);
       g_free (copy_uuid);
       g_free (tmp_dir);
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
   g_free (tmp_dir);
@@ -46993,7 +46993,7 @@ copy_report_format (const char* name, const char* source_uuid,
           }
         g_free (source_dir);
         g_free (copy_dir);
-        sql ("ROLLBACK;");
+        sql_rollback ();
         return -1;
       }
     else
@@ -47015,7 +47015,7 @@ copy_report_format (const char* name, const char* source_uuid,
                 g_free (copy_file);
                 g_free (source_dir);
                 g_free (copy_dir);
-                sql ("ROLLBACK");
+                sql_rollback ();
                 return -1;
               }
             g_free (source_file);
@@ -47025,7 +47025,7 @@ copy_report_format (const char* name, const char* source_uuid,
       }
   }
 
-  sql ("COMMIT");
+  sql_commit ();
   g_free (source_dir);
   g_free (copy_dir);
   if (new_report_format) *new_report_format = new;
@@ -47063,7 +47063,7 @@ modify_report_format (const char *report_format_id, const char *name,
 
   if (acl_user_may ("modify_report_format") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
@@ -47071,13 +47071,13 @@ modify_report_format (const char *report_format_id, const char *name,
   if (find_report_format_with_permission (report_format_id, &report_format,
                                           "modify_report_format"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (report_format == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
@@ -47091,7 +47091,7 @@ modify_report_format (const char *report_format_id, const char *name,
   if (active)
     set_report_format_active (report_format, strcmp (active, "0"));
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   /* Update format params if set */
   if (param_name)
@@ -47218,7 +47218,7 @@ delete_report_format (const char *report_format_id, int ultimate)
 
   if (acl_user_may ("delete_report_format") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
@@ -47227,7 +47227,7 @@ delete_report_format (const char *report_format_id, int ultimate)
   if (find_report_format_with_permission (report_format_id, &report_format,
                                           "delete_report_format"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -47239,18 +47239,18 @@ delete_report_format (const char *report_format_id, int ultimate)
 
       if (find_trash ("report_format", report_format_id, &report_format))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
       if (report_format == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 2;
         }
       if (ultimate == 0)
         {
           /* It's already in the trashcan. */
-          sql ("COMMIT;");
+          sql_commit ();
           return 0;
         }
 
@@ -47258,7 +47258,7 @@ delete_report_format (const char *report_format_id, int ultimate)
 
       if (trash_report_format_in_use (report_format))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
@@ -47295,7 +47295,7 @@ delete_report_format (const char *report_format_id, int ultimate)
         {
           g_free (dir);
           g_free (base);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
       g_free (dir);
@@ -47306,14 +47306,14 @@ delete_report_format (const char *report_format_id, int ultimate)
       g_free (base);
       unlink (dir);
       g_free (dir);
-      sql ("COMMIT;");
+      sql_commit ();
 
       return 0;
     }
 
   if (report_format_predefined (report_format))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 3;
     }
 
@@ -47346,14 +47346,14 @@ delete_report_format (const char *report_format_id, int ultimate)
                    report_format))
         {
           g_free (dir);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
       if (report_format_in_use (report_format))
         {
           g_free (dir);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
@@ -47362,7 +47362,7 @@ delete_report_format (const char *report_format_id, int ultimate)
       if (g_file_test (dir, G_FILE_TEST_EXISTS) && openvas_file_remove_recurse (dir))
         {
           g_free (dir);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
     }
@@ -47376,7 +47376,7 @@ delete_report_format (const char *report_format_id, int ultimate)
       if (report_format_in_use (report_format))
         {
           g_free (dir);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
@@ -47390,7 +47390,7 @@ delete_report_format (const char *report_format_id, int ultimate)
         {
           g_warning ("%s: failed to create dir %s", __FUNCTION__, trash_dir);
           g_free (trash_dir);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
       g_free (trash_dir);
@@ -47471,14 +47471,14 @@ delete_report_format (const char *report_format_id, int ultimate)
         {
           g_free (dir);
           g_free (new_dir);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
       g_free (new_dir);
     }
   g_free (dir);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -47655,7 +47655,7 @@ verify_report_format (const char *report_format_id)
 
   if (acl_user_may ("verify_report_format") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
@@ -47663,22 +47663,22 @@ verify_report_format (const char *report_format_id)
   if (find_report_format_with_permission (report_format_id, &report_format,
                                           "verify_report_format"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
   if (report_format == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
   ret = verify_report_format_internal (report_format);
   if (ret)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return ret;
     }
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 }
 
@@ -47698,10 +47698,10 @@ report_format_verify (report_format_t report_format)
   ret = verify_report_format_internal (report_format);
   if (ret)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return ret;
     }
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 }
 
@@ -48180,14 +48180,14 @@ set_report_format_param (report_format_t report_format, const char *name,
         break;
       case 1:        /* Too few rows in result of query. */
         g_free (quoted_name);
-        sql ("ROLLBACK;");
+        sql_rollback ();
         return 1;
         break;
       default:       /* Programming error. */
         assert (0);
       case -1:
         g_free (quoted_name);
-        sql ("ROLLBACK;");
+        sql_rollback ();
         return -1;
         break;
     }
@@ -48206,7 +48206,7 @@ set_report_format_param (report_format_t report_format, const char *name,
 
   if (validate_param_value (report_format, param, name, value))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       g_free (quoted_name);
       return 2;
     }
@@ -48225,7 +48225,7 @@ set_report_format_param (report_format_t report_format, const char *name,
   g_free (quoted_name);
   g_free (quoted_value);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -48771,7 +48771,7 @@ create_slave (const char* name, const char* comment, const char* host,
 
   if (acl_user_may ("create_slave") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
@@ -48779,7 +48779,7 @@ create_slave (const char* name, const char* comment, const char* host,
   /* Check whether a slave with the same name exists already. */
   if (resource_with_name_exists (name, "slave", 0))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
@@ -48787,20 +48787,20 @@ create_slave (const char* name, const char* comment, const char* host,
   if (find_credential_with_permission (credential_id, &credential,
                                        "get_credentials"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (credential == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 2;
     }
 
   if (sql_int ("SELECT type != 'up' FROM credentials WHERE id = %llu",
                credential))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 3;
     }
 
@@ -48838,7 +48838,7 @@ create_slave (const char* name, const char* comment, const char* host,
   g_free (quoted_host);
   g_free (quoted_port);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -48899,20 +48899,20 @@ modify_slave (const char *slave_id, const char *name, const char *comment,
 
   if (acl_user_may ("modify_slave") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   slave = 0;
   if (find_slave_with_permission (slave_id, &slave, "modify_slave"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (slave == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
@@ -48920,20 +48920,20 @@ modify_slave (const char *slave_id, const char *name, const char *comment,
   if (find_credential_with_permission (credential_id, &credential,
                                        "get_credentials"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (credential == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 5;
     }
 
   if (sql_int ("SELECT type != 'up' FROM credentials WHERE id = %llu",
                credential))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 6;
     }
 
@@ -48942,7 +48942,7 @@ modify_slave (const char *slave_id, const char *name, const char *comment,
     {
       if (resource_with_name_exists (name, "slave", slave))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 2;
         }
     }
@@ -48972,7 +48972,7 @@ modify_slave (const char *slave_id, const char *name, const char *comment,
   g_free (quoted_host);
   g_free (quoted_port);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -48995,13 +48995,13 @@ delete_slave (const char *slave_id, int ultimate)
 
   if (acl_user_may ("delete_slave") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   if (find_slave_with_permission (slave_id, &slave, "delete_slave"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -49009,18 +49009,18 @@ delete_slave (const char *slave_id, int ultimate)
     {
       if (find_trash ("slave", slave_id, &slave))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
       if (slave == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 2;
         }
       if (ultimate == 0)
         {
           /* It's already in the trashcan. */
-          sql ("COMMIT;");
+          sql_commit ();
           return 0;
         }
 
@@ -49030,7 +49030,7 @@ delete_slave (const char *slave_id, int ultimate)
                    " AND slave_location = " G_STRINGIFY (LOCATION_TRASH) ";",
                    slave))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
@@ -49038,7 +49038,7 @@ delete_slave (const char *slave_id, int ultimate)
       tags_set_orphans ("slave", slave, LOCATION_TRASH);
 
       sql ("DELETE FROM slaves_trash WHERE id = %llu;", slave);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -49050,7 +49050,7 @@ delete_slave (const char *slave_id, int ultimate)
                    " AND (hidden = 0 OR hidden = 1);",
                    slave))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
@@ -49086,7 +49086,7 @@ delete_slave (const char *slave_id, int ultimate)
                     " AND slave_location = " G_STRINGIFY (LOCATION_TABLE),
                     slave))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
   else
@@ -49096,7 +49096,7 @@ delete_slave (const char *slave_id, int ultimate)
     }
 
   sql ("DELETE FROM slaves WHERE id = %llu;", slave);
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 }
 
@@ -49674,11 +49674,11 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
         }
       results = next_entities (results);
     }
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 
  rollback_fail:
-  sql ("ROLLBACK;");
+  sql_rollback ();
   return -1;
 }
 
@@ -49740,7 +49740,7 @@ copy_group (const char *name, const char *comment, const char *group_id,
                             &old);
   if (ret)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return ret;
     }
 
@@ -49750,7 +49750,7 @@ copy_group (const char *name, const char *comment, const char *group_id,
        new,
        old);
 
-  sql ("COMMIT;");
+  sql_commit ();
   if (new_group_return)
     *new_group_return = new;
   return 0;
@@ -49927,13 +49927,13 @@ create_group (const char *group_name, const char *comment, const char *users,
 
   if (acl_user_may ("create_group") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   if (resource_with_name_exists (group_name, "group", 0))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
   quoted_group_name = sql_quote (group_name);
@@ -49954,7 +49954,7 @@ create_group (const char *group_name, const char *comment, const char *users,
   ret = add_users ("group", *group, users);
 
   if (ret)
-    sql ("ROLLBACK;");
+    sql_rollback ();
   else
     {
       if (special_full)
@@ -49967,11 +49967,11 @@ create_group (const char *group_name, const char *comment, const char *users,
           g_free (group_id);
           if (ret)
             {
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return ret;
             }
         }
-      sql ("COMMIT;");
+      sql_commit ();
     }
 
   return ret;
@@ -49995,13 +49995,13 @@ delete_group (const char *group_id, int ultimate)
 
   if (acl_user_may ("delete_group") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   if (find_group_with_permission (group_id, &group, "delete_group"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -50009,24 +50009,24 @@ delete_group (const char *group_id, int ultimate)
     {
       if (find_trash ("group", group_id, &group))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
       if (group == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 2;
         }
       if (ultimate == 0)
         {
           /* It's already in the trashcan. */
-          sql ("COMMIT;");
+          sql_commit ();
           return 0;
         }
 
       if (trash_group_in_use (group))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
@@ -50055,13 +50055,13 @@ delete_group (const char *group_id, int ultimate)
 
       sql ("DELETE FROM group_users_trash WHERE \"group\" = %llu;", group);
       sql ("DELETE FROM groups_trash WHERE id = %llu;", group);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
   if (group_in_use (group))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
@@ -50118,7 +50118,7 @@ delete_group (const char *group_id, int ultimate)
   sql ("DELETE FROM group_users WHERE \"group\" = %llu;", group);
   sql ("DELETE FROM groups WHERE id = %llu;", group);
 
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 }
 
@@ -50305,7 +50305,7 @@ modify_group (const char *group_id, const char *name, const char *comment,
 
   if (acl_user_may ("modify_group") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
@@ -50313,13 +50313,13 @@ modify_group (const char *group_id, const char *name, const char *comment,
 
   if (find_group_with_permission (group_id, &group, "modify_group"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (group == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
@@ -50328,7 +50328,7 @@ modify_group (const char *group_id, const char *name, const char *comment,
     {
       if (resource_with_name_exists (name, "group", group))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 5;
         }
     }
@@ -50353,9 +50353,9 @@ modify_group (const char *group_id, const char *name, const char *comment,
   ret = add_users ("group", group, users);
 
   if (ret)
-    sql ("ROLLBACK;");
+    sql_rollback ();
   else
-    sql ("COMMIT;");
+    sql_commit ();
 
   return ret;
 }
@@ -50769,9 +50769,9 @@ create_permission (const char *name_arg, const char *comment,
                                     resource_id_arg, subject_type, subject_id,
                                     permission);
   if (ret)
-    sql ("ROLLBACK;");
+    sql_rollback ();
   else
-    sql ("COMMIT;");
+    sql_commit ();
 
   return ret;
 }
@@ -50800,13 +50800,13 @@ copy_permission (const char* comment, const char *permission_id,
   permission = 0;
   if (find_permission (permission_id, &permission))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (permission == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 2;
     }
 
@@ -50819,7 +50819,7 @@ copy_permission (const char* comment, const char *permission_id,
       && role_is_predefined (subject))
     {
       free (subject_type);
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
   free (subject_type);
@@ -50830,7 +50830,7 @@ copy_permission (const char* comment, const char *permission_id,
       && (permission_resource (permission) == 0))
     {
       free (name);
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
   free (name);
@@ -50842,11 +50842,11 @@ copy_permission (const char* comment, const char *permission_id,
                             0, &new, &old);
   if (ret)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return ret;
     }
 
-  sql ("COMMIT;");
+  sql_commit ();
   if (new_permission) *new_permission = new;
   return 0;
 
@@ -51462,14 +51462,14 @@ delete_permission (const char *permission_id, int ultimate)
 
   if (acl_user_may ("delete_permission") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   if (find_permission_with_permission (permission_id, &permission,
                                        "delete_permission"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -51477,24 +51477,24 @@ delete_permission (const char *permission_id, int ultimate)
     {
       if (find_trash ("permission", permission_id, &permission))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
       if (permission == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 2;
         }
       if (ultimate == 0)
         {
           /* It's already in the trashcan. */
-          sql ("COMMIT;");
+          sql_commit ();
           return 0;
         }
 
       tags_set_orphans ("permission", permission, LOCATION_TRASH);
       sql ("DELETE FROM permissions_trash WHERE id = %llu;", permission);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -51507,7 +51507,7 @@ delete_permission (const char *permission_id, int ultimate)
       && role_is_predefined (subject))
     {
       free (subject_type);
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
   free (subject_type);
@@ -51533,7 +51533,7 @@ delete_permission (const char *permission_id, int ultimate)
 
   sql ("DELETE FROM permissions WHERE id = %llu;", permission);
 
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 }
 
@@ -51591,20 +51591,20 @@ modify_permission (const char *permission_id, const char *name_arg,
 
   if (acl_user_may ("modify_permission") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   permission = 0;
   if (find_permission (permission_id, &permission))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (permission == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
@@ -51619,7 +51619,7 @@ modify_permission (const char *permission_id, const char *name_arg,
       && role_is_predefined (subject))
     {
       free (existing_subject_type);
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
@@ -51681,7 +51681,7 @@ modify_permission (const char *permission_id, const char *name_arg,
       free (new_resource_id);
       free (existing_subject_type);
       free (new_subject_id);
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return ret;
     }
 
@@ -51717,7 +51717,7 @@ modify_permission (const char *permission_id, const char *name_arg,
   free (existing_subject_type);
   free (new_subject_id);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -52100,7 +52100,7 @@ create_port_list (const char* id, const char* name, const char* comment,
 
       if (acl_user_may ("create_port_list") == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 99;
         }
 
@@ -52114,7 +52114,7 @@ create_port_list (const char* id, const char* name, const char* comment,
                    current_credentials.uuid))
         {
           g_free (quoted_id);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
@@ -52125,7 +52125,7 @@ create_port_list (const char* id, const char* name, const char* comment,
                    current_credentials.uuid))
         {
           g_free (quoted_id);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 2;
         }
 
@@ -52146,14 +52146,14 @@ create_port_list (const char* id, const char* name, const char* comment,
       g_free (quoted_name);
       if (ret)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return ret;
         }
 
       if (port_list_return)
         *port_list_return = port_list;
 
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -52167,7 +52167,7 @@ create_port_list (const char* id, const char* name, const char* comment,
 
   if (acl_user_may ("create_port_list") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
@@ -52175,7 +52175,7 @@ create_port_list (const char* id, const char* name, const char* comment,
   /* Check whether a port_list with the same name exists already. */
   if (resource_with_name_exists (name, "port_list", 0))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
@@ -52209,7 +52209,7 @@ create_port_list (const char* id, const char* name, const char* comment,
       if (ret)
         {
           g_free (quoted_name);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return ret;
         }
     }
@@ -52217,7 +52217,7 @@ create_port_list (const char* id, const char* name, const char* comment,
   if (port_list_return)
     *port_list_return = port_list;
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -52248,7 +52248,7 @@ copy_port_list (const char* name, const char* comment,
                             &new, &old);
   if (ret)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return ret;
     }
 
@@ -52261,7 +52261,7 @@ copy_port_list (const char* name, const char* comment,
        new,
        old);
 
-  sql ("COMMIT;");
+  sql_commit ();
   if (new_port_list) *new_port_list = new;
   return 0;
 }
@@ -52293,7 +52293,7 @@ modify_port_list (const char *port_list_id, const char *name,
 
   if (acl_user_may ("modify_port_list") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
@@ -52301,13 +52301,13 @@ modify_port_list (const char *port_list_id, const char *name,
   if (find_port_list_with_permission (port_list_id, &port_list,
                                       "modify_port_list"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (port_list == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
@@ -52316,7 +52316,7 @@ modify_port_list (const char *port_list_id, const char *name,
     {
       if (resource_with_name_exists (name, "port_list", port_list))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 2;
         }
     }
@@ -52336,7 +52336,7 @@ modify_port_list (const char *port_list_id, const char *name,
   g_free (quoted_comment);
   g_free (quoted_name);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -52393,7 +52393,7 @@ create_port_range (const char *port_list_id, const char *type,
 
   if (acl_user_may ("create_port_range") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
@@ -52401,19 +52401,19 @@ create_port_range (const char *port_list_id, const char *type,
 
   if (find_port_list (port_list_id, &port_list))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (port_list == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 3;
     }
 
   if (port_list_in_use (port_list))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 5;
     }
 
@@ -52435,7 +52435,7 @@ create_port_range (const char *port_list_id, const char *type,
                first,
                last))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 6;
     }
 
@@ -52450,7 +52450,7 @@ create_port_range (const char *port_list_id, const char *type,
   if (port_range_return)
     *port_range_return = sql_last_insert_id ();
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -52474,21 +52474,21 @@ delete_port_list (const char *port_list_id, int ultimate)
 
   if (acl_user_may ("delete_port_list") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   if (find_port_list_with_permission (port_list_id, &port_list,
                                       "delete_port_list"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (port_list
       && port_list_is_predefined (port_list))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 3;
     }
 
@@ -52496,18 +52496,18 @@ delete_port_list (const char *port_list_id, int ultimate)
     {
       if (find_trash ("port_list", port_list_id, &port_list))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
       if (port_list == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 2;
         }
       if (ultimate == 0)
         {
           /* It's already in the trashcan. */
-          sql ("COMMIT;");
+          sql_commit ();
           return 0;
         }
 
@@ -52518,7 +52518,7 @@ delete_port_list (const char *port_list_id, int ultimate)
                    " = " G_STRINGIFY (LOCATION_TRASH) ";",
                    port_list))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
@@ -52527,7 +52527,7 @@ delete_port_list (const char *port_list_id, int ultimate)
 
       sql ("DELETE FROM port_ranges_trash WHERE port_list = %llu;", port_list);
       sql ("DELETE FROM port_lists_trash WHERE id = %llu;", port_list);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -52535,7 +52535,7 @@ delete_port_list (const char *port_list_id, int ultimate)
                " WHERE port_list = %llu;",
                port_list))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
@@ -52582,7 +52582,7 @@ delete_port_list (const char *port_list_id, int ultimate)
   sql ("DELETE FROM port_ranges WHERE port_list = %llu;", port_list);
   sql ("DELETE FROM port_lists WHERE id = %llu;", port_list);
 
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 }
 
@@ -52604,20 +52604,20 @@ delete_port_range (const char *port_range_id, int dummy)
 
   if (acl_user_may ("delete_port_range") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   if (find_port_range_with_permission (port_range_id, &port_range,
                                        "delete_port_range"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (port_range == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 2;
     }
 
@@ -52639,7 +52639,7 @@ delete_port_range (const char *port_range_id, int dummy)
 
   sql ("DELETE FROM port_ranges WHERE id = %llu;", port_range);
 
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 }
 
@@ -53206,7 +53206,7 @@ copy_role (const char *name, const char *comment, const char *role_id,
                             &old_role);
   if (ret)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return ret;
     }
 
@@ -53228,7 +53228,7 @@ copy_role (const char *name, const char *comment, const char *role_id,
        new_role,
        old_role);
 
-  sql ("COMMIT;");
+  sql_commit ();
   if (new_role_return)
     *new_role_return = new_role;
   return 0;
@@ -53260,13 +53260,13 @@ create_role (const char *role_name, const char *comment, const char *users,
 
   if (acl_user_may ("create_role") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   if (resource_with_name_exists (role_name, "role", 0))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
@@ -53288,9 +53288,9 @@ create_role (const char *role_name, const char *comment, const char *users,
   ret = add_users ("role", *role, users);
 
   if (ret)
-    sql ("ROLLBACK;");
+    sql_rollback ();
   else
-    sql ("COMMIT;");
+    sql_commit ();
 
   return ret;
 }
@@ -53355,13 +53355,13 @@ delete_role (const char *role_id, int ultimate)
 
   if (acl_user_may ("delete_role") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   if (find_role_with_permission (role_id, &role, "delete_role"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -53369,24 +53369,24 @@ delete_role (const char *role_id, int ultimate)
     {
       if (find_trash ("role", role_id, &role))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
       if (role == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 2;
         }
       if (ultimate == 0)
         {
           /* It's already in the trashcan. */
-          sql ("COMMIT;");
+          sql_commit ();
           return 0;
         }
 
       if (trash_role_in_use (role))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
@@ -53415,19 +53415,19 @@ delete_role (const char *role_id, int ultimate)
 
       sql ("DELETE FROM role_users_trash WHERE role = %llu;", role);
       sql ("DELETE FROM roles_trash WHERE id = %llu;", role);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
   if (role_is_predefined (role))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 3;
     }
 
   if (role_in_use (role))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
@@ -53482,7 +53482,7 @@ delete_role (const char *role_id, int ultimate)
   sql ("DELETE FROM role_users WHERE \"role\" = %llu;", role);
   sql ("DELETE FROM roles WHERE id = %llu;", role);
 
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 }
 
@@ -53647,7 +53647,7 @@ modify_role (const char *role_id, const char *name, const char *comment,
 
   if (acl_user_may ("modify_role") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
@@ -53655,13 +53655,13 @@ modify_role (const char *role_id, const char *name, const char *comment,
 
   if (find_role_with_permission (role_id, &role, "modify_role"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (role == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
@@ -53670,7 +53670,7 @@ modify_role (const char *role_id, const char *name, const char *comment,
     {
       if (resource_with_name_exists (name, "role", role))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 5;
         }
     }
@@ -53695,9 +53695,9 @@ modify_role (const char *role_id, const char *name, const char *comment,
   ret = add_users ("role", role, users);
 
   if (ret)
-    sql ("ROLLBACK;");
+    sql_rollback ();
   else
-    sql ("COMMIT;");
+    sql_commit ();
 
   return ret;
 }
@@ -53950,7 +53950,7 @@ create_filter (const char *name, const char *comment, const char *type,
 
   if (acl_user_may ("create_filter") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
@@ -53975,7 +53975,7 @@ create_filter (const char *name, const char *comment, const char *type,
       if (resource_with_name_exists (name, "filter", 0))
         {
           g_free (quoted_name);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
     }
@@ -54022,7 +54022,7 @@ create_filter (const char *name, const char *comment, const char *type,
   g_free (quoted_name);
   g_free (quoted_term);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -54065,13 +54065,13 @@ delete_filter (const char *filter_id, int ultimate)
 
   if (acl_user_may ("delete_filter") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   if (find_filter_with_permission (filter_id, &filter, "delete_filter"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -54079,18 +54079,18 @@ delete_filter (const char *filter_id, int ultimate)
     {
       if (find_trash ("filter", filter_id, &filter))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
       if (filter == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 2;
         }
       if (ultimate == 0)
         {
           /* It's already in the trashcan. */
-          sql ("COMMIT;");
+          sql_commit ();
           return 0;
         }
 
@@ -54100,7 +54100,7 @@ delete_filter (const char *filter_id, int ultimate)
                    " AND filter_location = " G_STRINGIFY (LOCATION_TRASH) ";",
                    filter))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
@@ -54115,7 +54115,7 @@ delete_filter (const char *filter_id, int ultimate)
                    ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
                    ALERT_CONDITION_FILTER_COUNT_CHANGED))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
@@ -54123,7 +54123,7 @@ delete_filter (const char *filter_id, int ultimate)
       tags_set_orphans ("filter", filter, LOCATION_TRASH);
 
       sql ("DELETE FROM filters_trash WHERE id = %llu;", filter);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -54132,7 +54132,7 @@ delete_filter (const char *filter_id, int ultimate)
                " WHERE filter = %llu;",
                filter))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
@@ -54147,7 +54147,7 @@ delete_filter (const char *filter_id, int ultimate)
                ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
                ALERT_CONDITION_FILTER_COUNT_CHANGED))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
@@ -54164,7 +54164,7 @@ delete_filter (const char *filter_id, int ultimate)
                    ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
                    ALERT_CONDITION_FILTER_COUNT_CHANGED))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
     }
@@ -54209,7 +54209,7 @@ delete_filter (const char *filter_id, int ultimate)
 
   sql ("DELETE FROM filters WHERE id = %llu;", filter);
 
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 }
 
@@ -54479,20 +54479,20 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
 
   if (acl_user_may ("modify_filter") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   filter = 0;
   if (find_filter_with_permission (filter_id, &filter, "modify_filter"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (filter == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
@@ -54501,7 +54501,7 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
       && type
       && strcasecmp (type, "result"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 5;
     }
 
@@ -54510,7 +54510,7 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
     {
       if (resource_with_name_exists (name, "filter", filter))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 2;
         }
     }
@@ -54540,7 +54540,7 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
   g_free (quoted_term);
   g_free (quoted_type);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -54783,7 +54783,7 @@ manage_restore (const char *id)
 
   if (acl_user_may ("restore") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
@@ -54791,7 +54791,7 @@ manage_restore (const char *id)
 
   if (find_trash ("agent", id, &resource))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -54804,7 +54804,7 @@ manage_restore (const char *id)
                    resource,
                    current_credentials.uuid))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 3;
         }
 
@@ -54829,7 +54829,7 @@ manage_restore (const char *id)
                           LOCATION_TABLE);
 
       sql ("DELETE FROM agents_trash WHERE id = %llu;", resource);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -54837,7 +54837,7 @@ manage_restore (const char *id)
 
   if (find_trash ("config", id, &resource))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -54852,7 +54852,7 @@ manage_restore (const char *id)
                    resource,
                    current_credentials.uuid))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 3;
         }
 
@@ -54892,7 +54892,7 @@ manage_restore (const char *id)
       sql ("DELETE FROM config_preferences_trash WHERE config = %llu;",
            resource);
       sql ("DELETE FROM configs_trash WHERE id = %llu;", resource);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -54900,7 +54900,7 @@ manage_restore (const char *id)
 
   if (find_trash ("alert", id, &resource))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -54915,7 +54915,7 @@ manage_restore (const char *id)
                    resource,
                    current_credentials.uuid))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 3;
         }
 
@@ -54924,7 +54924,7 @@ manage_restore (const char *id)
                    " FROM alerts_trash WHERE id = %llu;",
                    resource))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
@@ -54981,7 +54981,7 @@ manage_restore (const char *id)
            resource);
       sql ("DELETE FROM alerts_trash WHERE id = %llu;",
            resource);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -54989,7 +54989,7 @@ manage_restore (const char *id)
 
   if (find_trash ("filter", id, &resource))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -55002,7 +55002,7 @@ manage_restore (const char *id)
                    resource,
                    current_credentials.uuid))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 3;
         }
 
@@ -55031,7 +55031,7 @@ manage_restore (const char *id)
                           LOCATION_TABLE);
 
       sql ("DELETE FROM filters_trash WHERE id = %llu;", resource);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -55039,7 +55039,7 @@ manage_restore (const char *id)
 
   if (find_trash ("group", id, &resource))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -55054,7 +55054,7 @@ manage_restore (const char *id)
                    resource,
                    current_credentials.uuid))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 3;
         }
 
@@ -55082,7 +55082,7 @@ manage_restore (const char *id)
 
       sql ("DELETE FROM group_users_trash WHERE \"group\" = %llu;", resource);
       sql ("DELETE FROM groups_trash WHERE id = %llu;", resource);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -55090,7 +55090,7 @@ manage_restore (const char *id)
 
   if (find_trash ("credential", id, &resource))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -55105,7 +55105,7 @@ manage_restore (const char *id)
                    resource,
                    current_credentials.uuid))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 3;
         }
 
@@ -55158,7 +55158,7 @@ manage_restore (const char *id)
       sql ("DELETE FROM credentials_trash_data WHERE credential = %llu;",
            resource);
       sql ("DELETE FROM credentials_trash WHERE id = %llu;", resource);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -55166,7 +55166,7 @@ manage_restore (const char *id)
 
   if (find_trash ("note", id, &resource))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -55188,7 +55188,7 @@ manage_restore (const char *id)
                                  LOCATION_TABLE);
 
       sql ("DELETE FROM notes_trash WHERE id = %llu;", resource);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -55196,7 +55196,7 @@ manage_restore (const char *id)
 
   if (find_trash ("override", id, &resource))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -55220,7 +55220,7 @@ manage_restore (const char *id)
 
       sql ("DELETE FROM overrides_trash WHERE id = %llu;", resource);
       reports_clear_count_cache (1);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -55228,7 +55228,7 @@ manage_restore (const char *id)
 
   if (find_trash ("permission", id, &resource))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -55250,7 +55250,7 @@ manage_restore (const char *id)
                           LOCATION_TABLE);
 
       sql ("DELETE FROM permissions_trash WHERE id = %llu;", resource);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -55258,7 +55258,7 @@ manage_restore (const char *id)
 
   if (find_trash ("port_list", id, &resource))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -55273,7 +55273,7 @@ manage_restore (const char *id)
                    resource,
                    current_credentials.uuid))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 3;
         }
 
@@ -55309,7 +55309,7 @@ manage_restore (const char *id)
 
       sql ("DELETE FROM port_ranges_trash WHERE port_list = %llu;", resource);
       sql ("DELETE FROM port_lists_trash WHERE id = %llu;", resource);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -55317,7 +55317,7 @@ manage_restore (const char *id)
 
   if (find_trash ("report_format", id, &resource))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -55336,7 +55336,7 @@ manage_restore (const char *id)
                    resource,
                    current_credentials.uuid))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 3;
         }
 
@@ -55346,7 +55346,7 @@ manage_restore (const char *id)
                    "               WHERE id = %llu);",
                    resource))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 4;
         }
 
@@ -55449,13 +55449,13 @@ manage_restore (const char *id)
         {
           g_free (dir);
           g_free (trash_dir);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
       g_free (dir);
       g_free (trash_dir);
 
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -55463,7 +55463,7 @@ manage_restore (const char *id)
 
   if (find_trash ("role", id, &resource))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -55478,7 +55478,7 @@ manage_restore (const char *id)
                    resource,
                    current_credentials.uuid))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 3;
         }
 
@@ -55505,7 +55505,7 @@ manage_restore (const char *id)
 
       sql ("DELETE FROM role_users_trash WHERE role = %llu;", resource);
       sql ("DELETE FROM roles_trash WHERE id = %llu;", resource);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -55513,7 +55513,7 @@ manage_restore (const char *id)
 
   if (find_trash ("scanner", id, &resource))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -55525,7 +55525,7 @@ manage_restore (const char *id)
                    " AND " ACL_USER_OWNS () ";",
                    resource, current_credentials.uuid))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 3;
         }
 
@@ -55533,7 +55533,7 @@ manage_restore (const char *id)
                    " FROM scanners_trash WHERE id = %llu;",
                    resource))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
@@ -55559,7 +55559,7 @@ manage_restore (const char *id)
                           sql_last_insert_id (), LOCATION_TABLE);
 
       sql ("DELETE FROM scanners_trash WHERE id = %llu;", resource);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -55567,7 +55567,7 @@ manage_restore (const char *id)
 
   if (find_trash ("schedule", id, &resource))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -55580,7 +55580,7 @@ manage_restore (const char *id)
                    resource,
                    current_credentials.uuid))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 3;
         }
 
@@ -55611,7 +55611,7 @@ manage_restore (const char *id)
                           LOCATION_TABLE);
 
       sql ("DELETE FROM schedules_trash WHERE id = %llu;", resource);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -55619,7 +55619,7 @@ manage_restore (const char *id)
 
   if (find_trash ("slave", id, &resource))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -55632,7 +55632,7 @@ manage_restore (const char *id)
                    resource,
                    current_credentials.uuid))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 3;
         }
 
@@ -55641,7 +55641,7 @@ manage_restore (const char *id)
                    " FROM slaves_trash WHERE id = %llu;",
                    resource))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
@@ -55671,7 +55671,7 @@ manage_restore (const char *id)
                           LOCATION_TABLE);
 
       sql ("DELETE FROM slaves_trash WHERE id = %llu;", resource);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -55679,7 +55679,7 @@ manage_restore (const char *id)
 
   if (find_trash ("tag", id, &resource))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -55700,7 +55700,7 @@ manage_restore (const char *id)
                                  LOCATION_TABLE);
 
       sql ("DELETE FROM tags_trash WHERE id = %llu;", resource);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -55708,7 +55708,7 @@ manage_restore (const char *id)
 
   if (find_trash ("target", id, &resource))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -55723,7 +55723,7 @@ manage_restore (const char *id)
                    resource,
                    current_credentials.uuid))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 3;
         }
 
@@ -55737,7 +55737,7 @@ manage_restore (const char *id)
                    " FROM targets_trash WHERE id = %llu;",
                    resource, resource))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
@@ -55781,7 +55781,7 @@ manage_restore (const char *id)
                           LOCATION_TABLE);
 
       sql ("DELETE FROM targets_trash WHERE id = %llu;", resource);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -55789,7 +55789,7 @@ manage_restore (const char *id)
 
   if (find_trash_task (id, &resource))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -55807,7 +55807,7 @@ manage_restore (const char *id)
                    " FROM tasks WHERE id = %llu;",
                    resource))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
@@ -55840,11 +55840,11 @@ manage_restore (const char *id)
            resource);
 
       sql ("UPDATE tasks SET hidden = 0 WHERE id = %llu;", resource);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
-  sql ("ROLLBACK;");
+  sql_rollback ();
   return 2;
 }
 
@@ -55868,7 +55868,7 @@ manage_empty_trashcan ()
 
   if (acl_user_may ("empty_trashcan") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
@@ -55954,7 +55954,7 @@ manage_empty_trashcan ()
   sql ("DELETE FROM targets_trash" WHERE_OWNER);
   if (delete_trash_tasks ())
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -56019,7 +56019,7 @@ manage_empty_trashcan ()
         {
           g_warning ("%s: failed to remove trash dir %s", __FUNCTION__, dir);
           g_free (dir);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
 
@@ -56028,7 +56028,7 @@ manage_empty_trashcan ()
 
   g_array_free (report_formats, TRUE);
 
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 }
 
@@ -57368,7 +57368,7 @@ create_asset_host (const char *host_name, const char *comment,
 
   if (acl_user_may ("create_asset") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
@@ -57401,7 +57401,7 @@ create_asset_host (const char *host_name, const char *comment,
   if (host_return)
     *host_return = host;
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -57427,20 +57427,20 @@ create_asset_report (const char *report_id)
 
   if (acl_user_may ("create_asset") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   report = 0;
   if (find_report_with_permission (report_id, &report, "get_reports"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (report == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
@@ -57511,7 +57511,7 @@ create_asset_report (const char *report_id)
   hosts_set_max_severity (report);
   hosts_set_details (report);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -57538,7 +57538,7 @@ modify_asset (const char *asset_id, const char *comment)
 
   if (acl_user_may ("modify_asset") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
@@ -57558,7 +57558,7 @@ modify_asset (const char *asset_id, const char *comment)
         assert (0);
       case -1:
         g_free (quoted_asset_id);
-        sql ("ROLLBACK;");
+        sql_rollback ();
         return -1;
         break;
     }
@@ -57567,7 +57567,7 @@ modify_asset (const char *asset_id, const char *comment)
 
   if (asset == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
@@ -57581,7 +57581,7 @@ modify_asset (const char *asset_id, const char *comment)
 
   g_free (quoted_comment);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -57605,13 +57605,13 @@ delete_report_assets (const char *report_id)
   report = 0;
   if (find_report_with_permission (report_id, &report, "delete_report"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (report == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
@@ -57668,7 +57668,7 @@ delete_report_assets (const char *report_id)
 
   sql ("DROP TABLE delete_report_assets_hosts;");
 
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 }
 
@@ -57695,7 +57695,7 @@ delete_asset (const char *asset_id, const char *report_id, int dummy)
 
   if (acl_user_may ("delete_asset") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
@@ -57703,7 +57703,7 @@ delete_asset (const char *asset_id, const char *report_id, int dummy)
     {
       if (report_id == NULL)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 3;
         }
       return delete_report_assets (report_id);
@@ -57725,7 +57725,7 @@ delete_asset (const char *asset_id, const char *report_id, int dummy)
         assert (0);
       case -1:
         g_free (quoted_asset_id);
-        sql ("ROLLBACK;");
+        sql_rollback ();
         return -1;
         break;
     }
@@ -57741,18 +57741,18 @@ delete_asset (const char *asset_id, const char *report_id, int dummy)
       parent = 0;
       if (find_host_with_permission (parent_id, &parent, "delete_asset"))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
 
       if (parent == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 99;
         }
 
       sql ("DELETE FROM host_identifiers WHERE id = %llu;", asset);
-      sql ("COMMIT;");
+      sql_commit ();
 
       return 0;
     }
@@ -57773,7 +57773,7 @@ delete_asset (const char *asset_id, const char *report_id, int dummy)
         assert (0);
       case -1:
         g_free (quoted_asset_id);
-        sql ("ROLLBACK;");
+        sql_rollback ();
         return -1;
         break;
     }
@@ -57789,18 +57789,18 @@ delete_asset (const char *asset_id, const char *report_id, int dummy)
       parent = 0;
       if (find_host_with_permission (parent_id, &parent, "delete_asset"))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
 
       if (parent == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 99;
         }
 
       sql ("DELETE FROM host_oss WHERE id = %llu;", asset);
-      sql ("COMMIT;");
+      sql_commit ();
 
       return 0;
     }
@@ -57821,7 +57821,7 @@ delete_asset (const char *asset_id, const char *report_id, int dummy)
         assert (0);
       case -1:
         g_free (quoted_asset_id);
-        sql ("ROLLBACK;");
+        sql_rollback ();
         return -1;
         break;
     }
@@ -57834,12 +57834,12 @@ delete_asset (const char *asset_id, const char *report_id, int dummy)
                    " WHERE os = %llu;",
                    asset))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
 
       sql ("DELETE FROM oss WHERE id = %llu;", asset);
-      sql ("COMMIT;");
+      sql_commit ();
 
       return 0;
     }
@@ -57860,7 +57860,7 @@ delete_asset (const char *asset_id, const char *report_id, int dummy)
         assert (0);
       case -1:
         g_free (quoted_asset_id);
-        sql ("ROLLBACK;");
+        sql_rollback ();
         return -1;
         break;
     }
@@ -57874,12 +57874,12 @@ delete_asset (const char *asset_id, const char *report_id, int dummy)
       sql ("DELETE FROM host_max_severities WHERE host = %llu;", asset);
       sql ("DELETE FROM host_details WHERE host = %llu;", asset);
       sql ("DELETE FROM hosts WHERE id = %llu;", asset);
-      sql ("COMMIT;");
+      sql_commit ();
 
       return 0;
     }
 
-  sql ("ROLLBACK;");
+  sql_rollback ();
   return 2;
 }
 
@@ -60288,25 +60288,25 @@ manage_set_password (GSList *log_config, const gchar *database,
 
   if (find_user_by_name (name, &user))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (user == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
   uuid = user_uuid (user);
   if (uuid == NULL)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   ret = set_password (name, uuid, password, NULL);
-  sql ("COMMIT;");
+  sql_commit ();
   free (uuid);
   return ret;
 }
@@ -60441,7 +60441,7 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
 
   if (acl_user_may ("create_user") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       g_free (generated);
       return 99;
     }
@@ -60450,7 +60450,7 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
 
   if (resource_with_name_exists_global (name, "user", 0))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       g_free (generated);
       return -2;
     }
@@ -60463,7 +60463,7 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
   if (hosts && (manage_count_hosts (hosts, NULL) < 0))
     {
       manage_set_max_hosts (max);
-      sql ("ROLLBACK;");
+      sql_rollback ();
       g_free (generated);
       return 3;
     }
@@ -60523,13 +60523,13 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
 
       if (find_group (group_id, &group))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
 
       if (group == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           if (group_id_return) *group_id_return = group_id;
           return 1;
         }
@@ -60558,19 +60558,19 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
 
       if (forbid_super_admin && acl_role_can_super_everyone (role_id))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 99;
         }
 
       if (find_role (role_id, &role))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
 
       if (role == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           if (role_id_return) *role_id_return = role_id;
           return 2;
         }
@@ -60585,7 +60585,7 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
   if (new_user)
     *new_user = user;
 
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 }
 
@@ -60619,7 +60619,7 @@ copy_user (const char* name, const char* comment, const char *user_id,
                             1, &user, NULL);
   if (ret)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return ret;
     }
 
@@ -60641,7 +60641,7 @@ copy_user (const char* name, const char* comment, const char *user_id,
 
   g_free (quoted_uuid);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   if (new_user)
     *new_user = user;
@@ -60691,7 +60691,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
 
   if (acl_user_may ("delete_user") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
@@ -60701,19 +60701,19 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       if (forbid_super_admin
           && (strcmp (user_id_arg, ROLE_UUID_SUPER_ADMIN) == 0))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 99;
         }
 
       if (find_user_with_permission (user_id_arg, &user, "delete_user"))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
     }
   else if (find_user_by_name_with_permission (name_arg, &user, "delete_user"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -60728,7 +60728,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       if (user_is_super_admin (uuid))
         {
           free (uuid);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 99;
         }
       free (uuid);
@@ -60758,7 +60758,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
             cleanup_iterator (&tasks);
             free (current_credentials.uuid);
             current_credentials.uuid = current_uuid;
-            sql ("ROLLBACK;");
+            sql_rollback ();
             return 4;
           }
         default:
@@ -60778,7 +60778,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
 
           if (inheritor == 0)
             {
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return -1;
             }
         }
@@ -60786,13 +60786,13 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
         {
           if (find_user_with_permission (inheritor_id, &inheritor, "get_users"))
             {
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return -1;
             }
 
           if (inheritor == 0)
             {
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return 6;
             }
         }
@@ -60802,13 +60802,13 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       if (find_user_by_name_with_permission (inheritor_name, &inheritor,
                                              "get_users"))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
 
       if (inheritor == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 6;
         }
     }
@@ -60822,7 +60822,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
 
       if (inheritor == user)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 7;
         }
 
@@ -60835,7 +60835,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
                       inheritor))
         {
           g_free (real_inheritor_id);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 8;
         }
 
@@ -60942,7 +60942,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
 
       sql ("DELETE FROM users WHERE id = %llu;", user);
 
-      sql ("COMMIT;");
+      sql_commit ();
 
       return 0;
     }
@@ -61123,7 +61123,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   /* Delete user */
   sql ("DELETE FROM users WHERE id = %llu;", user);
 
-  sql ("COMMIT;");
+  sql_commit ();
   return 0;
 }
 
@@ -61190,7 +61190,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
 
   if (acl_user_may ("modify_user") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
@@ -61199,18 +61199,18 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
     {
       if (find_user_with_permission (user_id, &user, "modify_user"))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
     }
   else if (find_user_by_name_with_permission (*name, &user, "modify_user"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
   if (user == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 2;
     }
 
@@ -61221,7 +61221,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
   if (acl_user_can_super_everyone (uuid) && strcmp (uuid, current_credentials.uuid))
     {
       g_free (uuid);
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
@@ -61242,7 +61242,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
             *r_errdesc = errstr;
           else
             g_free (errstr);
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
     }
@@ -61254,7 +61254,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
   if (hosts && (manage_count_hosts (hosts, NULL) < 0))
     {
       manage_set_max_hosts (max);
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 6;
     }
   manage_set_max_hosts (max);
@@ -61265,19 +61265,19 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
     {
       if (validate_username (new_name) != 0)
         {
-          sql ("ROLLBACK");
+          sql_rollback ();
           return 7;
         }
 
       if (strcmp (uuid, current_credentials.uuid) == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 99;
         }
 
       if (resource_with_name_exists_global (new_name, "user", user))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 8;
         }
       quoted_new_name = sql_quote (new_name);
@@ -61358,13 +61358,13 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
 
           if (find_group (group_id, &group))
             {
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return -1;
             }
 
           if (group == 0)
             {
-              sql ("ROLLBACK;");
+              sql_rollback ();
               if (group_id_return) *group_id_return = group_id;
               return 1;
             }
@@ -61404,20 +61404,20 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
 
           if (find_role (role_id, &role))
             {
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return -1;
             }
 
           if (role == 0)
             {
-              sql ("ROLLBACK;");
+              sql_rollback ();
               if (role_id_return) *role_id_return = role_id;
               return 1;
             }
 
           if (acl_role_can_super_everyone (role_id))
             {
-              sql ("ROLLBACK;");
+              sql_rollback ();
               return 99;
             }
 
@@ -61429,7 +61429,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
         }
     }
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   if (was_admin)
     {
@@ -61906,7 +61906,7 @@ manage_set_ldap_info (int enabled, gchar *host, gchar *authdn,
            allow_plaintext);
     }
 
-  sql ("COMMIT;");
+  sql_commit ();
 }
 
 /**
@@ -61970,7 +61970,7 @@ manage_set_radius_info (int enabled, gchar *host, gchar *key)
       g_free (quoted);
     }
 
-  sql ("COMMIT;");
+  sql_commit ();
 }
 
 
@@ -62042,7 +62042,7 @@ create_tag (const char * name, const char * comment, const char * value,
 
   if (acl_user_may ("create_tag") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
@@ -62051,7 +62051,7 @@ create_tag (const char * name, const char * comment, const char * value,
       && valid_db_resource_type (lc_resource_type) == 0)
     {
       g_free (lc_resource_type);
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -62070,7 +62070,7 @@ create_tag (const char * name, const char * comment, const char * value,
   if (find_resource_with_permission (resource_type, resource_uuid,
                                      &resource, resource_permission, 0))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       g_free (lc_resource_type);
       g_free (resource_permission);
       return -1;
@@ -62091,7 +62091,7 @@ create_tag (const char * name, const char * comment, const char * value,
       if (find_resource_with_permission (resource_type, resource_uuid,
                                          &resource, resource_permission, 1))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           g_free (lc_resource_type);
           g_free (resource_permission);
           return -1;
@@ -62140,7 +62140,7 @@ create_tag (const char * name, const char * comment, const char * value,
   if (tag)
     *tag = sql_last_insert_id ();
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -62162,13 +62162,13 @@ delete_tag (const char *tag_id, int ultimate)
 
   if (acl_user_may ("delete_tag") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   if (find_tag_with_permission (tag_id, &tag, "delete_tag"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -62176,25 +62176,25 @@ delete_tag (const char *tag_id, int ultimate)
     {
       if (find_trash ("tag", tag_id, &tag))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return -1;
         }
       if (tag == 0)
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 2;
         }
       if (ultimate == 0)
         {
           /* It's already in the trashcan. */
-          sql ("COMMIT;");
+          sql_commit ();
           return 0;
         }
 
       permissions_set_orphans ("tag", tag, LOCATION_TRASH);
 
       sql ("DELETE FROM tags_trash WHERE id = %llu;", tag);
-      sql ("COMMIT;");
+      sql_commit ();
       return 0;
     }
 
@@ -62221,7 +62221,7 @@ delete_tag (const char *tag_id, int ultimate)
     }
 
   sql ("DELETE FROM tags WHERE id = %llu;", tag);
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -62258,20 +62258,20 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
 
   if (acl_user_may ("modify_tag") == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 99;
     }
 
   tag = 0;
   if (find_tag_with_permission (tag_id, &tag, "modify_tag"))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
   if (tag == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return 1;
     }
 
@@ -62281,7 +62281,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
   if (strcmp (lc_resource_type, "")
       && valid_db_resource_type (lc_resource_type) == 0)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
@@ -62330,7 +62330,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
       if (find_resource_with_permission (resource_type, resource_uuid,
                                          &resource, resource_permission, 0))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           g_free (lc_resource_type);
           g_free (resource_permission);
           return -1;
@@ -62351,7 +62351,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
           if (find_resource_with_permission (resource_type, resource_uuid,
                                              &resource, resource_permission, 1))
             {
-              sql ("ROLLBACK;");
+              sql_rollback ();
               g_free (lc_resource_type);
               g_free (resource_permission);
               return -1;
@@ -62411,7 +62411,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
   g_free (quoted_comment);
   g_free (quoted_value);
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   return 0;
 }
@@ -63274,7 +63274,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
         {
           sql_begin_exclusive ();
           sql ("VACUUM;");
-          sql ("COMMIT;");
+          sql_commit ();
         }
 
       ret = stat (db, &state);
@@ -63344,7 +63344,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
            "                    strpos (port, ')') - strpos (port, '(') - 1)"
            " WHERE port LIKE '%(%)%';");
       changes_old_format = sql_changes();
-      sql ("COMMIT;");
+      sql_commit ();
 
       success_text = g_strdup_printf ("Optimized: cleanup-port-names."
                                       " Ports converted from old format: %d,"
@@ -63367,7 +63367,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
            "    OR severity = '';");
 
       missing_severity_changes = sql_changes();
-      sql ("COMMIT;");
+      sql_commit ();
 
       success_text = g_strdup_printf ("Optimized: cleanup-result-severities."
                                       " Missing severity scores added: %d.",
@@ -63382,7 +63382,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
 
       reports_build_count_cache (1, &changes);
 
-      sql ("COMMIT;");
+      sql_commit ();
 
       success_text = g_strdup_printf ("Optimized: rebuild-report-cache."
                                       " Result counts recalculated for %d"
@@ -63397,7 +63397,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
 
       reports_build_count_cache (0, &changes);
 
-      sql ("COMMIT;");
+      sql_commit ();
 
       success_text = g_strdup_printf ("Optimized: update-report-cache."
                                       " Result counts calculated for %d"

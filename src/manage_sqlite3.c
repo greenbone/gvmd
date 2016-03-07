@@ -2858,7 +2858,7 @@ create_tables ()
        " overrides.port DESC, overrides.severity ASC,"
        " overrides.creation_time DESC",
        owned_clause);
-  sql ("COMMIT;");
+  sql_commit ();
 
   g_free (owned_clause);
 
@@ -2916,7 +2916,7 @@ create_tables ()
        "  FROM results, users"
        "  JOIN (SELECT 0 AS override UNION SELECT 1 AS override_opts)"
        "  JOIN (SELECT 0 AS dynamic UNION SELECT 1 AS dynamic_opts);");
-  sql ("COMMIT;");
+  sql_commit ();
 
   sql_begin_exclusive ();
   sql ("DROP VIEW IF EXISTS results_autofp;");
@@ -2981,7 +2981,7 @@ create_tables ()
        "  (SELECT 0 AS autofp_selection"
        "   UNION SELECT 1 AS autofp_selection"
        "   UNION SELECT 2 AS autofp_selection) AS autofp_opts;");
-  sql ("COMMIT;");
+  sql_commit ();
 }
 
 /**
@@ -3141,11 +3141,11 @@ backup_db (const gchar *database, gchar **backup_file)
 
   if (ret == -1 || WEXITSTATUS (ret))
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return -1;
     }
 
-  sql ("COMMIT;");
+  sql_commit ();
 
   if (backup_file)
     *backup_file = g_strdup_printf ("%s.bak", database);

@@ -158,6 +158,12 @@ sql_begin_immediate ();
 int
 sql_begin_immediate_giveup ();
 
+void
+sql_commit ();
+
+void
+sql_rollback ();
+
 
 /* Iterators. */
 

@@ -507,7 +507,7 @@ sql_begin_exclusive_giveup ()
   ret = sql_giveup ("LOCK TABLE meta IN ACCESS EXCLUSIVE MODE;");
   if (ret)
     {
-      sql ("ROLLBACK;");
+      sql_rollback ();
       return ret;
     }
   return 0;
@@ -534,6 +534,24 @@ sql_begin_immediate_giveup ()
 {
   /* TODO This is just an exclusive lock. */
   return sql_begin_exclusive_giveup ();
+}
+
+/**
+ * @brief Commit a transaction.
+ */
+void
+sql_commit ()
+{
+  sql ("COMMIT;");
+}
+
+/**
+ * @brief Roll a transaction back.
+ */
+void
+sql_rollback ()
+{
+  sql ("ROLLBACK;");
 }
 
 

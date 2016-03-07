@@ -3238,7 +3238,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
     }
 
 end_parse_osp_report:
-  sql ("COMMIT;");
+  sql_commit ();
   g_free (defs_file);
   free_entity (entity);
 }

@@ -1402,5 +1402,5 @@ make_port_ranges_iana_tcp_udp_2012 (port_list_t list)
   RANGE (PORT_PROTOCOL_UDP, 48128, 48129);
   RANGE (PORT_PROTOCOL_UDP, 48556, 48556);
 
-  sql ("COMMIT;");
+  sql_commit ();
 }

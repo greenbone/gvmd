@@ -1,3 +1,25 @@
+2016-03-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Do SQL COMMIT and ROLLBACK via interface functions.
+
+	* src/sql_pg.c (sql_begin_exclusive_giveup): Use sql_rollback.
+	(sql_commit, sql_rollback): New functions.
+
+	* src/sqlite3.c (sql_commit, sql_rollback): New functions.
+
+	* src/sql.h: Add headers accordingly.
+
+	* src/manage.c, src/manage_config_discovery.c,
+	src/manage_config_host_discovery.c,
+	src/manage_config_system_discovery.c, src/manage_migrators.c,
+	src/manage_ranges_all_tcp_nmap_5_51_top_100.c,
+	src/manage_ranges_all_tcp_nmap_5_51_top_1000.c,
+	src/manage_ranges_iana_tcp_2012.c,
+	src/manage_ranges_iana_tcp_udp_2012.c,
+	src/manage_ranges_nmap_5_51_top_2000_top_100.c,
+	src/manage_sql.c, src/manage_sqlite3.c: Replace COMMIT and ROLLBACK with
+	sql_commit and sql_rollback everywhere.
+
 2016-03-07  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (init_aggregate_iterator): Search the "filter" of

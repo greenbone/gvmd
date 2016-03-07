@@ -526,6 +526,24 @@ sql_begin_immediate_giveup ()
   return sql_giveup ("BEGIN IMMEDIATE;");
 }
 
+/**
+ * @brief Commit a transaction.
+ */
+void
+sql_commit ()
+{
+  sql ("COMMIT;");
+}
+
+/**
+ * @brief Roll a transaction back.
+ */
+void
+sql_rollback ()
+{
+  sql ("ROLLBACK;");
+}
+
 
 /* Iterators. */
 
