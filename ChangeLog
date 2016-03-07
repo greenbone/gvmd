@@ -1,3 +1,15 @@
+2016-03-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Ensure that an encryption key exists on startup, instead of relying on
+	the key being created on the fly.  This prevents operations from
+	creating duplicate keys when they are run at the same time.
+
+	* src/manage_sql.c (check_db): Call check_db_encryption_key.
+	(check_db_encryption_key): New function.
+
+	* src/openvasmd.c (main): Remove --create-credentials-encryption-key.
+	This is always done on startup now.
+
 2016-03-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (print_report_assets_xml): Use ip instead of host
@@ -53,7 +65,7 @@
 
 	* src/manage_sqlite3.c (report_severity_count): Update report_counts_id
 	params.
-	
+
 	* src/manage.c (report_results_filter_term, report_results_get_data):
 	New functions for basic filtering of report results.
 

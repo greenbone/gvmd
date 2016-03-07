@@ -1431,7 +1431,6 @@ main (int argc, char** argv)
   static gboolean migrate_database = FALSE;
   static gboolean encrypt_all_credentials = FALSE;
   static gboolean decrypt_all_credentials = FALSE;
-  static gboolean create_cred_enc_key = FALSE;
   static gboolean disable_password_policy = FALSE;
   static gboolean disable_scheduling = FALSE;
   static gboolean get_users = FALSE;
@@ -1520,8 +1519,6 @@ main (int argc, char** argv)
         { "max-email-attachment-size", '\0', 0, G_OPTION_ARG_INT, &max_email_attachment_size, "Maximum size of alert email attachments, in bytes.", "<number>"},
         { "max-email-include-size", '\0', 0, G_OPTION_ARG_INT, &max_email_include_size, "Maximum size of inlined content in alert emails, in bytes.", "<number>"},
         { "migrate", 'm', 0, G_OPTION_ARG_NONE, &migrate_database, "Migrate the database and exit.", NULL },
-        { "create-credentials-encryption-key", '\0', 0, G_OPTION_ARG_NONE,
-          &create_cred_enc_key, "Create a key to encrypt credentials.", NULL },
         { "encrypt-all-credentials", '\0', 0, G_OPTION_ARG_NONE,
           &encrypt_all_credentials, "(Re-)Encrypt all credentials.", NULL },
         { "decrypt-all-credentials", '\0',
@@ -2076,28 +2073,6 @@ main (int argc, char** argv)
                         __FUNCTION__);
             return EXIT_FAILURE;
         }
-    }
-
-  /* Option to create an encryption key for credentials.  This is
-   * optional because such a key will be created anyway if needed.  */
-  if (create_cred_enc_key)
-    {
-      infof ("   Creating credentials encryption key.\n");
-
-      switch (lsc_crypt_create_key ())
-        {
-        case 0:
-          fprintf (stderr, "Key creation succeeded.\n");
-          return EXIT_SUCCESS;
-        case 1:
-          fprintf (stderr, "Key already exists.\n");
-          return EXIT_SUCCESS;
-        default:
-          break;
-        }
-
-      fprintf (stderr, "Key creation failed.\n");
-      return EXIT_FAILURE;
     }
 
   if (encrypt_all_credentials)

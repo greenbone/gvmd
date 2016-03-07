@@ -95,6 +95,9 @@ create_tables ();
 void
 check_db_sequences ();
 
+static int
+check_db_encryption_key ();
+
 void
 manage_attach_databases ();
 
@@ -14827,6 +14830,8 @@ check_db ()
   check_db_roles ();
   check_db_permissions ();
   check_db_settings ();
+  if (check_db_encryption_key ())
+    return -1;
   if (progress)
     progress ();
 
@@ -38099,6 +38104,35 @@ set_task_preferences (task_t task, array_t *preferences)
 
 
 /* Credentials. */
+
+/**
+ * @brief Ensure that there is an encryption key.
+ *
+ * This prevents contention problems that can happen when the key is
+ * created on the fly during an OMP operation.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+check_db_encryption_key ()
+{
+  lsc_crypt_ctx_t crypt_ctx;
+  gchar *secret;
+
+  sql_begin_exclusive ();
+  crypt_ctx = lsc_crypt_new ();
+  /* The encryption layer creates the key if it does not exist. */
+  secret = lsc_crypt_encrypt (crypt_ctx, "dummy", "dummy", NULL);
+  lsc_crypt_release (crypt_ctx);
+  if (secret == NULL)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+  sql ("COMMIT");
+  g_free (secret);
+  return 0;
+}
 
 /**
  * @brief Find a credential for a specific permission, given a UUID.
