@@ -5353,14 +5353,26 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
       int i = 0;
       while (select_columns[i].select != NULL)
         {
-          if (strcmp (select_columns[i].select, group_column) == 0
-              || (select_columns[i].filter
-                  && strcmp (select_columns[i].filter, group_column) == 0))
+          if (select_columns[i].filter
+              && strcmp (select_columns[i].filter, group_column) == 0)
             {
               select_group_column = g_strdup (select_columns[i].select);
               break;
             }
           i++;
+        }
+      if (select_group_column == NULL)
+        {
+          i = 0;
+          while (select_columns[i].select != NULL)
+            {
+              if (strcmp (select_columns[i].select, group_column) == 0)
+                {
+                  select_group_column = g_strdup (select_columns[i].select);
+                  break;
+                }
+              i++;
+            }
         }
       if ((select_group_column == NULL) && where_columns)
         {
