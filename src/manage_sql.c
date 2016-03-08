@@ -5227,7 +5227,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
     filter = NULL;
 
   autofp_str = filter_term_value (filter ? filter : get->filter,
-                                           "apply_overrides");
+                                  "autofp");
   autofp = autofp_str ? atoi (autofp_str) : 0;
   apply_overrides_str = filter_term_value (filter ? filter : get->filter,
                                            "apply_overrides");
