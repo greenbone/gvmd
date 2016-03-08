@@ -12172,11 +12172,16 @@ init_manage_process (int update_nvt_cache, const gchar *database)
 
   /* Define functions for SQL. */
 
+  /* Lock to avoid an error return from Postgres when multiple processes
+   * create a function at the same time. */
+  sql_begin_exclusive ();
   if (manage_create_sql_functions ())
     {
+      sql_rollback ();
       g_warning ("%s: failed to create functions", __FUNCTION__);
       abort ();
     }
+  sql_commit ();
 }
 
 /**
