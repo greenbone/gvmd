@@ -2874,35 +2874,20 @@ typedef struct
 {
   get_data_t get;        ///< Get args with result filtering.
   get_data_t report_get; ///< Get args with report filtering.
-  int apply_overrides;   ///< Boolean.  Whether to apply overrides to results.
   char *delta_report_id; ///< ID of report to compare single report to.
-  char *delta_states;    ///< Delta states (Changed Gone New Same) to include.
   char *format_id;       ///< ID of report format.
   char *alert_id;        ///< ID of alert.
   char *report_id;       ///< ID of single report to get.
-  int first_result;      ///< Skip over results before this result number.
-  int max_results;       ///< Maximum number of results return.
   int host_first_result; ///< Skip over results before this result number.
   int host_max_results;  ///< Maximum number of results return.
-  char *sort_field;      ///< Field to sort results on.
-  int sort_order;        ///< Result sort order: 0 descending, else ascending.
-  char *levels;          ///< Letter encoded threat level filter.
   char *host_levels;     ///< Letter encoded threat level filter, for hosts.
-  char *search_phrase;   ///< Search phrase result filter.
   char *host_search_phrase;  ///< Search phrase result filter.
-  char *min_cvss_base;   ///< Minimum CVSS base filter.
-  char *min_qod;         ///< Minimum QoD filter.
-  int autofp;            ///< Boolean.  Whether to apply auto FP filter.
-  int notes;             ///< Boolean.  Whether to include associated notes.
   int notes_details;     ///< Boolean.  Whether to include details of above.
-  int overrides;         ///< Boolean.  Whether to include associated overrides.
   int overrides_details; ///< Boolean.  Whether to include details of above.
-  int result_hosts_only; ///< Boolean.  Whether to include only resulted hosts.
   char *type;            ///< Type of report.
   char *host;            ///< Host for asset report.
   char *pos;             ///< Position of report from end.
   int ignore_pagination; ///< Boolean.  Whether to ignore pagination filters.
-  char *timezone;        ///< Timezone.
 } get_reports_data_t;
 
 /**
@@ -2916,17 +2901,11 @@ get_reports_data_reset (get_reports_data_t *data)
   get_data_reset (&data->get);
   get_data_reset (&data->report_get);
   free (data->delta_report_id);
-  free (data->delta_states);
   free (data->format_id);
   free (data->alert_id);
   free (data->report_id);
-  free (data->sort_field);
-  free (data->levels);
   free (data->host_levels);
-  free (data->search_phrase);
   free (data->host_search_phrase);
-  free (data->min_cvss_base);
-  free (data->min_qod);
   free (data->type);
   free (data->host);
   free (data->pos);
@@ -2962,13 +2941,8 @@ get_report_formats_data_reset (get_report_formats_data_t *data)
 typedef struct
 {
   get_data_t get;        ///< Get args.
-  int apply_overrides;   ///< Boolean.  Whether to apply overrides to results.
-  int apply_overrides_set; /// < Boolean. Whether apply_overrides was set.
-  int autofp;            ///< Boolean.  Whether to apply auto FP filter.
   char *task_id;         ///< Task associated with results.
-  int notes;             ///< Boolean.  Whether to include associated notes.
   int notes_details;     ///< Boolean.  Whether to include details of above.
-  int overrides;         ///< Boolean.  Whether to include associated overrides.
   int overrides_details; ///< Boolean.  Whether to include details of above.
 } get_results_data_t;
 
@@ -7556,13 +7530,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &get_reports_data->format_id);
 
             if (find_attribute (attribute_names, attribute_values,
-                                "first_result", &attribute))
-              /* Subtract 1 to switch from 1 to 0 indexing. */
-              get_reports_data->first_result = atoi (attribute) - 1;
-            else
-              get_reports_data->first_result = 0;
-
-            if (find_attribute (attribute_names, attribute_values,
                                 "host_first_result", &attribute))
               /* Subtract 1 to switch from 1 to 0 indexing. */
               get_reports_data->host_first_result = atoi (attribute) - 1;
@@ -7570,35 +7537,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_reports_data->host_first_result = 0;
 
             if (find_attribute (attribute_names, attribute_values,
-                                "max_results", &attribute))
-              get_reports_data->max_results = atoi (attribute);
-            else
-              get_reports_data->max_results = -1;
-
-            if (find_attribute (attribute_names, attribute_values,
                                 "host_max_results", &attribute))
               get_reports_data->host_max_results = atoi (attribute);
             else
               get_reports_data->host_max_results = -1;
-
-            append_attribute (attribute_names, attribute_values, "sort_field",
-                              &get_reports_data->sort_field);
-
-            if (find_attribute (attribute_names, attribute_values,
-                                "sort_order", &attribute))
-              get_reports_data->sort_order = strcmp (attribute, "descending");
-            else
-              {
-                if (get_reports_data->sort_field == NULL
-                    || (strcmp (get_reports_data->sort_field, "type") == 0))
-                  /* Normally it makes more sense to order type descending. */
-                  get_reports_data->sort_order = 0;
-                else
-                  get_reports_data->sort_order = 1;
-              }
-
-            append_attribute (attribute_names, attribute_values, "levels",
-                              &get_reports_data->levels);
 
             append_attribute (attribute_names, attribute_values, "host_levels",
                               &get_reports_data->host_levels);
@@ -7607,25 +7549,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               "host_search_phrase",
                               &get_reports_data->host_search_phrase);
 
-            append_attribute (attribute_names, attribute_values, "delta_states",
-                              &get_reports_data->delta_states);
-
-            append_attribute (attribute_names, attribute_values,
-                              "search_phrase",
-                              &get_reports_data->search_phrase);
-
-            if (find_attribute (attribute_names, attribute_values,
-                                "autofp", &attribute))
-              get_reports_data->autofp = strcmp (attribute, "0");
-            else
-              get_reports_data->autofp = 0;
-
-            if (find_attribute (attribute_names, attribute_values,
-                                "notes", &attribute))
-              get_reports_data->notes = strcmp (attribute, "0");
-            else
-              get_reports_data->notes = 0;
-
             if (find_attribute (attribute_names, attribute_values,
                                 "notes_details", &attribute))
               get_reports_data->notes_details = strcmp (attribute, "0");
@@ -7633,36 +7556,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_reports_data->notes_details = 0;
 
             if (find_attribute (attribute_names, attribute_values,
-                                "overrides", &attribute))
-              get_reports_data->overrides = strcmp (attribute, "0");
-            else
-              get_reports_data->overrides = 0;
-
-            if (find_attribute (attribute_names, attribute_values,
                                 "overrides_details", &attribute))
               get_reports_data->overrides_details = strcmp (attribute, "0");
             else
               get_reports_data->overrides_details = 0;
-
-            if (find_attribute (attribute_names, attribute_values,
-                                "apply_overrides", &attribute))
-              get_reports_data->apply_overrides = strcmp (attribute, "0");
-            else
-              get_reports_data->apply_overrides = 0;
-
-            append_attribute (attribute_names, attribute_values,
-                              "min_cvss_base",
-                              &get_reports_data->min_cvss_base);
-
-            append_attribute (attribute_names, attribute_values,
-                              "min_qod",
-                              &get_reports_data->min_qod);
-
-            if (find_attribute (attribute_names, attribute_values,
-                                "result_hosts_only", &attribute))
-              get_reports_data->result_hosts_only = strcmp (attribute, "0");
-            else
-              get_reports_data->result_hosts_only = 1;
 
             if (find_attribute (attribute_names, attribute_values,
                                 "type", &attribute))
@@ -7685,10 +7582,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_reports_data->ignore_pagination = atoi (attribute);
             else
               get_reports_data->ignore_pagination = 0;
-
-            append_attribute (attribute_names, attribute_values,
-                              "timezone",
-                              &get_reports_data->timezone);
 
             set_client_state (CLIENT_GET_REPORTS);
           }
@@ -7726,46 +7619,16 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &get_results_data->task_id);
 
             if (find_attribute (attribute_names, attribute_values,
-                                "notes", &attribute))
-              get_results_data->notes = strcmp (attribute, "0");
-            else
-              get_results_data->notes = 0;
-
-            if (find_attribute (attribute_names, attribute_values,
                                 "notes_details", &attribute))
               get_results_data->notes_details = strcmp (attribute, "0");
             else
               get_results_data->notes_details = 0;
 
             if (find_attribute (attribute_names, attribute_values,
-                                "overrides", &attribute))
-              get_results_data->overrides = strcmp (attribute, "0");
-            else
-              get_results_data->overrides = 0;
-
-            if (find_attribute (attribute_names, attribute_values,
                                 "overrides_details", &attribute))
               get_results_data->overrides_details = strcmp (attribute, "0");
             else
               get_results_data->overrides_details = 0;
-
-            if (find_attribute (attribute_names, attribute_values,
-                                "apply_overrides", &attribute))
-              {
-                get_results_data->apply_overrides = strcmp (attribute, "0");
-                get_results_data->apply_overrides_set = 1;
-              }
-            else
-              {
-                get_results_data->apply_overrides = 0;
-                get_results_data->apply_overrides_set = 0;
-              }
-
-            if (find_attribute (attribute_names, attribute_values,
-                                "autofp", &attribute))
-              get_results_data->autofp = strcmp (attribute, "0");
-            else
-              get_results_data->autofp = 0;
 
             set_client_state (CLIENT_GET_RESULTS);
           }
@@ -10958,18 +10821,18 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
           if (include_result && note_iterator_result (notes))
             {
               iterator_t results;
-              get_data_t result_get;
-              result_get.type = g_strdup ("result");
-              result_uuid (note_iterator_result (notes), &(result_get.id));
-              result_get.first = 0;
-              result_get.max = 1;
-              init_result_get_iterator (&results, &result_get,
-                                        1,     /* apply_overides */
-                                        0,     /* autofp */
+              get_data_t *result_get;
+              result_get = report_results_get_data (1, 1,
+                                                    1, /* apply_overrides */
+                                                    0, /* autofp*/
+                                                    0  /* min_qod */);
+
+              init_result_get_iterator (&results, result_get,
                                         0,     /* No report restriction */
                                         NULL,  /* No host restriction */
                                         NULL); /* No extra order SQL. */
-              get_data_reset (&result_get);
+              get_data_reset (result_get);
+              free (result_get);
 
               while (next (&results))
                 buffer_results_xml (buffer,
@@ -11226,19 +11089,19 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
           if (include_result && override_iterator_result (overrides))
             {
               iterator_t results;
-              get_data_t result_get;
-              result_get.type = g_strdup ("result");
+              get_data_t *result_get;
+              result_get = report_results_get_data (1, 1,
+                                                    1, /* apply_overrides */
+                                                    0, /* autofp */
+                                                    0  /* min_qod */);
               result_uuid (override_iterator_result (overrides),
-                           &(result_get.id));
-              result_get.first = 0;
-              result_get.max = 1;
-              init_result_get_iterator (&results, &result_get,
-                                        1,  /* apply_overides */
-                                        0,  /* autofp */
+                           &(result_get->id));
+              init_result_get_iterator (&results, result_get,
                                         0,  /* No report restriction */
                                         NULL, /* No host restriction */
                                         NULL);  /* No extra order SQL. */
-              get_data_reset (&result_get);
+              get_data_reset (result_get);
+              free (result_get);
 
               while (next (&results))
                 buffer_results_xml (buffer,
@@ -16823,7 +16686,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
         report_t request_report = 0, delta_report = 0, report;
         report_format_t report_format;
-        float min_cvss_base;
         iterator_t reports;
         int count, filtered, ret, first;
 
@@ -16949,24 +16811,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             break;
           }
 
-        if (((strcmp (get_reports_data->type, "scan") == 0)
-             || (strcmp (get_reports_data->type, "prognostic") == 0))
-            && get_reports_data->min_cvss_base
-            && strlen (get_reports_data->min_cvss_base)
-            && (sscanf (get_reports_data->min_cvss_base,
-                        "%f",
-                        &min_cvss_base)
-                != 1))
-          {
-            get_reports_data_reset (get_reports_data);
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_reports",
-                                "GET_REPORTS min_cvss_base must be a float"
-                                " or the empty string"));
-            set_client_state (CLIENT_AUTHENTIC);
-            break;
-          }
-
         if (report_format_active (report_format) == 0)
           {
             get_reports_data_reset (get_reports_data);
@@ -17031,22 +16875,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       0,
                                       report_format,
                                       &get_reports_data->get,
-                                      get_reports_data->sort_order,
-                                      get_reports_data->sort_field,
-                                      get_reports_data->result_hosts_only,
-                                      NULL,
-                                      NULL,
-                                      get_reports_data->levels,
-                                      get_reports_data->delta_states,
-                                      get_reports_data->apply_overrides,
-                                      get_reports_data->search_phrase,
-                                      get_reports_data->autofp,
-                                      get_reports_data->notes,
                                       get_reports_data->notes_details,
-                                      get_reports_data->overrides,
                                       get_reports_data->overrides_details,
-                                      get_reports_data->first_result,
-                                      get_reports_data->max_results,
                                       get_reports_data->ignore_pagination,
                                       /* Special case the XML reports, bah. */
                                       strcmp
@@ -17063,8 +16893,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       "assets",
                                       get_reports_data->host,
                                       pos,
-                                      NULL, NULL, 0, 0, NULL,
-                                      get_reports_data->timezone);
+                                      NULL, NULL, 0, 0, NULL);
 
             if (ret)
               {
@@ -17124,22 +16953,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       0,
                                       report_format,
                                       &get_reports_data->get,
-                                      get_reports_data->sort_order,
-                                      get_reports_data->sort_field,
-                                      get_reports_data->result_hosts_only,
-                                      get_reports_data->min_cvss_base,
-                                      get_reports_data->min_qod,
-                                      get_reports_data->levels,
-                                      get_reports_data->delta_states,
-                                      get_reports_data->apply_overrides,
-                                      get_reports_data->search_phrase,
-                                      get_reports_data->autofp,
-                                      get_reports_data->notes,
                                       get_reports_data->notes_details,
-                                      get_reports_data->overrides,
                                       get_reports_data->overrides_details,
-                                      get_reports_data->first_result,
-                                      get_reports_data->max_results,
                                       get_reports_data->ignore_pagination,
                                       /* Special case the XML report, bah. */
                                       strcmp
@@ -17160,8 +16975,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       get_reports_data->host_levels,
                                       get_reports_data->host_first_result,
                                       get_reports_data->host_max_results,
-                                      NULL,
-                                      get_reports_data->timezone);
+                                      NULL);
 
             if (ret)
               {
@@ -17392,22 +17206,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       delta_report,
                                       report_format,
                                       &get_reports_data->get,
-                                      get_reports_data->sort_order,
-                                      get_reports_data->sort_field,
-                                      get_reports_data->result_hosts_only,
-                                      get_reports_data->min_cvss_base,
-                                      get_reports_data->min_qod,
-                                      get_reports_data->levels,
-                                      get_reports_data->delta_states,
-                                      get_reports_data->apply_overrides,
-                                      get_reports_data->search_phrase,
-                                      get_reports_data->autofp,
-                                      get_reports_data->notes,
                                       get_reports_data->notes_details,
-                                      get_reports_data->overrides,
                                       get_reports_data->overrides_details,
-                                      get_reports_data->first_result,
-                                      get_reports_data->max_results,
                                       get_reports_data->ignore_pagination,
                                       /* Special case the XML report, bah. */
                                       strcmp
@@ -17422,8 +17222,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       write_to_client_data,
                                       get_reports_data->alert_id,
                                       get_reports_data->type,
-                                      NULL, 0, NULL, NULL, 0, 0, prefix->str,
-                                      get_reports_data->timezone);
+                                      NULL, 0, NULL, NULL, 0, 0, prefix->str);
             g_string_free (prefix, TRUE);
             if (ret)
               {
@@ -17824,27 +17623,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          if (get_results_data->notes
-              && (get_results_data->task_id == NULL)
-              && (get_results_data->get.details == 0))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_results",
-                                "GET_RESULTS must have a task_id attribute or"
-                                " details set to true if the"
-                                " notes attribute is true"));
-          else if ((get_results_data->overrides
-                    || get_results_data->apply_overrides)
-                   && (get_results_data->task_id == NULL)
-                   && (get_results_data->get.details == 0))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_results",
-                                "GET_RESULTS must have a task_id attribute or"
-                                " details set to true if the apply_overides or "
-                                " overrides attributes are true"));
-          else if (get_results_data->get.id
-                   && find_result_with_permission (get_results_data->get.id,
-                                                   &result,
-                                                   NULL))
+          if (get_results_data->get.id
+              && find_result_with_permission (get_results_data->get.id,
+                                              &result,
+                                              NULL))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_results"));
           else if (get_results_data->get.id && result == 0)
             {
@@ -17873,21 +17655,46 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             }
           else
             {
+              const char* filter;
               iterator_t results;
               int max;
+              int notes, overrides;
+
+              if (get_results_data->get.filt_id
+                  && strcmp (get_results_data->get.filt_id, "0"))
+                {
+                  filter = filter_term (get_results_data->get.filt_id);
+                }
+              else
+                filter = get_results_data->get.filter;
 
               SEND_TO_CLIENT_OR_FAIL ("<get_results_response"
                                       " status=\"" STATUS_OK "\""
                                       " status_text=\"" STATUS_OK_TEXT "\">");
               INIT_GET (result, Result);
 
-
               init_result_get_iterator (&results, &get_results_data->get,
-                                        1,  /* apply_overides */
-                                        0,  /* autofp */
                                         0,  /* No report restriction */
                                         NULL, /* No host restriction */
                                         NULL);  /* No extra order SQL. */
+
+              manage_report_filter_controls (filter,
+                                             NULL, /* first */
+                                             NULL, /* max */
+                                             NULL, /* sort_field */
+                                             NULL, /* sort_order */
+                                             NULL, /* result_hosts_only */
+                                             NULL, /* min_cvss_base */
+                                             NULL, /* min_qod */
+                                             NULL, /* levels */
+                                             NULL, /* delta_states */
+                                             NULL, /* search_phrase */
+                                             NULL, /* search_phrase_exact */
+                                             NULL, /* autofp */
+                                             &notes,
+                                             &overrides,
+                                             NULL, /* apply_overrides */
+                                             NULL);/* zone */
 
               if (next (&results))
                 {
@@ -17912,9 +17719,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       buffer_results_xml (buffer,
                                           &results,
                                           task,
-                                          get_results_data->notes,
+                                          notes,
                                           get_results_data->notes_details,
-                                          get_results_data->overrides,
+                                          overrides,
                                           get_results_data->overrides_details,
                                           1,
                                           /* show tag details if selected by ID */

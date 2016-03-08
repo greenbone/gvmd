@@ -1,3 +1,42 @@
+2016-03-08  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Remove parameters made redundant by the powerfilter from get_results
+	and get_reports.
+
+	* src/manage_sql.c (init_result_get_iterator): Remove parameters
+	given_apply_overrides and given_autofp.
+	(report_severity_data, print_report_port_xml, print_report_xml): Update
+	init_result_get_iterator parameters.
+	(manage_send_report): Remove parameters sort_order, sort_field,
+	result_hosts_only, min_cvss_base, min_qod, levels, delta_states,
+	apply_overrides, search_phrase, autofp, notes, overrides, first_result,
+	max_results and zone.
+
+	* src/manage.h (get_data_t): Remove unused fields first and max.
+	(init_result_get_iterator, manage_send_report): Update parameters.
+
+	* src/omp.c (get_reports_data_t, get_reports_data_reset): Remove fields
+	apply_overrides, delta_states, first_result, max_results, sort_field,
+	sort_order, levels, search_phrase, min_cvss_base, min_qod, autofp,
+	notes, overrides, result_hosts_only and timezone.
+	(get_results_data): Remove fields apply_overrides, apply_overrides_set,
+	autofp, notes and overrides.
+	(omp_xml_handle_start_element): Remove parsing of attributes
+	corresponding to removed fields in get_reports_data_t and
+	get_results_data
+	(buffer_notes_xml, buffer_overrides_xml): Use function
+	report_results_get_data to generate results get data.
+	(omp_xml_handle_end_element): In GET_REPORTS case remove checks for
+	removed attributes and update manage_send_report parameters.  In
+	GET_RESULTS case remove checks for removed attributes and get values
+	for options notes and overrides from filter.
+
+	* src/schema_formats/XML/OMP.xml.in (get_results): Remove command
+	attributes apply_overrides, autofp, notes and overrides.  Update
+	example and add compatibility note for this removal.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
 2016-03-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Put a single transaction around the table creation and db checks, to

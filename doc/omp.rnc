@@ -5567,18 +5567,10 @@ get_results
        attribute filt_id { uuid }?
        & # ID of task for note and override handling.
        attribute task_id { uuid }?
-       & # Whether to include notes in the result.
-       attribute notes { boolean }?
        & # If notes are included, whether to include note details.
        attribute note_details { boolean }?
-       & # Whether to include overrides in the result.
-       attribute overrides { boolean }?
        & # If overrides are included, whether to include override details.
        attribute override_details { boolean }?
-       & # Whether to override result threat levels.
-       attribute apply_overrides { boolean }?
-       & # Whether to trust vendor security updates. 1 full match, 2 partial.
-       attribute autofp { xsd:token { pattern = "0|1|2" } }?
        & # Whether to include additional details of the results.
        attribute details { boolean }?
      }

@@ -20386,8 +20386,6 @@ results_extra_where (const get_data_t *get, report_t report, const gchar* host,
  *
  * @param[in]  iterator    Iterator.
  * @param[in]  get         GET data.
- * @param[in]  given_apply_overrides  Fallback apply_overrides if not in filter.
- * @param[in]  given_autofp  Fallback autofp if it is not in the filter.
  * @param[in]  report      Report to restrict returned results to.
  * @param[in]  host        Host to limit results to.
  * @param[in]  extra_order Extra text for ORDER term in SQL.
@@ -20397,7 +20395,6 @@ results_extra_where (const get_data_t *get, report_t report, const gchar* host,
  */
 int
 init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
-                          int given_apply_overrides, int given_autofp,
                           report_t report, const char* host,
                           const gchar *extra_order)
 {
@@ -20419,11 +20416,11 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
     filter = NULL;
 
   value = filter_term_value (filter ? filter : get->filter, "apply_overrides");
-  apply_overrides = value ? strcmp (value, "0") : given_apply_overrides;
+  apply_overrides = value ? strcmp (value, "0") : 0;
   g_free (value);
 
   value = filter_term_value (filter ? filter : get->filter, "autofp");
-  autofp = value ? atoi (value) : given_autofp;
+  autofp = value ? atoi (value) : 0;
   g_free (value);
 
   dynamic_severity = setting_dynamic_severity_int ();
@@ -22079,8 +22076,7 @@ report_severity_data (report_t report, const char *host,
     {
       get_data_t *get_all;
       get_all = report_results_get_data (1, -1, apply_overrides, autofp, 0);
-      init_result_get_iterator (&results, get_all, 0, 0, report, host,
-                                NULL);
+      init_result_get_iterator (&results, get_all, report, host, NULL);
       while (next (&results))
         {
           double severity = result_iterator_severity_double (&results);
@@ -22100,8 +22096,7 @@ report_severity_data (report_t report, const char *host,
       get_filtered.type = get->type;
       get_filtered.ignore_pagination = 1;
 
-      init_result_get_iterator (&results, &get_filtered, 0, 0, report, host,
-                                NULL);
+      init_result_get_iterator (&results, &get_filtered, report, host, NULL);
       while (next (&results))
         {
           double severity = result_iterator_severity_double (&results);
@@ -24856,8 +24851,6 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
   get_data_t result_get;
   memset (&result_get, 0, sizeof (result_get));
   result_get.type = g_strdup ("result");
-  result_get.first = first_result;
-  result_get.max = max_results;
 
   result_get.filter = g_strdup_printf ("sort%s=%s first=%d rows=%d"
                                        " levels=%s %s\"%s\""
@@ -24869,8 +24862,7 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
                                        search_phrase ? search_phrase : "",
                                        min_cvss_base ? min_cvss_base : "");
 
-  init_result_get_iterator (&results, &result_get, apply_overrides, autofp,
-                            report, NULL, NULL);
+  init_result_get_iterator (&results, &result_get, report, NULL, NULL);
 
   get_data_reset (&result_get);
 
@@ -26501,15 +26493,11 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 #if 0
       iterator_t results2;
 
-      res = init_result_get_iterator (&results, get,
-                                      apply_overrides, autofp, report, NULL,
-                                      order);
+      res = init_result_get_iterator (&results, get, report, NULL, order);
       if (res)
         return -1;
 
-      res = init_result_get_iterator (&results2, get,
-                                      apply_overrides, autofp, delta, NULL,
-                                      order);
+      res = init_result_get_iterator (&results2, get, delta, NULL, order);
       if (res)
         return -1;
 
@@ -26538,18 +26526,14 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       tracef ("   delta: %s: REPORT 2 END", __FUNCTION__);
 #endif
 
-      res = init_result_get_iterator (&results, get,
-                                      apply_overrides, autofp, report,
-                                      NULL, order);
+      res = init_result_get_iterator (&results, get, report, NULL, order);
       if (res)
         {
           g_free (order);
           return -1;
         }
 
-      res = init_result_get_iterator (&delta_results, get,
-                                      apply_overrides, autofp, delta,
-                                      NULL, order);
+      res = init_result_get_iterator (&delta_results, get, delta, NULL, order);
       if (res)
         {
           g_free (order);
@@ -26561,9 +26545,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   else if (get->details)
     {
       int res;
-      res = init_result_get_iterator (&results, get,
-                                      apply_overrides, autofp, report,
-                                      NULL, NULL);
+      res = init_result_get_iterator (&results, get, report, NULL, NULL);
       if (res)
         return -1;
     }
@@ -27946,31 +27928,8 @@ manage_report (report_t report, const get_data_t *get,
  * @param[in]  delta_report       Report to compare with.
  * @param[in]  report_format      Report format.
  * @param[in]  get                GET command data.
- * @param[in]  sort_order         Whether to sort ascending or descending.
- * @param[in]  sort_field         Field to sort on, or NULL for "type".
- * @param[in]  result_hosts_only  Whether to show only hosts with results.
- * @param[in]  min_cvss_base      Minimum CVSS base of included results.  All
- *                                results if NULL.
- * @param[in]  min_qod        Minimum QoD of included results.  All
- *                            results if NULL.
- * @param[in]  levels         String describing threat levels (message types)
- *                            to include in count (for example, "hmlgd" for
- *                            High, Medium, Low, loG and Debug).  All levels if
- *                            NULL.
- * @param[in]  delta_states   String describing delta states to include in count
- *                            (for example, "sngc" Same, New, Gone and Changed).
- *                            All levels if NULL.
- * @param[in]  apply_overrides    Whether to apply overrides.
- * @param[in]  search_phrase      Phrase that results must include.  All results
- *                                if NULL or "".
- * @param[in]  autofp             Whether to apply auto FP filter.
- * @param[in]  notes              Whether to include notes.
  * @param[in]  notes_details      If notes, Whether to include details.
- * @param[in]  overrides          Whether to include overrides.
  * @param[in]  overrides_details  If overrides, Whether to include details.
- * @param[in]  first_result       The result to start from.  The results are 0
- *                                indexed.
- * @param[in]  max_results        The maximum number of results returned.
  * @param[in]  ignore_pagination  Whether to ignore pagination.
  * @param[in]  base64             Whether to base64 encode the report.
  * @param[in]  send               Function to write to client.
@@ -27993,7 +27952,6 @@ manage_report (report_t report, const get_data_t *get,
  *                                 are 0 indexed.
  * @param[in]  host_max_results    The host maximum number of results returned.
  * @param[in]  prefix              Text to send to client before the report.
- * @param[in]  zone                Timezone.  NULL or "" for user's default.
  *
  * @return 0 success, -1 error, -2 failed to find alert report format, -3 error
  *         during alert, -4 failed to find alert filter, 1 failed to find alert,
@@ -28002,14 +27960,8 @@ manage_report (report_t report, const get_data_t *get,
 int
 manage_send_report (report_t report, report_t delta_report,
                     report_format_t report_format, const get_data_t *get,
-                    int sort_order, const char* sort_field,
-                    int result_hosts_only, const char *min_cvss_base,
-                    const char *min_qod,
-                    const char *levels, const char *delta_states,
-                    int apply_overrides, const char *search_phrase,
-                    int autofp, int notes, int notes_details, int overrides,
-                    int overrides_details, int first_result,
-                    int max_results, int ignore_pagination, int base64,
+                    int notes_details, int overrides_details,
+                    int ignore_pagination, int base64,
                     gboolean (*send) (const char *,
                                       int (*) (const char *, void*),
                                       void*),
@@ -28017,8 +27969,7 @@ manage_send_report (report_t report, report_t delta_report,
                     const char *alert_id, const char *type,
                     const char *host, int pos, const char *host_search_phrase,
                     const char *host_levels, int host_first_result,
-                    int host_max_results, const gchar* prefix,
-                    const char *zone)
+                    int host_max_results, const gchar* prefix)
 {
   task_t task;
   gchar *xml_file;

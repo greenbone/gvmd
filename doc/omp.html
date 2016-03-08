@@ -24874,34 +24874,14 @@ get_report_formats_response_report_format_count_page
           ID of task for note and override handling.
           </li>
 <li>
-          @<b>notes</b>
-          (<a href="#type_boolean">boolean</a>)
-          Whether to include notes in the result.
-          </li>
-<li>
           @<b>note_details</b>
           (<a href="#type_boolean">boolean</a>)
           If notes are included, whether to include note details.
           </li>
 <li>
-          @<b>overrides</b>
-          (<a href="#type_boolean">boolean</a>)
-          Whether to include overrides in the result.
-          </li>
-<li>
           @<b>override_details</b>
           (<a href="#type_boolean">boolean</a>)
           If overrides are included, whether to include override details.
-          </li>
-<li>
-          @<b>apply_overrides</b>
-          (<a href="#type_boolean">boolean</a>)
-          Whether to override result threat levels.
-          </li>
-<li>
-          @<b>autofp</b>
-          ("0", "1" or "2")
-          Whether to trust vendor security updates. 1 full match, 2 partial.
           </li>
 <li>
           @<b>details</b>
@@ -25021,12 +25001,8 @@ get_report_formats_response_report_format_count_page
        &amp; attribute filter { text }?
        &amp; attribute filt_id { uuid }?
        &amp; attribute task_id { uuid }?
-       &amp; attribute notes { boolean }?
        &amp; attribute note_details { boolean }?
-       &amp; attribute overrides { boolean }?
        &amp; attribute override_details { boolean }?
-       &amp; attribute apply_overrides { boolean }?
-       &amp; attribute autofp { xsd:token { pattern = "0|1|2" } }?
        &amp; attribute details { boolean }?
      }
 </pre></div>
@@ -25234,8 +25210,7 @@ get_results_response_result_count_page
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_results result_id="cac9e7c8-c726-49fd-a710-5f99079ab93e"
               task_id="40b236a9-2b0f-4813-b8c7-bc2b98d9d7e4"
-              notes="1"
-              overrides="1"/&gt;
+              filter="notes=1 overrides=1"/&gt;
 </pre></div>
 <i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_results_response status="200"
                        status_text="OK"&gt;

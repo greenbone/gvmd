@@ -15231,42 +15231,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
-        <name>notes</name>
-        <summary>Whether to include notes in the result</summary>
-        <type>boolean</type>
-      </attrib>
-      <attrib>
         <name>note_details</name>
         <summary>If notes are included, whether to include note details</summary>
-        <type>boolean</type>
-      </attrib>
-      <attrib>
-        <name>overrides</name>
-        <summary>Whether to include overrides in the result</summary>
         <type>boolean</type>
       </attrib>
       <attrib>
         <name>override_details</name>
         <summary>If overrides are included, whether to include override details</summary>
         <type>boolean</type>
-      </attrib>
-      <attrib>
-        <name>apply_overrides</name>
-        <summary>Whether to override result threat levels</summary>
-        <type>boolean</type>
-      </attrib>
-      <attrib>
-        <name>autofp</name>
-        <summary>
-          Whether to trust vendor security updates.  1 full match, 2 partial
-        </summary>
-        <type>
-          <alts>
-            <alt>0</alt>
-            <alt>1</alt>
-            <alt>2</alt>
-          </alts>
-        </type>
       </attrib>
       <attrib>
         <name>details</name>
@@ -15478,8 +15450,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <request>
         <get_results result_id="cac9e7c8-c726-49fd-a710-5f99079ab93e"
                      task_id="40b236a9-2b0f-4813-b8c7-bc2b98d9d7e4"
-                     notes="1"
-                     overrides="1">
+                     filter="notes=1 overrides=1">
         </get_results>
       </request>
       <response>
@@ -23436,6 +23407,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </response>
     </example>
   </command>
+  <change>
+    <command>GET_RESULTS</command>
+    <summary>Redundant filtering attributes removed</summary>
+    <description>
+      <p>
+        The command attributes "apply_overrides", "autofp", "notes" and
+        "overrides" were removed.
+        Equivalent functionality is available using filters
+        (with the filter and filt_id attributes).
+      </p>
+    </description>
+    <version>7.0</version>
+  </change>
   <change>
     <command>GET_REPORTS</command>
     <summary>Redundant filtering attributes removed</summary>

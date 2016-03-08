@@ -256,9 +256,7 @@ typedef struct
   char *filter;        ///< Filter term.
   char *filter_replace; ///< Column to replace in filter.
   char *filter_replacement; ///< Filter term to replace the one in filt_id.
-  int first;           ///< Skip over items before this number.
   char *id;            ///< ID of single item to get.
-  int max;             ///< Maximum number of items returned.
   int trash;           ///< Boolean.  Whether to return from trashcan.
   gchar *type;         ///< Type of resource.
   gchar *subtype;      ///< Subtype, or NULL.
@@ -1266,7 +1264,7 @@ int
 result_count (const get_data_t *, report_t, const char*);
 
 int
-init_result_get_iterator (iterator_t*, const get_data_t *, int, int, report_t,
+init_result_get_iterator (iterator_t*, const get_data_t *, report_t,
                           const char*, const gchar *);
 
 gboolean
@@ -1381,15 +1379,13 @@ manage_report (report_t, const get_data_t *, report_format_t,
 
 int
 manage_send_report (report_t, report_t, report_format_t, const get_data_t *,
-                    int, const char*, int, const char *, const char *,
-                    const char *, const char *, int, const char *,
-                    int, int, int, int, int, int, int, int, int,
+                    int, int, int, int,
                     gboolean (*) (const char *,
                                   int (*) (const char*, void*),
                                   void*),
                     int (*) (const char *, void*), void *, const char *,
                     const char *, const char *, int, const char *,
-                    const char *, int, int, const gchar *, const char *);
+                    const char *, int, int, const gchar *);
 
 
 
