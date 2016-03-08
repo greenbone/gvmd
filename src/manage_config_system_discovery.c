@@ -42,8 +42,6 @@ make_config_system_discovery (char *const uuid, char *const selector_name)
 {
   config_t config;
 
-  sql_begin_exclusive ();
-
   /* Create the System Discovery config. */
 
   sql ("INSERT into configs (uuid, name, owner, nvt_selector, comment,"
@@ -181,6 +179,4 @@ make_config_system_discovery (char *const uuid, char *const selector_name)
        nvt_selector_family_count (selector_name, 0),
        nvt_selector_nvt_count (selector_name, NULL, 0),
        config);
-
-  sql_commit ();
 }

@@ -1,5 +1,39 @@
 2016-03-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Put a single transaction around the table creation and db checks, to
+	prevent concurrent processes from running into problems with "if does
+	not exist then create" situations.
+
+	* src/manage_config_discovery.c (make_config_discovery): Remove
+	transaction.
+
+	* src/manage_config_host_discovery.c (make_config_host_discovery)
+	(check_config_host_discovery): Remove transactions.
+
+	* src/manage_config_discovery.c (make_config_system_discovery): Remove
+	transaction.
+
+	* src/manage_pg.c (check_db_sequences): Remove transaction.
+
+	* src/manage_ranges_all_tcp_nmap_5_51_top_100.c,
+	src/manage_ranges_all_tcp_nmap_5_51_top_1000.c,
+	src/manage_ranges_iana_tcp_2012.c,
+	src/manage_ranges_iana_tcp_udp_2012.c,
+	src/manage_ranges_nmap_5_51_top_2000_top_100.c: Remove transactions
+	from make_ functions.
+
+	* src/manage_sql.c (check_db_nvts, make_report_format_uuids_unique)
+	(check_db_report_formats, check_db_permissions, check_db_roles): Remove
+	transaction.
+	(check_db): Create transactions around all checks.
+	(check_db_encryption_key): Remove transaction.
+	(verify_report_format_internal): Make static.
+	(report_format_verify): Remove.  No longer used.
+
+	* src/manage_sqlite3.c (create_tables): Remove transaction.
+
+2016-03-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/sql_pg.c (sql_begin_exclusive, sql_begin_exclusive_giveup): Use
 	advisory locks instead of a table lock on "meta", so locking can be used
 	before the tables exist.

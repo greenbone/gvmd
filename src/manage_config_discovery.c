@@ -47,8 +47,6 @@
 void
 make_config_discovery (char *const uuid, char *const selector_name)
 {
-  sql_begin_exclusive ();
-
   /* First, create the Discovery config. */
   sql ("INSERT into configs (uuid, name, owner, nvt_selector, comment,"
        " family_count, nvt_count, nvts_growing, families_growing,"
@@ -941,7 +939,4 @@ make_config_discovery (char *const uuid, char *const selector_name)
        "         'Services[radio]:Test SSL based services',"
        "         'All;Known SSL ports;None');",
        uuid);
-
-
-  sql_commit ();
 }

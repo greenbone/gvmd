@@ -2506,12 +2506,12 @@ create_tables ()
 
 /**
  * @brief Ensure sequences for automatic ids are in a consistent state.
+ *
+ * Caller must organise a transaction.
  */
 void
 check_db_sequences ()
 {
-  sql_begin_exclusive ();
-
   iterator_t sequence_tables;
   init_iterator(&sequence_tables,
                 "SELECT table_name, column_name,"
@@ -2541,7 +2541,6 @@ check_db_sequences ()
     }
 
   cleanup_iterator (&sequence_tables);
-  sql ("COMMIT;");
 }
 
 

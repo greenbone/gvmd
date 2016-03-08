@@ -42,8 +42,6 @@ make_config_host_discovery (char *const uuid, char *const selector_name)
 {
   config_t config;
 
-  sql_begin_exclusive ();
-
   /* Create the Host Discovery config. */
 
   sql ("INSERT into configs (uuid, name, owner, nvt_selector, comment,"
@@ -96,8 +94,6 @@ make_config_host_discovery (char *const uuid, char *const selector_name)
        "         'Ping Host[checkbox]:Report about unrechable Hosts',"
        "         'no');",
        config);
-
-  sql_commit ();
 }
 
 /**
@@ -116,8 +112,6 @@ int
 check_config_host_discovery (char *const uuid)
 {
   int update;
-
-  sql_begin_exclusive ();
 
   update = 0;
 
@@ -158,8 +152,6 @@ check_config_host_discovery (char *const uuid)
 
   if (update)
     update_config_cache_init (uuid);
-
-  sql_commit ();
 
   return 0;
 }

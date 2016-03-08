@@ -238,7 +238,7 @@ int
 user_ensure_in_db (const gchar *, const gchar *);
 
 static int
-report_format_verify (report_format_t);
+verify_report_format_internal (report_format_t);
 
 void
 cleanup_prognosis_iterator ();
@@ -13812,11 +13812,7 @@ check_db_nvts ()
     }
   /* Ensure the NVT CVE table is filled. */
   if (sql_int ("SELECT count (*) FROM nvt_cves;") == 0)
-    {
-      sql_begin_immediate ();
-      refresh_nvt_cves ();
-      sql_commit ();
-    }
+    refresh_nvt_cves ();
 }
 
 /**
@@ -13975,8 +13971,6 @@ static int
 make_report_format_uuids_unique ()
 {
   iterator_t rows;
-
-  sql_begin_immediate ();
 
   sql ("CREATE TEMPORARY TABLE duplicates"
        " AS SELECT id, uuid, make_uuid () AS new_uuid, owner,"
@@ -14156,7 +14150,6 @@ make_report_format_uuids_unique ()
 
   sql ("DROP TABLE duplicates;");
 
-  sql_commit ();
   return 0;
 }
 
@@ -14202,7 +14195,7 @@ check_db_report_formats ()
            TRUST_YES,
            time (NULL));
       report_format = sql_last_insert_id ();
-      report_format_verify (report_format);
+      verify_report_format_internal (report_format);
     }
 
   if (sql_int ("SELECT count(*) FROM report_formats"
@@ -14220,7 +14213,7 @@ check_db_report_formats ()
            TRUST_YES,
            time (NULL));
       report_format = sql_last_insert_id ();
-      report_format_verify (report_format);
+      verify_report_format_internal (report_format);
     }
 
   if (sql_int ("SELECT count(*) FROM report_formats"
@@ -14246,7 +14239,7 @@ check_db_report_formats ()
            " 'csv', 'text/csv', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_id ();
-      report_format_verify (report_format);
+      verify_report_format_internal (report_format);
     }
 
   if (sql_int ("SELECT count(*) FROM report_formats"
@@ -14263,7 +14256,7 @@ check_db_report_formats ()
            " 'csv', 'text/csv', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_id ();
-      report_format_verify (report_format);
+      verify_report_format_internal (report_format);
     }
 
   if (sql_int ("SELECT count(*) FROM report_formats"
@@ -14280,7 +14273,7 @@ check_db_report_formats ()
            " 'csv', 'text/csv', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_id ();
-      report_format_verify (report_format);
+      verify_report_format_internal (report_format);
     }
 
   if (sql_int ("SELECT count(*) FROM report_formats"
@@ -14298,7 +14291,7 @@ check_db_report_formats ()
            " 'html', 'text/html', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_id ();
-      report_format_verify (report_format);
+      verify_report_format_internal (report_format);
     }
 
   if (sql_int ("SELECT count(*) FROM report_formats"
@@ -14316,7 +14309,7 @@ check_db_report_formats ()
            " 'csv', 'text/csv', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_id ();
-      report_format_verify (report_format);
+      verify_report_format_internal (report_format);
     }
 
   if (sql_int ("SELECT count(*) FROM report_formats"
@@ -14333,7 +14326,7 @@ check_db_report_formats ()
            " 'tex', 'text/plain', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_id ();
-      report_format_verify (report_format);
+      verify_report_format_internal (report_format);
     }
 
   if (sql_int ("SELECT count(*) FROM report_formats"
@@ -14350,7 +14343,7 @@ check_db_report_formats ()
            " 'nbe', 'text/plain', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_id ();
-      report_format_verify (report_format);
+      verify_report_format_internal (report_format);
     }
 
   if (sql_int ("SELECT count(*) FROM report_formats"
@@ -14367,7 +14360,7 @@ check_db_report_formats ()
            "'pdf', 'application/pdf', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_id ();
-      report_format_verify (report_format);
+      verify_report_format_internal (report_format);
     }
 
   if (sql_int ("SELECT count(*) FROM report_formats"
@@ -14384,7 +14377,7 @@ check_db_report_formats ()
            " 'txt', 'text/plain', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_id ();
-      report_format_verify (report_format);
+      verify_report_format_internal (report_format);
     }
 
   if (sql_int ("SELECT count(*) FROM report_formats"
@@ -14401,7 +14394,7 @@ check_db_report_formats ()
            " 'xml', 'text/xml', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_id ();
-      report_format_verify (report_format);
+      verify_report_format_internal (report_format);
     }
 
   if (sql_int ("SELECT count(*) FROM report_formats"
@@ -14479,7 +14472,7 @@ check_db_report_formats ()
            VERINICE_ISM_CONTROL_DESCRIPTION,
            VERINICE_ISM_CONTROL_DESCRIPTION);
 
-      report_format_verify (report_format);
+      verify_report_format_internal (report_format);
     }
 
   if (sql_int ("SELECT count(*) FROM report_formats"
@@ -14496,7 +14489,7 @@ check_db_report_formats ()
            " 'vna', 'application/zip', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_id ();
-      report_format_verify (report_format);
+      verify_report_format_internal (report_format);
     }
 
   return 0;
@@ -14624,7 +14617,6 @@ check_db_permissions ()
                " AND resource = 0;")
       <= 1)
     {
-      sql_begin_exclusive ();
       /* Clean-up any remaining permissions. */
       sql ("DELETE FROM permissions WHERE subject_type = 'role'"
            " AND subject = (SELECT id FROM roles"
@@ -14637,7 +14629,6 @@ check_db_permissions ()
       add_role_permission (ROLE_UUID_GUEST, "GET_INFO");
       add_role_permission (ROLE_UUID_GUEST, "GET_NVTS");
       add_role_permission (ROLE_UUID_GUEST, "GET_SETTINGS");
-      sql_commit ();
     }
 
   if (sql_int ("SELECT count(*) FROM permissions"
@@ -14647,7 +14638,6 @@ check_db_permissions ()
                " AND resource = 0;")
       <= 1)
     {
-      sql_begin_exclusive ();
       /* Clean-up any remaining permissions. */
       sql ("DELETE FROM permissions WHERE subject_type = 'role'"
            " AND subject = (SELECT id FROM roles"
@@ -14660,7 +14650,6 @@ check_db_permissions ()
       add_role_permission (ROLE_UUID_INFO, "GET_NVTS");
       add_role_permission (ROLE_UUID_INFO, "GET_SETTINGS");
       add_role_permission (ROLE_UUID_INFO, "MODIFY_SETTING");
-      sql_commit ();
     }
 
   if (sql_int ("SELECT count(*) FROM permissions"
@@ -14670,7 +14659,6 @@ check_db_permissions ()
                " AND resource = 0;")
       <= 1)
     {
-      sql_begin_exclusive ();
       /* Clean-up any remaining permissions. */
       sql ("DELETE FROM permissions WHERE subject_type = 'role'"
            " AND subject = (SELECT id FROM roles"
@@ -14680,7 +14668,6 @@ check_db_permissions ()
       add_role_permission (ROLE_UUID_MONITOR, "GET_SETTINGS");
       add_role_permission (ROLE_UUID_MONITOR, "GET_SYSTEM_REPORTS");
       add_role_permission (ROLE_UUID_MONITOR, "HELP");
-      sql_commit ();
     }
 
   if (sql_int ("SELECT count(*) FROM permissions"
@@ -14692,7 +14679,6 @@ check_db_permissions ()
     {
       command_t *command;
       command = omp_commands;
-      sql_begin_exclusive ();
 
       /* Clean-up any remaining permissions. */
       sql ("DELETE FROM permissions WHERE subject_type = 'role'"
@@ -14709,7 +14695,6 @@ check_db_permissions ()
             add_role_permission (ROLE_UUID_USER, command[0].name);
           command++;
         }
-      sql_commit ();
     }
 
   if (sql_int ("SELECT count(*) FROM permissions"
@@ -14721,7 +14706,6 @@ check_db_permissions ()
     {
       command_t *command;
       command = omp_commands;
-      sql_begin_exclusive ();
       /* Clean-up any remaining permissions. */
       sql ("DELETE FROM permissions WHERE subject_type = 'role'"
            " AND subject = (SELECT id FROM roles"
@@ -14740,7 +14724,6 @@ check_db_permissions ()
       add_role_permission (ROLE_UUID_OBSERVER, "HELP");
       add_role_permission (ROLE_UUID_OBSERVER, "GET_SETTINGS");
       add_role_permission (ROLE_UUID_OBSERVER, "MODIFY_SETTING");
-      sql_commit ();
     }
 }
 
@@ -14823,6 +14806,7 @@ check_db_roles ()
 static int
 check_db ()
 {
+  sql_begin_exclusive ();
   create_tables ();
   check_db_sequences ();
   if (progress)
@@ -14833,21 +14817,26 @@ check_db ()
   check_db_port_lists ();
   check_db_targets ();
   if (check_db_scanners ())
-    return -1;
+    goto fail;
   check_db_tasks ();
   if (check_db_report_formats ())
-    return -1;
+    goto fail;
   if (check_db_report_formats_trash ())
-    return -1;
+    goto fail;
   check_db_roles ();
   check_db_permissions ();
   check_db_settings ();
   if (check_db_encryption_key ())
-    return -1;
+    goto fail;
   if (progress)
     progress ();
 
+  sql_commit ();
   return 0;
+
+ fail:
+  sql_rollback ();
+  return -1;
 }
 
 /**
@@ -38123,6 +38112,8 @@ set_task_preferences (task_t task, array_t *preferences)
  * This prevents contention problems that can happen when the key is
  * created on the fly during an OMP operation.
  *
+ * Up to caller to create transaction.
+ *
  * @return 0 success, -1 error.
  */
 static int
@@ -38131,17 +38122,12 @@ check_db_encryption_key ()
   lsc_crypt_ctx_t crypt_ctx;
   gchar *secret;
 
-  sql_begin_exclusive ();
   crypt_ctx = lsc_crypt_new ();
   /* The encryption layer creates the key if it does not exist. */
   secret = lsc_crypt_encrypt (crypt_ctx, "dummy", "dummy", NULL);
   lsc_crypt_release (crypt_ctx);
   if (secret == NULL)
-    {
-      sql_rollback ();
-      return -1;
-    }
-  sql_commit ();
+    return -1;
   g_free (secret);
   return 0;
 }
@@ -47490,7 +47476,7 @@ delete_report_format (const char *report_format_id, int ultimate)
  *
  * @return 0 success, -1 error.
  */
-int
+static int
 verify_report_format_internal (report_format_t report_format)
 {
   int format_trust = TRUST_UNKNOWN;
@@ -47672,29 +47658,6 @@ verify_report_format (const char *report_format_id)
       return 1;
     }
 
-  ret = verify_report_format_internal (report_format);
-  if (ret)
-    {
-      sql_rollback ();
-      return ret;
-    }
-  sql_commit ();
-  return 0;
-}
-
-/**
- * @brief Verify a report format.
- *
- * @param[in]  report_format  Report format.
- *
- * @return 0 success, 99 permission denied, -1 error.
- */
-static int
-report_format_verify (report_format_t report_format)
-{
-  int ret;
-
-  sql_begin_immediate ();
   ret = verify_report_format_internal (report_format);
   if (ret)
     {
