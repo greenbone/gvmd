@@ -488,7 +488,7 @@ void
 sql_begin_exclusive ()
 {
   sql ("BEGIN;");
-  sql ("LOCK TABLE meta IN ACCESS EXCLUSIVE MODE;");
+  sql ("SELECT pg_advisory_xact_lock (1);");
 }
 
 /**
@@ -504,13 +504,10 @@ sql_begin_exclusive_giveup ()
   ret = sql_giveup ("BEGIN;");
   if (ret)
     return ret;
-  ret = sql_giveup ("LOCK TABLE meta IN ACCESS EXCLUSIVE MODE;");
-  if (ret)
-    {
-      sql_rollback ();
-      return ret;
-    }
-  return 0;
+  if (sql_int ("SELECT pg_try_advisory_xact_lock (1);"))
+    return 0;
+  sql_rollback ();
+  return 1;
 }
 
 /**
@@ -519,9 +516,8 @@ sql_begin_exclusive_giveup ()
 void
 sql_begin_immediate ()
 {
-  sql ("BEGIN;");
   /* TODO This is just an exclusive lock. */
-  sql ("LOCK TABLE meta IN ACCESS EXCLUSIVE MODE;");
+  sql_begin_exclusive ();
 }
 
 /**
