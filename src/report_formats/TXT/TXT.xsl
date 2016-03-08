@@ -716,7 +716,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:apply-templates select="delta/notes/note">
       <xsl:with-param name="delta" select="2"/>
     </xsl:apply-templates>
-    <xsl:if test="$report/filters/apply_overrides/text()='1'">
+    <xsl:if test="$report/filters/keywords/keyword[column='apply_overrides']/value='1'">
       <xsl:apply-templates select="overrides/override">
         <xsl:with-param name="delta" select="$delta"/>
       </xsl:apply-templates>
@@ -794,10 +794,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </xsl:when>
       <xsl:otherwise>
         <xsl:choose>
-          <xsl:when test="filters/autofp/text()='1'">
+          <xsl:when test="filters/keywords/keyword[column='autofp']/value='1'">
             <xsl:text>Vendor security updates are trusted, using full CVE matching.</xsl:text>
           </xsl:when>
-          <xsl:when test="filters/autofp/text()='2'">
+          <xsl:when test="filters/keywords/keyword[column='autofp']/value='2'">
             <xsl:text>Vendor security updates are trusted, using partial CVE matching.</xsl:text>
           </xsl:when>
           <xsl:otherwise>
@@ -808,7 +808,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <xsl:call-template name="newline"/>
 
         <xsl:choose>
-          <xsl:when test="filters/apply_overrides/text()='1'">
+          <xsl:when test="filters/keywords/keyword[column='apply_overrides']/value='1'">
             <xsl:text>Overrides are on.  When a result has an override, this report uses the</xsl:text>
             <xsl:call-template name="newline"/>
             <xsl:text>threat of the override.</xsl:text>
@@ -824,11 +824,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <xsl:call-template name="newline"/>
 
         <xsl:choose>
-          <xsl:when test="filters/notes = 0">
+          <xsl:when test="filters/keywords/keyword[column='notes']/value = 0">
             <xsl:text>Notes are excluded from the report.</xsl:text>
           </xsl:when>
           <xsl:otherwise>
             <xsl:text>Notes are included in the report.</xsl:text>
+          </xsl:otherwise>
+        </xsl:choose>
+
+        <xsl:choose>
+          <xsl:when test="filters/keywords/keyword[column='overrides']/value = 0">
+            <xsl:text>Information on overrides is excluded from the report.</xsl:text>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:text>Information on overrides is included in the report.</xsl:text>
           </xsl:otherwise>
         </xsl:choose>
         <xsl:call-template name="newline"/>
@@ -838,7 +847,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
     <xsl:text>This report might not show details of all issues that were found.</xsl:text>
     <xsl:call-template name="newline"/>
-    <xsl:if test="filters/result_hosts_only = 1">
+    <xsl:if test="filters/keywords/keyword[column='result_hosts_only']/value = 1">
       <xsl:text>It only lists hosts that produced issues.</xsl:text>
       <xsl:call-template name="newline"/>
     </xsl:if>
@@ -848,30 +857,44 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <xsl:text>".</xsl:text>
       <xsl:call-template name="newline"/>
     </xsl:if>
-    <xsl:if test="contains(filters/text(), 'h') = false">
+    <xsl:if test="contains(filters/keywords/keyword[column='levels']/value, 'h') = false">
       <xsl:text>Issues with the threat level "High" are not shown.</xsl:text>
       <xsl:call-template name="newline"/>
     </xsl:if>
-    <xsl:if test="contains(filters/text(), 'm') = false">
+    <xsl:if test="contains(filters/keywords/keyword[column='levels']/value, 'm') = false">
       <xsl:text>Issues with the threat level "Medium" are not shown.</xsl:text>
       <xsl:call-template name="newline"/>
     </xsl:if>
-    <xsl:if test="contains(filters/text(), 'l') = false">
+    <xsl:if test="contains(filters/keywords/keyword[column='levels']/value, 'l') = false">
       <xsl:text>Issues with the threat level "Low" are not shown.</xsl:text>
       <xsl:call-template name="newline"/>
     </xsl:if>
-    <xsl:if test="contains(filters/text(), 'g') = false">
+    <xsl:if test="contains(filters/keywords/keyword[column='levels']/value, 'g') = false">
       <xsl:text>Issues with the threat level "Log" are not shown.</xsl:text>
       <xsl:call-template name="newline"/>
     </xsl:if>
-    <xsl:if test="contains(filters/text(), 'd') = false">
+    <xsl:if test="contains(filters/keywords/keyword[column='levels']/value, 'd') = false">
       <xsl:text>Issues with the threat level "Debug" are not shown.</xsl:text>
       <xsl:call-template name="newline"/>
     </xsl:if>
-    <xsl:if test="contains(filters/text(), 'f') = false">
+    <xsl:if test="contains(filters/keywords/keyword[column='levels']/value, 'f') = false">
       <xsl:text>Issues with the threat level "False Positive" are not shown.</xsl:text>
       <xsl:call-template name="newline"/>
     </xsl:if>
+    <xsl:choose>
+      <xsl:when test="filters/keywords/keyword[column='min_qod']/value = 0">
+      </xsl:when>
+      <xsl:when test="string-length (filters/keywords/keyword[column='min_qod']/value) > 0">
+        <xsl:text>Only results with a minimum QoD of </xsl:text>
+        <xsl:value-of select="filters/keywords/keyword[column='min_qod']/value"/>
+        <xsl:text> are shown.</xsl:text>
+        <xsl:call-template name="newline"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:text>Only results with a minimum QoD of 70 are shown.</xsl:text>
+        <xsl:call-template name="newline"/>
+      </xsl:otherwise>
+    </xsl:choose>
     <xsl:call-template name="newline"/>
 
     <xsl:variable name="last" select="results/@start + count(results/result) - 1"/>
@@ -1079,7 +1102,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <xsl:choose>
             <xsl:when test="$report/@type = 'delta'">
             </xsl:when>
-            <xsl:when test="$report/filters/show_closed_cves = 1">
+            <xsl:when test="$report/filters/keywords/keyword[column='show_closed_cves']/value = 1">
               <xsl:call-template name="subsection">
                 <xsl:with-param name="name">Closed CVEs for Host <xsl:value-of select="$current_host" /></xsl:with-param>
               </xsl:call-template>

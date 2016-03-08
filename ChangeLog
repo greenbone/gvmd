@@ -1,3 +1,16 @@
+2016-03-08  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/report_formats/HTML/HTML.xsl (result [issue], real-report):
+	Adjust to new filter output syntax.  Add handling of filter keywords
+	"overrides" and "min_qod".
+	
+	* src/report_formats/LaTeX/latex.xsl (results-overview)
+	(results-per-host-single-host-closed-cves): Update filter handling as
+	above.
+
+	* src/report_formats/TXT/TXT.xsl (result [issue], real-report): Update
+	filter handling as above.
+
 2016-03-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_config_discovery.c (init_manage_process): Lock around the

@@ -800,10 +800,10 @@ advice given in each description, in order to rectify the issue.
       </xsl:when>
       <xsl:otherwise>
         <xsl:choose>
-          <xsl:when test="openvas:report()/filters/autofp/text()='1'">
+          <xsl:when test="openvas:report()/filters/keywords/keyword[column='autofp']/value='1'">
             <xsl:text>Vendor security updates are trusted, using full CVE matching.</xsl:text>
           </xsl:when>
-          <xsl:when test="openvas:report()/filters/autofp/text()='2'">
+          <xsl:when test="openvas:report()/filters/keywords/keyword[column='autofp']/value='2'">
             <xsl:text>Vendor security updates are trusted, using partial CVE matching.</xsl:text>
           </xsl:when>
           <xsl:otherwise>
@@ -812,7 +812,7 @@ advice given in each description, in order to rectify the issue.
         </xsl:choose>
         <xsl:call-template name="latex-newline"/>
         <xsl:choose>
-          <xsl:when test="openvas:report()/filters/apply_overrides/text()='1'">
+          <xsl:when test="openvas:report()/filters/keywords/keyword[column='apply_overrides']/value='1'">
             <xsl:text>Overrides are on.  When a result has an override, this report uses the threat of the override.</xsl:text>
             <xsl:call-template name="latex-newline"/>
           </xsl:when>
@@ -822,7 +822,17 @@ advice given in each description, in order to rectify the issue.
           </xsl:otherwise>
         </xsl:choose>
         <xsl:choose>
-          <xsl:when test="openvas:report()/filters/notes = 0">
+          <xsl:when test="openvas:report()/filters/keywords/keyword[column='overrides']/value = 0">
+            <xsl:text>Information on overrides is excluded from the report.</xsl:text>
+            <xsl:call-template name="latex-newline"/>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:text>Information on overrides is included in the report.</xsl:text>
+            <xsl:call-template name="latex-newline"/>
+          </xsl:otherwise>
+        </xsl:choose>
+        <xsl:choose>
+          <xsl:when test="openvas:report()/filters/keywords/keyword[column='notes']/value = 0">
             <xsl:text>Notes are excluded from the report.</xsl:text>
             <xsl:call-template name="latex-newline"/>
           </xsl:when>
@@ -834,37 +844,51 @@ advice given in each description, in order to rectify the issue.
       </xsl:otherwise>
     </xsl:choose>
     <xsl:text>This report might not show details of all issues that were found.</xsl:text><xsl:call-template name="latex-newline"/>
-    <xsl:if test="openvas:report()/filters/result_hosts_only = 1">
+    <xsl:if test="openvas:report()/filters/keywords/keyword[column='result_hosts_only']/value = 1">
       <xsl:text>It only lists hosts that produced issues.</xsl:text><xsl:call-template name="latex-newline"/>
     </xsl:if>
     <xsl:if test="string-length(openvas:report()/filters/phrase) &gt; 0">
       <xsl:text>It shows issues that contain the search phrase "</xsl:text><xsl:value-of select="openvas:report()/filters/phrase"/><xsl:text>".</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
-    <xsl:if test="contains(openvas:report()/filters/text(), 'h') = false">
+    <xsl:if test="contains(openvas:report()/filters/keywords/keyword[column='levels']/value, 'h') = false">
       <xsl:text>Issues with the threat level ``High'' are not shown.</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
-    <xsl:if test="contains(openvas:report()/filters/text(), 'm') = false">
+    <xsl:if test="contains(openvas:report()/filters/keywords/keyword[column='levels']/value, 'm') = false">
       <xsl:text>Issues with the threat level ``Medium'' are not shown.</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
-    <xsl:if test="contains(openvas:report()/filters/text(), 'l') = false">
+    <xsl:if test="contains(openvas:report()/filters/keywords/keyword[column='levels']/value, 'l') = false">
       <xsl:text>Issues with the threat level ``Low'' are not shown.</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
-    <xsl:if test="contains(openvas:report()/filters/text(), 'g') = false">
+    <xsl:if test="contains(openvas:report()/filters/keywords/keyword[column='levels']/value, 'g') = false">
       <xsl:text>Issues with the threat level ``Log'' are not shown.</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
-    <xsl:if test="contains(openvas:report()/filters/text(), 'd') = false">
+    <xsl:if test="contains(openvas:report()/filters/keywords/keyword[column='levels']/value, 'd') = false">
       <xsl:text>Issues with the threat level ``Debug'' are not shown.</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
-    <xsl:if test="contains(openvas:report()/filters/text(), 'f') = false">
+    <xsl:if test="contains(openvas:report()/filters/keywords/keyword[column='levels']/value, 'f') = false">
       <xsl:text>Issues with the threat level ``False Positive'' are not shown.</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
+    <xsl:choose>
+      <xsl:when test="openvas:report()/filters/keywords/keyword[column='min_qod']/value = 0">
+      </xsl:when>
+      <xsl:when test="string-length (openvas:report()/filters/keywords/keyword[column='min_qod']/value) > 0">
+        <xsl:text>Only results with a minimum QoD of </xsl:text>
+        <xsl:value-of select="openvas:report()/filters/keywords/keyword[column='min_qod']/value"/>
+        <xsl:text> are shown.</xsl:text>
+        <xsl:call-template name="latex-newline"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:text>Only results with a minimum QoD of 70 are shown.</xsl:text>
+        <xsl:call-template name="latex-newline"/>
+      </xsl:otherwise>
+    </xsl:choose>
     <xsl:call-template name="latex-newline"/>
 
     <xsl:variable name="last" select="openvas:report()/results/@start + count(openvas:report()/results/result) - 1"/>
@@ -990,7 +1014,7 @@ advice given in each description, in order to rectify the issue.
     <xsl:choose>
       <xsl:when test="openvas:report()/@type = 'delta'">
       </xsl:when>
-      <xsl:when test="openvas:report()/filters/show_closed_cves = 1">
+      <xsl:when test="openvas:report()/filters/keywords/keyword[column='show_closed_cves']/value = 1">
         <xsl:text>\begin{longtable}{|l|l|}</xsl:text><xsl:call-template name="newline"/>
         <xsl:call-template name="latex-hline"/>
         <xsl:call-template name="longtable-continue-block">
