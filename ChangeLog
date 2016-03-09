@@ -1,3 +1,20 @@
+2016-03-09  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	Merging openvas-scapdata-sync into greenbone-scapdata-sync
+	in order to maintain only a single sync script instead
+	of two mostly identical ones.
+
+	* CMakeLists.txt: Drop handling of openvas-scapdata-sync.in.
+
+	* src/omp.c (scap_script): Rename from openvas-scapdata-sync to
+	greenbone-scapdata-sync.
+
+	* tools/greenbone-scaptdata-sync.in: Merged some parts from
+	openvas-scapdata-sync here to make the script flexibel to
+	sync either from GSF or from community feed.
+
+	* tools/openvas-scapdata-sync.in: Removed.
+
 2016-03-08  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/report_formats/HTML/HTML.xsl (result [issue], real-report):
@@ -103,17 +120,17 @@
 
 2016-03-07  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
-	Merging openvas-cert-sync into greenbone-cert-sync
+	Merging openvas-certdata-sync into greenbone-certdata-sync
 	in order to maintain only a single sync script instead
 	of two mostly identical ones.
 
 	* CMakeLists.txt: Drop handling of openvas-certdata-sync.in.
 
-	* src/omp.c (cert_script): Rename from openvas-cert-sync to
-	greenbone-nvt-sync.
+	* src/omp.c (cert_script): Rename from openvas-certdata-sync to
+	greenbone-certdata-sync.
 
 	* tools/greenbone-certdata-sync.in: Merged some parts from
-	openvas-cert-sync here to make the script flexibel to
+	openvas-certdata-sync here to make the script flexibel to
 	sync either from GSF or from community feed.
 
 	* tools/openvas-certdata-sync.in: Removed.

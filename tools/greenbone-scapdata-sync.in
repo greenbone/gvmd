@@ -1,8 +1,10 @@
 #!/bin/sh
 #
 # greenbone-scap-sync
-# This script synchronizes an OpenVAS installation with the Greenbone SCAP
-# data directory.
+# This script synchronizes an OpenVAS installation with the
+# SCAP data from either the Greenbone Security Feed (in
+# case a GSF access key is present) or else from the Greenbone
+# Community Feed.
 #
 # Authors:
 # Henri Doreau <henri.doreau@greenbone.net>
@@ -10,7 +12,7 @@
 # Timo Pollmeier <timo.pollmeier@greenbone.net>
 #
 # Copyright:
-# Copyright (C) 2011-2014 Greenbone Networks GmbH
+# Copyright (C) 2011-2016 Greenbone Networks GmbH
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -26,8 +28,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-VERSION=20150218
-RESTRICTED=1
+VERSION=@OPENVASMD_VERSION@
 
 # SETTINGS
 # ========
@@ -54,7 +55,7 @@ fi
 # "--delete --exclude scap.db --exclude $PRIVATE_SUBDIR/",
 # which means that files which are not part of the feed, database or private
 # directory will be deleted.
-RSYNC_DELETE="--delete --exclude scap.db --exclude $PRIVATE_SUBDIR/"
+RSYNC_DELETE="--delete --exclude scap.db --exclude \"$PRIVATE_SUBDIR/\""
 
 # RSYNC_SSH_OPTS contains options which should be passed to ssh for the rsync
 # connection to the repository.
@@ -127,46 +128,53 @@ SCAP_RES_DIR="@OPENVAS_SCAP_RES_DIR@"
 
 SCAP_DB="$SCAP_DIR/scap.db"
 
-ACCESSKEY="@OPENVAS_SYSCONF_DIR@/gsf-access-key"
-
 TIMESTAMP="$SCAP_DIR/timestamp"
 
-if [ -z "$FEED_NAME" ] ; then
-  FEED_NAME="Greenbone SCAP Feed"
-fi
+ACCESSKEY="@OPENVAS_SYSCONF_DIR@/gsf-access-key"
 
-if [ -z "$FEED_VENDOR" ] ; then
-  FEED_VENDOR="Greenbone Networks GmbH"
-fi
+# Determine whether a GSF access key is present. If yes,
+# then use the Greenbone Security Feed. Else use the
+# Greenbone Community Feed.
+if [ -e $ACCESSKEY ]
+then
+  RESTRICTED=1
 
-if [ -z "$FEED_HOME" ] ; then
-  FEED_HOME="http://www.greenbone.net/technology/gsf.html"
+  if [ -z "$FEED_NAME" ] ; then
+    FEED_NAME="Greenbone SCAP Feed"
+  fi
+
+  if [ -z "$FEED_VENDOR" ] ; then
+    FEED_VENDOR="Greenbone Networks GmbH"
+  fi
+
+  if [ -z "$FEED_HOME" ] ; then
+    FEED_HOME="http://www.greenbone.net/technology/gsf.html"
+  fi
+
+else
+  RESTRICTED=0
+
+  if [ -z "$FEED_NAME" ] ; then
+    FEED_NAME="OpenVAS SCAP Feed"
+  fi
+
+  if [ -z "$FEED_VENDOR" ] ; then
+    FEED_VENDOR="The OpenVAS Project"
+  fi
+
+  if [ -z "$FEED_HOME" ] ; then
+    FEED_HOME="http://www.openvas.org/"
+  fi
+
+  if [ -z "$COMMUNITY_SCAP_RSYNC_FEED" ]; then
+    COMMUNITY_SCAP_RSYNC_FEED=rsync://feed.openvas.org:/cert-data
+    # An alternative syntax which might work if the above doesn't:
+    # COMMUNITY_SCAP_RSYNC_FEED=rsync@feed.openvas.org::cert-data
+  fi
+
 fi
 
 RSYNC=`command -v rsync`
-
-if [ -z "$TMPDIR" ]; then
-  SYNC_TMP_DIR=/tmp
-  # If we have mktemp, create a temporary dir (safer)
-  if [ -n "`which mktemp`" ]; then
-    SYNC_TMP_DIR=`mktemp -t -d greenbone-scap-data-sync.XXXXXXXXXX` || { echo "[e] Error: Cannot create temporary directory for file download" >&2; exit 1 ; }
-    trap "rm -rf $SYNC_TMP_DIR" EXIT HUP INT TRAP TERM
-  fi
-else
-  SYNC_TMP_DIR="$TMPDIR"
-fi
-
-do_describe () {
-  echo "This script synchronizes a SCAP collection with the '$FEED_NAME'."
-  echo "The '$FEED_NAME' is provided by '$FEED_VENDOR'."
-  echo "Online information about this feed: '$FEED_HOME'."
-}
-
-do_feedversion () {
-  if [ -r $TIMESTAMP ] ; then
-      echo `cat $TIMESTAMP`
-  fi
-}
 
 log_debug () {
   $LOG_CMD -p daemon.debug $1
@@ -196,9 +204,32 @@ handle_interrupt () {
   echo "$1:X" >&3
 }
 
+if [ -z "$TMPDIR" ]; then
+  SYNC_TMP_DIR=/tmp
+  # If we have mktemp, create a temporary dir (safer)
+  if [ -n "`which mktemp`" ]; then
+    SYNC_TMP_DIR=`mktemp -t -d greenbone-scap-data-sync.XXXXXXXXXX` || { log_err "Cannot create temporary directory for file download" ; exit 1 ; }
+    trap "rm -rf $SYNC_TMP_DIR" EXIT HUP INT TRAP TERM
+  fi
+else
+  SYNC_TMP_DIR="$TMPDIR"
+fi
+
+do_describe () {
+  echo "This script synchronizes a SCAP collection with the '$FEED_NAME'."
+  echo "The '$FEED_NAME' is provided by '$FEED_VENDOR'."
+  echo "Online information about this feed: '$FEED_HOME'."
+}
+
+do_feedversion () {
+  if [ -r $TIMESTAMP ] ; then
+      echo `cat $TIMESTAMP`
+  fi
+}
+
 # This function uses gos-state-manager to get information about the settings.
-# If not gos-state-manager is installed this values of the settings can not be
-# retrieved.
+# gos-state-manager is only available on a Greenbone OS.
+# If gos-state-manager is missing the settings values can not be retrieved.
 #
 # Input: option
 # Output: value as string or empty String if gos-state-manager is not installed
@@ -347,9 +378,14 @@ is_feed_current () {
         exit -1
       fi
     else
-      log_err "Could not find access key, aborting synchronization."
-      rm -rf $FEED_INFO_TEMP_DIR
-      exit -1
+      log_notice "No Greenbone Security Feed accees key found, falling back to Greenbone Community Feed"
+      eval "$RSYNC -ltvrP \"$COMMUNITY_SCAP_RSYNC_FEED/timestamp\" \"$FEED_INFO_TEMP_DIR\""
+      if [ $? -ne 0 ]
+      then
+        log_err "rsync failed, aborting synchronization."
+        rm -rf $FEED_INFO_TEMP_DIR
+        exit -1
+      fi
     fi
 
     FEED_VERSION_SERVER=`cat $FEED_INFO_TEMP_DIR/timestamp`
@@ -409,7 +445,7 @@ sql_pg () {
   exit_code=$?
   if [ 0 -ne "$exit_code" ]
   then
-    echo "[e] psql exited with code $exit_code for sql: $1."
+    log_err "psql exited with code $exit_code for sql: $1."
     exit 1
   fi
 }
@@ -746,9 +782,17 @@ for ovalfile in `find "$1" -name "*.xml" -type f`
 
 do_help () {
   echo "$0: Sync SCAP data"
+
+  if [ -e $ACCESSKEY ]
+  then
+    echo "GSF access key found: Using Greenbone Security Feed"
+  else
+    echo "No GSF access key found: Using Community Feed"
+  fi
+
   if [ $POSTGRES -eq 1 ];
   then
-    echo " --database       database name"
+    echo " --database        database name"
   fi
   echo " --describe        display current feed info"
   echo " --feedversion     display version of this feed"
@@ -1317,6 +1361,38 @@ update_scap_db() {
   done
 }
 
+do_rsync_community_feed () {
+  if [ -z "$COMMUNITY_SCAP_RSYNC_FEED" ]; then
+    COMMUNITY_SCAP_RSYNC_FEED=rsync://feed.openvas.org:/scap-data
+    # An alternative syntax which might work if the above doesn't:
+    # COMMUNITY_SCAP_RSYNC_FEED=rsync@feed.openvas.org::scap-data
+  fi
+
+  if [ -z "$RSYNC" ]; then
+    log_err "rsync not found!"
+  else
+    log_notice "Using rsync: $RSYNC"
+    log_notice "Configured SCAP data rsync feed: $COMMUNITY_SCAP_RSYNC_FEED"
+    mkdir -p "$SCAP_DIR"
+    eval "$RSYNC -ltvrP $RSYNC_DELETE \"$COMMUNITY_SCAP_RSYNC_FEED\" \"$CERT_DIR\""
+    if [ $? -ne 0 ] ; then
+      log_err "rsync failed. Your SCAP data might be broken now."
+      exit 1
+    fi
+  fi
+}
+
+do_sync_community_feed () {
+  if [ -z "$RSYNC" ] ; then
+    log_err "rsync not found!"
+    log_err "No utility available in PATH environment variable to download Feed data"
+    exit 1
+  else
+    log_notice "Will use rsync"
+    do_rsync_community_feed
+  fi
+}
+
 sync_scapdata(){
   if [ $REFRESH_ONLY -eq 0 ]
   then
@@ -1365,8 +1441,8 @@ sync_scapdata(){
       log_notice "Synchronization with the Greenbone SCAP data Repository successful."
 
     else
-      log_err "gsf-access-key not found, aborting synchronization."
-      exit 1
+      log_notice "No Greenbone Security Feed accees key found, falling back to Greenbone Community Feed"
+      do_sync_community_feed
     fi
   fi
 
