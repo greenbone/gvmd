@@ -1,3 +1,10 @@
+2016-03-09  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	Backport r24632.
+
+	* src/manage.c (get_osp_scan_report): Fix memory and file descriptors
+	leak, which caused long osp scans to abort.
+
 2016-03-07  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport applicable part of r24607.
