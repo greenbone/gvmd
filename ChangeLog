@@ -1,3 +1,8 @@
+2016-03-09  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (get_osp_scan_report): Fix memory and file descriptors
+	leak, which caused long osp scans to abort.
+
 2016-03-09  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	Merging openvas-scapdata-sync into greenbone-scapdata-sync
@@ -20,7 +25,7 @@
 	* src/report_formats/HTML/HTML.xsl (result [issue], real-report):
 	Adjust to new filter output syntax.  Add handling of filter keywords
 	"overrides" and "min_qod".
-	
+
 	* src/report_formats/LaTeX/latex.xsl (results-overview)
 	(results-per-host-single-host-closed-cves): Update filter handling as
 	above.

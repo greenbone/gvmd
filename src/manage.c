@@ -3293,13 +3293,11 @@ get_osp_scan_report (const char *scan_id, const char *host, int port,
     {
       g_warning ("OSP get_scan %s: %s", scan_id, error);
       g_free (error);
-      return -1;
+      progress = -1;
     }
-  if (progress < 100)
-    return progress;
 
   osp_connection_close (connection);
-  return 100;
+  return progress;
 }
 
 /**
