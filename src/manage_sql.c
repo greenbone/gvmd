@@ -14806,10 +14806,12 @@ check_db_roles ()
 /**
  * @brief Ensure that the database is in order.
  *
+ * @param[in]  check_encryption_key  Whether to check encryption key.
+ *
  * @return 0 success, -1 error.
  */
 static int
-check_db ()
+check_db (int check_encryption_key)
 {
   sql_begin_exclusive ();
   create_tables ();
@@ -14831,7 +14833,7 @@ check_db ()
   check_db_roles ();
   check_db_permissions ();
   check_db_settings ();
-  if (check_db_encryption_key ())
+  if (check_encryption_key && check_db_encryption_key ())
     goto fail;
   if (progress)
     progress ();
@@ -15000,6 +15002,7 @@ cleanup_tables ()
  * @param[in]  update_progress     Function to update progress, or NULL. *
  * @param[in]  stop_tasks          Stop any active tasks.
  * @param[in]  skip_db_check       Skip DB check.
+ * @param[in]  check_encryption_key  Check encryption key if doing DB check.
  *
  * @return 0 success, -1 error, -2 database is wrong version, -3 database needs
  *         to be initialised from server, -4 max_ips_per_target out of range.
@@ -15018,7 +15021,8 @@ init_manage_internal (GSList *log_config,
                               gnutls_session_t *,
                               gnutls_certificate_credentials_t *,
                               gchar*),
-                      int skip_db_check)
+                      int skip_db_check,
+                      int check_encryption_key)
 {
   int ret;
 
@@ -15103,7 +15107,7 @@ init_manage_internal (GSList *log_config,
 
   if (skip_db_check == 0)
     {
-      ret = check_db ();
+      ret = check_db (check_encryption_key);
       if (ret)
         return ret;
 
@@ -15167,7 +15171,8 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
                                update_progress,
                                1,  /* Stop active tasks. */
                                fork_connection,
-                               skip_db_check);
+                               skip_db_check,
+                               1); /* Check encryption key if checking db. */
 }
 
 /**
@@ -15199,7 +15204,8 @@ init_manage_helper (GSList *log_config, const gchar *database,
                                update_progress,
                                0,   /* Stop active tasks. */
                                NULL,
-                               0);  /* Skip DB check. */
+                               0,   /* Skip DB check. */
+                               0);  /* Dummy. */
 }
 
 /**

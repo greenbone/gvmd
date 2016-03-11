@@ -1,3 +1,15 @@
+2016-03-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Only ensure that the encryption key exists in the daemon process.  This
+	removes the key check from other invocations like --create-user.  This
+	prevents GPGME errors that occur when a non-owner user invokes a setuid
+	Manager.
+
+	* src/manage_sql.c (check_db, init_manage_internal): Add
+	check_encryption_key arg.
+	(init_manage): Enable encryption check.
+	(init_manage_helper): Add dummy check_encryption_key arg.
+
 2016-03-09  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (get_osp_scan_report): Fix memory and file descriptors
