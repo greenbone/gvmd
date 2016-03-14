@@ -1,3 +1,10 @@
+2016-03-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): Add a note about responding in
+	error case, from TODO.
+
+	* TODO: Remove.  All entries now either out of date or too ambitious.
+
 2016-03-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Only ensure that the encryption key exists in the daemon process.  This

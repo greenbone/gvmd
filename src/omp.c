@@ -16701,6 +16701,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
         /** @todo Some checks only required when type is "scan". */
 
+        /** @todo Respond in all error cases.
+         *
+         * When something fails mid-way through the report, we can only close
+         * the connection.  It would be nice to instead prepare everything
+         * before trying to send it, so that we could send an error response
+         * when there is a problem.  Buffering the entire report before sending
+         * it would probably take too long and/or use to much memory. */
+
         if (strcmp (get_reports_data->type, "scan")
             && strcmp (get_reports_data->type, "assets")
             && strcmp (get_reports_data->type, "prognostic"))
