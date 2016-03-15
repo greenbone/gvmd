@@ -1,5 +1,10 @@
 2016-03-15  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	* tools/greenbone-scapdata-sync.in: Set a default split size
+	depending on the system memory.
+
+2016-03-15  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	* tools/greenbone-certdata-sync.in, tools/greenbone-scapdata-sync.in:
 	Moved definition of LOG_CMD prior to sourcing the .conf file to
 	allow redefinition.

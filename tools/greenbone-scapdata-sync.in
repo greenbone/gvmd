@@ -88,7 +88,8 @@ REBUILD_OVAL=0
 VERBOSE=0
 
 # Split CVE data files into parts of this size in kB. 0 = no splitting
-SPLIT_PART_SIZE=0
+# The default is 1/30 of the system memory.
+SPLIT_PART_SIZE=`expr $(awk '/MemTotal/ {print $2}' /proc/meminfo) / 30`
 
 # SQLITE3 defines the name of the sqlite binary to call, along with additional
 # parameters.
@@ -1526,6 +1527,8 @@ check_alerts (){
   log_info "Calling openvasmd to check for alerts"
   openvasmd --check-alerts
 }
+
+log_info "Split size for very large files is $SPLIT_PART_SIZE kBytes (0 = no splitting)"
 
 psql_setup "tasks"
 while test $# -gt 0; do
