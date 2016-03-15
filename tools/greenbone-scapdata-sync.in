@@ -176,6 +176,17 @@ fi
 
 RSYNC=`command -v rsync`
 
+create_tmp_key () {
+  KEYTEMPDIR=`mktemp -d`
+  cp "$ACCESSKEY" "$KEYTEMPDIR"
+  TMPACCESSKEY="$KEYTEMPDIR/gsf-access-key"
+  chmod 400 "$TMPACCESSKEY"
+}
+
+remove_tmp_key () {
+  rm -rf "$KEYTEMPDIR"
+}
+
 log_debug () {
   $LOG_CMD -p daemon.debug $1
 }
@@ -370,13 +381,16 @@ is_feed_current () {
           RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p\""
         fi
       fi
-      rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid@feed.greenbone.net:/scap-data/timestamp $FEED_INFO_TEMP_DIR
+      create_tmp_key
+      rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $TMPACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid@feed.greenbone.net:/scap-data/timestamp $FEED_INFO_TEMP_DIR
       if [ $? -ne 0 ]
       then
         log_err "rsync failed, aborting synchronization."
         rm -rf $FEED_INFO_TEMP_DIR
+        remove_tmp_key
         exit -1
       fi
+      remove_tmp_key
     else
       log_notice "No Greenbone Security Feed accees key found, falling back to Greenbone Community Feed"
       eval "$RSYNC -ltvrP \"$COMMUNITY_SCAP_RSYNC_FEED/timestamp\" \"$FEED_INFO_TEMP_DIR\""
@@ -1410,6 +1424,7 @@ sync_scapdata(){
         log_err "Could not determine credentials, aborting synchronization."
         exit 1
       fi
+
       while [ 0 -ne "$notsynced" ]
       do
 
@@ -1431,15 +1446,17 @@ sync_scapdata(){
             RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p\""
           fi
         fi
+        create_tmp_key
         rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid@feed.greenbone.net:/scap-data $BASE_SYNC_DIR
         if [ 0 != "$?" ] ; then
           log_err "rsync failed, aborting synchronization."
+          remove_tmp_key
           exit 1
         fi
+        remove_tmp_key
         notsynced=0
       done
       log_notice "Synchronization with the Greenbone SCAP data Repository successful."
-
     else
       log_notice "No Greenbone Security Feed accees key found, falling back to Greenbone Community Feed"
       do_sync_community_feed

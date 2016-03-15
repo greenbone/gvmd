@@ -170,6 +170,17 @@ fi
 
 RSYNC=`command -v rsync`
 
+create_tmp_key () {
+  KEYTEMPDIR=`mktemp -d`
+  cp "$ACCESSKEY" "$KEYTEMPDIR"
+  TMPACCESSKEY="$KEYTEMPDIR/gsf-access-key"
+  chmod 400 "$TMPACCESSKEY"
+}
+
+remove_tmp_key () {
+  rm -rf "$KEYTEMPDIR"
+}
+
 do_describe () {
   echo "This script synchronizes a CERT collection with the '$FEED_NAME'."
   echo "The '$FEED_NAME' is provided by '$FEED_VENDOR'."
@@ -353,13 +364,16 @@ is_feed_current () {
           RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p\""
         fi
       fi
-      rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid@feed.greenbone.net:/cert-data/timestamp $FEED_INFO_TEMP_DIR
+      create_tmp_key
+      rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $TMPACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid@feed.greenbone.net:/cert-data/timestamp $FEED_INFO_TEMP_DIR
       if [ $? -ne 0 ]
       then
         log_err "rsync failed, aborting synchronization."
         rm -rf $FEED_INFO_TEMP_DIR
+        remove_tmp_key
         exit -1
       fi
+      remove_tmp_key
     else
       log_notice "No Greenbone Security Feed accees key found, falling back to Greenbone Community Feed"
       eval "$RSYNC -ltvrP \"$COMMUNITY_CERT_RSYNC_FEED/timestamp\" \"$FEED_INFO_TEMP_DIR\""
@@ -830,6 +844,7 @@ sync_certdata(){
         log_err "Could not determine credentials, aborting synchronization."
         exit 1
       fi
+
       while [ 1 -eq $notsynced ]
       do
 
@@ -851,16 +866,18 @@ sync_certdata(){
             RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p\""
           fi
         fi
+        create_tmp_key
         rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid@feed.greenbone.net:/cert-data $BASE_SYNC_DIR
         if [ 0 -ne "$?" ] ; then
           log_err "rsync failed, aborting synchronization."
+          remove_tmp_key
           exit 1
         fi
+        remove_tmp_key
         notsynced=0
       done
       log_notice "Synchronization with the Greenbone CERT data Repository successful."
       echo
-
     else
       log_notice "No Greenbone Security Feed accees key found, falling back to Greenbone Community Feed"
       do_sync_community_feed
