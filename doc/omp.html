@@ -152,6 +152,10 @@
 <td id="index"><div style="margin-left: 15px;">Definition of a command in OMP describing HELP command.</div></td>
 </tr>
 <tr id="index">
+<td id="index"><a href="#element_filter_keywords">filter_keywords</a></td>
+<td id="index"><div style="margin-left: 15px;">A group of filter keywords usable in an attribute or element text.</div></td>
+</tr>
+<tr id="index">
 <td id="index"><a href="#element_note">note</a></td>
 <td id="index"><div style="margin-left: 15px;">A note.</div></td>
 </tr>
@@ -1330,6 +1334,11 @@ ested|Stopped|Internal Error" }
               &lt;<b>required</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>filter_keywords</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Optional description of filter keywords usable in the attribute.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li>
 <li>
@@ -1383,6 +1392,7 @@ pattern_attrib
        pattern_attrib_name
        &amp; pattern_attrib_type
        &amp; pattern_attrib_required
+       &amp; pattern_attrib_filter_keywords*
      }
 
 pattern_attrib_name
@@ -1401,6 +1411,12 @@ pattern_attrib_required
  = element required
      {
        boolean
+     }
+
+pattern_attrib_filter_keywords
+ = element filter_keywords
+     {
+       filter_keywords
      }
 
 pattern_t
@@ -1614,11 +1630,134 @@ command_definition_ele
 </pre></div></div>
 </div>
 <div>
-<div><h3 id="element_note">6.9
+<div><h3 id="element_filter_keywords">6.9
+        Element <tt>filter_keywords</tt>
+</h3></div>
+<p>In short: A group of filter keywords usable in an attribute or element text.</p>
+<h4>6.9.1 Structure</h4>
+<ul style="list-style: none"><li><ul style="list-style: none">
+<li>
+              &lt;<b>condition</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Description of the condition under which the group of keywords applies.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>column</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">A column that can be used multiple times with operators and in sorting.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the keyword as used in the filter.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>type</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Type of the values the keyword can use.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>summary</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Short description of the keyword.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>option</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">An option only applied once which cannot be used with operators or in sorting.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the keyword as used in the filter.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>type</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Type of the values the keyword can use.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>summary</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Short description of the keyword.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul></li></ul>
+<h4>6.9.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><div style="margin-left: 5%"><pre>filter_keywords
+ = element filter_keywords
+     {
+       filter_keywords_condition?
+       &amp; filter_keywords_column*
+       &amp; filter_keywords_option*
+     }
+
+filter_keywords_condition
+ = element condition
+     {
+       text
+     }
+
+filter_keywords_column
+ = element column
+     {
+       filter_keywords_column_name
+       &amp; filter_keywords_column_type
+       &amp; filter_keywords_column_summary
+     }
+
+filter_keywords_column_name
+ = element name
+     {
+       name
+     }
+
+filter_keywords_column_type
+ = element type
+     {
+       type_name
+     }
+
+filter_keywords_column_summary
+ = element summary
+     {
+       text
+     }
+
+filter_keywords_option
+ = element option
+     {
+       filter_keywords_option_name
+       &amp; filter_keywords_option_type
+       &amp; filter_keywords_option_summary
+     }
+
+filter_keywords_option_name
+ = element name
+     {
+       name
+     }
+
+filter_keywords_option_type
+ = element type
+     {
+       type_name
+     }
+
+filter_keywords_option_summary
+ = element summary
+     {
+       text
+     }
+</pre></div></div>
+</div>
+<div>
+<div><h3 id="element_note">6.10
         Element <tt>note</tt>
 </h3></div>
 <p>In short: A note.</p>
-<h4>6.9.1 Structure</h4>
+<h4>6.10.1 Structure</h4>
 <ul style="list-style: none"><li><ul style="list-style: none">
 <li>
           @<b>id</b>
@@ -1853,7 +1992,7 @@ command_definition_ele
 </ul>
 </li>
 </ul></li></ul>
-<h4>6.9.2 RNC</h4>
+<h4>6.10.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><div style="margin-left: 5%"><pre>note
  = element note
      {
@@ -2158,11 +2297,11 @@ note_result_description
 </pre></div></div>
 </div>
 <div>
-<div><h3 id="element_override">6.10
+<div><h3 id="element_override">6.11
         Element <tt>override</tt>
 </h3></div>
 <p>In short: An override.</p>
-<h4>6.10.1 Structure</h4>
+<h4>6.11.1 Structure</h4>
 <ul style="list-style: none"><li><ul style="list-style: none">
 <li>
           @<b>id</b>
@@ -2418,7 +2557,7 @@ note_result_description
 </ul>
 </li>
 </ul></li></ul>
-<h4>6.10.2 RNC</h4>
+<h4>6.11.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><div style="margin-left: 5%"><pre>override
  = element override
      {
@@ -2738,11 +2877,11 @@ override_result_description
 </pre></div></div>
 </div>
 <div>
-<div><h3 id="element_result">6.11
+<div><h3 id="element_result">6.12
         Element <tt>result</tt>
 </h3></div>
 <p>In short: A result.</p>
-<h4>6.11.1 Structure</h4>
+<h4>6.12.1 Structure</h4>
 <ul style="list-style: none"><li><ul style="list-style: none">
 <li>
           @<b>id</b>
@@ -3070,7 +3209,7 @@ override_result_description
 </li></ul>
 </li>
 </ul></li></ul>
-<h4>6.11.2 RNC</h4>
+<h4>6.12.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><div style="margin-left: 5%"><pre>result
  = element result
      {
@@ -3573,11 +3712,11 @@ result_overrides_override
 </pre></div></div>
 </div>
 <div>
-<div><h3 id="element_report">6.12
+<div><h3 id="element_report">6.13
         Element <tt>report</tt>
 </h3></div>
 <p>In short: Actually attributes and either base64 or a report.</p>
-<h4>6.12.1 Structure</h4>
+<h4>6.13.1 Structure</h4>
 <ul style="list-style: none"><li><ul style="list-style: none">
 <li>
           @<b>id</b>
@@ -4486,7 +4625,7 @@ result_overrides_override
 </ul>
 </li>
 </ul></li></ul>
-<h4>6.12.2 RNC</h4>
+<h4>6.13.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><div style="margin-left: 5%"><pre>report
  = element report
      {
@@ -12923,7 +13062,25 @@ describe_scap_response_scap_currently_syncing_user
           @<b>filter</b>
           (text)
           Filter term to use to filter query.
-          </li>
+          <div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b></i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>column </i><b>uuid</b> (<a href="#type_uuid">uuid</a>) Unique ID</li>
+<li>
+<i>column </i><b>name</b> (<a href="#type_name">name</a>) Name</li>
+<li>
+<i>column </i><b>comment</b> (text) Comment text</li>
+<li>
+<i>column </i><b>created</b> (<a href="#type_iso_time">iso_time</a>) Creation time</li>
+<li>
+<i>column </i><b>modified</b> (<a href="#type_iso_time">iso_time</a>) Modification time</li>
+<li>
+<i>column </i><b>owner</b> (<a href="#type_name">name</a>) Name of the owner</li>
+<li>
+<i>column </i><b>trust</b> (<a href="#type_boolean">boolean</a>) Whether the the agent is trusted</li>
+</ul>
+</div>
+</li>
 <li>
           @<b>filt_id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -13544,7 +13701,33 @@ get_agents_response_agent_count_page
           @<b>filter</b>
           (text)
           Filter term to use to filter query.
-          </li>
+          <div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b></i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>column </i><b>uuid</b> (<a href="#type_uuid">uuid</a>) Unique ID</li>
+<li>
+<i>column </i><b>name</b> (<a href="#type_name">name</a>) Name</li>
+<li>
+<i>column </i><b>comment</b> (text) Comment text</li>
+<li>
+<i>column </i><b>created</b> (<a href="#type_iso_time">iso_time</a>) Creation time</li>
+<li>
+<i>column </i><b>modified</b> (<a href="#type_iso_time">iso_time</a>) Modification time</li>
+<li>
+<i>column </i><b>owner</b> (<a href="#type_name">name</a>) Name of the owner</li>
+<li>
+<i>column </i><b>nvt_selector</b> (<a href="#type_uuid">uuid</a>) NVT selector UUID</li>
+<li>
+<i>column </i><b>families_total</b> (<a href="#type_integer">integer</a>) Total number of selected NVT families</li>
+<li>
+<i>column </i><b>nvts_total</b> (<a href="#type_integer">integer</a>) Total number of selected NVTs</li>
+<li>
+<i>column </i><b>families_trend</b> (<a href="#type_boolean">boolean</a>) Whether new NVT families will be added</li>
+<li>
+<i>column </i><b>nvts_trend</b> (<a href="#type_boolean">boolean</a>) Whether new NVTs will be added</li>
+</ul>
+</div>
+</li>
 <li>
           @<b>filt_id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -14517,7 +14700,7 @@ get_configs_response_config_count_page
 <li>
           @<b>filter</b>
           (text)
-          Filter term to use to filter query of the resources to aggregate.
+          Filter term to use to filter query of the resources to aggregate (see get_... commands of selected type for keywords).
           </li>
 <li>
           @<b>filt_id</b>
@@ -15223,7 +15406,31 @@ get_aggregates_response_filters_keywords_keyword_value
           @<b>filter</b>
           (text)
           Filter term to use to filter query.
-          </li>
+          <div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b></i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>column </i><b>uuid</b> (<a href="#type_uuid">uuid</a>) Unique ID</li>
+<li>
+<i>column </i><b>name</b> (<a href="#type_name">name</a>) Name</li>
+<li>
+<i>column </i><b>comment</b> (text) Comment text</li>
+<li>
+<i>column </i><b>created</b> (<a href="#type_iso_time">iso_time</a>) Creation time</li>
+<li>
+<i>column </i><b>modified</b> (<a href="#type_iso_time">iso_time</a>) Modification time</li>
+<li>
+<i>column </i><b>owner</b> (<a href="#type_name">name</a>) Name of the owner</li>
+<li>
+<i>column </i><b>event</b> (<a href="#type_integer">integer</a>) The event that triggers the alert</li>
+<li>
+<i>column </i><b>condition</b> (<a href="#type_integer">integer</a>) The condition for the alert</li>
+<li>
+<i>column </i><b>method</b> (<a href="#type_integer">integer</a>) The method of the alert</li>
+<li>
+<i>column </i><b>filter</b> (<a href="#type_uuid">uuid</a>) UUID of the filter applied to the report</li>
+</ul>
+</div>
+</li>
 <li>
           @<b>filt_id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -15957,7 +16164,51 @@ get_alerts_response_alert_count_page
           @<b>filter</b>
           (text)
           Filter term to use to filter query.
-          </li>
+          <div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b></i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>column </i><b>uuid</b> (<a href="#type_uuid">uuid</a>) Unique ID</li>
+<li>
+<i>column </i><b>name</b> (<a href="#type_name">name</a>) Name</li>
+<li>
+<i>column </i><b>comment</b> (text) Comment text</li>
+<li>
+<i>column </i><b>created</b> (<a href="#type_iso_time">iso_time</a>) Creation time</li>
+<li>
+<i>column </i><b>modified</b> (<a href="#type_iso_time">iso_time</a>) Modification time</li>
+<li>
+<i>column </i><b>owner</b> (<a href="#type_name">name</a>) Name of the owner</li>
+</ul>
+</div>
+<div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b> if type is "host"</i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>column </i><b>severity</b> (<a href="#type_severity">severity</a>) Highest severity of the asset from latest report</li>
+<li>
+<i>column </i><b>os</b> (text) Best matching OS</li>
+<li>
+<i>column </i><b>oss</b> (text) Comma-separated list of all OSs of the host</li>
+<li>
+<i>column </i><b>hostname</b> (text) Hostname</li>
+<li>
+<i>column </i><b>ip</b> (<a href="#type_ip">ip</a>) IP address</li>
+</ul>
+</div>
+<div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b> if type is "os"</i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>column </i><b>title</b> (text) CPE title of the asset</li>
+<li>
+<i>column </i><b>hosts</b> (<a href="#type_integer">integer</a>) Number of hosts using the asset</li>
+<li>
+<i>column </i><b>latest_severity</b> (<a href="#type_severity">severity</a>) Latest severity score of the asset</li>
+<li>
+<i>column </i><b>highest_severity</b> (<a href="#type_severity">severity</a>) Latest severity score of the asset</li>
+<li>
+<i>column </i><b>average_severity</b> (<a href="#type_severity">severity</a>) Average severity score of the asset</li>
+</ul>
+</div>
+</li>
 <li>
           @<b>filt_id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -16825,7 +17076,29 @@ get_assets_response_asset_count_page
           @<b>filter</b>
           (text)
           Filter term to use to filter query.
-          </li>
+          <div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b></i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>column </i><b>uuid</b> (<a href="#type_uuid">uuid</a>) Unique ID</li>
+<li>
+<i>column </i><b>name</b> (<a href="#type_name">name</a>) Name</li>
+<li>
+<i>column </i><b>comment</b> (text) Comment text</li>
+<li>
+<i>column </i><b>created</b> (<a href="#type_iso_time">iso_time</a>) Creation time</li>
+<li>
+<i>column </i><b>modified</b> (<a href="#type_iso_time">iso_time</a>) Modification time</li>
+<li>
+<i>column </i><b>owner</b> (<a href="#type_name">name</a>) Name of the owner</li>
+<li>
+<i>column </i><b>login</b> (text) The login username</li>
+<li>
+<i>column </i><b>type</b> (text) The type abbreviation</li>
+<li>
+<i>column </i><b>allow_insecure</b> (<a href="#type_boolean">boolean</a>) Whether insecure use is allowed</li>
+</ul>
+</div>
+</li>
 <li>
           @<b>filt_id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -17681,7 +17954,27 @@ get_credentials_response_credential_count_page
           @<b>filter</b>
           (text)
           Filter term to use to filter query.
-          </li>
+          <div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b></i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>column </i><b>uuid</b> (<a href="#type_uuid">uuid</a>) Unique ID</li>
+<li>
+<i>column </i><b>name</b> (<a href="#type_name">name</a>) Name</li>
+<li>
+<i>column </i><b>comment</b> (text) Comment text</li>
+<li>
+<i>column </i><b>created</b> (<a href="#type_iso_time">iso_time</a>) Creation time</li>
+<li>
+<i>column </i><b>modified</b> (<a href="#type_iso_time">iso_time</a>) Modification time</li>
+<li>
+<i>column </i><b>owner</b> (<a href="#type_name">name</a>) Name of the owner</li>
+<li>
+<i>column </i><b>type</b> (text) Resource type the filter is restricted to</li>
+<li>
+<i>column </i><b>term</b> (text) The filter term</li>
+</ul>
+</div>
+</li>
 <li>
           @<b>filt_id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -18336,7 +18629,23 @@ get_filters_response_filter_count_page
           @<b>filter</b>
           (text)
           Filter term to use to filter query.
-          </li>
+          <div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b></i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>column </i><b>uuid</b> (<a href="#type_uuid">uuid</a>) Unique ID</li>
+<li>
+<i>column </i><b>name</b> (<a href="#type_name">name</a>) Name</li>
+<li>
+<i>column </i><b>comment</b> (text) Comment text</li>
+<li>
+<i>column </i><b>created</b> (<a href="#type_iso_time">iso_time</a>) Creation time</li>
+<li>
+<i>column </i><b>modified</b> (<a href="#type_iso_time">iso_time</a>) Modification time</li>
+<li>
+<i>column </i><b>owner</b> (<a href="#type_name">name</a>) Name of the owner</li>
+</ul>
+</div>
+</li>
 <li>
           @<b>filt_id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -18881,7 +19190,133 @@ get_groups_response_group_count_page
           @<b>filter</b>
           (text)
           Filter term to use to filter query.
-          </li>
+          <div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b></i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>column </i><b>uuid</b> (<a href="#type_uuid">uuid</a>) Unique ID</li>
+<li>
+<i>column </i><b>name</b> (<a href="#type_name">name</a>) Name</li>
+<li>
+<i>column </i><b>comment</b> (text) Comment text</li>
+<li>
+<i>column </i><b>created</b> (<a href="#type_iso_time">iso_time</a>) Creation time</li>
+<li>
+<i>column </i><b>modified</b> (<a href="#type_iso_time">iso_time</a>) Modification time</li>
+<li>
+<i>column </i><b>owner</b> (<a href="#type_name">name</a>) Name of the owner</li>
+<li>
+<i>column </i><b>severity</b> (<a href="#type_severity">severity</a>) Severity of the SecInfo</li>
+</ul>
+</div>
+<div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b> if type is "nvt"</i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>column </i><b>version</b> (text) Version of the NVT</li>
+<li>
+<i>column </i><b>summary</b> (text) Summary text of the NVT</li>
+<li>
+<i>column </i><b>cve</b> (text) List of BIDs of the NVT</li>
+<li>
+<i>column </i><b>xref</b> (text) List of XREFs of the NVT</li>
+<li>
+<i>column </i><b>family</b> (text) Family of the NVT</li>
+<li>
+<i>column </i><b>cvss</b> (<a href="#type_severity">severity</a>) Alias for severity</li>
+<li>
+<i>column </i><b>cvss_base</b> (<a href="#type_severity">severity</a>) Alias for severity</li>
+<li>
+<i>column </i><b>script_tags</b> (text) List of script tags</li>
+<li>
+<i>column </i><b>qod</b> (<a href="#type_integer">integer</a>) Numerical QoD</li>
+<li>
+<i>column </i><b>qod_type</b> (text) QoD type</li>
+<li>
+<i>column </i><b>solution_type</b> (text) Solution type</li>
+</ul>
+</div>
+<div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b> if type is "cve"</i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>column </i><b>vector</b> (text) "Vector" component of the CVSS base vector</li>
+<li>
+<i>column </i><b>complexity</b> (text) "Complexity" component of the CVSS base vector</li>
+<li>
+<i>column </i><b>authentication</b> (text) "Authentication" component of the CVSS base vector</li>
+<li>
+<i>column </i><b>confidentiality_impact</b> (text) "Confidentiality Impact" component of the CVSS base vector</li>
+<li>
+<i>column </i><b>integrity_impact</b> (text) "Integrity Impact" component of the CVSS base vector</li>
+<li>
+<i>column </i><b>availability_impact</b> (text) "Availability Impact" component of the CVSS base vector</li>
+<li>
+<i>column </i><b>products</b> (text) Space separated list CPEs the CVE applies to</li>
+<li>
+<i>column </i><b>cvss</b> (<a href="#type_severity">severity</a>) Alias for severity</li>
+<li>
+<i>column </i><b>description</b> (text) Description text of the CVE</li>
+<li>
+<i>column </i><b>published</b> (<a href="#type_"></a>) Time the CVE was published, alias for created</li>
+</ul>
+</div>
+<div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b> if type is "cpe"</i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>column </i><b>title</b> (text) Title text of the CPE</li>
+<li>
+<i>column </i><b>status</b> (text) Status of the CPE</li>
+<li>
+<i>column </i><b>deprecated_by_id</b> (text) NVD ID that has deprecated this CPE</li>
+<li>
+<i>column </i><b>max_cvss</b> (<a href="#type_severity">severity</a>) Alias for severity</li>
+<li>
+<i>column </i><b>cves</b> (<a href="#type_integer">integer</a>) Number of CVEs referencing this CPE</li>
+<li>
+<i>column </i><b>nvd_id</b> (<a href="#type_integer">integer</a>) NVD ID of the CVE</li>
+</ul>
+</div>
+<div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b> if type is "ovaldef"</i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>column </i><b>version</b> (<a href="#type_integer">integer</a>) Version number of the OVAL Definition</li>
+<li>
+<i>column </i><b>deprecated</b> (<a href="#type_boolean">boolean</a>) Whether the OVAL Definition is deprecated</li>
+<li>
+<i>column </i><b>class</b> (text) Class of the OVAL Definition</li>
+<li>
+<i>column </i><b>title</b> (text) Title of the OVAL Definition</li>
+<li>
+<i>column </i><b>description</b> (text) Longer description of the OVAL Definition</li>
+<li>
+<i>column </i><b>file</b> (text) Name of the file containing the OVAL Definition</li>
+<li>
+<i>column </i><b>status</b> (text) Status of the OVAL Definition</li>
+<li>
+<i>column </i><b>max_cvss</b> (<a href="#type_severity">severity</a>) Alias for severity</li>
+<li>
+<i>column </i><b>cves</b> (<a href="#type_integer">integer</a>) Number of CVEs referencing this CPE</li>
+</ul>
+</div>
+<div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b> if type is either "cert_bund_adv" or "dfn_cert_adv"</i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>column </i><b>title</b> (text) Title text of the CERT advisory</li>
+<li>
+<i>column </i><b>summary</b> (text) Summary text of the CERT advisory</li>
+<li>
+<i>column </i><b>cves</b> (<a href="#type_integer">integer</a>) Number of CVEs referenced by the CERT advisory</li>
+<li>
+<i>column </i><b>max_cvss</b> (<a href="#type_severity">severity</a>) Alias for severity</li>
+</ul>
+</div>
+<div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b> if type is "allinfo"</i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>column </i><b>type</b> (text) Type of SecInfo as given in the "type" parameter</li>
+<li>
+<i>column </i><b>extra</b> (text) Title or similar text</li>
+</ul>
+</div>
+</li>
 <li>
           @<b>filt_id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -20172,7 +20607,41 @@ get_info_response_details
           @<b>filter</b>
           (text)
           Filter term to use to filter query.
-          </li>
+          <div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b></i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>column </i><b>uuid</b> (<a href="#type_uuid">uuid</a>) Unique ID</li>
+<li>
+<i>column </i><b>name</b> (<a href="#type_name">name</a>) Name</li>
+<li>
+<i>column </i><b>created</b> (<a href="#type_iso_time">iso_time</a>) Creation time</li>
+<li>
+<i>column </i><b>modified</b> (<a href="#type_iso_time">iso_time</a>) Modification time</li>
+<li>
+<i>column </i><b>owner</b> (<a href="#type_name">name</a>) Name of the owner</li>
+<li>
+<i>column </i><b>nvt</b> (<a href="#type_oid">oid</a>) OID of the NVT the Note applies to</li>
+<li>
+<i>column </i><b>text</b> (text) Text of the Note</li>
+<li>
+<i>column </i><b>nvt_id</b> (<a href="#type_oid">oid</a>) Alias of nvt</li>
+<li>
+<i>column </i><b>task_name</b> (text) Name of the Task the Note applies to</li>
+<li>
+<i>column </i><b>task_id</b> (<a href="#type_uuid">uuid</a>) UUID of the Task the Note applies to</li>
+<li>
+<i>column </i><b>hosts</b> (text) Hosts the Note applies to</li>
+<li>
+<i>column </i><b>port</b> (text) Port the Note applies to</li>
+<li>
+<i>column </i><b>active</b> (<a href="#type_boolean">boolean</a>) Whether the Note is active</li>
+<li>
+<i>column </i><b>result</b> (<a href="#type_uuid">uuid</a>) UUID of the result the Note applies to</li>
+<li>
+<i>column </i><b>severity</b> (<a href="#type_severity">severity</a>) Minimum severity of results the Note applies to</li>
+</ul>
+</div>
+</li>
 <li>
           @<b>filt_id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -21412,7 +21881,47 @@ get_nvt_feed_version_response_version
           @<b>filter</b>
           (text)
           Filter term to use to filter query.
-          </li>
+          <div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b></i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>column </i><b>uuid</b> (<a href="#type_uuid">uuid</a>) Unique ID</li>
+<li>
+<i>column </i><b>name</b> (<a href="#type_name">name</a>) Name</li>
+<li>
+<i>column </i><b>created</b> (<a href="#type_iso_time">iso_time</a>) Creation time</li>
+<li>
+<i>column </i><b>modified</b> (<a href="#type_iso_time">iso_time</a>) Modification time</li>
+<li>
+<i>column </i><b>owner</b> (<a href="#type_name">name</a>) Name of the owner</li>
+<li>
+<i>column </i><b>nvt</b> (<a href="#type_oid">oid</a>) OID of the NVT the Override applies to</li>
+<li>
+<i>column </i><b>text</b> (text) Text of the Override</li>
+<li>
+<i>column </i><b>nvt_id</b> (<a href="#type_oid">oid</a>) Alias of nvt</li>
+<li>
+<i>column </i><b>task_name</b> (text) Name of the Task the Override applies to</li>
+<li>
+<i>column </i><b>task_id</b> (<a href="#type_uuid">uuid</a>) UUID of the Task the Override applies to</li>
+<li>
+<i>column </i><b>hosts</b> (text) Hosts the Override applies to</li>
+<li>
+<i>column </i><b>port</b> (text) Port the Override applies to</li>
+<li>
+<i>column </i><b>threat</b> (<a href="#type_threat">threat</a>) Minimum severity level the Override applies to</li>
+<li>
+<i>column </i><b>new_threat</b> (<a href="#type_threat">threat</a>) Severity level results are changed to by the Override</li>
+<li>
+<i>column </i><b>active</b> (<a href="#type_boolean">boolean</a>) Whether the Override is active</li>
+<li>
+<i>column </i><b>result</b> (<a href="#type_uuid">uuid</a>) UUID of the result the Override applies to</li>
+<li>
+<i>column </i><b>severity</b> (<a href="#type_severity">severity</a>) Minimum severity of results the Override applies to</li>
+<li>
+<i>column </i><b>new_severity</b> (<a href="#type_severity">severity</a>) Severity level results are changed to by the Override</li>
+</ul>
+</div>
+</li>
 <li>
           @<b>filt_id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -21777,7 +22286,35 @@ get_overrides_response_override
           @<b>filter</b>
           (text)
           Filter term to use to filter query.
-          </li>
+          <div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b></i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>column </i><b>uuid</b> (<a href="#type_uuid">uuid</a>) Unique ID</li>
+<li>
+<i>column </i><b>name</b> (<a href="#type_name">name</a>) Name</li>
+<li>
+<i>column </i><b>comment</b> (text) Comment text</li>
+<li>
+<i>column </i><b>created</b> (<a href="#type_iso_time">iso_time</a>) Creation time</li>
+<li>
+<i>column </i><b>modified</b> (<a href="#type_iso_time">iso_time</a>) Modification time</li>
+<li>
+<i>column </i><b>owner</b> (<a href="#type_name">name</a>) Name of the owner</li>
+<li>
+<i>column </i><b>type</b> (text) The resource type the permission is for</li>
+<li>
+<i>column </i><b>resource_uuid</b> (text) UUID of the resource the permission is for</li>
+<li>
+<i>column </i><b>subject_type</b> (text) Type of the subject of the permission</li>
+<li>
+<i>column </i><b>subject</b> (text) Name of the subject of the permission</li>
+<li>
+<i>column </i><b>resource</b> (text) Name of the resource the permission is for</li>
+<li>
+<i>column </i><b>subject_uuid</b> (text) UUID of the subject of the permission</li>
+</ul>
+</div>
+</li>
 <li>
           @<b>filt_id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -22446,7 +22983,29 @@ get_permissions_response_permission_count_page
           @<b>filter</b>
           (text)
           Filter term to use to filter query.
-          </li>
+          <div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b></i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>column </i><b>uuid</b> (<a href="#type_uuid">uuid</a>) Unique ID</li>
+<li>
+<i>column </i><b>name</b> (<a href="#type_name">name</a>) Name</li>
+<li>
+<i>column </i><b>comment</b> (text) Comment text</li>
+<li>
+<i>column </i><b>created</b> (<a href="#type_iso_time">iso_time</a>) Creation time</li>
+<li>
+<i>column </i><b>modified</b> (<a href="#type_iso_time">iso_time</a>) Modification time</li>
+<li>
+<i>column </i><b>owner</b> (<a href="#type_name">name</a>) Name of the owner</li>
+<li>
+<i>column </i><b>total</b> (<a href="#type_integer">integer</a>) Total number of ports in the Port List</li>
+<li>
+<i>column </i><b>tcp</b> (<a href="#type_integer">integer</a>) Number of TCP ports in the Port List</li>
+<li>
+<i>column </i><b>udp</b> (<a href="#type_integer">integer</a>) Number of UDP ports in the Port List</li>
+</ul>
+</div>
+</li>
 <li>
           @<b>filt_id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -23377,7 +23936,78 @@ get_preferences_response_preference_default
           @<b>filter</b>
           (text)
           Filter term to use to filter results, when getting a single report.
-          </li>
+          <div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b></i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>option </i><b>apply_overrides</b> (<a href="#type_boolean">boolean</a>) Whether to apply Overrides</li>
+<li>
+<i>option </i><b>autofp</b> ("0", "1" or "2") Whether to trust vendor security updates.
+            1 full match, 2 partial</li>
+<li>
+<i>option </i><b>levels</b> (<a href="#type_levels">levels</a>) Severity levels to select</li>
+<li>
+<i>option </i><b>min_qod</b> (<a href="#type_integer">integer</a>) Minimum QoD of the results</li>
+<li>
+<i>option </i><b>notes</b> (<a href="#type_boolean">boolean</a>) Whether to include Notes in the report</li>
+<li>
+<i>option </i><b>overrides</b> (<a href="#type_boolean">boolean</a>) Whether to include Override descriptions in the report</li>
+<li>
+<i>option </i><b>timezone</b> (text) The timezone to use for the report</li>
+<li>
+<i>column </i><b>uuid</b> (<a href="#type_uuid">uuid</a>) Unique ID</li>
+<li>
+<i>column </i><b>name</b> (<a href="#type_name">name</a>) Name of the NVT</li>
+<li>
+<i>column </i><b>created</b> (<a href="#type_iso_time">iso_time</a>) Creation time</li>
+<li>
+<i>column </i><b>modified</b> (<a href="#type_iso_time">iso_time</a>) Modification time</li>
+<li>
+<i>column </i><b>owner</b> (<a href="#type_name">name</a>) Name of the owner</li>
+<li>
+<i>column </i><b>host</b> (text) Host of the result</li>
+<li>
+<i>column </i><b>location</b> (text) Port and protocol of the result</li>
+<li>
+<i>column </i><b>nvt</b> (text) Unique ID of the test that produced the result</li>
+<li>
+<i>column </i><b>type</b> (<a href="#type_threat">threat</a>) Severity type of the result with overrides and autofp</li>
+<li>
+<i>column </i><b>original_type</b> (<a href="#type_threat">threat</a>) Original severity type of the result</li>
+<li>
+<i>column </i><b>auto_type</b> (<a href="#type_boolean">boolean</a>) Whether autofp applies to the result</li>
+<li>
+<i>column </i><b>description</b> (text) Description of the result</li>
+<li>
+<i>column </i><b>task</b> (text) Name of the task</li>
+<li>
+<i>column </i><b>report</b> (<a href="#type_number">number</a>) Internal ID of the report</li>
+<li>
+<i>column </i><b>cvss_base</b> (<a href="#type_severity">severity</a>) CVSS base score of the NVT that generated the result</li>
+<li>
+<i>column </i><b>nvt_version</b> (text) Version of the NVT that generated the result</li>
+<li>
+<i>column </i><b>severity</b> (<a href="#type_severity">severity</a>) Severity of the result with overrides and autofp</li>
+<li>
+<i>column </i><b>original_severity</b> (<a href="#type_severity">severity</a>) Original severity of the result</li>
+<li>
+<i>column </i><b>vulnerability</b> (text) Name of the NVT that generated result</li>
+<li>
+<i>column </i><b>date</b> (<a href="#type_iso_time">iso_time</a>) Time the result was generated</li>
+<li>
+<i>column </i><b>report_id</b> (<a href="#type_uuid">uuid</a>) UUID of the report</li>
+<li>
+<i>column </i><b>solution_type</b> (text) Solution type of the result</li>
+<li>
+<i>column </i><b>qod</b> (<a href="#type_integer">integer</a>) QoD of the result</li>
+<li>
+<i>column </i><b>qod_type</b> (text) QoD type of the result</li>
+<li>
+<i>column </i><b>task_id</b> (<a href="#type_uuid">uuid</a>) UUID of the task</li>
+<li>
+<i>column </i><b>cve</b> (text) List of CVEs of the result</li>
+</ul>
+</div>
+</li>
 <li>
           @<b>filt_id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -23385,9 +24015,61 @@ get_preferences_response_preference_default
           </li>
 <li>
           @<b>report_filter</b>
-          (<a href="#type_uuid">uuid</a>)
+          (text)
           Filter term to use to filter reports.
-          </li>
+          <div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b></i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>option </i><b>apply_overrides</b> (<a href="#type_boolean">boolean</a>) Whether to apply Overrides</li>
+<li>
+<i>option </i><b>min_qod</b> (<a href="#type_integer">integer</a>) Minimum QoD of the results</li>
+<li>
+<i>column </i><b>uuid</b> (<a href="#type_uuid">uuid</a>) Unique ID</li>
+<li>
+<i>column </i><b>created</b> (<a href="#type_iso_time">iso_time</a>) Creation time</li>
+<li>
+<i>column </i><b>modified</b> (<a href="#type_iso_time">iso_time</a>) Modification time</li>
+<li>
+<i>column </i><b>owner</b> (<a href="#type_name">name</a>) Name of the owner</li>
+<li>
+<i>column </i><b>task_id</b> (<a href="#type_uuid">uuid</a>) UUID of the Task of the Report</li>
+<li>
+<i>column </i><b>name</b> (<a href="#type_iso_time">iso_time</a>) Time the scan was started</li>
+<li>
+<i>column </i><b>date</b> (<a href="#type_iso_time">iso_time</a>) Time of the scan</li>
+<li>
+<i>column </i><b>status</b> (text) Status of scan</li>
+<li>
+<i>column </i><b>task</b> (text) Name of the Task the report belongs to</li>
+<li>
+<i>column </i><b>severity</b> (<a href="#type_severity">severity</a>) Highest severity of the results in the report</li>
+<li>
+<i>column </i><b>false_positive</b> (<a href="#type_integer">integer</a>) Number of false positive results</li>
+<li>
+<i>column </i><b>log</b> (<a href="#type_integer">integer</a>) Number of log results</li>
+<li>
+<i>column </i><b>low</b> (<a href="#type_integer">integer</a>) Number of low severity results</li>
+<li>
+<i>column </i><b>medium</b> (<a href="#type_integer">integer</a>) Number of medium severity results</li>
+<li>
+<i>column </i><b>high</b> (<a href="#type_integer">integer</a>) Number of high severity results</li>
+<li>
+<i>column </i><b>hosts</b> (<a href="#type_integer">integer</a>) Total number of hosts</li>
+<li>
+<i>column </i><b>result_hosts</b> (<a href="#type_integer">integer</a>) Number of hosts with results matching the min_qod</li>
+<li>
+<i>column </i><b>fp_per_host</b> (<a href="#type_integer">integer</a>) Number of false positive results per host with results</li>
+<li>
+<i>column </i><b>log_per_host</b> (<a href="#type_integer">integer</a>) Number of log results per host with results</li>
+<li>
+<i>column </i><b>low_per_host</b> (<a href="#type_integer">integer</a>) Number of low severity results per host with results</li>
+<li>
+<i>column </i><b>medium_per_host</b> (<a href="#type_integer">integer</a>) Number of medium severity results per host with results</li>
+<li>
+<i>column </i><b>high_per_host</b> (<a href="#type_integer">integer</a>) Number of high severity results per host with results</li>
+</ul>
+</div>
+</li>
 <li>
           @<b>report_filt_id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -23615,7 +24297,7 @@ get_preferences_response_preference_default
        attribute report_id { uuid }?
        &amp; attribute filter { text }?
        &amp; attribute filt_id { uuid }?
-       &amp; attribute report_filter { uuid }?
+       &amp; attribute report_filter { text }?
        &amp; attribute report_filt_id { uuid }?
        &amp; attribute type { xsd:token { pattern = "scan|assets|prognostic" } }?
        &amp; attribute format_id { uuid }?
@@ -24008,7 +24690,35 @@ get_reports_response_report_count_page
           @<b>filter</b>
           (text)
           Filter term to use to filter query.
-          </li>
+          <div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b></i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>column </i><b>uuid</b> (<a href="#type_uuid">uuid</a>) Unique ID</li>
+<li>
+<i>column </i><b>name</b> (<a href="#type_name">name</a>) Name</li>
+<li>
+<i>column </i><b>created</b> (<a href="#type_iso_time">iso_time</a>) Creation time</li>
+<li>
+<i>column </i><b>modified</b> (<a href="#type_iso_time">iso_time</a>) Modification time</li>
+<li>
+<i>column </i><b>owner</b> (<a href="#type_name">name</a>) Name of the owner</li>
+<li>
+<i>column </i><b>extension</b> (text) File extension of the report format</li>
+<li>
+<i>column </i><b>content_type</b> (text) Content type of the report format</li>
+<li>
+<i>column </i><b>summary</b> (text) Short summary of the report format</li>
+<li>
+<i>column </i><b>description</b> (text) Description of the report format</li>
+<li>
+<i>column </i><b>trust</b> (<a href="#type_boolean">boolean</a>) Whether the the report format is trusted</li>
+<li>
+<i>column </i><b>trust_time</b> (<a href="#type_iso_time">iso_time</a>) Time the report format was last verified</li>
+<li>
+<i>column </i><b>active</b> (<a href="#type_boolean">boolean</a>) Whether the the report format is active</li>
+</ul>
+</div>
+</li>
 <li>
           @<b>filt_id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -24862,7 +25572,78 @@ get_report_formats_response_report_format_count_page
           @<b>filter</b>
           (text)
           Filter term to use to filter query.
-          </li>
+          <div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b></i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>option </i><b>apply_overrides</b> (<a href="#type_boolean">boolean</a>) Whether to apply Overrides</li>
+<li>
+<i>option </i><b>autofp</b> ("0", "1" or "2") Whether to trust vendor security updates.
+            1 full match, 2 partial</li>
+<li>
+<i>option </i><b>levels</b> (<a href="#type_levels">levels</a>) Severity levels to select</li>
+<li>
+<i>option </i><b>min_qod</b> (<a href="#type_integer">integer</a>) Minimum QoD of the results</li>
+<li>
+<i>option </i><b>notes</b> (<a href="#type_boolean">boolean</a>) Whether to include Notes in the report</li>
+<li>
+<i>option </i><b>overrides</b> (<a href="#type_boolean">boolean</a>) Whether to include Override descriptions in the report</li>
+<li>
+<i>option </i><b>timezone</b> (text) The timezone to use for the report</li>
+<li>
+<i>column </i><b>uuid</b> (<a href="#type_uuid">uuid</a>) Unique ID</li>
+<li>
+<i>column </i><b>name</b> (<a href="#type_name">name</a>) Name of the NVT</li>
+<li>
+<i>column </i><b>created</b> (<a href="#type_iso_time">iso_time</a>) Creation time</li>
+<li>
+<i>column </i><b>modified</b> (<a href="#type_iso_time">iso_time</a>) Modification time</li>
+<li>
+<i>column </i><b>owner</b> (<a href="#type_name">name</a>) Name of the owner</li>
+<li>
+<i>column </i><b>host</b> (text) Host of the result</li>
+<li>
+<i>column </i><b>location</b> (text) Port and protocol of the result</li>
+<li>
+<i>column </i><b>nvt</b> (text) Unique ID of the test that produced the result</li>
+<li>
+<i>column </i><b>type</b> (<a href="#type_threat">threat</a>) Severity type of the result with overrides and autofp</li>
+<li>
+<i>column </i><b>original_type</b> (<a href="#type_threat">threat</a>) Original severity type of the result</li>
+<li>
+<i>column </i><b>auto_type</b> (<a href="#type_boolean">boolean</a>) Whether autofp applies to the result</li>
+<li>
+<i>column </i><b>description</b> (text) Description of the result</li>
+<li>
+<i>column </i><b>task</b> (text) Name of the task</li>
+<li>
+<i>column </i><b>report</b> (<a href="#type_number">number</a>) Internal ID of the report</li>
+<li>
+<i>column </i><b>cvss_base</b> (<a href="#type_severity">severity</a>) CVSS base score of the NVT that generated the result</li>
+<li>
+<i>column </i><b>nvt_version</b> (text) Version of the NVT that generated the result</li>
+<li>
+<i>column </i><b>severity</b> (<a href="#type_severity">severity</a>) Severity of the result with overrides and autofp</li>
+<li>
+<i>column </i><b>original_severity</b> (<a href="#type_severity">severity</a>) Original severity of the result</li>
+<li>
+<i>column </i><b>vulnerability</b> (text) Name of the NVT that generated result</li>
+<li>
+<i>column </i><b>date</b> (<a href="#type_iso_time">iso_time</a>) Time the result was generated</li>
+<li>
+<i>column </i><b>report_id</b> (<a href="#type_uuid">uuid</a>) UUID of the report</li>
+<li>
+<i>column </i><b>solution_type</b> (text) Solution type of the result</li>
+<li>
+<i>column </i><b>qod</b> (<a href="#type_integer">integer</a>) QoD of the result</li>
+<li>
+<i>column </i><b>qod_type</b> (text) QoD type of the result</li>
+<li>
+<i>column </i><b>task_id</b> (<a href="#type_uuid">uuid</a>) UUID of the task</li>
+<li>
+<i>column </i><b>cve</b> (text) List of CVEs of the result</li>
+</ul>
+</div>
+</li>
 <li>
           @<b>filt_id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -25299,7 +26080,23 @@ get_results_response_result_count_page
           @<b>filter</b>
           (text)
           Filter term to use to filter query.
-          </li>
+          <div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b></i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>column </i><b>uuid</b> (<a href="#type_uuid">uuid</a>) Unique ID</li>
+<li>
+<i>column </i><b>name</b> (<a href="#type_name">name</a>) Name</li>
+<li>
+<i>column </i><b>comment</b> (text) Comment text</li>
+<li>
+<i>column </i><b>created</b> (<a href="#type_iso_time">iso_time</a>) Creation time</li>
+<li>
+<i>column </i><b>modified</b> (<a href="#type_iso_time">iso_time</a>) Modification time</li>
+<li>
+<i>column </i><b>owner</b> (<a href="#type_name">name</a>) Name of the owner</li>
+</ul>
+</div>
+</li>
 <li>
           @<b>filt_id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -25831,7 +26628,29 @@ get_roles_response_role_count_page
           @<b>filter</b>
           (text)
           Filter term to use to filter query.
-          </li>
+          <div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b></i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>column </i><b>uuid</b> (<a href="#type_uuid">uuid</a>) Unique ID</li>
+<li>
+<i>column </i><b>name</b> (<a href="#type_name">name</a>) Name</li>
+<li>
+<i>column </i><b>comment</b> (text) Comment text</li>
+<li>
+<i>column </i><b>created</b> (<a href="#type_iso_time">iso_time</a>) Creation time</li>
+<li>
+<i>column </i><b>modified</b> (<a href="#type_iso_time">iso_time</a>) Modification time</li>
+<li>
+<i>column </i><b>owner</b> (<a href="#type_name">name</a>) Name of the owner</li>
+<li>
+<i>column </i><b>host</b> (text) Host of the scanner</li>
+<li>
+<i>column </i><b>port</b> (<a href="#type_integer">integer</a>) Port of the scanner</li>
+<li>
+<i>column </i><b>type</b> ("1" or "2") Scanner type: '1' for OSP, '2' for OpenVAS (classic)</li>
+</ul>
+</div>
+</li>
 <li>
           @<b>filt_id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -26486,7 +27305,39 @@ get_scanners_response_scanner_count_page
           @<b>filter</b>
           (text)
           Filter term to use to filter query.
-          </li>
+          <div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b></i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>column </i><b>uuid</b> (<a href="#type_uuid">uuid</a>) Unique ID</li>
+<li>
+<i>column </i><b>name</b> (<a href="#type_name">name</a>) Name</li>
+<li>
+<i>column </i><b>comment</b> (text) Comment text</li>
+<li>
+<i>column </i><b>created</b> (<a href="#type_iso_time">iso_time</a>) Creation time</li>
+<li>
+<i>column </i><b>modified</b> (<a href="#type_iso_time">iso_time</a>) Modification time</li>
+<li>
+<i>column </i><b>owner</b> (<a href="#type_name">name</a>) Name of the owner</li>
+<li>
+<i>column </i><b>first_time</b> (<a href="#type_iso_time">iso_time</a>) First time the schedule ran or will run</li>
+<li>
+<i>column </i><b>period</b> (<a href="#type_integer">integer</a>) Time period between runs in seconds</li>
+<li>
+<i>column </i><b>period_months</b> (<a href="#type_integer">integer</a>) Time period between runs in months</li>
+<li>
+<i>column </i><b>duration</b> (<a href="#type_integer">integer</a>) Maximum duration of scans run with the schedule</li>
+<li>
+<i>column </i><b>timezone</b> (text) Timezone the schedule uses</li>
+<li>
+<i>column </i><b>initial_offset</b> (<a href="#type_integer">integer</a>) Initial offset in seconds</li>
+<li>
+<i>column </i><b>first_run</b> (<a href="#type_iso_time">iso_time</a>) Alias for first_time</li>
+<li>
+<i>column </i><b>next_run</b> (<a href="#type_iso_time">iso_time</a>) The next time the schedule will run</li>
+</ul>
+</div>
+</li>
 <li>
           @<b>filt_id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -27182,7 +28033,17 @@ get_schedules_response_schedule_count_page
           @<b>filter</b>
           (text)
           Filter term.
-          </li>
+          <div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b></i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>column </i><b>name</b> (<a href="#type_name">name</a>) Name</li>
+<li>
+<i>column </i><b>comment</b> (text) Comment text</li>
+<li>
+<i>column </i><b>value</b> (text) Current value of the setting</li>
+</ul>
+</div>
+</li>
 <li>
           @<b>first</b>
           (<a href="#type_integer">integer</a>)
@@ -27397,7 +28258,31 @@ get_settings_response_setting_count_page
           @<b>filter</b>
           (text)
           Filter term to use to filter query.
-          </li>
+          <div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b></i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>column </i><b>uuid</b> (<a href="#type_uuid">uuid</a>) Unique ID</li>
+<li>
+<i>column </i><b>name</b> (<a href="#type_name">name</a>) Name</li>
+<li>
+<i>column </i><b>comment</b> (text) Comment text</li>
+<li>
+<i>column </i><b>created</b> (<a href="#type_iso_time">iso_time</a>) Creation time</li>
+<li>
+<i>column </i><b>modified</b> (<a href="#type_iso_time">iso_time</a>) Modification time</li>
+<li>
+<i>column </i><b>owner</b> (<a href="#type_name">name</a>) Name of the owner</li>
+<li>
+<i>column </i><b>host</b> (text) Host of the slave</li>
+<li>
+<i>column </i><b>port</b> (<a href="#type_integer">integer</a>) Port of the slave</li>
+<li>
+<i>column </i><b>login</b> (text) Username used for login</li>
+<li>
+<i>column </i><b>credential</b> (<a href="#type_name">name</a>) Name of the credential used to login</li>
+</ul>
+</div>
+</li>
 <li>
           @<b>filt_id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -28197,7 +29082,39 @@ get_system_reports_response_system_report_report
           @<b>filter</b>
           (text)
           Filter term to use to filter query.
-          </li>
+          <div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b></i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>column </i><b>uuid</b> (<a href="#type_uuid">uuid</a>) Unique ID</li>
+<li>
+<i>column </i><b>name</b> (<a href="#type_name">name</a>) Name</li>
+<li>
+<i>column </i><b>comment</b> (text) Comment text</li>
+<li>
+<i>column </i><b>created</b> (<a href="#type_iso_time">iso_time</a>) Creation time</li>
+<li>
+<i>column </i><b>modified</b> (<a href="#type_iso_time">iso_time</a>) Modification time</li>
+<li>
+<i>column </i><b>owner</b> (<a href="#type_name">name</a>) Name of the owner</li>
+<li>
+<i>column </i><b>resource_type</b> (text) Type of resource the tag applies to</li>
+<li>
+<i>column </i><b>resource</b> (<a href="#type_name">name</a>) Internal ID of resource the tag applies to</li>
+<li>
+<i>column </i><b>resource_uuid</b> (text) Unique ID of resource the tag applies to</li>
+<li>
+<i>column </i><b>resource_location</b> (<a href="#type_boolean">boolean</a>) Whether the resource is in the trash</li>
+<li>
+<i>column </i><b>active</b> (<a href="#type_boolean">boolean</a>) Whether the tag is active</li>
+<li>
+<i>column </i><b>value</b> (<a href="#type_name">name</a>) Value of the tag</li>
+<li>
+<i>column </i><b>orphan</b> (<a href="#type_boolean">boolean</a>) Whether the tag is an orphan</li>
+<li>
+<i>column </i><b>resource_name</b> (<a href="#type_name">name</a>) Name of resource the tag applies to</li>
+</ul>
+</div>
+</li>
 <li>
           @<b>filt_id</b>
           (text)
@@ -28733,7 +29650,39 @@ get_tags_response_tag_count_page
           @<b>filter</b>
           (text)
           Filter term to use to filter query.
-          </li>
+          <div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b></i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>column </i><b>uuid</b> (<a href="#type_uuid">uuid</a>) Unique ID</li>
+<li>
+<i>column </i><b>name</b> (<a href="#type_name">name</a>) Name</li>
+<li>
+<i>column </i><b>comment</b> (text) Comment text</li>
+<li>
+<i>column </i><b>created</b> (<a href="#type_iso_time">iso_time</a>) Creation time</li>
+<li>
+<i>column </i><b>modified</b> (<a href="#type_iso_time">iso_time</a>) Modification time</li>
+<li>
+<i>column </i><b>owner</b> (<a href="#type_name">name</a>) Name of the owner</li>
+<li>
+<i>column </i><b>hosts</b> (text) List of hosts</li>
+<li>
+<i>column </i><b>exclude_hosts</b> (text) List of excluded hosts</li>
+<li>
+<i>column </i><b>ips</b> (<a href="#type_integer">integer</a>) Number of hosts</li>
+<li>
+<i>column </i><b>port_list</b> (<a href="#type_name">name</a>) Name of the port list</li>
+<li>
+<i>column </i><b>ssh_credential</b> (<a href="#type_name">name</a>) Name of the SSH credential</li>
+<li>
+<i>column </i><b>smb_credential</b> (<a href="#type_name">name</a>) Name of the SMB credential</li>
+<li>
+<i>column </i><b>esxi_credential</b> (<a href="#type_name">name</a>) Name of the ESXi credential</li>
+<li>
+<i>column </i><b>snmp_credential</b> (<a href="#type_name">name</a>) Name of the SNMP credential</li>
+</ul>
+</div>
+</li>
 <li>
           @<b>filt_id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -29707,7 +30656,75 @@ get_targets_response_target_count_page
           @<b>filter</b>
           (text)
           Filter term to use to filter query.
-          </li>
+          <div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b></i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>option </i><b>apply_overrides</b> (<a href="#type_boolean">boolean</a>) Whether to apply Overrides</li>
+<li>
+<i>option </i><b>min_qod</b> (<a href="#type_integer">integer</a>) Minimum QoD of the results</li>
+<li>
+<i>column </i><b>uuid</b> (<a href="#type_uuid">uuid</a>) Unique ID</li>
+<li>
+<i>column </i><b>name</b> (<a href="#type_name">name</a>) Name</li>
+<li>
+<i>column </i><b>comment</b> (text) Comment text</li>
+<li>
+<i>column </i><b>created</b> (<a href="#type_iso_time">iso_time</a>) Creation time</li>
+<li>
+<i>column </i><b>modified</b> (<a href="#type_iso_time">iso_time</a>) Modification time</li>
+<li>
+<i>column </i><b>owner</b> (<a href="#type_name">name</a>) Name of the owner</li>
+<li>
+<i>column </i><b>status</b> (text) Status of the current scan</li>
+<li>
+<i>column </i><b>total</b> (<a href="#type_integer">integer</a>) Total number of results</li>
+<li>
+<i>column </i><b>first_report</b> (<a href="#type_uuid">uuid</a>) UUID of the first report</li>
+<li>
+<i>column </i><b>last_report</b> (<a href="#type_uuid">uuid</a>) UUID of the last finished report</li>
+<li>
+<i>column </i><b>threat</b> (<a href="#type_threat">threat</a>) Severity level of the last finished report</li>
+<li>
+<i>column </i><b>trend</b> ("up", "down", "more", "less" or "same") Trend of the task</li>
+<li>
+<i>column </i><b>severity</b> (<a href="#type_severity">severity</a>) Severity of the last finished report</li>
+<li>
+<i>column </i><b>schedule</b> (<a href="#type_name">name</a>) Name of the schedule</li>
+<li>
+<i>column </i><b>next_due</b> (<a href="#type_iso_time">iso_time</a>) Time the task is next due to run</li>
+<li>
+<i>column </i><b>first</b> (<a href="#type_iso_time">iso_time</a>) Timestamp of the first report</li>
+<li>
+<i>column </i><b>last</b> (<a href="#type_iso_time">iso_time</a>) Timestamp of the last finished report</li>
+<li>
+<i>column </i><b>false_positive</b> (<a href="#type_integer">integer</a>) Number of false positive results</li>
+<li>
+<i>column </i><b>log</b> (<a href="#type_integer">integer</a>) Number of log results</li>
+<li>
+<i>column </i><b>low</b> (<a href="#type_integer">integer</a>) Number of low severity results</li>
+<li>
+<i>column </i><b>medium</b> (<a href="#type_integer">integer</a>) Number of medium severity results</li>
+<li>
+<i>column </i><b>high</b> (<a href="#type_integer">integer</a>) Number of high severity results</li>
+<li>
+<i>column </i><b>hosts</b> (<a href="#type_integer">integer</a>) Total number of hosts</li>
+<li>
+<i>column </i><b>result_hosts</b> (<a href="#type_integer">integer</a>) Number of hosts with results matching the min_qod</li>
+<li>
+<i>column </i><b>fp_per_host</b> (<a href="#type_integer">integer</a>) Number of false positive results per host with results</li>
+<li>
+<i>column </i><b>log_per_host</b> (<a href="#type_integer">integer</a>) Number of log results per host with results</li>
+<li>
+<i>column </i><b>low_per_host</b> (<a href="#type_integer">integer</a>) Number of low severity results per host with results</li>
+<li>
+<i>column </i><b>medium_per_host</b> (<a href="#type_integer">integer</a>) Number of medium severity results per host with results</li>
+<li>
+<i>column </i><b>high_per_host</b> (<a href="#type_integer">integer</a>) Number of high severity results per host with results</li>
+<li>
+<i>column </i><b>target</b> (<a href="#type_name">name</a>) Name of the target</li>
+</ul>
+</div>
+</li>
 <li>
           @<b>filt_id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -31773,7 +32790,33 @@ get_tasks_response_task_count_page
           @<b>filter</b>
           (text)
           Filter term to use to filter query.
-          </li>
+          <div style="margin-left: 10px; padding: 0 0 3px 5px">
+<i><b>Keywords</b></i><ul style="list-style: none; padding-left: 10px;">
+<li>
+<i>column </i><b>uuid</b> (<a href="#type_uuid">uuid</a>) Unique ID</li>
+<li>
+<i>column </i><b>name</b> (<a href="#type_name">name</a>) Name</li>
+<li>
+<i>column </i><b>comment</b> (text) Comment text</li>
+<li>
+<i>column </i><b>created</b> (<a href="#type_iso_time">iso_time</a>) Creation time</li>
+<li>
+<i>column </i><b>modified</b> (<a href="#type_iso_time">iso_time</a>) Modification time</li>
+<li>
+<i>column </i><b>owner</b> (<a href="#type_name">name</a>) Name of the owner</li>
+<li>
+<i>column </i><b>method</b> (text) Methods allowed for authentication</li>
+<li>
+<i>column </i><b>roles</b> (text) Comma-separated list of roles</li>
+<li>
+<i>column </i><b>groups</b> (text) Comma-separated list of groups</li>
+<li>
+<i>column </i><b>hosts</b> (text) List of host that are either allowed of forbidden</li>
+<li>
+<i>column </i><b>ifaces</b> (text) List of ifaces that are either allowed of forbidden</li>
+</ul>
+</div>
+</li>
 <li>
           @<b>filt_id</b>
           (<a href="#type_uuid">uuid</a>)

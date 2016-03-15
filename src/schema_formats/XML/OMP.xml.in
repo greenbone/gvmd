@@ -317,6 +317,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <e>name</e>
         <e>type</e>
         <e>required</e>
+        <any><e>filter_keywords</e></any>
       </pattern>
       <ele>
         <name>name</name>
@@ -329,6 +330,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <ele>
         <name>required</name>
         <pattern><t>boolean</t></pattern>
+      </ele>
+      <ele>
+        <name>filter_keywords</name>
+        <pattern><t>filter_keywords</t></pattern>
+        <summary>Optional description of filter keywords usable in the attribute</summary>
       </ele>
     </ele>
     <ele>
@@ -435,6 +441,68 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </p>
       </description>
       <type>command_definition</type>
+    </ele>
+  </element>
+  <element>
+    <name>filter_keywords</name>
+    <summary>A group of filter keywords usable in an attribute or element text</summary>
+    <pattern>
+      <o><e>condition</e></o>
+      <any><e>column</e></any>
+      <any><e>option</e></any>
+    </pattern>
+    <ele>
+      <name>condition</name>
+      <pattern>text</pattern>
+      <summary>Description of the condition under which the group of keywords applies</summary>
+    </ele>
+    <ele>
+      <name>column</name>
+      <pattern>
+        <e>name</e>
+        <e>type</e>
+        <e>summary</e>
+      </pattern>
+      <summary>A column that can be used multiple times with operators and in sorting</summary>
+      <ele>
+        <name>name</name>
+        <pattern>name</pattern>
+        <summary>Name of the keyword as used in the filter</summary>
+      </ele>
+      <ele>
+        <name>type</name>
+        <pattern><t>type_name</t></pattern>
+        <summary>Type of the values the keyword can use</summary>
+      </ele>
+      <ele>
+        <name>summary</name>
+        <pattern>text</pattern>
+        <summary>Short description of the keyword</summary>
+      </ele>
+    </ele>
+    <ele>
+      <name>option</name>
+      <pattern>
+        <e>name</e>
+        <e>type</e>
+        <e>summary</e>
+      </pattern>
+      <summary>An option only applied once which cannot be used with operators or in sorting</summary>
+      <ele>
+        <name>name</name>
+        <pattern>name</pattern>
+        <summary>Name of the keyword as used in the filter</summary>
+      </ele>
+      <ele>
+        <name>type</name>
+        <pattern><t>type_name</t></pattern>
+        <summary>Type of the values the keyword can use</summary>
+      </ele>
+      <ele>
+        <name>summary</name>
+        <pattern>text</pattern>
+        <summary>Short description of the keyword</summary>
+      </ele>
     </ele>
   </element>
   <element>
@@ -7227,6 +7295,43 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
+        <filter_keywords>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>comment</name>
+            <type>text</type>
+            <summary>Comment text</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>trust</name>
+            <type>boolean</type>
+            <summary>Whether the the agent is trusted</summary>
+          </column>
+        </filter_keywords>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -7660,6 +7765,63 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
+        <filter_keywords>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>comment</name>
+            <type>text</type>
+            <summary>Comment text</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>nvt_selector</name>
+            <type>uuid</type>
+            <summary>NVT selector UUID</summary>
+          </column>
+          <column>
+            <name>families_total</name>
+            <type>integer</type>
+            <summary>Total number of selected NVT families</summary>
+          </column>
+          <column>
+            <name>nvts_total</name>
+            <type>integer</type>
+            <summary>Total number of selected NVTs</summary>
+          </column>
+          <column>
+            <name>families_trend</name>
+            <type>boolean</type>
+            <summary>Whether new NVT families will be added</summary>
+          </column>
+          <column>
+            <name>nvts_trend</name>
+            <type>boolean</type>
+            <summary>Whether new NVTs will be added</summary>
+          </column>
+        </filter_keywords>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -8293,7 +8455,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>
       <attrib>
         <name>filter</name>
-        <summary>Filter term to use to filter query of the resources to aggregate</summary>
+        <summary>Filter term to use to filter query of the resources to aggregate (see get_... commands of selected type for keywords)</summary>
         <type>text</type>
       </attrib>
       <attrib>
@@ -8771,6 +8933,58 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
+        <filter_keywords>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>comment</name>
+            <type>text</type>
+            <summary>Comment text</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>event</name>
+            <type>integer</type>
+            <summary>The event that triggers the alert</summary>
+          </column>
+          <column>
+            <name>condition</name>
+            <type>integer</type>
+            <summary>The condition for the alert</summary>
+          </column>
+          <column>
+            <name>method</name>
+            <type>integer</type>
+            <summary>The method of the alert</summary>
+          </column>
+          <column>
+            <name>filter</name>
+            <type>uuid</type>
+            <summary>UUID of the filter applied to the report</summary>
+          </column>
+        </filter_keywords>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -9252,6 +9466,94 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
+        <filter_keywords>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>comment</name>
+            <type>text</type>
+            <summary>Comment text</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+        </filter_keywords>
+        <filter_keywords>
+          <condition>type is "host"</condition>
+          <column>
+            <name>severity</name>
+            <type>severity</type>
+            <summary>Highest severity of the asset from latest report</summary>
+          </column>
+          <column>
+            <name>os</name>
+            <type>text</type>
+            <summary>Best matching OS</summary>
+          </column>
+          <column>
+            <name>oss</name>
+            <type>text</type>
+            <summary>Comma-separated list of all OSs of the host</summary>
+          </column>
+          <column>
+            <name>hostname</name>
+            <type>text</type>
+            <summary>Hostname</summary>
+          </column>
+          <column>
+            <name>ip</name>
+            <type>ip</type>
+            <summary>IP address</summary>
+          </column>
+        </filter_keywords>
+        <filter_keywords>
+          <condition>type is "os"</condition>
+          <column>
+            <name>title</name>
+            <type>text</type>
+            <summary>CPE title of the asset</summary>
+          </column>
+          <column>
+            <name>hosts</name>
+            <type>integer</type>
+            <summary>Number of hosts using the asset</summary>
+          </column>
+          <column>
+            <name>latest_severity</name>
+            <type>severity</type>
+            <summary>Latest severity score of the asset</summary>
+          </column>
+          <column>
+            <name>highest_severity</name>
+            <type>severity</type>
+            <summary>Latest severity score of the asset</summary>
+          </column>
+          <column>
+            <name>average_severity</name>
+            <type>severity</type>
+            <summary>Average severity score of the asset</summary>
+          </column>
+        </filter_keywords>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -9800,6 +10102,53 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
+        <filter_keywords>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>comment</name>
+            <type>text</type>
+            <summary>Comment text</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>login</name>
+            <type>text</type>
+            <summary>The login username</summary>
+          </column>
+          <column>
+            <name>type</name>
+            <type>text</type>
+            <summary>The type abbreviation</summary>
+          </column>
+          <column>
+            <name>allow_insecure</name>
+            <type>boolean</type>
+            <summary>Whether insecure use is allowed</summary>
+          </column>
+        </filter_keywords>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -10405,6 +10754,48 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
+        <filter_keywords>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>comment</name>
+            <type>text</type>
+            <summary>Comment text</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>type</name>
+            <type>text</type>
+            <summary>Resource type the filter is restricted to</summary>
+          </column>
+          <column>
+            <name>term</name>
+            <type>text</type>
+            <summary>The filter term</summary>
+          </column>
+        </filter_keywords>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -10801,6 +11192,38 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
+        <filter_keywords>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>comment</name>
+            <type>text</type>
+            <summary>Comment text</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+        </filter_keywords>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -11162,6 +11585,271 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
+        <filter_keywords>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>comment</name>
+            <type>text</type>
+            <summary>Comment text</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>severity</name>
+            <type>severity</type>
+            <summary>Severity of the SecInfo</summary>
+          </column>
+        </filter_keywords>
+        <filter_keywords>
+          <condition>type is "nvt"</condition>
+          <column>
+            <name>version</name>
+            <type>text</type>
+            <summary>Version of the NVT</summary>
+          </column>
+          <column>
+            <name>summary</name>
+            <type>text</type>
+            <summary>Summary text of the NVT</summary>
+          </column>
+          <column>
+            <name>cve</name>
+            <type>text</type>
+            <summary>List of BIDs of the NVT</summary>
+          </column>
+          <column>
+            <name>xref</name>
+            <type>text</type>
+            <summary>List of XREFs of the NVT</summary>
+          </column>
+          <column>
+            <name>family</name>
+            <type>text</type>
+            <summary>Family of the NVT</summary>
+          </column>
+          <column>
+            <name>cvss</name>
+            <type>severity</type>
+            <summary>Alias for severity</summary>
+          </column>
+          <column>
+            <name>cvss_base</name>
+            <type>severity</type>
+            <summary>Alias for severity</summary>
+          </column>
+          <column>
+            <name>script_tags</name>
+            <type>text</type>
+            <summary>List of script tags</summary>
+          </column>
+          <column>
+            <name>qod</name>
+            <type>integer</type>
+            <summary>Numerical QoD</summary>
+          </column>
+          <column>
+            <name>qod_type</name>
+            <type>text</type>
+            <summary>QoD type</summary>
+          </column>
+          <column>
+            <name>solution_type</name>
+            <type>text</type>
+            <summary>Solution type</summary>
+          </column>
+        </filter_keywords>
+        <filter_keywords>
+          <condition>type is "cve"</condition>
+          <column>
+            <name>vector</name>
+            <type>text</type>
+            <summary>"Vector" component of the CVSS base vector</summary>
+          </column>
+          <column>
+            <name>complexity</name>
+            <type>text</type>
+            <summary>"Complexity" component of the CVSS base vector</summary>
+          </column>
+          <column>
+            <name>authentication</name>
+            <type>text</type>
+            <summary>"Authentication" component of the CVSS base vector</summary>
+          </column>
+          <column>
+            <name>confidentiality_impact</name>
+            <type>text</type>
+            <summary>"Confidentiality Impact" component of the CVSS base vector</summary>
+          </column>
+          <column>
+            <name>integrity_impact</name>
+            <type>text</type>
+            <summary>"Integrity Impact" component of the CVSS base vector</summary>
+          </column>
+          <column>
+            <name>availability_impact</name>
+            <type>text</type>
+            <summary>"Availability Impact" component of the CVSS base vector</summary>
+          </column>
+          <column>
+            <name>products</name>
+            <type>text</type>
+            <summary>Space separated list CPEs the CVE applies to</summary>
+          </column>
+          <column>
+            <name>cvss</name>
+            <type>severity</type>
+            <summary>Alias for severity</summary>
+          </column>
+          <column>
+            <name>description</name>
+            <type>text</type>
+            <summary>Description text of the CVE</summary>
+          </column>
+          <column>
+            <name>published</name>
+            <type><t>iso_time</t></type>
+            <summary>Time the CVE was published, alias for created</summary>
+          </column>
+        </filter_keywords>
+        <filter_keywords>
+          <condition>type is "cpe"</condition>
+          <column>
+            <name>title</name>
+            <type>text</type>
+            <summary>Title text of the CPE</summary>
+          </column>
+          <column>
+            <name>status</name>
+            <type>text</type>
+            <summary>Status of the CPE</summary>
+          </column>
+          <column>
+            <name>deprecated_by_id</name>
+            <type>text</type>
+            <summary>NVD ID that has deprecated this CPE</summary>
+          </column>
+          <column>
+            <name>max_cvss</name>
+            <type>severity</type>
+            <summary>Alias for severity</summary>
+          </column>
+          <column>
+            <name>cves</name>
+            <type>integer</type>
+            <summary>Number of CVEs referencing this CPE</summary>
+          </column>
+          <column>
+            <name>nvd_id</name>
+            <type>integer</type>
+            <summary>NVD ID of the CVE</summary>
+          </column>
+        </filter_keywords>
+        <filter_keywords>
+          <condition>type is "ovaldef"</condition>
+          <column>
+            <name>version</name>
+            <type>integer</type>
+            <summary>Version number of the OVAL Definition</summary>
+          </column>
+          <column>
+            <name>deprecated</name>
+            <type>boolean</type>
+            <summary>Whether the OVAL Definition is deprecated</summary>
+          </column>
+          <column>
+            <name>class</name>
+            <type>text</type>
+            <summary>Class of the OVAL Definition</summary>
+          </column>
+          <column>
+            <name>title</name>
+            <type>text</type>
+            <summary>Title of the OVAL Definition</summary>
+          </column>
+          <column>
+            <name>description</name>
+            <type>text</type>
+            <summary>Longer description of the OVAL Definition</summary>
+          </column>
+          <column>
+            <name>file</name>
+            <type>text</type>
+            <summary>Name of the file containing the OVAL Definition</summary>
+          </column>
+          <column>
+            <name>status</name>
+            <type>text</type>
+            <summary>Status of the OVAL Definition</summary>
+          </column>
+          <column>
+            <name>max_cvss</name>
+            <type>severity</type>
+            <summary>Alias for severity</summary>
+          </column>
+          <column>
+            <name>cves</name>
+            <type>integer</type>
+            <summary>Number of CVEs referencing this CPE</summary>
+          </column>
+        </filter_keywords>
+        <filter_keywords>
+          <condition>type is either "cert_bund_adv" or "dfn_cert_adv"</condition>
+          <column>
+            <name>title</name>
+            <type>text</type>
+            <summary>Title text of the CERT advisory</summary>
+          </column>
+          <column>
+            <name>summary</name>
+            <type>text</type>
+            <summary>Summary text of the CERT advisory</summary>
+          </column>
+          <column>
+            <name>cves</name>
+            <type>integer</type>
+            <summary>Number of CVEs referenced by the CERT advisory</summary>
+          </column>
+          <column>
+            <name>max_cvss</name>
+            <type>severity</type>
+            <summary>Alias for severity</summary>
+          </column>
+        </filter_keywords>
+        <filter_keywords>
+          <condition>type is "allinfo"</condition>
+          <column>
+            <name>type</name>
+            <type>text</type>
+            <summary>Type of SecInfo as given in the "type" parameter</summary>
+          </column>
+          <column>
+            <name>extra</name>
+            <type>text</type>
+            <summary>Title or similar text</summary>
+          </column>
+        </filter_keywords>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -12055,6 +12743,83 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
+        <filter_keywords>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>nvt</name>
+            <type>oid</type>
+            <summary>OID of the NVT the Note applies to</summary>
+          </column>
+          <column>
+            <name>text</name>
+            <type>text</type>
+            <summary>Text of the Note</summary>
+          </column>
+          <column>
+            <name>nvt_id</name>
+            <type>oid</type>
+            <summary>Alias of nvt</summary>
+          </column>
+          <column>
+            <name>task_name</name>
+            <type>text</type>
+            <summary>Name of the Task the Note applies to</summary>
+          </column>
+          <column>
+            <name>task_id</name>
+            <type>uuid</type>
+            <summary>UUID of the Task the Note applies to</summary>
+          </column>
+          <column>
+            <name>hosts</name>
+            <type>text</type>
+            <summary>Hosts the Note applies to</summary>
+          </column>
+          <column>
+            <name>port</name>
+            <type>text</type>
+            <summary>Port the Note applies to</summary>
+          </column>
+          <column>
+            <name>active</name>
+            <type>boolean</type>
+            <summary>Whether the Note is active</summary>
+          </column>
+          <column>
+            <name>result</name>
+            <type>uuid</type>
+            <summary>UUID of the result the Note applies to</summary>
+          </column>
+          <column>
+            <name>severity</name>
+            <type>severity</type>
+            <summary>Minimum severity of results the Note applies to</summary>
+          </column>
+        </filter_keywords>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -12877,6 +13642,98 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
+        <filter_keywords>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>nvt</name>
+            <type>oid</type>
+            <summary>OID of the NVT the Override applies to</summary>
+          </column>
+          <column>
+            <name>text</name>
+            <type>text</type>
+            <summary>Text of the Override</summary>
+          </column>
+          <column>
+            <name>nvt_id</name>
+            <type>oid</type>
+            <summary>Alias of nvt</summary>
+          </column>
+          <column>
+            <name>task_name</name>
+            <type>text</type>
+            <summary>Name of the Task the Override applies to</summary>
+          </column>
+          <column>
+            <name>task_id</name>
+            <type>uuid</type>
+            <summary>UUID of the Task the Override applies to</summary>
+          </column>
+          <column>
+            <name>hosts</name>
+            <type>text</type>
+            <summary>Hosts the Override applies to</summary>
+          </column>
+          <column>
+            <name>port</name>
+            <type>text</type>
+            <summary>Port the Override applies to</summary>
+          </column>
+          <column>
+            <name>threat</name>
+            <type>threat</type>
+            <summary>Minimum severity level the Override applies to</summary>
+          </column>
+          <column>
+            <name>new_threat</name>
+            <type>threat</type>
+            <summary>Severity level results are changed to by the Override</summary>
+          </column>
+          <column>
+            <name>active</name>
+            <type>boolean</type>
+            <summary>Whether the Override is active</summary>
+          </column>
+          <column>
+            <name>result</name>
+            <type>uuid</type>
+            <summary>UUID of the result the Override applies to</summary>
+          </column>
+          <column>
+            <name>severity</name>
+            <type>severity</type>
+            <summary>Minimum severity of results the Override applies to</summary>
+          </column>
+          <column>
+            <name>new_severity</name>
+            <type>severity</type>
+            <summary>Severity level results are changed to by the Override</summary>
+          </column>
+        </filter_keywords>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -13123,6 +13980,68 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
+        <filter_keywords>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>comment</name>
+            <type>text</type>
+            <summary>Comment text</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>type</name>
+            <type>text</type>
+            <summary>The resource type the permission is for</summary>
+          </column>
+          <column>
+            <name>resource_uuid</name>
+            <type>text</type>
+            <summary>UUID of the resource the permission is for</summary>
+          </column>
+          <column>
+            <name>subject_type</name>
+            <type>text</type>
+            <summary>Type of the subject of the permission</summary>
+          </column>
+          <column>
+            <name>subject</name>
+            <type>text</type>
+            <summary>Name of the subject of the permission</summary>
+          </column>
+          <column>
+            <name>resource</name>
+            <type>text</type>
+            <summary>Name of the resource the permission is for</summary>
+          </column>
+          <column>
+            <name>subject_uuid</name>
+            <type>text</type>
+            <summary>UUID of the subject of the permission</summary>
+          </column>
+        </filter_keywords>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -13547,6 +14466,53 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
+        <filter_keywords>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>comment</name>
+            <type>text</type>
+            <summary>Comment text</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>total</name>
+            <type>integer</type>
+            <summary>Total number of ports in the Port List</summary>
+          </column>
+          <column>
+            <name>tcp</name>
+            <type>integer</type>
+            <summary>Number of TCP ports in the Port List</summary>
+          </column>
+          <column>
+            <name>udp</name>
+            <type>integer</type>
+            <summary>Number of UDP ports in the Port List</summary>
+          </column>
+        </filter_keywords>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -14164,6 +15130,180 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>filter</name>
         <summary>Filter term to use to filter results, when getting a single report</summary>
         <type>text</type>
+        <filter_keywords>
+          <option>
+            <name>apply_overrides</name>
+            <type>boolean</type>
+            <summary>Whether to apply Overrides</summary>
+          </option>
+          <option>
+            <name>autofp</name>
+            <type>
+              <alts>
+                <alt>0</alt>
+                <alt>1</alt>
+                <alt>2</alt>
+              </alts>
+            </type>
+            <summary>Whether to trust vendor security updates.
+            1 full match, 2 partial</summary>
+          </option>
+          <option>
+            <name>levels</name>
+            <type>levels</type>
+            <summary>Severity levels to select</summary>
+          </option>
+          <option>
+            <name>min_qod</name>
+            <type>integer</type>
+            <summary>Minimum QoD of the results</summary>
+          </option>
+          <option>
+            <name>notes</name>
+            <type>boolean</type>
+            <summary>Whether to include Notes in the report</summary>
+          </option>
+          <option>
+            <name>overrides</name>
+            <type>boolean</type>
+            <summary>Whether to include Override descriptions in the report</summary>
+          </option>
+          <option>
+            <name>timezone</name>
+            <type>text</type>
+            <summary>The timezone to use for the report</summary>
+          </option>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name of the NVT</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>host</name>
+            <type>text</type>
+            <summary>Host of the result</summary>
+          </column>
+          <column>
+            <name>location</name>
+            <type>text</type>
+            <summary>Port and protocol of the result</summary>
+          </column>
+          <column>
+            <name>nvt</name>
+            <type>text</type>
+            <summary>Unique ID of the test that produced the result</summary>
+          </column>
+          <column>
+            <name>type</name>
+            <type>threat</type>
+            <summary>Severity type of the result with overrides and autofp</summary>
+          </column>
+          <column>
+            <name>original_type</name>
+            <type>threat</type>
+            <summary>Original severity type of the result</summary>
+          </column>
+          <column>
+            <name>auto_type</name>
+            <type>boolean</type>
+            <summary>Whether autofp applies to the result</summary>
+          </column>
+          <column>
+            <name>description</name>
+            <type>text</type>
+            <summary>Description of the result</summary>
+          </column>
+          <column>
+            <name>task</name>
+            <type>text</type>
+            <summary>Name of the task</summary>
+          </column>
+          <column>
+            <name>report</name>
+            <type>number</type>
+            <summary>Internal ID of the report</summary>
+          </column>
+          <column>
+            <name>cvss_base</name>
+            <type>severity</type>
+            <summary>CVSS base score of the NVT that generated the result</summary>
+          </column>
+          <column>
+            <name>nvt_version</name>
+            <type>text</type>
+            <summary>Version of the NVT that generated the result</summary>
+          </column>
+          <column>
+            <name>severity</name>
+            <type>severity</type>
+            <summary>Severity of the result with overrides and autofp</summary>
+          </column>
+          <column>
+            <name>original_severity</name>
+            <type>severity</type>
+            <summary>Original severity of the result</summary>
+          </column>
+          <column>
+            <name>vulnerability</name>
+            <type>text</type>
+            <summary>Name of the NVT that generated result</summary>
+          </column>
+          <column>
+            <name>date</name>
+            <type>iso_time</type>
+            <summary>Time the result was generated</summary>
+          </column>
+          <column>
+            <name>report_id</name>
+            <type>uuid</type>
+            <summary>UUID of the report</summary>
+          </column>
+          <column>
+            <name>solution_type</name>
+            <type>text</type>
+            <summary>Solution type of the result</summary>
+          </column>
+          <column>
+            <name>qod</name>
+            <type>integer</type>
+            <summary>QoD of the result</summary>
+          </column>
+          <column>
+            <name>qod_type</name>
+            <type>text</type>
+            <summary>QoD type of the result</summary>
+          </column>
+          <column>
+            <name>task_id</name>
+            <type>uuid</type>
+            <summary>UUID of the task</summary>
+          </column>
+          <column>
+            <name>cve</name>
+            <type>text</type>
+            <summary>List of CVEs of the result</summary>
+          </column>
+        </filter_keywords>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -14173,7 +15313,129 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>report_filter</name>
         <summary>Filter term to use to filter reports</summary>
-        <type>uuid</type>
+        <type>text</type>
+        <filter_keywords>
+          <option>
+            <name>apply_overrides</name>
+            <type>boolean</type>
+            <summary>Whether to apply Overrides</summary>
+          </option>
+          <option>
+            <name>min_qod</name>
+            <type>integer</type>
+            <summary>Minimum QoD of the results</summary>
+          </option>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>task_id</name>
+            <type>uuid</type>
+            <summary>UUID of the Task of the Report</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>iso_time</type>
+            <summary>Time the scan was started</summary>
+          </column>
+          <column>
+            <name>date</name>
+            <type>iso_time</type>
+            <summary>Time of the scan</summary>
+          </column>
+          <column>
+            <name>status</name>
+            <type>text</type>
+            <summary>Status of scan</summary>
+          </column>
+          <column>
+            <name>task</name>
+            <type>text</type>
+            <summary>Name of the Task the report belongs to</summary>
+          </column>
+          <column>
+            <name>severity</name>
+            <type>severity</type>
+            <summary>Highest severity of the results in the report</summary>
+          </column>
+          <column>
+            <name>false_positive</name>
+            <type>integer</type>
+            <summary>Number of false positive results</summary>
+          </column>
+          <column>
+            <name>log</name>
+            <type>integer</type>
+            <summary>Number of log results</summary>
+          </column>
+          <column>
+            <name>low</name>
+            <type>integer</type>
+            <summary>Number of low severity results</summary>
+          </column>
+          <column>
+            <name>medium</name>
+            <type>integer</type>
+            <summary>Number of medium severity results</summary>
+          </column>
+          <column>
+            <name>high</name>
+            <type>integer</type>
+            <summary>Number of high severity results</summary>
+          </column>
+          <column>
+            <name>hosts</name>
+            <type>integer</type>
+            <summary>Total number of hosts</summary>
+          </column>
+          <column>
+            <name>result_hosts</name>
+            <type>integer</type>
+            <summary>Number of hosts with results matching the min_qod</summary>
+          </column>
+          <column>
+            <name>fp_per_host</name>
+            <type>integer</type>
+            <summary>Number of false positive results per host with results</summary>
+          </column>
+          <column>
+            <name>log_per_host</name>
+            <type>integer</type>
+            <summary>Number of log results per host with results</summary>
+          </column>
+          <column>
+            <name>low_per_host</name>
+            <type>integer</type>
+            <summary>Number of low severity results per host with results</summary>
+          </column>
+          <column>
+            <name>medium_per_host</name>
+            <type>integer</type>
+            <summary>Number of medium severity results per host with results</summary>
+          </column>
+          <column>
+            <name>high_per_host</name>
+            <type>integer</type>
+            <summary>Number of high severity results per host with results</summary>
+          </column>
+        </filter_keywords>
       </attrib>
       <attrib>
         <name>report_filt_id</name>
@@ -14656,6 +15918,68 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
+        <filter_keywords>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>extension</name>
+            <type>text</type>
+            <summary>File extension of the report format</summary>
+          </column>
+          <column>
+            <name>content_type</name>
+            <type>text</type>
+            <summary>Content type of the report format</summary>
+          </column>
+          <column>
+            <name>summary</name>
+            <type>text</type>
+            <summary>Short summary of the report format</summary>
+          </column>
+          <column>
+            <name>description</name>
+            <type>text</type>
+            <summary>Description of the report format</summary>
+          </column>
+          <column>
+            <name>trust</name>
+            <type>boolean</type>
+            <summary>Whether the the report format is trusted</summary>
+          </column>
+          <column>
+            <name>trust_time</name>
+            <type>iso_time</type>
+            <summary>Time the report format was last verified</summary>
+          </column>
+          <column>
+            <name>active</name>
+            <type>boolean</type>
+            <summary>Whether the the report format is active</summary>
+          </column>
+        </filter_keywords>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -15219,6 +16543,180 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
+        <filter_keywords>
+          <option>
+            <name>apply_overrides</name>
+            <type>boolean</type>
+            <summary>Whether to apply Overrides</summary>
+          </option>
+          <option>
+            <name>autofp</name>
+            <type>
+              <alts>
+                <alt>0</alt>
+                <alt>1</alt>
+                <alt>2</alt>
+              </alts>
+            </type>
+            <summary>Whether to trust vendor security updates.
+            1 full match, 2 partial</summary>
+          </option>
+          <option>
+            <name>levels</name>
+            <type>levels</type>
+            <summary>Severity levels to select</summary>
+          </option>
+          <option>
+            <name>min_qod</name>
+            <type>integer</type>
+            <summary>Minimum QoD of the results</summary>
+          </option>
+          <option>
+            <name>notes</name>
+            <type>boolean</type>
+            <summary>Whether to include Notes in the report</summary>
+          </option>
+          <option>
+            <name>overrides</name>
+            <type>boolean</type>
+            <summary>Whether to include Override descriptions in the report</summary>
+          </option>
+          <option>
+            <name>timezone</name>
+            <type>text</type>
+            <summary>The timezone to use for the report</summary>
+          </option>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name of the NVT</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>host</name>
+            <type>text</type>
+            <summary>Host of the result</summary>
+          </column>
+          <column>
+            <name>location</name>
+            <type>text</type>
+            <summary>Port and protocol of the result</summary>
+          </column>
+          <column>
+            <name>nvt</name>
+            <type>text</type>
+            <summary>Unique ID of the test that produced the result</summary>
+          </column>
+          <column>
+            <name>type</name>
+            <type>threat</type>
+            <summary>Severity type of the result with overrides and autofp</summary>
+          </column>
+          <column>
+            <name>original_type</name>
+            <type>threat</type>
+            <summary>Original severity type of the result</summary>
+          </column>
+          <column>
+            <name>auto_type</name>
+            <type>boolean</type>
+            <summary>Whether autofp applies to the result</summary>
+          </column>
+          <column>
+            <name>description</name>
+            <type>text</type>
+            <summary>Description of the result</summary>
+          </column>
+          <column>
+            <name>task</name>
+            <type>text</type>
+            <summary>Name of the task</summary>
+          </column>
+          <column>
+            <name>report</name>
+            <type>number</type>
+            <summary>Internal ID of the report</summary>
+          </column>
+          <column>
+            <name>cvss_base</name>
+            <type>severity</type>
+            <summary>CVSS base score of the NVT that generated the result</summary>
+          </column>
+          <column>
+            <name>nvt_version</name>
+            <type>text</type>
+            <summary>Version of the NVT that generated the result</summary>
+          </column>
+          <column>
+            <name>severity</name>
+            <type>severity</type>
+            <summary>Severity of the result with overrides and autofp</summary>
+          </column>
+          <column>
+            <name>original_severity</name>
+            <type>severity</type>
+            <summary>Original severity of the result</summary>
+          </column>
+          <column>
+            <name>vulnerability</name>
+            <type>text</type>
+            <summary>Name of the NVT that generated result</summary>
+          </column>
+          <column>
+            <name>date</name>
+            <type>iso_time</type>
+            <summary>Time the result was generated</summary>
+          </column>
+          <column>
+            <name>report_id</name>
+            <type>uuid</type>
+            <summary>UUID of the report</summary>
+          </column>
+          <column>
+            <name>solution_type</name>
+            <type>text</type>
+            <summary>Solution type of the result</summary>
+          </column>
+          <column>
+            <name>qod</name>
+            <type>integer</type>
+            <summary>QoD of the result</summary>
+          </column>
+          <column>
+            <name>qod_type</name>
+            <type>text</type>
+            <summary>QoD type of the result</summary>
+          </column>
+          <column>
+            <name>task_id</name>
+            <type>uuid</type>
+            <summary>UUID of the task</summary>
+          </column>
+          <column>
+            <name>cve</name>
+            <type>text</type>
+            <summary>List of CVEs of the result</summary>
+          </column>
+        </filter_keywords>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -15534,6 +17032,38 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
+        <filter_keywords>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>comment</name>
+            <type>text</type>
+            <summary>Comment text</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+        </filter_keywords>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -15883,6 +17413,58 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
+        <filter_keywords>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>comment</name>
+            <type>text</type>
+            <summary>Comment text</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>host</name>
+            <type>text</type>
+            <summary>Host of the scanner</summary>
+          </column>
+          <column>
+            <name>port</name>
+            <type>integer</type>
+            <summary>Port of the scanner</summary>
+          </column>
+         <column>
+            <name>type</name>
+            <type>
+              <alts>
+                <alt>1</alt>
+                <alt>2</alt>
+              </alts>
+            </type>
+            <summary>Scanner type: '1' for OSP, '2' for OpenVAS (classic)</summary>
+          </column>
+        </filter_keywords>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -16302,6 +17884,78 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
+        <filter_keywords>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>comment</name>
+            <type>text</type>
+            <summary>Comment text</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>first_time</name>
+            <type>iso_time</type>
+            <summary>First time the schedule ran or will run</summary>
+          </column>
+          <column>
+            <name>period</name>
+            <type>integer</type>
+            <summary>Time period between runs in seconds</summary>
+          </column>
+          <column>
+            <name>period_months</name>
+            <type>integer</type>
+            <summary>Time period between runs in months</summary>
+          </column>
+          <column>
+            <name>duration</name>
+            <type>integer</type>
+            <summary>Maximum duration of scans run with the schedule</summary>
+          </column>
+          <column>
+            <name>timezone</name>
+            <type>text</type>
+            <summary>Timezone the schedule uses</summary>
+          </column>
+          <column>
+            <name>initial_offset</name>
+            <type>integer</type>
+            <summary>Initial offset in seconds</summary>
+          </column>
+          <column>
+            <name>first_run</name>
+            <type>iso_time</type>
+            <summary>Alias for first_time</summary>
+          </column>
+          <column>
+            <name>next_run</name>
+            <type>iso_time</type>
+            <summary>The next time the schedule will run</summary>
+          </column>
+        </filter_keywords>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -16738,6 +18392,23 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>filter</name>
         <summary>Filter term</summary>
         <type>text</type>
+        <filter_keywords>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>comment</name>
+            <type>text</type>
+            <summary>Comment text</summary>
+          </column>
+          <column>
+            <name>value</name>
+            <type>text</type>
+            <summary>Current value of the setting</summary>
+          </column>
+        </filter_keywords>
       </attrib>
       <attrib>
         <name>first</name>
@@ -16876,6 +18547,58 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
+        <filter_keywords>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>comment</name>
+            <type>text</type>
+            <summary>Comment text</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>host</name>
+            <type>text</type>
+            <summary>Host of the slave</summary>
+          </column>
+          <column>
+            <name>port</name>
+            <type>integer</type>
+            <summary>Port of the slave</summary>
+          </column>
+          <column>
+            <name>login</name>
+            <type>text</type>
+            <summary>Username used for login</summary>
+          </column>
+          <column>
+            <name>credential</name>
+            <type>name</type>
+            <summary>Name of the credential used to login</summary>
+          </column>
+        </filter_keywords>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -17420,6 +19143,78 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
+        <filter_keywords>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>comment</name>
+            <type>text</type>
+            <summary>Comment text</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>resource_type</name>
+            <type>text</type>
+            <summary>Type of resource the tag applies to</summary>
+          </column>
+          <column>
+            <name>resource</name>
+            <type>name</type>
+            <summary>Internal ID of resource the tag applies to</summary>
+          </column>
+          <column>
+            <name>resource_uuid</name>
+            <type>text</type>
+            <summary>Unique ID of resource the tag applies to</summary>
+          </column>
+          <column>
+            <name>resource_location</name>
+            <type>boolean</type>
+            <summary>Whether the resource is in the trash</summary>
+          </column>
+          <column>
+            <name>active</name>
+            <type>boolean</type>
+            <summary>Whether the tag is active</summary>
+          </column>
+          <column>
+            <name>value</name>
+            <type>name</type>
+            <summary>Value of the tag</summary>
+          </column>
+          <column>
+            <name>orphan</name>
+            <type>boolean</type>
+            <summary>Whether the tag is an orphan</summary>
+          </column>
+          <column>
+            <name>resource_name</name>
+            <type>name</type>
+            <summary>Name of resource the tag applies to</summary>
+          </column>
+        </filter_keywords>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -17758,6 +19553,78 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
+        <filter_keywords>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>comment</name>
+            <type>text</type>
+            <summary>Comment text</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>hosts</name>
+            <type>text</type>
+            <summary>List of hosts</summary>
+          </column>
+          <column>
+            <name>exclude_hosts</name>
+            <type>text</type>
+            <summary>List of excluded hosts</summary>
+          </column>
+          <column>
+            <name>ips</name>
+            <type>integer</type>
+            <summary>Number of hosts</summary>
+          </column>
+          <column>
+            <name>port_list</name>
+            <type>name</type>
+            <summary>Name of the port list</summary>
+          </column>
+          <column>
+            <name>ssh_credential</name>
+            <type>name</type>
+            <summary>Name of the SSH credential</summary>
+          </column>
+          <column>
+            <name>smb_credential</name>
+            <type>name</type>
+            <summary>Name of the SMB credential</summary>
+          </column>
+          <column>
+            <name>esxi_credential</name>
+            <type>name</type>
+            <summary>Name of the ESXi credential</summary>
+          </column>
+          <column>
+            <name>snmp_credential</name>
+            <type>name</type>
+            <summary>Name of the SNMP credential</summary>
+          </column>
+        </filter_keywords>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -18381,6 +20248,176 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
+        <filter_keywords>
+          <option>
+            <name>apply_overrides</name>
+            <type>boolean</type>
+            <summary>Whether to apply Overrides</summary>
+          </option>
+          <option>
+            <name>min_qod</name>
+            <type>integer</type>
+            <summary>Minimum QoD of the results</summary>
+          </option>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>comment</name>
+            <type>text</type>
+            <summary>Comment text</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>status</name>
+            <type>text</type>
+            <summary>Status of the current scan</summary>
+          </column>
+          <column>
+            <name>total</name>
+            <type>integer</type>
+            <summary>Total number of results</summary>
+          </column>
+          <column>
+            <name>first_report</name>
+            <type>uuid</type>
+            <summary>UUID of the first report</summary>
+          </column>
+          <column>
+            <name>last_report</name>
+            <type>uuid</type>
+            <summary>UUID of the last finished report</summary>
+          </column>
+          <column>
+            <name>threat</name>
+            <type>threat</type>
+            <summary>Severity level of the last finished report</summary>
+          </column>
+          <column>
+            <name>trend</name>
+            <type>
+              <alts>
+                <alt>up</alt>
+                <alt>down</alt>
+                <alt>more</alt>
+                <alt>less</alt>
+                <alt>same</alt>
+              </alts>
+            </type>
+            <summary>Trend of the task</summary>
+          </column>
+          <column>
+            <name>severity</name>
+            <type>severity</type>
+            <summary>Severity of the last finished report</summary>
+          </column>
+          <column>
+            <name>schedule</name>
+            <type>name</type>
+            <summary>Name of the schedule</summary>
+          </column>
+          <column>
+            <name>next_due</name>
+            <type>iso_time</type>
+            <summary>Time the task is next due to run</summary>
+          </column>
+          <column>
+            <name>first</name>
+            <type>iso_time</type>
+            <summary>Timestamp of the first report</summary>
+          </column>
+          <column>
+            <name>last</name>
+            <type>iso_time</type>
+            <summary>Timestamp of the last finished report</summary>
+          </column>
+          <column>
+            <name>false_positive</name>
+            <type>integer</type>
+            <summary>Number of false positive results</summary>
+          </column>
+          <column>
+            <name>log</name>
+            <type>integer</type>
+            <summary>Number of log results</summary>
+          </column>
+          <column>
+            <name>low</name>
+            <type>integer</type>
+            <summary>Number of low severity results</summary>
+          </column>
+          <column>
+            <name>medium</name>
+            <type>integer</type>
+            <summary>Number of medium severity results</summary>
+          </column>
+          <column>
+            <name>high</name>
+            <type>integer</type>
+            <summary>Number of high severity results</summary>
+          </column>
+          <column>
+            <name>hosts</name>
+            <type>integer</type>
+            <summary>Total number of hosts</summary>
+          </column>
+          <column>
+            <name>result_hosts</name>
+            <type>integer</type>
+            <summary>Number of hosts with results matching the min_qod</summary>
+          </column>
+          <column>
+            <name>fp_per_host</name>
+            <type>integer</type>
+            <summary>Number of false positive results per host with results</summary>
+          </column>
+          <column>
+            <name>log_per_host</name>
+            <type>integer</type>
+            <summary>Number of log results per host with results</summary>
+          </column>
+          <column>
+            <name>low_per_host</name>
+            <type>integer</type>
+            <summary>Number of low severity results per host with results</summary>
+          </column>
+          <column>
+            <name>medium_per_host</name>
+            <type>integer</type>
+            <summary>Number of medium severity results per host with results</summary>
+          </column>
+          <column>
+            <name>high_per_host</name>
+            <type>integer</type>
+            <summary>Number of high severity results per host with results</summary>
+          </column>
+          <column>
+            <name>target</name>
+            <type>name</type>
+            <summary>Name of the target</summary>
+          </column>
+        </filter_keywords>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -19624,6 +21661,63 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
+        <filter_keywords>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>comment</name>
+            <type>text</type>
+            <summary>Comment text</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>method</name>
+            <type>text</type>
+            <summary>Methods allowed for authentication</summary>
+          </column>
+          <column>
+            <name>roles</name>
+            <type>text</type>
+            <summary>Comma-separated list of roles</summary>
+          </column>
+          <column>
+            <name>groups</name>
+            <type>text</type>
+            <summary>Comma-separated list of groups</summary>
+          </column>
+          <column>
+            <name>hosts</name>
+            <type>text</type>
+            <summary>List of host that are either allowed of forbidden</summary>
+          </column>
+          <column>
+            <name>ifaces</name>
+            <type>text</type>
+            <summary>List of ifaces that are either allowed of forbidden</summary>
+          </column>
+        </filter_keywords>
       </attrib>
       <attrib>
         <name>filt_id</name>

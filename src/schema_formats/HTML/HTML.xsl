@@ -447,6 +447,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <xsl:if test="summary">
             <xsl:value-of select="normalize-space(summary)"/>.
           </xsl:if>
+          <xsl:apply-templates select="filter_keywords"/>
         </li>
       </xsl:when>
       <xsl:when test="name() = 'c'">
@@ -645,6 +646,34 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:template name="command-details">
     <h2 id="command_details">7 Command Details</h2>
     <xsl:apply-templates select="command"/>
+  </xsl:template>
+
+  <!-- Filter keywords -->
+  <xsl:template match="filter_keywords">
+    <div style="margin-left: 10px; padding: 0 0 3px 5px">
+      <i>
+        <b>Keywords</b>
+        <xsl:if test="condition">
+          <xsl:text> if </xsl:text>
+          <xsl:value-of select="condition"/>
+        </xsl:if>
+      </i>
+      <ul style="list-style: none; padding-left: 10px;">
+        <xsl:for-each select="column|option">
+          <li>
+            <i>
+              <xsl:value-of select="name()"/>
+              <xsl:text> </xsl:text>
+            </i>
+            <b><xsl:value-of select="name"/></b>
+            <xsl:text> (</xsl:text>
+              <xsl:apply-templates select="type"/>
+            <xsl:text>) </xsl:text>
+            <xsl:value-of select="summary"/>
+          </li>
+        </xsl:for-each>
+      </ul>
+    </div>
   </xsl:template>
 
   <!-- Changes. -->

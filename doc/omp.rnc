@@ -390,6 +390,7 @@ pattern_attrib
        pattern_attrib_name
        & pattern_attrib_type
        & pattern_attrib_required
+       & pattern_attrib_filter_keywords*
      }
 
 pattern_attrib_name
@@ -408,6 +409,13 @@ pattern_attrib_required
  = element required
      {
        boolean
+     }
+
+# Optional description of filter keywords usable in the attribute.
+pattern_attrib_filter_keywords
+ = element filter_keywords
+     {
+       filter_keywords
      }
 
 # The type of the text of the element.
@@ -545,6 +553,85 @@ command_definition_ele
            | ( command_definition_type
            & command_definition_ele* ) )
        & command_definition_example*
+     }
+
+## Element Type filter_keywords
+##
+## A group of filter keywords usable in an attribute or element text.
+
+filter_keywords
+ = element filter_keywords
+     {
+       filter_keywords_condition?
+       & filter_keywords_column*
+       & filter_keywords_option*
+     }
+
+# Description of the condition under which the group of keywords applies.
+filter_keywords_condition
+ = element condition
+     {
+       text
+     }
+
+# A column that can be used multiple times with operators and in sorting.
+filter_keywords_column
+ = element column
+     {
+       filter_keywords_column_name
+       & filter_keywords_column_type
+       & filter_keywords_column_summary
+     }
+
+# Name of the keyword as used in the filter.
+filter_keywords_column_name
+ = element name
+     {
+       name
+     }
+
+# Type of the values the keyword can use.
+filter_keywords_column_type
+ = element type
+     {
+       type_name
+     }
+
+# Short description of the keyword.
+filter_keywords_column_summary
+ = element summary
+     {
+       text
+     }
+
+# An option only applied once which cannot be used with operators or in sorting.
+filter_keywords_option
+ = element option
+     {
+       filter_keywords_option_name
+       & filter_keywords_option_type
+       & filter_keywords_option_summary
+     }
+
+# Name of the keyword as used in the filter.
+filter_keywords_option_name
+ = element name
+     {
+       name
+     }
+
+# Type of the values the keyword can use.
+filter_keywords_option_type
+ = element type
+     {
+       type_name
+     }
+
+# Short description of the keyword.
+filter_keywords_option_summary
+ = element summary
+     {
+       text
      }
 
 ## Element Type note
@@ -5195,7 +5282,7 @@ get_configs
 get_aggregates
  = element get_aggregates
      {
-       # Filter term to use to filter query of the resources to aggregate.
+       # Filter term to use to filter query of the resources to aggregate (see get_... commands of selected type for keywords).
        attribute filter { text }?
        & # ID of filter to use to filter query of the resources to aggregate.
        attribute filt_id { uuid }?
@@ -5498,7 +5585,7 @@ get_reports
        & # ID of filter to use to filter results, when getting a single report.
        attribute filt_id { uuid }?
        & # Filter term to use to filter reports.
-       attribute report_filter { uuid }?
+       attribute report_filter { text }?
        & # ID of filter to use to filter reports.
        attribute report_filt_id { uuid }?
        & # Type of report to get.

@@ -1,3 +1,14 @@
+2016-03-15  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml.in: Add filter keyword documentation
+	for the get_... commands.
+
+	* src/schema_formats/HTML/HTML.xsl (structure-line): Apply templates
+	to filter_keywords element in attrib.
+	(filter_keywords): New template.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
 2016-03-15  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* tools/greenbone-scapdata-sync.in: Drop expr from the split
