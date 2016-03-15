@@ -115,10 +115,6 @@ fi
 # log messages.
 SCRIPT_NAME="greenbone-scapdata-sync"
 
-# LOG_CMD defines the command to use for logging. To have logger log to stderr
-# as well as syslog, add "-s" here.
-LOG_CMD="logger -t $SCRIPT_NAME"
-
 [ -r @OPENVAS_SYSCONF_DIR@/greenbone-scapdata-sync.conf ] && . @OPENVAS_SYSCONF_DIR@/greenbone-scapdata-sync.conf
 
 BASE_SYNC_DIR="@OPENVAS_STATE_DIR@"
@@ -129,6 +125,30 @@ SCAP_RES_DIR="@OPENVAS_SCAP_RES_DIR@"
 SCAP_DB="$SCAP_DIR/scap.db"
 
 TIMESTAMP="$SCAP_DIR/timestamp"
+
+# LOG_CMD defines the command to use for logging. To have logger log to stderr
+# as well as syslog, add "-s" here.
+LOG_CMD="logger -t $SCRIPT_NAME"
+
+log_debug () {
+  $LOG_CMD -p daemon.debug $1
+}
+
+log_info () {
+  $LOG_CMD -p daemon.info $1
+}
+
+log_notice () {
+  $LOG_CMD -p daemon.notice $1
+}
+
+log_warning () {
+  $LOG_CMD -p daemon.warning $1
+}
+
+log_err () {
+  $LOG_CMD -p daemon.err $1
+}
 
 ACCESSKEY="@OPENVAS_SYSCONF_DIR@/gsf-access-key"
 
@@ -151,6 +171,12 @@ then
     FEED_HOME="http://www.greenbone.net/technology/gsf.html"
   fi
 
+  if [ $(id -u) -eq 0 ]
+  then
+    log_notice "Started as root, restarting as openvasmd"
+    su --shell /bin/sh --command "$0 $@" openvasmd
+    exit $?
+  fi
 else
   RESTRICTED=0
 
@@ -185,26 +211,6 @@ create_tmp_key () {
 
 remove_tmp_key () {
   rm -rf "$KEYTEMPDIR"
-}
-
-log_debug () {
-  $LOG_CMD -p daemon.debug $1
-}
-
-log_info () {
-  $LOG_CMD -p daemon.info $1
-}
-
-log_notice () {
-  $LOG_CMD -p daemon.notice $1
-}
-
-log_warning () {
-  $LOG_CMD -p daemon.warning $1
-}
-
-log_err () {
-  $LOG_CMD -p daemon.err $1
 }
 
 set_interrupt_trap () {
