@@ -89,7 +89,7 @@ VERBOSE=0
 
 # Split CVE data files into parts of this size in kB. 0 = no splitting
 # The default is 1/30 of the system memory.
-SPLIT_PART_SIZE=`expr $(awk '/MemTotal/ {print $2}' /proc/meminfo) / 30`
+SPLIT_PART_SIZE=$(awk '/MemTotal/ { print int( $2/30) }' /proc/meminfo)
 
 # SQLITE3 defines the name of the sqlite binary to call, along with additional
 # parameters.

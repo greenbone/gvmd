@@ -1,5 +1,10 @@
 2016-03-15  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	* tools/greenbone-scapdata-sync.in: Drop expr from the split
+	size computation.
+
+2016-03-15  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	* tools/greenbone-scapdata-sync.in: Set a default split size
 	depending on the system memory.
 
