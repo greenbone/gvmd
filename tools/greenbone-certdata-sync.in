@@ -102,6 +102,10 @@ if [ -z "$SQL_RETRY_DELAY" ]; then
   SQL_RETRY_DELAY="10m" # allowed unit suffixes: see sleep command
 fi
 
+# LOG_CMD defines the command to use for logging. To have logger log to stderr
+# as well as syslog, add "-s" here.
+LOG_CMD="logger -t $SCRIPT_NAME"
+
 [ -r \"@OPENVAS_SYSCONF_DIR@/greenbone-certdata-sync.conf\" ] && . \"@OPENVAS_SYSCONF_DIR@/greenbone-certdata-sync.conf\"
 
 BASE_SYNC_DIR="@OPENVAS_STATE_DIR@"
@@ -118,10 +122,6 @@ if [ ! $POSTGRES -eq 1 ] ; then
 fi
 
 TIMESTAMP="$CERT_DIR/timestamp"
-
-# LOG_CMD defines the command to use for logging. To have logger log to stderr
-# as well as syslog, add "-s" here.
-LOG_CMD="logger -t $SCRIPT_NAME"
 
 log_debug () {
   $LOG_CMD -p daemon.debug $1

@@ -1,6 +1,12 @@
 2016-03-15  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* tools/greenbone-certdata-sync.in, tools/greenbone-scapdata-sync.in:
+	Moved definition of LOG_CMD prior to sourcing the .conf file to
+	allow redefinition.
+	
+2016-03-15  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* tools/greenbone-certdata-sync.in, tools/greenbone-scapdata-sync.in:
 	Move log function up and add special handling when started as root
 	when accesskey is present.
 
