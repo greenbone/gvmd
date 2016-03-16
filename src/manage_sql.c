@@ -26088,7 +26088,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
   if (delta)
     {
-      gchar *escaped_host = g_markup_escape_text (host, -1);
+      gchar *escaped_host = host ? g_markup_escape_text (host, -1) : NULL;
       gchar *escaped_delta_states = g_markup_escape_text (delta_states, -1);
       g_string_append_printf (filters_extra_buffer,
                               "<host><ip>%s</ip></host>"
@@ -26110,7 +26110,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     }
   else if (type && (strcmp (type, "prognostic") == 0))
     {
-      gchar *escaped_host = g_markup_escape_text (host, -1);
+      gchar *escaped_host = host ? g_markup_escape_text (host, -1) : NULL;
       g_string_append_printf (filters_extra_buffer,
                               "<host><ip>%s</ip></host>",
                               escaped_host ? escaped_host : "");
