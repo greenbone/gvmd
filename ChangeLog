@@ -1,3 +1,21 @@
+2016-03-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	When using SQLite, ensure that all three databases are in WAL mode.
+
+	* src/sql_sqlite3.c (sql_open): Enable WAL.
+
+	* tools/cert_db_init.sql, tools/scap_db_init.sql: Enable WAL.
+
+	* tools/greenbone-scapdata-sync.in (ensure_sqlite3_wal_mode): New
+	function.
+	(init_scap_db_update): When the db exists already, make sure it's in WAL
+	mode.
+
+	* tools/greenbone-certdata-sync.in (ensure_sqlite3_wal_mode): New
+	function.
+	(update_cert_db): When the db exists already, make sure it's in WAL
+	mode.
+
 2016-03-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (print_report_prognostic_xml): Only skip hosts with
@@ -48,7 +66,7 @@
 	* tools/greenbone-certdata-sync.in, tools/greenbone-scapdata-sync.in:
 	Moved definition of LOG_CMD prior to sourcing the .conf file to
 	allow redefinition.
-	
+
 2016-03-15  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* tools/greenbone-certdata-sync.in, tools/greenbone-scapdata-sync.in:

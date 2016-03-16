@@ -24,6 +24,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+.output /dev/null
+PRAGMA journal_mode=WAL;
+.output stdout
+
 /* --- TABLES CREATION --- */
 /* delete old tables */
 DROP TABLE IF EXISTS meta;

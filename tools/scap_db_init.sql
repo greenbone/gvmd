@@ -1,4 +1,4 @@
-/* 
+/*
  * OpenVAS
  * $Id$
  * Description: SCAP database initialization script
@@ -24,6 +24,10 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
+
+.output /dev/null
+PRAGMA journal_mode=WAL;
+.output stdout
 
 /* --- TABLES CREATION --- */
 /* delete old tables */
@@ -104,7 +108,7 @@ CREATE TABLE ovaldefs (
   modification_time DATE,
   version INTEGER,
   deprecated BOOLEAN,
-  def_class TEXT, /* enum */ 
+  def_class TEXT, /* enum */
   title TEXT,
   description TEXT,
   xml_file TEXT,
