@@ -1,3 +1,8 @@
+2016-03-16  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* tools/greenbone-scapdata-sync.in: Guard sqlite-specific call
+	with apropriate test.
+
 2016-03-15  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* tools/greenbone-scapdata-sync.in: Decrease split size by 50%.
