@@ -26342,8 +26342,10 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     {
       int ret;
 
-      ret = print_report_assets_xml (out, host, first_result,
-                                     max_results, levels, search_phrase, pos,
+      ret = print_report_assets_xml (out, host,
+                                     ignore_pagination ? 1 : first_result,
+                                     ignore_pagination ? -1 : max_results,
+                                     levels, search_phrase, pos,
                                      get, apply_overrides, autofp);
       g_free (sort_field);
       g_free (levels);
@@ -26374,7 +26376,9 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     {
       int ret;
 
-      ret = print_report_prognostic_xml (out, host, first_result, max_results,
+      ret = print_report_prognostic_xml (out, host,
+                                         ignore_pagination ? 1 : first_result,
+                                         ignore_pagination ? -1 : max_results,
                                          levels, search_phrase, pos, get,
                                          apply_overrides, autofp,
                                          host_search_phrase, host_levels,
