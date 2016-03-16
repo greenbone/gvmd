@@ -59,17 +59,8 @@
 
 #include <openvas/misc/openvas_server.h>
 
-#ifdef S_SPLINT_S
-/** @todo Weird that these are missing. */
-/*@-exportheader@*/
-int socket(int domain, int type, int protocol);
-/*@=exportheader@*/
-#endif
-
-#ifndef S_SPLINT_S
 #if FROM_BUFFER_SIZE > SSIZE_MAX
 #error FROM_BUFFER_SIZE too big for "read"
-#endif
 #endif
 
 /**
@@ -157,7 +148,7 @@ init_ompd_process (const gchar *database, gchar **disable)
  */
 static int
 read_from_client (gnutls_session_t* client_session,
-                  /*@unused@*/ int client_socket)
+                  /* unused */ int client_socket)
 {
   while (from_client_end < from_buffer_size)
     {
@@ -184,7 +175,6 @@ read_from_client (gnutls_session_t* client_session,
                   || count == GNUTLS_E_FATAL_ALERT_RECEIVED))
             {
               int alert = gnutls_alert_get (*client_session);
-              /*@dependent@*/
               const char* alert_name = gnutls_alert_get_name (alert);
               g_warning ("%s: TLS Alert %d: %s\n",
                          __FUNCTION__, alert, alert_name);

@@ -101,7 +101,6 @@ openvas_scanner_read ()
                   || count == GNUTLS_E_FATAL_ALERT_RECEIVED))
             {
               int alert = gnutls_alert_get (openvas_scanner_session);
-              /*@dependent@*/
               const char* alert_name = gnutls_alert_get_name (alert);
               g_warning ("%s: TLS Alert %d: %s\n", __FUNCTION__, alert,
                          alert_name);
@@ -166,7 +165,7 @@ openvas_scanner_write (int nvt_cache_mode)
             default:
               return -1;
           }
-        /*@fallthrough@*/
+        /* fallthrough */
       case SCANNER_INIT_CONNECTED:
         {
           char* string = "< OTP/2.0 >\n";
@@ -218,7 +217,7 @@ openvas_scanner_write (int nvt_cache_mode)
               }
             break;
           }
-        /*@fallthrough@*/
+        /* fallthrough */
       case SCANNER_INIT_GOT_PLUGINS:
         {
           static char* const ack = "\n";
@@ -242,7 +241,7 @@ openvas_scanner_write (int nvt_cache_mode)
           else
             break;
         }
-        /*@fallthrough@*/
+        /* fallthrough */
       case SCANNER_INIT_DONE:
       case SCANNER_INIT_DONE_CACHE_MODE:
       case SCANNER_INIT_DONE_CACHE_MODE_UPDATE:

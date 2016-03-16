@@ -124,10 +124,6 @@
 #include <openvas/misc/openvas_ssh.h>
 #include <openvas/omp/xml.h>
 
-#ifdef S_SPLINT_S
-#include "splint.h"
-#endif
-
 #undef G_LOG_DOMAIN
 /**
  * @brief GLib log domain.
@@ -5137,7 +5133,7 @@ buffer_size_t to_client_end = 0;
 /**
  * @brief Client input parsing context.
  */
-static /*@null@*/ /*@only@*/ GMarkupParseContext*
+static GMarkupParseContext*
 xml_context = NULL;
 
 /**
@@ -6708,7 +6704,7 @@ log_event_fail (const char *event, const char *resource, const char *id,
  * @param[in]  error             Error parameter.
  */
 static void
-omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
+omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               const gchar *element_name,
                               const gchar **attribute_names,
                               const gchar **attribute_values,
@@ -6732,7 +6728,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state (CLIENT_GET_VERSION);
             break;
           }
-        /*@fallthrough@*/
+        /* fallthrough */
       case CLIENT_COMMANDS:
         if (strcasecmp ("AUTHENTICATE", element_name) == 0)
           {
@@ -13815,7 +13811,7 @@ extern char client_address[];
  * @param[in]  error             Error parameter.
  */
 static void
-omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
+omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                             const gchar *element_name,
                             gpointer user_data,
                             GError **error)
@@ -18381,7 +18377,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 break;
               default:
                 assert (0);
-                /*@fallthrough@*/
+                /* fallthrough */
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_INTERNAL_ERROR ("get_aggregates"));
@@ -18846,7 +18842,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 break;
               default:
                 assert (0);
-                /*@fallthrough@*/
+                /* fallthrough */
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_INTERNAL_ERROR ("get_system_reports"));
@@ -27245,7 +27241,7 @@ create_task_fail:
                       break;
                     default:
                       assert (0);
-                      /*@fallthrough@*/
+                      /* fallthrough */
                     case -1:
                       SEND_TO_CLIENT_OR_FAIL
                         (XML_INTERNAL_ERROR ("modify_task"));
@@ -28155,12 +28151,12 @@ create_task_fail:
                       /* Task target lacks hosts.  This is checked when the
                        * target is created. */
                       assert (0);
-                      /*@fallthrough@*/
+                      /* fallthrough */
                     case -4:
                       /* Task lacks target.  This is checked when the task is
                        * created anyway. */
                       assert (0);
-                      /*@fallthrough@*/
+                      /* fallthrough */
                     case -1:
                     case -3: /* Failed to create report. */
                       SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_task"));
@@ -28463,10 +28459,10 @@ create_task_fail:
                       /* Task target lacks hosts.  This is checked when the
                        * target is created. */
                       assert (0);
-                      /*@fallthrough@*/
+                      /* fallthrough */
                     case -9:
                       /* Fork failed. */
-                      /*@fallthrough@*/
+                      /* fallthrough */
                     case -3: /* Failed to create report. */
                     case -1:
                       SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
@@ -28874,11 +28870,11 @@ create_task_fail:
  * @param[in]  error             Error parameter.
  */
 static void
-omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
+omp_xml_handle_text (/* unused */ GMarkupParseContext* context,
                      const gchar *text,
                      gsize text_len,
-                     /*@unused@*/ gpointer user_data,
-                     /*@unused@*/ GError **error)
+                     /* unused */ gpointer user_data,
+                     /* unused */ GError **error)
 {
   if (text_len == 0) return;
   tracef ("   XML   text: %s\n", text);
@@ -29968,9 +29964,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
  * @param[in]  user_data         Dummy parameter.
  */
 static void
-omp_xml_handle_error (/*@unused@*/ GMarkupParseContext* context,
+omp_xml_handle_error (/* unused */ GMarkupParseContext* context,
                       GError *error,
-                      /*@unused@*/ gpointer user_data)
+                      /* unused */ gpointer user_data)
 {
   tracef ("   XML ERROR %s\n", error->message);
 }

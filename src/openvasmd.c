@@ -77,9 +77,7 @@
  * \htmlinclude doc/openvasmd.html
  */
 
-#ifndef S_SPLINT_S
 #include <arpa/inet.h>
-#endif
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -87,10 +85,8 @@
 #include <glib/gstdio.h>
 #include <gnutls/gnutls.h>
 #include <netdb.h>
-#ifndef S_SPLINT_S
 #include <netinet/in.h>
 #include <netinet/ip.h>
-#endif
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -116,10 +112,6 @@
 
 #ifdef SVN_REV_AVAILABLE
 #include "svnrevision.h"
-#endif
-
-#ifdef S_SPLINT_S
-#include "splint.h"
 #endif
 
 /**
@@ -660,7 +652,6 @@ fork_connection_internal (int *client_socket,
     }
 
   exit (EXIT_FAILURE);
-  /*@notreached@*/
   return -1;
 }
 
@@ -883,7 +874,7 @@ handle_sighup_update (int signal)
  * @param[in]  given_signal  The signal that caused this function to run.
  */
 void
-handle_sigsegv (/*@unused@*/ int given_signal)
+handle_sigsegv (/* unused */ int given_signal)
 {
   manage_cleanup_process_error (given_signal);
   cleanup ();
@@ -898,7 +889,7 @@ handle_sigsegv (/*@unused@*/ int given_signal)
  * @param[in]  given_signal  The signal that caused this function to run.
  */
 void
-handle_sigchld (/*@unused@*/ int given_signal, siginfo_t *info, void *ucontext)
+handle_sigchld (/* unused */ int given_signal, siginfo_t *info, void *ucontext)
 {
   int status, pid;
   while ((pid = waitpid (-1, &status, WNOHANG)) > 0)
@@ -1155,7 +1146,6 @@ fork_update_nvt_cache ()
         cleanup_manage_process (FALSE);
         exit (EXIT_SUCCESS);
 
-        /*@notreached@*/
         break;
 
       case -1:
@@ -1311,7 +1301,6 @@ serve_and_schedule ()
 
       last_schedule_time = time (NULL);
     }
-  /*@notreached@*/
 }
 
 /**
@@ -2349,6 +2338,5 @@ main (int argc, char** argv)
   proctitle_set ("openvasmd");
   serve_and_schedule ();
 
-  /*@notreached@*/
   return EXIT_SUCCESS;
 }

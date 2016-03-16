@@ -572,9 +572,9 @@ task_alert_iterator_name (iterator_t*);
 /**
  * @brief The task currently running on the scanner.
  */
-extern /*@null@*/ task_t current_scanner_task;
+extern task_t current_scanner_task;
 
-extern /*@null@*/ report_t current_report;
+extern report_t current_report;
 
 #define MANAGE_EXAMPLE_TASK_UUID "343435d6-91b0-11de-9478-ffd71f4c6f29"
 
@@ -618,7 +618,7 @@ unsigned int
 task_id (task_t);
 
 int
-task_uuid (task_t, /*@out@*/ char **);
+task_uuid (task_t, char **);
 
 int
 task_in_trash (task_t);
@@ -813,11 +813,8 @@ task_false_positive_size (task_t);
 void
 free_tasks ();
 
-/*@null@*/ /*@dependent@*/ /*@special@*/
 task_t
-make_task (/*@only@*/ char*, /*@only@*/ char*)
-  /*@defines result->open_ports@*/
-  /*@ensures isnull result->description@*/;
+make_task (char*, char*);
 
 void
 make_task_complete (const char *);
@@ -831,7 +828,6 @@ load_tasks ();
 int
 save_tasks ();
 
-/*@dependent@*/
 gboolean
 find_task (const char* id, task_t*);
 
@@ -845,9 +841,7 @@ void
 reset_task (task_t);
 
 int
-set_task_parameter (task_t,
-                    /*@null@*/ const char*,
-                    /*@null@*/ /*@only@*/ char*);
+set_task_parameter (task_t, const char*, char*);
 
 char*
 task_observers (task_t);
@@ -1025,7 +1019,7 @@ gboolean
 find_result_with_permission (const char*, result_t*, const char *);
 
 int
-result_uuid (result_t, /*@out@*/ char **);
+result_uuid (result_t, char **);
 
 int
 result_detection_reference (result_t, char **, char **, char **, char **,
@@ -1158,7 +1152,6 @@ report_path_task_uuid (gchar*);
 
 gboolean
 report_task (report_t, task_t*);
-/*@=exportlocal@*/
 
 int
 report_scan_run_status (report_t, int*);

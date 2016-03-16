@@ -52,9 +52,7 @@ extern char from_scanner[];
 extern buffer_size_t from_scanner_start;
 extern buffer_size_t from_scanner_end;
 
-/*@-exportlocal@*/
 extern struct sockaddr_in scanner_address;
-/*@=exportlocal@*/
 
 int
 init_ompd (GSList*, int, const gchar*, int, int, int, void (*) (),

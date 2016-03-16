@@ -59,10 +59,6 @@
 #include <openvas/base/openvas_string.h>
 #include <openvas/misc/nvt_categories.h>
 
-#ifdef S_SPLINT_S
-#include "splint.h"
-#endif
-
 #undef G_LOG_DOMAIN
 /**
  * @brief GLib log domain.
@@ -111,7 +107,6 @@ blank_control_chars (char *string)
 /**
  * @brief Current message during OTP SERVER message commands.
  */
-/*@null@*/ /*@only@*/
 static message_t* current_message = NULL;
 
 /**
@@ -128,10 +123,8 @@ static char *plugins_feed_version = NULL;
  *
  * @return A pointer to the new message.
  */
-/*@only@*/
 static message_t*
 make_message (const char* host)
-  /*@ensures isnull result->description, result->oid@*/
 {
   message_t* message;
 
@@ -153,7 +146,7 @@ make_message (const char* host)
  * @param[in]  message       Pointer to the message.
  */
 static void
-free_message (/*@out@*/ /*@only@*/ message_t* message)
+free_message (message_t* message)
 {
   if (message->host) free (message->host);
   if (message->description) free (message->description);
@@ -214,7 +207,7 @@ set_message_port_string (message_t* message, char* string)
  * @param[in]  description  Description.
  */
 static void
-set_message_description (message_t* message, /*@only@*/ char* description)
+set_message_description (message_t* message, char* description)
 {
   if (message->description) free (message->description);
   message->description = description;
@@ -228,7 +221,7 @@ set_message_description (message_t* message, /*@only@*/ char* description)
  * @param[in]  oid          OID.
  */
 static void
-set_message_oid (message_t* message, /*@only@*/ char* oid)
+set_message_oid (message_t* message, char* oid)
 {
   if (message->oid) free (message->oid);
   message->oid = oid;
@@ -318,7 +311,6 @@ append_log_message (task_t task, message_t* message)
 /**
  * @brief The current scanner preference, during reading of scanner preferences.
  */
-/*@null@*/ /*@only@*/
 static char* current_scanner_preference = NULL;
 
 
@@ -327,7 +319,6 @@ static char* current_scanner_preference = NULL;
 /**
  * @brief The current plugin, during reading of scanner plugin list.
  */
-/*@only@*/
 static nvti_t* current_plugin = NULL;
 
 /**
@@ -560,7 +551,7 @@ parse_scanner_done (char** messages)
 static int
 parse_scanner_bad_login (char** messages)
 {
-  /*@dependent@*/ char *end, *match;
+  char *end, *match;
   end = *messages + from_scanner_end - from_scanner_start;
   while (*messages < end && ((*messages)[0] == ' '))
     { (*messages)++; from_scanner_start++; }
@@ -691,9 +682,9 @@ parse_scanner_plugin_list_tags (char** messages)
  *         field follows), -4 failed to find a newline (may be a <|>)
  */
 static int
-parse_scanner_server (/*@dependent@*/ char** messages)
+parse_scanner_server (char** messages)
 {
-  /*@dependent@*/ char *end, *match;
+  char *end, *match;
   end = *messages + from_scanner_end - from_scanner_start;
   while (*messages < end && ((*messages)[0] == ' '))
     { (*messages)++; from_scanner_start++; }
@@ -701,8 +692,8 @@ parse_scanner_server (/*@dependent@*/ char** messages)
                        (int) '\n',
                        from_scanner_end - from_scanner_start)))
     {
-      /*@dependent@*/ char* newline;
-      /*@dependent@*/ char* input;
+      char* newline;
+      char* input;
       buffer_size_t from_start, from_end;
       match[0] = '\0';
       /** @todo Is there ever whitespace before the newline? */
@@ -804,9 +795,9 @@ parse_scanner_loading (char *messages)
 int
 process_otp_scanner_input (void (*progress) ())
 {
-  /*@dependent@*/ char* match = NULL;
-  /*@dependent@*/ char* messages = from_scanner + from_scanner_start;
-  /*@dependent@*/ char* input;
+  char* match = NULL;
+  char* messages = from_scanner + from_scanner_start;
+  char* input;
   const char *ver_str = "< OTP/2.0 >\n";
   size_t ver_len = strlen (ver_str);
   buffer_size_t from_start, from_end;

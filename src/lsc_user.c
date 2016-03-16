@@ -37,10 +37,6 @@
 
 #include <openvas/base/openvas_file.h>
 
-#ifdef S_SPLINT_S
-#include "splint.h"
-#endif
-
 #undef G_LOG_DOMAIN
 /**
  * @brief GLib log domain.

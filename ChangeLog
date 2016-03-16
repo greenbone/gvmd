@@ -1,3 +1,39 @@
+2016-03-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Remove annotations and special code blocks for Splint, replacing
+	the fallthrough and unused parameter annotations with normal comments.
+
+	* src/lsc_crypt.c: Remove splint.h #include.
+
+	* src/lsc_user.c: Remove splint.h #include.
+
+	* src/manage_sql.c: Remove splint.h #include.  Remove or replace Splint
+	annotations.  Remove S_SPLINT_S-dependent typedef;
+
+	* src/manage.c: Remove splint.h #include and Splint annotations.
+	(get_nvti_xml): Remove S_SPLINT_S condition around the DEF macro calls.
+
+	* src/manage.h: Remove Splint annotations.
+
+	* src/omp.c: Remove splint.h #include.  Remove or replace Splint
+	annotations.
+
+	* src/ompd.c: Remove Splint-specific function "socket" and condition
+	around FROM_BUFFER_SIZE check.  Remove or replace Splint annotations.
+
+	* src/ompd.h: Remove Splint annotations.
+
+	* src/openvasmd.c: Remove Splint-specific conditions for includes and
+	splint.h #include.  Remove or replace Splint annotations.
+
+	* src/otp.c: Remove splint.h #include and Splint annotations.
+
+	* src/ovas-mngr-comm.c: Remove splint.h #include.
+
+	* src/scanner.c: Remove or replace Splint annotations.
+
+	* src/splint.h: Remove.
+
 2016-03-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	When using SQLite, ensure that all three databases are in WAL mode.

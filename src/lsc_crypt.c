@@ -32,10 +32,6 @@
 
 #include <openvas/base/gpgme_util.h>
 
-#ifdef S_SPLINT_S
-#include "splint.h"
-#endif
-
 #include "lsc_crypt.h"
 
 #undef G_LOG_DOMAIN

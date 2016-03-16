@@ -72,10 +72,6 @@
 #include <openvas/base/pwpolicy.h>
 #include <openvas/omp/omp.h>
 
-#ifdef S_SPLINT_S
-#include "splint.h"
-#endif
-
 /**
  * @brief Absolute maximum number of IPs per target.
  *
@@ -19145,7 +19141,6 @@ create_report (array_t *results, const char *task_id, const char *task_name,
   current_report = 0;
 
   exit (EXIT_SUCCESS);
-  /*@notreached@*/
   return 0;
 }
 
@@ -28775,10 +28770,6 @@ make_task_complete (const char *uuid)
   event (task, 0, EVENT_TASK_RUN_STATUS_CHANGED, (void*) TASK_STATUS_NEW);
 }
 
-#ifdef S_SPLINT_S
-typedef /*@only@*/ struct dirent * only_dirent_pointer;
-#endif
-
 /**
  * @brief Dummy function.
  *
@@ -28815,7 +28806,7 @@ save_tasks ()
  * @return 0 on success, -2 if parameter name error, -3 value error (NULL).
  */
 int
-set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
+set_task_parameter (task_t task, const char* parameter, char* value)
 {
   /** @todo Free value consistently. */
 
@@ -29122,7 +29113,6 @@ request_delete_task_uuid (const char *task_id, int ultimate)
         break;
     }
 
-  /*@notreached@*/
   sql_commit ();
   return 0;
 }
@@ -29288,7 +29278,7 @@ delete_trash_tasks ()
  * @param[in]  length  Length of the text.
  */
 void
-append_to_task_comment (task_t task, const char* text, /*@unused@*/ int length)
+append_to_task_comment (task_t task, const char* text, /* unused */ int length)
 {
   append_to_task_string (task, "comment", text);
 }
@@ -29301,7 +29291,7 @@ append_to_task_comment (task_t task, const char* text, /*@unused@*/ int length)
  * @param[in]  length  Length of the text.
  */
 void
-append_to_task_name (task_t task, const char* text, /*@unused@*/ int length)
+append_to_task_name (task_t task, const char* text, /* unused */ int length)
 {
   append_to_task_string (task, "name", text);
 }

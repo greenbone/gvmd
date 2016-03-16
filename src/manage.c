@@ -78,10 +78,6 @@
 #include <openvas/misc/openvas_uuid.h>
 #include <openvas/misc/openvas_proctitle.h>
 
-#ifdef S_SPLINT_S
-#include "splint.h"
-#endif
-
 #undef G_LOG_DOMAIN
 /**
  * @brief GLib log domain.
@@ -738,7 +734,7 @@ severity_data_level_counts (const severity_data_t *severity_data,
 /**
  * @brief The task currently running on the scanner.
  */
-/*@null@*/ task_t current_scanner_task = (task_t) 0;
+task_t current_scanner_task = (task_t) 0;
 
 /**
  * @brief The report of the current task.
@@ -6895,14 +6891,12 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
       iterator_t cert_refs_iterator, tags;
       gchar *tag_name_esc, *tag_value_esc, *tag_comment_esc;
 
-#ifndef S_SPLINT_S
       DEF (copyright);
       DEF (summary);
       DEF (family);
       DEF (version);
       DEF (xref);
       DEF (tag);
-#endif /* not S_SPLINT_S */
 
 #undef DEF
 
@@ -7768,7 +7762,7 @@ openvas_sync_feed (const gchar * sync_script, const gchar * current_user,
             fclose (sync_err);
             exit (EXIT_FAILURE);
           }
-        /*@notreached@ */
+
         fclose (sync_out);
         fclose (sync_err);
         exit (EXIT_FAILURE);
@@ -8004,7 +7998,7 @@ openvas_migrate_secinfo (const gchar * sync_script, int feed_type)
             fclose (sync_err);
             exit (EXIT_FAILURE);
           }
-        /*@notreached@ */
+
         fclose (sync_out);
         fclose (sync_err);
         exit (EXIT_FAILURE);
