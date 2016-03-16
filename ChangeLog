@@ -1,5 +1,10 @@
 2016-03-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (print_report_prognostic_xml): Only skip hosts with
+	no results if result_hosts_only is true.
+
+2016-03-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (print_report_xml): Apply ignore_pagination option
 	for "assets" and "prognostic" type reports.
 

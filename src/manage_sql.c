@@ -25115,7 +25115,7 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
                       + (strchr (levels, 'l') ? f_infos : 0)
                       + (strchr (levels, 'g') ? f_logs : 0)
                       + (strchr (levels, 'm') ? f_warnings : 0);
-          if (!filtered)
+          if (result_hosts_only && !filtered)
             /* Skip this host. */
             report_host = 0;
         }
