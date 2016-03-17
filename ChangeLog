@@ -1,5 +1,9 @@
 2016-03-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/CMakeLists.txt: Remove flawfinder target.
+
+2016-03-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (send_to_host, send_to_sourcefire, send_to_verinice)
 	(manage_report, manage_send_report, manage_schema): Remove RATS
 	annotations.

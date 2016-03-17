@@ -199,14 +199,11 @@ endif (BACKEND STREQUAL POSTGRESQL)
 
 ## Static analysis
 
-add_custom_target (flawfinder COMMENT "Running flawfinder..."
-                   COMMAND sh -c \"flawfinder ${CMAKE_CURRENT_SOURCE_DIR}/*.[ch]\")
-
 add_custom_target (cppcheck COMMENT "Running cppcheck..."
                    COMMAND sh -c \"cppcheck ${CMAKE_CURRENT_SOURCE_DIR}\")
 
 add_custom_target (check COMMENT "Checking code...")
-add_dependencies (check flawfinder cppcheck)
+add_dependencies (check cppcheck)
 
 ## Tag files
 
