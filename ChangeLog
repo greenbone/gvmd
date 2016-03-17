@@ -1,5 +1,12 @@
 2016-03-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/greenbone-certdata-sync.in: Replace -1 exit value with 1.  -1 is
+	technically out of range, apparently, and other exits all use 1.
+
+	* tools/greenbone-scapdata-sync.in: Replace -1 exit value with 1.
+
+2016-03-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (run_alert_script): New function.
 	(send_to_host): Use run_alert_script.
 

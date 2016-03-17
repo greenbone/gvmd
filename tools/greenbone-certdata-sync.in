@@ -350,7 +350,7 @@ is_feed_current () {
       then
         log_err "CERT synchronization: Could not determine credentials, aborting synchronization."
         rm -rf $FEED_INFO_TEMP_DIR
-        exit -1
+        exit 1
       fi
 
       gsmproxy=$(get_value proxy_feed | sed -r -e 's/^.*\/\///' -e 's/:([0-9]+)$/ \1/')
@@ -378,7 +378,7 @@ is_feed_current () {
         log_err "rsync failed, aborting synchronization."
         rm -rf $FEED_INFO_TEMP_DIR
         remove_tmp_key
-        exit -1
+        exit 1
       fi
       remove_tmp_key
     else
@@ -388,7 +388,7 @@ is_feed_current () {
       then
         log_err "rsync failed, aborting synchronization."
         rm -rf $FEED_INFO_TEMP_DIR
-        exit -1
+        exit 1
       fi
     fi
 
@@ -398,7 +398,7 @@ is_feed_current () {
     then
       log_err "Could not determine server feed version."
       rm -rf $FEED_INFO_TEMP_DIR
-      exit -1
+      exit 1
     fi
 
     # Check against FEED_VERSION
