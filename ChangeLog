@@ -1,5 +1,25 @@
 2016-03-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Reapply r24686, it was wanted in the end.
+
+	When using SQLite, ensure that all three databases are in WAL mode.
+
+	* src/sql_sqlite3.c (sql_open): Enable WAL.
+
+	* tools/cert_db_init.sql, tools/scap_db_init.sql: Enable WAL.
+
+	* tools/greenbone-scapdata-sync.in (ensure_sqlite3_wal_mode): New
+	function.
+	(init_scap_db_update): When the db exists already, make sure it's in WAL
+	mode.
+
+	* tools/greenbone-certdata-sync.in (ensure_sqlite3_wal_mode): New
+	function.
+	(update_cert_db): When the db exists already, make sure it's in WAL
+	mode.
+
+2016-03-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Revert r24686.
 
 	* src/sql_sqlite3.c (sql_open): Remove WAL code.
