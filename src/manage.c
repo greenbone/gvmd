@@ -7627,7 +7627,6 @@ openvas_sync_feed (const gchar * sync_script, const gchar * current_user,
 
   /* Setup SIGCHLD for waiting. */
 
-  /* RATS: ignore, this is SIG_DFL damnit. */
   if (signal (SIGCHLD, SIG_DFL) == SIG_ERR)
     {
       g_warning ("Failed to set SIG_DFL");

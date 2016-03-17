@@ -8682,7 +8682,6 @@ send_to_host (const char *host, const char *port,
                     exit (EXIT_FAILURE);
                   }
 
-                /* RATS: ignore, command is defined above. */
                 ret = system (command);
                 /* Ignore the shell command exit status, because we've not
                  * specified what it must be in the past. */
@@ -8782,7 +8781,6 @@ send_to_host (const char *host, const char *port,
         /* Just run the command as the current user. */
         g_free (report_file);
 
-        /* RATS: ignore, command is defined above. */
         ret = system (command);
         /* Ignore the shell command exit status, because we've not
          * specified what it must be in the past. */
@@ -9018,7 +9016,6 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                     exit (EXIT_FAILURE);
                   }
 
-                /* RATS: ignore, command is defined above. */
                 ret = system (command);
                 /* Ignore the shell command exit status, because we've not
                  * specified what it must be in the past. */
@@ -9121,7 +9118,6 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
         g_free (report_file);
         g_free (pkcs12_file);
 
-        /* RATS: ignore, command is defined above. */
         ret = system (command);
         /* Ignore the shell command exit status, because we've not
          * specified what it must be in the past. */
@@ -9344,7 +9340,6 @@ send_to_verinice (const char *url, const char *username, const char *password,
                     exit (EXIT_FAILURE);
                   }
 
-                /* RATS: ignore, command is defined above. */
                 ret = system (command);
                 /* Ignore the shell command exit status, because we've not
                  * specified what it must be in the past. */
@@ -9445,7 +9440,6 @@ send_to_verinice (const char *url, const char *username, const char *password,
         /* Just run the command as the current user. */
         g_free (archive_file);
 
-        /* RATS: ignore, command is defined above. */
         ret = system (command);
         /* Ignore the shell command exit status, because we've not
          * specified what it must be in the past. */
@@ -27737,7 +27731,6 @@ manage_report (report_t report, const get_data_t *get,
                       exit (EXIT_FAILURE);
                     }
 
-                  /* RATS: ignore, command is defined above. */
                   ret = system (command);
                   /* Ignore the shell command exit status, because we've not
                    * specified what it must be in the past. */
@@ -27853,7 +27846,6 @@ manage_report (report_t report, const get_data_t *get,
         {
           /* Just run the command as the current user. */
 
-          /* RATS: ignore, command is defined above. */
           ret = system (command);
           if (ret == -1)
             {
@@ -28215,7 +28207,6 @@ manage_send_report (report_t report, report_t delta_report,
                       exit (EXIT_FAILURE);
                     }
 
-                  /* RATS: ignore, command is defined above. */
                   ret = system (command);
                   /* Ignore the shell command exit status, because we've not
                    * specified what it must be in the past. */
@@ -28323,7 +28314,6 @@ manage_send_report (report_t report, report_t delta_report,
 
           g_free (xml_file);
 
-          /* RATS: ignore, command is defined above. */
           ret = system (command);
           /* Ignore the shell command exit status, because we've not
            * specified what it must be in the past. */
@@ -54615,7 +54605,6 @@ manage_schema (gchar *format, gchar **output_return, gsize *output_length,
 
       g_debug ("   command: %s\n", command);
 
-      /* RATS: ignore, command is defined above. */
       ret = system (command);
       if ((ret == -1)
           /* The schema "generate" script must exit with 0. */

@@ -1,5 +1,15 @@
 2016-03-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (send_to_host, send_to_sourcefire, send_to_verinice)
+	(manage_report, manage_send_report, manage_schema): Remove RATS
+	annotations.
+
+	* src/manage.c (openvas_sync_feed): Remove RATS annotation.
+
+	* src/otp.c (process_otp_scanner_input): Remove RATS annotations.
+
+2016-03-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (init_aggregate_iterator): Free opts_table on errors.
 	(send_to_host): Remove duplicate g_free of command.
 	(results_extra_where): Free levels, min_cvss_base, min_qod_clause

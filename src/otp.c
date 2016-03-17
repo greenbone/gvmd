@@ -1009,7 +1009,6 @@ process_otp_scanner_input (void (*progress) ())
 
                   protocol = g_newa (char, strlen (field));
 
-                  /* RATS: ignore, buffers are allocated to field length. */
                   if (sscanf (field, "%i/%s",
                               &number, protocol)
                       != 2)
@@ -1082,7 +1081,6 @@ process_otp_scanner_input (void (*progress) ())
 
                   protocol = g_newa (char, strlen (field));
 
-                  /* RATS: ignore, buffers are allocated to field length. */
                   if (sscanf (field, "%i/%s",
                               &number, protocol)
                       != 2)
@@ -1155,7 +1153,6 @@ process_otp_scanner_input (void (*progress) ())
 
                   protocol = g_newa (char, strlen (field));
 
-                  /* RATS: ignore, buffers are allocated to field length. */
                   if (sscanf (field, "%i/%s",
                               &number, protocol)
                       != 2)
