@@ -8524,19 +8524,17 @@ http_get (const char *url)
  * @return 0 success, -1 error.
  */
 static int
-send_to_host (const char *host, const char *port,
-              const char *report, int report_size)
+run_alert_script (const char *alert_id, const char *command_args,
+                  const char *report, int report_size)
 {
   gchar *script, *script_dir;
   gchar *report_file;
-  gchar *clean_host, *clean_port;
   char report_dir[] = "/tmp/openvasmd_alert_XXXXXX";
   GError *error;
 
-  if ((report == NULL) || (host == NULL))
+  if (report == NULL)
     return -1;
 
-  tracef ("send to host: %s:%s", host, port);
   tracef ("report: %s", report);
 
   /* Setup files. */
@@ -8563,7 +8561,7 @@ send_to_host (const char *host, const char *port,
   script_dir = g_build_filename (OPENVAS_DATA_DIR,
                                  "openvasmd",
                                  "global_alert_methods",
-                                 "4a398d42-87c0-11e5-a1c0-28d24461215b",
+                                 alert_id,
                                  NULL);
 
   script = g_build_filename (script_dir, "alert", NULL);
@@ -8615,18 +8613,12 @@ send_to_host (const char *host, const char *port,
 
     /* Call the script. */
 
-    clean_host = g_shell_quote (host);
-    clean_port = g_shell_quote (port);
-
-    command = g_strdup_printf ("%s %s %s %s > /dev/null"
+    command = g_strdup_printf ("%s %s %s > /dev/null"
                                " 2> /dev/null",
                                script,
-                               clean_host,
-                               clean_port,
+                               command_args,
                                report_file);
     g_free (script);
-    g_free (clean_host);
-    g_free (clean_port);
 
     g_debug ("   command: %s\n", command);
 
@@ -8820,6 +8812,41 @@ send_to_host (const char *host, const char *port,
 
     return 0;
   }
+}
+
+/**
+ * @brief Send a report to a host via TCP.
+ *
+ * @param[in]  host         Address of host.
+ * @param[in]  port         Port of host.
+ * @param[in]  report      Report that should be sent.
+ * @param[in]  report_size Size of the report.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+send_to_host (const char *host, const char *port,
+              const char *report, int report_size)
+{
+  gchar *clean_host, *clean_port, *command_args;
+  int ret;
+
+  tracef ("send to host: %s:%s", host, port);
+
+  if (host == NULL)
+    return -1;
+
+  clean_host = g_shell_quote (host);
+  clean_port = g_shell_quote (port);
+  command_args = g_strdup_printf ("%s %s", clean_host, clean_port);
+  g_free (clean_host);
+  g_free (clean_port);
+
+  ret = run_alert_script ("4a398d42-87c0-11e5-a1c0-28d24461215b", command_args,
+                          report, report_size);
+
+  g_free (command_args);
+  return ret;
 }
 
 /**
