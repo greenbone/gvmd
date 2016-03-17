@@ -592,17 +592,17 @@ parse_scanner_preference_value (char** messages, void (*progress) ())
                        from_scanner_end - from_scanner_start)))
     {
       match[0] = '\0';
-      value = g_strdup (*messages);
-      blank_control_chars (value);
       if (current_scanner_preference)
         {
           preference_t *preference;
 
+          value = g_strdup (*messages);
+          blank_control_chars (value);
           if (progress)
             progress ();
           preference = g_malloc0 (sizeof (preference_t));
           preference->name = g_strdup (current_scanner_preference);
-          preference->value = g_strdup (value);
+          preference->value = value;
           /* Add the preference to the_list which will be bulk-inserted
            * in DB later in manage_complete_nvt_cache_update. */
           scanner_preferences_list = g_list_prepend (scanner_preferences_list,

@@ -1,3 +1,18 @@
+2016-03-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (init_aggregate_iterator): Free opts_table on errors.
+	(send_to_host): Remove duplicate g_free of command.
+	(results_extra_where): Free levels, min_cvss_base, min_qod_clause
+	and min_cvss_base_clause when they are no longer needed.
+	(task_trend): Do not get min_qod as string, as it is only used as int.
+	(create_target): Free clean, quoted_exclude_hosts and quoted_hosts on
+	errors.
+	(create_report_format): Free real_old, old and new on errors.
+
+	* src/otp.c (parse_scanner_preference_value): Get and process value for
+	"value" only if current_scanner_preference is not NULL and assign it
+	directly to the preference.
+
 2016-03-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Reapply r24686, it was wanted in the end.

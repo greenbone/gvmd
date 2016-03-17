@@ -5244,12 +5244,14 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
     {
       g_free (columns);
       g_free (trash_columns);
+      g_free (opts_table);
       return 5;
     }
   if (get->trash && trash_columns == NULL)
     {
       g_free (columns);
       g_free (trash_columns);
+      g_free (opts_table);
       return 6;
     }
 
@@ -5266,6 +5268,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
             {
               g_free (columns);
               g_free (trash_columns);
+              g_free (opts_table);
               return 3;
             }
         }
@@ -5281,6 +5284,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
             {
               g_free (columns);
               g_free (trash_columns);
+              g_free (opts_table);
               return 7;
             }
         }
@@ -5289,6 +5293,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
     {
       g_free (columns);
       g_free (trash_columns);
+      g_free (opts_table);
       return 4;
     }
   select_data_columns = g_array_new (TRUE, TRUE, sizeof (gchar*));
@@ -8705,7 +8710,6 @@ send_to_host (const char *host, const char *port,
                 g_warning ("%s: and chdir failed\n",
                            __FUNCTION__);
               g_free (previous_dir);
-              g_free (command);
               g_free (command);
               return -1;
               break;
@@ -20359,10 +20363,12 @@ results_extra_where (const get_data_t *get, report_t report, const gchar* host,
 
   levels_clause = where_levels_auto (levels ? levels : "hmlgdf",
                                      new_severity_sql, auto_type_sql);
+  g_free (levels);
 
   min_cvss_base_clause = NULL;
   if (min_cvss_base)
     min_cvss_base_clause = where_cvss_base (min_cvss_base);
+  g_free (min_cvss_base);
 
   extra_where = g_strdup_printf("%s%s%s%s%s%s",
                                 report_clause ? report_clause : "",
@@ -20380,7 +20386,9 @@ results_extra_where (const get_data_t *get, report_t report, const gchar* host,
 
   g_free (new_severity_sql);
   g_free (auto_type_sql);
+  g_free (min_qod_clause);
   g_string_free (levels_clause, TRUE);
+  g_free (min_cvss_base_clause);
   g_free (report_clause);
   g_free (host_clause);
 
@@ -28634,7 +28642,6 @@ task_trend (task_t task, int override, int min_qod)
   int holes_a, warns_a, infos_a, logs_a, false_positives_a;
   int holes_b, warns_b, infos_b, logs_b, false_positives_b;
   double severity_a, severity_b;
-  gchar *min_qod_str;
   get_data_t *get;
 
   /* Ensure there are enough reports. */
@@ -28662,8 +28669,6 @@ task_trend (task_t task, int override, int min_qod)
   if (last_report == 0)
     return "";
 
-  min_qod_str = g_strdup_printf ("%d", min_qod);
-
   /* Count the logs and false positives too, as report_counts_id is faster
    * with all five. */
   get = report_results_get_data (1, -1, override, 0, min_qod);
@@ -28677,7 +28682,6 @@ task_trend (task_t task, int override, int min_qod)
   task_second_last_report (task, &second_last_report);
   if (second_last_report == 0)
     {
-      g_free (min_qod_str);
       get_data_reset (get);
       free (get);
       return "";
@@ -30277,6 +30281,7 @@ create_target (const char* name, const char* asset_hosts_filter,
     {
       g_free (quoted_exclude_hosts);
       g_free (quoted_name);
+      g_free (clean);
       sql_rollback ();
       return 3;
     }
@@ -30290,6 +30295,8 @@ create_target (const char* name, const char* asset_hosts_filter,
           || (port_list == 0))
         {
           g_free (quoted_name);
+          g_free (quoted_exclude_hosts);
+          g_free (quoted_hosts);
           return 6;
         }
     }
@@ -30302,6 +30309,8 @@ create_target (const char* name, const char* asset_hosts_filter,
       if (ret)
         {
           g_free (quoted_name);
+          g_free (quoted_exclude_hosts);
+          g_free (quoted_hosts);
           sql_rollback ();
           return ret;
         }
@@ -30978,6 +30987,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       if (max > max_hosts)
         {
           g_free (quoted_exclude_hosts);
+          g_free (clean);
           sql_rollback ();
           return 3;
         }
@@ -46355,6 +46365,8 @@ create_report_format (const char *uuid, const char *name,
               count = readlink (old, real_old, state.st_size + 1);
               if (count < 0 || count > state.st_size)
                 {
+                  g_free (real_old);
+                  g_free (old);
                   g_warning ("%s: readlink failed", __FUNCTION__);
                   sql_rollback ();
                   return -1;
@@ -46374,6 +46386,8 @@ create_report_format (const char *uuid, const char *name,
       g_free (base);
       if (symlink (old, new))
         {
+          g_free (old);
+          g_free (new);
           g_warning ("%s: symlink failed: %s", __FUNCTION__, strerror (errno));
           sql_rollback ();
           return -1;
