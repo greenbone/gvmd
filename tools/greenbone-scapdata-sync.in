@@ -845,30 +845,9 @@ scap_db_exists () {
   return 1;
 }
 
-ensure_sqlite3_wal_mode () {
-  if [ $POSTGRES -eq 1 ] ; then
-    return
-  fi
-  if [ ! -e $SCAP_DB ]
-  then
-    log_err "database missing, aborting synchronization."
-    exit 1
-  fi
-  reset_sql_tries
-  until [ "$try_sql" -eq 0 ]
-  do
-    DUMMY=`$SQLITE3 $SCAP_DB "PRAGMA journal_mode=WAL;"`
-    test_sql_exit "Could not set journal mode to WAL"
-  done
-}
-
 init_scap_db_update () {
-  log_info "Initialise database for update"
-
   if scap_db_exists
   then
-    log_info "Database exists already"
-
     check_db_version
     reset_sql_tries
     until [ "$try_sql" -eq 0 ]
@@ -876,7 +855,6 @@ init_scap_db_update () {
       CVE_REFDATE=`sql "select max(modification_time) from ${SCHEMA}cves;"`
       test_sql_exit "Could not get reference date for CVEs and CPEs"
     done
-    ensure_sqlite3_wal_mode
   else
     log_notice "Initializing SCAP database."
     reset_sql_tries

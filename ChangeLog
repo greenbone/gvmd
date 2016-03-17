@@ -1,3 +1,17 @@
+2016-03-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Revert r24686.
+
+	* src/sql_sqlite3.c (sql_open): Remove WAL code.
+
+	* tools/cert_db_init.sql, tools/scap_db_init.sql: Remove WAL code.
+
+	* tools/greenbone-scapdata-sync.in (ensure_sqlite3_wal_mode): Remove.
+	(init_scap_db_update): Remove WAL code
+
+	* tools/greenbone-certdata-sync.in (ensure_sqlite3_wal_mode): Remove.
+	(update_cert_db): Remove WAL code.
+
 2016-03-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Remove annotations and special code blocks for Splint, replacing

@@ -653,23 +653,6 @@ update_cvss () {
   fi
 }
 
-ensure_sqlite3_wal_mode () {
-  if [ $POSTGRES -eq 1 ] ; then
-    return
-  fi
-  if [ ! -e $CERT_DB ]
-  then
-    log_err "database missing, aborting synchronization."
-    exit 1
-  fi
-  reset_sql_tries
-  until [ "$try_sql" -eq 0 ]
-  do
-    DUMMY=`$SQLITE3 $CERT_DB "PRAGMA journal_mode=WAL;"`
-    test_sql_exit "Could not set journal mode to WAL"
-  done
-}
-
 update_cert_db() {
   if [ -z "$updated_cb" ]
   then
@@ -683,8 +666,6 @@ update_cert_db() {
 
   if cert_db_exists
   then
-    log_info "Database exists already"
-
     check_db_version
 
     reset_sql_tries
@@ -700,8 +681,6 @@ update_cert_db() {
       DFN_REFDATE=`sql "SELECT max(modification_time) from ${SCHEMA_CERT}dfn_cert_advs;"`
       test_sql_exit "Could not get DFN-CERT reference date from database"
     done
-
-    ensure_sqlite3_wal_mode
   else
     log_notice "Initializing CERT database."
     reset_sql_tries

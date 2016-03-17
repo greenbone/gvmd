@@ -248,9 +248,6 @@ sql_open (const char *database)
            OPENVAS_SQLITE_SLEEP_MAX);
 
   sqlite3_file_control (task_db, NULL, SQLITE_FCNTL_CHUNK_SIZE, &chunk_size);
-
-  sql ("PRAGMA journal_mode=WAL;");
-
   return 0;
 }
 
