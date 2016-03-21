@@ -1,3 +1,8 @@
+2016-03-21  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* doc/postgres-HOWTO: Added section with sample queries to
+	analyze the size of tables/relations.
+
 2016-03-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (manage_optimize): Add version of query with
