@@ -1,5 +1,11 @@
 2016-03-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (manage_optimize): Add version of query with
+	stricter type handling for PostgreSQL to cleanup-result-severities
+	case.
+
+2016-03-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Add keyword types to all iterator columns and use them to test if they
 	can be cast to numbers when a numeric filter keyword value is given.
 
