@@ -2756,20 +2756,18 @@ typedef struct
  *
  * @param[in]  select_columns  SELECT columns.
  * @param[in]  filter_column   Filter column.
- * @param[in]  type            Type of filter column.  The type is not given,
- *                             instead this is whether the filter term can be
- *                             unambiguously parsed as integer (e.g. 14) or a
- *                             double (e.g. 8.0).  Skip type shortcuts if value
- *                             is KEYWORD_TYPE_UNKNOWN.
+ * @param[out] type            Type of returned column.
  *
  * @return Column for the SELECT statement.
  */
 static gchar *
 columns_select_column_single (column_t *select_columns,
                               const char *filter_column,
-                              keyword_type_t type)
+                              keyword_type_t* type)
 {
   column_t *columns;
+  if (type)
+    *type = KEYWORD_TYPE_UNKNOWN;
   if (select_columns == NULL)
     return NULL;
   columns = select_columns;
@@ -2778,28 +2776,18 @@ columns_select_column_single (column_t *select_columns,
       if ((*columns).filter
           && strcmp ((*columns).filter, filter_column) == 0)
         {
-          /* Only include numeric columns when the filter term is numeric. */
-          if (type == KEYWORD_TYPE_UNKNOWN
-              || type == KEYWORD_TYPE_INTEGER
-              || type == KEYWORD_TYPE_DOUBLE)
-            return (*columns).select;
-          if ((*columns).type != KEYWORD_TYPE_INTEGER
-              && (*columns).type != KEYWORD_TYPE_DOUBLE)
-            return (*columns).select;
+          if (type)
+            *type = (*columns).type;
+          return (*columns).select;
         }
       if ((*columns).filter
           && *((*columns).filter)
           && *((*columns).filter) == '_'
           && strcmp (((*columns).filter) + 1, filter_column) == 0)
         {
-          /* Only include numeric columns when the filter term is numeric. */
-          if (type == KEYWORD_TYPE_UNKNOWN
-              || type == KEYWORD_TYPE_INTEGER
-              || type == KEYWORD_TYPE_DOUBLE)
-            return (*columns).select;
-          if ((*columns).type != KEYWORD_TYPE_INTEGER
-              && (*columns).type != KEYWORD_TYPE_DOUBLE)
-            return (*columns).select;
+          if (type)
+            *type = (*columns).type;
+          return (*columns).select;
         }
       columns++;
     }
@@ -2807,7 +2795,11 @@ columns_select_column_single (column_t *select_columns,
   while ((*columns).select)
     {
       if (strcmp ((*columns).select, filter_column) == 0)
-        return (*columns).select;
+        {
+          if (type)
+            *type = (*columns).type;
+          return (*columns).select;
+        }
       columns++;
     }
   return NULL;
@@ -2828,12 +2820,10 @@ columns_select_column (column_t *select_columns,
                        const char *filter_column)
 {
   gchar *column;
-  column = columns_select_column_single (select_columns, filter_column,
-                                         KEYWORD_TYPE_UNKNOWN);
+  column = columns_select_column_single (select_columns, filter_column, NULL);
   if (column)
     return column;
-  return columns_select_column_single (where_columns, filter_column,
-                                       KEYWORD_TYPE_UNKNOWN);
+  return columns_select_column_single (where_columns, filter_column, NULL);
 }
 
 /**
@@ -2842,7 +2832,7 @@ columns_select_column (column_t *select_columns,
  * @param[in]  select_columns  SELECT columns.
  * @param[in]  where_columns   WHERE "columns".
  * @param[in]  filter_column   Filter column.
- * @param[in]  type            Type of the filter column.
+ * @param[out] type            Type of the returned column.
  *
  * @return Column for the SELECT statement.
  */
@@ -2850,7 +2840,7 @@ static gchar *
 columns_select_column_with_type (column_t *select_columns,
                                  column_t *where_columns,
                                  const char *filter_column,
-                                 keyword_type_t type)
+                                 keyword_type_t* type)
 {
   gchar *column;
   column = columns_select_column_single (select_columns, filter_column, type);
@@ -3635,19 +3625,25 @@ filter_clause (const char* type, const char* filter,
           else if (keyword->column && strcmp (keyword->column, "owner"))
             {
               gchar *column;
+              keyword_type_t column_type;
               quoted_keyword = sql_quote (keyword->string);
-              column = columns_select_column (select_columns,
-                                              where_columns,
-                                              keyword->column);
+              column = columns_select_column_with_type (select_columns,
+                                                        where_columns,
+                                                        keyword->column,
+                                                        &column_type);
               assert (column);
-              if (keyword->type == KEYWORD_TYPE_INTEGER)
+              if (keyword->type == KEYWORD_TYPE_INTEGER
+                  && (column_type == KEYWORD_TYPE_INTEGER
+                      || column_type == KEYWORD_TYPE_DOUBLE))
                 g_string_append_printf (clause,
                                         "%s(CAST (%s AS NUMERIC) = %i",
                                         get_join (first_keyword, last_was_and,
                                                   last_was_not),
                                         column,
                                         keyword->integer_value);
-              else if (keyword->type == KEYWORD_TYPE_DOUBLE)
+          else if (keyword->type == KEYWORD_TYPE_DOUBLE
+                   && (column_type == KEYWORD_TYPE_DOUBLE
+                       || column_type == KEYWORD_TYPE_INTEGER))
                 g_string_append_printf (clause,
                                         "%s(CAST (%s AS NUMERIC) = %f",
                                         get_join (first_keyword, last_was_and,
@@ -3706,6 +3702,7 @@ filter_clause (const char* type, const char* filter,
       else if (keyword->relation == KEYWORD_RELATION_COLUMN_ABOVE)
         {
           gchar *column;
+          keyword_type_t column_type;
 
           if (vector_find_filter (filter_columns, keyword->column) == 0)
             {
@@ -3716,18 +3713,23 @@ filter_clause (const char* type, const char* filter,
             }
 
           quoted_keyword = sql_quote (keyword->string);
-          column = columns_select_column (select_columns,
-                                          where_columns,
-                                          keyword->column);
+          column = columns_select_column_with_type (select_columns,
+                                                    where_columns,
+                                                    keyword->column,
+                                                    &column_type);
           assert (column);
-          if (keyword->type == KEYWORD_TYPE_INTEGER)
+          if (keyword->type == KEYWORD_TYPE_INTEGER
+              && (column_type == KEYWORD_TYPE_INTEGER
+                  || column_type == KEYWORD_TYPE_DOUBLE))
             g_string_append_printf (clause,
                                     "%s(CAST (%s AS NUMERIC) > %i",
                                     get_join (first_keyword, last_was_and,
                                               last_was_not),
                                     column,
                                     keyword->integer_value);
-          else if (keyword->type == KEYWORD_TYPE_DOUBLE)
+          else if (keyword->type == KEYWORD_TYPE_DOUBLE
+                   && (column_type == KEYWORD_TYPE_DOUBLE
+                       || column_type == KEYWORD_TYPE_INTEGER))
             g_string_append_printf (clause,
                                     "%s(CAST (%s AS NUMERIC) > %f",
                                     get_join (first_keyword, last_was_and,
@@ -3745,6 +3747,7 @@ filter_clause (const char* type, const char* filter,
       else if (keyword->relation == KEYWORD_RELATION_COLUMN_BELOW)
         {
           gchar *column;
+          keyword_type_t column_type;
 
           if (vector_find_filter (filter_columns, keyword->column) == 0)
             {
@@ -3755,18 +3758,23 @@ filter_clause (const char* type, const char* filter,
             }
 
           quoted_keyword = sql_quote (keyword->string);
-          column = columns_select_column (select_columns,
-                                          where_columns,
-                                          keyword->column);
+          column = columns_select_column_with_type (select_columns,
+                                                    where_columns,
+                                                    keyword->column,
+                                                    &column_type);
           assert (column);
-          if (keyword->type == KEYWORD_TYPE_INTEGER)
+          if (keyword->type == KEYWORD_TYPE_INTEGER
+              && (column_type == KEYWORD_TYPE_INTEGER
+                  || column_type == KEYWORD_TYPE_DOUBLE))
             g_string_append_printf (clause,
                                     "%s(CAST (%s AS NUMERIC) < %i",
                                     get_join (first_keyword, last_was_and,
                                               last_was_not),
                                     column,
                                     keyword->integer_value);
-          else if (keyword->type == KEYWORD_TYPE_DOUBLE)
+          else if (keyword->type == KEYWORD_TYPE_DOUBLE
+                   && (column_type == KEYWORD_TYPE_DOUBLE
+                       || column_type == KEYWORD_TYPE_INTEGER))
             g_string_append_printf (clause,
                                     "%s(CAST (%s AS NUMERIC) < %f",
                                     get_join (first_keyword, last_was_and,
@@ -3825,13 +3833,17 @@ filter_clause (const char* type, const char* filter,
                  index++)
               {
                 gchar *select_column;
+                keyword_type_t column_type;
 
-                select_column = columns_select_column (select_columns,
-                                                       where_columns,
-                                                       filter_column);
+                select_column = columns_select_column_with_type (select_columns,
+                                                                 where_columns,
+                                                                 filter_column,
+                                                                 &column_type);
                 assert (select_column);
 
-                if (keyword->type == KEYWORD_TYPE_INTEGER)
+                if (keyword->type == KEYWORD_TYPE_INTEGER
+                    && (column_type == KEYWORD_TYPE_INTEGER
+                        || column_type == KEYWORD_TYPE_DOUBLE))
                   g_string_append_printf (clause,
                                           "%s"
                                           "(%s IS NULL"
@@ -3841,7 +3853,9 @@ filter_clause (const char* type, const char* filter,
                                           select_column,
                                           select_column,
                                           keyword->integer_value);
-                else if (keyword->type == KEYWORD_TYPE_DOUBLE)
+                else if (keyword->type == KEYWORD_TYPE_DOUBLE
+                         && (column_type == KEYWORD_TYPE_DOUBLE
+                             || column_type == KEYWORD_TYPE_INTEGER))
                   g_string_append_printf (clause,
                                           "%s"
                                           "(%s IS NULL"
@@ -3868,20 +3882,26 @@ filter_clause (const char* type, const char* filter,
                  index++)
               {
                 gchar *select_column;
+                keyword_type_t column_type;
 
-                select_column = columns_select_column (select_columns,
-                                                       where_columns,
-                                                       filter_column);
+                select_column = columns_select_column_with_type (select_columns,
+                                                                 where_columns,
+                                                                 filter_column,
+                                                                 &column_type);
                 assert (select_column);
 
-                if (keyword->type == KEYWORD_TYPE_INTEGER)
+                if (keyword->type == KEYWORD_TYPE_INTEGER
+                    && (column_type == KEYWORD_TYPE_INTEGER
+                        || column_type == KEYWORD_TYPE_DOUBLE))
                   g_string_append_printf (clause,
                                           "%sCAST (%s AS NUMERIC)"
                                           " = %i",
                                           (index ? " OR " : ""),
                                           select_column,
                                           keyword->integer_value);
-                else if (keyword->type == KEYWORD_TYPE_DOUBLE)
+                else if (keyword->type == KEYWORD_TYPE_DOUBLE
+                         && (column_type == KEYWORD_TYPE_DOUBLE
+                             || column_type == KEYWORD_TYPE_INTEGER))
                   g_string_append_printf (clause,
                                           "%sCAST (%s AS NUMERIC)"
                                           " = %f",
@@ -3919,14 +3939,23 @@ filter_clause (const char* type, const char* filter,
                  index++)
               {
                 gchar *select_column;
+                keyword_type_t column_type;
+                int column_type_matches = 0;
 
                 select_column = columns_select_column_with_type (select_columns,
                                                                  where_columns,
                                                                  filter_column,
-                                                                 type);
+                                                                 &column_type);
+
+                if (type == KEYWORD_TYPE_UNKNOWN
+                    || type == KEYWORD_TYPE_INTEGER
+                    || type == KEYWORD_TYPE_DOUBLE
+                    || (column_type != KEYWORD_TYPE_INTEGER
+                        && column_type != KEYWORD_TYPE_DOUBLE))
+                  column_type_matches = 1;
 
                 if (keyword_applies_to_column (keyword, filter_column)
-                    && select_column)
+                    && select_column && column_type_matches)
                   g_string_append_printf (clause,
                                           "%s"
                                           "(%s IS NULL"
@@ -3952,14 +3981,23 @@ filter_clause (const char* type, const char* filter,
                  index++)
               {
                 gchar *select_column;
+                keyword_type_t column_type;
+                int column_type_matches = 0;
 
                 select_column = columns_select_column_with_type (select_columns,
                                                                  where_columns,
                                                                  filter_column,
-                                                                 type);
+                                                                 &column_type);
+
+               if (type == KEYWORD_TYPE_UNKNOWN
+                    || type == KEYWORD_TYPE_INTEGER
+                    || type == KEYWORD_TYPE_DOUBLE
+                    || (column_type != KEYWORD_TYPE_INTEGER
+                        && column_type != KEYWORD_TYPE_DOUBLE))
+                  column_type_matches = 1;
 
                 if (keyword_applies_to_column (keyword, filter_column)
-                    && select_column)
+                    && select_column && column_type_matches)
                   g_string_append_printf (clause,
                                           "%sCAST (%s AS TEXT)"
                                           " %s '%s%s%s'",
@@ -4043,15 +4081,15 @@ filter_clause (const char* type, const char* filter,
  *
  * @param[in]  prefix  Column prefix.
  */
-#define GET_ITERATOR_COLUMNS_PREFIX(prefix)                             \
-  { prefix "id", NULL },                                                \
-  { prefix "uuid", NULL },                                              \
-  { prefix "name", NULL },                                              \
-  { prefix "comment", NULL },                                           \
-  { " iso_time (" prefix "creation_time)", NULL },                      \
-  { " iso_time (" prefix "modification_time)", NULL },                  \
-  { prefix "creation_time", "created" },                                \
-  { prefix "modification_time", "modified" }
+#define GET_ITERATOR_COLUMNS_PREFIX(prefix)                                 \
+  { prefix "id", NULL, KEYWORD_TYPE_INTEGER },                              \
+  { prefix "uuid", NULL, KEYWORD_TYPE_STRING },                             \
+  { prefix "name", NULL, KEYWORD_TYPE_STRING },                             \
+  { prefix "comment", NULL, KEYWORD_TYPE_STRING },                          \
+  { " iso_time (" prefix "creation_time)", NULL, KEYWORD_TYPE_STRING },     \
+  { " iso_time (" prefix "modification_time)", NULL, KEYWORD_TYPE_STRING }, \
+  { prefix "creation_time", "created", KEYWORD_TYPE_INTEGER },              \
+  { prefix "modification_time", "modified", KEYWORD_TYPE_INTEGER }
 
 /**
  * @brief Columns for GET iterator.
@@ -4063,9 +4101,10 @@ filter_clause (const char* type, const char* filter,
   {                                                                             \
     "(SELECT name FROM users AS inner_users"                                    \
     " WHERE inner_users.id = " G_STRINGIFY (table) ".owner)",                   \
-    "_owner"                                                                    \
+    "_owner",                                                                   \
+    KEYWORD_TYPE_INTEGER                                                        \
   },                                                                            \
-  { "owner", NULL }
+  { "owner", NULL, KEYWORD_TYPE_INTEGER }
 
 /**
  * @brief Number of columns for GET iterator.
@@ -7784,12 +7823,12 @@ alert_event (alert_t alert)
 #define ALERT_ITERATOR_COLUMNS                                                \
  {                                                                            \
    GET_ITERATOR_COLUMNS (alerts),                                             \
-   { "event", NULL },                                                         \
-   { "condition", NULL},                                                      \
-   { "method", NULL },                                                        \
-   { "filter", NULL},                                                         \
-   { G_STRINGIFY (LOCATION_TABLE), NULL},                                     \
-   { NULL, NULL }                                                             \
+   { "event", NULL, KEYWORD_TYPE_INTEGER },                                   \
+   { "condition", NULL, KEYWORD_TYPE_INTEGER },                               \
+   { "method", NULL, KEYWORD_TYPE_INTEGER },                                  \
+   { "filter", NULL, KEYWORD_TYPE_INTEGER },                                  \
+   { G_STRINGIFY (LOCATION_TABLE), NULL, KEYWORD_TYPE_INTEGER },              \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
  }
 
 /**
@@ -7798,12 +7837,12 @@ alert_event (alert_t alert)
 #define ALERT_ITERATOR_TRASH_COLUMNS                                          \
  {                                                                            \
    GET_ITERATOR_COLUMNS (alerts_trash),                                       \
-   { "event", NULL },                                                         \
-   { "condition", NULL},                                                      \
-   { "method", NULL },                                                        \
-   { "filter", NULL},                                                         \
-   { "filter_location", NULL},                                                \
-   { NULL, NULL }                                                             \
+   { "event", NULL, KEYWORD_TYPE_INTEGER },                                   \
+   { "condition", NULL, KEYWORD_TYPE_INTEGER },                               \
+   { "method", NULL, KEYWORD_TYPE_INTEGER },                                  \
+   { "filter", NULL, KEYWORD_TYPE_STRING },                                   \
+   { "filter_location", NULL, KEYWORD_TYPE_INTEGER},                          \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
  }
 
 /**
@@ -11608,7 +11647,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
  * @brief Task iterator columns.
  */
 #define TASK_ITERATOR_COLUMNS_INNER                                         \
-   { "run_status", NULL },                                                  \
+   { "run_status", NULL, KEYWORD_TYPE_INTEGER },                            \
    {                                                                        \
      "(SELECT count(*) FROM reports"                                        \
      " WHERE task = tasks.id)",                                             \
@@ -11620,15 +11659,17 @@ append_to_task_string (task_t task, const char* field, const char* value)
      /* TODO 1 == TASK_STATUS_DONE */                                       \
      " AND scan_run_status = 1"                                             \
      " ORDER BY date ASC LIMIT 1)",                                         \
-     "first_report"                                                         \
+     "first_report",                                                        \
+     KEYWORD_TYPE_STRING                                                    \
    },                                                                       \
-   { "run_status_name (run_status)", "status" },                            \
+   { "run_status_name (run_status)", "status", KEYWORD_TYPE_STRING },       \
    {                                                                        \
      "(SELECT uuid FROM reports WHERE task = tasks.id"                      \
      /* TODO 1 == TASK_STATUS_DONE */                                       \
      " AND scan_run_status = 1"                                             \
      " ORDER BY date DESC LIMIT 1)",                                        \
-     "last_report"                                                          \
+     "last_report",                                                         \
+     KEYWORD_TYPE_STRING                                                    \
    },                                                                       \
    {                                                                        \
      "(SELECT count(*) FROM reports"                                        \
@@ -11637,15 +11678,23 @@ append_to_task_string (task_t task, const char* field, const char* value)
      NULL,                                                                  \
      KEYWORD_TYPE_INTEGER                                                   \
    },                                                                       \
-   { "hosts_ordering", NULL },                                              \
-   { "scanner", NULL }
+   { "hosts_ordering", NULL, KEYWORD_TYPE_STRING },                         \
+   { "scanner", NULL, KEYWORD_TYPE_INTEGER }
 
 /**
  * @brief Task iterator WHERE columns.
  */
 #define TASK_ITERATOR_WHERE_COLUMNS_INNER                                    \
-   { "task_threat_level (id, opts.override, opts.min_qod)", "threat" },      \
-   { "task_trend (id, opts.override, opts.min_qod)", "trend" },              \
+   {                                                                         \
+     "task_threat_level (id, opts.override, opts.min_qod)",                  \
+     "threat",                                                               \
+     KEYWORD_TYPE_STRING                                                     \
+   },                                                                        \
+   {                                                                         \
+     "task_trend (id, opts.override, opts.min_qod)",                         \
+     "trend",                                                                \
+     KEYWORD_TYPE_STRING                                                     \
+   },                                                                        \
    {                                                                         \
      "task_severity (id, opts.override, opts.min_qod)",                      \
      "severity",                                                             \
@@ -11654,7 +11703,8 @@ append_to_task_string (task_t task, const char* field, const char* value)
    {                                                                         \
      "(SELECT schedules.name FROM schedules"                                 \
      " WHERE schedules.id = tasks.schedule)",                                \
-     "schedule"                                                              \
+     "schedule",                                                             \
+     KEYWORD_TYPE_STRING                                                     \
    },                                                                        \
    {                                                                         \
      "(CASE WHEN schedule_next_time IS NULL"                                 \
@@ -11665,21 +11715,24 @@ append_to_task_string (task_t task, const char* field, const char* value)
      "       WHERE schedules.id = tasks.schedule)"                           \
      " ELSE schedule_next_time"                                              \
      " END)",                                                                \
-     "next_due"                                                              \
+     "next_due",                                                             \
+     KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
      "(SELECT date FROM reports WHERE task = tasks.id"                       \
      /* TODO 1 == TASK_STATUS_DONE */                                        \
      " AND scan_run_status = 1"                                              \
      " ORDER BY date ASC LIMIT 1)",                                          \
-     "first"                                                                 \
+     "first",                                                                \
+     KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
      "(SELECT date FROM reports WHERE task = tasks.id"                       \
      /* TODO 1 == TASK_STATUS_DONE */                                        \
      " AND scan_run_status = 1"                                              \
      " ORDER BY date DESC LIMIT 1)",                                         \
-     "last"                                                                  \
+     "last",                                                                 \
+     KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
      "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
@@ -11798,7 +11851,8 @@ append_to_task_string (task_t task, const char* field, const char* value)
    },                                                                        \
    {                                                                         \
      "(SELECT name FROM targets WHERE id = target)",                         \
-     "target"                                                                \
+     "target",                                                               \
+     KEYWORD_TYPE_STRING                                                     \
    }
 
 /**
@@ -11807,7 +11861,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
 #define TASK_ITERATOR_WHERE_COLUMNS                                         \
  {                                                                          \
    TASK_ITERATOR_WHERE_COLUMNS_INNER,                                       \
-   { NULL, NULL }                                                           \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                     \
  }
 
 /**
@@ -11817,7 +11871,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
  {                                                                          \
    GET_ITERATOR_COLUMNS (tasks),                                            \
    TASK_ITERATOR_COLUMNS_INNER,                                             \
-   { NULL, NULL }                                                           \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                     \
  }
 
 /**
@@ -11826,7 +11880,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
 #define TASK_ITERATOR_COLUMNS_MIN                                           \
  {                                                                          \
    GET_ITERATOR_COLUMNS (tasks),                                            \
-   { NULL, NULL }                                                           \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                     \
  }
 
 /**
@@ -11836,7 +11890,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
  {                                                                          \
    TASK_ITERATOR_COLUMNS_INNER,                                             \
    TASK_ITERATOR_WHERE_COLUMNS_INNER,                                       \
-   { NULL, NULL }                                                           \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                     \
  }
 
 /**
@@ -19532,16 +19586,16 @@ report_add_result (report_t report, result_t result)
  */
 #define REPORT_ITERATOR_COLUMNS                                              \
  {                                                                           \
-   { "id", NULL },                                                           \
-   { "uuid", NULL },                                                         \
-   { "iso_time (start_time)", "name" },                                      \
-   { "''", NULL },                                                           \
-   { "iso_time (start_time)", NULL },                                        \
-   { "iso_time (end_time)", NULL },                                          \
-   { "start_time", "created" },                                              \
-   { "end_time", "modified" },                                               \
-   { "''", NULL },                                                           \
-   { NULL, NULL }                                                            \
+   { "id", NULL, KEYWORD_TYPE_INTEGER },                                     \
+   { "uuid", NULL, KEYWORD_TYPE_STRING },                                    \
+   { "iso_time (start_time)", "name", KEYWORD_TYPE_STRING },                 \
+   { "''", NULL, KEYWORD_TYPE_STRING },                                      \
+   { "iso_time (start_time)", NULL, KEYWORD_TYPE_STRING },                   \
+   { "iso_time (end_time)", NULL, KEYWORD_TYPE_STRING },                     \
+   { "start_time", "created", KEYWORD_TYPE_INTEGER },                        \
+   { "end_time", "modified", KEYWORD_TYPE_INTEGER },                         \
+   { "''", NULL, KEYWORD_TYPE_STRING },                                      \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
  }
 
 /**
@@ -19549,9 +19603,13 @@ report_add_result (report_t report, result_t result)
  */
 #define REPORT_ITERATOR_WHERE_COLUMNS                                        \
  {                                                                           \
-   { "run_status_name (scan_run_status)", "status" },                        \
-   { "(SELECT uuid FROM tasks WHERE tasks.id = task)", "task_id" },          \
-   { "date", NULL },                                                         \
+   { "run_status_name (scan_run_status)", "status", KEYWORD_TYPE_STRING },   \
+   {                                                                         \
+     "(SELECT uuid FROM tasks WHERE tasks.id = task)",                       \
+     "task_id",                                                              \
+     KEYWORD_TYPE_STRING                                                     \
+   },                                                                        \
+   { "date", NULL, KEYWORD_TYPE_INTEGER },                                   \
    { "(SELECT name FROM tasks WHERE tasks.id = task)", "task" },             \
    {                                                                         \
      "report_severity (id, opts.override, opts.min_qod)",                    \
@@ -19567,7 +19625,8 @@ report_add_result (report_t report, result_t result)
      "                  || CAST (temp % 10 as text)"                         \
      "           FROM (SELECT report_progress (id) AS temp) AS temp_sub)"    \
      "  END)",                                                               \
-     "status"                                                                \
+     "status",                                                               \
+     KEYWORD_TYPE_STRING                                                     \
    },                                                                        \
    {                                                                         \
      "report_severity_count (id, opts.override, opts.min_qod,"               \
@@ -19597,7 +19656,8 @@ report_add_result (report_t report, result_t result)
    },                                                                        \
    {                                                                         \
      "(SELECT name FROM users WHERE users.id = reports.owner)",              \
-     "_owner"                                                                \
+     "_owner",                                                               \
+     KEYWORD_TYPE_STRING                                                     \
    },                                                                        \
    {                                                                         \
      "report_host_count (id)",                                               \
@@ -19649,7 +19709,7 @@ report_add_result (report_t report, result_t result)
      "high_per_host",                                                        \
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
-   { NULL, NULL }                                                            \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
  }
 
 /**
@@ -20220,21 +20280,24 @@ where_qod (const char* min_qod)
  */
 #define RESULT_ITERATOR_COLUMNS                                               \
   {                                                                           \
-    { "id", NULL },                                                           \
-    { "uuid", NULL },                                                         \
-    { "(SELECT name FROM nvts WHERE nvts.oid =  nvt)", "name" },              \
-    { "''", "comment" },                                                      \
-    { " iso_time ( date )", "creation_time" },                                \
-    { " iso_time ( date )", "modification_time" },                            \
-    { "date", "created" },                                                    \
-    { "date", "modified" },                                                   \
+    { "id", NULL, KEYWORD_TYPE_INTEGER },                                     \
+    { "uuid", NULL, KEYWORD_TYPE_STRING },                                    \
+    { "(SELECT name FROM nvts WHERE nvts.oid =  nvt)",                        \
+      "name",                                                                 \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "''", "comment", KEYWORD_TYPE_STRING },                                 \
+    { " iso_time ( date )", "creation_time", KEYWORD_TYPE_STRING },           \
+    { " iso_time ( date )", "modification_time", KEYWORD_TYPE_STRING },       \
+    { "date", "created", KEYWORD_TYPE_INTEGER },                              \
+    { "date", "modified", KEYWORD_TYPE_INTEGER },                             \
     { "(SELECT name FROM users WHERE users.id = results.owner)",              \
-      "_owner" },                                                             \
-    { "owner", NULL },                                                        \
-    { "host", NULL },                                                         \
-    { "port", "location" },                                                   \
-    { "nvt", NULL },                                                          \
-    { "severity_to_type (severity)", "original_type" },                       \
+      "_owner",                                                               \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "owner", NULL, KEYWORD_TYPE_INTEGER },                                  \
+    { "host", NULL, KEYWORD_TYPE_STRING },                                    \
+    { "port", "location", KEYWORD_TYPE_STRING },                              \
+    { "nvt", NULL, KEYWORD_TYPE_STRING },                                     \
+    { "severity_to_type (severity)", "original_type", KEYWORD_TYPE_STRING },  \
     { "severity_to_type ((SELECT new_severity FROM result_new_severities"     \
       "                  WHERE result_new_severities.result = results.id"     \
       "                  AND result_new_severities.user"                      \
@@ -20243,16 +20306,21 @@ where_qod (const char* min_qod)
       "                         WHERE current_credentials.uuid = users.uuid)" \
       "                  AND result_new_severities.override = opts.override"  \
       "                  AND result_new_severities.dynamic = opts.dynamic"    \
-      "                  LIMIT 1))", "type" },                                \
+      "                  LIMIT 1))",                                          \
+      "type",                                                                 \
+      KEYWORD_TYPE_STRING },                                                  \
     { "(SELECT autofp FROM results_autofp"                                    \
       " WHERE (result = results.id) AND (autofp_selection = opts.autofp))",   \
-      "auto_type" },                                                          \
-    { "description", NULL },                                                  \
-    { "task", NULL },                                                         \
-    { "report", "report_rowid" },                                             \
-    { "(SELECT cvss_base FROM nvts WHERE nvts.oid =  nvt)", "cvss_base" },    \
-    { "nvt_version", NULL },                                                  \
-    { "severity", "original_severity" },                                      \
+      "auto_type",                                                            \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { "description", NULL, KEYWORD_TYPE_STRING },                             \
+    { "task", NULL, KEYWORD_TYPE_INTEGER },                                   \
+    { "report", "report_rowid", KEYWORD_TYPE_INTEGER },                       \
+    { "(SELECT cvss_base FROM nvts WHERE nvts.oid =  nvt)",                   \
+      "cvss_base",                                                            \
+      KEYWORD_TYPE_DOUBLE },                                                  \
+    { "nvt_version", NULL, KEYWORD_TYPE_STRING },                             \
+    { "severity", "original_severity", KEYWORD_TYPE_DOUBLE },                 \
     { "(SELECT new_severity FROM result_new_severities"                       \
       " WHERE result_new_severities.result = results.id"                      \
       " AND result_new_severities.user"                                       \
@@ -20261,19 +20329,27 @@ where_qod (const char* min_qod)
       "        WHERE current_credentials.uuid = users.uuid)"                  \
       " AND result_new_severities.override = opts.override"                   \
       " AND result_new_severities.dynamic = opts.dynamic"                     \
-      " LIMIT 1)", "severity" },                                              \
+      " LIMIT 1)",                                                            \
+      "severity",                                                             \
+      KEYWORD_TYPE_DOUBLE },                                                  \
     { "(SELECT name FROM nvts WHERE nvts.oid =  nvt)",                        \
-      "vulnerability" },                                                      \
-    { "date" , NULL },                                                        \
-    { "(SELECT uuid FROM reports WHERE id = report)", "report_id" },          \
+      "vulnerability",                                                        \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "date" , NULL, KEYWORD_TYPE_INTEGER },                                  \
+    { "(SELECT uuid FROM reports WHERE id = report)",                         \
+      "report_id",                                                            \
+      KEYWORD_TYPE_STRING },                                                  \
     { "(SELECT solution_type FROM nvts WHERE nvts.oid = nvt)",                \
-      "solution_type" },                                                      \
-    { "qod", NULL },                                                          \
-    { "qod_type", NULL },                                                     \
-    { "qod_type", NULL },                                                     \
-    { "(SELECT uuid FROM tasks WHERE id = task)", "task_id" },                \
-    { "(SELECT cve FROM nvts WHERE oid = nvt)", "cve" },                      \
-    { NULL, NULL }                                                            \
+      "solution_type",                                                        \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "qod", NULL, KEYWORD_TYPE_INTEGER },                                    \
+    { "qod_type", NULL, KEYWORD_TYPE_STRING },                                \
+    { "qod_type", NULL, KEYWORD_TYPE_STRING },                                \
+    { "(SELECT uuid FROM tasks WHERE id = task)",                             \
+      "task_id",                                                              \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "(SELECT cve FROM nvts WHERE oid = nvt)", "cve", KEYWORD_TYPE_STRING }, \
+    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
   }
 
 /**
@@ -31075,68 +31151,81 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 #define TARGET_ITERATOR_COLUMNS                             \
  {                                                          \
    GET_ITERATOR_COLUMNS (targets),                          \
-   { "hosts", NULL },                                       \
+   { "hosts", NULL, KEYWORD_TYPE_STRING },                  \
    { "target_credential (id, 0, CAST ('ssh' AS text))",     \
-     NULL },                                                \
+     NULL,                                                  \
+     KEYWORD_TYPE_INTEGER },                                \
    { "target_login_port (id, 0, CAST ('ssh' AS text))",     \
-     "ssh_port" },                                          \
+     "ssh_port",                                            \
+     KEYWORD_TYPE_INTEGER },                                \
    { "target_credential (id, 0, CAST ('smb' AS text))",     \
-     NULL },                                                \
-   { "port_list", NULL },                                   \
-   { "0", NULL },                                           \
-   { "0", NULL },                                           \
+     NULL,                                                  \
+     KEYWORD_TYPE_INTEGER },                                \
+   { "port_list", NULL, KEYWORD_TYPE_INTEGER },             \
+   { "0", NULL, KEYWORD_TYPE_INTEGER },                     \
+   { "0", NULL, KEYWORD_TYPE_INTEGER },                     \
    {                                                        \
      "(SELECT uuid FROM port_lists"                         \
      " WHERE port_lists.id = port_list)",                   \
-     NULL                                                   \
+     NULL,                                                  \
+     KEYWORD_TYPE_STRING                                    \
    },                                                       \
    {                                                        \
      "(SELECT name FROM port_lists"                         \
      " WHERE port_lists.id = port_list)",                   \
-     "port_list"                                            \
+     "port_list",                                           \
+     KEYWORD_TYPE_STRING                                    \
    },                                                       \
-   { "0", NULL },                                           \
-   { "exclude_hosts", NULL },                               \
-   { "reverse_lookup_only", NULL },                         \
-   { "reverse_lookup_unify", NULL },                        \
-   { "alive_test", NULL },                                  \
+   { "0", NULL, KEYWORD_TYPE_INTEGER },                     \
+   { "exclude_hosts", NULL, KEYWORD_TYPE_STRING },          \
+   { "reverse_lookup_only", NULL, KEYWORD_TYPE_INTEGER },   \
+   { "reverse_lookup_unify", NULL, KEYWORD_TYPE_INTEGER },  \
+   { "alive_test", NULL, KEYWORD_TYPE_INTEGER },            \
    { "target_credential (id, 0, CAST ('esxi' AS text))",    \
-     NULL },                                                \
-   { "0", NULL },                                           \
+     NULL,                                                  \
+     KEYWORD_TYPE_INTEGER },                                \
+   { "0", NULL, KEYWORD_TYPE_INTEGER },                     \
    { "target_credential (id, 0, CAST ('snmp' AS text))",    \
-     NULL },                                                \
-   { "0", NULL },                                           \
+     NULL,                                                  \
+     KEYWORD_TYPE_INTEGER },                                \
+   { "0", NULL, KEYWORD_TYPE_INTEGER },                     \
    {                                                        \
      "(SELECT name FROM credentials"                        \
      " WHERE credentials.id"                                \
      "       = target_credential (targets.id, 0,"           \
      "                            CAST ('ssh' AS text)))",  \
-     "ssh_credential"                                       \
+     "ssh_credential",                                      \
+     KEYWORD_TYPE_STRING                                    \
    },                                                       \
    {                                                        \
      "(SELECT name FROM credentials"                        \
      " WHERE credentials.id"                                \
      "       = target_credential (targets.id, 0,"           \
      "                            CAST ('smb' AS text)))",  \
-     "smb_credential"                                       \
+     "smb_credential",                                      \
+     KEYWORD_TYPE_STRING                                    \
    },                                                       \
    {                                                        \
      "(SELECT name FROM credentials"                        \
      " WHERE credentials.id"                                \
      "       = target_credential (targets.id, 0,"           \
      "                            CAST ('esxi' AS text)))", \
-     "esxi_credential"                                      \
+     "esxi_credential",                                     \
+     KEYWORD_TYPE_STRING                                    \
    },                                                       \
    {                                                        \
      "(SELECT name FROM credentials"                        \
      " WHERE credentials.id"                                \
      "       = target_credential (targets.id, 0,"           \
      "                            CAST ('snmp' AS text)))", \
-     "snmp_credential"                                      \
+     "snmp_credential",                                     \
+     KEYWORD_TYPE_STRING                                    \
    },                                                       \
-   { "hosts", NULL },                                       \
-   { "max_hosts (hosts, exclude_hosts)", "ips" },           \
-   { NULL, NULL }                                           \
+   { "hosts", NULL, KEYWORD_TYPE_STRING },                  \
+   { "max_hosts (hosts, exclude_hosts)",                    \
+     "ips",                                                 \
+     KEYWORD_TYPE_INTEGER },                                \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                     \
  }
 
 /**
@@ -31145,16 +31234,23 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 #define TARGET_ITERATOR_TRASH_COLUMNS                               \
  {                                                                  \
    GET_ITERATOR_COLUMNS (targets_trash),                            \
-   { "hosts", NULL },                                               \
-   { "target_credential (id, 1, CAST ('ssh' AS text))", NULL },     \
+   { "hosts", NULL, KEYWORD_TYPE_STRING },                          \
+   { "target_credential (id, 1, CAST ('ssh' AS text))",             \
+     NULL,                                                          \
+     KEYWORD_TYPE_INTEGER },                                        \
    { "target_login_port (id, 1, CAST ('ssh' AS text))",             \
-     "ssh_port" },                                                  \
-   { "target_credential (id, 1, CAST ('smb' AS text))", NULL },     \
-   { "port_list", NULL },                                           \
+     "ssh_port",                                                    \
+     KEYWORD_TYPE_INTEGER },                                        \
+   { "target_credential (id, 1, CAST ('smb' AS text))",             \
+     NULL,                                                          \
+     KEYWORD_TYPE_INTEGER },                                        \
+   { "port_list", NULL, KEYWORD_TYPE_INTEGER },                     \
    { "trash_target_credential_location (id, CAST ('ssh' AS text))", \
-     NULL },                                                        \
+     NULL,                                                          \
+     KEYWORD_TYPE_INTEGER },                                        \
    { "trash_target_credential_location (id, CAST ('smb' AS text))", \
-     NULL },                                                        \
+     NULL,                                                          \
+     KEYWORD_TYPE_INTEGER },                                        \
    {                                                                \
      "(CASE"                                                        \
      " WHEN port_list_location = " G_STRINGIFY (LOCATION_TRASH)     \
@@ -31163,7 +31259,8 @@ modify_target (const char *target_id, const char *name, const char *hosts,
      " ELSE (SELECT uuid FROM port_lists"                           \
      "       WHERE port_lists.id = port_list)"                      \
      " END)",                                                       \
-     NULL                                                           \
+     NULL,                                                          \
+     KEYWORD_TYPE_STRING                                            \
    },                                                               \
    {                                                                \
      "(CASE"                                                        \
@@ -31173,20 +31270,29 @@ modify_target (const char *target_id, const char *name, const char *hosts,
      " ELSE (SELECT name FROM port_lists"                           \
      "       WHERE port_lists.id = port_list)"                      \
      " END)",                                                       \
-     NULL                                                           \
+     NULL,                                                          \
+     KEYWORD_TYPE_STRING                                            \
    },                                                               \
-   { "port_list_location = " G_STRINGIFY (LOCATION_TRASH), NULL },  \
-   { "exclude_hosts", NULL },                                       \
-   { "reverse_lookup_only", NULL },                                 \
-   { "reverse_lookup_unify", NULL },                                \
-   { "alive_test", NULL },                                          \
-   { "target_credential (id, 1, CAST ('esxi' AS text))", NULL },    \
+   { "port_list_location = " G_STRINGIFY (LOCATION_TRASH),          \
+     NULL,                                                          \
+     KEYWORD_TYPE_STRING },                                         \
+   { "exclude_hosts", NULL, KEYWORD_TYPE_STRING },                  \
+   { "reverse_lookup_only", NULL, KEYWORD_TYPE_INTEGER },           \
+   { "reverse_lookup_unify", NULL, KEYWORD_TYPE_INTEGER },          \
+   { "alive_test", NULL, KEYWORD_TYPE_INTEGER },                    \
+   { "target_credential (id, 1, CAST ('esxi' AS text))",            \
+     NULL,                                                          \
+     KEYWORD_TYPE_INTEGER },                                        \
    { "trash_target_credential_location (id, CAST ('esxi' AS text))",\
-     NULL },                                                        \
-   { "target_credential (id, 1, CAST ('snmp' AS text))", NULL },    \
+     NULL,                                                          \
+     KEYWORD_TYPE_INTEGER },                                        \
+   { "target_credential (id, 1, CAST ('snmp' AS text))",            \
+     NULL,                                                          \
+     KEYWORD_TYPE_INTEGER },                                        \
    { "trash_target_credential_location (id, CAST ('snmp' AS text))",\
-     NULL },                                                        \
-   { NULL, NULL }                                                   \
+     NULL,                                                          \
+     KEYWORD_TYPE_INTEGER },                                        \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                             \
  }
 
 /**
@@ -33054,13 +33160,13 @@ sync_config (const char *config_id)
 #define CONFIG_ITERATOR_COLUMNS                                               \
  {                                                                            \
    GET_ITERATOR_COLUMNS (configs),                                            \
-   { "nvt_selector", NULL },                                                  \
-   { "family_count", "families_total" },                                      \
-   { "nvt_count", "nvts_total"},                                              \
-   { "families_growing", "families_trend"},                                   \
-   { "nvts_growing", "nvts_trend"},                                           \
-   { "type", NULL },                                                          \
-   { NULL, NULL }                                                             \
+   { "nvt_selector", NULL, KEYWORD_TYPE_STRING },                             \
+   { "family_count", "families_total", KEYWORD_TYPE_INTEGER },                \
+   { "nvt_count", "nvts_total", KEYWORD_TYPE_INTEGER},                        \
+   { "families_growing", "families_trend", KEYWORD_TYPE_INTEGER},             \
+   { "nvts_growing", "nvts_trend", KEYWORD_TYPE_INTEGER },                    \
+   { "type", NULL, KEYWORD_TYPE_INTEGER },                                    \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
  }
 
 /**
@@ -33069,13 +33175,13 @@ sync_config (const char *config_id)
 #define CONFIG_ITERATOR_TRASH_COLUMNS                                         \
  {                                                                            \
    GET_ITERATOR_COLUMNS (configs_trash),                                      \
-   { "nvt_selector", NULL },                                                  \
-   { "family_count", "families_total" },                                      \
-   { "nvt_count", "nvts_total"},                                              \
-   { "families_growing", "families_trend"},                                   \
-   { "nvts_growing", "nvts_trend"},                                           \
-   { "type", NULL },                                                          \
-   { NULL, NULL }                                                             \
+   { "nvt_selector", NULL, KEYWORD_TYPE_STRING },                             \
+   { "family_count", "families_total", KEYWORD_TYPE_INTEGER },                \
+   { "nvt_count", "nvts_total", KEYWORD_TYPE_INTEGER},                        \
+   { "families_growing", "families_trend", KEYWORD_TYPE_INTEGER},             \
+   { "nvts_growing", "nvts_trend", KEYWORD_TYPE_INTEGER },                    \
+   { "type", NULL, KEYWORD_TYPE_INTEGER },                                    \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
  }
 
 /**
@@ -34459,27 +34565,27 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
 #define NVT_ITERATOR_COLUMNS                                                \
  {                                                                          \
    GET_ITERATOR_COLUMNS_PREFIX (""),                                        \
-   { "''", "_owner" },                                                      \
-   { "0", NULL },                                                           \
-   { "oid", NULL },                                                         \
-   { "version", NULL },                                                     \
-   { "name", NULL },                                                        \
-   { "summary", NULL },                                                     \
-   { "copyright", NULL },                                                   \
-   { "cve", NULL },                                                         \
-   { "bid", NULL },                                                         \
-   { "xref", NULL },                                                        \
-   { "tag", NULL },                                                         \
-   { "category", NULL },                                                    \
-   { "family", NULL },                                                      \
-   { "cvss_base", NULL },                                                   \
-   { "cvss_base", "severity" },                                             \
-   { "cvss_base", "cvss" },                                                 \
-   { "qod", NULL },                                                         \
-   { "qod_type", NULL },                                                    \
-   { "solution_type" , NULL },                                              \
-   { "tag", "script_tags" },                                                \
-   { NULL, NULL }                                                           \
+   { "''", "_owner", KEYWORD_TYPE_STRING },                                 \
+   { "0", NULL, KEYWORD_TYPE_INTEGER },                                     \
+   { "oid", NULL, KEYWORD_TYPE_STRING },                                    \
+   { "version", NULL, KEYWORD_TYPE_STRING },                                \
+   { "name", NULL, KEYWORD_TYPE_STRING },                                   \
+   { "summary", NULL, KEYWORD_TYPE_STRING },                                \
+   { "copyright", NULL, KEYWORD_TYPE_STRING },                              \
+   { "cve", NULL, KEYWORD_TYPE_STRING },                                    \
+   { "bid", NULL, KEYWORD_TYPE_STRING },                                    \
+   { "xref", NULL, KEYWORD_TYPE_STRING },                                   \
+   { "tag", NULL, KEYWORD_TYPE_STRING },                                    \
+   { "category", NULL, KEYWORD_TYPE_STRING },                               \
+   { "family", NULL, KEYWORD_TYPE_STRING },                                 \
+   { "cvss_base", NULL, KEYWORD_TYPE_DOUBLE },                              \
+   { "cvss_base", "severity", KEYWORD_TYPE_DOUBLE },                        \
+   { "cvss_base", "cvss", KEYWORD_TYPE_DOUBLE },                            \
+   { "qod", NULL, KEYWORD_TYPE_INTEGER },                                   \
+   { "qod_type", NULL, KEYWORD_TYPE_STRING },                               \
+   { "solution_type", NULL, KEYWORD_TYPE_STRING },                          \
+   { "tag", "script_tags", KEYWORD_TYPE_STRING},                            \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                     \
  }
 
 /**
@@ -34488,27 +34594,27 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
 #define NVT_ITERATOR_COLUMNS_NVTS                                           \
  {                                                                          \
    GET_ITERATOR_COLUMNS_PREFIX ("nvts."),                                   \
-   { "''", "_owner" },                                                      \
-   { "0", NULL },                                                           \
-   { "oid", NULL },                                                         \
-   { "version", NULL },                                                     \
-   { "nvts.name", NULL },                                                   \
-   { "summary", NULL },                                                     \
-   { "copyright", NULL },                                                   \
-   { "cve", NULL },                                                         \
-   { "bid", NULL },                                                         \
-   { "xref", NULL },                                                        \
-   { "tag", NULL },                                                         \
-   { "category", NULL },                                                    \
-   { "nvts.family", NULL },                                                 \
-   { "cvss_base", NULL },                                                   \
-   { "cvss_base", "severity" },                                             \
-   { "cvss_base", "cvss" },                                                 \
-   { "qod", NULL },                                                         \
-   { "qod_type", NULL },                                                    \
-   { "solution_type" , NULL },                                              \
-   { "tag", "script_tags" },                                                \
-   { NULL, NULL }                                                           \
+   { "''", "_owner", KEYWORD_TYPE_STRING },                                 \
+   { "0", NULL, KEYWORD_TYPE_STRING },                                      \
+   { "oid", NULL, KEYWORD_TYPE_STRING },                                    \
+   { "version", NULL, KEYWORD_TYPE_STRING },                                \
+   { "nvts.name", NULL, KEYWORD_TYPE_STRING },                              \
+   { "summary", NULL, KEYWORD_TYPE_STRING },                                \
+   { "copyright", NULL, KEYWORD_TYPE_STRING },                              \
+   { "cve", NULL, KEYWORD_TYPE_STRING },                                    \
+   { "bid", NULL, KEYWORD_TYPE_STRING },                                    \
+   { "xref", NULL, KEYWORD_TYPE_STRING },                                   \
+   { "tag", NULL, KEYWORD_TYPE_STRING },                                    \
+   { "category", NULL, KEYWORD_TYPE_STRING },                               \
+   { "nvts.family", NULL, KEYWORD_TYPE_STRING },                            \
+   { "cvss_base", NULL, KEYWORD_TYPE_DOUBLE },                              \
+   { "cvss_base", "severity", KEYWORD_TYPE_DOUBLE },                        \
+   { "cvss_base", "cvss", KEYWORD_TYPE_DOUBLE },                            \
+   { "qod", NULL, KEYWORD_TYPE_INTEGER },                                   \
+   { "qod_type", NULL, KEYWORD_TYPE_STRING },                               \
+   { "solution_type", NULL, KEYWORD_TYPE_STRING },                          \
+   { "tag", "script_tags", KEYWORD_TYPE_STRING },                           \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                     \
  }
 
 /**
@@ -39024,38 +39130,48 @@ delete_credential (const char *credential_id, int ultimate)
  {                                                                            \
    GET_ITERATOR_COLUMNS (credentials),                                        \
    /* public generic data */                                                  \
-   { "type", NULL },                                                          \
-   { "allow_insecure", NULL },                                                \
+   { "type", NULL, KEYWORD_TYPE_STRING },                                     \
+   { "allow_insecure", NULL, KEYWORD_TYPE_INTEGER },                          \
    /* public type specific data */                                            \
    { "(SELECT value FROM credentials_data"                                    \
      " WHERE credential = credentials.id AND type = 'username')",             \
-     "login" },                                                               \
+     "login",                                                                 \
+     KEYWORD_TYPE_STRING                                                      \
+   },                                                                         \
    { "(SELECT value FROM credentials_data"                                    \
      " WHERE credential = credentials.id AND type = 'certificate')",          \
-     NULL },                                                                  \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING },                                                   \
    { "(SELECT value FROM credentials_data"                                    \
      " WHERE credential = credentials.id AND type = 'auth_algorithm')",       \
-     NULL },                                                                  \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING },                                                   \
    { "(SELECT value FROM credentials_data"                                    \
      " WHERE credential = credentials.id AND type = 'privacy_algorithm')",    \
-     NULL },                                                                  \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING },                                                   \
    /* private data */                                                         \
    { "(SELECT value FROM credentials_data"                                    \
      " WHERE credential = credentials.id AND type = 'secret')",               \
-     "secret" },                                                              \
+     "secret",                                                                \
+     KEYWORD_TYPE_STRING },                                                   \
    { "(SELECT value FROM credentials_data"                                    \
      " WHERE credential = credentials.id AND type = 'password')",             \
-     "password" },                                                            \
+     "password",                                                              \
+     KEYWORD_TYPE_STRING },                                                   \
    { "(SELECT value FROM credentials_data"                                    \
      " WHERE credential = credentials.id AND type = 'private_key')",          \
-     "private_key" },                                                         \
+     "private_key",                                                           \
+     KEYWORD_TYPE_STRING },                                                   \
    { "(SELECT value FROM credentials_data"                                    \
      " WHERE credential = credentials.id AND type = 'community')",            \
-     "password" },                                                            \
+     "community",                                                             \
+     KEYWORD_TYPE_STRING },                                                   \
    { "(SELECT value FROM credentials_data"                                    \
      " WHERE credential = credentials.id AND type = 'privacy_password')",     \
-     "private_key" },                                                         \
-   { NULL, NULL }                                                             \
+     "privacy_password",                                                      \
+     KEYWORD_TYPE_STRING },                                                   \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
  }
 
 /**
@@ -39065,41 +39181,50 @@ delete_credential (const char *credential_id, int ultimate)
  {                                                                            \
    GET_ITERATOR_COLUMNS (credentials_trash),                                  \
    /* public generic data */                                                  \
-   { "type", NULL },                                                          \
-   { "allow_insecure", NULL },                                                \
+   { "type", NULL, KEYWORD_TYPE_STRING },                                     \
+   { "allow_insecure", NULL, KEYWORD_TYPE_INTEGER },                          \
    /* public type specific data */                                            \
    { "(SELECT value FROM credentials_trash_data"                              \
      " WHERE credential = credentials_trash.id AND type = 'username')",       \
-     "login" },                                                               \
+     "login",                                                                 \
+     KEYWORD_TYPE_STRING },                                                   \
    { "(SELECT value FROM credentials_trash_data"                              \
      " WHERE credential = credentials_trash.id AND type = 'certificate')",    \
-     NULL },                                                                  \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING },                                                   \
    { "(SELECT value FROM credentials_trash_data"                              \
      " WHERE credential = credentials_trash.id"                               \
      "   AND type = 'auth_algorithm')",                                       \
-     NULL },                                                                  \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING },                                                   \
    { "(SELECT value FROM credentials_trash_data"                              \
      " WHERE credential = credentials_trash.id"                               \
      "   AND type = 'privacy_algorithm')",                                    \
-     NULL },                                                                  \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING },                                                   \
    /* private data */                                                         \
    { "(SELECT value FROM credentials_trash_data"                              \
      " WHERE credential = credentials_trash.id AND type = 'secret')",         \
-     "secret" },                                                              \
+     "secret",                                                                \
+     KEYWORD_TYPE_STRING },                                                   \
    { "(SELECT value FROM credentials_trash_data"                              \
      " WHERE credential = credentials_trash.id AND type = 'password')",       \
-     "password" },                                                            \
+     "password",                                                              \
+     KEYWORD_TYPE_STRING },                                                   \
    { "(SELECT value FROM credentials_trash_data"                              \
      " WHERE credential = credentials_trash.id AND type = 'private_key')",    \
-     "private_key" },                                                         \
+     "private_key",                                                           \
+     KEYWORD_TYPE_STRING },                                                   \
    { "(SELECT value FROM credentials_trash_data"                              \
      " WHERE credential = credentials_trash.id AND type = 'community')",      \
-     "private_key" },                                                         \
+     "community",                                                             \
+     KEYWORD_TYPE_STRING },                                                   \
    { "(SELECT value FROM credentials_trash_data"                              \
      " WHERE credential = credentials_trash.id"                               \
      " AND type = 'privacy_password')",                                       \
-     "private_key" },                                                         \
-   { NULL, NULL }                                                             \
+     "privacy_password",                                                      \
+     KEYWORD_TYPE_STRING },                                                   \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
  }
 
 /**
@@ -41007,14 +41132,14 @@ agent_uuid (agent_t agent)
 #define AGENT_ITERATOR_COLUMNS                                        \
  {                                                                    \
    GET_ITERATOR_COLUMNS (agents),                                     \
-   { "installer", NULL },                                             \
-   { "installer_64", NULL },                                          \
-   { "installer_filename", NULL },                                    \
-   { "installer_signature_64", NULL },                                \
-   { "installer_trust" , NULL },                                      \
-   { "installer_trust_time", NULL },                                  \
-   { "howto_install", NULL },                                         \
-   { "howto_use", NULL },                                             \
+   { "installer", NULL, KEYWORD_TYPE_STRING },                        \
+   { "installer_64", NULL, KEYWORD_TYPE_STRING },                     \
+   { "installer_filename", NULL, KEYWORD_TYPE_STRING },               \
+   { "installer_signature_64", NULL, KEYWORD_TYPE_STRING },           \
+   { "installer_trust" , NULL, KEYWORD_TYPE_STRING },                 \
+   { "installer_trust_time", NULL, KEYWORD_TYPE_STRING },             \
+   { "howto_install", NULL, KEYWORD_TYPE_STRING },                    \
+   { "howto_use", NULL, KEYWORD_TYPE_STRING },                        \
    {                                                                  \
      "(CASE"                                                          \
      "  WHEN installer_trust = 1 THEN 'yes'"                          \
@@ -41023,9 +41148,10 @@ agent_uuid (agent_t agent)
      "  ELSE ''"                                                      \
      "  END)"                                                         \
      " || ' (' || iso_time (installer_trust_time) || ')'",            \
-     "trust"                                                          \
+     "trust",                                                         \
+    KEYWORD_TYPE_STRING                                               \
    },                                                                 \
-   { NULL, NULL }                                                     \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                               \
  }
 
 /**
@@ -41034,14 +41160,14 @@ agent_uuid (agent_t agent)
 #define AGENT_ITERATOR_TRASH_COLUMNS                                  \
  {                                                                    \
    GET_ITERATOR_COLUMNS (agents_trash),                               \
-   { "installer", NULL },                                             \
-   { "installer_64", NULL },                                          \
-   { "installer_filename", NULL },                                    \
-   { "installer_signature_64", NULL },                                \
-   { "installer_trust" , NULL },                                      \
-   { "installer_trust_time", NULL },                                  \
-   { "howto_install", NULL },                                         \
-   { "howto_use", NULL },                                             \
+   { "installer", NULL, KEYWORD_TYPE_STRING },                        \
+   { "installer_64", NULL, KEYWORD_TYPE_STRING },                     \
+   { "installer_filename", NULL, KEYWORD_TYPE_STRING },               \
+   { "installer_signature_64", NULL, KEYWORD_TYPE_STRING },           \
+   { "installer_trust" , NULL, KEYWORD_TYPE_STRING },                 \
+   { "installer_trust_time", NULL, KEYWORD_TYPE_STRING },             \
+   { "howto_install", NULL, KEYWORD_TYPE_STRING },                    \
+   { "howto_use", NULL, KEYWORD_TYPE_STRING },                        \
    {                                                                  \
      "(CASE"                                                          \
      "  WHEN installer_trust = 1 THEN 'yes'"                          \
@@ -41050,9 +41176,10 @@ agent_uuid (agent_t agent)
      "  ELSE ''"                                                      \
      "  END)"                                                         \
      " || ' (' || iso_time (installer_trust_time) || ')'",            \
-     "trust"                                                          \
+     "trust",                                                         \
+    KEYWORD_TYPE_STRING                                               \
    },                                                                 \
-   { NULL, NULL }                                                     \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                               \
  }
 
 /**
@@ -41731,47 +41858,61 @@ modify_note (note_t note, const char *active, const char* text,
  */
 #define NOTE_ITERATOR_COLUMNS                                              \
  {                                                                         \
-   { "notes.id", "id" },                                                   \
-   { "notes.uuid", "uuid" },                                               \
+   { "notes.id", "id", KEYWORD_TYPE_INTEGER },                             \
+   { "notes.uuid", "uuid", KEYWORD_TYPE_STRING },                          \
    {                                                                       \
      "(CASE"                                                               \
      " WHEN notes.nvt LIKE 'CVE-%%'"                                       \
      " THEN notes.nvt"                                                     \
      " ELSE (SELECT name FROM nvts WHERE oid = notes.nvt)"                 \
      " END)",                                                              \
-     "name"                                                                \
+     "name",                                                               \
+     KEYWORD_TYPE_STRING                                                   \
    },                                                                      \
-   { "CAST ('' AS TEXT)", NULL },                                          \
-   { "iso_time (notes.creation_time)", NULL },                             \
-   { "iso_time (notes.modification_time)", NULL },                         \
-   { "notes.creation_time", "created" },                                   \
-   { "notes.modification_time", "modified" },                              \
-   { "(SELECT name FROM users WHERE users.id = notes.owner)", "_owner" },  \
-   { "owner", NULL },                                                      \
+   { "CAST ('' AS TEXT)", NULL, KEYWORD_TYPE_STRING },                     \
+   { "iso_time (notes.creation_time)", NULL, KEYWORD_TYPE_STRING },        \
+   { "iso_time (notes.modification_time)", NULL, KEYWORD_TYPE_STRING },    \
+   { "notes.creation_time", "created", KEYWORD_TYPE_INTEGER },             \
+   { "notes.modification_time", "modified", KEYWORD_TYPE_INTEGER },        \
+   { "(SELECT name FROM users WHERE users.id = notes.owner)",              \
+     "_owner",                                                             \
+     KEYWORD_TYPE_STRING },                                                \
+   { "owner", NULL, KEYWORD_TYPE_INTEGER },                                \
    /* Columns specific to notes. */                                        \
-   { "notes.nvt", "oid" },                                                 \
-   { "notes.text", "text" },                                               \
-   { "notes.hosts", "hosts" },                                             \
-   { "notes.port", "port" },                                               \
-   { "severity_to_level (notes.severity, 1)", "threat" },                  \
-   { "notes.task", NULL },                                                 \
-   { "notes.result", "result" },                                           \
-   { "notes.end_time", NULL },                                             \
-   { "(notes.end_time = 0) OR (notes.end_time >= m_now ())", "active" },   \
+   { "notes.nvt", "oid", KEYWORD_TYPE_STRING },                            \
+   { "notes.text", "text", KEYWORD_TYPE_STRING },                          \
+   { "notes.hosts", "hosts", KEYWORD_TYPE_STRING },                        \
+   { "notes.port", "port", KEYWORD_TYPE_STRING },                          \
+   { "severity_to_level (notes.severity, 1)",                              \
+     "threat",                                                             \
+     KEYWORD_TYPE_STRING },                                                \
+   { "notes.task", NULL, KEYWORD_TYPE_INTEGER },                           \
+   { "notes.result", "result", KEYWORD_TYPE_INTEGER },                     \
+   { "notes.end_time", NULL, KEYWORD_TYPE_INTEGER },                       \
+   { "(notes.end_time = 0) OR (notes.end_time >= m_now ())",               \
+     "active",                                                             \
+     KEYWORD_TYPE_INTEGER },                                               \
    {                                                                       \
      "(CASE"                                                               \
      " WHEN notes.nvt LIKE 'CVE-%%'"                                       \
      " THEN notes.nvt"                                                     \
      " ELSE (SELECT name FROM nvts WHERE oid = notes.nvt)"                 \
      " END)",                                                              \
-     "nvt"                                                                 \
+     "nvt",                                                                \
+     KEYWORD_TYPE_STRING                                                   \
    },                                                                      \
-   { "notes.nvt", "nvt_id" },                                              \
-   { "(SELECT uuid FROM tasks WHERE id = notes.task)", "task_id" },        \
-   { "(SELECT name FROM tasks WHERE id = notes.task)", "task_name" },      \
-   { "notes.severity", "severity" },                                       \
-   { "(SELECT name FROM users WHERE users.id = notes.owner)", "_owner" },  \
-   { NULL, NULL }                                                          \
+   { "notes.nvt", "nvt_id", KEYWORD_TYPE_STRING },                         \
+   { "(SELECT uuid FROM tasks WHERE id = notes.task)",                     \
+     "task_id",                                                            \
+     KEYWORD_TYPE_STRING },                                                \
+   { "(SELECT name FROM tasks WHERE id = notes.task)",                     \
+     "task_name",                                                          \
+     KEYWORD_TYPE_STRING },                                                \
+   { "notes.severity", "severity", KEYWORD_TYPE_DOUBLE },                  \
+   { "(SELECT name FROM users WHERE users.id = notes.owner)",              \
+     "_owner",                                                             \
+     KEYWORD_TYPE_STRING },                                                \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                    \
  }
 
 /**
@@ -41779,40 +41920,50 @@ modify_note (note_t note, const char *active, const char* text,
  */
 #define NOTE_ITERATOR_TRASH_COLUMNS                                              \
  {                                                                               \
-   { "notes_trash.id", "id" },                                                   \
-   { "notes_trash.uuid", "uuid" },                                               \
-   { "CAST ('' AS TEXT)", NULL },                                                \
-   { "CAST ('' AS TEXT)", NULL },                                                \
-   { "iso_time (notes_trash.creation_time)", NULL },                             \
-   { "iso_time (notes_trash.modification_time)", NULL },                         \
-   { "notes_trash.creation_time", "created" },                                   \
-   { "notes_trash.modification_time", "modified" },                              \
-   { "(SELECT name FROM users WHERE users.id = notes_trash.owner)", "_owner" },  \
-   { "owner", NULL },                                                            \
+   { "notes_trash.id", "id", KEYWORD_TYPE_INTEGER },                             \
+   { "notes_trash.uuid", "uuid", KEYWORD_TYPE_STRING },                          \
+   { "CAST ('' AS TEXT)", NULL, KEYWORD_TYPE_STRING },                           \
+   { "CAST ('' AS TEXT)", NULL, KEYWORD_TYPE_STRING },                           \
+   { "iso_time (notes_trash.creation_time)", NULL, KEYWORD_TYPE_STRING },        \
+   { "iso_time (notes_trash.modification_time)", NULL, KEYWORD_TYPE_STRING },    \
+   { "notes_trash.creation_time", "created", KEYWORD_TYPE_INTEGER },             \
+   { "notes_trash.modification_time", "modified", KEYWORD_TYPE_INTEGER },        \
+   { "(SELECT name FROM users WHERE users.id = notes_trash.owner)",              \
+     "_owner",                                                                   \
+     KEYWORD_TYPE_STRING },                                                      \
+   { "owner", NULL, KEYWORD_TYPE_INTEGER },                                      \
    /* Columns specific to notes_trash. */                                        \
-   { "notes_trash.nvt", "oid" },                                                 \
-   { "notes_trash.text", "text" },                                               \
-   { "notes_trash.hosts", "hosts" },                                             \
-   { "notes_trash.port", "port" },                                               \
-   { "severity_to_level (notes_trash.severity, 1)", "threat" },                  \
-   { "notes_trash.task", NULL },                                                 \
-   { "notes_trash.result", "result" },                                           \
-   { "notes_trash.end_time", NULL },                                             \
+   { "notes_trash.nvt", "oid", KEYWORD_TYPE_STRING },                            \
+   { "notes_trash.text", "text", KEYWORD_TYPE_STRING  },                         \
+   { "notes_trash.hosts", "hosts", KEYWORD_TYPE_STRING },                        \
+   { "notes_trash.port", "port", KEYWORD_TYPE_STRING },                          \
+   { "severity_to_level (notes_trash.severity, 1)",                              \
+     "threat",                                                                   \
+     KEYWORD_TYPE_STRING },                                                      \
+   { "notes_trash.task", NULL, KEYWORD_TYPE_INTEGER },                           \
+   { "notes_trash.result", "result", KEYWORD_TYPE_INTEGER },                     \
+   { "notes_trash.end_time", NULL, KEYWORD_TYPE_INTEGER },                       \
    { "(notes_trash.end_time = 0) OR (notes_trash.end_time >= m_now ())",         \
-     "active" },                                                                 \
+     "active",                                                                   \
+     KEYWORD_TYPE_INTEGER },                                                     \
    {                                                                             \
      "(CASE"                                                                     \
      " WHEN notes_trash.nvt LIKE 'CVE-%%'"                                       \
      " THEN notes_trash.nvt"                                                     \
      " ELSE (SELECT name FROM nvts WHERE oid = notes_trash.nvt)"                 \
      " END)",                                                                    \
-     "nvt"                                                                       \
+     "nvt",                                                                      \
+     KEYWORD_TYPE_STRING                                                         \
    },                                                                            \
-   { "notes_trash.nvt", "nvt_id" },                                              \
-   { "(SELECT uuid FROM tasks WHERE id = notes_trash.task)", "task_id" },        \
-   { "(SELECT name FROM tasks WHERE id = notes_trash.task)", "task_name" },      \
-   { "notes_trash.severity", "severity" },                                       \
-   { NULL, NULL }                                                                \
+   { "notes_trash.nvt", "nvt_id", KEYWORD_TYPE_STRING },                         \
+   { "(SELECT uuid FROM tasks WHERE id = notes_trash.task)",                     \
+     "task_id",                                                                  \
+     KEYWORD_TYPE_STRING },                                                      \
+   { "(SELECT name FROM tasks WHERE id = notes_trash.task)",                     \
+     "task_name",                                                                \
+     KEYWORD_TYPE_STRING },                                                      \
+   { "notes_trash.severity", "severity", KEYWORD_TYPE_DOUBLE },                  \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                          \
  }
 
 /**
@@ -42775,39 +42926,46 @@ modify_override (override_t override, const char *active, const char* text,
  */
 #define OVERRIDE_ITERATOR_COLUMNS                                           \
  {                                                                          \
-   { "overrides.id", "id" },                                                \
-   { "overrides.uuid", "uuid" },                                            \
+   { "overrides.id", "id", KEYWORD_TYPE_INTEGER },                          \
+   { "overrides.uuid", "uuid", KEYWORD_TYPE_STRING },                       \
    {                                                                        \
      "(CASE"                                                                \
      " WHEN overrides.nvt LIKE 'CVE-%%'"                                    \
      " THEN overrides.nvt"                                                  \
      " ELSE (SELECT name FROM nvts WHERE oid = overrides.nvt)"              \
      " END)",                                                               \
-     "name"                                                                 \
+     "name",                                                                \
+     KEYWORD_TYPE_STRING                                                    \
    },                                                                       \
-   { "CAST ('' AS TEXT)", NULL },                                           \
-   { "iso_time (overrides.creation_time)", NULL },                          \
-   { "iso_time (overrides.modification_time)", NULL },                      \
-   { "overrides.creation_time", "created" },                                \
-   { "overrides.modification_time", "modified" },                           \
+   { "CAST ('' AS TEXT)", NULL, KEYWORD_TYPE_STRING },                      \
+   { "iso_time (overrides.creation_time)", NULL, KEYWORD_TYPE_STRING },     \
+   { "iso_time (overrides.modification_time)", NULL, KEYWORD_TYPE_STRING }, \
+   { "overrides.creation_time", "created", KEYWORD_TYPE_INTEGER },          \
+   { "overrides.modification_time", "modified", KEYWORD_TYPE_INTEGER },     \
    {                                                                        \
      "(SELECT name FROM users WHERE users.id = overrides.owner)",           \
-     "_owner"                                                               \
+     "_owner",                                                              \
+     KEYWORD_TYPE_STRING                                                    \
    },                                                                       \
-   { "owner", NULL },                                                       \
+   { "owner", NULL, KEYWORD_TYPE_INTEGER },                                 \
    /* Columns specific to overrides. */                                     \
-   { "overrides.nvt", "oid" },                                              \
-   { "overrides.text", "text" },                                            \
-   { "overrides.hosts", "hosts" },                                          \
-   { "overrides.port", "port" },                                            \
-   { "severity_to_level (overrides.severity, 1)", "threat" },               \
-   { "severity_to_level (overrides.new_severity, 0)", "new_threat" },       \
-   { "overrides.task", NULL },                                              \
-   { "overrides.result", "result" },                                        \
-   { "overrides.end_time", NULL },                                          \
+   { "overrides.nvt", "oid", KEYWORD_TYPE_STRING },                         \
+   { "overrides.text", "text", KEYWORD_TYPE_STRING },                       \
+   { "overrides.hosts", "hosts", KEYWORD_TYPE_STRING },                     \
+   { "overrides.port", "port", KEYWORD_TYPE_STRING },                       \
+   { "severity_to_level (overrides.severity, 1)",                           \
+     "threat",                                                              \
+     KEYWORD_TYPE_STRING },                                                 \
+   { "severity_to_level (overrides.new_severity, 0)",                       \
+     "new_threat",                                                          \
+     KEYWORD_TYPE_STRING },                                                 \
+   { "overrides.task", NULL, KEYWORD_TYPE_STRING },                         \
+   { "overrides.result", "result", KEYWORD_TYPE_INTEGER },                  \
+   { "overrides.end_time", NULL, KEYWORD_TYPE_INTEGER },                    \
    {                                                                        \
      "(overrides.end_time = 0) OR (overrides.end_time >= m_now ())",        \
-     "active"                                                               \
+     "active",                                                              \
+     KEYWORD_TYPE_INTEGER                                                   \
    },                                                                       \
    {                                                                        \
      "(CASE"                                                                \
@@ -42815,18 +42973,24 @@ modify_override (override_t override, const char *active, const char* text,
      " THEN overrides.nvt"                                                  \
      " ELSE (SELECT name FROM nvts WHERE oid = overrides.nvt)"              \
      " END)",                                                               \
-     "name"                                                                 \
+     "name",                                                                \
+     KEYWORD_TYPE_STRING                                                    \
    },                                                                       \
-   { "overrides.nvt", "nvt_id" },                                           \
-   { "(SELECT uuid FROM tasks WHERE id = overrides.task)", "task_id" },     \
-   { "(SELECT name FROM tasks WHERE id = overrides.task)", "task_name" },   \
-   { "overrides.severity", "severity" },                                    \
-   { "overrides.new_severity", "new_severity" },                            \
+   { "overrides.nvt", "nvt_id", KEYWORD_TYPE_STRING },                      \
+   { "(SELECT uuid FROM tasks WHERE id = overrides.task)",                  \
+     "task_id",                                                             \
+     KEYWORD_TYPE_STRING },                                                 \
+   { "(SELECT name FROM tasks WHERE id = overrides.task)",                  \
+     "task_name",                                                           \
+     KEYWORD_TYPE_STRING },                                                 \
+   { "overrides.severity", "severity", KEYWORD_TYPE_DOUBLE },               \
+   { "overrides.new_severity", "new_severity", KEYWORD_TYPE_DOUBLE },       \
    {                                                                        \
      "(SELECT name FROM users WHERE users.id = overrides.owner)",           \
-     "_owner"                                                               \
+     "_owner",                                                              \
+     KEYWORD_TYPE_STRING                                                    \
    },                                                                       \
-   { NULL, NULL }                                                           \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                     \
  }
 
 /**
@@ -42834,33 +42998,47 @@ modify_override (override_t override, const char *active, const char* text,
  */
 #define OVERRIDE_ITERATOR_TRASH_COLUMNS                                     \
  {                                                                          \
-   { "overrides_trash.id", "id" },                                          \
-   { "overrides_trash.uuid", "uuid" },                                      \
-   { "CAST ('' AS TEXT)", NULL },                                           \
-   { "CAST ('' AS TEXT)", NULL },                                           \
-   { "iso_time (overrides_trash.creation_time)", NULL },                    \
-   { "iso_time (overrides_trash.modification_time)", NULL },                \
-   { "overrides_trash.creation_time", "created" },                          \
-   { "overrides_trash.modification_time", "modified" },                     \
+   { "overrides_trash.id", "id", KEYWORD_TYPE_INTEGER },                    \
+   { "overrides_trash.uuid", "uuid", KEYWORD_TYPE_STRING },                 \
+   { "CAST ('' AS TEXT)", NULL, KEYWORD_TYPE_STRING },                      \
+   { "CAST ('' AS TEXT)", NULL, KEYWORD_TYPE_STRING },                      \
+   { "iso_time (overrides_trash.creation_time)",                            \
+     NULL,                                                                  \
+     KEYWORD_TYPE_STRING },                                                 \
+   { "iso_time (overrides_trash.modification_time)",                        \
+     NULL,                                                                  \
+     KEYWORD_TYPE_STRING },                                                 \
+   { "overrides_trash.creation_time",                                       \
+     "created",                                                             \
+     KEYWORD_TYPE_INTEGER },                                                \
+   { "overrides_trash.modification_time",                                   \
+     "modified",                                                            \
+     KEYWORD_TYPE_INTEGER },                                                \
    {                                                                        \
      "(SELECT name FROM users WHERE users.id = overrides_trash.owner)",     \
-     "_owner"                                                               \
+     "_owner",                                                              \
+     KEYWORD_TYPE_STRING                                                    \
    },                                                                       \
-   { "owner", NULL },                                                       \
+   { "owner", NULL, KEYWORD_TYPE_STRING },                                  \
    /* Columns specific to overrides_trash. */                               \
-   { "overrides_trash.nvt", "oid" },                                        \
-   { "overrides_trash.text", "text" },                                      \
-   { "overrides_trash.hosts", "hosts" },                                    \
-   { "overrides_trash.port", "port" },                                      \
-   { "severity_to_level (overrides_trash.severity, 1)", "threat" },         \
-   { "severity_to_level (overrides_trash.new_severity, 0)", "new_threat" }, \
-   { "overrides_trash.task", NULL },                                        \
-   { "overrides_trash.result", "result" },                                  \
-   { "overrides_trash.end_time", NULL },                                    \
+   { "overrides_trash.nvt", "oid", KEYWORD_TYPE_STRING },                   \
+   { "overrides_trash.text", "text", KEYWORD_TYPE_STRING },                 \
+   { "overrides_trash.hosts", "hosts", KEYWORD_TYPE_STRING },               \
+   { "overrides_trash.port", "port", KEYWORD_TYPE_STRING },                 \
+   { "severity_to_level (overrides_trash.severity, 1)",                     \
+     "threat",                                                              \
+     KEYWORD_TYPE_STRING },                                                 \
+   { "severity_to_level (overrides_trash.new_severity, 0)",                 \
+     "new_threat",                                                          \
+     KEYWORD_TYPE_STRING },                                                 \
+   { "overrides_trash.task", NULL, KEYWORD_TYPE_INTEGER },                  \
+   { "overrides_trash.result", "result", KEYWORD_TYPE_INTEGER },            \
+   { "overrides_trash.end_time", NULL, KEYWORD_TYPE_INTEGER },              \
    {                                                                        \
      "(overrides_trash.end_time = 0)"                                       \
      " OR (overrides_trash.end_time >= m_now ())",                          \
-     "active"                                                               \
+     "active",                                                              \
+     KEYWORD_TYPE_INTEGER                                                   \
    },                                                                       \
    {                                                                        \
      "(CASE"                                                                \
@@ -42868,20 +43046,23 @@ modify_override (override_t override, const char *active, const char* text,
      " THEN overrides_trash.nvt"                                            \
      " ELSE (SELECT name FROM nvts WHERE oid = overrides_trash.nvt)"        \
      " END)",                                                               \
-     "nvt"                                                                  \
+     "nvt",                                                                 \
+     KEYWORD_TYPE_STRING                                                    \
    },                                                                       \
-   { "overrides_trash.nvt", "nvt_id" },                                     \
+   { "overrides_trash.nvt", "nvt_id", KEYWORD_TYPE_STRING },                \
    {                                                                        \
      "(SELECT uuid FROM tasks WHERE id = overrides_trash.task)",            \
-     "task_id"                                                              \
+     "task_id",                                                             \
+     KEYWORD_TYPE_STRING                                                    \
    },                                                                       \
    {                                                                        \
      "(SELECT name FROM tasks WHERE id = overrides_trash.task)",            \
-     "task_name"                                                            \
+     "task_name",                                                           \
+     KEYWORD_TYPE_STRING                                                    \
    },                                                                       \
-   { "overrides_trash.severity", NULL },                                    \
-   { "overrides_trash.new_severity", NULL },                                \
-   { NULL, NULL }                                                           \
+   { "overrides_trash.severity", NULL, KEYWORD_TYPE_DOUBLE },               \
+   { "overrides_trash.new_severity", NULL, KEYWORD_TYPE_DOUBLE },           \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                     \
  }
 
 /**
@@ -44209,23 +44390,27 @@ delete_scanner (const char *scanner_id, int ultimate)
 #define SCANNER_ITERATOR_COLUMNS                                     \
  {                                                                   \
    GET_ITERATOR_COLUMNS (scanners),                                  \
-   { "host" , NULL },                                                \
-   { "port" , NULL },                                                \
-   { "type", NULL },                                                 \
-   { "ca_pub", NULL },                                               \
+   { "host", NULL, KEYWORD_TYPE_STRING },                            \
+   { "port", NULL, KEYWORD_TYPE_INTEGER },                           \
+   { "type", NULL, KEYWORD_TYPE_INTEGER },                           \
+   { "ca_pub", NULL, KEYWORD_TYPE_STRING },                          \
    {                                                                 \
      "(SELECT name FROM credentials WHERE id = credential)",         \
-     "credential"                                                    \
+     "credential",                                                   \
+     KEYWORD_TYPE_STRING                                             \
    },                                                                \
-   { "credential", NULL },                                           \
-   { "0", NULL },                                                    \
+   { "credential", NULL, KEYWORD_TYPE_INTEGER },                     \
+   { "0", NULL, KEYWORD_TYPE_INTEGER },                              \
    { "credential_value (credential, 0, CAST ('certificate' AS TEXT))", \
-     NULL },                                                           \
+     NULL,                                                             \
+     KEYWORD_TYPE_STRING },                                            \
    { "credential_value (credential, 0, CAST ('private_key' AS TEXT))", \
-     NULL },                                                           \
+     NULL,                                                             \
+     KEYWORD_TYPE_STRING },                                            \
    { "credential_value (credential, 0, CAST ('secret' AS TEXT))",      \
-     NULL },                                                           \
-   { NULL, NULL }                                                    \
+     NULL,                                                             \
+     KEYWORD_TYPE_STRING },                                            \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                \
  }
 
 /**
@@ -44234,27 +44419,31 @@ delete_scanner (const char *scanner_id, int ultimate)
 #define SCANNER_ITERATOR_TRASH_COLUMNS                               \
  {                                                                   \
    GET_ITERATOR_COLUMNS (scanners_trash),                            \
-   { "host" , NULL },                                                \
-   { "port" , NULL },                                                \
-   { "type", NULL },                                                 \
-   { "ca_pub", NULL },                                               \
+   { "host" , NULL, KEYWORD_TYPE_STRING },                           \
+   { "port" , NULL, KEYWORD_TYPE_INTEGER },                          \
+   { "type", NULL, KEYWORD_TYPE_INTEGER },                           \
+   { "ca_pub", NULL, KEYWORD_TYPE_STRING },                          \
    {                                                                    \
      "(SELECT CASE"                                                     \
      " WHEN credential_location = " G_STRINGIFY (LOCATION_TABLE)        \
      " THEN (SELECT name FROM credentials WHERE id = credential)"       \
      " ELSE (SELECT name FROM credentials_trash WHERE id = credential)" \
      " END)",                                                           \
-     "credential"                                                       \
+     "credential",                                                      \
+     KEYWORD_TYPE_STRING                                                \
    },                                                                   \
-   { "credential", NULL },                                              \
-   { "credential_location", NULL },                                     \
+   { "credential", NULL, KEYWORD_TYPE_INTEGER },                        \
+   { "credential_location", NULL, KEYWORD_TYPE_INTEGER },               \
    { "credential_value (credential, 1, CAST ('certificate' AS TEXT))",  \
-     NULL },                                                            \
+     NULL,                                                              \
+     KEYWORD_TYPE_STRING },                                             \
    { "credential_value (credential, 1, CAST ('private_key' AS TEXT))",  \
-     NULL },                                                            \
+     NULL,                                                              \
+     KEYWORD_TYPE_STRING },                                             \
    { "credential_value (credential, 1, CAST ('secret' AS TEXT))",       \
-     NULL },                                                            \
-   { NULL, NULL }                                                       \
+     NULL,                                                              \
+     KEYWORD_TYPE_STRING },                                             \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                 \
  }
 
 /**
@@ -45338,15 +45527,17 @@ schedule_duration (schedule_t schedule)
 #define SCHEDULE_ITERATOR_COLUMNS                                          \
  {                                                                         \
    GET_ITERATOR_COLUMNS (schedules),                                       \
-   { "first_time", NULL },                                                 \
-   { "period", NULL },                                                     \
-   { "period_months", NULL },                                              \
-   { "duration", NULL },                                                   \
-   { "timezone", NULL },                                                   \
-   { "initial_offset", NULL },                                             \
-   { "next_time (first_time, period, period_months)", "next_run" },        \
-   { "first_time", "first_run" },                                          \
-   { NULL, NULL }                                                          \
+   { "first_time", NULL, KEYWORD_TYPE_INTEGER },                           \
+   { "period", NULL, KEYWORD_TYPE_INTEGER },                               \
+   { "period_months", NULL, KEYWORD_TYPE_INTEGER },                        \
+   { "duration", NULL, KEYWORD_TYPE_INTEGER },                             \
+   { "timezone", NULL, KEYWORD_TYPE_STRING },                              \
+   { "initial_offset", NULL, KEYWORD_TYPE_INTEGER },                       \
+   { "next_time (first_time, period, period_months)",                      \
+     "next_run",                                                           \
+     KEYWORD_TYPE_INTEGER },                                               \
+   { "first_time", "first_run", KEYWORD_TYPE_INTEGER },                    \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                    \
  }
 
 /**
@@ -45355,13 +45546,13 @@ schedule_duration (schedule_t schedule)
 #define SCHEDULE_ITERATOR_TRASH_COLUMNS                                    \
  {                                                                         \
    GET_ITERATOR_COLUMNS (schedules_trash),                                 \
-   { "first_time", NULL },                                                 \
-   { "period", NULL },                                                     \
-   { "period_months", NULL },                                              \
-   { "duration", NULL },                                                   \
-   { "timezone", NULL },                                                   \
-   { "initial_offset", NULL },                                             \
-   { NULL, NULL }                                                          \
+   { "first_time", NULL, KEYWORD_TYPE_INTEGER },                           \
+   { "period", NULL, KEYWORD_TYPE_INTEGER },                               \
+   { "period_months", NULL, KEYWORD_TYPE_INTEGER },                        \
+   { "duration", NULL, KEYWORD_TYPE_INTEGER },                             \
+   { "timezone", NULL, KEYWORD_TYPE_STRING },                              \
+   { "initial_offset", NULL, KEYWORD_TYPE_INTEGER },                       \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                    \
  }
 
 /**
@@ -48206,28 +48397,29 @@ report_format_trust (report_format_t report_format)
  */
 #define REPORT_FORMAT_ITERATOR_COLUMNS                                  \
  {                                                                      \
-   { "id", NULL },                                                      \
-   { "uuid", NULL },                                                    \
-   { "name", NULL },                                                    \
-   { "''", NULL },                                                      \
-   { "iso_time (creation_time)", NULL },                                \
-   { "iso_time (modification_time)", NULL },                            \
-   { "creation_time", "created" },                                      \
-   { "modification_time", "modified" },                                 \
+   { "id", NULL, KEYWORD_TYPE_INTEGER },                                \
+   { "uuid", NULL, KEYWORD_TYPE_STRING },                               \
+   { "name", NULL, KEYWORD_TYPE_STRING },                               \
+   { "''", NULL, KEYWORD_TYPE_STRING },                                 \
+   { "iso_time (creation_time)", NULL, KEYWORD_TYPE_STRING },           \
+   { "iso_time (modification_time)", NULL, KEYWORD_TYPE_STRING },       \
+   { "creation_time", "created", KEYWORD_TYPE_INTEGER },                \
+   { "modification_time", "modified", KEYWORD_TYPE_INTEGER },           \
    {                                                                    \
      "(SELECT name FROM users WHERE users.id = report_formats.owner)",  \
-     "_owner"                                                           \
+     "_owner",                                                          \
+     KEYWORD_TYPE_STRING                                                \
    },                                                                   \
-   { "owner", NULL },                                                   \
-   { "extension", NULL },                                               \
-   { "content_type", NULL },                                            \
-   { "summary", NULL },                                                 \
-   { "description", NULL },                                             \
-   { "signature", NULL },                                               \
-   { "trust", NULL },                                                   \
-   { "trust_time", NULL },                                              \
-   { "flags & 1", "active" },                                           \
-   { NULL, NULL }                                                       \
+   { "owner", NULL, KEYWORD_TYPE_INTEGER },                             \
+   { "extension", NULL, KEYWORD_TYPE_STRING },                          \
+   { "content_type", NULL, KEYWORD_TYPE_STRING },                       \
+   { "summary", NULL, KEYWORD_TYPE_STRING },                            \
+   { "description", NULL, KEYWORD_TYPE_STRING },                        \
+   { "signature", NULL, KEYWORD_TYPE_STRING },                          \
+   { "trust", NULL, KEYWORD_TYPE_INTEGER },                             \
+   { "trust_time", NULL, KEYWORD_TYPE_INTEGER },                        \
+   { "flags & 1", "active", KEYWORD_TYPE_INTEGER },                     \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                 \
  }
 
 /**
@@ -48235,29 +48427,30 @@ report_format_trust (report_format_t report_format)
  */
 #define REPORT_FORMAT_ITERATOR_TRASH_COLUMNS                            \
  {                                                                      \
-   { "id", NULL },                                                      \
-   { "uuid", NULL },                                                    \
-   { "name", NULL },                                                    \
-   { "''", NULL },                                                      \
-   { "iso_time (creation_time)", NULL },                                \
-   { "iso_time (modification_time)", NULL },                            \
-   { "creation_time", "created" },                                      \
-   { "modification_time", "modified" },                                 \
+   { "id", NULL, KEYWORD_TYPE_INTEGER },                                \
+   { "uuid", NULL, KEYWORD_TYPE_STRING },                               \
+   { "name", NULL, KEYWORD_TYPE_STRING },                               \
+   { "''", NULL, KEYWORD_TYPE_STRING },                                 \
+   { "iso_time (creation_time)", NULL, KEYWORD_TYPE_STRING },           \
+   { "iso_time (modification_time)", NULL, KEYWORD_TYPE_STRING },       \
+   { "creation_time", "created", KEYWORD_TYPE_INTEGER },                \
+   { "modification_time", "modified", KEYWORD_TYPE_INTEGER },           \
    {                                                                    \
      "(SELECT name FROM users"                                          \
      " WHERE users.id = report_formats_trash.owner)",                   \
-     "_owner"                                                           \
+     "_owner",                                                          \
+     KEYWORD_TYPE_STRING                                                \
    },                                                                   \
-   { "owner", NULL },                                                   \
-   { "extension", NULL },                                               \
-   { "content_type", NULL },                                            \
-   { "summary", NULL },                                                 \
-   { "description", NULL },                                             \
-   { "signature", NULL },                                               \
-   { "trust", NULL },                                                   \
-   { "trust_time", NULL },                                              \
-   { "flags & 1", "active" },                                           \
-   { NULL, NULL }                                                       \
+   { "owner", NULL, KEYWORD_TYPE_INTEGER },                             \
+   { "extension", NULL, KEYWORD_TYPE_STRING },                          \
+   { "content_type", NULL, KEYWORD_TYPE_STRING },                       \
+   { "summary", NULL, KEYWORD_TYPE_STRING },                            \
+   { "description", NULL, KEYWORD_TYPE_STRING },                        \
+   { "signature", NULL, KEYWORD_TYPE_STRING },                          \
+   { "trust", NULL, KEYWORD_TYPE_INTEGER },                             \
+   { "trust_time", NULL, KEYWORD_TYPE_INTEGER },                        \
+   { "flags & 1", "active", KEYWORD_TYPE_INTEGER },                     \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                 \
  }
 
 /**
@@ -49114,16 +49307,18 @@ trash_slave_readable (slave_t slave)
 #define SLAVE_ITERATOR_COLUMNS                                          \
  {                                                                      \
    GET_ITERATOR_COLUMNS (slaves),                                       \
-   { "host", NULL },                                                    \
-   { "port", NULL },                                                    \
+   { "host", NULL, KEYWORD_TYPE_STRING },                               \
+   { "port", NULL, KEYWORD_TYPE_INTEGER },                              \
    { "credential_value (credential, 0, 'username')",                    \
-     "login" },                                                         \
+     "login",                                                           \
+     KEYWORD_TYPE_STRING },                                             \
    {                                                                    \
      "(SELECT name FROM credentials WHERE id = credential)",            \
-     "credential"                                                       \
+     "credential",                                                      \
+     KEYWORD_TYPE_STRING                                                \
    },                                                                   \
-   { "credential", NULL },                                              \
-   { NULL, NULL }                                                       \
+   { "credential", NULL, KEYWORD_TYPE_INTEGER },                        \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                 \
  }
 
 /**
@@ -49132,21 +49327,23 @@ trash_slave_readable (slave_t slave)
 #define SLAVE_ITERATOR_TRASH_COLUMNS                                    \
  {                                                                      \
    GET_ITERATOR_COLUMNS (slaves_trash),                                 \
-   { "host", NULL },                                                    \
-   { "port", NULL },                                                    \
+   { "host", NULL, KEYWORD_TYPE_STRING },                               \
+   { "port", NULL, KEYWORD_TYPE_INTEGER },                              \
    { "credential_value (credential, credential_location, 'username')",  \
-     "login" },                                                         \
+     "login",                                                           \
+     KEYWORD_TYPE_STRING },                                             \
    {                                                                    \
      "(SELECT CASE"                                                     \
      " WHEN credential_location = " G_STRINGIFY (LOCATION_TABLE)        \
      " THEN (SELECT name FROM credentials WHERE id = credential)"       \
      " ELSE (SELECT name FROM credentials_trash WHERE id = credential)" \
      " END)",                                                           \
-     "credential"                                                       \
+     "credential",                                                      \
+     KEYWORD_TYPE_STRING                                                \
    },                                                                   \
-   { "credential", NULL },                                              \
-   { "credential_location", NULL },                                     \
-   { NULL, NULL }                                                       \
+   { "credential", NULL, KEYWORD_TYPE_INTEGER },                        \
+   { "credential_location", NULL, KEYWORD_TYPE_INTEGER },               \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                 \
  }
 
 /**
@@ -50169,7 +50366,7 @@ trash_group_in_use (group_t group)
 #define GROUP_ITERATOR_COLUMNS                                                \
  {                                                                            \
    GET_ITERATOR_COLUMNS (groups),                                             \
-   { NULL, NULL }                                                             \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
  }
 
 /**
@@ -50178,7 +50375,7 @@ trash_group_in_use (group_t group)
 #define GROUP_ITERATOR_TRASH_COLUMNS                                          \
  {                                                                            \
    GET_ITERATOR_COLUMNS (groups_trash),                                       \
-   { NULL, NULL }                                                             \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
  }
 
 /**
@@ -51014,19 +51211,22 @@ trash_permission_writable (permission_t permission)
 #define PERMISSION_ITERATOR_COLUMNS                                          \
  {                                                                           \
    GET_ITERATOR_COLUMNS (permissions),                                       \
-   { "resource_type", "type" },                                              \
-   { "resource_uuid", NULL },                                                \
+   { "resource_type", "type", KEYWORD_TYPE_STRING },                         \
+   { "resource_uuid", NULL, KEYWORD_TYPE_STRING },                           \
    {                                                                         \
      "(CASE"                                                                 \
      " WHEN resource_type = '' OR resource_type IS NULL"                     \
      " THEN ''"                                                              \
      " ELSE resource_name (resource_type, resource_uuid, resource_location)" \
      " END)",                                                                \
-     "_resource"                                                             \
+     "_resource",                                                            \
+     KEYWORD_TYPE_STRING                                                     \
    },                                                                        \
-   { "resource_location = " G_STRINGIFY (LOCATION_TRASH), NULL },            \
-   { "resource = -1", NULL },                                                \
-   { "subject_type", NULL },                                                 \
+   { "resource_location = " G_STRINGIFY (LOCATION_TRASH),                    \
+     NULL,                                                                   \
+     KEYWORD_TYPE_INTEGER },                                                 \
+   { "resource = -1", NULL, KEYWORD_TYPE_INTEGER },                          \
+   { "subject_type", NULL, KEYWORD_TYPE_STRING },                            \
    {                                                                         \
      "(CASE"                                                                 \
      " WHEN subject_type = 'user'"                                           \
@@ -51042,7 +51242,8 @@ trash_permission_writable (permission_t permission)
      "       WHERE roles_trash.id = subject)"                                \
      " ELSE (SELECT uuid FROM roles WHERE roles.id = subject)"               \
      " END)",                                                                \
-     "subject_uuid"                                                          \
+     "subject_uuid",                                                         \
+     KEYWORD_TYPE_STRING                                                     \
    },                                                                        \
    {                                                                         \
      "(CASE"                                                                 \
@@ -51059,10 +51260,13 @@ trash_permission_writable (permission_t permission)
      "       WHERE roles_trash.id = subject)"                                \
      " ELSE (SELECT name FROM roles WHERE roles.id = subject)"               \
      " END)",                                                                \
-     "_subject"                                                              \
+     "_subject",                                                             \
+     KEYWORD_TYPE_STRING                                                     \
    },                                                                        \
-   { "subject_location = " G_STRINGIFY (LOCATION_TRASH), NULL },             \
-   { NULL, NULL }                                                            \
+   { "subject_location = " G_STRINGIFY (LOCATION_TRASH),                     \
+     NULL,                                                                   \
+     KEYWORD_TYPE_INTEGER },                                                 \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
  }
 
 /**
@@ -51071,19 +51275,22 @@ trash_permission_writable (permission_t permission)
 #define PERMISSION_ITERATOR_TRASH_COLUMNS                                    \
  {                                                                           \
    GET_ITERATOR_COLUMNS (permissions_trash),                                 \
-   { "resource_type", "type" },                                              \
-   { "resource_uuid", NULL },                                                \
+   { "resource_type", "type", KEYWORD_TYPE_STRING },                         \
+   { "resource_uuid", NULL, KEYWORD_TYPE_STRING },                           \
    {                                                                         \
      "(CASE"                                                                 \
      " WHEN resource_type = '' OR resource_type IS NULL"                     \
      " THEN ''"                                                              \
      " ELSE resource_name (resource_type, resource_uuid, resource_location)" \
      " END)",                                                                \
-     "_resource"                                                             \
+     "_resource",                                                            \
+     KEYWORD_TYPE_STRING                                                     \
    },                                                                        \
-   { "resource_location = " G_STRINGIFY (LOCATION_TRASH), NULL },            \
-   { "resource = -1", NULL },                                                \
-   { "subject_type", NULL },                                                 \
+   { "resource_location = " G_STRINGIFY (LOCATION_TRASH),                    \
+     NULL,                                                                   \
+     KEYWORD_TYPE_INTEGER },                                                 \
+   { "resource = -1", NULL, KEYWORD_TYPE_INTEGER },                          \
+   { "subject_type", NULL, KEYWORD_TYPE_STRING },                            \
    {                                                                         \
      "(CASE"                                                                 \
      " WHEN subject_type = 'user'"                                           \
@@ -51099,7 +51306,8 @@ trash_permission_writable (permission_t permission)
      "       WHERE roles_trash.id = subject)"                                \
      " ELSE (SELECT uuid FROM roles WHERE roles.id = subject)"               \
      " END)",                                                                \
-     "subject_uuid"                                                          \
+     "subject_uuid",                                                         \
+     KEYWORD_TYPE_STRING                                                     \
    },                                                                        \
    {                                                                         \
      "(CASE"                                                                 \
@@ -51116,10 +51324,13 @@ trash_permission_writable (permission_t permission)
      "       WHERE roles_trash.id = subject)"                                \
      " ELSE (SELECT name FROM roles WHERE roles.id = subject)"               \
      " END)",                                                                \
-     "_subject"                                                              \
+     "_subject",                                                             \
+     KEYWORD_TYPE_STRING                                                     \
    },                                                                        \
-   { "subject_location = " G_STRINGIFY (LOCATION_TRASH), NULL },             \
-   { NULL, NULL }                                                            \
+   { "subject_location = " G_STRINGIFY (LOCATION_TRASH),                     \
+     NULL,                                                                   \
+     KEYWORD_TYPE_INTEGER },                                                 \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
  }
 
 /**
@@ -52614,7 +52825,8 @@ delete_port_range (const char *port_range_id, int dummy)
      "      - start"                                               \
      "      + 1)"                                                  \
      " FROM port_ranges WHERE port_list = port_lists.id)",         \
-     "total"                                                       \
+     "total",                                                      \
+     KEYWORD_TYPE_INTEGER                                          \
    },                                                              \
    {                                                               \
      /* COUNT TCP ports */                                         \
@@ -52626,7 +52838,8 @@ delete_port_range (const char *port_range_id, int dummy)
      "      + 1)"                                                  \
      " FROM port_ranges WHERE port_list = port_lists.id"           \
      "                  AND   type = 0)",                          \
-     "tcp"                                                         \
+     "tcp",                                                        \
+     KEYWORD_TYPE_INTEGER                                          \
    },                                                              \
    {                                                               \
      /* COUNT UDP ports */                                         \
@@ -52638,9 +52851,10 @@ delete_port_range (const char *port_range_id, int dummy)
      "      + 1)"                                                  \
      " FROM port_ranges WHERE port_list = port_lists.id"           \
      "                  AND   type = 1)",                          \
-     "udp"                                                         \
+     "udp",                                                        \
+     KEYWORD_TYPE_INTEGER                                          \
    },                                                              \
-   { NULL, NULL }                                                  \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                            \
  }
 
 /**
@@ -52659,7 +52873,8 @@ delete_port_range (const char *port_range_id, int dummy)
      "      + 1)"                                                  \
      " FROM port_ranges_trash"                                     \
      " WHERE port_list = port_lists_trash.id)",                    \
-     "total"                                                       \
+     "total",                                                      \
+     KEYWORD_TYPE_INTEGER                                          \
    },                                                              \
    {                                                               \
      /* COUNT TCP ports */                                         \
@@ -52671,7 +52886,8 @@ delete_port_range (const char *port_range_id, int dummy)
      "      + 1)"                                                  \
      " FROM port_ranges_trash"                                     \
      " WHERE port_list = port_lists_trash.id AND type = 0)",       \
-     "tcp"                                                         \
+     "tcp",                                                        \
+     KEYWORD_TYPE_INTEGER                                          \
    },                                                              \
    {                                                               \
      /* COUNT UDP ports */                                         \
@@ -52683,9 +52899,10 @@ delete_port_range (const char *port_range_id, int dummy)
      "      + 1)"                                                  \
      " FROM port_ranges_trash"                                     \
      " WHERE port_list = port_lists_trash.id AND type = 1)",       \
-     "udp"                                                         \
+     "udp",                                                        \
+     KEYWORD_TYPE_INTEGER                                          \
    },                                                              \
-   { NULL, NULL }                                                  \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                            \
  }
 
 /**
@@ -53664,7 +53881,7 @@ modify_role (const char *role_id, const char *name, const char *comment,
 #define ROLE_ITERATOR_COLUMNS                                                \
  {                                                                           \
    GET_ITERATOR_COLUMNS (roles),                                             \
-   { NULL, NULL }                                                            \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
  }
 
 /**
@@ -53673,7 +53890,7 @@ modify_role (const char *role_id, const char *name, const char *comment,
 #define ROLE_ITERATOR_TRASH_COLUMNS                                          \
  {                                                                           \
    GET_ITERATOR_COLUMNS (roles_trash),                                       \
-   { NULL, NULL }                                                            \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
  }
 
 /**
@@ -54231,9 +54448,9 @@ trash_filter_writable (filter_t filter)
 #define FILTER_ITERATOR_COLUMNS                               \
  {                                                            \
    GET_ITERATOR_COLUMNS (filters),                            \
-   { "type" , NULL },                                         \
-   { "term", NULL },                                          \
-   { NULL, NULL }                                             \
+   { "type" , NULL, KEYWORD_TYPE_STRING },                    \
+   { "term", NULL, KEYWORD_TYPE_STRING },                     \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                       \
  }
 
 /**
@@ -54242,9 +54459,9 @@ trash_filter_writable (filter_t filter)
 #define FILTER_ITERATOR_TRASH_COLUMNS                         \
  {                                                            \
    GET_ITERATOR_COLUMNS (filters_trash),                      \
-   { "type" , NULL },                                         \
-   { "term", NULL },                                          \
-   { NULL, NULL }                                             \
+   { "type" , NULL, KEYWORD_TYPE_STRING },                    \
+   { "term", NULL, KEYWORD_TYPE_STRING },                     \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                       \
  }
 
 /**
@@ -56841,11 +57058,13 @@ DEF_ACCESS (host_identifier_iterator_os_title,
    GET_ITERATOR_COLUMNS (hosts),                                      \
    {                                                                  \
      "1",                                                             \
-     "writable"                                                       \
+     "writable",                                                      \
+     KEYWORD_TYPE_INTEGER                                             \
    },                                                                 \
    {                                                                  \
      "0",                                                             \
-     "in_use"                                                         \
+     "in_use",                                                        \
+     KEYWORD_TYPE_INTEGER                                             \
    },                                                                 \
    {                                                                  \
      "(SELECT round (CAST (severity AS numeric), 1)"                  \
@@ -56853,7 +57072,8 @@ DEF_ACCESS (host_identifier_iterator_os_title,
      " WHERE host = hosts.id"                                         \
      " ORDER by creation_time DESC"                                   \
      " LIMIT 1)",                                                     \
-     "severity"                                                       \
+     "severity",                                                      \
+     KEYWORD_TYPE_DOUBLE                                              \
    },                                                                 \
    {                                                                  \
      "(SELECT CASE"                                                   \
@@ -56882,13 +57102,15 @@ DEF_ACCESS (host_identifier_iterator_os_title,
      "               WHERE sub.id = host_details.id)"                 \
      "              AS best_os_text)"                                 \
      "      AS vars)",                                                \
-     "os"                                                             \
+     "os",                                                            \
+     KEYWORD_TYPE_STRING                                              \
    },                                                                 \
    {                                                                  \
      "(SELECT group_concat (name, ', ') FROM oss"                     \
      "  WHERE id IN (SELECT distinct os FROM host_oss"                \
      "               WHERE host = hosts.id))",                        \
-     "oss"                                                            \
+     "oss",                                                           \
+     KEYWORD_TYPE_INTEGER                                             \
    },                                                                 \
    {                                                                  \
      "(SELECT value"                                                  \
@@ -56897,7 +57119,8 @@ DEF_ACCESS (host_identifier_iterator_os_title,
      " AND (name = 'hostname' or name = 'DNS-via-TargetDefinition')"  \
      " ORDER by creation_time DESC"                                   \
      " LIMIT 1)",                                                     \
-     "hostname"                                                       \
+     "hostname",                                                      \
+     KEYWORD_TYPE_STRING                                              \
    },                                                                 \
    {                                                                  \
      "(SELECT value"                                                  \
@@ -56906,9 +57129,10 @@ DEF_ACCESS (host_identifier_iterator_os_title,
      " AND name = 'ip'"                                               \
      " ORDER by creation_time DESC"                                   \
      " LIMIT 1)",                                                     \
-     "ip"                                                             \
+     "ip",                                                            \
+     KEYWORD_TYPE_STRING                                              \
    },                                                                 \
-   { NULL, NULL }                                                     \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                               \
  }
 
 /**
@@ -57008,20 +57232,24 @@ asset_host_count (const get_data_t *get)
    GET_ITERATOR_COLUMNS (oss),                                                \
    {                                                                          \
      "0",                                                                     \
-     "writable"                                                               \
+     "writable",                                                              \
+     KEYWORD_TYPE_INTEGER                                                     \
    },                                                                         \
    {                                                                          \
      "(SELECT count (*) > 0 FROM host_oss WHERE os = oss.id)",                \
-     "in_use"                                                                 \
+     "in_use",                                                                \
+     KEYWORD_TYPE_INTEGER                                                     \
    },                                                                         \
    {                                                                          \
      "(SELECT coalesce ((SELECT title FROM scap.cpes WHERE uuid = oss.name)," \
      "                  ''))",                                                \
-     "title"                                                                  \
+     "title",                                                                 \
+     KEYWORD_TYPE_STRING                                                      \
    },                                                                         \
    {                                                                          \
      "(SELECT count (distinct host) FROM host_oss WHERE os = oss.id)",        \
-     "hosts"                                                                  \
+     "hosts",                                                                 \
+     KEYWORD_TYPE_INTEGER                                                     \
    },                                                                         \
    {                                                                          \
      "(SELECT round (CAST (severity AS numeric), 1) FROM host_max_severities" \
@@ -57029,14 +57257,16 @@ asset_host_count (const get_data_t *get)
      "               WHERE os = oss.id"                                       \
      "               ORDER BY creation_time DESC LIMIT 1)"                    \
      " ORDER BY creation_time DESC LIMIT 1)",                                 \
-     "latest_severity"                                                        \
+     "latest_severity",                                                       \
+     KEYWORD_TYPE_DOUBLE                                                      \
    },                                                                         \
    {                                                                          \
      "(SELECT round (max (CAST (severity AS numeric)), 1)"                    \
      " FROM host_max_severities"                                              \
      " WHERE host IN (SELECT DISTINCT host FROM host_oss"                     \
      "                WHERE os = oss.id))",                                   \
-     "highest_severity"                                                       \
+     "highest_severity",                                                      \
+     KEYWORD_TYPE_DOUBLE                                                      \
    },                                                                         \
    {                                                                          \
      "(SELECT round (CAST (avg (severity) AS numeric), 2)"                    \
@@ -57047,9 +57277,10 @@ asset_host_count (const get_data_t *get)
      "       FROM (SELECT distinct host FROM host_oss WHERE os = oss.id)"     \
      "       AS hosts)"                                                       \
      " AS severities)",                                                       \
-     "average_severity"                                                       \
+     "average_severity",                                                      \
+     KEYWORD_TYPE_DOUBLE                                                      \
    },                                                                         \
-   { NULL, NULL }                                                             \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
  }
 
 /**
@@ -57846,12 +58077,12 @@ delete_asset (const char *asset_id, const char *report_id, int dummy)
  */
 #define SETTING_ITERATOR_COLUMNS                              \
  {                                                            \
-   { "id" , NULL },                                           \
-   { "uuid", NULL },                                          \
-   { "name", NULL },                                          \
-   { "comment", NULL },                                       \
-   { "value", NULL },                                         \
-   { NULL, NULL }                                             \
+   { "id" , NULL, KEYWORD_TYPE_INTEGER },                     \
+   { "uuid", NULL, KEYWORD_TYPE_STRING },                     \
+   { "name", NULL, KEYWORD_TYPE_STRING },                     \
+   { "comment", NULL, KEYWORD_TYPE_STRING },                  \
+   { "value", NULL, KEYWORD_TYPE_STRING },                    \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                       \
  }
 
 /**
@@ -58641,20 +58872,20 @@ modify_setting (const gchar *uuid, const gchar *name,
 #define CVE_INFO_ITERATOR_COLUMNS                               \
  {                                                              \
    GET_ITERATOR_COLUMNS_PREFIX (""),                            \
-   { "''", "_owner" },                                          \
-   { "0", NULL },                                               \
-   { "vector", NULL },                                          \
-   { "complexity", NULL },                                      \
-   { "authentication", NULL },                                  \
-   { "confidentiality_impact", NULL },                          \
-   { "integrity_impact", NULL },                                \
-   { "availability_impact", NULL },                             \
-   { "products", NULL },                                        \
-   { "cvss", NULL },                                            \
-   { "description", NULL },                                     \
-   { "cvss", "severity" },                                      \
-   { "creation_time", "published" },                            \
-   { NULL, NULL }                                               \
+   { "''", "_owner", KEYWORD_TYPE_STRING },                     \
+   { "0", NULL, KEYWORD_TYPE_INTEGER },                         \
+   { "vector", NULL, KEYWORD_TYPE_STRING },                     \
+   { "complexity", NULL, KEYWORD_TYPE_STRING },                 \
+   { "authentication", NULL, KEYWORD_TYPE_STRING },             \
+   { "confidentiality_impact", NULL, KEYWORD_TYPE_STRING },     \
+   { "integrity_impact", NULL, KEYWORD_TYPE_STRING },           \
+   { "availability_impact", NULL, KEYWORD_TYPE_STRING },        \
+   { "products", NULL, KEYWORD_TYPE_STRING },                   \
+   { "cvss", NULL, KEYWORD_TYPE_DOUBLE },                       \
+   { "description", NULL, KEYWORD_TYPE_STRING },                \
+   { "cvss", "severity", KEYWORD_TYPE_DOUBLE },                 \
+   { "creation_time", "published", KEYWORD_TYPE_INTEGER },      \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                         \
  }
 
 /**
@@ -58671,16 +58902,16 @@ modify_setting (const gchar *uuid, const gchar *name,
 #define CPE_INFO_ITERATOR_COLUMNS                               \
  {                                                              \
    GET_ITERATOR_COLUMNS_PREFIX (""),                            \
-   { "''", "_owner" },                                          \
-   { "0", NULL },                                                           \
-   { "title", NULL },                                           \
-   { "status", NULL },                                          \
-   { "deprecated_by_id", NULL },                                \
-   { "max_cvss", NULL },                                        \
-   { "cve_refs", "cves" },                                      \
-   { "nvd_id", NULL },                                          \
-   { "max_cvss", "severity" },                                  \
-   { NULL, NULL }                                               \
+   { "''", "_owner", KEYWORD_TYPE_STRING },                     \
+   { "0", NULL, KEYWORD_TYPE_INTEGER },                         \
+   { "title", NULL, KEYWORD_TYPE_STRING },                      \
+   { "status", NULL, KEYWORD_TYPE_STRING },                     \
+   { "deprecated_by_id", NULL, KEYWORD_TYPE_INTEGER },          \
+   { "max_cvss", NULL, KEYWORD_TYPE_DOUBLE },                   \
+   { "cve_refs", "cves", KEYWORD_TYPE_INTEGER },                \
+   { "nvd_id", NULL, KEYWORD_TYPE_INTEGER },                    \
+   { "max_cvss", "severity", KEYWORD_TYPE_DOUBLE },             \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                         \
  }
 
 /**
@@ -58697,19 +58928,19 @@ modify_setting (const gchar *uuid, const gchar *name,
 #define OVALDEF_INFO_ITERATOR_COLUMNS                            \
  {                                                               \
    GET_ITERATOR_COLUMNS_PREFIX (""),                             \
-   { "''", "_owner" },                                           \
-   { "0", NULL },                                                           \
-   { "version", NULL },                                          \
-   { "deprecated", NULL },                                       \
-   { "def_class", "class"},                                      \
-   { "title", NULL },                                            \
-   { "description", NULL },                                      \
-   { "xml_file", "file" },                                       \
-   { "status", NULL },                                           \
-   { "max_cvss", NULL },                                         \
-   { "cve_refs", "cves" },                                       \
-   { "max_cvss", "severity" },                                   \
-   { NULL, NULL }                                                \
+   { "''", "_owner", KEYWORD_TYPE_STRING },                      \
+   { "0", NULL, KEYWORD_TYPE_INTEGER },                          \
+   { "version", NULL, KEYWORD_TYPE_INTEGER },                    \
+   { "deprecated", NULL, KEYWORD_TYPE_INTEGER },                 \
+   { "def_class", "class", KEYWORD_TYPE_STRING },                \
+   { "title", NULL, KEYWORD_TYPE_STRING },                       \
+   { "description", NULL, KEYWORD_TYPE_STRING },                 \
+   { "xml_file", "file", KEYWORD_TYPE_STRING },                  \
+   { "status", NULL, KEYWORD_TYPE_STRING },                      \
+   { "max_cvss", NULL, KEYWORD_TYPE_DOUBLE },                    \
+   { "cve_refs", "cves", KEYWORD_TYPE_INTEGER },                 \
+   { "max_cvss", "severity", KEYWORD_TYPE_DOUBLE },              \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                          \
  }
 
 /**
@@ -58725,14 +58956,14 @@ modify_setting (const gchar *uuid, const gchar *name,
 #define CERT_BUND_ADV_INFO_ITERATOR_COLUMNS                       \
  {                                                               \
    GET_ITERATOR_COLUMNS_PREFIX (""),                             \
-   { "''", "_owner" },                                           \
-   { "0", NULL },                                                           \
-   { "title", NULL },                                            \
-   { "summary", NULL },                                          \
-   { "cve_refs", "cves" },                                       \
-   { "max_cvss", NULL },                                         \
-   { "max_cvss", "severity" },                                   \
-   { NULL, NULL }                                                \
+   { "''", "_owner", KEYWORD_TYPE_STRING },                      \
+   { "0", NULL, KEYWORD_TYPE_INTEGER },                          \
+   { "title", NULL, KEYWORD_TYPE_STRING },                       \
+   { "summary", NULL, KEYWORD_TYPE_STRING },                     \
+   { "cve_refs", "cves", KEYWORD_TYPE_INTEGER },                 \
+   { "max_cvss", NULL, KEYWORD_TYPE_DOUBLE },                    \
+   { "max_cvss", "severity", KEYWORD_TYPE_DOUBLE },              \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                          \
  }
 
 /**
@@ -58748,14 +58979,14 @@ modify_setting (const gchar *uuid, const gchar *name,
 #define DFN_CERT_ADV_INFO_ITERATOR_COLUMNS                       \
  {                                                               \
    GET_ITERATOR_COLUMNS_PREFIX (""),                             \
-   { "''", "_owner" },                                           \
-   { "0", NULL },                                                           \
-   { "title", NULL },                                            \
-   { "summary", NULL },                                          \
-   { "cve_refs", "cves" },                                       \
-   { "max_cvss", NULL },                                         \
-   { "max_cvss", "severity" },                                   \
-   { NULL, NULL }                                                \
+   { "''", "_owner", KEYWORD_TYPE_STRING },                      \
+   { "0", NULL, KEYWORD_TYPE_INTEGER },                          \
+   { "title", NULL, KEYWORD_TYPE_STRING },                       \
+   { "summary", NULL, KEYWORD_TYPE_STRING },                     \
+   { "cve_refs", "cves", KEYWORD_TYPE_INTEGER },                 \
+   { "max_cvss", NULL, KEYWORD_TYPE_DOUBLE },                    \
+   { "max_cvss", "severity", KEYWORD_TYPE_DOUBLE },              \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                          \
  }
 
 /**
@@ -58769,20 +59000,20 @@ modify_setting (const gchar *uuid, const gchar *name,
  */
 #define ALL_INFO_ITERATOR_COLUMNS                                       \
  {                                                                      \
-   { "id", NULL },                                                      \
-   { "uuid", NULL },                                                    \
-   { "name", NULL },                                                    \
-   { "comment", NULL },                                                 \
-   { "iso_time (created)", NULL },                                      \
-   { "iso_time (modified)", NULL },                                     \
-   { "created", NULL },                                                 \
-   { "modified", NULL },                                                \
-   { "''", "_owner" },                                                  \
-   { "0", NULL },                                                       \
-   { "type", NULL },                                                    \
-   { "extra", NULL },                                                   \
-   { "severity", NULL },                                                \
-   { NULL, NULL }                                                       \
+   { "id", NULL, KEYWORD_TYPE_INTEGER },                                \
+   { "uuid", NULL, KEYWORD_TYPE_STRING },                               \
+   { "name", NULL, KEYWORD_TYPE_STRING },                               \
+   { "comment", NULL, KEYWORD_TYPE_STRING },                            \
+   { "iso_time (created)", NULL, KEYWORD_TYPE_STRING },                 \
+   { "iso_time (modified)", NULL, KEYWORD_TYPE_STRING },                \
+   { "created", NULL, KEYWORD_TYPE_INTEGER },                           \
+   { "modified", NULL, KEYWORD_TYPE_INTEGER },                          \
+   { "''", "_owner", KEYWORD_TYPE_STRING },                             \
+   { "0", NULL, KEYWORD_TYPE_INTEGER },                                 \
+   { "type", NULL, KEYWORD_TYPE_STRING },                               \
+   { "extra", NULL, KEYWORD_TYPE_STRING },                              \
+   { "severity", NULL, KEYWORD_TYPE_DOUBLE },                           \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                 \
  }
 
 /**
@@ -61504,9 +61735,9 @@ trash_user_writable (user_t user)
 #define USER_ITERATOR_COLUMNS                                              \
  {                                                                         \
    GET_ITERATOR_COLUMNS (users),                                           \
-   { "method", NULL },                                                     \
-   { "hosts", NULL },                                                      \
-   { "hosts_allow", NULL },                                                \
+   { "method", NULL, KEYWORD_TYPE_STRING },                                \
+   { "hosts", NULL, KEYWORD_TYPE_STRING },                                 \
+   { "hosts_allow", NULL, KEYWORD_TYPE_INTEGER },                          \
    {                                                                       \
      "coalesce ((SELECT group_concat (name, ', ')"                         \
      "           FROM (SELECT DISTINCT name, order_role (name)"            \
@@ -61516,7 +61747,8 @@ trash_user_writable (user_t user)
      "                 ORDER BY order_role (roles.name) ASC)"              \
      "                 AS user_iterator_sub),"                             \
      "           '')",                                                     \
-     "roles"                                                               \
+     "roles",                                                              \
+     KEYWORD_TYPE_STRING                                                   \
    },                                                                      \
    {                                                                       \
      "coalesce ((SELECT group_concat (name, ', ')"                         \
@@ -61526,11 +61758,12 @@ trash_user_writable (user_t user)
      "                 ORDER BY groups.name ASC)"                          \
      "                AS user_iterator_sub),"                              \
      "           '')",                                                     \
-     "groups"                                                              \
+     "groups",                                                             \
+     KEYWORD_TYPE_STRING                                                   \
    },                                                                      \
-   { "ifaces", NULL },                                                     \
-   { "ifaces_allow", NULL },                                               \
-   { NULL, NULL }                                                          \
+   { "ifaces", NULL, KEYWORD_TYPE_STRING },                                \
+   { "ifaces_allow", NULL, KEYWORD_TYPE_INTEGER },                         \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                    \
  }
 
 /**
@@ -61539,12 +61772,12 @@ trash_user_writable (user_t user)
 #define USER_ITERATOR_TRASH_COLUMNS                                        \
  {                                                                         \
    GET_ITERATOR_COLUMNS (users_trash),                                     \
-   { "method", NULL },                                                     \
-   { "hosts", NULL },                                                      \
-   { "hosts_allow", NULL },                                                \
-   { "ifaces", NULL },                                                     \
-   { "ifaces_allow", NULL },                                               \
-   { NULL, NULL }                                                          \
+   { "method", NULL, KEYWORD_TYPE_STRING },                                \
+   { "hosts", NULL, KEYWORD_TYPE_STRING },                                 \
+   { "hosts_allow", NULL, KEYWORD_TYPE_INTEGER },                          \
+   { "ifaces", NULL, KEYWORD_TYPE_STRING },                                \
+   { "ifaces_allow", NULL, KEYWORD_TYPE_INTEGER },                         \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                    \
  }
 
 /**
@@ -62379,18 +62612,19 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
 #define TAG_ITERATOR_COLUMNS                                                  \
  {                                                                           \
    GET_ITERATOR_COLUMNS (tags),                                              \
-   { "resource_type", NULL },                                                \
-   { "resource", NULL },                                                     \
-   { "resource_uuid", NULL },                                                \
-   { "resource_location", NULL },                                            \
-   { "active", NULL },                                                       \
-   { "value", NULL },                                                        \
-   { "(resource = 0)", "orphan" },                                           \
+   { "resource_type", NULL, KEYWORD_TYPE_STRING },                           \
+   { "resource", NULL, KEYWORD_TYPE_INTEGER },                               \
+   { "resource_uuid", NULL, KEYWORD_TYPE_STRING },                           \
+   { "resource_location", NULL, KEYWORD_TYPE_INTEGER },                      \
+   { "active", NULL, KEYWORD_TYPE_INTEGER },                                 \
+   { "value", NULL, KEYWORD_TYPE_STRING },                                   \
+   { "(resource = 0)", "orphan", KEYWORD_TYPE_INTEGER },                     \
    {                                                                         \
      "resource_name (resource_type, resource_uuid, resource_location)",      \
-     "resource_name"                                                         \
+     "resource_name",                                                        \
+     KEYWORD_TYPE_STRING                                                     \
    },                                                                        \
-   { NULL, NULL }                                                            \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
  }
 
 /**
@@ -62399,18 +62633,19 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
 #define TAG_ITERATOR_TRASH_COLUMNS                                           \
  {                                                                           \
    GET_ITERATOR_COLUMNS (tags_trash),                                        \
-   { "resource_type", NULL },                                                \
-   { "resource", NULL },                                                     \
-   { "resource_uuid", NULL },                                                \
-   { "resource_location", NULL },                                            \
-   { "active", NULL },                                                       \
-   { "value", NULL },                                                        \
-   { "(resource = 0)", "orphan" },                                           \
+   { "resource_type", NULL, KEYWORD_TYPE_STRING },                           \
+   { "resource", NULL, KEYWORD_TYPE_INTEGER },                               \
+   { "resource_uuid", NULL, KEYWORD_TYPE_STRING },                           \
+   { "resource_location", NULL, KEYWORD_TYPE_INTEGER },                      \
+   { "active", NULL, KEYWORD_TYPE_INTEGER },                                 \
+   { "value", NULL, KEYWORD_TYPE_STRING },                                   \
+   { "(resource = 0)", "orphan", KEYWORD_TYPE_INTEGER },                     \
    {                                                                         \
      "resource_name (resource_type, resource_uuid, resource_location)",      \
-     "resource_name"                                                         \
+     "resource_name",                                                        \
+     KEYWORD_TYPE_STRING                                                     \
    },                                                                        \
-   { NULL, NULL }                                                            \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
  }
 
 /**
@@ -62424,9 +62659,9 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
  */
 #define TAG_NAME_ITERATOR_COLUMNS                                \
  {                                                               \
-   { "name" , NULL },                                            \
-   { "resource_type" , NULL },                                   \
-   { NULL, NULL }                                                \
+   { "name", NULL, KEYWORD_TYPE_STRING },                        \
+   { "resource_type", NULL, KEYWORD_TYPE_STRING },               \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                          \
  }
 
 /**
