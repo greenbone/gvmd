@@ -77,7 +77,9 @@ The program usage message follows.
       --encrypt-all-credentials   (Re-)Encrypt all credentials.
       --new-password=<password>   Modify user's password and exit.
       --optimize=<name>           Run an optimization: vacuum, analyze,
-                                  cleanup-config-prefs, remove-open-port-results
+                                  cleanup-config-prefs,
+                                  cleanup-result-severities,
+                                  remove-open-port-results
                                   or cleanup-port-names.
       -p, --port=<number>         Use port number <number>.
       --port2=<number>            Use port number <number> for address 2.

@@ -57415,6 +57415,29 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
                                       " removed IANA port names: %d.",
                                       changes_old_format, changes_iana);
     }
+  else if (strcasecmp (name, "cleanup-result-severities") == 0)
+    {
+      int missing_severity_changes = 0;
+      sql_begin_exclusive();
+
+      sql ("UPDATE results"
+           " SET severity"
+           "       = (SELECT value FROM settings"
+           "           WHERE uuid = '7eda49c5-096c-4bef-b1ab-d080d87300df'"
+           "             AND (settings.owner = results.owner"
+           "                  OR settings.owner IS NULL)"
+           "          ORDER BY settings.owner DESC)"
+           " WHERE severity IS NULL"
+           "    OR severity = '';");
+
+      missing_severity_changes = sql_changes();
+      sql ("COMMIT;");
+
+      success_text = g_strdup_printf ("Optimized: cleanup-result-severities."
+                                      " Missing severity scores added: %d.",
+                                      missing_severity_changes);
+
+    }
   else if (strcasecmp (name, "rebuild-report-cache") == 0)
     {
       int changes;

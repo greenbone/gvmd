@@ -1,5 +1,15 @@
 2016-03-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Backport r24354.
+
+	* INSTALL, README, src/openvasmd.c (main): Add new --optimize option
+	cleanup-result-severities.
+
+	* src/manage_sql.c (manage_optimize): Add cleanup-result-severities
+	case, filling in missing severity scores, e.g. in older OSP reports.
+
+2016-03-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Backport r23021.
 
 	* src/manage_sql.c (check_db_settings, credentials_setup): Add new
