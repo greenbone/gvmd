@@ -1,5 +1,13 @@
 2016-03-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Backport r24727.
+
+	* src/manage_sql.c (manage_optimize): Add version of query with
+	stricter type handling for PostgreSQL to cleanup-result-severities
+	case.
+
+2016-03-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Backport r24354.
 
 	* INSTALL, README, src/openvasmd.c (main): Add new --optimize option

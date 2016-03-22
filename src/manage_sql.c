@@ -57420,15 +57420,25 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
       int missing_severity_changes = 0;
       sql_begin_exclusive();
 
-      sql ("UPDATE results"
-           " SET severity"
-           "       = (SELECT value FROM settings"
-           "           WHERE uuid = '7eda49c5-096c-4bef-b1ab-d080d87300df'"
-           "             AND (settings.owner = results.owner"
-           "                  OR settings.owner IS NULL)"
-           "          ORDER BY settings.owner DESC)"
-           " WHERE severity IS NULL"
-           "    OR severity = '';");
+      if (sql_is_sqlite3 ())
+        sql ("UPDATE results"
+            " SET severity"
+            "       = (SELECT value FROM settings"
+            "           WHERE uuid = '7eda49c5-096c-4bef-b1ab-d080d87300df'"
+            "             AND (settings.owner = results.owner"
+            "                  OR settings.owner IS NULL)"
+            "          ORDER BY settings.owner DESC)"
+            " WHERE severity IS NULL"
+            "    OR severity = '';");
+      else
+        sql ("UPDATE results"
+            " SET severity"
+            "       = (SELECT CAST (value AS real) FROM settings"
+            "           WHERE uuid = '7eda49c5-096c-4bef-b1ab-d080d87300df'"
+            "             AND (settings.owner = results.owner"
+            "                  OR settings.owner IS NULL)"
+            "          ORDER BY settings.owner DESC)"
+            " WHERE severity IS NULL;");
 
       missing_severity_changes = sql_changes();
       sql ("COMMIT;");
