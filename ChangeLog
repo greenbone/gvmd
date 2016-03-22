@@ -1,5 +1,10 @@
 2016-03-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (filter_clause): Line SQL operators under their
+	left operand.
+
+2016-03-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* CMakeLists.txt: Install SCP alert.
 
 2016-03-22  Matthew Mundell <matthew.mundell@greenbone.net>

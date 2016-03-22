@@ -3848,7 +3848,7 @@ filter_clause (const char* type, const char* filter,
                                           "%s"
                                           "(%s IS NULL"
                                           " OR CAST (%s AS NUMERIC)"
-                                          " != %i)",
+                                          "    != %i)",
                                           (index ? " AND " : ""),
                                           select_column,
                                           select_column,
@@ -3860,7 +3860,7 @@ filter_clause (const char* type, const char* filter,
                                           "%s"
                                           "(%s IS NULL"
                                           " OR CAST (%s AS NUMERIC)"
-                                          " != %f)",
+                                          "    != %f)",
                                           (index ? " AND " : ""),
                                           select_column,
                                           select_column,
@@ -3870,7 +3870,7 @@ filter_clause (const char* type, const char* filter,
                                           "%s"
                                           "(%s IS NULL"
                                           " OR CAST (%s AS TEXT)"
-                                          " != '%s')",
+                                          "    != '%s')",
                                           (index ? " AND " : ""),
                                           select_column,
                                           select_column,
@@ -3960,7 +3960,7 @@ filter_clause (const char* type, const char* filter,
                                           "%s"
                                           "(%s IS NULL"
                                           " OR CAST (%s AS TEXT)"
-                                          " NOT %s '%s%s%s')",
+                                          "    NOT %s '%s%s%s')",
                                           (index ? " AND " : ""),
                                           select_column,
                                           select_column,
