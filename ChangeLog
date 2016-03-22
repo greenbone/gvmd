@@ -1,3 +1,23 @@
+2016-03-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add new alert method 'SCP'.
+
+	* src/manage.c (alert_method_name, alert_method_from_name): Add SCP.
+
+	* src/manage.h (alert_method_t): Add SCP.
+
+	* src/manage_sql.c (validate_scp_data): New function.
+	(create_alert, modify_alert): Check SCP method data.
+	(run_alert_script): Put outputs on same line, so they're easy to change.
+	(scp_to_host): New function.
+	(escalate_2): Add SCP case.
+
+	* src/omp.c (omp_xml_handle_end_element): Handle new returns.
+
+	* src/alert_methods/SCP: New directory.
+
+	* src/alert_methods/SCP/alert: New file.
+
 2016-03-21  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* doc/postgres-HOWTO: Added section with sample queries to
