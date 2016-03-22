@@ -12182,6 +12182,17 @@ check_db_settings ()
          "  'File name format string for the export of reports.',"
          "  '%%T-%%U');");
 
+  if (sql_int ("SELECT count(*) FROM settings"
+               " WHERE uuid = '7eda49c5-096c-4bef-b1ab-d080d87300df'"
+               " AND owner IS NULL;")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+         " VALUES"
+         " ('7eda49c5-096c-4bef-b1ab-d080d87300df', NULL,"
+         "  'Default Severity',"
+         "  'Severity to use if none is specified or available from SecInfo.',"
+         "  '10.0');");
+
 }
 
 /**
@@ -14220,6 +14231,16 @@ credentials_setup (credentials_t *credentials)
                 " ORDER BY owner DESC LIMIT 1;",
                 credentials->uuid);
 
+  credentials->default_severity
+    = sql_double ("SELECT value FROM settings"
+                  " WHERE name = 'Default Severity'"
+                  " AND ((owner IS NULL)"
+                  "      OR (owner ="
+                  "          (SELECT id FROM users"
+                  "           WHERE users.uuid = '%s')))"
+                  " ORDER BY coalesce (owner, 0) DESC LIMIT 1;",
+                  credentials->uuid);
+
   return 0;
 }
 
@@ -16240,9 +16261,29 @@ make_osp_result (task_t task, const char *host, const char *nvt,
       else
         {
           if (nvt && g_str_has_prefix (nvt, "CVE-"))
-            result_severity = cve_cvss_base (nvt);
+            {
+              result_severity = cve_cvss_base (nvt);
+              if (result_severity == NULL || strcmp (result_severity, "") == 0)
+                {
+                  g_free (result_severity);
+                  result_severity
+                    = g_strdup_printf ("%0.1f",
+                                       setting_default_severity_dbl ());
+                  g_debug ("%s: OSP CVE result without severity for '%s'",
+                           __FUNCTION__, nvt);
+                }
+            }
           else
-            result_severity = g_strdup (G_STRINGIFY (SEVERITY_LOG));
+            {
+              /*
+              result_severity
+                = g_strdup_printf ("%0.1f",
+                                   setting_default_severity_dbl ());
+              */
+              g_warning ("%s: Non-CVE OSP result without severity for test %s",
+                         __FUNCTION__, nvt ? nvt : "(unknown)");
+              return 0;
+            }
         }
     }
   else
@@ -52373,6 +52414,17 @@ setting_severity ()
 }
 
 /**
+ * @brief Return the Default Severity user setting as a double.
+ *
+ * @return The user's Default Severity.
+ */
+double
+setting_default_severity_dbl ()
+{
+  return current_credentials.default_severity;
+}
+
+/**
  * @brief Return the Dynamic Severity user setting as an int.
  *
  * @return 1 if user's Dynamic Severity is "Yes", 0 if it is "No",
@@ -52636,6 +52688,7 @@ modify_setting (const gchar *uuid, const gchar *name,
                || strcmp (uuid, "20f3034c-e709-11e1-87e7-406186ea4fc5") == 0
                || strcmp (uuid, "6765549a-934e-11e3-b358-406186ea4fc5") == 0
                || strcmp (uuid, "77ec2444-e7f2-4a80-a59b-f4237782d93f") == 0
+               || strcmp (uuid, "7eda49c5-096c-4bef-b1ab-d080d87300df") == 0
                || strcmp (uuid, "578a1c14-e2dc-45ef-a591-89d31391d007") == 0))
     {
       gsize value_size;
@@ -52736,6 +52789,20 @@ modify_setting (const gchar *uuid, const gchar *name,
         {
           /* Dynamic Severity */
           current_credentials.dynamic_severity = atoi (value);
+        }
+
+      if (strcmp (uuid, "7eda49c5-096c-4bef-b1ab-d080d87300df") == 0)
+        {
+          double severity_dbl;
+          /* Default Severity */
+          if (sscanf (value, "%lf", &severity_dbl) != 1
+              || severity_dbl < 0.0 || severity_dbl > 10.0)
+            {
+              g_free (value);
+              return 2;
+            }
+          else
+            current_credentials.default_severity = severity_dbl;
         }
 
       quoted_value = sql_quote (value);

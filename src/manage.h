@@ -3371,6 +3371,9 @@ setting_filter (const char *);
 const char *
 setting_severity ();
 
+double
+setting_default_severity_dbl ();
+
 int
 setting_dynamic_severity_int ();
 
