@@ -1,5 +1,9 @@
 2016-03-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* CMakeLists.txt: Install SCP alert.
+
+2016-03-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add new alert method 'SCP'.
 
 	* src/manage.c (alert_method_name, alert_method_from_name): Add SCP.
