@@ -14834,6 +14834,9 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 {
                   const char *name;
                   name = alert_data_iterator_name (&data);
+                  if (strcmp (alert_data_iterator_name (&data), "scp_password")
+                      == 0)
+                    continue;
                   if (strcmp (name, "notice") == 0)
                     notice = atoi (alert_data_iterator_data (&data));
                   else if (strcmp (method, "Email") == 0
