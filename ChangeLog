@@ -1,5 +1,10 @@
 2016-03-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/alert_methods/SCP/alert: Pass password with -f, otherwise it is
+	visible in the process list.  Remove temp files afterwards.
+
+2016-03-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In GET_ALERTS skip SCP
 	password.
 
