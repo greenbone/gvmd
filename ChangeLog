@@ -1,5 +1,9 @@
 2016-03-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (escalate_2): Implement SecInfo case of SCP.
+
+2016-03-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/alert_methods/SCP/alert: Pass password with -f, otherwise it is
 	visible in the process list.  Remove temp files afterwards.
 

@@ -10675,28 +10675,30 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           int ret;
           filter_t filter;
 
-#if 0
-          // TODO
           if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
             {
               gchar *message;
 
               message = new_secinfo_message (event, event_data, alert);
-              host = alert_data (alert, "method", "send_host");
-              port = alert_data (alert, "method", "send_port");
 
-              tracef ("send host: %s", host);
-              tracef ("send port: %s", port);
+              password = alert_data (alert, "method", "scp_password");
+              username = alert_data (alert, "method", "scp_username");
+              host = alert_data (alert, "method", "scp_host");
+              path = alert_data (alert, "method", "scp_path");
+              known_hosts = alert_data (alert, "method", "scp_known_hosts");
 
-              ret = send_to_host (host, port, message, strlen (message));
+              ret = scp_to_host (password, username, host, path, known_hosts,
+                                 message, strlen (message));
 
-              g_free (message);
+              free (password);
+              free (username);
               free (host);
-              free (port);
+              free (path);
+              free (known_hosts);
+              g_free (message);
 
               return ret;
             }
-#endif
 
           format_uuid = alert_data (alert,
                                     "method",
