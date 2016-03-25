@@ -1,3 +1,24 @@
+2016-03-25  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	Backport r24789.
+
+	Dynamically allocate and reallocate from_scanner buffer so it adjusts to
+	larger inputs from scanner instead of silently exiting.
+
+	* src/scanner.c (from_scanner): Define as pointer instead of array.
+	(from_scanner_size, from_scanner_size_max): New variables.
+	(openvas_scanner_read, openvas_scanner_full): Use new variables.
+	(openvas_scanner_realloc): New function.
+	(openvas_scanner_close): Free from_scanner buffer.
+	(openvas_scanner_init): Allocate from_scanner buffer.
+
+	* src/scanner.h: Add new function prototype.
+
+	* src/otp.c: Adjust from_scanner declaration.
+	(sync_buffer): Reallocate scanner buffer when it is full.
+
+	* src/ompd.h: Adjust from_scanner declaration.
+
 2016-03-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r24727.

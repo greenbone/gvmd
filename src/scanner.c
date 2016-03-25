@@ -51,7 +51,7 @@ char *openvas_scanner_key_priv = NULL;
 /**
  * @brief Buffer of input from the scanner.
  */
-char from_scanner[FROM_BUFFER_SIZE];
+char *from_scanner = NULL;
 
 /**
  * @brief The start of the data in the \ref from_scanner buffer.
@@ -62,6 +62,16 @@ buffer_size_t from_scanner_start = 0;
  * @brief The end of the data in the \ref from_scanner buffer.
  */
 buffer_size_t from_scanner_end = 0;
+
+/**
+ * @brief The current size of the \ref from_scanner buffer.
+ */
+buffer_size_t from_scanner_size = 1048576;
+
+/**
+ * @brief The max size of the \ref from_scanner buffer.
+ */
+buffer_size_t from_scanner_max_size = 1073741824;
 
 /**
  * @brief Read as much from the server as the \ref from_scanner buffer will
@@ -76,12 +86,12 @@ openvas_scanner_read ()
   if (openvas_scanner_socket == -1)
     return -1;
 
-  while (from_scanner_end < FROM_BUFFER_SIZE)
+  while (!openvas_scanner_full ())
     {
       ssize_t count;
       count = gnutls_record_recv (openvas_scanner_session,
                                   from_scanner + from_scanner_end,
-                                  FROM_BUFFER_SIZE - from_scanner_end);
+                                  from_scanner_size - from_scanner_end);
       if (count < 0)
         {
           if (count == GNUTLS_E_AGAIN)
@@ -129,7 +139,23 @@ openvas_scanner_read ()
 int
 openvas_scanner_full ()
 {
-  return !(from_scanner_end < FROM_BUFFER_SIZE);
+  return !(from_scanner_end < from_scanner_size);
+}
+
+/**
+ * @brief Reallocates the from_scanner buffer to a higher size.
+ *
+ * @return 1 if max size reached, 0 otherwise.
+ */
+int
+openvas_scanner_realloc ()
+{
+  if (from_scanner_size >= from_scanner_max_size)
+    return 1;
+  from_scanner_size *= 2;
+  g_warning ("Reallocing to %d", from_scanner_size);
+  from_scanner = g_realloc (from_scanner, from_scanner_size);
+  return 0;
 }
 
 /**
@@ -362,6 +388,8 @@ openvas_scanner_close ()
   openvas_scanner_socket = -1;
   openvas_scanner_session = NULL;
   openvas_scanner_credentials = NULL;
+  g_free (from_scanner);
+  from_scanner = NULL;
   return rc;
 }
 
@@ -527,6 +555,7 @@ openvas_scanner_init (int cache_mode)
 
   if (openvas_scanner_socket == -1)
     return -1;
+  from_scanner = g_malloc0 (from_scanner_size);
   ret = openvas_scanner_write (cache_mode);
   if (ret != -3)
     {

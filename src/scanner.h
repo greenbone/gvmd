@@ -65,6 +65,9 @@ int
 openvas_scanner_full ();
 
 int
+openvas_scanner_realloc ();
+
+int
 openvas_scanner_connected ();
 
 int
