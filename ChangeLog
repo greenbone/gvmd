@@ -1,3 +1,11 @@
+2016-03-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/lsc_user.c (lsc_user_rpm_create, lsc_user_deb_create): Add
+	warnings in internal error cases.
+
+	* src/manage_sql.c (credential_iterator_deb): Add warning for RPM
+	creation failure.
+
 2016-03-25  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	Dynamically allocate and reallocate from_scanner buffer so it adjusts to

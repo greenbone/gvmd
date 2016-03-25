@@ -40151,6 +40151,7 @@ credential_iterator_deb (iterator_t *iterator)
   login = credential_iterator_login (iterator);
   if (lsc_user_rpm_recreate (login, public_key, &rpm, &rpm_size))
     {
+      g_warning ("%s: Failed to create RPM base for DEB\n", __FUNCTION__);
       g_free (public_key);
       return NULL;
     }

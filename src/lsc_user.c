@@ -423,7 +423,10 @@ lsc_user_rpm_recreate (const gchar *name, const char *public_key,
   int ret = -1;
 
   if (alien_found () == FALSE)
-    return -1;
+    {
+      g_warning ("%s: Need \"alien\" to make RPMs\n", __FUNCTION__);
+      return -1;
+    }
 
   /* Make a directory for the key. */
 
@@ -606,7 +609,10 @@ lsc_user_deb_recreate (const gchar *name, const char *rpm, gsize rpm_size,
   int ret = -1;
 
   if (alien_found () == FALSE)
-    return -1;
+    {
+      g_warning ("%s: Need \"alien\" to make DEBs\n", __FUNCTION__);
+      return -1;
+    }
 
   /* Make a directory for the RPM. */
 
