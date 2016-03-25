@@ -44,6 +44,7 @@
 
 #include "otp.h"
 #include "manage.h"
+#include "scanner.h"
 #include "manage_sql.h"
 #include "tracef.h"
 #include "types.h"
@@ -455,7 +456,7 @@ reset_scanner_states ()
 
 /** @todo As with the OMP version, these should most likely be passed to and
  *        from the client in a data structure like an otp_parser_t. */
-extern char from_scanner[];
+extern char *from_scanner;
 extern buffer_size_t from_scanner_start;
 extern buffer_size_t from_scanner_end;
 
@@ -476,19 +477,9 @@ sync_buffer ()
     }
   else if (from_scanner_start == 0)
     {
-      if (from_scanner_end == from_buffer_size)
+      if (openvas_scanner_full () && openvas_scanner_realloc ())
         {
-          /** @todo If the buffer is entirely full here then exit.
-           *     (Or will hang waiting for buffer to empty.)
-           *     Could happen if scanner sends a field longer than the buffer.
-           *         Could realloc buffer instead.
-           *             which may eventually use all mem and bring down manager
-           *                 would only bring down process serving the client
-           *                 may lead to out of mem in other processes?
-           *                 could realloc to an upper limit within avail mem
-           *         Could process some OTP to empty space in the buffer.
-           **/
-          tracef ("   scanner buffer full\n");
+          g_warning ("From scanner buffer treshold.");
           return -1;
         }
     }

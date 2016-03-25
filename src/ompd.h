@@ -48,7 +48,7 @@ extern buffer_size_t from_buffer_size;
 extern char from_client[];
 extern buffer_size_t from_client_start;
 extern buffer_size_t from_client_end;
-extern char from_scanner[];
+extern char *from_scanner;
 extern buffer_size_t from_scanner_start;
 extern buffer_size_t from_scanner_end;
 
