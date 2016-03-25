@@ -1,5 +1,12 @@
 2016-03-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_TARGETS use the
+	correct accessor function.
+
+	* src/manage.h: Add header accordingly.
+
+2016-03-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (handle_get_configs, handle_get_scanners)
 	(omp_xml_handle_end_element): In the GET commands, do not send
 	dependents of globals if the user may not read the dependent.

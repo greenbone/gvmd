@@ -19370,7 +19370,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                                    "<name>%s</name>",
                                                    target_task_iterator_uuid (&tasks),
                                                    target_task_iterator_name (&tasks));
-                          if (alert_task_iterator_readable (&tasks))
+                          if (target_task_iterator_readable (&tasks))
                             SEND_TO_CLIENT_OR_FAIL ("</task>");
                           else
                             SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
