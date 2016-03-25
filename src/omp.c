@@ -13227,7 +13227,7 @@ handle_get_scanners (omp_parser_t *omp_parser, GError **error)
                 scanner_task_iterator_uuid (&tasks),
                 scanner_task_iterator_name (&tasks));
 
-              if (schedule_task_iterator_readable (&tasks))
+              if (scanner_task_iterator_readable (&tasks))
                 SEND_TO_CLIENT_OR_FAIL ("</task>");
               else
                 SEND_TO_CLIENT_OR_FAIL ("<permissions/>"

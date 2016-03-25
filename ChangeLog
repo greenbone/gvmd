@@ -1,5 +1,11 @@
 2016-03-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (scanner_task_iterator_readable): Correct offset.
+
+	* src/omp.c (handle_get_scanners): Use correct accessor function.
+
+2016-03-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/lsc_user.c (lsc_user_rpm_create, lsc_user_deb_create): Add
 	warnings in internal error cases.
 
