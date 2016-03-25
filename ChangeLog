@@ -1,5 +1,10 @@
 2016-03-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/lsc_user.c (lsc_user_exe_create): Add warnings in internal error
+	cases.
+
+2016-03-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (escalate_2): Implement SecInfo case of SCP.
 
 2016-03-23  Matthew Mundell <matthew.mundell@greenbone.net>

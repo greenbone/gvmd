@@ -847,12 +847,14 @@ lsc_user_exe_create (const gchar *user_name, const gchar *password,
 
   if (create_nsis_script (nsis_script, to_filename, user_name, password))
     {
+      g_warning ("%s: Failed to create NSIS script\n", __FUNCTION__);
       g_free (nsis_script);
       return -1;
     }
 
   if (execute_makensis (nsis_script))
     {
+      g_warning ("%s: Failed to execute makensis\n", __FUNCTION__);
       g_free (nsis_script);
       return -1;
     }
@@ -881,7 +883,10 @@ lsc_user_exe_recreate (const gchar *name, const gchar *password,
   int ret = -1;
 
   if (alien_found () == FALSE)
-    return -1;
+    {
+      g_warning ("%s: Need \"alien\" to make EXEs\n", __FUNCTION__);
+      return -1;
+    }
 
   /* Create NSIS package. */
 
