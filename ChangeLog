@@ -1,5 +1,13 @@
 2016-03-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (handle_get_configs, handle_get_scanners)
+	(omp_xml_handle_end_element): In the GET commands, do not send
+	dependents of globals if the user may not read the dependent.
+	For example, do not send a task owned by user A in the TASKS of
+	target Localhost when user B does a GET_TARGETS.
+
+2016-03-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (scanner_task_iterator_readable): Correct offset.
 
 	* src/omp.c (handle_get_scanners): Use correct accessor function.
