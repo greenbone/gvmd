@@ -8141,6 +8141,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <name>preference</name>
             <pattern>
               <e>nvt</e>
+              <e>hr_name</e>
               <e>name</e>
               <e>type</e>
               <e>value</e>
@@ -8165,8 +8166,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               </ele>
             </ele>
             <ele>
+              <name>hr_name</name>
+              <summary>The full, more "human readable" name of the preference</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
               <name>name</name>
-              <summary>The name of the preference</summary>
+              <summary>The compact name of the preference as used by the scanner</summary>
               <pattern><t>name</t></pattern>
             </ele>
             <ele>

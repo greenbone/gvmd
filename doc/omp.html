@@ -13972,8 +13972,13 @@ get_agents_response_agent_count_page
 </ul>
 </li>
 <li>
+              &lt;<b>hr_name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The full, more "human readable" name of the preference.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The name of the preference.</div>
+              <div style="margin-left: 15px; display: inline;">The compact name of the preference as used by the scanner.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -14400,6 +14405,7 @@ get_configs_response_config_preferences_preference
  = element preference
      {
        get_configs_response_config_preferences_preference_nvt
+       &amp; get_configs_response_config_preferences_preference_hr_name
        &amp; get_configs_response_config_preferences_preference_name
        &amp; get_configs_response_config_preferences_preference_type
        &amp; get_configs_response_config_preferences_preference_value
@@ -14416,6 +14422,12 @@ get_configs_response_config_preferences_preference_nvt
 
 get_configs_response_config_preferences_preference_nvt_name
  = element name
+     {
+       name
+     }
+
+get_configs_response_config_preferences_preference_hr_name
+ = element hr_name
      {
        name
      }

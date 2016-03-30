@@ -8942,6 +8942,7 @@ get_configs_response_config_preferences_preference
  = element preference
      {
        get_configs_response_config_preferences_preference_nvt
+       & get_configs_response_config_preferences_preference_hr_name
        & get_configs_response_config_preferences_preference_name
        & get_configs_response_config_preferences_preference_type
        & get_configs_response_config_preferences_preference_value
@@ -8964,7 +8965,14 @@ get_configs_response_config_preferences_preference_nvt_name
        name
      }
 
-# The name of the preference.
+# The full, more "human readable" name of the preference.
+get_configs_response_config_preferences_preference_hr_name
+ = element hr_name
+     {
+       name
+     }
+
+# The compact name of the preference as used by the scanner.
 get_configs_response_config_preferences_preference_name
  = element name
      {

@@ -1619,6 +1619,7 @@ typedef struct
   char *nvt_oid;   ///< OID of NVT preference affects.
   array_t *alts;   ///< Array of gchar's.  Alternate values for radio type.
   char *default_value; ///< Default value of preference.
+  char *hr_name;   ///< Extended, more human-readable name used by OSP.
 } preference_t;
 
 /**
@@ -1748,6 +1749,9 @@ preference_iterator_type (iterator_t *);
 
 const char*
 preference_iterator_default (iterator_t *);
+
+const char*
+preference_iterator_hr_name (iterator_t *);
 
 int
 manage_set_config (config_t, const char*, const char *, const char *);

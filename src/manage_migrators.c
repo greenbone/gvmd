@@ -12024,6 +12024,49 @@ migrate_163_to_164 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 163 to version 164.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_164_to_165 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 164. */
+
+  if (manage_db_version () != 164)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update database */
+
+  /* Add hr_name column to config_preferences table
+   *  and initialize it with name for OSP results */
+  sql ("ALTER TABLE config_preferences ADD COLUMN hr_name TEXT;");
+  sql ("UPDATE config_preferences"
+       " SET hr_name = name"
+       " WHERE type != 'SERVER_PREFS' AND type != 'PLUGINS_PREFS';");
+
+  /* Add hr_name column to config_preferences_trash table
+   *  and initialize it with name for OSP results */
+  sql ("ALTER TABLE config_preferences_trash ADD COLUMN hr_name TEXT;");
+  sql ("UPDATE config_preferences_trash"
+       " SET hr_name = name"
+       " WHERE type != 'SERVER_PREFS' AND type != 'PLUGINS_PREFS';");
+
+  /* Set the database version to 165. */
+
+  set_db_version (165);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -12202,6 +12245,7 @@ static migrator_t database_migrators[]
     {162, migrate_161_to_162},
     {163, migrate_162_to_163},
     {164, migrate_163_to_164},
+    {165, migrate_164_to_165},
     /* End marker. */
     {-1, NULL}};
 

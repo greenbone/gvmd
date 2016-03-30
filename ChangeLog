@@ -1,3 +1,37 @@
+2016-03-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add new "human readable" name column "hr_name" to config_preferences
+	and config_preferences_trash.  Hence increase database version to 165.
+	Add database migration from version 163 to 164.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 165.
+
+	* src/manage_migrators.c (migrate_164_to_165): New function.
+	(database_migrators): Add migrate_164_to_165.
+
+	* src/manage_sql.c (config_insert_preferences, insert_osp_parameter)
+	(copy_config, delete_config, update_config_params)
+	(init_preference_iterator): Add hr_name column for OSP preferences.
+	(preference_iterator_name): Add note that this corresponds to "id"
+	in OSP.
+	(preference_iterator_hr_name): New function.
+	(manage_restore): Add hr_name column for OSP preferences in config case.
+	
+	* src/omp.c (preference_new): Add hr_name parameter.
+	(import_config_data_t): Add hr_name field.
+	(client_state_t, omp_xml_handle_start_element)
+	(buffer_config_preference_xml, handle_get_configs)
+	(omp_xml_handle_end_element, omp_xml_handle_text): Add new hr_name
+	subelement to preference in create_config and get_configs.
+
+	* src/manage.h (preference_t): Add field hr_name.
+	(preference_iterator_hr_name): New function prototype.
+
+	* src/schema_formats/XML/OMP.xml.in (get_configs): Add hr_name element
+	to response.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
 2016-03-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_TARGETS use the
