@@ -1,5 +1,10 @@
 2016-03-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (config_insert_preferences): Remove "osp_" prefix
+	from type written to the database.
+
+2016-03-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Add new "human readable" name column "hr_name" to config_preferences
 	and config_preferences_trash.  Hence increase database version to 165.
 	Add database migration from version 163 to 164.
