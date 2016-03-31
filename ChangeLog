@@ -1,3 +1,10 @@
+2016-03-31  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* doc/db_postgres.sql (config_preferences, config_preferences_trash):
+	Add new column "hr_name".
+
+	* doc/db.png: Update from source.
+
 2016-03-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (config_insert_preferences): Remove "osp_" prefix

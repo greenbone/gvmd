@@ -402,7 +402,8 @@ CREATE TABLE config_preferences
   type text, -- openvasrc section name or NULL for top-level prefs
   name text,
   value text,
-  default_value text);
+  default_value text,
+  hr_name text);
 
 CREATE TABLE config_preferences_trash
  (id SERIAL PRIMARY KEY,
@@ -410,7 +411,8 @@ CREATE TABLE config_preferences_trash
   type text, -- openvasrc section name or NULL for top-level prefs
   name text,
   value text,
-  default_value text);
+  default_value text,
+  hr_name text);
 
 CREATE TABLE scanners
  (id SERIAL PRIMARY KEY,
