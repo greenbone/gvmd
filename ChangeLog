@@ -1,3 +1,9 @@
+2016-04-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/omp.c (buffer_aggregate_wc_xml): Output the name of the column
+	the words were extracted from as the group_column instead of just
+	"word".
+
 2016-03-31  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* doc/db_postgres.sql (config_preferences, config_preferences_trash):

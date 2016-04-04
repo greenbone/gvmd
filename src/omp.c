@@ -12211,7 +12211,9 @@ buffer_aggregate_wc_xml (GString *xml, iterator_t* aggregate,
 
   g_string_append_printf (xml, "<aggregate>");
 
-  g_string_append_printf (xml, "<group_column>word</group_column>");
+  g_string_append_printf (xml,
+                          "<group_column>%s</group_column>",
+                          group_column);
 
   while (next (aggregate))
     {
@@ -12291,10 +12293,11 @@ buffer_aggregate_wc_xml (GString *xml, iterator_t* aggregate,
                           "<name>value</name>"
                           "<stat>value</stat>"
                           "<type>%s</type>"
-                          "<column>word</column>"
+                          "<column>%s</column>"
                           "<data_type>text</data_type>"
                           "</aggregate_column>",
-                          type);
+                          type,
+                          group_column);
 
   g_string_append_printf (xml,
                           "<aggregate_column>"
