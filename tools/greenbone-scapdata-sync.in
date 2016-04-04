@@ -1417,7 +1417,7 @@ do_rsync_community_feed () {
     log_notice "Using rsync: $RSYNC"
     log_notice "Configured SCAP data rsync feed: $COMMUNITY_SCAP_RSYNC_FEED"
     mkdir -p "$SCAP_DIR"
-    eval "$RSYNC -ltvrP $RSYNC_DELETE \"$COMMUNITY_SCAP_RSYNC_FEED\" \"$CERT_DIR\""
+    eval "$RSYNC -ltvrP $RSYNC_DELETE \"$COMMUNITY_SCAP_RSYNC_FEED\" \"$SCAP_DIR\""
     if [ $? -ne 0 ] ; then
       log_err "rsync failed. Your SCAP data might be broken now."
       exit 1
@@ -1448,7 +1448,7 @@ sync_scapdata(){
       mkdir -p "$BASE_SYNC_DIR"
       read feeduser < $ACCESSKEY
       custid=`head -1 $ACCESSKEY | cut -d @ -f 1`
-      if [ -z $feeduser ] || [ -z $custid ]
+      if [ -z "$feeduser" ] || [ -z "$custid" ]
       then
         log_err "Could not determine credentials, aborting synchronization."
         exit 1
@@ -1627,11 +1627,14 @@ fi
 
 if [ $POSTGRES -eq 0 ]
 then
-  if [ $(id -u) -ne $(stat -c %u $SCAP_DB) ]
+  if [ -f "$SCAP_DB" ]
   then
-    log_err "Not synchronizing or updating the database since the current user is not the owner of the database."
-    echo "Not synchronizing or updating the database since the current user is not the owner of the database."
-    exit 1
+    if [ "$(id -u)" -ne "$(stat -c %u $SCAP_DB)" ]
+    then
+        log_err "Not synchronizing or updating the database since the current user is not the owner of the database."
+        echo "Not synchronizing or updating the database since the current user is not the owner of the database."
+        exit 1
+    fi
   fi
 fi
 
