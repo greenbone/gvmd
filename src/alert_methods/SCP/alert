@@ -37,7 +37,8 @@ echo $KNOWN_HOSTS > $KNOWN_HOSTS_FILE
 PASSWORD_FILE=`mktemp` || exit 1
 echo $PASSWORD > $PASSWORD_FILE
 
-sshpass -f ${PASSWORD_FILE} scp -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2" ${REPORT_FILE} ${USERNAME}@${HOST}:${DEST}
+# Escape destination twice because it is also expanded on the remote end.
+sshpass -f ${PASSWORD_FILE} scp -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2" "${REPORT_FILE}" "${USERNAME}@${HOST}:'${DEST}'"
 
 #echo $? > /tmp/EXIT_CODE
 

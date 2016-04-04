@@ -1,3 +1,10 @@
+2016-03-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (scp_alert_path_print): New function.
+	(escalate_2): Improve log message.  Allow $n for task name to SCP path.
+
+	* src/alert_methods/SCP/alert: Quote args.
+
 2016-04-04  Björn Ricks <björn.ricks@greenbone.net>
 
 	* tools/greenbone-certdata-sync.in: Fix first run of cert data sync script
@@ -44,7 +51,7 @@
 	in OSP.
 	(preference_iterator_hr_name): New function.
 	(manage_restore): Add hr_name column for OSP preferences in config case.
-	
+
 	* src/omp.c (preference_new): Add hr_name parameter.
 	(import_config_data_t): Add hr_name field.
 	(client_state_t, omp_xml_handle_start_element)
