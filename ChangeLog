@@ -1,5 +1,10 @@
 2016-04-04  Björn Ricks <björn.ricks@greenbone.net>
 
+	* tools/greenbone-certdata-sync.in: Fix first run of cert data sync script
+	without having a sqlite database yet.
+
+2016-04-04  Björn Ricks <björn.ricks@greenbone.net>
+
 	* tools/greenbone-scapdata-sync.in: Fix syncing the community feed. $CERT_DATA
 	dir was never set. Also fix first run of without having a sqlite db.
 
