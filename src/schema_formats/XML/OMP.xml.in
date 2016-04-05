@@ -2629,6 +2629,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>host</name>
         <pattern>
           <e>ip</e>
+          <e>asset</e>
           <e>start</e>
           <e>end</e>
           <any><e>detail</e></any>
@@ -2637,6 +2638,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>ip</name>
           <summary>IP of the host</summary>
           <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>asset</name>
+          <summary>Asset linked to host</summary>
+          <pattern>
+            <attrib>
+              <name>asset_id</name>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+          </pattern>
         </ele>
         <ele>
           <name>start</name>

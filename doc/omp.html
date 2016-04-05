@@ -4475,6 +4475,14 @@ result_overrides_override
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>asset</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Asset linked to host.</div>
+<ul style="list-style: none"><li>
+          @<b>asset_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li>
+<li>
               &lt;<b>start</b>&gt;
               <div style="margin-left: 15px; display: inline;">Scan start time for this host.</div>
 <ul style="list-style: none"></ul>
@@ -5559,6 +5567,7 @@ report_report_host
  = element host
      {
        report_report_host_ip
+       &amp; report_report_host_asset
        &amp; report_report_host_start
        &amp; report_report_host_end
        &amp; report_report_host_detail*
@@ -5568,6 +5577,12 @@ report_report_host_ip
  = element ip
      {
        text
+     }
+
+report_report_host_asset
+ = element asset
+     {
+       attribute asset_id { uuid }
      }
 
 report_report_host_start

@@ -1,4 +1,10 @@
-2016-03-25  Matthew Mundell <matthew.mundell@greenbone.net>
+2016-04-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml.in (report): Add HOST/ASSET.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
+2016-04-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (scp_alert_path_print): New function.
 	(escalate_2): Improve log message.  Allow $n for task name to SCP path.

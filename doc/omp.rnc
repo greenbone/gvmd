@@ -2936,6 +2936,7 @@ report_report_host
  = element host
      {
        report_report_host_ip
+       & report_report_host_asset
        & report_report_host_start
        & report_report_host_end
        & report_report_host_detail*
@@ -2946,6 +2947,13 @@ report_report_host_ip
  = element ip
      {
        text
+     }
+
+# Asset linked to host.
+report_report_host_asset
+ = element asset
+     {
+       attribute asset_id { uuid }
      }
 
 # Scan start time for this host.
