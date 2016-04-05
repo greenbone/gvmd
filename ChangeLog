@@ -1,5 +1,13 @@
 2016-04-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_report): Add some tracing.
+
+	* src/omp.c (omp_xml_handle_start_element)
+	(omp_xml_handle_end_element): Read over children of RESULT/HOST in
+	CREATE_REPORT.
+
+2016-04-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml.in (note, override, result): Add
 	HOST/ASSET.
 

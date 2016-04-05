@@ -19339,6 +19339,8 @@ create_report (array_t *results, const char *task_id, const char *task_name,
   pid_t pid;
   host_detail_t *detail;
 
+  tracef ("%s", __FUNCTION__);
+
   if (acl_user_may ("create_report") == 0)
     return 99;
 
@@ -19418,6 +19420,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
         break;
       default:
         /* Parent.  Return, in order to respond to client. */
+        tracef ("%s: %i forked %i", __FUNCTION__, getpid (), pid);
         return 0;
         break;
     }
@@ -19433,6 +19436,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
     }
 
   sql_begin_immediate ();
+  tracef ("%s: add hosts", __FUNCTION__);
   index = 0;
   while ((start = (create_report_result_t*) g_ptr_array_index (host_starts,
                                                                index++)))
@@ -19441,6 +19445,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
                               parse_iso_time (start->description),
                               0);
 
+  tracef ("%s: add results", __FUNCTION__);
   index = 0;
   while ((result = (create_report_result_t*) g_ptr_array_index (results,
                                                                 index++)))
@@ -19448,6 +19453,8 @@ create_report (array_t *results, const char *task_id, const char *task_name,
       gchar *quoted_host, *quoted_port, *quoted_nvt_oid;
       gchar *quoted_description, *quoted_scan_nvt_version, *quoted_severity;
       gchar *quoted_qod, *quoted_qod_type;
+
+      tracef ("%s: add results: index: %i", __FUNCTION__, index);
 
       quoted_host = sql_quote (result->host ? result->host : "");
       quoted_port = sql_quote (result->port ? result->port : "");
@@ -19496,6 +19503,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
       report_add_result (report, sql_last_insert_id ());
     }
 
+  tracef ("%s: add host ends", __FUNCTION__);
   index = 0;
   while ((end = (create_report_result_t*) g_ptr_array_index (host_ends,
                                                              index++)))
@@ -19520,6 +19528,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
         g_free (quoted_host);
       }
 
+  tracef ("%s: add host details", __FUNCTION__);
   index = 0;
   while ((detail = (host_detail_t*) g_ptr_array_index (details, index++)))
     if (detail->ip && detail->name)

@@ -9707,7 +9707,10 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION);
           }
         else if (strcasecmp ("HOST", element_name) == 0)
-          set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST);
+          {
+            omp_parser->read_over = 1;
+            set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST);
+          }
         else if (strcasecmp ("MODIFICATION_TIME", element_name) == 0)
           {
             set_client_state
@@ -23063,7 +23066,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, CREATION_TIME);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, DESCRIPTION);
       CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, DETECTION);
-      CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, HOST);
+      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, HOST);
       CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT,
                        MODIFICATION_TIME);
       CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, NAME);
