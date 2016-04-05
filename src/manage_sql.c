@@ -47385,6 +47385,13 @@ copy_report_format (const char* name, const char* source_uuid,
       return ret;
     }
 
+  if (report_format_predefined (old))
+    sql ("UPDATE report_formats SET trust = %i, trust_time = %i"
+         " WHERE id = %llu;",
+         TRUST_YES,
+         time (NULL),
+         new);
+
   /* Copy report format parameters. */
 
   sql ("INSERT INTO report_format_params "

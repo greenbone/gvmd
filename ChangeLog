@@ -1,5 +1,10 @@
 2016-04-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (copy_report_format): If the report format is
+	predefined, make sure that the cloned report format is trusted.
+
+2016-04-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_report): Add some tracing.
 
 	* src/omp.c (omp_xml_handle_start_element)
