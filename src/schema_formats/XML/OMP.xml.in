@@ -743,7 +743,21 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
       <ele>
         <name>host</name>
-        <pattern>text</pattern>
+        <pattern>
+          <e>asset</e>
+		  text
+        </pattern>
+        <ele>
+          <name>asset</name>
+          <summary>Asset linked to host</summary>
+          <pattern>
+            <attrib>
+              <name>asset_id</name>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+          </pattern>
+        </ele>
       </ele>
       <ele>
         <name>port</name>
@@ -1079,7 +1093,21 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
       <ele>
         <name>host</name>
-        <pattern>text</pattern>
+        <pattern>
+          <e>asset</e>
+          text
+        </pattern>
+        <ele>
+          <name>asset</name>
+          <summary>Asset linked to host</summary>
+          <pattern>
+            <attrib>
+              <name>asset_id</name>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+          </pattern>
+        </ele>
       </ele>
       <ele>
         <name>port</name>
@@ -1306,10 +1334,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>host</name>
-      <pattern>text</pattern>
+      <summary>The host the result applies to</summary>
+      <pattern>
+        <e>asset</e>
+        text
+      </pattern>
+      <ele>
+        <name>asset</name>
+        <summary>Asset linked to host</summary>
+        <pattern>
+          <attrib>
+            <name>asset_id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
     </ele>
     <ele>
       <name>port</name>
+      <summary>The port on the host</summary>
       <pattern>text</pattern>
     </ele>
     <ele>
@@ -2767,7 +2811,21 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <ele>
             <name>host</name>
             <summary>The host of the error message</summary>
-            <pattern>text</pattern>
+            <pattern>
+              <e>asset</e>
+              text
+            </pattern>
+            <ele>
+              <name>asset</name>
+              <summary>Asset linked to host</summary>
+              <pattern>
+                <attrib>
+                  <name>asset_id</name>
+                  <type>uuid</type>
+                  <required>1</required>
+                </attrib>
+              </pattern>
+            </ele>
           </ele>
           <ele>
             <name>port</name>

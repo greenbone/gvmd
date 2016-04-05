@@ -880,6 +880,14 @@ note_result_host
  = element host
      {
        text
+       & note_result_host_asset
+     }
+
+# Asset linked to host.
+note_result_host_asset
+ = element asset
+     {
+       attribute asset_id { uuid }
      }
 
 note_result_port
@@ -1234,6 +1242,14 @@ override_result_host
  = element host
      {
        text
+       & override_result_host_asset
+     }
+
+# Asset linked to host.
+override_result_host_asset
+ = element asset
+     {
+       attribute asset_id { uuid }
      }
 
 override_result_port
@@ -1472,12 +1488,22 @@ result_task_name
        text
      }
 
+# The host the result applies to.
 result_host
  = element host
      {
        text
+       & result_host_asset
      }
 
+# Asset linked to host.
+result_host_asset
+ = element asset
+     {
+       attribute asset_id { uuid }
+     }
+
+# The port on the host.
 result_port
  = element port
      {
@@ -3102,6 +3128,14 @@ report_report_errors_error_host
  = element host
      {
        text
+       & report_report_errors_error_host_asset
+     }
+
+# Asset linked to host.
+report_report_errors_error_host_asset
+ = element asset
+     {
+       attribute asset_id { uuid }
      }
 
 # The port of the error message.

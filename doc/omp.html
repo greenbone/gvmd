@@ -1921,7 +1921,14 @@ filter_keywords_option_summary
           </li>
 <li>
               &lt;<b>host</b>&gt;
-              <ul style="list-style: none"></ul>
+              <ul style="list-style: none"><li>
+              &lt;<b>asset</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Asset linked to host.</div>
+<ul style="list-style: none"><li>
+          @<b>asset_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li></ul>
 </li>
 <li>
               &lt;<b>port</b>&gt;
@@ -2209,6 +2216,13 @@ note_result_host
  = element host
      {
        text
+       &amp; note_result_host_asset
+     }
+
+note_result_host_asset
+ = element asset
+     {
+       attribute asset_id { uuid }
      }
 
 note_result_port
@@ -2486,7 +2500,14 @@ note_result_description
           </li>
 <li>
               &lt;<b>host</b>&gt;
-              <ul style="list-style: none"></ul>
+              <ul style="list-style: none"><li>
+              &lt;<b>asset</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Asset linked to host.</div>
+<ul style="list-style: none"><li>
+          @<b>asset_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li></ul>
 </li>
 <li>
               &lt;<b>port</b>&gt;
@@ -2789,6 +2810,13 @@ override_result_host
  = element host
      {
        text
+       &amp; override_result_host_asset
+     }
+
+override_result_host_asset
+ = element asset
+     {
+       attribute asset_id { uuid }
      }
 
 override_result_port
@@ -2980,11 +3008,20 @@ override_result_description
 </li>
 <li>
               &lt;<b>host</b>&gt;
-              <ul style="list-style: none"></ul>
+              <div style="margin-left: 15px; display: inline;">The host the result applies to.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>asset</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Asset linked to host.</div>
+<ul style="list-style: none"><li>
+          @<b>asset_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li></ul>
 </li>
 <li>
               &lt;<b>port</b>&gt;
-              <ul style="list-style: none"></ul>
+              <div style="margin-left: 15px; display: inline;">The port on the host.</div>
+<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>nvt</b>&gt;
@@ -3338,6 +3375,13 @@ result_host
  = element host
      {
        text
+       &amp; result_host_asset
+     }
+
+result_host_asset
+ = element asset
+     {
+       attribute asset_id { uuid }
      }
 
 result_port
@@ -4577,7 +4621,14 @@ result_overrides_override
 <li>
               &lt;<b>host</b>&gt;
               <div style="margin-left: 15px; display: inline;">The host of the error message.</div>
-<ul style="list-style: none"></ul>
+<ul style="list-style: none"><li>
+              &lt;<b>asset</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Asset linked to host.</div>
+<ul style="list-style: none"><li>
+          @<b>asset_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li></ul>
 </li>
 <li>
               &lt;<b>port</b>&gt;
@@ -5714,6 +5765,13 @@ report_report_errors_error_host
  = element host
      {
        text
+       &amp; report_report_errors_error_host_asset
+     }
+
+report_report_errors_error_host_asset
+ = element asset
+     {
+       attribute asset_id { uuid }
      }
 
 report_report_errors_error_port

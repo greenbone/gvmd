@@ -1,5 +1,12 @@
 2016-04-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml.in (note, override, result): Add
+	HOST/ASSET.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
+2016-04-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml.in (report): Add HOST/ASSET.
 
 	* doc/omp.rnc, doc/omp.html: Update from source.
