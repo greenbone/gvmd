@@ -1,5 +1,9 @@
 2016-04-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/otp.c (process_otp_scanner_input): Make message clearer.
+
+2016-04-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* INSTALL: Add alert prerequisites.
 
 2016-04-05  Matthew Mundell <matthew.mundell@greenbone.net>

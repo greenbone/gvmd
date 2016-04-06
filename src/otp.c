@@ -822,11 +822,11 @@ process_otp_scanner_input (void (*progress) ())
             parse_scanner_loading (messages);
             if (scanner_current_loading && scanner_total_loading)
               g_log (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE,
-                     "Scanner loading: %d / %d nvts.\n",
+                     "Waiting for scanner to load NVTs: %d / %d.\n",
                      scanner_current_loading, scanner_total_loading);
             else
               g_log (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE,
-                     "Scanner loading: No information provided. %s\n", messages);
+                     "Waiting for scanner to load: No information provided. (Message: %s)\n", messages);
             return 3;
           }
         if (from_scanner_end - from_scanner_start < ver_len)
