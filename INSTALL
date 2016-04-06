@@ -412,6 +412,13 @@ Prerequisites for verinice .PRO Connector alert:
 * A program in the PATH called greenbone_verinice_connector that takes args
   IP, port, username, password and report file in verinice .PRO format.
 
+Prerequisites for SCP alert:
+* sshpass
+* scp
+
+Prerequisites for Send alert:
+* socat
+
 Prerequisites for splitting large XML files (see tools/extra/README):
 * python
 
