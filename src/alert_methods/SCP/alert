@@ -24,7 +24,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-PASSWORD_FILE=$1
+PASSWORD=$1
 USERNAME=$2
 HOST=$3
 DEST=$4
@@ -34,7 +34,12 @@ REPORT_FILE=$6
 KNOWN_HOSTS_FILE=`mktemp` || exit 1
 echo $KNOWN_HOSTS > $KNOWN_HOSTS_FILE
 
-# TODO sshpass -f ${PASSWORD_FILE}...
-sshpass -p ${PASSWORD_FILE} scp -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2" ${REPORT_FILE} ${USERNAME}@${HOST}:${DEST}
+PASSWORD_FILE=`mktemp` || exit 1
+echo $PASSWORD > $PASSWORD_FILE
+
+sshpass -f ${PASSWORD_FILE} scp -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2" ${REPORT_FILE} ${USERNAME}@${HOST}:${DEST}
 
 #echo $? > /tmp/EXIT_CODE
+
+rm $KNOWN_HOSTS_FILE
+rm $PASSWORD_FILE
