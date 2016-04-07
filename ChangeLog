@@ -1,5 +1,11 @@
 2016-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r24863.  (Missed file.)
+
+	* src/alert_methods/SCP/alert: Quote args.
+
+2016-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport a little of r24131.
 
 	* src/manage_sql.c (alert_name): New function.
