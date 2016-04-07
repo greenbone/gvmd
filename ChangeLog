@@ -1,3 +1,9 @@
+2016-04-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r24881.
+
+	* INSTALL: Add alert prerequisites.
+
 2016-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r24863.  (Missed file.)
