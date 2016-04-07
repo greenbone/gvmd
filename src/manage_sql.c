@@ -9102,6 +9102,53 @@ alert_message_print (const gchar *message, event_t event,
 }
 
 /**
+ * @brief Print an SCP alert file path.
+ *
+ * @param[in]  message      Format string for message.
+ * @param[in]  task         Task.
+ *
+ * @return Freshly allocated message.
+ */
+static gchar *
+scp_alert_path_print (const gchar *message, task_t task)
+{
+  int formatting;
+  const gchar *point, *end;
+  GString *new_message;
+
+  assert (message);
+
+  new_message = g_string_new ("");
+  for (formatting = 0, point = message, end = (message + strlen (message));
+       point < end;
+       point++)
+    if (formatting)
+      {
+        switch (*point)
+          {
+            case '$':
+              g_string_append_c (new_message, '$');
+              break;
+            case 'n':
+              if (task)
+                {
+                  char *name = task_name (task);
+                  g_string_append (new_message, name);
+                  free (name);
+                }
+              break;
+          }
+        formatting = 0;
+      }
+    else if (*point == '$')
+      formatting = 1;
+    else
+      g_string_append_c (new_message, *point);
+
+  return g_string_free (new_message, FALSE);
+}
+
+/**
  * @brief Escalate an event.
  *
  * @param[in]  alert   Alert.
@@ -9154,18 +9201,23 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             int overrides, int overrides_details, int first_result,
             int max_results, const char *zone)
 {
-  char *name;
+  char *name_alert, *name_task;
   gchar *event_desc, *alert_desc;
-  name = task_name (task);
+
+  name_alert = alert_name (alert);
+  name_task = task_name (task);
   event_desc = event_description (event, event_data, NULL);
   alert_desc = alert_condition_description (condition, alert);
   g_log ("event alert", G_LOG_LEVEL_MESSAGE,
-         "The alert for task %s was triggered "
+         "The alert %s%s%s was triggered "
          "(Event: %s, Condition: %s)",
-         name,
+         name_alert,
+         name_task ? " for task " : "",
+         name_task ? name_task : "",
          event_desc,
          alert_desc);
-  free (name);
+  free (name_task);
+  free (name_alert);
   free (event_desc);
   free (alert_desc);
 
@@ -9639,7 +9691,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
       case ALERT_METHOD_SCP:
         {
           char *password, *username, *host, *path, *known_hosts, *filt_id;
-          gchar *report_content, *format_uuid;
+          gchar *report_content, *format_uuid, *alert_path;
           gsize content_length;
           report_format_t report_format;
           int ret;
@@ -9758,13 +9810,16 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           path = alert_data (alert, "method", "scp_path");
           known_hosts = alert_data (alert, "method", "scp_known_hosts");
 
-          ret = scp_to_host (password, username, host, path, known_hosts,
+          alert_path = scp_alert_path_print (path, task);
+          free (path);
+
+          ret = scp_to_host (password, username, host, alert_path, known_hosts,
                              report_content, content_length);
 
           free (password);
           free (username);
           free (host);
-          free (path);
+          g_free (alert_path);
           free (known_hosts);
           g_free (report_content);
 

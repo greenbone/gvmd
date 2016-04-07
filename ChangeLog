@@ -1,5 +1,14 @@
 2016-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r24863.
+
+	* src/manage_sql.c (scp_alert_path_print): New function.
+	(escalate_2): Improve log message.  Allow $n for task name to SCP path.
+
+	* src/alert_methods/SCP/alert: Quote args.
+
+2016-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r24760.
 
 	* src/alert_methods/SCP/alert: Pass password with -f, otherwise it is
