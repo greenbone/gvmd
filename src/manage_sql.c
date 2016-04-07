@@ -7008,6 +7008,19 @@ alert_uuid (alert_t alert)
 }
 
 /**
+ * @brief Return the name of an alert.
+ *
+ * @param[in]  alert  Alert.
+ *
+ * @return Name of alert.
+ */
+char *
+alert_name (alert_t alert)
+{
+  return sql_string ("SELECT name FROM alerts WHERE id = %llu;", alert);
+}
+
+/**
  * @brief Return the UUID of the filter of an alert.
  *
  * @param[in]  alert  Alert.

@@ -1,5 +1,11 @@
 2016-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport a little of r24131.
+
+	* src/manage_sql.c (alert_name): New function.
+
+2016-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r24863.
 
 	* src/manage_sql.c (scp_alert_path_print): New function.
