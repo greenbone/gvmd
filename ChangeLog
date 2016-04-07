@@ -1,3 +1,9 @@
+2016-04-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r24749.
+
+	* CMakeLists.txt: Install SCP alert.
+
 2016-03-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r24747.
