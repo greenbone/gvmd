@@ -1,3 +1,10 @@
+2016-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r24759.
+
+	* src/omp.c (omp_xml_handle_end_element): In GET_ALERTS skip SCP
+	password.
+
 2016-04-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r24749.
