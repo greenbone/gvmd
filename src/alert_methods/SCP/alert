@@ -1,0 +1,40 @@
+#!/bin/sh
+#
+# OpenVAS
+# $Id$
+# Description: Escalator method script: SCP.
+#
+# Authors:
+# Matthew Mundell <matthew.mundell@greenbone.net>
+#
+# Copyright:
+# Copyright (C) 2016 Greenbone Networks GmbH
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+
+PASSWORD_FILE=$1
+USERNAME=$2
+HOST=$3
+DEST=$4
+KNOWN_HOSTS=$5
+REPORT_FILE=$6
+
+KNOWN_HOSTS_FILE=`mktemp` || exit 1
+echo $KNOWN_HOSTS > $KNOWN_HOSTS_FILE
+
+# TODO sshpass -f ${PASSWORD_FILE}...
+sshpass -p ${PASSWORD_FILE} scp -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2" ${REPORT_FILE} ${USERNAME}@${HOST}:${DEST}
+
+#echo $? > /tmp/EXIT_CODE

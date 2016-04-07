@@ -6154,6 +6154,68 @@ validate_alert_condition_data (gchar *name, gchar* data,
 }
 
 /**
+ * @brief Validate method data for the SCP method.
+ *
+ * @param[in]  method          Method that data corresponds to.
+ * @param[in]  name            Name of data.
+ * @param[in]  data            The data.
+ *
+ * @return 0 valid, 15 error in SCP host, 17 failed to find report format for
+ *         SCP method, 18 error in SCP username, 19 error in SCP path, -1 error.
+ */
+int
+validate_scp_data (alert_method_t method, const gchar *name, gchar **data)
+{
+  if (method == ALERT_METHOD_SCP
+      && strcmp (name, "scp_username") == 0)
+    {
+      if (strlen (*data) == 0)
+        return 18;
+
+      if (strchr (*data, '@') || strchr (*data, ':'))
+        return 18;
+    }
+
+  if (method == ALERT_METHOD_SCP
+      && strcmp (name, "scp_path") == 0)
+    {
+      if (strlen (*data) == 0)
+        return 19;
+    }
+
+  if (method == ALERT_METHOD_SCP
+      && strcmp (name, "scp_host") == 0)
+    {
+      int type;
+      gchar *stripped;
+
+      stripped = g_strstrip (g_strdup (*data));
+      type = openvas_get_host_type (stripped);
+      g_free (stripped);
+      if ((type != HOST_TYPE_IPV4)
+          && (type != HOST_TYPE_IPV6)
+          && (type != HOST_TYPE_NAME))
+        return 15;
+    }
+
+  if (method == ALERT_METHOD_SCP
+      && strcmp (name, "scp_report_format") == 0)
+    {
+      report_format_t report_format;
+
+      report_format = 0;
+      if (find_report_format_with_permission (*data,
+                                              &report_format,
+                                              "get_report_formats"))
+        return -1;
+      if (report_format == 0)
+        return 17;
+    }
+
+  return 0;
+}
+
+/**
  * @brief Validate method data for the Send method.
  *
  * @param[in]  method          Method that data corresponds to.
@@ -6233,8 +6295,9 @@ validate_send_data (alert_method_t method, const gchar *name, gchar **data)
  *         5 unexpected condition data name, 6 syntax error in condition data,
  *         7 email subject too long, 8 email message too long, 9 failed to find
  *         filter for condition, 12 error in Send host, 13 error in Send port,
- *         14 failed to find report format for Send method, 99 permission
- *         denied, -1 error.
+ *         14 failed to find report format for Send method, 15 error in
+ *         SCP host, 17 failed to find report format for SCP method, 18 error
+ *         in SCP username, 99 permission denied, -1 error.
  */
 int
 create_alert (const char* name, const char* comment, const char* filter_id,
@@ -6412,6 +6475,15 @@ create_alert (const char* name, const char* comment, const char* filter_id,
           g_free (data);
           sql ("ROLLBACK;");
           return 8;
+        }
+
+      ret = validate_scp_data (method, name, &data);
+      if (ret)
+        {
+          g_free (name);
+          g_free (data);
+          sql ("ROLLBACK;");
+          return ret;
         }
 
       ret = validate_send_data (method, name, &data);
@@ -6731,6 +6803,15 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
               g_free (data);
               sql ("ROLLBACK;");
               return 10;
+            }
+
+          ret = validate_scp_data (method, name, &data);
+          if (ret)
+            {
+              g_free (name);
+              g_free (data);
+              sql ("ROLLBACK;");
+              return ret;
             }
 
           ret = validate_send_data (method, name, &data);
@@ -7803,8 +7884,8 @@ run_alert_script (const char *alert_id, const char *command_args,
 
     /* Call the script. */
 
-    command = g_strdup_printf ("%s %s %s > /dev/null"
-                               " 2> /dev/null",
+    command = g_strdup_printf ("%s %s %s"
+                               " > /dev/null 2> /dev/null",
                                script,
                                command_args,
                                report_file);
@@ -8036,6 +8117,56 @@ send_to_host (const char *host, const char *port,
   g_free (clean_port);
 
   ret = run_alert_script ("4a398d42-87c0-11e5-a1c0-28d24461215b", command_args,
+                          report, report_size);
+
+  g_free (command_args);
+  return ret;
+}
+
+/**
+ * @brief Send a report to a host via TCP.
+ *
+ * @param[in]  password     Password.
+ * @param[in]  username     Username.
+ * @param[in]  host         Address of host.
+ * @param[in]  path         Destination filename with path.
+ * @param[in]  known_host   Content for known_hosts file.
+ * @param[in]  report       Report that should be sent.
+ * @param[in]  report_size  Size of the report.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+scp_to_host (const char *password, const char *username, const char *host,
+             const char *path, const char *known_hosts, const char *report,
+             int report_size)
+{
+  gchar *clean_password, *clean_username, *clean_host, *clean_path;
+  gchar *clean_known_hosts, *command_args;
+  int ret;
+
+  tracef ("scp to host: %s@%s:%s", username, host, path);
+
+  if (password == NULL || username == NULL || host == NULL || path == NULL)
+    return -1;
+
+  if (known_hosts == NULL)
+    known_hosts = "";
+
+  clean_password = g_shell_quote (password);
+  clean_username = g_shell_quote (username);
+  clean_host = g_shell_quote (host);
+  clean_path = g_shell_quote (path);
+  clean_known_hosts = g_shell_quote (known_hosts);
+  command_args = g_strdup_printf ("%s %s %s %s %s", clean_password, clean_username,
+                                  clean_host, clean_path, clean_known_hosts);
+  g_free (clean_password);
+  g_free (clean_username);
+  g_free (clean_host);
+  g_free (clean_path);
+  g_free (clean_known_hosts);
+
+  ret = run_alert_script ("2db07698-ec49-11e5-bcff-28d24461215b", command_args,
                           report, report_size);
 
   g_free (command_args);
@@ -9504,6 +9635,140 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               return ret;
             }
           return -1;
+        }
+      case ALERT_METHOD_SCP:
+        {
+          char *password, *username, *host, *path, *known_hosts, *filt_id;
+          gchar *report_content, *format_uuid;
+          gsize content_length;
+          report_format_t report_format;
+          int ret;
+          filter_t filter;
+
+#if 0
+          // TODO
+          if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
+            {
+              gchar *message;
+
+              message = new_secinfo_message (event, event_data, alert);
+              host = alert_data (alert, "method", "send_host");
+              port = alert_data (alert, "method", "send_port");
+
+              tracef ("send host: %s", host);
+              tracef ("send port: %s", port);
+
+              ret = send_to_host (host, port, message, strlen (message));
+
+              g_free (message);
+              free (host);
+              free (port);
+
+              return ret;
+            }
+#endif
+
+          format_uuid = alert_data (alert,
+                                    "method",
+                                    "send_report_format");
+          if (format_uuid && strlen (format_uuid))
+            {
+              if (find_report_format_with_permission (format_uuid,
+                                                      &report_format,
+                                                      "get_report_formats")
+                  || (report_format == 0))
+                {
+                  g_warning ("%s: Could not find Send RFP '%s'", __FUNCTION__,
+                             format_uuid);
+                  g_free (format_uuid);
+                  return -2;
+                }
+              g_free (format_uuid);
+            }
+          else
+            {
+              g_free (format_uuid);
+              if (find_report_format_with_permission
+                   ("a994b278-1f62-11e1-96ac-406186ea4fc5",
+                    &report_format,
+                    "get_report_formats")
+                  || (report_format == 0))
+                {
+                  g_warning ("%s: Could not find XML RFP for Send",
+                             __FUNCTION__);
+                  return -2;
+                }
+            }
+
+          if (report == 0)
+            switch (sql_int64 (&report,
+                               "SELECT max (id) FROM reports"
+                               " WHERE task = %llu",
+                               task))
+              {
+                case 0:
+                  if (report)
+                    break;
+                case 1:        /* Too few rows in result of query. */
+                case -1:
+                  return -1;
+                  break;
+                default:       /* Programming error. */
+                  assert (0);
+                  return -1;
+              }
+
+          filt_id = alert_filter_id (alert);
+          if (filt_id)
+            {
+              if (find_filter_with_permission (filt_id, &filter, "get_filters"))
+                return -1;
+              if (filter == 0)
+                return -3;
+            }
+
+          report_content = manage_report (report, report_format,
+                                          filt_id,
+                                          sort_order, sort_field,
+                                          result_hosts_only,
+                                          min_cvss_base, min_qod, levels,
+                                          delta_states, apply_overrides,
+                                          search_phrase, autofp,
+                                          notes, notes_details, overrides,
+                                          overrides_details,
+                                          first_result, max_results,
+                                          NULL, /* Type. */
+                                          &content_length,
+                                          NULL,    /* Extension. */
+                                          NULL,    /* Content type. */
+                                          zone,
+                                          NULL,
+                                          NULL,
+                                          NULL);
+          free (filt_id);
+          if (report_content == NULL)
+            {
+              g_warning ("%s: Empty Report", __FUNCTION__);
+              return -1;
+            }
+
+          password = alert_data (alert, "method", "scp_password");
+          username = alert_data (alert, "method", "scp_username");
+          host = alert_data (alert, "method", "scp_host");
+          path = alert_data (alert, "method", "scp_path");
+          known_hosts = alert_data (alert, "method", "scp_known_hosts");
+
+          ret = scp_to_host (password, username, host, path, known_hosts,
+                             report_content, content_length);
+
+          free (password);
+          free (username);
+          free (host);
+          free (path);
+          free (known_hosts);
+          g_free (report_content);
+
+          return ret;
         }
       case ALERT_METHOD_SEND:
         {
