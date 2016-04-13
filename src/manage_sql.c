@@ -59425,6 +59425,63 @@ modify_setting (const gchar *uuid, const gchar *name,
   " AS allinfo"
 
 /**
+ * @brief All SecInfo iterator column union, with specifiers for LIMIT clause.
+ */
+#define ALL_INFO_UNION_COLUMNS_LIMIT                                           \
+  "(SELECT * FROM (SELECT " GET_ITERATOR_COLUMNS_STRING ","                    \
+  "                       CAST ('' AS text) AS _owner,"                        \
+  "                       CAST ('cve' AS text) AS type,"                       \
+  "                       description as extra, cvss as severity"              \
+  "                FROM cves"                                                  \
+  "                %s)"                                                        \
+  "               AS union_sub_1"                                              \
+  " UNION ALL"                                                                 \
+  " SELECT * FROM (SELECT " GET_ITERATOR_COLUMNS_STRING ","                    \
+  "                       CAST ('' AS text) AS _owner,"                        \
+  "                       CAST ('cpe' AS text) AS type, title as extra,"       \
+  "                       max_cvss as severity"                                \
+  "                FROM cpes"                                                  \
+  "                %s)"                                                        \
+  "               AS union_sub_2"                                              \
+  " UNION ALL"                                                                 \
+  " SELECT * FROM (SELECT " GET_ITERATOR_COLUMNS_STRING ","                    \
+  "                       CAST ('' AS text) AS _owner,"                        \
+  "                       CAST ('nvt' AS text) AS type,"                       \
+  "                       CASE summary WHEN 'NOSUMMARY' THEN tag"              \
+  "                                    ELSE summary END AS extra,"             \
+  "                       CAST (cvss_base AS float) as severity"               \
+  "                FROM nvts"                                                  \
+  "                %s)"                                                        \
+  "               AS union_sub_3"                                              \
+  " UNION ALL"                                                                 \
+  " SELECT * FROM (SELECT " GET_ITERATOR_COLUMNS_STRING ","                    \
+  "                       CAST ('' AS text) AS _owner,"                        \
+  "                       CAST ('cert_bund_adv' AS text) AS type,"             \
+  "                       title as extra,"                                     \
+  "                       max_cvss as severity"                                \
+  "                FROM cert_bund_advs"                                        \
+  "                %s)"                                                        \
+  "               AS union_sub_4"                                              \
+  " UNION ALL"                                                                 \
+  " SELECT * FROM (SELECT " GET_ITERATOR_COLUMNS_STRING ","                    \
+  "                       CAST ('' AS text) AS _owner,"                        \
+  "                       CAST ('dfn_cert_adv' AS text) AS type,"              \
+  "                       title as extra,"                                     \
+  "                       max_cvss as severity"                                \
+  "                FROM dfn_cert_advs"                                         \
+  "                %s)"                                                        \
+  "               AS union_sub_5"                                              \
+  " UNION ALL"                                                                 \
+  " SELECT * FROM (SELECT " GET_ITERATOR_COLUMNS_STRING ","                    \
+  "                       CAST ('' AS text) AS _owner,"                        \
+  "                       CAST ('ovaldef' AS text) AS type, title as extra,"   \
+  "                       max_cvss as severity"                                \
+  "                FROM ovaldefs"                                              \
+  "                %s)"                                                        \
+  "               AS union_sub_6)"                                             \
+  " AS allinfo"
+
+/**
  * @brief Initialise an CVE iterator, for CVEs reported for a certain CPE.
  *
  * @param[in]  iterator    Iterator.
@@ -60490,7 +60547,7 @@ init_all_info_iterator (iterator_t* iterator, get_data_t *get,
   static const char *filter_columns[] = ALL_INFO_ITERATOR_FILTER_COLUMNS;
   static column_t select_columns[] = ALL_INFO_ITERATOR_COLUMNS;
   int first, max;
-  gchar *columns, *clause, *filter, *order;
+  gchar *columns, *clause, *filter, *order, *limit_clause;
 
   if (get->filt_id && strcmp (get->filt_id, "0"))
     {
@@ -60506,19 +60563,29 @@ init_all_info_iterator (iterator_t* iterator, get_data_t *get,
                           &order, &first, &max, NULL, NULL);
   columns = columns_build_select (select_columns);
 
+  limit_clause = g_strdup_printf ("LIMIT %s OFFSET %i",
+                                  sql_select_limit (max),
+                                  first);
+
   init_iterator (iterator,
                  "SELECT %s"
-                 " FROM" ALL_INFO_UNION_COLUMNS
+                 " FROM" ALL_INFO_UNION_COLUMNS_LIMIT
                  " %s%s"
                  " %s"
-                 " LIMIT %s OFFSET %i;",
+                 " %s;",
                  columns,
+                 limit_clause,
+                 limit_clause,
+                 limit_clause,
+                 limit_clause,
+                 limit_clause,
+                 limit_clause,
                  clause ? "WHERE " : "",
                  clause ? clause   : "",
                  order,
-                 sql_select_limit (max),
-                 first);
+                 limit_clause);
 
+  g_free (limit_clause);
   g_free (order);
   g_free (filter);
   g_free (columns);

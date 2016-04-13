@@ -1,5 +1,12 @@
 2016-04-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (ALL_INFO_UNION_COLUMNS_LIMIT): New define.
+	(init_all_info_iterator): Use the limit version of the ALL_INFO
+	columns, so that the subqueries are limited before being UNIONed
+	together.  This is much faster on Postgres.
+
+2016-04-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/otp.c (process_otp_scanner_input): Make message clearer.
 
 2016-04-06  Matthew Mundell <matthew.mundell@greenbone.net>
