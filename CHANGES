@@ -1,3 +1,54 @@
+openvas-manager 6.1+beta3 (2016-04-14)
+
+This is the third beta version of the upcoming 6.1 release of the
+OpenVAS Manager. It will be part of the upcoming OpenVAS-9 release.
+This module is the central management service between
+security scanners and user clients.
+
+This release adds various alerts, consolidates credentials and
+applies the standard powerfilter now also for the report results
+to name just a few of the improvements.
+
+Many thanks to everyone who has contributed to this release:
+Benoît Allard, Hani Benhabiles, Sven Haardiek, Matthew Mundell,
+Timo Pollmeier, Jan-Oliver Wagner and Michael Wiegand.
+
+Main changes since 6.1+beta2:
+* Consolidation of credentials: Introduce various types of credentials and
+  use these reseources whenever a credential is required. Also the migration
+  will handle this properly.
+* Add task preference for auto deleting reports.
+* Add credential type "client certificate".
+* Add SNMP credential type.
+* Make login information of slaves a credentials resource.
+* Add SNMP credentials to targets.
+* Add new alert conditions "Filter count at least" and "Filter count changed".
+* Add alert method "Send", for sending the report to a TCP listener.
+* Add new alert method 'SCP'.
+* Add alert event "New NVTs arrived".
+* Add event type "Updated NVTs arrived".
+* Add support for SecInfo type in SecInfo alerts.
+* Add SYNC_CONFIG OMP command.
+* Introduce Scan Configs for OSP scanners.
+* Make GET_REPORTS command use the normal powerfilter and remove some
+  redundant command attributes and now unused functions.
+* Prevent concurrent NVT cache updates from being initiated via SIGHUP.
+* Add "ISM Control Description" parameter to "Verinice ISM" report format.
+* Ensure sequences for automatically assigning primary key ids in
+  PostgreSQL are consistent with table contents on startup.
+* Remove any special handling of a tag "risk_factor".
+* When using SQLite, ensure that all three databases are in WAL mode.
+* Merging openvas-certdata-sync into greenbone-certdata-sync
+  in order to maintain only a single sync script instead
+  of two mostly identical ones.
+* Merging openvas-scapdata-sync into greenbone-scapdata-sync
+  in order to maintain only a single sync script instead
+  of two mostly identical ones.
+* Add --check-alerts, which runs any SecInfo alerts that are due.
+* Various database performance improvements.
+* Various code improvements.
+
+
 openvas-manager 6.1+beta2 (2015-10-21)
 
 This is the second beta version of the upcoming 6.1 release of the
