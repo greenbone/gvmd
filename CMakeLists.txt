@@ -113,25 +113,9 @@ set (CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CPACK_PACKAGE_VERSION}")
 set (CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CPACK_PACKAGE_VERSION}")
 set (CPACK_PACKAGE_VENDOR "The OpenVAS Project")
 set (CPACK_SOURCE_IGNORE_FILES
+"${CMAKE_BINARY_DIR}"
 "/.svn/"
-"/_CPack_Packages/"
-"/CMakeFiles/"
-"cmake$"
 "swp$"
-"Cache.txt$"
-".tar.gz"
-"install_manifest.txt"
-"Makefile"
-"/doc/generated/"
-"log.conf$"
-"Doxyfile$"
-"Doxyfile_full$"
-"VERSION$"
-"tools/greenbone-scapdata-sync$"
-"tools/greenbone-certdata-sync$"
-"tools/openvas-portnames-update$"
-"tools/openvas-migrate-to-postgres$"
-"OMP.xml$"
 )
 
 include (CPack)
