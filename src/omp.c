@@ -17710,7 +17710,6 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             {
               const char* filter;
               iterator_t results;
-              int max;
               int notes, overrides;
 
               if (get_results_data->get.filt_id
@@ -17792,7 +17791,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               cleanup_iterator (&results);
 
               manage_filter_controls (get_results_data->get.filter,
-                                      &first, &max, NULL, NULL);
+                                      &first, NULL, NULL, NULL);
 
               filtered = get_results_data->get.id
                           ? 1 : result_count (&get_results_data->get,
