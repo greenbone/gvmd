@@ -1,3 +1,20 @@
+2016-04-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add setting "Max Rows Per Page", which can only be modified via new
+	option --max-rows.  Default is 0 which allows any number of rows.
+
+	* src/manage_sql.c (append_relation): Adjust "rows" according to max
+	allowed rows.
+	(filter_clause, init_get_iterator2): Take max allowed rows into account.
+	(check_db_settings): Ensure "Max Rows Per Page" exists.
+	(manage_max_rows, manage_set_max_rows): New function.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (send_get_end): Account for max allowed rows.
+
+	* src/openvasmd.c (main): Add --max-rows.
+
 2016-04-18  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* CMakeLists.txt: Simplify CPACK_SOURCE_IGNORE_FILES by ignoring the

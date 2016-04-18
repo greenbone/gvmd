@@ -3720,6 +3720,9 @@ all_info_iterator_severity (iterator_t*);
 /* Settings. */
 
 int
+manage_max_rows (int);
+
+int
 setting_count (const char *);
 
 char *
@@ -3758,6 +3761,9 @@ setting_value_int (const char *, int *);
 
 int
 modify_setting (const gchar *, const gchar *, const gchar *, gchar **);
+
+int
+manage_set_max_rows (GSList *, const gchar *, const gchar *, const char *);
 
 
 /* Users. */

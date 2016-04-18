@@ -6390,6 +6390,8 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
       max = -1;
     }
 
+  max = manage_max_rows (max);
+
   if (filter || get->filter)
     {
       gchar *new_filter;
