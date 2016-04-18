@@ -1,5 +1,9 @@
 2016-04-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Remove extra space.
+
+2016-04-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Remove unused max variable
 	from GET_RESULTS case.
 

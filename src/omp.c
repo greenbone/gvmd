@@ -17798,7 +17798,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                               0 /* No report */,
                                               NULL /* No host */);
 
-              SEND_GET_END("result", &get_results_data->get, count, filtered);
+              SEND_GET_END ("result", &get_results_data->get, count, filtered);
             }
 
           get_results_data_reset (get_results_data);
