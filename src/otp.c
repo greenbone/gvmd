@@ -1572,7 +1572,7 @@ process_otp_scanner_input (void (*progress) ())
                       hosts_set_identifiers ();
                       if (current_report)
                         {
-                          hosts_set_max_severity (current_report);
+                          hosts_set_max_severity (current_report, NULL, NULL);
                           hosts_set_details (current_report);
                           set_scan_end_time_otp (current_report, field);
                         }

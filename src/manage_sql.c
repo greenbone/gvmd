@@ -13819,6 +13819,29 @@ static void
 check_db_settings ()
 {
   if (sql_int ("SELECT count(*) FROM settings"
+               " WHERE uuid = '02e294fa-061b-11e6-ae64-28d24461215b'"
+               " AND " ACL_IS_GLOBAL () ";")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+         " VALUES"
+         " ('02e294fa-061b-11e6-ae64-28d24461215b', NULL,"
+         "  'Assets Apply Overrides',"
+         "  'Whether to apply overrides when creating an asset.',"
+         "  '0');");
+
+  if (sql_int ("SELECT count(*) FROM settings"
+               " WHERE uuid = '5a9046cc-0628-11e6-ba53-28d24461215b'"
+               " AND " ACL_IS_GLOBAL () ";")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+         " VALUES"
+         " ('5a9046cc-0628-11e6-ba53-28d24461215b', NULL,"
+         "  'Assets Min QOD',"
+         "  'Minimum QOD of results when creating an asset.',"
+         "  '%i');",
+         MIN_QOD_DEFAULT);
+
+  if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = '6765549a-934e-11e3-b358-406186ea4fc5'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
@@ -57066,13 +57089,47 @@ hosts_set_identifiers ()
  * @param[in]  report  The report associated with the scan.
  */
 void
-hosts_set_max_severity (report_t report)
+hosts_set_max_severity (report_t report, int *overrides_arg, int *min_qod_arg)
 {
+  gchar *new_severity_sql;
+  int overrides, min_qod;
+
+  if (overrides_arg)
+    overrides = *overrides_arg;
+  else
+    {
+      overrides = 0;
+      /* Get "Assets Apply Overrides". */
+      setting_value_int ("02e294fa-061b-11e6-ae64-28d24461215b", &overrides);
+    }
+
+  if (min_qod_arg)
+    min_qod = *min_qod_arg;
+  else
+    {
+      min_qod = MIN_QOD_DEFAULT;
+      /* Get "Assets Min QOD". */
+      setting_value_int ("5a9046cc-0628-11e6-ba53-28d24461215b", &min_qod);
+    }
+
+  new_severity_sql
+    = g_strdup_printf ("(SELECT new_severity FROM result_new_severities"
+                       " WHERE result_new_severities.result = results.id"
+                       " AND result_new_severities.user"
+                       "     = (SELECT id FROM users WHERE uuid = '%s')"
+                       " AND override = %d"
+                       " AND dynamic = %d"
+                       " LIMIT 1)",
+                       current_credentials.uuid,
+                       overrides,
+                       setting_dynamic_severity_int ());
+
   sql ("INSERT INTO host_max_severities"
        " (host, severity, source_type, source_id, creation_time)"
        " SELECT asset_host,"
-       "        coalesce ((SELECT max (severity) FROM results"
+       "        coalesce ((SELECT max (%s) FROM results"
        "                   WHERE report = %llu"
+       "                   AND qod >= %i"
        "                   AND host = (SELECT name FROM hosts"
        "                               WHERE id = asset_host)),"
        "                  0.0),"
@@ -57083,9 +57140,13 @@ hosts_set_max_severity (report_t report)
        "       FROM host_identifiers"
        "       WHERE source_id = (SELECT uuid FROM reports WHERE id = %llu))"
        "      AS subquery;",
+       new_severity_sql,
        report,
+       min_qod,
        report,
        report);
+
+  g_free (new_severity_sql);
 }
 
 /**
@@ -57985,15 +58046,17 @@ create_asset_host (const char *host_name, const char *comment,
  * @brief Create all available assets from a report.
  *
  * @param[in]  report_id  UUID of report.
+ * @param[in]  term       Filter term, for min_qod and apply_overrides.
  *
  * @return 0 success, 1 failed to find report, 99 permission denied, -1 error.
  */
 int
-create_asset_report (const char *report_id)
+create_asset_report (const char *report_id, const char *term)
 {
   resource_t report;
   iterator_t hosts;
-  gchar *quoted_report_id;
+  gchar *quoted_report_id, *apply_overrides_string, *min_qod_string;
+  int apply_overrides, min_qod;
 
   if (report_id == NULL)
     return -1;
@@ -58083,7 +58146,19 @@ create_asset_report (const char *report_id)
     }
   cleanup_iterator (&hosts);
   hosts_set_identifiers ();
-  hosts_set_max_severity (report);
+  apply_overrides_string = filter_term_value (term, "apply_overrides");
+  if (apply_overrides_string)
+    apply_overrides = atoi (apply_overrides_string);
+  else
+    apply_overrides = 1;
+  g_free (apply_overrides_string);
+  min_qod_string = filter_term_value (term, "min_qod");
+  if (min_qod_string)
+    min_qod = atoi (min_qod_string);
+  else
+    min_qod = MIN_QOD_DEFAULT;
+  g_free (min_qod_string);
+  hosts_set_max_severity (report, &apply_overrides, &min_qod);
   hosts_set_details (report);
 
   sql_commit ();
@@ -58820,7 +58895,9 @@ modify_setting (const gchar *uuid, const gchar *name,
                || strcmp (uuid, "6765549a-934e-11e3-b358-406186ea4fc5") == 0
                || strcmp (uuid, "77ec2444-e7f2-4a80-a59b-f4237782d93f") == 0
                || strcmp (uuid, "7eda49c5-096c-4bef-b1ab-d080d87300df") == 0
-               || strcmp (uuid, "578a1c14-e2dc-45ef-a591-89d31391d007") == 0))
+               || strcmp (uuid, "578a1c14-e2dc-45ef-a591-89d31391d007") == 0
+               || strcmp (uuid, "02e294fa-061b-11e6-ae64-28d24461215b") == 0
+               || strcmp (uuid, "5a9046cc-0628-11e6-ba53-28d24461215b") == 0))
     {
       gsize value_size;
       gchar *value, *quoted_uuid, *quoted_value;

@@ -261,7 +261,7 @@ void
 hosts_set_identifiers ();
 
 void
-hosts_set_max_severity (report_t report);
+hosts_set_max_severity (report_t, int*, int*);
 
 void
 hosts_set_details (report_t report);

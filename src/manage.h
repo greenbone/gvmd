@@ -2320,7 +2320,7 @@ int
 delete_asset (const char *, const char *, int);
 
 int
-create_asset_report (const char *);
+create_asset_report (const char *, const char *);
 
 int
 create_asset_host (const char *, const char *, resource_t* );

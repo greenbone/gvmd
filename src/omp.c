@@ -926,6 +926,7 @@ typedef struct
 {
   char *name;                  ///< Name of asset.
   char *comment;               ///< Comment on asset.
+  char *filter_term;           ///< Filter term, for report.
   char *report_id;             ///< Report UUID.
   char *type;                  ///< Type of asset.
 } create_asset_data_t;
@@ -937,6 +938,7 @@ static void
 create_asset_data_reset (create_asset_data_t *data)
 {
   free (data->comment);
+  free (data->filter_term);
   free (data->report_id);
   free (data->type);
   free (data->name);
@@ -5202,6 +5204,8 @@ typedef enum
   CLIENT_CREATE_ALERT_NAME,
   CLIENT_CREATE_ASSET,
   CLIENT_CREATE_ASSET_REPORT,
+  CLIENT_CREATE_ASSET_REPORT_FILTER,
+  CLIENT_CREATE_ASSET_REPORT_FILTER_TERM,
   CLIENT_CREATE_ASSET_ASSET,
   CLIENT_CREATE_ASSET_ASSET_COMMENT,
   CLIENT_CREATE_ASSET_ASSET_NAME,
@@ -9051,6 +9055,16 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_ASSET_ASSET_NAME);
         else if (strcasecmp ("TYPE", element_name) == 0)
           set_client_state (CLIENT_CREATE_ASSET_ASSET_TYPE);
+        ELSE_ERROR ("create_asset");
+
+      case CLIENT_CREATE_ASSET_REPORT:
+        if (strcasecmp ("FILTER", element_name) == 0)
+          set_client_state (CLIENT_CREATE_ASSET_REPORT_FILTER);
+        ELSE_ERROR ("create_asset");
+
+      case CLIENT_CREATE_ASSET_REPORT_FILTER:
+        if (strcasecmp ("TERM", element_name) == 0)
+          set_client_state (CLIENT_CREATE_ASSET_REPORT_FILTER_TERM);
         ELSE_ERROR ("create_asset");
 
       case CLIENT_CREATE_CONFIG:
@@ -20761,7 +20775,8 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                 "CREATE_ASSET requires a report ID or host"
                                 " name"));
           else if (create_asset_data->report_id)
-            switch (create_asset_report (create_asset_data->report_id))
+            switch (create_asset_report (create_asset_data->report_id,
+                                         create_asset_data->filter_term))
               {
                 case 0:
                   SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_asset"));
@@ -20844,6 +20859,8 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_ASSET_ASSET, COMMENT);
       CLOSE (CLIENT_CREATE_ASSET_ASSET, NAME);
       CLOSE (CLIENT_CREATE_ASSET_ASSET, TYPE);
+      CLOSE (CLIENT_CREATE_ASSET_REPORT, FILTER);
+      CLOSE (CLIENT_CREATE_ASSET_REPORT_FILTER, TERM);
 
       case CLIENT_CREATE_CONFIG:
         {
@@ -29192,6 +29209,9 @@ omp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_ASSET_ASSET_TYPE,
               &create_asset_data->type);
+
+      APPEND (CLIENT_CREATE_ASSET_REPORT_FILTER_TERM,
+              &create_asset_data->filter_term);
 
 
       APPEND (CLIENT_CREATE_CONFIG_COMMENT,

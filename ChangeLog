@@ -1,3 +1,25 @@
+2016-04-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Allow overrides and min QOD to be applied to the report case of
+	CREATE_ASSET.
+
+	* src/manage_sql.c (check_db_settings): Add Assets Apply Overrides and
+	Assets Min QOD.
+	(hosts_set_max_severity): Account for overrides and min QOD, according
+	to args and settings.
+	(create_asset_report): Add filter term arg.  Pass overrides and min QOD
+	from filter to hosts_set_max_severity.
+	(modify_setting): Add new settings.
+
+	* src/manage_sql.h, src/manage.h: Update headers accordingly.
+
+	* src/omp.c (create_asset_data_t, create_asset_data_reset)
+	(client_state_t): Add filter term entries.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add FILTER/TERM to CREATE_ASSET/REPORT.
+
+	* src/otp.c (process_otp_scanner_input): Update call.
+
 2016-04-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Remove extra space.
