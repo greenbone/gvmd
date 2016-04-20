@@ -19551,7 +19551,8 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               gchar *response;
               iterator_t alerts, groups, roles;
               gchar *in_assets, *max_checks, *max_hosts, *source_iface;
-              gchar *auto_delete, *auto_delete_data;
+              gchar *auto_delete, *auto_delete_data, *assets_apply_overrides;
+              gchar *assets_min_qod;
 
               ret = get_next (&tasks, &get_tasks_data->get, &first, &count,
                               init_task_iterator);
@@ -20257,6 +20258,9 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                            task_result_count (index, min_qod));
 
                   in_assets = task_preference_value (index, "in_assets");
+                  assets_apply_overrides = task_preference_value
+                                            (index, "assets_apply_overrides");
+                  assets_min_qod = task_preference_value (index, "assets_min_qod");
                   max_checks = task_preference_value (index, "max_checks");
                   max_hosts = task_preference_value (index, "max_hosts");
                   source_iface = task_preference_value (index, "source_iface");
@@ -20295,6 +20299,20 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     "</preference>"
                     "<preference>"
                     "<name>"
+                    "Apply Overrides when adding Assets"
+                    "</name>"
+                    "<scanner_name>assets_apply_overrides</scanner_name>"
+                    "<value>%s</value>"
+                    "</preference>"
+                    "<preference>"
+                    "<name>"
+                    "Min QOD when adding Assets"
+                    "</name>"
+                    "<scanner_name>assets_min_qod</scanner_name>"
+                    "<value>%s</value>"
+                    "</preference>"
+                    "<preference>"
+                    "<name>"
                     "Auto Delete Reports"
                     "</name>"
                     "<scanner_name>auto_delete</scanner_name>"
@@ -20313,6 +20331,10 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     max_hosts ? max_hosts : "20",
                     source_iface ? source_iface : "",
                     in_assets ? in_assets : "yes",
+                    assets_apply_overrides ? assets_apply_overrides : "yes",
+                    assets_min_qod
+                     ? assets_min_qod
+                     : G_STRINGIFY (MIN_QOD_DEFAULT),
                     auto_delete ? auto_delete : "0",
                     auto_delete_data ? auto_delete_data : "0");
 

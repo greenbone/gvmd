@@ -1,3 +1,15 @@
+2016-04-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Move settings added in last commit to task preferences.
+
+	* src/manage_sql.c (check_db_settings): Remove asset settings.
+	(make_task): Add asset preferences.
+	(hosts_set_max_severity): Get from task preferences instead of from
+	settings.
+
+	* src/omp.c (omp_xml_handle_end_element): Send new asset preferences
+	with task in CLIENT_GET_TASKS.
+
 2016-04-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Allow overrides and min QOD to be applied to the report case of

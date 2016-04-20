@@ -13819,29 +13819,6 @@ static void
 check_db_settings ()
 {
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = '02e294fa-061b-11e6-ae64-28d24461215b'"
-               " AND " ACL_IS_GLOBAL () ";")
-      == 0)
-    sql ("INSERT into settings (uuid, owner, name, comment, value)"
-         " VALUES"
-         " ('02e294fa-061b-11e6-ae64-28d24461215b', NULL,"
-         "  'Assets Apply Overrides',"
-         "  'Whether to apply overrides when creating an asset.',"
-         "  '0');");
-
-  if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = '5a9046cc-0628-11e6-ba53-28d24461215b'"
-               " AND " ACL_IS_GLOBAL () ";")
-      == 0)
-    sql ("INSERT into settings (uuid, owner, name, comment, value)"
-         " VALUES"
-         " ('5a9046cc-0628-11e6-ba53-28d24461215b', NULL,"
-         "  'Assets Min QOD',"
-         "  'Minimum QOD of results when creating an asset.',"
-         "  '%i');",
-         MIN_QOD_DEFAULT);
-
-  if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = '6765549a-934e-11e3-b358-406186ea4fc5'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
@@ -29203,6 +29180,13 @@ make_task (char* name, char* comment)
   sql ("INSERT INTO task_preferences (task, name, value)"
        " VALUES (%llu, 'in_assets', 'yes')",
        task);
+  sql ("INSERT INTO task_preferences (task, name, value)"
+       " VALUES (%llu, 'assets_apply_overrides', 'yes')",
+       task);
+  sql ("INSERT INTO task_preferences (task, name, value)"
+       " VALUES (%llu, 'assets_min_qod', %d)",
+       task,
+       MIN_QOD_DEFAULT);
   free (uuid);
   free (name);
   free (comment);
@@ -57098,18 +57082,32 @@ hosts_set_max_severity (report_t report, int *overrides_arg, int *min_qod_arg)
     overrides = *overrides_arg;
   else
     {
-      overrides = 0;
-      /* Get "Assets Apply Overrides". */
-      setting_value_int ("02e294fa-061b-11e6-ae64-28d24461215b", &overrides);
+      task_t task;
+      /* Get "Assets Apply Overrides" task preference. */
+      overrides = 1;
+      if (report_task (report, &task) == 0)
+        {
+          char *value;
+          value = task_preference_value (task, "assets_apply_overrides");
+          if (value)
+            overrides = atoi (value);
+        }
     }
 
   if (min_qod_arg)
     min_qod = *min_qod_arg;
   else
     {
-      min_qod = MIN_QOD_DEFAULT;
+      task_t task;
       /* Get "Assets Min QOD". */
-      setting_value_int ("5a9046cc-0628-11e6-ba53-28d24461215b", &min_qod);
+      min_qod = MIN_QOD_DEFAULT;
+      if (report_task (report, &task) == 0)
+        {
+          char *value;
+          value = task_preference_value (task, "assets_min_qod");
+          if (value)
+            min_qod = atoi (value);
+        }
     }
 
   new_severity_sql
