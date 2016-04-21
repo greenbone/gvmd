@@ -2502,10 +2502,10 @@ create_tables ()
        "  creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS config_preferences"
        " (id INTEGER PRIMARY KEY, config INTEGER, type, name, value,"
-       "  default_value);");
+       "  default_value, hr_name TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS config_preferences_trash"
        " (id INTEGER PRIMARY KEY, config INTEGER, type, name, value,"
-       "  default_value);");
+       "  default_value, hr_name TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS configs"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name,"
        "  nvt_selector, comment, family_count INTEGER, nvt_count INTEGER,"

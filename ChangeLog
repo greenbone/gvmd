@@ -1,3 +1,11 @@
+2016-04-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_pg.c (create_tables): Add column "hr_name" to tables
+	config_preferences and config_preferences_trash.
+
+	* src/manage_sqlite3.c (create_tables): Add column "hr_name" to tables
+	config_preferences and config_preferences_trash.
+
 2016-04-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (split_filter): Add assert.

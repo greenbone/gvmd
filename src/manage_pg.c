@@ -1898,7 +1898,8 @@ create_tables ()
        "  type text,"
        "  name text,"
        "  value text,"
-       "  default_value text);");
+       "  default_value text,"
+       "  hr_name text);");
 
   sql ("CREATE TABLE IF NOT EXISTS config_preferences_trash"
        " (id SERIAL PRIMARY KEY,"
@@ -1906,7 +1907,8 @@ create_tables ()
        "  type text,"
        "  name text,"
        "  value text,"
-       "  default_value text);");
+       "  default_value text,"
+       "  hr_name text);");
 
   sql ("CREATE TABLE IF NOT EXISTS schedules"
        " (id SERIAL PRIMARY KEY,"
