@@ -1924,6 +1924,8 @@ split_filter (const gchar* given_filter)
   const gchar *current_part, *filter;
   keyword_t *keyword;
 
+  assert (given_filter);
+
   filter = given_filter;
   parts = make_array ();
   in_quote = 0;
@@ -22842,6 +22844,9 @@ report_counts_id_full (report_t report, int* debugs, int* holes, int* infos,
   filter_cacheable = TRUE;
   override = 0;
   min_qod_int = MIN_QOD_DEFAULT;
+
+  if (filter == NULL)
+    filter = "";
 
   split = split_filter (filter);
   point = (keyword_t**) split->pdata;

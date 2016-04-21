@@ -1,3 +1,9 @@
+2016-04-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (split_filter): Add assert.
+	(report_counts_id_full): Check filter like all other split_filter
+	callers do.  Prevents segfault when no filter is given to GET_REPORTS.
+
 2016-04-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Move settings added in last commit to task preferences.
