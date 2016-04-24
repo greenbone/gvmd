@@ -2564,7 +2564,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
       /* Create the task on the slave. */
 
       {
-        gchar *in_assets, *max_checks, *max_hosts, *source_iface;
+        gchar *max_checks, *max_hosts, *source_iface;
         gchar *hosts_ordering;
         omp_create_task_opts_t opts;
 
@@ -2574,14 +2574,13 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
         opts.name = name;
         opts.comment = "Slave task created by Master";
 
-        in_assets = task_preference_value (task, "in_assets");
         max_checks = task_preference_value (task, "max_checks");
         max_hosts = task_preference_value (task, "max_hosts");
         source_iface = task_preference_value (task, "source_iface");
         hosts_ordering = task_hosts_ordering (task);
 
         opts.alterable = 0;
-        opts.in_assets = in_assets;
+        opts.in_assets = "no";
         opts.max_checks = max_checks ? max_checks : MAX_CHECKS_DEFAULT;
         opts.max_hosts = max_hosts ? max_hosts : MAX_HOSTS_DEFAULT;
         opts.source_iface = source_iface;
@@ -2595,7 +2594,6 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
         opts.slave_id = NULL;
 
         ret = omp_create_task_ext (session, opts, &slave_task_uuid);
-        g_free (in_assets);
         g_free (max_checks);
         g_free (max_hosts);
         g_free (source_iface);
@@ -2725,10 +2723,11 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
 
           opts = omp_get_report_opts_defaults;
           opts.report_id = slave_report_uuid;
-          opts.first_result = next_result;
           opts.format_id = "a994b278-1f62-11e1-96ac-406186ea4fc5";
-          opts.apply_overrides = 0;
-          opts.levels = "hmlgd";
+          opts.filter = g_strdup_printf
+                         ("first=%i rows=-1 levels=hmlgd apply_overrides=0"
+                          " min_qod=0 autofp=0 result_hosts_only=0 sort=id",
+                          next_result);
 
           if (status_done)
             /* Request all the hosts to get their end times. */
@@ -2742,6 +2741,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
               opts.format_id = "d5da9f67-8551-4e51-807b-b6a873d70e34";
               ret2 = omp_get_report_ext (session, opts, &get_report);
             }
+          g_free (opts.filter);
           if ((ret == 404) && (ret2 == 404))
             {
               /* Resource Missing. */
