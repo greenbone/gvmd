@@ -2726,7 +2726,8 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           opts.format_id = "a994b278-1f62-11e1-96ac-406186ea4fc5";
           opts.filter = g_strdup_printf
                          ("first=%i rows=-1 levels=hmlgd apply_overrides=0"
-                          " min_qod=0 autofp=0 result_hosts_only=0 sort=id",
+                          " min_qod=0 autofp=0 result_hosts_only=0"
+                          " sort=created",
                           next_result);
 
           if (status_done)

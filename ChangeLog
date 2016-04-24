@@ -1,3 +1,9 @@
+2016-04-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (slave_setup): Sort by creation time.  Sorting by ID in
+	the filter is ignored, which leads to table order, which is not
+	necessarily the same as ID order, escpecially on Postgres.
+
 2016-04-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (slave_setup): Just set in_assets to "no" when creating
