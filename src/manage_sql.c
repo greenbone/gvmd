@@ -57092,8 +57092,11 @@ hosts_set_max_severity (report_t report, int *overrides_arg, int *min_qod_arg)
         {
           char *value;
           value = task_preference_value (task, "assets_apply_overrides");
-          if (value)
-            overrides = atoi (value);
+          if (value && (strcmp (value, "yes") == 0))
+            overrides = 1;
+          else
+            overrides = 0;
+          free (value);
         }
     }
 
@@ -57110,6 +57113,7 @@ hosts_set_max_severity (report_t report, int *overrides_arg, int *min_qod_arg)
           value = task_preference_value (task, "assets_min_qod");
           if (value)
             min_qod = atoi (value);
+          free (value);
         }
     }
 
