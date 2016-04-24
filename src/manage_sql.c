@@ -3079,8 +3079,7 @@ filter_clause (const char* type, const char* filter,
 
       if (keyword->column && (strcasecmp (keyword->column, "sort") == 0))
         {
-          if (strcmp (keyword->string, "ROWID")
-              && (vector_find_filter (filter_columns, keyword->string) == 0))
+          if (vector_find_filter (filter_columns, keyword->string) == 0)
             {
               point++;
               continue;
@@ -3216,8 +3215,7 @@ filter_clause (const char* type, const char* filter,
       else if (keyword->column
                && (strcasecmp (keyword->column, "sort-reverse") == 0))
         {
-          if (strcmp (keyword->string, "ROWID")
-              && (vector_find_filter (filter_columns, keyword->string) == 0))
+          if (vector_find_filter (filter_columns, keyword->string) == 0)
             {
               point++;
               continue;

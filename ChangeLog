@@ -1,5 +1,11 @@
 2016-04-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (filter_clause): Remove "ROWID" checks from sort
+	handling.  Sorting by "ROWID" has not worked for some time; it was just
+	leading to an assertion failure.
+
+2016-04-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (slave_setup): Sort by creation time.  Sorting by ID in
 	the filter is ignored, which leads to table order, which is not
 	necessarily the same as ID order, escpecially on Postgres.
