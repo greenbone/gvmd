@@ -5471,7 +5471,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
         = g_strdup_printf ("CAST (strftime ('%%s',"
                            "                date(%s, 'unixepoch',"
                            "                     'localtime'),"
-                           "                'localtime')"
+                           "                'utc')"
                            "      AS INTEGER)",
                            "aggregate_group_value");
     else
@@ -5479,7 +5479,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
         = g_strdup_printf ("EXTRACT (EPOCH FROM"
                            "           date_trunc ('day',"
                            "           TIMESTAMP WITH TIME ZONE 'epoch'"
-                           "           + (%s) * INTERVAL '1 second'))",
+                           "           + (%s) * INTERVAL '1 second'))"
+                           "  :: integer",
                            "aggregate_group_value");
   else
     outer_group_by_column = g_strdup ("aggregate_group_value");
@@ -5604,9 +5605,14 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
 
   from_table = type_table (type, get->trash);
 
+  int group_column_is_time = group_column
+                              && (strcmp (group_column, "created") == 0
+                                  || strcmp (group_column, "modified") == 0
+                                  || strcmp (group_column, "published") == 0);
+
   init_iterator (iterator,
                  "SELECT sum(aggregate_count) AS outer_count,"
-                 " %s AS outer_group_column"
+                 " %s%s%s AS outer_group_column"
                  " %s"
                  " FROM (SELECT%s %s"
                  "       FROM %s%s%s"
@@ -5617,7 +5623,9 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                  "      AS agg_sub"
                  " GROUP BY outer_group_column %s"
                  " LIMIT %s OFFSET %d;",
+                 group_column_is_time ? "iso_time (": "",
                  outer_group_by_column,
+                 group_column_is_time ? ")": "",
                  outer_col_select->str,
                  distinct ? " DISTINCT" : "",
                  aggregate_select->str,

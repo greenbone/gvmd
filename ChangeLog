@@ -1,3 +1,16 @@
+2016-04-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_AUTHENTICATE case,
+	set session timezone for Postgres.
+
+	* src/manage_pg.c (manage_create_sql_functions): In iso_time function,
+	use normal year instead of week count year and do not add "+" before
+	timezone offset if it is negative.
+
+	* src/manage_sql.c (init_aggregate_iterator): Use UTC-based timestamp
+	for SQLite instead of one using timezone offset.  Output timestamps in
+	ISO format.
+
 2016-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_get_iterator2): Explain where_columns.

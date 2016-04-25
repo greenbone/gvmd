@@ -13922,6 +13922,10 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     }
                   tzset ();
 
+                  // Set timezone for Postgres session
+                  if (sql_is_sqlite3() == 0)
+                    sql ("SET SESSION TIME ZONE '%s';", timezone);
+
                   severity = setting_severity ();
                   pw_warning = openvas_validate_password
                                 (current_credentials.password,
