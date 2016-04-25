@@ -4861,7 +4861,10 @@ resource_name (const char *type, const char *uuid, int location, char **name)
  * @param[in]  get             GET data.
  * @param[in]  select_columns         Columns for SQL.
  * @param[in]  trash_select_columns   Columns for SQL trash case.
- * @param[in]  where_columns          WHERE columns.
+ * @param[in]  where_columns          WHERE columns.  These are columns that
+ *                                    can be used for filtering and searching,
+ *                                    but are not accessed (so column has no
+ *                                    iterator access function).
  * @param[in]  trash_where_columns    WHERE columns for trashcan.
  * @param[in]  filter_columns  Columns for filter.
  * @param[in]  distinct        Whether the query should be distinct.  Skipped
@@ -20888,9 +20891,11 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   ret = init_get_iterator2 (iterator,
                             "result",
                             get,
+                            /* SELECT columns. */
                             columns,
                             NULL,
-                            columns,
+                            /* Filterable columns not in SELECT columns. */
+                            NULL,
                             NULL,
                             filter_columns,
                             0,

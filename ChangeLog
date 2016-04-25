@@ -1,3 +1,9 @@
+2016-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_get_iterator2): Explain where_columns.
+	(init_result_get_iterator): Make where_columns arg NULL.  Those are already
+	passed in the "SELECT columns" arg.
+
 2016-04-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (hosts_set_max_severity): Correct overrides check.
