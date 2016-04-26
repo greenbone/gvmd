@@ -1,3 +1,8 @@
+2016-04-26  Sven Haardiek <sven.haardiek@greenbone.net>
+
+	* CMakeLists.txt: Make it possible to change OPENVAS_NVT_DIR,
+	OPENVAS_SCAP_DATA_DIR, OPENVAS_CERT_DATA_DIR
+
 2016-04-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_AUTHENTICATE case,

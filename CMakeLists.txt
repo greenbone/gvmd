@@ -185,9 +185,7 @@ set (OPENVAS_LOG_DIR      "${LOCALSTATEDIR}/log/openvas")
 set (OPENVAS_PID_DIR      "${LOCALSTATEDIR}/run")
 set (OPENVAS_SYSCONF_DIR  "${SYSCONFDIR}/openvas")
 set (OPENVAS_SCAP_RES_DIR "${OPENVAS_DATA_DIR}/scap")
-set (OPENVAS_SCAP_DATA_DIR "${OPENVAS_STATE_DIR}/scap-data")
 set (OPENVAS_CERT_RES_DIR "${OPENVAS_DATA_DIR}/cert")
-set (OPENVAS_CERT_DATA_DIR "${OPENVAS_STATE_DIR}/cert-data")
 set (OPENVAS_CA_DIR        "${OPENVAS_STATE_DIR}/openvasmd/trusted_certs")
 
 set (OPENVAS_SCANNER_CERTIFICATE "${OPENVAS_STATE_DIR}/CA/servercert.pem")
@@ -196,7 +194,17 @@ set (OPENVAS_CLIENT_CERTIFICATE  "${OPENVAS_STATE_DIR}/CA/clientcert.pem")
 set (OPENVAS_CLIENT_KEY          "${OPENVAS_STATE_DIR}/private/CA/clientkey.pem")
 set (OPENVAS_CA_CERTIFICATE      "${OPENVAS_STATE_DIR}/CA/cacert.pem")
 
-set (OPENVAS_NVT_DIR             "${OPENVAS_STATE_DIR}/plugins/")
+if (NOT OPENVAS_NVT_DIR)
+  set (OPENVAS_NVT_DIR "${OPENVAS_STATE_DIR}/plugins/")
+endif (NOT OPENVAS_NVT_DIR)
+
+if (NOT OPENVAS_CERT_DATA_DIR)
+  set (OPENVAS_CERT_DATA_DIR "${OPENVAS_STATE_DIR}/cert-data")
+endif (NOT OPENVAS_CERT_DATA_DIR)
+
+if (NOT OPENVAS_SCAP_DATA_DIR)
+  set (OPENVAS_SCAP_DATA_DIR "${OPENVAS_STATE_DIR}/scap-data")
+endif (NOT OPENVAS_SCAP_DATA_DIR)
 
 message ("-- Install prefix: ${CMAKE_INSTALL_PREFIX}")
 
