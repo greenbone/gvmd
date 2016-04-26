@@ -1,4 +1,13 @@
-2016-04-06  Matthew Mundell <matthew.mundell@greenbone.net>
+2016-04-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r25091.
+
+	* src/manage.h (alert_method_t): Move SCP after Send, because SEND was
+	introduced first, and the enumeration values are used in the db.  This
+	might break alerts created since r24727, but will repair Send alerts
+	created before r24747.
+
+2016-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r24881.
 
