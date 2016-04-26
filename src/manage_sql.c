@@ -59244,6 +59244,24 @@ modify_setting (const gchar *uuid, const gchar *name,
       else if (strcmp (uuid, "cb7db2fe-3fe4-4704-9fa1-efd4b9e522a8") == 0)
         setting_name = g_strdup ("Results Top Dashboard Row Heights");
 
+      /* Assets dashboards */
+      else if (strcmp (uuid, "0320e0db-bf30-4d4f-9379-b0a022d07cf7") == 0)
+        setting_name = g_strdup ("Assets Dashboard Components");
+      else if (strcmp (uuid, "48c344eb-062e-4ff5-81db-28f7ab110ca1") == 0)
+        setting_name = g_strdup ("Assets Dashboard Filters");
+      else if (strcmp (uuid, "d52373d8-90d9-4921-b03f-1ffd11e03f49") == 0)
+        setting_name = g_strdup ("Assets Dashboard Row Heights");
+
+      else if (strcmp (uuid, "d3f5f2de-a85b-43f2-a817-b127457cc8ba") == 0)
+        setting_name = g_strdup ("Hosts Top Dashboard Components");
+      else if (strcmp (uuid, "1cef4fae-57a6-4c1d-856c-0368ead863d4") == 0)
+        setting_name = g_strdup ("Hosts Top Dashboard Row Heights");
+
+      else if (strcmp (uuid, "e93b51ed-5881-40e0-bc4f-7d3268a36177") == 0)
+        setting_name = g_strdup ("OSs Top Dashboard Components");
+      else if (strcmp (uuid, "3006052f-3f28-419b-bffa-65b41605d5c3") == 0)
+        setting_name = g_strdup ("OSs Top Dashboard Row Heights");
+
       /* SecInfo dashboards */
       else if (strcmp (uuid, "84ab32da-fe69-44d8-8a8f-70034cf28d4e") == 0)
         setting_name = g_strdup ("SecInfo Dashboard Components");
@@ -63736,6 +63754,16 @@ type_columns (const char *type, int apply_overrides)
       static column_t columns[] = RESULT_ITERATOR_COLUMNS;
       return columns_build_select (columns);
     }
+  else if (strcasecmp (type, "HOST") == 0)
+    {
+      static column_t columns[] = HOST_ITERATOR_COLUMNS;
+      return columns_build_select (columns);
+    }
+  else if (strcasecmp (type, "OS") == 0)
+    {
+      static column_t columns[] = OS_ITERATOR_COLUMNS;
+      return columns_build_select (columns);
+    }
   else if (strcasecmp (type, "ALLINFO") == 0)
     {
       static column_t columns[] = ALL_INFO_ITERATOR_COLUMNS;
@@ -63792,6 +63820,8 @@ type_select_columns (const char *type, int apply_overrides)
   static column_t task_columns[] = TASK_ITERATOR_COLUMNS;
   static column_t report_columns[] = REPORT_ITERATOR_COLUMNS;
   static column_t result_columns[] = RESULT_ITERATOR_COLUMNS;
+  static column_t host_columns[] = HOST_ITERATOR_COLUMNS;
+  static column_t os_columns[] = OS_ITERATOR_COLUMNS;
   static column_t allinfo_columns[] = ALL_INFO_ITERATOR_COLUMNS;
   static column_t cpe_columns[] = CPE_INFO_ITERATOR_COLUMNS;
   static column_t cve_columns[] = CVE_INFO_ITERATOR_COLUMNS;
@@ -63809,6 +63839,10 @@ type_select_columns (const char *type, int apply_overrides)
     return report_columns;
   else if (strcasecmp (type, "RESULT") == 0)
     return result_columns;
+  else if (strcasecmp (type, "HOST") == 0)
+    return host_columns;
+  else if (strcasecmp (type, "OS") == 0)
+    return os_columns;
   else if (strcasecmp (type, "ALLINFO") == 0)
     return allinfo_columns;
   else if (strcasecmp (type, "CPE") == 0)
@@ -63877,6 +63911,16 @@ type_filter_columns (const char *type, int apply_overrides)
   else if (strcasecmp (type, "RESULT") == 0)
     {
       static const char *ret[] = RESULT_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
+  else if (strcasecmp (type, "HOST") == 0)
+    {
+      static const char *ret[] = HOST_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
+  else if (strcasecmp (type, "OS") == 0)
+    {
+      static const char *ret[] = OS_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
   else if (strcasecmp (type, "ALLINFO") == 0)
