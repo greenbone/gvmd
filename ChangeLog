@@ -1,3 +1,10 @@
+2016-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.h (alert_method_t): Move SCP after Send, because SEND was
+	introduced first, and the enumeration values are used in the db.  This
+	might break alerts created since r24727, but will repair Send alerts
+	created before r24747.
+
 2016-04-26  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (modify_setting): Add settings of Assets dashboards.
