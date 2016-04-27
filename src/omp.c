@@ -12392,7 +12392,15 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
 
       c_count += aggregate_iterator_count (aggregate);
 
-      if (group_column && value)
+      if (value && column_is_timestamp (group_column))
+        {
+          time_t value_int;
+          if (sscanf (value, "%ld", &value_int) == 1)
+            value_escaped = g_strdup (iso_time (&value_int));
+          else
+            value_escaped = g_markup_escape_text (value, -1);
+        }
+      else if (group_column && value)
         value_escaped = g_markup_escape_text (value, -1);
       else
         value_escaped = NULL;
@@ -12420,25 +12428,46 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
 
       for (index = 0; index < data_columns->len; index++)
         {
+          gchar *data_column = g_array_index (data_columns, gchar*, index);;
           double c_sum = g_array_index (c_sums, double, index);
           c_sum += aggregate_iterator_sum (aggregate, index);
           g_array_index (c_sums, double, index) = c_sum;
 
-          g_string_append_printf (xml,
-                                  "<stats column=\"%s\">"
-                                  "<min>%g</min>"
-                                  "<max>%g</max>"
-                                  "<mean>%g</mean>"
-                                  "<sum>%g</sum>"
-                                  "<c_sum>%g</c_sum>"
-                                  "</stats>",
-                                  g_array_index (data_columns, gchar*,
-                                                  index),
-                                  aggregate_iterator_min (aggregate, index),
-                                  aggregate_iterator_max (aggregate, index),
-                                  aggregate_iterator_mean (aggregate, index),
-                                  aggregate_iterator_sum (aggregate, index),
-                                  c_sum);
+          if (column_is_timestamp (data_column))
+            {
+              time_t min, max, mean;
+              min = (time_t)(aggregate_iterator_min (aggregate, index));
+              max = (time_t)(aggregate_iterator_max (aggregate, index));
+              mean = (time_t)(aggregate_iterator_mean (aggregate, index));
+
+              g_string_append_printf (xml,
+                                      "<stats column=\"%s\">"
+                                      "<min>%s</min>"
+                                      "<max>%s</max>"
+                                      "<mean>%s</mean>"
+                                      "<sum></sum>"
+                                      "<c_sum></c_sum>"
+                                      "</stats>",
+                                      data_column,
+                                      iso_time (&min),
+                                      iso_time (&max),
+                                      iso_time (&mean));
+            }
+          else
+            g_string_append_printf (xml,
+                                    "<stats column=\"%s\">"
+                                    "<min>%g</min>"
+                                    "<max>%g</max>"
+                                    "<mean>%g</mean>"
+                                    "<sum>%g</sum>"
+                                    "<c_sum>%g</c_sum>"
+                                    "</stats>",
+                                    data_column,
+                                    aggregate_iterator_min (aggregate, index),
+                                    aggregate_iterator_max (aggregate, index),
+                                    aggregate_iterator_mean (aggregate, index),
+                                    aggregate_iterator_sum (aggregate, index),
+                                    c_sum);
         }
 
       for (index = 0; index < text_columns->len; index++)
@@ -12446,14 +12475,24 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
           const char *text = aggregate_iterator_text (aggregate, index,
                                                       data_columns->len);
           gchar *text_escaped;
+          gchar *text_column = g_array_index (text_columns, gchar*, index);
 
-          if (text)
+          if (text && column_is_timestamp (text_column))
+            {
+              time_t text_int;
+              if (sscanf (text, "%ld", &text_int) == 1)
+                text_escaped = iso_time (&text_int);
+              else
+                text_escaped = g_markup_escape_text (text, -1);
+            }
+          else if (text)
             text_escaped  = g_markup_escape_text (text, -1);
           else
             text_escaped = NULL;
+
           g_string_append_printf (xml,
                                   "<text column=\"%s\">%s</text>",
-                                  g_array_index (text_columns, gchar*, index),
+                                  text_column,
                                   text_escaped ? text_escaped : "");
           g_free (text_escaped);
         }

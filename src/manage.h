@@ -4082,6 +4082,9 @@ xsl_transform (gchar *, gchar *, gchar **, gchar **);
 int
 valid_db_resource_type (const char*);
 
+int
+column_is_timestamp (const char*);
+
 char*
 type_columns (const char *, int);
 

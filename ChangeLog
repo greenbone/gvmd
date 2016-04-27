@@ -1,3 +1,15 @@
+2016-04-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (init_aggregate_iterator): Remove the conversion to
+	ISO format, which is now done in buffer_aggregate_xml.  Use new
+	function column_is_timestamp to test if group_column is a timestamp.
+	(column_is_timestamp): New function.
+
+	* src/manage.h (column_is_timestamp): New function prototype.
+	
+	* src/omp.c (buffer_aggregate_xml): Convert all columns containing
+	timestamps to ISO format.
+
 2016-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.h (alert_method_t): Move SCP after Send, because SEND was

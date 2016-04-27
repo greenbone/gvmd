@@ -5463,9 +5463,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
    * This returns "pseudo-UTC" dates which are used by the GSA charts because
    *  the JavaScript Date objects do not support setting the timezone.
    */
-  if (group_column && (strcmp (group_column, "created") == 0
-                       || strcmp (group_column, "modified") == 0
-                       || strcmp (group_column, "published") == 0))
+  if (column_is_timestamp (group_column))
     if (sql_is_sqlite3 ())
       outer_group_by_column
         = g_strdup_printf ("CAST (strftime ('%%s',"
@@ -5605,14 +5603,9 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
 
   from_table = type_table (type, get->trash);
 
-  int group_column_is_time = group_column
-                              && (strcmp (group_column, "created") == 0
-                                  || strcmp (group_column, "modified") == 0
-                                  || strcmp (group_column, "published") == 0);
-
   init_iterator (iterator,
                  "SELECT sum(aggregate_count) AS outer_count,"
-                 " %s%s%s AS outer_group_column"
+                 " %s AS outer_group_column"
                  " %s"
                  " FROM (SELECT%s %s"
                  "       FROM %s%s%s"
@@ -5623,9 +5616,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                  "      AS agg_sub"
                  " GROUP BY outer_group_column %s"
                  " LIMIT %s OFFSET %d;",
-                 group_column_is_time ? "iso_time (": "",
                  outer_group_by_column,
-                 group_column_is_time ? ")": "",
                  outer_col_select->str,
                  distinct ? " DISTINCT" : "",
                  aggregate_select->str,
@@ -63724,6 +63715,23 @@ int
 trash_tag_writable (tag_t tag)
 {
   return 0;
+}
+
+/**
+ * @brief Return whether a column is one containing timestamp.
+ *
+ * @param[in]  column  The column name.
+ *
+ * @return  1 if column contains timestamps, 0 otherwise.
+ */
+int
+column_is_timestamp (const char* column)
+{
+  return (column
+          && (strcmp (column, "created") == 0
+                      || strcmp (column, "date") == 0
+                      || strcmp (column, "modified") == 0
+                      || strcmp (column, "published") == 0));
 }
 
 /**
