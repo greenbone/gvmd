@@ -2809,6 +2809,15 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
               goto fail_stop_task;
             }
           free_entity (get_tasks);
+
+          /* Add results to assets. */
+          hosts_set_identifiers ();
+          if (current_report)
+            {
+              hosts_set_max_severity (current_report, NULL, NULL);
+              hosts_set_details (current_report);
+            }
+
           set_task_run_status (task, TASK_STATUS_DONE);
           break;
         }

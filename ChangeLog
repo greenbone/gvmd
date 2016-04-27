@@ -1,5 +1,12 @@
 2016-04-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (slave_setup): Add results to assets at end of scan.
+
+	* src/manage_sql.c (update_from_slave): Add IP to assets when setting
+	the host start time.
+
+2016-04-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (slave_setup): Check private_key instead of a copy, to
 	make it more obvious that private_key can be NULL.
 

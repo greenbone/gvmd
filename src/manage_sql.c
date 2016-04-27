@@ -50164,10 +50164,16 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
       if (strcmp (entity_name (host_start), "host_start") == 0)
         {
           entity_t host;
+          char *uuid;
 
           host = entity_child (host_start, "host");
           if (host == NULL)
             return -1;
+
+          uuid = report_uuid (current_report);
+          host_notice (entity_text (host), "ip", entity_text (host),
+                       "Report Host", uuid, 1);
+          free (uuid);
 
           set_scan_host_start_time (current_report,
                                     entity_text (host),
