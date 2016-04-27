@@ -57687,7 +57687,7 @@ asset_host_count (const get_data_t *get)
  */
 #define OS_ITERATOR_FILTER_COLUMNS                                           \
  { GET_ITERATOR_FILTER_COLUMNS, "title", "hosts", "latest_severity",         \
-   "highest_severity", "average_severity" }
+   "highest_severity", "average_severity", "average_severity_score" }
 
 /**
  * @brief OS iterator columns.
@@ -57743,6 +57743,28 @@ asset_host_count (const get_data_t *get)
      "       AS hosts)"                                                       \
      " AS severities)",                                                       \
      "average_severity",                                                      \
+     KEYWORD_TYPE_DOUBLE                                                      \
+   },                                                                         \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
+ }
+
+/**
+ * @brief OS iterator optional filtering columns.
+ */
+#define OS_ITERATOR_WHERE_COLUMNS                                             \
+ {                                                                            \
+   {                                                                          \
+     "(SELECT round (CAST (avg (severity) AS numeric)"                        \
+     "               * (SELECT count (distinct host)"                         \
+     "                  FROM host_oss WHERE os = oss.id), 2)"                 \
+     " FROM (SELECT (SELECT severity FROM host_max_severities"                \
+     "               WHERE host = hosts.host"                                 \
+     "               ORDER BY creation_time DESC LIMIT 1)"                    \
+     "              AS severity"                                              \
+     "       FROM (SELECT distinct host FROM host_oss WHERE os = oss.id)"     \
+     "       AS hosts)"                                                       \
+     " AS severities)",                                                       \
+     "average_severity_score",                                                \
      KEYWORD_TYPE_DOUBLE                                                      \
    },                                                                         \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
@@ -63883,6 +63905,7 @@ type_where_columns (const char *type, int apply_overrides)
 {
   static column_t task_columns[] = TASK_ITERATOR_WHERE_COLUMNS;
   static column_t report_columns[] = REPORT_ITERATOR_WHERE_COLUMNS;
+  static column_t os_columns[] = OS_ITERATOR_WHERE_COLUMNS;
 
   if (type == NULL)
     return NULL;
@@ -63890,6 +63913,8 @@ type_where_columns (const char *type, int apply_overrides)
     return task_columns;
   else if (strcasecmp (type, "REPORT") == 0)
     return report_columns;
+  else if (strcasecmp (type, "OS") == 0)
+    return os_columns;
   return NULL;
 }
 

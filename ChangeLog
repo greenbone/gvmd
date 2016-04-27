@@ -1,5 +1,12 @@
 2016-04-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (OS_ITERATOR_FILTER_COLUMNS): Add
+	average_severity_score.
+	(OS_ITERATOR_WHERE_COLUMNS): New macro.
+	(type_where_columns): Add type "OS".
+
+2016-04-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/omp.c (buffer_aggregate_xml): Copy value returned by iso_time
 	function in text columns.
 
