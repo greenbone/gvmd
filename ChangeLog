@@ -1,3 +1,8 @@
+2016-04-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (slave_setup): Check private_key instead of a copy, to
+	make it more obvious that private_key can be NULL.
+
 2016-04-27  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* tools/greenbone-scapdata-sync.in: Fixed a c&p bug where
@@ -23,7 +28,7 @@
 	(column_is_timestamp): New function.
 
 	* src/manage.h (column_is_timestamp): New function prototype.
-	
+
 	* src/omp.c (buffer_aggregate_xml): Convert all columns containing
 	timestamps to ISO format.
 

@@ -2174,15 +2174,19 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
 
               user_copy = g_strdup (user);
               password_copy = g_strdup (password);
-              private_key_copy = g_strdup (private_key);
               cleanup_iterator (&credentials);
 
               opts = omp_create_lsc_credential_opts_defaults;
               opts.name = name;
               opts.login = user_copy;
               opts.passphrase = password_copy;
-              if (private_key_copy)
-                opts.private_key = private_key_copy;
+              if (private_key)
+                {
+                  private_key_copy = g_strdup (private_key);
+                  opts.private_key = private_key_copy;
+                }
+              else
+                private_key_copy = NULL;
               opts.comment = "Slave SSH credential created by Master";
 
               ret = omp_create_lsc_credential_ext (session, opts,
