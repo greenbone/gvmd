@@ -1,3 +1,8 @@
+2016-04-27  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* tools/greenbone-scapdata-sync.in: Fixed a c&p bug where
+	cert-data was still applied instead of scap-data.
+
 2016-04-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (OS_ITERATOR_FILTER_COLUMNS): Add

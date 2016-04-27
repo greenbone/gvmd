@@ -42,7 +42,7 @@ if [ "@BACKEND@" = "POSTGRESQL" ]; then
   RECURSIVE_TRIGGERS_OFF=""
 fi
 
-# PRIVATE_SUBDIR defines a subdirectory of the CERT data directory
+# PRIVATE_SUBDIR defines a subdirectory of the SCAP data directory
 # where files not part of the feed or database will not be deleted by rsync.
 if [ -z "$PRIVATE_SUBDIR" ]
 then
@@ -194,9 +194,9 @@ else
   fi
 
   if [ -z "$COMMUNITY_SCAP_RSYNC_FEED" ]; then
-    COMMUNITY_SCAP_RSYNC_FEED=rsync://feed.openvas.org:/cert-data
+    COMMUNITY_SCAP_RSYNC_FEED=rsync://feed.openvas.org:/scap-data
     # An alternative syntax which might work if the above doesn't:
-    # COMMUNITY_SCAP_RSYNC_FEED=rsync@feed.openvas.org::cert-data
+    # COMMUNITY_SCAP_RSYNC_FEED=rsync@feed.openvas.org::scap-data
   fi
 
 fi
