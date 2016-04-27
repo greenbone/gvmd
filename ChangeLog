@@ -1,5 +1,10 @@
 2016-04-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/omp.c (buffer_aggregate_xml): Copy value returned by iso_time
+	function in text columns.
+
+2016-04-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (init_aggregate_iterator): Remove the conversion to
 	ISO format, which is now done in buffer_aggregate_xml.  Use new
 	function column_is_timestamp to test if group_column is a timestamp.

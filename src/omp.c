@@ -12481,7 +12481,7 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
             {
               time_t text_int;
               if (sscanf (text, "%ld", &text_int) == 1)
-                text_escaped = iso_time (&text_int);
+                text_escaped = g_strdup (iso_time (&text_int));
               else
                 text_escaped = g_markup_escape_text (text, -1);
             }
