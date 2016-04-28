@@ -116,11 +116,11 @@ add_definitions (-DOPENVASMD_CERT_DATABASE_VERSION=${OPENVASMD_CERT_DATABASE_VER
 add_definitions (-DOPENVAS_OS_NAME=\\\"${CMAKE_SYSTEM}\\\")
 add_definitions (-DPREFIX=\\\"${CMAKE_INSTALL_PREFIX}\\\")
 
-add_definitions (-DSCAP_RES_DIR=\\\"${OPENVAS_SCAP_RES_DIR}\\\")
-add_definitions (-DSCAP_DATA_DIR=\\\"${OPENVAS_SCAP_DATA_DIR}\\\")
+add_definitions (-DOPENVAS_SCAP_RES_DIR=\\\"${OPENVAS_SCAP_RES_DIR}\\\")
+add_definitions (-DOPENVAS_SCAP_DATA_DIR=\\\"${OPENVAS_SCAP_DATA_DIR}\\\")
 
-add_definitions (-DCERT_RES_DIR=\\\"${OPENVAS_CERT_RES_DIR}\\\")
-add_definitions (-DCERT_DATA_DIR=\\\"${OPENVAS_CERT_DATA_DIR}\\\")
+add_definitions (-DOPENVAS_CERT_RES_DIR=\\\"${OPENVAS_CERT_RES_DIR}\\\")
+add_definitions (-DOPENVAS_CERT_DATA_DIR=\\\"${OPENVAS_CERT_DATA_DIR}\\\")
 
 if (OPENVAS_SCANNER_CERTIFICATE)
   add_definitions (-DSCANNERCERT=\\\"${OPENVAS_SCANNER_CERTIFICATE}\\\")

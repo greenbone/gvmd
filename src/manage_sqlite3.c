@@ -2998,7 +2998,7 @@ manage_attach_databases ()
 {
   /* Attach the SCAP database. */
 
-  if (access (OPENVAS_STATE_DIR "/scap-data/scap.db", R_OK))
+  if (access (OPENVAS_SCAP_DATA_DIR "/scap.db", R_OK))
     switch (errno)
       {
         case ENOENT:
@@ -3010,12 +3010,12 @@ manage_attach_databases ()
           break;
       }
   else
-    sql_error ("ATTACH DATABASE '" OPENVAS_STATE_DIR "/scap-data/scap.db'"
+    sql_error ("ATTACH DATABASE '" OPENVAS_SCAP_DATA_DIR "/scap.db'"
                " AS scap;");
 
   /* Attach the CERT database. */
 
-  if (access (OPENVAS_STATE_DIR "/cert-data/cert.db", R_OK))
+  if (access (OPENVAS_CERT_DATA_DIR "/cert.db", R_OK))
     switch (errno)
       {
         case ENOENT:
@@ -3027,7 +3027,7 @@ manage_attach_databases ()
           break;
       }
   else
-    sql_error ("ATTACH DATABASE '" OPENVAS_STATE_DIR "/cert-data/cert.db'"
+    sql_error ("ATTACH DATABASE '" OPENVAS_CERT_DATA_DIR "/cert.db'"
                " AS cert;");
 }
 
@@ -3044,7 +3044,7 @@ manage_cert_loaded ()
   if (loaded)
     return 1;
 
-  if (access (OPENVAS_STATE_DIR "/cert-data/cert.db", R_OK))
+  if (access (OPENVAS_CERT_DATA_DIR "/cert.db", R_OK))
     switch (errno)
       {
         case ENOENT:
@@ -3080,7 +3080,7 @@ manage_scap_loaded ()
   if (loaded)
     return 1;
 
-  if (access (OPENVAS_STATE_DIR "/scap-data/scap.db", R_OK))
+  if (access (OPENVAS_SCAP_DATA_DIR "/scap.db", R_OK))
     switch (errno)
       {
         case ENOENT:

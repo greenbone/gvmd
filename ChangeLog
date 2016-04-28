@@ -1,3 +1,18 @@
+2016-04-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/CMakeLists.txt: Rename SCAP and CERT defs to match others.
+
+	* src/manage.c (CPE_GETBYNAME_XSL, CVE_GETBYNAME_XSL)
+	(OVALDEF_GETBYNAME_XSL, CERT_BUND_ADV_GETBYNAME_XSL)
+	(DFN_CERT_ADV_GETBYNAME_XSL, CPE_DICT_FILENAME, CVE_FILENAME_FMT)
+	(CERT_BUND_ADV_FILENAME_FMT, DFN_CERT_ADV_FILENAME_FMT)
+	(SCAP_TIMESTAMP_FILENAME, CERT_TIMESTAMP_FILENAME)
+	(get_ovaldef_filename): Rename SCAP dir definition.
+	(task_scanner_options): Use explicit SCAP dir definition.
+
+	* src/manage_sqlite3 (manage_attach_databases, manage_cert_loaded)
+	(manage_scap_loaded): Use explicit SCAP/CERT dir definition.
+
 2016-04-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (slave_setup): Add results to assets at end of scan.

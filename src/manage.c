@@ -87,46 +87,46 @@
 /**
  * @brief CPE selection stylesheet location.
  */
-#define CPE_GETBYNAME_XSL SCAP_RES_DIR "/cpe_getbyname.xsl"
+#define CPE_GETBYNAME_XSL OPENVAS_SCAP_RES_DIR "/cpe_getbyname.xsl"
 
 /**
  * @brief CVE selection stylesheet location.
  */
-#define CVE_GETBYNAME_XSL SCAP_RES_DIR "/cve_getbyname.xsl"
+#define CVE_GETBYNAME_XSL OPENVAS_SCAP_RES_DIR "/cve_getbyname.xsl"
 
 /**
  * @brief OVALDEF selection stylesheet location.
  */
-#define OVALDEF_GETBYNAME_XSL SCAP_RES_DIR "/ovaldef_getbyname.xsl"
+#define OVALDEF_GETBYNAME_XSL OPENVAS_SCAP_RES_DIR "/ovaldef_getbyname.xsl"
 
 /**
  * @brief CERT_BUND_ADV selection stylesheet location.
  */
-#define CERT_BUND_ADV_GETBYNAME_XSL CERT_RES_DIR "/cert_bund_getbyname.xsl"
+#define CERT_BUND_ADV_GETBYNAME_XSL OPENVAS_CERT_RES_DIR "/cert_bund_getbyname.xsl"
 
 /**
  * @brief DFN_CERT_ADV selection stylesheet location.
  */
-#define DFN_CERT_ADV_GETBYNAME_XSL CERT_RES_DIR "/dfn_cert_getbyname.xsl"
+#define DFN_CERT_ADV_GETBYNAME_XSL OPENVAS_CERT_RES_DIR "/dfn_cert_getbyname.xsl"
 
 /**
  * @brief CPE dictionary location.
  */
-#define CPE_DICT_FILENAME SCAP_DATA_DIR "/official-cpe-dictionary_v2.2.xml"
+#define CPE_DICT_FILENAME OPENVAS_SCAP_DATA_DIR "/official-cpe-dictionary_v2.2.xml"
 
 /**
  * @brief CVE data files location format string.
  *
  * %d should be the year expressed as YYYY.
  */
-#define CVE_FILENAME_FMT SCAP_DATA_DIR "/nvdcve-2.0-%d.xml"
+#define CVE_FILENAME_FMT OPENVAS_SCAP_DATA_DIR "/nvdcve-2.0-%d.xml"
 
 /**
  * @brief CERT-Bund data files location format string.
  *
  * %d should be the year without the century (expressed as YY),
  */
-#define CERT_BUND_ADV_FILENAME_FMT CERT_DATA_DIR "/CB-K%02d.xml"
+#define CERT_BUND_ADV_FILENAME_FMT OPENVAS_CERT_DATA_DIR "/CB-K%02d.xml"
 
 /**
  * @brief DFN-CERT data files location format string.
@@ -134,17 +134,17 @@
  * First %d should be the year expressed as YYYY,
  * second %d should be should be Month expressed as MM.
  */
-#define DFN_CERT_ADV_FILENAME_FMT CERT_DATA_DIR "/dfn-cert-%04d.xml"
+#define DFN_CERT_ADV_FILENAME_FMT OPENVAS_CERT_DATA_DIR "/dfn-cert-%04d.xml"
 
 /**
  * @brief SCAP timestamp location.
  */
-#define SCAP_TIMESTAMP_FILENAME SCAP_DATA_DIR "/timestamp"
+#define SCAP_TIMESTAMP_FILENAME OPENVAS_SCAP_DATA_DIR "/timestamp"
 
 /**
  * @brief CERT timestamp location.
  */
-#define CERT_TIMESTAMP_FILENAME CERT_DATA_DIR "/timestamp"
+#define CERT_TIMESTAMP_FILENAME OPENVAS_CERT_DATA_DIR "/timestamp"
 
 /**
  * @brief Default for Scanner max_checks preference.
@@ -3109,7 +3109,7 @@ task_scanner_options (task_t task, target_t target)
 
           if (!preference_iterator_value (&prefs))
             continue;
-          fname = g_strdup_printf ("%s/%s", OPENVAS_STATE_DIR "/scap-data/",
+          fname = g_strdup_printf ("%s/%s", OPENVAS_SCAP_DATA_DIR "/",
                                    preference_iterator_value (&prefs));
           value = openvas_file_as_base64 (fname);
           if (!value)
@@ -6709,7 +6709,7 @@ get_ovaldef_filename (char *item_id)
 
   if (*short_filename)
     {
-      result = g_strdup_printf ("%s/%s", SCAP_DATA_DIR, short_filename);
+      result = g_strdup_printf ("%s/%s", OPENVAS_SCAP_DATA_DIR, short_filename);
     }
   free (short_filename);
 
