@@ -108,7 +108,6 @@ LOG_CMD="logger -t $SCRIPT_NAME"
 
 [ -r \"@OPENVAS_SYSCONF_DIR@/greenbone-certdata-sync.conf\" ] && . \"@OPENVAS_SYSCONF_DIR@/greenbone-certdata-sync.conf\"
 
-BASE_SYNC_DIR="@OPENVAS_STATE_DIR@"
 CERT_DIR="@OPENVAS_CERT_DATA_DIR@"
 SCAP_DIR="@OPENVAS_SCAP_DATA_DIR@"
 
@@ -864,7 +863,7 @@ sync_certdata(){
       notsynced=1
       retried=0
 
-      mkdir -p "$BASE_SYNC_DIR"
+      mkdir -p "$CERT_DIR"
       read feeduser < $ACCESSKEY
       custid=`head -1 $ACCESSKEY | cut -d @ -f 1`
       if [ -z $feeduser ] || [ -z $custid ]
@@ -895,7 +894,7 @@ sync_certdata(){
           fi
         fi
         create_tmp_key
-        rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid@feed.greenbone.net:/cert-data $BASE_SYNC_DIR
+        rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid@feed.greenbone.net:/cert-data/ $CERT_DIR
         if [ 0 -ne "$?" ] ; then
           log_err "rsync failed, aborting synchronization."
           remove_tmp_key
@@ -951,16 +950,6 @@ do_self_test () {
       echo "rsync not found (required)." 1>&2
     fi
     log_err "rsync not found (required)."
-    SELFTEST_FAIL=1
-  fi
-
-  if [ ! -d $BASE_SYNC_DIR ]
-  then
-    if [ 0 -ne $SELFTEST_STDERR ]
-    then
-      echo "BASE_SYNC_DIR ($BASE_SYNC_DIR) not found." 1>&2
-    fi
-    log_err "BASE_SYNC_DIR ($BASE_SYNC_DIR) not found."
     SELFTEST_FAIL=1
   fi
 }
