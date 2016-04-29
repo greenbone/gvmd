@@ -256,9 +256,6 @@ else (NOT LIBGCRYPT)
   execute_process (COMMAND libgcrypt-config --cflags
     OUTPUT_VARIABLE GCRYPT_CFLAGS
     OUTPUT_STRIP_TRAILING_WHITESPACE)
-  execute_process (COMMAND libgcrypt-config --libs
-    OUTPUT_VARIABLE GCRYPT_LDFLAGS
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
 endif (NOT LIBGCRYPT)
 
 message (STATUS "Looking for gpgme...")

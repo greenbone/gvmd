@@ -1,3 +1,10 @@
+2016-04-29  Benoît Allard  <benoit.allard@greenbone.net>
+
+	Get rid of unnecessary linking with libgcrypt.
+
+	* CMakeLists.txt: Remove the linker flags for libgcrypt as we only use
+	  `GCRY_MD_MD5` which is defined in the header files.
+
 2016-04-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* tools/greenbone-certdata-sync.in (BASE_SYNC_DIR): Remove.
