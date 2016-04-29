@@ -1,3 +1,8 @@
+2016-04-29 Sven Haardiek <sven.haardiek@greenbone.net>
+
+	* tools/greenbone-certdata-sync.in, tools/greenbone-scapdata-sync.in: Make
+	check-alert also working, if openvasmd is not in $PATH
+
 2016-04-29  Benoît Allard  <benoit.allard@greenbone.net>
 
 	Get rid of unnecessary linking with libgcrypt.
