@@ -2224,7 +2224,7 @@ host_uuid (resource_t);
 
 host_t
 host_notice (const char *, const char *, const char *, const char *,
-             const char *, int);
+             const char *, int, int);
 
 void
 init_host_identifier_iterator (iterator_t*, host_t, int, const char*);

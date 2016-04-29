@@ -18244,13 +18244,17 @@ host_identify (const char *host_name, const char *identifier_name,
  * @param[in]  source_id         Source identifier.
  * @param[in]  check_add_to_assets  Whether to check the 'Add to Assets'
  *                                  task preference.
+ * @param[in]  check_for_identifier Whether to check for an existing identifier
+ *                                  like this one.  Used for slaves, which call
+ *                                  this repeatedly.
  *
  * @return Host if existed, else 0.
  */
 host_t
 host_notice (const char *host_name, const char *identifier_type,
              const char *identifier_value, const char *source_type,
-             const char *source_id, int check_add_to_assets)
+             const char *source_id, int check_add_to_assets,
+             int check_for_existing_identifier)
 {
   host_t host;
   gchar *quoted_identifier_value, *quoted_identifier_type, *quoted_source_type;
@@ -18287,6 +18291,22 @@ host_notice (const char *host_name, const char *identifier_type,
   quoted_source_id = sql_quote (source_id);
   quoted_source_type = sql_quote (source_type);
   quoted_identifier_type = sql_quote (identifier_type);
+
+  if (check_for_existing_identifier
+      && sql_int ("SELECT EXISTS (SELECT * FROM host_identifiers"
+                  "               WHERE host = %llu"
+                  "               AND owner = (SELECT id FROM users WHERE uuid = '%s')"
+                  "               AND name = '%s'"
+                  "               AND value = '%s'"
+                  "               AND source_type = '%s'"
+                  "               AND source_id = '%s');",
+                  host,
+                  current_credentials.uuid,
+                  quoted_identifier_type,
+                  quoted_identifier_value,
+                  quoted_source_type,
+                  quoted_source_id))
+    return 0;
 
   sql ("INSERT into host_identifiers"
        " (uuid, host, owner, name, comment, value, source_type, source_id,"
@@ -50172,7 +50192,7 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
 
           uuid = report_uuid (current_report);
           host_notice (entity_text (host), "ip", entity_text (host),
-                       "Report Host", uuid, 1);
+                       "Report Host", uuid, 1, 1);
           free (uuid);
 
           set_scan_host_start_time (current_report,
@@ -58144,7 +58164,7 @@ create_asset_report (const char *report_id, const char *term)
       iterator_t details;
 
       host = host_iterator_host (&hosts);
-      host_notice (host, "ip", host, "Report Host", report_id, 0);
+      host_notice (host, "ip", host, "Report Host", report_id, 0, 0);
 
       report_host = host_iterator_report_host (&hosts);
 

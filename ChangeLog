@@ -1,3 +1,15 @@
+2016-04-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (host_notice): Add check_for_identifier arg.
+	(update_from_slave): Ensure that host_notice does not add the "ip"
+	identifier multiple times, because there may be multiple updates
+	from the slave and each one will have this same HOST_START element.
+	(create_asset_report): Add new arg.
+
+	* src/manage.h: Adjust header accordingly.
+
+	* src/otp.c (process_otp_scanner_input): Add new host_notice arg.
+
 2016-04-29 Sven Haardiek <sven.haardiek@greenbone.net>
 
 	* tools/greenbone-certdata-sync.in, tools/greenbone-scapdata-sync.in: Make
