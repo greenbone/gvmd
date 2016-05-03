@@ -8556,8 +8556,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>text</type>
       </attrib>
       <attrib>
+        <name>subgroup_column</name>
+        <summary>The field to further group the resources inside groups by</summary>
+        <type>text</type>
+      </attrib>
+      <attrib>
         <name>sort_field</name>
-        <summary>The column to sort the aggregated rows by</summary>
+        <summary>The column to sort the aggregated rows by.
+        With a subgroup column, groups will be sorted by the group_column first.</summary>
         <type>text</type>
       </attrib>
       <attrib>
@@ -8644,6 +8650,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <any><e>group</e></any>
             <e>overall</e>
           </or>
+          <o><e>subgroups</e></o>
           <e>column_info</e>
         </pattern>
         <ele>
@@ -8669,13 +8676,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>group</name>
           <summary>Aggregate data for a group of resources</summary>
-          <pattern><t>text</t></pattern>
-        </ele>
-        <ele>
-          <name>group</name>
-          <summary>Aggregate data for all resources of the selected type</summary>
           <pattern>
             <e>value</e>
+            <any><e>subgroup</e></any>
             <e>count</e>
             <e>c_count</e>
             <any><e>stats</e></any>
@@ -8685,6 +8688,72 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <name>value</name>
             <summary>Value of the group column</summary>
             <pattern><t>text</t></pattern>
+          </ele>
+          <ele>
+            <name>subgroup</name>
+            <summary>Aggregate data for a subgroup of resources</summary>
+            <pattern>
+              <e>value</e>
+              <e>count</e>
+              <e>c_count</e>
+              <any><e>stats</e></any>
+            </pattern>
+            <ele>
+              <name>value</name>
+              <summary>Value of the subgroup column</summary>
+              <pattern><t>text</t></pattern>
+            </ele>
+            <ele>
+              <name>count</name>
+              <summary>Number of resources in the subgroup</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+            <ele>
+              <name>c_count</name>
+              <summary>Cumulative number of resources in the current subgroup</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+            <ele>
+              <name>stats</name>
+              <summary>Statistics of a data column for the current subgroup</summary>
+              <pattern>
+                <attrib>
+                  <name>column</name>
+                  <summary>Name of the column the stats apply to</summary>
+                  <type>text</type>
+                </attrib>
+                <e>min</e>
+                <e>max</e>
+                <e>mean</e>
+                <e>sum</e>
+                <e>c_sum</e>
+              </pattern>
+              <ele>
+                <name>min</name>
+                <summary>Minimum value of the data column</summary>
+                <pattern><t>text</t></pattern>
+              </ele>
+              <ele>
+                <name>max</name>
+                <summary>Maximum value of the data column</summary>
+                <pattern><t>text</t></pattern>
+              </ele>
+              <ele>
+                <name>mean</name>
+                <summary>Arithmetic mean of the numeric values of the data</summary>
+                <pattern><t>text</t></pattern>
+              </ele>
+              <ele>
+                <name>sum</name>
+                <summary>Sum of the numeric values of the data column</summary>
+                <pattern><t>text</t></pattern>
+              </ele>
+              <ele>
+                <name>c_sum</name>
+                <summary>Cumulative sum of the data column</summary>
+                <pattern><t>text</t></pattern>
+              </ele>
+            </ele>
           </ele>
           <ele>
             <name>count</name>
@@ -8783,6 +8852,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <ele>
             <name>sum</name>
             <summary>Overall sum of the numeric values of the data column</summary>
+            <pattern><t>text</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>subgroups</name>
+          <summary>Overview of all subgroup values</summary>
+          <pattern>
+            <any><e>value</e></any>
+          </pattern>
+          <ele>
+            <name>value</name>
+            <summary>Value of the subgroup column</summary>
             <pattern><t>text</t></pattern>
           </ele>
         </ele>

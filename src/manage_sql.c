@@ -5207,6 +5207,7 @@ append_column (GArray *columns, const gchar *column_name,
  *                             for trash and single resource.
  * @param[in]  data_columns    Columns to calculate statistics for.
  * @param[in]  group_column    Column to group data by.
+ * @param[in]  subgroup_column Column to further group data by.
  * @param[in]  text_columns    Columns to get text from.
  * @param[in]  extra_tables    Join tables.  Skipped for trash and single
  *                             resource.
@@ -5217,12 +5218,14 @@ append_column (GArray *columns, const gchar *column_name,
  *
  * @return 0 success, 1 failed to find resource, 2 failed to find filter,
  *         3 invalid stat_column, 4 invalid group_column, 5 invalid type,
- *         6 trashcan not used by type, 7 invalid text column, -1 error.
+ *         6 trashcan not used by type, 7 invalid text column, 8 invalid
+ *         subgroup_column, -1 error.
  */
 int
 init_aggregate_iterator (iterator_t* iterator, const char *type,
                          const get_data_t *get, int distinct,
-                         GArray *data_columns, const char *group_column,
+                         GArray *data_columns,
+                         const char *group_column, const char *subgroup_column,
                          GArray *text_columns,
                          const char *sort_field, const char *sort_stat,
                          int sort_order, int first_group, int max_groups,
@@ -5244,8 +5247,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   gchar *owner_filter;
   GString *aggregate_select, *outer_col_select;
   gchar *aggregate_group_by;
-  gchar *outer_group_by_column;
-  gchar *select_group_column;
+  gchar *outer_group_by_column, *outer_subgroup_column;
+  gchar *select_group_column, *select_subgroup_column;
   GArray *select_data_columns, *select_text_columns;
   gchar *order_column, *order;
 
@@ -5343,6 +5346,14 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
       g_free (opts_table);
       return 4;
     }
+  if (subgroup_column
+      && vector_find_filter (filter_columns, subgroup_column) == 0)
+    {
+      g_free (columns);
+      g_free (trash_columns);
+      g_free (opts_table);
+      return 8;
+    }
   select_data_columns = g_array_new (TRUE, TRUE, sizeof (gchar*));
   select_text_columns = g_array_new (TRUE, TRUE, sizeof (gchar*));
 
@@ -5391,51 +5402,20 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   array_free (permissions);
 
   select_group_column = NULL;
+  select_subgroup_column = NULL;
 
-  if (group_column == NULL)
+  if (group_column)
     {
-      select_group_column = NULL;
-    }
-  else
-    {
-      int i = 0;
-      while (select_columns[i].select != NULL)
+      select_group_column
+        = g_strdup (columns_select_column (select_columns,
+                                           where_columns,
+                                           group_column));
+      if (subgroup_column)
         {
-          if (select_columns[i].filter
-              && strcmp (select_columns[i].filter, group_column) == 0)
-            {
-              select_group_column = g_strdup (select_columns[i].select);
-              break;
-            }
-          i++;
-        }
-      if (select_group_column == NULL)
-        {
-          i = 0;
-          while (select_columns[i].select != NULL)
-            {
-              if (strcmp (select_columns[i].select, group_column) == 0)
-                {
-                  select_group_column = g_strdup (select_columns[i].select);
-                  break;
-                }
-              i++;
-            }
-        }
-      if ((select_group_column == NULL) && where_columns)
-        {
-          i = 0;
-          while (where_columns[i].select != NULL)
-            {
-              if (strcmp (where_columns[i].select, group_column) == 0
-                  || (where_columns[i].filter
-                      && strcmp (where_columns[i].filter, group_column) == 0))
-                {
-                  select_group_column = g_strdup (where_columns[i].select);
-                  break;
-                }
-              i++;
-            }
+          select_subgroup_column
+            = g_strdup (columns_select_column (select_columns,
+                                               where_columns,
+                                               subgroup_column));
         }
     }
 
@@ -5483,6 +5463,26 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   else
     outer_group_by_column = g_strdup ("aggregate_group_value");
 
+  if (column_is_timestamp (subgroup_column))
+    if (sql_is_sqlite3 ())
+      outer_subgroup_column
+        = g_strdup_printf ("CAST (strftime ('%%s',"
+                           "                date(%s, 'unixepoch',"
+                           "                     'localtime'),"
+                           "                'utc')"
+                           "      AS INTEGER)",
+                           "aggregate_subgroup_value");
+    else
+      outer_subgroup_column
+        = g_strdup_printf ("EXTRACT (EPOCH FROM"
+                           "           date_trunc ('day',"
+                           "           TIMESTAMP WITH TIME ZONE 'epoch'"
+                           "           + (%s) * INTERVAL '1 second'))"
+                           "  :: integer",
+                           "aggregate_subgroup_value");
+  else
+    outer_subgroup_column = g_strdup ("aggregate_subgroup_value");
+
   if (sort_stat && strcmp (sort_stat, "count") == 0)
     order_column = g_strdup ("outer_count");
   else if (sort_stat && strcmp (sort_stat, "value") == 0)
@@ -5490,7 +5490,9 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   else if (sort_field
            && group_column
            && strcmp (sort_field, "")
-           && strcmp (sort_field, group_column))
+           && strcmp (sort_field, group_column)
+           && (subgroup_column == NULL
+               || strcmp (sort_field, subgroup_column)))
     {
       int index;
       order_column = NULL;
@@ -5529,12 +5531,25 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
             }
         }
     }
+  else if (sort_field && subgroup_column
+           && strcmp (sort_field, subgroup_column) == 0)
+    order_column = g_strdup ("outer_subgroup_column");
   else
     order_column = g_strdup ("outer_group_column");
 
-  order = g_strdup_printf ("ORDER BY %s %s",
-                           order_column,
-                           sort_order ? "ASC" : "DESC");
+  if (subgroup_column)
+    {
+      order = g_strdup_printf ("ORDER BY outer_group_column %s, %s %s",
+                               sort_order ? "ASC" : "DESC",
+                               order_column,
+                               sort_order ? "ASC" : "DESC");
+    }
+  else
+    {
+      order = g_strdup_printf ("ORDER BY %s %s",
+                               order_column,
+                               sort_order ? "ASC" : "DESC");
+    }
   g_free (order_column);
   order_column = NULL;
 
@@ -5542,20 +5557,39 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   outer_col_select = g_string_new ("");
   if (group_column && strcmp (group_column, ""))
     {
-      xml_string_append (aggregate_select,
-                         " count(*) AS aggregate_count,"
-                         " %s as aggregate_group_value",
-                         select_group_column);
+      if (subgroup_column && strcmp (subgroup_column, ""))
+        {
+          xml_string_append (aggregate_select,
+                             " count(*) AS aggregate_count,"
+                             " %s AS aggregate_group_value,"
+                             " %s AS aggregate_subgroup_value",
+                             select_group_column,
+                             select_subgroup_column);
 
-      aggregate_group_by = g_strdup_printf (" GROUP BY %s",
-                                            select_group_column);
+          aggregate_group_by = g_strdup_printf (" GROUP BY %s, %s",
+                                                select_group_column,
+                                                select_subgroup_column);
+        }
+      else
+        {
+          xml_string_append (aggregate_select,
+                             " count(*) AS aggregate_count,"
+                             " %s AS aggregate_group_value,"
+                             " NULL AS aggregate_subgroup_value",
+                             select_group_column);
+
+          aggregate_group_by = g_strdup_printf (" GROUP BY %s",
+                                                select_group_column);
+        }
+
+
     }
   else
     {
-      aggregate_select = g_string_new ("");
       xml_string_append (aggregate_select,
                          " count(*) AS aggregate_count,"
-                         " NULL as aggregate_group_value");
+                         " NULL AS aggregate_group_value,"
+                         " NULL AS aggregate_subgroup_value");
 
       aggregate_group_by = g_strdup ("");
     }
@@ -5565,10 +5599,11 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
     {
       gchar *select_data_column = g_array_index (select_data_columns, gchar*,
                                                  col_index);
+      // TODO: Test type of column (string, number, timestamp)
       g_string_append_printf (aggregate_select,
                               ","
-                              " min(%s) AS aggregate_min_%d,"
-                              " max(%s) AS aggregate_max_%d,"
+                              " min(CAST (%s AS real)) AS aggregate_min_%d,"
+                              " max(CAST (%s AS real)) AS aggregate_max_%d,"
                               " avg(CAST (%s AS real)) * count(*)"
                               "   AS aggregate_avg_%d,"
                               " sum(CAST (%s AS real))"
@@ -5605,7 +5640,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
 
   init_iterator (iterator,
                  "SELECT sum(aggregate_count) AS outer_count,"
-                 " %s AS outer_group_column"
+                 " %s AS outer_group_column,"
+                 " %s AS outer_subgroup_column"
                  " %s"
                  " FROM (SELECT%s %s"
                  "       FROM %s%s%s"
@@ -5614,9 +5650,10 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                  "       %s%s%s%s"
                  "       %s)"
                  "      AS agg_sub"
-                 " GROUP BY outer_group_column %s"
+                 " GROUP BY outer_group_column, outer_subgroup_column %s"
                  " LIMIT %s OFFSET %d;",
                  outer_group_by_column,
+                 outer_subgroup_column,
                  outer_col_select->str,
                  distinct ? " DISTINCT" : "",
                  aggregate_select->str,
@@ -5646,11 +5683,13 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   g_string_free (aggregate_select, TRUE);
   g_string_free (outer_col_select, TRUE);
   g_free (outer_group_by_column);
+  g_free (outer_subgroup_column);
   g_free (select_group_column);
+  g_free (select_subgroup_column);
   return 0;
 }
 
-#define AGGREGATE_ITERATOR_OFFSET 2
+#define AGGREGATE_ITERATOR_OFFSET 3
 #define AGGREGATE_ITERATOR_N_STATS 4
 
 /**
@@ -5768,6 +5807,23 @@ aggregate_iterator_value (iterator_t* iterator)
   const char *ret;
   if (iterator->done) return NULL;
   ret = (const char*) sql_column_text (iterator->stmt, 1);
+  return ret;
+}
+
+/**
+ * @brief Get the value of the subgroup column from an aggregate iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The value, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+const char*
+aggregate_iterator_subgroup_value (iterator_t* iterator)
+{
+  const char *ret;
+  if (iterator->done) return NULL;
+  ret = (const char*) sql_column_text (iterator->stmt, 2);
   return ret;
 }
 
@@ -57539,7 +57595,7 @@ DEF_ACCESS (host_identifier_iterator_os_title,
  */
 #define HOST_ITERATOR_FILTER_COLUMNS                                        \
  { GET_ITERATOR_FILTER_COLUMNS, "severity", "os", "oss", "hostname", "ip",  \
-   NULL }
+   "severity_level", NULL }
 
 /**
  * @brief Host iterator columns.
@@ -57624,6 +57680,19 @@ DEF_ACCESS (host_identifier_iterator_os_title,
      KEYWORD_TYPE_STRING                                              \
    },                                                                 \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                               \
+ }
+
+#define HOST_ITERATOR_WHERE_COLUMNS                                   \
+ {                                                                    \
+   {                                                                  \
+     "(SELECT severity_to_level (CAST (severity AS numeric), 0)"      \
+     " FROM host_max_severities"                                      \
+     " WHERE host = hosts.id"                                         \
+     " ORDER by creation_time DESC"                                   \
+     " LIMIT 1)",                                                     \
+     "severity_level",                                                \
+     KEYWORD_TYPE_STRING                                              \
+   },                                                                 \
  }
 
 /**
@@ -63931,6 +64000,7 @@ type_where_columns (const char *type, int apply_overrides)
 {
   static column_t task_columns[] = TASK_ITERATOR_WHERE_COLUMNS;
   static column_t report_columns[] = REPORT_ITERATOR_WHERE_COLUMNS;
+  static column_t host_columns[] = HOST_ITERATOR_WHERE_COLUMNS;
   static column_t os_columns[] = OS_ITERATOR_WHERE_COLUMNS;
 
   if (type == NULL)
@@ -63939,6 +64009,8 @@ type_where_columns (const char *type, int apply_overrides)
     return task_columns;
   else if (strcasecmp (type, "REPORT") == 0)
     return report_columns;
+  else if (strcasecmp (type, "HOST") == 0)
+    return host_columns;
   else if (strcasecmp (type, "OS") == 0)
     return os_columns;
   return NULL;

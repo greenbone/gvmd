@@ -14808,9 +14808,14 @@ get_configs_response_config_count_page
           The field to group the resources by.
           </li>
 <li>
+          @<b>subgroup_column</b>
+          (text)
+          The field to further group the resources inside groups by.
+          </li>
+<li>
           @<b>sort_field</b>
           (text)
-          The column to sort the aggregated rows by.
+          The column to sort the aggregated rows by. With a subgroup column, groups will be sorted by the group_column first..
           </li>
 <li>
           @<b>sort_order</b>
@@ -14895,6 +14900,63 @@ get_configs_response_config_count_page
               &lt;<b>value</b>&gt;
               <div style="margin-left: 15px; display: inline;">Value of the group column.</div>
 <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>subgroup</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Aggregate data for a subgroup of resources.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Value of the subgroup column.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of resources in the subgroup.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>c_count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Cumulative number of resources in the current subgroup.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>stats</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Statistics of a data column for the current subgroup.</div>
+<ul style="list-style: none">
+<li>
+          @<b>column</b>
+          (text)
+          Name of the column the stats apply to.
+          </li>
+<li>
+              &lt;<b>min</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Minimum value of the data column.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>max</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Maximum value of the data column.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>mean</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Arithmetic mean of the numeric values of the data.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>sum</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Sum of the numeric values of the data column.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>c_sum</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Cumulative sum of the data column.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
 </li>
 <li>
               &lt;<b>count</b>&gt;
@@ -14985,6 +15047,15 @@ get_configs_response_config_count_page
 </ul>
 </li>
 </ul>
+</li>
+<li>
+              &lt;<b>subgroups</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Overview of all subgroup values.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>value</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Value of the subgroup column.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
 </li>
 <li>
               &lt;<b>column_info</b>&gt;
@@ -15080,6 +15151,7 @@ get_configs_response_config_count_page
        &amp; attribute type { text }
        &amp; attribute data_column { text }?
        &amp; attribute group_column { text }?
+       &amp; attribute subgroup_column { text }?
        &amp; attribute sort_field { text }?
        &amp; attribute sort_order { xsd:token { pattern = "ascending|descending" } }?
        &amp; attribute sort_stat { xsd:token { pattern = "min|max|mean|sum|count|value" } }?
@@ -15118,6 +15190,7 @@ get_aggregates_response_aggregate
        &amp; get_aggregates_response_aggregate_text_column*
        &amp; ( get_aggregates_response_aggregate_group*
            | get_aggregates_response_aggregate_overall )
+       &amp; get_aggregates_response_aggregate_subgroups?
        &amp; get_aggregates_response_aggregate_column_info
      }
 
@@ -15148,13 +15221,8 @@ get_aggregates_response_aggregate_text_column
 get_aggregates_response_aggregate_group
  = element group
      {
-       text
-     }
-
-get_aggregates_response_aggregate_group
- = element group
-     {
        get_aggregates_response_aggregate_group_value
+       &amp; get_aggregates_response_aggregate_group_subgroup*
        &amp; get_aggregates_response_aggregate_group_count
        &amp; get_aggregates_response_aggregate_group_c_count
        &amp; get_aggregates_response_aggregate_group_stats*
@@ -15163,6 +15231,74 @@ get_aggregates_response_aggregate_group
 
 get_aggregates_response_aggregate_group_value
  = element value
+     {
+       text
+     }
+
+get_aggregates_response_aggregate_group_subgroup
+ = element subgroup
+     {
+       get_aggregates_response_aggregate_group_subgroup_value
+       &amp; get_aggregates_response_aggregate_group_subgroup_count
+       &amp; get_aggregates_response_aggregate_group_subgroup_c_count
+       &amp; get_aggregates_response_aggregate_group_subgroup_stats*
+     }
+
+get_aggregates_response_aggregate_group_subgroup_value
+ = element value
+     {
+       text
+     }
+
+get_aggregates_response_aggregate_group_subgroup_count
+ = element count
+     {
+       integer
+     }
+
+get_aggregates_response_aggregate_group_subgroup_c_count
+ = element c_count
+     {
+       integer
+     }
+
+get_aggregates_response_aggregate_group_subgroup_stats
+ = element stats
+     {
+       attribute column { text }?
+       &amp; get_aggregates_response_aggregate_group_subgroup_stats_min
+       &amp; get_aggregates_response_aggregate_group_subgroup_stats_max
+       &amp; get_aggregates_response_aggregate_group_subgroup_stats_mean
+       &amp; get_aggregates_response_aggregate_group_subgroup_stats_sum
+       &amp; get_aggregates_response_aggregate_group_subgroup_stats_c_sum
+     }
+
+get_aggregates_response_aggregate_group_subgroup_stats_min
+ = element min
+     {
+       text
+     }
+
+get_aggregates_response_aggregate_group_subgroup_stats_max
+ = element max
+     {
+       text
+     }
+
+get_aggregates_response_aggregate_group_subgroup_stats_mean
+ = element mean
+     {
+       text
+     }
+
+get_aggregates_response_aggregate_group_subgroup_stats_sum
+ = element sum
+     {
+       text
+     }
+
+get_aggregates_response_aggregate_group_subgroup_stats_c_sum
+ = element c_sum
      {
        text
      }
@@ -15263,6 +15399,18 @@ get_aggregates_response_aggregate_overall_mean
 
 get_aggregates_response_aggregate_overall_sum
  = element sum
+     {
+       text
+     }
+
+get_aggregates_response_aggregate_subgroups
+ = element subgroups
+     {
+       get_aggregates_response_aggregate_subgroups_value*
+     }
+
+get_aggregates_response_aggregate_subgroups_value
+ = element value
      {
        text
      }

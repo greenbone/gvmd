@@ -1,3 +1,39 @@
+2016-05-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add option to group data by two columns in GET_AGGREGATES.
+
+	* src/manage_sql.c (init_aggregate_iterator): Add subgroup_column
+	param to allow grouping data by two columns.  Use columns_select_column
+	function to get the "select" clause of columns.  Cast data_column
+	values as numbers for min and max statistics.
+	(AGGREGATE_ITERATOR_OFFSET): Increase to 3.
+	(aggregate_iterator_subgroup_value): New function.
+	(HOST_ITERATOR_FILTER_COLUMNS): Add column "severity_level".
+	(HOST_ITERATOR_WHERE_COLUMNS): New macro.
+	(type_where_columns): Add case for type "HOST".
+
+	* src/manage.h (init_aggregate_iterator): Add param to prototype.
+	(aggregate_iterator_subgroup_value): New function prototype.
+
+	* src/omp.c: Add #include <math.h>.
+	(get_aggregates_data_t, get_aggregates_data_reset): Add subgroup_column
+	field.
+	(omp_xml_handle_start_element): In GET_AGGREGATES case, get attribute
+	subgroup_column.
+	(init_aggregate_lists): Add params subgroup_column and
+	subgroup_column_type.  Correct doc for text_column related params.
+	(buffer_aggregate_subgroup_value): New static helper function.
+	(buffer_aggregate_xml): Add new params subgroup_column and
+	subgroup_column_type and handle aggregates divided into subgroups.
+	Add missing doc for text_column related params.
+	(omp_xml_handle_end_element): In CLIENT_GET_AGGREGATES case, handle
+	the subgroup column.
+
+	* src/schema_formats/XML/OMP.xml.in (get_aggregates): Add subgroup
+	elements and attributes.  Remove superfluous group element.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
 2016-05-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (slave_setup): Set result_hosts_only in the filter, else

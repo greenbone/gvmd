@@ -5334,7 +5334,9 @@ get_aggregates
        attribute data_column { text }?
        & # The field to group the resources by.
        attribute group_column { text }?
-       & # The column to sort the aggregated rows by.
+       & # The field to further group the resources inside groups by.
+       attribute subgroup_column { text }?
+       & # The column to sort the aggregated rows by. With a subgroup column, groups will be sorted by the group_column first..
        attribute sort_field { text }?
        & # The order to sort by.
        attribute sort_order { xsd:token { pattern = "ascending|descending" } }?
@@ -9226,6 +9228,7 @@ get_aggregates_response_aggregate
        & get_aggregates_response_aggregate_text_column*
        & ( get_aggregates_response_aggregate_group*
            | get_aggregates_response_aggregate_overall )
+       & get_aggregates_response_aggregate_subgroups?
        & get_aggregates_response_aggregate_column_info
      }
 
@@ -9261,14 +9264,8 @@ get_aggregates_response_aggregate_text_column
 get_aggregates_response_aggregate_group
  = element group
      {
-       text
-     }
-
-# Aggregate data for all resources of the selected type.
-get_aggregates_response_aggregate_group
- = element group
-     {
        get_aggregates_response_aggregate_group_value
+       & get_aggregates_response_aggregate_group_subgroup*
        & get_aggregates_response_aggregate_group_count
        & get_aggregates_response_aggregate_group_c_count
        & get_aggregates_response_aggregate_group_stats*
@@ -9278,6 +9275,85 @@ get_aggregates_response_aggregate_group
 # Value of the group column.
 get_aggregates_response_aggregate_group_value
  = element value
+     {
+       text
+     }
+
+# Aggregate data for a subgroup of resources.
+get_aggregates_response_aggregate_group_subgroup
+ = element subgroup
+     {
+       get_aggregates_response_aggregate_group_subgroup_value
+       & get_aggregates_response_aggregate_group_subgroup_count
+       & get_aggregates_response_aggregate_group_subgroup_c_count
+       & get_aggregates_response_aggregate_group_subgroup_stats*
+     }
+
+# Value of the subgroup column.
+get_aggregates_response_aggregate_group_subgroup_value
+ = element value
+     {
+       text
+     }
+
+# Number of resources in the subgroup.
+get_aggregates_response_aggregate_group_subgroup_count
+ = element count
+     {
+       integer
+     }
+
+# Cumulative number of resources in the current subgroup.
+get_aggregates_response_aggregate_group_subgroup_c_count
+ = element c_count
+     {
+       integer
+     }
+
+# Statistics of a data column for the current subgroup.
+get_aggregates_response_aggregate_group_subgroup_stats
+ = element stats
+     {
+       # Name of the column the stats apply to.
+       attribute column { text }?
+       & get_aggregates_response_aggregate_group_subgroup_stats_min
+       & get_aggregates_response_aggregate_group_subgroup_stats_max
+       & get_aggregates_response_aggregate_group_subgroup_stats_mean
+       & get_aggregates_response_aggregate_group_subgroup_stats_sum
+       & get_aggregates_response_aggregate_group_subgroup_stats_c_sum
+     }
+
+# Minimum value of the data column.
+get_aggregates_response_aggregate_group_subgroup_stats_min
+ = element min
+     {
+       text
+     }
+
+# Maximum value of the data column.
+get_aggregates_response_aggregate_group_subgroup_stats_max
+ = element max
+     {
+       text
+     }
+
+# Arithmetic mean of the numeric values of the data.
+get_aggregates_response_aggregate_group_subgroup_stats_mean
+ = element mean
+     {
+       text
+     }
+
+# Sum of the numeric values of the data column.
+get_aggregates_response_aggregate_group_subgroup_stats_sum
+ = element sum
+     {
+       text
+     }
+
+# Cumulative sum of the data column.
+get_aggregates_response_aggregate_group_subgroup_stats_c_sum
+ = element c_sum
      {
        text
      }
@@ -9395,6 +9471,20 @@ get_aggregates_response_aggregate_overall_mean
 # Overall sum of the numeric values of the data column.
 get_aggregates_response_aggregate_overall_sum
  = element sum
+     {
+       text
+     }
+
+# Overview of all subgroup values.
+get_aggregates_response_aggregate_subgroups
+ = element subgroups
+     {
+       get_aggregates_response_aggregate_subgroups_value*
+     }
+
+# Value of the subgroup column.
+get_aggregates_response_aggregate_subgroups_value
+ = element value
      {
        text
      }

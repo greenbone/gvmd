@@ -4005,9 +4005,9 @@ trash_tag_writable (tag_t);
 
 int
 init_aggregate_iterator (iterator_t*, const char *, const get_data_t *, int,
-                         GArray *, const char *, GArray*, const char *,
-                         const char *, int, int, int, const char *,
-                         const char *);
+                         GArray *, const char *, const char*, GArray*,
+                         const char *, const char *, int, int, int,
+                         const char *, const char *);
 
 int
 aggregate_iterator_count (iterator_t*);
@@ -4029,6 +4029,9 @@ aggregate_iterator_text (iterator_t*, int, int);
 
 const char*
 aggregate_iterator_value (iterator_t*);
+
+const char*
+aggregate_iterator_subgroup_value (iterator_t*);
 
 
 /* Feeds. */
