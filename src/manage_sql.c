@@ -57709,19 +57709,26 @@ init_asset_host_iterator (iterator_t *iterator, const get_data_t *get)
 {
   static const char *filter_columns[] = HOST_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = HOST_ITERATOR_COLUMNS;
+  static column_t where_columns[] = HOST_ITERATOR_WHERE_COLUMNS;
 
-  return init_get_iterator (iterator,
-                            "host",
-                            get,
-                            /* Columns. */
-                            columns,
-                            /* Columns for trashcan. */
-                            NULL,
-                            filter_columns,
-                            0,
-                            NULL,
-                            NULL,
-                            TRUE);
+  return init_get_iterator2 (iterator,
+                             "host",
+                             get,
+                             /* Columns. */
+                             columns,
+                             /* Columns for trashcan. */
+                             NULL,
+                             /* WHERE Columns. */
+                             where_columns,
+                             /* WHERE Columns for trashcan. */
+                             NULL,
+                             filter_columns,
+                             0,
+                             NULL,
+                             NULL,
+                             TRUE,
+                             FALSE,
+                             NULL);
 }
 
 /**
@@ -57879,19 +57886,26 @@ init_asset_os_iterator (iterator_t *iterator, const get_data_t *get)
 {
   static const char *filter_columns[] = OS_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = OS_ITERATOR_COLUMNS;
+  static column_t where_columns[] = OS_ITERATOR_WHERE_COLUMNS;
 
-  return init_get_iterator (iterator,
-                            "os",
-                            get,
-                            /* Columns. */
-                            columns,
-                            /* Columns for trashcan. */
-                            NULL,
-                            filter_columns,
-                            0,
-                            NULL,
-                            NULL,
-                            TRUE);
+  return init_get_iterator2 (iterator,
+                             "os",
+                             get,
+                             /* Columns. */
+                             columns,
+                             /* Columns for trashcan. */
+                             NULL,
+                             /* WHERE Columns. */
+                             where_columns,
+                             /* WHERE Columns for trashcan. */
+                             NULL,
+                             filter_columns,
+                             0,
+                             NULL,
+                             NULL,
+                             TRUE,
+                             FALSE,
+                             NULL);
 }
 
 /**

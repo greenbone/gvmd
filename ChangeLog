@@ -1,5 +1,10 @@
 2016-05-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (init_asset_host_iterator, init_asset_os_iterator):
+	Use init_get_iterator2 and ..._WHERE_COLUMNS.
+
+2016-05-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Add option to group data by two columns in GET_AGGREGATES.
 
 	* src/manage_sql.c (init_aggregate_iterator): Add subgroup_column
