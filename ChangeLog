@@ -1,3 +1,8 @@
+2016-05-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (slave_setup): Set result_hosts_only in the filter, else
+	it has no effect.
+
 2016-04-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (host_notice): Add check_for_identifier arg.
