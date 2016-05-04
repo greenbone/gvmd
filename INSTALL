@@ -378,6 +378,9 @@ This setting can not be changed via OMP.  However, the openvasmd option
 --max-rows can be used to change it.  This changes the global value of the
 setting, and so applies to all users.
 
+Combining the options --max-rows and --user will set a value for maximum
+rows only for that user.
+
 
 Prerequisites for Optional Features
 -----------------------------------

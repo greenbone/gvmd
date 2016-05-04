@@ -1,3 +1,7 @@
+2016-05-04  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* INSTALL: Add note on user-specific max-rows.
+
 2016-05-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (check_db_permissions): Remove GET_SETTINGS from
