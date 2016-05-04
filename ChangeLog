@@ -1,3 +1,8 @@
+2016-05-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (check_db_permissions): Remove GET_SETTINGS from
+	Observer case, it's already added by the loop above.
+
 2016-05-04  Björn Ricks <bjoern.ricks@greenbone.net>
 
 	* src/manage_sql.c: Don't use xml_string_append function for adding a string
