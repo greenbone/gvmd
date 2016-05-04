@@ -1467,6 +1467,9 @@ target_task_iterator_name (iterator_t*);
 const char*
 target_task_iterator_uuid (iterator_t*);
 
+int
+target_task_iterator_readable (iterator_t*);
+
 
 /* Configs. */
 

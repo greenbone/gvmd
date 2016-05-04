@@ -1,3 +1,12 @@
+2016-05-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r24795.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_TARGETS use the
+	correct accessor function.
+
+	* src/manage.h: Add header accordingly.
+
 2016-04-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r25091.
