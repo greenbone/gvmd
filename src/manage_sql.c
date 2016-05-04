@@ -5559,7 +5559,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
     {
       if (subgroup_column && strcmp (subgroup_column, ""))
         {
-          xml_string_append (aggregate_select,
+          g_string_append_printf (aggregate_select,
                              " count(*) AS aggregate_count,"
                              " %s AS aggregate_group_value,"
                              " %s AS aggregate_subgroup_value",
@@ -5572,7 +5572,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
         }
       else
         {
-          xml_string_append (aggregate_select,
+          g_string_append_printf (aggregate_select,
                              " count(*) AS aggregate_count,"
                              " %s AS aggregate_group_value,"
                              " CAST (NULL AS TEXT) AS aggregate_subgroup_value",
@@ -5586,7 +5586,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
     }
   else
     {
-      xml_string_append (aggregate_select,
+      g_string_append_printf (aggregate_select,
                          " count(*) AS aggregate_count,"
                          " CAST (NULL AS TEXT) AS aggregate_group_value,"
                          " CAST (NULL AS TEXT) AS aggregate_subgroup_value");
