@@ -1,3 +1,12 @@
+2016-05-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (slave_connect, slave_setup, run_slave_task)
+	(fork_osp_scan_handler, cve_scan_host, fork_cve_scan_handler)
+	(run_task): Add a warning everywhere a task is set to Internal Error.
+
+	* src/manage.c (manage_cleanup_process_error): Add a warning everywhere
+	a task is set to Internal Error.
+
 2016-05-04  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* INSTALL: Add note on user-specific max-rows.

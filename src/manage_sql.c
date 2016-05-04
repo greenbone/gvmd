@@ -15713,7 +15713,11 @@ manage_cleanup_process_error (int signal)
   if (sql_is_open ())
     {
       if (current_scanner_task)
-        set_task_run_status (current_scanner_task, TASK_STATUS_INTERNAL_ERROR);
+        {
+          g_warning ("%s: Error exit, setting running task to Internal Error",
+                     __FUNCTION__);
+          set_task_run_status (current_scanner_task, TASK_STATUS_INTERNAL_ERROR);
+        }
       sql_close ();
     }
 }

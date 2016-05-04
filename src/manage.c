@@ -1798,7 +1798,10 @@ slave_connect (slave_t slave, const char *host, int port, int *socket,
 {
   *socket = openvas_server_open (session, host, port);
   if (*socket == -1)
-    return -1;
+    {
+      g_warning ("%s: failed to open connection to server", __FUNCTION__);
+      return -1;
+    }
 
   {
     int optval;
@@ -2646,7 +2649,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
                   if (ret == 404)
                     {
                       /* Resource Missing. */
-                      tracef ("   %s: task missing on slave\n", __FUNCTION__);
+                      g_warning ("%s: Task missing on slave", __FUNCTION__);
                       set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
                       goto giveup;
                     }
@@ -2688,7 +2691,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
       if (ret == 404)
         {
           /* Resource Missing. */
-          tracef ("   %s: task missing on slave\n", __FUNCTION__);
+          g_warning ("%s: Task missing on slave", __FUNCTION__);
           set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
           goto giveup;
         }
@@ -2704,7 +2707,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
       status = omp_task_status (get_tasks);
       if (status == NULL)
         {
-          tracef ("   %s: status was NULL\n", __FUNCTION__);
+          g_warning ("%s: Slave task status was NULL", __FUNCTION__);
           set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
           goto giveup;
         }
@@ -2748,7 +2751,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           if ((ret == 404) && (ret2 == 404))
             {
               /* Resource Missing. */
-              tracef ("   %s: report missing on slave\n", __FUNCTION__);
+              g_warning ("%s: Task report missing on slave", __FUNCTION__);
               set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
               goto giveup;
             }
@@ -2949,10 +2952,18 @@ run_slave_task (task_t task, target_t target,
   slave = task_slave (task);
   tracef ("   %s: slave: %llu\n", __FUNCTION__, slave);
   assert (slave);
-  if (slave == 0) return -1;
+  if (slave == 0)
+    {
+      g_warning ("%s: Task has no slave", __FUNCTION__);
+      return -1;
+    }
 
   host = slave_host (slave);
-  if (host == NULL) return -1;
+  if (host == NULL)
+    {
+      g_warning ("%s: Slave has no host", __FUNCTION__);
+      return -1;
+    }
 
   tracef ("   %s: host: %s\n", __FUNCTION__, host);
 
@@ -2960,6 +2971,7 @@ run_slave_task (task_t task, target_t target,
   if (port == -1)
     {
       free (host);
+      g_warning ("%s: Slave has no port", __FUNCTION__);
       return -1;
     }
 
@@ -2976,6 +2988,7 @@ run_slave_task (task_t task, target_t target,
   if (name == NULL)
     {
       free (host);
+      g_warning ("%s: Failed to make UUID", __FUNCTION__);
       return -1;
     }
 
@@ -2984,6 +2997,7 @@ run_slave_task (task_t task, target_t target,
       {
         /* Login failed. */
         free (host);
+        g_warning ("%s: Login failed", __FUNCTION__);
         return -1;
       }
     else
@@ -3504,6 +3518,9 @@ fork_osp_scan_handler (task_t task, target_t target)
         break;
       case -1:
         /* Parent, failed to fork. */
+        g_warning ("%s: Failed to fork: %s\n",
+                   __FUNCTION__,
+                   strerror (errno));
         set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
         set_report_scan_run_status (current_report,
                                     TASK_STATUS_INTERNAL_ERROR);
@@ -3630,7 +3647,7 @@ cve_scan_host (task_t task, openvas_host_t *openvas_host)
 
   if (host_nthlast_report_host (ip, &report_host, 1))
     {
-      tracef ("   %s: failed to get nthlast report.\n", __FUNCTION__);
+      g_warning ("%s: Failed to get nthlast report.\n", __FUNCTION__);
       g_free (ip);
       return 1;
     }
@@ -3772,6 +3789,9 @@ fork_cve_scan_handler (task_t task, target_t target)
         break;
       case -1:
         /* Parent, failed to fork. */
+        g_warning ("%s: Failed to fork: %s\n",
+                   __FUNCTION__,
+                   strerror (errno));
         set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
         set_report_scan_run_status (current_report,
                                     TASK_STATUS_INTERNAL_ERROR);
@@ -3801,7 +3821,7 @@ fork_cve_scan_handler (task_t task, target_t target)
   hosts = target_hosts (target);
   if (hosts == NULL)
     {
-      tracef ("   %s: target hosts is NULL.\n", __FUNCTION__);
+      g_warning ("%s: target hosts is NULL", __FUNCTION__);
       set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
       set_report_scan_run_status (current_report, TASK_STATUS_INTERNAL_ERROR);
       exit (1);
@@ -3818,6 +3838,7 @@ fork_cve_scan_handler (task_t task, target_t target)
   while ((openvas_host = openvas_hosts_next (openvas_hosts)))
     if (cve_scan_host (task, openvas_host))
       {
+        g_warning ("%s: cve_scan_host failed", __FUNCTION__);
         set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
         set_report_scan_run_status (current_report, TASK_STATUS_INTERNAL_ERROR);
         openvas_hosts_free (openvas_hosts);
@@ -4269,7 +4290,7 @@ run_task (const char *task_id, char **report_id, int from,
         break;
       case -1:
         /* Parent when error. */
-        g_warning ("%s: failed to fork task child: %s\n",
+        g_warning ("%s: Failed to fork task child: %s\n",
                    __FUNCTION__,
                    strerror (errno));
         set_task_run_status (task, run_status);
@@ -4305,6 +4326,7 @@ run_task (const char *task_id, char **report_id, int from,
                           last_stopped_report))
         {
           free (hosts);
+          g_warning ("%s: run_slave_task failed", __FUNCTION__);
           set_task_run_status (task, run_status);
           set_report_scan_run_status (current_report, run_status);
           exit (EXIT_FAILURE);
@@ -4322,6 +4344,7 @@ run_task (const char *task_id, char **report_id, int from,
   if (send_to_server ("CLIENT <|> PREFERENCES <|>\n"))
     {
       free (hosts);
+      g_warning ("%s: Failed to send OTP PREFERENCES", __FUNCTION__);
       set_task_run_status (task, run_status);
       set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
@@ -4359,6 +4382,7 @@ run_task (const char *task_id, char **report_id, int from,
   if (fail)
     {
       free (hosts);
+      g_warning ("%s: Failed to send OTP plugin_set", __FUNCTION__);
       set_task_run_status (task, run_status);
       set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
@@ -4370,6 +4394,7 @@ run_task (const char *task_id, char **report_id, int from,
   if (send_config_preferences (config, "SERVER_PREFS", NULL, NULL))
     {
       free (hosts);
+      g_warning ("%s: Failed to send OTP SERVER_PREFS", __FUNCTION__);
       set_task_run_status (task, run_status);
       set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
@@ -4379,6 +4404,7 @@ run_task (const char *task_id, char **report_id, int from,
   if (send_task_preferences (task))
     {
       free (hosts);
+      g_warning ("%s: Failed to send OTP task preferences", __FUNCTION__);
       set_task_run_status (task, run_status);
       set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
@@ -4393,6 +4419,7 @@ run_task (const char *task_id, char **report_id, int from,
     {
       free (port_range);
       free (hosts);
+      g_warning ("%s: Failed to send OTP port_range", __FUNCTION__);
       set_task_run_status (task, run_status);
       set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
@@ -4406,6 +4433,7 @@ run_task (const char *task_id, char **report_id, int from,
   if (port && sendf_to_server ("auth_port_ssh <|> %s\n", port))
     {
       free (port);
+      g_warning ("%s: Failed to send OTP auth_port_ssh", __FUNCTION__);
       set_task_run_status (task, run_status);
       set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
@@ -4425,6 +4453,7 @@ run_task (const char *task_id, char **report_id, int from,
       g_ptr_array_free (preference_files, TRUE);
       slist_free (files);
       free (hosts);
+      g_warning ("%s: Failed to send OTP PLUGINS_PREFS", __FUNCTION__);
       set_task_run_status (task, run_status);
       set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
@@ -4439,6 +4468,7 @@ run_task (const char *task_id, char **report_id, int from,
       g_ptr_array_add (preference_files, NULL);
       array_free (preference_files);
       slist_free (files);
+      g_warning ("%s: Failed to send OTP network_targets", __FUNCTION__);
       set_task_run_status (task, run_status);
       set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
@@ -4452,6 +4482,7 @@ run_task (const char *task_id, char **report_id, int from,
       g_ptr_array_add (preference_files, NULL);
       array_free (preference_files);
       slist_free (files);
+      g_warning ("%s: Failed to send OTP scanner preferences", __FUNCTION__);
       set_task_run_status (task, run_status);
       set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
@@ -4490,6 +4521,8 @@ run_task (const char *task_id, char **report_id, int from,
               g_ptr_array_add (preference_files, NULL);
               array_free (preference_files);
               slist_free (files);
+              g_warning ("%s: Failed to send OTP SSH preferences",
+                         __FUNCTION__);
               set_task_run_status (task, run_status);
               set_report_scan_run_status (current_report, run_status);
               current_report = (report_t) 0;
@@ -4539,6 +4572,8 @@ run_task (const char *task_id, char **report_id, int from,
               g_ptr_array_add (preference_files, NULL);
               array_free (preference_files);
               slist_free (files);
+              g_warning ("%s: Failed to send OTP SMB preferences",
+                         __FUNCTION__);
               set_task_run_status (task, run_status);
               set_report_scan_run_status (current_report, run_status);
               current_report = (report_t) 0;
@@ -4570,6 +4605,8 @@ run_task (const char *task_id, char **report_id, int from,
               g_ptr_array_add (preference_files, NULL);
               array_free (preference_files);
               slist_free (files);
+              g_warning ("%s: Failed to send OTP ESXi preferences",
+                         __FUNCTION__);
               set_task_run_status (task, run_status);
               set_report_scan_run_status (current_report, run_status);
               current_report = (report_t) 0;
@@ -4624,6 +4661,8 @@ run_task (const char *task_id, char **report_id, int from,
               g_ptr_array_add (preference_files, NULL);
               array_free (preference_files);
               slist_free (files);
+              g_warning ("%s: Failed to send OTP SNMP preferences",
+                         __FUNCTION__);
               set_task_run_status (task, run_status);
               set_report_scan_run_status (current_report, run_status);
               current_report = (report_t) 0;
@@ -4642,6 +4681,7 @@ run_task (const char *task_id, char **report_id, int from,
       free (hosts);
       array_free (preference_files);
       slist_free (files);
+      g_warning ("%s: Failed to send OTP alive test preferences", __FUNCTION__);
       set_task_run_status (task, run_status);
       set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
@@ -4653,6 +4693,7 @@ run_task (const char *task_id, char **report_id, int from,
       free (hosts);
       array_free (preference_files);
       slist_free (files);
+      g_warning ("%s: Failed to send OTP CLIENT", __FUNCTION__);
       set_task_run_status (task, run_status);
       set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
@@ -4687,6 +4728,7 @@ run_task (const char *task_id, char **report_id, int from,
             free (hosts);
             array_free (preference_files);
             slist_free (files);
+            g_warning ("%s: Failed to send an OTP file", __FUNCTION__);
             set_task_run_status (task, run_status);
             set_report_scan_run_status (current_report, run_status);
             current_report = (report_t) 0;
@@ -4707,6 +4749,7 @@ run_task (const char *task_id, char **report_id, int from,
         {
           free (hosts);
           slist_free (files);
+          g_warning ("%s: Failed to send an OTP task file", __FUNCTION__);
           set_task_run_status (task, run_status);
           set_report_scan_run_status (current_report, run_status);
           current_report = (report_t) 0;
@@ -4728,6 +4771,7 @@ run_task (const char *task_id, char **report_id, int from,
   free (hosts);
   if (fail)
     {
+      g_warning ("%s: Failed to send OTP LONG_ATTACK", __FUNCTION__);
       set_task_run_status (task, run_status);
       set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
