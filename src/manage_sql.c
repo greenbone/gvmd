@@ -5575,7 +5575,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
           xml_string_append (aggregate_select,
                              " count(*) AS aggregate_count,"
                              " %s AS aggregate_group_value,"
-                             " NULL AS aggregate_subgroup_value",
+                             " CAST (NULL AS TEXT) AS aggregate_subgroup_value",
                              select_group_column);
 
           aggregate_group_by = g_strdup_printf (" GROUP BY %s",
@@ -5588,8 +5588,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
     {
       xml_string_append (aggregate_select,
                          " count(*) AS aggregate_count,"
-                         " NULL AS aggregate_group_value,"
-                         " NULL AS aggregate_subgroup_value");
+                         " CAST (NULL AS TEXT) AS aggregate_group_value,"
+                         " CAST (NULL AS TEXT) AS aggregate_subgroup_value");
 
       aggregate_group_by = g_strdup ("");
     }

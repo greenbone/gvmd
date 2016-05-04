@@ -12401,6 +12401,7 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
   long int aggregate_group_count;
   GArray *group_mins, *group_maxs, *group_mean_sums, *group_sums, *group_c_sums;
   GTree *subgroup_c_counts;
+  int has_groups = 0;
 
   g_string_append_printf (xml, "<aggregate>");
 
@@ -12475,6 +12476,8 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
       const char *subgroup_value
         = aggregate_iterator_subgroup_value (aggregate);
       gchar *value_escaped, *subgroup_value_escaped;
+
+      has_groups = 1;
 
       c_count += aggregate_iterator_count (aggregate);
 
@@ -12801,12 +12804,15 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
   if (subgroup_column)
     {
       // Add elements for last group in case subgroups are used
-      g_string_append_printf (xml,
-                              "<count>%ld</count>"
-                              "<c_count>%ld</c_count>"
-                              "</group>",
-                              aggregate_group_count,
-                              previous_c_count);
+      if (has_groups)
+        {
+          g_string_append_printf (xml,
+                                  "<count>%ld</count>"
+                                  "<c_count>%ld</c_count>"
+                                  "</group>",
+                                  aggregate_group_count,
+                                  previous_c_count);
+        }
 
       // Also add overview of all subgroup values
       g_string_append_printf (xml,

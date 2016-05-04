@@ -1,3 +1,12 @@
+2016-05-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/omp.c (buffer_aggregate_xml): Check if there are any groups
+	before adding elements and closing tag for the final group.
+
+	* src/manage_sql.c (init_aggregate_iterator): Cast NULL values for
+	aggregate_group_value and aggregate_subgroup_value to TEXT to avoid
+	problems with them having unknown type in Postgres.
+
 2016-05-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (init_asset_host_iterator, init_asset_os_iterator):
