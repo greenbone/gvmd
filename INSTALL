@@ -364,6 +364,21 @@ Where:
              connecting to the scanner
 
 
+Changing the Maximum Number of Rows per Page
+--------------------------------------------
+
+The maximum number of rows returned by the OMP "GET" commands, like GET_TARGETS,
+is controlled by the OMP setting "Max Rows Per Page".  This setting is an upper
+limit on the number of resources returned by any GET command, regardless of the
+value given for "rows" in the command's filter.
+
+The default value for "Max Rows Per Page" is 1000.  0 indicates no limit.
+
+This setting can not be changed via OMP.  However, the openvasmd option
+--max-rows can be used to change it.  This changes the global value of the
+setting, and so applies to all users.
+
+
 Prerequisites for Optional Features
 -----------------------------------
 

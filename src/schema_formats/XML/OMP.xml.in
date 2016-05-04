@@ -25659,6 +25659,23 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <change>
+    <command>All GET_... commands</command>
+    <summary>Limit on number of returned rows introduced</summary>
+    <description>
+      <p>
+        The new setting "Max Rows Per Page" introduces a hard upper limit
+        on the number of rows return by any GET command, regardless of the
+        value of the "rows" term in the filter.
+      </p>
+      <p>
+        The setting defaults to 1000 and can be changed globally via the
+        --max-rows option.  A value of 0 indicates no limit, which is the
+        previous behaviour.
+      </p>
+    </description>
+    <version>7.0</version>
+  </change>
+  <change>
     <command>GET_RESULTS</command>
     <summary>Redundant filtering attributes removed</summary>
     <description>

@@ -7,7 +7,7 @@
 <body style="background-color: #FFFFFF; margin: 0px; font: small Verdana, sans-serif; font-size: 12px; color: #1A1A1A;"><div style="width: 98%; width:700px; align: center; margin-left: auto; margin-right: auto;"><table style="width: 100%;" cellpadding="3" cellspacing="0"><tr><td valign="top">
 <h1>OMP:
                   OpenVAS Management Protocol</h1>
-<p>Version: 6.0</p>
+<p>Version: 7.0</p>
 <p>The "management" protocol of the Open Vulnerability Assessment System.</p>
 <h2 id="contents">Contents</h2>
 <ol>
@@ -20,7 +20,7 @@
 <li><a href="#command_details">Command Details</a></li>
 <li><a href="#changes">
                       Compatibility Changes in Version
-                      6.0</a></li>
+                      7.0</a></li>
 </ol>
 <h2 id="type_summary">1 Summary of Data Types</h2>
 <table id="index">
@@ -24762,7 +24762,7 @@ get_reports_response_report_count_page
            content_type="text/xml"&gt;
      &lt;report id="f0fdf522-276d-4893-9274-fb8699dc2270"&gt;
        &lt;omp&gt;
-         &lt;version&gt;6.0&lt;/version&gt;
+         &lt;version&gt;7.0&lt;/version&gt;
        &lt;/omp&gt;
        &lt;sort&gt;
          &lt;field&gt;
@@ -38462,114 +38462,113 @@ start_task_response_report_id
 </div>
 <h2 id="changes">
       8 Compatibility Changes in Version
-      6.0</h2>
+      7.0</h2>
 <div>
 <div><h3>8.1
-          Change in <tt>PAUSE_TASK, RESUME_PAUSED_TASK</tt>
+          Change in <tt>All GET_... commands</tt>
 </h3></div>
-<p>In short: Commands removed.</p>
+<p>In short: Limit on number of returned rows introduced.</p>
 <p>
-        The task pausing feature has been removed and thus, the PAUSE_TASK and
-        RESUME_PAUSED_TASK commands don't exist anymore.
+        The new setting "Max Rows Per Page" introduces a hard upper limit
+        on the number of rows return by any GET command, regardless of the
+        value of the "rows" term in the filter.
+      </p>
+<p>
+        The setting defaults to 1000 and can be changed globally via the
+        --max-rows option.  A value of 0 indicates no limit, which is the
+        previous behaviour.
       </p>
 </div>
 <div>
 <div><h3>8.2
-          Change in <tt>GET_NOTES, GET_OVERRIDES, GET_REPORTS, GET_RESULTS</tt>
+          Change in <tt>GET_RESULTS</tt>
 </h3></div>
-<p>In short: Element RISK_FACTOR removed from element NVT.</p>
+<p>In short: Redundant filtering attributes removed.</p>
 <p>
-        Risk factors have been replaced by CVSS scores in all NVTs, so the
-        RISK_FACTOR element has been removed from the NVT elements in
-        various commands.
+        The command attributes "apply_overrides", "autofp", "notes" and
+        "overrides" were removed.
+        Equivalent functionality is available using filters
+        (with the filter and filt_id attributes).
       </p>
 </div>
 <div>
 <div><h3>8.3
-          Change in <tt>RESUME_STOPPED_TASK, RESUME_TASK</tt>
+          Change in <tt>GET_REPORTS</tt>
 </h3></div>
-<p>In short: RESUME_STOPPED_TASK renamed to RESUME_TASK.</p>
+<p>In short: Redundant filtering attributes removed.</p>
 <p>
-        The resuming of tasks is now done via the new command RESUME_TASK,
-    which is the former RESUME_STOPPED_TASK. There is no other resumable
-    status than "stopped" anymore and thus the command names are
-        consolidated for consistency and to avoid confusion.
+        The command attributes "first_result", "max_results", "sort_order",
+        "sort_field", "apply_overrides", "levels", "search_phrase",
+        "min_cvss_base", "min_qod", "notes", "overrides", "delta_states",
+        "autofp", "result_hosts_only" and "timezone" were removed.
+        Equivalent functionality is available using filters
+        (with the filter and filt_id attributes).
       </p>
 </div>
 <div>
 <div><h3>8.4
-          Change in <tt>RESUME_OR_START_TASK</tt>
+          Change in <tt>GET_REPORTS</tt>
 </h3></div>
-<p>In short: Command removed.</p>
+<p>In short: Filter keywords in response changed to common format.</p>
 <p>
-        As part of the consolidation of the start/resume handling of tasks,
-        the command RESUME_OR_START_TASK was removed. Use a combination of
-        START_TASK and RESUME_TASK to establish the same functionality.
+        The elements "phrase", "autofp", "notes", "overrides",
+        "apply_overrides", "result_hosts_only", "min_cvss_base",
+        "min_qod", "timezone" were removed from the "filters" element in the
+        report and replaced with a "keywords" element using the same
+        syntax as other GET_... commands.
       </p>
 </div>
 <div>
 <div><h3>8.5
-          Change in <tt>CREATE_TARGET, MODIFY_TARGET</tt>
+          Change in <tt>GET_CREDENTIALS</tt>
 </h3></div>
-<p>In short: Element TARGET_LOCATOR removed.</p>
+<p>In short: Credential types renamed.</p>
 <p>
-        The element TARGET_LOCATOR was removed from CREATE_TARGET and
-        MODIFY_TARGET.  This was an older, unused feature.
+        The TYPE element in the response will contain "up" instead of "pass"
+         for username + password credentials and "usk" instead of "gen" for
+         username + SSH key ones.
       </p>
 </div>
 <div>
 <div><h3>8.6
-          Change in <tt>GET_RESULTS</tt>
+          Change in <tt>CREATE_LSC_CREDENTIAL, DELETE_LSC_CREDENTIAL, GET_LSC_CREDENTIALS, MODIFY_LSC_CREDENTIAL</tt>
 </h3></div>
-<p>In short: "result" elements moved to response root element.</p>
+<p>In short: Resource type and commands renamed.</p>
 <p>
-        The "result" elements returned by the GET_RESULTS command are no
-        longer nested inside a "results" element but directly inside the
-        "get_results_response". The "results" element is used to return the
-        "max" and "start" attributes like similar elements for other types.
+        The type LSC_CREDENTIAL has been renamed to CREDENTIAL, so
+        the CREATE_LSC_CREDENTIAL command is now named CREATE_CREDENTIAL,
+        GET_LSC_CREDENTIALS is named GET_CREDENTIALS, etc.
       </p>
 </div>
 <div>
 <div><h3>8.7
-          Change in <tt>GET_TARGET_LOCATORS</tt>
+          Change in <tt>CREATE_SCANNER, GET_SCANNERS, MODIFY_SCANNER</tt>
 </h3></div>
-<p>In short: Command removed.</p>
+<p>In short: key_priv and key_pub replaced by credential.</p>
 <p>
-        The command GET_TARGET_LOCATORS was removed.
+        The key_priv and key_pub elements have been replaced by a credential
+        one referencing a "cc" (client certificate) type credential.
       </p>
 </div>
 <div>
 <div><h3>8.8
-          Change in <tt>GET_TASKS</tt>
+          Change in <tt>CREATE_SLAVE, GET_SLAVES, MODIFY_SLAVE</tt>
 </h3></div>
-<p>In short: Attribute "rcfile" and associate RCFILE removed.</p>
+<p>In short: username and password replaced by credential.</p>
 <p>
-        The attribute "rcfile" and associate response element RCFILE were
-        removed.  It is no longer possible to get an openvasrc configuration
-        for a task.  This feature was primarily introduced to support the
-        GTK frontend openvas-client, which is no longer maintained.
+        The username and password elements have been replaced by a credential
+        one referencing a "up" (username + password) type credential.
       </p>
 </div>
 <div>
 <div><h3>8.9
-          Change in <tt>CREATE_CONFIG, CREATE_TASK, MODIFY_TASK</tt>
+          Change in <tt>GET_TARGETS</tt>
 </h3></div>
-<p>In short: RCFILE removed.</p>
+<p>In short: "lsc_" removed from credential element names.</p>
 <p>
-        The element RCFILE was removed.  It is no longer possible to create
-        or modify a config or task from an openvasrc file.  This feature was
-        primarily introduced to support the GTK frontend openvas-client, which
-        is no longer maintained.
-      </p>
-</div>
-<div>
-<div><h3>8.10
-          Change in <tt>CREATE_LSC_CREDENTIAL</tt>
-</h3></div>
-<p>In short: KEY/PUBLIC removed.</p>
-<p>
-        The child PUBLIC of element KEY was removed, because public keys are
-        now extracted from the private key.
+        The elements ssh_lsc_credential, smb_lsc_credential and
+        esxi_lsc_credential have been renamed to ssh_credential, smb_credential
+        and esxi_credential.
       </p>
 </div>
 <div style="text-align: center; padding: 5px;">

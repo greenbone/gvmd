@@ -13905,7 +13905,7 @@ check_db_settings ()
          " VALUES"
          " ('76374a7a-0569-11e6-b6da-28d24461215b', NULL, 'Max Rows Per Page',"
          "  'The default maximum number of rows displayed in any listing.',"
-         "  0);");
+         "  1000);");
 
   if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = 'f16bb236-a32d-4cd5-a880-e0fcf2599f59'"

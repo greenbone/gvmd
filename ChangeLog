@@ -1,3 +1,13 @@
+2016-05-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (check_db_settings): Make "Max Rows Per Page" 1000.
+
+	* INSTALL: Add section about "Max Rows Per Page".
+
+	* src/schema_formats/XML/OMP.xml.in: Add CHANGE noting new row limit.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
 2016-05-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/omp.c (buffer_aggregate_xml): Check if there are any groups
