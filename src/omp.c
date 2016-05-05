@@ -18731,7 +18731,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           int ret, index;
           GString *xml;
           gchar *sort_field, *filter;
-          int first, max, sort_order;
+          int first, sort_order;
           GString *type_many;
 
           type = get_aggregates_data->type;
@@ -18895,7 +18895,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             filter = NULL;
 
           manage_filter_controls (filter ? filter : get->filter,
-                                  &first, &max, &sort_field, &sort_order);
+                                  &first, NULL, &sort_field, &sort_order);
 
           if (filter || get->filter)
             {
