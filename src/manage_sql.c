@@ -51697,7 +51697,7 @@ trash_permission_writable (permission_t permission)
  */
 #define PERMISSION_ITERATOR_FILTER_COLUMNS                               \
  { GET_ITERATOR_FILTER_COLUMNS, "type", "resource_uuid", "subject_type", \
-   "_subject", "_resource", "subject_uuid", NULL }
+   "_subject", "_resource", "subject_uuid", "orphan", NULL }
 
 /**
  * @brief Permission iterator columns.
@@ -51719,7 +51719,7 @@ trash_permission_writable (permission_t permission)
    { "resource_location = " G_STRINGIFY (LOCATION_TRASH),                    \
      NULL,                                                                   \
      KEYWORD_TYPE_INTEGER },                                                 \
-   { "resource = -1", NULL, KEYWORD_TYPE_INTEGER },                          \
+   { "resource = -1", "orphan", KEYWORD_TYPE_INTEGER },                      \
    { "subject_type", NULL, KEYWORD_TYPE_STRING },                            \
    {                                                                         \
      "(CASE"                                                                 \

@@ -1,3 +1,8 @@
+2016-05-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (PERMISSION_ITERATOR_FILTER_COLUMNS): Add orphan.
+	(PERMISSION_ITERATOR_COLUMNS): Name the orphan column.
+
 2016-05-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (slave_connect, slave_setup, run_slave_task)
