@@ -2153,6 +2153,9 @@ split_filter (const gchar* given_filter)
 /**
  * @brief Get info from a filter.
  *
+ * It's up to the caller to ensure that max is adjusted for Max Rows Per Page
+ * (by calling manage_max_rows).
+ *
  * @param[in]   filter      Filter.
  * @param[out]  first       Number of first item.
  * @param[out]  max         Max number of rows.
@@ -2213,6 +2216,7 @@ manage_filter_controls (const gchar *filter, int *first, int *max,
             {
               *max = atoi (keyword->string);
               if (*max == -2)
+                /* Rows Per Page. */
                 setting_value_int ("5f5a8712-8017-11e1-8556-406186ea4fc5",
                                    max);
               else if (*max < 1)
@@ -2318,6 +2322,9 @@ filter_control_str (keyword_t **point, const char *column, gchar **string)
 /**
  * @brief Get info from a filter for report.
  *
+ * It's up to the caller to ensure that max is adjusted for Max Rows Per Page
+ * (by calling manage_max_rows).
+ *
  * @param[in]   filter      Filter.
  * @param[out]  first       Number of first item.
  * @param[out]  max         Max number of rows.
@@ -2399,6 +2406,7 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
             {
               *max = atoi (keyword->string);
               if (*max == -2)
+                /* Rows Per Page. */
                 setting_value_int ("5f5a8712-8017-11e1-8556-406186ea4fc5",
                                    max);
               else if (*max < 1)
@@ -2593,6 +2601,7 @@ append_relation (GString *clean, keyword_t *keyword, const char relation)
       int max;
 
       if (strcmp (keyword->string, "-2") == 0)
+        /* Rows Per Page. */
         setting_value_int ("5f5a8712-8017-11e1-8556-406186ea4fc5", &max);
       else
         max = atoi (keyword->string);
@@ -4041,6 +4050,7 @@ filter_clause (const char* type, const char* filter,
   if (max_return)
     {
       if (*max_return == -2)
+        /* Rows Per Page. */
         setting_value_int ("5f5a8712-8017-11e1-8556-406186ea4fc5",
                            max_return);
       else if (*max_return < 1)
@@ -26429,6 +26439,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       apply_overrides = 0;
       zone = NULL;
     }
+
+  max_results = manage_max_rows (max_results);
 
   if (delta
       && sort_field
@@ -59498,6 +59510,7 @@ manage_max_rows (int max)
   if (current_credentials.uuid == NULL)
     return max;
 
+  /* Max Rows Per Page. */
   if (setting_value_int ("76374a7a-0569-11e6-b6da-28d24461215b", &max_rows))
     return max;
 

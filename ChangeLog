@@ -1,7 +1,11 @@
 2016-05-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/omp.c (omp_xml_handle_end_element): In GET_AGGREGATES remove max,
-	which is not used.
+	* src/manage_sql.h (manage_filter_controls)
+	(manage_report_filter_controls, append_relation, filter_clause): Note
+	about caller adjusting max.  Put setting name near UUID to make things clearer.
+	(print_report_xml): Adjust max_results to take into account Max Rows Per Page.
+	This was causing the report result and port counts to be wrong.
+	(manage_max_rows): Put setting name near UUID to make things clearer.
 
 2016-05-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
