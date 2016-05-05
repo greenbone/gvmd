@@ -1,6 +1,19 @@
 2016-05-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/manage_sql.h (manage_filter_controls)
+	* src/manage_sql.c (ignore_max_rows_per_page): New variable.
+	(print_report_xml): In the delta case, get all the results for iteration
+	as was done before the switch to full report filters.  The delta
+	comparison requires this because there's no way of knowing beforehand
+	how many actual delta results there will be.  Also disable Max Rows Per
+	Page for this iteration, to ensure that all results are there.
+	(manage_max_rows): Skip Max Rows Per Page if ignore_max_rows_per_page is
+	set.
+
+	* src/manage.h (get_data_t): Add ignore_max_rows_per_page.
+
+2016-05-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (manage_filter_controls)
 	(manage_report_filter_controls, append_relation, filter_clause): Note
 	about caller adjusting max.  Put setting name near UUID to make things clearer.
 	(print_report_xml): Adjust max_results to take into account Max Rows Per Page.

@@ -19144,6 +19144,11 @@ prognostic_report_result_total (report_host_t report_host, int *total)
 /* Reports. */
 
 /**
+ * @brief Whether to ignore the Max Rows Per Page settings.
+ */
+int ignore_max_rows_per_page = 0;
+
+/**
  * @brief Clear all cached report result counts.
  *
  * @param[in]  override  Flag for override or regular case.
@@ -27027,6 +27032,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     {
       int res;
       gchar *order;
+      get_data_t delta_get;
 
       if ((strcmp (sort_field, "name") == 0)
           || (strcmp (sort_field, "vulnerability") == 0))
@@ -27043,14 +27049,19 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       else
         order = g_strdup (", host, port, severity, description");
 
+      delta_get = *get;
+      delta_get.filt_id = NULL;
+      delta_get.filter = g_strdup_printf ("rows=-1 first=1 %s", term);
+      ignore_max_rows_per_page = 1;
+
 #if 0
       iterator_t results2;
 
-      res = init_result_get_iterator (&results, get, report, NULL, order);
+      res = init_result_get_iterator (&results, &delta_get, report, NULL, order);
       if (res)
         return -1;
 
-      res = init_result_get_iterator (&results2, get, delta, NULL, order);
+      res = init_result_get_iterator (&results2, &delta_get, delta, NULL, order);
       if (res)
         return -1;
 
@@ -27079,20 +27090,24 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       tracef ("   delta: %s: REPORT 2 END", __FUNCTION__);
 #endif
 
-      res = init_result_get_iterator (&results, get, report, NULL, order);
+      res = init_result_get_iterator (&results, &delta_get, report, NULL, order);
       if (res)
         {
+          ignore_max_rows_per_page = 0;
           g_free (order);
           return -1;
         }
 
-      res = init_result_get_iterator (&delta_results, get, delta, NULL, order);
+      res = init_result_get_iterator (&delta_results, &delta_get, delta, NULL, order);
       if (res)
         {
+          ignore_max_rows_per_page = 0;
           g_free (order);
           return -1;
         }
 
+      g_free (delta_get.filter);
+      ignore_max_rows_per_page = 0;
       g_free (order);
     }
   else if (get->details)
@@ -27144,6 +27159,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
       tracef ("   delta: %s: start", __FUNCTION__);
       tracef ("   delta: %s: sort_field: %s", __FUNCTION__, sort_field);
+      tracef ("   delta: %s: max_results: %i", __FUNCTION__, max_results);
       done = !next (&results);
       delta_done = !next (&delta_results);
       while (1)
@@ -59510,8 +59526,9 @@ manage_max_rows (int max)
   if (current_credentials.uuid == NULL)
     return max;
 
-  /* Max Rows Per Page. */
-  if (setting_value_int ("76374a7a-0569-11e6-b6da-28d24461215b", &max_rows))
+  if (ignore_max_rows_per_page
+      /* Max Rows Per Page. */
+      || setting_value_int ("76374a7a-0569-11e6-b6da-28d24461215b", &max_rows))
     return max;
 
   if (max_rows && (max < 0 || max > max_rows))

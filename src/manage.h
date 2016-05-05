@@ -260,6 +260,7 @@ typedef struct
   int trash;           ///< Boolean.  Whether to return from trashcan.
   gchar *type;         ///< Type of resource.
   gchar *subtype;      ///< Subtype, or NULL.
+  int ignore_max_rows_per_page; ///< Whether to ignore the Max Rows Per Page setting.
   int ignore_pagination; ///< Whether to ignore the pagination (first and max).
   int minimal;         ///< Whether to respond with minimal information.
 } get_data_t;
