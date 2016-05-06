@@ -1,5 +1,15 @@
 2016-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_delta_iterators): New function.  Body from
+	print_report_xml.
+	(print_report_xml): Use init_delta_iterators.
+
+2016-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (print_report_xml): Align args.
+
+2016-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (print_report_xml): Free term.
 
 2016-05-06  Matthew Mundell <matthew.mundell@greenbone.net>

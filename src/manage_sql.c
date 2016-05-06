@@ -26285,6 +26285,107 @@ host_summary_append (GString *host_summary_buffer, const char *host,
     }
 }
 
+
+/**
+ * @brief Init delta iterators for print_report_xml.
+ *
+ * @param[in]  report      The report.
+ * @param[in]  results     Report result iterator.
+ * @param[in]  delta       Delta report.
+ * @param[in]  results     Delta Report result iterator.
+ * @param[in]  term        Filter term.
+ * @param[out] sort_field  Sort field.
+ *
+ * @return 0 on success, -1 error.
+ */
+static int
+init_delta_iterators (report_t report, iterator_t *results, report_t delta,
+                      iterator_t *delta_results, const get_data_t *get,
+                      const char *term, const char *sort_field)
+{
+  int res;
+  gchar *order;
+  get_data_t delta_get;
+
+  if ((strcmp (sort_field, "name") == 0)
+      || (strcmp (sort_field, "vulnerability") == 0))
+    order = g_strdup (", host, port, severity, nvt, description");
+  else if (strcmp (sort_field, "host") == 0)
+    order = g_strdup (", port, severity, nvt, description");
+  else if ((strcmp (sort_field, "port") == 0)
+           || (strcmp (sort_field, "location") == 0))
+    order = g_strdup (", host, severity, nvt, description");
+  else if (strcmp (sort_field, "severity") == 0)
+    order = g_strdup (", host, port, nvt, description");
+  else if (strcmp (sort_field, "nvt") == 0)
+    order = g_strdup (", host, port, severity, description");
+  else
+    order = g_strdup (", host, port, severity, description");
+
+  delta_get = *get;
+  delta_get.filt_id = NULL;
+  delta_get.filter = g_strdup_printf ("rows=-1 first=1 %s", term);
+  ignore_max_rows_per_page = 1;
+
+#if 0
+  iterator_t results2;
+
+  res = init_result_get_iterator (results, &delta_get, report, NULL, order);
+  if (res)
+    return -1;
+
+  res = init_result_get_iterator (&results2, &delta_get, delta, NULL, order);
+  if (res)
+    return -1;
+
+  tracef ("   delta: %s: REPORT 1:", __FUNCTION__);
+  while (next (results))
+    tracef ("   delta: %s: %s   %s   %s   %s   %.30s",
+            __FUNCTION__,
+            result_iterator_nvt_name (results),
+            result_iterator_host (results),
+            result_iterator_type (results),
+            result_iterator_port (results),
+            result_iterator_descr (results));
+  cleanup_iterator (results);
+  tracef ("   delta: %s: REPORT 1 END", __FUNCTION__);
+
+  tracef ("   delta: %s: REPORT 2:", __FUNCTION__);
+  while (next (&results2))
+    tracef ("   delta: %s: %s   %s   %s   %s   %.30s",
+            __FUNCTION__,
+            result_iterator_nvt_name (&results2),
+            result_iterator_host (&results2),
+            result_iterator_type (&results2),
+            result_iterator_port (&results2),
+            result_iterator_descr (&results2));
+  cleanup_iterator (&results2);
+  tracef ("   delta: %s: REPORT 2 END", __FUNCTION__);
+#endif
+
+  res = init_result_get_iterator (results, &delta_get, report, NULL, order);
+  if (res)
+    {
+      ignore_max_rows_per_page = 0;
+      g_free (order);
+      return -1;
+    }
+
+  res = init_result_get_iterator (delta_results, &delta_get, delta, NULL, order);
+  if (res)
+    {
+      ignore_max_rows_per_page = 0;
+      g_free (order);
+      return -1;
+    }
+
+  g_free (delta_get.filter);
+  ignore_max_rows_per_page = 0;
+  g_free (order);
+
+  return 0;
+}
+
 /**
  * @brief Print the XML for a report to a file.
  *
@@ -27030,86 +27131,13 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
   if (delta && get->details)
     {
-      int res;
-      gchar *order;
-      get_data_t delta_get;
-
-      if ((strcmp (sort_field, "name") == 0)
-          || (strcmp (sort_field, "vulnerability") == 0))
-        order = g_strdup (", host, port, severity, nvt, description");
-      else if (strcmp (sort_field, "host") == 0)
-        order = g_strdup (", port, severity, nvt, description");
-      else if ((strcmp (sort_field, "port") == 0)
-               || (strcmp (sort_field, "location") == 0))
-        order = g_strdup (", host, severity, nvt, description");
-      else if (strcmp (sort_field, "severity") == 0)
-        order = g_strdup (", host, port, nvt, description");
-      else if (strcmp (sort_field, "nvt") == 0)
-        order = g_strdup (", host, port, severity, description");
-      else
-        order = g_strdup (", host, port, severity, description");
-
-      delta_get = *get;
-      delta_get.filt_id = NULL;
-      delta_get.filter = g_strdup_printf ("rows=-1 first=1 %s", term);
+      if (init_delta_iterators (report, &results, delta, &delta_results, get,
+                                term, sort_field))
+        {
+          g_free (term);
+          return -1;
+        }
       g_free (term);
-      ignore_max_rows_per_page = 1;
-
-#if 0
-      iterator_t results2;
-
-      res = init_result_get_iterator (&results, &delta_get, report, NULL, order);
-      if (res)
-        return -1;
-
-      res = init_result_get_iterator (&results2, &delta_get, delta, NULL, order);
-      if (res)
-        return -1;
-
-      tracef ("   delta: %s: REPORT 1:", __FUNCTION__);
-      while (next (&results))
-        tracef ("   delta: %s: %s   %s   %s   %s   %.30s",
-                __FUNCTION__,
-                result_iterator_nvt_name (&results),
-                result_iterator_host (&results),
-                result_iterator_type (&results),
-                result_iterator_port (&results),
-                result_iterator_descr (&results));
-      cleanup_iterator (&results);
-      tracef ("   delta: %s: REPORT 1 END", __FUNCTION__);
-
-      tracef ("   delta: %s: REPORT 2:", __FUNCTION__);
-      while (next (&results2))
-        tracef ("   delta: %s: %s   %s   %s   %s   %.30s",
-                __FUNCTION__,
-                result_iterator_nvt_name (&results2),
-                result_iterator_host (&results2),
-                result_iterator_type (&results2),
-                result_iterator_port (&results2),
-                result_iterator_descr (&results2));
-      cleanup_iterator (&results2);
-      tracef ("   delta: %s: REPORT 2 END", __FUNCTION__);
-#endif
-
-      res = init_result_get_iterator (&results, &delta_get, report, NULL, order);
-      if (res)
-        {
-          ignore_max_rows_per_page = 0;
-          g_free (order);
-          return -1;
-        }
-
-      res = init_result_get_iterator (&delta_results, &delta_get, delta, NULL, order);
-      if (res)
-        {
-          ignore_max_rows_per_page = 0;
-          g_free (order);
-          return -1;
-        }
-
-      g_free (delta_get.filter);
-      ignore_max_rows_per_page = 0;
-      g_free (order);
     }
   else if (get->details)
     {
