@@ -27827,24 +27827,24 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   if (delta)
     /** @todo The f_debugs, etc. vars are setup to give the page count. */
     PRINT (out,
-             "<result_count>"
-             "<filtered>%i</filtered>"
-             "<debug><filtered>%i</filtered></debug>"
-             "<hole><filtered>%i</filtered></hole>"
-             "<info><filtered>%i</filtered></info>"
-             "<log><filtered>%i</filtered></log>"
-             "<warning><filtered>%i</filtered></warning>"
-             "<false_positive>"
-             "<filtered>%i</filtered>"
-             "</false_positive>"
-             "</result_count>",
-             orig_filtered_result_count,
-             (strchr (levels, 'd') ? orig_f_debugs : 0),
-             (strchr (levels, 'h') ? orig_f_holes : 0),
-             (strchr (levels, 'l') ? orig_f_infos : 0),
-             (strchr (levels, 'g') ? orig_f_logs : 0),
-             (strchr (levels, 'm') ? orig_f_warnings : 0),
-             (strchr (levels, 'f') ? orig_f_false_positives : 0));
+           "<result_count>"
+           "<filtered>%i</filtered>"
+           "<debug><filtered>%i</filtered></debug>"
+           "<hole><filtered>%i</filtered></hole>"
+           "<info><filtered>%i</filtered></info>"
+           "<log><filtered>%i</filtered></log>"
+           "<warning><filtered>%i</filtered></warning>"
+           "<false_positive>"
+           "<filtered>%i</filtered>"
+           "</false_positive>"
+           "</result_count>",
+           orig_filtered_result_count,
+           (strchr (levels, 'd') ? orig_f_debugs : 0),
+           (strchr (levels, 'h') ? orig_f_holes : 0),
+           (strchr (levels, 'l') ? orig_f_infos : 0),
+           (strchr (levels, 'g') ? orig_f_logs : 0),
+           (strchr (levels, 'm') ? orig_f_warnings : 0),
+           (strchr (levels, 'f') ? orig_f_false_positives : 0));
   else
     {
       PRINT (out,
@@ -27879,12 +27879,12 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
              (strchr (levels, 'f') ? f_false_positives : 0));
 
       PRINT (out,
-          "<severity>"
-          "<full>%1.1f</full>"
-          "<filtered>%1.1f</filtered>"
-          "</severity>",
-          severity,
-          f_severity);
+             "<severity>"
+             "<full>%1.1f</full>"
+             "<filtered>%1.1f</filtered>"
+             "</severity>",
+             severity,
+             f_severity);
     }
 
   if (host_summary)

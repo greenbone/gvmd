@@ -1,6 +1,6 @@
 2016-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/manage_sql.c
+	* src/manage_sql.c (print_report_xml): Free term.
 
 2016-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
