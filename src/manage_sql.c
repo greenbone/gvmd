@@ -26285,7 +26285,6 @@ host_summary_append (GString *host_summary_buffer, const char *host,
     }
 }
 
-
 /**
  * @brief Init delta iterators for print_report_xml.
  *
@@ -27170,6 +27169,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       /* A tree of host, tree pairs, where the inner tree is a sorted tree
        * of port, threat pairs. */
       GTree *ports;
+      gchar *msg;
 
       orig_f_debugs = f_debugs;
       orig_f_holes = f_holes;
@@ -27271,7 +27271,11 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                         "new",
                                         NULL,
                                         0);
-                    PRINT_XML (out, buffer->str);
+                    if (fprintf (out, "%s", buffer->str) < 0)
+                      {
+                        fclose (out);
+                        return -1;
+                      }
                     g_string_free (buffer, TRUE);
                     if (result_hosts_only)
                       array_add_new_string (result_hosts,
@@ -27315,7 +27319,11 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                         "gone",
                                         NULL,
                                         0);
-                    PRINT_XML (out, buffer->str);
+                    if (fprintf (out, "%s", buffer->str) < 0)
+                      {
+                        fclose (out);
+                        return -1;
+                      }
                     g_string_free (buffer, TRUE);
                     if (result_hosts_only)
                       array_add_new_string (result_hosts,
@@ -27402,7 +27410,11 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
               tz_revert (zone, tz);
               return -1;
             }
-          PRINT_XML (out, buffer->str);
+          if (fprintf (out, "%s", buffer->str) < 0)
+            {
+              fclose (out);
+              return -1;
+            }
           g_string_free (buffer, TRUE);
 
           if ((used == 0)
@@ -27794,17 +27806,30 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
           else
             assert (0);
         }
-      PRINT (out, "</results>");
+      msg = g_markup_printf_escaped ("</results>");
+      if (fprintf (out, "%s", msg) < 0)
+        {
+          g_free (msg);
+          fclose (out);
+          return -1;
+        }
+      g_free (msg);
 
       /* Write ports to file. */
 
-      PRINT (out,
-               "<ports"
-               " start=\"%i\""
-               " max=\"%i\">",
-               /* Add 1 for 1 indexing. */
-               first_result + 1,
-               max_results);
+      msg = g_markup_printf_escaped ("<ports"
+                                     " start=\"%i\""
+                                     " max=\"%i\">",
+                                     /* Add 1 for 1 indexing. */
+                                     first_result + 1,
+                                     max_results);
+      if (fprintf (out, "%s", msg) < 0)
+        {
+          g_free (msg);
+          fclose (out);
+          return -1;
+        }
+      g_free (msg);
       if (sort_field == NULL || strcmp (sort_field, "port"))
         {
           if (sort_order)
@@ -27817,7 +27842,14 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       else
         g_tree_foreach (ports, print_host_ports_desc, out);
       g_tree_destroy (ports);
-      PRINT (out, "</ports>");
+      msg = g_markup_printf_escaped ("</ports>");
+      if (fprintf (out, "%s", msg) < 0)
+        {
+          g_free (msg);
+          fclose (out);
+          return -1;
+        }
+      g_free (msg);
     }
   else if (get->details)
     {

@@ -1,5 +1,10 @@
 2016-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (print_report_xml): Expand macros in delta section
+	to prepare for new function.
+
+2016-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_scanner): Adjust arg doc.
 
 2016-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
