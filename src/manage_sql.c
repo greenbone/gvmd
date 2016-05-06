@@ -64158,6 +64158,11 @@ type_filter_columns (const char *type, int apply_overrides)
       static const char *ret[] = ALERT_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
+  else if (strcasecmp (type, "NOTE") == 0)
+    {
+      static const char *ret[] = NOTE_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
   else
     return NULL;
 
