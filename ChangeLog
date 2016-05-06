@@ -1,5 +1,9 @@
 2016-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c
+
+2016-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.h (SETTING_UUID_ROWS_PER_PAGE)
 	(SETTING_UUID_MAX_ROWS_PER_PAGE): New defines.
 

@@ -26355,7 +26355,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   orig_f_false_positives = orig_f_warnings = orig_f_logs = orig_f_infos = 0;
   orig_f_holes = orig_f_debugs = 0;
 
-  /** @todo Leaks on error in PRINT.  The process normally exits then anyway. */
+  /** @todo Leaks on error in PRINT and PRINT_XML.  The process normally exits
+   *        then anyway. */
 
   /* run_status is set by report_scan_run_status when either of "delta" and
    * "report" are true.  run_status is only used by run_status_name, only when
@@ -26878,6 +26879,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     {
       int ret;
 
+      g_free (term);
+
       ret = print_report_assets_xml (out, host,
                                      ignore_pagination ? 1 : first_result,
                                      ignore_pagination ? -1 : max_results,
@@ -26911,6 +26914,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   if (type && (strcmp (type, "prognostic") == 0))
     {
       int ret;
+
+      g_free (term);
 
       ret = print_report_prognostic_xml (out, host,
                                          ignore_pagination ? 1 : first_result,
@@ -26951,6 +26956,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   if (report_timestamp (uuid, &timestamp))
     {
       free (uuid);
+      g_free (term);
       tz_revert (zone, tz);
       return -1;
     }
@@ -27003,6 +27009,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                  search_phrase, search_phrase_exact,
                                  min_cvss_base, min_qod, apply_overrides))
         {
+          g_free (term);
           tz_revert (zone, tz);
           return -1;
         }
@@ -27045,6 +27052,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       delta_get = *get;
       delta_get.filt_id = NULL;
       delta_get.filter = g_strdup_printf ("rows=-1 first=1 %s", term);
+      g_free (term);
       ignore_max_rows_per_page = 1;
 
 #if 0
@@ -27106,10 +27114,13 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   else if (get->details)
     {
       int res;
+      g_free (term);
       res = init_result_get_iterator (&results, get, report, NULL, NULL);
       if (res)
         return -1;
     }
+  else
+    g_free (term);
 
   if (get->details)
     PRINT (out,
