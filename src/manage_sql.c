@@ -63982,6 +63982,11 @@ type_columns (const char *type, int apply_overrides)
       static column_t columns[] = ALERT_ITERATOR_COLUMNS;
       return columns_build_select (columns);
     }
+  else if (strcasecmp (type, "NOTE") == 0)
+    {
+      static column_t columns[] = NOTE_ITERATOR_COLUMNS;
+      return columns_build_select (columns);
+    }
   else
     return NULL;
 }

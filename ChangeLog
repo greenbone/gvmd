@@ -1,5 +1,9 @@
 2016-05-06  Björn Ricks <bjoern.ricks@greenbone.net>
 
+	* src/manage_sql.c (type_columns): Return sql column definition for notes.
+
+2016-05-06  Björn Ricks <bjoern.ricks@greenbone.net>
+
 	* src/manage_sql.c (modify_setting): Add UUIDs for notes dashboard settings.
 
 2016-05-06  Michael Wiegand <michael.wiegand@greenbone.net>
