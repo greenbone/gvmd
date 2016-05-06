@@ -44555,9 +44555,7 @@ find_scanner_with_permission (const char* uuid, scanner_t* scanner,
  * @param[in]   host        Host of scanner.
  * @param[in]   port        Port of scanner.
  * @param[in]   type        Type of scanner.
- * @param[in]   ca_cert     CA Certificate for scanner.
- * @param[in]   key_pub     Certificate for scanner.
- * @param[in]   key_priv    Private key for scanner.
+ * @param[in]   ca_pub      CA Certificate for scanner.
  *
  * @return 0 success, 1 scanner exists already, 2 Invalid value,
  *         3 credential not found, 4 wrong credential type,
