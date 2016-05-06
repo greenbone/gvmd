@@ -1,5 +1,9 @@
 2016-05-06  Björn Ricks <bjoern.ricks@greenbone.net>
 
+	* src/manage_sql.c (type_select_columns): Return columns for notes.
+
+2016-05-06  Björn Ricks <bjoern.ricks@greenbone.net>
+
 	* src/manage_sql.c (type_columns): Return sql column definition for notes.
 
 2016-05-06  Björn Ricks <bjoern.ricks@greenbone.net>

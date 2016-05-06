@@ -64016,6 +64016,7 @@ type_select_columns (const char *type, int apply_overrides)
   static column_t nvt_columns[] = NVT_ITERATOR_COLUMNS;
   static column_t ovaldef_columns[] = OVALDEF_INFO_ITERATOR_COLUMNS;
   static column_t alert_columns[] = ALERT_ITERATOR_COLUMNS;
+  static column_t note_columns[] = NOTE_ITERATOR_COLUMNS;
 
   if (type == NULL)
     return NULL;
@@ -64045,6 +64046,8 @@ type_select_columns (const char *type, int apply_overrides)
     return ovaldef_columns;
   else if (strcasecmp (type, "ALERT") == 0)
     return alert_columns;
+  else if (strcasecmp (type, "NOTE") == 0)
+    return note_columns;
   return NULL;
 }
 
