@@ -2216,9 +2216,7 @@ manage_filter_controls (const gchar *filter, int *first, int *max,
             {
               *max = atoi (keyword->string);
               if (*max == -2)
-                /* Rows Per Page. */
-                setting_value_int ("5f5a8712-8017-11e1-8556-406186ea4fc5",
-                                   max);
+                setting_value_int (SETTING_UUID_ROWS_PER_PAGE, max);
               else if (*max < 1)
                 *max = -1;
               break;
@@ -2406,9 +2404,7 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
             {
               *max = atoi (keyword->string);
               if (*max == -2)
-                /* Rows Per Page. */
-                setting_value_int ("5f5a8712-8017-11e1-8556-406186ea4fc5",
-                                   max);
+                setting_value_int (SETTING_UUID_ROWS_PER_PAGE, max);
               else if (*max < 1)
                 *max = -1;
               break;
@@ -2601,8 +2597,7 @@ append_relation (GString *clean, keyword_t *keyword, const char relation)
       int max;
 
       if (strcmp (keyword->string, "-2") == 0)
-        /* Rows Per Page. */
-        setting_value_int ("5f5a8712-8017-11e1-8556-406186ea4fc5", &max);
+        setting_value_int (SETTING_UUID_ROWS_PER_PAGE, &max);
       else
         max = atoi (keyword->string);
 
@@ -4050,9 +4045,7 @@ filter_clause (const char* type, const char* filter,
   if (max_return)
     {
       if (*max_return == -2)
-        /* Rows Per Page. */
-        setting_value_int ("5f5a8712-8017-11e1-8556-406186ea4fc5",
-                           max_return);
+        setting_value_int (SETTING_UUID_ROWS_PER_PAGE, max_return);
       else if (*max_return < 1)
         *max_return = -1;
 
@@ -13898,22 +13891,22 @@ check_db_settings ()
          "  'Browser Language');");
 
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = '5f5a8712-8017-11e1-8556-406186ea4fc5'"
+               " WHERE uuid = '" SETTING_UUID_ROWS_PER_PAGE "'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
-         " ('5f5a8712-8017-11e1-8556-406186ea4fc5', NULL, 'Rows Per Page',"
+         " ('" SETTING_UUID_ROWS_PER_PAGE "', NULL, 'Rows Per Page',"
          "  'The default number of rows displayed in any listing.',"
          "  10);");
 
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = '76374a7a-0569-11e6-b6da-28d24461215b'"
+               " WHERE uuid = '" SETTING_UUID_MAX_ROWS_PER_PAGE "'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
-         " ('76374a7a-0569-11e6-b6da-28d24461215b', NULL, 'Max Rows Per Page',"
+         " ('" SETTING_UUID_MAX_ROWS_PER_PAGE "', NULL, 'Max Rows Per Page',"
          "  'The default maximum number of rows displayed in any listing.',"
          "  1000);");
 
@@ -59061,7 +59054,7 @@ modify_setting (const gchar *uuid, const gchar *name,
       return ret;
     }
 
-  if (uuid && (strcmp (uuid, "5f5a8712-8017-11e1-8556-406186ea4fc5") == 0
+  if (uuid && (strcmp (uuid, SETTING_UUID_ROWS_PER_PAGE) == 0
                || strcmp (uuid, "f16bb236-a32d-4cd5-a880-e0fcf2599f59") == 0
                || strcmp (uuid, "6765549a-934e-11e3-b358-406186ea4fc5") == 0
                || strcmp (uuid, "77ec2444-e7f2-4a80-a59b-f4237782d93f") == 0
@@ -59096,7 +59089,7 @@ modify_setting (const gchar *uuid, const gchar *name,
           value_size = 0;
         }
 
-      if (strcmp (uuid, "5f5a8712-8017-11e1-8556-406186ea4fc5") == 0)
+      if (strcmp (uuid, SETTING_UUID_ROWS_PER_PAGE) == 0)
         {
           const gchar *val;
           /* Rows Per Page. */
@@ -59536,8 +59529,7 @@ manage_max_rows (int max)
     return max;
 
   if (ignore_max_rows_per_page
-      /* Max Rows Per Page. */
-      || setting_value_int ("76374a7a-0569-11e6-b6da-28d24461215b", &max_rows))
+      || setting_value_int (SETTING_UUID_MAX_ROWS_PER_PAGE, &max_rows))
     return max;
 
   if (max_rows && (max < 0 || max > max_rows))
@@ -59610,14 +59602,14 @@ manage_set_max_rows (GSList *log_config, const gchar *database,
         }
 
       sql ("DELETE FROM settings"
-           " WHERE uuid = '76374a7a-0569-11e6-b6da-28d24461215b'"
+           " WHERE uuid = '" SETTING_UUID_MAX_ROWS_PER_PAGE "'"
            " AND owner = (SELECT id FROM users WHERE uuid = '%s');",
            uuid);
 
       if (max_rows >= 0)
         sql ("INSERT INTO settings (uuid, owner, name, comment, value)"
              " VALUES"
-             " ('76374a7a-0569-11e6-b6da-28d24461215b',"
+             " ('" SETTING_UUID_MAX_ROWS_PER_PAGE "',"
              "  (SELECT id FROM users WHERE uuid = '%s'),"
              "  'Max Rows Per Page',"
              "  'The default maximum number of rows displayed in any listing.',"
@@ -59630,12 +59622,12 @@ manage_set_max_rows (GSList *log_config, const gchar *database,
   else
     {
       sql ("DELETE FROM settings"
-           " WHERE uuid = '76374a7a-0569-11e6-b6da-28d24461215b'"
+           " WHERE uuid = '" SETTING_UUID_MAX_ROWS_PER_PAGE "'"
            " AND owner IS NULL;");
 
       sql ("INSERT INTO settings (uuid, owner, name, comment, value)"
            " VALUES"
-           " ('76374a7a-0569-11e6-b6da-28d24461215b',"
+           " ('" SETTING_UUID_MAX_ROWS_PER_PAGE "',"
            "  NULL,"
            "  'Max Rows Per Page',"
            "  'The default maximum number of rows displayed in any listing.',"

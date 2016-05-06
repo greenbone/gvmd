@@ -1,3 +1,13 @@
+2016-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.h (SETTING_UUID_ROWS_PER_PAGE)
+	(SETTING_UUID_MAX_ROWS_PER_PAGE): New defines.
+
+	* src/manage_sql.c (manage_filter_controls)
+	(manage_report_filter_controls, append_relation, filter_clause)
+	(check_db_settings, modify_setting, manage_max_rows)
+	(manage_set_max_rows): Use new defines.
+
 2016-05-06  Björn Ricks <bjoern.ricks@greenbone.net>
 
 	* src/manage_sql.c (type_filter_columns): Return filter columns for notes.
