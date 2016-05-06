@@ -59345,6 +59345,8 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("DFN-CERT Filter");
       else if (strcmp (uuid, "feefe56b-e2da-4913-81cc-1a6ae3b36e64") == 0)
         setting_name = g_strdup ("All SecInfo Filter");
+      else if (strcmp (uuid, "32b3d606-461b-4770-b3e1-b9ea3cf0f84c") == 0)
+        setting_name = g_strdup ("Notes Filter");
 
       /* Default resource selections */
       else if (strcmp (uuid, "f9f5a546-8018-48d0-bef5-5ad4926ea899") == 0)
@@ -59461,6 +59463,13 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("All SecInfo Top Dashboard Components");
       else if (strcmp (uuid, "985f38eb-1a30-4a35-abb6-3eec05b5d54a") == 0)
         setting_name = g_strdup ("All SecInfo Top Dashboard Row Heights");
+
+      /* Notes dashboard settings */
+      else if (strcmp (uuid, "ce7b121-c609-47b0-ab57-fd020a0336f4") == 0)
+        setting_name = g_strdup ("Notes Top Dashboard Components");
+      else if (strcmp (uuid, "05eb63e9-ccd7-481d-841d-9406d3281040") == 0)
+        setting_name = g_strdup ("Notes Top Dashboard Row Heights");
+
     }
 
   if (setting_name)
