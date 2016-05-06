@@ -26288,12 +26288,12 @@ host_summary_append (GString *host_summary_buffer, const char *host,
 /**
  * @brief Init delta iterators for print_report_xml.
  *
- * @param[in]  report      The report.
- * @param[in]  results     Report result iterator.
- * @param[in]  delta       Delta report.
- * @param[in]  results     Delta Report result iterator.
- * @param[in]  term        Filter term.
- * @param[out] sort_field  Sort field.
+ * @param[in]  report         The report.
+ * @param[in]  results        Report result iterator.
+ * @param[in]  delta          Delta report.
+ * @param[in]  delta_results  Delta report result iterator.
+ * @param[in]  term           Filter term.
+ * @param[out] sort_field     Sort field.
  *
  * @return 0 on success, -1 error.
  */
@@ -26381,6 +26381,712 @@ init_delta_iterators (report_t report, iterator_t *results, report_t delta,
   g_free (delta_get.filter);
   ignore_max_rows_per_page = 0;
   g_free (order);
+
+  return 0;
+}
+
+/**
+ * @brief Print delta results for print_report_xml.
+ *
+ * @param[in]  out            File stream to write to.
+ * @param[in]  results        Report result iterator.
+ * @param[in]  delta_results  Delta report result iterator.
+ * @param[in]  term           Filter term.
+ * @param[in]  sort_field     Sort field.
+ * @param[in]  orig_filtered_result_count  Result count.
+ * @param[in]  filtered_result_count       Result count.
+ * @param[in]  orig_f_debugs  Result count.
+ * @param[in]  f_debugs       Result count.
+ * @param[in]  orig_f_holes   Result count.
+ * @param[in]  f_holes        Result count.
+ * @param[in]  orig_f_infos   Result count.
+ * @param[in]  f_infos        Result count.
+ * @param[in]  orig_f_logs    Result count.
+ * @param[in]  f_logs         Result count.
+ * @param[in]  orig_f_warnings  Result count.
+ * @param[in]  f_warnings       Result count.
+ * @param[in]  orig_f_false_positives  Result count.
+ * @param[in]  f_false_positives       Result count.
+ * @param[in]  result_hosts   Result hosts.
+ *
+ * @return 0 on success, -1 error.
+ */
+static int
+print_report_delta_xml (FILE *out, iterator_t *results,
+                        iterator_t *delta_results, const char *delta_states,
+                        int first_result, int max_results, task_t task,
+                        int notes, int notes_details, int overrides,
+                        int overrides_details, int sort_order,
+                        const char *sort_field, int result_hosts_only,
+                        int *orig_filtered_result_count,
+                        int *filtered_result_count,
+                        int *orig_f_debugs, int *f_debugs,
+                        int *orig_f_holes, int *f_holes,
+                        int *orig_f_infos, int *f_infos,
+                        int *orig_f_logs, int *f_logs,
+                        int *orig_f_warnings, int *f_warnings,
+                        int *orig_f_false_positives, int *f_false_positives,
+                        array_t *result_hosts)
+{
+  gboolean done, delta_done;
+  int changed, gone, new, same;
+  /* A tree of host, tree pairs, where the inner tree is a sorted tree
+   * of port, threat pairs. */
+  GTree *ports;
+  gchar *msg;
+
+  *orig_f_debugs = *f_debugs;
+  *orig_f_holes = *f_holes;
+  *orig_f_infos = *f_infos;
+  *orig_f_logs = *f_logs;
+  *orig_f_warnings = *f_warnings;
+  *orig_f_false_positives = *f_false_positives;
+  *orig_filtered_result_count = *filtered_result_count;
+
+  changed = (strchr (delta_states, 'c') != NULL);
+  gone = (strchr (delta_states, 'g') != NULL);
+  new = (strchr (delta_states, 'n') != NULL);
+  same = (strchr (delta_states, 's') != NULL);
+
+  ports = g_tree_new_full ((GCompareDataFunc) strcmp, NULL, g_free,
+                           (GDestroyNotify) free_host_ports);
+
+  /* Compare the results in the two iterators, which are sorted. */
+
+  tracef ("   delta: %s: start", __FUNCTION__);
+  tracef ("   delta: %s: sort_field: %s", __FUNCTION__, sort_field);
+  tracef ("   delta: %s: max_results: %i", __FUNCTION__, max_results);
+  done = !next (results);
+  delta_done = !next (delta_results);
+  while (1)
+    {
+      GString *buffer;
+      compare_results_t state;
+      int used, would_use;
+
+      if (max_results == 0)
+        break;
+
+      if (done)
+        {
+          if (delta_done)
+            break;
+          if (new)
+            /* Extra results in 'delta_results'. */
+            do
+              {
+                const char *level;
+
+                tracef ("   delta: %s: extra from report 2: %s",
+                        __FUNCTION__,
+                        result_iterator_nvt_oid (results));
+
+                if (first_result)
+                  {
+                    tracef ("   delta: skip");
+                    first_result--;
+                    continue;
+                  }
+
+                /* Increase the result count. */
+                level = result_iterator_level (delta_results);
+                (*orig_filtered_result_count)++;
+                (*filtered_result_count)++;
+                if (strcmp (level, "High") == 0)
+                  {
+                    (*orig_f_holes)++;
+                    (*f_holes)++;
+                  }
+                else if (strcmp (level, "Medium") == 0)
+                  {
+                    (*orig_f_warnings)++;
+                    (*f_warnings)++;
+                  }
+                else if (strcmp (level, "Low") == 0)
+                  {
+                    (*orig_f_infos)++;
+                    (*f_infos)++;
+                  }
+                else if (strcmp (level, "Log") == 0)
+                  {
+                    (*orig_f_logs)++;
+                    (*f_logs)++;
+                  }
+                else if (strcmp (level, "False Positive") == 0)
+                  {
+                    (*orig_f_false_positives)++;
+                    (*f_false_positives)++;
+                  }
+
+                tracef ("   delta: %s: extra from report 2: %s",
+                        __FUNCTION__,
+                        result_iterator_nvt_oid (delta_results));
+                buffer = g_string_new ("");
+                buffer_results_xml (buffer,
+                                    delta_results,
+                                    task,
+                                    notes,
+                                    notes_details,
+                                    overrides,
+                                    overrides_details,
+                                    0,
+                                    0,
+                                    0,
+                                    "new",
+                                    NULL,
+                                    0);
+                if (fprintf (out, "%s", buffer->str) < 0)
+                  return -1;
+                g_string_free (buffer, TRUE);
+                if (result_hosts_only)
+                  array_add_new_string (result_hosts,
+                                        result_iterator_host (delta_results));
+                add_port (ports, delta_results);
+                max_results--;
+                if (max_results == 0)
+                  break;
+              }
+            while (next (delta_results));
+          delta_done = TRUE;
+          break;
+        }
+
+      if (delta_done)
+        {
+          /* Extra results in 'results'. */
+          if (gone)
+            do
+              {
+                tracef ("   delta: %s: extra from report 1: %s",
+                        __FUNCTION__,
+                        result_iterator_nvt_oid (results));
+                if (first_result)
+                  {
+                    tracef ("   delta: skip");
+                    first_result--;
+                    continue;
+                  }
+                buffer = g_string_new ("");
+                buffer_results_xml (buffer,
+                                    results,
+                                    task,
+                                    notes,
+                                    notes_details,
+                                    overrides,
+                                    overrides_details,
+                                    0,
+                                    0,
+                                    0,
+                                    "gone",
+                                    NULL,
+                                    0);
+                if (fprintf (out, "%s", buffer->str) < 0)
+                  return -1;
+                g_string_free (buffer, TRUE);
+                if (result_hosts_only)
+                  array_add_new_string (result_hosts,
+                                        result_iterator_host (results));
+                add_port (ports, results);
+                max_results--;
+                if (max_results == 0)
+                  break;
+              }
+            while (next (results));
+          else
+            do
+              {
+                const char *level;
+
+                /* Decrease the result count. */
+                level = result_iterator_level (results);
+                (*orig_filtered_result_count)--;
+                (*filtered_result_count)--;
+                if (strcmp (level, "High") == 0)
+                  {
+                    (*orig_f_holes)--;
+                    (*f_holes)--;
+                  }
+                else if (strcmp (level, "Medium") == 0)
+                  {
+                    (*orig_f_warnings)--;
+                    (*f_warnings)--;
+                  }
+                else if (strcmp (level, "Low") == 0)
+                  {
+                    (*orig_f_infos)--;
+                    (*f_infos)--;
+                  }
+                else if (strcmp (level, "Log") == 0)
+                  {
+                    (*orig_f_logs)--;
+                    (*f_logs)--;
+                  }
+                else if (strcmp (level, "False Positive") == 0)
+                  {
+                    (*orig_f_false_positives)--;
+                    (*f_false_positives)--;
+                  }
+              }
+            while (next (results));
+          done = TRUE;
+          break;
+        }
+
+      /* Compare the two results. */
+
+      buffer = g_string_new ("");
+      state = compare_and_buffer_results (buffer,
+                                          results,
+                                          delta_results,
+                                          task,
+                                          notes,
+                                          notes_details,
+                                          overrides,
+                                          overrides_details,
+                                          sort_order,
+                                          sort_field,
+                                          changed,
+                                          gone,
+                                          new,
+                                          same,
+                                          &max_results,
+                                          &first_result,
+                                          &used,
+                                          &would_use);
+      if (state == COMPARE_RESULTS_ERROR)
+        {
+          g_warning ("%s: compare_and_buffer_results failed\n",
+                     __FUNCTION__);
+          return -1;
+        }
+      if (fprintf (out, "%s", buffer->str) < 0)
+        return -1;
+      g_string_free (buffer, TRUE);
+
+      if ((used == 0)
+          && ((state == COMPARE_RESULTS_GONE)
+              || (state == COMPARE_RESULTS_SAME)
+              || (state == COMPARE_RESULTS_CHANGED)))
+        {
+          const char *level;
+
+          /* Decrease the result count. */
+          level = result_iterator_level (results);
+          (*filtered_result_count)--;
+          if (strcmp (level, "High") == 0)
+            {
+              (*f_holes)--;
+            }
+          else if (strcmp (level, "Medium") == 0)
+            {
+              (*f_warnings)--;
+            }
+          else if (strcmp (level, "Low") == 0)
+            {
+              (*f_infos)--;
+            }
+          else if (strcmp (level, "Log") == 0)
+            {
+              (*f_logs)--;
+            }
+          else if (strcmp (level, "False Positive") == 0)
+            {
+              (*f_false_positives)--;
+            }
+        }
+
+      if ((would_use == 0)
+          && ((state == COMPARE_RESULTS_GONE)
+              || (state == COMPARE_RESULTS_SAME)
+              || (state == COMPARE_RESULTS_CHANGED)))
+        {
+          const char *level;
+
+          /* Decrease the result count. */
+          level = result_iterator_level (results);
+          (*orig_filtered_result_count)--;
+          if (strcmp (level, "High") == 0)
+            {
+              (*orig_f_holes)--;
+            }
+          else if (strcmp (level, "Medium") == 0)
+            {
+              (*orig_f_warnings)--;
+            }
+          else if (strcmp (level, "Low") == 0)
+            {
+              (*orig_f_infos)--;
+            }
+          else if (strcmp (level, "Log") == 0)
+            {
+              (*orig_f_logs)--;
+            }
+          else if (strcmp (level, "False Positive") == 0)
+            {
+              (*orig_f_false_positives)--;
+            }
+        }
+
+      /* Move on to the next. */
+
+      if (state == COMPARE_RESULTS_GONE)
+        {
+          /* "Used" just the 'results' result. */
+          if (used)
+            {
+              if (result_hosts_only)
+                array_add_new_string (result_hosts,
+                                      result_iterator_host (results));
+              add_port (ports, results);
+            }
+          done = !next (results);
+        }
+      else if ((state == COMPARE_RESULTS_SAME)
+               || (state == COMPARE_RESULTS_CHANGED))
+        {
+          /* "Used" both results. */
+          if (used)
+            {
+              if (result_hosts_only)
+                array_add_new_string (result_hosts,
+                                      result_iterator_host (results));
+              add_port (ports, results);
+            }
+          done = !next (results);
+          delta_done = !next (delta_results);
+        }
+      else if (state == COMPARE_RESULTS_NEW)
+        {
+          if (would_use)
+            {
+              const char *level;
+
+              /* Would have "used" just the 'delta_results' result, on
+               * an earlier page. */
+
+              /* Increase the result count. */
+              level = result_iterator_level (delta_results);
+              (*orig_filtered_result_count)++;
+              if (strcmp (level, "High") == 0)
+                {
+                  (*orig_f_holes)++;
+                }
+              else if (strcmp (level, "Medium") == 0)
+                {
+                  (*orig_f_warnings)++;
+                }
+              else if (strcmp (level, "Low") == 0)
+                {
+                  (*orig_f_infos)++;
+                }
+              else if (strcmp (level, "Log") == 0)
+                {
+                  (*orig_f_logs)++;
+                }
+              else if (strcmp (level, "False Positive") == 0)
+                {
+                  (*orig_f_false_positives)++;
+                }
+            }
+
+          if (used)
+            {
+              const char *level;
+
+              /* "Used" just the 'delta_results' result. */
+
+              /* Increase the result count. */
+              level = result_iterator_level (delta_results);
+              (*filtered_result_count)++;
+              if (strcmp (level, "High") == 0)
+                {
+                  (*f_holes)++;
+                }
+              else if (strcmp (level, "Medium") == 0)
+                {
+                  (*f_warnings)++;
+                }
+              else if (strcmp (level, "Low") == 0)
+                {
+                  (*f_infos)++;
+                }
+              else if (strcmp (level, "Log") == 0)
+                {
+                  (*f_logs)++;
+                }
+              else if (strcmp (level, "False Positive") == 0)
+                {
+                  (*f_false_positives)++;
+                }
+
+              if (result_hosts_only)
+                array_add_new_string (result_hosts,
+                                      result_iterator_host
+                                       (delta_results));
+
+              add_port (ports, delta_results);
+            }
+          delta_done = !next (delta_results);
+        }
+      else
+        assert (0);
+    }
+
+  /* Compare remaining results, for the filtered report counts. */
+
+  tracef ("   delta: %s: counting rest", __FUNCTION__);
+  while (1)
+    {
+      compare_results_t state;
+      int used, would_use;
+
+      if (done)
+        {
+          if (delta_done)
+            break;
+          if (new)
+            /* Extra results in 'delta_results'. */
+            do
+              {
+                const char *level;
+
+                tracef ("   delta: %s: extra from report 2: %s",
+                        __FUNCTION__,
+                        result_iterator_nvt_oid (delta_results));
+
+                /* Increase the result count. */
+                level = result_iterator_level (delta_results);
+                (*orig_filtered_result_count)++;
+                if (strcmp (level, "High") == 0)
+                  {
+                    (*orig_f_holes)++;
+                  }
+                else if (strcmp (level, "Medium") == 0)
+                  {
+                    (*orig_f_warnings)++;
+                  }
+                else if (strcmp (level, "Low") == 0)
+                  {
+                    (*orig_f_infos)++;
+                  }
+                else if (strcmp (level, "Log") == 0)
+                  {
+                    (*orig_f_logs)++;
+                  }
+                else if (strcmp (level, "False Positive") == 0)
+                  {
+                    (*orig_f_false_positives)++;
+                  }
+              }
+            while (next (delta_results));
+          break;
+        }
+
+      if (delta_done)
+        {
+          /* Extra results in 'results'. */
+          if (gone)
+            do
+              {
+                tracef ("   delta: %s: extra from report 1: %s",
+                        __FUNCTION__,
+                        result_iterator_nvt_oid (results));
+
+                /* It's in the count already. */
+              }
+            while (next (results));
+          else
+            do
+              {
+                const char *level;
+
+                /* Decrease the result count. */
+                level = result_iterator_level (results);
+                (*orig_filtered_result_count)--;
+                if (strcmp (level, "High") == 0)
+                  {
+                    (*orig_f_holes)--;
+                  }
+                else if (strcmp (level, "Medium") == 0)
+                  {
+                    (*orig_f_warnings)--;
+                  }
+                else if (strcmp (level, "Low") == 0)
+                  {
+                    (*orig_f_infos)--;
+                  }
+                else if (strcmp (level, "Log") == 0)
+                  {
+                    (*orig_f_logs)--;
+                  }
+                else if (strcmp (level, "False Positive") == 0)
+                  {
+                    (*orig_f_false_positives)--;
+                  }
+              }
+            while (next (results));
+          break;
+        }
+
+      /* Compare the two results. */
+
+      state = compare_and_buffer_results (NULL,
+                                          results,
+                                          delta_results,
+                                          task,
+                                          notes,
+                                          notes_details,
+                                          overrides,
+                                          overrides_details,
+                                          sort_order,
+                                          sort_field,
+                                          changed,
+                                          gone,
+                                          new,
+                                          same,
+                                          &max_results,
+                                          &first_result,
+                                          &used,
+                                          &would_use);
+      if (state == COMPARE_RESULTS_ERROR)
+        {
+          g_warning ("%s: compare_and_buffer_results failed\n",
+                     __FUNCTION__);
+          return -1;
+        }
+
+      if (state == COMPARE_RESULTS_NEW)
+        {
+          if (used)
+            {
+              const char *level;
+
+              /* "Used" just the 'delta_results' result. */
+
+              /* Increase the result count. */
+              level = result_iterator_level (delta_results);
+              (*orig_filtered_result_count)++;
+              if (strcmp (level, "High") == 0)
+                {
+                  (*orig_f_holes)++;
+                }
+              else if (strcmp (level, "Medium") == 0)
+                {
+                  (*orig_f_warnings)++;
+                }
+              else if (strcmp (level, "Low") == 0)
+                {
+                  (*orig_f_infos)++;
+                }
+              else if (strcmp (level, "Log") == 0)
+                {
+                  (*orig_f_logs)++;
+                }
+              else if (strcmp (level, "False Positive") == 0)
+                {
+                  (*orig_f_false_positives)++;
+                }
+            }
+        }
+      else if (used)
+        {
+          /* It's in the count already. */
+        }
+      else
+        {
+          const char *level;
+
+          /* Decrease the result count. */
+          level = result_iterator_level (results);
+          (*orig_filtered_result_count)--;
+          if (strcmp (level, "High") == 0)
+            {
+              (*orig_f_holes)--;
+            }
+          else if (strcmp (level, "Medium") == 0)
+            {
+              (*orig_f_warnings)--;
+            }
+          else if (strcmp (level, "Low") == 0)
+            {
+              (*orig_f_infos)--;
+            }
+          else if (strcmp (level, "Log") == 0)
+            {
+              (*orig_f_logs)--;
+            }
+          else if (strcmp (level, "False Positive") == 0)
+            {
+              (*orig_f_false_positives)--;
+            }
+        }
+
+      /* Move on to the next. */
+
+      if (state == COMPARE_RESULTS_GONE)
+        {
+          /* "Used" just the 'results' result. */
+          done = !next (results);
+        }
+      else if ((state == COMPARE_RESULTS_SAME)
+               || (state == COMPARE_RESULTS_CHANGED))
+        {
+          /* "Used" both results. */
+          done = !next (results);
+          delta_done = !next (delta_results);
+        }
+      else if (state == COMPARE_RESULTS_NEW)
+        {
+          /* "Used" just the 'delta_results' result. */
+          delta_done = !next (delta_results);
+        }
+      else
+        assert (0);
+    }
+  msg = g_markup_printf_escaped ("</results>");
+  if (fprintf (out, "%s", msg) < 0)
+    {
+      g_free (msg);
+      fclose (out);
+      return -1;
+    }
+  g_free (msg);
+
+  /* Write ports to file. */
+
+  msg = g_markup_printf_escaped ("<ports"
+                                 " start=\"%i\""
+                                 " max=\"%i\">",
+                                 /* Add 1 for 1 indexing. */
+                                 first_result + 1,
+                                 max_results);
+  if (fprintf (out, "%s", msg) < 0)
+    {
+      g_free (msg);
+      fclose (out);
+      return -1;
+    }
+  g_free (msg);
+  if (sort_field == NULL || strcmp (sort_field, "port"))
+    {
+      if (sort_order)
+        g_tree_foreach (ports, print_host_ports_by_severity_asc, out);
+      else
+        g_tree_foreach (ports, print_host_ports_by_severity_desc, out);
+    }
+  else if (sort_order)
+    g_tree_foreach (ports, print_host_ports, out);
+  else
+    g_tree_foreach (ports, print_host_ports_desc, out);
+  g_tree_destroy (ports);
+  msg = g_markup_printf_escaped ("</ports>");
+  if (fprintf (out, "%s", msg) < 0)
+    {
+      g_free (msg);
+      fclose (out);
+      return -1;
+    }
+  g_free (msg);
 
   return 0;
 }
@@ -27164,692 +27870,33 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     result_hosts = NULL;
   if (delta && get->details)
     {
-      gboolean done, delta_done;
-      int changed, gone, new, same;
-      /* A tree of host, tree pairs, where the inner tree is a sorted tree
-       * of port, threat pairs. */
-      GTree *ports;
-      gchar *msg;
-
-      orig_f_debugs = f_debugs;
-      orig_f_holes = f_holes;
-      orig_f_infos = f_infos;
-      orig_f_logs = f_logs;
-      orig_f_warnings = f_warnings;
-      orig_f_false_positives = f_false_positives;
-      orig_filtered_result_count = filtered_result_count;
-
-      changed = (strchr (delta_states, 'c') != NULL);
-      gone = (strchr (delta_states, 'g') != NULL);
-      new = (strchr (delta_states, 'n') != NULL);
-      same = (strchr (delta_states, 's') != NULL);
-
-      ports = g_tree_new_full ((GCompareDataFunc) strcmp, NULL, g_free,
-                               (GDestroyNotify) free_host_ports);
-
-      /* Compare the results in the two iterators, which are sorted. */
-
-      tracef ("   delta: %s: start", __FUNCTION__);
-      tracef ("   delta: %s: sort_field: %s", __FUNCTION__, sort_field);
-      tracef ("   delta: %s: max_results: %i", __FUNCTION__, max_results);
-      done = !next (&results);
-      delta_done = !next (&delta_results);
-      while (1)
+      if (print_report_delta_xml (out, &results, &delta_results, delta_states,
+                                  first_result, max_results, task, notes,
+                                  notes_details, overrides, overrides_details,
+                                  sort_order, sort_field, result_hosts_only,
+                                  &orig_filtered_result_count,
+                                  &filtered_result_count,
+                                  &orig_f_debugs, &f_debugs,
+                                  &orig_f_holes, &f_holes,
+                                  &orig_f_infos, &f_infos,
+                                  &orig_f_logs, &f_logs,
+                                  &orig_f_warnings, &f_warnings,
+                                  &orig_f_false_positives, &f_false_positives,
+                                  result_hosts))
         {
-          GString *buffer;
-          compare_results_t state;
-          int used, would_use;
-
-          if (max_results == 0)
-            break;
-
-          if (done)
-            {
-              if (delta_done)
-                break;
-              if (new)
-                /* Extra results in 'delta_results'. */
-                do
-                  {
-                    const char *level;
-
-                    tracef ("   delta: %s: extra from report 2: %s",
-                            __FUNCTION__,
-                            result_iterator_nvt_oid (&results));
-
-                    if (first_result)
-                      {
-                        tracef ("   delta: skip");
-                        first_result--;
-                        continue;
-                      }
-
-                    /* Increase the result count. */
-                    level = result_iterator_level (&delta_results);
-                    orig_filtered_result_count++;
-                    filtered_result_count++;
-                    if (strcmp (level, "High") == 0)
-                      {
-                        orig_f_holes++;
-                        f_holes++;
-                      }
-                    else if (strcmp (level, "Medium") == 0)
-                      {
-                        orig_f_warnings++;
-                        f_warnings++;
-                      }
-                    else if (strcmp (level, "Low") == 0)
-                      {
-                        orig_f_infos++;
-                        f_infos++;
-                      }
-                    else if (strcmp (level, "Log") == 0)
-                      {
-                        orig_f_logs++;
-                        f_logs++;
-                      }
-                    else if (strcmp (level, "False Positive") == 0)
-                      {
-                        orig_f_false_positives++;
-                        f_false_positives++;
-                      }
-
-                    tracef ("   delta: %s: extra from report 2: %s",
-                            __FUNCTION__,
-                            result_iterator_nvt_oid (&delta_results));
-                    buffer = g_string_new ("");
-                    buffer_results_xml (buffer,
-                                        &delta_results,
-                                        task,
-                                        notes,
-                                        notes_details,
-                                        overrides,
-                                        overrides_details,
-                                        0,
-                                        0,
-                                        0,
-                                        "new",
-                                        NULL,
-                                        0);
-                    if (fprintf (out, "%s", buffer->str) < 0)
-                      {
-                        fclose (out);
-                        return -1;
-                      }
-                    g_string_free (buffer, TRUE);
-                    if (result_hosts_only)
-                      array_add_new_string (result_hosts,
-                                            result_iterator_host (&delta_results));
-                    add_port (ports, &delta_results);
-                    max_results--;
-                    if (max_results == 0)
-                      break;
-                  }
-                while (next (&delta_results));
-              delta_done = TRUE;
-              break;
-            }
-
-          if (delta_done)
-            {
-              /* Extra results in 'results'. */
-              if (gone)
-                do
-                  {
-                    tracef ("   delta: %s: extra from report 1: %s",
-                            __FUNCTION__,
-                            result_iterator_nvt_oid (&results));
-                    if (first_result)
-                      {
-                        tracef ("   delta: skip");
-                        first_result--;
-                        continue;
-                      }
-                    buffer = g_string_new ("");
-                    buffer_results_xml (buffer,
-                                        &results,
-                                        task,
-                                        notes,
-                                        notes_details,
-                                        overrides,
-                                        overrides_details,
-                                        0,
-                                        0,
-                                        0,
-                                        "gone",
-                                        NULL,
-                                        0);
-                    if (fprintf (out, "%s", buffer->str) < 0)
-                      {
-                        fclose (out);
-                        return -1;
-                      }
-                    g_string_free (buffer, TRUE);
-                    if (result_hosts_only)
-                      array_add_new_string (result_hosts,
-                                            result_iterator_host (&results));
-                    add_port (ports, &results);
-                    max_results--;
-                    if (max_results == 0)
-                      break;
-                  }
-                while (next (&results));
-              else
-                do
-                  {
-                    const char *level;
-
-                    /* Decrease the result count. */
-                    level = result_iterator_level (&results);
-                    orig_filtered_result_count--;
-                    filtered_result_count--;
-                    if (strcmp (level, "High") == 0)
-                      {
-                        orig_f_holes--;
-                        f_holes--;
-                      }
-                    else if (strcmp (level, "Medium") == 0)
-                      {
-                        orig_f_warnings--;
-                        f_warnings--;
-                      }
-                    else if (strcmp (level, "Low") == 0)
-                      {
-                        orig_f_infos--;
-                        f_infos--;
-                      }
-                    else if (strcmp (level, "Log") == 0)
-                      {
-                        orig_f_logs--;
-                        f_logs--;
-                      }
-                    else if (strcmp (level, "False Positive") == 0)
-                      {
-                        orig_f_false_positives--;
-                        f_false_positives--;
-                      }
-                  }
-                while (next (&results));
-              done = TRUE;
-              break;
-            }
-
-          /* Compare the two results. */
-
-          buffer = g_string_new ("");
-          state = compare_and_buffer_results (buffer,
-                                              &results,
-                                              &delta_results,
-                                              task,
-                                              notes,
-                                              notes_details,
-                                              overrides,
-                                              overrides_details,
-                                              sort_order,
-                                              sort_field,
-                                              changed,
-                                              gone,
-                                              new,
-                                              same,
-                                              &max_results,
-                                              &first_result,
-                                              &used,
-                                              &would_use);
-          if (state == COMPARE_RESULTS_ERROR)
-            {
-              g_warning ("%s: compare_and_buffer_results failed\n",
-                         __FUNCTION__);
-              g_free (sort_field);
-              g_free (levels);
-              g_free (search_phrase);
-              g_free (min_cvss_base);
-              g_free (min_qod);
-              g_free (delta_states);
-              cleanup_iterator (&results);
-              cleanup_iterator (&delta_results);
-              tz_revert (zone, tz);
-              return -1;
-            }
-          if (fprintf (out, "%s", buffer->str) < 0)
-            {
-              fclose (out);
-              return -1;
-            }
-          g_string_free (buffer, TRUE);
-
-          if ((used == 0)
-              && ((state == COMPARE_RESULTS_GONE)
-                  || (state == COMPARE_RESULTS_SAME)
-                  || (state == COMPARE_RESULTS_CHANGED)))
-            {
-              const char *level;
-
-              /* Decrease the result count. */
-              level = result_iterator_level (&results);
-              filtered_result_count--;
-              if (strcmp (level, "High") == 0)
-                {
-                  f_holes--;
-                }
-              else if (strcmp (level, "Medium") == 0)
-                {
-                  f_warnings--;
-                }
-              else if (strcmp (level, "Low") == 0)
-                {
-                  f_infos--;
-                }
-              else if (strcmp (level, "Log") == 0)
-                {
-                  f_logs--;
-                }
-              else if (strcmp (level, "False Positive") == 0)
-                {
-                  f_false_positives--;
-                }
-            }
-
-          if ((would_use == 0)
-              && ((state == COMPARE_RESULTS_GONE)
-                  || (state == COMPARE_RESULTS_SAME)
-                  || (state == COMPARE_RESULTS_CHANGED)))
-            {
-              const char *level;
-
-              /* Decrease the result count. */
-              level = result_iterator_level (&results);
-              orig_filtered_result_count--;
-              if (strcmp (level, "High") == 0)
-                {
-                  orig_f_holes--;
-                }
-              else if (strcmp (level, "Medium") == 0)
-                {
-                  orig_f_warnings--;
-                }
-              else if (strcmp (level, "Low") == 0)
-                {
-                  orig_f_infos--;
-                }
-              else if (strcmp (level, "Log") == 0)
-                {
-                  orig_f_logs--;
-                }
-              else if (strcmp (level, "False Positive") == 0)
-                {
-                  orig_f_false_positives--;
-                }
-            }
-
-          /* Move on to the next. */
-
-          if (state == COMPARE_RESULTS_GONE)
-            {
-              /* "Used" just the 'results' result. */
-              if (used)
-                {
-                  if (result_hosts_only)
-                    array_add_new_string (result_hosts,
-                                          result_iterator_host (&results));
-                  add_port (ports, &results);
-                }
-              done = !next (&results);
-            }
-          else if ((state == COMPARE_RESULTS_SAME)
-                   || (state == COMPARE_RESULTS_CHANGED))
-            {
-              /* "Used" both results. */
-              if (used)
-                {
-                  if (result_hosts_only)
-                    array_add_new_string (result_hosts,
-                                          result_iterator_host (&results));
-                  add_port (ports, &results);
-                }
-              done = !next (&results);
-              delta_done = !next (&delta_results);
-            }
-          else if (state == COMPARE_RESULTS_NEW)
-            {
-              if (would_use)
-                {
-                  const char *level;
-
-                  /* Would have "used" just the 'delta_results' result, on
-                   * an earlier page. */
-
-                  /* Increase the result count. */
-                  level = result_iterator_level (&delta_results);
-                  orig_filtered_result_count++;
-                  if (strcmp (level, "High") == 0)
-                    {
-                      orig_f_holes++;
-                    }
-                  else if (strcmp (level, "Medium") == 0)
-                    {
-                      orig_f_warnings++;
-                    }
-                  else if (strcmp (level, "Low") == 0)
-                    {
-                      orig_f_infos++;
-                    }
-                  else if (strcmp (level, "Log") == 0)
-                    {
-                      orig_f_logs++;
-                    }
-                  else if (strcmp (level, "False Positive") == 0)
-                    {
-                      orig_f_false_positives++;
-                    }
-                }
-
-              if (used)
-                {
-                  const char *level;
-
-                  /* "Used" just the 'delta_results' result. */
-
-                  /* Increase the result count. */
-                  level = result_iterator_level (&delta_results);
-                  filtered_result_count++;
-                  if (strcmp (level, "High") == 0)
-                    {
-                      f_holes++;
-                    }
-                  else if (strcmp (level, "Medium") == 0)
-                    {
-                      f_warnings++;
-                    }
-                  else if (strcmp (level, "Low") == 0)
-                    {
-                      f_infos++;
-                    }
-                  else if (strcmp (level, "Log") == 0)
-                    {
-                      f_logs++;
-                    }
-                  else if (strcmp (level, "False Positive") == 0)
-                    {
-                      f_false_positives++;
-                    }
-
-                  if (result_hosts_only)
-                    array_add_new_string (result_hosts,
-                                          result_iterator_host
-                                           (&delta_results));
-
-                  add_port (ports, &delta_results);
-                }
-              delta_done = !next (&delta_results);
-            }
-          else
-            assert (0);
-        }
-
-      /* Compare remaining results, for the filtered report counts. */
-
-      tracef ("   delta: %s: counting rest", __FUNCTION__);
-      while (1)
-        {
-          compare_results_t state;
-          int used, would_use;
-
-          if (done)
-            {
-              if (delta_done)
-                break;
-              if (new)
-                /* Extra results in 'delta_results'. */
-                do
-                  {
-                    const char *level;
-
-                    tracef ("   delta: %s: extra from report 2: %s",
-                            __FUNCTION__,
-                            result_iterator_nvt_oid (&delta_results));
-
-                    /* Increase the result count. */
-                    level = result_iterator_level (&delta_results);
-                    orig_filtered_result_count++;
-                    if (strcmp (level, "High") == 0)
-                      {
-                        orig_f_holes++;
-                      }
-                    else if (strcmp (level, "Medium") == 0)
-                      {
-                        orig_f_warnings++;
-                      }
-                    else if (strcmp (level, "Low") == 0)
-                      {
-                        orig_f_infos++;
-                      }
-                    else if (strcmp (level, "Log") == 0)
-                      {
-                        orig_f_logs++;
-                      }
-                    else if (strcmp (level, "False Positive") == 0)
-                      {
-                        orig_f_false_positives++;
-                      }
-                  }
-                while (next (&delta_results));
-              break;
-            }
-
-          if (delta_done)
-            {
-              /* Extra results in 'results'. */
-              if (gone)
-                do
-                  {
-                    tracef ("   delta: %s: extra from report 1: %s",
-                            __FUNCTION__,
-                            result_iterator_nvt_oid (&results));
-
-                    /* It's in the count already. */
-                  }
-                while (next (&results));
-              else
-                do
-                  {
-                    const char *level;
-
-                    /* Decrease the result count. */
-                    level = result_iterator_level (&results);
-                    orig_filtered_result_count--;
-                    if (strcmp (level, "High") == 0)
-                      {
-                        orig_f_holes--;
-                      }
-                    else if (strcmp (level, "Medium") == 0)
-                      {
-                        orig_f_warnings--;
-                      }
-                    else if (strcmp (level, "Low") == 0)
-                      {
-                        orig_f_infos--;
-                      }
-                    else if (strcmp (level, "Log") == 0)
-                      {
-                        orig_f_logs--;
-                      }
-                    else if (strcmp (level, "False Positive") == 0)
-                      {
-                        orig_f_false_positives--;
-                      }
-                  }
-                while (next (&results));
-              break;
-            }
-
-          /* Compare the two results. */
-
-          state = compare_and_buffer_results (NULL,
-                                              &results,
-                                              &delta_results,
-                                              task,
-                                              notes,
-                                              notes_details,
-                                              overrides,
-                                              overrides_details,
-                                              sort_order,
-                                              sort_field,
-                                              changed,
-                                              gone,
-                                              new,
-                                              same,
-                                              &max_results,
-                                              &first_result,
-                                              &used,
-                                              &would_use);
-          if (state == COMPARE_RESULTS_ERROR)
-            {
-              g_warning ("%s: compare_and_buffer_results failed\n",
-                         __FUNCTION__);
-              g_free (sort_field);
-              g_free (levels);
-              g_free (search_phrase);
-              g_free (min_cvss_base);
-              g_free (min_qod);
-              g_free (delta_states);
-              cleanup_iterator (&results);
-              cleanup_iterator (&delta_results);
-              tz_revert (zone, tz);
-              return -1;
-            }
-
-          if (state == COMPARE_RESULTS_NEW)
-            {
-              if (used)
-                {
-                  const char *level;
-
-                  /* "Used" just the 'delta_results' result. */
-
-                  /* Increase the result count. */
-                  level = result_iterator_level (&delta_results);
-                  orig_filtered_result_count++;
-                  if (strcmp (level, "High") == 0)
-                    {
-                      orig_f_holes++;
-                    }
-                  else if (strcmp (level, "Medium") == 0)
-                    {
-                      orig_f_warnings++;
-                    }
-                  else if (strcmp (level, "Low") == 0)
-                    {
-                      orig_f_infos++;
-                    }
-                  else if (strcmp (level, "Log") == 0)
-                    {
-                      orig_f_logs++;
-                    }
-                  else if (strcmp (level, "False Positive") == 0)
-                    {
-                      orig_f_false_positives++;
-                    }
-                }
-            }
-          else if (used)
-            {
-              /* It's in the count already. */
-            }
-          else
-            {
-              const char *level;
-
-              /* Decrease the result count. */
-              level = result_iterator_level (&results);
-              orig_filtered_result_count--;
-              if (strcmp (level, "High") == 0)
-                {
-                  orig_f_holes--;
-                }
-              else if (strcmp (level, "Medium") == 0)
-                {
-                  orig_f_warnings--;
-                }
-              else if (strcmp (level, "Low") == 0)
-                {
-                  orig_f_infos--;
-                }
-              else if (strcmp (level, "Log") == 0)
-                {
-                  orig_f_logs--;
-                }
-              else if (strcmp (level, "False Positive") == 0)
-                {
-                  orig_f_false_positives--;
-                }
-            }
-
-          /* Move on to the next. */
-
-          if (state == COMPARE_RESULTS_GONE)
-            {
-              /* "Used" just the 'results' result. */
-              done = !next (&results);
-            }
-          else if ((state == COMPARE_RESULTS_SAME)
-                   || (state == COMPARE_RESULTS_CHANGED))
-            {
-              /* "Used" both results. */
-              done = !next (&results);
-              delta_done = !next (&delta_results);
-            }
-          else if (state == COMPARE_RESULTS_NEW)
-            {
-              /* "Used" just the 'delta_results' result. */
-              delta_done = !next (&delta_results);
-            }
-          else
-            assert (0);
-        }
-      msg = g_markup_printf_escaped ("</results>");
-      if (fprintf (out, "%s", msg) < 0)
-        {
-          g_free (msg);
           fclose (out);
+          g_free (sort_field);
+          g_free (levels);
+          g_free (search_phrase);
+          g_free (min_cvss_base);
+          g_free (min_qod);
+          g_free (delta_states);
+          cleanup_iterator (&results);
+          cleanup_iterator (&delta_results);
+          tz_revert (zone, tz);
+
           return -1;
         }
-      g_free (msg);
-
-      /* Write ports to file. */
-
-      msg = g_markup_printf_escaped ("<ports"
-                                     " start=\"%i\""
-                                     " max=\"%i\">",
-                                     /* Add 1 for 1 indexing. */
-                                     first_result + 1,
-                                     max_results);
-      if (fprintf (out, "%s", msg) < 0)
-        {
-          g_free (msg);
-          fclose (out);
-          return -1;
-        }
-      g_free (msg);
-      if (sort_field == NULL || strcmp (sort_field, "port"))
-        {
-          if (sort_order)
-            g_tree_foreach (ports, print_host_ports_by_severity_asc, out);
-          else
-            g_tree_foreach (ports, print_host_ports_by_severity_desc, out);
-        }
-      else if (sort_order)
-        g_tree_foreach (ports, print_host_ports, out);
-      else
-        g_tree_foreach (ports, print_host_ports_desc, out);
-      g_tree_destroy (ports);
-      msg = g_markup_printf_escaped ("</ports>");
-      if (fprintf (out, "%s", msg) < 0)
-        {
-          g_free (msg);
-          fclose (out);
-          return -1;
-        }
-      g_free (msg);
     }
   else if (get->details)
     {

@@ -1,5 +1,11 @@
 2016-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (print_report_delta_xml): New function.
+	(print_report_xml): Move delta result generation out to
+	print_report_delta_xml.
+
+2016-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (print_report_xml): Expand macros in delta section
 	to prepare for new function.
 
