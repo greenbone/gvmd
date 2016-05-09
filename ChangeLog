@@ -1,5 +1,9 @@
 2016-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* CMakeLists.txt (OMP_VERSION): Increase to 7.
+
+2016-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (print_report_delta_xml): New function.
 	(print_report_xml): Move delta result generation out to
 	print_report_delta_xml.
