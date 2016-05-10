@@ -386,4 +386,6 @@ void check_generate_scripts ();
 
 void auto_delete_reports ();
 
+int days_from_now (time_t *epoch_time);
+
 #endif /* not OPENVAS_MANAGER_MANAGE_SQL_H */

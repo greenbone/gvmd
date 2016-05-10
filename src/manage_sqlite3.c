@@ -51,6 +51,9 @@ clean_hosts (const char *, int *);
 char *
 iso_time (time_t *);
 
+int
+days_from_now (time_t *);
+
 long
 current_offset (const char *);
 
@@ -536,6 +539,34 @@ sql_iso_time (sqlite3_context *context, int argc, sqlite3_value** argv)
         sqlite3_result_text (context, iso, -1, SQLITE_TRANSIENT);
       else
         sqlite3_result_error (context, "Failed to format time", -1);
+    }
+}
+
+/**
+ * @brief Calculate difference between now and epoch time in days
+ *
+ * This is a callback for a scalar SQL function of one argument.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_days_from_now (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  time_t epoch_time;
+
+  assert (argc == 1);
+
+  epoch_time = sqlite3_value_int (argv[0]);
+  if (epoch_time == 0)
+    sqlite3_result_int (context, -2);
+  else
+    {
+      int days;
+
+      days = days_from_now (&epoch_time);
+      sqlite3_result_int (context, days);
     }
 }
 
@@ -2023,6 +2054,20 @@ manage_create_sql_functions ()
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create iso_time", __FUNCTION__);
+      return -1;
+    }
+
+  if (sqlite3_create_function (task_db,
+                               "days_from_now",
+                               1,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_days_from_now,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create days_from_now", __FUNCTION__);
       return -1;
     }
 

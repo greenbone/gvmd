@@ -982,6 +982,24 @@ parse_iso_time (const char *text_time)
 }
 
 /**
+ * @brief Calculate difference between now and epoch_time in days
+ *
+ * @param[in]  epoch_time  Time in seconds from epoch.
+ *
+ * @return Int days bettween now and epoch_time or -1 if epoch_time is in the
+ * past
+ */
+int
+days_from_now (time_t *epoch_time)
+{
+    time_t now = time(NULL);
+    int diff = *epoch_time - now;
+
+    if (diff < 0) return -1;
+    return diff / 86400; /* 60 sec * 60 min * 24 h */
+}
+
+/**
  * @brief Create an ISO time from seconds since epoch.
  *
  * @param[in]  epoch_time  Time in seconds from epoch.

@@ -1,3 +1,10 @@
+2016-05-10  Björn Ricks <bjoern.ricks@greenbone.net>
+
+	* src/manage_sql.c (days_from_now),
+	src/manage_sql.h (days_from_now),
+	src/manage_sqlite3.c (sql_days_from_now, manage_create_sql_functions): Add
+	functions to sqlite3 to calculate days between now and a timestamp.
+
 2016-05-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/XML/OMP.xml.in (note): Align text.
