@@ -1,3 +1,14 @@
+2016-05-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add alert method SNMP.
+
+	* src/manage.c (alert_method_name, alert_method_from_name): Add SNMP.
+
+	* src/manage.h (alert_method_t): Add SNMP.
+
+	* src/manage_sql.c (snmp_to_host): New function.
+	(escalate_2): Add SNMP.
+
 2016-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* CMakeLists.txt (OMP_VERSION): Increase to 7.

@@ -890,6 +890,7 @@ alert_method_name (alert_method_t method)
       case ALERT_METHOD_HTTP_GET:    return "HTTP Get";
       case ALERT_METHOD_SCP:         return "SCP";
       case ALERT_METHOD_SEND:        return "Send";
+      case ALERT_METHOD_SNMP:        return "SNMP";
       case ALERT_METHOD_SOURCEFIRE:  return "Sourcefire Connector";
       case ALERT_METHOD_START_TASK:  return "Start Task";
       case ALERT_METHOD_SYSLOG:      return "Syslog";
@@ -958,6 +959,8 @@ alert_method_from_name (const char* name)
     return ALERT_METHOD_SCP;
   if (strcasecmp (name, "Send") == 0)
     return ALERT_METHOD_SEND;
+  if (strcasecmp (name, "SNMP") == 0)
+    return ALERT_METHOD_SNMP;
   if (strcasecmp (name, "Sourcefire Connector") == 0)
     return ALERT_METHOD_SOURCEFIRE;
   if (strcasecmp (name, "Start Task") == 0)
