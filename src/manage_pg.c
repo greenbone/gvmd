@@ -573,6 +573,20 @@ manage_create_sql_functions ()
        " END;"
        "$$ LANGUAGE plpgsql;");
 
+  sql ("CREATE OR REPLACE FUNCTION days_from_now (seconds integer)"
+       " RETURNS integer AS $$"
+       " DECLARE"
+       "   diff interval;"
+       " BEGIN"
+       "   diff := age ( to_timestamp( seconds ), now() );"
+       "   RETURN CASE"
+       "          WHEN diff < make_interval(0)"
+       "          THEN -1"
+       "          ELSE date_part( 'day', diff )"
+       "          END;"
+       " END;"
+       "$$ LANGUAGE plpgsql;");
+
   sql ("CREATE OR REPLACE FUNCTION uniquify (type text, proposed_name text,"
        "                                     owner integer, suffix text)"
        " RETURNS text AS $$"

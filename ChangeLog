@@ -1,5 +1,10 @@
 2016-05-10  Björn Ricks <bjoern.ricks@greenbone.net>
 
+	* src/manage_pg.c (manage_create_sql_functions): Add postgres plpgsql function
+	for days_from_now to calcuate days between now and a timestamp.
+
+2016-05-10  Björn Ricks <bjoern.ricks@greenbone.net>
+
 	* src/manage_sql.c (days_from_now),
 	src/manage_sql.h (days_from_now),
 	src/manage_sqlite3.c (sql_days_from_now, manage_create_sql_functions): Add
