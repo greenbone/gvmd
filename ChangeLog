@@ -1,5 +1,10 @@
 2016-05-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml.in (note): Align text.
+	(create_report): Align example.
+
+2016-05-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add alert method SNMP.
 
 	* src/manage.c (alert_method_name, alert_method_from_name): Add SNMP.
