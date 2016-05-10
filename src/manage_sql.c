@@ -42551,7 +42551,7 @@ modify_note (note_t note, const char *active, const char* text,
 #define NOTE_ITERATOR_FILTER_COLUMNS                                          \
  { ANON_GET_ITERATOR_FILTER_COLUMNS, "name", "nvt", "text", "nvt_id",         \
    "task_name", "task_id", "hosts", "port", "active", "result", "severity",   \
-   NULL }
+   "end_time", "active_days", NULL }
 
 /**
  * @brief Note iterator columns.
@@ -42588,7 +42588,7 @@ modify_note (note_t note, const char *active, const char* text,
      KEYWORD_TYPE_STRING },                                                \
    { "notes.task", NULL, KEYWORD_TYPE_INTEGER },                           \
    { "notes.result", "result", KEYWORD_TYPE_INTEGER },                     \
-   { "notes.end_time", NULL, KEYWORD_TYPE_INTEGER },                       \
+   { "notes.end_time", "end_time", KEYWORD_TYPE_INTEGER },                 \
    { "(notes.end_time = 0) OR (notes.end_time >= m_now ())",               \
      "active",                                                             \
      KEYWORD_TYPE_INTEGER },                                               \
@@ -42612,6 +42612,9 @@ modify_note (note_t note, const char *active, const char* text,
    { "(SELECT name FROM users WHERE users.id = notes.owner)",              \
      "_owner",                                                             \
      KEYWORD_TYPE_STRING },                                                \
+   { "days_from_now (notes.end_time)",                                     \
+     "active_days",                                                        \
+     KEYWORD_TYPE_INTEGER },                                               \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                    \
  }
 

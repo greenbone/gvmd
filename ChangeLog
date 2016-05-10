@@ -1,5 +1,10 @@
 2016-05-10  Björn Ricks <bjoern.ricks@greenbone.net>
 
+	* src/manage_sql.c (NOTE_ITERATOR_FILTER_COLUMNS, NOTE_ITERATOR_COLUMNS):
+	Allow to filter and group notes by active days and end date.
+
+2016-05-10  Björn Ricks <bjoern.ricks@greenbone.net>
+
 	* src/manage_pg.c (manage_create_sql_functions): Add postgres plpgsql function
 	for days_from_now to calcuate days between now and a timestamp.
 
