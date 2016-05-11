@@ -59542,6 +59542,8 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("All SecInfo Filter");
       else if (strcmp (uuid, "32b3d606-461b-4770-b3e1-b9ea3cf0f84c") == 0)
         setting_name = g_strdup ("Notes Filter");
+      else if (strcmp (uuid, "956d13bd-3baa-4404-a138-5e7eb8f9630e") == 0)
+        setting_name = g_strdup ("Overrides Filter");
 
       /* Default resource selections */
       else if (strcmp (uuid, "f9f5a546-8018-48d0-bef5-5ad4926ea899") == 0)
@@ -59664,6 +59666,12 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("Notes Top Dashboard Components");
       else if (strcmp (uuid, "05eb63e9-ccd7-481d-841d-9406d3281040") == 0)
         setting_name = g_strdup ("Notes Top Dashboard Row Heights");
+
+      /* Overrides dashboard settings */
+      else if (strcmp (uuid, "054862fe-0781-4527-b1aa-2113bcd16ce7") == 0)
+        setting_name = g_strdup ("Overrides Top Dashboard Components");
+      else if (strcmp (uuid, "a8c246f9-0506-4d8d-be35-a3befb22fbca") == 0)
+        setting_name = g_strdup ("Overrides Top Dashboard Row Heights");
 
     }
 
