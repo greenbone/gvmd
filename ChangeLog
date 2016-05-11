@@ -1,5 +1,11 @@
 2016-05-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_migrators.c (migrate_156_to_157, migrate_158_to_159):
+	Insert encrypted credential data of trash items into the correct table
+	credentials_trash_data instead of credentials_data.
+
+2016-05-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Replace username and password Alert method data with credentials.
 	Hence increase database version to 166. Add database migration from
 	version 165 to 166.

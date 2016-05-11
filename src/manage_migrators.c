@@ -10994,7 +10994,7 @@ migrate_156_to_157 ()
               return -1;
             }
           quoted_secret = sql_quote (secret);
-          sql ("INSERT INTO credentials_data (credential, type, value)"
+          sql ("INSERT INTO credentials_trash_data (credential, type, value)"
                " VALUES (%llu, 'secret', '%s');",
                new_credential, quoted_secret);
           g_free (quoted_secret);
@@ -11423,7 +11423,7 @@ migrate_158_to_159 ()
               return -1;
             }
           quoted_secret = sql_quote (secret);
-          sql ("INSERT INTO credentials_data (credential, type, value)"
+          sql ("INSERT INTO credentials_trash_data (credential, type, value)"
                " VALUES (%llu, 'secret', '%s');",
                new_credential, quoted_secret);
           g_free (quoted_secret);
