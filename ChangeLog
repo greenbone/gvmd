@@ -1,3 +1,8 @@
+2016-05-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (escalate_2): Add data "snmp_message" for method
+	SNMP, with variable expansion like the email subject.
+
 2016-05-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_migrators.c (migrate_156_to_157, migrate_158_to_159):
