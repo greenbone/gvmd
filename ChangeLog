@@ -1,5 +1,11 @@
 2016-05-11  Björn Ricks <bjoern.ricks@greenbone.net>
 
+	* src/manage_sql.c (type_columns, type_select_columns, type_filter_columns):
+	Allow overrides for get aggregate requests by returning corresponding columns
+	and filters.
+
+2016-05-11  Björn Ricks <bjoern.ricks@greenbone.net>
+
 	* src/manage_sql.c (OVERRIDE_ITERATOR_FILTER_COLUMNS,
 	OVERRIDE_ITERATOR_COLUMNS): Add active_days column and filter.
 

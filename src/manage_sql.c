@@ -64181,6 +64181,11 @@ type_columns (const char *type, int apply_overrides)
       static column_t columns[] = NOTE_ITERATOR_COLUMNS;
       return columns_build_select (columns);
     }
+  else if (strcasecmp (type, "OVERRIDE") == 0)
+    {
+      static column_t columns[] = OVERRIDE_ITERATOR_COLUMNS;
+      return columns_build_select (columns);
+    }
   else
     return NULL;
 }
@@ -64211,6 +64216,7 @@ type_select_columns (const char *type, int apply_overrides)
   static column_t ovaldef_columns[] = OVALDEF_INFO_ITERATOR_COLUMNS;
   static column_t alert_columns[] = ALERT_ITERATOR_COLUMNS;
   static column_t note_columns[] = NOTE_ITERATOR_COLUMNS;
+  static column_t override_columns[] = OVERRIDE_ITERATOR_COLUMNS;
 
   if (type == NULL)
     return NULL;
@@ -64242,6 +64248,8 @@ type_select_columns (const char *type, int apply_overrides)
     return alert_columns;
   else if (strcasecmp (type, "NOTE") == 0)
     return note_columns;
+  else if (strcasecmp (type, "OVERRIDE") == 0)
+    return override_columns;
   return NULL;
 }
 
@@ -64355,6 +64363,11 @@ type_filter_columns (const char *type, int apply_overrides)
   else if (strcasecmp (type, "NOTE") == 0)
     {
       static const char *ret[] = NOTE_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
+  else if (strcasecmp (type, "OVERRIDE") == 0)
+    {
+      static const char *ret[] = OVERRIDE_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
   else
