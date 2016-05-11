@@ -1,3 +1,8 @@
+2016-05-11  Björn Ricks <bjoern.ricks@greenbone.net>
+
+	* src/manage_pg.c (manage_create_sql_functions): Manage "active" case for
+	days_from_now function in postgres. "active" timestamps have the value 0.
+
 2016-05-10  Björn Ricks <bjoern.ricks@greenbone.net>
 
 	* src/manage_sql.c (NOTE_ITERATOR_FILTER_COLUMNS, NOTE_ITERATOR_COLUMNS):

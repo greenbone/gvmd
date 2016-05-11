@@ -580,6 +580,8 @@ manage_create_sql_functions ()
        " BEGIN"
        "   diff := age ( to_timestamp( seconds ), now() );"
        "   RETURN CASE"
+       "          WHEN seconds = 0"
+       "          THEN -2"
        "          WHEN diff < make_interval(0)"
        "          THEN -1"
        "          ELSE date_part( 'day', diff )"
