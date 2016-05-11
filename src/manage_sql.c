@@ -43622,7 +43622,7 @@ modify_override (override_t override, const char *active, const char* text,
 #define OVERRIDE_ITERATOR_FILTER_COLUMNS                                      \
  { ANON_GET_ITERATOR_FILTER_COLUMNS, "name", "nvt", "text", "nvt_id",         \
    "task_name", "task_id", "hosts", "port", "threat", "new_threat", "active", \
-   "result", "severity", "new_severity", NULL }
+   "result", "severity", "new_severity", "active_days", NULL }
 
 /**
  * @brief Override iterator columns.
@@ -43693,6 +43693,9 @@ modify_override (override_t override, const char *active, const char* text,
      "_owner",                                                              \
      KEYWORD_TYPE_STRING                                                    \
    },                                                                       \
+   { "days_from_now (overrides.end_time)",                                  \
+     "active_days",                                                         \
+     KEYWORD_TYPE_INTEGER },                                                \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                     \
  }
 
