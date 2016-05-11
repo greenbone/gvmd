@@ -15275,9 +15275,6 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 {
                   const char *name;
                   name = alert_data_iterator_name (&data);
-                  if (strcmp (alert_data_iterator_name (&data), "scp_password")
-                      == 0)
-                    continue;
                   if (strcmp (name, "notice") == 0)
                     notice = atoi (alert_data_iterator_data (&data));
                   else if (strcmp (method, "Email") == 0
@@ -15287,12 +15284,63 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                         continue;
                       message = 1;
                     }
-                  SENDF_TO_CLIENT_OR_FAIL ("<data>"
-                                           "<name>%s</name>"
-                                           "%s"
-                                           "</data>",
-                                           name,
-                                           alert_data_iterator_data (&data));
+
+                  if (strcmp (name, "scp_credential") == 0
+                      || strcmp (name, "verinice_server_credential") == 0)
+                    {
+                      // Username + Password credentials
+                      const char *credential_id;
+                      credential_t credential;
+                      credential_id = alert_data_iterator_data (&data);
+                      if (find_credential_with_permission (credential_id,
+                                                           &credential,
+                                                           "get_credentials"))
+                        {
+                          abort ();
+                        }
+                      else if (credential == 0)
+                        {
+                          SENDF_TO_CLIENT_OR_FAIL ("<data>"
+                                                   "<name>%s</name>"
+                                                   "%s"
+                                                   "</data>",
+                                                   name,
+                                                   credential_id);
+                        }
+                      else
+                        {
+                          gchar *cred_name, *username;
+                          cred_name = credential_name (credential);
+                          username = credential_value (credential, "username");
+
+                          SENDF_TO_CLIENT_OR_FAIL ("<data>"
+                                                   "<name>%s</name>"
+                                                   "<credential id=\"%s\">"
+                                                   "<name>%s</name>"
+                                                   "<login>%s</login>"
+                                                   "</credential>"
+                                                   "%s"
+                                                   "</data>",
+                                                   name,
+                                                   credential_id,
+                                                   cred_name,
+                                                   username,
+                                                   credential_id);
+
+                          g_free (cred_name);
+                          g_free (username);
+                        }
+                    }
+                  else
+                    {
+                      SENDF_TO_CLIENT_OR_FAIL ("<data>"
+                                               "<name>%s</name>"
+                                               "%s"
+                                               "</data>",
+                                               name,
+                                               alert_data_iterator_data
+                                                (&data));
+                    }
                 }
               /* If there is no email message data, send the default. */
               if (strcmp (method, "Email") == 0
@@ -21806,7 +21854,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   case 18:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_alert",
-                                        "Error in SCP username"));
+                                        "Error in SCP credential"));
                     log_event_fail ("alert", "Alert", NULL, "created");
                     break;
                   case 19:
@@ -25643,13 +25691,13 @@ create_task_fail:
               case 18:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_alert",
-                                    "Error in SCP username"));
+                                    "Error in SCP credential"));
                 log_event_fail ("alert", "Alert", NULL, "modify");
                 break;
               case 19:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_alert",
-                                    "Error in SCP username"));
+                                    "Error in SCP path"));
                 log_event_fail ("alert", "Alert", NULL, "modify");
                 break;
               case 20:
@@ -28539,6 +28587,11 @@ create_task_fail:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("test_alert",
                                       "Failed to find filter for alert"));
+                  break;
+                case -4:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("test_alert",
+                                      "Failed to find credential for alert"));
                   break;
                 default: /* Programming error. */
                   assert (0);

@@ -6945,19 +6945,40 @@ validate_alert_event_data (gchar *name, gchar* data, event_t event)
  * @param[in]  data            The data.
  *
  * @return 0 valid, 15 error in SCP host, 17 failed to find report format for
- *         SCP method, 18 error in SCP username, 19 error in SCP path, -1 error.
+ *         SCP method, 18 error in SCP credential, 19 error in SCP path,
+ *         -1 error.
  */
 int
 validate_scp_data (alert_method_t method, const gchar *name, gchar **data)
 {
   if (method == ALERT_METHOD_SCP
-      && strcmp (name, "scp_username") == 0)
+      && strcmp (name, "scp_credential") == 0)
     {
-      if (strlen (*data) == 0)
+      credential_t credential;
+      if (find_credential_with_permission (*data, &credential,
+                                           "get_credentials"))
+        return -1;
+      else if (credential == 0)
         return 18;
+      else
+        {
+          gchar *username;
+          username = credential_value (credential, "username");
 
-      if (strchr (*data, '@') || strchr (*data, ':'))
-        return 18;
+          if (username == NULL || strlen (username) == 0)
+            {
+              g_free (username);
+              return 18;
+            }
+
+          if (strchr (username, '@') || strchr (username, ':'))
+            {
+              g_free (username);
+              return 18;
+            }
+
+          g_free (username);
+        }
     }
 
   if (method == ALERT_METHOD_SCP
@@ -7111,9 +7132,9 @@ check_alert_params (event_t event, alert_condition_t condition,
  *         filter for condition, 12 error in Send host, 13 error in Send port,
  *         14 failed to find report format for Send method, 15 error in
  *         SCP host, 17 failed to find report format for SCP method, 18 error
- *         in SCP username, 20 method does not match event, 21 condition does
- *         not match event, 31 unexpected event data name, 32 syntax error in
- *         event data, 99 permission denied, -1 error.
+ *         in SCP credential, 19 error in SCP path, 20 method does not match
+ *         event, 21 condition does not match event, 31 unexpected event data
+ *         name, 32 syntax error in event data, 99 permission denied, -1 error.
  */
 int
 create_alert (const char* name, const char* comment, const char* filter_id,
@@ -7437,9 +7458,10 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
  *         find filter for condition, 12 error in Send host, 13 error in Send
  *         port, 14 failed to find report format for Send method, 15 error in
  *         SCP host, 17 failed to find report format for SCP method, 18 error
- *         in SCP username, 20 method does not match event, 21 condition does
- *         not match event, 31 unexpected event data name, 32 syntax error in
- *         event data, 99 permission denied, -1 internal error.
+ *         in SCP credential, 19 error in SCP path, 20 method does not match
+ *         event, 21 condition does not match event, 31 unexpected event data
+ *         name, 32 syntax error in event data, 99 permission denied,
+ *         -1 internal error.
  */
 int
 modify_alert (const char *alert_id, const char *name, const char *comment,
@@ -10346,7 +10368,7 @@ email_secinfo (alert_t alert, task_t task, event_t event,
  * @param[in]  overrides_details  If overrides, Whether to include details.
  *
  * @return 0 success, -1 error, -2 failed to find report format, -3 failed to
- *         find filter.
+ *         find filter, -4 failed to find credential.
  */
 static int
 escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
@@ -10841,6 +10863,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
         }
       case ALERT_METHOD_SCP:
         {
+          credential_t credential;
+          char *credential_id;
           char *password, *username, *host, *path, *known_hosts, *filt_id;
           gchar *report_content, *format_uuid, *alert_path;
           gsize content_length;
@@ -10852,28 +10876,44 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             {
               gchar *message;
 
-              message = new_secinfo_message (event, event_data, alert);
+              credential_id = alert_data (alert, "method", "scp_credential");
+              if (find_credential_with_permission (credential_id,
+                                                   &credential,
+                                                   "get_credentials"))
+                {
+                  return -1;
+                }
+              else if (credential == 0)
+                {
+                  return -4;
+                }
+              else
+                {
+                  message = new_secinfo_message (event, event_data, alert);
 
-              password = alert_data (alert, "method", "scp_password");
-              username = alert_data (alert, "method", "scp_username");
-              host = alert_data (alert, "method", "scp_host");
-              path = alert_data (alert, "method", "scp_path");
-              known_hosts = alert_data (alert, "method", "scp_known_hosts");
+                  password = credential_encrypted_value (credential,
+                                                         "password");
+                  username = credential_value (credential, "username");
 
-              alert_path = scp_alert_path_print (path, task);
-              free (path);
+                  host = alert_data (alert, "method", "scp_host");
+                  path = alert_data (alert, "method", "scp_path");
+                  known_hosts = alert_data (alert, "method", "scp_known_hosts");
 
-              ret = scp_to_host (password, username, host, alert_path,
-                                 known_hosts, message, strlen (message));
+                  alert_path = scp_alert_path_print (path, task);
+                  free (path);
 
-              free (password);
-              free (username);
-              free (host);
-              g_free (alert_path);
-              free (known_hosts);
-              g_free (message);
+                  ret = scp_to_host (password, username, host, alert_path,
+                                     known_hosts, message, strlen (message));
 
-              return ret;
+                  g_free (message);
+                  free (password);
+                  free (username);
+                  free (host);
+                  g_free (alert_path);
+                  free (known_hosts);
+
+                  return ret;
+                }
             }
 
           format_uuid = alert_data (alert,
@@ -10951,23 +10991,39 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               return -1;
             }
 
-          password = alert_data (alert, "method", "scp_password");
-          username = alert_data (alert, "method", "scp_username");
-          host = alert_data (alert, "method", "scp_host");
-          path = alert_data (alert, "method", "scp_path");
-          known_hosts = alert_data (alert, "method", "scp_known_hosts");
+          credential_id = alert_data (alert, "method", "scp_credential");
+          if (find_credential_with_permission (credential_id, &credential,
+                                               "get_credentials"))
+            {
+              g_free (report_content);
+              return -1;
+            }
+          else if (credential == 0)
+            {
+              g_free (report_content);
+              return -4;
+            }
+          else
+            {
+              password = credential_encrypted_value (credential, "password");
+              username = credential_value (credential, "username");
 
-          alert_path = scp_alert_path_print (path, task);
-          free (path);
+              host = alert_data (alert, "method", "scp_host");
+              path = alert_data (alert, "method", "scp_path");
+              known_hosts = alert_data (alert, "method", "scp_known_hosts");
 
-          ret = scp_to_host (password, username, host, alert_path, known_hosts,
-                             report_content, content_length);
+              alert_path = scp_alert_path_print (path, task);
+              free (path);
 
-          free (password);
-          free (username);
-          free (host);
-          g_free (alert_path);
-          free (known_hosts);
+              ret = scp_to_host (password, username, host, alert_path,
+                                 known_hosts, report_content, content_length);
+
+              free (password);
+              free (username);
+              free (host);
+              g_free (alert_path);
+              free (known_hosts);
+            }
           g_free (report_content);
 
           return ret;
@@ -11220,8 +11276,9 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
         }
       case ALERT_METHOD_VERINICE:
         {
+          credential_t credential;
           char *url, *username, *password, *filt_id;
-          gchar *report_content, *format_uuid;
+          gchar *credential_id, *report_content, *format_uuid;
           gsize content_length;
           report_format_t report_format;
           int ret;
@@ -11302,20 +11359,43 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             }
 
           url = alert_data (alert, "method", "verinice_server_url");
-          username = alert_data (alert, "method", "verinice_server_username");
-          password = alert_data (alert, "method", "verinice_server_password");
 
-          tracef ("    verinice  url: %s", url);
-          tracef ("verinice username: %s", username);
+          credential_id = alert_data (alert, "method",
+                                      "verinice_server_credential");
+          if (find_credential_with_permission (credential_id, &credential,
+                                               "get_credentials"))
+            {
+              free (filt_id);
+              free (url);
+              g_free (report_content);
+              return -1;
+            }
+          else if (credential == 0)
+            {
+              free (filt_id);
+              free (url);
+              g_free (report_content);
+              return -4;
+            }
+          else
+            {
+              username = credential_value (credential, "username");
+              password = credential_encrypted_value (credential, "password");
 
-          ret = send_to_verinice (url, username, password, report_content,
-                                  content_length);
+              tracef ("    verinice  url: %s", url);
+              tracef ("verinice username: %s", username);
 
-          free (filt_id);
-          free (url);
-          g_free (report_content);
+              ret = send_to_verinice (url, username, password, report_content,
+                                      content_length);
 
-          return ret;
+              free (filt_id);
+              free (url);
+              g_free (username);
+              g_free (password);
+              g_free (report_content);
+
+              return ret;
+            }
         }
       case ALERT_METHOD_START_TASK:
         {
@@ -11403,7 +11483,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
  * @param[in]  condition   Condition from alert, which was met by event.
  *
  * @return 0 success, -1 error, -2 failed to find report format for alert,
- *         -3 failed to find filter for alert.
+ *         -3 failed to find filter for alert, -4 failed to find credential.
  */
 static int
 escalate_1 (alert_t alert, task_t task, report_t report, event_t event,
@@ -11431,7 +11511,8 @@ escalate_1 (alert_t alert, task_t task, report_t report, event_t event,
  *
  * @return 0 success, 1 failed to find alert, 2 failed to find task,
  *         99 permission denied, -1 error, -2 failed to find report format
- *         for alert, -3 failed to find filter for alert.
+ *         for alert, -3 failed to find filter for alert, -4 failed to find
+ *         credential for alert.
  */
 int
 manage_alert (const char *alert_id, const char *task_id, event_t event,
@@ -11528,7 +11609,8 @@ manage_alert (const char *alert_id, const char *task_id, event_t event,
  *
  * @return 0 success, 1 failed to find alert, 2 failed to find task,
  *         99 permission denied, -1 error, -2 failed to find report format
- *         for alert, -3 failed to find filter for alert.
+ *         for alert, -3 failed to find filter for alert, -4 failed to find
+ *         credential for alert.
  */
 int
 manage_test_alert (const char *alert_id)

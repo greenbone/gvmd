@@ -9369,6 +9369,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <pattern>
               text
               <e>name</e>
+              <o><e>credential</e></o>
             </pattern>
             <ele>
               <name>name</name>
@@ -9376,6 +9377,29 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <pattern>
                 text
               </pattern>
+            </ele>
+            <ele>
+              <name>credential</name>
+              <summary>Credential information if the data is a credential ID</summary>
+              <pattern>
+                <attrib>
+                  <name>id</name>
+                  <type>uuid</type>
+                  <summary>UUID of the credential</summary>
+                </attrib>
+                <e>name</e>
+                <e>login</e>
+              </pattern>
+              <ele>
+                <name>name</name>
+                <summary>The name of the credential</summary>
+                <pattern><t>name</t></pattern>
+              </ele>
+              <ele>
+                <name>login</name>
+                <summary>The username of the credential</summary>
+                <pattern><t>name</t></pattern>
+              </ele>
             </ele>
           </ele>
         </ele>

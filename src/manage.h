@@ -2148,6 +2148,13 @@ credential_writable (credential_t);
 int
 trash_credential_readable (credential_t);
 
+gchar*
+credential_value (credential_t, const char*);
+
+gchar*
+credential_encrypted_value (credential_t, const char*);
+
+
 
 /* Agents. */
 

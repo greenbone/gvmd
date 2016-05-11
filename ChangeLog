@@ -1,3 +1,37 @@
+2016-05-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Replace username and password Alert method data with credentials.
+	Hence increase database version to 166. Add database migration from
+	version 165 to 166.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 166.
+
+	* src/manage_migrators.c (migrate_165_to_166): New function.
+	(database_migrators): Add migrate_165_to_166.
+
+	* src/manage_sql.c (validate_scp_data): Check scp_credential and the
+	username stored in the credential instead of scp_username.
+	(create_alert, modify_alert): Update return value doc accordingly and
+	add missing case for SCP path there.
+	(escalate_2): Get username and password for SCP and verinice alerts
+	from credential and add doc for new return value case.
+	(escalate_1, manage_alert, manage_test_alert): Add doc for new
+	credential return value.
+
+	* src/manage.h (credential_value, credential_encrypted_value): New
+	function prototypes.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_ALERTS case,
+	send name and login username of credential if available. In
+	CLIENT_CREATE_ALERT and CLIENT_MODIFY_ALERT cases, update the SCP error
+	messages.  In CLIENT_TEST_ALERT case handle new missing credential
+	return value of manage_test_alert.
+
+	* src/schema_formats/XML/OMP.xml.in (get_alerts): Add credential
+	element in method data.
+
+	* doc/db.png, doc/omp.rnc, doc/omp.html: Update from source.
+
 2016-05-11  Björn Ricks <bjoern.ricks@greenbone.net>
 
 	* src/manage_sql.c (modify_setting): Add uuids for override settings.

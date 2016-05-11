@@ -9821,6 +9821,7 @@ get_alerts_response_alert_method_data
      {
        text
        & get_alerts_response_alert_method_data_name
+       & get_alerts_response_alert_method_data_credential?
      }
 
 # The name of the method data.
@@ -9828,6 +9829,30 @@ get_alerts_response_alert_method_data_name
  = element name
      {
        text
+     }
+
+# Credential information if the data is a credential ID.
+get_alerts_response_alert_method_data_credential
+ = element credential
+     {
+       # UUID of the credential.
+       attribute id { uuid }?
+       & get_alerts_response_alert_method_data_credential_name
+       & get_alerts_response_alert_method_data_credential_login
+     }
+
+# The name of the credential.
+get_alerts_response_alert_method_data_credential_name
+ = element name
+     {
+       name
+     }
+
+# The username of the credential.
+get_alerts_response_alert_method_data_credential_login
+ = element login
+     {
+       name
      }
 
 get_alerts_response_alert_filter
