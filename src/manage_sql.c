@@ -9985,25 +9985,36 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
         }
       case ALERT_METHOD_SNMP:
         {
-          gchar *message, *event_desc;
-          char *community, *agent;
+          char *community, *agent, *snmp_message;
           int ret;
+          gchar *message;
 
           community = alert_data (alert, "method", "snmp_community");
           agent = alert_data (alert, "method", "snmp_agent");
+          snmp_message = alert_data (alert, "method", "snmp_message");
 
-          event_desc = event_description (event, event_data, NULL);
-          message = g_strdup_printf ("%s: %s", event_name (event), event_desc);
-          g_free (event_desc);
-
-          tracef ("SNMP message: %s", message);
+          tracef ("snmp_message: %s", snmp_message);
           tracef ("snmp_community: %s", community);
           tracef ("snmp_agent: %s", agent);
+
+          if (snmp_message)
+            {
+              message = alert_subject_print (snmp_message, event, event_data,
+                                             task);
+            }
+          else
+            {
+              gchar *event_desc;
+              event_desc = event_description (event, event_data, NULL);
+              message = g_strdup_printf ("%s", event_desc);
+              g_free (event_desc);
+            }
 
           ret = snmp_to_host (community, agent, message);
 
           free (agent);
           free (community);
+          free (snmp_message);
           g_free (message);
           return ret;
         }

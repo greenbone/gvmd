@@ -1,5 +1,12 @@
 2016-05-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r25263.
+
+	* src/manage_sql.c (escalate_2): Add data "snmp_message" for method
+	SNMP, with variable expansion like the email subject.
+
+2016-05-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r25274.
 
 	Add alert script forgotten with SNMP alert commit.
