@@ -8102,6 +8102,44 @@ run_alert_script (const char *alert_id, const char *command_args,
 }
 
 /**
+ * @brief Send an SNMP TRAP to a host.
+ *
+ * @param[in]  host         Address of host.
+ * @param[in]  port         Port of host.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+snmp_to_host (const char *community, const char *agent, const char *message)
+{
+  gchar *clean_community, *clean_agent, *clean_message, *command_args;
+  int ret;
+
+  tracef ("SNMP to host: %s", agent);
+
+  if (community == NULL || agent == NULL || message == NULL)
+    {
+      g_warning ("%s: parameter was NULL", __FUNCTION__);
+      return -1;
+    }
+
+  clean_community = g_shell_quote (community);
+  clean_agent = g_shell_quote (agent);
+  clean_message = g_shell_quote (message);
+  command_args = g_strdup_printf ("%s %s %s", clean_community, clean_agent,
+                                  clean_message);
+  g_free (clean_community);
+  g_free (clean_agent);
+  g_free (clean_message);
+
+  ret = run_alert_script ("9d435134-15d3-11e6-bf5c-28d24461215b", command_args,
+                          "", 0);
+
+  g_free (command_args);
+  return ret;
+}
+
+/**
  * @brief Send a report to a host via TCP.
  *
  * @param[in]  host         Address of host.
@@ -9943,6 +9981,30 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           free (port);
           g_free (report_content);
 
+          return ret;
+        }
+      case ALERT_METHOD_SNMP:
+        {
+          gchar *message, *event_desc;
+          char *community, *agent;
+          int ret;
+
+          community = alert_data (alert, "method", "snmp_community");
+          agent = alert_data (alert, "method", "snmp_agent");
+
+          event_desc = event_description (event, event_data, NULL);
+          message = g_strdup_printf ("%s: %s", event_name (event), event_desc);
+          g_free (event_desc);
+
+          tracef ("SNMP message: %s", message);
+          tracef ("snmp_community: %s", community);
+          tracef ("snmp_agent: %s", agent);
+
+          ret = snmp_to_host (community, agent, message);
+
+          free (agent);
+          free (community);
+          g_free (message);
           return ret;
         }
       case ALERT_METHOD_SOURCEFIRE:

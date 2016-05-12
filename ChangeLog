@@ -1,3 +1,16 @@
+2016-05-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r25207.
+
+	Add alert method SNMP.
+
+	* src/manage.c (alert_method_name, alert_method_from_name): Add SNMP.
+
+	* src/manage.h (alert_method_t): Add SNMP.
+
+	* src/manage_sql.c (snmp_to_host): New function.
+	(escalate_2): Add SNMP.
+
 2016-05-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r25167.
