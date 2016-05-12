@@ -1,5 +1,15 @@
 2016-05-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r25274.
+
+	Add alert script forgotten with SNMP alert commit.
+
+	* src/alert_methods/SNMP, src/alert_methods/SNMP/alert: New files.
+
+	* CMakeLists.txt: Install alert script.
+
+2016-05-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r25207.
 
 	Add alert method SNMP.
