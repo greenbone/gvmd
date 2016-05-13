@@ -5230,6 +5230,7 @@ append_column (GArray *columns, const gchar *column_name,
  * @param[in]  group_column    Column to group data by.
  * @param[in]  subgroup_column Column to further group data by.
  * @param[in]  text_columns    Columns to get text from.
+ * @param[in]  sort_data       GArray of sorting data.
  * @param[in]  extra_tables    Join tables.  Skipped for trash and single
  *                             resource.
  * @param[in]  extra_where     Extra WHERE clauses.  Skipped for single
@@ -5247,9 +5248,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                          const get_data_t *get, int distinct,
                          GArray *data_columns,
                          const char *group_column, const char *subgroup_column,
-                         GArray *text_columns,
-                         const char *sort_field, const char *sort_stat,
-                         int sort_order, int first_group, int max_groups,
+                         GArray *text_columns, GArray *sort_data,
+                         int first_group, int max_groups,
                          const char *extra_tables, const char *extra_where)
 {
   int owned;
@@ -5271,7 +5271,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   gchar *outer_group_by_column, *outer_subgroup_column;
   gchar *select_group_column, *select_subgroup_column;
   GArray *select_data_columns, *select_text_columns;
-  gchar *order_column, *order;
+  GString *order_clause;
 
   assert (get);
 
@@ -5504,75 +5504,101 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   else
     outer_subgroup_column = g_strdup ("aggregate_subgroup_value");
 
-  if (sort_stat && strcmp (sort_stat, "count") == 0)
-    order_column = g_strdup ("outer_count");
-  else if (sort_stat && strcmp (sort_stat, "value") == 0)
-    order_column = g_strdup ("outer_group_column");
-  else if (sort_field
-           && group_column
-           && strcmp (sort_field, "")
-           && strcmp (sort_field, group_column)
-           && (subgroup_column == NULL
-               || strcmp (sort_field, subgroup_column)))
+  if (sort_data)
     {
-      int index;
-      order_column = NULL;
-      for (index = 0;
-           index < data_columns->len && order_column == NULL;
-           index++)
-        {
-          gchar *column = g_array_index (data_columns, gchar*, index);
-          if (strcmp (column, sort_field) == 0)
-            {
-              if (sort_stat == NULL || strcmp (sort_stat, "") == 0
-                  || (   strcmp (sort_stat, "min")
-                      && strcmp (sort_stat, "max")
-                      && strcmp (sort_stat, "mean")
-                      && strcmp (sort_stat, "sum")))
-                order_column = g_strdup_printf ("max (aggregate_max_%d)",
-                                                index);
-              else if (strcmp (sort_stat, "mean") == 0)
-                order_column = g_strdup_printf ("sum (aggregate_avg_%d)",
-                                                index);
-              else
-                order_column = g_strdup_printf ("%s (aggregate_%s_%d)",
-                                                sort_stat, sort_stat, index);
-            }
-        }
+      order_clause = g_string_new ("ORDER BY");
 
-      for (index = 0;
-           index < text_columns->len && order_column == NULL;
-           index++)
-        {
-          gchar *column = g_array_index (text_columns, gchar*, index);
-          if (strcmp (column, sort_field) == 0)
-            {
-              order_column = g_strdup_printf ("max (text_column_%d)",
-                                              index);
-            }
-        }
-    }
-  else if (sort_field && subgroup_column
-           && strcmp (sort_field, subgroup_column) == 0)
-    order_column = g_strdup ("outer_subgroup_column");
-  else
-    order_column = g_strdup ("outer_group_column");
+      int sort_index;
+      for (sort_index = 0; sort_index < sort_data->len; sort_index++) {
+        sort_data_t *sort_data_item;
+        const gchar *sort_field, *sort_stat;
+        int sort_order;
+        gchar *order_column;
 
-  if (subgroup_column)
-    {
-      order = g_strdup_printf ("ORDER BY outer_group_column %s, %s %s",
+        sort_data_item = g_array_index (sort_data, sort_data_t*, sort_index);
+        sort_field = sort_data_item->field;
+        sort_stat = sort_data_item->stat;
+        sort_order = sort_data_item->order;
+
+        if (sort_stat && strcmp (sort_stat, "count") == 0)
+          order_column = g_strdup ("outer_count");
+        else if (sort_stat && strcmp (sort_stat, "value") == 0)
+          order_column = g_strdup ("outer_group_column");
+        else if (sort_field
+                 && group_column
+                 && strcmp (sort_field, "")
+                 && strcmp (sort_field, group_column)
+                 && (subgroup_column == NULL
+                     || strcmp (sort_field, subgroup_column)))
+          {
+            int index;
+            order_column = NULL;
+            for (index = 0;
+                 index < data_columns->len && order_column == NULL;
+                 index++)
+              {
+                gchar *column = g_array_index (data_columns, gchar*, index);
+                if (strcmp (column, sort_field) == 0)
+                  {
+                    if (sort_stat == NULL || strcmp (sort_stat, "") == 0
+                        || (   strcmp (sort_stat, "min")
+                            && strcmp (sort_stat, "max")
+                            && strcmp (sort_stat, "mean")
+                            && strcmp (sort_stat, "sum")))
+                      order_column = g_strdup_printf ("max (aggregate_max_%d)",
+                                                      index);
+                    else if (strcmp (sort_stat, "mean") == 0)
+                      order_column = g_strdup_printf ("sum (aggregate_avg_%d)",
+                                                      index);
+                    else
+                      order_column = g_strdup_printf ("%s (aggregate_%s_%d)",
+                                                      sort_stat, sort_stat,
+                                                      index);
+                  }
+              }
+
+            for (index = 0;
+                index < text_columns->len && order_column == NULL;
+                index++)
+              {
+                gchar *column = g_array_index (text_columns, gchar*, index);
+                if (strcmp (column, sort_field) == 0)
+                  {
+                    order_column = g_strdup_printf ("max (text_column_%d)",
+                                                    index);
+                  }
+              }
+          }
+        else if (sort_field && subgroup_column
+                && strcmp (sort_field, subgroup_column) == 0)
+          order_column = g_strdup ("outer_subgroup_column");
+        else
+          order_column = g_strdup ("outer_group_column");
+
+        if (subgroup_column && sort_index == 0)
+          {
+            xml_string_append (order_clause,
+                               " outer_group_column %s, %s %s",
                                sort_order ? "ASC" : "DESC",
                                order_column,
                                sort_order ? "ASC" : "DESC");
-    }
-  else
-    {
-      order = g_strdup_printf ("ORDER BY %s %s",
+          }
+        else
+          {
+            xml_string_append (order_clause,
+                               "%s %s %s",
+                               sort_index > 0 ? "," : "",
                                order_column,
                                sort_order ? "ASC" : "DESC");
+          }
+        g_free (order_column);
+      }
+
+      if (sort_data->len == 0)
+        g_string_append (order_clause, " outer_group_column ASC");
     }
-  g_free (order_column);
-  order_column = NULL;
+  else
+    order_clause = g_string_new ("");
 
   aggregate_select = g_string_new ("");
   outer_col_select = g_string_new ("");
@@ -5688,7 +5714,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                  clause ? ")" : "",
                  extra_where ? extra_where : "",
                  aggregate_group_by,
-                 order,
+                 order_clause->str,
                  sql_select_limit (max_groups),
                  first_group);
 
@@ -5698,7 +5724,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   g_free (owned_clause);
   g_free (trash_extra);
   g_free (filter_order);
-  g_free (order);
+  g_string_free (order_clause, TRUE);
   g_free (clause);
   g_free (aggregate_group_by);
   g_string_free (aggregate_select, TRUE);

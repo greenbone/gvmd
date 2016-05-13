@@ -8610,9 +8610,46 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </alts>
         </type>
       </attrib>
+      <any><e>sort</e></any>
       <any><e>data_column</e></any>
       <any><e>text_column</e></any>
     </pattern>
+    <ele>
+      <name>sort</name>
+      <summary>Optional tuples of sort criteria</summary>
+      <pattern>
+        <attrib>
+          <name>sort_field</name>
+          <summary>The column to sort the aggregated rows by.
+          With a subgroup column, groups will be sorted by the group_column first.</summary>
+          <type>text</type>
+        </attrib>
+        <attrib>
+          <name>sort_order</name>
+          <summary>The order to sort by</summary>
+          <type>
+            <alts>
+              <alt>ascending</alt>
+              <alt>descending</alt>
+            </alts>
+          </type>
+        </attrib>
+        <attrib>
+          <name>sort_stat</name>
+          <summary>The statistic to sort the aggregated rows by</summary>
+          <type>
+            <alts>
+              <alt>min</alt>
+              <alt>max</alt>
+              <alt>mean</alt>
+              <alt>sum</alt>
+              <alt>count</alt>
+              <alt>value</alt>
+            </alts>
+          </type>
+        </attrib>
+      </pattern>
+    </ele>
     <ele>
       <name>data_column</name>
       <summary>A column to get the data to aggregate from</summary>

@@ -4012,11 +4012,19 @@ trash_tag_writable (tag_t);
 
 /* Resource aggregates */
 
+typedef struct {
+  gchar *field;  ///< The field to sort by.
+  gchar *stat;   ///< The statistic to sort by.
+  int order;     ///< The sort order.
+} sort_data_t;
+
+void
+sort_data_free (sort_data_t*);
+
 int
 init_aggregate_iterator (iterator_t*, const char *, const get_data_t *, int,
-                         GArray *, const char *, const char*, GArray*,
-                         const char *, const char *, int, int, int,
-                         const char *, const char *);
+                         GArray *, const char *, const char*, GArray*, GArray*,
+                         int, int, const char *, const char *);
 
 int
 aggregate_iterator_count (iterator_t*);

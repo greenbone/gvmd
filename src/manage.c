@@ -7294,6 +7294,22 @@ validate_username (const gchar * name)
 }
 
 
+/* Resource aggregates. */
+
+/**
+ * @brief Free a sort_data_t struct and its related resources.
+ *
+ * @param[in] sort_data  The sort_data struct to free.
+ */
+void
+sort_data_free (sort_data_t *sort_data)
+{
+  g_free (sort_data->field);
+  g_free (sort_data->stat);
+  g_free (sort_data);
+}
+
+
 /* Feeds. */
 
 /**

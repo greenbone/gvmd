@@ -2506,9 +2506,7 @@ typedef struct
   GList *text_columns;   ///< Columns to get simple text from.
   char *group_column;    ///< Column to group data by.
   char *subgroup_column; ///< Column to further group data by.
-  char *sort_field;      ///< Field to sort aggregate groups on.
-  char *sort_stat;      ///< Statistic to sort aggregate groups on.
-  int sort_order;        ///< Group sort order: 0 descending, else ascending.
+  GList *sort_data;      ///< List of Sort data.
   int first_group;       ///< Skip over groups before this group number.
   int max_groups;        ///< Maximum number of aggregate groups to return.
   char *mode;            ///< Special aggregate mode.
@@ -2530,8 +2528,8 @@ get_aggregates_data_reset (get_aggregates_data_t *data)
   data->text_columns = NULL;
   free (data->group_column);
   free (data->subgroup_column);
-  free (data->sort_field);
-  free (data->sort_stat);
+  g_list_free_full (data->sort_data, (GDestroyNotify)sort_data_free);
+  data->sort_data = NULL;
   free (data->mode);
 
   memset (data, 0, sizeof (get_aggregates_data_t));
@@ -5544,6 +5542,7 @@ typedef enum
   CLIENT_GET_AGENTS,
   CLIENT_GET_AGGREGATES,
   CLIENT_GET_AGGREGATES_DATA_COLUMN,
+  CLIENT_GET_AGGREGATES_SORT,
   CLIENT_GET_AGGREGATES_TEXT_COLUMN,
   CLIENT_GET_ALERTS,
   CLIENT_GET_ASSETS,
@@ -7190,7 +7189,13 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         else if (strcasecmp ("GET_AGGREGATES", element_name) == 0)
           {
             gchar *data_column = g_strdup ("");
+            sort_data_t *sort_data;
             const gchar *attribute;
+            int sort_order_given;
+
+            sort_data = g_malloc0 (sizeof (sort_data_t));
+            sort_data->field = g_strdup ("");
+            sort_data->stat = g_strdup ("");
 
             append_attribute (attribute_names, attribute_values, "type",
                               &get_aggregates_data->type);
@@ -7201,6 +7206,7 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               append_attribute (attribute_names, attribute_values, "info_type",
                                 &get_aggregates_data->subtype);
             }
+
             append_attribute (attribute_names, attribute_values, "data_column",
                               &data_column);
             get_aggregates_data->data_columns
@@ -7215,20 +7221,30 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &get_aggregates_data->subgroup_column);
 
             append_attribute (attribute_names, attribute_values, "sort_field",
-                              &get_aggregates_data->sort_field);
-
+                              &(sort_data->field));
             append_attribute (attribute_names, attribute_values, "sort_stat",
-                              &get_aggregates_data->sort_stat);
+                              &(sort_data->stat));
+            if (find_attribute (attribute_names, attribute_values,
+                                "sort_order", &attribute))
+              {
+                sort_data->order = strcmp (attribute, "descending");
+                sort_order_given = 1;
+              }
+            else
+              {
+                sort_data->order = 1;
+                sort_order_given = 0;
+              }
+
+            if (strcmp (sort_data->field, "") || sort_order_given)
+              {
+                get_aggregates_data->sort_data
+                  = g_list_append (get_aggregates_data->sort_data,
+                                  sort_data);
+              }
 
             append_attribute (attribute_names, attribute_values, "mode",
                               &get_aggregates_data->mode);
-
-            if (find_attribute (attribute_names, attribute_values,
-                                "sort_order", &attribute))
-              get_aggregates_data->sort_order = strcmp (attribute,
-                                                        "descending");
-            else
-              get_aggregates_data->sort_order = 1;
 
             if (find_attribute (attribute_names, attribute_values,
                                 "first_group", &attribute))
@@ -8144,6 +8160,40 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               = g_list_append (get_aggregates_data->data_columns,
                                g_strdup (""));
             set_client_state (CLIENT_GET_AGGREGATES_DATA_COLUMN);
+          }
+        else if (strcasecmp ("SORT", element_name) == 0)
+          {
+            int sort_order_given;
+            const gchar* attribute;
+            sort_data_t *sort_data;
+            sort_data = g_malloc0 (sizeof (sort_data_t));
+            sort_data->field = g_strdup ("");
+            sort_data->stat = g_strdup ("");
+
+            append_attribute (attribute_names, attribute_values, "field",
+                              &(sort_data->field));
+            append_attribute (attribute_names, attribute_values, "stat",
+                              &(sort_data->stat));
+            if (find_attribute (attribute_names, attribute_values,
+                                "order", &attribute))
+              {
+                sort_order_given = 1;
+                sort_data->order = strcmp (attribute, "descending");
+              }
+            else
+              {
+                sort_order_given = 0;
+                sort_data->order = 1;
+              }
+
+            if (strcmp (sort_data->field, "") || sort_order_given)
+              {
+                get_aggregates_data->sort_data
+                  = g_list_append (get_aggregates_data->sort_data,
+                                  sort_data);
+              }
+
+            set_client_state (CLIENT_GET_AGGREGATES_SORT);
           }
         else if (strcasecmp ("TEXT_COLUMN", element_name) == 0)
           {
@@ -11919,11 +11969,13 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
  * @param[in]  subgroup_column   Second column the data grouped by.
  * @param[in]  data_column_list  GList of columns statistics are calculated for.
  * @param[in]  text_column_list  GList of columns used for labels.
+ * @param[in]  sort_data_list    GList of sort data.
  * @param[out] group_column_type     Type of the group_column.
  * @param[out] subgroup_column_type  Type of the group_column.
  * @param[out] data_columns      data_column_list copied to a GArray.
  * @param[out] text_column_types Types of the text_columns.
  * @param[out] text_columns      text_column_list copied to a GArray.
+ * @param[out] sort_data         sort_data_list copied to a GArray.
  * @param[out] c_sums            Array for calculating cumulative sums.
  */
 void
@@ -11931,12 +11983,14 @@ init_aggregate_lists (const gchar* group_column,
                       const gchar* subgroup_column,
                       GList *data_column_list,
                       GList *text_column_list,
+                      GList *sort_data_list,
                       gchar **group_column_type,
                       gchar **subgroup_column_type,
                       GArray **data_column_types,
                       GArray **data_columns,
                       GArray **text_column_types,
                       GArray **text_columns,
+                      GArray **sort_data,
                       GArray **c_sums)
 {
   if (group_column == NULL)
@@ -11964,6 +12018,7 @@ init_aggregate_lists (const gchar* group_column,
   *text_columns = g_array_new (TRUE, TRUE, sizeof (gchar*));
   *text_column_types = g_array_new (TRUE, TRUE, sizeof (char*));
   *c_sums = g_array_new (TRUE, TRUE, sizeof (double));
+  *sort_data = g_array_new (TRUE, TRUE, sizeof (sort_data_t*));
 
   data_column_list = g_list_first (data_column_list);
   while (data_column_list)
@@ -12007,6 +12062,20 @@ init_aggregate_lists (const gchar* group_column,
           g_array_append_val (*text_column_types, current_column_type);
         }
       text_column_list = text_column_list->next;
+    }
+
+  sort_data_list = g_list_first (sort_data_list);
+  while (sort_data_list)
+    {
+      sort_data_t *sort_data_item = sort_data_list->data;
+      sort_data_t *sort_data_copy = g_malloc0 (sizeof (sort_data_t));
+
+      sort_data_copy->field = g_strdup (sort_data_item->field);
+      sort_data_copy->stat = g_strdup (sort_data_item->stat);
+      sort_data_copy->order = sort_data_item->order;
+      g_array_append_val (*sort_data, sort_data_copy);
+
+      sort_data_list = sort_data_list->next;
     }
 }
 
@@ -12181,17 +12250,32 @@ buffer_word_counts_seq (gpointer value, gpointer buffer)
  * @param[in]  aggregate     The aggregate iterator.
  * @param[in]  type          The aggregated type.
  * @param[in]  group_column  Column the data are grouped by.
- * @param[in]  sort_stat     Statistic to sort by.
- * @param[in]  sort_order    0 = descending, 1 = ascending.
+ * @param[in]  sort_data     Sort data.
  * @param[in]  first_group   Index of the first word to output, starting at 0.
  * @param[in]  max_groups    Maximum number of words to output or -1 for all.
  */
 void
 buffer_aggregate_wc_xml (GString *xml, iterator_t* aggregate,
                          const gchar* type, const char* group_column,
-                         const char* sort_stat, int sort_order,
+                         GArray* sort_data,
                          int first_group, int max_groups)
 {
+  sort_data_t *first_sort_data;
+  const char *sort_stat;
+  int sort_order;
+
+  if (sort_data && sort_data->len)
+    {
+      first_sort_data = g_array_index (sort_data, sort_data_t*, 0);
+      sort_stat = first_sort_data->stat;
+      sort_order = first_sort_data->order;
+    }
+  else
+    {
+      sort_stat = "value";
+      sort_order = 0;
+    }
+
   GTree *word_counts, *ignore_words;
   GRegex *word_regex;
 
@@ -18773,6 +18857,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           get_data_t *get;
           GArray *data_columns, *data_column_types;
           GArray *text_columns, *text_column_types;
+          GArray *sort_data;
           GArray *c_sums;
           const char *group_column, *subgroup_column;
           char *group_column_type, *subgroup_column_type;
@@ -18802,9 +18887,11 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                 subgroup_column,
                                 get_aggregates_data->data_columns,
                                 get_aggregates_data->text_columns,
+                                get_aggregates_data->sort_data,
                                 &group_column_type, &subgroup_column_type,
                                 &data_column_types, &data_columns,
                                 &text_column_types, &text_columns,
+                                &sort_data,
                                 &c_sums);
 
           if (get_aggregates_data->mode
@@ -18816,8 +18903,6 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                             group_column, subgroup_column,
                                             text_columns,
                                             NULL, /* ignore sorting */
-                                            NULL,
-                                            0,
                                             0,    /* get all groups */
                                             -1,
                                             NULL /* extra_tables */,
@@ -18830,9 +18915,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                             data_columns,
                                             group_column, subgroup_column,
                                             text_columns,
-                                            get_aggregates_data->sort_field,
-                                            get_aggregates_data->sort_stat,
-                                            get_aggregates_data->sort_order,
+                                            sort_data,
                                             get_aggregates_data->first_group,
                                             get_aggregates_data->max_groups,
                                             NULL /* extra_tables */,
@@ -18901,6 +18984,9 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             {
               g_array_free (data_columns, TRUE);
               g_array_free (data_column_types, TRUE);
+              for (index = 0; index < sort_data->len; index++)
+                sort_data_free (g_array_index (sort_data, sort_data_t*, index));
+              g_array_free (sort_data, TRUE);
               g_array_free (c_sums, TRUE);
               return;
             }
@@ -18913,8 +18999,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               && strcasecmp (get_aggregates_data->mode, "word_counts") == 0)
             {
               buffer_aggregate_wc_xml (xml, &aggregate, type, group_column,
-                                       get_aggregates_data->sort_stat,
-                                       get_aggregates_data->sort_order,
+                                       sort_data,
                                        get_aggregates_data->first_group,
                                        get_aggregates_data->max_groups);
             }
@@ -18980,6 +19065,9 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           for (index = 0; index < data_column_types->len; index++)
             g_free (g_array_index (data_column_types, gchar*, index));
           g_array_free (data_column_types, TRUE);
+          for (index = 0; index < sort_data->len; index++)
+            sort_data_free (g_array_index (sort_data, sort_data_t*, index));
+          g_array_free (sort_data, TRUE);
           g_array_free (c_sums, TRUE);
 
           SEND_TO_CLIENT_OR_FAIL (xml->str);
@@ -18992,6 +19080,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         }
 
       CLOSE (CLIENT_GET_AGGREGATES, DATA_COLUMN);
+      CLOSE (CLIENT_GET_AGGREGATES, SORT);
       CLOSE (CLIENT_GET_AGGREGATES, TEXT_COLUMN);
 
       case CLIENT_GET_ASSETS:

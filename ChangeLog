@@ -1,3 +1,35 @@
+2016-05-13  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Allow sorting by multiple fields in OMP command GET_AGGREGATES.
+
+	* src/manage_sql.c (init_aggregate_iterator): Replace sort_field,
+	sort_stat and sort_order parameters with sort_data, which can contain
+	multiple sorting instructions.
+
+	* src/manage.c (sort_data_free): New function.
+
+	* src/manage.h (sort_data_t): New struct typedef.
+	(sort_data_free): New function prototype.
+	(init_aggregate_iterator): Update parameters.
+
+	* src/omp.c (get_aggregates_data_t, get_aggregates_data_reset): Replace
+	sort_field, sort_stat and sort_order with sort_data.
+	(client_state_t): Add CLIENT_GET_AGGREGATES_SORT.
+	(omp_xml_handle_start_element): Add sort_field, sort_stat and
+	sort_order attributes of GET_AGGREGATES and the field, stat and order
+	attributes of the new SORT subelement to sort_data list.
+	(init_aggregate_lists): Add params sort_data_list and sort_data to
+	copy the former to the latter, a GArray.
+	(buffer_aggregate_wc_xml): Replace sort_stat and sort_order param with
+	sort_data.
+	(omp_xml_handle_end_element): In case CLIENT_GET_AGGREGATES use new
+	sort_data lists and close SORT subelement.
+
+	* src/schema_formats/XML/OMP.xml.in (get_aggregates): Add new "sort"
+	subelement in command.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
 2016-05-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add alert script forgotten with SNMP alert commit.
