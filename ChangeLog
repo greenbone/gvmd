@@ -1,3 +1,16 @@
+2016-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Where possible, always include the resource name in event log messages.
+
+	* src/manage.h (resource_name): Export.
+
+	* src/manage_sql.c (resource_name): Ensure that name is always
+	initialised when the return is 0.
+
+	* src/omp.c (log_event_internal): New function.  From log_event.  Get
+	name when ID is given.
+	(log_event, log_event_fail): Use log_event_internal.
+
 2016-05-13  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Allow sorting by multiple fields in OMP command GET_AGGREGATES.
