@@ -14538,7 +14538,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             {
               case 0:
                 SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_asset"));
-                log_event ("delete_asset", "Asset",
+                log_event ("asset", "Asset",
                            delete_asset_data->asset_id, "deleted");
                 break;
               case 1:

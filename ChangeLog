@@ -1,5 +1,9 @@
 2016-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Correct log_event type.
+
+2016-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Where possible, always include the resource name in event log messages.
 
 	* src/manage.h (resource_name): Export.
