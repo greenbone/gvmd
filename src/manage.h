@@ -284,6 +284,9 @@ get_iterator_owner (iterator_t*);
 /* Resources. */
 
 int
+resource_name (const char *, const char *, int, char **);
+
+int
 resource_count (const char *, const get_data_t *);
 
 int

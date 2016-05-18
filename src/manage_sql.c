@@ -4441,7 +4441,7 @@ resource_exists (const char *type, resource_t resource, int location)
  * @param[in]  type      Type.
  * @param[in]  uuid      UUID.
  * @param[in]  location  Location.
- * @param[out] name      Name return.
+ * @param[out] name      Return for freshly allocated name.
  *
  * @return 0 success, 1 error in type.
  */
@@ -4520,6 +4520,8 @@ resource_name (const char *type, const char *uuid, int location, char **name)
                         type,
                         strcmp (type, "task") ? "_trash" : "",
                         uuid);
+  else
+    *name = NULL;
 
   return 0;
 }
