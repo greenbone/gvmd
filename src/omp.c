@@ -12488,7 +12488,7 @@ buffer_aggregate_subgroup_value (gchar *key,
                                  long int *value,
                                  GString *buffer)
 {
-  xml_string_append (buffer, "<value>%s</value>", key);
+  xml_string_append (buffer, "<value>%s</value>", key ? key : "");
   return FALSE;
 }
 
