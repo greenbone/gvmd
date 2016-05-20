@@ -59720,86 +59720,43 @@ modify_setting (const gchar *uuid, const gchar *name,
       else if (strcmp (uuid, "23409203-940a-4b4a-b70c-447475f18323") == 0)
         setting_name = g_strdup ("Default Target");
 
-      /* Scan Management dashboards */
+      /*
+       * Main dashboard
+       */
+      else if (strcmp (uuid, "d97eca9f-0386-4e5d-88f2-0ed7f60c0646") == 0)
+        setting_name = g_strdup ("Main Dashboard Components");
+      else if (strcmp (uuid, "8190fe85-3bc3-47fb-a9d4-bf1c8fcaa79c") == 0)
+        setting_name = g_strdup ("Main Dashboard Filters");
+      else if (strcmp (uuid, "fdde8a8a-0d10-491c-8eb0-46eb0792b417") == 0)
+        setting_name = g_strdup ("Main Dashboard Row Heights");
+
+      /*
+       * Scans dashboards
+       */
+      else if (strcmp (uuid, "c7584d7c-649f-4f8b-9ded-9e1dc20f24c8") == 0)
+        setting_name = g_strdup ("Scans Dashboard Components");
+      else if (strcmp (uuid, "39311e88-0d10-4a46-bc0c-5becd034667b") == 0)
+        setting_name = g_strdup ("Scans Dashboard Filters");
+      else if (strcmp (uuid, "fd846514-cfb1-48b1-8deb-0cf3b5eaedcd") == 0)
+        setting_name = g_strdup ("Scans Dashboard Row Heights");
+
+      /* Tasks dashboard settings */
       else if (strcmp (uuid, "3d5db3c7-5208-4b47-8c28-48efc621b1e0") == 0)
         setting_name = g_strdup ("Tasks Top Dashboard Components");
       else if (strcmp (uuid, "ce8608af-7e66-45a8-aa8a-76def4f9f838") == 0)
         setting_name = g_strdup ("Tasks Top Dashboard Row Heights");
 
+      /* Reports dashboard settings */
       else if (strcmp (uuid, "e599bb6b-b95a-4bb2-a6bb-fe8ac69bc071") == 0)
         setting_name = g_strdup ("Reports Top Dashboard Components");
       else if (strcmp (uuid, "fc875cd4-16bf-42d1-98ed-c0c9bd6015cd") == 0)
         setting_name = g_strdup ("Reports Top Dashboard Row Heights");
 
+      /* Results dashboard settings */
       else if (strcmp (uuid, "0b8ae70d-d8fc-4418-8a72-e65ac8d2828e") == 0)
         setting_name = g_strdup ("Results Top Dashboard Components");
       else if (strcmp (uuid, "cb7db2fe-3fe4-4704-9fa1-efd4b9e522a8") == 0)
         setting_name = g_strdup ("Results Top Dashboard Row Heights");
-
-      /* Assets dashboards */
-      else if (strcmp (uuid, "0320e0db-bf30-4d4f-9379-b0a022d07cf7") == 0)
-        setting_name = g_strdup ("Assets Dashboard Components");
-      else if (strcmp (uuid, "48c344eb-062e-4ff5-81db-28f7ab110ca1") == 0)
-        setting_name = g_strdup ("Assets Dashboard Filters");
-      else if (strcmp (uuid, "d52373d8-90d9-4921-b03f-1ffd11e03f49") == 0)
-        setting_name = g_strdup ("Assets Dashboard Row Heights");
-
-      else if (strcmp (uuid, "d3f5f2de-a85b-43f2-a817-b127457cc8ba") == 0)
-        setting_name = g_strdup ("Hosts Top Dashboard Components");
-      else if (strcmp (uuid, "1cef4fae-57a6-4c1d-856c-0368ead863d4") == 0)
-        setting_name = g_strdup ("Hosts Top Dashboard Row Heights");
-
-      else if (strcmp (uuid, "e93b51ed-5881-40e0-bc4f-7d3268a36177") == 0)
-        setting_name = g_strdup ("OSs Top Dashboard Components");
-      else if (strcmp (uuid, "3006052f-3f28-419b-bffa-65b41605d5c3") == 0)
-        setting_name = g_strdup ("OSs Top Dashboard Row Heights");
-
-      /* SecInfo dashboards */
-      else if (strcmp (uuid, "84ab32da-fe69-44d8-8a8f-70034cf28d4e") == 0)
-        setting_name = g_strdup ("SecInfo Dashboard Components");
-      else if (strcmp (uuid, "517d0efe-426e-49a9-baa7-eda2832c93e8") == 0)
-        setting_name = g_strdup ("SecInfo Dashboard Filters");
-      else if (strcmp (uuid, "42d48049-3153-43bf-b30d-72ca5ab1eb49") == 0)
-        setting_name = g_strdup ("SecInfo Dashboard Row Heights");
-
-      else if (strcmp (uuid, "f68d9369-1945-477b-968f-121c6029971b") == 0)
-        setting_name = g_strdup ("NVTs Top Dashboard Components");
-      else if (strcmp (uuid, "af89a84a-d3ec-43a8-97a8-aa688bf093bc") == 0)
-        setting_name = g_strdup ("NVTs Top Dashboard Row Heights");
-
-      else if (strcmp (uuid, "815ddd2e-8654-46c7-a05b-d73224102240") == 0)
-        setting_name = g_strdup ("CVEs Top Dashboard Components");
-      else if (strcmp (uuid, "418a5746-d68a-4a2d-864a-0da993b32220") == 0)
-        setting_name = g_strdup ("CVEs Top Dashboard Row Heights");
-
-      else if (strcmp (uuid, "9cff9b4d-b164-43ce-8687-f2360afc7500") == 0)
-        setting_name = g_strdup ("CPEs Top Dashboard Components");
-      else if (strcmp (uuid, "629fdb73-35fa-4247-9018-338c202f7c03") == 0)
-        setting_name = g_strdup ("CPEs Top Dashboard Row Heights");
-
-      else if (strcmp (uuid, "9563efc0-9f4e-4d1f-8f8d-0205e32b90a4") == 0)
-        setting_name = g_strdup ("OVAL Definitions Top Dashboard Components");
-      else if (strcmp (uuid, "fe1610a3-4e87-4b0d-9b7a-f0f66fef586b") == 0)
-        setting_name = g_strdup ("OVAL Definitions Top Dashboard Row Heights");
-
-      else if (strcmp (uuid, "a6946f44-480f-4f37-8a73-28a4cd5310c4") == 0)
-        setting_name = g_strdup ("CERT-Bund Advisories Top Dashboard"
-                                 " Components");
-      else if (strcmp (uuid, "469d50da-880a-4bfc-88ed-22e53764c683") == 0)
-        setting_name = g_strdup ("CERT-Bund Advisories Top Dashboard"
-                                 " Row Heights");
-
-      else if (strcmp (uuid, "9812ea49-682d-4f99-b3cc-eca051d1ce59") == 0)
-        setting_name = g_strdup ("DFN-CERT Advisories Top Dashboard"
-                                 " Components");
-      else if (strcmp (uuid, "72014b52-4389-435d-9438-8c13601ecbd2") == 0)
-        setting_name = g_strdup ("DFN-CERT Advisories Top Dashboard"
-                                 " Row Heights");
-
-      else if (strcmp (uuid, "4c7b1ea7-b7e6-4d12-9791-eb9f72b6f864") == 0)
-        setting_name = g_strdup ("All SecInfo Top Dashboard Components");
-      else if (strcmp (uuid, "985f38eb-1a30-4a35-abb6-3eec05b5d54a") == 0)
-        setting_name = g_strdup ("All SecInfo Top Dashboard Row Heights");
 
       /* Notes dashboard settings */
       else if (strcmp (uuid, "ce7b121-c609-47b0-ab57-fd020a0336f4") == 0)
@@ -59812,6 +59769,84 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("Overrides Top Dashboard Components");
       else if (strcmp (uuid, "a8c246f9-0506-4d8d-be35-a3befb22fbca") == 0)
         setting_name = g_strdup ("Overrides Top Dashboard Row Heights");
+
+      /*
+       * Assets dashboards
+       */
+      else if (strcmp (uuid, "0320e0db-bf30-4d4f-9379-b0a022d07cf7") == 0)
+        setting_name = g_strdup ("Assets Dashboard Components");
+      else if (strcmp (uuid, "48c344eb-062e-4ff5-81db-28f7ab110ca1") == 0)
+        setting_name = g_strdup ("Assets Dashboard Filters");
+      else if (strcmp (uuid, "d52373d8-90d9-4921-b03f-1ffd11e03f49") == 0)
+        setting_name = g_strdup ("Assets Dashboard Row Heights");
+
+      /* Hosts dashboard settings */
+      else if (strcmp (uuid, "d3f5f2de-a85b-43f2-a817-b127457cc8ba") == 0)
+        setting_name = g_strdup ("Hosts Top Dashboard Components");
+      else if (strcmp (uuid, "1cef4fae-57a6-4c1d-856c-0368ead863d4") == 0)
+        setting_name = g_strdup ("Hosts Top Dashboard Row Heights");
+
+      /* Operating Systems dashboard settings */
+      else if (strcmp (uuid, "e93b51ed-5881-40e0-bc4f-7d3268a36177") == 0)
+        setting_name = g_strdup ("OSs Top Dashboard Components");
+      else if (strcmp (uuid, "3006052f-3f28-419b-bffa-65b41605d5c3") == 0)
+        setting_name = g_strdup ("OSs Top Dashboard Row Heights");
+
+      /*
+       * SecInfo dashboards
+       */
+      else if (strcmp (uuid, "84ab32da-fe69-44d8-8a8f-70034cf28d4e") == 0)
+        setting_name = g_strdup ("SecInfo Dashboard Components");
+      else if (strcmp (uuid, "517d0efe-426e-49a9-baa7-eda2832c93e8") == 0)
+        setting_name = g_strdup ("SecInfo Dashboard Filters");
+      else if (strcmp (uuid, "42d48049-3153-43bf-b30d-72ca5ab1eb49") == 0)
+        setting_name = g_strdup ("SecInfo Dashboard Row Heights");
+
+      /* NVTs dashboard settings */
+      else if (strcmp (uuid, "f68d9369-1945-477b-968f-121c6029971b") == 0)
+        setting_name = g_strdup ("NVTs Top Dashboard Components");
+      else if (strcmp (uuid, "af89a84a-d3ec-43a8-97a8-aa688bf093bc") == 0)
+        setting_name = g_strdup ("NVTs Top Dashboard Row Heights");
+
+      /* CVEs dashboard settings */
+      else if (strcmp (uuid, "815ddd2e-8654-46c7-a05b-d73224102240") == 0)
+        setting_name = g_strdup ("CVEs Top Dashboard Components");
+      else if (strcmp (uuid, "418a5746-d68a-4a2d-864a-0da993b32220") == 0)
+        setting_name = g_strdup ("CVEs Top Dashboard Row Heights");
+
+      /* CPEs dashboard settings */
+      else if (strcmp (uuid, "9cff9b4d-b164-43ce-8687-f2360afc7500") == 0)
+        setting_name = g_strdup ("CPEs Top Dashboard Components");
+      else if (strcmp (uuid, "629fdb73-35fa-4247-9018-338c202f7c03") == 0)
+        setting_name = g_strdup ("CPEs Top Dashboard Row Heights");
+
+      /* OVAL Definitions dashboard settings */
+      else if (strcmp (uuid, "9563efc0-9f4e-4d1f-8f8d-0205e32b90a4") == 0)
+        setting_name = g_strdup ("OVAL Definitions Top Dashboard Components");
+      else if (strcmp (uuid, "fe1610a3-4e87-4b0d-9b7a-f0f66fef586b") == 0)
+        setting_name = g_strdup ("OVAL Definitions Top Dashboard Row Heights");
+
+      /* CERT-Bund Advisories dashboard settings */
+      else if (strcmp (uuid, "a6946f44-480f-4f37-8a73-28a4cd5310c4") == 0)
+        setting_name = g_strdup ("CERT-Bund Advisories Top Dashboard"
+                                 " Components");
+      else if (strcmp (uuid, "469d50da-880a-4bfc-88ed-22e53764c683") == 0)
+        setting_name = g_strdup ("CERT-Bund Advisories Top Dashboard"
+                                 " Row Heights");
+
+      /* DFN-CERT Advisories */
+      else if (strcmp (uuid, "9812ea49-682d-4f99-b3cc-eca051d1ce59") == 0)
+        setting_name = g_strdup ("DFN-CERT Advisories Top Dashboard"
+                                 " Components");
+      else if (strcmp (uuid, "72014b52-4389-435d-9438-8c13601ecbd2") == 0)
+        setting_name = g_strdup ("DFN-CERT Advisories Top Dashboard"
+                                 " Row Heights");
+
+      /* All SecInfo */
+      else if (strcmp (uuid, "4c7b1ea7-b7e6-4d12-9791-eb9f72b6f864") == 0)
+        setting_name = g_strdup ("All SecInfo Top Dashboard Components");
+      else if (strcmp (uuid, "985f38eb-1a30-4a35-abb6-3eec05b5d54a") == 0)
+        setting_name = g_strdup ("All SecInfo Top Dashboard Row Heights");
 
     }
 

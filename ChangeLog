@@ -1,3 +1,9 @@
+2016-05-20  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (modify_setting): Add settings for "Main" and
+	"Scans" dashboards.  Add comments for dashboards of individual types
+	and move Notes and Overrides to the other "Scans" dashboard settings.
+	
 2016-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Correct log_event type.
