@@ -1,3 +1,8 @@
+2016-05-20  Björn Ricks <bjoern.ricks@greenbone.net>
+
+	* src/wizards/quick_task.xml: Update start_hour validation in quick task
+	wizard. Allow hour withour leading zero.
+
 2016-05-20  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (modify_setting): Add settings for "Main" and
