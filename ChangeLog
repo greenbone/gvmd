@@ -1,3 +1,12 @@
+2016-05-23  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (valid_type, type_pretty_name, type_db_name): Add
+	type "Asset".
+	(modify_setting): Add new setting "Assets Filter".
+
+	* src/omp.c (omp_xml_handle_end_element): In case CLIENT_GET_ASSETS
+	use the standard INIT_GET macro to initialize the default filter.
+
 2016-05-20  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/omp.c (buffer_aggregate_subgroup_value): Output NULL subgroup

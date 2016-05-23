@@ -4149,6 +4149,7 @@ valid_type (const char* type)
 {
   return (strcasecmp (type, "agent") == 0)
          || (strcasecmp (type, "alert") == 0)
+         || (strcasecmp (type, "asset") == 0)
          || (strcasecmp (type, "config") == 0)
          || (strcasecmp (type, "credential") == 0)
          || (strcasecmp (type, "filter") == 0)
@@ -4187,6 +4188,8 @@ type_pretty_name (const char* type)
     return "Agent";
   if (strcasecmp (type, "alert") == 0)
     return "Alert";
+  if (strcasecmp (type, "asset") == 0)
+    return "Asset";
   if (strcasecmp (type, "config") == 0)
     return "Config";
   if (strcasecmp (type, "credential") == 0)
@@ -4246,6 +4249,8 @@ type_db_name (const char* type)
     return "agent";
   if (strcasecmp (type, "Alert") == 0)
     return "alert";
+  if (strcasecmp (type, "Asset") == 0)
+    return "asset";
   if (strcasecmp (type, "Config") == 0)
     return "config";
   if (strcasecmp (type, "Credential") == 0)
@@ -59634,6 +59639,8 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("Agents Filter");
       else if (strcmp (uuid, "b833a6f2-dcdc-4535-bfb0-a5154b5b5092") == 0)
         setting_name = g_strdup ("Alerts Filter");
+      else if (strcmp (uuid, "0f040d06-abf9-43a2-8f94-9de178b0e978") == 0)
+        setting_name = g_strdup ("Assets Filter");
       else if (strcmp (uuid, "1a9fbd91-0182-44cd-bc88-a13a9b3b1bef") == 0)
         setting_name = g_strdup ("Configs Filter");
       else if (strcmp (uuid, "186a5ac8-fe5a-4fb1-aa22-44031fb339f3") == 0)

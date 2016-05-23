@@ -19127,7 +19127,6 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           int count, first, filtered, ret;
           int (*init_asset_iterator) (iterator_t *, const get_data_t *);
           int (*asset_count) (const get_data_t *get);
-          get_data_t *get;
 
           if (acl_user_may ("get_assets") == 0)
             {
@@ -19149,43 +19148,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               break;
             }
 
-          get = &get_assets_data->get;
-          if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
-            {
-              char *user_filter;
-              gchar *name;
-
-              if (strcmp (get_assets_data->type, "host") == 0)
-                name = g_strdup ("HOST");
-              else if (strcmp (get_assets_data->type, "os") == 0)
-                name = g_strdup ("OS");
-              else if (strcmp (get_assets_data->type, "app") == 0)
-                name = g_strdup ("APP");
-              else
-                {
-                  if (send_find_error_to_client ("get_assets", "type",
-                                                 get_assets_data->type,
-                                                 omp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  get_assets_data_reset (get_assets_data);
-                  set_client_state (CLIENT_AUTHENTIC);
-                  break;
-                }
-
-              user_filter = setting_filter (name);
-              g_free (name);
-
-              if (user_filter && strlen (user_filter))
-                {
-                  get->filt_id = user_filter;
-                  get->filter = filter_term (user_filter);
-                }
-              else
-                 get->filt_id = g_strdup ("0");
-            }
+          INIT_GET (asset, Asset);
 
           /* Set type specific functions. */
           if (g_strcmp0 ("host", get_assets_data->type) == 0)
