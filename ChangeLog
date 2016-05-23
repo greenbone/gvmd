@@ -1,3 +1,11 @@
+2016-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r25343.
+
+	* src/manage.c (fork_osp_scan_handler): Adjust proctitle formatting and
+	wording, so it lines up and matches other cases.
+	(run_task): Change proctitle of OTP scan handlers.
+
 2016-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r25320.
