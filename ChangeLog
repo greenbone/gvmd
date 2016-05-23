@@ -1,5 +1,10 @@
 2016-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (manage_schedule): Try to resume before trying to start,
+	otherwise the task always starts from the beginning.
+
+2016-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (fork_osp_scan_handler, fork_cve_scan_handler): Adjust
 	proctitle formatting and wording, so it lines up and matches other
 	cases.
