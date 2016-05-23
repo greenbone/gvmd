@@ -1,3 +1,10 @@
+2016-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (fork_osp_scan_handler, fork_cve_scan_handler): Adjust
+	proctitle formatting and wording, so it lines up and matches other
+	cases.
+	(run_task): Change proctitle of OTP scan handlers.
+
 2016-05-23  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (valid_type, type_pretty_name, type_db_name): Add
@@ -22,7 +29,7 @@
 	* src/manage_sql.c (modify_setting): Add settings for "Main" and
 	"Scans" dashboards.  Add comments for dashboards of individual types
 	and move Notes and Overrides to the other "Scans" dashboard settings.
-	
+
 2016-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Correct log_event type.

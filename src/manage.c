@@ -3561,7 +3561,7 @@ fork_osp_scan_handler (task_t task, target_t target)
   set_task_run_status (task, TASK_STATUS_RUNNING);
   set_report_scan_run_status (current_report, TASK_STATUS_RUNNING);
 
-  snprintf (title, sizeof (title), "openvasmd (OSP): %s handler", report_id);
+  snprintf (title, sizeof (title), "openvasmd: OSP: Handling scan %s", report_id);
   proctitle_set (title);
 
   rc = handle_osp_scan (task, current_report, report_id);
@@ -3817,7 +3817,7 @@ fork_cve_scan_handler (task_t task, target_t target)
 
   set_task_run_status (task, TASK_STATUS_RUNNING);
 
-  snprintf (title, sizeof (title), "openvasmd (CVE): %s handler", report_id);
+  snprintf (title, sizeof (title), "openvasmd: CVE: Handling scan %s", report_id);
   g_free (report_id);
   proctitle_set (title);
 
@@ -3960,7 +3960,7 @@ run_task (const char *task_id, char **report_id, int from,
   target_t target;
   scanner_t scanner;
   slave_t slave;
-  char *hosts, *port_range, *port;
+  char title[128], *hosts, *port_range, *port, *uuid;
   gchar *plugins;
   int fail, pid;
   GSList *files = NULL;
@@ -4322,8 +4322,16 @@ run_task (const char *task_id, char **report_id, int from,
     free (iface);
   }
 
+  uuid = report_uuid (current_report);
+
   if (slave)
     {
+      snprintf (title, sizeof (title),
+                "openvasmd: OTP: Handling slave scan %s",
+                uuid);
+      free (uuid);
+      proctitle_set (title);
+
       if (run_slave_task (task, target, ssh_credential, smb_credential,
                           esxi_credential, snmp_credential,
                           last_stopped_report))
@@ -4336,6 +4344,10 @@ run_task (const char *task_id, char **report_id, int from,
         }
       exit (EXIT_SUCCESS);
     }
+
+  snprintf (title, sizeof (title), "openvasmd: OTP: Handling scan %s", uuid);
+  free (uuid);
+  proctitle_set (title);
 
   report_set_slave_uuid (current_report, "");
   report_set_slave_name (current_report, "");
