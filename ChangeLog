@@ -1,5 +1,12 @@
 2016-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r25352.
+
+	* src/manage.c (manage_schedule): Try to resume before trying to start,
+	otherwise the task always starts from the beginning.
+
+2016-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r25343.
 
 	* src/manage.c (fork_osp_scan_handler): Adjust proctitle formatting and

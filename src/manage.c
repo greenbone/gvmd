@@ -5182,9 +5182,9 @@ manage_schedule (int (*fork_connection) (int *,
 
       g_free (owner);
 
-      if (omp_start_task_report (&session, task_uuid, NULL))
+      if (omp_resume_task_report (&session, task_uuid, NULL))
         {
-          if (omp_resume_task_report (&session, task_uuid, NULL))
+          if (omp_start_task_report (&session, task_uuid, NULL))
             {
               g_warning ("%s: omp_start_task and omp_resume_task failed", __FUNCTION__);
               g_free (task_uuid);
