@@ -1,5 +1,9 @@
 2016-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/tracef.h: Remove.  No longer used.
+
+2016-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Replace tracef with g_debug.  No real gain having these messages
 	controlled by --verbose, when the log config does the same thing.
 
