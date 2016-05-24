@@ -39,7 +39,6 @@
 #include "lsc_user.h"
 #include "sql.h"
 #include "scanner.h"
-#include "tracef.h"
 
 #include <arpa/inet.h>
 #include <assert.h>
@@ -78,6 +77,12 @@
  * The number of 70000 is choosen to cover "192.168.0.0-192.168.255.255".
  */
 #define ABSOLUTE_MAX_IPS_PER_TARGET 70000
+
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
 
 
 /* Headers from backend specific manage_xxx.c file. */
@@ -3346,9 +3351,9 @@ filter_clause (const char* type, const char* filter,
                            && strcmp (keyword->string, "name")))
                 {
                   gchar *column;
-                  tracef ("   %s: select_columns: %p", __FUNCTION__, select_columns);
-                  tracef ("   %s: where_columns: %p", __FUNCTION__, where_columns);
-                  tracef ("   %s: keyword->string: %p", __FUNCTION__, keyword->string);
+                  g_debug ("   %s: select_columns: %p", __FUNCTION__, select_columns);
+                  g_debug ("   %s: where_columns: %p", __FUNCTION__, where_columns);
+                  g_debug ("   %s: keyword->string: %p", __FUNCTION__, keyword->string);
                   column = columns_select_column (select_columns,
                                                   where_columns,
                                                   keyword->string);
@@ -8538,7 +8543,7 @@ email (const char *to_address, const char *from_address, const char *subject,
       return -1;
     }
 
-  tracef ("   EMAIL to %s from %s subject: %s, body: %s",
+  g_debug ("   EMAIL to %s from %s subject: %s, body: %s",
           to_address, from_address, subject, body);
 
   content_file = fdopen (content_fd, "w");
@@ -8680,7 +8685,7 @@ email (const char *to_address, const char *from_address, const char *subject,
                              to_file_name,
                              content_file_name);
 
-  tracef ("   command: %s\n", command);
+  g_debug ("   command: %s\n", command);
 
   ret = system (command);
   if ((ret == -1) || WEXITSTATUS (ret))
@@ -8721,7 +8726,7 @@ http_get (const char *url)
   gint exit_status;
   gchar **cmd;
 
-  tracef ("   HTTP_GET %s", url);
+  g_debug ("   HTTP_GET %s", url);
 
   cmd = (gchar **) g_malloc (5 * sizeof (gchar *));
   cmd[0] = g_strdup ("/usr/bin/wget");
@@ -8795,7 +8800,7 @@ run_alert_script (const char *alert_id, const char *command_args,
   if (report == NULL)
     return -1;
 
-  tracef ("report: %s", report);
+  g_debug ("report: %s", report);
 
   /* Setup files. */
 
@@ -9088,7 +9093,7 @@ snmp_to_host (const char *community, const char *agent, const char *message)
   gchar *clean_community, *clean_agent, *clean_message, *command_args;
   int ret;
 
-  tracef ("SNMP to host: %s", agent);
+  g_debug ("SNMP to host: %s", agent);
 
   if (community == NULL || agent == NULL || message == NULL)
     {
@@ -9129,7 +9134,7 @@ send_to_host (const char *host, const char *port,
   gchar *clean_host, *clean_port, *command_args;
   int ret;
 
-  tracef ("send to host: %s:%s", host, port);
+  g_debug ("send to host: %s:%s", host, port);
 
   if (host == NULL)
     return -1;
@@ -9169,7 +9174,7 @@ scp_to_host (const char *password, const char *username, const char *host,
   gchar *clean_known_hosts, *command_args;
   int ret;
 
-  tracef ("scp to host: %s@%s:%s", username, host, path);
+  g_debug ("scp to host: %s@%s:%s", username, host, path);
 
   if (password == NULL || username == NULL || host == NULL || path == NULL)
     return -1;
@@ -9221,8 +9226,8 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
   if ((report == NULL) || (ip == NULL) || (port == NULL))
     return -1;
 
-  tracef ("send to sourcefire: %s:%s", ip, port);
-  tracef ("report: %s", report);
+  g_debug ("send to sourcefire: %s:%s", ip, port);
+  g_debug ("report: %s", report);
 
   /* Setup files. */
 
@@ -9558,8 +9563,8 @@ send_to_verinice (const char *url, const char *username, const char *password,
   if ((archive == NULL) || (url == NULL))
     return -1;
 
-  tracef ("send to verinice: %s", url);
-  tracef ("archive: %s", archive);
+  g_debug ("send to verinice: %s", url);
+  g_debug ("archive: %s", archive);
 
   /* Setup files. */
 
@@ -11078,8 +11083,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               host = alert_data (alert, "method", "send_host");
               port = alert_data (alert, "method", "send_port");
 
-              tracef ("send host: %s", host);
-              tracef ("send port: %s", port);
+              g_debug ("send host: %s", host);
+              g_debug ("send port: %s", port);
 
               ret = send_to_host (host, port, message, strlen (message));
 
@@ -11168,8 +11173,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           host = alert_data (alert, "method", "send_host");
           port = alert_data (alert, "method", "send_port");
 
-          tracef ("send host: %s", host);
-          tracef ("send port: %s", port);
+          g_debug ("send host: %s", host);
+          g_debug ("send port: %s", port);
 
           ret = send_to_host (host, port, report_content, content_length);
 
@@ -11189,9 +11194,9 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           agent = alert_data (alert, "method", "snmp_agent");
           snmp_message = alert_data (alert, "method", "snmp_message");
 
-          tracef ("snmp_message: %s", snmp_message);
-          tracef ("snmp_community: %s", community);
-          tracef ("snmp_agent: %s", agent);
+          g_debug ("snmp_message: %s", snmp_message);
+          g_debug ("snmp_community: %s", community);
+          g_debug ("snmp_agent: %s", agent);
 
           if (snmp_message)
             {
@@ -11300,9 +11305,9 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             port = g_strdup ("8307");
           pkcs12 = alert_data (alert, "method", "pkcs12");
 
-          tracef ("  sourcefire   ip: %s", ip);
-          tracef ("  sourcefire port: %s", port);
-          tracef ("sourcefire pkcs12: %s", pkcs12);
+          g_debug ("  sourcefire   ip: %s", ip);
+          g_debug ("  sourcefire port: %s", port);
+          g_debug ("sourcefire pkcs12: %s", pkcs12);
 
           ret = send_to_sourcefire (ip, port, pkcs12, report_content);
 
@@ -11327,8 +11332,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           level = g_strdup_printf ("event %s", submethod);
           g_free (submethod);
 
-          tracef ("  syslog level: %s", level);
-          tracef ("syslog message: %s", message);
+          g_debug ("  syslog level: %s", level);
+          g_debug ("syslog message: %s", message);
 
           g_log (level, G_LOG_LEVEL_MESSAGE, "%s", message);
 
@@ -11445,8 +11450,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               username = credential_value (credential, "username");
               password = credential_encrypted_value (credential, "password");
 
-              tracef ("    verinice  url: %s", url);
-              tracef ("verinice username: %s", username);
+              g_debug ("    verinice  url: %s", url);
+              g_debug ("verinice username: %s", username);
 
               ret = send_to_verinice (url, username, password, report_content,
                                       content_length);
@@ -11842,7 +11847,7 @@ condition_met (task_t task, report_t report, alert_t alert,
                 g_warning ("%s: failed to get last report\n", __FUNCTION__);
             }
 
-          tracef ("%s: last_report: %llu", __FUNCTION__, last_report);
+          g_debug ("%s: last_report: %llu", __FUNCTION__, last_report);
           if (last_report)
             {
               int db_count;
@@ -11857,7 +11862,7 @@ condition_met (task_t task, report_t report, alert_t alert,
               db_count = debugs + holes + infos + logs + warnings
                          + false_positives;
 
-              tracef ("%s: count: %i vs %i", __FUNCTION__, db_count, count);
+              g_debug ("%s: count: %i vs %i", __FUNCTION__, db_count, count);
               if (db_count >= count)
                 {
                   g_free (filter_id);
@@ -11928,10 +11933,10 @@ condition_met (task_t task, report_t report, alert_t alert,
                                       + false_positives;
 
                   cmp = last_count - second_last_count;
-                  tracef ("cmp: %i (vs %i)\n", cmp, count);
-                  tracef ("direction: %s\n", direction);
-                  tracef ("last_count: %i\n", last_count);
-                  tracef ("second_last_count: %i\n", second_last_count);
+                  g_debug ("cmp: %i (vs %i)\n", cmp, count);
+                  g_debug ("direction: %s\n", direction);
+                  g_debug ("last_count: %i\n", last_count);
+                  g_debug ("second_last_count: %i\n", second_last_count);
                   if (count < 0)
                     {
                       count = -count;
@@ -11967,9 +11972,9 @@ condition_met (task_t task, report_t report, alert_t alert,
                 }
               else
                 {
-                  tracef ("direction: %s\n", direction);
-                  tracef ("last_count: %i\n", last_count);
-                  tracef ("second_last_count NULL\n");
+                  g_debug ("direction: %s\n", direction);
+                  g_debug ("last_count: %i\n", last_count);
+                  g_debug ("second_last_count NULL\n");
                   if (((strcasecmp (direction, "changed") == 0)
                        || (strcasecmp (direction, "increased") == 0))
                       && (last_count > 0))
@@ -12030,10 +12035,10 @@ condition_met (task_t task, report_t report, alert_t alert,
               && second_last_severity > SEVERITY_MISSING)
             {
               double cmp = last_severity - second_last_severity;
-              tracef ("cmp: %f\n", cmp);
-              tracef ("direction: %s\n", direction);
-              tracef ("last_level: %1.1f\n", last_severity);
-              tracef ("second_last_level: %1.1f\n", second_last_severity);
+              g_debug ("cmp: %f\n", cmp);
+              g_debug ("direction: %s\n", direction);
+              g_debug ("last_level: %1.1f\n", last_severity);
+              g_debug ("second_last_level: %1.1f\n", second_last_severity);
               if (((strcasecmp (direction, "changed") == 0) && cmp)
                   || ((strcasecmp (direction, "increased") == 0) && (cmp > 0))
                   || ((strcasecmp (direction, "decreased") == 0) && (cmp < 0)))
@@ -12045,9 +12050,9 @@ condition_met (task_t task, report_t report, alert_t alert,
           else if (direction
                    && last_severity > SEVERITY_MISSING)
             {
-              tracef ("direction: %s\n", direction);
-              tracef ("last_level: %1.1f\n", last_severity);
-              tracef ("second_last_level NULL\n");
+              g_debug ("direction: %s\n", direction);
+              g_debug ("last_level: %1.1f\n", last_severity);
+              g_debug ("second_last_level NULL\n");
               if ((strcasecmp (direction, "changed") == 0)
                   || (strcasecmp (direction, "increased") == 0))
                 {
@@ -12079,7 +12084,7 @@ event (task_t task, report_t report, event_t event, void* event_data)
   GArray *alerts_triggered;
   guint index;
 
-  tracef ("   EVENT %i on task %llu", event, task);
+  g_debug ("   EVENT %i on task %llu", event, task);
 
   alerts_triggered = g_array_new (TRUE, TRUE, sizeof (alert_t));
 
@@ -14801,7 +14806,7 @@ make_report_format_uuids_unique ()
           command = g_strdup_printf ("cp -a %s %s > /dev/null 2>&1",
                                      dir,
                                      new_dir);
-          tracef ("   command: %s\n", command);
+          g_debug ("   command: %s\n", command);
           ret = system (command);
           g_free (command);
 
@@ -18204,7 +18209,7 @@ auto_delete_reports ()
 {
   iterator_t tasks;
 
-  tracef ("%s", __FUNCTION__);
+  g_debug ("%s", __FUNCTION__);
 
   if (sql_begin_exclusive_giveup ())
     return;
@@ -18237,7 +18242,7 @@ auto_delete_reports ()
       if (keep < 5 || keep > 1200)
         continue;
 
-      tracef ("%s: %s (%i)", __FUNCTION__,
+      g_debug ("%s: %s (%i)", __FUNCTION__,
               iterator_string (&tasks, 1),
               keep);
 
@@ -18258,12 +18263,12 @@ auto_delete_reports ()
           report = iterator_int64 (&reports, 0);
           assert (report);
 
-          tracef ("%s: delete %llu", __FUNCTION__, report);
+          g_debug ("%s: delete %llu", __FUNCTION__, report);
           ret = delete_report_internal (report);
           if (ret == 2)
             {
               /* Report is in use. */
-              tracef ("%s: %llu is in use", __FUNCTION__, report);
+              g_debug ("%s: %llu is in use", __FUNCTION__, report);
               continue;
             }
           if (ret)
@@ -19668,7 +19673,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
   pid_t pid;
   host_detail_t *detail;
 
-  tracef ("%s", __FUNCTION__);
+  g_debug ("%s", __FUNCTION__);
 
   if (acl_user_may ("create_report") == 0)
     return 99;
@@ -19749,7 +19754,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
         break;
       default:
         /* Parent.  Return, in order to respond to client. */
-        tracef ("%s: %i forked %i", __FUNCTION__, getpid (), pid);
+        g_debug ("%s: %i forked %i", __FUNCTION__, getpid (), pid);
         return 0;
         break;
     }
@@ -19765,7 +19770,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
     }
 
   sql_begin_immediate ();
-  tracef ("%s: add hosts", __FUNCTION__);
+  g_debug ("%s: add hosts", __FUNCTION__);
   index = 0;
   while ((start = (create_report_result_t*) g_ptr_array_index (host_starts,
                                                                index++)))
@@ -19774,7 +19779,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
                               parse_iso_time (start->description),
                               0);
 
-  tracef ("%s: add results", __FUNCTION__);
+  g_debug ("%s: add results", __FUNCTION__);
   index = 0;
   while ((result = (create_report_result_t*) g_ptr_array_index (results,
                                                                 index++)))
@@ -19783,7 +19788,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
       gchar *quoted_description, *quoted_scan_nvt_version, *quoted_severity;
       gchar *quoted_qod, *quoted_qod_type;
 
-      tracef ("%s: add results: index: %i", __FUNCTION__, index);
+      g_debug ("%s: add results: index: %i", __FUNCTION__, index);
 
       quoted_host = sql_quote (result->host ? result->host : "");
       quoted_port = sql_quote (result->port ? result->port : "");
@@ -19832,7 +19837,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
       report_add_result (report, sql_last_insert_id ());
     }
 
-  tracef ("%s: add host ends", __FUNCTION__);
+  g_debug ("%s: add host ends", __FUNCTION__);
   index = 0;
   while ((end = (create_report_result_t*) g_ptr_array_index (host_ends,
                                                              index++)))
@@ -19857,7 +19862,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
         g_free (quoted_host);
       }
 
-  tracef ("%s: add host details", __FUNCTION__);
+  g_debug ("%s: add host details", __FUNCTION__);
   index = 0;
   while ((detail = (host_detail_t*) g_ptr_array_index (details, index++)))
     if (detail->ip && detail->name)
@@ -23943,8 +23948,8 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
 
   if (sort_field == NULL) sort_field = "type";
 
-  tracef ("   delta: %s: sort_order: %i", __FUNCTION__, sort_order);
-  tracef ("   delta: %s: sort_field: %s", __FUNCTION__, sort_field);
+  g_debug ("   delta: %s: sort_order: %i", __FUNCTION__, sort_order);
+  g_debug ("   delta: %s: sort_field: %s", __FUNCTION__, sort_field);
 
   host = result_iterator_host (results);
   delta_host = result_iterator_host (delta_results);
@@ -23976,7 +23981,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
     }
 
   ret = collate_ip (NULL, strlen (host), host, strlen (delta_host), delta_host);
-  tracef ("   delta: %s: host: %s VS %s (%i)",
+  g_debug ("   delta: %s: host: %s VS %s (%i)",
           __FUNCTION__, host, delta_host, ret);
   if (ret)
     return ret;
@@ -23986,10 +23991,10 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
     {
       /* Sorting port first. */
 
-      tracef ("   delta: %s: port first", __FUNCTION__);
+      g_debug ("   delta: %s: port first", __FUNCTION__);
 
       ret = strcmp (port, delta_port);
-      tracef ("   delta: %s: port: %s VS %s (%i)",
+      g_debug ("   delta: %s: port: %s VS %s (%i)",
               __FUNCTION__, port, delta_port, ret);
       if (ret)
         {
@@ -23998,7 +24003,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
           return -ret;
         }
 
-      tracef ("   delta: %s: severity: %e VS %e",
+      g_debug ("   delta: %s: severity: %e VS %e",
               __FUNCTION__, severity, delta_severity);
       if (severity >= 0 && delta_severity >= 0)
         {
@@ -24011,13 +24016,13 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       ret = collate_message_type (NULL,
                                   strlen (type), type,
                                   strlen (delta_type), delta_type);
-      tracef ("   delta: %s: threat: %s VS %s (%i)",
+      g_debug ("   delta: %s: threat: %s VS %s (%i)",
               __FUNCTION__, type, delta_type, ret);
       if (ret)
         return -ret;
 
       ret = strcmp (nvt, delta_nvt);
-      tracef ("   delta: %s: NVT: %s VS %s (%i)",
+      g_debug ("   delta: %s: NVT: %s VS %s (%i)",
               __FUNCTION__, nvt, delta_nvt, ret);
       if (ret)
         return ret;
@@ -24030,10 +24035,10 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
     {
       /* Sorting NVT name first. */
 
-      tracef ("   delta: %s: name first", __FUNCTION__);
+      g_debug ("   delta: %s: name first", __FUNCTION__);
 
       ret = strcasecmp (name, delta_name);
-      tracef ("   delta: %s: name: %s VS %s (%i)",
+      g_debug ("   delta: %s: name: %s VS %s (%i)",
               __FUNCTION__, name, delta_name, ret);
       if (ret)
         {
@@ -24043,12 +24048,12 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
         }
 
       ret = strcmp (port, delta_port);
-      tracef ("   delta: %s: port: %s VS %s (%i)",
+      g_debug ("   delta: %s: port: %s VS %s (%i)",
               __FUNCTION__, port, delta_port, ret);
       if (ret)
         return ret;
 
-      tracef ("   delta: %s: severity: %e VS %e",
+      g_debug ("   delta: %s: severity: %e VS %e",
               __FUNCTION__, severity, delta_severity);
       if (severity >= 0 && delta_severity >= 0)
         {
@@ -24061,13 +24066,13 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       ret = collate_message_type (NULL,
                                   strlen (type), type,
                                   strlen (delta_type), delta_type);
-      tracef ("   delta: %s: threat: %s VS %s (%i)",
+      g_debug ("   delta: %s: threat: %s VS %s (%i)",
               __FUNCTION__, type, delta_type, ret);
       if (ret)
         return -ret;
 
       ret = strcmp (nvt, delta_nvt);
-      tracef ("   delta: %s: NVT: %s VS %s (%i)",
+      g_debug ("   delta: %s: NVT: %s VS %s (%i)",
               __FUNCTION__, nvt, delta_nvt, ret);
       if (ret)
         return ret;
@@ -24077,9 +24082,9 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
 
   /* Sorting severity first. */
 
-  tracef ("   delta: %s: severity first", __FUNCTION__);
+  g_debug ("   delta: %s: severity first", __FUNCTION__);
 
-  tracef ("   delta: %s: severity: %e VS %e",
+  g_debug ("   delta: %s: severity: %e VS %e",
           __FUNCTION__, severity, delta_severity);
   if (severity >= 0 && delta_severity >= 0)
     {
@@ -24092,19 +24097,19 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
   ret = collate_message_type (NULL,
                               strlen (type), type,
                               strlen (delta_type), delta_type);
-  tracef ("   delta: %s: threat: %s VS %s (%i)",
+  g_debug ("   delta: %s: threat: %s VS %s (%i)",
           __FUNCTION__, type, delta_type, ret);
   if (ret)
     return -ret;
 
   ret = strcmp (port, delta_port);
-  tracef ("   delta: %s: port: %s VS %s (%i)",
+  g_debug ("   delta: %s: port: %s VS %s (%i)",
           __FUNCTION__, port, delta_port, ret);
   if (ret)
     return ret;
 
   ret = strcmp (nvt, delta_nvt);
-  tracef ("   delta: %s: NVT: %s VS %s (%i)",
+  g_debug ("   delta: %s: NVT: %s VS %s (%i)",
           __FUNCTION__, nvt, delta_nvt, ret);
   if (ret)
     return ret;
@@ -24129,7 +24134,7 @@ compare_results (iterator_t *results, iterator_t *delta_results, int sort_order,
   int ret;
   const char *descr, *delta_descr;
 
-  tracef ("   delta: %s", __FUNCTION__);
+  g_debug ("   delta: %s", __FUNCTION__);
 
   ret = result_cmp (results, delta_results, sort_order, sort_field);
   if (ret > 0)
@@ -24142,7 +24147,7 @@ compare_results (iterator_t *results, iterator_t *delta_results, int sort_order,
   descr = result_iterator_descr (results);
   delta_descr = result_iterator_descr (delta_results);
 
-  tracef ("   delta: %s: descr: %s VS %s (%i)",
+  g_debug ("   delta: %s: descr: %s VS %s (%i)",
           __FUNCTION__, descr, delta_descr, strcmp (descr, delta_descr));
 
   ret = strcmp (descr, delta_descr);
@@ -24197,7 +24202,7 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
             *would_use = 1;
             if (*first_result)
               {
-                tracef ("   delta: skip");
+                g_debug ("   delta: skip");
                 (*first_result)--;
                 break;
               }
@@ -24226,7 +24231,7 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
             *would_use = 1;
             if (*first_result)
               {
-                tracef ("   delta: skip");
+                g_debug ("   delta: skip");
                 (*first_result)--;
                 break;
               }
@@ -24255,7 +24260,7 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
             *would_use = 1;
             if (*first_result)
               {
-                tracef ("   delta: skip");
+                g_debug ("   delta: skip");
                 (*first_result)--;
                 break;
               }
@@ -24284,7 +24289,7 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
             *would_use = 1;
             if (*first_result)
               {
-                tracef ("   delta: skip");
+                g_debug ("   delta: skip");
                 (*first_result)--;
                 break;
               }
@@ -24362,7 +24367,7 @@ dump (GArray *ports)
     {
       char *port = g_array_index (ports, char*, index);
       char *threat = port + strlen (port) + 1;
-      tracef ("  == %s %s %s", threat + strlen (threat) + 1, port, threat);
+      g_debug ("  == %s %s %s", threat + strlen (threat) + 1, port, threat);
     }
 }
 #endif
@@ -24398,7 +24403,7 @@ add_port (GTree *ports, iterator_t *results)
   *severity = result_iterator_severity_double (results);
 
   old_severity = g_tree_lookup (host_ports, port);
-  tracef ("   delta: %s: adding %s severity %1.1f on host %s", __FUNCTION__,
+  g_debug ("   delta: %s: adding %s severity %1.1f on host %s", __FUNCTION__,
           port, *severity, host);
   if (old_severity == NULL)
     g_tree_insert (host_ports, g_strdup (port), severity);
@@ -24421,7 +24426,7 @@ print_host_port (gpointer key, gpointer value, gpointer data)
 {
   gpointer *host_and_stream;
   host_and_stream = (gpointer*) data;
-  tracef ("   delta: %s: host %s port %s", __FUNCTION__,
+  g_debug ("   delta: %s: host %s port %s", __FUNCTION__,
           (gchar*) host_and_stream[0], (gchar*) key);
   fprintf ((FILE*) host_and_stream[1],
            "<port>"
@@ -24450,7 +24455,7 @@ print_host_ports (gpointer key, gpointer value, gpointer stream)
   gpointer host_and_stream[2];
   host_and_stream[0] = key;
   host_and_stream[1] = stream;
-  tracef ("   delta: %s: host %s", __FUNCTION__, (gchar*) key);
+  g_debug ("   delta: %s: host %s", __FUNCTION__, (gchar*) key);
   g_tree_foreach ((GTree*) value, print_host_port, host_and_stream);
   return FALSE;
 }
@@ -24486,7 +24491,7 @@ print_host_ports_desc (gpointer key, gpointer value, gpointer stream)
   guint index;
   array_t *ports;
 
-  tracef ("   delta: %s: host %s", __FUNCTION__, (gchar*) key);
+  g_debug ("   delta: %s: host %s", __FUNCTION__, (gchar*) key);
 
   /* Convert tree to array. */
 
@@ -24573,7 +24578,7 @@ print_host_ports_by_severity (gpointer key, gpointer value, gpointer stream,
   guint index, len;
   array_t *ports;
 
-  tracef ("   delta: %s: host %s", __FUNCTION__, (gchar*) key);
+  g_debug ("   delta: %s: host %s", __FUNCTION__, (gchar*) key);
 
   /* Convert tree to array. */
 
@@ -26268,10 +26273,10 @@ report_progress_active (report_t report, int maximum_hosts, gchar **hosts_xml)
                    ? (total / maximum_hosts) : 0;
 
 #if 1
-  tracef ("   total: %li\n", total);
-  tracef ("   num_hosts: %i\n", num_hosts);
-  tracef ("   maximum_hosts: %i\n", maximum_hosts);
-  tracef ("   total_progress: %i\n", total_progress);
+  g_debug ("   total: %li\n", total);
+  g_debug ("   num_hosts: %i\n", num_hosts);
+  g_debug ("   maximum_hosts: %i\n", maximum_hosts);
+  g_debug ("   total_progress: %i\n", total_progress);
 #endif
 
   if (total_progress == 0) total_progress = 1;
@@ -26562,9 +26567,9 @@ init_delta_iterators (report_t report, iterator_t *results, report_t delta,
   if (res)
     return -1;
 
-  tracef ("   delta: %s: REPORT 1:", __FUNCTION__);
+  g_debug ("   delta: %s: REPORT 1:", __FUNCTION__);
   while (next (results))
-    tracef ("   delta: %s: %s   %s   %s   %s   %.30s",
+    g_debug ("   delta: %s: %s   %s   %s   %s   %.30s",
             __FUNCTION__,
             result_iterator_nvt_name (results),
             result_iterator_host (results),
@@ -26572,11 +26577,11 @@ init_delta_iterators (report_t report, iterator_t *results, report_t delta,
             result_iterator_port (results),
             result_iterator_descr (results));
   cleanup_iterator (results);
-  tracef ("   delta: %s: REPORT 1 END", __FUNCTION__);
+  g_debug ("   delta: %s: REPORT 1 END", __FUNCTION__);
 
-  tracef ("   delta: %s: REPORT 2:", __FUNCTION__);
+  g_debug ("   delta: %s: REPORT 2:", __FUNCTION__);
   while (next (&results2))
-    tracef ("   delta: %s: %s   %s   %s   %s   %.30s",
+    g_debug ("   delta: %s: %s   %s   %s   %s   %.30s",
             __FUNCTION__,
             result_iterator_nvt_name (&results2),
             result_iterator_host (&results2),
@@ -26584,7 +26589,7 @@ init_delta_iterators (report_t report, iterator_t *results, report_t delta,
             result_iterator_port (&results2),
             result_iterator_descr (&results2));
   cleanup_iterator (&results2);
-  tracef ("   delta: %s: REPORT 2 END", __FUNCTION__);
+  g_debug ("   delta: %s: REPORT 2 END", __FUNCTION__);
 #endif
 
   res = init_result_get_iterator (results, &delta_get, report, NULL, order);
@@ -26678,9 +26683,9 @@ print_report_delta_xml (FILE *out, iterator_t *results,
 
   /* Compare the results in the two iterators, which are sorted. */
 
-  tracef ("   delta: %s: start", __FUNCTION__);
-  tracef ("   delta: %s: sort_field: %s", __FUNCTION__, sort_field);
-  tracef ("   delta: %s: max_results: %i", __FUNCTION__, max_results);
+  g_debug ("   delta: %s: start", __FUNCTION__);
+  g_debug ("   delta: %s: sort_field: %s", __FUNCTION__, sort_field);
+  g_debug ("   delta: %s: max_results: %i", __FUNCTION__, max_results);
   done = !next (results);
   delta_done = !next (delta_results);
   while (1)
@@ -26702,13 +26707,13 @@ print_report_delta_xml (FILE *out, iterator_t *results,
               {
                 const char *level;
 
-                tracef ("   delta: %s: extra from report 2: %s",
+                g_debug ("   delta: %s: extra from report 2: %s",
                         __FUNCTION__,
                         result_iterator_nvt_oid (results));
 
                 if (first_result)
                   {
-                    tracef ("   delta: skip");
+                    g_debug ("   delta: skip");
                     first_result--;
                     continue;
                   }
@@ -26743,7 +26748,7 @@ print_report_delta_xml (FILE *out, iterator_t *results,
                     (*f_false_positives)++;
                   }
 
-                tracef ("   delta: %s: extra from report 2: %s",
+                g_debug ("   delta: %s: extra from report 2: %s",
                         __FUNCTION__,
                         result_iterator_nvt_oid (delta_results));
                 buffer = g_string_new ("");
@@ -26782,12 +26787,12 @@ print_report_delta_xml (FILE *out, iterator_t *results,
           if (gone)
             do
               {
-                tracef ("   delta: %s: extra from report 1: %s",
+                g_debug ("   delta: %s: extra from report 1: %s",
                         __FUNCTION__,
                         result_iterator_nvt_oid (results));
                 if (first_result)
                   {
-                    tracef ("   delta: skip");
+                    g_debug ("   delta: skip");
                     first_result--;
                     continue;
                   }
@@ -27059,7 +27064,7 @@ print_report_delta_xml (FILE *out, iterator_t *results,
 
   /* Compare remaining results, for the filtered report counts. */
 
-  tracef ("   delta: %s: counting rest", __FUNCTION__);
+  g_debug ("   delta: %s: counting rest", __FUNCTION__);
   while (1)
     {
       compare_results_t state;
@@ -27075,7 +27080,7 @@ print_report_delta_xml (FILE *out, iterator_t *results,
               {
                 const char *level;
 
-                tracef ("   delta: %s: extra from report 2: %s",
+                g_debug ("   delta: %s: extra from report 2: %s",
                         __FUNCTION__,
                         result_iterator_nvt_oid (delta_results));
 
@@ -27113,7 +27118,7 @@ print_report_delta_xml (FILE *out, iterator_t *results,
           if (gone)
             do
               {
-                tracef ("   delta: %s: extra from report 1: %s",
+                g_debug ("   delta: %s: extra from report 1: %s",
                         __FUNCTION__,
                         result_iterator_nvt_oid (results));
 
@@ -27481,7 +27486,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       && strcmp (sort_field, "location")
       && strcmp (sort_field, "severity"))
     {
-      tracef ("   delta: %s: exit because sort_field: %s", __FUNCTION__,
+      g_debug ("   delta: %s: exit because sort_field: %s", __FUNCTION__,
               sort_field);
       fclose (out);
       g_free (term);
@@ -29704,7 +29709,7 @@ set_task_parameter (task_t task, const char* parameter, char* value)
 {
   /** @todo Free value consistently. */
 
-  tracef ("   set_task_parameter %u %s\n",
+  g_debug ("   set_task_parameter %u %s\n",
           task_id (task),
           parameter ? parameter : "(null)");
   if (value == NULL) return -3;
@@ -29844,7 +29849,7 @@ request_delete_task (task_t* task_pointer)
   task_t task = *task_pointer;
   int hidden;
 
-  tracef ("   request delete task %u\n", task_id (task));
+  g_debug ("   request delete task %u\n", task_id (task));
 
   hidden = sql_int ("SELECT hidden from tasks WHERE id = %llu;",
                     *task_pointer);
@@ -29907,7 +29912,7 @@ request_delete_task_uuid (const char *task_id, int ultimate)
    * should all work because there is already handling of the hidden flag
    * everywhere else. */
 
-  tracef ("   request delete task %s\n", task_id);
+  g_debug ("   request delete task %s\n", task_id);
 
   sql_begin_immediate ();
 
@@ -30026,7 +30031,7 @@ request_delete_task_uuid (const char *task_id, int ultimate)
 int
 delete_task (task_t task, int ultimate)
 {
-  tracef ("   delete task %llu\n", task);
+  g_debug ("   delete task %llu\n", task);
 
   /** @todo Many other places just assert this. */
   if (current_credentials.uuid == NULL)
@@ -30103,7 +30108,7 @@ delete_task_lock (task_t task, int ultimate)
 {
   int ret;
 
-  tracef ("   delete task %llu\n", task);
+  g_debug ("   delete task %llu\n", task);
 
   sql_begin_exclusive ();
 
@@ -31145,7 +31150,7 @@ create_target (const char* name, const char* asset_hosts_filter,
       chosen_hosts = g_string_free (buffer, FALSE);
       quoted_exclude_hosts = g_strdup ("");
 
-      tracef ("asset chosen_hosts: %s\n", chosen_hosts);
+      g_debug ("asset chosen_hosts: %s\n", chosen_hosts);
     }
   else
     {
@@ -31153,7 +31158,7 @@ create_target (const char* name, const char* asset_hosts_filter,
       quoted_exclude_hosts = exclude_hosts ? sql_quote (exclude_hosts)
                                            : g_strdup ("");
 
-      tracef ("manual chosen_hosts: %s\n", chosen_hosts);
+      g_debug ("manual chosen_hosts: %s\n", chosen_hosts);
     }
 
   max = manage_count_hosts (chosen_hosts, quoted_exclude_hosts);
@@ -36708,7 +36713,7 @@ static gchar *
 new_secinfo_list (event_t event, const void* event_data, alert_t alert,
                   int *count_return)
 {
-  tracef ("%s: event_data: %s", __FUNCTION__, (gchar*) event_data);
+  g_debug ("%s: event_data: %s", __FUNCTION__, (gchar*) event_data);
 
   if (strcasecmp (event_data, "nvt_example") == 0)
     return new_nvts_list (event, "nvt", alert, 1, count_return);
@@ -41149,7 +41154,7 @@ find_signature (const gchar *location, const gchar *installer_filename,
                                              location,
                                              signature_basename,
                                              NULL);
-      tracef ("signature_filename: %s\n", signature_filename);
+      g_debug ("signature_filename: %s\n", signature_filename);
 
       g_file_get_contents (signature_filename, signature, signature_size,
                            &error);
@@ -41168,7 +41173,7 @@ find_signature (const gchar *location, const gchar *installer_filename,
                                                      location,
                                                      signature_basename,
                                                      NULL);
-              tracef ("signature_filename (private): %s\n", signature_filename);
+              g_debug ("signature_filename (private): %s\n", signature_filename);
               g_free (signature_basename);
               g_file_get_contents (signature_filename, signature, signature_size,
                                    &error);
@@ -41181,7 +41186,7 @@ find_signature (const gchar *location, const gchar *installer_filename,
 
               real = realpath (signature_filename, NULL);
               g_free (signature_filename);
-              tracef ("real pathname: %s\n", real);
+              g_debug ("real pathname: %s\n", real);
               if (real == NULL)
                 return -1;
               split = g_strsplit (basename (real), ".", 2);
@@ -41189,7 +41194,7 @@ find_signature (const gchar *location, const gchar *installer_filename,
                 *uuid = g_strdup (*split);
               else
                 *uuid = g_strdup (basename (real));
-              tracef ("*uuid: %s\n", *uuid);
+              g_debug ("*uuid: %s\n", *uuid);
               g_strfreev (split);
               free (real);
               return 0;
@@ -47410,7 +47415,7 @@ create_report_format (const char *uuid, const char *name,
               g_free (old);
               old = g_build_filename (OPENVAS_NVT_DIR, "report_formats", base,
                                       NULL);
-              tracef ("using standard old: %s\n", old);
+              g_debug ("using standard old: %s\n", old);
             }
           else
             {
@@ -47432,7 +47437,7 @@ create_report_format (const char *uuid, const char *name,
               real_old[state.st_size] = '\0';
               g_free (old);
               old = real_old;
-              tracef ("using linked old: %s\n", old);
+              g_debug ("using linked old: %s\n", old);
             }
         }
       g_free (base);

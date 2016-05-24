@@ -24,7 +24,6 @@
  */
 
 #include "sql.h"
-#include "tracef.h"
 
 #include <assert.h>
 #include <endian.h>
@@ -36,6 +35,12 @@
 #include <string.h>
 
 #include <openvas/base/array.h>
+
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
 
 
 /* Headers of sql.c symbols used only here. */
@@ -253,9 +258,9 @@ sql_open (const char *database)
 
   PQsetNoticeProcessor (conn, log_notice, NULL);
 
-  tracef ("%s:   db: %s\n", __FUNCTION__, PQdb (conn));
-  tracef ("%s: user: %s\n", __FUNCTION__, PQuser (conn));
-  tracef ("%s: port: %s\n", __FUNCTION__, PQport (conn));
+  g_debug ("%s:   db: %s\n", __FUNCTION__, PQdb (conn));
+  g_debug ("%s: user: %s\n", __FUNCTION__, PQuser (conn));
+  g_debug ("%s: port: %s\n", __FUNCTION__, PQport (conn));
 
   return 0;
 }
@@ -369,7 +374,7 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
   (*stmt)->sql = g_strdup_vprintf (sql, args);
 
   if (log)
-    tracef ("   sql: %s\n", (*stmt)->sql);
+    g_debug ("   sql: %s\n", (*stmt)->sql);
 
   return 0;
 }

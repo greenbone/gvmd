@@ -96,7 +96,6 @@
 #include "manage_sql.h"
 /** @todo For access to scanner_t scanner. */
 #include "otp.h"
-#include "tracef.h"
 
 #include <arpa/inet.h>
 #include <assert.h>
@@ -5800,7 +5799,7 @@ static void
 set_client_state (client_state_t state)
 {
   client_state = state;
-  tracef ("   client state set: %i\n", client_state);
+  g_debug ("   client state set: %i\n", client_state);
 }
 
 
@@ -5889,7 +5888,7 @@ send_find_error_to_client (const char* command, const char* type,
 static void
 error_send_to_client (GError** error)
 {
-  tracef ("   send_to_client out of space in to_client\n");
+  g_debug ("   send_to_client out of space in to_client\n");
   g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_PARSE,
                "Manager out of space for reply to client.");
 }
@@ -6767,7 +6766,7 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
     = (int (*) (const char *, void*)) omp_parser->client_writer;
   void* write_to_client_data = (void*) omp_parser->client_writer_data;
 
-  tracef ("   XML  start: %s (%i)\n", element_name, client_state);
+  g_debug ("   XML  start: %s (%i)\n", element_name, client_state);
 
   if (omp_parser->read_over)
     omp_parser->read_over++;
@@ -10626,7 +10625,7 @@ send_reports (task_t task, int apply_overrides, int min_qod,
           return -6;
         }
 
-      tracef ("     %s\n", uuid);
+      g_debug ("     %s\n", uuid);
 
       report_scan_run_status (index, &run_status);
       scan_end = scan_end_time (index);
@@ -14380,7 +14379,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
     = (int (*) (const char *, void*)) omp_parser->client_writer;
   void* write_to_client_data = (void*) omp_parser->client_writer_data;
 
-  tracef ("   XML    end: %s\n", element_name);
+  g_debug ("   XML    end: %s\n", element_name);
 
   if (omp_parser->read_over > 1)
     {
@@ -14667,7 +14666,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   /** @todo Or some other error occurred. */
                   /** @todo Consider reverting parsing for retry. */
                   /** @todo process_omp_client_input must return -2. */
-                  tracef ("delete_task failed\n");
+                  g_debug ("delete_task failed\n");
                   abort ();
                   break;
                 case -5:
@@ -29590,7 +29589,7 @@ omp_xml_handle_text (/* unused */ GMarkupParseContext* context,
                      /* unused */ GError **error)
 {
   if (text_len == 0) return;
-  tracef ("   XML   text: %s\n", text);
+  g_debug ("   XML   text: %s\n", text);
   switch (client_state)
     {
       case CLIENT_AUTHENTICATE_CREDENTIALS_USERNAME:
@@ -30687,7 +30686,7 @@ omp_xml_handle_error (/* unused */ GMarkupParseContext* context,
                       GError *error,
                       /* unused */ gpointer user_data)
 {
-  tracef ("   XML ERROR %s\n", error->message);
+  g_debug ("   XML ERROR %s\n", error->message);
 }
 
 
@@ -30830,7 +30829,7 @@ process_omp_client_input ()
           if (g_error_matches (error,
                                G_MARKUP_ERROR,
                                G_MARKUP_ERROR_UNKNOWN_ELEMENT))
-            tracef ("   client error: G_MARKUP_ERROR_UNKNOWN_ELEMENT\n");
+            g_debug ("   client error: G_MARKUP_ERROR_UNKNOWN_ELEMENT\n");
           else if (g_error_matches (error,
                                     G_MARKUP_ERROR,
                                     G_MARKUP_ERROR_INVALID_CONTENT))
@@ -30842,12 +30841,12 @@ process_omp_client_input ()
                   g_error_free (error);
                   return current_error;
                 }
-              tracef ("   client error: G_MARKUP_ERROR_INVALID_CONTENT\n");
+              g_debug ("   client error: G_MARKUP_ERROR_INVALID_CONTENT\n");
             }
           else if (g_error_matches (error,
                                     G_MARKUP_ERROR,
                                     G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE))
-            tracef ("   client error: G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE\n");
+            g_debug ("   client error: G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE\n");
           else
             err = -1;
           g_info ("   Failed to parse client XML: %s\n", error->message);
@@ -30877,7 +30876,7 @@ process_omp_client_input ()
 int
 process_omp_write (const char* msg, void* buffer)
 {
-  tracef ("-> client internal: %s\n", msg);
+  g_debug ("-> client internal: %s\n", msg);
   g_string_append ((GString*) buffer, msg);
   return FALSE;
 }
@@ -30958,7 +30957,7 @@ process_omp (omp_parser_t *parser, const gchar *command, gchar **response)
           if (g_error_matches (error,
                                G_MARKUP_ERROR,
                                G_MARKUP_ERROR_UNKNOWN_ELEMENT))
-            tracef ("   client error: G_MARKUP_ERROR_UNKNOWN_ELEMENT\n");
+            g_debug ("   client error: G_MARKUP_ERROR_UNKNOWN_ELEMENT\n");
           else if (g_error_matches (error,
                                     G_MARKUP_ERROR,
                                     G_MARKUP_ERROR_INVALID_CONTENT))
@@ -30970,12 +30969,12 @@ process_omp (omp_parser_t *parser, const gchar *command, gchar **response)
                   g_error_free (error);
                   return current_error;
                 }
-              tracef ("   client error: G_MARKUP_ERROR_INVALID_CONTENT\n");
+              g_debug ("   client error: G_MARKUP_ERROR_INVALID_CONTENT\n");
             }
           else if (g_error_matches (error,
                                     G_MARKUP_ERROR,
                                     G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE))
-            tracef ("   client error: G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE\n");
+            g_debug ("   client error: G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE\n");
           else
             err = -1;
           g_info ("   Failed to parse client XML: %s\n", error->message);

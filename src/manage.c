@@ -48,7 +48,6 @@
 #include "manage_acl.h"
 #include "manage_sql.h"
 #include "ovas-mngr-comm.h"
-#include "tracef.h"
 
 #include <assert.h>
 #include <ctype.h>
@@ -1821,7 +1820,7 @@ slave_connect (slave_t slave, const char *host, int port, int *socket,
       }
   }
 
-  tracef ("   %s: connected\n", __FUNCTION__);
+  g_debug ("   %s: connected\n", __FUNCTION__);
 
   /* Authenticate using the slave login. */
 
@@ -1831,7 +1830,7 @@ slave_connect (slave_t slave, const char *host, int port, int *socket,
       return 1;
     }
 
-  tracef ("   %s: authenticated\n", __FUNCTION__);
+  g_debug ("   %s: authenticated\n", __FUNCTION__);
 
   return 0;
 }
@@ -1858,18 +1857,18 @@ slave_sleep_connect (slave_t slave, const char *host, int port, task_t task,
           || (task_run_status (task) == TASK_STATUS_STOP_REQUESTED))
         {
           if (task_run_status (task) == TASK_STATUS_STOP_REQUESTED_GIVEUP)
-            tracef ("   %s: task stopped for giveup\n", __FUNCTION__);
+            g_debug ("   %s: task stopped for giveup\n", __FUNCTION__);
           else
-            tracef ("   %s: task stopped\n", __FUNCTION__);
+            g_debug ("   %s: task stopped\n", __FUNCTION__);
           set_task_run_status (current_scanner_task, TASK_STATUS_STOPPED);
           return 3;
         }
-      tracef ("   %s: sleeping for %i\n", __FUNCTION__,
+      g_debug ("   %s: sleeping for %i\n", __FUNCTION__,
               RUN_SLAVE_TASK_SLEEP_SECONDS);
       openvas_sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
     }
   while (slave_connect (slave, host, port, socket, session));
-  tracef ("   %s: connected\n", __FUNCTION__);
+  g_debug ("   %s: connected\n", __FUNCTION__);
   return 0;
 }
 
@@ -2356,17 +2355,17 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
             }
         }
 
-      tracef ("   %s: slave SSH credential uuid: %s\n", __FUNCTION__,
-              slave_ssh_credential_uuid);
+      g_debug ("   %s: slave SSH credential uuid: %s\n", __FUNCTION__,
+               slave_ssh_credential_uuid);
 
-      tracef ("   %s: slave SMB credential uuid: %s\n", __FUNCTION__,
-              slave_smb_credential_uuid);
+      g_debug ("   %s: slave SMB credential uuid: %s\n", __FUNCTION__,
+               slave_smb_credential_uuid);
 
-      tracef ("   %s: slave ESXi credential uuid: %s\n", __FUNCTION__,
-              slave_esxi_credential_uuid);
+      g_debug ("   %s: slave ESXi credential uuid: %s\n", __FUNCTION__,
+               slave_esxi_credential_uuid);
 
-      tracef ("   %s: slave SNMP credential uuid: %s\n", __FUNCTION__,
-              slave_snmp_credential_uuid);
+      g_debug ("   %s: slave SNMP credential uuid: %s\n", __FUNCTION__,
+               slave_snmp_credential_uuid);
 
       /* Create the target on the slave. */
 
@@ -2461,7 +2460,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           goto fail_esxi_credential;
         }
 
-      tracef ("   %s: slave target uuid: %s\n", __FUNCTION__, slave_target_uuid);
+      g_debug ("   %s: slave target uuid: %s\n", __FUNCTION__, slave_target_uuid);
 
       /* Create the config on the slave. */
 
@@ -2575,7 +2574,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           goto fail_target;
       }
 
-      tracef ("   %s: slave config uuid: %s\n", __FUNCTION__, slave_config_uuid);
+      g_debug ("   %s: slave config uuid: %s\n", __FUNCTION__, slave_config_uuid);
 
       /* Create the task on the slave. */
 
@@ -2677,7 +2676,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
                                    TASK_STATUS_STOP_WAITING);
             break;
           case TASK_STATUS_STOP_REQUESTED_GIVEUP:
-            tracef ("   %s: task stopped for giveup\n", __FUNCTION__);
+            g_debug ("   %s: task stopped for giveup\n", __FUNCTION__);
             set_task_run_status (current_scanner_task, TASK_STATUS_STOPPED);
             goto giveup;
             break;
@@ -2880,7 +2879,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
   openvas_server_close (*socket, *session);
   slave_session = NULL;
   slave_socket = NULL;
-  tracef ("   %s: succeed\n", __FUNCTION__);
+  g_debug ("   %s: succeed\n", __FUNCTION__);
   return 0;
 
  fail_stop_task:
@@ -2911,14 +2910,14 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
   omp_delete_lsc_credential_ext (session, slave_ssh_credential_uuid, del_opts);
   free (slave_ssh_credential_uuid);
  fail:
-  tracef ("   %s: fail\n", __FUNCTION__);
+  g_debug ("   %s: fail\n", __FUNCTION__);
   openvas_server_close (*socket, *session);
   slave_session = NULL;
   slave_socket = NULL;
   return 1;
 
  giveup:
-  tracef ("   %s: giveup\n", __FUNCTION__);
+  g_debug ("   %s: giveup\n", __FUNCTION__);
   openvas_server_close (*socket, *session);
   slave_session = NULL;
   slave_socket = NULL;
@@ -2957,12 +2956,12 @@ run_slave_task (task_t task, target_t target,
    * the master, and the open statement would prevent the slave from getting
    * a lock on the database and fulfilling the request. */
 
-  tracef ("   Running slave task %llu\n", task);
+  g_debug ("   Running slave task %llu\n", task);
 
   // FIX permission checks  may the user still access the slave, target, port list etc?
 
   slave = task_slave (task);
-  tracef ("   %s: slave: %llu\n", __FUNCTION__, slave);
+  g_debug ("   %s: slave: %llu\n", __FUNCTION__, slave);
   assert (slave);
   if (slave == 0)
     {
@@ -2977,7 +2976,7 @@ run_slave_task (task_t task, target_t target,
       return -1;
     }
 
-  tracef ("   %s: host: %s\n", __FUNCTION__, host);
+  g_debug ("   %s: host: %s\n", __FUNCTION__, host);
 
   port = slave_port (slave);
   if (port == -1)
@@ -3518,7 +3517,7 @@ fork_osp_scan_handler (task_t task, target_t target)
 
   if (create_current_report (task, &report_id, TASK_STATUS_REQUESTED))
     {
-      tracef ("   %s: failed to create report.\n", __FUNCTION__);
+      g_debug ("   %s: failed to create report.\n", __FUNCTION__);
       return -1;
     }
 
@@ -3788,7 +3787,7 @@ fork_cve_scan_handler (task_t task, target_t target)
 
   if (create_current_report (task, &report_id, TASK_STATUS_REQUESTED))
     {
-      tracef ("   %s: failed to create report.\n", __FUNCTION__);
+      g_debug ("   %s: failed to create report.\n", __FUNCTION__);
       return -1;
     }
 
@@ -4097,7 +4096,7 @@ run_task (const char *task_id, char **report_id, int from,
     }
   else
     {
-      tracef ("   task target is 0.\n");
+      g_debug ("   task target is 0.\n");
       set_task_run_status (task, run_status);
       return -2;
     }
@@ -4220,7 +4219,7 @@ run_task (const char *task_id, char **report_id, int from,
   hosts = target_hosts (target);
   if (hosts == NULL)
     {
-      tracef ("   target hosts is NULL.\n");
+      g_debug ("   target hosts is NULL.\n");
       set_task_run_status (task, run_status);
       return -4;
     }
@@ -4231,7 +4230,7 @@ run_task (const char *task_id, char **report_id, int from,
     {
       if (task_last_stopped_report (task, &last_stopped_report))
         {
-          tracef ("   error getting last stopped report.\n");
+          g_debug ("   error getting last stopped report.\n");
           set_task_run_status (task, run_status);
           free (hosts);
           return -1;
@@ -5250,7 +5249,7 @@ get_slave_system_report_types (const char *required_type, gchar ***start,
   host = slave_host (slave);
   if (host == NULL) return -1;
 
-  tracef ("   %s: host: %s\n", __FUNCTION__, host);
+  g_debug ("   %s: host: %s\n", __FUNCTION__, host);
 
   port = slave_port (slave);
   if (port == -1)
@@ -5263,14 +5262,14 @@ get_slave_system_report_types (const char *required_type, gchar ***start,
   free (host);
   if (socket == -1) return -1;
 
-  tracef ("   %s: connected\n", __FUNCTION__);
+  g_debug ("   %s: connected\n", __FUNCTION__);
 
   /* Authenticate using the slave login. */
 
   if (slave_authenticate (&session, slave))
     goto fail;
 
-  tracef ("   %s: authenticated\n", __FUNCTION__);
+  g_debug ("   %s: authenticated\n", __FUNCTION__);
 
   if (omp_get_system_reports (&session, required_type, 1, &get))
     goto fail;
@@ -5346,7 +5345,7 @@ get_system_report_types (const char *required_type, gchar ***start,
     return get_slave_system_report_types (required_type, start, types,
                                           slave_id);
 
-  tracef ("   command: " COMMAND);
+  g_debug ("   command: " COMMAND);
 
   if ((g_spawn_command_line_sync (COMMAND,
                                   &astdout,
@@ -5357,9 +5356,9 @@ get_system_report_types (const char *required_type, gchar ***start,
       || (WIFEXITED (exit_status) == 0)
       || WEXITSTATUS (exit_status))
     {
-      tracef ("%s: openvasmr failed with %d", __FUNCTION__, exit_status);
-      tracef ("%s: stdout: %s", __FUNCTION__, astdout);
-      tracef ("%s: stderr: %s", __FUNCTION__, astderr);
+      g_debug ("%s: openvasmr failed with %d", __FUNCTION__, exit_status);
+      g_debug ("%s: stdout: %s", __FUNCTION__, astdout);
+      g_debug ("%s: stderr: %s", __FUNCTION__, astderr);
       g_free (astdout);
       g_free (astderr);
       *start = *types = g_malloc0 (sizeof (gchar*) * 2);
@@ -5538,7 +5537,7 @@ slave_system_report (const char *name, const char *duration,
   host = slave_host (slave);
   if (host == NULL) return -1;
 
-  tracef ("   %s: host: %s\n", __FUNCTION__, host);
+  g_debug ("   %s: host: %s\n", __FUNCTION__, host);
 
   port = slave_port (slave);
   if (port == -1)
@@ -5551,14 +5550,14 @@ slave_system_report (const char *name, const char *duration,
   free (host);
   if (socket == -1) return -1;
 
-  tracef ("   %s: connected\n", __FUNCTION__);
+  g_debug ("   %s: connected\n", __FUNCTION__);
 
   /* Authenticate using the slave login. */
 
   if (slave_authenticate (&session, slave))
     goto fail;
 
-  tracef ("   %s: authenticated\n", __FUNCTION__);
+  g_debug ("   %s: authenticated\n", __FUNCTION__);
 
   opts = omp_get_system_reports_opts_defaults;
   opts.name = name;
@@ -5631,7 +5630,7 @@ manage_system_report (const char *name, const char *duration,
   /* For simplicity, it's up to the command to do the base64 encoding. */
   command = g_strdup_printf ("openvasmr %s %s", duration, name);
 
-  tracef ("   command: %s", command);
+  g_debug ("   command: %s", command);
 
   if ((g_spawn_command_line_sync (command,
                                   &astdout,
@@ -5649,9 +5648,9 @@ manage_system_report (const char *name, const char *duration,
       gsize output_len;
       GString *buffer;
 
-      tracef ("%s: openvasmr failed with %d", __FUNCTION__, exit_status);
-      tracef ("%s: stdout: %s", __FUNCTION__, astdout);
-      tracef ("%s: stderr: %s", __FUNCTION__, astderr);
+      g_debug ("%s: openvasmr failed with %d", __FUNCTION__, exit_status);
+      g_debug ("%s: stdout: %s", __FUNCTION__, astdout);
+      g_debug ("%s: stderr: %s", __FUNCTION__, astderr);
       g_free (astdout);
       g_free (astderr);
       g_free (command);
@@ -6619,7 +6618,7 @@ delete_slave_task (slave_t slave, const char *slave_task_uuid)
   host = slave_host (slave);
   if (host == NULL) return -1;
 
-  tracef ("   %s: host: %s\n", __FUNCTION__, host);
+  g_debug ("   %s: host: %s\n", __FUNCTION__, host);
 
   port = slave_port (slave);
   if (port == -1)
@@ -6632,14 +6631,14 @@ delete_slave_task (slave_t slave, const char *slave_task_uuid)
   free (host);
   if (socket == -1) return -1;
 
-  tracef ("   %s: connected\n", __FUNCTION__);
+  g_debug ("   %s: connected\n", __FUNCTION__);
 
   /* Authenticate using the slave login. */
 
   if (slave_authenticate (&session, slave))
     goto fail;
 
-  tracef ("   %s: authenticated\n", __FUNCTION__);
+  g_debug ("   %s: authenticated\n", __FUNCTION__);
 
   /* Get the UUIDs of the slave resources. */
 
@@ -8701,7 +8700,7 @@ manage_run_wizard (const gchar *name,
                   || (strlen (status) == 0)
                   || (status[0] != '2'))
                 {
-                  tracef ("response was %s\n", response);
+                  g_debug ("response was %s\n", response);
                   if (command_error)
                     {
                       const char *text;

@@ -108,11 +108,16 @@
 #include "scanner.h"
 #include "ompd.h"
 #include "ovas-mngr-comm.h"
-#include "tracef.h"
 
 #ifdef SVN_REV_AVAILABLE
 #include "svnrevision.h"
 #endif
+
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md   main"
 
 /**
  * @brief The name of this program.
@@ -289,6 +294,11 @@ gchar *dh_params_option = NULL;
  * @brief Whether a SIGHUP initiated NVT update is in progress.
  */
 int update_in_progress = 0;
+
+/**
+ * @brief Logging parameters, as passed to setup_log_handlers.
+ */
+GSList *log_config = NULL;
 
 
 /* Helpers. */
@@ -718,7 +728,7 @@ log_config_free ()
 static void
 cleanup ()
 {
-  tracef ("   Cleaning up.\n");
+  g_debug ("   Cleaning up.\n");
   /** @todo These should happen via omp, maybe with "cleanup_omp ();". */
   cleanup_manage_process (TRUE);
   g_strfreev (disabled_commands);
@@ -733,7 +743,7 @@ cleanup ()
                     strerror (errno));
     }
 #endif /* LOG */
-  tracef ("   Exiting.\n");
+  g_debug ("   Exiting.\n");
   if (log_config) log_config_free ();
 
   /* Tear down authentication system conf, if any. */
@@ -834,7 +844,7 @@ handle_sigabrt (int given_signal)
       frame_count = 0;
     }
   for (index = 0; index < frame_count; index++)
-    tracef ("%s\n", frames_text[index]);
+    g_debug ("%s\n", frames_text[index]);
   free (frames_text);
 #endif
 
@@ -925,7 +935,7 @@ spin_progress ()
   putchar ('\b');
   putchar (current);
   fflush (stdout);
-  tracef ("   %c\n", current);
+  g_debug ("   %c\n", current);
 }
 
 /**
@@ -1101,7 +1111,7 @@ fork_update_nvt_cache ()
 
   if (update_in_progress)
     {
-      tracef ("%s: Update skipped because an update is in progress",
+      g_debug ("%s: Update skipped because an update is in progress",
               __FUNCTION__);
       return 1;
     }
@@ -1432,6 +1442,7 @@ main (int argc, char** argv)
   static int max_ips_per_target = MANAGE_MAX_HOSTS;
   static int max_email_attachment_size = 0;
   static int max_email_include_size = 0;
+  static int verbose = 0;
   static gchar *max_rows = NULL;
   static gchar *create_user = NULL;
   static gchar *delete_user = NULL;
@@ -1526,7 +1537,7 @@ main (int argc, char** argv)
         { "user", '\0', 0, G_OPTION_ARG_STRING, &user, "User for --new-password and --max-rows.", "<username>" },
         { "gnutls-priorities", '\0', 0, G_OPTION_ARG_STRING, &priorities, "Sets the GnuTLS priorities for the Manager socket.", "<priorities-string>" },
         { "dh-params", '\0', 0, G_OPTION_ARG_STRING, &dh_params, "Diffie-Hellman parameters file", "<file>" },
-        { "verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Print tracing messages.", NULL },
+        { "verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Has no effect.  See INSTALL for logging config.", NULL },
         { "version", '\0', 0, G_OPTION_ARG_NONE, &print_version, "Print version and exit.", NULL },
         { NULL }
       };

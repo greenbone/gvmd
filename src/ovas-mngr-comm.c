@@ -49,7 +49,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "tracef.h"
 #include "logf.h"
 
 /** @todo Consider moving to libs (so please leave "server" in the names). */
@@ -76,12 +75,6 @@
  * Only consulted if compiled with TRACE non-zero.
  */
 int verbose = 0;
-
-/** @todo This is the definition for the entire module. */
-/**
- * @brief Logging parameters, as passed to setup_log_handlers.
- */
-GSList *log_config = NULL;
 
 /** @cond STATIC */
 
@@ -127,14 +120,14 @@ sendn_to_server (const void * msg, size_t n)
 {
   if (TO_SERVER_BUFFER_SIZE - to_server_end < n)
     {
-      tracef ("   sendn_to_server: available space (%i) < n (%zu)\n",
-              TO_SERVER_BUFFER_SIZE - to_server_end, n);
+      g_debug ("   sendn_to_server: available space (%i) < n (%zu)\n",
+               TO_SERVER_BUFFER_SIZE - to_server_end, n);
       return 1;
     }
 
   memmove (to_server + to_server_end, msg, n);
-  tracef ("s> server  (string) %.*s\n", (int) n, to_server + to_server_end);
-  tracef ("-> server  %zu bytes\n", n);
+  g_debug ("s> server  (string) %.*s\n", (int) n, to_server + to_server_end);
+  g_debug ("-> server  %zu bytes\n", n);
   to_server_end += n;
 
   return 0;
@@ -213,11 +206,11 @@ write_string_to_server (gnutls_session_t* server_session, char* const string)
 #if LOG
       if (count) logf ("=> server %.*s\n", (int) count, point);
 #endif
-      tracef ("s> server  (string) %.*s\n", (int) count, point);
+      g_debug ("s> server  (string) %.*s\n", (int) count, point);
       point += count;
-      tracef ("=> server  (string) %zi bytes\n", count);
+      g_debug ("=> server  (string) %zi bytes\n", count);
     }
-  tracef ("=> server  (string) done\n");
+  g_debug ("=> server  (string) done\n");
   /* Wrote everything. */
   return 0;
 }
@@ -261,11 +254,11 @@ write_to_server_buffer (gnutls_session_t* server_session)
                        (int) count,
                        to_server + to_server_start);
 #endif
-      tracef ("s> server  %.*s\n", (int) count, to_server + to_server_start);
+      g_debug ("s> server  %.*s\n", (int) count, to_server + to_server_start);
       to_server_start += count;
-      tracef ("=> server  %zi bytes\n", count);
+      g_debug ("=> server  %zi bytes\n", count);
     }
-  tracef ("=> server  done\n");
+  g_debug ("=> server  done\n");
   to_server_start = to_server_end = 0;
   /* Wrote everything. */
   return 0;

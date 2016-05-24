@@ -44,7 +44,6 @@
 /** @todo For scanner_init_state. */
 #include "otp.h"
 #include "ovas-mngr-comm.h"
-#include "tracef.h"
 
 #include <assert.h>
 #include <dirent.h>
@@ -62,6 +61,12 @@
 #if FROM_BUFFER_SIZE > SSIZE_MAX
 #error FROM_BUFFER_SIZE too big for "read"
 #endif
+
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md   main"
 
 /**
  * @brief Buffer of input from the client.
@@ -167,7 +172,7 @@ read_from_client (gnutls_session_t* client_session,
           if (count == GNUTLS_E_REHANDSHAKE)
             {
               /** @todo Rehandshake. */
-              tracef ("   should rehandshake\n");
+              g_debug ("   should rehandshake\n");
               continue;
             }
           if (gnutls_error_is_fatal ((int) count) == 0
@@ -230,9 +235,9 @@ write_to_client (gnutls_session_t* client_session)
             to_client_end - to_client_start,
             to_client + to_client_start);
       to_client_start += count;
-      tracef ("=> client  %u bytes\n", (unsigned int) count);
+      g_debug ("=> client  %u bytes\n", (unsigned int) count);
     }
-  tracef ("=> client  done\n");
+  g_debug ("=> client  done\n");
   to_client_start = to_client_end = 0;
 
   /* Wrote everything. */
@@ -267,7 +272,7 @@ ompd_send_to_client (const char* msg, void* write_to_client_data)
           case  0:      /* Wrote everything in to_client. */
             break;
           case -1:      /* Error. */
-            tracef ("   %s full (%i < %zu); client write failed\n",
+            g_debug ("   %s full (%i < %zu); client write failed\n",
                     __FUNCTION__,
                     ((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end,
                     strlen (msg));
@@ -284,7 +289,7 @@ ompd_send_to_client (const char* msg, void* write_to_client_data)
         break;
 
       memmove (to_client + to_client_end, msg, length);
-      tracef ("-> client: %.*s\n", (int) length, msg);
+      g_debug ("-> client: %.*s\n", (int) length, msg);
       to_client_end += length;
       msg += length;
     }
@@ -294,7 +299,7 @@ ompd_send_to_client (const char* msg, void* write_to_client_data)
       assert (strlen (msg)
               <= (((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end));
       memmove (to_client + to_client_end, msg, strlen (msg));
-      tracef ("-> client: %s\n", msg);
+      g_debug ("-> client: %s\n", msg);
       to_client_end += strlen (msg);
     }
 
@@ -369,7 +374,7 @@ serve_omp (gnutls_session_t* client_session,
   if (ompd_nvt_cache_mode)
     g_info ("   Updating NVT cache.\n");
   else
-    tracef ("   Serving OMP.\n");
+    g_debug ("   Serving OMP.\n");
 
   /* Initialise the XML parser and the manage library. */
   init_omp_process (ompd_nvt_cache_mode,
@@ -562,7 +567,7 @@ serve_omp (gnutls_session_t* client_session,
                 /* There may be more to read. */
                 break;
               case -3:       /* End of file. */
-                tracef ("   EOF reading from client.\n");
+                g_debug ("   EOF reading from client.\n");
                 rc = 0;
                 goto client_free;
               default:       /* Programming error. */
@@ -581,13 +586,13 @@ serve_omp (gnutls_session_t* client_session,
               if (g_strstr_len (from_client + initial_start,
                                 from_client_end - initial_start,
                                 "<password>"))
-                tracef ("<= client  Input may contain password, suppressed.\n");
+                g_debug ("<= client  Input may contain password, suppressed.\n");
               else
-                tracef ("<= client  \"%.*s\"\n",
+                g_debug ("<= client  \"%.*s\"\n",
                         from_client_end - initial_start,
                         from_client + initial_start);
 #else
-              tracef ("<= client  %i bytes\n",
+              g_debug ("<= client  %i bytes\n",
                       from_client_end - initial_start);
 #endif
             }
@@ -648,14 +653,14 @@ serve_omp (gnutls_session_t* client_session,
           else if (ret == -2)
             {
               /* to_scanner buffer full. */
-              tracef ("   client input stalled 1\n");
+              g_debug ("   client input stalled 1\n");
               client_input_stalled = 1;
               /* Carry on to write to_scanner. */
             }
           else if (ret == -3)
             {
               /* to_client buffer full. */
-              tracef ("   client input stalled 2\n");
+              g_debug ("   client input stalled 2\n");
               client_input_stalled = 2;
               /* Carry on to write to_client. */
             }
@@ -799,13 +804,13 @@ serve_omp (gnutls_session_t* client_session,
           else if (ret == -2)
             {
               /* to_scanner buffer full. */
-              tracef ("   client input still stalled (1)\n");
+              g_debug ("   client input still stalled (1)\n");
               client_input_stalled = 1;
             }
           else if (ret == -3)
             {
               /* to_client buffer full. */
-              tracef ("   client input still stalled (2)\n");
+              g_debug ("   client input still stalled (2)\n");
               client_input_stalled = 2;
             }
           else
@@ -857,7 +862,7 @@ serve_omp (gnutls_session_t* client_session,
             }
           else if (ret == -3)
             /* to_scanner buffer still full. */
-            tracef ("   scanner input stalled\n");
+            g_debug ("   scanner input stalled\n");
           else
             /* Programming error. */
             assert (ret == 0);

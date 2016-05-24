@@ -25,7 +25,6 @@
 
 #include "scanner.h"
 #include "ompd.h"
-#include "tracef.h"
 #include "otp.h"
 #include "ovas-mngr-comm.h"
 
@@ -38,6 +37,12 @@
 #include <fcntl.h>
 
 #include <openvas/misc/openvas_server.h>
+
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md   main"
 
 /* Current OpenVAS Scanner connection. */
 gnutls_session_t openvas_scanner_session = NULL;
@@ -103,7 +108,7 @@ openvas_scanner_read ()
           if (count == GNUTLS_E_REHANDSHAKE)
             {
               /** @todo Rehandshake. */
-              tracef ("   should rehandshake\n");
+              g_debug ("   should rehandshake\n");
               continue;
             }
           if (gnutls_error_is_fatal (count) == 0

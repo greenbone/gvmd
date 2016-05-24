@@ -134,11 +134,16 @@
 
 #include "manage_sql.h"
 #include "sql.h"
-#include "tracef.h"
 
 #include <openvas/misc/openvas_uuid.h>
 #include <openvas/base/openvas_file.h>
 #include <openvas/misc/openvas_logging.h>
+
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md   main"
 
 
 /* Old config IDs. */
@@ -6541,10 +6546,10 @@ migrate_79_to_80 ()
                                            "methods",
                                            "ldap_connect",
                                            NULL);
-      tracef ("          user: %s\n", names[index]->d_name);
-      tracef ("    remote dir: %s\n", remote_dir);
-      tracef ("   classic dir: %s\n", classic_dir);
-      tracef ("     flag file: %s\n", remote_flag_file);
+      g_debug ("          user: %s\n", names[index]->d_name);
+      g_debug ("    remote dir: %s\n", remote_dir);
+      g_debug ("   classic dir: %s\n", classic_dir);
+      g_debug ("     flag file: %s\n", remote_flag_file);
       if (g_file_test (remote_dir, G_FILE_TEST_IS_DIR)
           && g_file_test (remote_flag_file, G_FILE_TEST_EXISTS))
         method = AUTHENTICATION_METHOD_LDAP_CONNECT;
@@ -6599,7 +6604,7 @@ migrate_79_to_80 ()
           sql_rollback ();
           return -1;
         }
-      tracef ("          uuid: %s\n", uuid);
+      g_debug ("          uuid: %s\n", uuid);
 
       /* Get role. */
 

@@ -24,12 +24,18 @@
  */
 
 #include "sql.h"
-#include "tracef.h"
 
 #include <assert.h>
 #include <errno.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
 
 
 /* Headers of internal symbols defined in backend files. */
@@ -342,7 +348,7 @@ sql_quiet (char* sql, ...)
 /**
  * @brief Get a particular cell from a SQL query.
  *
- * @param[in]   log          Whether to do tracef logging.
+ * @param[in]   log          Whether to do g_debug logging.
  * @param[in]   sql          Format string for SQL query.
  * @param[in]   args         Arguments for format string.
  * @param[out]  stmt_return  Return from statement.
@@ -393,7 +399,7 @@ sql_x_internal (int log, char* sql, va_list args, sql_stmt_t** stmt_return)
     }
   assert (ret == 1);
   if (log)
-    tracef ("   sql_x end\n");
+    g_debug ("   sql_x end (%s)\n", sql);
   return 0;
 }
 
@@ -591,7 +597,7 @@ init_prepared_iterator (iterator_t* iterator, sql_stmt_t* stmt)
   iterator->stmt = stmt;
   iterator->prepared = 1;
   iterator->crypt_ctx = NULL;
-  tracef ("   sql: init prepared %p\n", stmt);
+  g_debug ("   sql: init prepared %p\n", stmt);
 }
 
 /**

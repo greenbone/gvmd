@@ -46,7 +46,6 @@
 #include "manage.h"
 #include "scanner.h"
 #include "manage_sql.h"
-#include "tracef.h"
 #include "types.h"
 
 #include <assert.h>
@@ -405,7 +404,7 @@ static void
 set_scanner_state (scanner_state_t state)
 {
   scanner_state = state;
-  tracef ("   scanner state set: %i\n", scanner_state);
+  g_debug ("   scanner state set: %i\n", scanner_state);
 }
 
 /**
@@ -435,7 +434,7 @@ void
 set_scanner_init_state (scanner_init_state_t state)
 {
   scanner_init_state = state;
-  tracef ("   scanner init state set: %i\n", scanner_init_state);
+  g_debug ("   scanner init state set: %i\n", scanner_init_state);
 }
 
 /**
@@ -473,7 +472,7 @@ sync_buffer ()
   if (from_scanner_start > 0 && from_scanner_start == from_scanner_end)
     {
       from_scanner_start = from_scanner_end = 0;
-      tracef ("   scanner start caught end\n");
+      g_debug ("   scanner start caught end\n");
     }
   else if (from_scanner_start == 0)
     {
@@ -494,11 +493,11 @@ sync_buffer ()
       from_scanner_start = 0;
 #if TRACE
       from_scanner[from_scanner_end] = '\0';
-      //tracef ("   new from_scanner: %s\n", from_scanner);
-      tracef ("   new from_scanner_start: %" BUFFER_SIZE_T_FORMAT "\n",
-              from_scanner_start);
-      tracef ("   new from_scanner_end: %" BUFFER_SIZE_T_FORMAT "\n",
-              from_scanner_end);
+      //g_debug ("   new from_scanner: %s\n", from_scanner);
+      g_debug ("   new from_scanner_start: %" BUFFER_SIZE_T_FORMAT "\n",
+               from_scanner_start);
+      g_debug ("   new from_scanner_end: %" BUFFER_SIZE_T_FORMAT "\n",
+               from_scanner_end);
 #endif
     }
   return 0;
@@ -523,7 +522,7 @@ parse_scanner_done (char** messages)
     return -2;
   if (strncasecmp ("SERVER", *messages, 6))
     {
-      tracef ("   scanner fail: expected final \"SERVER\"\n");
+      g_debug ("   scanner fail: expected final \"SERVER\"\n");
       return -1;
     }
   set_scanner_state (SCANNER_TOP);
@@ -553,7 +552,7 @@ parse_scanner_bad_login (char** messages)
       /** @todo Are there 19 characters available? */
       if (strncasecmp ("Bad login attempt !", *messages, 19) == 0)
         {
-          tracef ("match bad login\n");
+          g_debug ("match bad login\n");
           from_scanner_start += match + 1 - *messages;
           *messages = match + 1;
           set_scanner_init_state (SCANNER_INIT_TOP);
@@ -792,7 +791,7 @@ process_otp_scanner_input (void (*progress) ())
   const char *ver_str = "< OTP/2.0 >\n";
   size_t ver_len = strlen (ver_str);
   buffer_size_t from_start, from_end;
-  //tracef ("   consider %.*s\n", from_scanner_end - from_scanner_start, messages);
+  //g_debug ("   consider %.*s\n", from_scanner_end - from_scanner_start, messages);
 
   /* Before processing the input, check if another manager process has stopped
    * the current task.  If so, send the stop request to the scanner.  This is
@@ -837,8 +836,8 @@ process_otp_scanner_input (void (*progress) ())
           }
         if (strncasecmp (ver_str, messages, ver_len))
           {
-            tracef ("   scanner fail: expected \"%s\""
-                    "   got \"%.12s\"\n\n", ver_str, messages);
+            g_debug ("   scanner fail: expected \"%s\""
+                     "   got \"%.12s\"\n\n", ver_str, messages);
             return -1;
           }
         from_scanner_start += ver_len;
@@ -949,8 +948,8 @@ process_otp_scanner_input (void (*progress) ())
           field = openvas_strip_space (message, match);
           blank_control_chars (field);
 
-          tracef ("   scanner old state %i\n", scanner_state);
-          tracef ("   scanner field: %s\n", field);
+          g_debug ("   scanner old state %i\n", scanner_state);
+          g_debug ("   scanner field: %s\n", field);
           switch (scanner_state)
             {
               case SCANNER_BYE:
@@ -1007,8 +1006,8 @@ process_otp_scanner_input (void (*progress) ())
                       number = atoi (field);
                       protocol[0] = '\0';
                     }
-                  tracef ("   scanner got debug port, number: %i, protocol: %s\n",
-                          number, protocol);
+                  g_debug ("   scanner got debug port, number: %i, protocol: %s\n",
+                           number, protocol);
 
                   set_message_port_number (current_message, number);
                   set_message_port_protocol (current_message, protocol);
@@ -1079,8 +1078,8 @@ process_otp_scanner_input (void (*progress) ())
                       number = atoi (field);
                       protocol[0] = '\0';
                     }
-                  tracef ("   scanner got alarm port, number: %i, protocol: %s\n",
-                          number, protocol);
+                  g_debug ("   scanner got alarm port, number: %i, protocol: %s\n",
+                           number, protocol);
 
                   set_message_port_number (current_message, number);
                   set_message_port_protocol (current_message, protocol);
@@ -1151,8 +1150,8 @@ process_otp_scanner_input (void (*progress) ())
                       number = atoi (field);
                       protocol[0] = '\0';
                     }
-                  tracef ("   scanner got log port, number: %i, protocol: %s\n",
-                          number, protocol);
+                  g_debug ("   scanner got log port, number: %i, protocol: %s\n",
+                           number, protocol);
 
                   set_message_port_number (current_message, number);
                   set_message_port_protocol (current_message, protocol);
@@ -1287,7 +1286,7 @@ process_otp_scanner_input (void (*progress) ())
               case SCANNER_NVT_INFO:
                 {
                   char* feed_version = g_strdup (field);
-                  tracef ("   scanner got nvti_info: %s\n", feed_version);
+                  g_debug ("   scanner got nvti_info: %s\n", feed_version);
                   if (plugins_feed_version)
                     g_free (plugins_feed_version);
                   plugins_feed_version = feed_version;
@@ -1408,8 +1407,8 @@ process_otp_scanner_input (void (*progress) ())
                   }
                 else
                   {
-                    tracef ("New scanner command to implement: %s\n",
-                            field);
+                    g_debug ("New scanner command to implement: %s\n",
+                             field);
                     goto return_error;
                   }
                 break;
@@ -1427,7 +1426,7 @@ process_otp_scanner_input (void (*progress) ())
                   if (current_report && current_host)
                     {
                       unsigned int current, max;
-                      tracef ("   scanner got ports: %s\n", field);
+                      g_debug ("   scanner got ports: %s\n", field);
                       if (sscanf (field, "%u/%u", &current, &max) == 2)
                         set_scan_ports (current_report,
                                         current_host,
@@ -1623,8 +1622,8 @@ process_otp_scanner_input (void (*progress) ())
                 }
               case SCANNER_TOP:
               default:
-                tracef ("   switch t\n");
-                tracef ("   cmp %i\n", strcasecmp ("SERVER", field));
+                g_debug ("   switch t\n");
+                g_debug ("   cmp %i\n", strcasecmp ("SERVER", field));
                 if (strcasecmp ("SERVER", field))
                   goto return_error;
                 set_scanner_state (SCANNER_SERVER);
@@ -1643,7 +1642,7 @@ process_otp_scanner_input (void (*progress) ())
                 break;
             }
 
-          tracef ("   scanner new state: %i\n", scanner_state);
+          g_debug ("   scanner new state: %i\n", scanner_state);
 
           continue;
 

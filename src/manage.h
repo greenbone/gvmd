@@ -41,6 +41,13 @@
 #include <openvas/osp/osp.h>
 
 /**
+ * @brief Flag with all Glib log levels.
+ */
+#define ALL_LOG_LEVELS  (G_LOG_LEVEL_MASK       \
+                         | G_LOG_FLAG_FATAL     \
+                         | G_LOG_FLAG_RECURSION)
+
+/**
  * @brief Name value pair.
  */
 typedef struct

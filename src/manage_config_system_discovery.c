@@ -29,6 +29,12 @@
 
 #include <assert.h>
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md   main"
+
 /**
  * @brief Make System Discovery Scan Config.
  *

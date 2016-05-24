@@ -24,10 +24,11 @@
  */
 
 #include "sql.h"
-#include "tracef.h"
 
 #include <assert.h>
 #include <sqlite3.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <errno.h>
@@ -36,6 +37,12 @@
  * @brief Chunk size for SQLite memory allocation.
  */
 #define DB_CHUNK_SIZE 1 * 1024 * 1024
+
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
 
 
 /* Headers of sql.c symbols used only here. */
@@ -346,7 +353,7 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
   formatted = g_strdup_vprintf (sql, args);
 
   if (log)
-    tracef ("   sql: %s\n", formatted);
+    g_debug ("   sql: %s\n", formatted);
 
   retries = 0;
   *stmt = (sql_stmt_t*) g_malloc0 (sizeof (sql_stmt_t));

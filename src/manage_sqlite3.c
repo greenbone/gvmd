@@ -29,12 +29,18 @@
 #include "manage.h"
 #include "manage_utils.h"
 #include "manage_acl.h"
-#include "tracef.h"
 
 #include <sqlite3.h>
 #include <time.h>
+#include <unistd.h>
 
 #include <openvas/misc/openvas_uuid.h>
+
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
 
 
 /* Variables */
@@ -801,7 +807,7 @@ sql_common_cve (sqlite3_context *context, int argc, sqlite3_value** argv)
 
   assert (argc == 2);
 
-  tracef ("   %s: top\n", __FUNCTION__);
+  g_debug ("   %s: top\n", __FUNCTION__);
 
   cve1 = sqlite3_value_text (argv[0]);
   if (cve1 == NULL)
@@ -825,7 +831,7 @@ sql_common_cve (sqlite3_context *context, int argc, sqlite3_value** argv)
     {
       while (*point_2)
         {
-          tracef ("   %s: %s vs %s\n", __FUNCTION__, g_strstrip (*point_1), g_strstrip (*point_2));
+          g_debug ("   %s: %s vs %s\n", __FUNCTION__, g_strstrip (*point_1), g_strstrip (*point_2));
           if (strcmp (g_strstrip (*point_1), g_strstrip (*point_2)) == 0)
             {
               g_strfreev (split_1);
@@ -965,7 +971,7 @@ clear_cache (void *cache_arg)
   sql_severity_t *cache;
 
   cache = (sql_severity_t*) cache_arg;
-  tracef ("   %s: %llu, %llu\n", __FUNCTION__, cache->task, cache->overrides_task);
+  g_debug ("   %s: %llu, %llu\n", __FUNCTION__, cache->task, cache->overrides_task);
   cache->task = 0;
   cache->overrides_task = 0;
   free (cache->severity);
@@ -1086,7 +1092,7 @@ sql_task_threat_level (sqlite3_context *context, int argc, sqlite3_value** argv)
   else
     threat = severity_to_level (severity_dbl, 0);
 
-  tracef ("   %s: %llu: %s\n", __FUNCTION__, task, threat);
+  g_debug ("   %s: %llu: %s\n", __FUNCTION__, task, threat);
   if (threat)
     {
       sqlite3_result_text (context, threat, -1, SQLITE_TRANSIENT);
@@ -1376,7 +1382,7 @@ sql_task_severity (sqlite3_context *context, int argc, sqlite3_value** argv)
 
   severity = cached_task_severity (context, task, overrides, min_qod);
   severity_double = severity ? g_strtod (severity, 0) : 0.0;
-  tracef ("   %s: %llu: %s\n", __FUNCTION__, task, severity);
+  g_debug ("   %s: %llu: %s\n", __FUNCTION__, task, severity);
   if (severity)
     {
       sqlite3_result_double (context, severity_double);
@@ -3174,7 +3180,7 @@ backup_db (const gchar *database, gchar **backup_file)
                              database,
                              database,
                              database);
-  tracef ("   command: %s\n", command);
+  g_debug ("   command: %s\n", command);
   ret = system (command);
   g_free (command);
 

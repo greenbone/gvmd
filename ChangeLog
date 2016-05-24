@@ -1,5 +1,36 @@
 2016-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Replace tracef with g_debug.  No real gain having these messages
+	controlled by --verbose, when the log config does the same thing.
+
+	This is also simpler, and removes the mix of tracef and g_debug that had
+	crept in.
+
+	* src/manage.c, src/manage_migrators, src/manage_sql.c,
+	src/manage_sqlite3.c, src/omp.c, src/ompd.c, src/otp.c,
+	src/ovas-mngr-comm.c, src/scanner.c, src/sql.c, src/sql_pg.c,
+	src/sql_sqlite3.c: Replace tracef.
+
+	* src/manage.h (ALL_LOG_LEVELS): New define.  Was in tracef.h.
+
+	* src/manage_acl.c: Remove tracef.h include.
+
+	* src/manage_config_discovery.c, src/manage_config_host_discovery.c,
+	src/manage_config_system_discovery.c, src/manage_pg.c,
+    src/manage_ranges_all_tcp_nmap_5_51_top_100.c,
+	src/manage_ranges_all_tcp_nmap_5_51_top_1000.c,
+	src/manage_ranges_iana_tcp_2012.c,
+	src/manage_ranges_iana_tcp_udp_2012.c,
+	src/manage_ranges_nmap_5_51_top_2000_top_100.c (G_LOG_DOMAIN): Define
+	for logging.
+
+	* src/openvasmd.c: Replace tracef.
+	(G_LOG_DOMAIN): Define for logging.
+	(log_config): New variable.  From tracef.h and ovas-mngr-comm.c.
+	(main): Note verbose flags are obsolete.
+
+2016-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Replace infof with g_info.  No real gain having these messages
 	controlled by --verbose.
 

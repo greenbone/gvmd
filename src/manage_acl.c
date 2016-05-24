@@ -34,11 +34,16 @@
 #include "manage_acl.h"
 #include "manage_sql.h"
 #include "sql.h"
-#include "tracef.h"
 
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
 
 /**
  * @brief Test whether a user may perform an operation.
