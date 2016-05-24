@@ -1,5 +1,9 @@
 2016-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (slave_sleep_connect, slave_setup): Add more tracing.
+
+2016-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (run_task): Set the scheduled flag of the report every
 	time, so that this flag is also set when a scheduled task uses the
 	report from a previous stopped scan that was started manual.

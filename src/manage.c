@@ -1857,13 +1857,19 @@ slave_sleep_connect (slave_t slave, const char *host, int port, task_t task,
       if ((task_run_status (task) == TASK_STATUS_STOP_REQUESTED_GIVEUP)
           || (task_run_status (task) == TASK_STATUS_STOP_REQUESTED))
         {
-          tracef ("   %s: task stopped for giveup\n", __FUNCTION__);
+          if (task_run_status (task) == TASK_STATUS_STOP_REQUESTED_GIVEUP)
+            tracef ("   %s: task stopped for giveup\n", __FUNCTION__);
+          else
+            tracef ("   %s: task stopped\n", __FUNCTION__);
           set_task_run_status (current_scanner_task, TASK_STATUS_STOPPED);
           return 3;
         }
+      tracef ("   %s: sleeping for %i\n", __FUNCTION__,
+              RUN_SLAVE_TASK_SLEEP_SECONDS);
       openvas_sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
     }
   while (slave_connect (slave, host, port, socket, session));
+  tracef ("   %s: connected\n", __FUNCTION__);
   return 0;
 }
 
@@ -2874,6 +2880,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
   openvas_server_close (*socket, *session);
   slave_session = NULL;
   slave_socket = NULL;
+  tracef ("   %s: succeed\n", __FUNCTION__);
   return 0;
 
  fail_stop_task:
@@ -2904,12 +2911,14 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
   omp_delete_lsc_credential_ext (session, slave_ssh_credential_uuid, del_opts);
   free (slave_ssh_credential_uuid);
  fail:
+  tracef ("   %s: fail\n", __FUNCTION__);
   openvas_server_close (*socket, *session);
   slave_session = NULL;
   slave_socket = NULL;
   return 1;
 
  giveup:
+  tracef ("   %s: giveup\n", __FUNCTION__);
   openvas_server_close (*socket, *session);
   slave_session = NULL;
   slave_socket = NULL;
