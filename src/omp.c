@@ -30850,7 +30850,7 @@ process_omp_client_input ()
             tracef ("   client error: G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE\n");
           else
             err = -1;
-          infof ("   Failed to parse client XML: %s\n", error->message);
+          g_info ("   Failed to parse client XML: %s\n", error->message);
           g_error_free (error);
         }
       else
@@ -30978,7 +30978,7 @@ process_omp (omp_parser_t *parser, const gchar *command, gchar **response)
             tracef ("   client error: G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE\n");
           else
             err = -1;
-          infof ("   Failed to parse client XML: %s\n", error->message);
+          g_info ("   Failed to parse client XML: %s\n", error->message);
           g_error_free (error);
         }
       else

@@ -367,7 +367,7 @@ serve_omp (gnutls_session_t* client_session,
     ompd_nvt_cache_mode = client_socket;
 
   if (ompd_nvt_cache_mode)
-    infof ("   Updating NVT cache.\n");
+    g_info ("   Updating NVT cache.\n");
   else
     tracef ("   Serving OMP.\n");
 

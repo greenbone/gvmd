@@ -961,12 +961,12 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
   if (update_nvt_cache == 0)
     {
       proctitle_set ("openvasmd: Rebuilding");
-      infof ("%s: Rebuilding NVT cache\n", __FUNCTION__);
+      g_info ("%s: Rebuilding NVT cache\n", __FUNCTION__);
     }
   else
     {
       proctitle_set ("openvasmd: Updating");
-      infof ("%s: Updating NVT cache\n", __FUNCTION__);
+      g_info ("%s: Updating NVT cache\n", __FUNCTION__);
     }
 
   switch (init_ompd (log_config,
@@ -1053,7 +1053,7 @@ rebuild_nvt_cache_retry (int update_or_rebuild, int register_cleanup,
                          void (*progress) (), int skip_create_tables)
 {
   proctitle_set ("openvasmd: Reloading");
-  infof ("%s: Reloading NVT cache\n", __FUNCTION__);
+  g_info ("%s: Reloading NVT cache\n", __FUNCTION__);
 
   /* Don't ignore SIGCHLD, in order to wait for child process. */
   setup_signal_handler (SIGCHLD, SIG_DFL, 0);
@@ -1137,7 +1137,7 @@ fork_update_nvt_cache ()
 
         /* Update the cache. */
 
-        infof ("   internal NVT cache update\n");
+        g_info ("   internal NVT cache update\n");
 
         rebuild_nvt_cache_retry (1, 0, NULL, 1);
 
@@ -1568,7 +1568,7 @@ main (int argc, char** argv)
 
   if (migrate_database
       && manage_migrate_needs_timezone (log_config, database))
-    infof ("%s: leaving TZ as is, for migrator\n", __FUNCTION__);
+    g_info ("%s: leaving TZ as is, for migrator\n", __FUNCTION__);
   else if (setenv ("TZ", "utc 0", 1) == -1)
     {
       g_critical ("%s: failed to set timezone\n", __FUNCTION__);
@@ -1607,13 +1607,13 @@ main (int argc, char** argv)
 
   if (backup_database)
     {
-      infof ("   Backing up database.\n");
+      g_info ("   Backing up database.\n");
 
       /* Backup the database and then exit. */
       switch (manage_backup_db (database))
         {
           case 0:
-            infof ("   Backup succeeded.\n");
+            g_info ("   Backup succeeded.\n");
             return EXIT_SUCCESS;
           case -1:
             g_critical ("%s: database backup failed\n",
@@ -1782,7 +1782,7 @@ main (int argc, char** argv)
 
   if (check_alerts)
     {
-      infof ("   Creating admin user.\n");
+      g_info ("   Creating admin user.\n");
 
       /* Check the alerts and then exit. */
       switch (manage_check_alerts (log_config, database, create_user, role))
@@ -1801,7 +1801,7 @@ main (int argc, char** argv)
 
   if (create_user)
     {
-      infof ("   Creating admin user.\n");
+      g_info ("   Creating admin user.\n");
 
       /* Create the user and then exit. */
       switch (manage_create_user (log_config, database, create_user, role))
@@ -1830,7 +1830,7 @@ main (int argc, char** argv)
 
   if (delete_user)
     {
-      infof ("   Deleting user.\n");
+      g_info ("   Deleting user.\n");
 
       /* Delete the user and then exit. */
       switch (manage_delete_user (log_config, database, delete_user, inheritor))
@@ -2057,13 +2057,13 @@ main (int argc, char** argv)
 
   if (migrate_database)
     {
-      infof ("   Migrating database.\n");
+      g_info ("   Migrating database.\n");
 
       /* Migrate the database to the version supported by this manager. */
       switch (manage_migrate (log_config, database))
         {
           case 0:
-            infof ("   Migration succeeded.\n");
+            g_info ("   Migration succeeded.\n");
             return EXIT_SUCCESS;
           case 1:
             g_warning ("%s: databases are already at the supported version\n",
@@ -2103,7 +2103,7 @@ main (int argc, char** argv)
 
   if (encrypt_all_credentials)
     {
-      infof ("   (Re-)encrypting all credentials.\n");
+      g_info ("   (Re-)encrypting all credentials.\n");
       switch (manage_encrypt_all_credentials (log_config, database, FALSE))
         {
           case 0:
@@ -2134,7 +2134,7 @@ main (int argc, char** argv)
 
   if (decrypt_all_credentials)
     {
-      infof ("   Decrypting all credentials.\n");
+      g_info ("   Decrypting all credentials.\n");
       switch (manage_encrypt_all_credentials (log_config, database, TRUE))
         {
           case 0:

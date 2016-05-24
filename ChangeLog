@@ -1,5 +1,21 @@
 2016-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Replace infof with g_info.  No real gain having these messages
+	controlled by --verbose.
+
+	* src/manage_migrators.c (manage_migrate): Replace infof.
+
+	* src/omp.c (process_omp_client_input, process_omp): Replace infof.
+
+	* src/ompd.c (serve_omp): Replace infof.
+
+	* src/openvasmd.c (update_or_rebuild_nvt_cache, rebuild_nvt_cache_retry)
+	(fork_update_nvt_cache, main): Replace infof.
+
+	* src/tracef.h (infof): Remove.  No longer used.
+
+2016-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (slave_sleep_connect, slave_setup): Add more tracing.
 
 2016-05-24  Matthew Mundell <matthew.mundell@greenbone.net>

@@ -12711,7 +12711,7 @@ manage_migrate (GSList *log_config, const gchar *database)
               return -1;
             }
 
-          infof ("   Migrating to %i", migrators->version);
+          g_info ("   Migrating to %i", migrators->version);
 
           if (migrators->function ())
             {
