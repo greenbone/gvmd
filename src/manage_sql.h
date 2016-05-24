@@ -350,4 +350,6 @@ void check_generate_scripts ();
 
 void auto_delete_reports ();
 
+void set_report_scheduled (report_t);
+
 #endif /* not OPENVAS_MANAGER_MANAGE_SQL_H */

@@ -15340,7 +15340,7 @@ task_run_status (task_t task)
  *
  * @param[in]   report  Report.
  */
-static void
+void
 set_report_scheduled (report_t report)
 {
   /* Using unused column "nbefile" instead of adding column "flags", to avoid

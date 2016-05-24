@@ -3611,6 +3611,8 @@ run_task (const char *task_id, char **report_id, int from,
         break;
     }
 
+  set_report_scheduled (current_report);
+
   /* Every fail exit from here must reset to this run status, and must
    * clear current_report. */
 
