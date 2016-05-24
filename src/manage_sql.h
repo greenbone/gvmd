@@ -388,4 +388,6 @@ void auto_delete_reports ();
 
 int days_from_now (time_t *epoch_time);
 
+void set_report_scheduled (report_t);
+
 #endif /* not OPENVAS_MANAGER_MANAGE_SQL_H */

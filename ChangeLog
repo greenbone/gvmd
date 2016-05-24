@@ -1,3 +1,13 @@
+2016-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (run_task): Set the scheduled flag of the report every
+	time, so that this flag is also set when a scheduled task uses the
+	report from a previous stopped scan that was started manual.
+
+	* src/manage_sql.c (set_report_scheduled): Export.
+
+	* src/manage_sql.h: Add header accordingly.
+
 2016-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (manage_schedule): Try to resume before trying to start,
