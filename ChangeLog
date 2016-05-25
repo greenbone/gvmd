@@ -1,3 +1,7 @@
+2016-05-25  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* INSTALL: Slight improvements/fixes.
+
 2016-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/sql_sqlite3.c (sql_open): Set journal_size_limit so that the WAL

@@ -98,6 +98,9 @@ and client certificate are signed by this CA. The "openvas-manage-certs" script
 can assist you in setting up your infrastructure. Please refer to the
 documentation provided with the script for usage details.
 
+If certificates expired or in other ways there is need to update certificates
+for scanners, please see also section "Updating Scanner Certificates".
+
 
 Choosing the Database Backend
 -----------------------------
@@ -170,7 +173,7 @@ The configuration is divided into domains like this one
 	[md   main]
 	prepend=%t %p
 	prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
-	file=/home/mattm/var/log/openvas/openvasmd.log
+	file=/var/log/openvas/openvasmd.log
 	level=128
 
 The "level" field controls the amount of logging that is written.
