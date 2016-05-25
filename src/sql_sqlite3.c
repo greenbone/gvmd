@@ -257,6 +257,7 @@ sql_open (const char *database)
   sqlite3_file_control (task_db, NULL, SQLITE_FCNTL_CHUNK_SIZE, &chunk_size);
 
   sql ("PRAGMA journal_mode=WAL;");
+  sql ("PRAGMA journal_size_limit=134217728;");  /* 128 MB. */
 
   return 0;
 }

@@ -1,5 +1,10 @@
 2016-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/sql_sqlite3.c (sql_open): Set journal_size_limit so that the WAL
+	is brought down to a reasonable size after it grows large.
+
+2016-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_cleanup_process_error): Use convenience
 	log function for consistency.
 
