@@ -32,6 +32,7 @@
 #include <inttypes.h>
 #include <netinet/in.h>
 #include <postgresql/libpq-fe.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <openvas/base/array.h>
