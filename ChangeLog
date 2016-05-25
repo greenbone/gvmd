@@ -1,5 +1,9 @@
 2016-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c (main): Correct info message.
+
+2016-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* INSTALL: Add section Logging Configuration.
 
 2016-05-25  Timo Pollmeier <timo.pollmeier@greenbone.net>

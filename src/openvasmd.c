@@ -1793,7 +1793,7 @@ main (int argc, char** argv)
 
   if (check_alerts)
     {
-      g_info ("   Creating admin user.\n");
+      g_info ("   Checking alerts.\n");
 
       /* Check the alerts and then exit. */
       switch (manage_check_alerts (log_config, database, create_user, role))
