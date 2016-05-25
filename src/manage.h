@@ -48,6 +48,15 @@
                          | G_LOG_FLAG_RECURSION)
 
 /**
+ * @brief Defines g_info for glib versions older than 2.40.
+ */
+#ifndef g_info
+#define g_info(...)  g_log (G_LOG_DOMAIN,         \
+                            G_LOG_LEVEL_INFO,     \
+                            __VA_ARGS__)
+#endif /* g_info not defined */
+
+/**
  * @brief Name value pair.
  */
 typedef struct

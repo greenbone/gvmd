@@ -1,3 +1,8 @@
+2016-05-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage.h: Define g_info macro if it is not defined, which
+	is the case for glib versions older than 2.40.
+
 2016-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/tracef.h: Remove.  No longer used.
