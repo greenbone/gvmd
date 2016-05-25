@@ -50,7 +50,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <xsl:value-of select="vuln:cvss/cvss:base_metrics/cvss:score"/>
     </xsl:when>
     <xsl:otherwise>
-      <xsl:text>0.0</xsl:text>
+      <xsl:text>NULL</xsl:text>
     </xsl:otherwise>
   </xsl:choose>,
   '<xsl:value-of select='str:replace(vuln:summary/text(), "&#39;", "&#39;&#39;")'/>',

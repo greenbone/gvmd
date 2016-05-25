@@ -1,3 +1,10 @@
+2016-05-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In case CLIENT_GET_INFO
+	output NULL cvss of CVEs as empty string.
+
+	* tools/cve_update_pg.xsl: Write missing cvss to database as NULL.
+
 2016-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/sql_pg.c: Include stdlib.h, like tracef.h used to do.

@@ -16274,7 +16274,9 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                      "<availability_impact>%s</availability_impact>"
                                      "<description>%s</description>"
                                      "<products>%s</products>",
-                                     cve_info_iterator_cvss (&info),
+                                     cve_info_iterator_cvss (&info)
+                                      ? cve_info_iterator_cvss (&info)
+                                      : "",
                                      cve_info_iterator_vector (&info),
                                      cve_info_iterator_complexity (&info),
                                      cve_info_iterator_authentication (&info),
