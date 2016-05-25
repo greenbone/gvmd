@@ -315,8 +315,7 @@ set_gnutls_priority (gnutls_session_t *session, const char *priority)
   const char *errp = NULL;
   if (gnutls_priority_set_direct (*session, priority, &errp)
       == GNUTLS_E_INVALID_REQUEST)
-    g_log (G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, "Invalid GnuTLS priority: %s\n",
-           errp);
+    g_warning ("Invalid GnuTLS priority: %s\n", errp);
 }
 
 
@@ -1222,8 +1221,8 @@ serve_and_schedule ()
 
       if (termination_signal)
         {
-          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Received %s signal.\n",
-                 sys_siglist[termination_signal]);
+          g_debug ("Received %s signal.\n",
+                   sys_siglist[termination_signal]);
           cleanup ();
           /* Raise signal again, to exit with the correct return value. */
           setup_signal_handler (termination_signal, SIG_DFL, 0);
@@ -1233,8 +1232,7 @@ serve_and_schedule ()
 
       if (sighup_update_nvt_cache)
         {
-          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Received %s signal.\n",
-                 sys_siglist[SIGHUP]);
+          g_debug ("Received %s signal.\n", sys_siglist[SIGHUP]);
           sighup_update_nvt_cache = 0;
           fork_update_nvt_cache ();
         }
@@ -1292,8 +1290,8 @@ serve_and_schedule ()
 
       if (termination_signal)
         {
-          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Received %s signal.\n",
-                 sys_siglist[termination_signal]);
+          g_debug ("Received %s signal.\n",
+                   sys_siglist[termination_signal]);
           cleanup ();
           /* Raise signal again, to exit with the correct return value. */
           setup_signal_handler (termination_signal, SIG_DFL, 0);
@@ -1303,8 +1301,7 @@ serve_and_schedule ()
 
       if (sighup_update_nvt_cache)
         {
-          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Received %s signal.\n",
-                 sys_siglist[SIGHUP]);
+          g_debug ("Received %s signal.\n", sys_siglist[SIGHUP]);
           sighup_update_nvt_cache = 0;
           fork_update_nvt_cache ();
         }

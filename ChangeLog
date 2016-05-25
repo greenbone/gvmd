@@ -1,5 +1,13 @@
 2016-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_cleanup_process_error): Use convenience
+	log function for consistency.
+
+	* src/openvasmd.c (set_gnutls_priority, serve_and_schedule): Use
+	convenience log function for consistency.
+
+2016-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c (main): Correct info message.
 
 2016-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
