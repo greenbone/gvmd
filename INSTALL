@@ -154,6 +154,42 @@ administrators via clients like the Greenbone Security Assistant (GSA).
 Also, the new user can change her password via GSA.
 
 
+Logging Configuration
+---------------------
+
+By default Manager writes logs to the file
+
+    <install-prefix>/var/log/openvas/openvasmd.log
+
+Logging is configured entirely by the file
+
+    <install-prefix>/etc/openvas/openvasmd_log.conf
+
+The configuration is divided into domains like this one
+
+	[md   main]
+	prepend=%t %p
+	prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
+	file=/home/mattm/var/log/openvas/openvasmd.log
+	level=128
+
+The "level" field controls the amount of logging that is written.
+The value of "level" can be
+
+      4  Errors.
+	  8  Critical situation.
+     16  Warnings.
+	 32  Messages.
+	 64  Information.
+    128  Debug.  (Lots of output.)
+
+Enabling any level includes all the levels above it.  So enabling Information
+will include Warnings, Critical situations and Errors.
+
+To get absolutely all logging, set the level to 128 for all domains in the
+configuration file.
+
+
 Optimizing the database
 -----------------------
 

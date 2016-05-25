@@ -1,3 +1,7 @@
+2016-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* INSTALL: Add section Logging Configuration.
+
 2016-05-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage.h: Define g_info macro if it is not defined, which
