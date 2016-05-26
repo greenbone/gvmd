@@ -2935,7 +2935,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
  * @param[out]  target_snmp_credential   Target SNMP credential.
  * @param[out]  last_stopped_report  Last stopped report if any, else 0.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, 1 login failed, -1 error.
  */
 static int
 run_slave_task (task_t task, target_t target,
@@ -3006,10 +3006,25 @@ run_slave_task (task_t task, target_t target,
   while ((ret = slave_connect (slave, host, port, &socket, &session)))
     if (ret == 1)
       {
+        result_t result;
+        gchar *port_string;
+
         /* Login failed. */
+
+        port_string = g_strdup_printf ("%i", port);
+        result = make_result (task,
+                              host,
+                              port_string,
+                              /* NVT: Global variable settings. */
+                              "1.3.6.1.4.1.25623.1.0.12288",
+                              "Error Message",
+                              "Authentication with the slave failed.");
+        g_free (port_string);
+        if (current_report)
+          report_add_result (current_report, result);
+
         free (host);
-        g_warning ("%s: Login failed", __FUNCTION__);
-        return -1;
+        return 1;
       }
     else
       {
@@ -4336,21 +4351,30 @@ run_task (const char *task_id, char **report_id, int from,
 
   if (slave)
     {
+      free (hosts);
+
       snprintf (title, sizeof (title),
                 "openvasmd: OTP: Handling slave scan %s",
                 uuid);
       free (uuid);
       proctitle_set (title);
 
-      if (run_slave_task (task, target, ssh_credential, smb_credential,
-                          esxi_credential, snmp_credential,
-                          last_stopped_report))
+      switch (run_slave_task (task, target, ssh_credential, smb_credential,
+                              esxi_credential, snmp_credential,
+                              last_stopped_report))
         {
-          free (hosts);
-          g_warning ("%s: run_slave_task failed", __FUNCTION__);
-          set_task_run_status (task, run_status);
-          set_report_scan_run_status (current_report, run_status);
-          exit (EXIT_FAILURE);
+          case 0:
+            break;
+          default:
+            assert (0);
+          case 1:
+            /* Auth failure. */
+          case -1:
+            /* Error. */
+            g_warning ("%s: run_slave_task failed", __FUNCTION__);
+            set_task_run_status (task, run_status);
+            set_report_scan_run_status (current_report, run_status);
+            exit (EXIT_FAILURE);
         }
       exit (EXIT_SUCCESS);
     }

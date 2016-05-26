@@ -1,5 +1,12 @@
 2016-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (run_slave_task): Add an error result to the report
+	if authentication fails with the slave.  Free hosts earlier.
+	(run_task): Include new "authentication failure" case when checking
+	run_slave_task return.
+
+2016-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_config): Correct check for NVT selector
 	insertion.  config_type can be NULL.
 
