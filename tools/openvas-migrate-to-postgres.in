@@ -52,8 +52,17 @@ fi
 
 [ -r @OPENVAS_SYSCONF_DIR@/migrate-to-postgres.conf ] && . @OPENVAS_SYSCONF_DIR@/migrate-to-postgres.conf
 
-SQLITE_DB_DIR="@OPENVAS_STATE_DIR@/mgr"
-SQLITE_DB="$SQLITE_DB_DIR/tasks.db"
+if [ -z "$SQLITE_DB_DIR" ]; then
+  SQLITE_DB_DIR="@OPENVAS_STATE_DIR@/mgr"
+fi
+
+if [ -z "$SQLITE_DB_FILE" ]; then
+  SQLITE_DB_FILE="tasks.db"
+fi
+
+if [ -z "$SQLITE_DB" ]; then
+  SQLITE_DB="$SQLITE_DB_DIR/$SQLITE_DB_FILE"
+fi
 
 SQLITE=`command -v sqlite3`
 
