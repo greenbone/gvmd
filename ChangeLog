@@ -1,3 +1,10 @@
+2016-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r25379.
+
+	* src/manage_sql.c (create_config): Correct check for NVT selector
+	insertion.  config_type can be NULL.
+
 2016-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r25358.

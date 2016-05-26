@@ -31686,7 +31686,7 @@ create_config (const char* proposed_name, const char* comment,
 
   *config = sql_last_insert_id ();
 
-  if (config_type && strcmp (config_type, "0") == 0)
+  if (config_type == NULL || strcmp (config_type, "0") == 0)
     {
       if ((ret = insert_nvt_selectors (selector_uuid, selectors)))
         {
