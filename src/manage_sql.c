@@ -20237,7 +20237,8 @@ report_add_result (report_t report, result_t result)
  { ANON_GET_ITERATOR_FILTER_COLUMNS, "task_id", "name", "date", "status",      \
    "task", "severity", "false_positive", "log", "low", "medium", "high",       \
    "hosts", "result_hosts", "fp_per_host", "log_per_host", "low_per_host",     \
-   "medium_per_host", "high_per_host", NULL }
+   "medium_per_host", "high_per_host", "duration", "duration_per_host",        \
+   NULL }
 
 /**
  * @brief Report iterator columns.
@@ -20365,6 +20366,21 @@ report_add_result (report_t report, result_t result)
      "            / nullif (report_result_host_count (id, opts.min_qod), 0),"\
      "          0)",                                                         \
      "high_per_host",                                                        \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
+     "(CASE WHEN (start_time IS NULL or end_time IS NULL)"                   \
+     " THEN NULL ELSE end_time - start_time END)",                           \
+     "duration",                                                             \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
+     "(CASE WHEN (start_time IS NULL or end_time IS NULL"                    \
+     "            or report_result_host_count (id, opts.min_qod) = 0)"       \
+     " THEN NULL"                                                            \
+     " ELSE (end_time - start_time)"                                         \
+     "        / report_result_host_count (id, opts.min_qod) END)",           \
+     "duration_per_host",                                                    \
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
