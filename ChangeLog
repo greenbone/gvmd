@@ -1,3 +1,8 @@
+2016-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (create_config): Correct check for NVT selector
+	insertion.  config_type can be NULL.
+
 2016-05-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In case CLIENT_GET_INFO
