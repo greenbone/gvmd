@@ -1,3 +1,12 @@
+2016-05-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Enable key truncation again, because it is still a problem with older
+	libssh version.
+
+	* src/manage_sql.c (truncate_private_key): New function.
+	(create_credential): Truncate private key if possible, but if it fails
+	then try extract the public key anyway.
+
 2016-05-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (init_task_user_iterator): Make the user selection
@@ -96,7 +105,7 @@
 
 	* src/manage_config_discovery.c, src/manage_config_host_discovery.c,
 	src/manage_config_system_discovery.c, src/manage_pg.c,
-    src/manage_ranges_all_tcp_nmap_5_51_top_100.c,
+	src/manage_ranges_all_tcp_nmap_5_51_top_100.c,
 	src/manage_ranges_all_tcp_nmap_5_51_top_1000.c,
 	src/manage_ranges_iana_tcp_2012.c,
 	src/manage_ranges_iana_tcp_udp_2012.c,

@@ -39200,6 +39200,37 @@ truncate_certificate (const gchar* private_key)
 }
 
 /**
+ * @brief Truncate a private key, removing extra data.
+ *
+ * @param[in]  private_key    The private key.
+ *
+ * @return  The truncated private key as a newly allocated string or NULL.
+ */
+static gchar *
+truncate_private_key (const gchar* private_key)
+{
+  gchar *key_start, *key_end;
+  key_start = strstr (private_key, "-----BEGIN RSA PRIVATE KEY-----\n");
+  if (key_start)
+    {
+      key_end = strstr (key_start, "-----END RSA PRIVATE KEY-----\n")
+                  + strlen ("-----END RSA PRIVATE KEY-----\n");
+    }
+  else
+    {
+      key_start = strstr (private_key, "-----BEGIN DSA PRIVATE KEY-----\n");
+      if (key_start)
+        key_end = strstr (key_start, "-----END DSA PRIVATE KEY-----\n")
+                    + strlen ("-----END DSA PRIVATE KEY-----\n");
+    }
+
+  if (key_start == NULL || key_end == NULL)
+    return NULL;
+  else
+    return g_strndup (key_start, key_end - key_start);
+}
+
+/**
  * @brief Create a Credential.
  *
  * @param[in]  name            Name of LSC credential.  Must be at least one
@@ -39412,12 +39443,26 @@ create_credential (const char* name, const char* comment, const char* login,
   if (key_private)
     {
       lsc_crypt_ctx_t crypt_ctx;
-      gchar *key_public;
+      gchar *key_private_truncated, *key_public;
 
-      key_public = openvas_ssh_public_from_private (key_private,
-                                                    given_password);
-      if (!key_public)
+      /* Try truncate the private key, but if that fails try get the public
+       * key anyway, in case it's a key type that truncate_private_key does
+       * not understand. */
+
+      if (key_private)
+        key_private_truncated = truncate_private_key (key_private);
+      else
         return 3;
+
+      key_public = openvas_ssh_public_from_private (key_private_truncated
+                                                     ? key_private_truncated
+                                                     : key_private,
+                                                    given_password);
+      if (key_public == NULL)
+        {
+          g_free (key_private_truncated);
+          return 3;
+        }
       g_free (key_public);
 
       /* Encrypt password and private key.  Note that we do not need
