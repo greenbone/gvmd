@@ -1,3 +1,8 @@
+2016-05-30  Björn Ricks <bjoern.ricks@greenbone.net>
+
+	* src/manage_sql.c (create_credential): Fix check for missing password. Check
+	for password only if username password credential type is set.
+
 2016-05-26  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (REPORT_ITERATOR_FILTER_COLUMNS)

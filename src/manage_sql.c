@@ -39316,7 +39316,8 @@ create_credential (const char* name, const char* comment, const char* login,
       && strcmp (quoted_type, "snmp"))
     ret = 5;
   else if (given_password == NULL && auto_generate == 0
-           && strcmp (quoted_type, "up"))
+           && strcmp (quoted_type, "up") == 0)
+      // username password requires a password
     ret = 6;
   else if (key_private == NULL && auto_generate == 0
            && (strcmp (quoted_type, "cc") == 0
