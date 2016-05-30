@@ -1,3 +1,8 @@
+2016-05-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (init_task_user_iterator): Make the user selection
+	distinct so users are only shown once in the observers list.
+
 2016-05-30  Björn Ricks <bjoern.ricks@greenbone.net>
 
 	* src/manage_sql.c (create_credential): Fix check for missing password. Check

@@ -6565,7 +6565,7 @@ void
 init_task_user_iterator (iterator_t *iterator, task_t task)
 {
   init_iterator (iterator,
-                 "SELECT id, resource, subject,"
+                 "SELECT DISTINCT 1, resource, subject,"
                  " (SELECT name FROM users"
                  "  WHERE users.id = permissions.subject)"
                  " FROM permissions"
