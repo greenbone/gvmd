@@ -1,3 +1,15 @@
+2016-06-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (print_report_xml): Add default apply_overrides and
+	min_qod to the returned filter if they are missing.
+
+	* src/manage.h (APPLY_OVERRIDES_DEFAULT): New macro. Moved from omp.c.
+
+	* src/omp.c (APPLY_OVERRIDES_DEFAULT): Remove. Moved to manage.h.
+	(send_get_end): Add default apply_overrides to result filters if the
+	keyword is missing.  Add default min_qod if it is missing in task,
+	report and result filters.
+
 2016-05-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Enable key truncation again, because it is still a problem with older

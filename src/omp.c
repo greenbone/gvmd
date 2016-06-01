@@ -130,11 +130,6 @@
  */
 #define G_LOG_DOMAIN "md    omp"
 
-/**
- * @brief GLib log domain.
- */
-#define APPLY_OVERRIDES_DEFAULT 0
-
 
 /* Static headers. */
 
@@ -6403,9 +6398,22 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
       new_filter = manage_clean_filter (filter ? filter : get->filter);
       g_free (filter);
       if ((strcmp (type, "task") == 0)
-          || (strcmp (type, "report") == 0))
+          || (strcmp (type, "report") == 0)
+          || (strcmp (type, "result") == 0))
         {
           gchar *value;
+
+          value = filter_term_value (new_filter, "min_qod");
+          if (value == NULL)
+            {
+              filter = new_filter;
+              new_filter = g_strdup_printf ("min_qod=%i %s",
+                                            MIN_QOD_DEFAULT,
+                                            filter);
+              g_free (filter);
+            }
+          g_free (value);
+
           value = filter_term_value (new_filter, "apply_overrides");
           if (value == NULL)
             {
@@ -6420,7 +6428,17 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
       filter = new_filter;
     }
   else
-    filter = manage_clean_filter ("");
+    {
+      if ((strcmp (type, "task") == 0)
+          || (strcmp (type, "report") == 0)
+          || (strcmp (type, "result") == 0))
+        filter = manage_clean_filter("apply_overrides="
+                                     G_STRINGIFY (APPLY_OVERRIDES_DEFAULT)
+                                     " min_qod="
+                                     G_STRINGIFY (MIN_QOD_DEFAULT));
+      else
+        filter = manage_clean_filter ("");
+    }
 
   type_many = g_string_new (type);
 

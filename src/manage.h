@@ -1053,6 +1053,11 @@ result_detection_reference (result_t, char **, char **, char **, char **,
 #define OVAS_MANAGE_REPORT_ID_LENGTH UUID_LEN_STR
 
 /**
+ * @brief Default apply_overrides setting
+ */
+#define APPLY_OVERRIDES_DEFAULT 0
+
+/**
  * @brief Default quality of detection percentage.
  */
 #define QOD_DEFAULT 75

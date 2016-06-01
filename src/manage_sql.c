@@ -27399,6 +27399,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   double severity, f_severity;
   gchar *tz, *zone;
   GString *filters_buffer, *filters_extra_buffer, *host_summary_buffer;
+  gchar *term_value;
 
   /* Init some vars to prevent warnings from older compilers. */
   total_result_count = filtered_result_count = 0;
@@ -27647,6 +27648,31 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   clean = manage_clean_filter (term
                                 ? term
                                 : (get->filter ? get->filter : ""));
+
+  term_value = filter_term_value (clean, "min_qod");
+  if (term_value == NULL)
+    {
+      gchar *new_filter;
+      new_filter = g_strdup_printf ("min_qod=%i %s",
+                                    MIN_QOD_DEFAULT,
+                                    clean);
+      g_free (clean);
+      clean = new_filter;
+    }
+  g_free (term_value);
+
+  term_value = filter_term_value (clean, "apply_overrides");
+  if (term_value == NULL)
+    {
+      gchar *new_filter;
+      new_filter = g_strdup_printf ("apply_overrides=%i %s",
+                                    APPLY_OVERRIDES_DEFAULT,
+                                    clean);
+      g_free (clean);
+      clean = new_filter;
+    }
+  g_free (term_value);
+
   g_free (term);
   term = clean;
 
