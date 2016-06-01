@@ -3842,16 +3842,16 @@ run_task (const char *task_id, char **report_id, int from,
 
           if (sendf_to_server ("SSH Authorization[entry]:SSH login name:"
                                " <|> %s\n",
-                               user)
+                               user ? user : "")
               || (lsc_credential_iterator_private_key (&credentials)
                    ? sendf_to_server ("SSH Authorization[password]:"
                                       "SSH key passphrase:"
                                       " <|> %s\n",
-                                      password)
+                                      password ? password : "")
                    : sendf_to_server ("SSH Authorization[password]:"
                                       "SSH password (unsafe!):"
                                       " <|> %s\n",
-                                      password)))
+                                      password ? password : "")))
 
             {
  fail:
@@ -3899,10 +3899,10 @@ run_task (const char *task_id, char **report_id, int from,
           const char *password = lsc_credential_iterator_password (&credentials);
 
           if (sendf_to_server ("SMB Authorization[entry]:SMB login: <|> %s\n",
-                               user)
+                               user ? user : "")
               || sendf_to_server ("SMB Authorization[password]:SMB password:"
                                   " <|> %s\n",
-                                  password))
+                                  password ? password : ""))
             {
               free (hosts);
               cleanup_iterator (&credentials);
@@ -3930,10 +3930,10 @@ run_task (const char *task_id, char **report_id, int from,
 
           if (sendf_to_server ("ESXi Authorization[entry]:ESXi login name:"
                                " <|> %s\n",
-                               user)
+                               user ? user : "")
               || sendf_to_server ("ESXi Authorization[password]:ESXi login password:"
                                   " <|> %s\n",
-                                  password))
+                                  password ? password : ""))
             {
               free (hosts);
               cleanup_iterator (&credentials);

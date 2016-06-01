@@ -1,3 +1,10 @@
+2016-06-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r25445.
+
+	* src/manage.c (run_task): Send credential preferences with empty value
+	instead of "(null)" value when they are null in the credential.
+
 2016-05-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r25414.
