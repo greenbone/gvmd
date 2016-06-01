@@ -1,5 +1,10 @@
 2016-06-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage.c (run_task): Send credential preferences with empty value
+	instead of "(null)" value when they are null in the credential.
+
+2016-06-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (print_report_xml): Add default apply_overrides and
 	min_qod to the returned filter if they are missing.
 

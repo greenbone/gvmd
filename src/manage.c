@@ -4552,16 +4552,16 @@ run_task (const char *task_id, char **report_id, int from,
 
           if (sendf_to_server ("SSH Authorization[entry]:SSH login name:"
                                " <|> %s\n",
-                               user)
+                               user ? user : "")
               || (credential_iterator_private_key (&credentials)
                    ? sendf_to_server ("SSH Authorization[password]:"
                                       "SSH key passphrase:"
                                       " <|> %s\n",
-                                      password)
+                                      password ? password : "")
                    : sendf_to_server ("SSH Authorization[password]:"
                                       "SSH password (unsafe!):"
                                       " <|> %s\n",
-                                      password)))
+                                      password ? password : "")))
 
             {
  fail:
@@ -4611,10 +4611,10 @@ run_task (const char *task_id, char **report_id, int from,
           const char *password = credential_iterator_password (&credentials);
 
           if (sendf_to_server ("SMB Authorization[entry]:SMB login: <|> %s\n",
-                               user)
+                               user ? user : "")
               || sendf_to_server ("SMB Authorization[password]:SMB password:"
                                   " <|> %s\n",
-                                  password))
+                                  password ? password : ""))
             {
               free (hosts);
               cleanup_iterator (&credentials);
@@ -4644,10 +4644,10 @@ run_task (const char *task_id, char **report_id, int from,
 
           if (sendf_to_server ("ESXi Authorization[entry]:ESXi login name:"
                                " <|> %s\n",
-                               user)
+                               user ? user : "")
               || sendf_to_server ("ESXi Authorization[password]:ESXi login password:"
                                   " <|> %s\n",
-                                  password))
+                                  password ? password : ""))
             {
               free (hosts);
               cleanup_iterator (&credentials);
@@ -4684,26 +4684,26 @@ run_task (const char *task_id, char **report_id, int from,
 
           if (sendf_to_server ("SNMP Authorization[password]:SNMP Community:"
                                " <|> %s\n",
-                               community)
+                               community ? community : "")
               || sendf_to_server ("SNMP Authorization[entry]:SNMPv3 Username:"
                                   " <|> %s\n",
-                                  user)
+                                  user ? user : "")
               || sendf_to_server ("SNMP Authorization[password]:"
                                   "SNMPv3 Password:"
                                   " <|> %s\n",
-                                  password)
+                                  password ? password : "")
               || sendf_to_server ("SNMP Authorization[radio]:"
                                   "SNMPv3 Authentication Algorithm:"
                                   " <|> %s\n",
-                                  auth_algorithm)
+                                  auth_algorithm ? auth_algorithm : "")
               || sendf_to_server ("SNMP Authorization[password]:"
                                   "SNMPv3 Privacy Password:"
                                   " <|> %s\n",
-                                  privacy_password)
+                                  privacy_password ? privacy_password : "")
               || sendf_to_server ("SNMP Authorization[radio]:"
                                   "SNMPv3 Privacy Algorithm:"
                                   " <|> %s\n",
-                                  privacy_algorithm))
+                                  privacy_algorithm ? privacy_algorithm : ""))
             {
               free (hosts);
               cleanup_iterator (&credentials);
