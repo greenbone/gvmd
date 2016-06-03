@@ -1357,6 +1357,9 @@ target_count (const get_data_t *);
 void
 init_user_target_iterator (iterator_t*, target_t);
 
+void
+init_target_iterator_one (iterator_t*, target_t);
+
 int
 init_target_iterator (iterator_t*, const get_data_t *);
 

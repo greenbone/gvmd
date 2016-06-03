@@ -30631,6 +30631,26 @@ init_user_target_iterator (iterator_t* iterator, target_t target)
 }
 
 /**
+ * @brief Initialise a target iterator, given a single target.
+ *
+ * @param[in]  iterator   Iterator.
+ * @param[in]  target     Single target to iterate.
+ */
+void
+init_target_iterator_one (iterator_t* iterator, target_t target)
+{
+  get_data_t get;
+
+  assert (target);
+
+  memset (&get, '\0', sizeof (get));
+  get.id = target_uuid (target);
+  get.filter = "owner=any permission=get_targets";
+
+  init_target_iterator (iterator, &get);
+}
+
+/**
  * @brief Initialise a target iterator, including observed targets.
  *
  * @param[in]  iterator    Iterator.

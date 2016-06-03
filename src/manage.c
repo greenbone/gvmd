@@ -2160,7 +2160,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
 
       /* Create the target on the slave. */
 
-      init_user_target_iterator (&targets, target);
+      init_target_iterator_one (&targets, target);
       if (next (&targets))
         {
           const char *hosts, *port, *exclude_hosts, *alive_tests;
