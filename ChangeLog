@@ -1,3 +1,14 @@
+2016-06-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r25165.
+
+	* src/manage.c (slave_connect, slave_setup, run_slave_task)
+	(fork_osp_scan_handler, run_task): Add a warning everywhere a task is
+	set to Internal Error.
+
+	* src/manage.c (manage_cleanup_process_error): Add a warning everywhere
+	a task is set to Internal Error.
+
 2016-06-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r25449.
