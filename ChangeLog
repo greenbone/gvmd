@@ -1,6 +1,16 @@
 2016-06-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/ovas-mngr-comm.c (verbose): Remove.
+	* src/ompd.c (serve_omp): Remove TRACE_TEXT and TRACE checks because
+	the glib log config controls this now.  As a result remove the LOG
+	checks, because the from_client_end check is always required.
+
+	* src/otp.c (sync_buffer): Remove TRACE check.
+
+	* src/openvasmd.c: Remove logf include.  Not used.
+
+2016-06-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/ovas-mngr-comm.c (verbose): Remove.  No longer used.
 
 2016-06-03  Matthew Mundell <matthew.mundell@greenbone.net>
 

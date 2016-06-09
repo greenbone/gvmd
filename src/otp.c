@@ -491,14 +491,11 @@ sync_buffer ()
       from_scanner_end -= from_scanner_start;
       memmove (from_scanner, start, from_scanner_end);
       from_scanner_start = 0;
-#if TRACE
       from_scanner[from_scanner_end] = '\0';
-      //g_debug ("   new from_scanner: %s\n", from_scanner);
       g_debug ("   new from_scanner_start: %" BUFFER_SIZE_T_FORMAT "\n",
                from_scanner_start);
       g_debug ("   new from_scanner_end: %" BUFFER_SIZE_T_FORMAT "\n",
                from_scanner_end);
-#endif
     }
   return 0;
 }

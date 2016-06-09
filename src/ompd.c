@@ -553,9 +553,8 @@ serve_omp (gnutls_session_t* client_session,
       /* Read any data from the client. */
       if (client_socket > 0 && FD_ISSET (client_socket, &readfds))
         {
-#if TRACE || LOG
           buffer_size_t initial_start = from_client_end;
-#endif
+
           switch (read_from_client (client_session, client_socket))
             {
               case  0:       /* Read everything. */
@@ -574,7 +573,6 @@ serve_omp (gnutls_session_t* client_session,
                 assert (0);
             }
 
-#if TRACE || LOG
           /* This check prevents output in the "asynchronous network
            * error" case. */
           if (from_client_end > initial_start)
@@ -582,7 +580,6 @@ serve_omp (gnutls_session_t* client_session,
               logf ("<= client %.*s\n",
                     from_client_end - initial_start,
                     from_client + initial_start);
-#if TRACE_TEXT
               if (g_strstr_len (from_client + initial_start,
                                 from_client_end - initial_start,
                                 "<password>"))
@@ -591,12 +588,7 @@ serve_omp (gnutls_session_t* client_session,
                 g_debug ("<= client  \"%.*s\"\n",
                         from_client_end - initial_start,
                         from_client + initial_start);
-#else
-              g_debug ("<= client  %i bytes\n",
-                      from_client_end - initial_start);
-#endif
             }
-#endif /* TRACE || LOG */
 
           ret = process_omp_client_input ();
           if (ret == 0)
