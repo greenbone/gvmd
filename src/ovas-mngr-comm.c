@@ -68,14 +68,6 @@
 
 /** @endcond */
 
-/** @todo This is the definition for the entire module. */
-/**
- * @brief Verbose output flag.
- *
- * Only consulted if compiled with TRACE non-zero.
- */
-int verbose = 0;
-
 /** @cond STATIC */
 
 /**
