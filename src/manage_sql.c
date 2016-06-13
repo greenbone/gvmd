@@ -9929,6 +9929,7 @@ static int max_attach_length = MAX_ATTACH_LENGTH;
  * @param[in]  subject     Format string for subject.
  * @param[in]  event       Event.
  * @param[in]  event_data  Event data.
+ * @param[in]  alert       Alert.
  * @param[in]  task        Task.
  * @param[in]  total       Total number of resources (for SecInfo alerts).
  *
@@ -9936,7 +9937,8 @@ static int max_attach_length = MAX_ATTACH_LENGTH;
  */
 static gchar *
 alert_subject_print (const gchar *subject, event_t event,
-                     const void *event_data, task_t task, int total)
+                     const void *event_data,
+                     alert_t alert, task_t task, int total)
 {
   int formatting;
   const gchar *point, *end;
@@ -9955,16 +9957,6 @@ alert_subject_print (const gchar *subject, event_t event,
             case '$':
               g_string_append_c (new_subject, '$');
               break;
-            case 'n':
-              {
-                if (task)
-                  {
-                    char *name = task_name (task);
-                    g_string_append (new_subject, name);
-                    free (name);
-                  }
-                break;
-              }
             case 'd':
               /* Date that the check was last performed. */
               if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
@@ -9994,6 +9986,24 @@ alert_subject_print (const gchar *subject, event_t event,
                 g_free (event_desc);
                 break;
               }
+            case 'n':
+              {
+                if (task)
+                  {
+                    char *name = task_name (task);
+                    g_string_append (new_subject, name);
+                    free (name);
+                  }
+                break;
+              }
+            case 'N':
+              {
+                /* Alert Name */
+                char *name = alert_name (alert);
+                g_string_append (new_subject, name);
+                free (name);
+                break;
+              }
             case 'q':
               if (event == EVENT_NEW_SECINFO)
                 g_string_append (new_subject, "New");
@@ -10013,6 +10023,32 @@ alert_subject_print (const gchar *subject, event_t event,
             case 'T':
               g_string_append_printf (new_subject, "%i", total);
               break;
+            case 'u':
+              {
+                /* Current user or owner of the Alert */
+                if (current_credentials.username
+                    && strcmp (current_credentials.username, ""))
+                  {
+                    g_string_append (new_subject, current_credentials.username);
+                  }
+                else
+                  {
+                    char *owner = alert_owner_uuid (alert);
+                    gchar *name = user_name (owner);
+                    g_string_append (new_subject, name);
+                    free (owner);
+                    g_free (name);
+                  }
+                break;
+              }
+            case 'U':
+              {
+                /* Alert UUID */
+                char *uuid = alert_uuid (task);
+                g_string_append (new_subject, uuid);
+                free (uuid);
+                break;
+              }
             default:
               g_string_append_c (new_subject, '$');
               g_string_append_c (new_subject, *point);
@@ -10146,6 +10182,14 @@ alert_message_print (const gchar *message, event_t event,
                   free (name);
                 }
               break;
+            case 'N':
+              {
+                /* Alert Name */
+                char *name = alert_name (alert);
+                g_string_append (new_message, name);
+                free (name);
+                break;
+              }
             case 'r':
               {
                 /* Report format name. */
@@ -10207,6 +10251,32 @@ alert_message_print (const gchar *message, event_t event,
             case 'T':
               {
                 g_string_append_printf (new_message, "%i", total);
+                break;
+              }
+            case 'u':
+              {
+                /* Current user or owner of the Alert */
+                if (current_credentials.username
+                    && strcmp (current_credentials.username, ""))
+                  {
+                    g_string_append (new_message, current_credentials.username);
+                  }
+                else
+                  {
+                    char *owner = alert_owner_uuid (alert);
+                    gchar *name = user_name (owner);
+                    g_string_append (new_message, name);
+                    free (owner);
+                    g_free (name);
+                  }
+                break;
+              }
+            case 'U':
+              {
+                /* Alert UUID */
+                char *uuid = alert_uuid (task);
+                g_string_append (new_message, uuid);
+                free (uuid);
                 break;
               }
             case 'z':
@@ -10321,7 +10391,7 @@ email_secinfo (alert_t alert, task_t task, event_t event,
     {
       g_free (subject);
       subject = alert_subject_print (alert_subject, event,
-                                     type, task, count);
+                                     type, alert, task, count);
     }
   g_free (alert_subject);
 
@@ -10577,7 +10647,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                     {
                       g_free (subject);
                       subject = alert_subject_print (alert_subject, event,
-                                                     event_data, task, 0);
+                                                     event_data,
+                                                     alert, task, 0);
                     }
                   g_free (alert_subject);
 
@@ -10697,7 +10768,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                     {
                       g_free (subject);
                       subject = alert_subject_print (alert_subject, event,
-                                                     event_data, task, 0);
+                                                     event_data,
+                                                     alert, task, 0);
                     }
                   g_free (alert_subject);
                   if (max_attach_length <= 0
@@ -10747,7 +10819,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                     {
                       g_free (subject);
                       subject = alert_subject_print (alert_subject, event,
-                                                     event_data, task, 0);
+                                                     event_data,
+                                                     alert, task, 0);
                     }
                   g_free (alert_subject);
 
@@ -11214,13 +11287,13 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   g_free (list);
 
                   message = alert_subject_print (snmp_message, event, type,
-                                                 task, count);
+                                                 alert, task, count);
 
                   g_free (type);
                 }
               else
                 message = alert_subject_print (snmp_message, event, event_data,
-                                               task, 0);
+                                               alert, task, 0);
             }
           else
             {

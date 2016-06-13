@@ -1,3 +1,10 @@
+2016-06-13  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (alert_subject_print): Add "alert" parameter and
+	output placeholders $N (Alert name), $u (user) and $U (alert UUID).
+	(alert_message_print): Add output placeholders $N, $u and $U.
+	(email_secinfo, escalate_2): Add new parameter for alert_subject_print.
+
 2016-06-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/ompd.c (serve_omp): Remove TRACE_TEXT and TRACE checks because
