@@ -1,3 +1,33 @@
+2016-06-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Remove the min_cvss_base filter.
+
+	* src/manage_sql.c (check_min_cvss_base): Remove.
+	(manage_report_filter_controls): Remove min_cvss_base param.
+	(prognosis_where_cvss_base): Remove.
+	(init_host_prognosis_iterator, prognostic_report_result_count): Remove
+	min_cvss_base param.
+	(where_cvss_base): Remove.
+	(where_qod): Fix doc for min_qod param.
+	(results_extra_where): Remove handling of min_cvss_base keyword.
+	(print_report_port_xml, print_report_prognostic_xml): Remove
+	min_cvss_base param.
+	(print_report_xml): Remove handling of min_cvss_base keyword.
+
+	* src/manage.c (cve_scan_host): Remove min_cvss_base param in
+	init_host_prognosis_iterator call.
+
+	* src/manage.h (init_host_prognosis_iterator)
+	(manage_report_filter_controls): Update parameters.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_RESULTS case
+	remove min_cvss_base param in manage_report_filter_controls call.
+
+	* src/schema_formats/XML/OMP.xml.in (report): Remove min_cvss_base
+	element.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
 2016-06-13  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (alert_subject_print): Add "alert" parameter and

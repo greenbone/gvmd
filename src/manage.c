@@ -3697,7 +3697,7 @@ cve_scan_host (task_t task, openvas_host_t *openvas_host)
           start_time = time (NULL);
           prognosis_report_host = 0;
           init_host_prognosis_iterator (&prognosis, report_host, 0, -1,
-                                        NULL, NULL, NULL, 0, NULL);
+                                        NULL, NULL, 0, NULL);
           while (next (&prognosis))
             {
               const char *threat, *app, *cve;

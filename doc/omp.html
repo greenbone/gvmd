@@ -3943,11 +3943,6 @@ result_overrides_override
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>min_cvss_base</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Minimum CVSS base if in effect, else empty string.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
               &lt;<b>min_qod</b>&gt;
               <div style="margin-left: 15px; display: inline;">Minimum QoD if in effect, else empty string.</div>
 <ul style="list-style: none"></ul>
@@ -4925,7 +4920,6 @@ report_report_filters
        &amp; report_report_filters_overrides
        &amp; report_report_filters_apply_overrides
        &amp; report_report_filters_result_hosts_only
-       &amp; report_report_filters_min_cvss_base
        &amp; report_report_filters_min_qod
        &amp; report_report_filters_autofp
        &amp; report_report_filters_filter*
@@ -4967,12 +4961,6 @@ report_report_filters_result_hosts_only
  = element result_hosts_only
      {
        xsd:token { pattern = "0|1" }
-     }
-
-report_report_filters_min_cvss_base
- = element min_cvss_base
-     {
-       text
      }
 
 report_report_filters_min_qod
@@ -14843,6 +14831,27 @@ get_configs_response_config_count_page
           Special mode for aggregation.
           </li>
 <li>
+              &lt;<b>sort</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Optional tuples of sort criteria.</div>
+<ul style="list-style: none">
+<li>
+          @<b>sort_field</b>
+          (text)
+          The column to sort the aggregated rows by. With a subgroup column, groups will be sorted by the group_column first..
+          </li>
+<li>
+          @<b>sort_order</b>
+          ("ascending" or "descending")
+          The order to sort by.
+          </li>
+<li>
+          @<b>sort_stat</b>
+          ("min", "max", "mean", "sum", "count" or "value")
+          The statistic to sort the aggregated rows by.
+          </li>
+</ul>
+</li>
+<li>
               &lt;<b>data_column</b>&gt;
               *<div style="margin-left: 15px; display: inline;">(text)</div>
 <div style="margin-left: 15px; display: inline;">A column to get the data to aggregate from.</div>
@@ -15158,8 +15167,17 @@ get_configs_response_config_count_page
        &amp; attribute first_group { integer }?
        &amp; attribute max_groups { integer }?
        &amp; attribute mode { xsd:token { pattern = "|word_counts" } }?
+       &amp; get_aggregates_sort*
        &amp; get_aggregates_data_column*
        &amp; get_aggregates_text_column*
+     }
+
+get_aggregates_sort
+ = element sort
+     {
+       attribute sort_field { text }?
+       &amp; attribute sort_order { xsd:token { pattern = "ascending|descending" } }?
+       &amp; attribute sort_stat { xsd:token { pattern = "min|max|mean|sum|count|value" } }?
      }
 
 get_aggregates_data_column

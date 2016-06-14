@@ -18332,7 +18332,6 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                              NULL, /* sort_field */
                                              NULL, /* sort_order */
                                              NULL, /* result_hosts_only */
-                                             NULL, /* min_cvss_base */
                                              NULL, /* min_qod */
                                              NULL, /* levels */
                                              NULL, /* delta_states */

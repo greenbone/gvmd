@@ -1443,30 +1443,6 @@ parse_time (const gchar *string, int *seconds)
 }
 
 /**
- * @brief Check min CVSS base.
- *
- * @param[in]  min_cvss_base  Minimum value for CVSS.
- *
- * @return Min CVSS base.
- */
-static const char *
-check_min_cvss_base (const char* min_cvss_base)
-{
-  float min_cvss_base_float;
-  int end;
-
-  /* Postgres throws an error if it's not in the right format, so make sure
-   * it's a float.  SQLite just returns 0.0 when CASTing strings that are not
-   * floats. */
-  end = 0;
-  sscanf (min_cvss_base, "%f%n", &min_cvss_base_float, &end);
-  if (end == strlen (min_cvss_base))
-    return min_cvss_base;
-
-  return "0.0";
-}
-
-/**
  * @brief Get last time NVT alerts were checked.
  *
  * @param[in]  nvts_list    List of nvti_t to insert.
@@ -2352,8 +2328,6 @@ filter_control_str (keyword_t **point, const char *column, gchar **string)
  * @param[out]  sort_field  Sort field.
  * @param[out]  sort_order  Sort order.
  * @param[out]  result_hosts_only  Whether to show only hosts with results.
- * @param[out]  min_cvss_base      Minimum CVSS base of included results.  All
- *                                 results if NULL.
  * @param[out]  min_qod        Minimum QoD base of included results.  All
  *                              results if NULL.
  * @param[out]  levels         String describing threat levels (message types)
@@ -2375,8 +2349,7 @@ filter_control_str (keyword_t **point, const char *column, gchar **string)
 void
 manage_report_filter_controls (const gchar *filter, int *first, int *max,
                                gchar **sort_field, int *sort_order,
-                               int *result_hosts_only, gchar **min_cvss_base,
-                               gchar **min_qod,
+                               int *result_hosts_only, gchar **min_qod,
                                gchar **levels, gchar **delta_states,
                                gchar **search_phrase, int *search_phrase_exact,
                                int *autofp, int *notes, int *overrides,
@@ -2569,16 +2542,6 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
         *levels = NULL;
       else
         *levels = string;
-    }
-
-  if (min_cvss_base)
-    {
-      if (filter_control_str ((keyword_t **) split->pdata,
-                              "min_cvss_base",
-                              &string))
-        *min_cvss_base = NULL;
-      else
-        *min_cvss_base = string;
     }
 
   if (min_qod)
@@ -19199,38 +19162,6 @@ prognosis_where_levels (const char* levels)
 }
 
 /**
- * @brief Return SQL WHERE for restricting a SELECT to a minimum CVSS base.
- *
- * @param[in]  min_cvss_base  Minimum value for CVSS.
- *
- * @return WHERE clause if one is required, else NULL.
- */
-static GString *
-prognosis_where_cvss_base (const char* min_cvss_base)
-{
-  if (min_cvss_base)
-    {
-      GString *cvss_sql;
-      gchar *quoted_min_cvss_base;
-
-      if (strlen (min_cvss_base) == 0)
-        return NULL;
-
-      min_cvss_base = check_min_cvss_base (min_cvss_base);
-      quoted_min_cvss_base = sql_quote (min_cvss_base);
-      cvss_sql = g_string_new ("");
-      g_string_append_printf (cvss_sql,
-                              " AND CAST (cves.cvss AS REAL)"
-                              " >= CAST ('%s' AS REAL)",
-                              quoted_min_cvss_base);
-      g_free (quoted_min_cvss_base);
-
-      return cvss_sql;
-    }
-  return NULL;
-}
-
-/**
  * @brief Return SQL ORDER BY for sorting results in a prognostic report.
  *
  * @param[in]  sort_field  Name of the field to sort by.
@@ -19290,7 +19221,6 @@ prognosis_order_by (const char* sort_field, int ascending)
  *                            High, Medium, Low, loG and Debug).  All levels if
  *                            NULL.
  * @param[in]  search_phrase  Phrase that results must include.  All results
- * @param[in]  min_cvss_base  Minimum value for CVSS.  All results if NULL.
  * @param[in]  sort_order     Whether to sort in ascending order.
  * @param[in]  sort_field     Name of the field to sort by.
  */
@@ -19298,15 +19228,13 @@ void
 init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host,
                               int first_result, int max_results,
                               const char *levels, const char *search_phrase,
-                              const char *min_cvss_base, int sort_order,
-                              const char *sort_field)
+                              int sort_order, const char *sort_field)
 {
-  GString *phrase_sql, *cvss_sql, *order_sql;
+  GString *phrase_sql, *order_sql;
 
   if (levels == NULL) levels = "hmlgdf";
 
   phrase_sql = prognosis_where_search_phrase (search_phrase);
-  cvss_sql = prognosis_where_cvss_base (min_cvss_base);
   order_sql = prognosis_order_by (sort_field, sort_order);
 
   init_iterator (iterator,
@@ -19323,19 +19251,17 @@ init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host,
                  " AND report_host_details.name = 'App'"
                  " AND cpes.id=affected_products.cpe"
                  " AND cves.id=affected_products.cve"
-                 "%s%s%s%s"
+                 "%s%s%s"
                  " LIMIT %s OFFSET %i;",
                  report_host,
                  report_host,
                  phrase_sql ? phrase_sql->str : "",
                  prognosis_where_levels (levels),
-                 cvss_sql ? cvss_sql->str : "",
                  order_sql ? order_sql->str : "",
                  sql_select_limit (max_results),
                  first_result);
 
   if (phrase_sql) g_string_free (phrase_sql, TRUE);
-  if (cvss_sql) g_string_free (cvss_sql, TRUE);
   if (order_sql) g_string_free (order_sql, TRUE);
 }
 
@@ -19344,7 +19270,6 @@ init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host,
  *
  * @param[in]   report_host    Report host for which to count.
  * @param[in]   search_phrase  Phrase that results must include.  All results
- * @param[in]   min_cvss_base  Minimum value for CVSS.  All results if NULL.
  * @param[out]  all            Number of messages to increment.
  * @param[out]  holes          Number of hole messages to increment.
  * @param[out]  infos          Number of info messages to increment.
@@ -19353,14 +19278,12 @@ init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host,
 static void
 prognostic_report_result_count (report_host_t report_host,
                                 const char *search_phrase,
-                                const char *min_cvss_base, int *all,
-                                int *holes, int *infos, int *warnings)
+                                int *all, int *holes, int *infos, int *warnings)
 {
-  GString *phrase_sql, *cvss_sql;
+  GString *phrase_sql;
   int host_holes, host_warnings, host_infos;
 
   phrase_sql = prognosis_where_search_phrase (search_phrase);
-  cvss_sql = prognosis_where_cvss_base (min_cvss_base);
 
   host_holes = sql_int ("SELECT count (*)"
                         " FROM scap.cves, scap.cpes, scap.affected_products,"
@@ -19370,11 +19293,10 @@ prognostic_report_result_count (report_host_t report_host,
                         " AND report_host_details.name = 'App'"
                         " AND cpes.id=affected_products.cpe"
                         " AND cves.id=affected_products.cve"
-                        "%s%s%s;",
+                        "%s%s;",
                         report_host,
                         phrase_sql ? phrase_sql->str : "",
-                        prognosis_where_levels ("h"),
-                        cvss_sql ? cvss_sql->str : "");
+                        prognosis_where_levels ("h"));
 
   host_warnings = sql_int ("SELECT count (*)"
                            " FROM scap.cves, scap.cpes, scap.affected_products,"
@@ -19384,11 +19306,10 @@ prognostic_report_result_count (report_host_t report_host,
                            " AND report_host_details.name = 'App'"
                            " AND cpes.id=affected_products.cpe"
                            " AND cves.id=affected_products.cve"
-                           "%s%s%s;",
+                           "%s%s;",
                            report_host,
                            phrase_sql ? phrase_sql->str : "",
-                           prognosis_where_levels ("m"),
-                           cvss_sql ? cvss_sql->str : "");
+                           prognosis_where_levels ("m"));
 
   host_infos = sql_int ("SELECT count (*)"
                         " FROM scap.cves, scap.cpes, scap.affected_products,"
@@ -19398,11 +19319,10 @@ prognostic_report_result_count (report_host_t report_host,
                         " AND report_host_details.name = 'App'"
                         " AND cpes.id=affected_products.cpe"
                         " AND cves.id=affected_products.cve"
-                        "%s%s%s;",
+                        "%s%s;",
                         report_host,
                         phrase_sql ? phrase_sql->str : "",
-                        prognosis_where_levels ("l"),
-                        cvss_sql ? cvss_sql->str : "");
+                        prognosis_where_levels ("l"));
 
   *all += host_holes + host_warnings + host_infos;
 
@@ -19411,7 +19331,6 @@ prognostic_report_result_count (report_host_t report_host,
   *infos += host_infos;
 
   if (phrase_sql) g_string_free (phrase_sql, TRUE);
-  if (cvss_sql) g_string_free (cvss_sql, TRUE);
 }
 
 /**
@@ -20950,41 +20869,9 @@ where_levels_auto (const char *levels, const char *new_severity_sql,
 }
 
 /**
- * @brief Return SQL WHERE for restricting a SELECT to a minimum CVSS base.
- *
- * @param[in]  min_cvss_base  Minimum value for CVSS.
- *
- * @return WHERE clause if one is required, else NULL.
- */
-static gchar*
-where_cvss_base (const char* min_cvss_base)
-{
-  if (min_cvss_base)
-    {
-      gchar *cvss_sql;
-      gchar *quoted_min_cvss_base;
-
-      if (strlen (min_cvss_base) == 0)
-        return NULL;
-
-      min_cvss_base = check_min_cvss_base (min_cvss_base);
-      quoted_min_cvss_base = sql_quote (min_cvss_base);
-      cvss_sql = g_strdup_printf (" AND CAST ((SELECT cvss_base FROM nvts"
-                                  "            WHERE nvts.oid = results.nvt)"
-                                  "           AS REAL)"
-                                  " >= CAST ('%s' AS REAL)",
-                                  quoted_min_cvss_base);
-      g_free (quoted_min_cvss_base);
-
-      return cvss_sql;
-    }
-  return NULL;
-}
-
-/**
  * @brief Return SQL WHERE for restricting a SELECT to a minimum QoD.
  *
- * @param[in]  min_cvss_base  Minimum value for QoD.
+ * @param[in]  min_qod  Minimum value for QoD.
  *
  * @return WHERE clause if one is required, else NULL.
  */
@@ -21139,8 +21026,8 @@ results_extra_where (const get_data_t *get, report_t report, const gchar* host,
                      const gchar *filter)
 {
   gchar *extra_where;
-  gchar *levels, *min_cvss_base, *min_qod;
-  gchar *report_clause, *host_clause, *min_qod_clause, *min_cvss_base_clause;
+  gchar *levels, *min_qod;
+  gchar *report_clause, *host_clause, *min_qod_clause;
   GString *levels_clause;
   gchar *new_severity_sql, *auto_type_sql;
 
@@ -21150,9 +21037,6 @@ results_extra_where (const get_data_t *get, report_t report, const gchar* host,
   levels = filter_term_value (filter, "levels");
   if (levels == NULL)
     levels = g_strdup ("hmlgdf");
-
-  min_cvss_base
-    = filter_term_value (filter, "min_cvss_base");
 
   // Build clause fragments
 
@@ -21209,19 +21093,11 @@ results_extra_where (const get_data_t *get, report_t report, const gchar* host,
                                      new_severity_sql, auto_type_sql);
   g_free (levels);
 
-  min_cvss_base_clause = NULL;
-  if (min_cvss_base)
-    min_cvss_base_clause = where_cvss_base (min_cvss_base);
-  g_free (min_cvss_base);
-
-  extra_where = g_strdup_printf("%s%s%s%s%s%s",
+  extra_where = g_strdup_printf("%s%s%s%s%s",
                                 report_clause ? report_clause : "",
                                 host_clause ? host_clause : "",
                                 levels_clause->str,
                                 min_qod_clause ? min_qod_clause : "",
-                                min_cvss_base_clause
-                                  ? min_cvss_base_clause
-                                  : "",
                                 get->trash
                                   ? " AND ((SELECT (hidden = 2) FROM tasks"
                                     "       WHERE tasks.id = task))"
@@ -21232,7 +21108,6 @@ results_extra_where (const get_data_t *get, report_t report, const gchar* host,
   g_free (auto_type_sql);
   g_free (min_qod_clause);
   g_string_free (levels_clause, TRUE);
-  g_free (min_cvss_base_clause);
   g_free (report_clause);
   g_free (host_clause);
 
@@ -25691,8 +25566,6 @@ print_report_assets_xml (FILE *out, const char *host, int first_result, int
  * @param[in]  search_phrase    Phrase that results must include.  All
  *                              results if NULL or "".
  * @param[in]  search_phrase_exact    Whether search phrase is exact.
- * @param[in]  min_cvss_base    Minimum CVSS base of included results. All
- *                              results if NULL.
  * @param[in]  min_qod          Minimum QoD of included results. All
  *                              results if NULL.
  * @param[in]  apply_overrides    Whether to apply overrides.
@@ -25704,8 +25577,7 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
                        int max_results, int sort_order, const char *sort_field,
                        const char *levels, int autofp,
                        const char *search_phrase, int search_phrase_exact,
-                       const char *min_cvss_base, const char *min_qod,
-                       int apply_overrides)
+                       const char *min_qod, int apply_overrides)
 {
   iterator_t results;
   result_buffer_t *last_item;
@@ -25716,14 +25588,12 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
   result_get.type = g_strdup ("result");
 
   result_get.filter = g_strdup_printf ("sort%s=%s first=%d rows=%d"
-                                       " levels=%s %s\"%s\""
-                                       " min_cvss_base=%s",
+                                       " levels=%s %s\"%s\"",
                                        sort_order ? "" : "-reverse",
                                        sort_field, first_result, max_results,
                                        levels ? levels : "hmlgdf",
                                        search_phrase_exact ? "=" : "",
-                                       search_phrase ? search_phrase : "",
-                                       min_cvss_base ? min_cvss_base : "");
+                                       search_phrase ? search_phrase : "");
 
   init_result_get_iterator (&results, &result_get, report, NULL, NULL);
 
@@ -25876,8 +25746,6 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
  * @param[in]  host_first_result   The host result to start from.  The results
  *                                 are 0 indexed.
  * @param[in]  host_max_results    The host maximum number of results returned.
- * @param[in]  min_cvss_base       Minimum CVSS base of included results.  All
- *                                 results if NULL.
  * @param[in]  result_hosts_only   Whether to show only hosts with results.
  * @param[in]  sort_order          Whether to sort in ascending order.
  * @param[in]  sort_field          Name of the field to sort by.
@@ -25891,9 +25759,8 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
                              int apply_overrides, int autofp,
                              const char *host_search_phrase,
                              const char *host_levels, int host_first_result,
-                             int host_max_results, gchar *min_cvss_base,
-                             int result_hosts_only, int sort_order,
-                             const char *sort_field)
+                             int host_max_results, int result_hosts_only,
+                             int sort_order, const char *sort_field)
 {
   array_t *buffer, *apps;
   buffer_host_t *buffer_host;
@@ -25960,7 +25827,6 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
           result_total += host_result_total;
 
           prognostic_report_result_count (report_host, search_phrase,
-                                          min_cvss_base,
                                           &filtered, &f_holes,
                                           &f_infos, &f_warnings);
           filtered = (strchr (levels, 'h') ? f_holes : 0)
@@ -25985,7 +25851,6 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
               init_host_prognosis_iterator (&prognosis, report_host,
                                             0, -1,
                                             levels, search_phrase,
-                                            min_cvss_base,
                                             sort_order, sort_field);
               while (next (&prognosis))
                 {
@@ -27457,7 +27322,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
   FILE *out;
   gchar *clean, *term, *sort_field, *levels, *search_phrase;
-  gchar *min_cvss_base, *min_qod;
+  gchar *min_qod;
   gchar *delta_states, *timestamp;
   int min_qod_int;
   char *uuid, *tsk_uuid = NULL, *start_time, *end_time;
@@ -27537,8 +27402,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       manage_report_filter_controls (term ? term : get->filter,
                                      &first_result, &max_results, &sort_field,
                                      &sort_order, &result_hosts_only,
-                                     &min_cvss_base, &min_qod, &levels,
-                                     &delta_states,
+                                     &min_qod, &levels, &delta_states,
                                      &search_phrase, &search_phrase_exact,
                                      &autofp, &notes, &overrides,
                                      &apply_overrides, &zone);
@@ -27551,7 +27415,6 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       sort_field = NULL;
       sort_order = 1;
       result_hosts_only = 1;
-      min_cvss_base = NULL;
       min_qod = NULL;
       levels = NULL;
       delta_states = NULL;
@@ -27582,7 +27445,6 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       g_free (sort_field);
       g_free (levels);
       g_free (search_phrase);
-      g_free (min_cvss_base);
       g_free (min_qod);
       g_free (delta_states);
       return -1;
@@ -27597,7 +27459,6 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       g_free (sort_field);
       g_free (levels);
       g_free (search_phrase);
-      g_free (min_cvss_base);
       g_free (min_qod);
       g_free (delta_states);
       return -1;
@@ -27666,7 +27527,6 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
           g_free (sort_field);
           g_free (levels);
           g_free (search_phrase);
-          g_free (min_cvss_base);
           g_free (min_qod);
           g_free (delta_states);
           tz_revert (zone, tz);
@@ -28039,7 +27899,6 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       g_free (sort_field);
       g_free (levels);
       g_free (search_phrase);
-      g_free (min_cvss_base);
       g_free (min_qod);
       g_free (delta_states);
 
@@ -28074,13 +27933,12 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                          apply_overrides, autofp,
                                          host_search_phrase, host_levels,
                                          host_first_result, host_max_results,
-                                         min_cvss_base, result_hosts_only,
+                                         result_hosts_only,
                                          sort_order, sort_field);
 
       g_free (sort_field);
       g_free (levels);
       g_free (search_phrase);
-      g_free (min_cvss_base);
       g_free (min_qod);
       g_free (delta_states);
 
@@ -28157,7 +28015,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                  ignore_pagination ? -1 : max_results,
                                  sort_order, sort_field, levels, autofp,
                                  search_phrase, search_phrase_exact,
-                                 min_cvss_base, min_qod, apply_overrides))
+                                 min_qod, apply_overrides))
         {
           g_free (term);
           tz_revert (zone, tz);
@@ -28232,7 +28090,6 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
           g_free (sort_field);
           g_free (levels);
           g_free (search_phrase);
-          g_free (min_cvss_base);
           g_free (min_qod);
           g_free (delta_states);
           cleanup_iterator (&results);
@@ -28490,7 +28347,6 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   g_free (sort_field);
   g_free (levels);
   g_free (search_phrase);
-  g_free (min_cvss_base);
   g_free (min_qod);
   g_free (delta_states);
 

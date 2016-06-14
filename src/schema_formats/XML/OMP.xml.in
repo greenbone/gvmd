@@ -1922,7 +1922,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>overrides</e>
           <e>apply_overrides</e>
           <e>result_hosts_only</e>
-          <e>min_cvss_base</e>
           <e>min_qod</e>
           <e>autofp</e>
           <any><e>filter</e></any>
@@ -1971,13 +1970,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </summary>
           <pattern>
             <t><alts><alt>0</alt><alt>1</alt></alts></t>
-          </pattern>
-        </ele>
-        <ele>
-          <name>min_cvss_base</name>
-          <summary>Minimum CVSS base if in effect, else empty string</summary>
-          <pattern>
-            text
           </pattern>
         </ele>
         <ele>

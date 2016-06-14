@@ -2182,7 +2182,6 @@ report_report_filters
        & report_report_filters_overrides
        & report_report_filters_apply_overrides
        & report_report_filters_result_hosts_only
-       & report_report_filters_min_cvss_base
        & report_report_filters_min_qod
        & report_report_filters_autofp
        & report_report_filters_filter*
@@ -2230,13 +2229,6 @@ report_report_filters_result_hosts_only
  = element result_hosts_only
      {
        xsd:token { pattern = "0|1" }
-     }
-
-# Minimum CVSS base if in effect, else empty string.
-report_report_filters_min_cvss_base
- = element min_cvss_base
-     {
-       text
      }
 
 # Minimum QoD if in effect, else empty string.
@@ -5348,8 +5340,21 @@ get_aggregates
        attribute max_groups { integer }?
        & # Special mode for aggregation.
        attribute mode { xsd:token { pattern = "|word_counts" } }?
+       & get_aggregates_sort*
        & get_aggregates_data_column*
        & get_aggregates_text_column*
+     }
+
+# Optional tuples of sort criteria.
+get_aggregates_sort
+ = element sort
+     {
+       # The column to sort the aggregated rows by. With a subgroup column, groups will be sorted by the group_column first..
+       attribute sort_field { text }?
+       & # The order to sort by.
+       attribute sort_order { xsd:token { pattern = "ascending|descending" } }?
+       & # The statistic to sort the aggregated rows by.
+       attribute sort_stat { xsd:token { pattern = "min|max|mean|sum|count|value" } }?
      }
 
 # A column to get the data to aggregate from.

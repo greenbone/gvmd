@@ -1416,8 +1416,7 @@ cve_app_location (report_host_t, const gchar *, const gchar *);
 
 void
 init_host_prognosis_iterator (iterator_t*, report_host_t, int, int,
-                              const char *, const char *, const char *, int,
-                              const char *);
+                              const char *, const char *, int, const char *);
 
 double
 prognosis_iterator_cvss_double (iterator_t*);
@@ -1453,8 +1452,7 @@ manage_filter_controls (const gchar *, int *, int *, gchar **, int *);
 void
 manage_report_filter_controls (const gchar *, int *, int *, gchar **, int *,
                                int *, gchar **, gchar **, gchar **, gchar **,
-                               gchar **, int *, int *, int *, int *, int *,
-                               gchar **);
+                               int *, int *, int *, int *, int *, gchar **);
 
 gchar *
 manage_clean_filter (const gchar *);
