@@ -2766,6 +2766,8 @@ create_tables ()
        "  severity, count, override, end_time INTEGER, min_qod INTEGER);");
   sql ("CREATE INDEX IF NOT EXISTS report_counts_by_report_and_override"
        " ON report_counts (report, override);");
+  sql ("CREATE TABLE IF NOT EXISTS resources_predefined"
+       " (id INTEGER PRIMARY KEY, type, resource INTEGER)");
   sql ("CREATE TABLE IF NOT EXISTS results"
        " (id INTEGER PRIMARY KEY, uuid, task INTEGER, host, port, nvt,"
        "  type, description, report, nvt_version, severity REAL,"

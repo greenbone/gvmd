@@ -12416,6 +12416,73 @@ migrate_165_to_166 ()
   return 0;
 }
 
+/**
+ * @brief Mark a report format predefined.
+ */
+static void
+insert_predefined (const gchar *uuid)
+{
+  if (sql_int ("SELECT EXISTS (SELECT * FROM report_formats"
+               "               WHERE uuid = '%s');",
+               uuid))
+    sql ("INSERT INTO resources_predefined (type, resource)"
+         " VALUES ('report_format',"
+         "         (SELECT id FROM report_formats WHERE uuid = '%s'));",
+         uuid);
+}
+
+/**
+ * @brief Migrate the database from version 166 to version 167.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_166_to_167 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 166. */
+
+  if (manage_db_version () != 166)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Ensure the tables exist for the migrator. */
+
+  sql ("CREATE TABLE IF NOT EXISTS resources_predefined"
+       " (id INTEGER PRIMARY KEY, type, resource INTEGER)");
+
+  /* Mark predefined report formats. */
+
+  insert_predefined ("5057e5cc-b825-11e4-9d0e-28d24461215b");
+  insert_predefined ("910200ca-dc05-11e1-954f-406186ea4fc5");
+  insert_predefined ("5ceff8ba-1f62-11e1-ab9f-406186ea4fc5");
+  insert_predefined ("c1645568-627a-11e3-a660-406186ea4fc5");
+  insert_predefined ("9087b18c-626c-11e3-8892-406186ea4fc5");
+  insert_predefined ("6c248850-1f62-11e1-b082-406186ea4fc5");
+  insert_predefined ("77bd6c4a-1f62-11e1-abf0-406186ea4fc5");
+  insert_predefined ("a684c02c-b531-11e1-bdc2-406186ea4fc5");
+  insert_predefined ("9ca6fe72-1f62-11e1-9e7c-406186ea4fc5");
+  insert_predefined ("c402cc3e-b531-11e1-9163-406186ea4fc5");
+  insert_predefined ("a3810a62-1f62-11e1-9219-406186ea4fc5");
+  insert_predefined ("a994b278-1f62-11e1-96ac-406186ea4fc5");
+  insert_predefined ("9e5e5deb-879e-4ecc-8be6-a71cd0875cdd");
+  insert_predefined ("c15ad349-bd8d-457a-880a-c7056532ee15");
+  insert_predefined ("50c9950a-f326-11e4-800c-28d24461215b");
+
+  /* Set the database version to 167. */
+
+  set_db_version (167);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -12596,6 +12663,7 @@ static migrator_t database_migrators[]
     {164, migrate_163_to_164},
     {165, migrate_164_to_165},
     {166, migrate_165_to_166},
+    {167, migrate_166_to_167},
     /* End marker. */
     {-1, NULL}};
 

@@ -1,3 +1,25 @@
+2016-06-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Record which report formats are predefined in the database.
+	Hence increase database version to 167.  Add database migration from
+	version 166 to 167.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 167.
+
+	* src/manage_migrators.c (insert_predefined, migrate_166_to_167): New
+	functions.
+	(database_migrators): Add migrate_166_to_167.
+
+	* src/manage_sql.c (resource_predefined, resource_set_predefined): New
+	function.
+	(check_db_report_formats): Mark predefined report formats when creating
+	them.
+	(report_format_predefined): Use resource_predefined.
+
+	* doc/db.png: Update for version change.
+
+	* src/manage_sqlite3.c (create_tables): Add resources_predefined.
+
 2016-06-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Remove the min_cvss_base filter.

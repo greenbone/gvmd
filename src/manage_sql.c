@@ -6000,6 +6000,45 @@ info_name_count (const char *type, const char *name)
   return count;
 }
 
+/**
+ * @brief Return whether a report format is predefined.
+ *
+ * @param[in]  report_format  Report format.
+ *
+ * @return 1 if predefined, else 0.
+ */
+static int
+resource_predefined (const gchar *type, resource_t resource)
+{
+  assert (valid_type (type));
+  return sql_int ("SELECT EXISTS (SELECT * FROM resources_predefined"
+                  "               WHERE type = '%s' AND resource = %llu);",
+                  type,
+                  resource);
+}
+
+/**
+ * @brief Mark a resource as predefined.
+ *
+ * Currently only report formats use this.
+ */
+static void
+resource_set_predefined (const gchar *type, resource_t resource, int enable)
+{
+  assert (valid_type (type));
+  if (enable)
+    sql ("INSERT into resources_predefined (type, resource)"
+         " VALUES ('%s', %llu);",
+         type,
+         resource);
+  else
+    sql ("DELETE FROM resources_predefined"
+         " WHERE type = '%s'"
+         " AND resource = %llu;",
+         type,
+         resource);
+}
+
 
 
 /**
@@ -14933,6 +14972,7 @@ check_db_report_formats ()
            TRUST_YES,
            time (NULL));
       report_format = sql_last_insert_id ();
+      resource_set_predefined ("report_format", report_format, 1);
       verify_report_format_internal (report_format);
     }
 
@@ -14951,6 +14991,7 @@ check_db_report_formats ()
            TRUST_YES,
            time (NULL));
       report_format = sql_last_insert_id ();
+      resource_set_predefined ("report_format", report_format, 1);
       verify_report_format_internal (report_format);
     }
 
@@ -14977,6 +15018,7 @@ check_db_report_formats ()
            " 'csv', 'text/csv', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_id ();
+      resource_set_predefined ("report_format", report_format, 1);
       verify_report_format_internal (report_format);
     }
 
@@ -14994,6 +15036,7 @@ check_db_report_formats ()
            " 'csv', 'text/csv', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_id ();
+      resource_set_predefined ("report_format", report_format, 1);
       verify_report_format_internal (report_format);
     }
 
@@ -15011,6 +15054,7 @@ check_db_report_formats ()
            " 'csv', 'text/csv', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_id ();
+      resource_set_predefined ("report_format", report_format, 1);
       verify_report_format_internal (report_format);
     }
 
@@ -15029,6 +15073,7 @@ check_db_report_formats ()
            " 'html', 'text/html', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_id ();
+      resource_set_predefined ("report_format", report_format, 1);
       verify_report_format_internal (report_format);
     }
 
@@ -15047,6 +15092,7 @@ check_db_report_formats ()
            " 'csv', 'text/csv', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_id ();
+      resource_set_predefined ("report_format", report_format, 1);
       verify_report_format_internal (report_format);
     }
 
@@ -15064,6 +15110,7 @@ check_db_report_formats ()
            " 'tex', 'text/plain', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_id ();
+      resource_set_predefined ("report_format", report_format, 1);
       verify_report_format_internal (report_format);
     }
 
@@ -15081,6 +15128,7 @@ check_db_report_formats ()
            " 'nbe', 'text/plain', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_id ();
+      resource_set_predefined ("report_format", report_format, 1);
       verify_report_format_internal (report_format);
     }
 
@@ -15098,6 +15146,7 @@ check_db_report_formats ()
            "'pdf', 'application/pdf', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_id ();
+      resource_set_predefined ("report_format", report_format, 1);
       verify_report_format_internal (report_format);
     }
 
@@ -15115,6 +15164,7 @@ check_db_report_formats ()
            " 'txt', 'text/plain', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_id ();
+      resource_set_predefined ("report_format", report_format, 1);
       verify_report_format_internal (report_format);
     }
 
@@ -15132,6 +15182,7 @@ check_db_report_formats ()
            " 'xml', 'text/xml', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_id ();
+      resource_set_predefined ("report_format", report_format, 1);
       verify_report_format_internal (report_format);
     }
 
@@ -15153,6 +15204,8 @@ check_db_report_formats ()
            " 'svg', 'image/svg+xml', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_id ();
+
+      resource_set_predefined ("report_format", report_format, 1);
 
       /* Create report "Graph Type" format parameter and parameter options */
       sql ("INSERT INTO report_format_params (report_format, name, type, value,"
@@ -15193,6 +15246,8 @@ check_db_report_formats ()
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_id ();
 
+      resource_set_predefined ("report_format", report_format, 1);
+
       /* Create report "Attach HTML report" format parameter */
       sql ("INSERT INTO report_format_params (report_format, name, type, value,"
            " type_min, type_max, type_regex, fallback)"
@@ -15227,6 +15282,7 @@ check_db_report_formats ()
            " 'vna', 'application/zip', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_id ();
+      resource_set_predefined ("report_format", report_format, 1);
       verify_report_format_internal (report_format);
     }
 
@@ -48965,24 +49021,7 @@ trash_report_format_global (report_format_t report_format)
 int
 report_format_predefined (report_format_t report_format)
 {
-  return sql_int ("SELECT uuid = '5057e5cc-b825-11e4-9d0e-28d24461215b'"
-                  " OR uuid = '910200ca-dc05-11e1-954f-406186ea4fc5'"
-                  " OR uuid = '5ceff8ba-1f62-11e1-ab9f-406186ea4fc5'"
-                  " OR uuid = 'c1645568-627a-11e3-a660-406186ea4fc5'"
-                  " OR uuid = '9087b18c-626c-11e3-8892-406186ea4fc5'"
-                  " OR uuid = '6c248850-1f62-11e1-b082-406186ea4fc5'"
-                  " OR uuid = '77bd6c4a-1f62-11e1-abf0-406186ea4fc5'"
-                  " OR uuid = 'a684c02c-b531-11e1-bdc2-406186ea4fc5'"
-                  " OR uuid = '9ca6fe72-1f62-11e1-9e7c-406186ea4fc5'"
-                  " OR uuid = 'c402cc3e-b531-11e1-9163-406186ea4fc5'"
-                  " OR uuid = 'a3810a62-1f62-11e1-9219-406186ea4fc5'"
-                  " OR uuid = 'a994b278-1f62-11e1-96ac-406186ea4fc5'"
-                  " OR uuid = '9e5e5deb-879e-4ecc-8be6-a71cd0875cdd'"
-                  " OR uuid = 'c15ad349-bd8d-457a-880a-c7056532ee15'"
-                  " OR uuid = '50c9950a-f326-11e4-800c-28d24461215b'"
-                  " FROM report_formats"
-                  " WHERE id = %llu;",
-                  report_format);
+  return resource_predefined ("report_format", report_format);
 }
 
 /**
