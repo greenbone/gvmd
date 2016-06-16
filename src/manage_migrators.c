@@ -12425,7 +12425,7 @@ insert_predefined (const gchar *uuid)
   if (sql_int ("SELECT EXISTS (SELECT * FROM report_formats"
                "               WHERE uuid = '%s');",
                uuid))
-    sql ("INSERT INTO resources_predefined (type, resource)"
+    sql ("INSERT INTO resources_predefined (resource_type, resource)"
          " VALUES ('report_format',"
          "         (SELECT id FROM report_formats WHERE uuid = '%s'));",
          uuid);
@@ -12453,8 +12453,12 @@ migrate_166_to_167 ()
 
   /* Ensure the tables exist for the migrator. */
 
-  sql ("CREATE TABLE IF NOT EXISTS resources_predefined"
-       " (id INTEGER PRIMARY KEY, type, resource INTEGER)");
+  if (sql_is_sqlite3 ())
+    sql ("CREATE TABLE IF NOT EXISTS resources_predefined"
+         " (id INTEGER PRIMARY KEY, resource_type, resource INTEGER)");
+  else
+    sql ("CREATE TABLE IF NOT EXISTS resources_predefined"
+         " (id SERIAL PRIMARY KEY, resource_type text, resource INTEGER)");
 
   /* Mark predefined report formats. */
 

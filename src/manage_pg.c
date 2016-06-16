@@ -2080,6 +2080,11 @@ create_tables ()
        "  end_time integer,"
        "  min_qod integer);");
 
+  sql ("CREATE TABLE IF NOT EXISTS resources_predefined"
+       " (id SERIAL PRIMARY KEY,"
+       "  resource_type text,"
+       "  resource integer);");
+
   sql ("CREATE TABLE IF NOT EXISTS results"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"

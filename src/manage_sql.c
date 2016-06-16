@@ -6012,7 +6012,8 @@ resource_predefined (const gchar *type, resource_t resource)
 {
   assert (valid_type (type));
   return sql_int ("SELECT EXISTS (SELECT * FROM resources_predefined"
-                  "               WHERE type = '%s' AND resource = %llu);",
+                  "               WHERE resource_type = '%s'"
+                  "               AND resource = %llu);",
                   type,
                   resource);
 }
@@ -6027,13 +6028,13 @@ resource_set_predefined (const gchar *type, resource_t resource, int enable)
 {
   assert (valid_type (type));
   if (enable)
-    sql ("INSERT into resources_predefined (type, resource)"
+    sql ("INSERT into resources_predefined (resource_type, resource)"
          " VALUES ('%s', %llu);",
          type,
          resource);
   else
     sql ("DELETE FROM resources_predefined"
-         " WHERE type = '%s'"
+         " WHERE resource_type = '%s'"
          " AND resource = %llu;",
          type,
          resource);

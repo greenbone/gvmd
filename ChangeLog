@@ -1,5 +1,21 @@
 2016-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Rename "type" in resources_predefined to "resource_type" to match
+	other tables, and to prevent using Postgres keywords.  Create
+	resources_predefined for Postgres too.
+
+	* src/manage_migrators.c (insert_predefined): Rename type column.
+	(migrate_166_to_167): Rename type column.  Add Postgres case.
+
+	* src/manage_pg.c (create_tables): Add resource_predefined.
+
+	* src/manage_sql.c (resource_predefined)
+	(resource_set_predefined): Rename type column.
+
+	* src/manage_sqlite3.c (create_tables): Rename type column.
+
+2016-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_modify_scanner): Match return value to
 	description, for correctness.
 
