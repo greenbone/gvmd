@@ -1,5 +1,10 @@
 2016-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (modify_report_format): Prevent modification of
+	predefined report formats, unless invoked via --modify-report-format.
+
+2016-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (report_format_trash_global): Remove.  Duplicate of
 	trash_report_format_global.
 	(manage_restore): Use report_format_trash_global.
