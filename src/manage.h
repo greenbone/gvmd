@@ -2833,7 +2833,7 @@ copy_report_format (const char *, const char *, report_format_t*);
 
 int
 modify_report_format (const char *, const char *, const char *, const char *,
-                      const char *, const char *);
+                      const char *, const char *, const char *);
 
 int
 delete_report_format (const char *, int);
@@ -3021,6 +3021,9 @@ init_param_option_iterator (iterator_t*, report_format_param_t, int,
 
 const char*
 param_option_iterator_value (iterator_t *);
+
+int
+manage_modify_report_format (GSList *, const gchar *, const char *, const gchar *);
 
 
 /* Slaves. */

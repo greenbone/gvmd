@@ -1,3 +1,16 @@
+2016-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add option --modify-report-format.
+
+	* src/manage_sql.c (modify_report_format): Add predefined arg.
+	(manage_modify_report_format): New function.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/openvasmd.c (main): Add --modify-report-format.
+
+	* src/omp.c (create_task_fail): Update modify_report_format call.
+
 2016-06-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Record which report formats are predefined in the database.

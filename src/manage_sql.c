@@ -48158,21 +48158,27 @@ copy_report_format (const char* name, const char* source_uuid,
  * @param[in]  active            Active flag.
  * @param[in]  param_name        Parameter to modify.
  * @param[in]  param_value       Value of parameter.
+ * @param[in]  predefined        Predefined flag.
  *
- * @return 0 success, 1 failed to find report format, 2 report format_id
+ * @return 0 success, 1 failed to find report format, 2 report_format_id
  * required, 3 failed to find report format parameter, 4 parameter value
- * validation failed, 99 permission denied, -1 internal error.
+ * validation failed, 5 error in predefined, 99 permission denied, -1 internal
+ * error.
  */
 int
 modify_report_format (const char *report_format_id, const char *name,
                       const char *summary, const char *active,
-                      const char *param_name, const char *param_value)
+                      const char *param_name, const char *param_value,
+                      const char *predefined)
 {
   report_format_t report_format;
   int ret = 0;
 
   if (report_format_id == NULL)
     return 2;
+
+  if (predefined && strcmp (predefined, "0") && strcmp (predefined, "1"))
+    return 5;
 
   sql_begin_immediate ();
 
@@ -48207,6 +48213,10 @@ modify_report_format (const char *report_format_id, const char *name,
 
   if (active)
     set_report_format_active (report_format, strcmp (active, "0"));
+
+  if (predefined)
+    resource_set_predefined ("report_format", report_format,
+                             strcmp (predefined, "0"));
 
   sql_commit ();
 
@@ -49786,6 +49796,68 @@ init_param_option_iterator (iterator_t* iterator,
  *         cleanup_iterator.
  */
 DEF_ACCESS (param_option_iterator_value, 1);
+
+/**
+ * @brief Modify the given report format.
+ *
+ * @param[in]  log_config        Log configuration.
+ * @param[in]  database          Location of manage database.
+ * @param[in]  report_format_id  UUID of report_format.
+ * @param[in]  predefined        Predefined flag.
+ *
+ * @return 0 success, 1 failed to find report format, 3 report_format_id
+ *         required, 4 invalid value, 99 permission denied, -1 error,
+ *         -2 database is wrong version, -3 database needs to be initialised
+ *         from server.
+ */
+int
+manage_modify_report_format (GSList *log_config, const gchar *database,
+                             const char *report_format_id,
+                             const gchar *predefined)
+{
+  const gchar *db;
+  int ret;
+
+  if (openvas_auth_init ())
+    return -1;
+
+  db = database ? database : sql_default_database ();
+
+  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
+  assert (ret != -4);
+  if (ret)
+    return ret;
+
+  init_manage_process (0, db);
+  current_credentials.uuid = "";
+
+  ret = modify_report_format (report_format_id, NULL, NULL, NULL, NULL, NULL,
+                              predefined);
+  switch (ret)
+    {
+      case 0:
+        printf ("Report format modified.\n");
+        break;
+      case 1:
+        printf ("Failed to find report format.\n");
+        break;
+      case 2:
+        printf ("Report format ID required.\n");
+        break;
+      case 5:
+        printf ("Predefined flag must be 0 or 1.\n");
+        break;
+      case 99:
+        printf ("Permission denied.\n");
+        break;
+      default:
+        printf ("Failed to modify report format.\n");
+        break;
+    }
+  cleanup_manage_process (TRUE);
+
+  return ret;
+}
 
 
 /* Slaves. */

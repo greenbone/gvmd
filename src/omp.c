@@ -27019,7 +27019,8 @@ create_task_fail:
                     modify_report_format_data->summary,
                     modify_report_format_data->active,
                     modify_report_format_data->param_name,
-                    modify_report_format_data->param_value))
+                    modify_report_format_data->param_value,
+                    NULL))
             {
               case 0:
                 SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_report_format"));
