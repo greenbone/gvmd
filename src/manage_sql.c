@@ -49035,21 +49035,6 @@ report_format_predefined (report_format_t report_format)
 }
 
 /**
- * @brief Return whether a report format is global.
- *
- * @param[in]  report_format  Report format.
- *
- * @return 1 if global, else 0.
- */
-static int
-report_format_trash_global (report_format_t report_format)
-{
-  return sql_int ("SELECT " ACL_IS_GLOBAL () " FROM report_formats_trash"
-                  " WHERE id = %llu;",
-                  report_format);
-}
-
-/**
  * @brief Return whether a report format is active.
  *
  * @param[in]  report_format  Report format.
@@ -56576,7 +56561,7 @@ manage_restore (const char *id)
         }
       cleanup_iterator (&params);
 
-      global = report_format_trash_global (resource);
+      global = trash_report_format_global (resource);
 
       trash_uuid = sql_string ("SELECT original_uuid FROM report_formats_trash"
                                " WHERE id = %llu;",
