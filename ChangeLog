@@ -1,5 +1,10 @@
 2016-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_report_format): Only allow admins to create
+	global report formats.
+
+2016-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (send_get_common): Add special case for report formats,
 	similar to permissions, so that at least admins can delete the global
 	report formats.

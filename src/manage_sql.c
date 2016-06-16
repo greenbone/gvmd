@@ -47461,6 +47461,12 @@ create_report_format (const char *uuid, const char *name,
       return 99;
     }
 
+  if (global && acl_user_can_everything (current_credentials.uuid) == 0)
+    {
+      sql_rollback ();
+      return 99;
+    }
+
   if (sql_int ("SELECT COUNT(*) FROM report_formats WHERE uuid = '%s';",
                uuid)
       || sql_int ("SELECT COUNT(*) FROM report_formats_trash"
