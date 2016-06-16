@@ -6164,9 +6164,11 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
       /* Or the user is effectively the owner. */
       || acl_user_has_super (current_credentials.uuid,
                              get_iterator_owner (iterator))
-      /* Or the user has Admin rights and the resource is a permission... */
+      /* Or the user has Admin rights and the resource is a permission or a
+       * report format... */
       || (current_credentials.uuid
-          && ((strcmp (type, "permission") == 0)
+          && (((strcmp (type, "permission") == 0)
+               || (strcmp (type, "report_format") == 0))
               && get_iterator_uuid (iterator)
               /* ... but not the special Admin permission. */
               && strcmp (get_iterator_uuid (iterator),

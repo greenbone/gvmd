@@ -1,5 +1,11 @@
 2016-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (send_get_common): Add special case for report formats,
+	similar to permissions, so that at least admins can delete the global
+	report formats.
+
+2016-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Rename "type" in resources_predefined to "resource_type" to match
 	other tables, and to prevent using Postgres keywords.  Create
 	resources_predefined for Postgres too.
@@ -24,7 +30,7 @@
 2016-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (report_format_writable): Consider global report
-	formats	writable, because it's possible to edit them, but not predefined
+	formats writable, because it's possible to edit them, but not predefined
 	report formats.
 
 2016-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
