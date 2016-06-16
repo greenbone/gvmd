@@ -1,7 +1,8 @@
 2016-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/manage_sql.c (modify_report_format): Prevent modification of
-	predefined report formats, unless invoked via --modify-report-format.
+	* src/manage_sql.c (report_format_writable): Consider global report
+	formats	writable, because it's possible to edit them, but not predefined
+	report formats.
 
 2016-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
 

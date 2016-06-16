@@ -48952,7 +48952,7 @@ int
 report_format_writable (report_format_t report_format)
 {
   return (report_format_in_use (report_format) == 0
-          && report_format_global (report_format) == 0);
+          && report_format_predefined (report_format) == 0);
 }
 
 /**
