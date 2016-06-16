@@ -23704,9 +23704,6 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
           assert (strcasecmp ("CREATE_REPORT_FORMAT", element_name) == 0);
 
-          /* For now the import element, GET_REPORT_FORMATS_RESPONSE, overrides
-           * any other elements. */
-
           if (create_report_format_data->copy)
             {
               switch (copy_report_format (create_report_format_data->name,

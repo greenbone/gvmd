@@ -1,5 +1,12 @@
 2016-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_modify_scanner): Match return value to
+	description, for correctness.
+
+	* src/omp.c (omp_xml_handle_end_element): Remove outdated comment.
+
+2016-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (report_format_writable): Consider global report
 	formats	writable, because it's possible to edit them, but not predefined
 	report formats.

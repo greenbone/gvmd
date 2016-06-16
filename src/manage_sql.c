@@ -44731,7 +44731,7 @@ manage_modify_scanner (GSList *log_config, const gchar *database,
       g_free (quoted_scanner_id);
     }
   else
-    return 1;
+    return 3;
 
   if (name)
     name_for_credential = sql_quote (name);
