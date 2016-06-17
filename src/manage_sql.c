@@ -39206,63 +39206,6 @@ set_credential_data (credential_t credential,
 #define PASSWORD_LENGTH 10
 
 /**
- * @brief Truncate a certificate, removing extra data.
- *
- * @param[in]  private_key    The private key.
- *
- * @return  The truncated private key as a newly allocated string or NULL.
- */
-static gchar *
-truncate_certificate (const gchar* private_key)
-{
-  gchar *cert_start, *cert_end;
-  cert_start = strstr (private_key, "-----BEGIN CERTIFICATE-----\n");
-  if (cert_start)
-    {
-      cert_end = strstr (cert_start, "-----END CERTIFICATE-----\n")
-                  + strlen ("-----END CERTIFICATE-----\n");
-    }
-  else
-    return NULL;
-
-  if (cert_end == NULL)
-    return NULL;
-  else
-    return g_strndup (cert_start, cert_end - cert_start);
-}
-
-/**
- * @brief Truncate a private key, removing extra data.
- *
- * @param[in]  private_key    The private key.
- *
- * @return  The truncated private key as a newly allocated string or NULL.
- */
-static gchar *
-truncate_private_key (const gchar* private_key)
-{
-  gchar *key_start, *key_end;
-  key_start = strstr (private_key, "-----BEGIN RSA PRIVATE KEY-----\n");
-  if (key_start)
-    {
-      key_end = strstr (key_start, "-----END RSA PRIVATE KEY-----\n")
-                  + strlen ("-----END RSA PRIVATE KEY-----\n");
-    }
-  else
-    {
-      key_start = strstr (private_key, "-----BEGIN DSA PRIVATE KEY-----\n");
-      if (key_start)
-        key_end = strstr (key_start, "-----END DSA PRIVATE KEY-----\n")
-                    + strlen ("-----END DSA PRIVATE KEY-----\n");
-    }
-
-  if (key_start == NULL || key_end == NULL)
-    return NULL;
-  else
-    return g_strndup (key_start, key_end - key_start);
-}
-
-/**
  * @brief Create a Credential.
  *
  * @param[in]  name            Name of LSC credential.  Must be at least one

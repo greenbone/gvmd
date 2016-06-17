@@ -1,3 +1,31 @@
+2016-06-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add info about certificates to Credential and Scanner details pages.
+
+	* src/manage_sql.c (truncate_certificate, truncate_private_key): Remove.
+	Moved to manage.c.
+	
+	* src/manage.c: Add #include <openvas/base/gpgme_util.h>.
+	(truncate_certificate, truncate_private_key): New. Moved from
+	manage_sql.c.
+	(get_certificate_info. certificate_iso_time, certificate_time_status):
+	New functions.
+
+	* src/manage.h (truncate_certificate, truncate_private_key)
+	(get_certificate_info, certificate_iso_time, certificate_time_status):
+	New function prototypes.
+
+	* src/omp.c (handle_get_scanners): Add certficate info elements.
+	(omp_xml_handle_end_element): In case CLIENT_GET_CREDENTIALS add
+	certificate info elements.
+
+	* src/schema_formats/XML/OMP.xml.in (certificate_info): New common
+	element.
+	(get_credentials, get_scanners): Add certificate info elements in
+	responses.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
 2016-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_report_format): Only allow admins to create

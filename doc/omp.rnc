@@ -634,6 +634,55 @@ filter_keywords_option_summary
        text
      }
 
+## Element Type certificate_info
+##
+## Info about a certificate.
+
+certificate_info
+ = element certificate_info
+     {
+       certificate_info_time_status
+       & certificate_info_activation_time
+       & certificate_info_expiration_time
+       & certificate_info_issuer
+       & certificate_info_md5_fingerprint
+     }
+
+# Whether the certificate is valid, expired or not active yet.
+certificate_info_time_status
+ = element time_status
+     {
+       xsd:token { pattern = "expired|inactive|unknown|valid" }
+     }
+
+# Time before which the certificate is not valid.
+certificate_info_activation_time
+ = element activation_time
+     {
+       text
+     }
+
+# Time after which the certificate is no longer valid.
+certificate_info_expiration_time
+ = element expiration_time
+     {
+       text
+     }
+
+# DN of the issuer of the certificate.
+certificate_info_issuer
+ = element issuer
+     {
+       text
+     }
+
+# MD5 fingerprint of the certificate.
+certificate_info_md5_fingerprint
+ = element md5_fingerprint
+     {
+       text
+     }
+
 ## Element Type note
 ##
 ## A note.
@@ -10525,6 +10574,7 @@ get_credentials_response_credential
        & get_credentials_response_credential_full_type
        & get_credentials_response_credential_auth_algorithm?
        & get_credentials_response_credential_privacy?
+       & get_credentials_response_credential_certificate_info?
        & get_credentials_response_credential_scanners?
        & get_credentials_response_credential_slaves?
        & get_credentials_response_credential_targets?
@@ -10701,6 +10751,17 @@ get_credentials_response_credential_privacy_algorithm
  = element algorithm
      {
        xsd:token { pattern = "aes|des" }
+     }
+
+# Info about the certificate.
+get_credentials_response_credential_certificate_info
+ = element certificate_info    # type certificate_info
+     {
+       certificate_info_time_status
+       & certificate_info_activation_time
+       & certificate_info_expiration_time
+       & certificate_info_issuer
+       & certificate_info_md5_fingerprint
      }
 
 # All scanners using this credential.
@@ -14745,6 +14806,8 @@ get_scanners_response_scanner
        & get_scanners_response_scanner_in_use
        & get_scanners_response_scanner_permissions
        & get_scanners_response_scanner_user_tags
+       & get_scanners_response_scanner_ca_pub_info
+       & get_scanners_response_scanner_certificate_info
        & get_scanners_response_scanner_host
        & get_scanners_response_scanner_port
        & get_scanners_response_scanner_type
@@ -14872,6 +14935,28 @@ get_scanners_response_scanner_user_tags_tag_comment
  = element comment
      {
        text
+     }
+
+# Info about the CA certificate.
+get_scanners_response_scanner_ca_pub_info
+ = element ca_pub_info    # type certificate_info
+     {
+       certificate_info_time_status
+       & certificate_info_activation_time
+       & certificate_info_expiration_time
+       & certificate_info_issuer
+       & certificate_info_md5_fingerprint
+     }
+
+# Info about the certificate.
+get_scanners_response_scanner_certificate_info
+ = element certificate_info    # type certificate_info
+     {
+       certificate_info_time_status
+       & certificate_info_activation_time
+       & certificate_info_expiration_time
+       & certificate_info_issuer
+       & certificate_info_md5_fingerprint
      }
 
 # Host of the scanner.

@@ -156,6 +156,10 @@
 <td id="index"><div style="margin-left: 15px;">A group of filter keywords usable in an attribute or element text.</div></td>
 </tr>
 <tr id="index">
+<td id="index"><a href="#element_certificate_info">certificate_info</a></td>
+<td id="index"><div style="margin-left: 15px;">Info about a certificate.</div></td>
+</tr>
+<tr id="index">
 <td id="index"><a href="#element_note">note</a></td>
 <td id="index"><div style="margin-left: 15px;">A note.</div></td>
 </tr>
@@ -1753,11 +1757,86 @@ filter_keywords_option_summary
 </pre></div></div>
 </div>
 <div>
-<div><h3 id="element_note">6.10
+<div><h3 id="element_certificate_info">6.10
+        Element <tt>certificate_info</tt>
+</h3></div>
+<p>In short: Info about a certificate.</p>
+<h4>6.10.1 Structure</h4>
+<ul style="list-style: none"><li><ul style="list-style: none">
+<li>
+              &lt;<b>time_status</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the certificate is valid, expired or not active yet.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>activation_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Time before which the certificate is not valid.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>expiration_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Time after which the certificate is no longer valid.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>issuer</b>&gt;
+              <div style="margin-left: 15px; display: inline;">DN of the issuer of the certificate.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>md5_fingerprint</b>&gt;
+              <div style="margin-left: 15px; display: inline;">MD5 fingerprint of the certificate.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul></li></ul>
+<h4>6.10.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><div style="margin-left: 5%"><pre>certificate_info
+ = element certificate_info
+     {
+       certificate_info_time_status
+       &amp; certificate_info_activation_time
+       &amp; certificate_info_expiration_time
+       &amp; certificate_info_issuer
+       &amp; certificate_info_md5_fingerprint
+     }
+
+certificate_info_time_status
+ = element time_status
+     {
+       xsd:token { pattern = "expired|inactive|unknown|valid" }
+     }
+
+certificate_info_activation_time
+ = element activation_time
+     {
+       text
+     }
+
+certificate_info_expiration_time
+ = element expiration_time
+     {
+       text
+     }
+
+certificate_info_issuer
+ = element issuer
+     {
+       text
+     }
+
+certificate_info_md5_fingerprint
+ = element md5_fingerprint
+     {
+       text
+     }
+</pre></div></div>
+</div>
+<div>
+<div><h3 id="element_note">6.11
         Element <tt>note</tt>
 </h3></div>
 <p>In short: A note.</p>
-<h4>6.10.1 Structure</h4>
+<h4>6.11.1 Structure</h4>
 <ul style="list-style: none"><li><ul style="list-style: none">
 <li>
           @<b>id</b>
@@ -1999,7 +2078,7 @@ filter_keywords_option_summary
 </ul>
 </li>
 </ul></li></ul>
-<h4>6.10.2 RNC</h4>
+<h4>6.11.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><div style="margin-left: 5%"><pre>note
  = element note
      {
@@ -2311,11 +2390,11 @@ note_result_description
 </pre></div></div>
 </div>
 <div>
-<div><h3 id="element_override">6.11
+<div><h3 id="element_override">6.12
         Element <tt>override</tt>
 </h3></div>
 <p>In short: An override.</p>
-<h4>6.11.1 Structure</h4>
+<h4>6.12.1 Structure</h4>
 <ul style="list-style: none"><li><ul style="list-style: none">
 <li>
           @<b>id</b>
@@ -2578,7 +2657,7 @@ note_result_description
 </ul>
 </li>
 </ul></li></ul>
-<h4>6.11.2 RNC</h4>
+<h4>6.12.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><div style="margin-left: 5%"><pre>override
  = element override
      {
@@ -2905,11 +2984,11 @@ override_result_description
 </pre></div></div>
 </div>
 <div>
-<div><h3 id="element_result">6.12
+<div><h3 id="element_result">6.13
         Element <tt>result</tt>
 </h3></div>
 <p>In short: A result.</p>
-<h4>6.12.1 Structure</h4>
+<h4>6.13.1 Structure</h4>
 <ul style="list-style: none"><li><ul style="list-style: none">
 <li>
           @<b>id</b>
@@ -3246,7 +3325,7 @@ override_result_description
 </li></ul>
 </li>
 </ul></li></ul>
-<h4>6.12.2 RNC</h4>
+<h4>6.13.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><div style="margin-left: 5%"><pre>result
  = element result
      {
@@ -3756,11 +3835,11 @@ result_overrides_override
 </pre></div></div>
 </div>
 <div>
-<div><h3 id="element_report">6.13
+<div><h3 id="element_report">6.14
         Element <tt>report</tt>
 </h3></div>
 <p>In short: Actually attributes and either base64 or a report.</p>
-<h4>6.13.1 Structure</h4>
+<h4>6.14.1 Structure</h4>
 <ul style="list-style: none"><li><ul style="list-style: none">
 <li>
           @<b>id</b>
@@ -4679,7 +4758,7 @@ result_overrides_override
 </ul>
 </li>
 </ul></li></ul>
-<h4>6.13.2 RNC</h4>
+<h4>6.14.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><div style="margin-left: 5%"><pre>report
  = element report
      {
@@ -17564,6 +17643,12 @@ get_assets_response_asset_count_page
 </li></ul>
 </li>
 <li>
+              &lt;<b>certificate_info</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">(<a href="#element_certificate_info">certificate_info</a>)</div>
+<div style="margin-left: 15px; display: inline;">Info about the certificate.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>scanners</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">All scanners using this credential.</div>
 <ul style="list-style: none"><li>
@@ -17782,6 +17867,7 @@ get_credentials_response_credential
        &amp; get_credentials_response_credential_full_type
        &amp; get_credentials_response_credential_auth_algorithm?
        &amp; get_credentials_response_credential_privacy?
+       &amp; get_credentials_response_credential_certificate_info?
        &amp; get_credentials_response_credential_scanners?
        &amp; get_credentials_response_credential_slaves?
        &amp; get_credentials_response_credential_targets?
@@ -17935,6 +18021,16 @@ get_credentials_response_credential_privacy_algorithm
  = element algorithm
      {
        xsd:token { pattern = "aes|des" }
+     }
+
+get_credentials_response_credential_certificate_info
+ = element certificate_info    # type certificate_info
+     {
+       certificate_info_time_status
+       &amp; certificate_info_activation_time
+       &amp; certificate_info_expiration_time
+       &amp; certificate_info_issuer
+       &amp; certificate_info_md5_fingerprint
      }
 
 get_credentials_response_credential_scanners
@@ -27067,6 +27163,18 @@ get_roles_response_role_count_page
 </ul>
 </li>
 <li>
+              &lt;<b>ca_pub_info</b>&gt;
+              <div style="margin-left: 15px; display: inline;">(<a href="#element_certificate_info">certificate_info</a>)</div>
+<div style="margin-left: 15px; display: inline;">Info about the CA certificate.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>certificate_info</b>&gt;
+              <div style="margin-left: 15px; display: inline;">(<a href="#element_certificate_info">certificate_info</a>)</div>
+<div style="margin-left: 15px; display: inline;">Info about the certificate.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>host</b>&gt;
               <div style="margin-left: 15px; display: inline;">Host of the scanner.</div>
 <ul style="list-style: none"></ul>
@@ -27254,6 +27362,8 @@ get_scanners_response_scanner
        &amp; get_scanners_response_scanner_in_use
        &amp; get_scanners_response_scanner_permissions
        &amp; get_scanners_response_scanner_user_tags
+       &amp; get_scanners_response_scanner_ca_pub_info
+       &amp; get_scanners_response_scanner_certificate_info
        &amp; get_scanners_response_scanner_host
        &amp; get_scanners_response_scanner_port
        &amp; get_scanners_response_scanner_type
@@ -27366,6 +27476,26 @@ get_scanners_response_scanner_user_tags_tag_comment
  = element comment
      {
        text
+     }
+
+get_scanners_response_scanner_ca_pub_info
+ = element ca_pub_info    # type certificate_info
+     {
+       certificate_info_time_status
+       &amp; certificate_info_activation_time
+       &amp; certificate_info_expiration_time
+       &amp; certificate_info_issuer
+       &amp; certificate_info_md5_fingerprint
+     }
+
+get_scanners_response_scanner_certificate_info
+ = element certificate_info    # type certificate_info
+     {
+       certificate_info_time_status
+       &amp; certificate_info_activation_time
+       &amp; certificate_info_expiration_time
+       &amp; certificate_info_issuer
+       &amp; certificate_info_md5_fingerprint
      }
 
 get_scanners_response_scanner_host

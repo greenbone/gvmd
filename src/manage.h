@@ -104,6 +104,24 @@ typedef struct
 extern command_t omp_commands[];
 
 
+/* Certificate and key management. */
+
+gchar*
+truncate_certificate (const gchar*);
+
+gchar*
+truncate_private_key (const gchar*);
+
+int
+get_certificate_info (const gchar*, time_t*, time_t*, gchar**, gchar**);
+
+gchar *
+certificate_iso_time (time_t);
+
+const gchar *
+certificate_time_status (time_t, time_t);
+
+
 /* Credentials. */
 
 extern credentials_t current_credentials;

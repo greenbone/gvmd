@@ -506,6 +506,53 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
   </element>
   <element>
+    <name>certificate_info</name>
+    <summary>Info about a certificate</summary>
+    <pattern>
+      <e>time_status</e>
+      <e>activation_time</e>
+      <e>expiration_time</e>
+      <e>issuer</e>
+      <e>md5_fingerprint</e>
+    </pattern>
+    <ele>
+      <name>time_status</name>
+      <summary>
+        Whether the certificate is valid, expired or not active yet
+      </summary>
+      <pattern>
+        <t>
+          <alts>
+            <alt>expired</alt>
+            <alt>inactive</alt>
+            <alt>unknown</alt>
+            <alt>valid</alt>
+          </alts>
+        </t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>activation_time</name>
+      <summary>Time before which the certificate is not valid</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>expiration_time</name>
+      <summary>Time after which the certificate is no longer valid</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>issuer</name>
+      <summary>DN of the issuer of the certificate</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>md5_fingerprint</name>
+      <summary>MD5 fingerprint of the certificate</summary>
+      <pattern>text</pattern>
+    </ele>
+  </element>
+  <element>
     <name>note</name>
     <summary>A note</summary>
     <pattern>
@@ -10438,6 +10485,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>full_type</e>
           <o><e>auth_algorithm</e></o>
           <o><e>privacy</e></o>
+          <o><e>certificate_info</e></o>
           <o><e>scanners</e></o>
           <o><e>slaves</e></o>
           <o><e>targets</e></o>
@@ -10614,6 +10662,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               </t>
             </pattern>
           </ele>
+        </ele>
+        <ele>
+          <name>certificate_info</name>
+          <summary>
+            Info about the certificate
+          </summary>
+          <type>certificate_info</type>
         </ele>
         <ele>
           <name>scanners</name>
@@ -17727,6 +17782,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>in_use</e>
           <e>permissions</e>
           <e>user_tags</e>
+          <e>ca_pub_info</e>
+          <e>certificate_info</e>
           <e>host</e>
           <e>port</e>
           <e>type</e>
@@ -17839,6 +17896,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <pattern>text</pattern>
             </ele>
           </ele>
+        </ele>
+        <ele>
+          <name>ca_pub_info</name>
+          <summary>
+            Info about the CA certificate
+          </summary>
+          <type>certificate_info</type>
+        </ele>
+        <ele>
+          <name>certificate_info</name>
+          <summary>
+            Info about the certificate
+          </summary>
+          <type>certificate_info</type>
         </ele>
         <ele>
           <name>host</name>

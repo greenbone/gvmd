@@ -68,6 +68,7 @@
 #include <unistd.h>
 
 #include <openvas/base/cvss.h>
+#include <openvas/base/gpgme_util.h>
 #include <openvas/base/openvas_string.h>
 #include <openvas/base/openvas_file.h>
 #include <openvas/base/openvas_hosts.h>
@@ -154,6 +155,211 @@
  * @brief Default for Scanner max_hosts preference.
  */
 #define MAX_HOSTS_DEFAULT "20"
+
+
+/* Certificate and key management. */
+
+/**
+ * @brief Truncate a certificate, removing extra data.
+ *
+ * @param[in]  certificate    The certificate.
+ *
+ * @return  The truncated private key as a newly allocated string or NULL.
+ */
+gchar *
+truncate_certificate (const gchar* certificate)
+{
+  gchar *cert_start, *cert_end;
+  cert_start = strstr (certificate, "-----BEGIN CERTIFICATE-----\n");
+  if (cert_start)
+    {
+      cert_end = strstr (cert_start, "-----END CERTIFICATE-----\n")
+                  + strlen ("-----END CERTIFICATE-----\n");
+    }
+  else
+    return NULL;
+
+  if (cert_end == NULL)
+    return NULL;
+  else
+    return g_strndup (cert_start, cert_end - cert_start);
+}
+
+/**
+ * @brief Truncate a private key, removing extra data.
+ *
+ * @param[in]  private_key    The private key.
+ *
+ * @return  The truncated private key as a newly allocated string or NULL.
+ */
+gchar *
+truncate_private_key (const gchar* private_key)
+{
+  gchar *key_start, *key_end;
+  key_start = strstr (private_key, "-----BEGIN RSA PRIVATE KEY-----\n");
+  if (key_start)
+    {
+      key_end = strstr (key_start, "-----END RSA PRIVATE KEY-----\n")
+                  + strlen ("-----END RSA PRIVATE KEY-----\n");
+    }
+  else
+    {
+      key_start = strstr (private_key, "-----BEGIN DSA PRIVATE KEY-----\n");
+      if (key_start)
+        key_end = strstr (key_start, "-----END DSA PRIVATE KEY-----\n")
+                    + strlen ("-----END DSA PRIVATE KEY-----\n");
+    }
+
+  if (key_start == NULL || key_end == NULL)
+    return NULL;
+  else
+    return g_strndup (key_start, key_end - key_start);
+}
+
+/**
+ * @brief Gathers info from a certificate.
+ *
+ * @param[in]  certificate      The certificate to get data from.
+ * @param[out] activation_time  Pointer to write activation time to.
+ * @param[out] expiration_time  Pointer to write expiration time to.
+ * @param[out] fingerprint      Pointer for newly allocated fingerprint.
+ * @param[out] issuer           Pointer for newly allocated issuer DN.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+get_certificate_info (const gchar* certificate,
+                      time_t* activation_time, time_t* expiration_time,
+                      gchar** fingerprint, gchar** issuer)
+{
+  gchar *cert_truncated;
+
+  cert_truncated = NULL;
+  if (activation_time)
+    *activation_time = -1;
+  if (expiration_time)
+    *expiration_time = -1;
+  if (fingerprint)
+    *fingerprint = NULL;
+  if (issuer)
+    *issuer = NULL;
+
+  if (certificate)
+    {
+      int err;
+      gnutls_datum_t cert_datum;
+      gnutls_x509_crt_t gnutls_cert;
+
+      cert_truncated = truncate_certificate (certificate);
+      if (cert_truncated == NULL)
+        {
+          return -1;
+        }
+      cert_datum.data = (unsigned char*) cert_truncated;
+      cert_datum.size = strlen (cert_truncated);
+
+      gnutls_x509_crt_init (&gnutls_cert);
+      err = gnutls_x509_crt_import (gnutls_cert, &cert_datum,
+                                    GNUTLS_X509_FMT_PEM);
+      if (err)
+        {
+          g_free (cert_truncated);
+          return -1;
+        }
+
+      if (activation_time)
+        {
+          *activation_time
+            = gnutls_x509_crt_get_activation_time (gnutls_cert);
+        }
+
+      if (expiration_time)
+        {
+          *expiration_time
+            = gnutls_x509_crt_get_expiration_time (gnutls_cert);
+        }
+
+      if (fingerprint) {
+        int i;
+        size_t buffer_size = 16;
+        unsigned char buffer[buffer_size];
+        GString *string;
+
+        string = g_string_new ("");
+
+        gnutls_x509_crt_get_fingerprint(gnutls_cert, GNUTLS_DIG_MD5,
+                                        buffer, &buffer_size);
+
+        for (i = 0; i < buffer_size; i++)
+          {
+            if (i != 0)
+              {
+                g_string_append_c (string, ':');
+              }
+            g_string_append_printf(string, "%02x", buffer[i]);
+          }
+
+        *fingerprint = string->str;
+        g_string_free (string, FALSE);
+      }
+
+      if (issuer)
+        {
+          size_t buffer_size;
+          gchar *buffer;
+          gnutls_x509_crt_get_issuer_dn(gnutls_cert, NULL, &buffer_size);
+          buffer = g_malloc(buffer_size);
+          gnutls_x509_crt_get_issuer_dn(gnutls_cert, buffer, &buffer_size);
+
+          *issuer = buffer;
+        }
+
+      gnutls_x509_crt_deinit (gnutls_cert);
+      g_free (cert_truncated);
+    }
+  return 0;
+}
+
+/**
+ * @brief Converts a certificate time to an ISO time string.
+ *
+ * @param[in] time  The time as a time_t.
+ *
+ * @return Newly allocated string.
+ */
+gchar *
+certificate_iso_time (time_t time)
+{
+  if (time == 0)
+    return (g_strdup ("unlimited"));
+  else if (time == -1)
+    return (g_strdup ("unknown"));
+  else
+    return (g_strdup (iso_time (&time)));
+}
+
+/**
+ * @brief Tests the activation and expiration time of a certificate.
+ *
+ * @param[in] activated  The activation.
+ *
+ * @return Static status string.
+ */
+const gchar *
+certificate_time_status (time_t activates, time_t expires)
+{
+  time_t now;
+  time (&now);
+
+  if (activates == -1 || expires == -1)
+    return "unknown";
+  else if (activates > now)
+    return "inactive";
+  else if (expires != 0 && expires < now)
+    return "expired";
+  else
+    return "valid";
+}
 
 
 /* Helpers. */

@@ -13771,18 +13771,91 @@ handle_get_scanners (omp_parser_t *omp_parser, GError **error)
        ("<host>%s</host>"
         "<port>%d</port>"
         "<type>%d</type>"
-        "<ca_pub>%s</ca_pub>"
-        "<credential id=\"%s\">"
-        "<name>%s</name>"
-        "<trash>%d</trash>"
-        "</credential>",
+        "<ca_pub>%s</ca_pub>",
         scanner_iterator_host (&scanners) ?: "",
         scanner_iterator_port (&scanners) ?: 0,
         scanner_iterator_type (&scanners),
-        scanner_iterator_ca_pub (&scanners) ?: "",
+        scanner_iterator_ca_pub (&scanners) ?: "");
+
+      if (get_scanners_data->get.details)
+        {
+          time_t activation_time, expiration_time;
+          gchar *activation_time_str, *expiration_time_str;
+
+          if (scanner_iterator_ca_pub (&scanners))
+            {
+              /* CA Certificate */
+              gchar *fingerprint, *issuer;
+              get_certificate_info (scanner_iterator_ca_pub (&scanners),
+                                    &activation_time, &expiration_time,
+                                    &fingerprint, &issuer);
+              activation_time_str = certificate_iso_time (activation_time);
+              expiration_time_str = certificate_iso_time (expiration_time);
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<ca_pub_info>"
+                "<time_status>%s</time_status>"
+                "<activation_time>%s</activation_time>"
+                "<expiration_time>%s</expiration_time>"
+                "<md5_fingerprint>%s</md5_fingerprint>"
+                "<issuer>%s</issuer>"
+                "</ca_pub_info>",
+                certificate_time_status (activation_time, expiration_time),
+                activation_time_str,
+                expiration_time_str,
+                fingerprint,
+                issuer);
+              g_free (activation_time_str);
+              g_free (expiration_time_str);
+              g_free (fingerprint);
+              g_free (issuer);
+            }
+        }
+
+      credential_id = credential_uuid (scanner_iterator_credential (&scanners));
+      SENDF_TO_CLIENT_OR_FAIL
+       ("<credential id=\"%s\">"
+        "<name>%s</name>"
+        "<trash>%d</trash>",
         credential_id ? credential_id : "",
         scanner_iterator_credential_name (&scanners) ?: "",
         scanner_iterator_credential_trash (&scanners));
+
+      if (get_scanners_data->get.details)
+        {
+          time_t activation_time, expiration_time;
+          gchar *activation_time_str, *expiration_time_str;
+
+          if (scanner_iterator_key_pub (&scanners))
+            {
+              /* Certificate */
+              gchar *fingerprint, *issuer;
+              get_certificate_info (scanner_iterator_key_pub (&scanners),
+                                    &activation_time, &expiration_time,
+                                    &fingerprint, &issuer);
+              activation_time_str = certificate_iso_time (activation_time);
+              expiration_time_str = certificate_iso_time (expiration_time);
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<certificate_info>"
+                "<time_status>%s</time_status>"
+                "<activation_time>%s</activation_time>"
+                "<expiration_time>%s</expiration_time>"
+                "<md5_fingerprint>%s</md5_fingerprint>"
+                "<issuer>%s</issuer>"
+                "</certificate_info>",
+                certificate_time_status (activation_time, expiration_time),
+                activation_time_str,
+                expiration_time_str,
+                fingerprint,
+                issuer);
+              g_free (activation_time_str);
+              g_free (expiration_time_str);
+              g_free (fingerprint);
+              g_free (issuer);
+            }
+        }
+
+      SENDF_TO_CLIENT_OR_FAIL
+        ("</credential>");
       g_free (credential_id);
       count++;
       if (get_scanners_data->get.details)
@@ -15619,7 +15692,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           SEND_GET_START("credential");
           while (1)
             {
-              const char *private_key, *login, *type;
+              const char *private_key, *login, *type, *cert;
 
               ret = get_next (&credentials, &get_credentials_data->get,
                               &first, &count, init_credential_iterator);
@@ -15636,6 +15709,8 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               private_key = credential_iterator_private_key (&credentials);
               login = credential_iterator_login (&credentials);
               type = credential_iterator_type (&credentials);
+              cert = credential_iterator_certificate (&credentials);
+
               SENDF_TO_CLIENT_OR_FAIL
                ("<allow_insecure>%d</allow_insecure>"
                 "<login>%s</login>"
@@ -15659,6 +15734,36 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                      "<privacy><algorithm>%s</algorithm></privacy>",
                      auth_algorithm ? auth_algorithm : "",
                      privacy_algorithm ? privacy_algorithm : "");
+                }
+
+              if (cert && get_credentials_data->get.details)
+                {
+                  /* get certificate info */
+                  time_t activation_time, expiration_time;
+                  gchar *activation_time_str, *expiration_time_str;
+                  gchar *fingerprint, *issuer;
+                  get_certificate_info (cert,
+                                        &activation_time, &expiration_time,
+                                        &fingerprint, &issuer);
+                  activation_time_str = certificate_iso_time (activation_time);
+                  expiration_time_str = certificate_iso_time (expiration_time);
+                  SENDF_TO_CLIENT_OR_FAIL
+                   ("<certificate_info>"
+                    "<time_status>%s</time_status>"
+                    "<activation_time>%s</activation_time>"
+                    "<expiration_time>%s</expiration_time>"
+                    "<md5_fingerprint>%s</md5_fingerprint>"
+                    "<issuer>%s</issuer>"
+                    "</certificate_info>",
+                    certificate_time_status (activation_time, expiration_time),
+                    activation_time_str,
+                    expiration_time_str,
+                    fingerprint ? fingerprint : "",
+                    issuer ? issuer : "");
+                  g_free (activation_time_str);
+                  g_free (expiration_time_str);
+                  g_free (fingerprint);
+                  g_free (issuer);
                 }
 
               switch (format)
@@ -15697,8 +15802,6 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     break;
                   case 5:
                     {
-                      const char *cert;
-                      cert = credential_iterator_certificate (&credentials);
                       SENDF_TO_CLIENT_OR_FAIL
                        ("<certificate>%s</certificate>", cert ?: "");
                       break;
