@@ -588,7 +588,7 @@ manage_create_sql_functions ()
        "   RETURN CASE"
        "          WHEN seconds = 0"
        "          THEN -2"
-       "          WHEN diff < make_interval(0)"
+       "          WHEN diff < interval '0 seconds'"
        "          THEN -1"
        "          ELSE date_part( 'day', diff )"
        "          END;"

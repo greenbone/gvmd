@@ -1,5 +1,11 @@
 2016-06-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_pg.c (manage_create_sql_functions): Use interval literal
+	instead of make_interval function for compatibility with older
+	PostgreSQL versions.
+
+2016-06-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Handle the main functionality of GET_... OMP commands in individual
 	functions instead of doing it directly in omp_xml_handle_end_element.
 
