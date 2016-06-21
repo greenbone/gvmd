@@ -7,7 +7,7 @@
 # Timo Pollmeier <timo.pollmeier@greenbone.net>
 #
 # Copyright:
-# Copyright (C) 2009-2015 Greenbone Networks GmbH
+# Copyright (C) 2009-2016 Greenbone Networks GmbH
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -69,13 +69,13 @@ endif (NOT CMAKE_BUILD_TYPE MATCHES "Release")
 ## Project version
 # The following three variables should be set through the project command once
 # we require CMake >= 3.0
-set (PROJECT_VERSION_MAJOR 6)
-set (PROJECT_VERSION_MINOR 1)
+set (PROJECT_VERSION_MAJOR 7)
+set (PROJECT_VERSION_MINOR 0)
 set (PROJECT_VERSION_PATCH 0)
 
 # Set beta version if this is a beta release series,
 # unset if this is a stable release series.
-set (PROJECT_BETA_RELEASE 4)
+set (PROJECT_BETA_RELEASE 1)
 
 if (SVN_REVISION)
   set (PROJECT_VERSION_SVN "${SVN_REVISION}")

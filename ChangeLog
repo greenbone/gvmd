@@ -1,3 +1,11 @@
+2016-06-21  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	Increase version for the next official release from 6.1 to 7.0
+	because the number of changes is more comprehensive than originally
+	assumed.
+
+	* CMakeLists.txt: Set version to 9.0+beta1.
+
 2016-06-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_set_ldap_info): Add cacert arg.
