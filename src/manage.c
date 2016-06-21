@@ -173,16 +173,16 @@ truncate_certificate (const gchar* certificate)
   cert_start = strstr (certificate, "-----BEGIN CERTIFICATE-----\n");
   if (cert_start)
     {
-      cert_end = strstr (cert_start, "-----END CERTIFICATE-----\n")
-                  + strlen ("-----END CERTIFICATE-----\n");
-    }
-  else
-    return NULL;
+      cert_end = strstr (cert_start, "-----END CERTIFICATE-----\n");
 
-  if (cert_end == NULL)
-    return NULL;
-  else
-    return g_strndup (cert_start, cert_end - cert_start);
+      if (cert_end == NULL)
+        return NULL;
+
+      cert_end += strlen ("-----END CERTIFICATE-----\n");
+
+      return g_strndup (cert_start, cert_end - cert_start);
+    }
+  return NULL;
 }
 
 /**
