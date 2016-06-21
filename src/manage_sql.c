@@ -16394,14 +16394,19 @@ authenticate_any_method (const gchar *username, const gchar *password,
       ldap_auth_info_t info;
       int allow_plaintext;
       gchar *authdn, *host;
+      char *cacert;
+
+      cacert = sql_string ("SELECT value FROM meta"
+                           " WHERE name = 'ldap_cacert';");
 
       *auth_method = AUTHENTICATION_METHOD_LDAP_CONNECT;
       manage_get_ldap_info (NULL, &host, &authdn, &allow_plaintext);
       info = ldap_auth_info_new (host, authdn, allow_plaintext);
       g_free (host);
       g_free (authdn);
-      ret = ldap_connect_authenticate (username, password, info);
+      ret = ldap_connect_authenticate (username, password, info, cacert);
       ldap_auth_info_free (info);
+      free (cacert);
       return ret;
     }
   if (openvas_auth_radius_enabled ()
