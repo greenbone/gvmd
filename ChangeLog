@@ -1,5 +1,10 @@
 2016-06-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (truncate_certificate): Don't assume that the cert will
+	be multiple lines.
+
+2016-06-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (truncate_certificate): Don't assume that there will be
 	an end marker.
 
