@@ -63388,15 +63388,16 @@ manage_get_ldap_info (int *enabled, gchar **host, gchar **authdn,
 /**
  * @brief Set LDAP info.
  *
- * @param[out]  enabled    Whether LDAP is enabled.  -1 to keep current value.
- * @param[out]  host       LDAP host.  NULL to keep current value.
- * @param[out]  authdn     Auth DN.  NULL to keep current value.
- * @param[out]  allow_plaintext  Whether plaintext auth is allowed.  -1 to
- *                               keep current value.
+ * @param[in]  enabled    Whether LDAP is enabled.  -1 to keep current value.
+ * @param[in]  host       LDAP host.  NULL to keep current value.
+ * @param[in]  authdn     Auth DN.  NULL to keep current value.
+ * @param[in]  allow_plaintext  Whether plaintext auth is allowed.  -1 to
+ *                              keep current value.
+ * @param[in]  cacert     CA certificate.  NULL to keep current value.
  */
 void
 manage_set_ldap_info (int enabled, gchar *host, gchar *authdn,
-                      int allow_plaintext)
+                      int allow_plaintext, gchar *cacert)
 {
   gchar *quoted;
 
@@ -63431,6 +63432,15 @@ manage_set_ldap_info (int enabled, gchar *host, gchar *authdn,
       sql ("DELETE FROM meta WHERE name LIKE 'ldap_allow_plaintext';");
       sql ("INSERT INTO meta (name, value) VALUES ('ldap_allow_plaintext', %i);",
            allow_plaintext);
+    }
+
+  if (cacert)
+    {
+      sql ("DELETE FROM meta WHERE name LIKE 'ldap_cacert';");
+      quoted = sql_quote (cacert);
+      sql ("INSERT INTO meta (name, value) VALUES ('ldap_cacert', '%s');",
+           quoted);
+      g_free (quoted);
     }
 
   sql_commit ();

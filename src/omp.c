@@ -26363,11 +26363,11 @@ create_task_fail:
               if (strcmp (group, "method:ldap_connect") == 0)
                 {
                   GSList *setting;
-                  gchar *ldap_host, *ldap_authdn;
+                  gchar *ldap_host, *ldap_authdn, *ldap_cacert;
                   int ldap_enabled, ldap_plaintext;
 
                   ldap_enabled = ldap_plaintext = -1;
-                  ldap_host = ldap_authdn = NULL;
+                  ldap_host = ldap_authdn = ldap_cacert = NULL;
                   setting = auth_group->settings;
                   while (setting)
                     {
@@ -26384,12 +26384,14 @@ create_task_fail:
                         ldap_authdn = g_strdup (kvp->value);
                       else if (strcmp (kvp->key, "allow-plaintext") == 0)
                         ldap_plaintext = (strcmp (kvp->value, "true") == 0);
+                      else if (strcmp (kvp->key, "cacert") == 0)
+                        ldap_cacert = g_strdup (kvp->value);
 
                       setting = g_slist_next (setting);
                     }
 
                   manage_set_ldap_info (ldap_enabled, ldap_host, ldap_authdn,
-                                        ldap_plaintext);
+                                        ldap_plaintext, ldap_cacert);
                 }
               if (strcmp (group, "method:radius_connect") == 0)
                 {
