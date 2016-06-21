@@ -13387,6 +13387,970 @@ get_ovaldi_files ()
 }
 
 /**
+ * @brief Handle end of GET_AGENTS element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_agents (omp_parser_t *omp_parser, GError **error)
+{
+  int format;
+
+  if (get_agents_data->format)
+    {
+      if (strlen (get_agents_data->format))
+        {
+          if (strcasecmp (get_agents_data->format, "installer") == 0)
+            format = 1;
+          else if (strcasecmp (get_agents_data->format, "howto_install") == 0)
+            format = 2;
+          else if (strcasecmp (get_agents_data->format, "howto_use") == 0)
+            format = 3;
+          else
+            format = -1;
+        }
+      else
+        format = 0;
+    }
+  else if (get_agents_data->get.details == 1) /* For exporting */
+    format = 1;
+  else
+    format = 0;
+
+  if (format == -1)
+    SEND_TO_CLIENT_OR_FAIL
+      (XML_ERROR_SYNTAX ("get_agents",
+                         "GET_AGENTS format attribute should"
+                         " be 'installer', 'howto_install' or 'howto_use'."));
+  else
+    {
+      iterator_t agents;
+      int ret, count, filtered, first;
+
+      INIT_GET (agent, Agent);
+
+      ret = init_agent_iterator (&agents,
+                                  &get_agents_data->get);
+      if (ret)
+        {
+          switch (ret)
+            {
+              case 1:
+                if (send_find_error_to_client ("get_agents",
+                                               "agents",
+                                               get_agents_data->get.id,
+                                               omp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
+              case 2:
+                if (send_find_error_to_client ("get_agents", "filter",
+                                               get_agents_data->get.filt_id,
+                                               omp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_INTERNAL_ERROR ("get_agents"));
+                break;
+            }
+          get_agents_data_reset (get_agents_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          return;
+        }
+
+      SEND_GET_START ("agent");
+      while (1)
+        {
+          ret = get_next (&agents, &get_agents_data->get, &first,
+                          &count, init_agent_iterator);
+          if (ret == 1)
+            break;
+          if (ret == -1)
+            {
+              internal_error_send_to_client (error);
+              return;
+            }
+
+          SEND_GET_COMMON (agent, &get_agents_data->get,
+                            &agents);
+          switch (format)
+            {
+              case 1: /* installer */
+                {
+                  time_t trust_time;
+                  trust_time = agent_iterator_trust_time (&agents);
+
+                  SENDF_TO_CLIENT_OR_FAIL
+                   ("<package format=\"installer\">"
+                    "<filename>%s</filename>"
+                    "%s"
+                    "</package>"
+                    "<installer>"
+                    "<trust>%s<time>%s</time></trust>"
+                    "</installer>"
+                    "</agent>",
+                    agent_iterator_installer_filename (&agents),
+                    agent_iterator_installer_64 (&agents),
+                    agent_iterator_trust (&agents),
+                    iso_time (&trust_time));
+                }
+                break;
+              case 2: /* howto_install */
+                SENDF_TO_CLIENT_OR_FAIL
+                 ("<package format=\"howto_install\">%s</package>"
+                  "</agent>",
+                  agent_iterator_howto_install (&agents));
+                break;
+              case 3: /* howto_use */
+                SENDF_TO_CLIENT_OR_FAIL
+                 ("<package format=\"howto_use\">%s</package>"
+                  "</agent>",
+                  agent_iterator_howto_use (&agents));
+                break;
+              default:
+                {
+                  time_t trust_time;
+
+                  trust_time = agent_iterator_trust_time (&agents);
+
+                  SENDF_TO_CLIENT_OR_FAIL
+                   ("<installer>"
+                    "<trust>%s<time>%s</time></trust>"
+                    "</installer>"
+                    "</agent>",
+                    agent_iterator_trust (&agents),
+                    iso_time (&trust_time));
+                }
+                break;
+            }
+          count++;
+        }
+      cleanup_iterator (&agents);
+      filtered = get_agents_data->get.id
+                  ? 1
+                  : agent_count (&get_agents_data->get);
+      SEND_GET_END ("agent", &get_agents_data->get, count, filtered);
+    }
+  get_agents_data_reset (get_agents_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
+ * @brief Handle end of GET_AGGREGATES element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_aggregates (omp_parser_t *omp_parser, GError **error)
+{
+  iterator_t aggregate;
+  const char *type;
+  get_data_t *get;
+  GArray *data_columns, *data_column_types;
+  GArray *text_columns, *text_column_types;
+  GArray *sort_data;
+  GArray *c_sums;
+  const char *group_column, *subgroup_column;
+  char *group_column_type, *subgroup_column_type;
+  int ret, index;
+  GString *xml;
+  gchar *sort_field, *filter;
+  int first, sort_order;
+  GString *type_many;
+
+  type = get_aggregates_data->type;
+  if (type == NULL)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("get_aggregates",
+                             "GET_AGGREGATES requires a 'type' attribute"));
+      return;
+    }
+
+  get = &get_aggregates_data->get;
+
+  ret = init_get ("get_aggregates",
+                  &get_aggregates_data->get,
+                  "Aggregates",
+                  &first);
+  if (ret)
+    {
+      switch (ret)
+        {
+          case 99:
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("get_aggregates",
+                                "Permission denied"));
+            break;
+          default:
+            internal_error_send_to_client (error);
+            return;
+        }
+      get_aggregates_data_reset (get_aggregates_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  group_column = get_aggregates_data->group_column;
+  subgroup_column = get_aggregates_data->subgroup_column;
+
+  init_aggregate_lists (group_column,
+                        subgroup_column,
+                        get_aggregates_data->data_columns,
+                        get_aggregates_data->text_columns,
+                        get_aggregates_data->sort_data,
+                        &group_column_type, &subgroup_column_type,
+                        &data_column_types, &data_columns,
+                        &text_column_types, &text_columns,
+                        &sort_data,
+                        &c_sums);
+
+  if (get_aggregates_data->mode
+      && strcasecmp (get_aggregates_data->mode, "word_counts") == 0)
+    {
+      ret = init_aggregate_iterator (&aggregate, type, get,
+                                    0 /* distinct */,
+                                    data_columns,
+                                    group_column, subgroup_column,
+                                    text_columns,
+                                    NULL, /* ignore sorting */
+                                    0,    /* get all groups */
+                                    -1,
+                                    NULL /* extra_tables */,
+                                    NULL /* extra_where */);
+    }
+  else
+    {
+      ret = init_aggregate_iterator (&aggregate, type, get,
+                                    0 /* distinct */,
+                                    data_columns,
+                                    group_column, subgroup_column,
+                                    text_columns,
+                                    sort_data,
+                                    get_aggregates_data->first_group,
+                                    get_aggregates_data->max_groups,
+                                    NULL /* extra_tables */,
+                                    NULL /* extra_where */);
+    }
+
+  switch (ret)
+    {
+      case 0:
+        break;
+      case 1:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("get_aggregates",
+                             "Failed to find resource"));
+        break;
+      case 2:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("get_aggregates",
+                             "Failed to find filter"));
+        break;
+      case 3:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("get_aggregates",
+                             "Invalid data_column"));
+        break;
+      case 4:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("get_aggregates",
+                             "Invalid group_column"));
+        break;
+      case 5:
+        SEND_TO_CLIENT_OR_FAIL
+            (XML_ERROR_SYNTAX ("get_aggregates",
+                               "Invalid resource type"));
+        break;
+      case 6:
+        SEND_TO_CLIENT_OR_FAIL
+            (XML_ERROR_SYNTAX ("get_aggregates",
+                               "Trashcan not used by resource type"));
+        break;
+      case 7:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("get_aggregates",
+                             "Invalid text_column"));
+        break;
+      case 8:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("get_aggregates",
+                             "Invalid subgroup_column"));
+        break;
+      case 99:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("get_aggregates",
+                             "Permission denied"));
+        break;
+      default:
+        assert (0);
+        /* fallthrough */
+      case -1:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_INTERNAL_ERROR ("get_aggregates"));
+        break;
+    }
+
+  if (ret)
+    {
+      g_array_free (data_columns, TRUE);
+      g_array_free (data_column_types, TRUE);
+      for (index = 0; index < sort_data->len; index++)
+        sort_data_free (g_array_index (sort_data, sort_data_t*, index));
+      g_array_free (sort_data, TRUE);
+      g_array_free (c_sums, TRUE);
+      return;
+    }
+
+  xml = g_string_new ("<get_aggregates_response"
+                      "  status_text=\"" STATUS_OK_TEXT "\""
+                      "  status=\"" STATUS_OK "\">");
+
+  if (get_aggregates_data->mode
+      && strcasecmp (get_aggregates_data->mode, "word_counts") == 0)
+    {
+      buffer_aggregate_wc_xml (xml, &aggregate, type, group_column,
+                                sort_data,
+                                get_aggregates_data->first_group,
+                                get_aggregates_data->max_groups);
+    }
+  else
+    {
+      buffer_aggregate_xml (xml, &aggregate, type,
+                            group_column, group_column_type,
+                            subgroup_column, subgroup_column_type,
+                            data_columns, data_column_types,
+                            text_columns, text_column_types,
+                            c_sums);
+    }
+
+  if (get->filt_id && strcmp (get->filt_id, "0"))
+    {
+      if (get->filter_replacement)
+        filter = g_strdup (get->filter_replacement);
+      else
+        filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("get_aggregates",
+                             "Failed to find filter"));
+    }
+  else
+    filter = NULL;
+
+  manage_filter_controls (filter ? filter : get->filter,
+                          &first, NULL, &sort_field, &sort_order);
+
+  if (filter || get->filter)
+    {
+      gchar *new_filter;
+      new_filter = manage_clean_filter (filter ? filter : get->filter);
+      g_free (filter);
+      if ((strcmp (type, "task") == 0)
+          && (filter_term_value (new_filter, "apply_overrides")
+              == NULL))
+        {
+          filter = new_filter;
+          new_filter = g_strdup_printf ("apply_overrides=%i %s",
+                                        APPLY_OVERRIDES_DEFAULT,
+                                        filter);
+          g_free (filter);
+        }
+      filter = new_filter;
+    }
+  else
+    filter = manage_clean_filter ("");
+
+  type_many = g_string_new (type);
+
+  if (strcmp (type, "info") != 0)
+    g_string_append (type_many, "s");
+
+  buffer_get_filter_xml (xml, type, get, filter, NULL);
+
+  g_string_append (xml, "</get_aggregates_response>");
+
+  for (index = 0; index < data_columns->len; index++)
+    g_free (g_array_index (data_columns, gchar*, index));
+  g_array_free (data_columns, TRUE);
+  for (index = 0; index < data_column_types->len; index++)
+    g_free (g_array_index (data_column_types, gchar*, index));
+  g_array_free (data_column_types, TRUE);
+  for (index = 0; index < sort_data->len; index++)
+    sort_data_free (g_array_index (sort_data, sort_data_t*, index));
+  g_array_free (sort_data, TRUE);
+  g_array_free (c_sums, TRUE);
+
+  SEND_TO_CLIENT_OR_FAIL (xml->str);
+
+  cleanup_iterator (&aggregate);
+  g_string_free (xml, TRUE);
+  get_aggregates_data_reset (get_aggregates_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
+ * @brief Handle end of GET_ALERTS element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_alerts (omp_parser_t *omp_parser, GError **error)
+{
+  iterator_t alerts;
+  int count, filtered, ret, first;
+
+  INIT_GET (alert, Alert);
+
+  ret = init_alert_iterator (&alerts, &get_alerts_data->get);
+  if (ret)
+    {
+      switch (ret)
+        {
+          case 1:
+            if (send_find_error_to_client ("get_alerts", "alert",
+                                           get_alerts_data->get.id,
+                                           omp_parser))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            break;
+          case 2:
+            if (send_find_error_to_client
+                  ("get_alerts", "alert", get_alerts_data->get.filt_id,
+                   omp_parser))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            break;
+          case -1:
+            SEND_TO_CLIENT_OR_FAIL
+              (XML_INTERNAL_ERROR ("get_alerts"));
+            break;
+        }
+      get_alerts_data_reset (get_alerts_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  SEND_GET_START ("alert");
+  while (1)
+    {
+      iterator_t data;
+      char *filter_uuid;
+      int notice, message, has_secinfo_type;
+      const char *method;
+
+      ret = get_next (&alerts, &get_alerts_data->get, &first,
+                      &count, init_alert_iterator);
+      if (ret == 1)
+        break;
+      if (ret == -1)
+        {
+          internal_error_send_to_client (error);
+          return;
+        }
+      SEND_GET_COMMON (alert, &get_alerts_data->get,
+                        &alerts);
+
+      /* Filter. */
+
+      filter_uuid = alert_iterator_filter_uuid (&alerts);
+      if (filter_uuid)
+        {
+          SENDF_TO_CLIENT_OR_FAIL ("<filter id=\"%s\">"
+                                   "<name>%s</name>"
+                                   "<trash>%i</trash>",
+                                   filter_uuid,
+                                   alert_iterator_filter_name (&alerts),
+                                   alert_iterator_filter_trash (&alerts));
+          if (alert_iterator_filter_readable (&alerts))
+            SEND_TO_CLIENT_OR_FAIL ("</filter>");
+          else
+            SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                    "</filter>");
+        }
+
+      /* Condition. */
+
+      SENDF_TO_CLIENT_OR_FAIL ("<condition>%s",
+                               alert_condition_name
+                               (alert_iterator_condition (&alerts)));
+      init_alert_data_iterator (&data, get_iterator_resource (&alerts),
+                                get_alerts_data->get.trash,
+                                "condition");
+      while (next (&data))
+        SENDF_TO_CLIENT_OR_FAIL ("<data>"
+                                 "<name>%s</name>"
+                                 "%s"
+                                 "</data>",
+                                 alert_data_iterator_name (&data),
+                                 alert_data_iterator_data (&data));
+      cleanup_iterator (&data);
+
+      SEND_TO_CLIENT_OR_FAIL ("</condition>");
+
+      /* Event. */
+
+      SENDF_TO_CLIENT_OR_FAIL ("<event>%s",
+                                event_name (alert_iterator_event (&alerts)));
+      init_alert_data_iterator (&data, get_iterator_resource (&alerts),
+                                get_alerts_data->get.trash, "event");
+      has_secinfo_type = 0;
+      while (next (&data))
+        {
+          if (strcmp (alert_data_iterator_name (&data), "secinfo_type")
+              == 0)
+            has_secinfo_type = 1;
+          SENDF_TO_CLIENT_OR_FAIL ("<data>"
+                                   "<name>%s</name>"
+                                   "%s"
+                                   "</data>",
+                                   alert_data_iterator_name (&data),
+                                   alert_data_iterator_data (&data));
+        }
+      if ((alert_iterator_event (&alerts) == EVENT_NEW_SECINFO
+            || alert_iterator_event (&alerts) == EVENT_UPDATED_SECINFO)
+          && (has_secinfo_type == 0))
+        SENDF_TO_CLIENT_OR_FAIL ("<data>"
+                                 "<name>secinfo_type</name>"
+                                 "NVT"
+                                 "</data>");
+      cleanup_iterator (&data);
+      SEND_TO_CLIENT_OR_FAIL ("</event>");
+
+      /* Method. */
+
+      method = alert_method_name (alert_iterator_method (&alerts));
+      SENDF_TO_CLIENT_OR_FAIL ("<method>%s", method);
+      init_alert_data_iterator (&data, get_iterator_resource (&alerts),
+                                get_alerts_data->get.trash, "method");
+      notice = -1;
+      message = 0;
+      while (next (&data))
+        {
+          const char *name;
+          name = alert_data_iterator_name (&data);
+          if (strcmp (name, "notice") == 0)
+            notice = atoi (alert_data_iterator_data (&data));
+          else if (strcmp (method, "Email") == 0
+                    && strcmp (name, "message") == 0)
+            {
+              if (strlen (alert_data_iterator_data (&data)) == 0)
+                continue;
+              message = 1;
+            }
+
+          if (strcmp (name, "scp_credential") == 0
+              || strcmp (name, "verinice_server_credential") == 0)
+            {
+              // Username + Password credentials
+              const char *credential_id;
+              credential_t credential;
+              credential_id = alert_data_iterator_data (&data);
+              if (find_credential_with_permission (credential_id,
+                                                   &credential,
+                                                   "get_credentials"))
+                {
+                  abort ();
+                }
+              else if (credential == 0)
+                {
+                  SENDF_TO_CLIENT_OR_FAIL ("<data>"
+                                           "<name>%s</name>"
+                                           "%s"
+                                           "</data>",
+                                           name,
+                                           credential_id);
+                }
+              else
+                {
+                  gchar *cred_name, *username;
+                  cred_name = credential_name (credential);
+                  username = credential_value (credential, "username");
+
+                  SENDF_TO_CLIENT_OR_FAIL ("<data>"
+                                           "<name>%s</name>"
+                                           "<credential id=\"%s\">"
+                                           "<name>%s</name>"
+                                           "<login>%s</login>"
+                                           "</credential>"
+                                           "%s"
+                                           "</data>",
+                                           name,
+                                           credential_id,
+                                           cred_name,
+                                           username,
+                                           credential_id);
+
+                  g_free (cred_name);
+                  g_free (username);
+                }
+            }
+          else
+            {
+              SENDF_TO_CLIENT_OR_FAIL ("<data>"
+                                       "<name>%s</name>"
+                                       "%s"
+                                       "</data>",
+                                       name,
+                                       alert_data_iterator_data (&data));
+            }
+        }
+      /* If there is no email message data, send the default. */
+      if (strcmp (method, "Email") == 0
+          && message == 0
+          && (notice == 0 || notice == 2))
+        SENDF_TO_CLIENT_OR_FAIL ("<data>"
+                                 "<name>message</name>"
+                                 "%s"
+                                 "</data>",
+                                 notice == 0
+                                  ? ALERT_MESSAGE_INCLUDE
+                                  : ALERT_MESSAGE_ATTACH);
+      cleanup_iterator (&data);
+      SEND_TO_CLIENT_OR_FAIL ("</method>");
+
+      if (get_alerts_data->tasks)
+        {
+          iterator_t tasks;
+
+          SEND_TO_CLIENT_OR_FAIL ("<tasks>");
+          init_alert_task_iterator (&tasks,
+                                    get_iterator_resource (&alerts), 0);
+          while (next (&tasks))
+            {
+              SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
+                                       "<name>%s</name>",
+                                       alert_task_iterator_uuid (&tasks),
+                                       alert_task_iterator_name (&tasks));
+
+              if (alert_task_iterator_readable (&tasks))
+                SEND_TO_CLIENT_OR_FAIL ("</task>");
+              else
+                SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                        "</task>");
+            }
+          cleanup_iterator (&tasks);
+          SEND_TO_CLIENT_OR_FAIL ("</tasks>");
+        }
+
+      SEND_TO_CLIENT_OR_FAIL ("</alert>");
+      count++;
+    }
+  cleanup_iterator (&alerts);
+  filtered = get_alerts_data->get.id
+              ? 1
+              : alert_count (&get_alerts_data->get);
+  SEND_GET_END ("alert", &get_alerts_data->get, count, filtered);
+
+  get_alerts_data_reset (get_alerts_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
+ * @brief Handle end of GET_ASSETS element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_assets (omp_parser_t *omp_parser, GError **error)
+{
+  iterator_t assets;
+  int count, first, filtered, ret;
+  int (*init_asset_iterator) (iterator_t *, const get_data_t *);
+  int (*asset_count) (const get_data_t *get);
+
+  if (acl_user_may ("get_assets") == 0)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("get_assets",
+                           "Permission denied"));
+      get_assets_data_reset (get_assets_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  if (get_assets_data->type == NULL)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("get_assets",
+                           "No type specified."));
+      get_assets_data_reset (get_assets_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  INIT_GET (asset, Asset);
+
+  /* Set type specific functions. */
+  if (g_strcmp0 ("host", get_assets_data->type) == 0)
+    {
+      init_asset_iterator = init_asset_host_iterator;
+      asset_count = asset_host_count;
+      get_assets_data->get.subtype = g_strdup ("host");
+    }
+  else if (g_strcmp0 ("os", get_assets_data->type) == 0)
+    {
+      init_asset_iterator = init_asset_os_iterator;
+      asset_count = asset_os_count;
+      get_assets_data->get.subtype = g_strdup ("os");
+    }
+  else
+    {
+      if (send_find_error_to_client ("get_assets", "type",
+                                     get_assets_data->type, omp_parser))
+        {
+          error_send_to_client (error);
+        }
+      get_assets_data_reset (get_assets_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  ret = init_asset_iterator (&assets, &get_assets_data->get);
+  if (ret)
+    {
+      switch (ret)
+        {
+        case 1:
+          if (send_find_error_to_client ("get_assets", "type",
+                                         get_assets_data->type,
+                                         omp_parser))
+            {
+              error_send_to_client (error);
+              return;
+            }
+          break;
+        case 2:
+          if (send_find_error_to_client
+              ("get_assets", "filter", get_assets_data->get.filt_id,
+               omp_parser))
+            {
+              error_send_to_client (error);
+              return;
+            }
+          break;
+        case -1:
+          SEND_TO_CLIENT_OR_FAIL
+            (XML_INTERNAL_ERROR ("get_assets"));
+          break;
+        }
+      get_assets_data_reset (get_assets_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  count = 0;
+  manage_filter_controls (get_assets_data->get.filter, &first, NULL, NULL, NULL);
+  SEND_GET_START ("asset");
+  while (next (&assets))
+    {
+      GString *result;
+      iterator_t identifiers;
+
+      /* Assets are currently always writable. */
+      if (send_get_common ("asset", &get_assets_data->get, &assets,
+                           omp_parser->client_writer,
+                           omp_parser->client_writer_data,
+                           asset_iterator_writable (&assets),
+                           asset_iterator_in_use (&assets)))
+        {
+          error_send_to_client (error);
+          return;
+        }
+
+      result = g_string_new ("");
+
+      /* Information depending on type. */
+
+      if (g_strcmp0 ("host", get_assets_data->type) == 0)
+        {
+          xml_string_append (result, "<identifiers>");
+          init_host_identifier_iterator (&identifiers,
+                                          get_iterator_resource (&assets),
+                                          0, NULL);
+          while (next (&identifiers))
+            {
+              const char *source_type;
+              gchar *name;
+
+              source_type = host_identifier_iterator_source_type
+                              (&identifiers);
+              if (strcmp (source_type, "User") == 0)
+                name = user_name (host_identifier_iterator_source_id
+                                    (&identifiers));
+              else
+                name = NULL;
+
+              xml_string_append (result,
+                                 "<identifier id=\"%s\">"
+                                 "<name>%s</name>"
+                                 "<value>%s</value>"
+                                 "<creation_time>%s</creation_time>"
+                                 "<modification_time>%s</modification_time>"
+                                 "<source id=\"%s\">"
+                                 "<type>%s</type>"
+                                 "<data>%s</data>"
+                                 "<deleted>%i</deleted>"
+                                 "<name>%s</name>"
+                                 "</source>",
+                                 get_iterator_uuid (&identifiers),
+                                 get_iterator_name (&identifiers),
+                                 host_identifier_iterator_value (&identifiers),
+                                 get_iterator_creation_time (&identifiers),
+                                 get_iterator_modification_time (&identifiers),
+                                 host_identifier_iterator_source_id
+                                  (&identifiers),
+                                 source_type,
+                                 host_identifier_iterator_source_data
+                                  (&identifiers),
+                                 host_identifier_iterator_source_orphan
+                                  (&identifiers),
+                                 name ? name : "");
+
+              g_free (name);
+
+              if (strcmp (get_iterator_name (&identifiers), "OS") == 0)
+                xml_string_append (result,
+                                   "<os id=\"%s\">"
+                                   "<title>%s</title>"
+                                   "</os>",
+                                   host_identifier_iterator_os_id
+                                    (&identifiers),
+                                   host_identifier_iterator_os_title
+                                    (&identifiers));
+
+              xml_string_append (result, "</identifier>");
+            }
+          cleanup_iterator (&identifiers);
+          xml_string_append (result, "</identifiers>");
+        }
+
+      g_string_append_printf (result, "<type>%s</type>",
+                              get_assets_data->type);
+      g_string_append_printf (result, "<%s>", get_assets_data->type);
+
+      if (g_strcmp0 ("os", get_assets_data->type) == 0)
+        {
+          iterator_t os_hosts;
+          const char *latest, *highest, *average;
+
+          latest = asset_os_iterator_latest_severity (&assets);
+          highest = asset_os_iterator_highest_severity (&assets);
+          average = asset_os_iterator_average_severity (&assets);
+          g_string_append_printf (result,
+                                  "<latest_severity>"
+                                  "<value>%s</value>"
+                                  "</latest_severity>"
+                                  "<highest_severity>"
+                                  "<value>%s</value>"
+                                  "</highest_severity>"
+                                  "<average_severity>"
+                                  "<value>%s</value>"
+                                  "</average_severity>",
+                                  latest ? latest : "",
+                                  highest ? highest : "",
+                                  average ? average : "");
+
+          g_string_append_printf (result,
+                                  "<title>%s</title>"
+                                  "<installs>%i</installs>"
+                                  "<hosts>"
+                                  "%i",
+                                  asset_os_iterator_title (&assets),
+                                  asset_os_iterator_installs (&assets),
+                                  asset_os_iterator_installs (&assets));
+          init_os_host_iterator (&os_hosts,
+                                  get_iterator_resource (&assets));
+          while (next (&os_hosts))
+            {
+              const char *severity;
+              severity = os_host_iterator_severity (&os_hosts);
+              g_string_append_printf (result,
+                                      "<asset id=\"%s\">"
+                                      "<name>%s</name>"
+                                      "<severity>"
+                                      "<value>%s</value>"
+                                      "</severity>"
+                                      "</asset>",
+                                      get_iterator_uuid (&os_hosts),
+                                      get_iterator_name (&os_hosts),
+                                      severity ? severity : "");
+            }
+          cleanup_iterator (&os_hosts);
+          g_string_append_printf (result, "</hosts>");
+        }
+      else if (g_strcmp0 ("host", get_assets_data->type) == 0)
+        {
+          const char *severity;
+          iterator_t details;
+
+          severity = asset_host_iterator_severity (&assets);
+          g_string_append_printf (result,
+                                  "<severity>"
+                                  "<value>%s</value>"
+                                  "</severity>",
+                                  severity ? severity : "");
+
+          init_host_detail_iterator (&details,
+                                      get_iterator_resource (&assets));
+          while (next (&details))
+            g_string_append_printf (result,
+                                    "<detail>"
+                                    "<name>%s</name>"
+                                    "<value>%s</value>"
+                                    "<source id=\"%s\">"
+                                    "<type>%s</type>"
+                                    "</source>"
+                                    "</detail>",
+                                    host_detail_iterator_name
+                                      (&details),
+                                    host_detail_iterator_value
+                                      (&details),
+                                    host_detail_iterator_source_id
+                                      (&details),
+                                    host_detail_iterator_source_type
+                                      (&details));
+          cleanup_iterator (&details);
+        }
+
+      g_string_append_printf (result,
+                              "</%s>"
+                              "</asset>",
+                              get_assets_data->type);
+      SEND_TO_CLIENT_OR_FAIL (result->str);
+      count++;
+      g_string_free (result, TRUE);
+    }
+  cleanup_iterator (&assets);
+
+  if (get_assets_data->details == 1)
+    SEND_TO_CLIENT_OR_FAIL ("<details>1</details>");
+
+  filtered = get_assets_data->get.id
+              ? 1
+              : asset_count (&get_assets_data->get);
+
+  SEND_GET_END ("asset", &get_assets_data->get, count, filtered);
+
+  get_assets_data_reset (get_assets_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
  * @brief Handle end of GET_CONFIGS element.
  *
  * @param[in]  omp_parser   OMP parser.
@@ -13704,6 +14668,3050 @@ handle_get_configs (omp_parser_t *omp_parser, GError **error)
 }
 
 /**
+ * @brief Handle end of GET_CREDENTIALS element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_credentials (omp_parser_t *omp_parser, GError **error)
+{
+  iterator_t credentials;
+  int count, filtered, ret, first;
+  int format;
+  char *data_format;
+
+  data_format = get_credentials_data->format;
+  if (data_format)
+    {
+      if (strlen (data_format))
+        {
+          if (strcasecmp (data_format, "key") == 0)
+            format = 1;
+          else if (strcasecmp (data_format, "rpm") == 0)
+            format = 2;
+          else if (strcasecmp (data_format, "deb") == 0)
+            format = 3;
+          else if (strcasecmp (data_format, "exe") == 0)
+            format = 4;
+          else if (strcasecmp (data_format, "pem") == 0)
+            format = 5;
+          else
+            format = -1;
+        }
+      else
+        format = 0;
+    }
+  else
+    format = 0;
+
+  if (format == -1)
+    SEND_TO_CLIENT_OR_FAIL
+      (XML_ERROR_SYNTAX ("get_credentials",
+                         "GET_CREDENTIALS format attribute should"
+                         " be 'key', 'rpm', 'deb', 'exe' or 'pem'."));
+
+  INIT_GET (credential, Credential);
+
+  ret = init_credential_iterator (&credentials,
+                                  &get_credentials_data->get);
+  if (ret)
+    {
+      switch (ret)
+        {
+          case 1:
+            if (send_find_error_to_client ("get_credentials",
+                                           "credential",
+                                           get_credentials_data->get.id,
+                                           omp_parser))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            break;
+          case 2:
+            if (send_find_error_to_client ("get_credentials",
+                                           "credential",
+                                           get_credentials_data->get.filt_id,
+                                           omp_parser))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            break;
+          case -1:
+            SEND_TO_CLIENT_OR_FAIL
+              (XML_INTERNAL_ERROR ("get_credentials"));
+            break;
+        }
+      get_credentials_data_reset (get_credentials_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  SEND_GET_START("credential");
+  while (1)
+    {
+      const char *private_key, *login, *type, *cert;
+
+      ret = get_next (&credentials, &get_credentials_data->get,
+                      &first, &count, init_credential_iterator);
+      if (ret == 1)
+        break;
+      if (ret == -1)
+        {
+          internal_error_send_to_client (error);
+          return;
+        }
+
+      SEND_GET_COMMON (credential, &get_credentials_data->get, &credentials);
+      private_key = credential_iterator_private_key (&credentials);
+      login = credential_iterator_login (&credentials);
+      type = credential_iterator_type (&credentials);
+      cert = credential_iterator_certificate (&credentials);
+
+      SENDF_TO_CLIENT_OR_FAIL
+       ("<allow_insecure>%d</allow_insecure>"
+        "<login>%s</login>"
+        "<type>%s</type>"
+        "<full_type>%s</full_type>",
+        credential_iterator_allow_insecure (&credentials),
+        login ? login : "",
+        type ? type : "",
+        type ? credential_full_type (type) : "");
+
+      if (strcmp (type, "snmp") == 0)
+        {
+          const char *auth_algorithm, *privacy_algorithm;
+          auth_algorithm
+            = credential_iterator_auth_algorithm (&credentials);
+          privacy_algorithm
+            = credential_iterator_privacy_algorithm (&credentials);
+
+          SENDF_TO_CLIENT_OR_FAIL
+           ("<auth_algorithm>%s</auth_algorithm>"
+            "<privacy><algorithm>%s</algorithm></privacy>",
+            auth_algorithm ? auth_algorithm : "",
+            privacy_algorithm ? privacy_algorithm : "");
+        }
+
+      if (cert && get_credentials_data->get.details)
+        {
+          /* get certificate info */
+          time_t activation_time, expiration_time;
+          gchar *activation_time_str, *expiration_time_str;
+          gchar *fingerprint, *issuer;
+          get_certificate_info (cert,
+                                &activation_time, &expiration_time,
+                                &fingerprint, &issuer);
+          activation_time_str = certificate_iso_time (activation_time);
+          expiration_time_str = certificate_iso_time (expiration_time);
+          SENDF_TO_CLIENT_OR_FAIL
+           ("<certificate_info>"
+            "<time_status>%s</time_status>"
+            "<activation_time>%s</activation_time>"
+            "<expiration_time>%s</expiration_time>"
+            "<md5_fingerprint>%s</md5_fingerprint>"
+            "<issuer>%s</issuer>"
+            "</certificate_info>",
+            certificate_time_status (activation_time, expiration_time),
+            activation_time_str,
+            expiration_time_str,
+            fingerprint ? fingerprint : "",
+            issuer ? issuer : "");
+          g_free (activation_time_str);
+          g_free (expiration_time_str);
+          g_free (fingerprint);
+          g_free (issuer);
+        }
+
+      switch (format)
+        {
+          char *package;
+
+          case 1: /* key */
+            {
+              char *pub;
+              const char *pass;
+
+              pass = credential_iterator_password (&credentials);
+              pub = openvas_ssh_public_from_private (private_key, pass);
+              SENDF_TO_CLIENT_OR_FAIL
+                ("<public_key>%s</public_key>", pub ?: "");
+              g_free (pub);
+              break;
+            }
+          case 2: /* rpm */
+            package = credential_iterator_rpm (&credentials);
+            SENDF_TO_CLIENT_OR_FAIL
+              ("<package format=\"rpm\">%s</package>", package ?: "");
+            g_free (package);
+            break;
+          case 3: /* deb */
+            package = credential_iterator_deb (&credentials);
+            SENDF_TO_CLIENT_OR_FAIL
+              ("<package format=\"deb\">%s</package>", package ?: "");
+            g_free (package);
+            break;
+          case 4: /* exe */
+            package = credential_iterator_exe (&credentials);
+            SENDF_TO_CLIENT_OR_FAIL
+              ("<package format=\"exe\">%s</package>", package ?: "");
+            g_free (package);
+            break;
+          case 5:
+            {
+              SENDF_TO_CLIENT_OR_FAIL
+                ("<certificate>%s</certificate>", cert ?: "");
+              break;
+            }
+        }
+
+      if (get_credentials_data->scanners)
+        {
+          iterator_t scanners;
+
+          SENDF_TO_CLIENT_OR_FAIL ("<scanners>");
+          init_credential_scanner_iterator
+            (&scanners, get_iterator_resource (&credentials), 0);
+          while (next (&scanners))
+            {
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<scanner id=\"%s\">"
+                "<name>%s</name>",
+                credential_scanner_iterator_uuid (&scanners),
+                credential_scanner_iterator_name (&scanners));
+              if (credential_scanner_iterator_readable (&scanners))
+                SEND_TO_CLIENT_OR_FAIL ("</scanner>");
+              else
+                SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                        "</scanner>");
+            }
+          cleanup_iterator (&scanners);
+
+          SEND_TO_CLIENT_OR_FAIL ("</scanners>");
+        }
+
+      if (get_credentials_data->slaves)
+        {
+          iterator_t slaves;
+
+          SENDF_TO_CLIENT_OR_FAIL ("<slaves>");
+          init_credential_slave_iterator
+            (&slaves, get_iterator_resource (&credentials), 0);
+          while (next (&slaves))
+            {
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<slave id=\"%s\">"
+                "<name>%s</name>",
+                credential_slave_iterator_uuid (&slaves),
+                credential_slave_iterator_name (&slaves));
+              if (credential_slave_iterator_readable (&slaves))
+                SEND_TO_CLIENT_OR_FAIL ("</slave>");
+              else
+                SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                        "</slave>");
+            }
+          cleanup_iterator (&slaves);
+
+          SEND_TO_CLIENT_OR_FAIL ("</slaves>");
+        }
+
+      if (get_credentials_data->targets)
+        {
+          iterator_t targets;
+
+          SENDF_TO_CLIENT_OR_FAIL ("<targets>");
+          init_credential_target_iterator
+            (&targets, get_iterator_resource (&credentials), 0);
+          while (next (&targets))
+            {
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<target id=\"%s\">"
+                "<name>%s</name>",
+                credential_target_iterator_uuid (&targets),
+                credential_target_iterator_name (&targets));
+              if (credential_target_iterator_readable (&targets))
+                SEND_TO_CLIENT_OR_FAIL ("</target>");
+              else
+                SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                        "</target>");
+            }
+          cleanup_iterator (&targets);
+
+          SEND_TO_CLIENT_OR_FAIL ("</targets>");
+        }
+
+      SEND_TO_CLIENT_OR_FAIL ("</credential>");
+      count++;
+    }
+
+  cleanup_iterator (&credentials);
+  filtered = get_credentials_data->get.id
+              ? 1
+              : credential_count (&get_credentials_data->get);
+  SEND_GET_END ("credential", &get_credentials_data->get,
+                count, filtered);
+  get_credentials_data_reset (get_credentials_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
+ * @brief Handle end of GET_FILTERS element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_filters (omp_parser_t *omp_parser, GError **error)
+{
+  iterator_t filters;
+  int count, filtered, ret, first;
+
+  INIT_GET (filter, Filter);
+
+  ret = init_filter_iterator (&filters, &get_filters_data->get);
+  if (ret)
+    {
+      switch (ret)
+        {
+          case 1:
+            if (send_find_error_to_client ("get_filters", "filter",
+                                           get_filters_data->get.id,
+                                           omp_parser))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            break;
+          case 2:
+            if (send_find_error_to_client
+                  ("get_filters", "filter",
+                   get_filters_data->get.filt_id, omp_parser))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            break;
+          case -1:
+            SEND_TO_CLIENT_OR_FAIL
+              (XML_INTERNAL_ERROR ("get_filters"));
+            break;
+        }
+      get_filters_data_reset (get_filters_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  SEND_GET_START ("filter");
+  while (1)
+    {
+      ret = get_next (&filters, &get_filters_data->get, &first, &count,
+                      init_filter_iterator);
+      if (ret == 1)
+        break;
+      if (ret == -1)
+        {
+          internal_error_send_to_client (error);
+          return;
+        }
+
+      SEND_GET_COMMON (filter, &get_filters_data->get, &filters);
+
+      SENDF_TO_CLIENT_OR_FAIL ("<type>%s</type>"
+                               "<term>%s</term>",
+                               filter_iterator_type (&filters),
+                               filter_iterator_term (&filters));
+
+      if (get_filters_data->alerts)
+        {
+          iterator_t alerts;
+
+          SEND_TO_CLIENT_OR_FAIL ("<alerts>");
+          init_filter_alert_iterator (&alerts,
+                                      get_iterator_resource
+                                        (&filters));
+          while (next (&alerts))
+            {
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<alert id=\"%s\">"
+                "<name>%s</name>",
+                filter_alert_iterator_uuid (&alerts),
+                filter_alert_iterator_name (&alerts));
+              if (filter_alert_iterator_readable (&alerts))
+                SEND_TO_CLIENT_OR_FAIL ("</alert>");
+              else
+                SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                        "</alert>");
+            }
+          cleanup_iterator (&alerts);
+          SEND_TO_CLIENT_OR_FAIL ("</alerts>");
+        }
+
+      SEND_TO_CLIENT_OR_FAIL ("</filter>");
+
+      count++;
+    }
+  cleanup_iterator (&filters);
+  filtered = get_filters_data->get.id
+              ? 1
+              : filter_count (&get_filters_data->get);
+  SEND_GET_END ("filter", &get_filters_data->get, count, filtered);
+
+  get_filters_data_reset (get_filters_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
+ * @brief Handle end of GET_GROUPS element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_groups (omp_parser_t *omp_parser, GError **error)
+{
+  iterator_t groups;
+  int count, filtered, ret, first;
+
+  INIT_GET (group, Group);
+
+  ret = init_group_iterator (&groups, &get_groups_data->get);
+  if (ret)
+    {
+      switch (ret)
+        {
+          case 1:
+            if (send_find_error_to_client ("get_groups", "group",
+                                           get_groups_data->get.id,
+                                           omp_parser))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            break;
+          case 2:
+            if (send_find_error_to_client
+                  ("get_groups", "group", get_groups_data->get.filt_id,
+                   omp_parser))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            break;
+          case -1:
+            SEND_TO_CLIENT_OR_FAIL
+              (XML_INTERNAL_ERROR ("get_groups"));
+            break;
+        }
+      get_groups_data_reset (get_groups_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  SEND_GET_START ("group");
+  while (1)
+    {
+      gchar *users;
+
+      ret = get_next (&groups, &get_groups_data->get, &first, &count,
+                      init_group_iterator);
+      if (ret == 1)
+        break;
+      if (ret == -1)
+        {
+          internal_error_send_to_client (error);
+          return;
+        }
+
+      SEND_GET_COMMON (group, &get_groups_data->get, &groups);
+
+      users = group_users (get_iterator_resource (&groups));
+      SENDF_TO_CLIENT_OR_FAIL ("<users>%s</users>", users ? users : "");
+      g_free (users);
+
+      SEND_TO_CLIENT_OR_FAIL ("</group>");
+
+      count++;
+    }
+  cleanup_iterator (&groups);
+  filtered = get_groups_data->get.id
+              ? 1
+              : group_count (&get_groups_data->get);
+  SEND_GET_END ("group", &get_groups_data->get, count, filtered);
+
+  get_groups_data_reset (get_groups_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
+ * @brief Handle end of GET_INFO element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_info (omp_parser_t *omp_parser, GError **error)
+{
+  iterator_t info;
+  int count, first, filtered, ret;
+  int (*init_info_iterator) (iterator_t*, get_data_t *, const char *);
+  int (*info_count) (const get_data_t *get);
+  const char *update_time;
+  get_data_t *get;
+
+  if (acl_user_may ("get_info") == 0)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("get_info",
+                          "Permission denied"));
+      get_info_data_reset (get_info_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  if (manage_scap_loaded () == 0)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("get_info",
+                          "GET_INFO requires the SCAP database."));
+      get_info_data_reset (get_info_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+  if (manage_cert_loaded () == 0)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("get_info",
+                          "GET_INFO requires the CERT database."));
+      get_info_data_reset (get_info_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  if (get_info_data->name && get_info_data->get.id)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("get_info",
+                            "Only one of name and the id attribute"
+                            " may be given."));
+      get_info_data_reset (get_info_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+  if (get_info_data->type == NULL)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("get_info",
+                            "No type specified."));
+      get_info_data_reset (get_info_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  get = &get_info_data->get;
+  if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
+    {
+      char *user_filter;
+      gchar *name;
+
+      if (strcmp (get_info_data->type, "cpe") == 0)
+        name = g_strdup ("CPE");
+      else if (strcmp (get_info_data->type, "cve") == 0)
+        name = g_strdup ("CVE");
+      else if (strcmp (get_info_data->type, "ovaldef") == 0)
+        name = g_strdup ("OVAL");
+      else if (strcmp (get_info_data->type, "cert_bund_adv") == 0)
+        name = g_strdup ("CERT-Bund");
+      else if (strcmp (get_info_data->type, "dfn_cert_adv") == 0)
+        name = g_strdup ("DFN-CERT");
+      else if (strcmp (get_info_data->type, "nvt") == 0)
+        name = g_strdup ("NVT");
+      else if (strcmp (get_info_data->type, "allinfo") == 0)
+        name = g_strdup ("All SecInfo");
+      else
+        {
+          if (send_find_error_to_client ("get_info", "type",
+                                          get_info_data->type,
+                                          omp_parser))
+            {
+              error_send_to_client (error);
+              return;
+            }
+          get_info_data_reset (get_info_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          return;
+        }
+
+      user_filter = setting_filter (name);
+      g_free (name);
+
+      if (user_filter && strlen (user_filter))
+        {
+          get->filt_id = user_filter;
+          get->filter = filter_term (user_filter);
+        }
+      else
+        get->filt_id = g_strdup("0");
+    }
+
+  /* Set type specific functions */
+  if (g_strcmp0 ("cpe", get_info_data->type) == 0)
+    {
+      init_info_iterator = init_cpe_info_iterator;
+      info_count = cpe_info_count;
+      get_info_data->get.subtype = g_strdup ("cpe");
+    }
+  else if (g_strcmp0 ("cve", get_info_data->type) == 0)
+    {
+      init_info_iterator = init_cve_info_iterator;
+      info_count = cve_info_count;
+      get_info_data->get.subtype = g_strdup ("cve");
+    }
+  else if ((g_strcmp0 ("nvt", get_info_data->type) == 0)
+            && (get_info_data->name == NULL)
+            && (get_info_data->get.id == NULL))
+    {
+      init_info_iterator = init_nvt_info_iterator;
+      info_count = nvt_info_count;
+      get_info_data->get.subtype = g_strdup ("nvt");
+    }
+  else if (g_strcmp0 ("nvt", get_info_data->type) == 0)
+    {
+      gchar *result;
+
+      get_info_data->get.subtype = g_strdup ("nvt");
+
+      manage_read_info (get_info_data->type, get_info_data->get.id,
+                        get_info_data->name, &result);
+      if (result)
+        {
+          SEND_GET_START ("info");
+          SEND_TO_CLIENT_OR_FAIL ("<info>");
+          SEND_TO_CLIENT_OR_FAIL (result);
+          SEND_TO_CLIENT_OR_FAIL ("</info>");
+          SEND_TO_CLIENT_OR_FAIL ("<details>1</details>");
+          SEND_GET_END ("info", &get_info_data->get, 1, 1);
+          g_free (result);
+          get_info_data_reset (get_info_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          return;
+        }
+      else
+        {
+          if (send_find_error_to_client ("get_info",
+                                         get_info_data->name
+                                          ? "name"
+                                          : "ID",
+                                         get_info_data->name
+                                          ? get_info_data->name
+                                          : get_info_data->get.id,
+                                         omp_parser))
+            {
+              error_send_to_client (error);
+              return;
+            }
+          get_info_data_reset (get_info_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          return;
+        }
+    }
+  else if (g_strcmp0 ("ovaldef", get_info_data->type) == 0)
+    {
+      init_info_iterator = init_ovaldef_info_iterator;
+      info_count = ovaldef_info_count;
+      get_info_data->get.subtype = g_strdup ("ovaldef");
+    }
+  else if (g_strcmp0 ("cert_bund_adv", get_info_data->type) == 0)
+    {
+      init_info_iterator = init_cert_bund_adv_info_iterator;
+      info_count = cert_bund_adv_info_count;
+      get_info_data->get.subtype = g_strdup ("cert_bund_adv");
+    }
+  else if (g_strcmp0 ("dfn_cert_adv", get_info_data->type) == 0)
+    {
+      init_info_iterator = init_dfn_cert_adv_info_iterator;
+      info_count = dfn_cert_adv_info_count;
+      get_info_data->get.subtype = g_strdup ("dfn_cert_adv");
+    }
+  else if (g_strcmp0 ("allinfo", get_info_data->type) == 0)
+    {
+      init_info_iterator = init_all_info_iterator;
+      info_count = all_info_count;
+      get_info_data->get.subtype = g_strdup ("allinfo");
+    }
+  else
+    {
+      if (send_find_error_to_client ("get_info", "type",
+                                     get_info_data->type, omp_parser))
+        {
+          error_send_to_client (error);
+        }
+      return;
+    }
+
+  ret = init_info_iterator (&info, &get_info_data->get, get_info_data->name);
+  if (ret)
+    {
+      switch (ret)
+        {
+        case 1:
+          if (send_find_error_to_client ("get_info", "type",
+                                         get_info_data->type,
+                                         omp_parser))
+            {
+              error_send_to_client (error);
+              return;
+            }
+          break;
+        case 2:
+          if (send_find_error_to_client
+               ("get_info", "filter", get_info_data->get.filt_id,
+                omp_parser))
+            {
+              error_send_to_client (error);
+              return;
+            }
+          break;
+        case -1:
+          SEND_TO_CLIENT_OR_FAIL
+            (XML_INTERNAL_ERROR ("get_info"));
+          break;
+        }
+      get_info_data_reset (get_info_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  count = 0;
+  manage_filter_controls (get_info_data->get.filter, &first, NULL, NULL, NULL);
+  SEND_GET_START ("info");
+  update_time = manage_scap_update_time ();
+  while (next (&info))
+    {
+      GString *result;
+
+      /* Info's are currently always read only */
+      if (send_get_common ("info", &get_info_data->get, &info,
+                           omp_parser->client_writer,
+                           omp_parser->client_writer_data, 0, 0))
+        {
+          error_send_to_client (error);
+          return;
+        }
+
+      SENDF_TO_CLIENT_OR_FAIL ("<update_time>%s</update_time>",
+                               update_time);
+
+      result = g_string_new ("");
+
+      /* Information depending on type */
+
+      if (g_strcmp0 ("cpe", get_info_data->type) == 0)
+        {
+          const char *title;
+
+          xml_string_append (result, "<cpe>");
+          title = cpe_info_iterator_title (&info);
+          if (title)
+            xml_string_append (result,
+                               "<title>%s</title>",
+                               cpe_info_iterator_title (&info));
+          xml_string_append (result,
+                             "<nvd_id>%s</nvd_id>"
+                             "<max_cvss>%s</max_cvss>"
+                             "<cve_refs>%s</cve_refs>"
+                             "<status>%s</status>",
+                             cpe_info_iterator_nvd_id (&info),
+                             cpe_info_iterator_max_cvss (&info),
+                             cpe_info_iterator_cve_refs (&info),
+                             cpe_info_iterator_status (&info) ?
+                             cpe_info_iterator_status (&info) : "");
+
+          if (get_info_data->details == 1)
+            {
+              iterator_t cves;
+              g_string_append (result, "<cves>");
+              init_cpe_cve_iterator (&cves, get_iterator_name (&info), 0, NULL);
+              while (next (&cves))
+                xml_string_append (result,
+                                   "<cve>"
+                                   "<entry"
+                                   " xmlns:cpe-lang=\"http://cpe.mitre.org/language/2.0\""
+                                   " xmlns:vuln=\"http://scap.nist.gov/schema/vulnerability/0.4\""
+                                   " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\""
+                                   " xmlns:patch=\"http://scap.nist.gov/schema/patch/0.1\""
+                                   " xmlns:scap-core=\"http://scap.nist.gov/schema/scap-core/0.1\""
+                                   " xmlns:cvss=\"http://scap.nist.gov/schema/cvss-v2/0.2\""
+                                   " xmlns=\"http://scap.nist.gov/schema/feed/vulnerability/2.0\""
+                                   " id=\"%s\">"
+                                   "<vuln:cvss>"
+                                   "<cvss:base_metrics>"
+                                   "<cvss:score>%s</cvss:score>"
+                                   "</cvss:base_metrics>"
+                                   "</vuln:cvss>"
+                                   "</entry>"
+                                   "</cve>",
+                                   cve_iterator_name (&cves),
+                                   cve_iterator_cvss (&cves));
+              cleanup_iterator (&cves);
+              g_string_append (result, "</cves>");
+            }
+        }
+      else if (g_strcmp0 ("cve", get_info_data->type) == 0)
+        {
+          xml_string_append (result,
+                             "<cve>"
+                             "<cvss>%s</cvss>"
+                             "<vector>%s</vector>"
+                             "<complexity>%s</complexity>"
+                             "<authentication>%s</authentication>"
+                             "<confidentiality_impact>%s</confidentiality_impact>"
+                             "<integrity_impact>%s</integrity_impact>"
+                             "<availability_impact>%s</availability_impact>"
+                             "<description>%s</description>"
+                             "<products>%s</products>",
+                             cve_info_iterator_cvss (&info)
+                              ? cve_info_iterator_cvss (&info)
+                              : "",
+                             cve_info_iterator_vector (&info),
+                             cve_info_iterator_complexity (&info),
+                             cve_info_iterator_authentication (&info),
+                             cve_info_iterator_confidentiality_impact (&info),
+                             cve_info_iterator_integrity_impact (&info),
+                             cve_info_iterator_availability_impact (&info),
+                             cve_info_iterator_description (&info),
+                             cve_info_iterator_products (&info));
+          if (get_info_data->details == 1)
+            {
+              iterator_t nvts;
+              iterator_t cert_advs;
+              init_cve_nvt_iterator (&nvts, get_iterator_name (&info), 1, NULL);
+              g_string_append (result, "<nvts>");
+              while (next (&nvts))
+                xml_string_append (result,
+                                   "<nvt oid=\"%s\">"
+                                   "<name>%s</name>"
+                                   "</nvt>",
+                                   nvt_iterator_oid (&nvts),
+                                   nvt_iterator_name (&nvts));
+              g_string_append (result, "</nvts>");
+              cleanup_iterator (&nvts);
+
+              g_string_append (result, "<cert>");
+              if (manage_cert_loaded())
+                {
+                  init_cve_cert_bund_adv_iterator (&cert_advs,
+                                                  get_iterator_name (&info),
+                                                  1, NULL);
+                  while (next (&cert_advs))
+                    {
+                      xml_string_append
+                        (result,
+                         "<cert_ref type=\"CERT-Bund\">"
+                         "<name>%s</name>"
+                         "<title>%s</title>"
+                         "</cert_ref>",
+                         get_iterator_name (&cert_advs),
+                         cert_bund_adv_info_iterator_title (&cert_advs));
+                  };
+                  cleanup_iterator (&cert_advs);
+
+                  init_cve_dfn_cert_adv_iterator (&cert_advs,
+                                                  get_iterator_name
+                                                    (&info),
+                                                  1, NULL);
+                  while (next (&cert_advs))
+                    {
+                      xml_string_append (result,
+                                         "<cert_ref type=\"DFN-CERT\">"
+                                         "<name>%s</name>"
+                                         "<title>%s</title>"
+                                         "</cert_ref>",
+                                         get_iterator_name (&cert_advs),
+                                         dfn_cert_adv_info_iterator_title
+                                          (&cert_advs));
+                  };
+                  cleanup_iterator (&cert_advs);
+                }
+              else
+                {
+                  g_string_append(result, "<warning>"
+                                          "database not available"
+                                          "</warning>");
+                }
+              g_string_append (result, "</cert>");
+            }
+        }
+      else if (g_strcmp0 ("ovaldef", get_info_data->type) == 0)
+        {
+          const char *description;
+          xml_string_append (result,
+                             "<ovaldef>"
+                             "<version>%s</version>"
+                             "<deprecated>%s</deprecated>"
+                             "<status>%s</status>"
+                             "<class>%s</class>"
+                             "<title>%s</title>"
+                             "<max_cvss>%s</max_cvss>"
+                             "<cve_refs>%s</cve_refs>"
+                             "<file>%s</file>",
+                             ovaldef_info_iterator_version (&info),
+                             ovaldef_info_iterator_deprecated (&info),
+                             ovaldef_info_iterator_status (&info),
+                             ovaldef_info_iterator_class (&info),
+                             ovaldef_info_iterator_title (&info),
+                             ovaldef_info_iterator_max_cvss (&info),
+                             ovaldef_info_iterator_cve_refs (&info),
+                             ovaldef_info_iterator_file (&info));
+          description = ovaldef_info_iterator_description (&info);
+          if (get_info_data->details == 1)
+            xml_string_append (result,
+                               "<description>%s</description>",
+                               description);
+        }
+      else if (g_strcmp0 ("cert_bund_adv", get_info_data->type) == 0)
+        xml_string_append (result,
+                           "<cert_bund_adv>"
+                           "<title>%s</title>"
+                           "<summary>%s</summary>"
+                           "<max_cvss>%s</max_cvss>"
+                           "<cve_refs>%s</cve_refs>",
+                           cert_bund_adv_info_iterator_title (&info),
+                           cert_bund_adv_info_iterator_summary (&info),
+                           cert_bund_adv_info_iterator_max_cvss(&info),
+                           cert_bund_adv_info_iterator_cve_refs (&info));
+      else if (g_strcmp0 ("dfn_cert_adv", get_info_data->type) == 0)
+        xml_string_append (result,
+                           "<dfn_cert_adv>"
+                           "<title>%s</title>"
+                           "<summary>%s</summary>"
+                           "<max_cvss>%s</max_cvss>"
+                           "<cve_refs>%s</cve_refs>",
+                           dfn_cert_adv_info_iterator_title (&info),
+                           dfn_cert_adv_info_iterator_summary (&info),
+                           dfn_cert_adv_info_iterator_max_cvss(&info),
+                           dfn_cert_adv_info_iterator_cve_refs (&info));
+      else if (g_strcmp0 ("nvt", get_info_data->type) == 0)
+        {
+          if (send_nvt (&info, 1, 1, -1, NULL, 0,
+                        omp_parser->client_writer,
+                        omp_parser->client_writer_data))
+            {
+              cleanup_iterator (&info);
+              error_send_to_client (error);
+              return;
+            }
+        }
+      else if (g_strcmp0 ("allinfo", get_info_data->type) == 0)
+        {
+          const char *extra = all_info_iterator_extra (&info);
+          xml_string_append (result,
+                             "<allinfo>"
+                             "<type>%s</type>"
+                             "<extra>%s</extra>"
+                             "<severity>%s</severity>",
+                             all_info_iterator_type (&info),
+                             extra ? extra : "",
+                             all_info_iterator_severity (&info));
+        }
+
+      /* Append raw data if full details are requested */
+
+      if (get_info_data->details == 1)
+        {
+          gchar *raw_data = NULL;
+          gchar *nonconst_id = g_strdup(get_iterator_uuid (&info));
+          gchar *nonconst_name = g_strdup(get_iterator_name (&info));
+          manage_read_info (get_info_data->type, nonconst_id,
+                            nonconst_name, &raw_data);
+          g_string_append_printf (result, "<raw_data>%s</raw_data>",
+                                  raw_data);
+          g_free(nonconst_id);
+          g_free(nonconst_name);
+          g_free(raw_data);
+        }
+
+      g_string_append_printf (result, "</%s></info>", get_info_data->type);
+      SEND_TO_CLIENT_OR_FAIL (result->str);
+      count++;
+      g_string_free (result, TRUE);
+    }
+  cleanup_iterator (&info);
+
+  if (get_info_data->details == 1)
+    SEND_TO_CLIENT_OR_FAIL ("<details>1</details>");
+
+  filtered = get_info_data->get.id
+              ? 1
+              : (get_info_data->name
+                  ? info_name_count (get_info_data->type, get_info_data->name)
+                  : info_count (&get_info_data->get));
+
+  if (strcmp (get_info_data->type, "allinfo"))
+    SEND_GET_END ("info", &get_info_data->get, count, filtered);
+  else
+    send_get_end ("info", &get_info_data->get, count, filtered,
+                  total_info_count (&get_info_data->get, 0),
+                  omp_parser->client_writer, omp_parser->client_writer_data);
+
+  get_info_data_reset (get_info_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
+ * @brief Handle end of GET_NOTES element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_notes (omp_parser_t *omp_parser, GError **error)
+{
+  nvt_t nvt = 0;
+  task_t task = 0;
+
+  if (get_notes_data->note_id && get_notes_data->nvt_oid)
+    SEND_TO_CLIENT_OR_FAIL
+     (XML_ERROR_SYNTAX ("get_notes",
+                        "Only one of NVT and the note_id attribute"
+                        " may be given"));
+  else if (get_notes_data->note_id && get_notes_data->task_id)
+    SEND_TO_CLIENT_OR_FAIL
+     (XML_ERROR_SYNTAX ("get_notes",
+                        "Only one of the note_id and task_id"
+                        " attributes may be given"));
+  else if (get_notes_data->task_id
+            && find_task (get_notes_data->task_id, &task))
+    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_notes"));
+  else if (get_notes_data->task_id && task == 0)
+    {
+      if (send_find_error_to_client ("get_notes",
+                                      "task", get_notes_data->task_id,
+                                      omp_parser))
+        {
+          error_send_to_client (error);
+          return;
+        }
+    }
+  else if (get_notes_data->nvt_oid
+            && find_nvt (get_notes_data->nvt_oid, &nvt))
+    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_notes"));
+  else if (get_notes_data->nvt_oid && nvt == 0)
+    {
+      if (send_find_error_to_client ("get_notes", "NVT",
+                                     get_notes_data->nvt_oid,
+                                     omp_parser))
+        {
+          error_send_to_client (error);
+          return;
+        }
+    }
+  else
+    {
+      iterator_t notes;
+      GString *buffer;
+      int count, filtered, ret, first;
+
+      INIT_GET (note, Note);
+
+      ret = init_note_iterator (&notes, &get_notes_data->get, nvt, 0,
+                                task);
+      if (ret)
+        {
+          switch (ret)
+            {
+              case 1:
+                if (send_find_error_to_client ("get_notes", "note",
+                                               get_notes_data->get.id,
+                                               omp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
+              case 2:
+                if (send_find_error_to_client
+                      ("get_notes", "filter",
+                       get_notes_data->get.filt_id, omp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_INTERNAL_ERROR ("get_notes"));
+                break;
+            }
+          get_notes_data_reset (get_notes_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          return;
+        }
+
+      SEND_GET_START ("note");
+
+      buffer = g_string_new ("");
+
+      // TODO: Do the iteration with get_next so it checks "first".
+      buffer_notes_xml (buffer, &notes, get_notes_data->get.details,
+                        get_notes_data->result, &count);
+
+      SEND_TO_CLIENT_OR_FAIL (buffer->str);
+      g_string_free (buffer, TRUE);
+
+      cleanup_iterator (&notes);
+      filtered = get_notes_data->get.id
+                  ? 1
+                  : note_count (&get_notes_data->get, nvt, 0, task);
+      SEND_GET_END ("note", &get_notes_data->get, count, filtered);
+    }
+  get_notes_data_reset (get_notes_data);
+  set_client_state (CLIENT_AUTHENTIC);
+
+}
+
+/**
+ * @brief Handle end of GET_NVT_FEED_VERSION element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_nvt_feed_version (omp_parser_t *omp_parser, GError **error)
+{
+  char *feed_version;
+
+  if (acl_user_may ("get_nvt_feed_version") == 0)
+    SEND_TO_CLIENT_OR_FAIL
+      (XML_ERROR_SYNTAX ("get_nvt_feed_version",
+                         "Permission denied"));
+  else if ((feed_version = nvts_feed_version ()))
+    {
+      SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_version_response"
+                              " status=\"" STATUS_OK "\""
+                              " status_text=\"" STATUS_OK_TEXT "\">"
+                              "<version>");
+      SEND_TO_CLIENT_OR_FAIL (feed_version);
+      free (feed_version);
+      SEND_TO_CLIENT_OR_FAIL ("</version>"
+                              "</get_nvt_feed_version_response>");
+    }
+  else
+    SEND_XML_SERVICE_DOWN ("get_nvt_feed_version");
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
+ * @brief Handle end of GET_NVTS element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_nvts (omp_parser_t *omp_parser, GError **error)
+{
+  char *feed_version;
+
+  if (acl_user_may ("get_nvts") == 0)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("get_nvts",
+                          "Permission denied"));
+      get_nvts_data_reset (get_nvts_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  feed_version = nvts_feed_version ();
+  if (feed_version)
+    {
+      config_t config, preferences_config;
+      nvt_t nvt = 0;
+
+      config = preferences_config = 0;
+
+      free (feed_version);
+
+      if (get_nvts_data->nvt_oid && get_nvts_data->family)
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("get_nvts",
+                            "Too many parameters at once"));
+      else if ((get_nvts_data->details == 0)
+                && get_nvts_data->preference_count)
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("get_nvts",
+                            "GET_NVTS preference_count attribute"
+                            " requires the details attribute"));
+      else if ((get_nvts_data->details == 0)
+                && get_nvts_data->preferences)
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("get_nvts",
+                            "GET_NVTS preferences attribute"
+                            " requires the details attribute"));
+      else if (((get_nvts_data->details == 0)
+                || ((get_nvts_data->config_id == NULL)
+                    && (get_nvts_data->preferences_config_id == NULL)))
+                && get_nvts_data->timeout)
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("get_nvts",
+                            "GET_NVTS timeout attribute"
+                            " requires the details and config_id"
+                            " attributes"));
+      else if (get_nvts_data->nvt_oid
+                && find_nvt (get_nvts_data->nvt_oid, &nvt))
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_INTERNAL_ERROR ("get_nvts"));
+      else if (get_nvts_data->nvt_oid && nvt == 0)
+        {
+          if (send_find_error_to_client ("get_nvts", "NVT",
+                                          get_nvts_data->nvt_oid,
+                                          omp_parser))
+            {
+              error_send_to_client (error);
+              return;
+            }
+        }
+      else if (get_nvts_data->config_id
+                && get_nvts_data->preferences_config_id)
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("get_nvts",
+                            "GET_NVTS config_id and"
+                            " preferences_config_id both given"));
+      else if (get_nvts_data->config_id
+                && find_config_with_permission (get_nvts_data->config_id,
+                                                &config,
+                                                NULL))
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_INTERNAL_ERROR ("get_nvts"));
+      else if (get_nvts_data->config_id && (config == 0))
+        {
+          if (send_find_error_to_client
+                ("get_nvts", "config", get_nvts_data->config_id,
+                omp_parser))
+            {
+              error_send_to_client (error);
+              return;
+            }
+        }
+      else if (get_nvts_data->preferences_config_id
+                && find_config_with_permission
+                    (get_nvts_data->preferences_config_id,
+                    &preferences_config,
+                    NULL))
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_INTERNAL_ERROR ("get_nvts"));
+      else if (get_nvts_data->preferences_config_id
+                && (preferences_config == 0))
+        {
+          if (send_find_error_to_client
+                ("get_nvts", "config",
+                get_nvts_data->preferences_config_id,
+                omp_parser))
+            {
+              error_send_to_client (error);
+              return;
+            }
+        }
+      else
+        {
+          iterator_t nvts;
+
+          SENDF_TO_CLIENT_OR_FAIL
+           ("<get_nvts_response"
+            " status=\"" STATUS_OK "\""
+            " status_text=\"" STATUS_OK_TEXT "\">");
+
+          init_nvt_iterator (&nvts,
+                              nvt,
+                              get_nvts_data->nvt_oid
+                              /* Presume the NVT is in the config (if
+                                * a config was given). */
+                              ? 0
+                              : config,
+                              get_nvts_data->family,
+                              NULL,
+                              get_nvts_data->sort_order,
+                              get_nvts_data->sort_field);
+          if (preferences_config)
+            config = preferences_config;
+          if (get_nvts_data->details)
+            while (next (&nvts))
+              {
+                int pref_count = -1;
+                char *timeout = NULL;
+
+                if (get_nvts_data->timeout)
+                  timeout = config_nvt_timeout (config,
+                                                nvt_iterator_oid (&nvts));
+
+                if (get_nvts_data->preferences && (timeout == NULL))
+                  timeout = config_nvt_timeout
+                              (config,
+                              nvt_iterator_oid (&nvts));
+
+                if (get_nvts_data->preference_count)
+                  {
+                    const char *nvt_name = nvt_iterator_name (&nvts);
+                    pref_count = nvt_preference_count (nvt_name);
+                  }
+                if (send_nvt (&nvts, 1, get_nvts_data->preferences,
+                              pref_count, timeout, config,
+                              omp_parser->client_writer,
+                              omp_parser->client_writer_data))
+                  {
+                    free (timeout);
+                    cleanup_iterator (&nvts);
+                    error_send_to_client (error);
+                    return;
+                  }
+                free (timeout);
+
+                SEND_TO_CLIENT_OR_FAIL ("</nvt>");
+              }
+          else
+            while (next (&nvts))
+              {
+                if (send_nvt (&nvts, 0, 0, -1, NULL, 0,
+                              omp_parser->client_writer,
+                              omp_parser->client_writer_data))
+                  {
+                    cleanup_iterator (&nvts);
+                    error_send_to_client (error);
+                    return;
+                  }
+                SEND_TO_CLIENT_OR_FAIL ("</nvt>");
+              }
+          cleanup_iterator (&nvts);
+
+          SEND_TO_CLIENT_OR_FAIL ("</get_nvts_response>");
+        }
+    }
+  else
+    SEND_XML_SERVICE_DOWN ("get_nvts");
+
+  get_nvts_data_reset (get_nvts_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
+ * @brief Handle end of GET_NVT_FAMILIES element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_nvt_families (omp_parser_t *omp_parser, GError **error)
+{
+  iterator_t families;
+
+  if (acl_user_may ("get_nvt_families") == 0)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("get_nvt_families",
+                          "Permission denied"));
+      get_nvt_families_data_reset (get_nvt_families_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  SEND_TO_CLIENT_OR_FAIL ("<get_nvt_families_response"
+                          " status=\"" STATUS_OK "\""
+                          " status_text=\"" STATUS_OK_TEXT "\">"
+                          "<families>");
+
+  init_family_iterator (&families,
+                        1,
+                        NULL,
+                        get_nvt_families_data->sort_order);
+  while (next (&families))
+    {
+      int family_max;
+      const char *family;
+
+      family = family_iterator_name (&families);
+      if (family)
+        family_max = family_nvt_count (family);
+      else
+        family_max = -1;
+
+      SENDF_TO_CLIENT_OR_FAIL
+       ("<family>"
+        "<name>%s</name>"
+        /* The total number of NVT's in the family. */
+        "<max_nvt_count>%i</max_nvt_count>"
+        "</family>",
+        family ? family : "",
+        family_max);
+    }
+  cleanup_iterator (&families);
+
+  SEND_TO_CLIENT_OR_FAIL ("</families>"
+                          "</get_nvt_families_response>");
+
+  get_nvt_families_data_reset (get_nvt_families_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
+ * @brief Handle end of GET_OVERRIDES element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_overrides (omp_parser_t *omp_parser, GError **error)
+{
+  nvt_t nvt = 0;
+  task_t task = 0;
+
+  if (get_overrides_data->override_id && get_overrides_data->nvt_oid)
+    SEND_TO_CLIENT_OR_FAIL
+     (XML_ERROR_SYNTAX ("get_overrides",
+                        "Only one of NVT and the override_id attribute"
+                        " may be given"));
+  else if (get_overrides_data->override_id
+            && get_overrides_data->task_id)
+    SEND_TO_CLIENT_OR_FAIL
+     (XML_ERROR_SYNTAX ("get_overrides",
+                        "Only one of the override_id and task_id"
+                        " attributes may be given"));
+  else if (get_overrides_data->task_id
+            && find_task (get_overrides_data->task_id, &task))
+    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_overrides"));
+  else if (get_overrides_data->task_id && task == 0)
+    {
+      if (send_find_error_to_client ("get_overrides", "task",
+                                     get_overrides_data->task_id,
+                                     omp_parser))
+        {
+          error_send_to_client (error);
+          return;
+        }
+    }
+  else if (get_overrides_data->nvt_oid
+            && find_nvt (get_overrides_data->nvt_oid, &nvt))
+    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_overrides"));
+  else if (get_overrides_data->nvt_oid && nvt == 0)
+    {
+      if (send_find_error_to_client ("get_overrides",
+                                     "NVT", get_overrides_data->nvt_oid,
+                                     omp_parser))
+        {
+          error_send_to_client (error);
+          return;
+        }
+    }
+  else
+    {
+      iterator_t overrides;
+      GString *buffer;
+      int count, filtered, ret, first;
+
+      INIT_GET (override, Override);
+
+      ret = init_override_iterator (&overrides,
+                                    &get_overrides_data->get, nvt, 0,
+                                    task);
+      if (ret)
+        {
+          switch (ret)
+            {
+              case 1:
+                if (send_find_error_to_client
+                      ("get_overrides", "override",
+                       get_overrides_data->get.id, omp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
+              case 2:
+                if (send_find_error_to_client
+                      ("get_overrides", "filter",
+                       get_overrides_data->get.filt_id, omp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_INTERNAL_ERROR ("get_overrides"));
+                break;
+            }
+          get_overrides_data_reset (get_overrides_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          return;
+        }
+
+      SEND_GET_START ("override");
+
+      buffer = g_string_new ("");
+
+      // TODO: Do the iteration with get_next so it checks "first".
+      buffer_overrides_xml (buffer, &overrides,
+                            get_overrides_data->get.details,
+                            get_overrides_data->result, &count);
+
+      SEND_TO_CLIENT_OR_FAIL (buffer->str);
+      g_string_free (buffer, TRUE);
+
+      cleanup_iterator (&overrides);
+      filtered = get_overrides_data->get.id
+                  ? 1
+                  : override_count (&get_overrides_data->get, nvt, 0,
+                                    task);
+      SEND_GET_END ("override", &get_overrides_data->get, count,
+                    filtered);
+    }
+  get_overrides_data_reset (get_overrides_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
+ * @brief Handle end of GET_PERMISSIONS element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_permissions (omp_parser_t *omp_parser, GError **error)
+{
+  iterator_t permissions;
+  int count, filtered, ret, first;
+
+  INIT_GET (permission, Permission);
+
+  ret = init_permission_iterator (&permissions,
+                                  &get_permissions_data->get);
+  if (ret)
+    {
+      switch (ret)
+        {
+          case 1:
+            if (send_find_error_to_client ("get_permissions",
+                                           "permission",
+                                           get_permissions_data->get.id,
+                                           omp_parser))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            break;
+          case 2:
+            if (send_find_error_to_client
+                  ("get_permissions", "filter",
+                   get_permissions_data->get.filt_id, omp_parser))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            break;
+          case -1:
+            SEND_TO_CLIENT_OR_FAIL
+              (XML_INTERNAL_ERROR ("get_permissions"));
+            break;
+        }
+      get_permissions_data_reset (get_permissions_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  SEND_GET_START ("permission");
+  while (1)
+    {
+      const char *resource_type;
+
+      ret = get_next (&permissions, &get_permissions_data->get, &first,
+                      &count, init_permission_iterator);
+      if (ret == 1)
+        break;
+      if (ret == -1)
+        {
+          internal_error_send_to_client (error);
+          return;
+        }
+
+      SEND_GET_COMMON (permission, &get_permissions_data->get, &permissions);
+
+      resource_type = permission_iterator_resource_type (&permissions);
+      SENDF_TO_CLIENT_OR_FAIL
+       ("<resource id=\"%s\">"
+        "<name>%s</name>"
+        "<type>%s</type>"
+        "<trash>%i</trash>"
+        "<deleted>%i</deleted>",
+        permission_iterator_resource_uuid (&permissions),
+        resource_type && strcmp (resource_type, "")
+          ? permission_iterator_resource_name (&permissions)
+          : "",
+        permission_iterator_resource_type (&permissions),
+        permission_iterator_resource_in_trash (&permissions),
+        permission_iterator_resource_orphan (&permissions));
+
+      if (permission_iterator_resource_readable (&permissions))
+        SEND_TO_CLIENT_OR_FAIL ("</resource>");
+      else
+        SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                "</resource>");
+
+      SENDF_TO_CLIENT_OR_FAIL
+       ("<subject id=\"%s\">"
+        "<name>%s</name>"
+        "<type>%s</type>"
+        "<trash>%i</trash>",
+        permission_iterator_subject_uuid (&permissions),
+        permission_iterator_subject_name (&permissions),
+        permission_iterator_subject_type (&permissions),
+        permission_iterator_subject_in_trash (&permissions));
+
+      if (permission_iterator_subject_readable (&permissions))
+        SEND_TO_CLIENT_OR_FAIL ("</subject>");
+      else
+        SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                "</subject>");
+
+      SEND_TO_CLIENT_OR_FAIL ("</permission>");
+      count++;
+    }
+  cleanup_iterator (&permissions);
+  filtered = get_permissions_data->get.id
+              ? 1
+              : permission_count (&get_permissions_data->get);
+  SEND_GET_END ("permission", &get_permissions_data->get, count, filtered);
+
+  get_permissions_data_reset (get_permissions_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
+ * @brief Handle end of GET_PORT_LISTS element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_port_lists (omp_parser_t *omp_parser, GError **error)
+{
+  iterator_t port_lists;
+  int count, filtered, ret, first;
+
+  INIT_GET (port_list, Port List);
+
+  ret = init_port_list_iterator (&port_lists,
+                                  &get_port_lists_data->get);
+  if (ret)
+    {
+      switch (ret)
+        {
+          case 1:
+            if (send_find_error_to_client ("get_port_lists",
+                                           "port_list",
+                                           get_port_lists_data->get.id,
+                                           omp_parser))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            break;
+          case 2:
+            if (send_find_error_to_client
+                  ("get_port_lists", "port_list",
+                   get_port_lists_data->get.filt_id, omp_parser))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            break;
+          case -1:
+            SEND_TO_CLIENT_OR_FAIL
+              (XML_INTERNAL_ERROR ("get_port_lists"));
+            break;
+        }
+      get_port_lists_data_reset (get_port_lists_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  SEND_GET_START ("port_list");
+  while (1)
+    {
+      ret = get_next (&port_lists, &get_port_lists_data->get, &first,
+                      &count, init_port_list_iterator);
+      if (ret == 1)
+        break;
+      if (ret == -1)
+        {
+          internal_error_send_to_client (error);
+          return;
+        }
+
+      SEND_GET_COMMON (port_list, &get_port_lists_data->get,
+                        &port_lists);
+
+      SENDF_TO_CLIENT_OR_FAIL ("<port_count>"
+                               "<all>%i</all>"
+                               "<tcp>%i</tcp>"
+                               "<udp>%i</udp>"
+                               "</port_count>",
+                               port_list_iterator_count_all (&port_lists),
+                               port_list_iterator_count_tcp (&port_lists),
+                               port_list_iterator_count_udp (&port_lists));
+
+      if (get_port_lists_data->get.details)
+        {
+          iterator_t ranges;
+
+          SEND_TO_CLIENT_OR_FAIL ("<port_ranges>");
+
+          init_port_range_iterator (&ranges,
+                                    get_iterator_resource (&port_lists),
+                                    0, 1, NULL);
+          while (next (&ranges))
+            SENDF_TO_CLIENT_OR_FAIL
+             ("<port_range id=\"%s\">"
+              "<start>%s</start>"
+              "<end>%s</end>"
+              "<type>%s</type>"
+              "<comment>%s</comment>"
+              "</port_range>",
+              port_range_iterator_uuid (&ranges),
+              port_range_iterator_start (&ranges),
+              port_range_iterator_end (&ranges)
+                ? port_range_iterator_end (&ranges)
+                : port_range_iterator_start (&ranges),
+              port_range_iterator_type (&ranges),
+              port_range_iterator_comment (&ranges));
+          cleanup_iterator (&ranges);
+
+          SENDF_TO_CLIENT_OR_FAIL ("</port_ranges>");
+        }
+
+      if (get_port_lists_data->targets)
+        {
+          iterator_t targets;
+
+          SEND_TO_CLIENT_OR_FAIL ("<targets>");
+
+          init_port_list_target_iterator (&targets,
+                                          get_iterator_resource
+                                            (&port_lists), 0);
+          while (next (&targets))
+            {
+              if ((get_iterator_owner (&port_lists) == 0)
+                  && port_list_target_iterator_readable (&targets) == 0)
+                /* Skip other users' targets for global port lists. */
+                continue;
+
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<target id=\"%s\">"
+                "<name>%s</name>",
+                port_list_target_iterator_uuid (&targets),
+                port_list_target_iterator_name (&targets));
+              if (port_list_target_iterator_readable (&targets))
+                SEND_TO_CLIENT_OR_FAIL ("</target>");
+              else
+                SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                        "</target>");
+            }
+
+          cleanup_iterator (&targets);
+
+          SEND_TO_CLIENT_OR_FAIL ("</targets>");
+        }
+
+      SEND_TO_CLIENT_OR_FAIL ("</port_list>");
+
+      count++;
+    }
+
+  cleanup_iterator (&port_lists);
+  filtered = get_port_lists_data->get.id
+              ? 1
+              : port_list_count (&get_port_lists_data->get);
+  SEND_GET_END ("port_list", &get_port_lists_data->get, count, filtered);
+
+  get_port_lists_data_reset (get_port_lists_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
+ * @brief Handle end of GET_PREFERENCES element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_preferences (omp_parser_t *omp_parser, GError **error)
+{
+  iterator_t prefs;
+  nvt_t nvt = 0;
+  config_t config = 0;
+
+  if (acl_user_may ("get_preferences") == 0)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("get_preferences",
+                          "Permission denied"));
+      get_preferences_data_reset (get_preferences_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  if (get_preferences_data->nvt_oid
+      && find_nvt (get_preferences_data->nvt_oid, &nvt))
+    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_preferences"));
+  else if (get_preferences_data->nvt_oid && nvt == 0)
+    {
+      if (send_find_error_to_client ("get_preferences", "NVT",
+                                     get_preferences_data->nvt_oid,
+                                     omp_parser))
+        {
+          error_send_to_client (error);
+          return;
+        }
+    }
+  else if (get_preferences_data->config_id
+            && find_config (get_preferences_data->config_id, &config))
+    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_preferences"));
+  else if (get_preferences_data->config_id && config == 0)
+    {
+      if (send_find_error_to_client ("get_preferences", "config",
+                                     get_preferences_data->config_id,
+                                     omp_parser))
+        {
+          error_send_to_client (error);
+          return;
+        }
+    }
+  else
+    {
+      char *nvt_name = manage_nvt_name (nvt);
+      SEND_TO_CLIENT_OR_FAIL ("<get_preferences_response"
+                              " status=\"" STATUS_OK "\""
+                              " status_text=\"" STATUS_OK_TEXT "\">");
+      init_nvt_preference_iterator (&prefs, nvt_name);
+      free (nvt_name);
+      if (get_preferences_data->preference)
+        while (next (&prefs))
+          {
+            char *name = strstr (nvt_preference_iterator_name (&prefs), "]:");
+            if (name
+                && (strcmp (name + 2,
+                            get_preferences_data->preference)
+                    == 0))
+              {
+                GString *buffer = g_string_new ("");
+                buffer_config_preference_xml (buffer, &prefs, config, 1);
+                SEND_TO_CLIENT_OR_FAIL (buffer->str);
+                g_string_free (buffer, TRUE);
+                break;
+              }
+          }
+      else
+        while (next (&prefs))
+          {
+            GString *buffer = g_string_new ("");
+            buffer_config_preference_xml (buffer, &prefs, config, 1);
+            SEND_TO_CLIENT_OR_FAIL (buffer->str);
+            g_string_free (buffer, TRUE);
+          }
+
+      cleanup_iterator (&prefs);
+      SEND_TO_CLIENT_OR_FAIL ("</get_preferences_response>");
+    }
+  get_preferences_data_reset (get_preferences_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
+ * @brief Handle end of GET_REPORTS element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_reports (omp_parser_t *omp_parser, GError **error)
+{
+  if (current_credentials.username == NULL)
+    {
+      get_reports_data_reset (get_reports_data);
+      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  report_t request_report = 0, delta_report = 0, report;
+  report_format_t report_format;
+  iterator_t reports;
+  int count, filtered, ret, first;
+
+  if (acl_user_may ("get_reports") == 0)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("get_reports",
+                          "Permission denied"));
+      get_reports_data_reset (get_reports_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  /** @todo Some checks only required when type is "scan". */
+
+  /** @todo Respond in all error cases.
+    *
+    * When something fails mid-way through the report, we can only close
+    * the connection.  It would be nice to instead prepare everything
+    * before trying to send it, so that we could send an error response
+    * when there is a problem.  Buffering the entire report before sending
+    * it would probably take too long and/or use to much memory. */
+
+  if (strcmp (get_reports_data->type, "scan")
+      && strcmp (get_reports_data->type, "assets")
+      && strcmp (get_reports_data->type, "prognostic"))
+    {
+      get_reports_data_reset (get_reports_data);
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("get_reports",
+                          "GET_REPORTS type must be scan, assets or"
+                          " prognostic"));
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  if (strcmp (get_reports_data->type, "prognostic") == 0
+      && manage_scap_loaded () == 0)
+    {
+      get_reports_data_reset (get_reports_data);
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("get_reports",
+                          "GET_REPORTS with type prognostic requires the"
+                          " SCAP database"));
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  if ((strcmp (get_reports_data->type, "scan") == 0)
+      && get_reports_data->report_id
+      && find_report_with_permission (get_reports_data->report_id,
+                                      &request_report,
+                                      NULL))
+    {
+      get_reports_data_reset (get_reports_data);
+      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  if (get_reports_data->delta_report_id
+      && strcmp (get_reports_data->delta_report_id, "0")
+      && find_report_with_permission (get_reports_data->delta_report_id,
+                                      &delta_report,
+                                      NULL))
+    {
+      get_reports_data_reset (get_reports_data);
+      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  if (get_reports_data->format_id == NULL)
+    get_reports_data->format_id
+      = g_strdup ("a994b278-1f62-11e1-96ac-406186ea4fc5");
+
+  if (find_report_format_with_permission (get_reports_data->format_id,
+                                          &report_format,
+                                          "get_report_formats"))
+    {
+      get_reports_data_reset (get_reports_data);
+      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  if (report_format == 0)
+    {
+      if (send_find_error_to_client ("get_reports", "report format",
+                                     get_reports_data->format_id,
+                                     omp_parser))
+        {
+          error_send_to_client (error);
+          return;
+        }
+      get_reports_data_reset (get_reports_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  if ((strcmp (get_reports_data->type, "scan") == 0)
+      && get_reports_data->report_id
+      && request_report == 0)
+    {
+      if (send_find_error_to_client ("get_reports", "report",
+                                     get_reports_data->report_id,
+                                     omp_parser))
+        {
+          error_send_to_client (error);
+          return;
+        }
+      get_reports_data_reset (get_reports_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  if ((strcmp (get_reports_data->type, "scan") == 0)
+      && get_reports_data->delta_report_id
+      && strcmp (get_reports_data->delta_report_id, "0")
+      && delta_report == 0)
+    {
+      if (send_find_error_to_client ("get_reports", "report",
+                                     get_reports_data->delta_report_id,
+                                     omp_parser))
+        {
+          error_send_to_client (error);
+          return;
+        }
+      get_reports_data_reset (get_reports_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  if (report_format_active (report_format) == 0)
+    {
+      get_reports_data_reset (get_reports_data);
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("get_reports",
+                          "GET_REPORTS report format must be active"));
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  if ((report_format_predefined (report_format) == 0)
+      && (report_format_trust (report_format) > 1))
+    {
+      get_reports_data_reset (get_reports_data);
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("get_reports",
+                          "GET_REPORTS report format must be predefined"
+                          " or trusted"));
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  if (strcmp (get_reports_data->type, "assets") == 0)
+    {
+      gchar *extension, *content_type;
+      int ret, pos;
+      get_data_t * get;
+
+      /* An asset report. */
+
+      get = &get_reports_data->get;
+      if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
+        {
+          g_free (get->filt_id);
+          get->filt_id = g_strdup ("0");
+        }
+
+      if (get_reports_data->alert_id == NULL)
+        SEND_TO_CLIENT_OR_FAIL
+         ("<get_reports_response"
+          " status=\"" STATUS_OK "\""
+          " status_text=\"" STATUS_OK_TEXT "\">");
+
+      content_type = report_format_content_type (report_format);
+      extension = report_format_extension (report_format);
+
+      SENDF_TO_CLIENT_OR_FAIL
+       ("<report"
+        " type=\"assets\""
+        " format_id=\"%s\""
+        " extension=\"%s\""
+        " content_type=\"%s\">",
+        get_reports_data->format_id,
+        extension,
+        content_type);
+
+      g_free (extension);
+      g_free (content_type);
+
+      pos = get_reports_data->pos ? atoi (get_reports_data->pos) : 1;
+      ret = manage_send_report (0,
+                                0,
+                                report_format,
+                                &get_reports_data->get,
+                                get_reports_data->notes_details,
+                                get_reports_data->overrides_details,
+                                get_reports_data->ignore_pagination,
+                                /* Special case the XML reports, bah. */
+                                strcmp
+                                  (get_reports_data->format_id,
+                                   "a994b278-1f62-11e1-96ac-406186ea4fc5")
+                                && strcmp
+                                    (get_reports_data->format_id,
+                                     "5057e5cc-b825-11e4-9d0e-28d24461215b"),
+                                send_to_client,
+                                omp_parser->client_writer,
+                                omp_parser->client_writer_data,
+                                get_reports_data->alert_id,
+                                "assets",
+                                get_reports_data->host,
+                                pos,
+                                NULL, NULL, 0, 0, NULL);
+
+      if (ret)
+        {
+          internal_error_send_to_client (error);
+          get_reports_data_reset (get_reports_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          return;
+        }
+
+      SEND_TO_CLIENT_OR_FAIL ("</report>"
+                              "</get_reports_response>");
+
+      get_reports_data_reset (get_reports_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  if (strcmp (get_reports_data->type, "prognostic") == 0)
+    {
+      gchar *extension, *content_type;
+      int ret, pos;
+      get_data_t * get;
+
+      /* A prognostic report. */
+
+      get = &get_reports_data->get;
+      if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
+        {
+          g_free (get->filt_id);
+          get->filt_id = g_strdup ("0");
+        }
+
+      if (get_reports_data->alert_id == NULL)
+        SEND_TO_CLIENT_OR_FAIL
+          ("<get_reports_response"
+          " status=\"" STATUS_OK "\""
+          " status_text=\"" STATUS_OK_TEXT "\">");
+
+      content_type = report_format_content_type (report_format);
+      extension = report_format_extension (report_format);
+
+      SENDF_TO_CLIENT_OR_FAIL
+        ("<report"
+        " type=\"prognostic\""
+        " format_id=\"%s\""
+        " extension=\"%s\""
+        " content_type=\"%s\">",
+        get_reports_data->format_id,
+        extension,
+        content_type);
+
+      g_free (extension);
+      g_free (content_type);
+
+      pos = get_reports_data->pos ? atoi (get_reports_data->pos) : 1;
+      ret = manage_send_report (0,
+                                0,
+                                report_format,
+                                &get_reports_data->get,
+                                get_reports_data->notes_details,
+                                get_reports_data->overrides_details,
+                                get_reports_data->ignore_pagination,
+                                /* Special case the XML report, bah. */
+                                strcmp
+                                  (get_reports_data->format_id,
+                                  "a994b278-1f62-11e1-96ac-406186ea4fc5")
+                                && strcmp
+                                    (get_reports_data->format_id,
+                                      "5057e5cc-b825-11e4-9d0e-28d24461215b"),
+                                send_to_client,
+                                omp_parser->client_writer,
+                                omp_parser->client_writer_data,
+                                get_reports_data->alert_id,
+                                "prognostic",
+                                get_reports_data->host,
+                                pos,
+                                get_reports_data->host_search_phrase,
+                                get_reports_data->host_levels,
+                                get_reports_data->host_first_result,
+                                get_reports_data->host_max_results,
+                                NULL);
+
+      if (ret)
+        {
+          internal_error_send_to_client (error);
+          get_reports_data_reset (get_reports_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          return;
+        }
+
+      SEND_TO_CLIENT_OR_FAIL ("</report>"
+                              "</get_reports_response>");
+
+      get_reports_data_reset (get_reports_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  /* The usual scan report. */
+
+  if (get_reports_data->get.id)
+    {
+      /* Showing requested report, use Results Filter setting. */
+      INIT_GET (report, Result);
+    }
+  else
+    {
+      /* Showing multiple reports.  Use Report Filter setting.  Expand
+        * INIT_GET here to pass the get_reports_data->report_get to
+        * init_get. */
+      ret = init_get ("get_reports",
+                      &get_reports_data->report_get,
+                      "Reports",
+                      &first);
+      if (ret)
+        {
+          switch (ret)
+            {
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_ERROR_SYNTAX ("get_reports",
+                                    "Permission denied"));
+                break;
+              default:
+                internal_error_send_to_client (error);
+                return;
+            }
+          get_reports_data_reset (get_reports_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          return;
+        }
+    }
+
+  if ((get_reports_data->report_get.id == NULL)
+      || (strlen (get_reports_data->report_get.id) == 0))
+    {
+      gchar *overrides, *min_qod, *filter;
+      get_data_t * get;
+
+      /* For simplicity, use a fixed result filter when filtering
+        * reports.  A given result filter is only applied when getting
+        * a single specified report. */
+
+      get = &get_reports_data->report_get;
+
+      /* Get overrides value from report filter. */
+      if (get->filt_id && strcmp (get->filt_id, "0"))
+        {
+          filter = filter_term (get->filt_id);
+          if (filter == NULL)
+            assert (0);
+        }
+      else
+        filter = NULL;
+      g_free (get_reports_data->get.filter);
+      overrides
+        = filter_term_value (filter ? filter : get->filter, "apply_overrides");
+      min_qod
+        = filter_term_value (filter ? filter : get->filter, "min_qod");
+      g_free (filter);
+
+      /* Setup result filter from overrides. */
+      get_reports_data->get.filter
+        = g_strdup_printf ("apply_overrides=%i min_qod=%s",
+                           overrides && strcmp (overrides, "0"),
+                           min_qod ? min_qod : G_STRINGIFY (MIN_QOD_DEFAULT));
+      g_free (overrides);
+      g_free (min_qod);
+    }
+
+  ret = init_report_iterator (&reports, &get_reports_data->report_get);
+  if (ret)
+    {
+      switch (ret)
+        {
+          case 1:
+            if (send_find_error_to_client ("get_reports", "report",
+                                           get_reports_data->get.id,
+                                           omp_parser))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            break;
+          case 2:
+            if (send_find_error_to_client
+                  ("get_reports", "filter",
+                   get_reports_data->get.filt_id, omp_parser))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            break;
+          case -1:
+            SEND_TO_CLIENT_OR_FAIL
+              (XML_INTERNAL_ERROR ("get_reports"));
+            break;
+        }
+      get_reports_data_reset (get_reports_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  if (get_reports_data->alert_id == NULL)
+    SEND_GET_START ("report");
+  while (next_report (&reports, &report))
+    {
+      gchar *extension, *content_type;
+      int ret;
+      GString *prefix;
+
+      prefix = g_string_new ("");
+      content_type = report_format_content_type (report_format);
+      extension = report_format_extension (report_format);
+
+      if (get_reports_data->alert_id == NULL)
+        g_string_append_printf (prefix,
+                                "<report"
+                                " type=\"scan\""
+                                " id=\"%s\""
+                                " format_id=\"%s\""
+                                " extension=\"%s\""
+                                " content_type=\"%s\">",
+                                report_iterator_uuid (&reports),
+                                get_reports_data->format_id,
+                                extension,
+                                content_type);
+
+      g_free (extension);
+      g_free (content_type);
+
+      if (get_reports_data->alert_id == NULL)
+        {
+          task_t task;
+
+          /* Send the standard elements.  Should match send_get_common. */
+          buffer_xml_append_printf
+            (prefix,
+             "<owner><name>%s</name></owner>"
+             "<name>%s</name>"
+             "<comment>%s</comment>"
+             "<creation_time>%s</creation_time>"
+             "<modification_time>"
+             "%s"
+             "</modification_time>"
+             "<writable>0</writable>"
+             "<in_use>0</in_use>",
+             get_iterator_owner_name (&reports)
+              ? get_iterator_owner_name (&reports)
+              : "",
+             get_iterator_name (&reports)
+              ? get_iterator_name (&reports)
+              : "",
+             get_iterator_comment (&reports)
+              ? get_iterator_comment (&reports)
+              : "",
+             get_iterator_creation_time (&reports)
+              ? get_iterator_creation_time (&reports)
+              : "",
+             get_iterator_modification_time (&reports)
+              ? get_iterator_modification_time (&reports)
+              : "");
+          /* Send short task and report format info */
+          report_task (report, &task);
+          if (task)
+            {
+              gchar *report_task_uuid, *report_task_name;
+              task_uuid (task, &report_task_uuid);
+              report_task_name = task_name (task);
+
+              buffer_xml_append_printf
+                (prefix,
+                 "<task id=\"%s\">"
+                 "<name>%s</name>"
+                 "</task>",
+                 report_task_uuid,
+                 report_task_name);
+
+              g_free (report_task_uuid);
+              g_free (report_task_name);
+            }
+
+            if (get_reports_data->format_id)
+              {
+                gchar *format_name = NULL;
+                format_name = report_format_name (report_format);
+
+                buffer_xml_append_printf
+                  (prefix,
+                   "<report_format id=\"%s\">"
+                   "<name>%s</name>"
+                   "</report_format>",
+                   get_reports_data->format_id,
+                   format_name ? format_name : "");
+                // g_free (report_format_name);
+              }
+
+        }
+      /* If there's just one report then cleanup the iterator early.  This
+        * closes the iterator transaction, allowing manage_schedule to lock
+        * the db during generation of large reports. */
+      if (request_report)
+        cleanup_iterator (&reports);
+
+      ret = manage_send_report (report,
+                                delta_report,
+                                report_format,
+                                &get_reports_data->get,
+                                get_reports_data->notes_details,
+                                get_reports_data->overrides_details,
+                                get_reports_data->ignore_pagination,
+                                /* Special case the XML report, bah. */
+                                strcmp
+                                  (get_reports_data->format_id,
+                                  "a994b278-1f62-11e1-96ac-406186ea4fc5")
+                                && strcmp
+                                    (get_reports_data->format_id,
+                                      "5057e5cc-b825-11e4-9d0e-28d24461215b"),
+                                send_to_client,
+                                omp_parser->client_writer,
+                                omp_parser->client_writer_data,
+                                get_reports_data->alert_id,
+                                get_reports_data->type,
+                                NULL, 0, NULL, NULL, 0, 0, prefix->str);
+      g_string_free (prefix, TRUE);
+      if (ret)
+        {
+          if (get_reports_data->alert_id)
+            switch (ret)
+              {
+                case 0:
+                  break;
+                case 1:
+                  if (send_find_error_to_client
+                        ("get_reports", "alert",
+                        get_reports_data->alert_id, omp_parser))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  /* Close the connection with the client, as part of the
+                    * response may have been sent before the error
+                    * occurred. */
+                  internal_error_send_to_client (error);
+                  if (request_report == 0)
+                    cleanup_iterator (&reports);
+                  get_reports_data_reset (get_reports_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  return;
+                  break;
+                case 2:
+                  if (send_find_error_to_client
+                        ("get_reports", "filter",
+                        get_reports_data->get.filt_id, omp_parser))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  /* This error always occurs before anything is sent
+                    * to the client, so the connection can stay up. */
+                  if (request_report == 0)
+                    cleanup_iterator (&reports);
+                  get_reports_data_reset (get_reports_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  return;
+                  break;
+                case -2:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("get_reports",
+                                      "Failed to find report format for"
+                                      " alert"));
+                  if (request_report == 0)
+                    cleanup_iterator (&reports);
+                  get_reports_data_reset (get_reports_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  return;
+                  break;
+                case -3:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("get_reports"));
+                  if (request_report == 0)
+                    cleanup_iterator (&reports);
+                  get_reports_data_reset (get_reports_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  return;
+                  break;
+                case -4:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("get_reports",
+                                      "Failed to find filter for"
+                                      " alert"));
+                  if (request_report == 0)
+                    cleanup_iterator (&reports);
+                  get_reports_data_reset (get_reports_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  return;
+                  break;
+                default:
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("get_reports"));
+                  /* Close the connection with the client, as part of the
+                    * response may have been sent before the error
+                    * occurred. */
+                  internal_error_send_to_client (error);
+                  if (request_report == 0)
+                    cleanup_iterator (&reports);
+                  get_reports_data_reset (get_reports_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  return;
+                  break;
+              }
+          else if (ret == 2)
+            {
+              if (send_find_error_to_client
+                    ("get_reports", "filter",
+                     get_reports_data->get.filt_id, omp_parser))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+              /* This error always occurs before anything is sent
+                * to the client, so the connection can stay up. */
+              if (request_report == 0)
+                cleanup_iterator (&reports);
+              get_reports_data_reset (get_reports_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              return;
+            }
+          else
+            {
+              /* Close the connection with the client, as part of the
+                * response may have been sent before the error
+                * occurred. */
+              internal_error_send_to_client (error);
+              if (request_report == 0)
+                cleanup_iterator (&reports);
+              get_reports_data_reset (get_reports_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              return;
+            }
+        }
+      if (get_reports_data->alert_id == NULL)
+        SEND_TO_CLIENT_OR_FAIL ("</report>");
+
+      count++;
+
+      if (request_report)
+        /* Just to be safe, because iterator has been freed. */
+        break;
+    }
+  if (request_report == 0)
+    cleanup_iterator (&reports);
+
+  if (get_reports_data->alert_id)
+    SEND_TO_CLIENT_OR_FAIL (XML_OK ("get_reports"));
+  else
+    {
+      filtered = get_reports_data->get.id
+                  ? 1
+                  : report_count (&get_reports_data->report_get);
+      SEND_GET_END ("report", &get_reports_data->report_get, count,
+                    filtered);
+    }
+
+  get_reports_data_reset (get_reports_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
+ * @brief Handle end of GET_REPORT_FORMATS element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_report_formats (omp_parser_t *omp_parser, GError **error)
+{
+  if (get_report_formats_data->params &&
+      get_report_formats_data->get.trash)
+    SEND_TO_CLIENT_OR_FAIL
+     (XML_ERROR_SYNTAX ("get_report_formats",
+                        "GET_REPORT_FORMATS params given with trash"));
+  else
+    {
+      iterator_t report_formats;
+      int count, filtered, ret, first;
+
+      INIT_GET (report_format, Report Format);
+
+      ret = init_report_format_iterator (&report_formats,
+                                          &get_report_formats_data->get);
+      if (ret)
+        {
+          switch (ret)
+            {
+              case 1:
+                if (send_find_error_to_client ("get_report_formats",
+                                               "report_format",
+                                               get_report_formats_data->get.id,
+                                               omp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
+              case 2:
+                if (send_find_error_to_client
+                      ("get_report_formats", "filter",
+                       get_report_formats_data->get.filt_id, omp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_INTERNAL_ERROR ("get_report_formats"));
+                break;
+            }
+          get_report_formats_data_reset (get_report_formats_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          return;
+        }
+
+      SEND_GET_START ("report_format");
+      while (1)
+        {
+          time_t trust_time;
+
+          ret = get_next (&report_formats,
+                          &get_report_formats_data->get, &first, &count,
+                          init_report_format_iterator);
+          if (ret == 1)
+            break;
+          if (ret == -1)
+            {
+              internal_error_send_to_client (error);
+              return;
+            }
+
+          SEND_GET_COMMON (report_format,
+                            &get_report_formats_data->get,
+                            &report_formats);
+
+          trust_time = report_format_iterator_trust_time
+                        (&report_formats);
+
+          SENDF_TO_CLIENT_OR_FAIL
+           ("<extension>%s</extension>"
+            "<content_type>%s</content_type>"
+            "<summary>%s</summary>"
+            "<description>%s</description>"
+            "<global>%i</global>"
+            "<predefined>%i</predefined>",
+            report_format_iterator_extension (&report_formats),
+            report_format_iterator_content_type (&report_formats),
+            report_format_iterator_summary (&report_formats),
+            report_format_iterator_description (&report_formats),
+            get_report_formats_data->get.trash
+              ? trash_report_format_global
+                  (get_iterator_resource (&report_formats))
+              : report_format_global
+                  (get_iterator_resource (&report_formats)),
+            get_report_formats_data->get.trash
+              ? 0
+              : report_format_predefined
+                  (get_iterator_resource (&report_formats)));
+
+          if (get_report_formats_data->alerts)
+            {
+              iterator_t alerts;
+
+              SEND_TO_CLIENT_OR_FAIL ("<alerts>");
+              init_report_format_alert_iterator (&alerts,
+                                          get_iterator_resource
+                                            (&report_formats));
+              while (next (&alerts))
+                {
+                  if ((get_iterator_owner (&report_formats) == 0)
+                      && report_format_alert_iterator_readable (&alerts)
+                          == 0)
+                    /* Skip other users' alerts for global report
+                      * formats. */
+                    continue;
+
+                  SENDF_TO_CLIENT_OR_FAIL
+                   ("<alert id=\"%s\">"
+                    "<name>%s</name>",
+                    report_format_alert_iterator_uuid (&alerts),
+                    report_format_alert_iterator_name (&alerts));
+                  if (report_format_alert_iterator_readable (&alerts))
+                    SEND_TO_CLIENT_OR_FAIL ("</alert>");
+                  else
+                    SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                            "</alert>");
+                }
+              cleanup_iterator (&alerts);
+              SEND_TO_CLIENT_OR_FAIL ("</alerts>");
+            }
+
+          if (get_report_formats_data->params
+              || get_report_formats_data->get.details)
+            {
+              iterator_t params;
+              init_report_format_param_iterator
+                (&params, get_iterator_resource (&report_formats),
+                get_report_formats_data->get.trash, 1, NULL);
+              while (next (&params))
+                {
+                  long long int min, max;
+                  iterator_t options;
+
+                  SENDF_TO_CLIENT_OR_FAIL
+                   ("<param>"
+                    "<name>%s</name>"
+                    "<type>%s",
+                    report_format_param_iterator_name (&params),
+                    report_format_param_iterator_type_name (&params));
+
+                  min = report_format_param_iterator_type_min (&params);
+                  if (min > LLONG_MIN)
+                    SENDF_TO_CLIENT_OR_FAIL ("<min>%lli</min>", min);
+
+                  max = report_format_param_iterator_type_max (&params);
+                  if (max < LLONG_MAX)
+                    SENDF_TO_CLIENT_OR_FAIL ("<max>%lli</max>", max);
+
+                  SENDF_TO_CLIENT_OR_FAIL
+                    ("</type>"
+                    "<value>%s</value>"
+                    "<default>%s</default>",
+                    report_format_param_iterator_value (&params),
+                    report_format_param_iterator_fallback (&params));
+
+                  if (report_format_param_iterator_type (&params)
+                      == REPORT_FORMAT_PARAM_TYPE_SELECTION)
+                    {
+                      SEND_TO_CLIENT_OR_FAIL ("<options>");
+                      init_param_option_iterator
+                        (&options,
+                        report_format_param_iterator_param
+                          (&params),
+                        1,
+                        NULL);
+                      while (next (&options))
+                        SENDF_TO_CLIENT_OR_FAIL
+                         ("<option>%s</option>",
+                          param_option_iterator_value (&options));
+                      cleanup_iterator (&options);
+                      SEND_TO_CLIENT_OR_FAIL ("</options>");
+                    }
+
+                  SEND_TO_CLIENT_OR_FAIL ("</param>");
+                }
+              cleanup_iterator (&params);
+            }
+
+          if (get_report_formats_data->get.details)
+            {
+              file_iterator_t files;
+              if (init_report_format_file_iterator
+                    (&files, get_iterator_resource (&report_formats)))
+                {
+                  cleanup_iterator (&report_formats);
+                  error_send_to_client (error);
+                  return;
+                }
+              while (next_file (&files))
+                {
+                  gchar *content = file_iterator_content_64 (&files);
+                  SENDF_TO_CLIENT_OR_FAIL
+                   ("<file name=\"%s\">%s</file>",
+                    file_iterator_name (&files),
+                    content);
+                  g_free (content);
+                }
+              cleanup_file_iterator (&files);
+
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<signature>%s</signature>",
+                report_format_iterator_signature (&report_formats));
+            }
+
+          SENDF_TO_CLIENT_OR_FAIL
+           ("<trust>%s<time>%s</time></trust>"
+            "<active>%i</active>",
+            get_report_formats_data->get.trash
+              ? report_format_iterator_trust (&report_formats)
+              : (report_format_predefined (get_iterator_resource
+                                            (&report_formats))
+                  ? "yes"
+                  : report_format_iterator_trust (&report_formats)),
+            iso_time (&trust_time),
+            report_format_iterator_active (&report_formats));
+
+          SEND_TO_CLIENT_OR_FAIL ("</report_format>");
+          count++;
+        }
+      cleanup_iterator (&report_formats);
+      filtered = get_report_formats_data->get.id
+                  ? 1
+                  : report_format_count (&get_report_formats_data->get);
+      SEND_GET_END ("report_format", &get_report_formats_data->get,
+                    count, filtered);
+    }
+  get_report_formats_data_reset (get_report_formats_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
+ * @brief Handle end of GET_RESULTS element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_results (omp_parser_t *omp_parser, GError **error)
+{
+  result_t result = 0;
+  task_t task = 0;
+
+  if (acl_user_may ("get_results") == 0)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("get_results",
+                          "Permission denied"));
+      get_results_data_reset (get_results_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  if (current_credentials.username == NULL)
+    {
+      get_results_data_reset (get_results_data);
+      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_results"));
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  if (get_results_data->get.id
+      && find_result_with_permission (get_results_data->get.id,
+                                      &result,
+                                      NULL))
+    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_results"));
+  else if (get_results_data->get.id && result == 0)
+    {
+      if (send_find_error_to_client ("get_results", "result",
+                                      get_results_data->get.id,
+                                      omp_parser))
+        {
+          error_send_to_client (error);
+          return;
+        }
+    }
+  else if (get_results_data->task_id
+            && find_task_with_permission (get_results_data->task_id,
+                                          &task,
+                                          NULL))
+    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_results"));
+  else if (get_results_data->task_id && task == 0)
+    {
+      if (send_find_error_to_client ("get_results", "task",
+                                      get_results_data->task_id,
+                                      omp_parser))
+        {
+          error_send_to_client (error);
+          return;
+        }
+    }
+  else
+    {
+      const char* filter;
+      iterator_t results;
+      int notes, overrides;
+      int count, filtered, ret, first;
+
+      if (get_results_data->get.filt_id
+          && strcmp (get_results_data->get.filt_id, "0"))
+        {
+          filter = filter_term (get_results_data->get.filt_id);
+        }
+      else
+        filter = get_results_data->get.filter;
+
+      SEND_TO_CLIENT_OR_FAIL ("<get_results_response"
+                              " status=\"" STATUS_OK "\""
+                              " status_text=\"" STATUS_OK_TEXT "\">");
+      INIT_GET (result, Result);
+
+      init_result_get_iterator (&results, &get_results_data->get,
+                                0,  /* No report restriction */
+                                NULL, /* No host restriction */
+                                NULL);  /* No extra order SQL. */
+
+      manage_report_filter_controls (filter,
+                                      NULL, /* first */
+                                      NULL, /* max */
+                                      NULL, /* sort_field */
+                                      NULL, /* sort_order */
+                                      NULL, /* result_hosts_only */
+                                      NULL, /* min_qod */
+                                      NULL, /* levels */
+                                      NULL, /* delta_states */
+                                      NULL, /* search_phrase */
+                                      NULL, /* search_phrase_exact */
+                                      NULL, /* autofp */
+                                      &notes,
+                                      &overrides,
+                                      NULL, /* apply_overrides */
+                                      NULL);/* zone */
+
+      if (next (&results))
+        {
+          if (get_results_data->get.id && (task == 0))
+            {
+              char *task_id;
+              task_uuid (result_iterator_task (&results), &task_id);
+              if (find_task_with_permission (task_id, &task, NULL))
+                {
+                  free (task_id);
+                  internal_error_send_to_client (error);
+                  cleanup_iterator (&results);
+                  return;
+                }
+              free (task_id);
+            }
+
+          count = 0;
+          do
+            {
+              GString *buffer = g_string_new ("");
+              buffer_results_xml (buffer,
+                                  &results,
+                                  task,
+                                  notes,
+                                  get_results_data->notes_details,
+                                  overrides,
+                                  get_results_data->overrides_details,
+                                  1,
+                                  /* show tag details if selected by ID */
+                                  get_results_data->get.id != NULL,
+                                  get_results_data->get.details,
+                                  NULL,
+                                  NULL,
+                                  0);
+              SEND_TO_CLIENT_OR_FAIL (buffer->str);
+              g_string_free (buffer, TRUE);
+              count ++;
+            }
+          while (next (&results));
+        }
+      cleanup_iterator (&results);
+
+      manage_filter_controls (get_results_data->get.filter,
+                              &first, NULL, NULL, NULL);
+
+      filtered = get_results_data->get.id
+                  ? 1 : result_count (&get_results_data->get,
+                                      0 /* No report */,
+                                      NULL /* No host */);
+
+      SEND_GET_END ("result", &get_results_data->get, count, filtered);
+    }
+
+  get_results_data_reset (get_results_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
+ * @brief Handle end of GET_ROLES element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_roles (omp_parser_t *omp_parser, GError **error)
+{
+  iterator_t roles;
+  int count, filtered, ret, first;
+
+  INIT_GET (role, Role);
+
+  ret = init_role_iterator (&roles, &get_roles_data->get);
+  if (ret)
+    {
+      switch (ret)
+        {
+          case 1:
+            if (send_find_error_to_client ("get_roles", "role",
+                                            get_roles_data->get.id,
+                                            omp_parser))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            break;
+          case 2:
+            if (send_find_error_to_client
+                  ("get_roles", "role", get_roles_data->get.filt_id,
+                  omp_parser))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            break;
+          case -1:
+            SEND_TO_CLIENT_OR_FAIL
+              (XML_INTERNAL_ERROR ("get_roles"));
+            break;
+        }
+      get_roles_data_reset (get_roles_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  SEND_GET_START ("role");
+  while (1)
+    {
+      gchar *users;
+
+      ret = get_next (&roles, &get_roles_data->get, &first, &count,
+                      init_role_iterator);
+      if (ret == 1)
+        break;
+      if (ret == -1)
+        {
+          internal_error_send_to_client (error);
+          return;
+        }
+
+      SEND_GET_COMMON (role, &get_roles_data->get, &roles);
+
+      users = role_users (get_iterator_resource (&roles));
+      SENDF_TO_CLIENT_OR_FAIL ("<users>%s</users>", users ? users : "");
+      g_free (users);
+
+      SEND_TO_CLIENT_OR_FAIL ("</role>");
+
+      count++;
+    }
+  cleanup_iterator (&roles);
+  filtered = get_roles_data->get.id
+              ? 1
+              : role_count (&get_roles_data->get);
+  SEND_GET_END ("role", &get_roles_data->get, count, filtered);
+
+  get_roles_data_reset (get_roles_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+
+/**
  * @brief Handle end of GET_SCANNERS element.
  *
  * @param[in]  omp_parser   OMP parser.
@@ -13956,6 +17964,2085 @@ handle_get_scanners (omp_parser_t *omp_parser, GError **error)
   SEND_GET_END ("scanner", &get_scanners_data->get, count, filtered);
   get_scanners_data_reset (get_scanners_data);
   set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
+ * @brief Handle end of GET_SCHEDULES element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_schedules (omp_parser_t *omp_parser, GError **error)
+{
+  if (get_schedules_data->tasks && get_schedules_data->get.trash)
+    SEND_TO_CLIENT_OR_FAIL
+     (XML_ERROR_SYNTAX ("get_schedules",
+                        "GET_SCHEDULES tasks given with trash"));
+  else
+    {
+      iterator_t schedules;
+      int count, filtered, ret, first;
+
+      INIT_GET (schedule, Schedule);
+
+      ret = init_schedule_iterator (&schedules, &get_schedules_data->get);
+      if (ret)
+        {
+          switch (ret)
+            {
+              case 1:
+                if (send_find_error_to_client ("get_schedules",
+                                               "schedule",
+                                               get_schedules_data->get.id,
+                                               omp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
+              case 2:
+                if (send_find_error_to_client
+                      ("get_schedules", "filter",
+                       get_schedules_data->get.filt_id, omp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_INTERNAL_ERROR ("get_schedules"));
+                break;
+            }
+          get_schedules_data_reset (get_schedules_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          return;
+        }
+
+      SEND_GET_START ("schedule");
+      while (1)
+        {
+          time_t first_time, next_time;
+          gchar *iso;
+          const char *timezone, *abbrev;
+          char *simple_period_unit, *simple_duration_unit;
+          int period, period_minutes, period_hours, period_days;
+          int period_weeks, period_months, duration, duration_minutes;
+          int duration_hours, duration_days, duration_weeks;
+          int simple_period, simple_duration;
+
+          ret = get_next (&schedules, &get_schedules_data->get, &first,
+                          &count, init_schedule_iterator);
+          if (ret == 1)
+            break;
+          if (ret == -1)
+            {
+              internal_error_send_to_client (error);
+              return;
+            }
+
+          SEND_GET_COMMON (schedule, &get_schedules_data->get, &schedules);
+
+          timezone = schedule_iterator_timezone (&schedules);
+          first_time = schedule_iterator_first_time (&schedules);
+          next_time = schedule_iterator_next_time (&schedules);
+
+          first_time += schedule_iterator_initial_offset (&schedules)
+                          - time_offset (timezone, first_time);
+          if (next_time)
+            next_time += schedule_iterator_initial_offset (&schedules)
+                            - time_offset (timezone, next_time);
+
+          /* Duplicate static string because there's an iso_time_tz below. */
+          abbrev = NULL;
+          iso = g_strdup (iso_time_tz (&first_time, timezone, &abbrev));
+
+          period = schedule_iterator_period (&schedules);
+          if (period)
+            {
+              period_minutes = period / 60;
+              period_hours = period_minutes / 60;
+              period_days = period_hours / 24;
+              period_weeks = period_days / 7;
+            }
+          simple_period_unit = "";
+          if (period == 0)
+            simple_period = 0;
+          else if (period_weeks && (period % (60 * 60 * 24 * 7) == 0))
+            {
+              simple_period = period_weeks;
+              simple_period_unit = "week";
+            }
+          else if (period_days && (period % (60 * 60 * 24) == 0))
+            {
+              simple_period = period_days;
+              simple_period_unit = "day";
+            }
+          else if (period_hours && (period % (60 * 60) == 0))
+            {
+              simple_period = period_hours;
+              simple_period_unit = "hour";
+            }
+          /* The granularity of the "simple" GSA interface stops at hours. */
+          else
+            simple_period = 0;
+
+          period_months = schedule_iterator_period_months (&schedules);
+          if (period_months && (period_months < 25))
+            {
+              simple_period = period_months;
+              simple_period_unit = "month";
+            }
+
+          duration = schedule_iterator_duration (&schedules);
+          if (duration)
+            {
+              duration_minutes = duration / 60;
+              duration_hours = duration_minutes / 60;
+              duration_days = duration_hours / 24;
+              duration_weeks = duration_days / 7;
+            }
+          simple_duration_unit = "";
+          if (duration == 0)
+            simple_duration = 0;
+          else if (duration_weeks
+                    && (duration % (60 * 60 * 24 * 7) == 0))
+            {
+              simple_duration = duration_weeks;
+              simple_duration_unit = "week";
+            }
+          else if (duration_days
+                    && (duration % (60 * 60 * 24) == 0))
+            {
+              simple_duration = duration_days;
+              simple_duration_unit = "day";
+            }
+          else if (duration_hours
+                    && (duration % (60 * 60) == 0))
+            {
+              simple_duration = duration_hours;
+              simple_duration_unit = "hour";
+            }
+          /* The granularity of the "simple" GSA interface stops at hours. */
+          else
+            simple_duration = 0;
+
+          SENDF_TO_CLIENT_OR_FAIL
+           ("<first_time>%s</first_time>"
+            "<next_time>%s</next_time>"
+            "<period>%ld</period>"
+            "<period_months>%ld</period_months>"
+            "<simple_period>%i<unit>%s</unit></simple_period>"
+            "<duration>%ld</duration>"
+            "<simple_duration>%i<unit>%s</unit></simple_duration>"
+            "<timezone>%s</timezone>"
+            "<timezone_abbrev>%s</timezone_abbrev>",
+            iso,
+            (next_time == 0 ? "over" : iso_time_tz (&next_time, timezone, NULL)),
+            schedule_iterator_period (&schedules),
+            schedule_iterator_period_months (&schedules),
+            simple_period,
+            simple_period_unit,
+            schedule_iterator_duration (&schedules),
+            simple_duration,
+            simple_duration_unit,
+            schedule_iterator_timezone (&schedules)
+              ? schedule_iterator_timezone (&schedules)
+              : "UTC",
+            abbrev ? abbrev : "UTC");
+
+          g_free (iso);
+          if (get_schedules_data->tasks)
+            {
+              iterator_t tasks;
+
+              SEND_TO_CLIENT_OR_FAIL ("<tasks>");
+              init_schedule_task_iterator (&tasks,
+                                            get_iterator_resource
+                                            (&schedules));
+              while (next (&tasks))
+                {
+                  SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
+                                           "<name>%s</name>",
+                                           schedule_task_iterator_uuid (&tasks),
+                                           schedule_task_iterator_name
+                                            (&tasks));
+                  if (schedule_task_iterator_readable (&tasks))
+                    SEND_TO_CLIENT_OR_FAIL ("</task>");
+                  else
+                    SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                            "</task>");
+                }
+              cleanup_iterator (&tasks);
+              SEND_TO_CLIENT_OR_FAIL ("</tasks>");
+            }
+          SEND_TO_CLIENT_OR_FAIL ("</schedule>");
+          count++;
+        }
+      cleanup_iterator (&schedules);
+      filtered = get_schedules_data->get.id
+                  ? 1
+                  : schedule_count (&get_schedules_data->get);
+      SEND_GET_END ("schedule", &get_schedules_data->get, count, filtered);
+    }
+  get_schedules_data_reset (get_schedules_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
+ * @brief Handle end of GET_SCHEDULES element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_settings (omp_parser_t *omp_parser, GError **error)
+{
+  setting_t setting = 0;
+  iterator_t settings;
+  int count, filtered;
+
+  if (acl_user_may ("get_settings") == 0)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("get_settings",
+                          "Permission denied"));
+      get_settings_data_reset (get_settings_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  init_setting_iterator (&settings,
+                         get_settings_data->setting_id,
+                         get_settings_data->filter,
+                         get_settings_data->first,
+                         get_settings_data->max,
+                         get_settings_data->sort_order,
+                         get_settings_data->sort_field);
+
+  SEND_TO_CLIENT_OR_FAIL ("<get_settings_response"
+                          " status=\"" STATUS_OK "\""
+                          " status_text=\"" STATUS_OK_TEXT "\">");
+  SENDF_TO_CLIENT_OR_FAIL ("<filters>"
+                           "<term>%s</term>"
+                           "</filters>"
+                           "<settings start=\"%i\" max=\"%i\"/>",
+                           get_settings_data->filter
+                            ? get_settings_data->filter
+                            : "",
+                           /* Add 1 for 1 indexing. */
+                           get_settings_data->first + 1,
+                           get_settings_data->max);
+  count = 0;
+  while (next (&settings))
+    {
+      SENDF_TO_CLIENT_OR_FAIL ("<setting id=\"%s\">"
+                               "<name>%s</name>"
+                               "<comment>%s</comment>"
+                               "<value>%s</value>"
+                               "</setting>",
+                               setting_iterator_uuid (&settings),
+                               setting_iterator_name (&settings),
+                               setting_iterator_comment (&settings),
+                               setting_iterator_value (&settings));
+      count++;
+    }
+  filtered = setting
+              ? 1
+              : setting_count (get_settings_data->filter);
+  SENDF_TO_CLIENT_OR_FAIL ("<setting_count>"
+                           "<filtered>%i</filtered>"
+                           "<page>%i</page>"
+                           "</setting_count>",
+                           filtered,
+                           count);
+  cleanup_iterator (&settings);
+  SEND_TO_CLIENT_OR_FAIL ("</get_settings_response>");
+
+  get_settings_data_reset (get_settings_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
+ * @brief Handle end of GET_SLAVES element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_slaves (omp_parser_t *omp_parser, GError **error)
+{
+  if (get_slaves_data->tasks && get_slaves_data->get.trash)
+    SEND_TO_CLIENT_OR_FAIL
+     (XML_ERROR_SYNTAX ("get_slaves",
+                        "GET_SLAVES tasks given with trash"));
+  else
+    {
+      iterator_t slaves;
+      int count, filtered, ret, first;
+
+      INIT_GET (slave, Slave);
+
+      ret = init_slave_iterator (&slaves, &get_slaves_data->get);
+      if (ret)
+        {
+          switch (ret)
+            {
+              case 1:
+                if (send_find_error_to_client ("get_slaves",
+                                               "slave",
+                                               get_slaves_data->get.id,
+                                               omp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
+              case 2:
+                if (send_find_error_to_client
+                      ("get_slaves", "filter",
+                       get_slaves_data->get.filt_id, omp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_INTERNAL_ERROR ("get_slaves"));
+                break;
+            }
+          get_slaves_data_reset (get_slaves_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          return;
+        }
+
+      SEND_GET_START ("slave");
+      while (1)
+        {
+          credential_t credential;
+          const char *credential_name;
+          gchar *credential_id;
+
+          ret = get_next (&slaves, &get_slaves_data->get, &first,
+                          &count, init_slave_iterator);
+          if (ret == 1)
+            break;
+          if (ret == -1)
+            {
+              internal_error_send_to_client (error);
+              return;
+            }
+
+          SEND_GET_COMMON (slave, &get_slaves_data->get, &slaves);
+
+          credential = slave_iterator_credential (&slaves);
+          credential_id = slave_iterator_credential_trash (&slaves)
+                            ? trash_credential_uuid (credential)
+                            : credential_uuid (credential);
+          credential_name = slave_iterator_credential_name (&slaves);
+
+          SENDF_TO_CLIENT_OR_FAIL ("<host>%s</host>"
+                                   "<port>%s</port>"
+                                   "<credential id=\"%s\">"
+                                   "<name>%s</name>"
+                                   "<login>%s</login>"
+                                   "<trash>%d</trash>"
+                                   "</credential>",
+                                   slave_iterator_host (&slaves),
+                                   slave_iterator_port (&slaves),
+                                   credential_id ? credential_id : "",
+                                   credential_name
+                                    ? credential_name : "",
+                                   slave_iterator_login (&slaves),
+                                   slave_iterator_credential_trash (&slaves));
+
+          if (get_slaves_data->tasks)
+            {
+              iterator_t tasks;
+
+              SEND_TO_CLIENT_OR_FAIL ("<tasks>");
+              init_slave_task_iterator (&tasks,
+                                        get_iterator_resource
+                                          (&slaves));
+              while (next (&tasks))
+                {
+                  SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
+                                           "<name>%s</name>",
+                                           slave_task_iterator_uuid (&tasks),
+                                           slave_task_iterator_name (&tasks));
+                  if (slave_task_iterator_readable (&tasks))
+                    SEND_TO_CLIENT_OR_FAIL ("</task>");
+                  else
+                    SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                            "</task>");
+                }
+              cleanup_iterator (&tasks);
+              SEND_TO_CLIENT_OR_FAIL ("</tasks>");
+            }
+
+          SEND_TO_CLIENT_OR_FAIL ("</slave>");
+          count++;
+        }
+      cleanup_iterator (&slaves);
+      filtered = get_slaves_data->get.id
+                  ? 1
+                  : slave_count (&get_slaves_data->get);
+      SEND_GET_END ("slave", &get_slaves_data->get, count, filtered);
+    }
+  get_slaves_data_reset (get_slaves_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
+ * @brief Handle end of GET_SYSTEM_REPORTS element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_system_reports (omp_parser_t *omp_parser, GError **error)
+{
+  int ret;
+  report_type_iterator_t types;
+
+  ret = init_system_report_type_iterator
+          (&types,
+          get_system_reports_data->name,
+          get_system_reports_data->slave_id);
+  switch (ret)
+    {
+      case 1:
+        if (send_find_error_to_client ("get_system_reports",
+                                       "system report",
+                                       get_system_reports_data->name,
+                                       omp_parser))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        break;
+      case 2:
+        if (send_find_error_to_client
+              ("get_system_reports", "slave",
+               get_system_reports_data->slave_id, omp_parser))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        break;
+      case 99:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("get_system_reports",
+                             "Permission denied"));
+        break;
+      default:
+        assert (0);
+        /* fallthrough */
+      case -1:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_INTERNAL_ERROR ("get_system_reports"));
+        break;
+      case 0:
+      case 3:
+        {
+          int report_ret;
+          char *report;
+          SEND_TO_CLIENT_OR_FAIL ("<get_system_reports_response"
+                                  " status=\"" STATUS_OK "\""
+                                  " status_text=\"" STATUS_OK_TEXT "\">");
+          while (next_report_type (&types))
+            if (get_system_reports_data->brief
+                && (ret != 3))
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<system_report>"
+                "<name>%s</name>"
+                "<title>%s</title>"
+                "</system_report>",
+                report_type_iterator_name (&types),
+                report_type_iterator_title (&types));
+            else if ((report_ret = manage_system_report
+                                    (report_type_iterator_name (&types),
+                                      get_system_reports_data->duration,
+                                      get_system_reports_data->slave_id,
+                                      &report))
+                      && (report_ret != 3))
+              {
+                cleanup_report_type_iterator (&types);
+                internal_error_send_to_client (error);
+                return;
+              }
+            else if (report)
+              {
+                SENDF_TO_CLIENT_OR_FAIL
+                 ("<system_report>"
+                  "<name>%s</name>"
+                  "<title>%s</title>"
+                  "<report format=\"%s\" duration=\"%s\">"
+                  "%s"
+                  "</report>"
+                  "</system_report>",
+                  report_type_iterator_name (&types),
+                  report_type_iterator_title (&types),
+                  (ret == 3 ? "txt" : "png"),
+                  get_system_reports_data->duration
+                    ? get_system_reports_data->duration
+                    : "86400",
+                  report);
+                free (report);
+              }
+          cleanup_report_type_iterator (&types);
+          SEND_TO_CLIENT_OR_FAIL ("</get_system_reports_response>");
+        }
+    }
+
+  get_system_reports_data_reset (get_system_reports_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
+ * @brief Handle end of GET_TAGS element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_tags (omp_parser_t *omp_parser, GError **error)
+{
+  iterator_t tags;
+  int ret, count, first, filtered;
+
+  INIT_GET (tag, Tag);
+
+  if (get_tags_data->names_only)
+    ret = init_tag_name_iterator (&tags, &get_tags_data->get);
+  else
+    ret = init_tag_iterator (&tags, &get_tags_data->get);
+
+  if (ret)
+    {
+      switch (ret)
+        {
+          case 1:
+            if (send_find_error_to_client ("get_tags",
+                                           "tag", get_tags_data->get.id,
+                                           omp_parser))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            break;
+          case 2:
+            if (send_find_error_to_client
+                  ("get_tags", "filter", get_tags_data->get.filt_id,
+                   omp_parser))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            break;
+          default:
+            SEND_TO_CLIENT_OR_FAIL
+              (XML_INTERNAL_ERROR ("get_tags"));
+        }
+      get_tags_data_reset (get_tags_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  SEND_GET_START ("tag");
+  while (1)
+    {
+      ret = get_next (&tags, &get_tags_data->get, &first, &count,
+                      get_tags_data->names_only
+                        ? init_tag_name_iterator
+                        : init_tag_iterator);
+      if (ret == 1)
+        break;
+      if (ret == -1)
+        {
+          internal_error_send_to_client (error);
+          return;
+        }
+
+      if (get_tags_data->names_only)
+        SENDF_TO_CLIENT_OR_FAIL ("<tag>"
+                                 "<name>%s</name>"
+                                 "</tag>",
+                                 tag_name_iterator_name (&tags));
+      else
+        {
+          gchar* value;
+
+          value = g_markup_escape_text (tag_iterator_value (&tags), -1);
+
+          SEND_GET_COMMON (tag, &get_tags_data->get, &tags);
+
+          SENDF_TO_CLIENT_OR_FAIL ("<resource id=\"%s\">"
+                                   "<type>%s</type>"
+                                   "<name>%s</name>"
+                                   "<trash>%d</trash>",
+                                   tag_iterator_resource_uuid (&tags),
+                                   tag_iterator_resource_type (&tags),
+                                   tag_iterator_resource_name (&tags),
+                                   tag_iterator_resource_location (&tags));
+
+          if (tag_iterator_resource_readable (&tags) == 0)
+            SENDF_TO_CLIENT_OR_FAIL ("<permissions/>");
+
+
+          SENDF_TO_CLIENT_OR_FAIL ("</resource>"
+                                   "<value>%s</value>"
+                                   "<active>%d</active>"
+                                   "<orphan>%d</orphan>"
+                                   "</tag>",
+                                   value,
+                                   tag_iterator_active (&tags),
+                                   tag_iterator_orphan (&tags));
+          g_free (value);
+        }
+      count++;
+    }
+  cleanup_iterator (&tags);
+  filtered = get_tags_data->get.id
+              ? 1
+              : tag_count (&get_tags_data->get);
+  SEND_GET_END ("tag", &get_tags_data->get, count, filtered);
+
+  get_tags_data_reset (get_tags_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
+ * @brief Handle end of GET_TARGETS element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_targets (omp_parser_t *omp_parser, GError **error)
+{
+  if (get_targets_data->tasks && get_targets_data->get.trash)
+    SEND_TO_CLIENT_OR_FAIL
+     (XML_ERROR_SYNTAX ("get_target",
+                        "GET_TARGETS tasks given with trash"));
+  else
+    {
+      iterator_t targets;
+      int count, filtered, ret, first;
+
+      INIT_GET (target, Target);
+
+      ret = init_target_iterator (&targets, &get_targets_data->get);
+      if (ret)
+        {
+          switch (ret)
+            {
+              case 1:
+                if (send_find_error_to_client ("get_targets",
+                                               "target",
+                                               get_targets_data->get.id,
+                                               omp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
+              case 2:
+                if (send_find_error_to_client
+                      ("get_targets", "filter",
+                       get_targets_data->get.filt_id, omp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_INTERNAL_ERROR ("get_targets"));
+                break;
+            }
+          get_targets_data_reset (get_targets_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          return;
+        }
+
+      SEND_GET_START ("target");
+      while (1)
+        {
+          char *ssh_name, *ssh_uuid, *smb_name, *smb_uuid;
+          char *esxi_name, *esxi_uuid, *snmp_name, *snmp_uuid;
+          const char *port_list_uuid, *port_list_name, *ssh_port;
+          const char *hosts, *exclude_hosts, *reverse_lookup_only;
+          const char *reverse_lookup_unify;
+          credential_t ssh_credential, smb_credential;
+          credential_t esxi_credential, snmp_credential;
+          int port_list_trash, max_hosts, port_list_available;
+          int ssh_credential_available;
+          int smb_credential_available;
+          int esxi_credential_available;
+          int snmp_credential_available;
+
+          ret = get_next (&targets, &get_targets_data->get, &first,
+                          &count, init_target_iterator);
+          if (ret == 1)
+            break;
+          if (ret == -1)
+            {
+              internal_error_send_to_client (error);
+              return;
+            }
+
+          ssh_credential = target_iterator_ssh_credential (&targets);
+          smb_credential = target_iterator_smb_credential (&targets);
+          esxi_credential = target_iterator_esxi_credential (&targets);
+          snmp_credential = target_iterator_snmp_credential (&targets);
+          ssh_credential_available = 1;
+          if (get_targets_data->get.trash
+              && target_iterator_ssh_trash (&targets))
+            {
+              ssh_name = trash_credential_name (ssh_credential);
+              ssh_uuid = trash_credential_uuid (ssh_credential);
+              ssh_credential_available
+                = trash_credential_readable (ssh_credential);
+            }
+          else if (ssh_credential)
+            {
+              credential_t found;
+
+              ssh_name = credential_name (ssh_credential);
+              ssh_uuid = credential_uuid (ssh_credential);
+              if (find_credential_with_permission
+                    (ssh_uuid,
+                     &found,
+                     "get_credentials"))
+                abort ();
+              ssh_credential_available = (found > 0);
+            }
+          else
+            {
+              ssh_name = NULL;
+              ssh_uuid = NULL;
+            }
+          smb_credential_available = 1;
+          if (get_targets_data->get.trash
+              && target_iterator_smb_trash (&targets))
+            {
+              smb_name = trash_credential_name (smb_credential);
+              smb_uuid = trash_credential_uuid (smb_credential);
+              smb_credential_available
+                = trash_credential_readable (smb_credential);
+            }
+          else if (smb_credential)
+            {
+              credential_t found;
+
+              smb_name = credential_name (smb_credential);
+              smb_uuid = credential_uuid (smb_credential);
+              if (find_credential_with_permission
+                    (smb_uuid,
+                     &found,
+                     "get_credentials"))
+                abort ();
+              smb_credential_available = (found > 0);
+            }
+          else
+            {
+              smb_name = NULL;
+              smb_uuid = NULL;
+            }
+          esxi_credential_available = 1;
+          if (get_targets_data->get.trash
+              && target_iterator_esxi_trash (&targets))
+            {
+              esxi_name
+                = trash_credential_name (esxi_credential);
+              esxi_uuid
+                = trash_credential_uuid (esxi_credential);
+              esxi_credential_available
+                = trash_credential_readable (esxi_credential);
+            }
+          else if (esxi_credential)
+            {
+              credential_t found;
+
+              esxi_name = credential_name (esxi_credential);
+              esxi_uuid = credential_uuid (esxi_credential);
+              if (find_credential_with_permission
+                    (esxi_uuid,
+                     &found,
+                     "get_credentials"))
+                abort ();
+              esxi_credential_available = (found > 0);
+            }
+          else
+            {
+              esxi_name = NULL;
+              esxi_uuid = NULL;
+            }
+          snmp_credential_available = 1;
+          if (get_targets_data->get.trash
+              && target_iterator_snmp_trash (&targets))
+            {
+              snmp_name
+                = trash_credential_name (snmp_credential);
+              snmp_uuid
+                = trash_credential_uuid (snmp_credential);
+              snmp_credential_available
+                = trash_credential_readable (snmp_credential);
+            }
+          else if (snmp_credential)
+            {
+              credential_t found;
+
+              snmp_name = credential_name (snmp_credential);
+              snmp_uuid = credential_uuid (snmp_credential);
+              if (find_credential_with_permission
+                    (snmp_uuid,
+                     &found,
+                     "get_credentials"))
+                abort ();
+              snmp_credential_available = (found > 0);
+            }
+          else
+            {
+              snmp_name = NULL;
+              snmp_uuid = NULL;
+            }
+          port_list_uuid = target_iterator_port_list_uuid (&targets);
+          port_list_name = target_iterator_port_list_name (&targets);
+          port_list_trash = target_iterator_port_list_trash (&targets);
+          ssh_port = target_iterator_ssh_port (&targets);
+
+          port_list_available = 1;
+          if (port_list_trash)
+            port_list_available = trash_port_list_readable_uuid
+                                    (port_list_uuid);
+          else if (port_list_uuid)
+            {
+              port_list_t found;
+              if (find_port_list_with_permission (port_list_uuid,
+                                                  &found,
+                                                  "get_port_lists"))
+                abort ();
+              port_list_available = (found > 0);
+            }
+
+          SEND_GET_COMMON (target, &get_targets_data->get, &targets);
+
+          hosts = target_iterator_hosts (&targets);
+          exclude_hosts = target_iterator_exclude_hosts (&targets);
+          max_hosts = manage_count_hosts (hosts, exclude_hosts);
+          reverse_lookup_only = target_iterator_reverse_lookup_only
+                                  (&targets);
+          reverse_lookup_unify = target_iterator_reverse_lookup_unify
+                                  (&targets);
+
+          SENDF_TO_CLIENT_OR_FAIL ("<hosts>%s</hosts>"
+                                   "<exclude_hosts>%s</exclude_hosts>"
+                                   "<max_hosts>%i</max_hosts>"
+                                   "<port_list id=\"%s\">"
+                                   "<name>%s</name>"
+                                   "<trash>%i</trash>",
+                                   hosts,
+                                   exclude_hosts ? exclude_hosts : "",
+                                   max_hosts,
+                                   port_list_uuid ? port_list_uuid : "",
+                                   port_list_name ? port_list_name : "",
+                                   port_list_trash);
+
+          if (port_list_available == 0)
+            SEND_TO_CLIENT_OR_FAIL ("<permissions/>");
+
+          SENDF_TO_CLIENT_OR_FAIL ("</port_list>"
+                                   "<ssh_credential id=\"%s\">"
+                                   "<name>%s</name>"
+                                   "<port>%s</port>"
+                                   "<trash>%i</trash>",
+                                   ssh_uuid ? ssh_uuid : "",
+                                   ssh_name ? ssh_name : "",
+                                   ssh_port ? ssh_port : "",
+                                   (get_targets_data->get.trash
+                                    && target_iterator_ssh_trash (&targets)));
+
+          if (ssh_credential_available == 0)
+            SEND_TO_CLIENT_OR_FAIL ("<permissions/>");
+
+          SENDF_TO_CLIENT_OR_FAIL ("</ssh_credential>"
+                                   "<smb_credential id=\"%s\">"
+                                   "<name>%s</name>"
+                                   "<trash>%i</trash>",
+                                   smb_uuid ? smb_uuid : "",
+                                   smb_name ? smb_name : "",
+                                   (get_targets_data->get.trash
+                                    && target_iterator_smb_trash (&targets)));
+
+          if (smb_credential_available == 0)
+            SEND_TO_CLIENT_OR_FAIL ("<permissions/>");
+
+          SENDF_TO_CLIENT_OR_FAIL ("</smb_credential>"
+                                   "<esxi_credential id=\"%s\">"
+                                   "<name>%s</name>"
+                                   "<trash>%i</trash>",
+                                   esxi_uuid ? esxi_uuid : "",
+                                   esxi_name ? esxi_name : "",
+                                   (get_targets_data->get.trash
+                                    && target_iterator_esxi_trash (&targets)));
+
+          if (esxi_credential_available == 0)
+            SEND_TO_CLIENT_OR_FAIL ("<permissions/>");
+
+          SENDF_TO_CLIENT_OR_FAIL ("</esxi_credential>"
+                                   "<snmp_credential id=\"%s\">"
+                                   "<name>%s</name>"
+                                   "<trash>%i</trash>",
+                                   snmp_uuid ? snmp_uuid : "",
+                                   snmp_name ? snmp_name : "",
+                                   (get_targets_data->get.trash
+                                    && target_iterator_snmp_trash (&targets)));
+
+          if (snmp_credential_available == 0)
+            SEND_TO_CLIENT_OR_FAIL ("<permissions/>");
+
+          SENDF_TO_CLIENT_OR_FAIL ("</snmp_credential>"
+                                   "<reverse_lookup_only>"
+                                   "%s"
+                                   "</reverse_lookup_only>"
+                                   "<reverse_lookup_unify>"
+                                   "%s"
+                                   "</reverse_lookup_unify>"
+                                   "<alive_tests>%s</alive_tests>",
+                                   reverse_lookup_only,
+                                   reverse_lookup_unify,
+                                   target_iterator_alive_tests (&targets));
+
+          if (get_targets_data->get.details)
+            SENDF_TO_CLIENT_OR_FAIL ("<port_range>%s</port_range>",
+                                     target_port_range
+                                      (get_iterator_resource (&targets)));
+
+          if (get_targets_data->tasks)
+            {
+              iterator_t tasks;
+
+              SEND_TO_CLIENT_OR_FAIL ("<tasks>");
+              init_target_task_iterator (&tasks,
+                                         get_iterator_resource (&targets));
+              while (next (&tasks))
+                {
+                  if ((get_iterator_owner (&targets) == 0)
+                      && target_task_iterator_readable (&tasks) == 0)
+                    /* Skip other users' tasks for global targets. */
+                    continue;
+
+                  SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
+                                           "<name>%s</name>",
+                                           target_task_iterator_uuid (&tasks),
+                                           target_task_iterator_name (&tasks));
+                  if (target_task_iterator_readable (&tasks))
+                    SEND_TO_CLIENT_OR_FAIL ("</task>");
+                  else
+                    SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                            "</task>");
+                }
+              cleanup_iterator (&tasks);
+              SEND_TO_CLIENT_OR_FAIL ("</tasks>");
+            }
+
+          SEND_TO_CLIENT_OR_FAIL ("</target>");
+          count++;
+          free (ssh_name);
+          free (ssh_uuid);
+          free (smb_name);
+          free (smb_uuid);
+          free (esxi_name);
+          free (esxi_uuid);
+        }
+      cleanup_iterator (&targets);
+      filtered = get_targets_data->get.id
+                  ? 1
+                  : target_count (&get_targets_data->get);
+      SEND_GET_END ("target", &get_targets_data->get, count, filtered);
+    }
+  get_targets_data_reset (get_targets_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
+ * @brief Handle end of GET_TASKS element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_tasks (omp_parser_t *omp_parser, GError **error)
+{
+  iterator_t tasks;
+  int count, filtered, ret, first;
+  get_data_t *get;
+  const char *filter;
+  gchar *overrides, *min_qod_str, *clean_filter;
+  int apply_overrides, min_qod;
+
+  if (get_tasks_data->get.details && get_tasks_data->get.trash)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("get_task",
+                          "GET_TASKS details given with trash"));
+      get_tasks_data_reset (get_tasks_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  INIT_GET (task, Task);
+
+  get_tasks_data->get.minimal = get_tasks_data->schedules_only;
+  ret = init_task_iterator (&tasks, &get_tasks_data->get);
+  if (ret)
+    {
+      switch (ret)
+        {
+          case 1:
+            if (send_find_error_to_client ("get_tasks",
+                                           "task",
+                                           get_tasks_data->get.id,
+                                           omp_parser))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            break;
+          case 2:
+            if (send_find_error_to_client
+                  ("get_tasks", "task", get_tasks_data->get.filt_id,
+                  omp_parser))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            break;
+          case -1:
+            SEND_TO_CLIENT_OR_FAIL
+              (XML_INTERNAL_ERROR ("get_tasks"));
+            break;
+        }
+      get_tasks_data_reset (get_tasks_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  SEND_GET_START ("task");
+
+  get = &get_tasks_data->get;
+  if (get->filt_id && strcmp (get->filt_id, "0"))
+    {
+      filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        {
+          error_send_to_client (error);
+          return;
+        }
+    }
+  else
+    filter = NULL;
+  clean_filter = manage_clean_filter (filter ? filter : get->filter);
+  overrides = filter_term_value (clean_filter, "apply_overrides");
+  min_qod_str = filter_term_value (clean_filter, "min_qod");
+  g_free (clean_filter);
+  apply_overrides = overrides
+                      ? strcmp (overrides, "0")
+                      : APPLY_OVERRIDES_DEFAULT;
+  g_free (overrides);
+  if (min_qod_str == NULL
+      || sscanf (min_qod_str, "%d", &min_qod) != 1)
+    min_qod = MIN_QOD_DEFAULT;
+  SENDF_TO_CLIENT_OR_FAIL ("<apply_overrides>%i</apply_overrides>",
+                           apply_overrides);
+
+  while (1)
+    {
+      task_t index;
+      gchar *progress_xml;
+      target_t target;
+      slave_t slave;
+      scanner_t scanner;
+      const char *first_report_id, *last_report_id;
+      char *config_name, *config_uuid;
+      char *task_target_uuid, *task_target_name;
+      char *task_slave_uuid, *task_slave_name;
+      char *task_schedule_uuid, *task_schedule_name;
+      char *task_scanner_uuid, *task_scanner_name;
+      gchar *first_report, *last_report;
+      gchar *second_last_report_id, *second_last_report;
+      gchar *current_report;
+      report_t running_report;
+      schedule_t schedule;
+      time_t next_time;
+      char *owner, *observers;
+      int target_in_trash, schedule_in_trash, scanner_in_trash;
+      int debugs, holes = 0, infos = 0, logs, warnings = 0;
+      int holes_2 = 0, infos_2 = 0, warnings_2 = 0;
+      int false_positives, task_scanner_type, slave_available;
+      int schedule_available, target_available, config_available;
+      int scanner_available;
+      double severity = 0, severity_2 = 0;
+      gchar *response;
+      iterator_t alerts, groups, roles;
+      gchar *in_assets, *max_checks, *max_hosts, *source_iface;
+      gchar *auto_delete, *auto_delete_data, *assets_apply_overrides;
+      gchar *assets_min_qod;
+
+      ret = get_next (&tasks, &get_tasks_data->get, &first, &count,
+                      init_task_iterator);
+      if (ret == 1)
+        break;
+      if (ret == -1)
+        {
+          internal_error_send_to_client (error);
+          return;
+        }
+
+      index = get_iterator_resource (&tasks);
+      target = task_target (index);
+      slave = task_slave (index);
+
+      if (get_tasks_data->schedules_only)
+        {
+          SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
+                                   "<name>%s</name>",
+                                   get_iterator_uuid (&tasks),
+                                   get_iterator_name (&tasks));
+
+          schedule_available = 1;
+          schedule = task_schedule (index);
+          if (schedule)
+            {
+              schedule_in_trash = task_schedule_in_trash (index);
+              if (schedule_in_trash)
+                {
+                  task_schedule_uuid = schedule_uuid (schedule);
+                  task_schedule_name = schedule_name (schedule);
+                  schedule_available = trash_schedule_readable (schedule);
+                }
+              else
+                {
+                  schedule_t found;
+                  task_schedule_uuid = schedule_uuid (schedule);
+                  task_schedule_name = schedule_name (schedule);
+                  if (find_schedule_with_permission (task_schedule_uuid,
+                                                    &found,
+                                                    "get_schedules"))
+                    g_error ("%s: GET_TASKS: error finding"
+                             " task schedule, aborting",
+                             __FUNCTION__);
+                  schedule_available = (found > 0);
+                }
+            }
+          else
+            {
+              task_schedule_uuid = (char*) g_strdup ("");
+              task_schedule_name = (char*) g_strdup ("");
+              schedule_in_trash = 0;
+            }
+
+          if (schedule_available && schedule)
+            {
+              iterator_t schedule_iterator;
+              time_t first_time, next_time;
+              int period, period_months, duration;
+
+              init_iterator (&schedule_iterator,
+                             "SELECT"
+                             " first_time,"
+                             " next_time (first_time, period,"
+                             "            period_months),"
+                             " period, period_months, duration"
+                             " FROM schedules"
+                             " WHERE id = %llu",
+                             schedule);
+
+              next (&schedule_iterator);
+
+              first_time = iterator_int (&schedule_iterator, 0);
+              next_time = iterator_int (&schedule_iterator, 1);
+              period = iterator_int (&schedule_iterator, 2);
+              period_months = iterator_int (&schedule_iterator, 3);
+              duration = iterator_int (&schedule_iterator, 4);
+
+              SENDF_TO_CLIENT_OR_FAIL ("<schedule id=\"%s\">"
+                                       "<name>%s</name>"
+                                       "<next_time>%s</next_time>"
+                                       "<trash>%d</trash>"
+                                       "<first_time>%s</first_time>"
+                                       "<period>%d</period>"
+                                       "<period_months>"
+                                       "%d"
+                                       "</period_months>"
+                                       "<duration>%d</duration>"
+                                       "</schedule>"
+                                       "<schedule_periods>"
+                                       "%d"
+                                       "</schedule_periods>",
+                                       task_schedule_uuid,
+                                       task_schedule_name,
+                                       next_time
+                                        ? iso_time (&next_time)
+                                        : "over",
+                                       schedule_in_trash,
+                                       first_time
+                                        ? iso_time (&first_time)
+                                        : "",
+                                       period,
+                                       period_months,
+                                       duration,
+                                       task_schedule_periods (index));
+
+              cleanup_iterator (&schedule_iterator);
+            }
+          else
+            {
+              next_time = task_schedule_next_time_tz (index);
+
+              SENDF_TO_CLIENT_OR_FAIL ("<schedule id=\"%s\">"
+                                       "<name>%s</name>"
+                                       "<next_time>%s</next_time>"
+                                       "<trash>%d</trash>"
+                                       "</schedule>",
+                                       task_schedule_uuid,
+                                       task_schedule_name,
+                                       next_time
+                                        ? iso_time (&next_time)
+                                        : "over",
+                                       schedule_in_trash);
+            }
+
+          SENDF_TO_CLIENT_OR_FAIL ("</task>");
+
+        }
+      else
+        {
+          SEND_GET_COMMON (task, &get_tasks_data->get, &tasks);
+          target_in_trash = task_target_in_trash (index);
+          if ((target == 0)
+              && (task_iterator_run_status (&tasks)
+                  == TASK_STATUS_RUNNING))
+            {
+              progress_xml = g_strdup_printf
+                              ("%i",
+                              task_upload_progress (index));
+              running_report = 0;
+            }
+          else
+            {
+              int progress;
+              gchar *host_xml;
+
+              running_report = task_iterator_current_report (&tasks);
+              progress
+                = report_progress (running_report, index, &host_xml);
+              progress_xml
+                = g_strdup_printf ("%i%s", progress, host_xml);
+              g_free (host_xml);
+            }
+
+          if (running_report)
+            {
+              gchar *timestamp;
+              char *scan_end, *current_report_id;
+
+              current_report_id = report_uuid (running_report);
+
+              if (report_timestamp (current_report_id, &timestamp))
+                g_error ("%s: GET_TASKS: error getting timestamp"
+                         " of report, aborting",
+                         __FUNCTION__);
+
+              scan_end = scan_end_time_uuid (current_report_id),
+
+              current_report = g_strdup_printf ("<current_report>"
+                                                "<report id=\"%s\">"
+                                                "<timestamp>"
+                                                "%s"
+                                                "</timestamp>"
+                                                "<scan_end>"
+                                                "%s"
+                                                "</scan_end>"
+                                                "</report>"
+                                                "</current_report>",
+                                                current_report_id,
+                                                timestamp,
+                                                scan_end);
+              free (current_report_id);
+              free (scan_end);
+              g_free (timestamp);
+            }
+          else
+            current_report = g_strdup ("");
+
+          first_report_id = task_iterator_first_report (&tasks);
+          if (first_report_id)
+            {
+              gchar *timestamp;
+              char *scan_end;
+
+              // TODO Could skip this count for tasks page.
+              if (report_counts (first_report_id,
+                                 &debugs, &holes_2, &infos_2, &logs,
+                                 &warnings_2, &false_positives,
+                                 &severity_2, apply_overrides,
+                                 0, min_qod))
+                g_error ("%s: GET_TASKS: error getting counts for"
+                         " first report, aborting",
+                         __FUNCTION__);
+
+              if (report_timestamp (first_report_id, &timestamp))
+                g_error ("%s: GET_TASKS: failed to get timestamp of"
+                         " first report, aborting",
+                         __FUNCTION__);
+
+              scan_end = scan_end_time_uuid (first_report_id),
+
+              first_report = g_strdup_printf ("<first_report>"
+                                              "<report id=\"%s\">"
+                                              "<timestamp>"
+                                              "%s"
+                                              "</timestamp>"
+                                              "<scan_end>%s</scan_end>"
+                                              "<result_count>"
+                                              "<debug>%i</debug>"
+                                              "<hole>%i</hole>"
+                                              "<info>%i</info>"
+                                              "<log>%i</log>"
+                                              "<warning>%i</warning>"
+                                              "<false_positive>"
+                                              "%i"
+                                              "</false_positive>"
+                                              "</result_count>"
+                                              "<severity>"
+                                              "%1.1f"
+                                              "</severity>"
+                                              "</report>"
+                                              "</first_report>",
+                                              first_report_id,
+                                              timestamp,
+                                              scan_end,
+                                              debugs,
+                                              holes_2,
+                                              infos_2,
+                                              logs,
+                                              warnings_2,
+                                              false_positives,
+                                              severity_2);
+              free (scan_end);
+              g_free (timestamp);
+            }
+          else
+            first_report = g_strdup ("");
+
+          second_last_report_id = task_second_last_report_id (index);
+          if (second_last_report_id)
+            {
+              gchar *timestamp;
+              char *scan_end;
+
+              /* If the first report is the second last report then skip
+                * doing the count again. */
+              if (((first_report_id == NULL)
+                  || (strcmp (second_last_report_id, first_report_id)))
+                  && report_counts (second_last_report_id,
+                                    &debugs, &holes_2, &infos_2,
+                                    &logs, &warnings_2,
+                                    &false_positives, &severity_2,
+                                    apply_overrides,
+                                    0, min_qod))
+                g_error ("%s: GET_TASKS: error getting counts for"
+                         " second report, aborting",
+                         __FUNCTION__);
+
+              if (report_timestamp (second_last_report_id, &timestamp))
+                g_error ("%s: GET_TASKS: error getting timestamp of"
+                         " second report, aborting",
+                         __FUNCTION__);
+
+              scan_end = scan_end_time_uuid (second_last_report_id),
+
+              second_last_report = g_strdup_printf
+                                    ("<second_last_report>"
+                                     "<report id=\"%s\">"
+                                     "<timestamp>%s</timestamp>"
+                                     "<scan_end>%s</scan_end>"
+                                     "<result_count>"
+                                     "<debug>%i</debug>"
+                                     "<hole>%i</hole>"
+                                     "<info>%i</info>"
+                                     "<log>%i</log>"
+                                     "<warning>%i</warning>"
+                                     "<false_positive>"
+                                     "%i"
+                                     "</false_positive>"
+                                     "</result_count>"
+                                     "<severity>%1.1f</severity>"
+                                     "</report>"
+                                     "</second_last_report>",
+                                     second_last_report_id,
+                                     timestamp,
+                                     scan_end,
+                                     debugs,
+                                     holes_2,
+                                     infos_2,
+                                     logs,
+                                     warnings_2,
+                                     false_positives,
+                                     severity_2);
+              free (scan_end);
+              g_free (timestamp);
+            }
+          else
+            second_last_report = g_strdup ("");
+
+          last_report_id = task_iterator_last_report (&tasks);
+          if (last_report_id)
+            {
+              gchar *timestamp;
+              char *scan_end;
+
+              /* If the last report is the first report or the second
+                * last report, then reuse the counts from before. */
+              if ((first_report_id == NULL)
+                  || (second_last_report_id == NULL)
+                  || (strcmp (last_report_id, first_report_id)
+                      && strcmp (last_report_id,
+                                second_last_report_id)))
+                {
+                  if (report_counts
+                      (last_report_id,
+                        &debugs, &holes, &infos, &logs,
+                        &warnings, &false_positives, &severity,
+                        apply_overrides,
+                        0, min_qod))
+                    g_error ("%s: GET_TASKS: error getting counts for"
+                             " last report, aborting",
+                             __FUNCTION__);
+                }
+              else
+                {
+                  holes = holes_2;
+                  infos = infos_2;
+                  warnings = warnings_2;
+                  severity = severity_2;
+                }
+
+              if (report_timestamp (last_report_id, &timestamp))
+                g_error ("%s: GET_TASKS: error getting timestamp for"
+                         " last report, aborting",
+                         __FUNCTION__);
+
+              scan_end = scan_end_time_uuid (last_report_id);
+
+              last_report = g_strdup_printf ("<last_report>"
+                                             "<report id=\"%s\">"
+                                             "<timestamp>%s</timestamp>"
+                                             "<scan_end>%s</scan_end>"
+                                             "<result_count>"
+                                             "<debug>%i</debug>"
+                                             "<hole>%i</hole>"
+                                             "<info>%i</info>"
+                                             "<log>%i</log>"
+                                             "<warning>%i</warning>"
+                                             "<false_positive>"
+                                             "%i"
+                                             "</false_positive>"
+                                             "</result_count>"
+                                             "<severity>"
+                                             "%1.1f"
+                                             "</severity>"
+                                             "</report>"
+                                             "</last_report>",
+                                             last_report_id,
+                                             timestamp,
+                                             scan_end,
+                                             debugs,
+                                             holes,
+                                             infos,
+                                             logs,
+                                             warnings,
+                                             false_positives,
+                                             severity);
+              free (scan_end);
+              g_free (timestamp);
+            }
+          else
+            last_report = g_strdup ("");
+
+          g_free (second_last_report_id);
+
+          owner = task_owner_name (index);
+          observers = task_observers (index);
+          config_name = task_config_name (index);
+          config_uuid = task_config_uuid (index);
+          target_available = 1;
+          if (target_in_trash)
+            {
+              task_target_uuid = trash_target_uuid (target);
+              task_target_name = trash_target_name (target);
+              target_available = trash_target_readable (target);
+            }
+          else if (target)
+            {
+              target_t found;
+              task_target_uuid = target_uuid (target);
+              task_target_name = target_name (target);
+              if (find_target_with_permission (task_target_uuid,
+                                                &found,
+                                                "get_targets"))
+                g_error ("%s: GET_TASKS: error finding task target,"
+                         " aborting",
+                         __FUNCTION__);
+              target_available = (found > 0);
+            }
+          else
+            {
+              task_target_uuid = NULL;
+              task_target_name = NULL;
+            }
+          config_available = 1;
+          if (task_config_in_trash (index))
+            config_available = trash_config_readable_uuid (config_uuid);
+          else if (config_uuid)
+            {
+              config_t found;
+              if (find_config_with_permission (config_uuid,
+                                              &found,
+                                              "get_configs"))
+                g_error ("%s: GET_TASKS: error finding task config,"
+                         " aborting",
+                         __FUNCTION__);
+              config_available = (found > 0);
+            }
+          slave_available = 1;
+          if (task_slave_in_trash (index))
+            {
+              task_slave_uuid = trash_slave_uuid (slave);
+              task_slave_name = trash_slave_name (slave);
+              slave_available = trash_slave_readable (slave);
+            }
+          else if (slave)
+            {
+              slave_t found;
+              task_slave_uuid = slave_uuid (slave);
+              task_slave_name = slave_name (slave);
+              if (find_slave_with_permission (task_slave_uuid,
+                                              &found,
+                                              "get_slaves"))
+                g_error ("%s: GET_TASKS: error finding task slave,"
+                         " aborting",
+                         __FUNCTION__);
+
+              slave_available = (found > 0);
+            }
+          else
+            {
+              task_slave_uuid = g_strdup ("");
+              task_slave_name = g_strdup ("");
+            }
+          schedule_available = 1;
+          schedule = task_schedule (index);
+          if (schedule)
+            {
+              schedule_in_trash = task_schedule_in_trash (index);
+              if (schedule_in_trash)
+                {
+                  task_schedule_uuid = schedule_uuid (schedule);
+                  task_schedule_name = schedule_name (schedule);
+                  schedule_available = trash_schedule_readable (schedule);
+                }
+              else
+                {
+                  schedule_t found;
+                  task_schedule_uuid = schedule_uuid (schedule);
+                  task_schedule_name = schedule_name (schedule);
+                  if (find_schedule_with_permission (task_schedule_uuid,
+                                                     &found,
+                                                     "get_schedules"))
+                    g_error ("%s: GET_TASKS: error finding"
+                             " task schedule, aborting",
+                             __FUNCTION__);
+                  schedule_available = (found > 0);
+                }
+            }
+          else
+            {
+              task_schedule_uuid = (char*) g_strdup ("");
+              task_schedule_name = (char*) g_strdup ("");
+              schedule_in_trash = 0;
+            }
+          scanner_available = 1;
+          scanner = task_iterator_scanner (&tasks);
+          if (scanner)
+            {
+              scanner_in_trash = task_scanner_in_trash (index);
+
+              task_scanner_uuid = scanner_uuid (scanner);
+              task_scanner_name = scanner_name (scanner);
+              task_scanner_type = scanner_type (scanner);
+              if (scanner_in_trash)
+                scanner_available = trash_scanner_readable (scanner);
+              else
+                {
+                  scanner_t found;
+
+                  if (find_scanner_with_permission
+                      (task_scanner_uuid, &found, "get_scanners"))
+                    g_error ("%s: GET_TASKS: error finding"
+                             " task scanner, aborting",
+                             __FUNCTION__);
+                  scanner_available = (found > 0);
+                }
+            }
+          else
+            {
+              /* Container tasks have no associated scanner. */
+              task_scanner_uuid = g_strdup ("");
+              task_scanner_name = g_strdup ("");
+              task_scanner_type = 0;
+              scanner_in_trash = 0;
+            }
+          next_time = task_schedule_next_time_tz (index);
+          response = g_strdup_printf
+                      ("<alterable>%i</alterable>"
+                       "<config id=\"%s\">"
+                       "<name>%s</name>"
+                       "<type>%i</type>"
+                       "<trash>%i</trash>"
+                       "%s"
+                       "</config>"
+                       "<target id=\"%s\">"
+                       "<name>%s</name>"
+                       "<trash>%i</trash>"
+                       "%s"
+                       "</target>"
+                       "<hosts_ordering>%s</hosts_ordering>"
+                       "<scanner id='%s'>"
+                       "<name>%s</name>"
+                       "<type>%d</type>"
+                       "<trash>%i</trash>"
+                       "%s"
+                       "</scanner>"
+                       "<slave id=\"%s\">"
+                       "<name>%s</name>"
+                       "<trash>%i</trash>"
+                       "%s"
+                       "</slave>"
+                       "<status>%s</status>"
+                       "<progress>%s</progress>"
+                       "<report_count>"
+                       "%u<finished>%u</finished>"
+                       "</report_count>"
+                       "<trend>%s</trend>"
+                       "<schedule id=\"%s\">"
+                       "<name>%s</name>"
+                       "<next_time>%s</next_time>"
+                       "<trash>%i</trash>"
+                       "%s"
+                       "</schedule>"
+                       "<schedule_periods>%i</schedule_periods>"
+                       "%s%s%s%s",
+                       get_tasks_data->get.trash
+                        ? 0
+                        : task_alterable (index),
+                       config_uuid ?: "",
+                       config_name ?: "",
+                       config_type (task_config (index)),
+                       task_config_in_trash (index),
+                       config_available ? "" : "<permissions/>",
+                       task_target_uuid ?: "",
+                       task_target_name ?: "",
+                       target_in_trash,
+                       target_available ? "" : "<permissions/>",
+                       task_iterator_hosts_ordering (&tasks),
+                       task_scanner_uuid,
+                       task_scanner_name,
+                       task_scanner_type,
+                       scanner_in_trash,
+                       scanner_available ? "" : "<permissions/>",
+                       task_slave_uuid ?: "",
+                       task_slave_name ?: "",
+                       task_slave_in_trash (index),
+                       slave_available ? "" : "<permissions/>",
+                       task_iterator_run_status_name (&tasks),
+                       progress_xml,
+                       task_iterator_total_reports (&tasks),
+                       task_iterator_finished_reports (&tasks),
+                       task_iterator_trend_counts
+                        (&tasks, holes, warnings, infos, severity,
+                         holes_2, warnings_2, infos_2, severity_2),
+                       task_schedule_uuid,
+                       task_schedule_name,
+                       (next_time == 0 ? "over" : iso_time (&next_time)),
+                       schedule_in_trash,
+                       schedule_available ? "" : "<permissions/>",
+                       task_schedule_periods (index),
+                       current_report,
+                       first_report,
+                       last_report,
+                       second_last_report);
+          g_free (config_name);
+          g_free (config_uuid);
+          free (task_target_name);
+          free (task_target_uuid);
+          g_free (progress_xml);
+          g_free (current_report);
+          g_free (first_report);
+          g_free (last_report);
+          g_free (second_last_report);
+          g_free (task_schedule_uuid);
+          g_free (task_schedule_name);
+          g_free (task_scanner_uuid);
+          g_free (task_scanner_name);
+          free (task_slave_uuid);
+          free (task_slave_name);
+          if (send_to_client (response,
+                              omp_parser->client_writer,
+                              omp_parser->client_writer_data))
+            {
+              g_free (response);
+              cleanup_iterator (&tasks);
+              error_send_to_client (error);
+              cleanup_iterator (&tasks);
+              return;
+            }
+          g_free (response);
+
+          SENDF_TO_CLIENT_OR_FAIL
+           ("<observers>%s",
+            ((owner == NULL)
+            || (strcmp (owner,
+                        current_credentials.username)))
+              ? ""
+              : observers);
+          free (owner);
+          free (observers);
+
+          init_task_group_iterator (&groups, index);
+          while (next (&groups))
+            SENDF_TO_CLIENT_OR_FAIL
+             ("<group id=\"%s\">"
+              "<name>%s</name>"
+              "</group>",
+              task_group_iterator_uuid (&groups),
+              task_group_iterator_name (&groups));
+          cleanup_iterator (&groups);
+
+          init_task_role_iterator (&roles, index);
+          while (next (&roles))
+            SENDF_TO_CLIENT_OR_FAIL
+             ("<role id=\"%s\">"
+              "<name>%s</name>"
+              "</role>",
+              task_role_iterator_uuid (&roles),
+              task_role_iterator_name (&roles));
+          cleanup_iterator (&roles);
+
+          SENDF_TO_CLIENT_OR_FAIL ("</observers>");
+
+          init_task_alert_iterator (&alerts, index, 0);
+          while (next (&alerts))
+            {
+              alert_t found;
+
+              if (find_alert_with_permission (task_alert_iterator_uuid
+                                              (&alerts),
+                                              &found,
+                                              "get_alerts"))
+                abort ();
+
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<alert id=\"%s\">"
+                "<name>%s</name>",
+                task_alert_iterator_uuid (&alerts),
+                task_alert_iterator_name (&alerts));
+
+              if (found)
+                SENDF_TO_CLIENT_OR_FAIL
+                ("</alert>");
+              else
+                SENDF_TO_CLIENT_OR_FAIL
+                 ("<permissions/>"
+                  "</alert>");
+            }
+          cleanup_iterator (&alerts);
+
+          if (get_tasks_data->get.details)
+            {
+              /* The detailed version. */
+
+              /** @todo Handle error cases.
+                *
+                * The errors are either SQL errors or out of space in
+                * buffer errors.  Both should probably just lead to aborts
+                * at the SQL or buffer output level.
+                */
+              send_reports (index,
+                            apply_overrides,
+                            min_qod,
+                            omp_parser->client_writer,
+                            omp_parser->client_writer_data);
+            }
+
+          SENDF_TO_CLIENT_OR_FAIL ("<result_count>%i</result_count>",
+                                    task_result_count (index, min_qod));
+
+          in_assets = task_preference_value (index, "in_assets");
+          assets_apply_overrides = task_preference_value
+                                    (index, "assets_apply_overrides");
+          assets_min_qod = task_preference_value (index, "assets_min_qod");
+          max_checks = task_preference_value (index, "max_checks");
+          max_hosts = task_preference_value (index, "max_hosts");
+          source_iface = task_preference_value (index, "source_iface");
+          auto_delete = task_preference_value (index, "auto_delete");
+          auto_delete_data = task_preference_value (index, "auto_delete_data");
+
+          SENDF_TO_CLIENT_OR_FAIL
+           ("<preferences>"
+            "<preference>"
+            "<name>"
+            "Maximum concurrently executed NVTs per host"
+            "</name>"
+            "<scanner_name>max_checks</scanner_name>"
+            "<value>%s</value>"
+            "</preference>"
+            "<preference>"
+            "<name>"
+            "Maximum concurrently scanned hosts"
+            "</name>"
+            "<scanner_name>max_hosts</scanner_name>"
+            "<value>%s</value>"
+            "</preference>"
+            "<preference>"
+            "<name>"
+            "Network Source Interface"
+            "</name>"
+            "<scanner_name>source_iface</scanner_name>"
+            "<value>%s</value>"
+            "</preference>"
+            "<preference>"
+            "<name>"
+            "Add results to Asset Management"
+            "</name>"
+            "<scanner_name>in_assets</scanner_name>"
+            "<value>%s</value>"
+            "</preference>"
+            "<preference>"
+            "<name>"
+            "Apply Overrides when adding Assets"
+            "</name>"
+            "<scanner_name>assets_apply_overrides</scanner_name>"
+            "<value>%s</value>"
+            "</preference>"
+            "<preference>"
+            "<name>"
+            "Min QOD when adding Assets"
+            "</name>"
+            "<scanner_name>assets_min_qod</scanner_name>"
+            "<value>%s</value>"
+            "</preference>"
+            "<preference>"
+            "<name>"
+            "Auto Delete Reports"
+            "</name>"
+            "<scanner_name>auto_delete</scanner_name>"
+            "<value>%s</value>"
+            "</preference>"
+            "<preference>"
+            "<name>"
+            "Auto Delete Reports Data"
+            "</name>"
+            "<scanner_name>auto_delete_data</scanner_name>"
+            "<value>%s</value>"
+            "</preference>"
+            "</preferences>"
+            "</task>",
+            max_checks ? max_checks : "4",
+            max_hosts ? max_hosts : "20",
+            source_iface ? source_iface : "",
+            in_assets ? in_assets : "yes",
+            assets_apply_overrides ? assets_apply_overrides : "yes",
+            assets_min_qod
+              ? assets_min_qod
+              : G_STRINGIFY (MIN_QOD_DEFAULT),
+            auto_delete ? auto_delete : "0",
+            auto_delete_data ? auto_delete_data : "0");
+
+          g_free (in_assets);
+          g_free (max_checks);
+          g_free (max_hosts);
+          g_free (source_iface);
+        }
+
+      count++;
+    }
+  cleanup_iterator (&tasks);
+  g_free (min_qod_str);
+  filtered = get_tasks_data->get.id
+              ? 1
+              : task_count (&get_tasks_data->get);
+  SEND_GET_END ("task", &get_tasks_data->get, count, filtered);
+
+  get_tasks_data_reset (get_tasks_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
+ * @brief Handle end of GET_USER element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_users (omp_parser_t *omp_parser, GError **error)
+{
+  iterator_t users;
+  int count, filtered, ret, first;
+
+  INIT_GET (user, User);
+
+  ret = init_user_iterator (&users, &get_users_data->get);
+  if (ret)
+    {
+      switch (ret)
+        {
+          case 1:
+            if (send_find_error_to_client ("get_users",
+                                           "user",
+                                           get_users_data->get.id,
+                                           omp_parser))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            break;
+          case 2:
+            if (send_find_error_to_client
+                  ("get_users", "user", get_users_data->get.filt_id,
+                   omp_parser))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            break;
+          case -1:
+            SEND_TO_CLIENT_OR_FAIL
+              (XML_INTERNAL_ERROR ("get_users"));
+            break;
+        }
+      get_users_data_reset (get_users_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  SEND_GET_START ("user");
+  while (1)
+    {
+      iterator_t groups, roles;
+      const char *hosts, *ifaces;
+      int hosts_allow, ifaces_allow;
+
+      ret = get_next (&users, &get_users_data->get, &first, &count,
+                      init_user_iterator);
+      if (ret == 1)
+        break;
+      if (ret == -1)
+        {
+          internal_error_send_to_client (error);
+          return;
+        }
+
+      SEND_GET_COMMON (user, &get_users_data->get, &users);
+
+      hosts = user_iterator_hosts (&users);
+      hosts_allow = user_iterator_hosts_allow (&users);
+
+      SENDF_TO_CLIENT_OR_FAIL ("<hosts allow=\"%i\">%s</hosts>"
+                               "<sources><source>%s</source></sources>",
+                               hosts_allow,
+                               hosts ? hosts : "",
+                               user_iterator_method (&users)
+                                ? user_iterator_method (&users)
+                                : "file");
+
+      /* Interfaces Access */
+      ifaces = user_iterator_ifaces (&users);
+      ifaces_allow = user_iterator_ifaces_allow (&users);
+      SENDF_TO_CLIENT_OR_FAIL ("<ifaces allow=\"%i\">%s</ifaces>",
+                               ifaces_allow,
+                               ifaces ? ifaces : "");
+
+      /* User Roles */
+      init_user_role_iterator (&roles,
+                                get_iterator_resource (&users));
+      while (next (&roles))
+        {
+          SENDF_TO_CLIENT_OR_FAIL ("<role id=\"%s\">"
+                                   "<name>%s</name>",
+                                   user_role_iterator_uuid (&roles),
+                                   user_role_iterator_name (&roles));
+          if (user_role_iterator_readable (&roles))
+            SEND_TO_CLIENT_OR_FAIL ("</role>");
+          else
+            SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                    "</role>");
+        }
+      cleanup_iterator (&roles);
+
+      SEND_TO_CLIENT_OR_FAIL ("<groups>");
+      init_user_group_iterator (&groups,
+                                get_iterator_resource (&users));
+      while (next (&groups))
+        {
+          SENDF_TO_CLIENT_OR_FAIL ("<group id=\"%s\">"
+                                   "<name>%s</name>",
+                                   user_group_iterator_uuid (&groups),
+                                   user_group_iterator_name (&groups));
+          if (user_group_iterator_readable (&groups))
+            SEND_TO_CLIENT_OR_FAIL ("</group>");
+          else
+            SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                    "</group>");
+        }
+      cleanup_iterator (&groups);
+      SEND_TO_CLIENT_OR_FAIL ("</groups>"
+                              "</user>");
+      count++;
+    }
+  cleanup_iterator (&users);
+  filtered = get_users_data->get.id
+              ? 1
+              : user_count (&get_users_data->get);
+  SEND_GET_END ("user", &get_users_data->get, count, filtered);
+
+  get_users_data_reset (get_users_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
+ * @brief Handle end of GET_VERSION element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_version (omp_parser_t *omp_parser, GError **error)
+{
+  SEND_TO_CLIENT_OR_FAIL ("<get_version_response"
+                          " status=\"" STATUS_OK "\""
+                          " status_text=\"" STATUS_OK_TEXT "\">"
+                          "<version>" OMP_VERSION "</version>"
+                          "</get_version_response>");
+  if (client_state == CLIENT_GET_VERSION_AUTHENTIC)
+    set_client_state (CLIENT_AUTHENTIC);
+  else
+    set_client_state (CLIENT_TOP);
 }
 
 /**
@@ -14471,6 +20558,8 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
   int (*write_to_client) (const char *, void*)
     = (int (*) (const char *, void*)) omp_parser->client_writer;
   void* write_to_client_data = (void*) omp_parser->client_writer_data;
+
+  int ret;
 
   g_debug ("   XML    end: %s\n", element_name);
 
@@ -15192,5977 +21281,133 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         }
 
       case CLIENT_GET_AGENTS:
-        {
-          int format;
+        assert (strcasecmp ("GET_AGENTS", element_name) == 0);
+        return handle_get_agents (omp_parser, error);
 
-          assert (strcasecmp ("GET_AGENTS", element_name) == 0);
+      case CLIENT_GET_AGGREGATES:
+        assert (strcasecmp ("GET_AGGREGATES", element_name) == 0);
+        return handle_get_aggregates (omp_parser, error);
 
-          if (get_agents_data->format)
-            {
-              if (strlen (get_agents_data->format))
-                {
-                  if (strcasecmp (get_agents_data->format, "installer") == 0)
-                    format = 1;
-                  else if (strcasecmp (get_agents_data->format,
-                                       "howto_install")
-                           == 0)
-                    format = 2;
-                  else if (strcasecmp (get_agents_data->format, "howto_use")
-                           == 0)
-                    format = 3;
-                  else
-                    format = -1;
-                }
-              else
-                format = 0;
-            }
-          else if (get_agents_data->get.details == 1) /* For exporting */
-            format = 1;
-          else
-            format = 0;
-
-          if (format == -1)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_agents",
-                                "GET_AGENTS format attribute should"
-                                " be 'installer', 'howto_install' or 'howto_use'."));
-          else
-            {
-              iterator_t agents;
-              int ret, count, filtered, first;
-
-              INIT_GET (agent, Agent);
-
-              ret = init_agent_iterator (&agents,
-                                         &get_agents_data->get);
-              if (ret)
-                {
-                  switch (ret)
-                    {
-                      case 1:
-                        if (send_find_error_to_client ("get_agents",
-                                                       "agents",
-                                                       get_agents_data->get.id,
-                                                       omp_parser))
-                          {
-                            error_send_to_client (error);
-                            return;
-                          }
-                        break;
-                      case 2:
-                        if (send_find_error_to_client
-                             ("get_agents", "filter",
-                              get_agents_data->get.filt_id, omp_parser))
-                          {
-                            error_send_to_client (error);
-                            return;
-                          }
-                        break;
-                      case -1:
-                        SEND_TO_CLIENT_OR_FAIL
-                         (XML_INTERNAL_ERROR ("get_agents"));
-                        break;
-                    }
-                  get_agents_data_reset (get_agents_data);
-                  set_client_state (CLIENT_AUTHENTIC);
-                  break;
-                }
-
-              SEND_GET_START ("agent");
-              while (1)
-                {
-                  ret = get_next (&agents, &get_agents_data->get, &first,
-                                  &count, init_agent_iterator);
-                  if (ret == 1)
-                    break;
-                  if (ret == -1)
-                    {
-                      internal_error_send_to_client (error);
-                      return;
-                    }
-
-                  SEND_GET_COMMON (agent, &get_agents_data->get,
-                                   &agents);
-                  switch (format)
-                    {
-                      case 1: /* installer */
-                        {
-                          time_t trust_time;
-                          trust_time = agent_iterator_trust_time (&agents);
-
-                          SENDF_TO_CLIENT_OR_FAIL
-                           ("<package format=\"installer\">"
-                            "<filename>%s</filename>"
-                            "%s"
-                            "</package>"
-                            "<installer>"
-                            "<trust>%s<time>%s</time></trust>"
-                            "</installer>"
-                            "</agent>",
-                            agent_iterator_installer_filename (&agents),
-                            agent_iterator_installer_64 (&agents),
-                            agent_iterator_trust (&agents),
-                            iso_time (&trust_time));
-                        }
-                        break;
-                      case 2: /* howto_install */
-                        SENDF_TO_CLIENT_OR_FAIL
-                         ("<package format=\"howto_install\">%s</package>"
-                          "</agent>",
-                          agent_iterator_howto_install (&agents));
-                        break;
-                      case 3: /* howto_use */
-                        SENDF_TO_CLIENT_OR_FAIL
-                         ("<package format=\"howto_use\">%s</package>"
-                          "</agent>",
-                          agent_iterator_howto_use (&agents));
-                        break;
-                      default:
-                        {
-                          time_t trust_time;
-
-                          trust_time = agent_iterator_trust_time (&agents);
-
-                          SENDF_TO_CLIENT_OR_FAIL
-                           ("<installer>"
-                            "<trust>%s<time>%s</time></trust>"
-                            "</installer>"
-                            "</agent>",
-                            agent_iterator_trust (&agents),
-                            iso_time (&trust_time));
-                        }
-                        break;
-                    }
-                  count++;
-                }
-              cleanup_iterator (&agents);
-              filtered = get_agents_data->get.id
-                          ? 1
-                          : agent_count (&get_agents_data->get);
-              SEND_GET_END ("agent", &get_agents_data->get, count, filtered);
-            }
-          get_agents_data_reset (get_agents_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
+      CLOSE (CLIENT_GET_AGGREGATES, DATA_COLUMN);
+      CLOSE (CLIENT_GET_AGGREGATES, SORT);
+      CLOSE (CLIENT_GET_AGGREGATES, TEXT_COLUMN);
 
       case CLIENT_GET_ALERTS:
-        {
-          iterator_t alerts;
-          int count, filtered, ret, first;
+        assert (strcasecmp ("GET_ALERTS", element_name) == 0);
+        return handle_get_alerts (omp_parser, error);
 
-          assert (strcasecmp ("GET_ALERTS", element_name) == 0);
-
-          INIT_GET (alert, Alert);
-
-          ret = init_alert_iterator (&alerts, &get_alerts_data->get);
-          if (ret)
-            {
-              switch (ret)
-                {
-                  case 1:
-                    if (send_find_error_to_client ("get_alerts", "alert",
-                                                   get_alerts_data->get.id,
-                                                   omp_parser))
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
-                    break;
-                  case 2:
-                    if (send_find_error_to_client
-                         ("get_alerts", "alert", get_alerts_data->get.filt_id,
-                          omp_parser))
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
-                    break;
-                  case -1:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("get_alerts"));
-                    break;
-                }
-              get_alerts_data_reset (get_alerts_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-
-          SEND_GET_START ("alert");
-          while (1)
-            {
-              iterator_t data;
-              char *filter_uuid;
-              int notice, message, has_secinfo_type;
-              const char *method;
-
-              ret = get_next (&alerts, &get_alerts_data->get, &first,
-                              &count, init_alert_iterator);
-              if (ret == 1)
-                break;
-              if (ret == -1)
-                {
-                  internal_error_send_to_client (error);
-                  return;
-                }
-              SEND_GET_COMMON (alert, &get_alerts_data->get,
-                               &alerts);
-
-              /* Filter. */
-
-              filter_uuid = alert_iterator_filter_uuid (&alerts);
-              if (filter_uuid)
-                {
-                  SENDF_TO_CLIENT_OR_FAIL ("<filter id=\"%s\">"
-                                           "<name>%s</name>"
-                                           "<trash>%i</trash>",
-                                           filter_uuid,
-                                           alert_iterator_filter_name (&alerts),
-                                           alert_iterator_filter_trash
-                                            (&alerts));
-                  if (alert_iterator_filter_readable (&alerts))
-                    SEND_TO_CLIENT_OR_FAIL ("</filter>");
-                  else
-                    SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
-                                            "</filter>");
-                }
-
-              /* Condition. */
-
-              SENDF_TO_CLIENT_OR_FAIL ("<condition>%s",
-                                       alert_condition_name
-                                        (alert_iterator_condition
-                                          (&alerts)));
-              init_alert_data_iterator (&data, get_iterator_resource (&alerts),
-                                        get_alerts_data->get.trash,
-                                        "condition");
-              while (next (&data))
-                SENDF_TO_CLIENT_OR_FAIL ("<data>"
-                                         "<name>%s</name>"
-                                         "%s"
-                                         "</data>",
-                                         alert_data_iterator_name (&data),
-                                         alert_data_iterator_data (&data));
-              cleanup_iterator (&data);
-
-              SEND_TO_CLIENT_OR_FAIL ("</condition>");
-
-              /* Event. */
-
-              SENDF_TO_CLIENT_OR_FAIL ("<event>%s",
-                                       event_name (alert_iterator_event
-                                                    (&alerts)));
-              init_alert_data_iterator (&data, get_iterator_resource (&alerts),
-                                        get_alerts_data->get.trash, "event");
-              has_secinfo_type = 0;
-              while (next (&data))
-                {
-                  if (strcmp (alert_data_iterator_name (&data), "secinfo_type")
-                      == 0)
-                    has_secinfo_type = 1;
-                  SENDF_TO_CLIENT_OR_FAIL ("<data>"
-                                           "<name>%s</name>"
-                                           "%s"
-                                           "</data>",
-                                           alert_data_iterator_name (&data),
-                                           alert_data_iterator_data (&data));
-                }
-              if ((alert_iterator_event (&alerts) == EVENT_NEW_SECINFO
-                   || alert_iterator_event (&alerts) == EVENT_UPDATED_SECINFO)
-                  && (has_secinfo_type == 0))
-                SENDF_TO_CLIENT_OR_FAIL ("<data>"
-                                         "<name>secinfo_type</name>"
-                                         "NVT"
-                                         "</data>");
-              cleanup_iterator (&data);
-              SEND_TO_CLIENT_OR_FAIL ("</event>");
-
-              /* Method. */
-
-              method = alert_method_name (alert_iterator_method (&alerts));
-              SENDF_TO_CLIENT_OR_FAIL ("<method>%s", method);
-              init_alert_data_iterator (&data, get_iterator_resource (&alerts),
-                                        get_alerts_data->get.trash, "method");
-              notice = -1;
-              message = 0;
-              while (next (&data))
-                {
-                  const char *name;
-                  name = alert_data_iterator_name (&data);
-                  if (strcmp (name, "notice") == 0)
-                    notice = atoi (alert_data_iterator_data (&data));
-                  else if (strcmp (method, "Email") == 0
-                           && strcmp (name, "message") == 0)
-                    {
-                      if (strlen (alert_data_iterator_data (&data)) == 0)
-                        continue;
-                      message = 1;
-                    }
-
-                  if (strcmp (name, "scp_credential") == 0
-                      || strcmp (name, "verinice_server_credential") == 0)
-                    {
-                      // Username + Password credentials
-                      const char *credential_id;
-                      credential_t credential;
-                      credential_id = alert_data_iterator_data (&data);
-                      if (find_credential_with_permission (credential_id,
-                                                           &credential,
-                                                           "get_credentials"))
-                        {
-                          abort ();
-                        }
-                      else if (credential == 0)
-                        {
-                          SENDF_TO_CLIENT_OR_FAIL ("<data>"
-                                                   "<name>%s</name>"
-                                                   "%s"
-                                                   "</data>",
-                                                   name,
-                                                   credential_id);
-                        }
-                      else
-                        {
-                          gchar *cred_name, *username;
-                          cred_name = credential_name (credential);
-                          username = credential_value (credential, "username");
-
-                          SENDF_TO_CLIENT_OR_FAIL ("<data>"
-                                                   "<name>%s</name>"
-                                                   "<credential id=\"%s\">"
-                                                   "<name>%s</name>"
-                                                   "<login>%s</login>"
-                                                   "</credential>"
-                                                   "%s"
-                                                   "</data>",
-                                                   name,
-                                                   credential_id,
-                                                   cred_name,
-                                                   username,
-                                                   credential_id);
-
-                          g_free (cred_name);
-                          g_free (username);
-                        }
-                    }
-                  else
-                    {
-                      SENDF_TO_CLIENT_OR_FAIL ("<data>"
-                                               "<name>%s</name>"
-                                               "%s"
-                                               "</data>",
-                                               name,
-                                               alert_data_iterator_data
-                                                (&data));
-                    }
-                }
-              /* If there is no email message data, send the default. */
-              if (strcmp (method, "Email") == 0
-                  && message == 0
-                  && (notice == 0 || notice == 2))
-                SENDF_TO_CLIENT_OR_FAIL ("<data>"
-                                         "<name>message</name>"
-                                         "%s"
-                                         "</data>",
-                                         notice == 0
-                                          ? ALERT_MESSAGE_INCLUDE
-                                          : ALERT_MESSAGE_ATTACH);
-              cleanup_iterator (&data);
-              SEND_TO_CLIENT_OR_FAIL ("</method>");
-
-              if (get_alerts_data->tasks)
-                {
-                  iterator_t tasks;
-
-                  SEND_TO_CLIENT_OR_FAIL ("<tasks>");
-                  init_alert_task_iterator (&tasks,
-                                            get_iterator_resource (&alerts), 0);
-                  while (next (&tasks))
-                    {
-                      SENDF_TO_CLIENT_OR_FAIL
-                       ("<task id=\"%s\">"
-                        "<name>%s</name>",
-                        alert_task_iterator_uuid (&tasks),
-                        alert_task_iterator_name (&tasks));
-
-                      if (alert_task_iterator_readable (&tasks))
-                        SEND_TO_CLIENT_OR_FAIL ("</task>");
-                      else
-                        SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
-                                                "</task>");
-                    }
-                  cleanup_iterator (&tasks);
-                  SEND_TO_CLIENT_OR_FAIL ("</tasks>");
-                }
-
-              SEND_TO_CLIENT_OR_FAIL ("</alert>");
-              count++;
-            }
-          cleanup_iterator (&alerts);
-          filtered = get_alerts_data->get.id
-                      ? 1
-                      : alert_count (&get_alerts_data->get);
-          SEND_GET_END ("alert", &get_alerts_data->get, count, filtered);
-
-          get_alerts_data_reset (get_alerts_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
+      case CLIENT_GET_ASSETS:
+        assert (strcasecmp ("GET_ASSETS", element_name) == 0);
+        return handle_get_assets (omp_parser, error);
 
       case CLIENT_GET_CONFIGS:
         assert (strcasecmp ("GET_CONFIGS", element_name) == 0);
         return handle_get_configs (omp_parser, error);
 
       case CLIENT_GET_CREDENTIALS:
-        {
-          iterator_t credentials;
-          int count, filtered, ret, first;
-          int format;
-          char *data_format;
-
-          assert (strcasecmp ("GET_CREDENTIALS", element_name) == 0);
-
-          data_format = get_credentials_data->format;
-          if (data_format)
-            {
-              if (strlen (data_format))
-                {
-                  if (strcasecmp (data_format, "key") == 0)
-                    format = 1;
-                  else if (strcasecmp (data_format, "rpm") == 0)
-                    format = 2;
-                  else if (strcasecmp (data_format, "deb") == 0)
-                    format = 3;
-                  else if (strcasecmp (data_format, "exe") == 0)
-                    format = 4;
-                  else if (strcasecmp (data_format, "pem") == 0)
-                    format = 5;
-                  else
-                    format = -1;
-                }
-              else
-                format = 0;
-            }
-          else
-            format = 0;
-
-          if (format == -1)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_credentials",
-                                "GET_CREDENTIALS format attribute should"
-                                " be 'key', 'rpm', 'deb', 'exe' or 'pem'."));
-
-          INIT_GET (credential, Credential);
-
-          ret = init_credential_iterator (&credentials,
-                                          &get_credentials_data->get);
-          if (ret)
-            {
-              switch (ret)
-                {
-                  case 1:
-                    if (send_find_error_to_client ("get_credentials",
-                                                   "credential",
-                                                   get_credentials_data->get.id,
-                                                   omp_parser))
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
-                    break;
-                  case 2:
-                    if (send_find_error_to_client
-                         ("get_credentials", "credential",
-                          get_credentials_data->get.filt_id, omp_parser))
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
-                    break;
-                  case -1:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("get_credentials"));
-                    break;
-                }
-              get_credentials_data_reset (get_credentials_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-
-          SEND_GET_START("credential");
-          while (1)
-            {
-              const char *private_key, *login, *type, *cert;
-
-              ret = get_next (&credentials, &get_credentials_data->get,
-                              &first, &count, init_credential_iterator);
-              if (ret == 1)
-                break;
-              if (ret == -1)
-                {
-                  internal_error_send_to_client (error);
-                  return;
-                }
-
-              SEND_GET_COMMON (credential, &get_credentials_data->get,
-                               &credentials);
-              private_key = credential_iterator_private_key (&credentials);
-              login = credential_iterator_login (&credentials);
-              type = credential_iterator_type (&credentials);
-              cert = credential_iterator_certificate (&credentials);
-
-              SENDF_TO_CLIENT_OR_FAIL
-               ("<allow_insecure>%d</allow_insecure>"
-                "<login>%s</login>"
-                "<type>%s</type>"
-                "<full_type>%s</full_type>",
-                credential_iterator_allow_insecure (&credentials),
-                login ? login : "",
-                type ? type : "",
-                type ? credential_full_type (type) : "");
-
-              if (strcmp (type, "snmp") == 0)
-                {
-                  const char *auth_algorithm, *privacy_algorithm;
-                  auth_algorithm
-                    = credential_iterator_auth_algorithm (&credentials);
-                  privacy_algorithm
-                    = credential_iterator_privacy_algorithm (&credentials);
-
-                  SENDF_TO_CLIENT_OR_FAIL
-                    ("<auth_algorithm>%s</auth_algorithm>"
-                     "<privacy><algorithm>%s</algorithm></privacy>",
-                     auth_algorithm ? auth_algorithm : "",
-                     privacy_algorithm ? privacy_algorithm : "");
-                }
-
-              if (cert && get_credentials_data->get.details)
-                {
-                  /* get certificate info */
-                  time_t activation_time, expiration_time;
-                  gchar *activation_time_str, *expiration_time_str;
-                  gchar *fingerprint, *issuer;
-                  get_certificate_info (cert,
-                                        &activation_time, &expiration_time,
-                                        &fingerprint, &issuer);
-                  activation_time_str = certificate_iso_time (activation_time);
-                  expiration_time_str = certificate_iso_time (expiration_time);
-                  SENDF_TO_CLIENT_OR_FAIL
-                   ("<certificate_info>"
-                    "<time_status>%s</time_status>"
-                    "<activation_time>%s</activation_time>"
-                    "<expiration_time>%s</expiration_time>"
-                    "<md5_fingerprint>%s</md5_fingerprint>"
-                    "<issuer>%s</issuer>"
-                    "</certificate_info>",
-                    certificate_time_status (activation_time, expiration_time),
-                    activation_time_str,
-                    expiration_time_str,
-                    fingerprint ? fingerprint : "",
-                    issuer ? issuer : "");
-                  g_free (activation_time_str);
-                  g_free (expiration_time_str);
-                  g_free (fingerprint);
-                  g_free (issuer);
-                }
-
-              switch (format)
-                {
-                  char *package;
-
-                  case 1: /* key */
-                    {
-                      char *pub;
-                      const char *pass;
-
-                      pass = credential_iterator_password (&credentials);
-                      pub = openvas_ssh_public_from_private (private_key, pass);
-                      SENDF_TO_CLIENT_OR_FAIL
-                       ("<public_key>%s</public_key>", pub ?: "");
-                      g_free (pub);
-                      break;
-                    }
-                  case 2: /* rpm */
-                    package = credential_iterator_rpm (&credentials);
-                    SENDF_TO_CLIENT_OR_FAIL
-                     ("<package format=\"rpm\">%s</package>", package ?: "");
-                    g_free (package);
-                    break;
-                  case 3: /* deb */
-                    package = credential_iterator_deb (&credentials);
-                    SENDF_TO_CLIENT_OR_FAIL
-                     ("<package format=\"deb\">%s</package>", package ?: "");
-                    g_free (package);
-                    break;
-                  case 4: /* exe */
-                    package = credential_iterator_exe (&credentials);
-                    SENDF_TO_CLIENT_OR_FAIL
-                     ("<package format=\"exe\">%s</package>", package ?: "");
-                    g_free (package);
-                    break;
-                  case 5:
-                    {
-                      SENDF_TO_CLIENT_OR_FAIL
-                       ("<certificate>%s</certificate>", cert ?: "");
-                      break;
-                    }
-                }
-
-              if (get_credentials_data->scanners)
-                {
-                  iterator_t scanners;
-
-                  SENDF_TO_CLIENT_OR_FAIL ("<scanners>");
-                  init_credential_scanner_iterator
-                   (&scanners, get_iterator_resource (&credentials), 0);
-                  while (next (&scanners))
-                    {
-                      SENDF_TO_CLIENT_OR_FAIL
-                       ("<scanner id=\"%s\">"
-                        "<name>%s</name>",
-                        credential_scanner_iterator_uuid (&scanners),
-                        credential_scanner_iterator_name (&scanners));
-                      if (credential_scanner_iterator_readable (&scanners))
-                        SEND_TO_CLIENT_OR_FAIL ("</scanner>");
-                      else
-                        SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
-                                                "</scanner>");
-                    }
-                  cleanup_iterator (&scanners);
-
-                  SEND_TO_CLIENT_OR_FAIL ("</scanners>");
-                }
-
-              if (get_credentials_data->slaves)
-                {
-                  iterator_t slaves;
-
-                  SENDF_TO_CLIENT_OR_FAIL ("<slaves>");
-                  init_credential_slave_iterator
-                   (&slaves, get_iterator_resource (&credentials), 0);
-                  while (next (&slaves))
-                    {
-                      SENDF_TO_CLIENT_OR_FAIL
-                       ("<slave id=\"%s\">"
-                        "<name>%s</name>",
-                        credential_slave_iterator_uuid (&slaves),
-                        credential_slave_iterator_name (&slaves));
-                      if (credential_slave_iterator_readable (&slaves))
-                        SEND_TO_CLIENT_OR_FAIL ("</slave>");
-                      else
-                        SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
-                                                "</slave>");
-                    }
-                  cleanup_iterator (&slaves);
-
-                  SEND_TO_CLIENT_OR_FAIL ("</slaves>");
-                }
-
-              if (get_credentials_data->targets)
-                {
-                  iterator_t targets;
-
-                  SENDF_TO_CLIENT_OR_FAIL ("<targets>");
-                  init_credential_target_iterator
-                   (&targets, get_iterator_resource (&credentials), 0);
-                  while (next (&targets))
-                    {
-                      SENDF_TO_CLIENT_OR_FAIL
-                       ("<target id=\"%s\">"
-                        "<name>%s</name>",
-                        credential_target_iterator_uuid (&targets),
-                        credential_target_iterator_name (&targets));
-                      if (credential_target_iterator_readable (&targets))
-                        SEND_TO_CLIENT_OR_FAIL ("</target>");
-                      else
-                        SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
-                                                "</target>");
-                    }
-                  cleanup_iterator (&targets);
-
-                  SEND_TO_CLIENT_OR_FAIL ("</targets>");
-                }
-
-              SEND_TO_CLIENT_OR_FAIL ("</credential>");
-              count++;
-            }
-
-          cleanup_iterator (&credentials);
-          filtered = get_credentials_data->get.id
-                      ? 1
-                      : credential_count (&get_credentials_data->get);
-          SEND_GET_END ("credential", &get_credentials_data->get,
-                        count, filtered);
-          get_credentials_data_reset (get_credentials_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
+        assert (strcasecmp ("GET_CREDENTIALS", element_name) == 0);
+        return handle_get_credentials (omp_parser, error);
 
       case CLIENT_GET_FILTERS:
-        {
-          iterator_t filters;
-          int count, filtered, ret, first;
-
-          assert (strcasecmp ("GET_FILTERS", element_name) == 0);
-
-          INIT_GET (filter, Filter);
-
-          ret = init_filter_iterator (&filters, &get_filters_data->get);
-          if (ret)
-            {
-              switch (ret)
-                {
-                  case 1:
-                    if (send_find_error_to_client ("get_filters", "filter",
-                                                   get_filters_data->get.id,
-                                                   omp_parser))
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
-                    break;
-                  case 2:
-                    if (send_find_error_to_client
-                         ("get_filters", "filter",
-                          get_filters_data->get.filt_id, omp_parser))
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
-                    break;
-                  case -1:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("get_filters"));
-                    break;
-                }
-              get_filters_data_reset (get_filters_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-
-          SEND_GET_START ("filter");
-          while (1)
-            {
-              ret = get_next (&filters, &get_filters_data->get, &first, &count,
-                              init_filter_iterator);
-              if (ret == 1)
-                break;
-              if (ret == -1)
-                {
-                  internal_error_send_to_client (error);
-                  return;
-                }
-
-              SEND_GET_COMMON (filter, &get_filters_data->get, &filters);
-
-              SENDF_TO_CLIENT_OR_FAIL ("<type>%s</type>"
-                                       "<term>%s</term>",
-                                       filter_iterator_type (&filters),
-                                       filter_iterator_term (&filters));
-
-              if (get_filters_data->alerts)
-                {
-                  iterator_t alerts;
-
-                  SEND_TO_CLIENT_OR_FAIL ("<alerts>");
-                  init_filter_alert_iterator (&alerts,
-                                              get_iterator_resource
-                                               (&filters));
-                  while (next (&alerts))
-                    {
-                      SENDF_TO_CLIENT_OR_FAIL
-                       ("<alert id=\"%s\">"
-                        "<name>%s</name>",
-                        filter_alert_iterator_uuid (&alerts),
-                        filter_alert_iterator_name (&alerts));
-                      if (filter_alert_iterator_readable (&alerts))
-                        SEND_TO_CLIENT_OR_FAIL ("</alert>");
-                      else
-                        SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
-                                                "</alert>");
-                    }
-                  cleanup_iterator (&alerts);
-                  SEND_TO_CLIENT_OR_FAIL ("</alerts>");
-                }
-
-              SEND_TO_CLIENT_OR_FAIL ("</filter>");
-
-              count++;
-            }
-          cleanup_iterator (&filters);
-          filtered = get_filters_data->get.id
-                      ? 1
-                      : filter_count (&get_filters_data->get);
-          SEND_GET_END ("filter", &get_filters_data->get, count, filtered);
-
-          get_filters_data_reset (get_filters_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
+        assert (strcasecmp ("GET_FILTERS", element_name) == 0);
+        return handle_get_filters (omp_parser, error);
 
       case CLIENT_GET_GROUPS:
-        {
-          iterator_t groups;
-          int count, filtered, ret, first;
-
-          assert (strcasecmp ("GET_GROUPS", element_name) == 0);
-
-          INIT_GET (group, Group);
-
-          ret = init_group_iterator (&groups, &get_groups_data->get);
-          if (ret)
-            {
-              switch (ret)
-                {
-                  case 1:
-                    if (send_find_error_to_client ("get_groups", "group",
-                                                   get_groups_data->get.id,
-                                                   omp_parser))
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
-                    break;
-                  case 2:
-                    if (send_find_error_to_client
-                         ("get_groups", "group", get_groups_data->get.filt_id,
-                          omp_parser))
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
-                    break;
-                  case -1:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("get_groups"));
-                    break;
-                }
-              get_groups_data_reset (get_groups_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-
-          SEND_GET_START ("group");
-          while (1)
-            {
-              gchar *users;
-
-              ret = get_next (&groups, &get_groups_data->get, &first, &count,
-                              init_group_iterator);
-              if (ret == 1)
-                break;
-              if (ret == -1)
-                {
-                  internal_error_send_to_client (error);
-                  return;
-                }
-
-              SEND_GET_COMMON (group, &get_groups_data->get, &groups);
-
-              users = group_users (get_iterator_resource (&groups));
-              SENDF_TO_CLIENT_OR_FAIL ("<users>%s</users>", users ? users : "");
-              g_free (users);
-
-              SEND_TO_CLIENT_OR_FAIL ("</group>");
-
-              count++;
-            }
-          cleanup_iterator (&groups);
-          filtered = get_groups_data->get.id
-                      ? 1
-                      : group_count (&get_groups_data->get);
-          SEND_GET_END ("group", &get_groups_data->get, count, filtered);
-
-          get_groups_data_reset (get_groups_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
+        assert (strcasecmp ("GET_GROUPS", element_name) == 0);
+        return handle_get_groups (omp_parser, error);
 
       case CLIENT_GET_INFO:
-        {
-          iterator_t info;
-          int count, first, filtered, ret;
-          int (*init_info_iterator) (iterator_t*, get_data_t *, const char *);
-          int (*info_count) (const get_data_t *get);
-          const char *update_time;
-          get_data_t *get;
-
-          if (acl_user_may ("get_info") == 0)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("get_info",
-                                  "Permission denied"));
-              get_info_data_reset (get_info_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-
-          if (manage_scap_loaded () == 0)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("get_info",
-                                  "GET_INFO requires the SCAP database."));
-              get_info_data_reset (get_info_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-          if (manage_cert_loaded () == 0)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("get_info",
-                                  "GET_INFO requires the CERT database."));
-              get_info_data_reset (get_info_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-
-          if (get_info_data->name && get_info_data->get.id)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-                (XML_ERROR_SYNTAX ("get_info",
-                                   "Only one of name and the id attribute"
-                                   " may be given."));
-              get_info_data_reset (get_info_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-          if (get_info_data->type == NULL)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-                (XML_ERROR_SYNTAX ("get_info",
-                                   "No type specified."));
-              get_info_data_reset (get_info_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-
-          get = &get_info_data->get;
-          if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
-            {
-              char *user_filter;
-              gchar *name;
-
-              if (strcmp (get_info_data->type, "cpe") == 0)
-                name = g_strdup ("CPE");
-              else if (strcmp (get_info_data->type, "cve") == 0)
-                name = g_strdup ("CVE");
-              else if (strcmp (get_info_data->type, "ovaldef") == 0)
-                name = g_strdup ("OVAL");
-              else if (strcmp (get_info_data->type, "cert_bund_adv") == 0)
-                name = g_strdup ("CERT-Bund");
-              else if (strcmp (get_info_data->type, "dfn_cert_adv") == 0)
-                name = g_strdup ("DFN-CERT");
-              else if (strcmp (get_info_data->type, "nvt") == 0)
-                name = g_strdup ("NVT");
-              else if (strcmp (get_info_data->type, "allinfo") == 0)
-                name = g_strdup ("All SecInfo");
-              else
-                {
-                  if (send_find_error_to_client ("get_info", "type",
-                                                 get_info_data->type,
-                                                 omp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  get_info_data_reset (get_info_data);
-                  set_client_state (CLIENT_AUTHENTIC);
-                  break;
-                }
-
-              user_filter = setting_filter (name);
-              g_free (name);
-
-              if (user_filter && strlen (user_filter))
-                {
-                  get->filt_id = user_filter;
-                  get->filter = filter_term (user_filter);
-                }
-              else
-                get->filt_id = g_strdup("0");
-            }
-
-          /* Set type specific functions */
-          if (g_strcmp0 ("cpe", get_info_data->type) == 0)
-            {
-              init_info_iterator = init_cpe_info_iterator;
-              info_count = cpe_info_count;
-              get_info_data->get.subtype = g_strdup ("cpe");
-            }
-          else if (g_strcmp0 ("cve", get_info_data->type) == 0)
-            {
-              init_info_iterator = init_cve_info_iterator;
-              info_count = cve_info_count;
-              get_info_data->get.subtype = g_strdup ("cve");
-            }
-          else if ((g_strcmp0 ("nvt", get_info_data->type) == 0)
-                   && (get_info_data->name == NULL)
-                   && (get_info_data->get.id == NULL))
-            {
-              init_info_iterator = init_nvt_info_iterator;
-              info_count = nvt_info_count;
-              get_info_data->get.subtype = g_strdup ("nvt");
-            }
-          else if (g_strcmp0 ("nvt", get_info_data->type) == 0)
-            {
-              gchar *result;
-
-              get_info_data->get.subtype = g_strdup ("nvt");
-
-              manage_read_info (get_info_data->type, get_info_data->get.id,
-                                get_info_data->name, &result);
-              if (result)
-                {
-                  SEND_GET_START ("info");
-                  SEND_TO_CLIENT_OR_FAIL ("<info>");
-                  SEND_TO_CLIENT_OR_FAIL (result);
-                  SEND_TO_CLIENT_OR_FAIL ("</info>");
-                  SEND_TO_CLIENT_OR_FAIL ("<details>1</details>");
-                  SEND_GET_END ("info", &get_info_data->get, 1, 1);
-                  g_free (result);
-                  get_info_data_reset (get_info_data);
-                  set_client_state (CLIENT_AUTHENTIC);
-                  break;
-                }
-              else
-                {
-                  if (send_find_error_to_client ("get_info",
-                                                 get_info_data->name
-                                                  ? "name"
-                                                  : "ID",
-                                                 get_info_data->name
-                                                  ? get_info_data->name
-                                                  : get_info_data->get.id,
-                                                 omp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  get_info_data_reset (get_info_data);
-                  set_client_state (CLIENT_AUTHENTIC);
-                  break;
-                }
-            }
-          else if (g_strcmp0 ("ovaldef", get_info_data->type) == 0)
-            {
-              init_info_iterator = init_ovaldef_info_iterator;
-              info_count = ovaldef_info_count;
-              get_info_data->get.subtype = g_strdup ("ovaldef");
-            }
-          else if (g_strcmp0 ("cert_bund_adv", get_info_data->type) == 0)
-            {
-              init_info_iterator = init_cert_bund_adv_info_iterator;
-              info_count = cert_bund_adv_info_count;
-              get_info_data->get.subtype = g_strdup ("cert_bund_adv");
-            }
-          else if (g_strcmp0 ("dfn_cert_adv", get_info_data->type) == 0)
-            {
-              init_info_iterator = init_dfn_cert_adv_info_iterator;
-              info_count = dfn_cert_adv_info_count;
-              get_info_data->get.subtype = g_strdup ("dfn_cert_adv");
-            }
-          else if (g_strcmp0 ("allinfo", get_info_data->type) == 0)
-            {
-              init_info_iterator = init_all_info_iterator;
-              info_count = all_info_count;
-              get_info_data->get.subtype = g_strdup ("allinfo");
-            }
-          else
-            {
-              if (send_find_error_to_client ("get_info", "type",
-                                             get_info_data->type, omp_parser))
-                {
-                  error_send_to_client (error);
-                }
-              return;
-            }
-
-          ret = init_info_iterator (&info, &get_info_data->get, get_info_data->name);
-          if (ret)
-            {
-              switch (ret)
-                {
-                case 1:
-                  if (send_find_error_to_client ("get_info", "type",
-                                                 get_info_data->type,
-                                                 omp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  break;
-                case 2:
-                  if (send_find_error_to_client
-                      ("get_info", "filter", get_info_data->get.filt_id,
-                       omp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  break;
-                case -1:
-                  SEND_TO_CLIENT_OR_FAIL
-                    (XML_INTERNAL_ERROR ("get_info"));
-                  break;
-                }
-              get_info_data_reset (get_info_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              return;
-            }
-
-          count = 0;
-          manage_filter_controls (get_info_data->get.filter, &first, NULL, NULL, NULL);
-          SEND_GET_START ("info");
-          update_time = manage_scap_update_time ();
-          while (next (&info))
-            {
-              GString *result;
-
-              /* Info's are currently always read only */
-              if (send_get_common ("info", &get_info_data->get, &info,
-                               write_to_client, write_to_client_data, 0, 0))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-
-              SENDF_TO_CLIENT_OR_FAIL ("<update_time>%s</update_time>",
-                                       update_time);
-
-              result = g_string_new ("");
-
-              /* Information depending on type */
-
-              if (g_strcmp0 ("cpe", get_info_data->type) == 0)
-                {
-                  const char *title;
-
-                  xml_string_append (result, "<cpe>");
-                  title = cpe_info_iterator_title (&info);
-                  if (title)
-                    xml_string_append (result,
-                                       "<title>%s</title>",
-                                       cpe_info_iterator_title (&info));
-                  xml_string_append (result,
-                                     "<nvd_id>%s</nvd_id>"
-                                     "<max_cvss>%s</max_cvss>"
-                                     "<cve_refs>%s</cve_refs>"
-                                     "<status>%s</status>",
-                                     cpe_info_iterator_nvd_id (&info),
-                                     cpe_info_iterator_max_cvss (&info),
-                                     cpe_info_iterator_cve_refs (&info),
-                                     cpe_info_iterator_status (&info) ?
-                                     cpe_info_iterator_status (&info) : "");
-
-                  if (get_info_data->details == 1)
-                    {
-                      iterator_t cves;
-                      g_string_append (result, "<cves>");
-                      init_cpe_cve_iterator (&cves, get_iterator_name (&info), 0, NULL);
-                      while (next (&cves))
-                        xml_string_append (result,
-                                           "<cve>"
-                                           "<entry"
-                                           " xmlns:cpe-lang=\"http://cpe.mitre.org/language/2.0\""
-                                           " xmlns:vuln=\"http://scap.nist.gov/schema/vulnerability/0.4\""
-                                           " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\""
-                                           " xmlns:patch=\"http://scap.nist.gov/schema/patch/0.1\""
-                                           " xmlns:scap-core=\"http://scap.nist.gov/schema/scap-core/0.1\""
-                                           " xmlns:cvss=\"http://scap.nist.gov/schema/cvss-v2/0.2\""
-                                           " xmlns=\"http://scap.nist.gov/schema/feed/vulnerability/2.0\""
-                                           " id=\"%s\">"
-                                           "<vuln:cvss>"
-                                           "<cvss:base_metrics>"
-                                           "<cvss:score>%s</cvss:score>"
-                                           "</cvss:base_metrics>"
-                                           "</vuln:cvss>"
-                                           "</entry>"
-                                           "</cve>",
-                                           cve_iterator_name (&cves),
-                                           cve_iterator_cvss (&cves));
-                      cleanup_iterator (&cves);
-                      g_string_append (result, "</cves>");
-                    }
-                }
-              else if (g_strcmp0 ("cve", get_info_data->type) == 0)
-                {
-                  xml_string_append (result,
-                                     "<cve>"
-                                     "<cvss>%s</cvss>"
-                                     "<vector>%s</vector>"
-                                     "<complexity>%s</complexity>"
-                                     "<authentication>%s</authentication>"
-                                     "<confidentiality_impact>%s</confidentiality_impact>"
-                                     "<integrity_impact>%s</integrity_impact>"
-                                     "<availability_impact>%s</availability_impact>"
-                                     "<description>%s</description>"
-                                     "<products>%s</products>",
-                                     cve_info_iterator_cvss (&info)
-                                      ? cve_info_iterator_cvss (&info)
-                                      : "",
-                                     cve_info_iterator_vector (&info),
-                                     cve_info_iterator_complexity (&info),
-                                     cve_info_iterator_authentication (&info),
-                                     cve_info_iterator_confidentiality_impact (&info),
-                                     cve_info_iterator_integrity_impact (&info),
-                                     cve_info_iterator_availability_impact (&info),
-                                     cve_info_iterator_description (&info),
-                                     cve_info_iterator_products (&info));
-                  if (get_info_data->details == 1)
-                    {
-                      iterator_t nvts;
-                      iterator_t cert_advs;
-                      init_cve_nvt_iterator (&nvts,  get_iterator_name (&info), 1, NULL);
-                      g_string_append (result, "<nvts>");
-                      while (next (&nvts))
-                        xml_string_append (result,
-                                           "<nvt oid=\"%s\">"
-                                           "<name>%s</name>"
-                                           "</nvt>",
-                                           nvt_iterator_oid (&nvts),
-                                           nvt_iterator_name (&nvts));
-                      g_string_append (result, "</nvts>");
-                      cleanup_iterator (&nvts);
-
-                      g_string_append (result, "<cert>");
-                      if (manage_cert_loaded())
-                        {
-                          init_cve_cert_bund_adv_iterator (&cert_advs,
-                                                          get_iterator_name
-                                                            (&info),
-                                                          1, NULL);
-                          while (next (&cert_advs))
-                            {
-                              xml_string_append
-                                (result,
-                                 "<cert_ref type=\"CERT-Bund\">"
-                                 "<name>%s</name>"
-                                 "<title>%s</title>"
-                                 "</cert_ref>",
-                                 get_iterator_name (&cert_advs),
-                                 cert_bund_adv_info_iterator_title
-                                  (&cert_advs));
-                          };
-                          cleanup_iterator (&cert_advs);
-
-                          init_cve_dfn_cert_adv_iterator (&cert_advs,
-                                                          get_iterator_name
-                                                            (&info),
-                                                          1, NULL);
-                          while (next (&cert_advs))
-                            {
-                              xml_string_append (result,
-                                                "<cert_ref type=\"DFN-CERT\">"
-                                                "<name>%s</name>"
-                                                "<title>%s</title>"
-                                                "</cert_ref>",
-                                                get_iterator_name (&cert_advs),
-                                                dfn_cert_adv_info_iterator_title
-                                                  (&cert_advs));
-                          };
-                          cleanup_iterator (&cert_advs);
-                        }
-                      else
-                        {
-                          g_string_append(result, "<warning>"
-                                                  "database not available"
-                                                  "</warning>");
-                        }
-                      g_string_append (result, "</cert>");
-                    }
-                }
-              else if (g_strcmp0 ("ovaldef", get_info_data->type) == 0)
-                {
-                  const char *description;
-                  xml_string_append (result,
-                                     "<ovaldef>"
-                                     "<version>%s</version>"
-                                     "<deprecated>%s</deprecated>"
-                                     "<status>%s</status>"
-                                     "<class>%s</class>"
-                                     "<title>%s</title>"
-                                     "<max_cvss>%s</max_cvss>"
-                                     "<cve_refs>%s</cve_refs>"
-                                     "<file>%s</file>",
-                                     ovaldef_info_iterator_version (&info),
-                                     ovaldef_info_iterator_deprecated (&info),
-                                     ovaldef_info_iterator_status (&info),
-                                     ovaldef_info_iterator_class (&info),
-                                     ovaldef_info_iterator_title (&info),
-                                     ovaldef_info_iterator_max_cvss (&info),
-                                     ovaldef_info_iterator_cve_refs (&info),
-                                     ovaldef_info_iterator_file (&info));
-                  description = ovaldef_info_iterator_description (&info);
-                  if (get_info_data->details == 1)
-                    xml_string_append (result,
-                                       "<description>%s</description>",
-                                       description);
-                }
-              else if (g_strcmp0 ("cert_bund_adv", get_info_data->type) == 0)
-                xml_string_append (result,
-                                   "<cert_bund_adv>"
-                                   "<title>%s</title>"
-                                   "<summary>%s</summary>"
-                                   "<max_cvss>%s</max_cvss>"
-                                   "<cve_refs>%s</cve_refs>",
-                                   cert_bund_adv_info_iterator_title (&info),
-                                   cert_bund_adv_info_iterator_summary (&info),
-                                   cert_bund_adv_info_iterator_max_cvss(&info),
-                                   cert_bund_adv_info_iterator_cve_refs (&info));
-              else if (g_strcmp0 ("dfn_cert_adv", get_info_data->type) == 0)
-                xml_string_append (result,
-                                   "<dfn_cert_adv>"
-                                   "<title>%s</title>"
-                                   "<summary>%s</summary>"
-                                   "<max_cvss>%s</max_cvss>"
-                                   "<cve_refs>%s</cve_refs>",
-                                   dfn_cert_adv_info_iterator_title (&info),
-                                   dfn_cert_adv_info_iterator_summary (&info),
-                                   dfn_cert_adv_info_iterator_max_cvss(&info),
-                                   dfn_cert_adv_info_iterator_cve_refs (&info));
-              else if (g_strcmp0 ("nvt", get_info_data->type) == 0)
-                {
-                  if (send_nvt (&info, 1, 1, -1, NULL, 0, write_to_client,
-                                write_to_client_data))
-                    {
-                      cleanup_iterator (&info);
-                      error_send_to_client (error);
-                      return;
-                    }
-                }
-              else if (g_strcmp0 ("allinfo", get_info_data->type) == 0)
-                {
-                  const char *extra = all_info_iterator_extra (&info);
-                  xml_string_append (result,
-                                     "<allinfo>"
-                                     "<type>%s</type>"
-                                     "<extra>%s</extra>"
-                                     "<severity>%s</severity>",
-                                     all_info_iterator_type (&info),
-                                     extra ? extra : "",
-                                     all_info_iterator_severity (&info));
-                }
-
-              /* Append raw data if full details are requested */
-
-              if (get_info_data->details == 1)
-                {
-                  gchar *raw_data = NULL;
-                  gchar *nonconst_id = g_strdup(get_iterator_uuid (&info));
-                  gchar *nonconst_name = g_strdup(get_iterator_name (&info));
-                  manage_read_info (get_info_data->type, nonconst_id,
-                                    nonconst_name, &raw_data);
-                  g_string_append_printf (result, "<raw_data>%s</raw_data>",
-                                          raw_data);
-                  g_free(nonconst_id);
-                  g_free(nonconst_name);
-                  g_free(raw_data);
-                }
-
-              g_string_append_printf (result, "</%s></info>", get_info_data->type);
-              SEND_TO_CLIENT_OR_FAIL (result->str);
-              count++;
-              g_string_free (result, TRUE);
-            }
-          cleanup_iterator (&info);
-
-          if (get_info_data->details == 1)
-            SEND_TO_CLIENT_OR_FAIL ("<details>1</details>");
-
-          filtered = get_info_data->get.id
-                      ? 1
-                      : (get_info_data->name
-                          ? info_name_count (get_info_data->type,
-                                             get_info_data->name)
-                          : info_count (&get_info_data->get));
-
-          if (strcmp (get_info_data->type, "allinfo"))
-            SEND_GET_END ("info", &get_info_data->get, count, filtered);
-          else
-            send_get_end ("info", &get_info_data->get, count, filtered,
-                          total_info_count (&get_info_data->get, 0),
-                          write_to_client, write_to_client_data);
-
-          get_info_data_reset (get_info_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
+        assert (strcasecmp ("GET_INFO", element_name) == 0);
+        return handle_get_info (omp_parser, error);
 
       case CLIENT_GET_NOTES:
-        {
-          nvt_t nvt = 0;
-          task_t task = 0;
-
-          assert (strcasecmp ("GET_NOTES", element_name) == 0);
-
-          if (get_notes_data->note_id && get_notes_data->nvt_oid)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_notes",
-                                "Only one of NVT and the note_id attribute"
-                                " may be given"));
-          else if (get_notes_data->note_id && get_notes_data->task_id)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_notes",
-                                "Only one of the note_id and task_id"
-                                " attributes may be given"));
-          else if (get_notes_data->task_id
-                   && find_task (get_notes_data->task_id, &task))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_notes"));
-          else if (get_notes_data->task_id && task == 0)
-            {
-              if (send_find_error_to_client ("get_notes",
-                                             "task", get_notes_data->task_id,
-                                             omp_parser))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else if (get_notes_data->nvt_oid
-                   && find_nvt (get_notes_data->nvt_oid, &nvt))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_notes"));
-          else if (get_notes_data->nvt_oid && nvt == 0)
-            {
-              if (send_find_error_to_client ("get_notes", "NVT",
-                                             get_notes_data->nvt_oid,
-                                             omp_parser))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else
-            {
-              iterator_t notes;
-              GString *buffer;
-              int count, filtered, ret, first;
-
-              INIT_GET (note, Note);
-
-              ret = init_note_iterator (&notes, &get_notes_data->get, nvt, 0,
-                                        task);
-              if (ret)
-                {
-                  switch (ret)
-                    {
-                      case 1:
-                        if (send_find_error_to_client ("get_notes", "note",
-                                                       get_notes_data->get.id,
-                                                       omp_parser))
-                          {
-                            error_send_to_client (error);
-                            return;
-                          }
-                        break;
-                      case 2:
-                        if (send_find_error_to_client
-                             ("get_notes", "filter",
-                              get_notes_data->get.filt_id, omp_parser))
-                          {
-                            error_send_to_client (error);
-                            return;
-                          }
-                        break;
-                      case -1:
-                        SEND_TO_CLIENT_OR_FAIL
-                         (XML_INTERNAL_ERROR ("get_notes"));
-                        break;
-                    }
-                  get_notes_data_reset (get_notes_data);
-                  set_client_state (CLIENT_AUTHENTIC);
-                  break;
-                }
-
-              SEND_GET_START ("note");
-
-              buffer = g_string_new ("");
-
-              // TODO: Do the iteration with get_next so it checks "first".
-              buffer_notes_xml (buffer, &notes, get_notes_data->get.details,
-                                get_notes_data->result, &count);
-
-              SEND_TO_CLIENT_OR_FAIL (buffer->str);
-              g_string_free (buffer, TRUE);
-
-              cleanup_iterator (&notes);
-              filtered = get_notes_data->get.id
-                          ? 1
-                          : note_count (&get_notes_data->get, nvt, 0, task);
-              SEND_GET_END ("note", &get_notes_data->get, count, filtered);
-            }
-          get_notes_data_reset (get_notes_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
+        assert (strcasecmp ("GET_NOTES", element_name) == 0);
+        return handle_get_notes (omp_parser, error);
 
       case CLIENT_GET_NVT_FEED_VERSION:
-        {
-          char *feed_version;
-
-          if (acl_user_may ("get_nvt_feed_version") == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_nvt_feed_version",
-                                "Permission denied"));
-          else if ((feed_version = nvts_feed_version ()))
-            {
-              SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_version_response"
-                                      " status=\"" STATUS_OK "\""
-                                      " status_text=\"" STATUS_OK_TEXT "\">"
-                                      "<version>");
-              SEND_TO_CLIENT_OR_FAIL (feed_version);
-              free (feed_version);
-              SEND_TO_CLIENT_OR_FAIL ("</version>"
-                                      "</get_nvt_feed_version_response>");
-            }
-          else
-            SEND_XML_SERVICE_DOWN ("get_nvt_feed_version");
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
+        assert (strcasecmp ("GET_NVT_FEED_VERSION", element_name) == 0);
+        return handle_get_nvt_feed_version (omp_parser, error);
 
       case CLIENT_GET_NVTS:
-        {
-          char *feed_version;
-
-          if (acl_user_may ("get_nvts") == 0)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("get_nvts",
-                                  "Permission denied"));
-              get_nvts_data_reset (get_nvts_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-
-          feed_version = nvts_feed_version ();
-          if (feed_version)
-            {
-              config_t config, preferences_config;
-              nvt_t nvt = 0;
-
-              config = preferences_config = 0;
-
-              free (feed_version);
-
-              if (get_nvts_data->nvt_oid && get_nvts_data->family)
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("get_nvts",
-                                    "Too many parameters at once"));
-              else if ((get_nvts_data->details == 0)
-                       && get_nvts_data->preference_count)
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("get_nvts",
-                                    "GET_NVTS preference_count attribute"
-                                    " requires the details attribute"));
-              else if ((get_nvts_data->details == 0)
-                       && get_nvts_data->preferences)
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("get_nvts",
-                                    "GET_NVTS preferences attribute"
-                                    " requires the details attribute"));
-              else if (((get_nvts_data->details == 0)
-                        || ((get_nvts_data->config_id == NULL)
-                            && (get_nvts_data->preferences_config_id == NULL)))
-                       && get_nvts_data->timeout)
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("get_nvts",
-                                    "GET_NVTS timeout attribute"
-                                    " requires the details and config_id"
-                                    " attributes"));
-              else if (get_nvts_data->nvt_oid
-                       && find_nvt (get_nvts_data->nvt_oid, &nvt))
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("get_nvts"));
-              else if (get_nvts_data->nvt_oid && nvt == 0)
-                {
-                  if (send_find_error_to_client ("get_nvts", "NVT",
-                                                 get_nvts_data->nvt_oid,
-                                                 omp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                }
-              else if (get_nvts_data->config_id
-                       && get_nvts_data->preferences_config_id)
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("get_nvts",
-                                    "GET_NVTS config_id and"
-                                    " preferences_config_id both given"));
-              else if (get_nvts_data->config_id
-                       && find_config_with_permission (get_nvts_data->config_id,
-                                                       &config,
-                                                       NULL))
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("get_nvts"));
-              else if (get_nvts_data->config_id && (config == 0))
-                {
-                  if (send_find_error_to_client
-                       ("get_nvts", "config", get_nvts_data->config_id,
-                        omp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                }
-              else if (get_nvts_data->preferences_config_id
-                       && find_config_with_permission
-                           (get_nvts_data->preferences_config_id,
-                            &preferences_config,
-                            NULL))
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("get_nvts"));
-              else if (get_nvts_data->preferences_config_id
-                       && (preferences_config == 0))
-                {
-                  if (send_find_error_to_client
-                       ("get_nvts", "config",
-                        get_nvts_data->preferences_config_id,
-                        omp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                }
-              else
-                {
-                  iterator_t nvts;
-
-                  SENDF_TO_CLIENT_OR_FAIL
-                   ("<get_nvts_response"
-                    " status=\"" STATUS_OK "\""
-                    " status_text=\"" STATUS_OK_TEXT "\">");
-
-                  init_nvt_iterator (&nvts,
-                                     nvt,
-                                     get_nvts_data->nvt_oid
-                                      /* Presume the NVT is in the config (if
-                                       * a config was given). */
-                                      ? 0
-                                      : config,
-                                     get_nvts_data->family,
-                                     NULL,
-                                     get_nvts_data->sort_order,
-                                     get_nvts_data->sort_field);
-                  if (preferences_config)
-                    config = preferences_config;
-                  if (get_nvts_data->details)
-                    while (next (&nvts))
-                      {
-                        int pref_count = -1;
-                        char *timeout = NULL;
-
-                        if (get_nvts_data->timeout)
-                          timeout = config_nvt_timeout (config,
-                                                        nvt_iterator_oid (&nvts));
-
-                        if (get_nvts_data->preferences && (timeout == NULL))
-                          timeout = config_nvt_timeout
-                                     (config,
-                                      nvt_iterator_oid (&nvts));
-
-                        if (get_nvts_data->preference_count)
-                          {
-                            const char *nvt_name = nvt_iterator_name (&nvts);
-                            pref_count = nvt_preference_count (nvt_name);
-                          }
-                        if (send_nvt (&nvts, 1, get_nvts_data->preferences,
-                                      pref_count, timeout, config,
-                                      write_to_client, write_to_client_data))
-                          {
-                            free (timeout);
-                            cleanup_iterator (&nvts);
-                            error_send_to_client (error);
-                            return;
-                          }
-                        free (timeout);
-
-                        SEND_TO_CLIENT_OR_FAIL ("</nvt>");
-                      }
-                  else
-                    while (next (&nvts))
-                      {
-                        if (send_nvt (&nvts, 0, 0, -1, NULL, 0, write_to_client,
-                                      write_to_client_data))
-                          {
-                            cleanup_iterator (&nvts);
-                            error_send_to_client (error);
-                            return;
-                          }
-                        SEND_TO_CLIENT_OR_FAIL ("</nvt>");
-                      }
-                  cleanup_iterator (&nvts);
-
-                  SEND_TO_CLIENT_OR_FAIL ("</get_nvts_response>");
-                }
-            }
-          else
-            SEND_XML_SERVICE_DOWN ("get_nvts");
-        }
-        get_nvts_data_reset (get_nvts_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
+        assert (strcasecmp ("GET_NVTS", element_name) == 0);
+        return handle_get_nvts (omp_parser, error);
 
       case CLIENT_GET_NVT_FAMILIES:
-        {
-          iterator_t families;
-
-          if (acl_user_may ("get_nvt_families") == 0)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("get_nvt_families",
-                                  "Permission denied"));
-              get_nvt_families_data_reset (get_nvt_families_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-
-          SEND_TO_CLIENT_OR_FAIL ("<get_nvt_families_response"
-                                  " status=\"" STATUS_OK "\""
-                                  " status_text=\"" STATUS_OK_TEXT "\">"
-                                  "<families>");
-
-          init_family_iterator (&families,
-                                1,
-                                NULL,
-                                get_nvt_families_data->sort_order);
-          while (next (&families))
-            {
-              int family_max;
-              const char *family;
-
-              family = family_iterator_name (&families);
-              if (family)
-                family_max = family_nvt_count (family);
-              else
-                family_max = -1;
-
-              SENDF_TO_CLIENT_OR_FAIL
-               ("<family>"
-                "<name>%s</name>"
-                /* The total number of NVT's in the family. */
-                "<max_nvt_count>%i</max_nvt_count>"
-                "</family>",
-                family ? family : "",
-                family_max);
-            }
-          cleanup_iterator (&families);
-
-          SEND_TO_CLIENT_OR_FAIL ("</families>"
-                                  "</get_nvt_families_response>");
-        }
-        get_nvt_families_data_reset (get_nvt_families_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
+        assert (strcasecmp ("GET_NVT_FAMILIES", element_name) == 0);
+        return handle_get_nvt_families (omp_parser, error);
 
       case CLIENT_GET_OVERRIDES:
-        {
-          nvt_t nvt = 0;
-          task_t task = 0;
-
-          assert (strcasecmp ("GET_OVERRIDES", element_name) == 0);
-
-          if (get_overrides_data->override_id && get_overrides_data->nvt_oid)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_overrides",
-                                "Only one of NVT and the override_id attribute"
-                                " may be given"));
-          else if (get_overrides_data->override_id
-                   && get_overrides_data->task_id)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_overrides",
-                                "Only one of the override_id and task_id"
-                                " attributes may be given"));
-          else if (get_overrides_data->task_id
-                   && find_task (get_overrides_data->task_id, &task))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_overrides"));
-          else if (get_overrides_data->task_id && task == 0)
-            {
-              if (send_find_error_to_client ("get_overrides", "task",
-                                             get_overrides_data->task_id,
-                                             omp_parser))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else if (get_overrides_data->nvt_oid
-                   && find_nvt (get_overrides_data->nvt_oid, &nvt))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_overrides"));
-          else if (get_overrides_data->nvt_oid && nvt == 0)
-            {
-              if (send_find_error_to_client ("get_overrides",
-                                             "NVT", get_overrides_data->nvt_oid,
-                                             omp_parser))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else
-            {
-              iterator_t overrides;
-              GString *buffer;
-              int count, filtered, ret, first;
-
-              INIT_GET (override, Override);
-
-              ret = init_override_iterator (&overrides,
-                                            &get_overrides_data->get, nvt, 0,
-                                            task);
-              if (ret)
-                {
-                  switch (ret)
-                    {
-                      case 1:
-                        if (send_find_error_to_client
-                             ("get_overrides", "override",
-                              get_overrides_data->get.id, omp_parser))
-                          {
-                            error_send_to_client (error);
-                            return;
-                          }
-                        break;
-                      case 2:
-                        if (send_find_error_to_client
-                             ("get_overrides", "filter",
-                              get_overrides_data->get.filt_id, omp_parser))
-                          {
-                            error_send_to_client (error);
-                            return;
-                          }
-                        break;
-                      case -1:
-                        SEND_TO_CLIENT_OR_FAIL
-                         (XML_INTERNAL_ERROR ("get_overrides"));
-                        break;
-                    }
-                  get_overrides_data_reset (get_overrides_data);
-                  set_client_state (CLIENT_AUTHENTIC);
-                  break;
-                }
-
-              SEND_GET_START ("override");
-
-              buffer = g_string_new ("");
-
-              // TODO: Do the iteration with get_next so it checks "first".
-              buffer_overrides_xml (buffer, &overrides,
-                                    get_overrides_data->get.details,
-                                    get_overrides_data->result, &count);
-
-              SEND_TO_CLIENT_OR_FAIL (buffer->str);
-              g_string_free (buffer, TRUE);
-
-              cleanup_iterator (&overrides);
-              filtered = get_overrides_data->get.id
-                          ? 1
-                          : override_count (&get_overrides_data->get, nvt, 0,
-                                            task);
-              SEND_GET_END ("override", &get_overrides_data->get, count,
-                            filtered);
-            }
-          get_overrides_data_reset (get_overrides_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
+        assert (strcasecmp ("GET_OVERRIDES", element_name) == 0);
+        return handle_get_overrides (omp_parser, error);
 
       case CLIENT_GET_PERMISSIONS:
-        {
-          iterator_t permissions;
-          int count, filtered, ret, first;
-
-          assert (strcasecmp ("GET_PERMISSIONS", element_name) == 0);
-
-          INIT_GET (permission, Permission);
-
-          ret = init_permission_iterator (&permissions,
-                                          &get_permissions_data->get);
-          if (ret)
-            {
-              switch (ret)
-                {
-                  case 1:
-                    if (send_find_error_to_client ("get_permissions",
-                                                   "permission",
-                                                   get_permissions_data->get.id,
-                                                   omp_parser))
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
-                    break;
-                  case 2:
-                    if (send_find_error_to_client
-                         ("get_permissions", "filter",
-                          get_permissions_data->get.filt_id, omp_parser))
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
-                    break;
-                  case -1:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("get_permissions"));
-                    break;
-                }
-              get_permissions_data_reset (get_permissions_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-
-          SEND_GET_START ("permission");
-          while (1)
-            {
-              const char *resource_type;
-
-              ret = get_next (&permissions, &get_permissions_data->get, &first,
-                              &count, init_permission_iterator);
-              if (ret == 1)
-                break;
-              if (ret == -1)
-                {
-                  internal_error_send_to_client (error);
-                  return;
-                }
-
-              SEND_GET_COMMON (permission, &get_permissions_data->get, &permissions);
-
-              resource_type = permission_iterator_resource_type (&permissions);
-              SENDF_TO_CLIENT_OR_FAIL
-               ("<resource id=\"%s\">"
-                "<name>%s</name>"
-                "<type>%s</type>"
-                "<trash>%i</trash>"
-                "<deleted>%i</deleted>",
-                permission_iterator_resource_uuid (&permissions),
-                resource_type && strcmp (resource_type, "")
-                 ? permission_iterator_resource_name (&permissions)
-                 : "",
-                permission_iterator_resource_type (&permissions),
-                permission_iterator_resource_in_trash (&permissions),
-                permission_iterator_resource_orphan (&permissions));
-
-              if (permission_iterator_resource_readable (&permissions))
-                SEND_TO_CLIENT_OR_FAIL ("</resource>");
-              else
-                SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
-                                        "</resource>");
-
-              SENDF_TO_CLIENT_OR_FAIL
-               ("<subject id=\"%s\">"
-                "<name>%s</name>"
-                "<type>%s</type>"
-                "<trash>%i</trash>",
-                permission_iterator_subject_uuid (&permissions),
-                permission_iterator_subject_name (&permissions),
-                permission_iterator_subject_type (&permissions),
-                permission_iterator_subject_in_trash (&permissions));
-
-              if (permission_iterator_subject_readable (&permissions))
-                SEND_TO_CLIENT_OR_FAIL ("</subject>");
-              else
-                SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
-                                        "</subject>");
-
-              SEND_TO_CLIENT_OR_FAIL ("</permission>");
-              count++;
-            }
-          cleanup_iterator (&permissions);
-          filtered = get_permissions_data->get.id
-                      ? 1
-                      : permission_count (&get_permissions_data->get);
-          SEND_GET_END ("permission", &get_permissions_data->get, count, filtered);
-
-          get_permissions_data_reset (get_permissions_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
+        assert (strcasecmp ("GET_PERMISSIONS", element_name) == 0);
+        return handle_get_permissions (omp_parser, error);
 
       case CLIENT_GET_PORT_LISTS:
-        {
-          iterator_t port_lists;
-          int count, filtered, ret, first;
-
-          assert (strcasecmp ("GET_PORT_LISTS", element_name) == 0);
-
-          INIT_GET (port_list, Port List);
-
-          ret = init_port_list_iterator (&port_lists,
-                                         &get_port_lists_data->get);
-          if (ret)
-            {
-              switch (ret)
-                {
-                  case 1:
-                    if (send_find_error_to_client ("get_port_lists",
-                                                   "port_list",
-                                                   get_port_lists_data->get.id,
-                                                   omp_parser))
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
-                    break;
-                  case 2:
-                    if (send_find_error_to_client
-                         ("get_port_lists", "port_list",
-                          get_port_lists_data->get.filt_id, omp_parser))
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
-                    break;
-                  case -1:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("get_port_lists"));
-                    break;
-                }
-              get_port_lists_data_reset (get_port_lists_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-
-          SEND_GET_START ("port_list");
-          while (1)
-            {
-              ret = get_next (&port_lists, &get_port_lists_data->get, &first,
-                              &count, init_port_list_iterator);
-              if (ret == 1)
-                break;
-              if (ret == -1)
-                {
-                  internal_error_send_to_client (error);
-                  return;
-                }
-
-              SEND_GET_COMMON (port_list, &get_port_lists_data->get,
-                               &port_lists);
-
-              SENDF_TO_CLIENT_OR_FAIL ("<port_count>"
-                                       "<all>%i</all>"
-                                       "<tcp>%i</tcp>"
-                                       "<udp>%i</udp>"
-                                       "</port_count>",
-                                       port_list_iterator_count_all
-                                        (&port_lists),
-                                       port_list_iterator_count_tcp
-                                        (&port_lists),
-                                       port_list_iterator_count_udp
-                                        (&port_lists));
-
-              if (get_port_lists_data->get.details)
-                {
-                  iterator_t ranges;
-
-                  SEND_TO_CLIENT_OR_FAIL ("<port_ranges>");
-
-                  init_port_range_iterator (&ranges,
-                                            get_iterator_resource (&port_lists),
-                                            0, 1, NULL);
-                  while (next (&ranges))
-                    SENDF_TO_CLIENT_OR_FAIL
-                     ("<port_range id=\"%s\">"
-                      "<start>%s</start>"
-                      "<end>%s</end>"
-                      "<type>%s</type>"
-                      "<comment>%s</comment>"
-                      "</port_range>",
-                      port_range_iterator_uuid (&ranges),
-                      port_range_iterator_start (&ranges),
-                      port_range_iterator_end (&ranges)
-                       ? port_range_iterator_end (&ranges)
-                       : port_range_iterator_start (&ranges),
-                      port_range_iterator_type (&ranges),
-                      port_range_iterator_comment (&ranges));
-                  cleanup_iterator (&ranges);
-
-                  SENDF_TO_CLIENT_OR_FAIL ("</port_ranges>");
-                }
-
-              if (get_port_lists_data->targets)
-                {
-                  iterator_t targets;
-
-                  SEND_TO_CLIENT_OR_FAIL ("<targets>");
-
-                  init_port_list_target_iterator (&targets,
-                                                  get_iterator_resource
-                                                   (&port_lists), 0);
-                  while (next (&targets))
-                    {
-                      if ((get_iterator_owner (&port_lists) == 0)
-                          && port_list_target_iterator_readable (&targets) == 0)
-                        /* Skip other users' targets for global port lists. */
-                        continue;
-
-                      SENDF_TO_CLIENT_OR_FAIL
-                       ("<target id=\"%s\">"
-                        "<name>%s</name>",
-                        port_list_target_iterator_uuid (&targets),
-                        port_list_target_iterator_name (&targets));
-                      if (port_list_target_iterator_readable (&targets))
-                        SEND_TO_CLIENT_OR_FAIL ("</target>");
-                      else
-                        SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
-                                                "</target>");
-                    }
-
-                  cleanup_iterator (&targets);
-
-                  SEND_TO_CLIENT_OR_FAIL ("</targets>");
-                }
-
-              SEND_TO_CLIENT_OR_FAIL ("</port_list>");
-
-              count++;
-            }
-
-          cleanup_iterator (&port_lists);
-          filtered = get_port_lists_data->get.id
-                      ? 1
-                      : port_list_count (&get_port_lists_data->get);
-          SEND_GET_END ("port_list", &get_port_lists_data->get, count,
-                        filtered);
-
-          get_port_lists_data_reset (get_port_lists_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
+        assert (strcasecmp ("GET_PORT_LISTS", element_name) == 0);
+        return handle_get_port_lists (omp_parser, error);
 
       case CLIENT_GET_PREFERENCES:
-        {
-          iterator_t prefs;
-          nvt_t nvt = 0;
-          config_t config = 0;
-
-          if (acl_user_may ("get_preferences") == 0)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("get_preferences",
-                                  "Permission denied"));
-              get_preferences_data_reset (get_preferences_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-
-          if (get_preferences_data->nvt_oid
-              && find_nvt (get_preferences_data->nvt_oid, &nvt))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_preferences"));
-          else if (get_preferences_data->nvt_oid && nvt == 0)
-            {
-              if (send_find_error_to_client ("get_preferences", "NVT",
-                                             get_preferences_data->nvt_oid,
-                                             omp_parser))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else if (get_preferences_data->config_id
-                   && find_config (get_preferences_data->config_id, &config))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_preferences"));
-          else if (get_preferences_data->config_id && config == 0)
-            {
-              if (send_find_error_to_client ("get_preferences", "config",
-                                             get_preferences_data->config_id,
-                                             omp_parser))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else
-            {
-              char *nvt_name = manage_nvt_name (nvt);
-              SEND_TO_CLIENT_OR_FAIL ("<get_preferences_response"
-                                      " status=\"" STATUS_OK "\""
-                                      " status_text=\"" STATUS_OK_TEXT "\">");
-              init_nvt_preference_iterator (&prefs, nvt_name);
-              free (nvt_name);
-              if (get_preferences_data->preference)
-                while (next (&prefs))
-                  {
-                    char *name = strstr (nvt_preference_iterator_name (&prefs), "]:");
-                    if (name
-                        && (strcmp (name + 2,
-                                    get_preferences_data->preference)
-                            == 0))
-                      {
-                        GString *buffer = g_string_new ("");
-                        buffer_config_preference_xml (buffer, &prefs, config, 1);
-                        SEND_TO_CLIENT_OR_FAIL (buffer->str);
-                        g_string_free (buffer, TRUE);
-                        break;
-                      }
-                  }
-              else
-                while (next (&prefs))
-                  {
-                    GString *buffer = g_string_new ("");
-                    buffer_config_preference_xml (buffer, &prefs, config, 1);
-                    SEND_TO_CLIENT_OR_FAIL (buffer->str);
-                    g_string_free (buffer, TRUE);
-                  }
-
-              cleanup_iterator (&prefs);
-              SEND_TO_CLIENT_OR_FAIL ("</get_preferences_response>");
-            }
-          get_preferences_data_reset (get_preferences_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
+        assert (strcasecmp ("GET_PREFERENCES", element_name) == 0);
+        return handle_get_preferences (omp_parser, error);
 
       case CLIENT_GET_REPORTS:
         assert (strcasecmp ("GET_REPORTS", element_name) == 0);
-        if (current_credentials.username == NULL)
-          {
-            get_reports_data_reset (get_reports_data);
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
-            set_client_state (CLIENT_AUTHENTIC);
-            break;
-          }
-
-        report_t request_report = 0, delta_report = 0, report;
-        report_format_t report_format;
-        iterator_t reports;
-        int count, filtered, ret, first;
-
-        if (acl_user_may ("get_reports") == 0)
-          {
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_reports",
-                                "Permission denied"));
-            get_reports_data_reset (get_reports_data);
-            set_client_state (CLIENT_AUTHENTIC);
-            break;
-          }
-
-        /** @todo Some checks only required when type is "scan". */
-
-        /** @todo Respond in all error cases.
-         *
-         * When something fails mid-way through the report, we can only close
-         * the connection.  It would be nice to instead prepare everything
-         * before trying to send it, so that we could send an error response
-         * when there is a problem.  Buffering the entire report before sending
-         * it would probably take too long and/or use to much memory. */
-
-        if (strcmp (get_reports_data->type, "scan")
-            && strcmp (get_reports_data->type, "assets")
-            && strcmp (get_reports_data->type, "prognostic"))
-          {
-            get_reports_data_reset (get_reports_data);
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_reports",
-                                "GET_REPORTS type must be scan, assets or"
-                                " prognostic"));
-            set_client_state (CLIENT_AUTHENTIC);
-            break;
-          }
-
-        if (strcmp (get_reports_data->type, "prognostic") == 0
-            && manage_scap_loaded () == 0)
-          {
-            get_reports_data_reset (get_reports_data);
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_reports",
-                                "GET_REPORTS with type prognostic requires the"
-                                " SCAP database"));
-            set_client_state (CLIENT_AUTHENTIC);
-            break;
-          }
-
-        if ((strcmp (get_reports_data->type, "scan") == 0)
-            && get_reports_data->report_id
-            && find_report_with_permission (get_reports_data->report_id,
-                                            &request_report,
-                                            NULL))
-          {
-            get_reports_data_reset (get_reports_data);
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
-            set_client_state (CLIENT_AUTHENTIC);
-            break;
-          }
-
-        if (get_reports_data->delta_report_id
-            && strcmp (get_reports_data->delta_report_id, "0")
-            && find_report_with_permission (get_reports_data->delta_report_id,
-                                            &delta_report,
-                                            NULL))
-          {
-            get_reports_data_reset (get_reports_data);
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
-            set_client_state (CLIENT_AUTHENTIC);
-            break;
-          }
-
-        if (get_reports_data->format_id == NULL)
-          get_reports_data->format_id
-           = g_strdup ("a994b278-1f62-11e1-96ac-406186ea4fc5");
-
-        if (find_report_format_with_permission (get_reports_data->format_id,
-                                                &report_format,
-                                                "get_report_formats"))
-          {
-            get_reports_data_reset (get_reports_data);
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
-            set_client_state (CLIENT_AUTHENTIC);
-            break;
-          }
-
-        if (report_format == 0)
-          {
-            if (send_find_error_to_client ("get_reports", "report format",
-                                           get_reports_data->format_id,
-                                           omp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            get_reports_data_reset (get_reports_data);
-            set_client_state (CLIENT_AUTHENTIC);
-            break;
-          }
-
-        if ((strcmp (get_reports_data->type, "scan") == 0)
-            && get_reports_data->report_id
-            && request_report == 0)
-          {
-            if (send_find_error_to_client ("get_reports", "report",
-                                           get_reports_data->report_id,
-                                           omp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            get_reports_data_reset (get_reports_data);
-            set_client_state (CLIENT_AUTHENTIC);
-            break;
-          }
-
-        if ((strcmp (get_reports_data->type, "scan") == 0)
-            && get_reports_data->delta_report_id
-            && strcmp (get_reports_data->delta_report_id, "0")
-            && delta_report == 0)
-          {
-            if (send_find_error_to_client ("get_reports", "report",
-                                           get_reports_data->delta_report_id,
-                                           omp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            get_reports_data_reset (get_reports_data);
-            set_client_state (CLIENT_AUTHENTIC);
-            break;
-          }
-
-        if (report_format_active (report_format) == 0)
-          {
-            get_reports_data_reset (get_reports_data);
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_reports",
-                                "GET_REPORTS report format must be active"));
-            set_client_state (CLIENT_AUTHENTIC);
-            break;
-          }
-
-        if ((report_format_predefined (report_format) == 0)
-            && (report_format_trust (report_format) > 1))
-          {
-            get_reports_data_reset (get_reports_data);
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_reports",
-                                "GET_REPORTS report format must be predefined"
-                                " or trusted"));
-            set_client_state (CLIENT_AUTHENTIC);
-            break;
-          }
-
-        if (strcmp (get_reports_data->type, "assets") == 0)
-          {
-            gchar *extension, *content_type;
-            int ret, pos;
-            get_data_t * get;
-
-            /* An asset report. */
-
-            get = &get_reports_data->get;
-            if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
-              {
-                g_free (get->filt_id);
-                get->filt_id = g_strdup ("0");
-              }
-
-            if (get_reports_data->alert_id == NULL)
-              SEND_TO_CLIENT_OR_FAIL
-               ("<get_reports_response"
-                " status=\"" STATUS_OK "\""
-                " status_text=\"" STATUS_OK_TEXT "\">");
-
-            content_type = report_format_content_type (report_format);
-            extension = report_format_extension (report_format);
-
-            SENDF_TO_CLIENT_OR_FAIL
-             ("<report"
-              " type=\"assets\""
-              " format_id=\"%s\""
-              " extension=\"%s\""
-              " content_type=\"%s\">",
-              get_reports_data->format_id,
-              extension,
-              content_type);
-
-            g_free (extension);
-            g_free (content_type);
-
-            pos = get_reports_data->pos ? atoi (get_reports_data->pos) : 1;
-            ret = manage_send_report (0,
-                                      0,
-                                      report_format,
-                                      &get_reports_data->get,
-                                      get_reports_data->notes_details,
-                                      get_reports_data->overrides_details,
-                                      get_reports_data->ignore_pagination,
-                                      /* Special case the XML reports, bah. */
-                                      strcmp
-                                       (get_reports_data->format_id,
-                                        "a994b278-1f62-11e1-96ac-406186ea4fc5")
-                                      && strcmp
-                                          (get_reports_data->format_id,
-                                           "5057e5cc-b825-11e4"
-                                           "-9d0e-28d24461215b"),
-                                      send_to_client,
-                                      write_to_client,
-                                      write_to_client_data,
-                                      get_reports_data->alert_id,
-                                      "assets",
-                                      get_reports_data->host,
-                                      pos,
-                                      NULL, NULL, 0, 0, NULL);
-
-            if (ret)
-              {
-                internal_error_send_to_client (error);
-                get_reports_data_reset (get_reports_data);
-                set_client_state (CLIENT_AUTHENTIC);
-                return;
-              }
-
-            SEND_TO_CLIENT_OR_FAIL ("</report>"
-                                    "</get_reports_response>");
-
-            get_reports_data_reset (get_reports_data);
-            set_client_state (CLIENT_AUTHENTIC);
-            break;
-          }
-
-        if (strcmp (get_reports_data->type, "prognostic") == 0)
-          {
-            gchar *extension, *content_type;
-            int ret, pos;
-            get_data_t * get;
-
-            /* A prognostic report. */
-
-            get = &get_reports_data->get;
-            if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
-              {
-                g_free (get->filt_id);
-                get->filt_id = g_strdup ("0");
-              }
-
-            if (get_reports_data->alert_id == NULL)
-              SEND_TO_CLIENT_OR_FAIL
-               ("<get_reports_response"
-                " status=\"" STATUS_OK "\""
-                " status_text=\"" STATUS_OK_TEXT "\">");
-
-            content_type = report_format_content_type (report_format);
-            extension = report_format_extension (report_format);
-
-            SENDF_TO_CLIENT_OR_FAIL
-             ("<report"
-              " type=\"prognostic\""
-              " format_id=\"%s\""
-              " extension=\"%s\""
-              " content_type=\"%s\">",
-              get_reports_data->format_id,
-              extension,
-              content_type);
-
-            g_free (extension);
-            g_free (content_type);
-
-            pos = get_reports_data->pos ? atoi (get_reports_data->pos) : 1;
-            ret = manage_send_report (0,
-                                      0,
-                                      report_format,
-                                      &get_reports_data->get,
-                                      get_reports_data->notes_details,
-                                      get_reports_data->overrides_details,
-                                      get_reports_data->ignore_pagination,
-                                      /* Special case the XML report, bah. */
-                                      strcmp
-                                       (get_reports_data->format_id,
-                                        "a994b278-1f62-11e1-96ac-406186ea4fc5")
-                                      && strcmp
-                                          (get_reports_data->format_id,
-                                           "5057e5cc-b825-11e4"
-                                           "-9d0e-28d24461215b"),
-                                      send_to_client,
-                                      write_to_client,
-                                      write_to_client_data,
-                                      get_reports_data->alert_id,
-                                      "prognostic",
-                                      get_reports_data->host,
-                                      pos,
-                                      get_reports_data->host_search_phrase,
-                                      get_reports_data->host_levels,
-                                      get_reports_data->host_first_result,
-                                      get_reports_data->host_max_results,
-                                      NULL);
-
-            if (ret)
-              {
-                internal_error_send_to_client (error);
-                get_reports_data_reset (get_reports_data);
-                set_client_state (CLIENT_AUTHENTIC);
-                return;
-              }
-
-            SEND_TO_CLIENT_OR_FAIL ("</report>"
-                                    "</get_reports_response>");
-
-            get_reports_data_reset (get_reports_data);
-            set_client_state (CLIENT_AUTHENTIC);
-            break;
-          }
-
-        /* The usual scan report. */
-
-        if (get_reports_data->get.id)
-          {
-            /* Showing requested report, use Results Filter setting. */
-            INIT_GET (report, Result);
-          }
-        else
-          {
-            /* Showing multiple reports.  Use Report Filter setting.  Expand
-             * INIT_GET here to pass the get_reports_data->report_get to
-             * init_get. */
-            ret = init_get ("get_reports",
-                            &get_reports_data->report_get,
-                            "Reports",
-                            &first);
-            if (ret)
-              {
-                switch (ret)
-                  {
-                    case 99:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("get_reports",
-                                          "Permission denied"));
-                      break;
-                    default:
-                      internal_error_send_to_client (error);
-                      return;
-                  }
-                get_reports_data_reset (get_reports_data);
-                set_client_state (CLIENT_AUTHENTIC);
-                break;
-              }
-          }
-
-        if ((get_reports_data->report_get.id == NULL)
-            || (strlen (get_reports_data->report_get.id) == 0))
-          {
-            gchar *overrides, *min_qod, *filter;
-            get_data_t * get;
-
-            /* For simplicity, use a fixed result filter when filtering
-             * reports.  A given result filter is only applied when getting
-             * a single specified report. */
-
-            get = &get_reports_data->report_get;
-
-            /* Get overrides value from report filter. */
-            if (get->filt_id && strcmp (get->filt_id, "0"))
-              {
-                filter = filter_term (get->filt_id);
-                if (filter == NULL)
-                  assert (0);
-              }
-            else
-              filter = NULL;
-            g_free (get_reports_data->get.filter);
-            overrides
-             = filter_term_value (filter ? filter : get->filter,
-                                  "apply_overrides");
-            min_qod
-             = filter_term_value (filter ? filter : get->filter,
-                                  "min_qod");
-            g_free (filter);
-
-            /* Setup result filter from overrides. */
-            get_reports_data->get.filter
-             = g_strdup_printf ("apply_overrides=%i min_qod=%s",
-                                overrides && strcmp (overrides, "0"),
-                                min_qod ? min_qod
-                                        : G_STRINGIFY (MIN_QOD_DEFAULT));
-            g_free (overrides);
-            g_free (min_qod);
-          }
-
-        ret = init_report_iterator (&reports, &get_reports_data->report_get);
-        if (ret)
-          {
-            switch (ret)
-              {
-                case 1:
-                  if (send_find_error_to_client ("get_reports", "report",
-                                                 get_reports_data->get.id,
-                                                 omp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  break;
-                case 2:
-                  if (send_find_error_to_client
-                       ("get_reports", "filter",
-                        get_reports_data->get.filt_id, omp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  break;
-                case -1:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("get_reports"));
-                  break;
-              }
-            get_reports_data_reset (get_reports_data);
-            set_client_state (CLIENT_AUTHENTIC);
-            break;
-          }
-
-        if (get_reports_data->alert_id == NULL)
-          SEND_GET_START ("report");
-        while (next_report (&reports, &report))
-          {
-            gchar *extension, *content_type;
-            int ret;
-            GString *prefix;
-
-            prefix = g_string_new ("");
-            content_type = report_format_content_type (report_format);
-            extension = report_format_extension (report_format);
-
-            if (get_reports_data->alert_id == NULL)
-              g_string_append_printf (prefix,
-                                      "<report"
-                                      " type=\"scan\""
-                                      " id=\"%s\""
-                                      " format_id=\"%s\""
-                                      " extension=\"%s\""
-                                      " content_type=\"%s\">",
-                                      report_iterator_uuid (&reports),
-                                      get_reports_data->format_id,
-                                      extension,
-                                      content_type);
-
-            g_free (extension);
-            g_free (content_type);
-
-            if (get_reports_data->alert_id == NULL)
-              {
-                task_t task;
-
-                /* Send the standard elements.  Should match send_get_common. */
-                buffer_xml_append_printf
-                  (prefix,
-                   "<owner><name>%s</name></owner>"
-                   "<name>%s</name>"
-                   "<comment>%s</comment>"
-                   "<creation_time>%s</creation_time>"
-                   "<modification_time>"
-                   "%s"
-                   "</modification_time>"
-                   "<writable>0</writable>"
-                   "<in_use>0</in_use>",
-                   get_iterator_owner_name (&reports)
-                    ? get_iterator_owner_name (&reports)
-                    : "",
-                   get_iterator_name (&reports)
-                    ? get_iterator_name (&reports)
-                    : "",
-                   get_iterator_comment (&reports)
-                    ? get_iterator_comment (&reports)
-                    : "",
-                   get_iterator_creation_time (&reports)
-                    ? get_iterator_creation_time (&reports)
-                    : "",
-                   get_iterator_modification_time (&reports)
-                    ? get_iterator_modification_time (&reports)
-                    : "");
-                /* Send short task and report format info */
-                report_task (report, &task);
-                if (task)
-                  {
-                    gchar *report_task_uuid, *report_task_name;
-                    task_uuid (task, &report_task_uuid);
-                    report_task_name = task_name (task);
-
-                    buffer_xml_append_printf
-                      (prefix,
-                       "<task id=\"%s\">"
-                       "<name>%s</name>"
-                       "</task>",
-                       report_task_uuid,
-                       report_task_name);
-
-                    g_free (report_task_uuid);
-                    g_free (report_task_name);
-                  }
-
-                 if (get_reports_data->format_id)
-                   {
-                     gchar *format_name = NULL;
-                     format_name = report_format_name (report_format);
-
-                     buffer_xml_append_printf
-                       (prefix,
-                        "<report_format id=\"%s\">"
-                        "<name>%s</name>"
-                        "</report_format>",
-                        get_reports_data->format_id,
-                        format_name ? format_name : "");
-                     // g_free (report_format_name);
-                   }
-
-              }
-            /* If there's just one report then cleanup the iterator early.  This
-             * closes the iterator transaction, allowing manage_schedule to lock
-             * the db during generation of large reports. */
-            if (request_report)
-              cleanup_iterator (&reports);
-
-            ret = manage_send_report (report,
-                                      delta_report,
-                                      report_format,
-                                      &get_reports_data->get,
-                                      get_reports_data->notes_details,
-                                      get_reports_data->overrides_details,
-                                      get_reports_data->ignore_pagination,
-                                      /* Special case the XML report, bah. */
-                                      strcmp
-                                       (get_reports_data->format_id,
-                                        "a994b278-1f62-11e1-96ac-406186ea4fc5")
-                                      && strcmp
-                                          (get_reports_data->format_id,
-                                           "5057e5cc-b825-11e4"
-                                           "-9d0e-28d24461215b"),
-                                      send_to_client,
-                                      write_to_client,
-                                      write_to_client_data,
-                                      get_reports_data->alert_id,
-                                      get_reports_data->type,
-                                      NULL, 0, NULL, NULL, 0, 0, prefix->str);
-            g_string_free (prefix, TRUE);
-            if (ret)
-              {
-                if (get_reports_data->alert_id)
-                  switch (ret)
-                    {
-                      case 0:
-                        break;
-                      case 1:
-                        if (send_find_error_to_client
-                             ("get_reports", "alert",
-                              get_reports_data->alert_id, omp_parser))
-                          {
-                            error_send_to_client (error);
-                            return;
-                          }
-                        /* Close the connection with the client, as part of the
-                         * response may have been sent before the error
-                         * occurred. */
-                        internal_error_send_to_client (error);
-                        if (request_report == 0)
-                          cleanup_iterator (&reports);
-                        get_reports_data_reset (get_reports_data);
-                        set_client_state (CLIENT_AUTHENTIC);
-                        return;
-                        break;
-                      case 2:
-                        if (send_find_error_to_client
-                             ("get_reports", "filter",
-                              get_reports_data->get.filt_id, omp_parser))
-                          {
-                            error_send_to_client (error);
-                            return;
-                          }
-                        /* This error always occurs before anything is sent
-                         * to the client, so the connection can stay up. */
-                        if (request_report == 0)
-                          cleanup_iterator (&reports);
-                        get_reports_data_reset (get_reports_data);
-                        set_client_state (CLIENT_AUTHENTIC);
-                        return;
-                        break;
-                      case -2:
-                        SEND_TO_CLIENT_OR_FAIL
-                         (XML_ERROR_SYNTAX ("get_reports",
-                                            "Failed to find report format for"
-                                            " alert"));
-                        if (request_report == 0)
-                          cleanup_iterator (&reports);
-                        get_reports_data_reset (get_reports_data);
-                        set_client_state (CLIENT_AUTHENTIC);
-                        return;
-                        break;
-                      case -3:
-                        SEND_TO_CLIENT_OR_FAIL
-                         (XML_INTERNAL_ERROR ("get_reports"));
-                        if (request_report == 0)
-                          cleanup_iterator (&reports);
-                        get_reports_data_reset (get_reports_data);
-                        set_client_state (CLIENT_AUTHENTIC);
-                        return;
-                        break;
-                      case -4:
-                        SEND_TO_CLIENT_OR_FAIL
-                         (XML_ERROR_SYNTAX ("get_reports",
-                                            "Failed to find filter for"
-                                            " alert"));
-                        if (request_report == 0)
-                          cleanup_iterator (&reports);
-                        get_reports_data_reset (get_reports_data);
-                        set_client_state (CLIENT_AUTHENTIC);
-                        return;
-                        break;
-                      default:
-                      case -1:
-                        SEND_TO_CLIENT_OR_FAIL
-                         (XML_INTERNAL_ERROR ("get_reports"));
-                        /* Close the connection with the client, as part of the
-                         * response may have been sent before the error
-                         * occurred. */
-                        internal_error_send_to_client (error);
-                        if (request_report == 0)
-                          cleanup_iterator (&reports);
-                        get_reports_data_reset (get_reports_data);
-                        set_client_state (CLIENT_AUTHENTIC);
-                        return;
-                        break;
-                    }
-                else if (ret == 2)
-                  {
-                    if (send_find_error_to_client
-                         ("get_reports", "filter",
-                          get_reports_data->get.filt_id, omp_parser))
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
-                    /* This error always occurs before anything is sent
-                     * to the client, so the connection can stay up. */
-                    if (request_report == 0)
-                      cleanup_iterator (&reports);
-                    get_reports_data_reset (get_reports_data);
-                    set_client_state (CLIENT_AUTHENTIC);
-                    return;
-                  }
-                else
-                  {
-                    /* Close the connection with the client, as part of the
-                     * response may have been sent before the error
-                     * occurred. */
-                    internal_error_send_to_client (error);
-                    if (request_report == 0)
-                      cleanup_iterator (&reports);
-                    get_reports_data_reset (get_reports_data);
-                    set_client_state (CLIENT_AUTHENTIC);
-                    return;
-                  }
-              }
-            if (get_reports_data->alert_id == NULL)
-              SEND_TO_CLIENT_OR_FAIL ("</report>");
-
-            count++;
-
-            if (request_report)
-              /* Just to be safe, because iterator has been freed. */
-              break;
-          }
-        if (request_report == 0)
-          cleanup_iterator (&reports);
-
-        if (get_reports_data->alert_id)
-          SEND_TO_CLIENT_OR_FAIL (XML_OK ("get_reports"));
-        else
-          {
-            filtered = get_reports_data->get.id
-                        ? 1
-                        : report_count (&get_reports_data->report_get);
-            SEND_GET_END ("report", &get_reports_data->report_get, count,
-                          filtered);
-          }
-
-        get_reports_data_reset (get_reports_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
+        return handle_get_reports (omp_parser, error);
 
       case CLIENT_GET_REPORT_FORMATS:
-        {
-          assert (strcasecmp ("GET_REPORT_FORMATS", element_name) == 0);
-
-          if (get_report_formats_data->params &&
-              get_report_formats_data->get.trash)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_report_formats",
-                                "GET_REPORT_FORMATS params given with trash"));
-          else
-            {
-              iterator_t report_formats;
-              int count, filtered, ret, first;
-
-              INIT_GET (report_format, Report Format);
-
-              ret = init_report_format_iterator (&report_formats,
-                                                 &get_report_formats_data->get);
-              if (ret)
-                {
-                  switch (ret)
-                    {
-                      case 1:
-                        if (send_find_error_to_client ("get_report_formats",
-                                                       "report_format",
-                                                       get_report_formats_data->get.id,
-                                                       omp_parser))
-                          {
-                            error_send_to_client (error);
-                            return;
-                          }
-                        break;
-                      case 2:
-                        if (send_find_error_to_client
-                             ("get_report_formats", "filter",
-                              get_report_formats_data->get.filt_id, omp_parser))
-                          {
-                            error_send_to_client (error);
-                            return;
-                          }
-                        break;
-                      case -1:
-                        SEND_TO_CLIENT_OR_FAIL
-                         (XML_INTERNAL_ERROR ("get_report_formats"));
-                        break;
-                    }
-                  get_report_formats_data_reset (get_report_formats_data);
-                  set_client_state (CLIENT_AUTHENTIC);
-                  break;
-                }
-
-              SEND_GET_START ("report_format");
-              while (1)
-                {
-                  time_t trust_time;
-
-                  ret = get_next (&report_formats,
-                                  &get_report_formats_data->get, &first, &count,
-                                  init_report_format_iterator);
-                  if (ret == 1)
-                    break;
-                  if (ret == -1)
-                    {
-                      internal_error_send_to_client (error);
-                      return;
-                    }
-
-                  SEND_GET_COMMON (report_format,
-                                   &get_report_formats_data->get,
-                                   &report_formats);
-
-                  trust_time = report_format_iterator_trust_time
-                                (&report_formats);
-
-                  SENDF_TO_CLIENT_OR_FAIL
-                   ("<extension>%s</extension>"
-                    "<content_type>%s</content_type>"
-                    "<summary>%s</summary>"
-                    "<description>%s</description>"
-                    "<global>%i</global>"
-                    "<predefined>%i</predefined>",
-                    report_format_iterator_extension (&report_formats),
-                    report_format_iterator_content_type (&report_formats),
-                    report_format_iterator_summary (&report_formats),
-                    report_format_iterator_description (&report_formats),
-                    get_report_formats_data->get.trash
-                      ? trash_report_format_global
-                         (get_iterator_resource (&report_formats))
-                      : report_format_global
-                         (get_iterator_resource (&report_formats)),
-                    get_report_formats_data->get.trash
-                      ? 0
-                      : report_format_predefined
-                         (get_iterator_resource (&report_formats)));
-
-                  if (get_report_formats_data->alerts)
-                    {
-                      iterator_t alerts;
-
-                      SEND_TO_CLIENT_OR_FAIL ("<alerts>");
-                      init_report_format_alert_iterator (&alerts,
-                                                  get_iterator_resource
-                                                   (&report_formats));
-                      while (next (&alerts))
-                        {
-                          if ((get_iterator_owner (&report_formats) == 0)
-                              && report_format_alert_iterator_readable (&alerts)
-                                 == 0)
-                            /* Skip other users' alerts for global report
-                             * formats. */
-                            continue;
-
-                          SENDF_TO_CLIENT_OR_FAIL
-                           ("<alert id=\"%s\">"
-                            "<name>%s</name>",
-                            report_format_alert_iterator_uuid (&alerts),
-                            report_format_alert_iterator_name (&alerts));
-                          if (report_format_alert_iterator_readable (&alerts))
-                            SEND_TO_CLIENT_OR_FAIL ("</alert>");
-                          else
-                            SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
-                                                    "</alert>");
-                        }
-                      cleanup_iterator (&alerts);
-                      SEND_TO_CLIENT_OR_FAIL ("</alerts>");
-                    }
-
-                  if (get_report_formats_data->params
-                      || get_report_formats_data->get.details)
-                    {
-                      iterator_t params;
-                      init_report_format_param_iterator
-                       (&params, get_iterator_resource (&report_formats),
-                        get_report_formats_data->get.trash, 1, NULL);
-                      while (next (&params))
-                        {
-                          long long int min, max;
-                          iterator_t options;
-
-                          SENDF_TO_CLIENT_OR_FAIL
-                           ("<param>"
-                            "<name>%s</name>"
-                            "<type>%s",
-                            report_format_param_iterator_name (&params),
-                            report_format_param_iterator_type_name (&params));
-
-                          min = report_format_param_iterator_type_min (&params);
-                          if (min > LLONG_MIN)
-                            SENDF_TO_CLIENT_OR_FAIL ("<min>%lli</min>", min);
-
-                          max = report_format_param_iterator_type_max (&params);
-                          if (max < LLONG_MAX)
-                            SENDF_TO_CLIENT_OR_FAIL ("<max>%lli</max>", max);
-
-                          SENDF_TO_CLIENT_OR_FAIL
-                           ("</type>"
-                            "<value>%s</value>"
-                            "<default>%s</default>",
-                            report_format_param_iterator_value (&params),
-                            report_format_param_iterator_fallback (&params));
-
-                          if (report_format_param_iterator_type (&params)
-                              == REPORT_FORMAT_PARAM_TYPE_SELECTION)
-                            {
-                              SEND_TO_CLIENT_OR_FAIL ("<options>");
-                              init_param_option_iterator
-                               (&options,
-                                report_format_param_iterator_param
-                                 (&params),
-                                1,
-                                NULL);
-                              while (next (&options))
-                                SENDF_TO_CLIENT_OR_FAIL
-                                 ("<option>%s</option>",
-                                  param_option_iterator_value (&options));
-                              cleanup_iterator (&options);
-                              SEND_TO_CLIENT_OR_FAIL ("</options>");
-                            }
-
-                          SEND_TO_CLIENT_OR_FAIL ("</param>");
-                        }
-                      cleanup_iterator (&params);
-                    }
-
-                  if (get_report_formats_data->get.details)
-                    {
-                      file_iterator_t files;
-                      if (init_report_format_file_iterator
-                           (&files, get_iterator_resource (&report_formats)))
-                        {
-                          cleanup_iterator (&report_formats);
-                          error_send_to_client (error);
-                          return;
-                        }
-                      while (next_file (&files))
-                        {
-                          gchar *content = file_iterator_content_64 (&files);
-                          SENDF_TO_CLIENT_OR_FAIL
-                           ("<file name=\"%s\">%s</file>",
-                            file_iterator_name (&files),
-                            content);
-                          g_free (content);
-                        }
-                      cleanup_file_iterator (&files);
-
-                      SENDF_TO_CLIENT_OR_FAIL
-                       ("<signature>%s</signature>",
-                        report_format_iterator_signature (&report_formats));
-                    }
-
-                  SENDF_TO_CLIENT_OR_FAIL
-                   ("<trust>%s<time>%s</time></trust>"
-                    "<active>%i</active>",
-                    get_report_formats_data->get.trash
-                     ? report_format_iterator_trust (&report_formats)
-                     : (report_format_predefined (get_iterator_resource
-                                                   (&report_formats))
-                         ? "yes"
-                         : report_format_iterator_trust (&report_formats)),
-                    iso_time (&trust_time),
-                    report_format_iterator_active (&report_formats));
-
-                  SEND_TO_CLIENT_OR_FAIL ("</report_format>");
-                  count++;
-                }
-              cleanup_iterator (&report_formats);
-              filtered = get_report_formats_data->get.id
-                          ? 1
-                          : report_format_count (&get_report_formats_data->get);
-              SEND_GET_END ("report_format", &get_report_formats_data->get,
-                            count, filtered);
-            }
-          get_report_formats_data_reset (get_report_formats_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
+        assert (strcasecmp ("GET_REPORT_FORMATS", element_name) == 0);
+        return handle_get_report_formats (omp_parser, error);
 
       case CLIENT_GET_RESULTS:
-        {
-          result_t result = 0;
-          task_t task = 0;
-
-          assert (strcasecmp ("GET_RESULTS", element_name) == 0);
-
-          if (acl_user_may ("get_results") == 0)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("get_results",
-                                  "Permission denied"));
-              get_results_data_reset (get_results_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-
-          if (current_credentials.username == NULL)
-            {
-              get_results_data_reset (get_results_data);
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_results"));
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-
-          if (get_results_data->get.id
-              && find_result_with_permission (get_results_data->get.id,
-                                              &result,
-                                              NULL))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_results"));
-          else if (get_results_data->get.id && result == 0)
-            {
-              if (send_find_error_to_client ("get_results", "result",
-                                             get_results_data->get.id,
-                                             omp_parser))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else if (get_results_data->task_id
-                   && find_task_with_permission (get_results_data->task_id,
-                                                 &task,
-                                                 NULL))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_results"));
-          else if (get_results_data->task_id && task == 0)
-            {
-              if (send_find_error_to_client ("get_results", "task",
-                                             get_results_data->task_id,
-                                             omp_parser))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else
-            {
-              const char* filter;
-              iterator_t results;
-              int notes, overrides;
-
-              if (get_results_data->get.filt_id
-                  && strcmp (get_results_data->get.filt_id, "0"))
-                {
-                  filter = filter_term (get_results_data->get.filt_id);
-                }
-              else
-                filter = get_results_data->get.filter;
-
-              SEND_TO_CLIENT_OR_FAIL ("<get_results_response"
-                                      " status=\"" STATUS_OK "\""
-                                      " status_text=\"" STATUS_OK_TEXT "\">");
-              INIT_GET (result, Result);
-
-              init_result_get_iterator (&results, &get_results_data->get,
-                                        0,  /* No report restriction */
-                                        NULL, /* No host restriction */
-                                        NULL);  /* No extra order SQL. */
-
-              manage_report_filter_controls (filter,
-                                             NULL, /* first */
-                                             NULL, /* max */
-                                             NULL, /* sort_field */
-                                             NULL, /* sort_order */
-                                             NULL, /* result_hosts_only */
-                                             NULL, /* min_qod */
-                                             NULL, /* levels */
-                                             NULL, /* delta_states */
-                                             NULL, /* search_phrase */
-                                             NULL, /* search_phrase_exact */
-                                             NULL, /* autofp */
-                                             &notes,
-                                             &overrides,
-                                             NULL, /* apply_overrides */
-                                             NULL);/* zone */
-
-              if (next (&results))
-                {
-                  if (get_results_data->get.id && (task == 0))
-                    {
-                      char *task_id;
-                      task_uuid (result_iterator_task (&results), &task_id);
-                      if (find_task_with_permission (task_id, &task, NULL))
-                        {
-                          free (task_id);
-                          internal_error_send_to_client (error);
-                          cleanup_iterator (&results);
-                          return;
-                        }
-                      free (task_id);
-                    }
-
-                  count = 0;
-                  do
-                    {
-                      GString *buffer = g_string_new ("");
-                      buffer_results_xml (buffer,
-                                          &results,
-                                          task,
-                                          notes,
-                                          get_results_data->notes_details,
-                                          overrides,
-                                          get_results_data->overrides_details,
-                                          1,
-                                          /* show tag details if selected by ID */
-                                          get_results_data->get.id != NULL,
-                                          get_results_data->get.details,
-                                          NULL,
-                                          NULL,
-                                          0);
-                      SEND_TO_CLIENT_OR_FAIL (buffer->str);
-                      g_string_free (buffer, TRUE);
-                      count ++;
-                    }
-                  while (next (&results));
-                }
-              cleanup_iterator (&results);
-
-              manage_filter_controls (get_results_data->get.filter,
-                                      &first, NULL, NULL, NULL);
-
-              filtered = get_results_data->get.id
-                          ? 1 : result_count (&get_results_data->get,
-                                              0 /* No report */,
-                                              NULL /* No host */);
-
-              SEND_GET_END ("result", &get_results_data->get, count, filtered);
-            }
-
-          get_results_data_reset (get_results_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
+        assert (strcasecmp ("GET_RESULTS", element_name) == 0);
+        return handle_get_results (omp_parser, error);
 
       case CLIENT_GET_ROLES:
-        {
-          iterator_t roles;
-          int count, filtered, ret, first;
-
-          assert (strcasecmp ("GET_ROLES", element_name) == 0);
-
-          INIT_GET (role, Role);
-
-          ret = init_role_iterator (&roles, &get_roles_data->get);
-          if (ret)
-            {
-              switch (ret)
-                {
-                  case 1:
-                    if (send_find_error_to_client ("get_roles", "role",
-                                                   get_roles_data->get.id,
-                                                   omp_parser))
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
-                    break;
-                  case 2:
-                    if (send_find_error_to_client
-                         ("get_roles", "role", get_roles_data->get.filt_id,
-                          omp_parser))
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
-                    break;
-                  case -1:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("get_roles"));
-                    break;
-                }
-              get_roles_data_reset (get_roles_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-
-          SEND_GET_START ("role");
-          while (1)
-            {
-              gchar *users;
-
-              ret = get_next (&roles, &get_roles_data->get, &first, &count,
-                              init_role_iterator);
-              if (ret == 1)
-                break;
-              if (ret == -1)
-                {
-                  internal_error_send_to_client (error);
-                  return;
-                }
-
-              SEND_GET_COMMON (role, &get_roles_data->get, &roles);
-
-              users = role_users (get_iterator_resource (&roles));
-              SENDF_TO_CLIENT_OR_FAIL ("<users>%s</users>", users ? users : "");
-              g_free (users);
-
-              SEND_TO_CLIENT_OR_FAIL ("</role>");
-
-              count++;
-            }
-          cleanup_iterator (&roles);
-          filtered = get_roles_data->get.id
-                      ? 1
-                      : role_count (&get_roles_data->get);
-          SEND_GET_END ("role", &get_roles_data->get, count, filtered);
-
-          get_roles_data_reset (get_roles_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
+        assert (strcasecmp ("GET_ROLES", element_name) == 0);
+        return handle_get_roles (omp_parser, error);
 
       case CLIENT_GET_SCANNERS:
         assert (strcasecmp ("GET_SCANNERS", element_name) == 0);
         return handle_get_scanners (omp_parser, error);
 
       case CLIENT_GET_SCHEDULES:
-        {
-          assert (strcasecmp ("GET_SCHEDULES", element_name) == 0);
-
-          if (get_schedules_data->tasks && get_schedules_data->get.trash)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_schedules",
-                                "GET_SCHEDULES tasks given with trash"));
-          else
-            {
-              iterator_t schedules;
-              int count, filtered, ret, first;
-
-              INIT_GET (schedule, Schedule);
-
-              ret = init_schedule_iterator (&schedules, &get_schedules_data->get);
-              if (ret)
-                {
-                  switch (ret)
-                    {
-                      case 1:
-                        if (send_find_error_to_client ("get_schedules",
-                                                       "schedule",
-                                                       get_schedules_data->get.id,
-                                                       omp_parser))
-                          {
-                            error_send_to_client (error);
-                            return;
-                          }
-                        break;
-                      case 2:
-                        if (send_find_error_to_client
-                             ("get_schedules", "filter",
-                              get_schedules_data->get.filt_id, omp_parser))
-                          {
-                            error_send_to_client (error);
-                            return;
-                          }
-                        break;
-                      case -1:
-                        SEND_TO_CLIENT_OR_FAIL
-                         (XML_INTERNAL_ERROR ("get_schedules"));
-                        break;
-                    }
-                  get_schedules_data_reset (get_schedules_data);
-                  set_client_state (CLIENT_AUTHENTIC);
-                  break;
-                }
-
-              SEND_GET_START ("schedule");
-              while (1)
-                {
-                  time_t first_time, next_time;
-                  gchar *iso;
-                  const char *timezone, *abbrev;
-                  char *simple_period_unit, *simple_duration_unit;
-                  int period, period_minutes, period_hours, period_days;
-                  int period_weeks, period_months, duration, duration_minutes;
-                  int duration_hours, duration_days, duration_weeks;
-                  int simple_period, simple_duration;
-
-                  ret = get_next (&schedules, &get_schedules_data->get, &first,
-                                  &count, init_schedule_iterator);
-                  if (ret == 1)
-                    break;
-                  if (ret == -1)
-                    {
-                      internal_error_send_to_client (error);
-                      return;
-                    }
-
-                  SEND_GET_COMMON (schedule, &get_schedules_data->get, &schedules);
-
-                  timezone = schedule_iterator_timezone (&schedules);
-                  first_time = schedule_iterator_first_time (&schedules);
-                  next_time = schedule_iterator_next_time (&schedules);
-
-                  first_time += schedule_iterator_initial_offset (&schedules)
-                                 - time_offset (timezone, first_time);
-                  if (next_time)
-                    next_time += schedule_iterator_initial_offset (&schedules)
-                                   - time_offset (timezone, next_time);
-
-                  /* Duplicate static string because there's an iso_time_tz below. */
-                  abbrev = NULL;
-                  iso = g_strdup (iso_time_tz (&first_time, timezone, &abbrev));
-
-                  period = schedule_iterator_period (&schedules);
-                  if (period)
-                    {
-                      period_minutes = period / 60;
-                      period_hours = period_minutes / 60;
-                      period_days = period_hours / 24;
-                      period_weeks = period_days / 7;
-                    }
-                  simple_period_unit = "";
-                  if (period == 0)
-                    simple_period = 0;
-                  else if (period_weeks && (period % (60 * 60 * 24 * 7) == 0))
-                    {
-                      simple_period = period_weeks;
-                      simple_period_unit = "week";
-                    }
-                  else if (period_days && (period % (60 * 60 * 24) == 0))
-                    {
-                      simple_period = period_days;
-                      simple_period_unit = "day";
-                    }
-                  else if (period_hours && (period % (60 * 60) == 0))
-                    {
-                      simple_period = period_hours;
-                      simple_period_unit = "hour";
-                    }
-                  /* The granularity of the "simple" GSA interface stops at hours. */
-                  else
-                    simple_period = 0;
-
-                  period_months = schedule_iterator_period_months (&schedules);
-                  if (period_months && (period_months < 25))
-                    {
-                      simple_period = period_months;
-                      simple_period_unit = "month";
-                    }
-
-                  duration = schedule_iterator_duration (&schedules);
-                  if (duration)
-                    {
-                      duration_minutes = duration / 60;
-                      duration_hours = duration_minutes / 60;
-                      duration_days = duration_hours / 24;
-                      duration_weeks = duration_days / 7;
-                    }
-                  simple_duration_unit = "";
-                  if (duration == 0)
-                    simple_duration = 0;
-                  else if (duration_weeks
-                           && (duration % (60 * 60 * 24 * 7) == 0))
-                    {
-                      simple_duration = duration_weeks;
-                      simple_duration_unit = "week";
-                    }
-                  else if (duration_days
-                           && (duration % (60 * 60 * 24) == 0))
-                    {
-                      simple_duration = duration_days;
-                      simple_duration_unit = "day";
-                    }
-                  else if (duration_hours
-                           && (duration % (60 * 60) == 0))
-                    {
-                      simple_duration = duration_hours;
-                      simple_duration_unit = "hour";
-                    }
-                  /* The granularity of the "simple" GSA interface stops at hours. */
-                  else
-                    simple_duration = 0;
-
-                  SENDF_TO_CLIENT_OR_FAIL
-                   ("<first_time>%s</first_time>"
-                    "<next_time>%s</next_time>"
-                    "<period>%ld</period>"
-                    "<period_months>%ld</period_months>"
-                    "<simple_period>%i<unit>%s</unit></simple_period>"
-                    "<duration>%ld</duration>"
-                    "<simple_duration>%i<unit>%s</unit></simple_duration>"
-                    "<timezone>%s</timezone>"
-                    "<timezone_abbrev>%s</timezone_abbrev>",
-                    iso,
-                    (next_time == 0 ? "over" : iso_time_tz (&next_time, timezone, NULL)),
-                    schedule_iterator_period (&schedules),
-                    schedule_iterator_period_months (&schedules),
-                    simple_period,
-                    simple_period_unit,
-                    schedule_iterator_duration (&schedules),
-                    simple_duration,
-                    simple_duration_unit,
-                    schedule_iterator_timezone (&schedules)
-                     ? schedule_iterator_timezone (&schedules)
-                     : "UTC",
-                    abbrev ? abbrev : "UTC");
-
-                  g_free (iso);
-                  if (get_schedules_data->tasks)
-                    {
-                      iterator_t tasks;
-
-                      SEND_TO_CLIENT_OR_FAIL ("<tasks>");
-                      init_schedule_task_iterator (&tasks,
-                                                   get_iterator_resource
-                                                    (&schedules));
-                      while (next (&tasks))
-                        {
-                          SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
-                                                   "<name>%s</name>",
-                                                   schedule_task_iterator_uuid (&tasks),
-                                                   schedule_task_iterator_name (&tasks));
-                          if (schedule_task_iterator_readable (&tasks))
-                            SEND_TO_CLIENT_OR_FAIL ("</task>");
-                          else
-                            SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
-                                                    "</task>");
-                        }
-                      cleanup_iterator (&tasks);
-                      SEND_TO_CLIENT_OR_FAIL ("</tasks>");
-                    }
-                  SEND_TO_CLIENT_OR_FAIL ("</schedule>");
-                  count++;
-                }
-              cleanup_iterator (&schedules);
-              filtered = get_schedules_data->get.id
-                          ? 1
-                          : schedule_count (&get_schedules_data->get);
-              SEND_GET_END ("schedule", &get_schedules_data->get, count, filtered);
-            }
-          get_schedules_data_reset (get_schedules_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
+        assert (strcasecmp ("GET_SCHEDULES", element_name) == 0);
+        return handle_get_schedules (omp_parser, error);
 
       case CLIENT_GET_SETTINGS:
-        {
-          setting_t setting = 0;
-          iterator_t settings;
-          int count, filtered;
-
-          assert (strcasecmp ("GET_SETTINGS", element_name) == 0);
-
-          if (acl_user_may ("get_settings") == 0)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("get_settings",
-                                  "Permission denied"));
-              get_settings_data_reset (get_settings_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-
-          init_setting_iterator (&settings,
-                                 get_settings_data->setting_id,
-                                 get_settings_data->filter,
-                                 get_settings_data->first,
-                                 get_settings_data->max,
-                                 get_settings_data->sort_order,
-                                 get_settings_data->sort_field);
-
-          SEND_TO_CLIENT_OR_FAIL ("<get_settings_response"
-                                  " status=\"" STATUS_OK "\""
-                                  " status_text=\"" STATUS_OK_TEXT "\">");
-          SENDF_TO_CLIENT_OR_FAIL ("<filters>"
-                                   "<term>%s</term>"
-                                   "</filters>"
-                                   "<settings start=\"%i\" max=\"%i\"/>",
-                                   get_settings_data->filter
-                                    ? get_settings_data->filter
-                                    : "",
-                                   /* Add 1 for 1 indexing. */
-                                   get_settings_data->first + 1,
-                                   get_settings_data->max);
-          count = 0;
-          while (next (&settings))
-            {
-              SENDF_TO_CLIENT_OR_FAIL ("<setting id=\"%s\">"
-                                       "<name>%s</name>"
-                                       "<comment>%s</comment>"
-                                       "<value>%s</value>"
-                                       "</setting>",
-                                       setting_iterator_uuid (&settings),
-                                       setting_iterator_name (&settings),
-                                       setting_iterator_comment (&settings),
-                                       setting_iterator_value (&settings));
-              count++;
-            }
-          filtered = setting
-                      ? 1
-                      : setting_count (get_settings_data->filter);
-          SENDF_TO_CLIENT_OR_FAIL ("<setting_count>"
-                                   "<filtered>%i</filtered>"
-                                   "<page>%i</page>"
-                                   "</setting_count>",
-                                   filtered,
-                                   count);
-          cleanup_iterator (&settings);
-          SEND_TO_CLIENT_OR_FAIL ("</get_settings_response>");
-
-          get_settings_data_reset (get_settings_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
+        assert (strcasecmp ("GET_SETTINGS", element_name) == 0);
+        return handle_get_settings (omp_parser, error);
 
       case CLIENT_GET_SLAVES:
-        {
-
-          assert (strcasecmp ("GET_SLAVES", element_name) == 0);
-
-          if (get_slaves_data->tasks && get_slaves_data->get.trash)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_slaves",
-                                "GET_SLAVES tasks given with trash"));
-          else
-            {
-              iterator_t slaves;
-              int count, filtered, ret, first;
-
-              INIT_GET (slave, Slave);
-
-              ret = init_slave_iterator (&slaves, &get_slaves_data->get);
-              if (ret)
-                {
-                  switch (ret)
-                    {
-                      case 1:
-                        if (send_find_error_to_client ("get_slaves",
-                                                       "slave",
-                                                       get_slaves_data->get.id,
-                                                       omp_parser))
-                          {
-                            error_send_to_client (error);
-                            return;
-                          }
-                        break;
-                      case 2:
-                        if (send_find_error_to_client
-                             ("get_slaves", "filter",
-                              get_slaves_data->get.filt_id, omp_parser))
-                          {
-                            error_send_to_client (error);
-                            return;
-                          }
-                        break;
-                      case -1:
-                        SEND_TO_CLIENT_OR_FAIL
-                         (XML_INTERNAL_ERROR ("get_slaves"));
-                        break;
-                    }
-                  get_slaves_data_reset (get_slaves_data);
-                  set_client_state (CLIENT_AUTHENTIC);
-                  break;
-                }
-
-              SEND_GET_START ("slave");
-              while (1)
-                {
-                  credential_t credential;
-                  const char *credential_name;
-                  gchar *credential_id;
-
-                  ret = get_next (&slaves, &get_slaves_data->get, &first,
-                                  &count, init_slave_iterator);
-                  if (ret == 1)
-                    break;
-                  if (ret == -1)
-                    {
-                      internal_error_send_to_client (error);
-                      return;
-                    }
-
-                  SEND_GET_COMMON (slave, &get_slaves_data->get, &slaves);
-
-                  credential = slave_iterator_credential (&slaves);
-                  credential_id = slave_iterator_credential_trash (&slaves)
-                                    ? trash_credential_uuid (credential)
-                                    : credential_uuid (credential);
-                  credential_name = slave_iterator_credential_name (&slaves);
-
-                  SENDF_TO_CLIENT_OR_FAIL ("<host>%s</host>"
-                                           "<port>%s</port>"
-                                           "<credential id=\"%s\">"
-                                           "<name>%s</name>"
-                                           "<login>%s</login>"
-                                           "<trash>%d</trash>"
-                                           "</credential>",
-                                           slave_iterator_host (&slaves),
-                                           slave_iterator_port (&slaves),
-                                           credential_id ? credential_id : "",
-                                           credential_name
-                                            ? credential_name : "",
-                                           slave_iterator_login (&slaves),
-                                           slave_iterator_credential_trash
-                                            (&slaves));
-
-
-                  if (get_slaves_data->tasks)
-                    {
-                      iterator_t tasks;
-
-                      SEND_TO_CLIENT_OR_FAIL ("<tasks>");
-                      init_slave_task_iterator (&tasks,
-                                                get_iterator_resource
-                                                 (&slaves));
-                      while (next (&tasks))
-                        {
-                          SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
-                                                   "<name>%s</name>",
-                                                   slave_task_iterator_uuid
-                                                    (&tasks),
-                                                   slave_task_iterator_name
-                                                    (&tasks));
-                          if (slave_task_iterator_readable (&tasks))
-                            SEND_TO_CLIENT_OR_FAIL ("</task>");
-                          else
-                            SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
-                                                    "</task>");
-                        }
-                      cleanup_iterator (&tasks);
-                      SEND_TO_CLIENT_OR_FAIL ("</tasks>");
-                    }
-
-                  SEND_TO_CLIENT_OR_FAIL ("</slave>");
-                  count++;
-                }
-              cleanup_iterator (&slaves);
-              filtered = get_slaves_data->get.id
-                          ? 1
-                          : slave_count (&get_slaves_data->get);
-              SEND_GET_END ("slave", &get_slaves_data->get, count, filtered);
-            }
-          get_slaves_data_reset (get_slaves_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
-
-      case CLIENT_GET_AGGREGATES:
-        {
-          assert (strcasecmp ("GET_AGGREGATES", element_name) == 0);
-
-          iterator_t aggregate;
-          const char *type;
-          get_data_t *get;
-          GArray *data_columns, *data_column_types;
-          GArray *text_columns, *text_column_types;
-          GArray *sort_data;
-          GArray *c_sums;
-          const char *group_column, *subgroup_column;
-          char *group_column_type, *subgroup_column_type;
-          int ret, index;
-          GString *xml;
-          gchar *sort_field, *filter;
-          int first, sort_order;
-          GString *type_many;
-
-          type = get_aggregates_data->type;
-          if (type == NULL)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-                  (XML_ERROR_SYNTAX ("get_aggregates",
-                                      "GET_AGGREGATES requires a"
-                                      " 'type' attribute"));
-              return;
-            }
-
-          get = &get_aggregates_data->get;
-          INIT_GET (aggregate, Aggregate);
-
-          group_column = get_aggregates_data->group_column;
-          subgroup_column = get_aggregates_data->subgroup_column;
-
-          init_aggregate_lists (group_column,
-                                subgroup_column,
-                                get_aggregates_data->data_columns,
-                                get_aggregates_data->text_columns,
-                                get_aggregates_data->sort_data,
-                                &group_column_type, &subgroup_column_type,
-                                &data_column_types, &data_columns,
-                                &text_column_types, &text_columns,
-                                &sort_data,
-                                &c_sums);
-
-          if (get_aggregates_data->mode
-              && strcasecmp (get_aggregates_data->mode, "word_counts") == 0)
-            {
-              ret = init_aggregate_iterator (&aggregate, type, get,
-                                            0 /* distinct */,
-                                            data_columns,
-                                            group_column, subgroup_column,
-                                            text_columns,
-                                            NULL, /* ignore sorting */
-                                            0,    /* get all groups */
-                                            -1,
-                                            NULL /* extra_tables */,
-                                            NULL /* extra_where */);
-            }
-          else
-            {
-              ret = init_aggregate_iterator (&aggregate, type, get,
-                                            0 /* distinct */,
-                                            data_columns,
-                                            group_column, subgroup_column,
-                                            text_columns,
-                                            sort_data,
-                                            get_aggregates_data->first_group,
-                                            get_aggregates_data->max_groups,
-                                            NULL /* extra_tables */,
-                                            NULL /* extra_where */);
-            }
-
-          switch (ret)
-            {
-              case 0:
-                break;
-              case 1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("get_aggregates",
-                                    "Failed to find resource"));
-                break;
-              case 2:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("get_aggregates",
-                                    "Failed to find filter"));
-                break;
-              case 3:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("get_aggregates",
-                                    "Invalid data_column"));
-                break;
-              case 4:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("get_aggregates",
-                                    "Invalid group_column"));
-                break;
-              case 5:
-                SEND_TO_CLIENT_OR_FAIL
-                    (XML_ERROR_SYNTAX ("get_aggregates",
-                                        "Invalid resource type"));
-                break;
-              case 6:
-                SEND_TO_CLIENT_OR_FAIL
-                    (XML_ERROR_SYNTAX ("get_aggregates",
-                                        "Trashcan not used by resource type"));
-                break;
-              case 7:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("get_aggregates",
-                                    "Invalid text_column"));
-                break;
-              case 8:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("get_aggregates",
-                                    "Invalid subgroup_column"));
-                break;
-              case 99:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("get_aggregates",
-                                    "Permission denied"));
-                break;
-              default:
-                assert (0);
-                /* fallthrough */
-              case -1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("get_aggregates"));
-                break;
-            }
-
-          if (ret)
-            {
-              g_array_free (data_columns, TRUE);
-              g_array_free (data_column_types, TRUE);
-              for (index = 0; index < sort_data->len; index++)
-                sort_data_free (g_array_index (sort_data, sort_data_t*, index));
-              g_array_free (sort_data, TRUE);
-              g_array_free (c_sums, TRUE);
-              return;
-            }
-
-          xml = g_string_new ("<get_aggregates_response"
-                              "  status_text=\"" STATUS_OK_TEXT "\""
-                              "  status=\"" STATUS_OK "\">");
-
-          if (get_aggregates_data->mode
-              && strcasecmp (get_aggregates_data->mode, "word_counts") == 0)
-            {
-              buffer_aggregate_wc_xml (xml, &aggregate, type, group_column,
-                                       sort_data,
-                                       get_aggregates_data->first_group,
-                                       get_aggregates_data->max_groups);
-            }
-          else
-            {
-              buffer_aggregate_xml (xml, &aggregate, type,
-                                    group_column, group_column_type,
-                                    subgroup_column, subgroup_column_type,
-                                    data_columns, data_column_types,
-                                    text_columns, text_column_types,
-                                    c_sums);
-            }
-
-          if (get->filt_id && strcmp (get->filt_id, "0"))
-            {
-              if (get->filter_replacement)
-                filter = g_strdup (get->filter_replacement);
-              else
-                filter = filter_term (get->filt_id);
-              if (filter == NULL)
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("get_aggregates",
-                                    "Failed to find filter"));
-            }
-          else
-            filter = NULL;
-
-          manage_filter_controls (filter ? filter : get->filter,
-                                  &first, NULL, &sort_field, &sort_order);
-
-          if (filter || get->filter)
-            {
-              gchar *new_filter;
-              new_filter = manage_clean_filter (filter ? filter : get->filter);
-              g_free (filter);
-              if ((strcmp (type, "task") == 0)
-                  && (filter_term_value (new_filter, "apply_overrides")
-                      == NULL))
-                {
-                  filter = new_filter;
-                  new_filter = g_strdup_printf ("apply_overrides=%i %s",
-                                                APPLY_OVERRIDES_DEFAULT,
-                                                filter);
-                  g_free (filter);
-                }
-              filter = new_filter;
-            }
-          else
-            filter = manage_clean_filter ("");
-
-          type_many = g_string_new (type);
-
-          if (strcmp (type, "info") != 0)
-            g_string_append (type_many, "s");
-
-          buffer_get_filter_xml (xml, type, get, filter, NULL);
-
-          g_string_append (xml, "</get_aggregates_response>");
-
-          for (index = 0; index < data_columns->len; index++)
-            g_free (g_array_index (data_columns, gchar*, index));
-          g_array_free (data_columns, TRUE);
-          for (index = 0; index < data_column_types->len; index++)
-            g_free (g_array_index (data_column_types, gchar*, index));
-          g_array_free (data_column_types, TRUE);
-          for (index = 0; index < sort_data->len; index++)
-            sort_data_free (g_array_index (sort_data, sort_data_t*, index));
-          g_array_free (sort_data, TRUE);
-          g_array_free (c_sums, TRUE);
-
-          SEND_TO_CLIENT_OR_FAIL (xml->str);
-
-          cleanup_iterator (&aggregate);
-          g_string_free (xml, TRUE);
-          get_aggregates_data_reset (get_aggregates_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
-
-      CLOSE (CLIENT_GET_AGGREGATES, DATA_COLUMN);
-      CLOSE (CLIENT_GET_AGGREGATES, SORT);
-      CLOSE (CLIENT_GET_AGGREGATES, TEXT_COLUMN);
-
-      case CLIENT_GET_ASSETS:
-        {
-          iterator_t assets;
-          int count, first, filtered, ret;
-          int (*init_asset_iterator) (iterator_t *, const get_data_t *);
-          int (*asset_count) (const get_data_t *get);
-
-          if (acl_user_may ("get_assets") == 0)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("get_assets",
-                                  "Permission denied"));
-              get_assets_data_reset (get_assets_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-
-          if (get_assets_data->type == NULL)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-                (XML_ERROR_SYNTAX ("get_assets",
-                                   "No type specified."));
-              get_assets_data_reset (get_assets_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-
-          INIT_GET (asset, Asset);
-
-          /* Set type specific functions. */
-          if (g_strcmp0 ("host", get_assets_data->type) == 0)
-            {
-              init_asset_iterator = init_asset_host_iterator;
-              asset_count = asset_host_count;
-              get_assets_data->get.subtype = g_strdup ("host");
-            }
-          else if (g_strcmp0 ("os", get_assets_data->type) == 0)
-            {
-              init_asset_iterator = init_asset_os_iterator;
-              asset_count = asset_os_count;
-              get_assets_data->get.subtype = g_strdup ("os");
-            }
-          else
-            {
-              if (send_find_error_to_client ("get_assets", "type",
-                                             get_assets_data->type, omp_parser))
-                {
-                  error_send_to_client (error);
-                }
-              get_assets_data_reset (get_assets_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              return;
-            }
-
-          ret = init_asset_iterator (&assets, &get_assets_data->get);
-          if (ret)
-            {
-              switch (ret)
-                {
-                case 1:
-                  if (send_find_error_to_client ("get_assets", "type",
-                                                 get_assets_data->type,
-                                                 omp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  break;
-                case 2:
-                  if (send_find_error_to_client
-                      ("get_assets", "filter", get_assets_data->get.filt_id,
-                       omp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  break;
-                case -1:
-                  SEND_TO_CLIENT_OR_FAIL
-                    (XML_INTERNAL_ERROR ("get_assets"));
-                  break;
-                }
-              get_assets_data_reset (get_assets_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              return;
-            }
-
-          count = 0;
-          manage_filter_controls (get_assets_data->get.filter, &first, NULL, NULL, NULL);
-          SEND_GET_START ("asset");
-          while (next (&assets))
-            {
-              GString *result;
-              iterator_t identifiers;
-
-              /* Assets are currently always writable. */
-              if (send_get_common ("asset", &get_assets_data->get, &assets,
-                                   write_to_client, write_to_client_data,
-                                   asset_iterator_writable (&assets),
-                                   asset_iterator_in_use (&assets)))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-
-              result = g_string_new ("");
-
-              /* Information depending on type. */
-
-              if (g_strcmp0 ("host", get_assets_data->type) == 0)
-                {
-                  xml_string_append (result, "<identifiers>");
-                  init_host_identifier_iterator (&identifiers,
-                                                 get_iterator_resource (&assets),
-                                                 0, NULL);
-                  while (next (&identifiers))
-                    {
-                      const char *source_type;
-                      gchar *name;
-
-                      source_type = host_identifier_iterator_source_type
-                                     (&identifiers);
-                      if (strcmp (source_type, "User") == 0)
-                        name = user_name (host_identifier_iterator_source_id
-                                           (&identifiers));
-                      else
-                        name = NULL;
-
-                      xml_string_append (result,
-                                         "<identifier id=\"%s\">"
-                                         "<name>%s</name>"
-                                         "<value>%s</value>"
-                                         "<creation_time>%s</creation_time>"
-                                         "<modification_time>%s</modification_time>"
-                                         "<source id=\"%s\">"
-                                         "<type>%s</type>"
-                                         "<data>%s</data>"
-                                         "<deleted>%i</deleted>"
-                                         "<name>%s</name>"
-                                         "</source>",
-                                         get_iterator_uuid (&identifiers),
-                                         get_iterator_name (&identifiers),
-                                         host_identifier_iterator_value
-                                          (&identifiers),
-                                         get_iterator_creation_time (&identifiers),
-                                         get_iterator_modification_time
-                                          (&identifiers),
-                                         host_identifier_iterator_source_id
-                                          (&identifiers),
-                                         source_type,
-                                         host_identifier_iterator_source_data
-                                          (&identifiers),
-                                         host_identifier_iterator_source_orphan
-                                          (&identifiers),
-                                         name ? name : "");
-
-                      g_free (name);
-
-                      if (strcmp (get_iterator_name (&identifiers), "OS") == 0)
-                        xml_string_append (result,
-                                           "<os id=\"%s\">"
-                                           "<title>%s</title>"
-                                           "</os>",
-                                           host_identifier_iterator_os_id
-                                            (&identifiers),
-                                           host_identifier_iterator_os_title
-                                            (&identifiers));
-
-                      xml_string_append (result, "</identifier>");
-                    }
-                  cleanup_iterator (&identifiers);
-                  xml_string_append (result, "</identifiers>");
-                }
-
-              g_string_append_printf (result, "<type>%s</type>",
-                                      get_assets_data->type);
-              g_string_append_printf (result, "<%s>", get_assets_data->type);
-
-              if (g_strcmp0 ("os", get_assets_data->type) == 0)
-                {
-                  iterator_t os_hosts;
-                  const char *latest, *highest, *average;
-
-                  latest = asset_os_iterator_latest_severity (&assets);
-                  highest = asset_os_iterator_highest_severity (&assets);
-                  average = asset_os_iterator_average_severity (&assets);
-                  g_string_append_printf (result,
-                                          "<latest_severity>"
-                                          "<value>%s</value>"
-                                          "</latest_severity>"
-                                          "<highest_severity>"
-                                          "<value>%s</value>"
-                                          "</highest_severity>"
-                                          "<average_severity>"
-                                          "<value>%s</value>"
-                                          "</average_severity>",
-                                          latest ? latest : "",
-                                          highest ? highest : "",
-                                          average ? average : "");
-
-                  g_string_append_printf (result,
-                                          "<title>%s</title>"
-                                          "<installs>%i</installs>"
-                                          "<hosts>"
-                                          "%i",
-                                          asset_os_iterator_title (&assets),
-                                          asset_os_iterator_installs (&assets),
-                                          asset_os_iterator_installs (&assets));
-                  init_os_host_iterator (&os_hosts,
-                                         get_iterator_resource (&assets));
-                  while (next (&os_hosts))
-                    {
-                      const char *severity;
-                      severity = os_host_iterator_severity (&os_hosts);
-                      g_string_append_printf (result,
-                                              "<asset id=\"%s\">"
-                                              "<name>%s</name>"
-                                              "<severity>"
-                                              "<value>%s</value>"
-                                              "</severity>"
-                                              "</asset>",
-                                              get_iterator_uuid (&os_hosts),
-                                              get_iterator_name (&os_hosts),
-                                              severity ? severity : "");
-                    }
-                  cleanup_iterator (&os_hosts);
-                  g_string_append_printf (result, "</hosts>");
-                }
-              else if (g_strcmp0 ("host", get_assets_data->type) == 0)
-                {
-                  const char *severity;
-                  iterator_t details;
-
-                  severity = asset_host_iterator_severity (&assets);
-                  g_string_append_printf (result,
-                                          "<severity>"
-                                          "<value>%s</value>"
-                                          "</severity>",
-                                          severity ? severity : "");
-
-                  init_host_detail_iterator (&details,
-                                             get_iterator_resource (&assets));
-                  while (next (&details))
-                    g_string_append_printf (result,
-                                            "<detail>"
-                                            "<name>%s</name>"
-                                            "<value>%s</value>"
-                                            "<source id=\"%s\">"
-                                            "<type>%s</type>"
-                                            "</source>"
-                                            "</detail>",
-                                            host_detail_iterator_name
-                                             (&details),
-                                            host_detail_iterator_value
-                                             (&details),
-                                            host_detail_iterator_source_id
-                                             (&details),
-                                            host_detail_iterator_source_type
-                                             (&details));
-                  cleanup_iterator (&details);
-                }
-
-              g_string_append_printf (result,
-                                      "</%s>"
-                                      "</asset>",
-                                      get_assets_data->type);
-              SEND_TO_CLIENT_OR_FAIL (result->str);
-              count++;
-              g_string_free (result, TRUE);
-            }
-          cleanup_iterator (&assets);
-
-          if (get_assets_data->details == 1)
-            SEND_TO_CLIENT_OR_FAIL ("<details>1</details>");
-
-          filtered = get_assets_data->get.id
-                      ? 1
-                      : asset_count (&get_assets_data->get);
-
-          SEND_GET_END ("asset", &get_assets_data->get, count, filtered);
-
-          get_assets_data_reset (get_assets_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
+        assert (strcasecmp ("GET_SLAVES", element_name) == 0);
+        return handle_get_slaves (omp_parser, error);
 
       case CLIENT_GET_SYSTEM_REPORTS:
-        {
-          int ret;
-          report_type_iterator_t types;
-
-          assert (strcasecmp ("GET_SYSTEM_REPORTS", element_name) == 0);
-
-          ret = init_system_report_type_iterator
-                 (&types,
-                  get_system_reports_data->name,
-                  get_system_reports_data->slave_id);
-          switch (ret)
-            {
-              case 1:
-                if (send_find_error_to_client ("get_system_reports",
-                                               "system report",
-                                               get_system_reports_data->name,
-                                               omp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                break;
-              case 2:
-                if (send_find_error_to_client
-                     ("get_system_reports", "slave",
-                      get_system_reports_data->slave_id, omp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                break;
-              case 99:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("get_system_reports",
-                                    "Permission denied"));
-                break;
-              default:
-                assert (0);
-                /* fallthrough */
-              case -1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("get_system_reports"));
-                break;
-              case 0:
-              case 3:
-                {
-                  int report_ret;
-                  char *report;
-                  SEND_TO_CLIENT_OR_FAIL ("<get_system_reports_response"
-                                          " status=\"" STATUS_OK "\""
-                                          " status_text=\""
-                                          STATUS_OK_TEXT
-                                          "\">");
-                  while (next_report_type (&types))
-                    if (get_system_reports_data->brief
-                        && (ret != 3))
-                      SENDF_TO_CLIENT_OR_FAIL
-                       ("<system_report>"
-                        "<name>%s</name>"
-                        "<title>%s</title>"
-                        "</system_report>",
-                        report_type_iterator_name (&types),
-                        report_type_iterator_title (&types));
-                    else if ((report_ret = manage_system_report
-                                            (report_type_iterator_name (&types),
-                                             get_system_reports_data->duration,
-                                             get_system_reports_data->slave_id,
-                                             &report))
-                             && (report_ret != 3))
-                      {
-                        cleanup_report_type_iterator (&types);
-                        internal_error_send_to_client (error);
-                        return;
-                      }
-                    else if (report)
-                      {
-                        SENDF_TO_CLIENT_OR_FAIL
-                         ("<system_report>"
-                          "<name>%s</name>"
-                          "<title>%s</title>"
-                          "<report format=\"%s\" duration=\"%s\">"
-                          "%s"
-                          "</report>"
-                          "</system_report>",
-                          report_type_iterator_name (&types),
-                          report_type_iterator_title (&types),
-                          (ret == 3 ? "txt" : "png"),
-                          get_system_reports_data->duration
-                           ? get_system_reports_data->duration
-                           : "86400",
-                          report);
-                        free (report);
-                      }
-                  cleanup_report_type_iterator (&types);
-                  SEND_TO_CLIENT_OR_FAIL ("</get_system_reports_response>");
-                }
-            }
-
-          get_system_reports_data_reset (get_system_reports_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
+        assert (strcasecmp ("GET_SYSTEM_REPORTS", element_name) == 0);
+        return handle_get_system_reports (omp_parser, error);
 
       case CLIENT_GET_TAGS:
-        {
-          iterator_t tags;
-          int ret, count, first, filtered;
-
-          assert (strcasecmp ("GET_TAGS", element_name) == 0);
-
-          INIT_GET (tag, Tag);
-
-          if (get_tags_data->names_only)
-            ret = init_tag_name_iterator (&tags, &get_tags_data->get);
-          else
-            ret = init_tag_iterator (&tags, &get_tags_data->get);
-
-          if (ret)
-            {
-              switch (ret)
-                {
-                  case 1:
-                    if (send_find_error_to_client ("get_tags",
-                                                   "tag", get_tags_data->get.id,
-                                                   omp_parser))
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
-                    break;
-                  case 2:
-                    if (send_find_error_to_client
-                          ("get_tags", "filter", get_tags_data->get.filt_id,
-                           omp_parser))
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
-                    break;
-                  default:
-                    SEND_TO_CLIENT_OR_FAIL
-                      (XML_INTERNAL_ERROR ("get_tags"));
-                }
-              get_tags_data_reset (get_tags_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-
-          SEND_GET_START ("tag");
-          while (1)
-            {
-              ret = get_next (&tags, &get_tags_data->get, &first, &count,
-                              get_tags_data->names_only
-                               ? init_tag_name_iterator
-                               : init_tag_iterator);
-              if (ret == 1)
-                break;
-              if (ret == -1)
-                {
-                  internal_error_send_to_client (error);
-                  return;
-                }
-
-              if (get_tags_data->names_only)
-                SENDF_TO_CLIENT_OR_FAIL ("<tag>"
-                                         "<name>%s</name>"
-                                         "</tag>",
-                                         tag_name_iterator_name (&tags));
-              else
-                {
-                  gchar* value;
-
-                  value = g_markup_escape_text (tag_iterator_value (&tags), -1);
-
-                  SEND_GET_COMMON (tag, &get_tags_data->get, &tags);
-
-                  SENDF_TO_CLIENT_OR_FAIL ("<resource id=\"%s\">"
-                                           "<type>%s</type>"
-                                           "<name>%s</name>"
-                                           "<trash>%d</trash>",
-                                           tag_iterator_resource_uuid (&tags),
-                                           tag_iterator_resource_type (&tags),
-                                           tag_iterator_resource_name (&tags),
-                                           tag_iterator_resource_location
-                                            (&tags));
-
-                  if (tag_iterator_resource_readable (&tags) == 0)
-                    SENDF_TO_CLIENT_OR_FAIL ("<permissions/>");
-
-
-                  SENDF_TO_CLIENT_OR_FAIL ("</resource>"
-                                           "<value>%s</value>"
-                                           "<active>%d</active>"
-                                           "<orphan>%d</orphan>"
-                                           "</tag>",
-                                           value,
-                                           tag_iterator_active (&tags),
-                                           tag_iterator_orphan (&tags));
-                  g_free (value);
-                }
-              count++;
-            }
-          cleanup_iterator (&tags);
-          filtered = get_tags_data->get.id
-                      ? 1
-                      : tag_count (&get_tags_data->get);
-          SEND_GET_END ("tag", &get_tags_data->get, count, filtered);
-
-          get_tags_data_reset (get_tags_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
+        assert (strcasecmp ("GET_TAGS", element_name) == 0);
+        return handle_get_tags (omp_parser, error);
 
       case CLIENT_GET_TARGETS:
-        {
-          assert (strcasecmp ("GET_TARGETS", element_name) == 0);
-
-          if (get_targets_data->tasks && get_targets_data->get.trash)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_target",
-                                "GET_TARGETS tasks given with trash"));
-          else
-            {
-              iterator_t targets;
-              int count, filtered, ret, first;
-
-              INIT_GET (target, Target);
-
-              ret = init_target_iterator (&targets, &get_targets_data->get);
-              if (ret)
-                {
-                  switch (ret)
-                    {
-                      case 1:
-                        if (send_find_error_to_client ("get_targets",
-                                                       "target",
-                                                       get_targets_data->get.id,
-                                                       omp_parser))
-                          {
-                            error_send_to_client (error);
-                            return;
-                          }
-                        break;
-                      case 2:
-                        if (send_find_error_to_client
-                             ("get_targets", "filter",
-                              get_targets_data->get.filt_id, omp_parser))
-                          {
-                            error_send_to_client (error);
-                            return;
-                          }
-                        break;
-                      case -1:
-                        SEND_TO_CLIENT_OR_FAIL
-                         (XML_INTERNAL_ERROR ("get_targets"));
-                        break;
-                    }
-                  get_targets_data_reset (get_targets_data);
-                  set_client_state (CLIENT_AUTHENTIC);
-                  break;
-                }
-
-              SEND_GET_START ("target");
-              while (1)
-                {
-                  char *ssh_name, *ssh_uuid, *smb_name, *smb_uuid;
-                  char *esxi_name, *esxi_uuid, *snmp_name, *snmp_uuid;
-                  const char *port_list_uuid, *port_list_name, *ssh_port;
-                  const char *hosts, *exclude_hosts, *reverse_lookup_only;
-                  const char *reverse_lookup_unify;
-                  credential_t ssh_credential, smb_credential;
-                  credential_t esxi_credential, snmp_credential;
-                  int port_list_trash, max_hosts, port_list_available;
-                  int ssh_credential_available;
-                  int smb_credential_available;
-                  int esxi_credential_available;
-                  int snmp_credential_available;
-
-                  ret = get_next (&targets, &get_targets_data->get, &first,
-                                  &count, init_target_iterator);
-                  if (ret == 1)
-                    break;
-                  if (ret == -1)
-                    {
-                      internal_error_send_to_client (error);
-                      return;
-                    }
-
-                  ssh_credential = target_iterator_ssh_credential (&targets);
-                  smb_credential = target_iterator_smb_credential (&targets);
-                  esxi_credential = target_iterator_esxi_credential (&targets);
-                  snmp_credential = target_iterator_snmp_credential (&targets);
-                  ssh_credential_available = 1;
-                  if (get_targets_data->get.trash
-                      && target_iterator_ssh_trash (&targets))
-                    {
-                      ssh_name = trash_credential_name (ssh_credential);
-                      ssh_uuid = trash_credential_uuid (ssh_credential);
-                      ssh_credential_available
-                       = trash_credential_readable (ssh_credential);
-                    }
-                  else if (ssh_credential)
-                    {
-                      credential_t found;
-
-                      ssh_name = credential_name (ssh_credential);
-                      ssh_uuid = credential_uuid (ssh_credential);
-                      if (find_credential_with_permission
-                           (ssh_uuid,
-                            &found,
-                            "get_credentials"))
-                        abort ();
-                      ssh_credential_available = (found > 0);
-                    }
-                  else
-                    {
-                      ssh_name = NULL;
-                      ssh_uuid = NULL;
-                    }
-                  smb_credential_available = 1;
-                  if (get_targets_data->get.trash
-                      && target_iterator_smb_trash (&targets))
-                    {
-                      smb_name = trash_credential_name (smb_credential);
-                      smb_uuid = trash_credential_uuid (smb_credential);
-                      smb_credential_available
-                       = trash_credential_readable (smb_credential);
-                    }
-                  else if (smb_credential)
-                    {
-                      credential_t found;
-
-                      smb_name = credential_name (smb_credential);
-                      smb_uuid = credential_uuid (smb_credential);
-                      if (find_credential_with_permission
-                           (smb_uuid,
-                            &found,
-                            "get_credentials"))
-                        abort ();
-                      smb_credential_available = (found > 0);
-                    }
-                  else
-                    {
-                      smb_name = NULL;
-                      smb_uuid = NULL;
-                    }
-                  esxi_credential_available = 1;
-                  if (get_targets_data->get.trash
-                      && target_iterator_esxi_trash (&targets))
-                    {
-                      esxi_name
-                       = trash_credential_name (esxi_credential);
-                      esxi_uuid
-                       = trash_credential_uuid (esxi_credential);
-                      esxi_credential_available
-                       = trash_credential_readable (esxi_credential);
-                    }
-                  else if (esxi_credential)
-                    {
-                      credential_t found;
-
-                      esxi_name = credential_name (esxi_credential);
-                      esxi_uuid = credential_uuid (esxi_credential);
-                      if (find_credential_with_permission
-                           (esxi_uuid,
-                            &found,
-                            "get_credentials"))
-                        abort ();
-                      esxi_credential_available = (found > 0);
-                    }
-                  else
-                    {
-                      esxi_name = NULL;
-                      esxi_uuid = NULL;
-                    }
-                  snmp_credential_available = 1;
-                  if (get_targets_data->get.trash
-                      && target_iterator_snmp_trash (&targets))
-                    {
-                      snmp_name
-                       = trash_credential_name (snmp_credential);
-                      snmp_uuid
-                       = trash_credential_uuid (snmp_credential);
-                      snmp_credential_available
-                       = trash_credential_readable (snmp_credential);
-                    }
-                  else if (snmp_credential)
-                    {
-                      credential_t found;
-
-                      snmp_name = credential_name (snmp_credential);
-                      snmp_uuid = credential_uuid (snmp_credential);
-                      if (find_credential_with_permission
-                           (snmp_uuid,
-                            &found,
-                            "get_credentials"))
-                        abort ();
-                      snmp_credential_available = (found > 0);
-                    }
-                  else
-                    {
-                      snmp_name = NULL;
-                      snmp_uuid = NULL;
-                    }
-                  port_list_uuid = target_iterator_port_list_uuid (&targets);
-                  port_list_name = target_iterator_port_list_name (&targets);
-                  port_list_trash = target_iterator_port_list_trash (&targets);
-                  ssh_port = target_iterator_ssh_port (&targets);
-
-                  port_list_available = 1;
-                  if (port_list_trash)
-                    port_list_available = trash_port_list_readable_uuid
-                                           (port_list_uuid);
-                  else if (port_list_uuid)
-                    {
-                      port_list_t found;
-                      if (find_port_list_with_permission (port_list_uuid,
-                                                          &found,
-                                                          "get_port_lists"))
-                        abort ();
-                      port_list_available = (found > 0);
-                    }
-
-                  SEND_GET_COMMON (target, &get_targets_data->get, &targets);
-
-                  hosts = target_iterator_hosts (&targets);
-                  exclude_hosts = target_iterator_exclude_hosts (&targets);
-                  max_hosts = manage_count_hosts (hosts, exclude_hosts);
-                  reverse_lookup_only = target_iterator_reverse_lookup_only
-                                         (&targets);
-                  reverse_lookup_unify = target_iterator_reverse_lookup_unify
-                                         (&targets);
-
-                  SENDF_TO_CLIENT_OR_FAIL ("<hosts>%s</hosts>"
-                                           "<exclude_hosts>%s</exclude_hosts>"
-                                           "<max_hosts>%i</max_hosts>"
-                                           "<port_list id=\"%s\">"
-                                           "<name>%s</name>"
-                                           "<trash>%i</trash>",
-                                           hosts,
-                                           exclude_hosts ? exclude_hosts : "",
-                                           max_hosts,
-                                           port_list_uuid ? port_list_uuid : "",
-                                           port_list_name ? port_list_name : "",
-                                           port_list_trash);
-
-                  if (port_list_available == 0)
-                    SEND_TO_CLIENT_OR_FAIL ("<permissions/>");
-
-                  SENDF_TO_CLIENT_OR_FAIL ("</port_list>"
-                                           "<ssh_credential id=\"%s\">"
-                                           "<name>%s</name>"
-                                           "<port>%s</port>"
-                                           "<trash>%i</trash>",
-                                           ssh_uuid ? ssh_uuid : "",
-                                           ssh_name ? ssh_name : "",
-                                           ssh_port ? ssh_port : "",
-                                           (get_targets_data->get.trash
-                                             && target_iterator_ssh_trash
-                                                 (&targets)));
-
-                  if (ssh_credential_available == 0)
-                    SEND_TO_CLIENT_OR_FAIL ("<permissions/>");
-
-                  SENDF_TO_CLIENT_OR_FAIL ("</ssh_credential>"
-                                           "<smb_credential id=\"%s\">"
-                                           "<name>%s</name>"
-                                           "<trash>%i</trash>",
-                                           smb_uuid ? smb_uuid : "",
-                                           smb_name ? smb_name : "",
-                                           (get_targets_data->get.trash
-                                             && target_iterator_smb_trash
-                                                 (&targets)));
-
-                  if (smb_credential_available == 0)
-                    SEND_TO_CLIENT_OR_FAIL ("<permissions/>");
-
-                  SENDF_TO_CLIENT_OR_FAIL ("</smb_credential>"
-                                           "<esxi_credential id=\"%s\">"
-                                           "<name>%s</name>"
-                                           "<trash>%i</trash>",
-                                           esxi_uuid ? esxi_uuid : "",
-                                           esxi_name ? esxi_name : "",
-                                           (get_targets_data->get.trash
-                                             && target_iterator_esxi_trash
-                                                 (&targets)));
-
-                  if (esxi_credential_available == 0)
-                    SEND_TO_CLIENT_OR_FAIL ("<permissions/>");
-
-                  SENDF_TO_CLIENT_OR_FAIL ("</esxi_credential>"
-                                           "<snmp_credential id=\"%s\">"
-                                           "<name>%s</name>"
-                                           "<trash>%i</trash>",
-                                           snmp_uuid ? snmp_uuid : "",
-                                           snmp_name ? snmp_name : "",
-                                           (get_targets_data->get.trash
-                                             && target_iterator_snmp_trash
-                                                 (&targets)));
-
-                  if (snmp_credential_available == 0)
-                    SEND_TO_CLIENT_OR_FAIL ("<permissions/>");
-
-                  SENDF_TO_CLIENT_OR_FAIL ("</snmp_credential>"
-                                           "<reverse_lookup_only>"
-                                           "%s"
-                                           "</reverse_lookup_only>"
-                                           "<reverse_lookup_unify>"
-                                           "%s"
-                                           "</reverse_lookup_unify>"
-                                           "<alive_tests>%s</alive_tests>",
-                                           reverse_lookup_only,
-                                           reverse_lookup_unify,
-                                           target_iterator_alive_tests
-                                            (&targets));
-
-                  if (get_targets_data->get.details)
-                    SENDF_TO_CLIENT_OR_FAIL ("<port_range>%s</port_range>",
-                                             target_port_range
-                                              (get_iterator_resource
-                                                (&targets)));
-
-                  if (get_targets_data->tasks)
-                    {
-                      iterator_t tasks;
-
-                      SEND_TO_CLIENT_OR_FAIL ("<tasks>");
-                      init_target_task_iterator (&tasks,
-                                                 get_iterator_resource
-                                                  (&targets));
-                      while (next (&tasks))
-                        {
-                          if ((get_iterator_owner (&targets) == 0)
-                              && target_task_iterator_readable (&tasks) == 0)
-                            /* Skip other users' tasks for global targets. */
-                            continue;
-
-                          SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
-                                                   "<name>%s</name>",
-                                                   target_task_iterator_uuid (&tasks),
-                                                   target_task_iterator_name (&tasks));
-                          if (target_task_iterator_readable (&tasks))
-                            SEND_TO_CLIENT_OR_FAIL ("</task>");
-                          else
-                            SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
-                                                    "</task>");
-                        }
-                      cleanup_iterator (&tasks);
-                      SEND_TO_CLIENT_OR_FAIL ("</tasks>");
-                    }
-
-                  SEND_TO_CLIENT_OR_FAIL ("</target>");
-                  count++;
-                  free (ssh_name);
-                  free (ssh_uuid);
-                  free (smb_name);
-                  free (smb_uuid);
-                  free (esxi_name);
-                  free (esxi_uuid);
-                }
-              cleanup_iterator (&targets);
-              filtered = get_targets_data->get.id
-                          ? 1
-                          : target_count (&get_targets_data->get);
-              SEND_GET_END ("target", &get_targets_data->get, count, filtered);
-            }
-          get_targets_data_reset (get_targets_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
+        assert (strcasecmp ("GET_TARGETS", element_name) == 0);
+        return handle_get_targets (omp_parser, error);
 
       case CLIENT_GET_TASKS:
-        {
-          iterator_t tasks;
-          int count, filtered, ret, first, apply_overrides, min_qod;
-          get_data_t * get;
-          gchar *overrides, *min_qod_str, *filter, *clean_filter;
-
-          assert (strcasecmp ("GET_TASKS", element_name) == 0);
-
-          if (get_tasks_data->get.details && get_tasks_data->get.trash)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("get_task",
-                                  "GET_TASKS details given with trash"));
-              get_tasks_data_reset (get_tasks_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-
-          INIT_GET (task, Task);
-
-          get_tasks_data->get.minimal = get_tasks_data->schedules_only;
-          ret = init_task_iterator (&tasks, &get_tasks_data->get);
-          if (ret)
-            {
-              switch (ret)
-                {
-                  case 1:
-                    if (send_find_error_to_client ("get_tasks",
-                                                   "task",
-                                                   get_tasks_data->get.id,
-                                                   omp_parser))
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
-                    break;
-                  case 2:
-                    if (send_find_error_to_client
-                         ("get_tasks", "task", get_tasks_data->get.filt_id,
-                          omp_parser))
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
-                    break;
-                  case -1:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("get_tasks"));
-                    break;
-                }
-              get_tasks_data_reset (get_tasks_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-
-          SEND_GET_START ("task");
-
-          get = &get_tasks_data->get;
-          if (get->filt_id && strcmp (get->filt_id, "0"))
-            {
-              filter = filter_term (get->filt_id);
-              if (filter == NULL)
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else
-            filter = NULL;
-          clean_filter = manage_clean_filter (filter ? filter : get->filter);
-          overrides = filter_term_value (clean_filter, "apply_overrides");
-          min_qod_str = filter_term_value (clean_filter, "min_qod");
-          g_free (clean_filter);
-          apply_overrides = overrides
-                             ? strcmp (overrides, "0")
-                             : APPLY_OVERRIDES_DEFAULT;
-          g_free (overrides);
-          if (min_qod_str == NULL
-              || sscanf (min_qod_str, "%d", &min_qod) != 1)
-            min_qod = MIN_QOD_DEFAULT;
-          SENDF_TO_CLIENT_OR_FAIL ("<apply_overrides>%i</apply_overrides>",
-                                   apply_overrides);
-
-          while (1)
-            {
-              task_t index;
-              gchar *progress_xml;
-              target_t target;
-              slave_t slave;
-              scanner_t scanner;
-              const char *first_report_id, *last_report_id;
-              char *config_name, *config_uuid;
-              char *task_target_uuid, *task_target_name;
-              char *task_slave_uuid, *task_slave_name;
-              char *task_schedule_uuid, *task_schedule_name;
-              char *task_scanner_uuid, *task_scanner_name;
-              gchar *first_report, *last_report;
-              gchar *second_last_report_id, *second_last_report;
-              gchar *current_report;
-              report_t running_report;
-              schedule_t schedule;
-              time_t next_time;
-              char *owner, *observers;
-              int target_in_trash, schedule_in_trash, scanner_in_trash;
-              int debugs, holes = 0, infos = 0, logs, warnings = 0;
-              int holes_2 = 0, infos_2 = 0, warnings_2 = 0;
-              int false_positives, task_scanner_type, slave_available;
-              int schedule_available, target_available, config_available;
-              int scanner_available;
-              double severity = 0, severity_2 = 0;
-              gchar *response;
-              iterator_t alerts, groups, roles;
-              gchar *in_assets, *max_checks, *max_hosts, *source_iface;
-              gchar *auto_delete, *auto_delete_data, *assets_apply_overrides;
-              gchar *assets_min_qod;
-
-              ret = get_next (&tasks, &get_tasks_data->get, &first, &count,
-                              init_task_iterator);
-              if (ret == 1)
-                break;
-              if (ret == -1)
-                {
-                  internal_error_send_to_client (error);
-                  return;
-                }
-
-              index = get_iterator_resource (&tasks);
-              target = task_target (index);
-              slave = task_slave (index);
-
-              if (get_tasks_data->schedules_only)
-                {
-                  SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
-                                           "<name>%s</name>",
-                                           get_iterator_uuid (&tasks),
-                                           get_iterator_name (&tasks));
-
-                  schedule_available = 1;
-                  schedule = task_schedule (index);
-                  if (schedule)
-                    {
-                      schedule_in_trash = task_schedule_in_trash (index);
-                      if (schedule_in_trash)
-                        {
-                          task_schedule_uuid = schedule_uuid (schedule);
-                          task_schedule_name = schedule_name (schedule);
-                          schedule_available
-                            = trash_schedule_readable (schedule);
-                        }
-                      else
-                        {
-                          schedule_t found;
-                          task_schedule_uuid = schedule_uuid (schedule);
-                          task_schedule_name = schedule_name (schedule);
-                          if (find_schedule_with_permission (task_schedule_uuid,
-                                                            &found,
-                                                            "get_schedules"))
-                            g_error ("%s: GET_TASKS: error finding"
-                                     " task schedule, aborting",
-                                     __FUNCTION__);
-                          schedule_available = (found > 0);
-                        }
-                    }
-                  else
-                    {
-                      task_schedule_uuid = (char*) g_strdup ("");
-                      task_schedule_name = (char*) g_strdup ("");
-                      schedule_in_trash = 0;
-                    }
-
-                  if (schedule_available && schedule)
-                    {
-                      iterator_t schedule_iterator;
-                      time_t first_time, next_time;
-                      int period, period_months, duration;
-
-                      init_iterator (&schedule_iterator,
-                                     "SELECT"
-                                     " first_time,"
-                                     " next_time (first_time, period,"
-                                     "            period_months),"
-                                     " period, period_months, duration"
-                                     " FROM schedules"
-                                     " WHERE id = %llu",
-                                     schedule);
-
-                      next (&schedule_iterator);
-
-                      first_time = iterator_int (&schedule_iterator, 0);
-                      next_time = iterator_int (&schedule_iterator, 1);
-                      period = iterator_int (&schedule_iterator, 2);
-                      period_months = iterator_int (&schedule_iterator, 3);
-                      duration = iterator_int (&schedule_iterator, 4);
-
-                      SENDF_TO_CLIENT_OR_FAIL ("<schedule id=\"%s\">"
-                                               "<name>%s</name>"
-                                               "<next_time>%s</next_time>"
-                                               "<trash>%d</trash>"
-                                               "<first_time>%s</first_time>"
-                                               "<period>%d</period>"
-                                               "<period_months>"
-                                               "%d"
-                                               "</period_months>"
-                                               "<duration>%d</duration>"
-                                               "</schedule>"
-                                               "<schedule_periods>"
-                                               "%d"
-                                               "</schedule_periods>",
-                                               task_schedule_uuid,
-                                               task_schedule_name,
-                                               next_time
-                                                ? iso_time (&next_time)
-                                                : "over",
-                                               schedule_in_trash,
-                                               first_time
-                                                ? iso_time (&first_time)
-                                                : "",
-                                               period,
-                                               period_months,
-                                               duration,
-                                               task_schedule_periods (index));
-
-                      cleanup_iterator (&schedule_iterator);
-                    }
-                  else
-                    {
-                      next_time = task_schedule_next_time_tz (index);
-
-                      SENDF_TO_CLIENT_OR_FAIL ("<schedule id=\"%s\">"
-                                               "<name>%s</name>"
-                                               "<next_time>%s</next_time>"
-                                               "<trash>%d</trash>"
-                                               "</schedule>",
-                                               task_schedule_uuid,
-                                               task_schedule_name,
-                                               next_time
-                                                ? iso_time (&next_time)
-                                                : "over",
-                                               schedule_in_trash);
-                    }
-
-                  SENDF_TO_CLIENT_OR_FAIL ("</task>");
-
-                }
-              else
-                {
-                  SEND_GET_COMMON (task, &get_tasks_data->get, &tasks);
-                  target_in_trash = task_target_in_trash (index);
-                  if ((target == 0)
-                      && (task_iterator_run_status (&tasks)
-                          == TASK_STATUS_RUNNING))
-                    {
-                      progress_xml = g_strdup_printf
-                                      ("%i",
-                                      task_upload_progress (index));
-                      running_report = 0;
-                    }
-                  else
-                    {
-                      int progress;
-                      gchar *host_xml;
-
-                      running_report = task_iterator_current_report (&tasks);
-                      progress
-                        = report_progress (running_report, index, &host_xml);
-                      progress_xml
-                        = g_strdup_printf ("%i%s", progress, host_xml);
-                      g_free (host_xml);
-                    }
-
-                  if (running_report)
-                    {
-                      gchar *timestamp;
-                      char *scan_end, *current_report_id;
-
-                      current_report_id = report_uuid (running_report);
-
-                      if (report_timestamp (current_report_id, &timestamp))
-                        g_error ("%s: GET_TASKS: error getting timestamp"
-                                 " of report, aborting",
-                                 __FUNCTION__);
-
-                      scan_end = scan_end_time_uuid (current_report_id),
-
-                      current_report = g_strdup_printf ("<current_report>"
-                                                        "<report id=\"%s\">"
-                                                        "<timestamp>"
-                                                        "%s"
-                                                        "</timestamp>"
-                                                        "<scan_end>"
-                                                        "%s"
-                                                        "</scan_end>"
-                                                        "</report>"
-                                                        "</current_report>",
-                                                        current_report_id,
-                                                        timestamp,
-                                                        scan_end);
-                      free (current_report_id);
-                      free (scan_end);
-                      g_free (timestamp);
-                    }
-                  else
-                    current_report = g_strdup ("");
-
-                  first_report_id = task_iterator_first_report (&tasks);
-                  if (first_report_id)
-                    {
-                      gchar *timestamp;
-                      char *scan_end;
-
-                      // TODO Could skip this count for tasks page.
-                      if (report_counts (first_report_id,
-                                         &debugs, &holes_2, &infos_2, &logs,
-                                         &warnings_2, &false_positives,
-                                         &severity_2, apply_overrides,
-                                         0, min_qod))
-                        g_error ("%s: GET_TASKS: error getting counts for"
-                                 " first report, aborting",
-                                 __FUNCTION__);
-
-                      if (report_timestamp (first_report_id, &timestamp))
-                        g_error ("%s: GET_TASKS: failed to get timestamp of"
-                                 " first report, aborting",
-                                 __FUNCTION__);
-
-                      scan_end = scan_end_time_uuid (first_report_id),
-
-                      first_report = g_strdup_printf ("<first_report>"
-                                                      "<report id=\"%s\">"
-                                                      "<timestamp>"
-                                                      "%s"
-                                                      "</timestamp>"
-                                                      "<scan_end>%s</scan_end>"
-                                                      "<result_count>"
-                                                      "<debug>%i</debug>"
-                                                      "<hole>%i</hole>"
-                                                      "<info>%i</info>"
-                                                      "<log>%i</log>"
-                                                      "<warning>%i</warning>"
-                                                      "<false_positive>"
-                                                      "%i"
-                                                      "</false_positive>"
-                                                      "</result_count>"
-                                                      "<severity>"
-                                                      "%1.1f"
-                                                      "</severity>"
-                                                      "</report>"
-                                                      "</first_report>",
-                                                      first_report_id,
-                                                      timestamp,
-                                                      scan_end,
-                                                      debugs,
-                                                      holes_2,
-                                                      infos_2,
-                                                      logs,
-                                                      warnings_2,
-                                                      false_positives,
-                                                      severity_2);
-                      free (scan_end);
-                      g_free (timestamp);
-                    }
-                  else
-                    first_report = g_strdup ("");
-
-                  second_last_report_id = task_second_last_report_id (index);
-                  if (second_last_report_id)
-                    {
-                      gchar *timestamp;
-                      char *scan_end;
-
-                      /* If the first report is the second last report then skip
-                       * doing the count again. */
-                      if (((first_report_id == NULL)
-                          || (strcmp (second_last_report_id, first_report_id)))
-                          && report_counts (second_last_report_id,
-                                            &debugs, &holes_2, &infos_2,
-                                            &logs, &warnings_2,
-                                            &false_positives, &severity_2,
-                                            apply_overrides,
-                                            0, min_qod))
-                        g_error ("%s: GET_TASKS: error getting counts for"
-                                 " second report, aborting",
-                                 __FUNCTION__);
-
-                      if (report_timestamp (second_last_report_id, &timestamp))
-                        g_error ("%s: GET_TASKS: error getting timestamp of"
-                                 " second report, aborting",
-                                 __FUNCTION__);
-
-                      scan_end = scan_end_time_uuid (second_last_report_id),
-
-                      second_last_report = g_strdup_printf
-                                            ("<second_last_report>"
-                                             "<report id=\"%s\">"
-                                             "<timestamp>%s</timestamp>"
-                                             "<scan_end>%s</scan_end>"
-                                             "<result_count>"
-                                             "<debug>%i</debug>"
-                                             "<hole>%i</hole>"
-                                             "<info>%i</info>"
-                                             "<log>%i</log>"
-                                             "<warning>%i</warning>"
-                                             "<false_positive>"
-                                             "%i"
-                                             "</false_positive>"
-                                             "</result_count>"
-                                             "<severity>%1.1f</severity>"
-                                             "</report>"
-                                             "</second_last_report>",
-                                             second_last_report_id,
-                                             timestamp,
-                                             scan_end,
-                                             debugs,
-                                             holes_2,
-                                             infos_2,
-                                             logs,
-                                             warnings_2,
-                                             false_positives,
-                                             severity_2);
-                      free (scan_end);
-                      g_free (timestamp);
-                    }
-                  else
-                    second_last_report = g_strdup ("");
-
-                  last_report_id = task_iterator_last_report (&tasks);
-                  if (last_report_id)
-                    {
-                      gchar *timestamp;
-                      char *scan_end;
-
-                      /* If the last report is the first report or the second
-                       * last report, then reuse the counts from before. */
-                      if ((first_report_id == NULL)
-                          || (second_last_report_id == NULL)
-                          || (strcmp (last_report_id, first_report_id)
-                              && strcmp (last_report_id,
-                                        second_last_report_id)))
-                        {
-                          if (report_counts
-                              (last_report_id,
-                                &debugs, &holes, &infos, &logs,
-                                &warnings, &false_positives, &severity,
-                                apply_overrides,
-                                0, min_qod))
-                            g_error ("%s: GET_TASKS: error getting counts for"
-                                     " last report, aborting",
-                                     __FUNCTION__);
-                        }
-                      else
-                        {
-                          holes = holes_2;
-                          infos = infos_2;
-                          warnings = warnings_2;
-                          severity = severity_2;
-                        }
-
-                      if (report_timestamp (last_report_id, &timestamp))
-                        g_error ("%s: GET_TASKS: error getting timestamp for"
-                                 " last report, aborting",
-                                 __FUNCTION__);
-
-                      scan_end = scan_end_time_uuid (last_report_id);
-
-                      last_report = g_strdup_printf ("<last_report>"
-                                                     "<report id=\"%s\">"
-                                                     "<timestamp>%s</timestamp>"
-                                                     "<scan_end>%s</scan_end>"
-                                                     "<result_count>"
-                                                     "<debug>%i</debug>"
-                                                     "<hole>%i</hole>"
-                                                     "<info>%i</info>"
-                                                     "<log>%i</log>"
-                                                     "<warning>%i</warning>"
-                                                     "<false_positive>"
-                                                     "%i"
-                                                     "</false_positive>"
-                                                     "</result_count>"
-                                                     "<severity>"
-                                                     "%1.1f"
-                                                     "</severity>"
-                                                     "</report>"
-                                                     "</last_report>",
-                                                     last_report_id,
-                                                     timestamp,
-                                                     scan_end,
-                                                     debugs,
-                                                     holes,
-                                                     infos,
-                                                     logs,
-                                                     warnings,
-                                                     false_positives,
-                                                     severity);
-                      free (scan_end);
-                      g_free (timestamp);
-                    }
-                  else
-                    last_report = g_strdup ("");
-
-                  g_free (second_last_report_id);
-
-                  owner = task_owner_name (index);
-                  observers = task_observers (index);
-                  config_name = task_config_name (index);
-                  config_uuid = task_config_uuid (index);
-                  target_available = 1;
-                  if (target_in_trash)
-                    {
-                      task_target_uuid = trash_target_uuid (target);
-                      task_target_name = trash_target_name (target);
-                      target_available = trash_target_readable (target);
-                    }
-                  else if (target)
-                    {
-                      target_t found;
-                      task_target_uuid = target_uuid (target);
-                      task_target_name = target_name (target);
-                      if (find_target_with_permission (task_target_uuid,
-                                                       &found,
-                                                       "get_targets"))
-                        g_error ("%s: GET_TASKS: error finding task target,"
-                                 " aborting",
-                                 __FUNCTION__);
-                      target_available = (found > 0);
-                    }
-                  else
-                    {
-                      task_target_uuid = NULL;
-                      task_target_name = NULL;
-                    }
-                  config_available = 1;
-                  if (task_config_in_trash (index))
-                    config_available = trash_config_readable_uuid (config_uuid);
-                  else if (config_uuid)
-                    {
-                      config_t found;
-                      if (find_config_with_permission (config_uuid,
-                                                      &found,
-                                                      "get_configs"))
-                        g_error ("%s: GET_TASKS: error finding task config,"
-                                 " aborting",
-                                 __FUNCTION__);
-                      config_available = (found > 0);
-                    }
-                  slave_available = 1;
-                  if (task_slave_in_trash (index))
-                    {
-                      task_slave_uuid = trash_slave_uuid (slave);
-                      task_slave_name = trash_slave_name (slave);
-                      slave_available = trash_slave_readable (slave);
-                    }
-                  else if (slave)
-                    {
-                      slave_t found;
-                      task_slave_uuid = slave_uuid (slave);
-                      task_slave_name = slave_name (slave);
-                      if (find_slave_with_permission (task_slave_uuid,
-                                                      &found,
-                                                      "get_slaves"))
-                        g_error ("%s: GET_TASKS: error finding task slave,"
-                                 " aborting",
-                                 __FUNCTION__);
-
-                      slave_available = (found > 0);
-                    }
-                  else
-                    {
-                      task_slave_uuid = g_strdup ("");
-                      task_slave_name = g_strdup ("");
-                    }
-                  schedule_available = 1;
-                  schedule = task_schedule (index);
-                  if (schedule)
-                    {
-                      schedule_in_trash = task_schedule_in_trash (index);
-                      if (schedule_in_trash)
-                        {
-                          task_schedule_uuid = schedule_uuid (schedule);
-                          task_schedule_name = schedule_name (schedule);
-                          schedule_available = trash_schedule_readable (schedule);
-                        }
-                      else
-                        {
-                          schedule_t found;
-                          task_schedule_uuid = schedule_uuid (schedule);
-                          task_schedule_name = schedule_name (schedule);
-                          if (find_schedule_with_permission (task_schedule_uuid,
-                                                            &found,
-                                                            "get_schedules"))
-                            g_error ("%s: GET_TASKS: error finding"
-                                     " task schedule, aborting",
-                                     __FUNCTION__);
-                          schedule_available = (found > 0);
-                        }
-                    }
-                  else
-                    {
-                      task_schedule_uuid = (char*) g_strdup ("");
-                      task_schedule_name = (char*) g_strdup ("");
-                      schedule_in_trash = 0;
-                    }
-                  scanner_available = 1;
-                  scanner = task_iterator_scanner (&tasks);
-                  if (scanner)
-                    {
-                      scanner_in_trash = task_scanner_in_trash (index);
-
-                      task_scanner_uuid = scanner_uuid (scanner);
-                      task_scanner_name = scanner_name (scanner);
-                      task_scanner_type = scanner_type (scanner);
-                      if (scanner_in_trash)
-                        scanner_available = trash_scanner_readable (scanner);
-                      else
-                        {
-                          scanner_t found;
-
-                          if (find_scanner_with_permission
-                              (task_scanner_uuid, &found, "get_scanners"))
-                            g_error ("%s: GET_TASKS: error finding"
-                                     " task scanner, aborting",
-                                     __FUNCTION__);
-                          scanner_available = (found > 0);
-                        }
-                    }
-                  else
-                    {
-                      /* Container tasks have no associated scanner. */
-                      task_scanner_uuid = g_strdup ("");
-                      task_scanner_name = g_strdup ("");
-                      task_scanner_type = 0;
-                      scanner_in_trash = 0;
-                    }
-                  next_time = task_schedule_next_time_tz (index);
-                  response = g_strdup_printf
-                              ("<alterable>%i</alterable>"
-                               "<config id=\"%s\">"
-                               "<name>%s</name>"
-                               "<type>%i</type>"
-                               "<trash>%i</trash>"
-                               "%s"
-                               "</config>"
-                               "<target id=\"%s\">"
-                               "<name>%s</name>"
-                               "<trash>%i</trash>"
-                               "%s"
-                               "</target>"
-                               "<hosts_ordering>%s</hosts_ordering>"
-                               "<scanner id='%s'>"
-                               "<name>%s</name>"
-                               "<type>%d</type>"
-                               "<trash>%i</trash>"
-                               "%s"
-                               "</scanner>"
-                               "<slave id=\"%s\">"
-                               "<name>%s</name>"
-                               "<trash>%i</trash>"
-                               "%s"
-                               "</slave>"
-                               "<status>%s</status>"
-                               "<progress>%s</progress>"
-                               "<report_count>"
-                               "%u<finished>%u</finished>"
-                               "</report_count>"
-                               "<trend>%s</trend>"
-                               "<schedule id=\"%s\">"
-                               "<name>%s</name>"
-                               "<next_time>%s</next_time>"
-                               "<trash>%i</trash>"
-                               "%s"
-                               "</schedule>"
-                               "<schedule_periods>%i</schedule_periods>"
-                               "%s%s%s%s",
-                               get_tasks_data->get.trash
-                                ? 0
-                                : task_alterable (index),
-                               config_uuid ?: "",
-                               config_name ?: "",
-                               config_type (task_config (index)),
-                               task_config_in_trash (index),
-                               config_available ? "" : "<permissions/>",
-                               task_target_uuid ?: "",
-                               task_target_name ?: "",
-                               target_in_trash,
-                               target_available ? "" : "<permissions/>",
-                               task_iterator_hosts_ordering (&tasks),
-                               task_scanner_uuid,
-                               task_scanner_name,
-                               task_scanner_type,
-                               scanner_in_trash,
-                               scanner_available ? "" : "<permissions/>",
-                               task_slave_uuid ?: "",
-                               task_slave_name ?: "",
-                               task_slave_in_trash (index),
-                               slave_available ? "" : "<permissions/>",
-                               task_iterator_run_status_name (&tasks),
-                               progress_xml,
-                               task_iterator_total_reports (&tasks),
-                               task_iterator_finished_reports (&tasks),
-                               task_iterator_trend_counts
-                                (&tasks, holes, warnings, infos, severity,
-                                 holes_2, warnings_2, infos_2, severity_2),
-                               task_schedule_uuid,
-                               task_schedule_name,
-                               (next_time == 0
-                                ? "over"
-                                : iso_time (&next_time)),
-                               schedule_in_trash,
-                               schedule_available ? "" : "<permissions/>",
-                               task_schedule_periods (index),
-                               current_report,
-                               first_report,
-                               last_report,
-                               second_last_report);
-                  g_free (config_name);
-                  g_free (config_uuid);
-                  free (task_target_name);
-                  free (task_target_uuid);
-                  g_free (progress_xml);
-                  g_free (current_report);
-                  g_free (first_report);
-                  g_free (last_report);
-                  g_free (second_last_report);
-                  g_free (task_schedule_uuid);
-                  g_free (task_schedule_name);
-                  g_free (task_scanner_uuid);
-                  g_free (task_scanner_name);
-                  free (task_slave_uuid);
-                  free (task_slave_name);
-                  if (send_to_client (response,
-                                      write_to_client,
-                                      write_to_client_data))
-                    {
-                      g_free (response);
-                      cleanup_iterator (&tasks);
-                      error_send_to_client (error);
-                      cleanup_iterator (&tasks);
-                      return;
-                    }
-                  g_free (response);
-
-                  SENDF_TO_CLIENT_OR_FAIL
-                   ("<observers>%s",
-                    ((owner == NULL)
-                    || (strcmp (owner,
-                                current_credentials.username)))
-                      ? ""
-                      : observers);
-                  free (owner);
-                  free (observers);
-
-                  init_task_group_iterator (&groups, index);
-                  while (next (&groups))
-                    SENDF_TO_CLIENT_OR_FAIL
-                     ("<group id=\"%s\">"
-                      "<name>%s</name>"
-                      "</group>",
-                      task_group_iterator_uuid (&groups),
-                      task_group_iterator_name (&groups));
-                  cleanup_iterator (&groups);
-
-                  init_task_role_iterator (&roles, index);
-                  while (next (&roles))
-                    SENDF_TO_CLIENT_OR_FAIL
-                     ("<role id=\"%s\">"
-                      "<name>%s</name>"
-                      "</role>",
-                      task_role_iterator_uuid (&roles),
-                      task_role_iterator_name (&roles));
-                  cleanup_iterator (&roles);
-
-                  SENDF_TO_CLIENT_OR_FAIL ("</observers>");
-
-                  init_task_alert_iterator (&alerts, index, 0);
-                  while (next (&alerts))
-                    {
-                      alert_t found;
-
-                      if (find_alert_with_permission (task_alert_iterator_uuid
-                                                      (&alerts),
-                                                      &found,
-                                                      "get_alerts"))
-                        abort ();
-
-                      SENDF_TO_CLIENT_OR_FAIL
-                       ("<alert id=\"%s\">"
-                        "<name>%s</name>",
-                        task_alert_iterator_uuid (&alerts),
-                        task_alert_iterator_name (&alerts));
-
-                      if (found)
-                        SENDF_TO_CLIENT_OR_FAIL
-                        ("</alert>");
-                      else
-                        SENDF_TO_CLIENT_OR_FAIL
-                         ("<permissions/>"
-                          "</alert>");
-                    }
-                  cleanup_iterator (&alerts);
-
-                  if (get_tasks_data->get.details)
-                    {
-                      /* The detailed version. */
-
-                      /** @todo Handle error cases.
-                       *
-                       * The errors are either SQL errors or out of space in
-                       * buffer errors.  Both should probably just lead to aborts
-                       * at the SQL or buffer output level.
-                       */
-                      send_reports (index,
-                                    apply_overrides,
-                                    min_qod,
-                                    write_to_client,
-                                    write_to_client_data);
-                    }
-
-                  SENDF_TO_CLIENT_OR_FAIL ("<result_count>%i</result_count>",
-                                           task_result_count (index, min_qod));
-
-                  in_assets = task_preference_value (index, "in_assets");
-                  assets_apply_overrides = task_preference_value
-                                            (index, "assets_apply_overrides");
-                  assets_min_qod = task_preference_value (index, "assets_min_qod");
-                  max_checks = task_preference_value (index, "max_checks");
-                  max_hosts = task_preference_value (index, "max_hosts");
-                  source_iface = task_preference_value (index, "source_iface");
-                  auto_delete = task_preference_value (index, "auto_delete");
-                  auto_delete_data = task_preference_value (index, "auto_delete_data");
-
-                  SENDF_TO_CLIENT_OR_FAIL
-                   ("<preferences>"
-                    "<preference>"
-                    "<name>"
-                    "Maximum concurrently executed NVTs per host"
-                    "</name>"
-                    "<scanner_name>max_checks</scanner_name>"
-                    "<value>%s</value>"
-                    "</preference>"
-                    "<preference>"
-                    "<name>"
-                    "Maximum concurrently scanned hosts"
-                    "</name>"
-                    "<scanner_name>max_hosts</scanner_name>"
-                    "<value>%s</value>"
-                    "</preference>"
-                    "<preference>"
-                    "<name>"
-                    "Network Source Interface"
-                    "</name>"
-                    "<scanner_name>source_iface</scanner_name>"
-                    "<value>%s</value>"
-                    "</preference>"
-                    "<preference>"
-                    "<name>"
-                    "Add results to Asset Management"
-                    "</name>"
-                    "<scanner_name>in_assets</scanner_name>"
-                    "<value>%s</value>"
-                    "</preference>"
-                    "<preference>"
-                    "<name>"
-                    "Apply Overrides when adding Assets"
-                    "</name>"
-                    "<scanner_name>assets_apply_overrides</scanner_name>"
-                    "<value>%s</value>"
-                    "</preference>"
-                    "<preference>"
-                    "<name>"
-                    "Min QOD when adding Assets"
-                    "</name>"
-                    "<scanner_name>assets_min_qod</scanner_name>"
-                    "<value>%s</value>"
-                    "</preference>"
-                    "<preference>"
-                    "<name>"
-                    "Auto Delete Reports"
-                    "</name>"
-                    "<scanner_name>auto_delete</scanner_name>"
-                    "<value>%s</value>"
-                    "</preference>"
-                    "<preference>"
-                    "<name>"
-                    "Auto Delete Reports Data"
-                    "</name>"
-                    "<scanner_name>auto_delete_data</scanner_name>"
-                    "<value>%s</value>"
-                    "</preference>"
-                    "</preferences>"
-                    "</task>",
-                    max_checks ? max_checks : "4",
-                    max_hosts ? max_hosts : "20",
-                    source_iface ? source_iface : "",
-                    in_assets ? in_assets : "yes",
-                    assets_apply_overrides ? assets_apply_overrides : "yes",
-                    assets_min_qod
-                     ? assets_min_qod
-                     : G_STRINGIFY (MIN_QOD_DEFAULT),
-                    auto_delete ? auto_delete : "0",
-                    auto_delete_data ? auto_delete_data : "0");
-
-                  g_free (in_assets);
-                  g_free (max_checks);
-                  g_free (max_hosts);
-                  g_free (source_iface);
-                }
-
-              count++;
-            }
-          cleanup_iterator (&tasks);
-          g_free (min_qod_str);
-          filtered = get_tasks_data->get.id
-                      ? 1
-                      : task_count (&get_tasks_data->get);
-          SEND_GET_END ("task", &get_tasks_data->get, count, filtered);
-        }
-
-        get_tasks_data_reset (get_tasks_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
+        assert (strcasecmp ("GET_TASKS", element_name) == 0);
+        return handle_get_tasks (omp_parser, error);
 
       case CLIENT_GET_USERS:
-        {
-          iterator_t users;
-          int count, filtered, ret, first;
-
-          assert (strcasecmp ("GET_USERS", element_name) == 0);
-
-          INIT_GET (user, User);
-
-          ret = init_user_iterator (&users, &get_users_data->get);
-          if (ret)
-            {
-              switch (ret)
-                {
-                  case 1:
-                    if (send_find_error_to_client ("get_users",
-                                                   "user",
-                                                   get_users_data->get.id,
-                                                   omp_parser))
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
-                    break;
-                  case 2:
-                    if (send_find_error_to_client
-                         ("get_users", "user", get_users_data->get.filt_id,
-                          omp_parser))
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
-                    break;
-                  case -1:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("get_users"));
-                    break;
-                }
-              get_users_data_reset (get_users_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-
-          SEND_GET_START ("user");
-          while (1)
-            {
-              iterator_t groups, roles;
-              const char *hosts, *ifaces;
-              int hosts_allow, ifaces_allow;
-
-              ret = get_next (&users, &get_users_data->get, &first, &count,
-                              init_user_iterator);
-              if (ret == 1)
-                break;
-              if (ret == -1)
-                {
-                  internal_error_send_to_client (error);
-                  return;
-                }
-
-              SEND_GET_COMMON (user, &get_users_data->get, &users);
-
-              hosts = user_iterator_hosts (&users);
-              hosts_allow = user_iterator_hosts_allow (&users);
-
-              SENDF_TO_CLIENT_OR_FAIL ("<hosts allow=\"%i\">%s</hosts>"
-                                       "<sources><source>%s</source></sources>",
-                                       hosts_allow,
-                                       hosts ? hosts : "",
-                                       user_iterator_method (&users)
-                                        ? user_iterator_method (&users)
-                                        : "file");
-
-              /* Interfaces Access */
-              ifaces = user_iterator_ifaces (&users);
-              ifaces_allow = user_iterator_ifaces_allow (&users);
-              SENDF_TO_CLIENT_OR_FAIL ("<ifaces allow=\"%i\">%s</ifaces>",
-                                       ifaces_allow,
-                                       ifaces ? ifaces : "");
-
-              /* User Roles */
-              init_user_role_iterator (&roles,
-                                       get_iterator_resource (&users));
-              while (next (&roles))
-                {
-                  SENDF_TO_CLIENT_OR_FAIL ("<role id=\"%s\">"
-                                           "<name>%s</name>",
-                                           user_role_iterator_uuid (&roles),
-                                           user_role_iterator_name (&roles));
-                  if (user_role_iterator_readable (&roles))
-                    SEND_TO_CLIENT_OR_FAIL ("</role>");
-                  else
-                    SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
-                                            "</role>");
-                }
-              cleanup_iterator (&roles);
-
-              SEND_TO_CLIENT_OR_FAIL ("<groups>");
-              init_user_group_iterator (&groups,
-                                        get_iterator_resource (&users));
-              while (next (&groups))
-                {
-                  SENDF_TO_CLIENT_OR_FAIL ("<group id=\"%s\">"
-                                           "<name>%s</name>",
-                                           user_group_iterator_uuid (&groups),
-                                           user_group_iterator_name (&groups));
-                  if (user_group_iterator_readable (&groups))
-                    SEND_TO_CLIENT_OR_FAIL ("</group>");
-                  else
-                    SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
-                                            "</group>");
-                }
-              cleanup_iterator (&groups);
-              SEND_TO_CLIENT_OR_FAIL ("</groups>"
-                                      "</user>");
-              count++;
-            }
-          cleanup_iterator (&users);
-          filtered = get_users_data->get.id
-                      ? 1
-                      : user_count (&get_users_data->get);
-          SEND_GET_END ("user", &get_users_data->get, count, filtered);
-
-          get_users_data_reset (get_users_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
+        assert (strcasecmp ("GET_USERS", element_name) == 0);
+        return handle_get_users (omp_parser, error);
 
       case CLIENT_GET_VERSION:
       case CLIENT_GET_VERSION_AUTHENTIC:
-        SEND_TO_CLIENT_OR_FAIL ("<get_version_response"
-                                " status=\"" STATUS_OK "\""
-                                " status_text=\"" STATUS_OK_TEXT "\">"
-                                "<version>" OMP_VERSION "</version>"
-                                "</get_version_response>");
-        if (client_state == CLIENT_GET_VERSION_AUTHENTIC)
-          set_client_state (CLIENT_AUTHENTIC);
-        else
-          set_client_state (CLIENT_TOP);
-        break;
+        assert (strcasecmp ("GET_VERSION", element_name) == 0);
+        return handle_get_version (omp_parser, error);
 
       case CLIENT_HELP:
         if (acl_user_may ("help") == 0)

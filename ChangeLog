@@ -1,3 +1,22 @@
+2016-06-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Handle the main functionality of GET_... OMP commands in individual
+	functions instead of doing it directly in omp_xml_handle_end_element.
+
+	* src/omp.c (handle_get_agents, handle_get_aggregates)
+	(handle_get_alerts, handle_get_assets, handle_get_credentials)
+	(handle_get_filters, handle_get_groups, handle_get_info)
+	(handle_get_notes, handle_get_nvt_feed_version, handle_get_nvts)
+	(handle_get_nvt_families, handle_get_permissions, handle_get_port_lists)
+	(handle_get_preferences, handle_get_reports, handle_get_report_formats)
+	(handle_get_results, handle_get_roles, handle_get_schedules)
+	(handle_get_settings, handle_get_slaves, handle_get_system_reports)
+	(handle_get_tags, handle_get_targets, handle_get_tasks)
+	(handle_get_users, handle_get_version): New functions for handling
+	GET_... commands.
+	(omp_xml_handle_end_element): Move the GET_... command handling to the
+	new handle_get_... functions and call them here.
+
 2016-06-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Add info about certificates to Credential and Scanner details pages.
