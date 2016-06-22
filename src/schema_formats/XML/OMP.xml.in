@@ -7002,17 +7002,25 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>auth_conf_setting</name>
           <pattern>
-            <attrib>
-              <name>key</name>
-              <type>text</type>
-              <required>1</required>
-            </attrib>
-            <attrib>
-              <name>value</name>
-              <type>text</type>
-              <required>1</required>
-            </attrib>
+            <e>key</e>
+            <e>value</e>
+            <o><e>certificate_info</e></o>
           </pattern>
+          <ele>
+            <name>key</name>
+            <summary>Setting name</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>value</name>
+            <summary>Setting value</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>certificate_info</name>
+            <summary>Info about the certificate</summary>
+            <type>certificate_info</type>
+          </ele>
         </ele>
       </ele>
     </response>
@@ -7025,7 +7033,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <response>
         <describe_auth_response status="200" status_text="OK">
           <group name="Foo">
-            <auth_conf_setting key="Bar" value="Baz"/>
+            <auth_conf_setting>
+              <key>Bar</key>
+              <value>Baz</value>
+            </auth_conf_setting>
           </group>
         </describe_auth_response>
       </response>
@@ -23021,19 +23032,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
       <ele>
         <name>auth_conf_setting</name>
-        <summary>A setting to modify</summary>
         <pattern>
-          <attrib>
-            <name>key</name>
-            <type>text</type>
-            <required>1</required>
-          </attrib>
-          <attrib>
-            <name>value</name>
-            <type>text</type>
-            <required>1</required>
-          </attrib>
+          <e>key</e>
+          <e>value</e>
         </pattern>
+        <ele>
+          <name>key</name>
+          <summary>Setting name</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>value</name>
+          <summary>Setting value</summary>
+          <pattern>text</pattern>
+        </ele>
       </ele>
     </ele>
     <response>
@@ -23055,7 +23067,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <request>
         <modify_auth>
           <group name="Foo">
-            <auth_conf_setting key="Bar" value="Baz"/>
+            <auth_conf_setting>
+              <key>Bar</key>
+              <value>Baz</value>
+            </auth_conf_setting>
           </group>
         </modify_auth>
       </request>
@@ -25782,6 +25797,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </response>
     </example>
   </command>
+  <change>
+    <command>DESCRIBE_AUTH, MODIFY_AUTH</command>
+    <summary>Response attributes "key" and "value" moved to elements</summary>
+    <description>
+      <p>
+        The attributes "key" and "value" of AUTH_CONF_SETTING have been moved
+        to new child elements of AUTH_CONF_SETTING, KEY and VALUE.  This is in order
+        to preserve whitespace in the settings.
+      </p>
+    </description>
+    <version>7.0</version>
+  </change>
   <change>
     <command>All GET_... commands</command>
     <summary>Limit on number of returned rows introduced</summary>

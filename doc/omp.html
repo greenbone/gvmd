@@ -12556,13 +12556,21 @@ create_user_role
               &lt;<b>auth_conf_setting</b>&gt;
               <ul style="list-style: none">
 <li>
-          @<b>key</b>
-          (text)
-          </li>
+              &lt;<b>key</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Setting name.</div>
+<ul style="list-style: none"></ul>
+</li>
 <li>
-          @<b>value</b>
-          (text)
-          </li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Setting value.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>certificate_info</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">(<a href="#element_certificate_info">certificate_info</a>)</div>
+<div style="margin-left: 15px; display: inline;">Info about the certificate.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -12596,8 +12604,31 @@ describe_auth_response_group
 describe_auth_response_group_auth_conf_setting
  = element auth_conf_setting
      {
-       attribute key { text }
-       &amp; attribute value { text }
+       describe_auth_response_group_auth_conf_setting_key
+       &amp; describe_auth_response_group_auth_conf_setting_value
+       &amp; describe_auth_response_group_auth_conf_setting_certificate_info?
+     }
+
+describe_auth_response_group_auth_conf_setting_key
+ = element key
+     {
+       text
+     }
+
+describe_auth_response_group_auth_conf_setting_value
+ = element value
+     {
+       text
+     }
+
+describe_auth_response_group_auth_conf_setting_certificate_info
+ = element certificate_info    # type certificate_info
+     {
+       certificate_info_time_status
+       &amp; certificate_info_activation_time
+       &amp; certificate_info_expiration_time
+       &amp; certificate_info_issuer
+       &amp; certificate_info_md5_fingerprint
      }
 </pre></div>
 </div>
@@ -12608,8 +12639,10 @@ describe_auth_response_group_auth_conf_setting
 <i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;describe_auth_response status="200"
                          status_text="OK"&gt;
    &lt;group name="Foo"&gt;
-     &lt;auth_conf_setting key="Bar"
-                        value="Baz"/&gt;
+     &lt;auth_conf_setting&gt;
+       &lt;key&gt;Bar&lt;/key&gt;
+       &lt;value&gt;Baz&lt;/value&gt;
+     &lt;/auth_conf_setting&gt;
    &lt;/group&gt;
  &lt;/describe_auth_response&gt;
 </pre></div>
@@ -34664,16 +34697,17 @@ modify_alert_filter
               &lt;<b>group</b>&gt;
               <ul style="list-style: none"><li>
               &lt;<b>auth_conf_setting</b>&gt;
-              *<div style="margin-left: 15px; display: inline;">A setting to modify.</div>
-<ul style="list-style: none">
+              *<ul style="list-style: none">
 <li>
-          @<b>key</b>
-          (text)
-          </li>
+              &lt;<b>key</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Setting name.</div>
+<ul style="list-style: none"></ul>
+</li>
 <li>
-          @<b>value</b>
-          (text)
-          </li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Setting value.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li></ul>
 </li></ul>
@@ -34708,8 +34742,20 @@ modify_auth_group
 modify_auth_group_auth_conf_setting
  = element auth_conf_setting
      {
-       attribute key { text }
-       &amp; attribute value { text }
+       modify_auth_group_auth_conf_setting_key
+       &amp; modify_auth_group_auth_conf_setting_value
+     }
+
+modify_auth_group_auth_conf_setting_key
+ = element key
+     {
+       text
+     }
+
+modify_auth_group_auth_conf_setting_value
+ = element value
+     {
+       text
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>modify_auth_response
@@ -34724,8 +34770,10 @@ modify_auth_group_auth_conf_setting
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_auth&gt;
    &lt;group name="Foo"&gt;
-     &lt;auth_conf_setting key="Bar"
-                        value="Baz"/&gt;
+     &lt;auth_conf_setting&gt;
+       &lt;key&gt;Bar&lt;/key&gt;
+       &lt;value&gt;Baz&lt;/value&gt;
+     &lt;/auth_conf_setting&gt;
    &lt;/group&gt;
  &lt;/modify_auth&gt;
 </pre></div>
@@ -38657,6 +38705,17 @@ start_task_response_report_id
       7.0</h2>
 <div>
 <div><h3>8.1
+          Change in <tt>DESCRIBE_AUTH, MODIFY_AUTH</tt>
+</h3></div>
+<p>In short: Response attributes "key" and "value" moved to elements.</p>
+<p>
+        The attributes "key" and "value" of AUTH_CONF_SETTING have been moved
+        to new child elements of AUTH_CONF_SETTING, KEY and VALUE.  This is in order
+        to preserve whitespace in the settings.
+      </p>
+</div>
+<div>
+<div><h3>8.2
           Change in <tt>All GET_... commands</tt>
 </h3></div>
 <p>In short: Limit on number of returned rows introduced.</p>
@@ -38672,7 +38731,7 @@ start_task_response_report_id
       </p>
 </div>
 <div>
-<div><h3>8.2
+<div><h3>8.3
           Change in <tt>GET_RESULTS</tt>
 </h3></div>
 <p>In short: Redundant filtering attributes removed.</p>
@@ -38684,7 +38743,7 @@ start_task_response_report_id
       </p>
 </div>
 <div>
-<div><h3>8.3
+<div><h3>8.4
           Change in <tt>GET_REPORTS</tt>
 </h3></div>
 <p>In short: Redundant filtering attributes removed.</p>
@@ -38698,7 +38757,7 @@ start_task_response_report_id
       </p>
 </div>
 <div>
-<div><h3>8.4
+<div><h3>8.5
           Change in <tt>GET_REPORTS</tt>
 </h3></div>
 <p>In short: Filter keywords in response changed to common format.</p>
@@ -38711,7 +38770,7 @@ start_task_response_report_id
       </p>
 </div>
 <div>
-<div><h3>8.5
+<div><h3>8.6
           Change in <tt>GET_CREDENTIALS</tt>
 </h3></div>
 <p>In short: Credential types renamed.</p>
@@ -38722,7 +38781,7 @@ start_task_response_report_id
       </p>
 </div>
 <div>
-<div><h3>8.6
+<div><h3>8.7
           Change in <tt>CREATE_LSC_CREDENTIAL, DELETE_LSC_CREDENTIAL, GET_LSC_CREDENTIALS, MODIFY_LSC_CREDENTIAL</tt>
 </h3></div>
 <p>In short: Resource type and commands renamed.</p>
@@ -38733,7 +38792,7 @@ start_task_response_report_id
       </p>
 </div>
 <div>
-<div><h3>8.7
+<div><h3>8.8
           Change in <tt>CREATE_SCANNER, GET_SCANNERS, MODIFY_SCANNER</tt>
 </h3></div>
 <p>In short: key_priv and key_pub replaced by credential.</p>
@@ -38743,7 +38802,7 @@ start_task_response_report_id
       </p>
 </div>
 <div>
-<div><h3>8.8
+<div><h3>8.9
           Change in <tt>CREATE_SLAVE, GET_SLAVES, MODIFY_SLAVE</tt>
 </h3></div>
 <p>In short: username and password replaced by credential.</p>
@@ -38753,7 +38812,7 @@ start_task_response_report_id
       </p>
 </div>
 <div>
-<div><h3>8.9
+<div><h3>8.10
           Change in <tt>GET_TARGETS</tt>
 </h3></div>
 <p>In short: "lsc_" removed from credential element names.</p>

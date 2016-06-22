@@ -6119,12 +6119,25 @@ modify_auth_group
        modify_auth_group_auth_conf_setting*
      }
 
-# A setting to modify.
 modify_auth_group_auth_conf_setting
  = element auth_conf_setting
      {
-       attribute key { text }
-       & attribute value { text }
+       modify_auth_group_auth_conf_setting_key
+       & modify_auth_group_auth_conf_setting_value
+     }
+
+# Setting name.
+modify_auth_group_auth_conf_setting_key
+ = element key
+     {
+       text
+     }
+
+# Setting value.
+modify_auth_group_auth_conf_setting_value
+ = element value
+     {
+       text
      }
 
 ## Command modify_config
@@ -8195,8 +8208,34 @@ describe_auth_response_group
 describe_auth_response_group_auth_conf_setting
  = element auth_conf_setting
      {
-       attribute key { text }
-       & attribute value { text }
+       describe_auth_response_group_auth_conf_setting_key
+       & describe_auth_response_group_auth_conf_setting_value
+       & describe_auth_response_group_auth_conf_setting_certificate_info?
+     }
+
+# Setting name.
+describe_auth_response_group_auth_conf_setting_key
+ = element key
+     {
+       text
+     }
+
+# Setting value.
+describe_auth_response_group_auth_conf_setting_value
+ = element value
+     {
+       text
+     }
+
+# Info about the certificate.
+describe_auth_response_group_auth_conf_setting_certificate_info
+ = element certificate_info    # type certificate_info
+     {
+       certificate_info_time_status
+       & certificate_info_activation_time
+       & certificate_info_expiration_time
+       & certificate_info_issuer
+       & certificate_info_md5_fingerprint
      }
 
 ## Response to describe_cert

@@ -1,5 +1,12 @@
 2016-06-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml.in (describe_auth, modify_auth): Move
+	value and key to elements.  Add associated CHANGE.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
+2016-06-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move the key and value of settings in MODIFY_AUTH and DESCRIBE_AUTH from
 	attributes to elements, so that newlines are preserved in the value.
 
