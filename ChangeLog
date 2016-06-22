@@ -1,3 +1,8 @@
+2016-06-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/omp.c (buffer_aggregate_xml): Round CVSS type group and subgroup
+	values to one decimal place.
+
 2016-06-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_DESCRIBE_AUTH pass

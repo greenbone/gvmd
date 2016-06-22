@@ -12630,6 +12630,13 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
           else
             value_escaped = g_markup_escape_text (value, -1);
         }
+      else if (value && group_column_type
+               && strcmp (group_column_type, "cvss") == 0)
+        {
+          double dbl_value;
+          sscanf (value, "%lf", &dbl_value);
+          value_escaped = g_strdup_printf ("%0.1lf", dbl_value);
+        }
       else if (group_column && value)
         value_escaped = g_markup_escape_text (value, -1);
       else
@@ -12642,6 +12649,13 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
             subgroup_value_escaped = g_strdup (iso_time (&value_int));
           else
             subgroup_value_escaped = g_markup_escape_text (subgroup_value, -1);
+        }
+      else if (subgroup_value && subgroup_column_type
+               && strcmp (subgroup_column_type, "cvss") == 0)
+        {
+          double dbl_value;
+          sscanf (subgroup_value, "%lf", &dbl_value);
+          subgroup_value_escaped = g_strdup_printf ("%0.1lf", dbl_value);
         }
       else if (subgroup_column && subgroup_value)
         subgroup_value_escaped = g_markup_escape_text (subgroup_value, -1);
