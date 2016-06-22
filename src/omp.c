@@ -384,46 +384,6 @@ typedef struct
 } auth_conf_setting_t;
 
 /**
- * @brief Forms a authentication configuration key/value-pair from xml element.
- *
- * Parameters fit glibs xml_start_element callback data.
- *
- * Expected input is generated from an element like:
- * @code <auth_conf_setting key="key" value="value"> @endcode
- *
- * @param[in]  element_name      Name of current element.
- * @param[in]  attribute_names   Attribute names.
- * @param[in]  attribute_values  Attribute names.
- *
- * @return 0 if input is not generated from a auth_conf_setting xml element as
- *         expected, pointer to freshly allocated auth_conf_setting_t that
- *         owns it key and value string otherwise.
- */
-static auth_conf_setting_t *
-auth_conf_setting_from_xml (const gchar * element_name,
-                            const gchar ** attribute_names,
-                            const gchar ** attribute_values)
-{
-  auth_conf_setting_t *kvp = NULL;
-
-  if (strcasecmp (element_name, "auth_conf_setting") == 0)
-    {
-      const gchar *key_attr;
-      const gchar *val_attr;
-      if (find_attribute (attribute_names, attribute_values, "key", &key_attr)
-          && find_attribute (attribute_names, attribute_values, "value",
-                             &val_attr))
-        {
-          kvp = g_malloc0 (sizeof (auth_conf_setting_t));
-          kvp->key = g_strdup (key_attr);
-          kvp->value = g_strdup (val_attr);
-        }
-    }
-
-  return kvp;
-}
-
-/**
  * @brief Init for a GET handler.
  *
  * @param[in]  command       OMP command name.
@@ -3329,6 +3289,8 @@ typedef struct
  */
 typedef struct
 {
+  gchar *key;                   ///< Key for current auth_conf_setting.
+  gchar *value;                 ///< Value for current auth_conf_setting.
   GSList *groups;               ///< List of auth_group_t
   GSList *curr_group_settings;  ///< Settings of currently parsed group.
 } modify_auth_data_t;
@@ -3341,8 +3303,13 @@ typedef struct
 void
 modify_auth_data_reset (modify_auth_data_t * data)
 {
-  GSList *item = data->groups;
-  GSList *subitem = NULL;
+  GSList *item, *subitem;
+
+  g_free (data->key);
+  g_free (data->value);
+
+  item = data->groups;
+  subitem = NULL;
   while (item)
     {
       auth_group_t *group = (auth_group_t *) item->data;
@@ -5590,6 +5557,8 @@ typedef enum
   CLIENT_MODIFY_AUTH,
   CLIENT_MODIFY_AUTH_GROUP,
   CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING,
+  CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING_KEY,
+  CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING_VALUE,
   CLIENT_MODIFY_CONFIG,
   CLIENT_MODIFY_CONFIG_COMMENT,
   CLIENT_MODIFY_CONFIG_FAMILY_SELECTION,
@@ -8355,33 +8324,15 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_AUTH_GROUP:
         if (strcasecmp ("AUTH_CONF_SETTING", element_name) == 0)
-          {
-            set_client_state (CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING);
-            auth_conf_setting_t *setting =
-              auth_conf_setting_from_xml (element_name,
-                                          attribute_names,
-                                          attribute_values);
-            modify_auth_data->curr_group_settings =
-              g_slist_prepend (modify_auth_data->curr_group_settings, setting);
-          }
+          set_client_state (CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING);
         ELSE_ERROR ("modify_auth");
 
       case CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING:
-        {
-          /* AUTH_CONF_SETTING should not have any children. */
-          if (send_element_error_to_client ("auth_conf_setting", element_name,
-                                            write_to_client,
-                                            write_to_client_data))
-            {
-              error_send_to_client (error);
-              return;
-            }
-          modify_auth_data_reset (modify_auth_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                       "Error");
-          break;
-        }
+        if (strcasecmp ("KEY", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING_KEY);
+        else if (strcasecmp ("VALUE", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING_VALUE);
+        ELSE_ERROR ("modify_auth");
 
       case CLIENT_MODIFY_CONFIG:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -20961,8 +20912,14 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   " status=\"" STATUS_OK "\""
                                   " status_text=\"" STATUS_OK_TEXT "\">"
                                   "<group name=\"method:file\">"
-                                  "<auth_conf_setting key=\"enable\" value=\"true\"/>"
-                                  "<auth_conf_setting key=\"order\" value=\"1\"/>"
+                                  "<auth_conf_setting>"
+                                  "<key>enable</key>"
+                                  "<value>true</value>"
+                                  "</auth_conf_setting>"
+                                  "<auth_conf_setting>"
+                                  "<key>order</key>"
+                                  "<value>1</value>"
+                                  "</auth_conf_setting>"
                                   "</group>");
 
           if (openvas_auth_ldap_enabled ())
@@ -20973,11 +20930,26 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                     &ldap_allow_plaintext, &ldap_cacert);
               SENDF_TO_CLIENT_OR_FAIL
                ("<group name=\"method:ldap_connect\">"
-                "<auth_conf_setting key=\"enable\" value=\"%s\"/>"
-                "<auth_conf_setting key=\"order\" value=\"0\"/>"
-                "<auth_conf_setting key=\"ldaphost\" value=\"%s\"/>"
-                "<auth_conf_setting key=\"authdn\" value=\"%s\"/>"
-                "<auth_conf_setting key=\"allow-plaintext\" value=\"%i\"/>",
+                "<auth_conf_setting>"
+                "<key>enable</key>"
+                "<value>%s</value>"
+                "</auth_conf_setting>"
+                "<auth_conf_setting>"
+                "<key>order</key>"
+                "<value>0</value>"
+                "</auth_conf_setting>"
+                "<auth_conf_setting>"
+                "<key>ldaphost</key>"
+                "<value>%s</value>"
+                "</auth_conf_setting>"
+                "<auth_conf_setting>"
+                "<key>authdn</key>"
+                "<value>%s</value>"
+                "</auth_conf_setting>"
+                "<auth_conf_setting>"
+                "<key>allow-plaintext</key>"
+                "<value>%i</value>"
+                "</auth_conf_setting>",
                 ldap_enabled ? "true" : "false",
                 ldap_host,
                 ldap_authdn,
@@ -20993,7 +20965,9 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   gchar *fingerprint, *issuer;
 
                   SENDF_TO_CLIENT_OR_FAIL
-                   ("<auth_conf_setting key=\"cacert\" value=\"%s\">",
+                   ("<auth_conf_setting>"
+                    "<key>cacert</key>"
+                    "<value>%s</value>",
                     ldap_cacert);
 
                   get_certificate_info (ldap_cacert, &activation_time,
@@ -21039,9 +21013,18 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                       &radius_key);
               SENDF_TO_CLIENT_OR_FAIL
                ("<group name=\"method:radius_connect\">"
-                "<auth_conf_setting key=\"enable\" value=\"%s\"/>"
-                "<auth_conf_setting key=\"radiushost\" value=\"%s\"/>"
-                "<auth_conf_setting key=\"radiuskey\" value=\"%s\"/>"
+                "<auth_conf_setting>"
+                "<key>enable</key>"
+                "<value>%s</value>"
+                "</auth_conf_setting>"
+                "<auth_conf_setting>"
+                "<key>radiushost</key>"
+                "<value>%s</value>"
+                "</auth_conf_setting>"
+                "<auth_conf_setting>"
+                "<key>radiuskey</key>"
+                "<value>%s</value>"
+                "</auth_conf_setting>"
                 "</group>",
                 radius_enabled ? "true" : "false", radius_host, radius_key);
               g_free (radius_host);
@@ -26508,12 +26491,27 @@ create_task_fail:
           set_client_state (CLIENT_MODIFY_AUTH);
           break;
         }
-
       case CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING:
         {
+          auth_conf_setting_t *setting;
+
+          assert (strcasecmp ("AUTH_CONF_SETTING", element_name) == 0);
+
+          setting = g_malloc0 (sizeof (auth_conf_setting_t));
+          setting->key = modify_auth_data->key;
+          modify_auth_data->key = NULL;
+          setting->value = modify_auth_data->value;
+          modify_auth_data->value = NULL;
+
+          /* Add setting to settings. */
+          modify_auth_data->curr_group_settings
+           = g_slist_prepend (modify_auth_data->curr_group_settings, setting);
+
           set_client_state (CLIENT_MODIFY_AUTH_GROUP);
           break;
         }
+      CLOSE (CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING, KEY);
+      CLOSE (CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING, VALUE);
 
       case CLIENT_MODIFY_CONFIG:
         assert (strcasecmp ("MODIFY_CONFIG", element_name) == 0);
@@ -30869,6 +30867,13 @@ omp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_ASSET_COMMENT,
               &modify_asset_data->comment);
+
+
+      APPEND (CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING_KEY,
+              &modify_auth_data->key);
+
+      APPEND (CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING_VALUE,
+              &modify_auth_data->value);
 
 
       APPEND (CLIENT_MODIFY_FILTER_COMMENT,

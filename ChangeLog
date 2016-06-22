@@ -1,9 +1,22 @@
+2016-06-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Move the key and value of settings in MODIFY_AUTH and DESCRIBE_AUTH from
+	attributes to elements, so that newlines are preserved in the value.
+
+	* src/omp.c (auth_conf_setting_from_xml): Remove.  No longer used.
+	(modify_auth_data_t, modify_auth_data_reset, client_state_t): Add key and
+	value.
+	(omp_xml_handle_start_element): In CLIENT_MODIFY_AUTH_GROUP remove
+	attribute handling.  Add KEY and VALUE handling.  In DESCRIBE_AUTH use
+	elements.
+	(omp_xml_handle_text): Add KEY and VALUE handling.
+
 2016-06-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/omp.c (buffer_aggregate_xml): Round CVSS type group and subgroup
 	values to one decimal place.
 
-2016-06-21  Matthew Mundell <matthew.mundell@greenbone.net>
+2016-06-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_DESCRIBE_AUTH pass
 	LDAP certificate info too if there is a certificate.
