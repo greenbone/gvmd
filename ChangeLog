@@ -1,3 +1,9 @@
+2016-06-22  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* CMakeLists.txt, INSTALL: Imcrease dependency for glib from 2.16 to
+	2.32 in order to allow the use of newer API elements. Also,
+	prior to 2.32 there is subject to the (disputed) CVE-2012-0039.
+
 2016-06-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/XML/OMP.xml.in (describe_auth, modify_auth): Move
@@ -50,7 +56,7 @@
 	because the number of changes is more comprehensive than originally
 	assumed.
 
-	* CMakeLists.txt: Set version to 9.0+beta1.
+	* CMakeLists.txt: Set version to 7.0+beta1.
 
 2016-06-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
