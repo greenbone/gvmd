@@ -20953,24 +20953,68 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
           if (openvas_auth_ldap_enabled ())
             {
-              gchar *ldap_host, *ldap_authdn;
+              gchar *ldap_host, *ldap_authdn, *ldap_cacert;
               int ldap_enabled, ldap_allow_plaintext;
               manage_get_ldap_info (&ldap_enabled, &ldap_host, &ldap_authdn,
-                                    &ldap_allow_plaintext);
+                                    &ldap_allow_plaintext, &ldap_cacert);
               SENDF_TO_CLIENT_OR_FAIL
                ("<group name=\"method:ldap_connect\">"
                 "<auth_conf_setting key=\"enable\" value=\"%s\"/>"
                 "<auth_conf_setting key=\"order\" value=\"0\"/>"
                 "<auth_conf_setting key=\"ldaphost\" value=\"%s\"/>"
                 "<auth_conf_setting key=\"authdn\" value=\"%s\"/>"
-                "<auth_conf_setting key=\"allow-plaintext\" value=\"%i\"/>"
-                "</group>",
+                "<auth_conf_setting key=\"allow-plaintext\" value=\"%i\"/>",
                 ldap_enabled ? "true" : "false",
                 ldap_host,
                 ldap_authdn,
                 ldap_allow_plaintext);
+
               g_free (ldap_host);
               g_free (ldap_authdn);
+
+              if (ldap_cacert)
+                {
+                  time_t activation_time, expiration_time;
+                  gchar *activation_time_str, *expiration_time_str;
+                  gchar *fingerprint, *issuer;
+
+                  SENDF_TO_CLIENT_OR_FAIL
+                   ("<auth_conf_setting key=\"cacert\" value=\"%s\">",
+                    ldap_cacert);
+
+                  get_certificate_info (ldap_cacert, &activation_time,
+                                        &expiration_time, &fingerprint,
+                                        &issuer);
+                  g_warning ("got");
+                  activation_time_str = certificate_iso_time (activation_time);
+                  g_warning ("got");
+                  expiration_time_str = certificate_iso_time (expiration_time);
+                  g_warning ("got");
+                  SENDF_TO_CLIENT_OR_FAIL
+                   ("<certificate_info>"
+                    "<time_status>%s</time_status>"
+                    "<activation_time>%s</activation_time>"
+                    "<expiration_time>%s</expiration_time>"
+                    "<md5_fingerprint>%s</md5_fingerprint>"
+                    "<issuer>%s</issuer>"
+                    "</certificate_info>",
+                    certificate_time_status (activation_time, expiration_time),
+                    activation_time_str,
+                    expiration_time_str,
+                    fingerprint,
+                    issuer);
+                  g_warning ("free");
+                  g_free (activation_time_str);
+                  g_free (expiration_time_str);
+                  g_free (fingerprint);
+                  g_free (issuer);
+
+                  SEND_TO_CLIENT_OR_FAIL ("</auth_conf_setting>");
+
+                  g_free (ldap_cacert);
+                }
+
+              SEND_TO_CLIENT_OR_FAIL ("</group>");
             }
 
           if (openvas_auth_radius_enabled ())

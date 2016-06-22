@@ -3957,7 +3957,7 @@ char*
 user_uuid (user_t);
 
 void
-manage_get_ldap_info (int *, gchar **, gchar **, int *);
+manage_get_ldap_info (int *, gchar **, gchar **, int *, gchar **);
 
 void
 manage_set_ldap_info (int, gchar *, gchar *, int, gchar *);

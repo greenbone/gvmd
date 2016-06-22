@@ -16393,14 +16393,10 @@ authenticate_any_method (const gchar *username, const gchar *password,
     {
       ldap_auth_info_t info;
       int allow_plaintext;
-      gchar *authdn, *host;
-      char *cacert;
-
-      cacert = sql_string ("SELECT value FROM meta"
-                           " WHERE name = 'ldap_cacert';");
+      gchar *authdn, *host, *cacert;
 
       *auth_method = AUTHENTICATION_METHOD_LDAP_CONNECT;
-      manage_get_ldap_info (NULL, &host, &authdn, &allow_plaintext);
+      manage_get_ldap_info (NULL, &host, &authdn, &allow_plaintext, &cacert);
       info = ldap_auth_info_new (host, authdn, allow_plaintext);
       g_free (host);
       g_free (authdn);
@@ -63360,10 +63356,11 @@ user_role_iterator_readable (iterator_t* iterator)
  * @param[out]  ldap_host  Freshly allocated LDAP host.
  * @param[out]  authdn     Freshly allocated Auth DN.
  * @param[out]  plaintext  Whether plaintext auth is allowed.
+ * @param[out]  cacert     CA cert if there's one, else NULL.
  */
 void
 manage_get_ldap_info (int *enabled, gchar **host, gchar **authdn,
-                      int *plaintext)
+                      int *plaintext, gchar **cacert)
 {
   if (enabled)
     *enabled = ldap_auth_enabled ();
@@ -63383,6 +63380,9 @@ manage_get_ldap_info (int *enabled, gchar **host, gchar **authdn,
                         "                  WHERE name"
                         "                        = 'ldap_allow_plaintext'),"
                         "                 0);");
+
+  *cacert = sql_string ("SELECT value FROM meta"
+                        " WHERE name = 'ldap_cacert';");
 }
 
 /**
