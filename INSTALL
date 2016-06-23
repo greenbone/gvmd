@@ -10,11 +10,10 @@ Prerequisites for openvas-manager
 ---------------------------------
 
 Prerequisites:
-* cmake
+* cmake >= 2.8
 * glib-2.0 >= 2.32
 * gnutls >= 3.2.15
 * libopenvas_base, libopenvas_omp, libopenvas_misc, libopenvas_osp >= 9.0.0
-* openvas-libraries >= 8.1.0
 * sqlite3 library or PostgreSQL database
 * pkg-config
 
