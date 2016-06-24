@@ -17675,7 +17675,6 @@ handle_get_roles (omp_parser_t *omp_parser, GError **error)
   set_client_state (CLIENT_AUTHENTIC);
 }
 
-
 /**
  * @brief Handle end of GET_SCANNERS element.
  *
@@ -18205,12 +18204,50 @@ handle_get_settings (omp_parser_t *omp_parser, GError **error)
       SENDF_TO_CLIENT_OR_FAIL ("<setting id=\"%s\">"
                                "<name>%s</name>"
                                "<comment>%s</comment>"
-                               "<value>%s</value>"
-                               "</setting>",
+                               "<value>%s</value>",
                                setting_iterator_uuid (&settings),
                                setting_iterator_name (&settings),
                                setting_iterator_comment (&settings),
                                setting_iterator_value (&settings));
+
+      if ((strcmp (setting_iterator_uuid (&settings),
+                   SETTING_UUID_DEFAULT_CA_CERT)
+           == 0)
+          && setting_iterator_value (&settings)
+          && strlen (setting_iterator_value (&settings)))
+        {
+          time_t activation_time, expiration_time;
+          gchar *activation_time_str, *expiration_time_str, *fingerprint;
+          gchar *issuer;
+
+          get_certificate_info (setting_iterator_value (&settings),
+                                &activation_time,
+                                &expiration_time, &fingerprint,
+                                &issuer);
+          activation_time_str = certificate_iso_time (activation_time);
+          expiration_time_str = certificate_iso_time (expiration_time);
+          SENDF_TO_CLIENT_OR_FAIL
+           ("<certificate_info>"
+            "<time_status>%s</time_status>"
+            "<activation_time>%s</activation_time>"
+            "<expiration_time>%s</expiration_time>"
+            "<md5_fingerprint>%s</md5_fingerprint>"
+            "<issuer>%s</issuer>"
+            "</certificate_info>",
+            certificate_time_status (activation_time, expiration_time),
+            activation_time_str,
+            expiration_time_str,
+            fingerprint,
+            issuer);
+          g_warning ("free");
+          g_free (activation_time_str);
+          g_free (expiration_time_str);
+          g_free (fingerprint);
+          g_free (issuer);
+        }
+
+      SEND_TO_CLIENT_OR_FAIL ("</setting>");
+
       count++;
     }
   filtered = setting
@@ -20140,14 +20177,15 @@ handle_create_scanner (omp_parser_t *omp_parser, GError **error)
 
   if (!create_scanner_data->name || !create_scanner_data->host
       || !create_scanner_data->port || !create_scanner_data->type
-      || !create_scanner_data->ca_pub || !create_scanner_data->credential_id)
+      || !create_scanner_data->credential_id)
     {
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("create_scanner", "Missing entity"));
       goto create_scanner_leave;
     }
 
-  if (check_certificate (create_scanner_data->ca_pub))
+  if (create_scanner_data->ca_pub
+      && check_certificate (create_scanner_data->ca_pub))
     {
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("create_scanner", "Erroneous CA Certificate."));

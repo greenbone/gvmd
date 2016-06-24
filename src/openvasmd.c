@@ -1463,11 +1463,13 @@ main (int argc, char** argv)
   static gchar *manager_port_string = NULL;
   static gchar *manager_port_string_2 = NULL;
   static gchar *modify_report_format = NULL;
+  static gchar *modify_setting = NULL;
   static gchar *predefined = NULL;
   static gchar *scanner_name = NULL;
   static gchar *rc_name = NULL;
   static gchar *role = NULL;
   static gchar *disable = NULL;
+  static gchar *value = NULL;
   GError *error = NULL;
   GOptionContext *option_context;
   static GOptionEntry option_entries[]
@@ -1521,6 +1523,8 @@ main (int argc, char** argv)
         { "migrate", 'm', 0, G_OPTION_ARG_NONE, &migrate_database, "Migrate the database and exit.", NULL },
         { "modify-report-format", '\0', 0, G_OPTION_ARG_STRING, &modify_report_format,
           "Modify report format <uuid> and exit.", "<uuid>" },
+        { "modify-setting", '\0', 0, G_OPTION_ARG_STRING, &modify_setting,
+          "Modify setting <uuid> and exit.", "<uuid>" },
         { "encrypt-all-credentials", '\0', 0, G_OPTION_ARG_NONE,
           &encrypt_all_credentials, "(Re-)Encrypt all credentials.", NULL },
         { "decrypt-all-credentials", '\0',
@@ -1538,6 +1542,7 @@ main (int argc, char** argv)
         { "user", '\0', 0, G_OPTION_ARG_STRING, &user, "User for --new-password and --max-rows.", "<username>" },
         { "gnutls-priorities", '\0', 0, G_OPTION_ARG_STRING, &priorities, "Sets the GnuTLS priorities for the Manager socket.", "<priorities-string>" },
         { "dh-params", '\0', 0, G_OPTION_ARG_STRING, &dh_params, "Diffie-Hellman parameters file", "<file>" },
+        { "value", '\0', 0, G_OPTION_ARG_STRING, &value, "Value for --modify-setting.", "<value>" },
         { "verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Has no effect.  See INSTALL for logging config.", NULL },
         { "version", '\0', 0, G_OPTION_ARG_NONE, &print_version, "Print version and exit.", NULL },
         { NULL }
@@ -2045,6 +2050,50 @@ main (int argc, char** argv)
             return EXIT_SUCCESS;
           case 1:
             g_critical ("%s: failed to find user\n", __FUNCTION__);
+            log_config_free ();
+            return EXIT_FAILURE;
+          case -2:
+            g_critical ("%s: database is wrong version\n", __FUNCTION__);
+            log_config_free ();
+            return EXIT_FAILURE;
+          case -3:
+            g_critical ("%s: database must be initialised"
+                        " (with --update or --rebuild)\n",
+                        __FUNCTION__);
+            log_config_free ();
+            return EXIT_FAILURE;
+          case -1:
+          default:
+            g_critical ("%s: internal error\n", __FUNCTION__);
+            log_config_free ();
+            return EXIT_FAILURE;
+        }
+    }
+
+  if (modify_setting)
+    {
+      /* Modify a setting and then exit. */
+
+      switch (manage_modify_setting (log_config, database, user,
+                                     modify_setting,
+                                     value))
+        {
+          case 0:
+            log_config_free ();
+            return EXIT_SUCCESS;
+          case 1:
+            g_critical ("%s: failed to find user\n", __FUNCTION__);
+            log_config_free ();
+            return EXIT_FAILURE;
+          case 3:
+            g_critical ("%s: error in setting UUID\n",
+                        __FUNCTION__);
+            log_config_free ();
+            return EXIT_FAILURE;
+          case 4:
+            g_critical ("%s: modifying this setting for a single user is"
+                        " forbidden\n",
+                        __FUNCTION__);
             log_config_free ();
             return EXIT_FAILURE;
           case -2:

@@ -44933,7 +44933,7 @@ create_scanner (const char* name, const char *comment, const char *host,
       return 99;
     }
 
-  if (!host || !port || !type || !ca_pub || !credential_id)
+  if (!host || !port || !type || !credential_id)
     return 2;
   iport = atoi (port);
   itype = atoi (type);
@@ -44978,9 +44978,13 @@ create_scanner (const char* name, const char *comment, const char *host,
        "                      modification_time)"
        " VALUES (make_uuid (), '%s',"
        "  (SELECT id FROM users WHERE users.uuid = '%s'),"
-       "  '%s', '%s', %d, %d, '%s', %llu, m_now (), m_now ());",
+       "  '%s', '%s', %d, %d, %s%s%s, %llu, m_now (), m_now ());",
        quoted_name, current_credentials.uuid, quoted_comment, quoted_host,
-       iport, itype, quoted_ca_pub, credential);
+       iport, itype,
+       ca_pub ? "'" : "",
+       ca_pub ? quoted_ca_pub : "NULL",
+       ca_pub ? "'" : "",
+       credential);
 
   if (new_scanner)
     *new_scanner = sql_last_insert_id ();
@@ -45026,7 +45030,8 @@ copy_scanner (const char* name, const char* comment, const char *scanner_id,
  * @param[in]   host        Host of scanner.
  * @param[in]   port        Port of scanner.
  * @param[in]   type        Type of scanner.
- * @param[in]   ca_cert     CA Certificate of scanner or NULL.
+ * @param[in]   ca_pub      CA Certificate of scanner, or "" for default, or
+ *                          to keep existing value.
  * @param[in]   credential_id  UUID of credential or NULL.
  *
  * @return 0 success, 1 failed to find scanner, 2 scanner with new name exists,
@@ -45139,13 +45144,20 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
   g_free (quoted_comment);
   g_free (quoted_name);
 
-  if (ca_pub && *ca_pub)
+  if (ca_pub)
     {
-      char *quoted_ca_pub = sql_quote (ca_pub);
-      sql ("UPDATE scanners SET ca_pub = '%s' WHERE id = %llu;", quoted_ca_pub,
-           scanner);
-      g_free (quoted_ca_pub);
+      if (*ca_pub)
+        {
+          char *quoted_ca_pub = sql_quote (ca_pub);
+          sql ("UPDATE scanners SET ca_pub = '%s' WHERE id = %llu;", quoted_ca_pub,
+               scanner);
+          g_free (quoted_ca_pub);
+        }
+      else
+        /* Use default CA cert. */
+        sql ("UPDATE scanners SET ca_pub = NULL WHERE id = %llu;", scanner);
     }
+
   if (credential_id)
     {
       sql ("UPDATE scanners SET credential = %llu WHERE id = %llu;",
@@ -60122,6 +60134,147 @@ manage_set_max_rows (GSList *log_config, const gchar *database,
            "  'The default maximum number of rows displayed in any listing.',"
            "  %i);",
            max_rows);
+    }
+
+  sql_commit ();
+  return 0;
+}
+
+/**
+ * @brief Get the name of a setting.
+ *
+ * @param[in]  uuid  UUID of setting.
+ *
+ * @return Setting name.
+ */
+static const gchar *
+setting_name (const gchar *uuid)
+{
+  if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
+    return "Default CA Cert";
+  return NULL;
+}
+
+/**
+ * @brief Get the description of a setting.
+ *
+ * @param[in]  uuid  UUID of setting.
+ *
+ * @return Setting description.
+ */
+static const gchar *
+setting_description (const gchar *uuid)
+{
+  if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
+    return "Default CA Certificate for Scanners";
+  return NULL;
+}
+
+/**
+ * @brief Change value of a setting.
+ *
+ * @param[in]  log_config      Log configuration.
+ * @param[in]  database        Location of manage database.
+ * @param[in]  name            Name of user.
+ * @param[in]  uuid            UUID of setting.
+ * @param[in]  value           New value.
+ *
+ * @return 0 success, 1 failed to find user, 2 value out of range, 3 error in
+ *         setting uuid, 4 modifying setting for a single user forbidden,
+ *         -1 error.
+ */
+int
+manage_modify_setting (GSList *log_config, const gchar *database,
+                       const gchar *name, const gchar *uuid, const char *value)
+{
+  int ret;
+  const gchar *db;
+  gchar *quoted_name, *quoted_description, *quoted_value;
+
+  if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT))
+    return 3;
+
+  if (openvas_auth_init ())
+    return -1;
+
+  db = database ? database : sql_default_database ();
+
+  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
+  assert (ret != -4);
+  if (ret)
+    return ret;
+
+  init_manage_process (0, db);
+
+  sql_begin_immediate ();
+
+  if (name)
+    {
+      user_t user;
+
+      if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
+        {
+          sql_rollback ();
+          return 4;
+        }
+
+      if (find_user_by_name (name, &user))
+        {
+          sql_rollback ();
+          return -1;
+        }
+
+      if (user == 0)
+        {
+          sql_rollback ();
+          return 1;
+        }
+
+      sql ("DELETE FROM settings"
+           " WHERE uuid = '%s'"
+           " AND owner = %llu;",
+           uuid,
+           user);
+
+      if (value)
+        {
+          quoted_value = sql_quote (value);
+          quoted_name = sql_quote (setting_name (uuid));
+          quoted_description = sql_quote (setting_description (uuid));
+          sql ("INSERT INTO settings (uuid, owner, name, comment, value)"
+               " VALUES ('%s', %llu, '%s', '%s', '%s');",
+               uuid,
+               user,
+               quoted_name,
+               quoted_description,
+               quoted_value);
+          g_free (quoted_value);
+          g_free (quoted_name);
+          g_free (quoted_description);
+        }
+    }
+  else
+    {
+      sql ("DELETE FROM settings"
+           " WHERE uuid = '%s'"
+           " AND owner IS NULL;",
+           uuid);
+
+      if (value)
+        {
+          quoted_value = sql_quote (value);
+          quoted_name = sql_quote (setting_name (uuid));
+          quoted_description = sql_quote (setting_description (uuid));
+          sql ("INSERT INTO settings (uuid, owner, name, comment, value)"
+               " VALUES ('%s', NULL, '%s', '%s', '%s');",
+               uuid,
+               quoted_name,
+               quoted_description,
+               quoted_value);
+          g_free (quoted_value);
+          g_free (quoted_name);
+          g_free (quoted_description);
+        }
     }
 
   sql_commit ();

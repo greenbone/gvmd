@@ -4153,6 +4153,9 @@ scanner_setup (scanner_t scanner)
   if (ret)
     return ret;
   ca_pub = scanner_ca_pub (scanner);
+  if (ca_pub == NULL)
+    ca_pub = sql_string ("SELECT value FROM settings"
+                         " WHERE uuid = '" SETTING_UUID_DEFAULT_CA_CERT "';");
   key_pub = scanner_key_pub (scanner);
   key_priv = scanner_key_priv (scanner);
   openvas_scanner_set_certs (ca_pub, key_pub, key_priv);

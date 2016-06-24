@@ -1,3 +1,23 @@
+2016-06-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add immutable setting "Default CA Cert", with option --modify-setting.
+
+	* src/manage.c (scanner_setup): If the scanner has no CA cert, look for
+	one in the new setting.
+
+	* src/manage_sql.c (create_scanner): Allow ca_pub to be NULL.  If it's
+	NULL use the default.
+	(modify_scanner): If ca_pub is "", use the default.
+	(setting_name, setting_description, manage_modify_setting): New
+	functions.
+
+	* src/manage_sql.h (SETTING_UUID_DEFAULT_CA_CERT): New define.
+
+	* src/omp.c (handle_get_settings): Send cert info with Default CA Cert.
+	(handle_create_scanner): Allow ca_pub to be NULL.
+
+	* src/openvasmd.c (main): Add --modify-setting.
+
 2016-06-23  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* CMakeLists.txt: Increase required cmake version from 2.6
