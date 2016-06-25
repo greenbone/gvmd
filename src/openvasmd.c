@@ -335,17 +335,20 @@ set_gnutls_priority (gnutls_session_t *session, const char *priority)
 int
 serve_client (int server_socket, int client_socket)
 {
-  int optval;
-
-  optval = 1;
-  if (setsockopt (server_socket,
-                  SOL_SOCKET, SO_KEEPALIVE,
-                  &optval, sizeof (int)))
+  if (server_socket > 0)
     {
-      g_critical ("%s: failed to set SO_KEEPALIVE on scanner socket: %s\n",
-                  __FUNCTION__,
-                  strerror (errno));
-      exit (EXIT_FAILURE);
+      int optval;
+
+      optval = 1;
+      if (setsockopt (server_socket,
+                      SOL_SOCKET, SO_KEEPALIVE,
+                      &optval, sizeof (int)))
+        {
+          g_critical ("%s: failed to set SO_KEEPALIVE on scanner socket: %s\n",
+                      __FUNCTION__,
+                      strerror (errno));
+          exit (EXIT_FAILURE);
+        }
     }
 
   if (openvas_server_attach (client_socket, &client_session))
@@ -1470,6 +1473,7 @@ main (int argc, char** argv)
   static gchar *role = NULL;
   static gchar *disable = NULL;
   static gchar *value = NULL;
+  static gchar *xml = NULL;
   GError *error = NULL;
   GOptionContext *option_context;
   static GOptionEntry option_entries[]
@@ -1539,12 +1543,15 @@ main (int argc, char** argv)
         { "rebuild", '\0', 0, G_OPTION_ARG_NONE, &rebuild_nvt_cache, "Rebuild the NVT cache and exit.", NULL },
         { "role", '\0', 0, G_OPTION_ARG_STRING, &role, "Role for --create-user and --get-users.", "<role>" },
         { "update", 'u', 0, G_OPTION_ARG_NONE, &update_nvt_cache, "Update the NVT cache and exit.", NULL },
-        { "user", '\0', 0, G_OPTION_ARG_STRING, &user, "User for --new-password and --max-rows.", "<username>" },
+        { "user", '\0', 0, G_OPTION_ARG_STRING, &user, "User, --new-password and --xml.", "<username>" },
         { "gnutls-priorities", '\0', 0, G_OPTION_ARG_STRING, &priorities, "Sets the GnuTLS priorities for the Manager socket.", "<priorities-string>" },
         { "dh-params", '\0', 0, G_OPTION_ARG_STRING, &dh_params, "Diffie-Hellman parameters file", "<file>" },
         { "value", '\0', 0, G_OPTION_ARG_STRING, &value, "Value for --modify-setting.", "<value>" },
         { "verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Has no effect.  See INSTALL for logging config.", NULL },
         { "version", '\0', 0, G_OPTION_ARG_NONE, &print_version, "Print version and exit.", NULL },
+        { "xml", 'X', 0, G_OPTION_ARG_STRING, &xml,
+          "XML command (e.g. \"<help/>\").  \"-\" to read from stdin.",
+          "<command>"},
         { NULL }
       };
 
@@ -2044,6 +2051,44 @@ main (int argc, char** argv)
         }
 
       switch (manage_set_password (log_config, database, user, new_password))
+        {
+          case 0:
+            log_config_free ();
+            return EXIT_SUCCESS;
+          case 1:
+            g_critical ("%s: failed to find user\n", __FUNCTION__);
+            log_config_free ();
+            return EXIT_FAILURE;
+          case -2:
+            g_critical ("%s: database is wrong version\n", __FUNCTION__);
+            log_config_free ();
+            return EXIT_FAILURE;
+          case -3:
+            g_critical ("%s: database must be initialised"
+                        " (with --update or --rebuild)\n",
+                        __FUNCTION__);
+            log_config_free ();
+            return EXIT_FAILURE;
+          case -1:
+          default:
+            g_critical ("%s: internal error\n", __FUNCTION__);
+            log_config_free ();
+            return EXIT_FAILURE;
+        }
+    }
+
+  if (xml)
+    {
+      /* Process OMP, and then exit. */
+
+      if (user == NULL)
+        {
+          g_warning ("%s: --user required\n", __FUNCTION__);
+          return EXIT_FAILURE;
+        }
+
+      switch (manage_xml (log_config, database, fork_connection_for_scheduler, user,
+                          xml))
         {
           case 0:
             log_config_free ();

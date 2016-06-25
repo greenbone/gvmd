@@ -1499,6 +1499,166 @@ cert_check_time ()
                   "      END;");
 }
 
+/**
+ * @brief Run OMP.
+ *
+ * @param[in]  log_config       Log configuration.
+ * @param[in]  database         Location of manage database.
+ * @param[in]  fork_connection  OMP connection forker..
+ * @param[in]  name             Name of user.
+ * @param[in]  xml              OMP to run.
+ *
+ * @return 0 success, 1 failed to find user, -1 error.
+ */
+int
+manage_xml (GSList *log_config, const gchar *database,
+            int (*fork_connection)
+                   (int *,
+                    gnutls_session_t *,
+                    gnutls_certificate_credentials_t *,
+                    gchar*),
+            const gchar *name, const char *xml)
+{
+  int ret, socket, pid;
+  const gchar *db;
+  gnutls_session_t session;
+  gnutls_certificate_credentials_t credentials;
+
+  if (openvas_auth_init ())
+    return -1;
+
+  db = database ? database : sql_default_database ();
+
+  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
+  assert (ret != -4);
+  if (ret)
+    return ret;
+
+  init_manage_process (0, db);
+
+  if (name)
+    {
+      user_t user;
+      gchar *uuid;
+
+      if (find_user_by_name (name, &user))
+        {
+          sql_rollback ();
+          return -1;
+        }
+
+      if (user == 0)
+        {
+          sql_rollback ();
+          return 1;
+        }
+
+      uuid = user_uuid (user);
+      if (uuid == NULL)
+        {
+          sql_rollback ();
+          return -1;
+        }
+      pid = fork_connection (&socket, &session, &credentials, uuid);
+      g_free (uuid);
+      switch (pid)
+        {
+          case 0:
+            /* Child.  Break, run OMP, exit. */
+            break;
+
+          case -1:
+            /* Parent on error. */
+            g_warning ("%s: fork_connection failed\n", __FUNCTION__);
+            exit (EXIT_FAILURE);
+            break;
+
+          default:
+            {
+              int status;
+
+              /* Parent.  Wait for child, to check return. */
+
+              g_debug ("%s: %i fork_connectioned %i",
+                       __FUNCTION__, getpid (), pid);
+
+              if (signal (SIGCHLD, SIG_DFL) == SIG_ERR)
+                g_warning ("%s: failed to set SIGCHLD", __FUNCTION__);
+              while (waitpid (pid, &status, 0) < 0)
+                {
+                  if (errno == ECHILD)
+                    {
+                      g_warning ("%s: Failed to get child exit, OMP may not"
+                                 " have been run",
+                                 __FUNCTION__);
+                      exit (EXIT_FAILURE);
+                    }
+                  if (errno == EINTR)
+                    continue;
+                  g_warning ("%s: waitpid: %s",
+                             __FUNCTION__,
+                             strerror (errno));
+                  g_warning ("%s: As a result, OMP may not have been run",
+                             __FUNCTION__);
+                  exit (EXIT_FAILURE);
+                }
+              if (WIFEXITED (status))
+                switch (WEXITSTATUS (status))
+                  {
+                    case EXIT_SUCCESS:
+                      /* Child succeeded. */
+                      exit (EXIT_SUCCESS);
+
+                    case EXIT_FAILURE:
+                    default:
+                      break;
+                  }
+
+              /* Child failed, reset task schedule time and exit. */
+
+              printf ("Failed to run OMP.\n");
+              g_warning ("%s: child failed\n", __FUNCTION__);
+              exit (EXIT_FAILURE);
+            }
+        }
+
+      /* Run the OMP. */
+
+      if (omp_authenticate (&session, name, ""))
+        {
+          printf ("Failed to authenticate.\n");
+          g_warning ("%s: omp_authenticate failed", __FUNCTION__);
+          openvas_server_free (socket, session, credentials);
+          exit (EXIT_FAILURE);
+        }
+
+      if (openvas_server_sendf (&session, "%s", xml) == -1)
+        {
+          printf ("Failed to send to manager.\n");
+          openvas_server_free (socket, session, credentials);
+          exit (EXIT_FAILURE);
+        }
+
+      /* Read the response. */
+
+      entity_t entity = NULL;
+      if (read_entity (&session, &entity))
+        {
+          printf ("Failed to read response.\n");
+          openvas_server_free (socket, session, credentials);
+          exit (EXIT_FAILURE);
+        }
+
+      print_entity_format (entity, GINT_TO_POINTER (0));
+      openvas_server_free (socket, session, credentials);
+      exit (EXIT_SUCCESS);
+    }
+  else
+    assert (0);
+
+  return 0;
+}
+
 
 /* Filter utilities. */
 

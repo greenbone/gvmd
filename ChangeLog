@@ -1,3 +1,15 @@
+2016-06-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add option --xml, for running OMP directly.
+
+	* src/manage_sql.c (manage_xml): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/openvasmd.c (serve_client): Only set socket option if there is a
+	socket.
+	(main): Add --xml.
+
 2016-06-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add immutable setting "Default CA Cert", with option --modify-setting.

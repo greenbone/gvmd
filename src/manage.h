@@ -86,6 +86,15 @@ manage_cleanup_process_error (int);
 void
 manage_reset_currents ();
 
+int
+manage_xml (GSList *, const gchar *,
+            int (*fork_connection)
+                   (int *,
+                    gnutls_session_t *,
+                    gnutls_certificate_credentials_t *,
+                    gchar*),
+            const gchar *, const char *);
+
 
 /* Commands. */
 
