@@ -2087,6 +2087,33 @@ main (int argc, char** argv)
           return EXIT_FAILURE;
         }
 
+      if (strcmp (xml, "-") == 0)
+        {
+          GError *error;
+          gchar *content;
+          gsize content_len;
+          GIOChannel *stdin_channel;
+
+          /* Mixing stream and file descriptor IO might lead to trouble. */
+          error = NULL;
+          stdin_channel = g_io_channel_unix_new (fileno (stdin));
+          g_io_channel_read_to_end (stdin_channel, &content, &content_len,
+                                    &error);
+          g_io_channel_shutdown (stdin_channel, TRUE, NULL);
+          g_io_channel_unref (stdin_channel);
+          if (error)
+            {
+              g_critical ("%s: Failed to read from stdin: %s\n", __FUNCTION__,
+                          error->message);
+              g_error_free (error);
+              log_config_free ();
+              return EXIT_FAILURE;
+            }
+
+          g_free (xml);
+          xml = content;
+        }
+
       switch (manage_xml (log_config, database, fork_connection_for_scheduler, user,
                           xml))
         {
