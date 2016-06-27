@@ -396,11 +396,23 @@ Where:
 <uuid>       refers to the UUID used by OpenVAS Manager to identify the scanner;
              the UUID can be retrieved with "openvasmd --get-scanners"
 <cacert>     refers to the certificate of the CA used to sign the scanner
-             certificate
+             certificate. Leaving this empty will delete the CA certificate of
+             the scanner. This option can be dropped if the scanner uses
+             a certificate that corresponds with the default CA certficate of Manager
 <clientcert> refers to the certificate Manager uses to authenticate when
              connecting to the scanner
 <clientkey>  refers to the private key Manager uses to authenticate when
              connecting to the scanner
+
+To set just a new default CA certificate:
+
+  $ openvasmd --modify-setting 9ac801ea-39f8-11e6-bbaa-28d24461215b \
+              --value "`cat /var/lib/openvas/CA/cacert.pem`"
+
+Replace the path to the pem-file with the one of your setup. The
+UUID is the fixed one of the immutable global setting for the default
+CA certificate and thus does not need to be changed.
+
 
 
 Changing the Maximum Number of Rows per Page
