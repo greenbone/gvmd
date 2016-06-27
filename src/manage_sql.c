@@ -44789,7 +44789,8 @@ manage_delete_scanner (GSList *log_config, const gchar *database,
  * @param[in]  host             Host of scanner.
  * @param[in]  port             Port of scanner.
  * @param[in]  type             Type of scanner.
- * @param[in]  ca_pub_path      CA Certificate path.
+ * @param[in]  ca_pub_path      CA Certificate path.  NULL to leave it as is.
+ *                              "" to use the default.
  * @param[in]  key_pub_path     Certificate path.
  * @param[in]  key_priv_path    Private key path.
  *
@@ -44849,7 +44850,9 @@ manage_modify_scanner (GSList *log_config, const gchar *database,
 
   if (ca_pub_path)
     {
-      if (g_file_get_contents (ca_pub_path, &ca_pub, NULL, &error) == 0)
+      if (*ca_pub_path == '\0')
+        ca_pub = g_strdup ("");
+      else if (g_file_get_contents (ca_pub_path, &ca_pub, NULL, &error) == 0)
         {
           g_warning ("%s: %s\n", __FUNCTION__, error->message);
           g_error_free (error);
