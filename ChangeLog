@@ -1,5 +1,9 @@
 2016-06-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (days_from_now): Add space.
+
+2016-06-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (escalate_1): Get the details, because the report
 	formats use the results.
 

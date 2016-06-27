@@ -997,7 +997,7 @@ parse_iso_time (const char *text_time)
 int
 days_from_now (time_t *epoch_time)
 {
-    time_t now = time(NULL);
+    time_t now = time (NULL);
     int diff = *epoch_time - now;
 
     if (diff < 0) return -1;
