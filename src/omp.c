@@ -6919,7 +6919,7 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("CREATE_TASK", element_name) == 0)
           {
-            create_task_data->task = make_task (NULL, NULL);
+            create_task_data->task = make_task (NULL, NULL, 1, 1);
             create_task_data->alerts = make_array ();
             create_task_data->groups = make_array ();
             set_client_state (CLIENT_CREATE_TASK);

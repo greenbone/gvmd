@@ -11919,7 +11919,15 @@ manage_alert (const char *alert_id, const char *task_id, event_t event,
 int
 manage_test_alert (const char *alert_id)
 {
+  int ret;
   alert_t alert;
+  task_t task;
+  report_t report;
+  result_t result;
+  char *task_id, *report_id;
+  time_t now;
+  const char *now_string;
+  gchar *clean;
 
   if (acl_user_may ("test_alert") == 0)
     return 99;
@@ -11950,10 +11958,50 @@ manage_test_alert (const char *alert_id)
       return ret;
     }
 
-  return manage_alert (alert_id,
-                       MANAGE_EXAMPLE_TASK_UUID,
-                       EVENT_TASK_RUN_STATUS_CHANGED,
-                       (void*) TASK_STATUS_DONE);
+  task = make_task (g_strdup ("Temporary Task for Alert"),
+                    g_strdup (""),
+                    0,  /* Exclude from assets. */
+                    0); /* Skip event and log. */
+
+  report_id = openvas_uuid_make ();
+  if (report_id == NULL)
+    return -1;
+  task_uuid (task, &task_id);
+  report = make_report (task, report_id, TASK_STATUS_DONE);
+  result = make_result (task, "127.0.0.1", "telnet (23/tcp)",
+                        "1.3.6.1.4.1.25623.1.0.10330", "Alarm",
+                        "A telnet server seems to be running on this port.");
+  if (result == 0)
+    {
+      ret = -1;
+      goto exit;
+    }
+  now = time (NULL);
+  now_string = ctime (&now);
+  if (strlen (now_string) == 0)
+    {
+      ret = -1;
+      goto exit;
+    }
+  clean = g_strdup (now_string);
+  if (clean[strlen (clean) - 1] == '\n')
+    clean[strlen (clean) - 1] = '\0';
+  set_task_start_time_otp (task, g_strdup (clean));
+  set_scan_start_time_otp (report, g_strdup (clean));
+  set_scan_host_start_time_otp (report, "127.0.0.1", clean);
+  report_add_result (report, result);
+  set_scan_host_end_time_otp (report, "127.0.0.1", clean);
+  set_scan_end_time_otp (report, clean);
+  g_free (clean);
+  ret = manage_alert (alert_id,
+                      task_id,
+                      EVENT_TASK_RUN_STATUS_CHANGED,
+                      (void*) TASK_STATUS_DONE);
+ exit:
+  delete_task (task, 1);
+  free (task_id);
+  free (report_id);
+  return ret;
 }
 
 /**
@@ -17292,12 +17340,9 @@ report_scheduled (report_t report)
  * @param[in]  task    Task.
  * @param[in]  status  New run status.
  */
-void
-set_task_run_status (task_t task, task_status_t status)
+static void
+set_task_run_status_internal (task_t task, task_status_t status)
 {
-  char *uuid;
-  char *name;
-
   if ((task == current_scanner_task) && current_report)
     sql ("UPDATE reports SET scan_run_status = %u WHERE id = %llu;",
          status,
@@ -17305,6 +17350,23 @@ set_task_run_status (task_t task, task_status_t status)
   sql ("UPDATE tasks SET run_status = %u WHERE id = %llu;",
        status,
        task);
+}
+
+/**
+ * @brief Set the run state of a task.
+ *
+ * Logs and generates event.
+ *
+ * @param[in]  task    Task.
+ * @param[in]  status  New run status.
+ */
+void
+set_task_run_status (task_t task, task_status_t status)
+{
+  char *uuid;
+  char *name;
+
+  set_task_run_status_internal (task, status);
 
   task_uuid (task, &uuid);
   name = task_name (task);
@@ -19911,7 +19973,9 @@ create_report (array_t *results, const char *task_id, const char *task_name,
     }
   else
     task = make_task (g_strdup (task_name),
-                      task_comment ? g_strdup (task_comment) : NULL);
+                      task_comment ? g_strdup (task_comment) : NULL,
+                      1,  /* Include in assets. */
+                      1); /* Log and generate event. */
 
   /* Generate report UUID. */
 
@@ -29792,13 +29856,15 @@ free_tasks ()
  * The char* parameters name and comment are used directly and freed
  * when the task is freed.
  *
- * @param[in]  name     The name of the task.
- * @param[in]  comment  A comment associated the task.
+ * @param[in]  name       The name of the task.
+ * @param[in]  comment    A comment associated the task.
+ * @param[in]  in_assets  Whether task must be considered for assets.
+ * @param[in]  event      Whether to be generate event and event log.
  *
  * @return A pointer to the new task.
  */
 task_t
-make_task (char* name, char* comment)
+make_task (char* name, char* comment, int in_assets, int event)
 {
   task_t task;
   char* uuid = openvas_uuid_make ();
@@ -29819,10 +29885,14 @@ make_task (char* name, char* comment)
        quoted_name ? quoted_name : "",
        quoted_comment ? quoted_comment : "");
   task = sql_last_insert_id ();
-  set_task_run_status (task, TASK_STATUS_NEW);
+  if (event)
+    set_task_run_status (task, TASK_STATUS_NEW);
+  else
+    set_task_run_status_internal (task, TASK_STATUS_NEW);
   sql ("INSERT INTO task_preferences (task, name, value)"
-       " VALUES (%llu, 'in_assets', 'yes')",
-       task);
+       " VALUES (%llu, 'in_assets', '%s')",
+       task,
+       in_assets ? "yes" : "no");
   sql ("INSERT INTO task_preferences (task, name, value)"
        " VALUES (%llu, 'assets_apply_overrides', 'yes')",
        task);

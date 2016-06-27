@@ -1,5 +1,21 @@
 2016-06-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Use a temporary task for TEST_ALERT, to remove the last dependence on
+	the example task.
+
+	* src/manage_sql.c (manage_test_alert): Use a temporary task instead of
+	the example task.
+	(set_task_run_status_internal): New function.
+	(set_task_run_status): Use set_task_run_status_internal.
+	(create_report): Add new make_task args.
+	(make_task): Add args for in_assets and skipping event.
+
+	* src/manage.h: Adjust header accordingly.
+
+	* src/omp.c (omp_xml_handle_start_element): Add new make_task args.
+
+2016-06-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_modify_scanner): If the CA cert path is "",
 	then use the default cert.
 

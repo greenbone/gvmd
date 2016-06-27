@@ -863,7 +863,7 @@ void
 free_tasks ();
 
 task_t
-make_task (char*, char*);
+make_task (char*, char*, int, int);
 
 void
 make_task_complete (const char *);
