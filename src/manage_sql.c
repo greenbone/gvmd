@@ -12901,13 +12901,9 @@ init_task_iterator (iterator_t* iterator, const get_data_t *get)
                             filter_columns,
                             0,
                             extra_tables,
-                            (get->id
-                             && (strcmp (get->id, MANAGE_EXAMPLE_TASK_UUID)
-                                 == 0))
-                             ? " AND hidden = 1"
-                             : (get->trash
-                                 ? " AND hidden = 2"
-                                 : " AND hidden = 0"),
+                            get->trash
+                             ? " AND hidden = 2"
+                             : " AND hidden = 0",
                             current_credentials.uuid ? TRUE : FALSE,
                             FALSE,
                             NULL);
@@ -13972,71 +13968,6 @@ make_port_ranges_openvas_default (port_list_t list)
   RANGE (PORT_PROTOCOL_TCP, 61446, 61446);
   RANGE (PORT_PROTOCOL_TCP, 65000, 65000);
   RANGE (PORT_PROTOCOL_TCP, 65301, 65301);
-}
-
-/**
- * @brief Ensure the predefined example task and report exists.
- */
-static void
-check_db_tasks ()
-{
-  if (sql_int ("SELECT count(*) FROM tasks"
-               " WHERE uuid = '" MANAGE_EXAMPLE_TASK_UUID "';")
-      == 0)
-    {
-      sql ("INSERT into tasks (uuid, owner, name, hidden, comment,"
-           " run_status, start_time, end_time, config, target, scanner, slave,"
-           " alterable, creation_time, modification_time)"
-           " VALUES ('" MANAGE_EXAMPLE_TASK_UUID "', NULL, 'Example task',"
-           " 1, 'This is an example task for the help pages.', %u,"
-           " 1251236905, 1251237136,"
-           " (SELECT id FROM configs WHERE name = 'Full and fast'),"
-           " (SELECT id FROM targets WHERE name = 'Localhost'),"
-           " (SELECT id FROM scanners WHERE uuid = '" SCANNER_UUID_DEFAULT "'),"
-           " 0, 0, m_now (), m_now ());",
-           TASK_STATUS_DONE);
-    }
-
-  if (sql_int ("SELECT count(*) FROM reports"
-               " WHERE uuid = '343435d6-91b0-11de-9478-ffd71f4c6f30';")
-      == 0)
-    {
-      task_t task;
-      result_t result;
-      report_t report;
-
-      /* Setup a dummy user, so that find_task will work. */
-      current_credentials.uuid = "";
-
-      if (find_task (MANAGE_EXAMPLE_TASK_UUID, &task))
-        g_warning ("%s: error while finding example task", __FUNCTION__);
-      else if (task == 0)
-        g_warning ("%s: failed to find example task", __FUNCTION__);
-      else
-        {
-          sql ("INSERT into reports (uuid, owner, hidden, task, comment,"
-               " start_time, end_time, scan_run_status, slave_progress,"
-               " slave_task_uuid)"
-               " VALUES ('343435d6-91b0-11de-9478-ffd71f4c6f30', NULL, 1, %llu,"
-               " 'This is an example report for the help pages.',"
-               " 1251236905, 1251237136,"
-               " %u, 0, '');",
-               task, TASK_STATUS_DONE);
-          report = sql_last_insert_id ();
-          sql ("INSERT into results (owner, date, uuid, task, host, port, nvt,"
-               " type, severity, description, qod)"
-               " VALUES (NULL, m_now(), 'cb291ec0-1b0d-11df-8aa1-002264764cea',"
-               " %llu, '127.0.0.1', 'telnet (23/tcp)',"
-               " '1.3.6.1.4.1.25623.1.0.10330', 'Security Note', 2.0,"
-               " 'A telnet server seems to be running on this port',"
-               " '" G_STRINGIFY (QOD_DEFAULT) "');",
-               task);
-          result = sql_last_insert_id ();
-          report_add_result (report, result);
-          manage_report_host_add (report, "127.0.0.1", 1251236906, 1251237135);
-        }
-      current_credentials.uuid = NULL;
-    }
 }
 
 /**
@@ -15825,7 +15756,6 @@ check_db (int check_encryption_key)
   check_db_targets ();
   if (check_db_scanners ())
     goto fail;
-  check_db_tasks ();
   if (check_db_report_formats ())
     goto fail;
   if (check_db_report_formats_trash ())
@@ -16742,13 +16672,9 @@ resource_count (const char *type, const get_data_t *get)
                      : " AND (SELECT hidden FROM tasks"
                        "      WHERE tasks.id = task)"
                        "     = 0")
-                 : (get->id
-                    && (strcmp (get->id, MANAGE_EXAMPLE_TASK_UUID)
-                        == 0))
-                    ? " AND hidden = 1"
-                    : (get->trash
-                        ? " AND hidden = 2"
-                        : " AND hidden = 0"),
+                 : (get->trash
+                     ? " AND hidden = 2"
+                     : " AND hidden = 0"),
                 type_owned (type));
 }
 
@@ -16853,13 +16779,9 @@ task_count (const get_data_t *get)
                 where_columns,
                 extra_columns, 0,
                 extra_tables,
-                (get->id
-                 && (strcmp (get->id, MANAGE_EXAMPLE_TASK_UUID)
-                     == 0))
-                 ? " AND hidden = 1"
-                 : (get->trash
-                     ? " AND hidden = 2"
-                     : " AND hidden = 0"),
+                get->trash
+                 ? " AND hidden = 2"
+                 : " AND hidden = 0",
                 TRUE);
 
   g_free (extra_tables);

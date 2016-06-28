@@ -1,3 +1,24 @@
+2016-06-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Remove the example task.  Hence increase database version to 168.  Add
+	database migration from version 167 to 168.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 168.
+
+	* src/manage_migrators.c (migrate_35_to_36, migrate_36_to_37): Use
+	actual UUID.
+	(migrate_167_to_168): New function.
+	(database_migrators): Add migrate_167_to_168.
+
+	* src/manage.h (MANAGE_EXAMPLE_TASK_UUID): Remove.
+
+	* src/manage_sql.c (init_task_iterator, resource_count)
+	(task_count): Remove example task special case.
+	(check_db_tasks): Remove.
+	(check_db): Remove check_db_tasks.
+
+	* doc/db.png: Update for version change.
+
 2016-06-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (init_get_iterator2): Add "host" and "os" to the
@@ -12,7 +33,7 @@
 2016-06-27  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* INSTALL: Add some notes on the global CA certificate.
- 
+
 2016-06-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (days_from_now): Add space.

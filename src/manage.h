@@ -625,8 +625,6 @@ extern task_t current_scanner_task;
 
 extern report_t current_report;
 
-#define MANAGE_EXAMPLE_TASK_UUID "343435d6-91b0-11de-9478-ffd71f4c6f29"
-
 
 /* Task code specific to the representation of tasks. */
 

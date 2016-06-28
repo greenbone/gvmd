@@ -2980,7 +2980,7 @@ migrate_35_to_36 ()
   sql ("UPDATE tasks SET"
        " target = (SELECT id FROM targets WHERE name = 'Localhost'),"
        " config = (SELECT id FROM configs WHERE name = 'Full and fast')"
-       " WHERE uuid = '" MANAGE_EXAMPLE_TASK_UUID "';");
+       " WHERE uuid = '343435d6-91b0-11de-9478-ffd71f4c6f29';");
 
   /* Scanner preference "port_range" moved from config into target. */
 
@@ -3094,7 +3094,7 @@ migrate_36_to_37 ()
   sql ("UPDATE tasks SET"
        " target = (SELECT id FROM targets WHERE name = 'Localhost'),"
        " config = (SELECT id FROM configs WHERE name = 'Full and fast')"
-       " WHERE uuid = '" MANAGE_EXAMPLE_TASK_UUID "';");
+       " WHERE uuid = '343435d6-91b0-11de-9478-ffd71f4c6f29';");
 
   /* Set the database version to 37. */
 
@@ -12487,6 +12487,64 @@ migrate_166_to_167 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 167 to version 168.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_167_to_168 ()
+{
+  const char *uuid;
+
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 167. */
+
+  if (manage_db_version () != 167)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  uuid = "343435d6-91b0-11de-9478-ffd71f4c6f29";
+
+  sql ("DELETE FROM report_counts"
+       " WHERE report IN (SELECT id FROM reports"
+       "                  WHERE task = (SELECT id FROM tasks"
+       "                                WHERE uuid = '%s'));",
+       uuid);
+
+  sql ("DELETE FROM report_hosts"
+       " WHERE report IN (SELECT id FROM reports"
+       "                  WHERE task = (SELECT id FROM tasks"
+       "                                WHERE uuid = '%s'));",
+       uuid);
+
+  sql ("DELETE FROM results"
+       " WHERE task = (SELECT id FROM tasks"
+       "               WHERE uuid = '%s');",
+       uuid);
+
+  sql ("DELETE FROM reports"
+       " WHERE task = (SELECT id FROM tasks"
+       "               WHERE uuid = '%s');",
+       uuid);
+
+  sql ("DELETE FROM tasks WHERE uuid = '%s';",
+       uuid);
+
+  /* Set the database version to 168. */
+
+  set_db_version (168);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -12668,6 +12726,7 @@ static migrator_t database_migrators[]
     {165, migrate_164_to_165},
     {166, migrate_165_to_166},
     {167, migrate_166_to_167},
+    {168, migrate_167_to_168},
     /* End marker. */
     {-1, NULL}};
 
