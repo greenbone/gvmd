@@ -5450,6 +5450,8 @@ get_assets
        attribute filter { text }?
        & # ID of filter to use to filter query.
        attribute filt_id { uuid }?
+       & # Whether to ignore info used to split the report into pages like the filter terms "first" and "rows".
+       attribute ignore_pagination { boolean }?
      }
 
 ## Command get_credentials

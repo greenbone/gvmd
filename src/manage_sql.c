@@ -5151,7 +5151,9 @@ init_get_iterator2 (iterator_t* iterator, const char *type,
     columns = columns_build_select (select_columns);
 
   if (get->ignore_pagination
-      && ((strcmp (type, "task") == 0)
+      && ((strcmp (type, "host") == 0)
+          || (strcmp (type, "os") == 0)
+          || (strcmp (type, "task") == 0)
           || (strcmp (type, "report") == 0)
           || (strcmp (type, "result") == 0)))
     {
@@ -57990,7 +57992,7 @@ hosts_set_details (report_t report)
        " AND (SELECT value = 'yes' FROM task_preferences"
        "      WHERE task = (SELECT task FROM reports WHERE id = %llu)"
        "      AND name = 'in_assets')"
-       " AND (name = 'best_os_cpe' OR name = 'best_os_txt');",
+       " AND (name IN ('best_os_cpe', 'best_os_txt', 'traceroute'));",
        report,
        report,
        report,

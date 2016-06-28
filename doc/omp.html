@@ -16621,6 +16621,11 @@ get_alerts_response_alert_count_page
           (<a href="#type_uuid">uuid</a>)
           ID of filter to use to filter query.
           </li>
+<li>
+          @<b>ignore_pagination</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to ignore info used to split the report into pages like the filter terms "first" and "rows".
+          </li>
 </ul>
 </li>
 <li style="margin-top: 15px;">
@@ -16978,6 +16983,7 @@ get_alerts_response_alert_count_page
        attribute asset_id { uuid }?
        &amp; attribute filter { text }?
        &amp; attribute filt_id { uuid }?
+       &amp; attribute ignore_pagination { boolean }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_assets_response
