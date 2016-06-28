@@ -1214,7 +1214,7 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
         }
       else
         owned_clause
-         = g_strdup_printf (/* Either a global resource (like target Localhost).
+         = g_strdup_printf (/* Either a global resource (like Full and Fast).
                              *
                              * The globals are only required when GET permission
                              * is requested, because it is only possible to read

@@ -1947,7 +1947,7 @@ migrate_18_to_19 ()
        " WHERE name = 'empty';");
 
   sql ("UPDATE targets"
-       " SET uuid = '" TARGET_UUID_LOCALHOST "'"
+       " SET uuid = 'b493b7a8-7489-11df-a3ec-002264764cea'"
        " WHERE name = 'Localhost';");
 
   /* Set the database version to 19. */
@@ -12545,6 +12545,134 @@ migrate_167_to_168 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 168 to version 169.
+ *
+ * @param[in]  owner  Target owner.
+ * @param[in]  uuid   Target UUID.
+ * @param[out] new    New target.
+ *
+ * @return 0 success, -1 error.
+ */
+static void
+migrate_168_to_169_copy_target (user_t owner, const gchar *uuid, target_t *new)
+{
+  assert (new);
+
+  sql ("INSERT INTO targets"
+       " (uuid, owner, name, comment, creation_time, modification_time,"
+       "  hosts, exclude_hosts, port_list, reverse_lookup_only,"
+       "  reverse_lookup_unify)"
+       " SELECT make_uuid (), %llu, name, comment, m_now (), m_now (),"
+       "        hosts, exclude_hosts, port_list, reverse_lookup_only,"
+       "        reverse_lookup_unify"
+       " FROM targets"
+       " WHERE uuid = '%s';",
+       owner,
+       uuid);
+
+  *new = sql_last_insert_id ();
+
+  sql ("INSERT INTO tags"
+       " (uuid, owner, name, comment, creation_time, modification_time,"
+       "  resource_type, resource, resource_uuid, resource_location,"
+       "  active, value)"
+       " SELECT make_uuid (), %llu, name, comment, m_now (), m_now (),"
+       "        resource_type, %llu,"
+       "        (SELECT uuid FROM targets WHERE id = %llu),"
+       "        resource_location, active, value"
+       " FROM tags WHERE resource_type = 'target'"
+       "           AND resource = (SELECT id FROM targets WHERE uuid = '%s')"
+       "           AND resource_location = " G_STRINGIFY (LOCATION_TABLE) ";",
+       owner,
+       *new,
+       *new,
+       uuid);
+}
+
+/**
+ * @brief Migrate the database from version 168 to version 169.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_168_to_169 ()
+{
+  const char *uuid;
+  iterator_t users;
+
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 168. */
+
+  if (manage_db_version () != 168)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The predefined target Localhost was removed. */
+
+  uuid = "b493b7a8-7489-11df-a3ec-002264764cea";
+
+  init_iterator (&users, "SELECT id FROM users;");
+  while (next (&users))
+    {
+      user_t owner;
+
+      owner = iterator_int64 (&users, 0);
+
+      if (sql_int ("SELECT count (*) FROM tasks"
+                   " WHERE owner = %llu"
+                   " AND target = (SELECT id FROM targets"
+                   "               WHERE uuid = '%s');",
+                   owner,
+                   uuid))
+        {
+          target_t new;
+
+          /* This user is using Localhost.  Create a copy owned by the user. */
+
+          current_credentials.username = sql_string ("SELECT name FROM users"
+                                                     " WHERE owner = %llu;",
+                                                     owner);
+          current_credentials.uuid = sql_string ("SELECT uuid FROM users"
+                                                 " WHERE owner = %llu;",
+                                                 owner);
+
+          migrate_168_to_169_copy_target (owner, uuid, &new);
+
+          free (current_credentials.username);
+          free (current_credentials.uuid);
+
+          /* Assign the copy to the user's tasks. */
+
+          sql ("UPDATE tasks SET target = %llu"
+               " WHERE owner = %llu"
+               " AND target = (SELECT id FROM targets WHERE uuid = '%s');",
+               new,
+               owner,
+               uuid);
+        }
+    }
+  cleanup_iterator (&users);
+
+  /* Delete the old Localhost. */
+
+  sql ("DELETE FROM targets WHERE uuid = '%s';",
+       uuid);
+
+  /* Set the database version to 169. */
+
+  set_db_version (169);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -12727,6 +12855,7 @@ static migrator_t database_migrators[]
     {166, migrate_165_to_166},
     {167, migrate_166_to_167},
     {168, migrate_167_to_168},
+    {169, migrate_168_to_169},
     /* End marker. */
     {-1, NULL}};
 

@@ -13971,29 +13971,6 @@ make_port_ranges_openvas_default (port_list_t list)
 }
 
 /**
- * @brief Ensure the predefined target exists.
- */
-static void
-check_db_targets ()
-{
-  if (sql_int ("SELECT count(*) FROM targets WHERE name = 'Localhost';")
-      == 0)
-    sql ("INSERT INTO targets"
-         " (uuid, owner, name, hosts, creation_time, modification_time,"
-         "  port_list)"
-         " VALUES ('" TARGET_UUID_LOCALHOST "', NULL, 'Localhost',"
-         " 'localhost', m_now (), m_now (),"
-         " (SELECT id FROM port_lists WHERE uuid = '" PORT_LIST_UUID_DEFAULT "'));");
-  else
-    /* The port list was wrong for a while, so make sure it's correct. */
-    sql ("UPDATE targets SET port_list = "
-         " (SELECT id FROM port_lists"
-         "  WHERE uuid = '" PORT_LIST_UUID_DEFAULT "')"
-         " WHERE uuid = '" TARGET_UUID_LOCALHOST "';");
-
-}
-
-/**
  * @brief Ensure the predefined scanner exists.
  *
  * @return 0 if success, -1 if error.
@@ -15753,7 +15730,6 @@ check_db (int check_encryption_key)
   check_db_nvts ();
   check_db_configs ();
   check_db_port_lists ();
-  check_db_targets ();
   if (check_db_scanners ())
     goto fail;
   if (check_db_report_formats ())
@@ -31558,9 +31534,6 @@ delete_target (const char *target_id, int ultimate)
   target_t target = 0;
   target_t trash_target;
 
-  if (strcmp (target_id, TARGET_UUID_LOCALHOST) == 0)
-    return 3;
-
   sql_begin_immediate ();
 
   if (acl_user_may ("delete_target") == 0)
@@ -33006,11 +32979,7 @@ trash_target_in_use (target_t target)
 int
 target_writable (target_t target)
 {
-  return sql_int ("SELECT count(*) FROM targets"
-                  " WHERE id = %llu"
-                  " AND uuid = '" TARGET_UUID_LOCALHOST "'",
-                  target)
-         == 0;
+  return 1;
 }
 
 /**
@@ -33023,12 +32992,7 @@ target_writable (target_t target)
 int
 trash_target_writable (target_t target)
 {
-  return (sql_int ("SELECT count(*) FROM targets_trash"
-                   " WHERE id = %llu"
-                   " AND uuid = '" TARGET_UUID_LOCALHOST "'",
-                   target)
-          || trash_target_in_use (target))
-         == 0;
+  return trash_target_in_use (target) == 0;
 }
 
 /**

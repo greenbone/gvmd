@@ -1,5 +1,27 @@
 2016-06-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Remove the predefined target Localhost.  Hence increase database version
+	to 169.  Add database migration from version 168 to 169.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 169.
+
+	* src/manage_migrators.c (migrate_18_to_19): Specify UUID directly.
+	(migrate_168_to_169_copy_target, migrate_168_to_169): New functions.
+	(database_migrators): Add migrate_168_to_169.
+
+	* src/manage_acl.c (acl_where_owned_user): Replace Localhost as example.
+
+	* src/manage_sql.c (check_db_targets): Remove.
+	(check_db): Remove check_db_tasks.
+	(delete_target, target_writable, trash_target_writable): Remove
+	Localhost special case.
+
+	* src/manage_sql.h (TARGET_UUID_LOCALHOST): Remove.
+
+	* doc/db.png: Update for version change.
+
+2016-06-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Remove the example task.  Hence increase database version to 168.  Add
 	database migration from version 167 to 168.
 

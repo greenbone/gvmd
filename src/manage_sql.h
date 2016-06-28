@@ -198,11 +198,6 @@
 #define ROLE_UUID_OBSERVER "87a7ebce-b74d-11e2-a81f-406186ea4fc5"
 
 /**
- * @brief UUID of 'Localhost' target.
- */
-#define TARGET_UUID_LOCALHOST "b493b7a8-7489-11df-a3ec-002264764cea"
-
-/**
  * @brief UUID of 'OpenVAS Default' scanner.
  */
 #define SCANNER_UUID_DEFAULT "08b69003-5fc2-4037-a479-93b440211c73"
