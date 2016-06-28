@@ -11344,7 +11344,7 @@ migrate_158_to_159 ()
     }
   cleanup_iterator (&scanners);
 
- /* Create new credentials for trashcan */
+  /* Create new credentials for trashcan */
   init_iterator (&scanners,
                  "SELECT id, name, key_pub, key_priv, owner"
                  " FROM scanners_trash;");
@@ -12508,6 +12508,8 @@ migrate_167_to_168 ()
     }
 
   /* Update the database. */
+
+  /* The example task was removed. */
 
   uuid = "343435d6-91b0-11de-9478-ffd71f4c6f29";
 

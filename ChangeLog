@@ -1,5 +1,10 @@
 2016-06-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_migrators.c (migrate_158_to_159): Align comment.
+	(migrate_167_to_168): Add comment.
+
+2016-06-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Remove the predefined target Localhost.  Hence increase database version
 	to 169.  Add database migration from version 168 to 169.
 
