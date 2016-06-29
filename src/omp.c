@@ -25327,12 +25327,14 @@ create_task_fail:
                          (XML_ERROR_SYNTAX ("modify_task",
                                             "Invalid auto_delete value"));
                         fail = 1;
+                        break;
                       case 2:
                         SEND_TO_CLIENT_OR_FAIL
                          (XML_ERROR_SYNTAX ("modify_task",
                                             "Auto Delete count out of range"
                                             " (must be from 5 to 1200)"));
                         fail = 1;
+                        break;
                       default:
                         SEND_TO_CLIENT_OR_FAIL
                          (XML_INTERNAL_ERROR ("modify_task"));

@@ -1,3 +1,10 @@
+2016-06-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r25646.
+
+	* src/omp.c (omp_xml_handle_end_element): In case CLIENT_MODIFY_TASK,
+	add missing break statements in set_task_preferences switch case block.
+
 2016-06-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r25165.
