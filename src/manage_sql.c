@@ -60274,6 +60274,8 @@ setting_name (const gchar *uuid)
 {
   if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
     return "Default CA Cert";
+  if (strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE) == 0)
+    return "Max Rows Per Page";
   return NULL;
 }
 
@@ -60289,7 +60291,39 @@ setting_description (const gchar *uuid)
 {
   if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
     return "Default CA Certificate for Scanners";
+  if (strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE) == 0)
+    return "The default maximum number of rows displayed in any listing.";
   return NULL;
+}
+
+/**
+ * @brief Get the name of a setting.
+ *
+ * @param[in]  uuid   UUID of setting.
+ * @param[in]  value  Value of setting, to verify.
+ * @param[in]  user   User setting is to apply to, or NULL.
+ *
+ * @return 0 if valid, else 1.
+ */
+static int
+setting_verify (const gchar *uuid, const gchar *value, const gchar *user)
+{
+  if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
+    return 0;
+
+  if (strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE) == 0)
+    {
+      int max_rows;
+      max_rows = atoi (value);
+      if (user)
+        {
+          if (max_rows < -1)
+            return 1;
+        }
+      else if (max_rows < 0)
+        return 1;
+    }
+  return 0;
 }
 
 /**
@@ -60303,7 +60337,7 @@ setting_description (const gchar *uuid)
  *
  * @return 0 success, 1 failed to find user, 2 value out of range, 3 error in
  *         setting uuid, 4 modifying setting for a single user forbidden,
- *         -1 error.
+ *         5 syntax error in setting value, -1 error.
  */
 int
 manage_modify_setting (GSList *log_config, const gchar *database,
@@ -60313,8 +60347,12 @@ manage_modify_setting (GSList *log_config, const gchar *database,
   const gchar *db;
   gchar *quoted_name, *quoted_description, *quoted_value;
 
-  if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT))
+  if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT)
+      && strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE))
     return 3;
+
+  if (setting_verify (uuid, value, name))
+    return 5;
 
   if (openvas_auth_init ())
     return -1;

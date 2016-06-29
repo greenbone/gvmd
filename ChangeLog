@@ -1,5 +1,16 @@
 2016-06-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add Max Rows Per Page handling to --modify-setting.
+
+	* src/manage_sql.c (setting_name, setting_description): Add Max Rows
+	Per Page.
+	(setting_verify): New function.
+	(manage_modify_setting): Add Max Rows Per Page.  Verify setting value.
+
+	* src/openvasmd.c (main): Handle new manage_modify_setting return.
+
+2016-06-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_migrators.c (migrate_158_to_159): Align comment.
 	(migrate_167_to_168): Add comment.
 

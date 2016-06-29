@@ -2168,6 +2168,11 @@ main (int argc, char** argv)
                         __FUNCTION__);
             log_config_free ();
             return EXIT_FAILURE;
+          case 5:
+            g_critical ("%s: syntax error in setting value\n",
+                        __FUNCTION__);
+            log_config_free ();
+            return EXIT_FAILURE;
           case -2:
             g_critical ("%s: database is wrong version\n", __FUNCTION__);
             log_config_free ();
