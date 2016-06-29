@@ -3107,16 +3107,24 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
   omp_delete_port_list_ext (session, slave_port_list_uuid, del_opts);
   free (slave_port_list_uuid);
  fail_snmp_credential:
-  omp_delete_lsc_credential_ext (session, slave_snmp_credential_uuid, del_opts);
+  if (slave_snmp_credential_uuid)
+    omp_delete_lsc_credential_ext (session, slave_snmp_credential_uuid,
+                                   del_opts);
   free (slave_snmp_credential_uuid);
  fail_esxi_credential:
-  omp_delete_lsc_credential_ext (session, slave_esxi_credential_uuid, del_opts);
+  if (slave_esxi_credential_uuid)
+    omp_delete_lsc_credential_ext (session, slave_esxi_credential_uuid,
+                                   del_opts);
   free (slave_esxi_credential_uuid);
  fail_smb_credential:
-  omp_delete_lsc_credential_ext (session, slave_smb_credential_uuid, del_opts);
+  if (slave_smb_credential_uuid)
+    omp_delete_lsc_credential_ext (session, slave_smb_credential_uuid,
+                                   del_opts);
   free (slave_smb_credential_uuid);
  fail_ssh_credential:
-  omp_delete_lsc_credential_ext (session, slave_ssh_credential_uuid, del_opts);
+  if (slave_ssh_credential_uuid)
+    omp_delete_lsc_credential_ext (session, slave_ssh_credential_uuid,
+                                   del_opts);
   free (slave_ssh_credential_uuid);
  fail:
   g_debug ("   %s: fail\n", __FUNCTION__);
