@@ -1,3 +1,7 @@
+2016-06-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/alert_methods/SNMP/alert: Correct Description.
+
 2016-06-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (slave_setup): Check credential vars before trying to

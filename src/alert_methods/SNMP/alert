@@ -2,7 +2,7 @@
 #
 # OpenVAS
 # $Id$
-# Description: Escalator method script: SCP.
+# Description: Escalator method script: SNMP.
 #
 # Authors:
 # Matthew Mundell <matthew.mundell@greenbone.net>
