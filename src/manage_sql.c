@@ -3798,7 +3798,8 @@ filter_clause (const char* type, const char* filter,
                    && (column_type == KEYWORD_TYPE_DOUBLE
                        || column_type == KEYWORD_TYPE_INTEGER))
                 g_string_append_printf (clause,
-                                        "%s(CAST (%s AS NUMERIC) = %f",
+                                        "%s(CAST (%s AS REAL)"
+                                        " = CAST (%f AS REAL)",
                                         get_join (first_keyword, last_was_and,
                                                   last_was_not),
                                         column,
@@ -3884,7 +3885,8 @@ filter_clause (const char* type, const char* filter,
                    && (column_type == KEYWORD_TYPE_DOUBLE
                        || column_type == KEYWORD_TYPE_INTEGER))
             g_string_append_printf (clause,
-                                    "%s(CAST (%s AS NUMERIC) > %f",
+                                    "%s(CAST (%s AS REAL)"
+                                    " > CAST (%f AS REAL)",
                                     get_join (first_keyword, last_was_and,
                                               last_was_not),
                                     column,
@@ -3929,7 +3931,8 @@ filter_clause (const char* type, const char* filter,
                    && (column_type == KEYWORD_TYPE_DOUBLE
                        || column_type == KEYWORD_TYPE_INTEGER))
             g_string_append_printf (clause,
-                                    "%s(CAST (%s AS NUMERIC) < %f",
+                                    "%s(CAST (%s AS REAL)"
+                                    " < CAST (%f AS REAL)",
                                     get_join (first_keyword, last_was_and,
                                               last_was_not),
                                     column,
@@ -4012,8 +4015,8 @@ filter_clause (const char* type, const char* filter,
                   g_string_append_printf (clause,
                                           "%s"
                                           "(%s IS NULL"
-                                          " OR CAST (%s AS NUMERIC)"
-                                          "    != %f)",
+                                          " OR CAST (%s AS REAL)"
+                                          "    != CAST (%f AS REAL))",
                                           (index ? " AND " : ""),
                                           select_column,
                                           select_column,
@@ -4056,8 +4059,8 @@ filter_clause (const char* type, const char* filter,
                          && (column_type == KEYWORD_TYPE_DOUBLE
                              || column_type == KEYWORD_TYPE_INTEGER))
                   g_string_append_printf (clause,
-                                          "%sCAST (%s AS NUMERIC)"
-                                          " = %f",
+                                          "%sCAST (%s AS REAL)"
+                                          " = CAST (%f AS REAL)",
                                           (index ? " OR " : ""),
                                           select_column,
                                           keyword->double_value);

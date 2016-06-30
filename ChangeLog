@@ -1,3 +1,9 @@
+2016-06-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (filter_clause): Cast floating point numbers as
+	"real" to avoid issues from casting "real" type columns to a higher
+	precision type.
+
 2016-06-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/alert_methods/SNMP/alert: Correct Description.
