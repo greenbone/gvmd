@@ -635,25 +635,6 @@ resource_with_name_exists_global (const char *name, const char *type,
 }
 
 /**
- * @brief Get the threat of a CVSS.
- *
- * @param  cvss  CVSS.
- *
- * @return Static threat name.
- */
-const char *
-cvss_threat (double cvss)
-{
-  if (cvss < 0.0 || cvss > 10.0)
-    return "";
-  if (cvss <= 2.0)
-    return "Low";
-  if (cvss <= 5.0)
-    return "Medium";
-  return "High";
-}
-
-/**
  * @brief Test whether a string equal to a given string exists in an array.
  *
  * @param[in]  array   Array of gchar* pointers.
@@ -18987,7 +18968,7 @@ make_cve_result (task_t task, const char* host, const char *nvt, double cvss,
        " VALUES"
        " (NULL, m_now (), %llu, '%s', '', '%s', '', '%1.1f', '%s',"
        "  '%s', make_uuid (), %i, '');",
-       task, host ?: "", nvt, cvss, cvss_threat (cvss),
+       task, host ?: "", nvt, cvss, severity_to_type (cvss),
        quoted_descr, QOD_DEFAULT);
 
   g_free (quoted_descr);
@@ -25680,7 +25661,7 @@ print_report_assets_xml (FILE *out, const char *host, int first_result, int
                                "<value>%s</value>"
                                "</detail>",
                                value,
-                               cvss_threat (cvss));
+                               severity_to_level (cvss, 0));
                       cleanup_iterator (&prognosis);
                     }
 
@@ -25702,13 +25683,13 @@ print_report_assets_xml (FILE *out, const char *host, int first_result, int
 
               /* Print prognosis of host, according to highest CVSS. */
 
-              if (highest_cvss >= 0)
+              if (highest_cvss > 0)
                 PRINT (out,
                        "<detail>"
                        "<name>prognosis</name>"
                        "<value>%s</value>"
                        "</detail>",
-                       cvss_threat (highest_cvss));
+                       severity_to_level (highest_cvss, 0));
 
               PRINT (out,
                      "<detail>"
@@ -26042,8 +26023,8 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
                 {
                   const char *threat;
 
-                  threat = cvss_threat (prognosis_iterator_cvss_double
-                                         (&prognosis));
+                  threat = severity_to_level (prognosis_iterator_cvss_double
+                                                (&prognosis), 0);
 
                   array_add_new_string (apps,
                                         prognosis_iterator_cpe (&prognosis));

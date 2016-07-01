@@ -1,3 +1,17 @@
+2016-07-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (cvss_threat): Remove.
+	(make_cve_result): Use severity_to_type instead of cvss_threat.
+	(print_report_assets_xml): Use severity_to_level instead of cvss_threat
+	and add prognosis only if highest CVSS is > 0, not >= 0.
+	(print_report_prognostic_xml): Use severity_to_level instead of
+	cvss_threat.
+
+	* src/manage_sql.h (cvss_threat): Remove.
+
+	* src/manage.c (cve_scan_host): Use severity in debug output instead of
+	threat.
+
 2016-06-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (filter_clause): Cast floating point numbers as

@@ -279,9 +279,6 @@ hosts_set_details (report_t report);
 gboolean
 host_nthlast_report_host (const char *, report_host_t *, int);
 
-const char *
-cvss_threat (double);
-
 char*
 report_host_ip (const char *);
 

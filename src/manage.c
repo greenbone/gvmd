@@ -3917,7 +3917,8 @@ cve_scan_host (task_t task, openvas_host_t *openvas_host)
                                         NULL, NULL, 0, NULL);
           while (next (&prognosis))
             {
-              const char *threat, *app, *cve;
+              const char *app, *cve;
+              double severity;
               gchar *desc, *location;
               result_t result;
 
@@ -3927,8 +3928,7 @@ cve_scan_host (task_t task, openvas_host_t *openvas_host)
                                                                 start_time,
                                                                 0);
 
-              threat = cvss_threat (prognosis_iterator_cvss_double
-                                     (&prognosis));
+              severity = prognosis_iterator_cvss_double (&prognosis);
 
               app = prognosis_iterator_cpe (&prognosis);
               cve = prognosis_iterator_cve (&prognosis);
@@ -3949,12 +3949,10 @@ cve_scan_host (task_t task, openvas_host_t *openvas_host)
                                       prognosis_iterator_description
                                        (&prognosis));
 
-              g_debug ("%s: making result with threat [%s] desc [%s]", __FUNCTION__, threat, desc);
+              g_debug ("%s: making result with severity %1.1f desc [%s]",
+                       __FUNCTION__, severity, desc);
 
-              result = make_cve_result
-                        (task, ip, cve,
-                         prognosis_iterator_cvss_double (&prognosis),
-                         desc);
+              result = make_cve_result (task, ip, cve, severity, desc);
               g_free (desc);
               if (current_report)
                 {
