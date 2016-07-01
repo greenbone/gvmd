@@ -1,3 +1,15 @@
+2016-07-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Remove --max-rows.  Replaced by --modify-setting.
+
+	* src/manage_sql.c (manage_set_max_rows): Remove function.
+
+	* src/manage.h: Remove header accordingly.
+
+	* src/openvasmd.c (main): Remove --max-rows.
+
+	* INSTALL: Adjust for --max-rows removal.  Indent command consistently.
+
 2016-07-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (cvss_threat): Remove.

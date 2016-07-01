@@ -1442,7 +1442,6 @@ main (int argc, char** argv)
   static int max_email_attachment_size = 0;
   static int max_email_include_size = 0;
   static int verbose = 0;
-  static gchar *max_rows = NULL;
   static gchar *create_user = NULL;
   static gchar *delete_user = NULL;
   static gchar *inheritor = NULL;
@@ -1523,7 +1522,6 @@ main (int argc, char** argv)
         { "max-ips-per-target", '\0', 0, G_OPTION_ARG_INT, &max_ips_per_target, "Maximum number of IPs per target.", "<number>"},
         { "max-email-attachment-size", '\0', 0, G_OPTION_ARG_INT, &max_email_attachment_size, "Maximum size of alert email attachments, in bytes.", "<number>"},
         { "max-email-include-size", '\0', 0, G_OPTION_ARG_INT, &max_email_include_size, "Maximum size of inlined content in alert emails, in bytes.", "<number>"},
-        { "max-rows", '\0', 0, G_OPTION_ARG_STRING, &max_rows, "Default maximum number of rows returned by GET commands.", "<number>"},
         { "migrate", 'm', 0, G_OPTION_ARG_NONE, &migrate_database, "Migrate the database and exit.", NULL },
         { "modify-report-format", '\0', 0, G_OPTION_ARG_STRING, &modify_report_format,
           "Modify report format <uuid> and exit.", "<uuid>" },
@@ -2171,41 +2169,6 @@ main (int argc, char** argv)
           case 5:
             g_critical ("%s: syntax error in setting value\n",
                         __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -2:
-            g_critical ("%s: database is wrong version\n", __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -3:
-            g_critical ("%s: database must be initialised"
-                        " (with --update or --rebuild)\n",
-                        __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -1:
-          default:
-            g_critical ("%s: internal error\n", __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-        }
-    }
-
-  if (max_rows)
-    {
-      /* Modify the Max Rows Per Page setting and then exit. */
-
-      switch (manage_set_max_rows (log_config, database, user, max_rows))
-        {
-          case 0:
-            log_config_free ();
-            return EXIT_SUCCESS;
-          case 1:
-            g_critical ("%s: failed to find user\n", __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case 2:
-            g_critical ("%s: max row count out of range\n", __FUNCTION__);
             log_config_free ();
             return EXIT_FAILURE;
           case -2:

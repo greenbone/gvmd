@@ -124,7 +124,7 @@ You need a running OpenVAS Scanner (openvassd) for this
 as the Manager will retrieve all NVT details from the Scanner.
 Run this command if you are using the default ports:
 
-$ openvasmd --rebuild
+    $ openvasmd --rebuild
 
 This command can be repeated anytime to update the database
 with updated NVT data, regardless of whether openvasmd already
@@ -138,7 +138,7 @@ If you have used Manager before, you might need to migrate
 the database to the current data model. Use this command
 to run the migration:
 
-$ openvasmd --migrate
+    $ openvasmd --migrate
 
 
 Creating an administrator user for OpenVAS
@@ -147,7 +147,7 @@ Creating an administrator user for OpenVAS
 You can create an administrator user with the --create-user option of
 "openvasmd":
 
-$ openvasmd --create-user=myuser
+    $ openvasmd --create-user=myuser
 
 The new user's password is printed on success.
 
@@ -170,20 +170,20 @@ Logging is configured entirely by the file
 
 The configuration is divided into domains like this one
 
-	[md   main]
-	prepend=%t %p
-	prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
-	file=/var/log/openvas/openvasmd.log
-	level=128
+    [md   main]
+    prepend=%t %p
+    prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
+    file=/var/log/openvas/openvasmd.log
+    level=128
 
 The "level" field controls the amount of logging that is written.
 The value of "level" can be
 
       4  Errors.
-	  8  Critical situation.
+      8  Critical situation.
      16  Warnings.
-	 32  Messages.
-	 64  Information.
+     32  Messages.
+     64  Information.
     128  Debug.  (Lots of output.)
 
 Enabling any level includes all the levels above it.  So enabling Information
@@ -250,16 +250,16 @@ instance, you need to import the information from a Services Names list.
 
 In order to update the database, download the port names list:
 
-$ wget http://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xml
+    $ wget http://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xml
 
 Then provide it as an argument to openvas-portnames-update script:
 
-$ openvas-portnames-update service-names-port-numbers.xml
+    $ openvas-portnames-update service-names-port-numbers.xml
 
 You can safely delete the list after that as it is not needed and all relevant
 information has been imported into the database.
 
-$ rm service-names-port-numbers.xml
+    $ rm service-names-port-numbers.xml
 
 Note that IANA updates this list frequently. The same steps could be followed to
 update the information in the database from a newer list.
@@ -276,14 +276,14 @@ via backups.  To be able to do a proper restore of the data, it is
 important to also backup the encryption key.  The easiest way to do
 this is to create backup of the entire directory tree
 
-   <install-prefix>/var/lib/openvas/gnupg
+    <install-prefix>/var/lib/openvas/gnupg
 
 and store it at a safe place independent from the database backups.
 This needs to be done only once after the key has been created or
 changed.  The Manager creates the key on the fly if it does not
 exists.  If needed the key can also be created in advance using:
 
-$ openvasmd --create-credentials-encryption-key
+    $ openvasmd --create-credentials-encryption-key
 
 To check whether the key has been generated you may use the command
 
@@ -304,24 +304,24 @@ credentials it will be saved encrypted.
 
 To encrypt all existing credentials you may use
 
-$ openvasmd --encrypt-all-credentials
+    $ openvasmd --encrypt-all-credentials
 
 Key change: If you disable the current key (see also the gpg manual) and
 create a new key, this command will decrypt using the old but disabled key
 and then re-encrypt using the new key.  The command --decrypt-all-credentials
 may be used to revert to plaintext credentials:
 
-$ gpg --homedir /var/lib/openvas/gnupg -K
+    $ gpg --homedir /var/lib/openvas/gnupg -K
 
 Look for the current key and remember its keyid. Then:
 
-$ gpg --homedir /var/lib/openvas/gnupg --edit-key KEYID
+    $ gpg --homedir /var/lib/openvas/gnupg --edit-key KEYID
 
 At the prompt enter "disable" followed by "save" and "quit".
 Then create a new key and re-encrypt all passwords:
 
-$ openvasmd --create-credentials-encryption-key
-$ openvasmd --encrypt-all-credentials
+    $ openvasmd --create-credentials-encryption-key
+    $ openvasmd --encrypt-all-credentials
 
 No encryption: If for backward compatibility reasons encrypted credentials
 are not desired, the manager must _always_ be started with the option
@@ -340,19 +340,19 @@ will need to enter all of them anew afterwards.
 
 Get the key fingerprint:
 
-$ gpg --homedir <install-prefix>/var/lib/openvas/gnupg --list-secret-keys
+    $ gpg --homedir <install-prefix>/var/lib/openvas/gnupg --list-secret-keys
 
 Remove the secret key:
 
-$ gpg --homedir=<prefix>/etc/openvas/gnupg --delete-secret-keys KEYID
+    $ gpg --homedir=<prefix>/etc/openvas/gnupg --delete-secret-keys KEYID
 
 Remove the key:
 
-$ gpg --homedir=<prefix>/etc/openvas/gnupg --delete-keys KEYID
+    $ gpg --homedir=<prefix>/etc/openvas/gnupg --delete-keys KEYID
 
 Create a new key:
 
-$ openvasmd --create-credentials-encryption-key
+    $ openvasmd --create-credentials-encryption-key
 
 Finally, reset all credentials, by hand.
 
@@ -387,10 +387,10 @@ certificates in Manager database as well.
 
 The database can be updated using the following command:
 
-  $ openvasmd --modify-scanner <uuid> \
-              --scanner-ca-pub <cacert> \
-              --scanner-key-pub <clientcert> \
-              --scanner-key-priv <clientkey>
+    $ openvasmd --modify-scanner <uuid> \
+                --scanner-ca-pub <cacert> \
+                --scanner-key-pub <clientcert> \
+                --scanner-key-priv <clientkey>
 
 Where:
 <uuid>       refers to the UUID used by OpenVAS Manager to identify the scanner;
@@ -406,8 +406,8 @@ Where:
 
 To set just a new default CA certificate:
 
-  $ openvasmd --modify-setting 9ac801ea-39f8-11e6-bbaa-28d24461215b \
-              --value "`cat /var/lib/openvas/CA/cacert.pem`"
+    $ openvasmd --modify-setting 9ac801ea-39f8-11e6-bbaa-28d24461215b \
+                --value "`cat /var/lib/openvas/CA/cacert.pem`"
 
 Replace the path to the pem-file with the one of your setup. The
 UUID is the fixed one of the immutable global setting for the default
@@ -426,11 +426,13 @@ value given for "rows" in the command's filter.
 The default value for "Max Rows Per Page" is 1000.  0 indicates no limit.
 
 This setting can not be changed via OMP.  However, the openvasmd option
---max-rows can be used to change it.  This changes the global value of the
-setting, and so applies to all users.
+--modify-setting can be used to change it.
 
-Combining the options --max-rows and --user will set a value for maximum
-rows only for that user.
+    $ openvasmd --modify-setting 76374a7a-0569-11e6-b6da-28d24461215b \
+                --value 100
+
+This changes the global value of the setting, and so applies to all users.
+Adding --user to the command will set a value for maximum rows only for that user.
 
 
 Prerequisites for Optional Features
@@ -499,7 +501,7 @@ If you want to use the Clang Static Analyzer (http://clang-analyzer.llvm.org/)
 to do a static code analysis, you can do so by adding the following parameter
 when configuring the build:
 
-  -DCMAKE_C_COMPILER=/usr/share/clang/scan-build/ccc-analyzer
+    -DCMAKE_C_COMPILER=/usr/share/clang/scan-build/ccc-analyzer
 
 Note that the example above uses the default location of ccc-analyzer in Debian
 GNU/Linux and may be different in other environments.

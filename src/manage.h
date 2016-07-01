@@ -3825,9 +3825,6 @@ int
 modify_setting (const gchar *, const gchar *, const gchar *, gchar **);
 
 int
-manage_set_max_rows (GSList *, const gchar *, const gchar *, const char *);
-
-int
 manage_modify_setting (GSList *, const gchar *, const gchar *, const gchar *, const char *);
 
 
