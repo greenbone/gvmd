@@ -5399,6 +5399,23 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   if (get->id)
     g_warning ("%s: Called with an id parameter", __FUNCTION__);
 
+  if ((manage_scap_loaded () == FALSE
+       && (strcmp (type, "cve") == 0
+           || strcmp (type, "cpe") == 0
+           || strcmp (type, "ovaldef") == 0
+           || strcmp (type, "allinfo") == 0))
+      || (manage_cert_loaded () == FALSE
+          && (strcmp (type, "cert_bund_adv") == 0
+              || strcmp (type, "dfn_cert_adv") == 0
+              || strcmp (type, "allinfo") == 0)))
+    {
+      // Init a dummy iterator if SCAP or CERT DB is required but unavailable.
+      init_iterator (iterator,
+                     "SELECT NULL LIMIT %s",
+                     sql_select_limit (0));
+      return 0;
+    }
+
   if (get->filt_id && strcmp (get->filt_id, "0"))
     {
       if (get->filter_replacement)

@@ -1,3 +1,9 @@
+2016-07-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (init_aggregate_iterator): Init iterator with an
+	empty dummy selection if type requires SCAP or CERT database but
+	that database is unavailable.
+
 2016-07-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Remove --max-rows.  Replaced by --modify-setting.
