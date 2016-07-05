@@ -29975,7 +29975,8 @@ copy_target (const char* name, const char* comment, const char *target_id,
   return copy_resource ("target", name, comment, target_id,
                         "hosts, exclude_hosts, lsc_credential, ssh_port,"
                         " smb_lsc_credential, esxi_lsc_credential, port_range,"
-                        " reverse_lookup_only, reverse_lookup_unify",
+                        " reverse_lookup_only, reverse_lookup_unify,"
+                        " alive_test",
                         1, new_target);
 }
 

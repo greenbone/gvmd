@@ -1,3 +1,9 @@
+2016-07-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r25741.
+
+	* src/manage_sql.c (copy_target): Copy alive_test too.
+
 2016-06-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r25646.
