@@ -1,3 +1,11 @@
+2016-07-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (setting_verify): Allow value to be NULL.  This
+	allows the user to remove the setting by leaving out --value.
+	(setting_normalise): New function.
+	(manage_modify_setting): Normalise the setting.  This converts the string
+	to a number for Max Rows Per Page, and NULLs the value if <= 0.
+
 2016-07-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (init_aggregate_iterator): Init iterator with an

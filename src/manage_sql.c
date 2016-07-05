@@ -60207,6 +60207,9 @@ setting_description (const gchar *uuid)
 static int
 setting_verify (const gchar *uuid, const gchar *value, const gchar *user)
 {
+  if (value == NULL)
+    return 0;
+
   if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
     return 0;
 
@@ -60223,6 +60226,32 @@ setting_verify (const gchar *uuid, const gchar *value, const gchar *user)
         return 1;
     }
   return 0;
+}
+
+/**
+ * @brief Normalise the value of a setting.
+ *
+ * @param[in]  uuid   UUID of setting.
+ * @param[in]  value  Value of setting, to verify.
+ *
+ * @return Normalised value.
+ */
+static gchar *
+setting_normalise (const gchar *uuid, const gchar *value)
+{
+  if (value == NULL)
+    return NULL;
+
+  if (strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE) == 0)
+    {
+      int max_rows;
+      max_rows = atoi (value);
+      if (max_rows <= 0)
+        return NULL;
+      return g_strdup_printf ("%i", max_rows);
+    }
+
+  return g_strdup (value);
 }
 
 /**
@@ -60244,7 +60273,7 @@ manage_modify_setting (GSList *log_config, const gchar *database,
 {
   int ret;
   const gchar *db;
-  gchar *quoted_name, *quoted_description, *quoted_value;
+  gchar *quoted_name, *quoted_description, *quoted_value, *normalised;
 
   if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT)
       && strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE))
@@ -60295,9 +60324,11 @@ manage_modify_setting (GSList *log_config, const gchar *database,
            uuid,
            user);
 
-      if (value)
+      normalised = setting_normalise (uuid, value);
+      if (normalised)
         {
-          quoted_value = sql_quote (value);
+          quoted_value = sql_quote (normalised);
+          g_free (normalised);
           quoted_name = sql_quote (setting_name (uuid));
           quoted_description = sql_quote (setting_description (uuid));
           sql ("INSERT INTO settings (uuid, owner, name, comment, value)"
@@ -60319,9 +60350,11 @@ manage_modify_setting (GSList *log_config, const gchar *database,
            " AND owner IS NULL;",
            uuid);
 
-      if (value)
+      normalised = setting_normalise (uuid, value);
+      if (normalised)
         {
-          quoted_value = sql_quote (value);
+          quoted_value = sql_quote (normalised);
+          g_free (normalised);
           quoted_name = sql_quote (setting_name (uuid));
           quoted_description = sql_quote (setting_description (uuid));
           sql ("INSERT INTO settings (uuid, owner, name, comment, value)"
