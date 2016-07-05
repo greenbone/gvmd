@@ -1,4 +1,8 @@
-2016-07-01  Matthew Mundell <matthew.mundell@greenbone.net>
+2016-07-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (copy_target): Copy alive_test too.
+
+2016-07-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (setting_verify): Allow value to be NULL.  This
 	allows the user to remove the setting by leaving out --value.
