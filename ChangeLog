@@ -1,3 +1,10 @@
+2016-07-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (slave_setup): Add the task name, task UUID and report
+	UUID to the task comment.
+	(run_slave_task): Add the task name to the name used for all resources
+	on the slave.
+
 2016-07-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (copy_target): Copy alive_test too.

@@ -2789,14 +2789,26 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
 
       {
         gchar *max_checks, *max_hosts, *source_iface;
-        gchar *hosts_ordering;
+        gchar *hosts_ordering, *comment;
         omp_create_task_opts_t opts;
+        char *name_task, *uuid_report, *uuid_task;
 
         opts = omp_create_task_opts_defaults;
         opts.config_id = slave_config_uuid;
         opts.target_id = slave_target_uuid;
         opts.name = name;
-        opts.comment = "Slave task created by Master";
+        task_uuid (task, &uuid_task);
+        name_task = task_name (task);
+        uuid_report = report_uuid (current_report);
+        comment = g_strdup_printf ("Slave task for master task %s (%s)"
+                                   " report %s.",
+                                   name_task,
+                                   uuid_task,
+                                   uuid_report);
+        opts.comment = comment;
+        free (uuid_task);
+        free (name_task);
+        free (uuid_report);
 
         max_checks = task_preference_value (task, "max_checks");
         max_hosts = task_preference_value (task, "max_hosts");
@@ -2818,6 +2830,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
         opts.slave_id = NULL;
 
         ret = omp_create_task_ext (session, opts, &slave_task_uuid);
+        g_free (comment);
         g_free (max_checks);
         g_free (max_hosts);
         g_free (source_iface);
@@ -3166,6 +3179,7 @@ run_slave_task (task_t task, target_t target,
   char *host, *name, *uuid;
   int port, socket, ret;
   gnutls_session_t session;
+  gchar *slave_task_name;
 
   /* Some of the cases in here must write to the session outside an open
    * statement.  For example, the omp_create_lsc_credential must come after
@@ -3212,13 +3226,24 @@ run_slave_task (task_t task, target_t target,
   free (uuid);
   free (name);
 
-  name = openvas_uuid_make ();
-  if (name == NULL)
+  uuid = openvas_uuid_make ();
+  if (uuid == NULL)
     {
       free (host);
       g_warning ("%s: Failed to make UUID", __FUNCTION__);
       return -1;
     }
+
+  name = task_name (task);
+  if (name == NULL)
+    {
+      free (host);
+      g_warning ("%s: Failed to get task name", __FUNCTION__);
+      return -1;
+    }
+  slave_task_name = g_strdup_printf ("%s for %s", uuid, name);
+  free (name);
+  free (uuid);
 
   while ((ret = slave_connect (slave, host, port, &socket, &session)))
     if (ret == 1)
@@ -3250,7 +3275,7 @@ run_slave_task (task_t task, target_t target,
           {
             set_task_run_status (task, TASK_STATUS_STOPPED);
             free (host);
-            free (name);
+            g_free (slave_task_name);
             return 0;
           }
         openvas_sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
@@ -3258,10 +3283,10 @@ run_slave_task (task_t task, target_t target,
 
   while (1)
     {
-      ret = slave_setup (slave, &session, &socket, name, host, port, task,
-                         target, target_ssh_credential, target_smb_credential,
-                         target_esxi_credential, target_snmp_credential,
-                         last_stopped_report);
+      ret = slave_setup (slave, &session, &socket, slave_task_name, host, port,
+                         task, target, target_ssh_credential,
+                         target_smb_credential, target_esxi_credential,
+                         target_snmp_credential, last_stopped_report);
       if (ret == 1)
         {
           ret = slave_sleep_connect (slave, host, port, task, &socket, &session);
@@ -3275,7 +3300,7 @@ run_slave_task (task_t task, target_t target,
 
   current_scanner_task = (task_t) 0;
   free (host);
-  free (name);
+  g_free (slave_task_name);
 
   return 0;
 }
