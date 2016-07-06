@@ -187,6 +187,7 @@ set (OPENVAS_SYSCONF_DIR  "${SYSCONFDIR}/openvas")
 set (OPENVAS_SCAP_RES_DIR "${OPENVAS_DATA_DIR}/scap")
 set (OPENVAS_CERT_RES_DIR "${OPENVAS_DATA_DIR}/cert")
 set (OPENVAS_CA_DIR        "${OPENVAS_STATE_DIR}/openvasmd/trusted_certs")
+set (OPENVAS_LIB_INSTALL_DIR     "${LIBDIR}")
 
 set (OPENVAS_SCANNER_CERTIFICATE "${OPENVAS_STATE_DIR}/CA/servercert.pem")
 set (OPENVAS_SCANNER_KEY         "${OPENVAS_STATE_DIR}/private/CA/serverkey.pem")

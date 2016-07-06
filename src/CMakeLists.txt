@@ -194,7 +194,7 @@ install (FILES ${CMAKE_CURRENT_BINARY_DIR}/openvasmd
 
 if (BACKEND STREQUAL POSTGRESQL)
   install (TARGETS manage-pg-server
-           LIBRARY DESTINATION "${OPENVAS_STATE_DIR}/openvasmd/pg/")
+           LIBRARY DESTINATION "${OPENVAS_LIB_INSTALL_DIR}/openvasmd/pg")
 endif (BACKEND STREQUAL POSTGRESQL)
 
 ## Static analysis

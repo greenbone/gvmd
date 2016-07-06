@@ -1,5 +1,14 @@
 2016-07-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* CMakeLists.txt (OPENVAS_LIB_INSTALL_DIR): Add.
+
+	* src/CMakeLists.txt: Install manage-pg-server to OPENVAS_LIB_INSTALL_DIR.
+
+	* src/manage_pg.c (manage_create_sql_functions): Expect Postgres lib to be
+	int OPENVAS_LIB_INSTALL_DIR.
+
+2016-07-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (slave_setup): Add the task name, task UUID and report
 	UUID to the task comment.
 	(run_slave_task): Add the task name to the name used for all resources
