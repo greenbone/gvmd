@@ -11637,9 +11637,8 @@ handle_get_scanners (omp_parser_t *omp_parser, GError **error)
                                       get_iterator_resource (&scanners));
           while (next (&tasks))
             {
-              if ((get_iterator_owner (&scanners) == 0)
-                  && scanner_task_iterator_readable (&tasks) == 0)
-                /* Skip other users' tasks for global scanners. */
+              if (scanner_task_iterator_readable (&tasks) == 0)
+                /* Only show tasks the user may see. */
                 continue;
 
               SENDF_TO_CLIENT_OR_FAIL
@@ -13295,9 +13294,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                    (&tasks, get_iterator_resource (&configs), 0);
                   while (next (&tasks))
                     {
-                      if ((get_iterator_owner (&configs) == 0)
-                          && config_task_iterator_readable (&tasks) == 0)
-                        /* Skip other users' tasks for global configs. */
+                      if (config_task_iterator_readable (&tasks) == 0)
+                        /* Only show tasks the user may see. */
                         continue;
 
                       SENDF_TO_CLIENT_OR_FAIL
@@ -14852,9 +14850,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                    (&port_lists), 0);
                   while (next (&targets))
                     {
-                      if ((get_iterator_owner (&port_lists) == 0)
-                          && port_list_target_iterator_readable (&targets) == 0)
-                        /* Skip other users' targets for global port lists. */
+                      if (port_list_target_iterator_readable (&targets) == 0)
+                        /* Only show targets the user may see. */
                         continue;
 
                       SENDF_TO_CLIENT_OR_FAIL
@@ -15837,11 +15834,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                    (&report_formats));
                       while (next (&alerts))
                         {
-                          if ((get_iterator_owner (&report_formats) == 0)
-                              && report_format_alert_iterator_readable (&alerts)
-                                 == 0)
-                            /* Skip other users' alerts for global report
-                             * formats. */
+                          if (report_format_alert_iterator_readable (&alerts)
+                              == 0)
+                            /* Only show alerts the user may see. */
                             continue;
 
                           SENDF_TO_CLIENT_OR_FAIL
@@ -17488,9 +17483,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                   (&targets));
                       while (next (&tasks))
                         {
-                          if ((get_iterator_owner (&targets) == 0)
-                              && target_task_iterator_readable (&tasks) == 0)
-                            /* Skip other users' tasks for global targets. */
+                          if (target_task_iterator_readable (&tasks) == 0)
+                            /* Only show tasks the user may see. */
                             continue;
 
                           SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
