@@ -1,5 +1,11 @@
 2016-07-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (handle_get_configs, handle_get_scanners)
+	(omp_xml_handle_end_element): In the GET commands, do not send
+	dependents if the user may not read the dependent.
+
+2016-07-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Allow the User role to run the feed DESCRIBE commands.  Hence increase
 	database version to 170.  Add database migration from version 169 to 170.
 
