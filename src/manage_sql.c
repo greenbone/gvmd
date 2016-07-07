@@ -54250,7 +54250,7 @@ init_port_range_iterator (iterator_t* iterator, port_list_t port_list,
         init_iterator (iterator,
                        "SELECT uuid, comment, start, \"end\", type, exclude"
                        " FROM port_ranges"
-                       " WHERE 1 == 0");
+                       " WHERE 1 = 0");
       free (uuid);
     }
   else

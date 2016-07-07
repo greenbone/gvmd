@@ -1,3 +1,7 @@
+2016-07-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_port_range_iterator): Use = in SQL for Postgres.
+
 2016-07-07  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (host_routes_xml): New function.
