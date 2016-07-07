@@ -261,7 +261,10 @@ sql_open (const char *database)
 
   g_debug ("%s:   db: %s\n", __FUNCTION__, PQdb (conn));
   g_debug ("%s: user: %s\n", __FUNCTION__, PQuser (conn));
+  g_debug ("%s: host: %s\n", __FUNCTION__, PQhost (conn));
   g_debug ("%s: port: %s\n", __FUNCTION__, PQport (conn));
+  g_debug ("%s: socket: %i\n", __FUNCTION__, PQsocket (conn));
+  g_debug ("%s: postgres version: %i\n", __FUNCTION__, PQserverVersion (conn));
 
   return 0;
 }

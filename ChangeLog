@@ -1,5 +1,9 @@
 2016-07-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_pg.c (sql_open): Add more debug info.
+
+2016-07-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_port_range_iterator): Use = in SQL for Postgres.
 
 2016-07-07  Timo Pollmeier <timo.pollmeier@greenbone.net>
