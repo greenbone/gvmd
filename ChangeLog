@@ -1,3 +1,19 @@
+2016-07-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Allow the User role to run the feed DESCRIBE commands.  Hence increase
+	database version to 170.  Add database migration from version 169 to 170.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 170.
+
+	* src/manage_migrators.c (migrate_169_to_170_add_permission)
+	(migrate_169_to_170): New functions.
+	(database_migrators): Add migrate_169_to_170.
+
+	* src/manage_sql.c (check_db_permissions): Only skip DESCRIBE_AUTH, to
+	allow the other DESCRIBE commands.
+
+	* doc/db.png: Update for version change.
+
 2016-07-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* CMakeLists.txt (OPENVAS_LIB_INSTALL_DIR): Add.

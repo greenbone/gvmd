@@ -15601,7 +15601,7 @@ check_db_permissions ()
            "                WHERE uuid = '" ROLE_UUID_USER "');");
       while (command[0].name)
         {
-          if (strstr (command[0].name, "DESCRIBE") == NULL
+          if (strstr (command[0].name, "DESCRIBE_AUTH") == NULL
               && strcmp (command[0].name, "GET_VERSION")
               && strstr (command[0].name, "GROUP") == NULL
               && strstr (command[0].name, "ROLE") == NULL

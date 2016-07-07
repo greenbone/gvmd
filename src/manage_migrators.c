@@ -12675,6 +12675,68 @@ migrate_168_to_169 ()
   return 0;
 }
 
+/**
+ * @brief Add permission to role.
+ *
+ * Caller must ensure args are SQL escaped.
+ *
+ * @param[in]  role        Role.
+ * @param[in]  permission  Permission.
+ */
+static void
+migrate_169_to_170_add_permission (const gchar *role, const gchar *permission)
+{
+  sql ("INSERT INTO permissions"
+       " (uuid, owner, name, comment, resource_type, resource, resource_uuid,"
+       "  resource_location, subject_type, subject, subject_location,"
+       "  creation_time, modification_time)"
+       " VALUES"
+       " (make_uuid (), NULL, lower ('%s'), '', '',"
+       "  0, '', " G_STRINGIFY (LOCATION_TABLE) ", 'role',"
+       "  (SELECT id FROM roles WHERE uuid = '%s'),"
+       "  " G_STRINGIFY (LOCATION_TABLE) ", m_now (), m_now ());",
+       permission,
+       role);
+}
+
+/**
+ * @brief Migrate the database from version 169 to version 170.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_169_to_170 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 169. */
+
+  if (manage_db_version () != 169)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Role "User" got more DESCRIBE permissions. */
+
+  migrate_169_to_170_add_permission ("8d453140-b74d-11e2-b0be-406186ea4fc5",
+                                     "DESCRIBE_CERT");
+  migrate_169_to_170_add_permission ("8d453140-b74d-11e2-b0be-406186ea4fc5",
+                                     "DESCRIBE_FEED");
+  migrate_169_to_170_add_permission ("8d453140-b74d-11e2-b0be-406186ea4fc5",
+                                     "DESCRIBE_SCAP");
+
+  /* Set the database version to 170. */
+
+  set_db_version (170);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -12858,6 +12920,7 @@ static migrator_t database_migrators[]
     {167, migrate_166_to_167},
     {168, migrate_167_to_168},
     {169, migrate_168_to_169},
+    {170, migrate_169_to_170},
     /* End marker. */
     {-1, NULL}};
 
