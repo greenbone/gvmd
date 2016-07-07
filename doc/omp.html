@@ -16847,6 +16847,40 @@ get_alerts_response_alert_count_page
 </li>
 </ul>
 </li>
+<li>
+              &lt;<b>routes</b>&gt;
+              <div style="margin-left: 15px; display: inline;">List of routes to the host, with most recent ones first.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>route</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">List of hosts on the route to the host.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>host</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">A host on the route.</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID if the host is in the asset management.
+          </li>
+<li>
+          @<b>distance</b>
+          (<a href="#type_number">number</a>)
+          Distance from the scanner.
+          </li>
+<li>
+          @<b>same_source</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether the current host asset has the same source as the target host.
+          </li>
+<li>
+              &lt;<b>ip</b>&gt;
+              <div style="margin-left: 15px; display: inline;">IP address of the host.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li></ul>
+</li>
 </ul>
 </li>
 <li>
@@ -17138,6 +17172,7 @@ get_assets_response_asset_host
      {
        get_assets_response_asset_host_severity
        &amp; get_assets_response_asset_host_detail*
+       &amp; get_assets_response_asset_host_routes
      }
 
 get_assets_response_asset_host_severity
@@ -17181,6 +17216,33 @@ get_assets_response_asset_host_detail_source
 
 get_assets_response_asset_host_detail_source_type
  = element type
+     {
+       text
+     }
+
+get_assets_response_asset_host_routes
+ = element routes
+     {
+       get_assets_response_asset_host_routes_route*
+     }
+
+get_assets_response_asset_host_routes_route
+ = element route
+     {
+       get_assets_response_asset_host_routes_route_host*
+     }
+
+get_assets_response_asset_host_routes_route_host
+ = element host
+     {
+       attribute id { uuid }?
+       &amp; attribute distance { number }?
+       &amp; attribute same_source { boolean }?
+       &amp; get_assets_response_asset_host_routes_route_host_ip
+     }
+
+get_assets_response_asset_host_routes_route_host_ip
+ = element ip
      {
        text
      }

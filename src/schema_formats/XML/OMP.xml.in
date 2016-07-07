@@ -10000,6 +10000,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>
             <e>severity</e>
             <any><e>detail</e></any>
+            <e>routes</e>
           </pattern>
           <ele>
             <name>severity</name>
@@ -10045,6 +10046,47 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <name>type</name>
                 <summary>Type of source</summary>
                 <pattern>text</pattern>
+              </ele>
+            </ele>
+          </ele>
+          <ele>
+            <name>routes</name>
+            <summary>List of routes to the host, with most recent ones first</summary>
+            <pattern>
+              <any><e>route</e></any>
+            </pattern>
+            <ele>
+              <name>route</name>
+              <summary>List of hosts on the route to the host</summary>
+              <pattern>
+                <any><e>host</e></any>
+              </pattern>
+              <ele>
+                <name>host</name>
+                <summary>A host on the route</summary>
+                <pattern>
+                  <attrib>
+                    <name>id</name>
+                    <summary>UUID if the host is in the asset management</summary>
+                    <type>uuid</type>
+                  </attrib>
+                  <attrib>
+                    <name>distance</name>
+                    <summary>Distance from the scanner</summary>
+                    <type>number</type>
+                  </attrib>
+                  <attrib>
+                    <name>same_source</name>
+                    <summary>Whether the current host asset has the same source as the target host</summary>
+                    <type>boolean</type>
+                  </attrib>
+                  <e>ip</e>
+                </pattern>
+                <ele>
+                  <name>ip</name>
+                  <summary>IP address of the host</summary>
+                  <pattern>text</pattern>
+                </ele>
               </ele>
             </ele>
           </ele>

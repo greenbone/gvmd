@@ -14125,7 +14125,10 @@ handle_get_assets (omp_parser_t *omp_parser, GError **error)
     {
       GString *result;
       iterator_t identifiers;
+      resource_t asset;
+      gchar *routes_xml;
 
+      asset = get_iterator_resource (&assets);
       /* Assets are currently always writable. */
       if (send_get_common ("asset", &get_assets_data->get, &assets,
                            omp_parser->client_writer,
@@ -14290,6 +14293,11 @@ handle_get_assets (omp_parser_t *omp_parser, GError **error)
                                     host_detail_iterator_source_type
                                       (&details));
           cleanup_iterator (&details);
+
+          routes_xml = host_routes_xml (asset);
+
+          g_string_append (result, routes_xml);
+          g_free (routes_xml);
         }
 
       g_string_append_printf (result,

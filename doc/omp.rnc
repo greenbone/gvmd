@@ -10292,6 +10292,7 @@ get_assets_response_asset_host
      {
        get_assets_response_asset_host_severity
        & get_assets_response_asset_host_detail*
+       & get_assets_response_asset_host_routes
      }
 
 # Severity of the host.
@@ -10341,6 +10342,40 @@ get_assets_response_asset_host_detail_source
 # Type of source.
 get_assets_response_asset_host_detail_source_type
  = element type
+     {
+       text
+     }
+
+# List of routes to the host, with most recent ones first.
+get_assets_response_asset_host_routes
+ = element routes
+     {
+       get_assets_response_asset_host_routes_route*
+     }
+
+# List of hosts on the route to the host.
+get_assets_response_asset_host_routes_route
+ = element route
+     {
+       get_assets_response_asset_host_routes_route_host*
+     }
+
+# A host on the route.
+get_assets_response_asset_host_routes_route_host
+ = element host
+     {
+       # UUID if the host is in the asset management.
+       attribute id { uuid }?
+       & # Distance from the scanner.
+       attribute distance { number }?
+       & # Whether the current host asset has the same source as the target host.
+       attribute same_source { boolean }?
+       & get_assets_response_asset_host_routes_route_host_ip
+     }
+
+# IP address of the host.
+get_assets_response_asset_host_routes_route_host_ip
+ = element ip
      {
        text
      }

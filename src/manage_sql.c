@@ -57887,6 +57887,127 @@ hosts_set_details (report_t report)
 }
 
 /**
+ * @brief Get XML of a detailed host route.
+ *
+ * @param[in]  report  The report associated with the scan.
+ */
+gchar*
+host_routes_xml (host_t host)
+{
+  iterator_t routes;
+  GString* buffer;
+
+  gchar *owned_clause;
+
+  owned_clause = acl_where_owned_for_get ("host", NULL);
+
+  buffer = g_string_new ("<routes>");
+  init_iterator (&routes,
+                 "SELECT outer_details.value,"
+                 "       outer_details.source_type,"
+                 "       outer_details.source_id,"
+                 "       outer_identifiers.modification_time"
+                 "  FROM host_details AS outer_details,"
+                 "       host_identifiers AS outer_identifiers"
+                 " WHERE outer_details.host = %llu"
+                 "   AND outer_details.name = 'traceroute'"
+                 "   AND outer_details.source_id = outer_identifiers.source_id"
+                 "   AND outer_identifiers.host = outer_details.host"
+                 "   AND outer_identifiers.name='ip'"
+                 "   AND outer_identifiers.modification_time"
+                 "         = (SELECT max (modification_time)"
+                 "              FROM host_identifiers"
+                 "             WHERE host_identifiers.host = %llu"
+                 "               AND host_identifiers.source_id IN"
+                 "                   (SELECT source_id FROM host_details"
+                 "                     WHERE host = %llu"
+                 "                       AND value = outer_details.value)"
+                 "              AND host_identifiers.name='ip')"
+                 " ORDER BY outer_identifiers.modification_time DESC;",
+                 host, host, host);
+
+  while (next (&routes))
+    {
+      const char *traceroute;
+      const char *source_id;
+      time_t modified;
+      gchar **hop_ips, **hop_ip;
+      int distance;
+
+      g_string_append (buffer, "<route>");
+
+      traceroute = iterator_string (&routes, 0);
+      source_id = iterator_string (&routes, 2);
+      modified = iterator_int64 (&routes, 3);
+
+      hop_ips = g_strsplit (traceroute, ",", 0);
+      hop_ip = hop_ips;
+
+      distance = 0;
+
+      while (*hop_ip != NULL) {
+        iterator_t best_host_iterator;
+        const char *best_host_id;
+        int same_source;
+
+        init_iterator (&best_host_iterator,
+                       "SELECT hosts.uuid,"
+                       "       (source_id='%s')"
+                       "         AS same_source"
+                       "  FROM hosts, host_identifiers"
+                       " WHERE hosts.id = host_identifiers.host"
+                       "   AND host_identifiers.name = 'ip'"
+                       "   AND host_identifiers.value='%s'"
+                       "   AND %s"
+                       " ORDER BY same_source DESC,"
+                       "          abs(host_identifiers.modification_time"
+                       "              - %llu) ASC"
+                       " LIMIT 1;",
+                       source_id,
+                       *hop_ip,
+                       owned_clause,
+                       modified);
+
+        if (next (&best_host_iterator))
+          {
+            best_host_id = iterator_string (&best_host_iterator, 0);
+            same_source = iterator_int (&best_host_iterator, 1);
+          }
+        else
+          {
+            best_host_id = NULL;
+            same_source = 0;
+          }
+
+        g_string_append_printf (buffer,
+                                "<host id=\"%s\""
+                                " distance=\"%d\""
+                                " same_source=\"%d\">"
+                                "<ip>%s</ip>"
+                                "</host>",
+                                best_host_id ? best_host_id : "",
+                                distance,
+                                same_source,
+                                *hop_ip);
+
+        cleanup_iterator (&best_host_iterator);
+
+        distance++;
+        hop_ip++;
+      }
+
+      g_string_append (buffer, "</route>");
+      g_strfreev(hop_ips);
+    }
+
+  cleanup_iterator (&routes);
+
+  g_string_append (buffer, "</routes>");
+
+  return g_string_free (buffer, FALSE);
+}
+
+/**
  * @brief Add host details to a report host.
  *
  * @param[in]  report  UUID of resource.

@@ -276,6 +276,9 @@ hosts_set_max_severity (report_t, int*, int*);
 void
 hosts_set_details (report_t report);
 
+gchar*
+host_routes_xml (host_t);
+
 gboolean
 host_nthlast_report_host (const char *, report_host_t *, int);
 
