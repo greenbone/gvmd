@@ -276,7 +276,7 @@ via backups.  To be able to do a proper restore of the data, it is
 important to also backup the encryption key.  The easiest way to do
 this is to create backup of the entire directory tree
 
-    <install-prefix>/var/lib/openvas/gnupg
+    <install-prefix>/var/lib/openvas/openvasmd/gnupg
 
 and store it at a safe place independent from the database backups.
 This needs to be done only once after the key has been created or
@@ -287,7 +287,7 @@ exists.  If needed the key can also be created in advance using:
 
 To check whether the key has been generated you may use the command
 
-$ gpg --homedir <install-prefix>/var/lib/openvas/gnupg --list-secret-keys
+$ gpg --homedir <install-prefix>/var/lib/openvas/openvasmd/gnupg --list-secret-keys
 
 An example output would be
 
@@ -311,11 +311,11 @@ create a new key, this command will decrypt using the old but disabled key
 and then re-encrypt using the new key.  The command --decrypt-all-credentials
 may be used to revert to plaintext credentials:
 
-    $ gpg --homedir /var/lib/openvas/gnupg -K
+    $ gpg --homedir /var/lib/openvas/openvasmd/gnupg -K
 
 Look for the current key and remember its keyid. Then:
 
-    $ gpg --homedir /var/lib/openvas/gnupg --edit-key KEYID
+    $ gpg --homedir /var/lib/openvas/openvasmd/gnupg --edit-key KEYID
 
 At the prompt enter "disable" followed by "save" and "quit".
 Then create a new key and re-encrypt all passwords:
@@ -340,7 +340,7 @@ will need to enter all of them anew afterwards.
 
 Get the key fingerprint:
 
-    $ gpg --homedir <install-prefix>/var/lib/openvas/gnupg --list-secret-keys
+    $ gpg --homedir <install-prefix>/var/lib/openvas/openvasmd/gnupg --list-secret-keys
 
 Remove the secret key:
 
@@ -357,8 +357,24 @@ Create a new key:
 Finally, reset all credentials, by hand.
 
 
-Migrating Encrypted Credentials from OpenVAS Manager 4.0
---------------------------------------------------------
+Migrating Encrypted Credentials from OpenVAS Manager 5.0 to 6.0
+---------------------------------------------------------------
+
+While OpenVAS Manager 5.0 initially place the credential encryption key in
+<install-prefix>/var/lib/openvas/gnupg, OpenVAS Manager 6.0 has switched to using
+<install-prefix>/var/lib/openvas/openvasmd/gnupg to make it easier to back up all
+Manager data.
+
+In order to continue using your encrypted credentials, please move the contents
+of <install-prefix>/var/lib/openvas/gnupg to
+<install-prefix>/var/lib/openvas/openvasmd/gnupg.
+
+Make sure the permissions on <install-prefix>/var/lib/openvas/openvasmd/gnupg are
+suitable for the user OpenVAS Manager is running as.
+
+
+Migrating Encrypted Credentials from OpenVAS Manager 4.0 to 5.0
+---------------------------------------------------------------
 
 While OpenVAS Manager 4.0 initially place the credential encryption key in
 <install-prefix>/etc/openvas/gnupg, OpenVAS Manager 5.0 has switched to using

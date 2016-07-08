@@ -291,7 +291,7 @@ find_the_key (lsc_crypt_ctx_t ctx, gboolean no_create)
     {
       /* We better reset the gpgme context after an error.  */
       gpgme_release (ctx->encctx);
-      ctx->encctx = openvas_init_gpgme_ctx ();
+      ctx->encctx = openvas_init_gpgme_ctx ("openvasmd");
       if (!ctx->encctx)
         {
           g_critical ("%s: can't continue w/o a gpgme context\n", G_STRFUNC);
@@ -509,7 +509,7 @@ lsc_crypt_new ()
   lsc_crypt_ctx_t ctx;
 
   ctx = g_malloc0 (sizeof *ctx);
-  ctx->encctx = openvas_init_gpgme_ctx ();
+  ctx->encctx = openvas_init_gpgme_ctx ("openvasmd");
   if (!ctx->encctx)
     {
       g_critical ("%s: can't continue w/o a gpgme context\n", G_STRFUNC);

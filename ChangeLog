@@ -1,3 +1,10 @@
+2016-07-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/lsc_crypt.c (find_the_key, lsc_crypt_new): Pass subdir to
+	openvas_init_gpgme_ctx.
+
+	* INSTALL: Update gnupg location.  Add note about migrating.
+
 2016-07-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (sql_open): Add more debug info.
