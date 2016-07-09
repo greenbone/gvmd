@@ -416,9 +416,13 @@ Where:
              the scanner. This option can be dropped if the scanner uses
              a certificate that corresponds with the default CA certficate of Manager
 <clientcert> refers to the certificate Manager uses to authenticate when
-             connecting to the scanner
+             connecting to the scanner. For a default OpenVAS Scanner setup
+             with self-signed certificates this would be
+             /var/lib/openvas/CA/clientcert.pem
 <clientkey>  refers to the private key Manager uses to authenticate when
-             connecting to the scanner
+             connecting to the scanner. For a default OpenVAS Scanner setup
+             with self-signed certificates this would be
+             /var/lib/openvas/private/CA/clientkey.pem
 
 To set just a new default CA certificate:
 
