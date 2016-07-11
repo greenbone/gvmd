@@ -1,5 +1,20 @@
 2016-07-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Move report formats trash to DATA dir.  Hence increase database version
+	to 171.  Add database migration from version 170 to 171.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 171.
+
+	* src/manage_migrators.c (migrate_170_to_171): New functions.
+	(database_migrators): Add migrate_170_to_171.
+
+	* src/manage_sql.c (report_format_trash_dir): Switch from STATE dir to
+	DATA dir.
+
+	* doc/db.png: Update for version change.
+
+2016-07-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (report_format_trash_dir): New function.
 	(check_db_report_formats_trash, delete_report_format, manage_restore)
 	(manage_empty_trashcan): Use function to get dir, so that location is in

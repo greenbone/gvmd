@@ -12737,6 +12737,108 @@ migrate_169_to_170 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 170 to version 171.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_170_to_171 ()
+{
+  gchar *old_dir, *new_dir;
+
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 170. */
+
+  if (manage_db_version () != 170)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The report formats trash moved to an FHS compliant location. */
+
+  new_dir = g_build_filename (OPENVAS_STATE_DIR,
+                              "openvasmd",
+                              NULL);
+
+  if (g_mkdir_with_parents (new_dir, 0755 /* "rwxr-xr-x" */))
+    {
+      g_warning ("%s: failed to create dir %s", __FUNCTION__, new_dir);
+      g_free (new_dir);
+      sql_rollback ();
+      return -1;
+    }
+
+  old_dir = g_build_filename (OPENVAS_DATA_DIR,
+                              "openvasmd",
+                              "report_formats_trash",
+                              NULL);
+
+  /* Ensure the old dir exists. */
+  g_mkdir_with_parents (old_dir, 0755 /* "rwxr-xr-x" */);
+
+  {
+    gchar **cmd;
+    gchar *standard_out = NULL;
+    gchar *standard_err = NULL;
+    gint exit_status;
+
+    cmd = (gchar **) g_malloc (4 * sizeof (gchar *));
+    cmd[0] = g_strdup ("mv");
+    cmd[1] = old_dir;
+    cmd[2] = new_dir;
+    cmd[3] = NULL;
+    g_debug ("%s: Spawning in .: %s %s %s\n",
+             __FUNCTION__, cmd[0], cmd[1], cmd[2]);
+    if ((g_spawn_sync (".",
+                       cmd,
+                       NULL,                  /* Environment. */
+                       G_SPAWN_SEARCH_PATH,
+                       NULL,                  /* Setup function. */
+                       NULL,
+                       &standard_out,
+                       &standard_err,
+                       &exit_status,
+                       NULL)
+         == FALSE)
+        || (WIFEXITED (exit_status) == 0)
+        || WEXITSTATUS (exit_status))
+      {
+        g_warning ("%s: failed rename: %d (WIF %i, WEX %i)",
+                   __FUNCTION__,
+                   exit_status,
+                   WIFEXITED (exit_status),
+                 WEXITSTATUS (exit_status));
+        g_debug ("%s: stdout: %s\n", __FUNCTION__, standard_out);
+        g_debug ("%s: stderr: %s\n", __FUNCTION__, standard_err);
+        g_free (old_dir);
+        g_free (new_dir);
+        g_free (cmd[0]);
+        g_free (cmd);
+        sql_rollback ();
+        return -1;
+      }
+
+    g_free (cmd[0]);
+    g_free (cmd);
+  }
+
+  g_free (old_dir);
+  g_free (new_dir);
+
+  /* Set the database version to 171. */
+
+  set_db_version (171);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -12921,6 +13023,7 @@ static migrator_t database_migrators[]
     {168, migrate_167_to_168},
     {169, migrate_168_to_169},
     {170, migrate_169_to_170},
+    {171, migrate_170_to_171},
     /* End marker. */
     {-1, NULL}};
 

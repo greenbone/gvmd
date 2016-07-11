@@ -15422,13 +15422,15 @@ static gchar *
 report_format_trash_dir (const gchar *report_format_id)
 {
   if (report_format_id)
-    return g_build_filename (OPENVAS_DATA_DIR,
+    return g_build_filename (OPENVAS_STATE_DIR,
                              "openvasmd",
                              "report_formats_trash",
                              report_format_id,
                              NULL);
 
-  return g_build_filename (OPENVAS_DATA_DIR, "openvasmd", "report_formats_trash",
+  return g_build_filename (OPENVAS_STATE_DIR,
+                           "openvasmd",
+                           "report_formats_trash",
                            NULL);
 }
 
