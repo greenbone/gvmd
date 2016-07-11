@@ -15411,6 +15411,28 @@ check_db_report_formats ()
 }
 
 /**
+ * @brief Get trash directory of a report format.
+ *
+ * @param[in]  report_format_id  UUID of report format.  NULL for the
+ *             base dir that holds the report format trash.
+ *
+ * @return Freshly allocated trash dir.
+ */
+static gchar *
+report_format_trash_dir (const gchar *report_format_id)
+{
+  if (report_format_id)
+    return g_build_filename (OPENVAS_DATA_DIR,
+                             "openvasmd",
+                             "report_formats_trash",
+                             report_format_id,
+                             NULL);
+
+  return g_build_filename (OPENVAS_DATA_DIR, "openvasmd", "report_formats_trash",
+                           NULL);
+}
+
+/**
  * @brief Ensure that the report formats trash directory matches the database.
  *
  * @return -1 if error, 0 if success.
@@ -15423,8 +15445,7 @@ check_db_report_formats_trash ()
   GDir *directory;
   const gchar *entry;
 
-  dir = g_build_filename (OPENVAS_DATA_DIR, "openvasmd", "report_formats_trash",
-                          NULL);
+  dir = report_format_trash_dir (NULL);
   error = NULL;
   directory = g_dir_open (dir, 0, &error);
 
@@ -48507,11 +48528,7 @@ delete_report_format (const char *report_format_id, int ultimate)
 
       /* Trash files. */
       report_format_string = g_strdup_printf ("%llu", report_format);
-      dir = g_build_filename (OPENVAS_DATA_DIR,
-                              "openvasmd",
-                              "report_formats_trash",
-                              report_format_string,
-                              NULL);
+      dir = report_format_trash_dir (report_format_string);
       g_free (report_format_string);
       if (g_file_test (dir, G_FILE_TEST_EXISTS) && openvas_file_remove_recurse (dir))
         {
@@ -48604,10 +48621,7 @@ delete_report_format (const char *report_format_id, int ultimate)
 
       /* Move to trash. */
 
-      trash_dir = g_build_filename (OPENVAS_DATA_DIR,
-                                    "openvasmd",
-                                    "report_formats_trash",
-                                    NULL);
+      trash_dir = report_format_trash_dir (NULL);
       if (g_mkdir_with_parents (trash_dir, 0755 /* "rwxr-xr-x" */))
         {
           g_warning ("%s: failed to create dir %s", __FUNCTION__, trash_dir);
@@ -48683,11 +48697,7 @@ delete_report_format (const char *report_format_id, int ultimate)
       gchar *new_dir, *report_format_string;
 
       report_format_string = g_strdup_printf ("%llu", trash_report_format);
-      new_dir = g_build_filename (OPENVAS_DATA_DIR,
-                                  "openvasmd",
-                                  "report_formats_trash",
-                                  report_format_string,
-                                  NULL);
+      new_dir = report_format_trash_dir (report_format_string);
       g_free (report_format_string);
       if (move_report_format_dir (dir, new_dir))
         {
@@ -56699,11 +56709,7 @@ manage_restore (const char *id)
       free (trash_uuid);
 
       resource_string = g_strdup_printf ("%llu", resource);
-      trash_dir = g_build_filename (OPENVAS_DATA_DIR,
-                                    "openvasmd",
-                                    "report_formats_trash",
-                                    resource_string,
-                                    NULL);
+      trash_dir = report_format_trash_dir (resource_string);
       g_free (resource_string);
       if (move_report_format_dir (trash_dir, dir))
         {
@@ -57268,11 +57274,7 @@ manage_empty_trashcan ()
                               g_array_index (report_formats,
                                              report_format_t,
                                              index));
-      dir = g_build_filename (OPENVAS_DATA_DIR,
-                              "openvasmd",
-                              "report_formats_trash",
-                              name,
-                              NULL);
+      dir = report_format_trash_dir (name);
       g_free (name);
 
       if (g_file_test (dir, G_FILE_TEST_EXISTS) && openvas_file_remove_recurse (dir))
