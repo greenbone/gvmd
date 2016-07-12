@@ -1,5 +1,10 @@
 2016-07-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (schedule_user_uuid): Init to NULL to make it clear that
+	it's a pointer.
+
+2016-07-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Make CREATE_REPORT_FORMAT work with --xml when there is no --user.
 
 	* src/manage_sql.c (manage_xml): Also fork when the user UUID is NULL.

@@ -5988,7 +5988,7 @@ int authenticate_allow_all = 0;
  * @brief UUID of user whose scheduled task is to be started (in connection
  *        with authenticate_allow_all).
  */
-gchar* schedule_user_uuid = 0;
+gchar* schedule_user_uuid = NULL;
 
 /**
  * @brief Ensure that any subsequent authentications succeed.
