@@ -1,5 +1,21 @@
 2016-07-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Make CREATE_REPORT_FORMAT work with --xml when there is no --user.
+
+	* src/manage_sql.c (manage_xml): Also fork when the user UUID is NULL.
+	(authenticate): Authenticate automatically when user UUID is NULL.
+	(create_report_format): If the user UUID is NULL then still create the
+	report format, as long as it is global.
+
+	* src/manage_acl.c (acl_user_may): Grant permission when UUID is NULL.
+
+	* src/omp.c (omp_xml_handle_start_element): Only allow the
+	CREATE_REPORT_FORMAT command for --xml without --user.
+
+	* src/openvasmd.c (main): Remove --user requirement for --xml.
+
+2016-07-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move global report formats to STATE dir.  Hence increase database version
 	to 172.  Add database migration from version 171 to 172.
 

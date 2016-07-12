@@ -1507,6 +1507,7 @@ manage_xml (GSList *log_config, const gchar *database,
   const gchar *db;
   gnutls_session_t session;
   gnutls_certificate_credentials_t credentials;
+  gchar *uuid;
 
   if (openvas_auth_init ())
     return -1;
@@ -1523,7 +1524,6 @@ manage_xml (GSList *log_config, const gchar *database,
   if (name)
     {
       user_t user;
-      gchar *uuid;
 
       if (find_user_by_name (name, &user))
         {
@@ -1543,104 +1543,103 @@ manage_xml (GSList *log_config, const gchar *database,
           sql_rollback ();
           return -1;
         }
-      pid = fork_connection (&socket, &session, &credentials, uuid);
-      g_free (uuid);
-      switch (pid)
+   }
+ else
+   uuid = NULL;
+
+  pid = fork_connection (&socket, &session, &credentials, uuid);
+  g_free (uuid);
+  switch (pid)
+    {
+      case 0:
+        /* Child.  Break, run OMP, exit. */
+        break;
+
+      case -1:
+        /* Parent on error. */
+        g_warning ("%s: fork_connection failed\n", __FUNCTION__);
+        exit (EXIT_FAILURE);
+        break;
+
+      default:
         {
-          case 0:
-            /* Child.  Break, run OMP, exit. */
-            break;
+          int status;
 
-          case -1:
-            /* Parent on error. */
-            g_warning ("%s: fork_connection failed\n", __FUNCTION__);
-            exit (EXIT_FAILURE);
-            break;
+          /* Parent.  Wait for child, to check return. */
 
-          default:
+          g_debug ("%s: %i fork_connectioned %i",
+                   __FUNCTION__, getpid (), pid);
+
+          if (signal (SIGCHLD, SIG_DFL) == SIG_ERR)
+            g_warning ("%s: failed to set SIGCHLD", __FUNCTION__);
+          while (waitpid (pid, &status, 0) < 0)
             {
-              int status;
-
-              /* Parent.  Wait for child, to check return. */
-
-              g_debug ("%s: %i fork_connectioned %i",
-                       __FUNCTION__, getpid (), pid);
-
-              if (signal (SIGCHLD, SIG_DFL) == SIG_ERR)
-                g_warning ("%s: failed to set SIGCHLD", __FUNCTION__);
-              while (waitpid (pid, &status, 0) < 0)
+              if (errno == ECHILD)
                 {
-                  if (errno == ECHILD)
-                    {
-                      g_warning ("%s: Failed to get child exit, OMP may not"
-                                 " have been run",
-                                 __FUNCTION__);
-                      exit (EXIT_FAILURE);
-                    }
-                  if (errno == EINTR)
-                    continue;
-                  g_warning ("%s: waitpid: %s",
-                             __FUNCTION__,
-                             strerror (errno));
-                  g_warning ("%s: As a result, OMP may not have been run",
+                  g_warning ("%s: Failed to get child exit, OMP may not"
+                             " have been run",
                              __FUNCTION__);
                   exit (EXIT_FAILURE);
                 }
-              if (WIFEXITED (status))
-                switch (WEXITSTATUS (status))
-                  {
-                    case EXIT_SUCCESS:
-                      /* Child succeeded. */
-                      exit (EXIT_SUCCESS);
-
-                    case EXIT_FAILURE:
-                    default:
-                      break;
-                  }
-
-              /* Child failed, reset task schedule time and exit. */
-
-              printf ("Failed to run OMP.\n");
-              g_warning ("%s: child failed\n", __FUNCTION__);
+              if (errno == EINTR)
+                continue;
+              g_warning ("%s: waitpid: %s",
+                         __FUNCTION__,
+                         strerror (errno));
+              g_warning ("%s: As a result, OMP may not have been run",
+                         __FUNCTION__);
               exit (EXIT_FAILURE);
             }
-        }
+          if (WIFEXITED (status))
+            switch (WEXITSTATUS (status))
+              {
+                case EXIT_SUCCESS:
+                  /* Child succeeded. */
+                  exit (EXIT_SUCCESS);
 
-      /* Run the OMP. */
+                case EXIT_FAILURE:
+                default:
+                  break;
+              }
 
-      if (omp_authenticate (&session, name, ""))
-        {
-          printf ("Failed to authenticate.\n");
-          g_warning ("%s: omp_authenticate failed", __FUNCTION__);
-          openvas_server_free (socket, session, credentials);
+          /* Child failed, reset task schedule time and exit. */
+
+          printf ("Failed to run OMP.\n");
+          g_warning ("%s: child failed\n", __FUNCTION__);
           exit (EXIT_FAILURE);
         }
-
-      if (openvas_server_sendf (&session, "%s", xml) == -1)
-        {
-          printf ("Failed to send to manager.\n");
-          openvas_server_free (socket, session, credentials);
-          exit (EXIT_FAILURE);
-        }
-
-      /* Read the response. */
-
-      entity_t entity = NULL;
-      if (read_entity (&session, &entity))
-        {
-          printf ("Failed to read response.\n");
-          openvas_server_free (socket, session, credentials);
-          exit (EXIT_FAILURE);
-        }
-
-      print_entity_format (entity, GINT_TO_POINTER (0));
-      openvas_server_free (socket, session, credentials);
-      exit (EXIT_SUCCESS);
     }
-  else
-    assert (0);
 
-  return 0;
+  /* Run the OMP. */
+
+  if (omp_authenticate (&session, name, ""))
+    {
+      printf ("Failed to authenticate.\n");
+      g_warning ("%s: omp_authenticate failed", __FUNCTION__);
+      openvas_server_free (socket, session, credentials);
+      exit (EXIT_FAILURE);
+    }
+
+  if (openvas_server_sendf (&session, "%s", xml) == -1)
+    {
+      printf ("Failed to send to manager.\n");
+      openvas_server_free (socket, session, credentials);
+      exit (EXIT_FAILURE);
+    }
+
+  /* Read the response. */
+
+  entity_t entity = NULL;
+  if (read_entity (&session, &entity))
+    {
+      printf ("Failed to read response.\n");
+      openvas_server_free (socket, session, credentials);
+      exit (EXIT_FAILURE);
+    }
+
+  print_entity_format (entity, GINT_TO_POINTER (0));
+  openvas_server_free (socket, session, credentials);
+  exit (EXIT_SUCCESS);
 }
 
 
@@ -16574,7 +16573,8 @@ authenticate (credentials_t* credentials)
 
       if (authenticate_allow_all)
         {
-          /* This flag is set for scheduled tasks only. Take the stored uuid
+          /* This flag is set when Manager makes a connection to itself, for
+           * scheduled tasks, alerts and --xml.  Take the stored uuid
            * to be able to tell apart locally authenticated vs remotely
            * authenticated users (in order to fetch the correct rules). */
           credentials->uuid = get_scheduled_user_uuid ();
@@ -16624,6 +16624,13 @@ authenticate (credentials_t* credentials)
           return 0;
         }
       return fail;
+    }
+  else if (authenticate_allow_all
+           && (get_scheduled_user_uuid () == NULL))
+    {
+      /* --xml without --user. */
+      credentials->uuid = NULL;
+      return 0;
     }
   return 1;
 }
@@ -47440,11 +47447,17 @@ create_report_format (const char *uuid, const char *name,
   int format_trust = TRUST_UNKNOWN;
   create_report_format_param_t *param;
 
-  assert (current_credentials.uuid);
   assert (uuid);
   assert (name);
   assert (files);
   assert (params);
+
+  if (global == 0
+      && current_credentials.uuid == NULL)    /* --xml without --user. */
+    {
+      sql_rollback ();
+      return 99;
+    }
 
   /* Verify the signature. */
 
@@ -47545,7 +47558,9 @@ create_report_format (const char *uuid, const char *name,
       return 99;
     }
 
-  if (global && acl_user_can_everything (current_credentials.uuid) == 0)
+  if (global
+      && current_credentials.uuid    /* NULL for --xml without --user. */
+      && acl_user_can_everything (current_credentials.uuid) == 0)
     {
       sql_rollback ();
       return 99;
