@@ -126,6 +126,9 @@ int delete_reports (task_t);
 
 int delete_slave_task (slave_t, const char *);
 
+gchar *
+report_format_dir (const gchar *);
+
 int
 stop_task_internal (task_t);
 
@@ -14231,12 +14234,7 @@ update_report_format_uuid (const char *old, const char *new)
 {
   gchar *dir;
 
-  dir = g_build_filename (OPENVAS_DATA_DIR,
-                          "openvasmd",
-                          "global_report_formats",
-                          old,
-                          NULL);
-
+  dir = report_format_dir (old);
   if (g_file_test (dir, G_FILE_TEST_EXISTS))
     openvas_file_remove_recurse (dir);
   g_free (dir);
@@ -14916,16 +14914,8 @@ make_report_format_uuids_unique ()
             {
               /* Shared subdir in the global dir, so copy. */
               copy = 1;
-              dir = g_build_filename (OPENVAS_DATA_DIR,
-                                      "openvasmd",
-                                      "global_report_formats",
-                                      old_uuid,
-                                      NULL);
-              new_dir = g_build_filename (OPENVAS_DATA_DIR,
-                                          "openvasmd",
-                                          "global_report_formats",
-                                          new_uuid,
-                                          NULL);
+              dir = report_format_dir (old_uuid);
+              new_dir = report_format_dir (new_uuid);
             }
           else
             {
@@ -28666,11 +28656,7 @@ manage_report (report_t report, const get_data_t *get,
 
     uuid_format = get_iterator_uuid (&formats);
     if (report_format_global (report_format))
-      script_dir = g_build_filename (OPENVAS_DATA_DIR,
-                                     "openvasmd",
-                                     "global_report_formats",
-                                     uuid_format,
-                                     NULL);
+      script_dir = report_format_dir (uuid_format);
     else
       {
         gchar *owner;
@@ -29149,11 +29135,7 @@ manage_send_report (report_t report, report_t delta_report,
 
     uuid_format = get_iterator_uuid (&formats);
     if (report_format_global (report_format))
-      script_dir = g_build_filename (OPENVAS_DATA_DIR,
-                                     "openvasmd",
-                                     "global_report_formats",
-                                     uuid_format,
-                                     NULL);
+      script_dir = report_format_dir (uuid_format);
     else
       {
         gchar *owner;
@@ -47677,11 +47659,7 @@ create_report_format (const char *uuid, const char *name,
   /* Write files to disk. */
 
   if (global)
-    dir = g_build_filename (OPENVAS_DATA_DIR,
-                            "openvasmd",
-                            "global_report_formats",
-                            new_uuid ? new_uuid : uuid,
-                            NULL);
+    dir = report_format_dir (new_uuid ? new_uuid : uuid);
   else
     {
       assert (current_credentials.uuid);
@@ -48089,11 +48067,7 @@ copy_report_format (const char* name, const char* source_uuid,
 
   global = report_format_global (old);
   if (global)
-    source_dir = g_build_filename (OPENVAS_DATA_DIR,
-                                   "openvasmd",
-                                   "global_report_formats",
-                                   source_uuid,
-                                   NULL);
+    source_dir = report_format_dir (source_uuid);
   else
     {
       gchar *owner_uuid;
@@ -48559,11 +48533,7 @@ delete_report_format (const char *report_format_id, int ultimate)
     }
 
   if (report_format_global (report_format))
-    dir = g_build_filename (OPENVAS_DATA_DIR,
-                            "openvasmd",
-                            "global_report_formats",
-                            report_format_id,
-                            NULL);
+    dir = report_format_dir (report_format_id);
   else
     dir = g_build_filename (OPENVAS_STATE_DIR,
                             "openvasmd",
@@ -56696,11 +56666,7 @@ manage_restore (const char *id)
       /* Move the dir last, in case any SQL rolls back. */
 
       if (global)
-        dir = g_build_filename (OPENVAS_DATA_DIR,
-                                "openvasmd",
-                                "global_report_formats",
-                                trash_uuid,
-                                NULL);
+        dir = report_format_dir (trash_uuid);
       else
         dir = g_build_filename (OPENVAS_STATE_DIR,
                                 "openvasmd",

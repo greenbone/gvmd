@@ -1,3 +1,11 @@
+2016-07-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (report_format_dir): New function.
+	(init_report_format_file_iterator): Use function to get dir, so that
+	location is in one place.
+
+	* src/manage_migrators.c (migrate_170_to_171): New functions.
+
 2016-07-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Move report formats trash to DATA dir.  Hence increase database version

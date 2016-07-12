@@ -6641,6 +6641,23 @@ get_report_format_files (const char *dir_name, GPtrArray **start)
 }
 
 /**
+ * @brief Get the directory of a report format.
+ *
+ * @param[in]  uuid  Report format UUID.
+ *
+ * @return Freshly allocated dir name.
+ */
+gchar *
+report_format_dir (const gchar *uuid)
+{
+  return g_build_filename (OPENVAS_DATA_DIR,
+                           "openvasmd",
+                           "global_report_formats",
+                           uuid,
+                           NULL);
+}
+
+/**
  * @brief Initialise a report format file iterator.
  *
  * @param[in]  iterator       Iterator.
@@ -6660,11 +6677,7 @@ init_report_format_file_iterator (file_iterator_t* iterator,
     return -1;
 
   if (report_format_global (report_format))
-    dir_name = g_build_filename (OPENVAS_DATA_DIR,
-                                 "openvasmd",
-                                 "global_report_formats",
-                                 uuid,
-                                 NULL);
+    dir_name = report_format_dir (uuid);
   else
     {
       gchar *owner_uuid;
