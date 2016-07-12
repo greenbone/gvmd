@@ -1,23 +1,35 @@
 2016-07-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Move global report formats to STATE dir.  Hence increase database version
+	to 172.  Add database migration from version 171 to 172.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 172.
+
+	* src/manage_migrators.c (migrate_171_to_172): New function.
+	(database_migrators): Add migrate_171_to_172.
+
+	* src/manage.c (report_format_dir): Use STATE dir.
+
+	* doc/db.png: Update for version change.
+
+2016-07-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (report_format_dir): New function.
 	(init_report_format_file_iterator): Use function to get dir, so that
 	location is in one place.
 
-	* src/manage_migrators.c (migrate_170_to_171): New functions.
-
 2016-07-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	Move report formats trash to DATA dir.  Hence increase database version
+	Move report formats trash to STATE dir.  Hence increase database version
 	to 171.  Add database migration from version 170 to 171.
 
 	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 171.
 
-	* src/manage_migrators.c (migrate_170_to_171): New functions.
+	* src/manage_migrators.c (migrate_170_to_171): New function.
 	(database_migrators): Add migrate_170_to_171.
 
-	* src/manage_sql.c (report_format_trash_dir): Switch from STATE dir to
-	DATA dir.
+	* src/manage_sql.c (report_format_trash_dir): Switch from DATA dir to
+	STATE dir.
 
 	* doc/db.png: Update for version change.
 
