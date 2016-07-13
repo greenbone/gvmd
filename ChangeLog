@@ -1,3 +1,28 @@
+2016-07-13  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add new "report_format_list" parameter type for report formats
+	to allow including the report in other formats and add a report format
+	that generates a .zip file as an example.
+
+	* report_formats/ZIP/create_report_import, report_formats/ZIP/generate:
+	New files.
+
+	* src/manage.c (report_format_param_type_name)
+	(report_format_param_type_from_name): Add type "report_format_list".
+
+	* src/manage.h (report_format_param_type_t): Add new value
+	REPORT_FORMAT_PARAM_TYPE_REPORT_FORMAT_LIST.
+
+	* src/manage_sql.c (print_report_xml_start, print_report_xml_end): New
+	function. Split print_report_xml.
+	(print_report_xml): Remove. Split into print_report_xml_start and
+	print_report_xml_end.
+	(manage_report): Use new XML generation and report format functions.
+	(run_report_format_script, apply_report_format): New functions.
+	(manage_send_report): Use new XML generation and report format
+	functions.
+	(validate_param_value): Add case for report_format_list params.
+
 2016-07-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_modify_report_format): Add active arg.

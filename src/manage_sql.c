@@ -198,6 +198,9 @@ report_counts_cache_exists (report_t, int, int);
 static void report_severity_data (report_t, const char *, const get_data_t *,
                                   severity_data_t*, severity_data_t*);
 
+static gchar* apply_report_format (gchar *, gchar *, gchar *, gchar *,
+                                   GList **);
+
 static int cache_report_counts (report_t, int, int, severity_data_t*, int);
 
 static char*
@@ -27479,14 +27482,13 @@ print_report_delta_xml (FILE *out, iterator_t *results,
 }
 
 /**
- * @brief Print the XML for a report to a file.
+ * @brief Print the main XML content for a report to a file.
  *
  * @param[in]  report      The report.
  * @param[in]  delta       Report to compare with the report.
  * @param[in]  task        Task associated with report.
- * @param[in]  xml_file    File name.
+ * @param[in]  xml_body    File name.
  * @param[in]  get         GET command data.
- * @param[in]  report_format  Format of report that will be created from XML.
  * @param[in]  type               Type of report, NULL, "scan" or "assets".
  * @param[in]  notes_details      If notes, Whether to include details.
  * @param[in]  overrides_details  If overrides, Whether to include details.
@@ -27510,14 +27512,15 @@ print_report_delta_xml (FILE *out, iterator_t *results,
  * @return 0 on success, -1 error, 2 failed to find filter (before any printing).
  */
 static int
-print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
-                  const get_data_t *get, report_format_t report_format,
-                  const char *type, int notes_details, int overrides_details,
-                  const char *host, int pos,
-                  const char *host_search_phrase, const char *host_levels,
-                  int host_first_result, int host_max_results,
-                  int ignore_pagination, gchar **filter_term_return,
-                  gchar **zone_return, gchar **host_summary)
+print_report_xml_start (report_t report, report_t delta, task_t task,
+                        gchar* xml_start, const get_data_t *get,
+                        const char *type,
+                        int notes_details, int overrides_details,
+                        const char *host, int pos,
+                        const char *host_search_phrase, const char *host_levels,
+                        int host_first_result, int host_max_results,
+                        int ignore_pagination, gchar **filter_term_return,
+                        gchar **zone_return, gchar **host_summary)
 {
   int result_hosts_only;
   int notes, overrides;
@@ -27532,7 +27535,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   char *uuid, *tsk_uuid = NULL, *start_time, *end_time;
   int total_result_count, filtered_result_count, run_status;
   array_t *result_hosts;
-  iterator_t results, delta_results, params;
+  iterator_t results, delta_results;
   int debugs, holes, infos, logs, warnings, false_positives;
   int f_debugs, f_holes, f_infos, f_logs, f_warnings, f_false_positives;
   int orig_f_debugs, orig_f_holes, orig_f_infos, orig_f_logs;
@@ -27576,7 +27579,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
         }
     }
 
-  out = fopen (xml_file, "w");
+  out = fopen (xml_start, "w");
 
   if (out == NULL)
     {
@@ -27757,16 +27760,6 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
              "</report>"
              "</delta>");
     }
-
-  PRINT (out, "<report_format>");
-  init_report_format_param_iterator (&params, report_format, 0, 1, NULL);
-  while (next (&params))
-    PRINT (out,
-           "<param><name>%s</name><value>%s</value></param>",
-           report_format_param_iterator_name (&params),
-           report_format_param_iterator_value (&params));
-  cleanup_iterator (&params);
-  PRINT (out, "</report_format>");
 
   if (report)
     {
@@ -28546,8 +28539,6 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       return -1;
     }
 
-  PRINT (out, "</report>");
-
   g_free (sort_field);
   g_free (levels);
   g_free (search_phrase);
@@ -28556,6 +28547,59 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
   if (host_summary && host_summary_buffer)
     *host_summary = g_string_free (host_summary_buffer, FALSE);
+
+  if (fclose (out))
+    {
+      g_warning ("%s: fclose failed: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Completes a report by adding report format info.
+ *
+ * @param[in]   xml_start      Path of file containing start of report.
+ * @param[in]   xml_full       Path to file to print full report to.
+ * @param[in]   report_format  Format of report that will be created from XML.
+ */
+static int
+print_report_xml_end (gchar *xml_start, gchar *xml_full,
+                      report_format_t report_format)
+{
+  FILE *out;
+  iterator_t params;
+
+  if (openvas_file_copy (xml_start, xml_full) == FALSE)
+    {
+      g_warning ("%s: failed to copy xml_start file", __FUNCTION__);
+      return -1;
+    }
+
+  out = fopen (xml_full, "a");
+  if (out == NULL)
+    {
+      g_warning ("%s: fopen failed: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
+      return -1;
+    }
+
+  PRINT (out, "<report_format>");
+  init_report_format_param_iterator (&params, report_format, 0, 1, NULL);
+  while (next (&params))
+    PRINT (out,
+           "<param><name>%s</name><value>%s</value></param>",
+           report_format_param_iterator_name (&params),
+           report_format_param_iterator_value (&params));
+  cleanup_iterator (&params);
+
+  PRINT (out, "</report_format>");
+
+  PRINT (out, "</report>");
 
   if (fclose (out))
     {
@@ -28597,9 +28641,13 @@ manage_report (report_t report, const get_data_t *get,
                gchar **host_summary)
 {
   task_t task;
-  gchar *xml_file;
+  gchar *report_format_id, *xml_start, *xml_file, *output_file;
   char xml_dir[] = "/tmp/openvasmd_XXXXXX";
   int ret;
+  GList *used_rfps;
+  GError *get_error;
+  gchar *output;
+  gsize output_len;
 
   if (type && strcmp (type, "scan"))
     return NULL;
@@ -28619,374 +28667,528 @@ manage_report (report_t report, const get_data_t *get,
       return NULL;
     }
 
-  xml_file = g_strdup_printf ("%s/report.xml", xml_dir);
-  ret = print_report_xml (report, 0, task, xml_file, get,
-                          report_format, type, notes_details, overrides_details,
-                          NULL, 0, NULL, NULL, 0, 0, /* host params */
-                          0 /* ignore_pagination */,
-                          filter_term_return, zone_return, host_summary);
+  xml_start = g_strdup_printf ("%s/report-start.xml", xml_dir);
+  ret = print_report_xml_start (report, 0, task, xml_start, get,
+                                type, notes_details, overrides_details,
+                                NULL, 0, NULL, NULL, 0, 0, /* host params */
+                                0 /* ignore_pagination */,
+                                filter_term_return, zone_return, host_summary);
   if (ret)
     {
-      g_free (xml_file);
+      g_free (xml_start);
       return NULL;
     }
 
-  /* Pass the file to the report format generate script, sending the output
-   * to a file. */
+  xml_file = g_strdup_printf ("%s/report.xml", xml_dir);
 
-  {
-    iterator_t formats;
-    const char *uuid_format;
-    gchar *script, *script_dir;
-    get_data_t report_format_get;
+  /* Apply report format(s) */
+  report_format_id = report_format_uuid (report_format);
 
-    /* Setup file names. */
+  output_file = apply_report_format (report_format_id,
+                                     xml_start, xml_file, xml_dir,
+                                     &used_rfps);
 
-    memset (&report_format_get, '\0', sizeof (report_format_get));
-    report_format_get.id = report_format_uuid (report_format);
-
-    init_report_format_iterator (&formats, &report_format_get);
-    if (next (&formats) == FALSE)
-      {
-        g_free (xml_file);
-        cleanup_iterator (&formats);
-        return NULL;
-      }
-
-    /* Set convenience return parameters. */
-    assert (report_format_iterator_extension (&formats));
-    assert (report_format_iterator_content_type (&formats));
-    if (extension)
-      *extension = g_strdup (report_format_iterator_extension (&formats));
-    if (content_type)
-      *content_type = g_strdup (report_format_iterator_content_type (&formats));
-
-    uuid_format = get_iterator_uuid (&formats);
-    if (report_format_global (report_format))
-      script_dir = report_format_dir (uuid_format);
-    else
-      {
-        gchar *owner;
-        owner = sql_string ("SELECT uuid FROM users"
-                            " WHERE id = (SELECT owner FROM"
-                            "             report_formats WHERE id = %llu);",
-                            report_format);
-        script_dir = g_build_filename (OPENVAS_STATE_DIR,
-                                       "openvasmd",
-                                       "report_formats",
-                                       owner,
-                                       uuid_format,
-                                       NULL);
-        g_free (owner);
-      }
-
-    cleanup_iterator (&formats);
-
-    script = g_build_filename (script_dir, "generate", NULL);
-
-    if (!g_file_test (script, G_FILE_TEST_EXISTS))
-      {
-        g_free (script);
-        g_free (script_dir);
-        if (extension) g_free (*extension);
-        if (content_type) g_free (*content_type);
-        g_free (xml_file);
-        return NULL;
-      }
-
+  if (output_file == NULL)
     {
-      gchar *output_file, *command;
-      char *previous_dir;
-      int ret;
-
-      /* Change into the script directory. */
-
-      /** @todo NULL arg is glibc extension. */
-      previous_dir = getcwd (NULL, 0);
-      if (previous_dir == NULL)
-        {
-          g_warning ("%s: Failed to getcwd: %s\n",
-                     __FUNCTION__,
-                     strerror (errno));
-          g_free (previous_dir);
-          g_free (script);
-          g_free (script_dir);
-          g_free (xml_file);
-          if (extension) g_free (*extension);
-          if (content_type) g_free (*content_type);
-          return NULL;
-        }
-
-      if (chdir (script_dir))
-        {
-          g_warning ("%s: Failed to chdir: %s\n",
-                     __FUNCTION__,
-                     strerror (errno));
-          g_free (previous_dir);
-          g_free (script);
-          g_free (script_dir);
-          g_free (xml_file);
-          if (extension) g_free (*extension);
-          if (content_type) g_free (*content_type);
-          return NULL;
-        }
-      g_free (script_dir);
-
-      output_file = g_strdup_printf ("%s/report.out", xml_dir);
-
-      /* Call the script. */
-
-      command = g_strdup_printf ("%s %s > %s"
-                                 " 2> /dev/null",
-                                 script,
-                                 xml_file,
-                                 output_file);
-      g_free (script);
-
-      g_debug ("   command: %s\n", command);
-
-      if (geteuid () == 0)
-        {
-          pid_t pid;
-          struct passwd *nobody;
-
-          /* Run the command with lower privileges in a fork. */
-
-          nobody = getpwnam ("nobody");
-          if ((nobody == NULL)
-              || chown (xml_dir, nobody->pw_uid, nobody->pw_gid)
-              || chown (xml_file, nobody->pw_uid, nobody->pw_gid))
-            {
-              g_warning ("%s: Failed to set dir permissions: %s\n",
-                         __FUNCTION__,
-                         strerror (errno));
-              g_free (previous_dir);
-              g_free (output_file);
-              g_free (xml_file);
-              if (extension) g_free (*extension);
-              if (content_type) g_free (*content_type);
-              return NULL;
-            }
-          g_free (xml_file);
-
-          pid = fork ();
-          switch (pid)
-            {
-              case 0:
-                {
-                  /* Child.  Drop privileges, run command, exit. */
-
-                  cleanup_manage_process (FALSE);
-
-                  if (setgroups (0,NULL))
-                    {
-                      g_warning ("%s (child): setgroups: %s\n",
-                                 __FUNCTION__, strerror (errno));
-                      exit (EXIT_FAILURE);
-                    }
-                  if (setgid (nobody->pw_gid))
-                    {
-                      g_warning ("%s (child): setgid: %s\n",
-                                 __FUNCTION__,
-                                 strerror (errno));
-                      exit (EXIT_FAILURE);
-                    }
-                  if (setuid (nobody->pw_uid))
-                    {
-                      g_warning ("%s (child): setuid: %s\n",
-                                 __FUNCTION__,
-                                 strerror (errno));
-                      exit (EXIT_FAILURE);
-                    }
-
-                  ret = system (command);
-                  /* Ignore the shell command exit status, because we've not
-                   * specified what it must be in the past. */
-                  if (ret == -1)
-                    {
-                      g_warning ("%s (child):"
-                                 " system failed with ret %i, %i, %s\n",
-                                 __FUNCTION__,
-                                 ret,
-                                 WEXITSTATUS (ret),
-                                 command);
-                      exit (EXIT_FAILURE);
-                    }
-
-                  exit (EXIT_SUCCESS);
-                }
-
-              case -1:
-                /* Parent when error. */
-
-                g_warning ("%s: Failed to fork: %s\n",
-                           __FUNCTION__,
-                           strerror (errno));
-                if (chdir (previous_dir))
-                  g_warning ("%s: and chdir failed\n",
-                             __FUNCTION__);
-                g_free (previous_dir);
-                g_free (output_file);
-                g_free (command);
-                if (extension) g_free (*extension);
-                if (content_type) g_free (*content_type);
-                return NULL;
-                break;
-
-              default:
-                {
-                  int status;
-
-                  /* Parent on success.  Wait for child, and check result. */
-
-                  g_free (command);
-
-                  while (waitpid (pid, &status, 0) < 0)
-                    {
-                      if (errno == ECHILD)
-                        {
-                          g_warning ("%s: Failed to get child exit status",
-                                     __FUNCTION__);
-                          if (chdir (previous_dir))
-                            g_warning ("%s: and chdir failed\n",
-                                       __FUNCTION__);
-                          g_free (previous_dir);
-                          g_free (output_file);
-                          if (extension) g_free (*extension);
-                          if (content_type) g_free (*content_type);
-                          return NULL;
-                        }
-                      if (errno == EINTR)
-                        continue;
-                      g_warning ("%s: wait: %s",
-                                 __FUNCTION__,
-                                 strerror (errno));
-                      if (chdir (previous_dir))
-                        g_warning ("%s: and chdir failed\n",
-                                   __FUNCTION__);
-                      g_free (previous_dir);
-                      g_free (output_file);
-                      if (extension) g_free (*extension);
-                      if (content_type) g_free (*content_type);
-                      return NULL;
-                    }
-                  if (WIFEXITED (status))
-                    switch (WEXITSTATUS (status))
-                      {
-                        case EXIT_SUCCESS:
-                          break;
-                        case EXIT_FAILURE:
-                        default:
-                          g_warning ("%s: child failed, %s\n",
-                                     __FUNCTION__,
-                                     command);
-                          if (chdir (previous_dir))
-                            g_warning ("%s: and chdir failed\n",
-                                       __FUNCTION__);
-                          g_free (previous_dir);
-                          g_free (output_file);
-                          if (extension) g_free (*extension);
-                          if (content_type) g_free (*content_type);
-                          return NULL;
-                      }
-                  else
-                    {
-                      g_warning ("%s: child failed, %s\n",
-                                 __FUNCTION__,
-                                 command);
-                      if (chdir (previous_dir))
-                        g_warning ("%s: and chdir failed\n",
-                                   __FUNCTION__);
-                      g_free (previous_dir);
-                      g_free (output_file);
-                      if (extension) g_free (*extension);
-                      if (content_type) g_free (*content_type);
-                      return NULL;
-                    }
-
-                  /* Child succeeded, continue to process result. */
-
-                  break;
-                }
-            }
-        }
-      else
-        {
-          /* Just run the command as the current user. */
-
-          ret = system (command);
-          if (ret == -1)
-            {
-              g_warning ("%s: system failed with ret %i, %i, %s\n",
-                         __FUNCTION__,
-                         ret,
-                         WEXITSTATUS (ret),
-                         command);
-              if (chdir (previous_dir))
-                g_warning ("%s: and chdir failed\n",
-                           __FUNCTION__);
-              g_free (previous_dir);
-              g_free (output_file);
-              g_free (command);
-              if (extension) g_free (*extension);
-              if (content_type) g_free (*content_type);
-              return NULL;
-            }
-
-          g_free (command);
-        }
-
-      {
-        GError *get_error;
-        gchar *output;
-        gsize output_len;
-
-        /* Change back to the previous directory. */
-
-        if (chdir (previous_dir))
-          {
-            g_warning ("%s: Failed to chdir back: %s\n",
-                       __FUNCTION__,
-                       strerror (errno));
-            g_free (previous_dir);
-            g_free (output_file);
-            if (extension) g_free (*extension);
-            if (content_type) g_free (*content_type);
-            return NULL;
-          }
-        g_free (previous_dir);
-
-        /* Read the script output from file. */
-
-        get_error = NULL;
-        g_file_get_contents (output_file,
-                             &output,
-                             &output_len,
-                             &get_error);
-        g_free (output_file);
-        if (get_error)
-          {
-            g_warning ("%s: Failed to get output: %s\n",
-                       __FUNCTION__,
-                       get_error->message);
-            g_error_free (get_error);
-            if (extension) g_free (*extension);
-            if (content_type) g_free (*content_type);
-            return NULL;
-          }
-
-        /* Remove the directory. */
-
-        openvas_file_remove_recurse (xml_dir);
-
-        /* Return the output. */
-
-        if (output_length) *output_length = output_len;
-
-        return output;
-      }
+      g_warning ("%s: No file returned for report format", __FUNCTION__);
     }
-  }
+  g_free (report_format_id);
+  g_free (xml_file);
+  g_free (xml_start);
+
+  /* Read the script output from file. */
+  if (output_file == NULL)
+    {
+      return NULL;
+    }
+
+  get_error = NULL;
+  g_file_get_contents (output_file,
+                       &output,
+                       &output_len,
+                       &get_error);
+  g_free (output_file);
+  if (get_error)
+    {
+      g_warning ("%s: Failed to get output: %s\n",
+                  __FUNCTION__,
+                  get_error->message);
+      g_error_free (get_error);
+      if (extension) g_free (*extension);
+      if (content_type) g_free (*content_type);
+      return NULL;
+    }
+
+  /* Remove the directory. */
+
+  openvas_file_remove_recurse (xml_dir);
+
+  /* Return the output. */
+
+  if (output_length) *output_length = output_len;
+
+  return output;
+}
+
+/**
+ * @brief Runs the script of a report format.
+ *
+ * @param[in]   report_format_id    UUID of the report format.
+ * @param[in]   xml_start           Path to main part of the report XML.
+ * @param[in]   xml_dir             Path of the dir with XML and subreports.
+ * @param[in]   report_format_extra Extra data for report format.
+ * @param[in]   output_file         Path to write report to.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+run_report_format_script (gchar *report_format_id,
+                          gchar *xml_file,
+                          gchar *xml_dir,
+                          gchar *report_format_extra,
+                          gchar *output_file)
+{
+  iterator_t formats;
+  report_format_t report_format;
+  gchar *script, *script_dir;
+  get_data_t report_format_get;
+
+  gchar *command;
+  char *previous_dir;
+  int ret;
+
+  /* Setup file names and complete report. */
+
+  memset (&report_format_get, '\0', sizeof (report_format_get));
+  report_format_get.id = report_format_id;
+
+  init_report_format_iterator (&formats, &report_format_get);
+  if (next (&formats) == FALSE)
+    {
+      cleanup_iterator (&formats);
+      return -1;
+    }
+
+  report_format = get_iterator_resource (&formats);
+
+  if (report_format_global (report_format))
+    {
+      script_dir = report_format_dir (report_format_id);
+    }
+  else
+    {
+      gchar *owner;
+      owner = sql_string ("SELECT uuid FROM users"
+                          " WHERE id = (SELECT owner FROM"
+                          "             report_formats WHERE id = %llu);",
+                          report_format);
+      script_dir = g_build_filename (OPENVAS_STATE_DIR,
+                                     "openvasmd",
+                                     "report_formats",
+                                     owner,
+                                     report_format_id,
+                                     NULL);
+      g_free (owner);
+    }
+
+  cleanup_iterator (&formats);
+
+  script = g_build_filename (script_dir, "generate", NULL);
+
+  if (!g_file_test (script, G_FILE_TEST_EXISTS))
+    {
+      g_free (script);
+      g_free (script_dir);
+      return -1;
+    }
+
+  /* Change into the script directory. */
+
+  /** @todo NULL arg is glibc extension. */
+  previous_dir = getcwd (NULL, 0);
+  if (previous_dir == NULL)
+    {
+      g_warning ("%s: Failed to getcwd: %s\n",
+                  __FUNCTION__,
+                  strerror (errno));
+      g_free (previous_dir);
+      g_free (script);
+      g_free (script_dir);
+      return -1;
+    }
+
+  if (chdir (script_dir))
+    {
+      g_warning ("%s: Failed to chdir: %s\n",
+                  __FUNCTION__,
+                  strerror (errno));
+      g_free (previous_dir);
+      g_free (script);
+      g_free (script_dir);
+      return -1;
+    }
+  g_free (script_dir);
+
+  /* Call the script. */
+
+  command = g_strdup_printf ("%s %s '%s' > %s"
+                             " 2> /dev/null",
+                             script,
+                             xml_file,
+                             report_format_extra,
+                             output_file);
+  g_free (script);
+
+  g_debug ("   command: %s\n", command);
+
+  if (geteuid () == 0)
+    {
+      pid_t pid;
+      struct passwd *nobody;
+
+      /* Run the command with lower privileges in a fork. */
+
+      nobody = getpwnam ("nobody");
+      if ((nobody == NULL)
+          || chown (xml_dir, nobody->pw_uid, nobody->pw_gid)
+          || chown (xml_file, nobody->pw_uid, nobody->pw_gid))
+        {
+          g_warning ("%s: Failed to set dir permissions: %s\n",
+                      __FUNCTION__,
+                      strerror (errno));
+          g_free (previous_dir);
+          return -1;
+        }
+
+      pid = fork ();
+      switch (pid)
+        {
+          case 0:
+            {
+              /* Child.  Drop privileges, run command, exit. */
+
+              cleanup_manage_process (FALSE);
+
+              if (setgroups (0,NULL))
+                {
+                  g_warning ("%s (child): setgroups: %s\n",
+                              __FUNCTION__, strerror (errno));
+                  exit (EXIT_FAILURE);
+                }
+              if (setgid (nobody->pw_gid))
+                {
+                  g_warning ("%s (child): setgid: %s\n",
+                              __FUNCTION__,
+                              strerror (errno));
+                  exit (EXIT_FAILURE);
+                }
+              if (setuid (nobody->pw_uid))
+                {
+                  g_warning ("%s (child): setuid: %s\n",
+                              __FUNCTION__,
+                              strerror (errno));
+                  exit (EXIT_FAILURE);
+                }
+
+              ret = system (command);
+              /* Ignore the shell command exit status, because we've not
+                * specified what it must be in the past. */
+              if (ret == -1)
+                {
+                  g_warning ("%s (child):"
+                              " system failed with ret %i, %i, %s\n",
+                              __FUNCTION__,
+                              ret,
+                              WEXITSTATUS (ret),
+                              command);
+                  exit (EXIT_FAILURE);
+                }
+
+              exit (EXIT_SUCCESS);
+            }
+
+          case -1:
+            /* Parent when error. */
+
+            g_warning ("%s: Failed to fork: %s\n",
+                        __FUNCTION__,
+                        strerror (errno));
+            if (chdir (previous_dir))
+              g_warning ("%s: and chdir failed\n",
+                          __FUNCTION__);
+            g_free (previous_dir);
+            g_free (command);
+            return -1;
+            break;
+
+          default:
+            {
+              int status;
+
+              /* Parent on success.  Wait for child, and check result. */
+
+              g_free (command);
+
+              while (waitpid (pid, &status, 0) < 0)
+                {
+                  if (errno == ECHILD)
+                    {
+                      g_warning ("%s: Failed to get child exit status",
+                                  __FUNCTION__);
+                      if (chdir (previous_dir))
+                        g_warning ("%s: and chdir failed\n",
+                                    __FUNCTION__);
+                      g_free (previous_dir);
+                      return -1;
+                    }
+                  if (errno == EINTR)
+                    continue;
+                  g_warning ("%s: wait: %s",
+                              __FUNCTION__,
+                              strerror (errno));
+                  if (chdir (previous_dir))
+                    g_warning ("%s: and chdir failed\n",
+                                __FUNCTION__);
+                  g_free (previous_dir);
+                  return -1;
+                }
+              if (WIFEXITED (status))
+                switch (WEXITSTATUS (status))
+                  {
+                    case EXIT_SUCCESS:
+                      break;
+                    case EXIT_FAILURE:
+                    default:
+                      g_warning ("%s: child failed, %s\n",
+                                  __FUNCTION__,
+                                  command);
+                      if (chdir (previous_dir))
+                        g_warning ("%s: and chdir failed\n",
+                                    __FUNCTION__);
+                      g_free (previous_dir);
+                      return -1;
+                  }
+              else
+                {
+                  g_warning ("%s: child failed, %s\n",
+                              __FUNCTION__,
+                              command);
+                  if (chdir (previous_dir))
+                    g_warning ("%s: and chdir failed\n",
+                                __FUNCTION__);
+                  g_free (previous_dir);
+                  return -1;
+                }
+
+              /* Child succeeded, continue to process result. */
+
+              break;
+            }
+        }
+    }
+  else
+    {
+      /* Just run the command as the current user. */
+
+      ret = system (command);
+      /* Ignore the shell command exit status, because we've not
+        * specified what it must be in the past. */
+      if (ret == -1)
+        {
+          g_warning ("%s: system failed with ret %i, %i, %s\n",
+                      __FUNCTION__,
+                      ret,
+                      WEXITSTATUS (ret),
+                      command);
+          if (chdir (previous_dir))
+            g_warning ("%s: and chdir failed\n",
+                        __FUNCTION__);
+          g_free (previous_dir);
+          g_free (command);
+          return -1;
+        }
+
+      g_free (command);
+    }
+
+  /* Change back to the previous directory. */
+
+  if (chdir (previous_dir))
+    {
+      g_warning ("%s: Failed to chdir back: %s\n",
+                  __FUNCTION__,
+                  strerror (errno));
+      g_free (previous_dir);
+      return -1;
+    }
+  g_free (previous_dir);
+
+  return 0;
+}
+
+/**
+ * @brief Applies a report format to an XML report.
+ *
+ * @param[in]  report_format      Report format to apply.
+ * @param[in]  xml_file           Path to the report XML file.
+ * @param[in]  xml_dir            Path to the temporary dir.
+ * @param[in]  used_rfps          List of already applied report formats.
+ *
+ * @return Path to the generated file or NULL.
+ */
+static gchar*
+apply_report_format (gchar *report_format_id,
+                     gchar *xml_start,
+                     gchar *xml_file,
+                     gchar *xml_dir,
+                     GList **used_rfps)
+{
+  report_format_t report_format;
+  GHashTable *subreports;
+  gchar *rf_dependencies_string, *output_file, *out_file_part, *out_file_ext;
+  gchar *files_xml;
+  int ret;
+
+  assert (report_format_id);
+  assert (xml_start);
+  assert (xml_file);
+  assert (xml_dir);
+  assert (used_rfps);
+
+  // Check if there would be an infinite recursion loop
+  if (*used_rfps 
+      && g_list_find_custom (*used_rfps, report_format_id,
+                             (GCompareFunc) strcmp))
+    {
+      g_message ("%s: Recursion loop for report_format '%s'",
+                 __FUNCTION__, report_format_id);
+      return NULL;
+    }
+
+  // Check if report format is available
+  if (find_report_format_with_permission (report_format_id, &report_format,
+                                          "get_report_formats")
+      || report_format == 0)
+    {
+      g_message ("%s: Report format '%s' not found",
+                 __FUNCTION__, report_format_id);
+      return NULL;
+    }
+
+  // Get subreports
+  subreports = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+
+  rf_dependencies_string
+    = sql_string ("SELECT value"
+                  "  FROM report_format_params"
+                  " WHERE report_format = %llu"
+                  "   AND type = %i",
+                  report_format,
+                  REPORT_FORMAT_PARAM_TYPE_REPORT_FORMAT_LIST);
+
+  if (rf_dependencies_string) 
+    {
+      gchar **rf_dependencies, **current_rf_dependency;
+      GString *files_xml_buf;
+      GHashTableIter files_iter;
+      gchar *key, *value;
+
+      *used_rfps = g_list_append (*used_rfps, report_format_id);
+
+      // Recursively create subreports for dependencies
+      rf_dependencies = g_strsplit (rf_dependencies_string, ",", -1);
+      current_rf_dependency = rf_dependencies;
+
+      while (*current_rf_dependency)
+        {
+          gchar *subreport_file;
+          subreport_file = NULL;
+
+          if (g_hash_table_contains (subreports, *current_rf_dependency)
+              == FALSE)
+            {
+              subreport_file = apply_report_format (*current_rf_dependency,
+                                                    xml_start,
+                                                    xml_file,
+                                                    xml_dir,
+                                                    used_rfps);
+              if (subreport_file)
+                {
+                  g_hash_table_insert (subreports,
+                                       g_strdup (*current_rf_dependency),
+                                       subreport_file);
+                }
+            }
+
+          current_rf_dependency ++;
+        }
+
+      g_strfreev (rf_dependencies);
+
+      *used_rfps = g_list_remove (*used_rfps, report_format_id);
+
+      // Build dependencies XML
+      files_xml_buf = g_string_new ("<files>");
+      xml_string_append (files_xml_buf,
+                         "<basedir>%s</basedir>",
+                         xml_dir);
+
+      g_hash_table_iter_init (&files_iter, subreports);
+      while (g_hash_table_iter_next (&files_iter,
+                                     (void**)&key, (void**)&value))
+        {
+          xml_string_append (files_xml_buf,
+                             "<file id=\"%s\">%s</file>",
+                             key, value);
+        }
+
+      g_string_append (files_xml_buf, "</files>");
+      files_xml = g_string_free (files_xml_buf, FALSE);
+    }
+  else
+    {
+      GString *files_xml_buf;
+      // Build dependencies XML
+      files_xml_buf = g_string_new ("<files>");
+      xml_string_append (files_xml_buf,
+                         "<basedir>%s</basedir>",
+                         xml_dir);
+      g_string_append (files_xml_buf, "</files>");
+      files_xml = g_string_free (files_xml_buf, FALSE);
+    }
+
+  // Generate output file
+  out_file_ext = report_format_extension (report_format);
+  out_file_part = g_strdup_printf ("%s-XXXXXX.%s",
+                                   report_format_id, out_file_ext);
+  output_file = g_build_filename (xml_dir, out_file_part, NULL);
+  ret = mkstemps (output_file, strlen (out_file_ext) + 1);
+  if (ret == -1)
+    {
+      g_warning ("%s: mkstemp failed: %s", __FUNCTION__, strerror (errno));
+      g_free (output_file);
+      output_file = NULL;
+      goto cleanup;
+    }
+  g_free (out_file_ext);
+  g_free (out_file_part);
+
+  if (print_report_xml_end (xml_start, xml_file, report_format)) 
+    {
+      g_free (output_file);
+      output_file = NULL;
+      goto cleanup;
+    }
+
+  run_report_format_script (report_format_id,
+                            xml_file, xml_dir, files_xml, output_file);
+
+  // Clean up and return filename
+  cleanup:
+  g_free (files_xml);
+  g_hash_table_destroy (subreports);
+
+  return output_file;
 }
 
 /**
@@ -29050,9 +29252,13 @@ manage_send_report (report_t report, report_t delta_report,
                     int host_max_results, const gchar* prefix)
 {
   task_t task;
-  gchar *xml_file;
+  gchar *xml_start, *xml_file;
   char xml_dir[] = "/tmp/openvasmd_XXXXXX";
   int ret;
+  GList *used_rfps;
+  gchar *output_file, *report_format_id;
+  char chunk[MANAGE_SEND_REPORT_CHUNK_SIZE + 1];
+  FILE *stream;
 
   if (type && (strcmp (type, "assets") == 0))
     task = 0;
@@ -29104,413 +29310,128 @@ manage_send_report (report_t report, report_t delta_report,
       return -1;
     }
 
-  xml_file = g_strdup_printf ("%s/report.xml", xml_dir);
-  ret = print_report_xml (report, delta_report, task, xml_file, get,
-                          report_format, type, notes_details, overrides_details,
-                          host, pos, host_search_phrase,
-                          host_levels, host_first_result, host_max_results,
-                          ignore_pagination, NULL, NULL, NULL);
+  xml_start = g_strdup_printf ("%s/report-start.xml", xml_dir);
+  ret = print_report_xml_start (report, delta_report, task, xml_start, get,
+                                type, notes_details, overrides_details,
+                                host, pos, host_search_phrase, host_levels,
+                                host_first_result, host_max_results,
+                                ignore_pagination, NULL, NULL, NULL);
   if (ret)
     {
-      g_free (xml_file);
+      g_free (xml_start);
       if (ret == 2)
         return 2;
       return -1;
     }
 
-  /* Pass the file to the report format generate script, sending the output
-   * to a file. */
+  xml_file = g_strdup_printf ("%s/report.xml", xml_dir);
 
-  {
-    iterator_t formats;
-    const char *uuid_format;
-    gchar *script, *script_dir;
-    get_data_t report_format_get;
+  /* Apply report format(s) */
+  report_format_id = report_format_uuid (report_format);
 
-    /* Setup file names. */
+  output_file = apply_report_format (report_format_id,
+                                     xml_start, xml_file, xml_dir,
+                                     &used_rfps);
 
-    memset (&report_format_get, '\0', sizeof (report_format_get));
-    report_format_get.id = report_format_uuid (report_format);
-
-    init_report_format_iterator (&formats, &report_format_get);
-    if (next (&formats) == FALSE)
-      {
-        g_free (xml_file);
-        cleanup_iterator (&formats);
-        return -1;
-      }
-
-    uuid_format = get_iterator_uuid (&formats);
-    if (report_format_global (report_format))
-      script_dir = report_format_dir (uuid_format);
-    else
-      {
-        gchar *owner;
-        owner = sql_string ("SELECT uuid FROM users"
-                            " WHERE id = (SELECT owner FROM"
-                            "             report_formats WHERE id = %llu);",
-                            report_format);
-        script_dir = g_build_filename (OPENVAS_STATE_DIR,
-                                       "openvasmd",
-                                       "report_formats",
-                                       owner,
-                                       uuid_format,
-                                       NULL);
-        g_free (owner);
-      }
-
-    cleanup_iterator (&formats);
-
-    script = g_build_filename (script_dir, "generate", NULL);
-
-    if (!g_file_test (script, G_FILE_TEST_EXISTS))
-      {
-        g_free (script);
-        g_free (script_dir);
-        g_free (xml_file);
-        return -1;
-      }
-
+  if (output_file == NULL)
     {
-      gchar *output_file, *command;
-      char *previous_dir;
-      int ret;
-
-      /* Change into the script directory. */
-
-      /** @todo NULL arg is glibc extension. */
-      previous_dir = getcwd (NULL, 0);
-      if (previous_dir == NULL)
-        {
-          g_warning ("%s: Failed to getcwd: %s\n",
-                     __FUNCTION__,
-                     strerror (errno));
-          g_free (previous_dir);
-          g_free (script);
-          g_free (script_dir);
-          g_free (xml_file);
-          return -1;
-        }
-
-      if (chdir (script_dir))
-        {
-          g_warning ("%s: Failed to chdir: %s\n",
-                     __FUNCTION__,
-                     strerror (errno));
-          g_free (previous_dir);
-          g_free (script);
-          g_free (script_dir);
-          g_free (xml_file);
-          return -1;
-        }
-      g_free (script_dir);
-
-      output_file = g_strdup_printf ("%s/report.out", xml_dir);
-
-      /* Call the script. */
-
-      command = g_strdup_printf ("%s %s > %s"
-                                 " 2> /dev/null",
-                                 script,
-                                 xml_file,
-                                 output_file);
-      g_free (script);
-
-      g_debug ("   command: %s\n", command);
-
-      if (geteuid () == 0)
-        {
-          pid_t pid;
-          struct passwd *nobody;
-
-          /* Run the command with lower privileges in a fork. */
-
-          nobody = getpwnam ("nobody");
-          if ((nobody == NULL)
-              || chown (xml_dir, nobody->pw_uid, nobody->pw_gid)
-              || chown (xml_file, nobody->pw_uid, nobody->pw_gid))
-            {
-              g_warning ("%s: Failed to set dir permissions: %s\n",
-                         __FUNCTION__,
-                         strerror (errno));
-              g_free (previous_dir);
-              g_free (xml_file);
-              g_free (output_file);
-              return -1;
-            }
-
-          g_free (xml_file);
-
-          pid = fork ();
-          switch (pid)
-            {
-              case 0:
-                {
-                  /* Child.  Drop privileges, run command, exit. */
-
-                  cleanup_manage_process (FALSE);
-
-                  if (setgroups (0,NULL))
-                    {
-                      g_warning ("%s (child): setgroups: %s\n",
-                                 __FUNCTION__, strerror (errno));
-                      exit (EXIT_FAILURE);
-                    }
-                  if (setgid (nobody->pw_gid))
-                    {
-                      g_warning ("%s (child): setgid: %s\n",
-                                 __FUNCTION__,
-                                 strerror (errno));
-                      exit (EXIT_FAILURE);
-                    }
-                  if (setuid (nobody->pw_uid))
-                    {
-                      g_warning ("%s (child): setuid: %s\n",
-                                 __FUNCTION__,
-                                 strerror (errno));
-                      exit (EXIT_FAILURE);
-                    }
-
-                  ret = system (command);
-                  /* Ignore the shell command exit status, because we've not
-                   * specified what it must be in the past. */
-                  if (ret == -1)
-                    {
-                      g_warning ("%s (child):"
-                                 " system failed with ret %i, %i, %s\n",
-                                 __FUNCTION__,
-                                 ret,
-                                 WEXITSTATUS (ret),
-                                 command);
-                      exit (EXIT_FAILURE);
-                    }
-
-                  exit (EXIT_SUCCESS);
-                }
-
-              case -1:
-                /* Parent when error. */
-
-                g_warning ("%s: Failed to fork: %s\n",
-                           __FUNCTION__,
-                           strerror (errno));
-                if (chdir (previous_dir))
-                  g_warning ("%s: and chdir failed\n",
-                             __FUNCTION__);
-                g_free (previous_dir);
-                g_free (output_file);
-                g_free (command);
-                return -1;
-                break;
-
-              default:
-                {
-                  int status;
-
-                  /* Parent on success.  Wait for child, and check result. */
-
-                  g_free (command);
-
-                  while (waitpid (pid, &status, 0) < 0)
-                    {
-                      if (errno == ECHILD)
-                        {
-                          g_warning ("%s: Failed to get child exit status",
-                                     __FUNCTION__);
-                          if (chdir (previous_dir))
-                            g_warning ("%s: and chdir failed\n",
-                                       __FUNCTION__);
-                          g_free (previous_dir);
-                          g_free (output_file);
-                          return -1;
-                        }
-                      if (errno == EINTR)
-                        continue;
-                      g_warning ("%s: wait: %s",
-                                 __FUNCTION__,
-                                 strerror (errno));
-                      if (chdir (previous_dir))
-                        g_warning ("%s: and chdir failed\n",
-                                   __FUNCTION__);
-                      g_free (previous_dir);
-                      g_free (output_file);
-                      return -1;
-                    }
-                  if (WIFEXITED (status))
-                    switch (WEXITSTATUS (status))
-                      {
-                        case EXIT_SUCCESS:
-                          break;
-                        case EXIT_FAILURE:
-                        default:
-                          g_warning ("%s: child failed, %s\n",
-                                     __FUNCTION__,
-                                     command);
-                          if (chdir (previous_dir))
-                            g_warning ("%s: and chdir failed\n",
-                                       __FUNCTION__);
-                          g_free (previous_dir);
-                          g_free (output_file);
-                          return -1;
-                      }
-                  else
-                    {
-                      g_warning ("%s: child failed, %s\n",
-                                 __FUNCTION__,
-                                 command);
-                      if (chdir (previous_dir))
-                        g_warning ("%s: and chdir failed\n",
-                                   __FUNCTION__);
-                      g_free (previous_dir);
-                      g_free (output_file);
-                      return -1;
-                    }
-
-                  /* Child succeeded, continue to process result. */
-
-                  break;
-                }
-            }
-        }
-      else
-        {
-          /* Just run the command as the current user. */
-
-          g_free (xml_file);
-
-          ret = system (command);
-          /* Ignore the shell command exit status, because we've not
-           * specified what it must be in the past. */
-          if (ret == -1)
-            {
-              g_warning ("%s: system failed with ret %i, %i, %s\n",
-                         __FUNCTION__,
-                         ret,
-                         WEXITSTATUS (ret),
-                         command);
-              if (chdir (previous_dir))
-                g_warning ("%s: and chdir failed\n",
-                           __FUNCTION__);
-              g_free (previous_dir);
-              g_free (command);
-              g_free (output_file);
-              return -1;
-            }
-
-          g_free (command);
-        }
-
-      {
-        char chunk[MANAGE_SEND_REPORT_CHUNK_SIZE + 1];
-        FILE *stream;
-
-        /* Change back to the previous directory. */
-
-        if (chdir (previous_dir))
-          {
-            g_warning ("%s: Failed to chdir back: %s\n",
-                       __FUNCTION__,
-                       strerror (errno));
-            g_free (previous_dir);
-            g_free (output_file);
-            return -1;
-          }
-        g_free (previous_dir);
-
-        /* Read the script output from file in chunks, sending to client. */
-
-        stream = fopen (output_file, "r");
-        g_free (output_file);
-        if (stream == NULL)
-          {
-            g_warning ("%s: %s\n",
-                       __FUNCTION__,
-                       strerror (errno));
-            return -1;
-          }
-
-        if (prefix && send (prefix, send_data_1, send_data_2))
-          {
-            fclose (stream);
-            g_warning ("%s: send prefix error\n", __FUNCTION__);
-            return -1;
-          }
-
-        while (1)
-          {
-            int left;
-            char *dest;
-
-            /* Read a chunk. */
-
-            left = MANAGE_SEND_REPORT_CHUNK_SIZE;
-            dest = chunk;
-            while (1)
-              {
-                int ret = fread (dest, 1, left, stream);
-                if (ferror (stream))
-                  {
-                    fclose (stream);
-                    g_warning ("%s: error after fread\n", __FUNCTION__);
-                    return -1;
-                  }
-                left -= ret;
-                if (left == 0)
-                  break;
-                if (feof (stream))
-                  break;
-                dest += ret;
-              }
-
-            /* Send the chunk. */
-
-            if (left < MANAGE_SEND_REPORT_CHUNK_SIZE)
-              {
-                if (base64)
-                  {
-                    gchar *chunk64;
-                    chunk64 = g_base64_encode ((guchar*) chunk,
-                                               MANAGE_SEND_REPORT_CHUNK_SIZE
-                                                - left);
-                    if (send (chunk64, send_data_1, send_data_2))
-                      {
-                        g_free (chunk64);
-                        fclose (stream);
-                        g_warning ("%s: send error\n", __FUNCTION__);
-                        return -1;
-                      }
-                    g_free (chunk64);
-                  }
-                else
-                  {
-                    chunk[MANAGE_SEND_REPORT_CHUNK_SIZE - left] = '\0';
-                    if (send (chunk, send_data_1, send_data_2))
-                      {
-                        fclose (stream);
-                        g_warning ("%s: send error\n", __FUNCTION__);
-                        return -1;
-                      }
-                  }
-              }
-
-            /* Check if there's more. */
-
-            if (feof (stream))
-              break;
-          }
-
-        fclose (stream);
-
-        /* Remove the directory. */
-
-        openvas_file_remove_recurse (xml_dir);
-
-        /* Return the output. */
-
-        return 0;
-      }
+      g_warning ("%s: No file returned for report format", __FUNCTION__);
     }
-  }
+  g_free (report_format_id);
+
+  /* Send the report. */
+
+  /* Read the script output from file in chunks, sending to client. */
+
+  stream = fopen (output_file, "r");
+  g_free (output_file);
+  if (stream == NULL)
+    {
+      g_warning ("%s: %s\n",
+                  __FUNCTION__,
+                  strerror (errno));
+      return -1;
+    }
+
+  if (prefix && send (prefix, send_data_1, send_data_2))
+    {
+      fclose (stream);
+      g_warning ("%s: send prefix error\n", __FUNCTION__);
+      return -1;
+    }
+
+  while (1)
+    {
+      int left;
+      char *dest;
+
+      /* Read a chunk. */
+
+      left = MANAGE_SEND_REPORT_CHUNK_SIZE;
+      dest = chunk;
+      while (1)
+        {
+          int ret = fread (dest, 1, left, stream);
+          if (ferror (stream))
+            {
+              fclose (stream);
+              g_warning ("%s: error after fread\n", __FUNCTION__);
+              return -1;
+            }
+          left -= ret;
+          if (left == 0)
+            break;
+          if (feof (stream))
+            break;
+          dest += ret;
+        }
+
+      /* Send the chunk. */
+
+      if (left < MANAGE_SEND_REPORT_CHUNK_SIZE)
+        {
+          if (base64)
+            {
+              gchar *chunk64;
+              chunk64 = g_base64_encode ((guchar*) chunk,
+                                          MANAGE_SEND_REPORT_CHUNK_SIZE
+                                          - left);
+              if (send (chunk64, send_data_1, send_data_2))
+                {
+                  g_free (chunk64);
+                  fclose (stream);
+                  g_warning ("%s: send error\n", __FUNCTION__);
+                  return -1;
+                }
+              g_free (chunk64);
+            }
+          else
+            {
+              chunk[MANAGE_SEND_REPORT_CHUNK_SIZE - left] = '\0';
+              if (send (chunk, send_data_1, send_data_2))
+                {
+                  fclose (stream);
+                  g_warning ("%s: send error\n", __FUNCTION__);
+                  return -1;
+                }
+            }
+        }
+
+      /* Check if there's more. */
+
+      if (feof (stream))
+        break;
+    }
+
+  fclose (stream);
+
+  /* Remove the directory. */
+
+  openvas_file_remove_recurse (xml_dir);
+
+  /* Return the output. */
+
+  return 0;
 }
 
 /**
@@ -49303,6 +49224,15 @@ validate_param_value (report_format_t report_format,
           max = report_format_param_type_max (report_format, name);
           if (actual > max)
             return 1;
+        }
+        break;
+      case REPORT_FORMAT_PARAM_TYPE_REPORT_FORMAT_LIST:
+        {
+          if (g_regex_match_simple ("^(?:[[:alnum:]-_]+,)*(?:[[:alnum:]-_]+)$",
+                                    value, 0, 0) == FALSE)
+            return 1;
+          else
+            return 0;
         }
         break;
       default:

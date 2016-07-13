@@ -6536,6 +6536,8 @@ report_format_param_type_name (report_format_param_type_t type)
         return "string";
       case REPORT_FORMAT_PARAM_TYPE_TEXT:
         return "text";
+      case REPORT_FORMAT_PARAM_TYPE_REPORT_FORMAT_LIST:
+        return "report_format_list";
       default:
         assert (0);
       case REPORT_FORMAT_PARAM_TYPE_ERROR:
@@ -6563,6 +6565,8 @@ report_format_param_type_from_name (const char *name)
     return REPORT_FORMAT_PARAM_TYPE_STRING;
   if (strcmp (name, "text") == 0)
     return REPORT_FORMAT_PARAM_TYPE_TEXT;
+  if (strcmp (name, "report_format_list") == 0)
+    return REPORT_FORMAT_PARAM_TYPE_REPORT_FORMAT_LIST;
   return REPORT_FORMAT_PARAM_TYPE_ERROR;
 }
 

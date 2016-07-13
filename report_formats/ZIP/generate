@@ -1,0 +1,48 @@
+#!/bin/sh
+#
+# OpenVAS
+# $Id$
+# Description: Report generator script: ZIP.
+#
+# This report generates a .zip archive containing the report in one or more
+#  other report formats.
+#
+# Authors:
+# Timo Pollmeier <timo.pollmeier@greenbone.net>
+#
+# Copyright:
+# Copyright (C) 2016 Greenbone Networks GmbH
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+
+FILES=`echo "$2" | xmlstarlet sel -t -v "/files/file"`
+
+BASEDIR=`echo "$2" | xmlstarlet sel -t -v "/files/basedir"`
+ARCHIVE_TEMPLATE="${BASEDIR}/report-XXXXXX.zip"
+
+ARCHIVE=`mktemp -u "$ARCHIVE_TEMPLATE"`
+
+PREV_PWD="$PWD"
+cd "$BASEDIR"
+
+for FILENAME in $FILES;
+do
+  FILE_BASENAME=`basename "$FILENAME"`
+  zip -q "$ARCHIVE" "$FILE_BASENAME"
+done
+
+cd "$PREV_PWD"
+
+cat "$ARCHIVE"
