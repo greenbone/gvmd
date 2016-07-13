@@ -3048,7 +3048,8 @@ const char*
 param_option_iterator_value (iterator_t *);
 
 int
-manage_modify_report_format (GSList *, const gchar *, const char *, const gchar *);
+manage_modify_report_format (GSList *, const gchar *, const char *,
+                             const gchar *, const gchar *);
 
 
 /* Slaves. */

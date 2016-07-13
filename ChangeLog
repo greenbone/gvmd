@@ -1,3 +1,11 @@
+2016-07-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (manage_modify_report_format): Add active arg.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/openvasmd.c (main): Add --active, for --modify-report-format.
+
 2016-07-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (schedule_user_uuid): Init to NULL to make it clear that

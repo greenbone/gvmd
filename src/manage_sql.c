@@ -49881,6 +49881,7 @@ DEF_ACCESS (param_option_iterator_value, 1);
  * @param[in]  database          Location of manage database.
  * @param[in]  report_format_id  UUID of report_format.
  * @param[in]  predefined        Predefined flag.
+ * @param[in]  active            Active flag.
  *
  * @return 0 success, 1 failed to find report format, 3 report_format_id
  *         required, 4 invalid value, 99 permission denied, -1 error,
@@ -49890,7 +49891,7 @@ DEF_ACCESS (param_option_iterator_value, 1);
 int
 manage_modify_report_format (GSList *log_config, const gchar *database,
                              const char *report_format_id,
-                             const gchar *predefined)
+                             const gchar *predefined, const gchar *active)
 {
   const gchar *db;
   int ret;
@@ -49908,7 +49909,7 @@ manage_modify_report_format (GSList *log_config, const gchar *database,
   init_manage_process (0, db);
   current_credentials.uuid = "";
 
-  ret = modify_report_format (report_format_id, NULL, NULL, NULL, NULL, NULL,
+  ret = modify_report_format (report_format_id, NULL, NULL, active, NULL, NULL,
                               predefined);
   switch (ret)
     {
