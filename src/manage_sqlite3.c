@@ -3163,41 +3163,76 @@ manage_scap_loaded ()
  * @brief Backup the database to a file.
  *
  * @param[in]   database     Database to backup.
- * @param[out]  backup_file  Freshly allocated name of backup file.
+ * @param[out]  backup_file  Location for freshly allocated name of backup
+ *                           file, or NULL.  Only set on success.
  *
  * @return 0 success, -1 error.
  */
 static int
-backup_db (const gchar *database, gchar **backup_file)
+backup_db (const gchar *database, gchar **backup_file_arg)
 {
-  gchar *command;
-  int ret;
+  gchar *backup_file;
+  sqlite3 *backup_db, *actual_task_db;
+  sqlite3_backup *backup;
 
-  sql_begin_exclusive ();
+  backup_file = g_strdup_printf ("%s.bak", database);
 
-  command = g_strdup_printf ("cp %s %s.bak > /dev/null 2>&1"
-                             "&& for f in `ls %s-* 2> /dev/null | grep --invert .\\*bak`;"
-                             "   do cp $f $f.bak > /dev/null 2>&1;"
-                             "   done",
-                             database,
-                             database,
-                             database);
-  g_debug ("   command: %s\n", command);
-  ret = system (command);
-  g_free (command);
-
-  if (ret == -1 || WEXITSTATUS (ret))
+  if (sqlite3_open (backup_file, &backup_db) != SQLITE_OK)
     {
-      sql_rollback ();
-      return -1;
+      g_warning ("%s: sqlite3_open failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
+      goto fail;
     }
 
-  sql_commit ();
+  /* Turn off WAL for the backup db. */
+  actual_task_db = task_db;
+  task_db = backup_db;
+  sql ("PRAGMA journal_mode=DELETE;");
+  task_db = actual_task_db;
 
-  if (backup_file)
-    *backup_file = g_strdup_printf ("%s.bak", database);
+  backup = sqlite3_backup_init (backup_db, "main", task_db, "main");
+  if (backup == NULL)
+    {
+      g_warning ("%s: sqlite3_backup_init failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (backup_db));
+      goto fail;
+    }
 
+  while (1)
+    {
+      int ret;
+
+      ret = sqlite3_backup_step (backup, 20 /* pages */);
+      if (ret == SQLITE_DONE)
+        break;
+      if (ret == SQLITE_OK)
+        continue;
+      if (ret == SQLITE_BUSY || ret == SQLITE_LOCKED)
+        {
+          sqlite3_sleep (250);
+          continue;
+        }
+      g_warning ("%s: sqlite3_backup_step failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errstr (ret));
+      sqlite3_backup_finish (backup);
+      goto fail;
+    }
+  sqlite3_backup_finish (backup);
+  sqlite3_close (backup_db);
+
+  if (backup_file_arg)
+    *backup_file_arg = backup_file;
+  else
+    g_free (backup_file);
   return 0;
+
+ fail:
+  sqlite3_close (backup_db);
+  g_free (backup_file);
+  return -1;
 }
 
 /**

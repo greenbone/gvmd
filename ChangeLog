@@ -1,3 +1,9 @@
+2016-07-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sqlite3.c (backup_db): Use SQLite's backup interface instead
+	of mv.  Turn off WAL on the backup db to ensure that the db is a single
+	file.
+
 2016-07-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (apply_report_format): Add report format name
