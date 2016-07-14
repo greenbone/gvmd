@@ -28851,7 +28851,8 @@ run_report_format_script (gchar *report_format_id,
       nobody = getpwnam ("nobody");
       if ((nobody == NULL)
           || chown (xml_dir, nobody->pw_uid, nobody->pw_gid)
-          || chown (xml_file, nobody->pw_uid, nobody->pw_gid))
+          || chown (xml_file, nobody->pw_uid, nobody->pw_gid)
+          || chown (output_file, nobody->pw_uid, nobody->pw_gid))
         {
           g_warning ("%s: Failed to set dir permissions: %s\n",
                       __FUNCTION__,

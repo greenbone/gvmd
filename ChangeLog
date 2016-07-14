@@ -1,3 +1,8 @@
+2016-07-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (run_report_format_script): Set owner of output
+	file to "nobody" like the input file and directory.
+
 2016-07-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sqlite3.c (backup_db): Use SQLite's backup interface instead
