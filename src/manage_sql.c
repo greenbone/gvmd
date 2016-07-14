@@ -29137,9 +29137,34 @@ apply_report_format (gchar *report_format_id,
       while (g_hash_table_iter_next (&files_iter,
                                      (void**)&key, (void**)&value))
         {
-          xml_string_append (files_xml_buf,
-                             "<file id=\"%s\">%s</file>",
-                             key, value);
+          get_data_t report_format_get;
+          iterator_t file_format_iter;
+
+          memset (&report_format_get, '\0', sizeof (report_format_get));
+          report_format_get.id = key;
+
+          init_report_format_iterator (&file_format_iter, &report_format_get);
+          if (next (&file_format_iter))
+            {
+              xml_string_append (files_xml_buf,
+                                 "<file id=\"%s\""
+                                 " content_type=\"%s\""
+                                 " report_format_name=\"%s\">"
+                                 "%s"
+                                 "</file>",
+                                 key,
+                                 report_format_iterator_content_type
+                                  (&file_format_iter),
+                                 get_iterator_name (&file_format_iter),
+                                 value);
+            }
+          else
+            {
+              xml_string_append (files_xml_buf,
+                                 "<file id=\"%s\">%s</file>",
+                                 key, value);
+            }
+          cleanup_iterator (&file_format_iter);
         }
 
       g_string_append (files_xml_buf, "</files>");

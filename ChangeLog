@@ -1,3 +1,11 @@
+2016-07-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (apply_report_format): Add report format name
+	and content type to file info.
+
+	* report_formats/ZIP/generate: Rename the included reports so the
+	filenames contain the task name, date and report format name.
+
 2016-07-13  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Add new "report_format_list" parameter type for report formats

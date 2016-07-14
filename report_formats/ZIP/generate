@@ -27,6 +27,10 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
+XMLFILE=`readlink -f "$1"`
+DATE=`xmlstarlet sel -t -v /report/scan_start "$XMLFILE" | cut -c 1-10`
+TASK_NAME=`xmlstarlet sel -t -v /report/task/name "$XMLFILE"`
+
 FILES=`echo "$2" | xmlstarlet sel -t -v "/files/file"`
 
 BASEDIR=`echo "$2" | xmlstarlet sel -t -v "/files/basedir"`
@@ -39,8 +43,14 @@ cd "$BASEDIR"
 
 for FILENAME in $FILES;
 do
-  FILE_BASENAME=`basename "$FILENAME"`
-  zip -q "$ARCHIVE" "$FILE_BASENAME"
+  REPORT_FORMAT=`echo "$2" | xmlstarlet sel -t -v "/files/file[text()='$FILENAME']/@report_format_name"`
+  FILE_EXT="${FILENAME##*.}"
+
+  NEW_FILENAME=`echo "${TASK_NAME}-${DATE}-${REPORT_FORMAT}.${FILE_EXT}" | sed 's/ /_/g'`
+
+  mv "$FILENAME" "$NEW_FILENAME"
+  zip -q "$ARCHIVE" "$NEW_FILENAME"
+  mv "$NEW_FILENAME" "$FILENAME"
 done
 
 cd "$PREV_PWD"
