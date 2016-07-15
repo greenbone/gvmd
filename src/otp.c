@@ -373,7 +373,6 @@ typedef enum
   SCANNER_PLUGIN_LIST_NAME,
   SCANNER_PLUGIN_LIST_OID,
   SCANNER_PLUGIN_LIST_PLUGIN_VERSION,
-  SCANNER_PLUGIN_LIST_SUMMARY,
   SCANNER_PLUGIN_LIST_TAGS,
   SCANNER_PLUGIN_LIST_XREFS,
   SCANNER_PREFERENCE_NAME,
@@ -1234,12 +1233,6 @@ process_otp_scanner_input (void (*progress) ())
               case SCANNER_PLUGIN_LIST_COPYRIGHT:
                 {
                   nvti_set_copyright (current_plugin, field);
-                  set_scanner_state (SCANNER_PLUGIN_LIST_SUMMARY);
-                  break;
-                }
-              case SCANNER_PLUGIN_LIST_SUMMARY:
-                {
-                  nvti_set_summary (current_plugin, field);
                   set_scanner_state (SCANNER_PLUGIN_LIST_FAMILY);
                   break;
                 }

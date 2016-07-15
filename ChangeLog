@@ -1,3 +1,12 @@
+2016-07-15  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (make_nvt_from_nvti): Don't insert nvt summary.
+
+	* src/otp.c (scanner_state_t): Remove SCANNER_PLUGIN_LIST_SUMMARY
+	element.
+	(process_otp_scanner_input): Adjust for scanner not sending summary
+	anymore.
+
 2016-07-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (run_report_format_script): Set owner of output

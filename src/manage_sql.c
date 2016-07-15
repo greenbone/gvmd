@@ -35342,7 +35342,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
 {
   gchar *qod_str, *qod_type;
   /** @todo Freeing string literals. */
-  gchar *quoted_version, *quoted_name, *quoted_summary;
+  gchar *quoted_version, *quoted_name;
   gchar *quoted_copyright, *quoted_cve, *quoted_bid, *quoted_xref, *quoted_tag;
   gchar *quoted_cvss_base, *quoted_qod_type, *quoted_family, *value;
   gchar *quoted_solution_type;
@@ -35366,7 +35366,6 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
 
   quoted_version = sql_quote (nvti_version (nvti));
   quoted_name = sql_quote (nvti_name (nvti) ? nvti_name (nvti) : "");
-  quoted_summary = sql_quote (nvti_summary (nvti) ? nvti_summary (nvti) : "");
   quoted_copyright = sql_quote (nvti_copyright (nvti)
                                 ? nvti_copyright (nvti)
                                 : "");
@@ -35496,13 +35495,13 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   else
     quoted_solution_type = g_strdup ("");
 
-  sql ("INSERT into nvts (oid, version, name, summary, copyright,"
+  sql ("INSERT into nvts (oid, version, name, copyright,"
        " cve, bid, xref, tag, category, family, cvss_base,"
        " creation_time, modification_time, uuid, solution_type,"
        " qod, qod_type)"
-       " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',"
+       " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s',"
        " '%s', %i, '%s', '%s', %i, %i, '%s', '%s', %d, '%s');",
-       nvti_oid (nvti), quoted_version, quoted_name, quoted_summary,
+       nvti_oid (nvti), quoted_version, quoted_name,
        quoted_copyright, quoted_cve, quoted_bid, quoted_xref, quoted_tag,
        nvti_category (nvti), quoted_family, quoted_cvss_base, creation_time,
        modification_time, nvti_oid (nvti), quoted_solution_type,
@@ -35513,7 +35512,6 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
 
   g_free (quoted_version);
   g_free (quoted_name);
-  g_free (quoted_summary);
   g_free (quoted_copyright);
   g_free (quoted_cve);
   g_free (quoted_bid);
