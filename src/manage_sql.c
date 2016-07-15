@@ -29054,8 +29054,8 @@ apply_report_format (gchar *report_format_id,
   assert (xml_dir);
   assert (used_rfps);
 
-  // Check if there would be an infinite recursion loop
-  if (*used_rfps 
+  /* Check if there would be an infinite recursion loop. */
+  if (*used_rfps
       && g_list_find_custom (*used_rfps, report_format_id,
                              (GCompareFunc) strcmp))
     {
@@ -29064,7 +29064,7 @@ apply_report_format (gchar *report_format_id,
       return NULL;
     }
 
-  // Check if report format is available
+  /* Check if report format is available. */
   if (find_report_format_with_permission (report_format_id, &report_format,
                                           "get_report_formats")
       || report_format == 0)
@@ -29074,7 +29074,7 @@ apply_report_format (gchar *report_format_id,
       return NULL;
     }
 
-  // Get subreports
+  /* Get subreports. */
   subreports = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
 
   rf_dependencies_string
@@ -29085,7 +29085,7 @@ apply_report_format (gchar *report_format_id,
                   report_format,
                   REPORT_FORMAT_PARAM_TYPE_REPORT_FORMAT_LIST);
 
-  if (rf_dependencies_string) 
+  if (rf_dependencies_string)
     {
       gchar **rf_dependencies, **current_rf_dependency;
       GString *files_xml_buf;
@@ -29094,7 +29094,7 @@ apply_report_format (gchar *report_format_id,
 
       *used_rfps = g_list_append (*used_rfps, report_format_id);
 
-      // Recursively create subreports for dependencies
+      /* Recursively create subreports for dependencies. */
       rf_dependencies = g_strsplit (rf_dependencies_string, ",", -1);
       current_rf_dependency = rf_dependencies;
 
@@ -29126,7 +29126,7 @@ apply_report_format (gchar *report_format_id,
 
       *used_rfps = g_list_remove (*used_rfps, report_format_id);
 
-      // Build dependencies XML
+      /* Build dependencies XML. */
       files_xml_buf = g_string_new ("<files>");
       xml_string_append (files_xml_buf,
                          "<basedir>%s</basedir>",
@@ -29172,7 +29172,7 @@ apply_report_format (gchar *report_format_id,
   else
     {
       GString *files_xml_buf;
-      // Build dependencies XML
+      /* Build dependencies XML. */
       files_xml_buf = g_string_new ("<files>");
       xml_string_append (files_xml_buf,
                          "<basedir>%s</basedir>",
@@ -29181,7 +29181,7 @@ apply_report_format (gchar *report_format_id,
       files_xml = g_string_free (files_xml_buf, FALSE);
     }
 
-  // Generate output file
+  /* Generate output file. */
   out_file_ext = report_format_extension (report_format);
   out_file_part = g_strdup_printf ("%s-XXXXXX.%s",
                                    report_format_id, out_file_ext);
@@ -29197,7 +29197,7 @@ apply_report_format (gchar *report_format_id,
   g_free (out_file_ext);
   g_free (out_file_part);
 
-  if (print_report_xml_end (xml_start, xml_file, report_format)) 
+  if (print_report_xml_end (xml_start, xml_file, report_format))
     {
       g_free (output_file);
       output_file = NULL;
@@ -29207,7 +29207,7 @@ apply_report_format (gchar *report_format_id,
   run_report_format_script (report_format_id,
                             xml_file, xml_dir, files_xml, output_file);
 
-  // Clean up and return filename
+  /* Clean up and return filename. */
   cleanup:
   g_free (files_xml);
   g_hash_table_destroy (subreports);
@@ -29352,7 +29352,7 @@ manage_send_report (report_t report, report_t delta_report,
 
   xml_file = g_strdup_printf ("%s/report.xml", xml_dir);
 
-  /* Apply report format(s) */
+  /* Apply report format(s). */
   report_format_id = report_format_uuid (report_format);
 
   output_file = apply_report_format (report_format_id,

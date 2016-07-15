@@ -1,5 +1,10 @@
 2016-07-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (apply_report_format, manage_send_report): Flush
+	trailing whitespace.  Neaten comments.
+
+2016-07-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_report, manage_send_report): Init used_rfps, to
 	prevent segfaults.
 
