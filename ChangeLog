@@ -1,5 +1,10 @@
 2016-07-15  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* CMakeLists.txt: Change destinations of global report formats from
+	OPENVAS_DATA_DIR to OPENVAS_STATE_DIR.
+
+2016-07-15  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (print_report_xml_start): Do not add closing
 	report tag for assets and prognostic reports.  These cases are also
 	handled by print_report_xml_end now.
