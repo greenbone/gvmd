@@ -1,3 +1,12 @@
+2016-07-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (manage_report, manage_send_report): Init used_rfps, to
+	prevent segfaults.
+
+2016-07-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sqlite3.c (backup_db): Use SQLite's backup interface instead
+
 2016-07-15  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* CMakeLists.txt: Change destinations of global report formats from

@@ -28645,6 +28645,8 @@ manage_report (report_t report, const get_data_t *get,
   gchar *output;
   gsize output_len;
 
+  used_rfps = NULL;
+
   if (type && strcmp (type, "scan"))
     return NULL;
 
@@ -29281,6 +29283,8 @@ manage_send_report (report_t report, report_t delta_report,
   gchar *output_file, *report_format_id;
   char chunk[MANAGE_SEND_REPORT_CHUNK_SIZE + 1];
   FILE *stream;
+
+  used_rfps = NULL;
 
   if (type && (strcmp (type, "assets") == 0))
     task = 0;
