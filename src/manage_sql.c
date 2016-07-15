@@ -28104,8 +28104,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       if (ret)
         return ret;
 
-      PRINT (out, "</report>");
-
       if (fclose (out))
         {
           g_warning ("%s: fclose failed: %s\n",
@@ -28143,8 +28141,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
       if (ret)
         return ret;
-
-      PRINT (out, "</report>");
 
       if (fclose (out))
         {

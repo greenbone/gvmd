@@ -1,3 +1,9 @@
+2016-07-15  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (print_report_xml_start): Do not add closing
+	report tag for assets and prognostic reports.  These cases are also
+	handled by print_report_xml_end now.
+
 2016-07-15  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (make_nvt_from_nvti): Don't insert nvt summary.
