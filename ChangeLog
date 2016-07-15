@@ -1,5 +1,9 @@
 2016-07-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (escalate_1): Add sorting by severity to filter.
+
+2016-07-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (apply_report_format, manage_send_report): Flush
 	trailing whitespace.  Neaten comments.
 

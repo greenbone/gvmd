@@ -11806,7 +11806,8 @@ escalate_1 (alert_t alert, task_t task, report_t report, event_t event,
   get_data_t get;
   memset (&get, 0, sizeof (get_data_t));
   get.details = 1;
-  get.filter = g_strdup_printf ("notes=1 overrides=1 rows=%d",
+  get.filter = g_strdup_printf ("notes=1 overrides=1 sort-reverse=severity"
+                                " rows=%d",
                                 method == ALERT_METHOD_EMAIL ? 1000 : -1);
 
   ret = escalate_2 (alert, task, report, event, event_data, method, condition,
