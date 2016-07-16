@@ -1,3 +1,9 @@
+2016-07-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r25786.
+
+	* src/manage_sql.c (escalate_1): Add sorting by severity to filter.
+
 2016-07-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r25774.

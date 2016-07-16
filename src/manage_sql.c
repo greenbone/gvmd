@@ -10250,8 +10250,8 @@ escalate_1 (alert_t alert, task_t task, report_t report, event_t event,
             alert_condition_t condition)
 {
   return escalate_2 (alert, task, report, event, event_data, method, condition,
-                     1,       /* Ascending. */
-                     NULL,    /* Sort field. */
+                     0,          /* Descending. */
+                     "severity", /* Sort field. */
                      0,       /* Result hosts only. */
                      NULL,    /* Min CVSS base. */
                      NULL,    /* Min QoD. */
