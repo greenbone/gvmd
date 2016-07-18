@@ -12941,6 +12941,58 @@ migrate_171_to_172 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 172 to version 173.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_172_to_173 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 172. */
+
+  if (manage_db_version () != 172)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Remove unused columns */
+  if (sql_is_sqlite3 ())
+    {
+      sql ("ALTER TABLE nvts RENAME TO nvts_172;");
+
+      sql ("CREATE TABLE IF NOT EXISTS nvts"
+           " (id INTEGER PRIMARY KEY, uuid, oid, version, name, comment,"
+           "  copyright, cve, bid, xref, tag, category INTEGER, family, cvss_base,"
+           "  creation_time, modification_time, solution_type TEXT, qod INTEGER,"
+           "  qod_type TEXT);");
+
+      sql ("INSERT INTO nvts"
+           " (id, uuid, oid, version, name, comment, copyright, cve,"
+           "  bid, xref, tag, category, family, cvss_base, creation_time,"
+           "  modification_time, solution_type, qod, qod_type)"
+           " SELECT id, uuid, oid, version, name, comment, copyright, cve,"
+           "  bid, xref, tag, category, family, cvss_base, creation_time,"
+           "  modification_time, solution_type, qod, qod_type"
+           " FROM nvts_172;");
+
+      sql ("DROP TABLE nvts_172;");
+    }
+  else
+    sql ("ALTER TABLE nvts DROP COLUMN summary;");
+
+  /* Set the database version to 173. */
+
+  set_db_version (173);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -13127,6 +13179,7 @@ static migrator_t database_migrators[]
     {170, migrate_169_to_170},
     {171, migrate_170_to_171},
     {172, migrate_171_to_172},
+    {173, migrate_172_to_173},
     /* End marker. */
     {-1, NULL}};
 

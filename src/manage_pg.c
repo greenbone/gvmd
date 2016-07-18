@@ -2197,7 +2197,6 @@ create_tables ()
        "  version text,"
        "  name text,"
        "  comment text,"
-       "  summary text,"
        "  copyright text,"
        "  cve text,"
        "  bid text,"

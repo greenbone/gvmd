@@ -35530,7 +35530,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
  * @brief Filter columns for NVT info iterator.
  */
 #define NVT_INFO_ITERATOR_FILTER_COLUMNS                                    \
- { GET_ITERATOR_FILTER_COLUMNS, "version", "summary", "cve", "bid", "xref", \
+ { GET_ITERATOR_FILTER_COLUMNS, "version", "cve", "bid", "xref",            \
    "family", "cvss_base", "severity", "cvss", "script_tags", "qod",         \
    "qod_type", "solution_type", NULL }
 
@@ -35545,7 +35545,6 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
    { "oid", NULL, KEYWORD_TYPE_STRING },                                    \
    { "version", NULL, KEYWORD_TYPE_STRING },                                \
    { "name", NULL, KEYWORD_TYPE_STRING },                                   \
-   { "summary", NULL, KEYWORD_TYPE_STRING },                                \
    { "copyright", NULL, KEYWORD_TYPE_STRING },                              \
    { "cve", NULL, KEYWORD_TYPE_STRING },                                    \
    { "bid", NULL, KEYWORD_TYPE_STRING },                                    \
@@ -35574,7 +35573,6 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
    { "oid", NULL, KEYWORD_TYPE_STRING },                                    \
    { "version", NULL, KEYWORD_TYPE_STRING },                                \
    { "nvts.name", NULL, KEYWORD_TYPE_STRING },                              \
-   { "summary", NULL, KEYWORD_TYPE_STRING },                                \
    { "copyright", NULL, KEYWORD_TYPE_STRING },                              \
    { "cve", NULL, KEYWORD_TYPE_STRING },                                    \
    { "bid", NULL, KEYWORD_TYPE_STRING },                                    \
@@ -35830,16 +35828,6 @@ DEF_ACCESS (nvt_iterator_version, GET_ITERATOR_COLUMN_COUNT + 1);
 DEF_ACCESS (nvt_iterator_name, GET_ITERATOR_COLUMN_COUNT + 2);
 
 /**
- * @brief Get the summary from an NVT iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Summary, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (nvt_iterator_summary, GET_ITERATOR_COLUMN_COUNT + 3);
-
-/**
  * @brief Get the copyright from an NVT iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -35847,7 +35835,7 @@ DEF_ACCESS (nvt_iterator_summary, GET_ITERATOR_COLUMN_COUNT + 3);
  * @return Copyright, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (nvt_iterator_copyright, GET_ITERATOR_COLUMN_COUNT + 4);
+DEF_ACCESS (nvt_iterator_copyright, GET_ITERATOR_COLUMN_COUNT + 3);
 
 /**
  * @brief Get the cve from an NVT iterator.
@@ -35857,7 +35845,7 @@ DEF_ACCESS (nvt_iterator_copyright, GET_ITERATOR_COLUMN_COUNT + 4);
  * @return Cve, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (nvt_iterator_cve, GET_ITERATOR_COLUMN_COUNT + 5);
+DEF_ACCESS (nvt_iterator_cve, GET_ITERATOR_COLUMN_COUNT + 4);
 
 /**
  * @brief Get the bid from an NVT iterator.
@@ -35867,7 +35855,7 @@ DEF_ACCESS (nvt_iterator_cve, GET_ITERATOR_COLUMN_COUNT + 5);
  * @return Bid, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (nvt_iterator_bid, GET_ITERATOR_COLUMN_COUNT + 6);
+DEF_ACCESS (nvt_iterator_bid, GET_ITERATOR_COLUMN_COUNT + 5);
 
 /**
  * @brief Get the xref from an NVT iterator.
@@ -35877,7 +35865,7 @@ DEF_ACCESS (nvt_iterator_bid, GET_ITERATOR_COLUMN_COUNT + 6);
  * @return Xref, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (nvt_iterator_xref, GET_ITERATOR_COLUMN_COUNT + 7);
+DEF_ACCESS (nvt_iterator_xref, GET_ITERATOR_COLUMN_COUNT + 6);
 
 /**
  * @brief Get the tag from an NVT iterator.
@@ -35887,7 +35875,7 @@ DEF_ACCESS (nvt_iterator_xref, GET_ITERATOR_COLUMN_COUNT + 7);
  * @return Tag, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (nvt_iterator_tag, GET_ITERATOR_COLUMN_COUNT + 8);
+DEF_ACCESS (nvt_iterator_tag, GET_ITERATOR_COLUMN_COUNT + 7);
 
 /**
  * @brief Get the category from an NVT iterator.
@@ -35901,7 +35889,7 @@ nvt_iterator_category (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 9);
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
   return ret;
 }
 
@@ -35913,7 +35901,7 @@ nvt_iterator_category (iterator_t* iterator)
  * @return Family, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (nvt_iterator_family, GET_ITERATOR_COLUMN_COUNT + 10);
+DEF_ACCESS (nvt_iterator_family, GET_ITERATOR_COLUMN_COUNT + 9);
 
 /**
  * @brief Get the cvss_base from an NVT iterator.
@@ -35923,7 +35911,7 @@ DEF_ACCESS (nvt_iterator_family, GET_ITERATOR_COLUMN_COUNT + 10);
  * @return Cvss_base, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (nvt_iterator_cvss_base, GET_ITERATOR_COLUMN_COUNT + 11);
+DEF_ACCESS (nvt_iterator_cvss_base, GET_ITERATOR_COLUMN_COUNT + 10);
 
 /**
  * @brief Get the qod from an NVT iterator.
@@ -35933,7 +35921,7 @@ DEF_ACCESS (nvt_iterator_cvss_base, GET_ITERATOR_COLUMN_COUNT + 11);
  * @return QoD, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (nvt_iterator_qod, GET_ITERATOR_COLUMN_COUNT + 14);
+DEF_ACCESS (nvt_iterator_qod, GET_ITERATOR_COLUMN_COUNT + 13);
 
 /**
  * @brief Get the qod_type from an NVT iterator.
@@ -35943,7 +35931,7 @@ DEF_ACCESS (nvt_iterator_qod, GET_ITERATOR_COLUMN_COUNT + 14);
  * @return QoD type, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (nvt_iterator_qod_type, GET_ITERATOR_COLUMN_COUNT + 15);
+DEF_ACCESS (nvt_iterator_qod_type, GET_ITERATOR_COLUMN_COUNT + 14);
 
 /**
  * @brief Get the solution_type from an NVT iterator.
@@ -35953,7 +35941,7 @@ DEF_ACCESS (nvt_iterator_qod_type, GET_ITERATOR_COLUMN_COUNT + 15);
  * @return Solution type, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (nvt_iterator_solution_type, GET_ITERATOR_COLUMN_COUNT + 16);
+DEF_ACCESS (nvt_iterator_solution_type, GET_ITERATOR_COLUMN_COUNT + 15);
 
 /**
  * @brief Get the number of NVTs in one or all families.

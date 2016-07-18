@@ -7260,7 +7260,6 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
       gchar *tag_name_esc, *tag_value_esc, *tag_comment_esc;
 
       DEF (copyright);
-      DEF (summary);
       DEF (family);
       DEF (version);
       DEF (xref);
@@ -7342,7 +7341,6 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                               "<user_tags>%s</user_tags>"
                               "<category>%s</category>"
                               "<copyright>%s</copyright>"
-                              "<summary>%s</summary>"
                               "<family>%s</family>"
                               "<version>%s</version>"
                               "<cvss_base>%s</cvss_base>"
@@ -7368,7 +7366,6 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                               tags_str->str,
                               category_name (nvt_iterator_category (nvts)),
                               copyright_text,
-                              summary_text,
                               family_text,
                               version_text,
                               nvt_iterator_cvss_base (nvts)
@@ -7384,7 +7381,6 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                               pref_count,
                               timeout ? timeout : "");
       g_free (copyright_text);
-      g_free (summary_text);
       g_free (family_text);
       g_free (version_text);
       g_free (xref_text);

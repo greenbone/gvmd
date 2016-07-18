@@ -1872,9 +1872,6 @@ const char*
 nvt_iterator_name (iterator_t*);
 
 const char*
-nvt_iterator_summary (iterator_t*);
-
-const char*
 nvt_iterator_description (iterator_t*);
 
 const char*

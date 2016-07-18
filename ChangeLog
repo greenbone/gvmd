@@ -1,3 +1,30 @@
+2016-07-18  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	Remove nvts summary field.  Hence increase database version
+	to 173.  Add database migration from version 172 to 173.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 173.
+
+	* src/manage_migrators.c (migrate_172_to_173): New function.
+	(database_migrators): Add migrate_172_to_173.
+
+	* src/manage.c (get_nvti_xml): Remove summary element.
+
+	* doc/db.png: Update for version change.
+
+	* src/manage_pg.c (create_tables), src/manage_sqlite3.c (create_tables):
+	Remove nvts summary column.
+
+	* src/manage_sql.c (NVT_INFO_ITERATOR_FILTER_COLUMNS)
+	(NVT_ITERATOR_COLUMNS, NVT_ITERATOR_COLUMN_NVTS): Remove nvts summary
+	column.
+	(nvt_iterator_summary): Remove function.
+	(nvt_iterator_copyright, nvt_iterator_cve, nvt_iterator_bid)
+	(nvt_iterator_xref, nvt_iterator_tag, nvt_iterator_category)
+	(nvt_iterator_category, nvt_iterator_cvss_base, nvt_iterator_qod)
+	(nvt_iterator_qod_type, nvt_iterator_solution_type): Adjust columns
+	numbers.
+
 2016-07-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (escalate_1): Add sorting by severity to filter.
