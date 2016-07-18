@@ -26279,4 +26279,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </p>
     </description>
   </change>
+  <change>
+    <command>GET_NVTS</command>
+    <summary>Remove summary element</summary>
+    <version>4.0</version>
+    <description>
+      <p>
+        Remove summary element as the nvt tag includes a summary already.
+      </p>
+    </description>
+  </change>
 </protocol>

@@ -1,5 +1,10 @@
 2016-07-18  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml.in: Add note about removal of summary
+	from get_nvts.
+
+2016-07-18  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
 	Remove nvts summary field.  Hence increase database version
 	to 173.  Add database migration from version 172 to 173.
 
