@@ -126,6 +126,9 @@ int delete_reports (task_t);
 
 int delete_slave_task (slave_t, const char *);
 
+void
+set_certs (const char *, const char *, const char *);
+
 gchar *
 report_format_dir (const gchar *);
 
@@ -16425,7 +16428,7 @@ manage_scanner_set (const char *uuid)
   ca_pub = scanner_ca_pub (scanner);
   key_pub = scanner_key_pub (scanner);
   key_priv = scanner_key_priv (scanner);
-  openvas_scanner_set_certs (ca_pub, key_pub, key_priv);
+  set_certs (ca_pub, key_pub, key_priv);
   g_free (host);
   g_free (ca_pub);
   g_free (key_pub);
@@ -46013,9 +46016,9 @@ verify_scanner (const char *scanner_id, char **version)
     {
       int ret = openvas_scanner_set_address (scanner_iterator_host (&scanner),
                                              scanner_iterator_port (&scanner));
-      openvas_scanner_set_certs (scanner_iterator_ca_pub (&scanner),
-                                 scanner_iterator_key_pub (&scanner),
-                                 scanner_iterator_key_priv (&scanner));
+      set_certs (scanner_iterator_ca_pub (&scanner),
+                 scanner_iterator_key_pub (&scanner),
+                 scanner_iterator_key_priv (&scanner));
       cleanup_iterator (&scanner);
       if (ret == -1)
         return 2;

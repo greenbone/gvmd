@@ -4164,6 +4164,27 @@ run_cve_task (task_t task)
 /* OTP tasks. */
 
 /**
+ * @brief Initialise OpenVAS scanner variables, checking for defaults.
+ *
+ * @param[in]  ca_pub       CA Certificate.
+ * @param[in]  key_pub      Scanner Certificate.
+ * @param[in]  key_priv     Scanner private key.
+ */
+void
+set_certs (const char *ca_pub, const char *key_pub, const char *key_priv)
+{
+  const char *fallback;
+
+  if (ca_pub == NULL)
+    fallback = sql_string ("SELECT value FROM settings"
+                          " WHERE uuid = '" SETTING_UUID_DEFAULT_CA_CERT "';");
+  else
+    fallback = NULL;
+
+  openvas_scanner_set_certs (fallback ? fallback : ca_pub, key_pub, key_priv);
+}
+
+/**
  * @brief Initialise some values of the OpenVAS scanner.
  *
  * @param[in]  scanner  Scanner.
@@ -4184,12 +4205,9 @@ scanner_setup (scanner_t scanner)
   if (ret)
     return ret;
   ca_pub = scanner_ca_pub (scanner);
-  if (ca_pub == NULL)
-    ca_pub = sql_string ("SELECT value FROM settings"
-                         " WHERE uuid = '" SETTING_UUID_DEFAULT_CA_CERT "';");
   key_pub = scanner_key_pub (scanner);
   key_priv = scanner_key_priv (scanner);
-  openvas_scanner_set_certs (ca_pub, key_pub, key_priv);
+  set_certs (ca_pub, key_pub, key_priv);
   g_free (ca_pub);
   g_free (key_pub);
   g_free (key_priv);
