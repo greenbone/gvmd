@@ -25457,7 +25457,21 @@ get_reports_response_report_count_page
 <li>
               &lt;<b>value</b>&gt;
               <div style="margin-left: 15px; display: inline;">The value of the param.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>report_format</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Report format info if type is report_format_list.</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the report format if available.</div>
 <ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
 </li>
 <li>
               &lt;<b>default</b>&gt;
@@ -25787,7 +25801,7 @@ get_report_formats_response_report_format_param_name
 get_report_formats_response_report_format_param_type
  = element type
      {
-       text # RNC limitation: xsd:token { pattern = "boolean|integer|selection|string|text" }
+       text # RNC limitation: xsd:token { pattern = "boolean|integer|selection|string|text|report_format_list" }
        &amp; get_report_formats_response_report_format_param_type_min?
        &amp; get_report_formats_response_report_format_param_type_max?
        &amp; get_report_formats_response_report_format_param_type_options?
@@ -25819,6 +25833,19 @@ get_report_formats_response_report_format_param_type_options_option
 
 get_report_formats_response_report_format_param_value
  = element value
+     {
+       get_report_formats_response_report_format_param_value_report_format*
+     }
+
+get_report_formats_response_report_format_param_value_report_format
+ = element report_format
+     {
+       attribute id { uuid }
+       &amp; get_report_formats_response_report_format_param_value_report_format_name
+     }
+
+get_report_formats_response_report_format_param_value_report_format_name
+ = element name
      {
        text
      }

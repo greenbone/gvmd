@@ -49287,8 +49287,9 @@ validate_param_value (report_format_t report_format,
         break;
       case REPORT_FORMAT_PARAM_TYPE_REPORT_FORMAT_LIST:
         {
-          if (g_regex_match_simple ("^(?:[[:alnum:]-_]+,)*(?:[[:alnum:]-_]+)$",
-                                    value, 0, 0) == FALSE)
+          if (g_regex_match_simple 
+                ("^(?:[[:alnum:]-_]+)?(?:,(?:[[:alnum:]-_])+)*$", value, 0, 0)
+              == FALSE)
             return 1;
           else
             return 0;

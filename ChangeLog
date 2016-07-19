@@ -1,3 +1,22 @@
+2016-07-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Output report_format_list report format params also as XML and allow
+	them to be empty when modifying a report format.
+
+	* src/manage_sql.c (validate_param_value): Allow empty strings for
+	report_format_list params.
+
+	* src/omp.c (client_state_t, omp_xml_handle_start_element): Add case
+	to read over report_format elements in modify_report_format params.
+	(handle_get_report_formats): Add report_format elem in params with type
+	report_format_list.
+	(omp_xml_handle_end_element): Close new report_format elements.
+
+	* src/schema_formats/XML/OMP.xml.in (get_report_formats): Add
+	report_format elem to params in response.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2016-07-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Improve error text of "unavailable" responses, and add a separate case for

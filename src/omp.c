@@ -5297,6 +5297,7 @@ typedef enum
   CLIENT_CRF_GRFR_REPORT_FORMAT_NAME,
   CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM,
   CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_DEFAULT,
+  CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_DEFAULT_REPORT_FORMAT,
   CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_NAME,
   CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS,
   CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS_OPTION,
@@ -5304,6 +5305,7 @@ typedef enum
   CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MAX,
   CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MIN,
   CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE,
+  CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE_REPORT_FORMAT,
   CLIENT_CRF_GRFR_REPORT_FORMAT_PREDEFINED,
   CLIENT_CRF_GRFR_REPORT_FORMAT_SIGNATURE,
   CLIENT_CRF_GRFR_REPORT_FORMAT_SUMMARY,
@@ -9977,6 +9979,24 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("VALUE", element_name) == 0)
           set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE);
+        ELSE_ERROR ("create_report_format");
+
+      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_DEFAULT:
+        if (strcasecmp ("REPORT_FORMAT", element_name) == 0)
+          {
+            omp_parser->read_over = 1;
+            set_client_state
+              (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_DEFAULT_REPORT_FORMAT);
+          }
+        ELSE_ERROR ("create_report_format");
+
+      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE:
+        if (strcasecmp ("REPORT_FORMAT", element_name) == 0)
+          {
+            omp_parser->read_over = 1;
+            set_client_state
+              (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE_REPORT_FORMAT);
+          }
         ELSE_ERROR ("create_report_format");
 
       case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS:
@@ -17365,12 +17385,89 @@ handle_get_report_formats (omp_parser_t *omp_parser, GError **error)
                   if (max < LLONG_MAX)
                     SENDF_TO_CLIENT_OR_FAIL ("<max>%lli</max>", max);
 
-                  SENDF_TO_CLIENT_OR_FAIL
-                    ("</type>"
-                    "<value>%s</value>"
-                    "<default>%s</default>",
-                    report_format_param_iterator_value (&params),
-                    report_format_param_iterator_fallback (&params));
+                  if (report_format_param_iterator_type (&params)
+                      == REPORT_FORMAT_PARAM_TYPE_REPORT_FORMAT_LIST)
+                    {
+                      const char *value;
+                      const char *fallback;
+                      value = report_format_param_iterator_value (&params);
+                      fallback = report_format_param_iterator_fallback
+                                    (&params);
+
+                      SENDF_TO_CLIENT_OR_FAIL
+                        ("</type><value>%s",
+                         value ? value : "");
+                      if (value)
+                        {
+                          gchar **ids, **current_id;
+                          ids = g_strsplit (value, ",", -1);
+                          current_id = ids;
+                          while (*current_id)
+                            {
+                              report_format_t value_rf;
+                              gchar *name;
+                              find_report_format_with_permission
+                                    (*current_id, &value_rf,
+                                     "get_report_formats");
+                              name = value_rf ? report_format_name (value_rf)
+                                              : NULL;
+
+                              SENDF_TO_CLIENT_OR_FAIL
+                                ("<report_format id=\"%s\">"
+                                 "<name>%s</name>"
+                                 "</report_format>",
+                                 *current_id,
+                                 name ? name : "");
+
+                              g_free (name);
+                              current_id ++;
+                            }
+                          g_strfreev (ids);
+                        }
+
+                      SENDF_TO_CLIENT_OR_FAIL
+                        ("</value><default>%s",
+                         fallback ? fallback : "");
+                      if (fallback)
+                        {
+                          gchar **ids, **current_id;
+                          ids = g_strsplit (fallback, ",", -1);
+                          current_id = ids;
+                          while (*current_id)
+                            {
+                              report_format_t value_rf;
+                              gchar *name;
+                              find_report_format_with_permission
+                                    (*current_id, &value_rf,
+                                     "get_report_formats");
+                              name = value_rf ? report_format_name (value_rf)
+                                              : NULL;
+
+                              SENDF_TO_CLIENT_OR_FAIL
+                                ("<report_format id=\"%s\">"
+                                 "<name>%s</name>"
+                                 "</report_format>",
+                                 *current_id,
+                                 name ? name : "");
+
+                              g_free (name);
+                              current_id ++;
+                            }
+                          g_strfreev (ids);
+                        }
+
+                      SENDF_TO_CLIENT_OR_FAIL
+                        ("</default>");
+                    }
+                  else
+                    {
+                      SENDF_TO_CLIENT_OR_FAIL
+                        ("</type>"
+                         "<value>%s</value>"
+                         "<default>%s</default>",
+                         report_format_param_iterator_value (&params),
+                         report_format_param_iterator_fallback (&params));
+                    }
 
                   if (report_format_param_iterator_type (&params)
                       == REPORT_FORMAT_PARAM_TYPE_SELECTION)
@@ -24441,6 +24538,12 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT, SIGNATURE);
       CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT, SUMMARY);
       CLOSE_READ_OVER (CLIENT_CRF_GRFR_REPORT_FORMAT, TRUST);
+
+      CLOSE_READ_OVER (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_DEFAULT,
+                       REPORT_FORMAT);
+
+      CLOSE_READ_OVER (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE,
+                       REPORT_FORMAT);
 
       case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS_OPTION:
         assert (strcasecmp ("OPTION", element_name) == 0);

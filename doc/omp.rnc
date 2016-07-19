@@ -14233,7 +14233,7 @@ get_report_formats_response_report_format_param_name
 get_report_formats_response_report_format_param_type
  = element type
      {
-       text # RNC limitation: xsd:token { pattern = "boolean|integer|selection|string|text" }
+       text # RNC limitation: xsd:token { pattern = "boolean|integer|selection|string|text|report_format_list" }
        & get_report_formats_response_report_format_param_type_min?
        & get_report_formats_response_report_format_param_type_max?
        & get_report_formats_response_report_format_param_type_options?
@@ -14270,6 +14270,21 @@ get_report_formats_response_report_format_param_type_options_option
 # The value of the param.
 get_report_formats_response_report_format_param_value
  = element value
+     {
+       get_report_formats_response_report_format_param_value_report_format*
+     }
+
+# Report format info if type is report_format_list.
+get_report_formats_response_report_format_param_value_report_format
+ = element report_format
+     {
+       attribute id { uuid }
+       & get_report_formats_response_report_format_param_value_report_format_name
+     }
+
+# Name of the report format if available.
+get_report_formats_response_report_format_param_value_report_format_name
+ = element name
      {
        text
      }
