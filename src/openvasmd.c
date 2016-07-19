@@ -1039,6 +1039,9 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
         return EXIT_SUCCESS;
       case 1:
         return 2;
+      case -2:
+        g_critical ("%s: scanner OpenVAS Default has no cert\n", __FUNCTION__);
+        return EXIT_FAILURE;
       default:
       case -1:
         return EXIT_FAILURE;

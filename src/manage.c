@@ -4169,8 +4169,10 @@ run_cve_task (task_t task)
  * @param[in]  ca_pub       CA Certificate.
  * @param[in]  key_pub      Scanner Certificate.
  * @param[in]  key_priv     Scanner private key.
+ *
+ * @return 0 success, 1 both default CA cert setting and ca_pub were NULL.
  */
-void
+int
 set_certs (const char *ca_pub, const char *key_pub, const char *key_priv)
 {
   const char *fallback;
@@ -4182,6 +4184,10 @@ set_certs (const char *ca_pub, const char *key_pub, const char *key_priv)
     fallback = NULL;
 
   openvas_scanner_set_certs (fallback ? fallback : ca_pub, key_pub, key_priv);
+
+  if (ca_pub || fallback)
+    return 0;
+  return 1;
 }
 
 /**
@@ -4189,7 +4195,7 @@ set_certs (const char *ca_pub, const char *key_pub, const char *key_priv)
  *
  * @param[in]  scanner  Scanner.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, -1 error, 1 no CA cert.
  */
 static int
 scanner_setup (scanner_t scanner)
@@ -4207,11 +4213,13 @@ scanner_setup (scanner_t scanner)
   ca_pub = scanner_ca_pub (scanner);
   key_pub = scanner_key_pub (scanner);
   key_priv = scanner_key_priv (scanner);
-  set_certs (ca_pub, key_pub, key_priv);
+  ret = 0;
+  if (set_certs (ca_pub, key_pub, key_priv))
+    ret = 1;
   g_free (ca_pub);
   g_free (key_pub);
   g_free (key_priv);
-  return 0;
+  return ret;
 }
 
 /**
@@ -4232,9 +4240,9 @@ scanner_setup (scanner_t scanner)
  *         4 resuming task not supported, 99 permission denied, -1 error,
  *         -2 task is missing a target,
  *         -3 creating the report failed, -4 target missing hosts, -5 scanner is
- *         down or still loading, -6 already a task running in this process, -9
- *         fork failed.  After forking: 0 success (parent), 2 success (child),
- *         -10 error (child).
+ *         down or still loading, -6 already a task running in this process,
+ *         -7 no CA cert, -9 fork failed.  After forking: 0 success (parent),
+ *         2 success (child), -10 error (child).
  */
 static int
 run_task (const char *task_id, char **report_id, int from,
@@ -4326,8 +4334,15 @@ run_task (const char *task_id, char **report_id, int from,
 
   /* Classic OpenVAS Scanner. If task has no scanner, use default one. */
 
-  if (scanner_setup (scanner))
-    return -5;
+  switch (scanner_setup (scanner))
+    {
+      case 0:
+        break;
+      case 1:
+        return -7;
+      default:
+        return -5;
+    }
 
   if (!openvas_scanner_connected ()
       && (openvas_scanner_connect () || openvas_scanner_init (0)))
@@ -5115,7 +5130,7 @@ run_task (const char *task_id, char **report_id, int from,
  *         99 permission denied, -1 internal error,
  *         -2 task is missing a target, -3 creating the report failed,
  *         -4 target missing hosts, -6 already a task running in this process,
- *         -9 fork failed.
+ *         -7 no CA cert, -9 fork failed.
  *         After forking: 0 success (parent), 2 success (child),
  *         -10 error (child).
  */
@@ -5165,7 +5180,7 @@ end_stop_osp:
  * @param[in]  task  Task.
  *
  * @return 0 on success, 1 if stop requested, -1 if out of space in scanner
- *         output buffer, -5 scanner down.
+ *         output buffer, -5 scanner down, -7 no CA cert.
  */
 int
 stop_task_internal (task_t task)
@@ -5181,8 +5196,15 @@ stop_task_internal (task_t task)
           scanner_t scanner = task_scanner (task);
 
           assert (scanner);
-          if (scanner_setup (scanner))
-            return -5;
+          switch (scanner_setup (scanner))
+            {
+              case 0:
+                break;
+              case 1:
+                return -7;
+              default:
+                return -5;
+            }
           if (!openvas_scanner_connected ()
               && (openvas_scanner_connect () || openvas_scanner_init (0)))
             return -5;

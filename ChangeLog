@@ -1,3 +1,27 @@
+2016-07-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Improve error text of "unavailable" responses, and add a separate case for
+	"no cert" errors.
+
+	* src/manage.c (set_certs): Add return.
+	(scanner_setup): Return 1 when there is no CA cert.
+	(run_task, stop_task): Check scanner_setup return.
+
+	* src/manage_sql.c (manage_scanner_set, manage_scanner_set_default): Add
+	"no cert" return.
+	(request_delete_task_uuid): Add "no cert" case.
+	(verify_scanner): Check set_certs return.
+
+	* src/omp.c (STATUS_SERVICE_UNAVAILABLE_TEXT): Remove.  No longer used.
+	(XML_ERROR_UNAVAILABLE): Add text arg.
+	(omp_xml_handle_start_element): Say why the service is unavailable.
+	(omp_xml_handle_end_element): Add "no cert" error cases.  Say why service
+	is unavailable.
+
+	* src/ompd.c (serve_omp): Pass through manage_scanner_set_default return.
+
+	* src/openvasmd.c (update_or_rebuild_nvt_cache): Add "no cert" case.
+
 2016-07-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Make Verinice ISM report format use a new parameter that selects the

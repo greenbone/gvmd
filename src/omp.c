@@ -688,11 +688,6 @@ check_private_key (const char *key_str)
 #define STATUS_SERVICE_UNAVAILABLE     "503"
 
 /**
- * @brief Response code text when a service is unavailable.
- */
-#define STATUS_SERVICE_UNAVAILABLE_TEXT "Service unavailable"
-
-/**
  * @brief Response code when a service is down.
  */
 #define STATUS_SERVICE_DOWN            "503"
@@ -5925,10 +5920,10 @@ make_xml_error_syntax (const char *tag, const char *text)
  *
  * @param  tag   Name of the command generating the response.
  */
-#define XML_ERROR_UNAVAILABLE(tag)                        \
+#define XML_ERROR_UNAVAILABLE(tag, text)                  \
  "<" tag "_response"                                      \
  " status=\"" STATUS_SERVICE_UNAVAILABLE "\""             \
- " status_text=\"" STATUS_SERVICE_UNAVAILABLE_TEXT "\"/>"
+ " status_text=\"" text "\"/>"
 
 /**
  * @brief Expand to XML for a STATUS_ERROR_MISSING response.
@@ -6806,7 +6801,9 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_AUTHENTIC_COMMANDS:
         if (command_disabled (omp_parser, element_name))
           {
-            SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE ("omp"));
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_UNAVAILABLE ("omp",
+                                     "Service unavailable: Command disabled"));
             g_set_error (error,
                          G_MARKUP_ERROR,
                          G_MARKUP_ERROR_UNKNOWN_ELEMENT,
@@ -6816,7 +6813,10 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                  && strcasecmp ("CREATE_REPORT_FORMAT", element_name))
           {
             /* Only CREATE_REPORT_FORMAT may run without a user (via --xml). */
-            SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE ("omp"));
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_UNAVAILABLE ("omp",
+                                     "Service unavailable:"
+                                     " Command prohibited with --xml"));
             g_set_error (error,
                          G_MARKUP_ERROR,
                          G_MARKUP_ERROR_UNKNOWN_ELEMENT,
@@ -20871,6 +20871,13 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   delete_task_data->task_id,
                                   "deleted");
                   break;
+                case -7:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("delete_task", "No CA certificate"));
+                  log_event_fail ("task", "Task",
+                                  delete_task_data->task_id,
+                                  "deleted");
+                  break;
               }
           }
         else
@@ -29358,6 +29365,13 @@ create_task_fail:
                                       resume_task_data->task_id,
                                       "resumed");
                       break;
+                    case -7:
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_ERROR_SYNTAX ("resume_task", "No CA certificate"));
+                      log_event_fail ("task", "Task",
+                                      resume_task_data->task_id,
+                                      "resumed");
+                      break;
                     default: /* Programming error. */
                       assert (0);
                       SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_task"));
@@ -29673,6 +29687,13 @@ create_task_fail:
                                       start_task_data->task_id,
                                       "started");
                       break;
+                    case -7:
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_ERROR_SYNTAX ("start_task", "No CA certificate"));
+                      log_event_fail ("task", "Task",
+                                      start_task_data->task_id,
+                                      "started");
+                      break;
                     case -10:
                       /* Forked task process: error. */
                       current_error = -10;
@@ -29735,6 +29756,13 @@ create_task_fail:
                   SEND_XML_SERVICE_DOWN ("stop_task");
                   log_event_fail ("task", "Task",
                                   stop_task_data->task_id,
+                                  "stopped");
+                  break;
+                case -7:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("stop_task", "No CA certificate"));
+                  log_event_fail ("task", "Task",
+                                  resume_task_data->task_id,
                                   "stopped");
                   break;
                 default:  /* Programming error. */
@@ -30006,7 +30034,12 @@ create_task_fail:
                   break;
                 case 2:
                   SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_UNAVAILABLE ("verify_scanner"));
+                   (XML_ERROR_UNAVAILABLE ("verify_scanner",
+                                           "Service unavailable"));
+                  break;
+                case 3:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("verify_scanner", "No CA certificate"));
                   break;
                 case 99:
                   SEND_TO_CLIENT_OR_FAIL

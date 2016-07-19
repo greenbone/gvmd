@@ -126,7 +126,7 @@ int delete_reports (task_t);
 
 int delete_slave_task (slave_t, const char *);
 
-void
+int
 set_certs (const char *, const char *, const char *);
 
 gchar *
@@ -16390,14 +16390,14 @@ user_exists (const gchar *name)
  *
  * @param[in]  uuid     Scanner UUID.
  *
- * @return 0 if success, -1 if error.
+ * @return 0 if success, -1 if error, -2 scanner has no cert.
  */
 int
 manage_scanner_set (const char *uuid)
 {
   scanner_t scanner = 0;
   char *host, *ca_pub, *key_pub, *key_priv;
-  int port, type;
+  int ret, port, type;
 
   if (uuid == NULL)
     return -1;
@@ -16429,18 +16429,20 @@ manage_scanner_set (const char *uuid)
   ca_pub = scanner_ca_pub (scanner);
   key_pub = scanner_key_pub (scanner);
   key_priv = scanner_key_priv (scanner);
-  set_certs (ca_pub, key_pub, key_priv);
+  ret = set_certs (ca_pub, key_pub, key_priv);
   g_free (host);
   g_free (ca_pub);
   g_free (key_pub);
   g_free (key_priv);
+  if (ret)
+    return -2;
   return 0;
 }
 
 /**
  * @brief Set the default scanner as the scanner to connect to.
  *
- * @return 0 if success, -1 if error.
+ * @return 0 success, -1 error, -2 scanner has no cert.
  */
 int
 manage_scanner_set_default ()
@@ -30047,9 +30049,9 @@ find_trash_task (const char*, task_t*);
  * @param[in]  task_id   UUID of task.
  * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
  *
- * @return 0 if deleted, 1 if delete requested, 2 if task is hidden, 3 failed
- *         to find task, 99 permission denied, -1 if error, -5 if scanner is
- *         down.
+ * @return 0 deleted, 1 delete requested, 2 task is hidden, 3 failed to find
+ *         task, 99 permission denied, -1 error, -5 scanner is down, -7 no CA
+ *         cert.
  */
 int
 request_delete_task_uuid (const char *task_id, int ultimate)
@@ -30158,6 +30160,10 @@ request_delete_task_uuid (const char *task_id, int ultimate)
         return -1;
         break;
       case -5:   /* Scanner down. */
+        sql_rollback ();
+        return -5;
+        break;
+      case -7:   /* No CA cert. */
         sql_rollback ();
         return -5;
         break;
@@ -46013,7 +46019,7 @@ osp_get_details_from_iterator (iterator_t *iterator, char **desc,
  * @param[out]  version     Version returned by the scanner.
  *
  * @return 0 success, 1 failed to find scanner, 2 failed to get version,
- *         99 if permission denied, -1 error.
+ *         3 no cert, 99 if permission denied, -1 error.
  */
 int
 verify_scanner (const char *scanner_id, char **version)
@@ -46042,14 +46048,23 @@ verify_scanner (const char *scanner_id, char **version)
     }
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVAS)
     {
-      int ret = openvas_scanner_set_address (scanner_iterator_host (&scanner),
-                                             scanner_iterator_port (&scanner));
-      set_certs (scanner_iterator_ca_pub (&scanner),
-                 scanner_iterator_key_pub (&scanner),
-                 scanner_iterator_key_priv (&scanner));
+      if (openvas_scanner_set_address (scanner_iterator_host (&scanner),
+                                       scanner_iterator_port (&scanner))
+          == -1)
+        {
+          cleanup_iterator (&scanner);
+          return 2;
+        }
+
+      if (set_certs (scanner_iterator_ca_pub (&scanner),
+                     scanner_iterator_key_pub (&scanner),
+                     scanner_iterator_key_priv (&scanner)))
+        {
+          cleanup_iterator (&scanner);
+          return 3;
+        }
+
       cleanup_iterator (&scanner);
-      if (ret == -1)
-        return 2;
       if (openvas_scanner_connected ())
         openvas_scanner_close ();
       if (openvas_scanner_connect () || openvas_scanner_init (0)

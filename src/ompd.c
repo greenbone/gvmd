@@ -352,7 +352,7 @@ session_clean (gnutls_session_t *sess, gnutls_certificate_credentials_t *creds)
  * @param[in]  disable              Commands to disable.
  * @param[in]  progress             Function to mark progress, or NULL.
  *
- * @return 0 on success, -1 on error, 1 scanner still loading.
+ * @return 0 success, 1 scanner still loading, -1 error, -2 scanner has no cert.
  */
 int
 serve_omp (gnutls_session_t* client_session,
@@ -393,11 +393,15 @@ serve_omp (gnutls_session_t* client_session,
   /* Setup the scanner address and try to connect. */
   if (ompd_nvt_cache_mode && !openvas_scanner_connected ())
     {
+      int ret;
+
       /* Is here because it queries the DB and needs it initialized.
        * XXX: Move outside serve_omp ().
        */
-      if (manage_scanner_set_default ())
-        return -1;
+
+      ret = manage_scanner_set_default ();
+      if (ret)
+        return ret;
       if (openvas_scanner_connect () || openvas_scanner_init (1))
         {
           openvas_scanner_close ();
