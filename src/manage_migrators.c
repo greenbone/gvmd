@@ -12993,6 +12993,62 @@ migrate_172_to_173 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 173 to version 174.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_173_to_174 ()
+{
+  sql_begin_exclusive ();
+  report_format_t report_format;
+
+  /* Ensure that the database is currently version 173. */
+
+  if (manage_db_version () != 173)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Get row id of Verinice ISM report format */
+  sql_int64 (&report_format,
+             "SELECT id FROM report_formats"
+             " WHERE uuid='c15ad349-bd8d-457a-880a-c7056532ee15';");
+
+  // Update version number in summary and description
+  sql ("UPDATE report_formats"
+       " SET summary='Greenbone Verinice ISM Report, v3.0.0.',"
+       "     description='Information Security Management Report for Verinice import, version 3.0.0.\n'"
+       " WHERE id = %llu",
+       report_format);
+
+  // Remove old attach params
+  sql ("DELETE FROM report_format_params"
+       " WHERE report_format = %llu"
+       "   AND name LIKE 'Attach %%%% report'",
+       report_format);
+
+  // Add new attach param
+  sql ("INSERT INTO report_format_params (report_format, name, type, value,"
+       " type_min, type_max, type_regex, fallback)"
+       " VALUES (%lli, 'Attached report formats', %i, '%s', 0, 0, '', 1);",
+       report_format,
+       REPORT_FORMAT_PARAM_TYPE_REPORT_FORMAT_LIST,
+       "6c248850-1f62-11e1-b082-406186ea4fc5");
+
+  /* Set the database version to 174. */
+
+  set_db_version (174);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -13180,6 +13236,7 @@ static migrator_t database_migrators[]
     {171, migrate_170_to_171},
     {172, migrate_171_to_172},
     {173, migrate_172_to_173},
+    {174, migrate_173_to_174},
     /* End marker. */
     {-1, NULL}};
 

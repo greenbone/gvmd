@@ -1,3 +1,35 @@
+2016-07-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Make Verinice ISM report format use a new parameter that selects the
+	included report formats.  Hence increase database version to 174.
+	Add database migration from version 173 to 174.  Also use different
+	temporary directories for the report input XML files to avoid
+	possible conflicts.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 174.
+
+	* src/manage_migrators.c (migrate_173_to_174): New function.
+	(database_migrators): Add migrate_173_to_174.
+
+	* doc/db.png: Update for version change.
+
+	* src/manage_sql.c (check_db_report_formats): In the Verinice ISM
+	format replace the boolean "Attach HTML report" parameter with a report
+	format list "Attached report formats" one to allow selecting multiple
+	attached formats in copies and increase version to 3.0.0.
+	(apply_report_format): Add doc for xml_start param.  Use different
+	temporary directories for the report input XML files to avoid conflicts
+	in case report format scripts use the XML directory for temp files.
+
+	* src/report_formats/Verinice_ISM/Verinice_ISM.xsl: Replace the
+	"htmlfilename" and "htmlmimetype" params with "filenames_str"
+	"mimetypes_str", which will be "|" separated lists allowing to handle
+	multiple file attachments.
+
+	* src/report_formats/Verinice_ISM/generate: Handle the list of
+	dependency report formats instead of the now removed parameter
+	"Attach HTML report".
+
 2016-07-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (set_certs): New function.

@@ -15357,8 +15357,8 @@ check_db_report_formats ()
            " extension, content_type, signature, trust, trust_time, flags,"
            " creation_time, modification_time)"
            " VALUES ('c15ad349-bd8d-457a-880a-c7056532ee15', NULL, 'Verinice ISM',"
-           " 'Greenbone Verinice ISM Report, v1.1.10.',"
-           " 'Information Security Management Report for Verinice import, version 1.1.10.\n',"
+           " 'Greenbone Verinice ISM Report, v3.0.0.',"
+           " 'Information Security Management Report for Verinice import, version 3.0.0.\n',"
            " 'vna', 'application/zip', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_id ();
@@ -15368,9 +15368,10 @@ check_db_report_formats ()
       /* Create report "Attach HTML report" format parameter */
       sql ("INSERT INTO report_format_params (report_format, name, type, value,"
            " type_min, type_max, type_regex, fallback)"
-           " VALUES (%lli, 'Attach HTML report', %i, 1, 0, 1, '', 1);",
+           " VALUES (%lli, 'Attached report formats', %i, '%s', 0, 0, '', 1);",
            report_format,
-           REPORT_FORMAT_PARAM_TYPE_BOOLEAN);
+           REPORT_FORMAT_PARAM_TYPE_REPORT_FORMAT_LIST,
+           "6c248850-1f62-11e1-b082-406186ea4fc5");
 
       /* Create "ISM Control Description" parameter */
       sql ("INSERT INTO report_format_params (report_format, name, type, value,"
@@ -29033,6 +29034,7 @@ run_report_format_script (gchar *report_format_id,
  * @brief Applies a report format to an XML report.
  *
  * @param[in]  report_format      Report format to apply.
+ * @param[in]  xml_start          Path to the main part of the report XML.
  * @param[in]  xml_file           Path to the report XML file.
  * @param[in]  xml_dir            Path to the temporary dir.
  * @param[in]  used_rfps          List of already applied report formats.
@@ -29048,6 +29050,7 @@ apply_report_format (gchar *report_format_id,
 {
   report_format_t report_format;
   GHashTable *subreports;
+  GList *temp_dirs, *temp_files;
   gchar *rf_dependencies_string, *output_file, *out_file_part, *out_file_ext;
   gchar *files_xml;
   int ret;
@@ -29079,6 +29082,8 @@ apply_report_format (gchar *report_format_id,
     }
 
   /* Get subreports. */
+  temp_dirs = NULL;
+  temp_files = NULL;
   subreports = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
 
   rf_dependencies_string
@@ -29104,16 +29109,28 @@ apply_report_format (gchar *report_format_id,
 
       while (*current_rf_dependency)
         {
-          gchar *subreport_file;
+          gchar *subreport_dir, *subreport_xml, *subreport_file;
           subreport_file = NULL;
+
+          subreport_dir = g_strdup ("/tmp/openvasmd_XXXXXX");
+
+          if (mkdtemp (subreport_dir) == NULL)
+            {
+              g_warning ("%s: mkdtemp failed\n", __FUNCTION__);
+              g_free (subreport_dir);
+              break;
+            }
+          subreport_xml = g_build_filename (subreport_dir, "report.xml", NULL);
+          temp_dirs = g_list_append (temp_dirs, subreport_dir);
+          temp_files = g_list_append (temp_files, subreport_xml);
 
           if (g_hash_table_contains (subreports, *current_rf_dependency)
               == FALSE)
             {
               subreport_file = apply_report_format (*current_rf_dependency,
                                                     xml_start,
-                                                    xml_file,
-                                                    xml_dir,
+                                                    subreport_xml,
+                                                    subreport_dir,
                                                     used_rfps);
               if (subreport_file)
                 {
@@ -29193,7 +29210,7 @@ apply_report_format (gchar *report_format_id,
   ret = mkstemps (output_file, strlen (out_file_ext) + 1);
   if (ret == -1)
     {
-      g_warning ("%s: mkstemp failed: %s", __FUNCTION__, strerror (errno));
+      g_warning ("%s: mkstemps failed: %s", __FUNCTION__, strerror (errno));
       g_free (output_file);
       output_file = NULL;
       goto cleanup;
@@ -29213,6 +29230,17 @@ apply_report_format (gchar *report_format_id,
 
   /* Clean up and return filename. */
   cleanup:
+  while (temp_dirs)
+    {
+      openvas_file_remove_recurse (temp_dirs->data);
+      g_free (temp_dirs->data);
+      temp_dirs = g_list_remove (temp_dirs, temp_dirs->data);
+    }
+  while (temp_files)
+    {
+      g_free (temp_files->data);
+      temp_files = g_list_remove (temp_files, temp_files->data);
+    }
   g_free (files_xml);
   g_hash_table_destroy (subreports);
 

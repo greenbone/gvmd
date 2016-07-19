@@ -15,9 +15,10 @@ Parameters:
 Authors:
 Michael Wiegand <michael.wiegand@greenbone.net>
 Andre Heinecke <aheinecke@intevation.de>
+Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 Copyright:
-Copyright (C) 2011, 2012 Greenbone Networks GmbH
+Copyright (C) 2011, 2012, 2016 Greenbone Networks GmbH
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -40,7 +41,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     xmlns:func="http://exslt.org/functions"
     xmlns:openvas="http://openvas.org"
     extension-element-prefixes="str func openvas">
-  <xsl:param name="htmlfilename"/>
+  <xsl:param name="filenames_str"/>
+  <xsl:param name="mimetypes_str"/>
   <xsl:param name="filedate"/>
   <xsl:include href="classification.xsl"/>
   <xsl:output method="xml" encoding="UTF-8"/>
@@ -1043,15 +1045,19 @@ CIS</value>
             <file>files/<xsl:value-of select="$filename"/></file>
         </file> -->
         <xsl:choose>
-          <xsl:when test="report/report_format/param[name='Attach HTML report'] and report/report_format/param[name='Attach HTML report']/value = '1'">
+          <xsl:when test="report/report_format/param[name='Attached report formats'] != ''">
+            <xsl:variable name="filenames" select="str:tokenize($filenames_str,'|')"/>
+            <xsl:variable name="mimetypes" select="str:tokenize($mimetypes_str,'|')"/>
+            <xsl:for-each select="$filenames">
+              <xsl:variable name="position" select="position()"/>
         <file>
             <syncAttribute>
                 <name>attachment_file_name</name>
-                <value><xsl:value-of select="$htmlfilename"/></value>
+                <value><xsl:value-of select="."/></value>
             </syncAttribute>
             <syncAttribute>
                 <name>attachment_name</name>
-                <value><xsl:value-of select="$htmlfilename"/></value>
+                <value><xsl:value-of select="."/></value>
             </syncAttribute>
             <syncAttribute>
                 <name>attachment_date</name>
@@ -1059,11 +1065,12 @@ CIS</value>
             </syncAttribute>
             <syncAttribute>
                 <name>attachment_mime_type</name>
-                <value><xsl:value-of select="$htmlmimetype"/></value>
+                <value><xsl:value-of select="$mimetypes[$position]"/></value>
             </syncAttribute>
-            <extId><xsl:value-of select="$htmlfilename"/></extId>
-            <file>files/<xsl:value-of select="$htmlfilename"/></file>
+            <extId><xsl:value-of select="."/></extId>
+            <file>files/<xsl:value-of select="."/></file>
         </file>
+            </xsl:for-each>
           </xsl:when>
         </xsl:choose>
 
