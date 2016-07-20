@@ -1,3 +1,8 @@
+2016-07-20  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_migrators.c (migrate_171_to_172): Move report formats
+	individually and skip ones that already exist at the new location.
+
 2016-07-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Output report_format_list report format params also as XML and allow
