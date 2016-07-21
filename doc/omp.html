@@ -34498,7 +34498,7 @@ help_response_schema_protocol_command
 <li>
 <i>Command</i><ul style="list-style: none">
 <li>
-          @<b>agent</b>
+          @<b>agent_id</b>
           (<a href="#type_uuid">uuid</a>)
           ID of agent to modify.
           </li>
@@ -34532,7 +34532,7 @@ help_response_schema_protocol_command
 <i>Command</i><div style="margin-left: 5%"><pre>modify_agent
  = element modify_agent
      {
-       attribute agent { uuid }
+       attribute agent_id { uuid }
        &amp; modify_agent_name?
        &amp; modify_agent_comment?
      }
@@ -37019,7 +37019,7 @@ modify_setting_value
 <li>
 <i>Command</i><ul style="list-style: none">
 <li>
-          @<b>slave</b>
+          @<b>slave_id</b>
           (<a href="#type_uuid">uuid</a>)
           ID of slave to modify.
           </li>
@@ -37072,7 +37072,7 @@ modify_setting_value
 <i>Command</i><div style="margin-left: 5%"><pre>modify_slave
  = element modify_slave
      {
-       attribute slave { uuid }
+       attribute slave_id { uuid }
        &amp; modify_slave_name
        &amp; modify_slave_comment?
        &amp; modify_slave_host
@@ -37796,7 +37796,7 @@ modify_task_file
 <li>
 <i>Command</i><ul style="list-style: none">
 <li>
-          @<b>id</b>
+          @<b>user_id</b>
           (<a href="#type_uuid">uuid</a>)
           ID of the user to be modified. Overrides NAME element.
           </li>
@@ -37867,7 +37867,7 @@ modify_task_file
 <i>Command</i><div style="margin-left: 5%"><pre>modify_user
  = element modify_user
      {
-       attribute id { uuid }
+       attribute user_id { uuid }
        &amp; modify_user_name
        &amp; modify_user_new_name?
        &amp; modify_user_password?

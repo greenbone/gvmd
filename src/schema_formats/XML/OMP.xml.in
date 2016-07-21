@@ -22887,7 +22887,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </description>
     <pattern>
       <attrib>
-        <name>agent</name>
+        <name>agent_id</name>
         <summary>ID of agent to modify</summary>
         <type>uuid</type>
         <required>1</required>
@@ -24614,7 +24614,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </description>
     <pattern>
       <attrib>
-        <name>slave</name>
+        <name>slave_id</name>
         <summary>ID of slave to modify</summary>
         <type>uuid</type>
         <required>1</required>
@@ -25155,7 +25155,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </description>
     <pattern>
       <attrib>
-        <name>id</name>
+        <name>user_id</name>
         <summary>ID of the user to be modified.  Overrides NAME element</summary>
         <type>uuid</type>
         <required>1</required>

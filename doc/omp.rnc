@@ -5979,7 +5979,7 @@ modify_agent
  = element modify_agent
      {
        # ID of agent to modify.
-       attribute agent { uuid }
+       attribute agent_id { uuid }
        & modify_agent_name?
        & modify_agent_comment?
      }
@@ -7040,7 +7040,7 @@ modify_slave
  = element modify_slave
      {
        # ID of slave to modify.
-       attribute slave { uuid }
+       attribute slave_id { uuid }
        & modify_slave_name
        & modify_slave_comment?
        & modify_slave_host
@@ -7402,7 +7402,7 @@ modify_user
  = element modify_user
      {
        # ID of the user to be modified. Overrides NAME element.
-       attribute id { uuid }
+       attribute user_id { uuid }
        & modify_user_name
        & modify_user_new_name?
        & modify_user_password?
