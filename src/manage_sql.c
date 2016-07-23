@@ -5132,7 +5132,7 @@ init_get_iterator2 (iterator_t* iterator, const char *type,
     owned_clause = g_strdup (" t ()");
   else
     owned_clause = acl_where_owned (type, get, owned, owner_filter, resource,
-                                permissions);
+                                    permissions);
 
   g_free (owner_filter);
   array_free (permissions);

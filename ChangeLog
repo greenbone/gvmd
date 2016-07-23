@@ -1,5 +1,9 @@
 2016-07-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_get_iterator2): Align arg.
+
+2016-07-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c (PROGNAME): Remove.  No longer used.
 
 2016-07-23  Matthew Mundell <matthew.mundell@greenbone.net>
