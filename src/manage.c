@@ -2227,6 +2227,105 @@ get_tasks_last_report (entity_t get_tasks)
 }
 
 /**
+ * @brief Get last report from GET_TASKS response.
+ *
+ * @param[in]  get_tasks  GET_TASKS response.
+ *
+ * @return 0 success, 1 giveup.
+ */
+static int
+setup_ids (slave_t slave, gnutls_session_t *session, int *socket,
+           const char *host, int port, task_t task,
+           entity_t get_tasks, gchar **slave_config_uuid,
+           gchar **slave_target_uuid, gchar **slave_port_list_uuid,
+           gchar **slave_ssh_credential_uuid, gchar **slave_smb_credential_uuid,
+           gchar **slave_esxi_credential_uuid,
+           gchar **slave_snmp_credential_uuid)
+{
+  entity_t get_tasks_task;
+
+  assert (slave_config_uuid);
+  assert (slave_target_uuid);
+  assert (slave_port_list_uuid);
+  assert (slave_ssh_credential_uuid);
+  assert (slave_smb_credential_uuid);
+  assert (slave_esxi_credential_uuid);
+  assert (slave_snmp_credential_uuid);
+
+  get_tasks_task = entity_child (get_tasks, "task");
+  if (get_tasks_task)
+    {
+      entity_t entity;
+
+      entity = entity_child (get_tasks_task, "config");
+      if (entity && entity_attribute (entity, "id"))
+        *slave_config_uuid = g_strdup (entity_attribute (entity, "id"));
+
+      entity = entity_child (get_tasks_task, "target");
+      if (entity && entity_attribute (entity, "id"))
+        *slave_target_uuid = g_strdup (entity_attribute (entity, "id"));
+
+      if (*slave_target_uuid)
+        {
+          entity_t get_targets;
+          int ret;
+
+          while ((ret = omp_get_targets (session, *slave_target_uuid, 0, 0,
+                                         &get_targets)))
+            {
+              if (ret == 404)
+                {
+                  /* Target missing. */
+                  break;
+                }
+              else if (ret)
+                {
+                  openvas_server_close (*socket, *session);
+                  ret = slave_sleep_connect (slave, host, port, task, socket,
+                                             session);
+                  if (ret == 3)
+                    return 1;
+                }
+            }
+          if (ret == 0)
+            {
+              entity_t target;
+              target = entity_child (get_targets, "target");
+              if (target)
+                {
+                  entity = entity_child (target, "port_list");
+                  if (entity && entity_attribute (entity, "id"))
+                    *slave_port_list_uuid = g_strdup (entity_attribute
+                                                       (entity, "id"));
+
+                  entity = entity_child (target, "ssh_credential");
+                  if (entity && entity_attribute (entity, "id"))
+                    *slave_ssh_credential_uuid = g_strdup (entity_attribute
+                                                            (entity, "id"));
+
+                  entity = entity_child (target, "smb_credential");
+                  if (entity && entity_attribute (entity, "id"))
+                    *slave_smb_credential_uuid = g_strdup (entity_attribute
+                                                            (entity, "id"));
+
+                  entity = entity_child (target, "esxi_credential");
+                  if (entity && entity_attribute (entity, "id"))
+                    *slave_esxi_credential_uuid = g_strdup (entity_attribute
+                                                             (entity, "id"));
+
+                  entity = entity_child (target, "snmp_credential");
+                  if (entity && entity_attribute (entity, "id"))
+                    *slave_snmp_credential_uuid = g_strdup (entity_attribute
+                                                             (entity, "id"));
+                }
+              free_entity (get_targets);
+            }
+        }
+    }
+  return 0;
+}
+
+/**
  * @brief Setup a task on a slave.
  *
  * @param[in]   slave       Slave.
@@ -2335,6 +2434,14 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
                                  slave_task_uuid);
                       goto fail;
                     }
+
+                  setup_ids (slave, session, socket, host, port, task,
+                             get_tasks, &slave_config_uuid, &slave_target_uuid,
+                             &slave_port_list_uuid,
+                             &slave_ssh_credential_uuid,
+                             &slave_smb_credential_uuid,
+                             &slave_esxi_credential_uuid,
+                             &slave_snmp_credential_uuid);
                 }
               else
                 {
@@ -2345,6 +2452,14 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
                       case 0:
                         if (slave_report_uuid == NULL)
                           goto fail;
+                        setup_ids (slave, session, socket, host, port, task,
+                                   get_tasks, &slave_config_uuid,
+                                   &slave_target_uuid,
+                                   &slave_port_list_uuid,
+                                   &slave_ssh_credential_uuid,
+                                   &slave_smb_credential_uuid,
+                                   &slave_esxi_credential_uuid,
+                                   &slave_snmp_credential_uuid);
                         set_task_run_status (task, TASK_STATUS_REQUESTED);
                         break;
                       case 1:
