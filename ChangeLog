@@ -1,3 +1,7 @@
+2016-07-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (get_tasks_last_report): Correct doc typo.
+
 2016-07-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/XML/OMP.xml.in (modify_agent, modify_slave)

@@ -2188,7 +2188,7 @@ cleanup_slave ()
 }
 
 /**
- * @brief Get last report fro GET_TASKS response.
+ * @brief Get last report from GET_TASKS response.
  *
  * @param[in]  get_tasks  GET_TASKS response.
  *
