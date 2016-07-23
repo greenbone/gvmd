@@ -1,5 +1,9 @@
 2016-07-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c (PROGNAME): Remove.  No longer used.
+
+2016-07-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (get_tasks_last_report): Correct doc typo.
 
 2016-07-21  Matthew Mundell <matthew.mundell@greenbone.net>

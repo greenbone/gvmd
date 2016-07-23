@@ -119,13 +119,6 @@
 #define G_LOG_DOMAIN "md   main"
 
 /**
- * @brief The name of this program.
- *
- * @todo Use `program_invocation[_short]_name'?
- */
-#define PROGNAME "openvasmd"
-
-/**
  * @brief The version number of this program.
  */
 #ifndef OPENVASMD_VERSION
