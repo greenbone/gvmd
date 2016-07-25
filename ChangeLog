@@ -1,3 +1,8 @@
+2016-07-25  Björn Ricks <bjoern.ricks@greenbone.net>
+
+	* tools/greenbone-certdata-sync.in, tools/greenbone-scapdata-sync.in: Fix some
+	errors raised by shellcheck.
+
 2016-07-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (print_report_port_xml): Print rounded numeric value

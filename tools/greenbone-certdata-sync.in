@@ -123,23 +123,23 @@ fi
 TIMESTAMP="$CERT_DIR/timestamp"
 
 log_debug () {
-  $LOG_CMD -p daemon.debug $1
+  $LOG_CMD -p daemon.debug "$1"
 }
 
 log_info () {
-  $LOG_CMD -p daemon.info $1
+  $LOG_CMD -p daemon.info "$1"
 }
 
 log_notice () {
-  $LOG_CMD -p daemon.notice $1
+  $LOG_CMD -p daemon.notice "$1"
 }
 
 log_warning () {
-  $LOG_CMD -p daemon.warning $1
+  $LOG_CMD -p daemon.warning "$1"
 }
 
 log_err () {
-  $LOG_CMD -p daemon.err $1
+  $LOG_CMD -p daemon.err "$1"
 }
 
 ACCESSKEY="@OPENVAS_SYSCONF_DIR@/gsf-access-key"
@@ -166,7 +166,7 @@ then
   if [ $(id -u) -eq 0 ]
   then
     log_notice "Started as root, restarting as openvasmd"
-    su --shell /bin/sh --command "$0 $@" openvasmd
+    su --shell /bin/sh --command "$0 $*" openvasmd
     exit $?
   fi
 
@@ -238,9 +238,9 @@ get_value ()
 {
   value=""
   key=$1
-  if which gos-state-manager 2>&1 1>/dev/null
+  if which gos-state-manager >/dev/null 2>&1
   then
-    if gos-state-manager get "$key.value" 2>&1 1>/dev/null
+    if gos-state-manager get "$key.value" >/dev/null 2>&1
     then
       value="$(gos-state-manager get "$key.value")"
     fi
@@ -345,10 +345,10 @@ is_feed_current () {
     then
       read feeduser < $ACCESSKEY
       custid=`head -1 $ACCESSKEY | cut -d @ -f 1`
-      if [ -z $feeduser ] || [ -z $custid ]
+      if [ -z "$feeduser" ] || [ -z "$custid" ]
       then
         log_err "CERT synchronization: Could not determine credentials, aborting synchronization."
-        rm -rf $FEED_INFO_TEMP_DIR
+        rm -rf "$FEED_INFO_TEMP_DIR"
         exit 1
       fi
 
@@ -371,11 +371,11 @@ is_feed_current () {
         fi
       fi
       create_tmp_key
-      rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $TMPACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid@feed.greenbone.net:/cert-data/timestamp $FEED_INFO_TEMP_DIR
+      rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $TMPACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid@feed.greenbone.net:/cert-data/timestamp "$FEED_INFO_TEMP_DIR"
       if [ $? -ne 0 ]
       then
         log_err "rsync failed, aborting synchronization."
-        rm -rf $FEED_INFO_TEMP_DIR
+        rm -rf "$FEED_INFO_TEMP_DIR"
         remove_tmp_key
         exit 1
       fi
@@ -386,7 +386,7 @@ is_feed_current () {
       if [ $? -ne 0 ]
       then
         log_err "rsync failed, aborting synchronization."
-        rm -rf $FEED_INFO_TEMP_DIR
+        rm -rf "$FEED_INFO_TEMP_DIR"
         exit 1
       fi
     fi
@@ -396,7 +396,7 @@ is_feed_current () {
     if [ -z "$FEED_VERSION_SERVER" ]
     then
       log_err "Could not determine server feed version."
-      rm -rf $FEED_INFO_TEMP_DIR
+      rm -rf "$FEED_INFO_TEMP_DIR"
       exit 1
     fi
 
@@ -408,7 +408,7 @@ is_feed_current () {
     fi
 
     # Cleanup
-    rm -rf $FEED_INFO_TEMP_DIR
+    rm -rf "$FEED_INFO_TEMP_DIR"
   else
     FEED_CURRENT=0
   fi
@@ -752,8 +752,9 @@ update_cert_db() {
   xmlcount=$(ls $CERT_DIR/CB-K*.xml 2> /dev/null | wc -l)
   if [ $xmlcount -ne 0 ]
   then
-    for certfile in `ls $CERT_DIR/CB-K*.xml`
+    for certfile in $CERT_DIR/CB-K*.xml
     do
+      [ -e "$certfile" ] || break  # No file found
       filedate=`stat -c "%Y" $certfile | cut -d " " -f 1 | tr -d "-"`
       filedate=$(( $filedate - ( $filedate % 60 ) ))
       if [ $filedate -gt $DB_LASTUPDATE ]
@@ -786,8 +787,9 @@ update_cert_db() {
   xmlcount=$(ls $CERT_DIR/dfn-cert-*.xml 2> /dev/null | wc -l)
   if [ $xmlcount -ne 0 ]
   then
-    for certfile in `ls $CERT_DIR/dfn-cert-*.xml`
+    for certfile in $CERT_DIR/dfn-cert-*.xml
     do
+      [ -e "$certfile" ] || break  # no file found
       filedate=`stat -c "%Y" $certfile | cut -d " " -f 1 | tr -d "-"`
       filedate=$(( $filedate - ( $filedate % 60 ) ))
       if [ $filedate -gt $DB_LASTUPDATE ]
@@ -861,12 +863,11 @@ sync_certdata(){
     then
       log_notice "Found Greenbone Security Feed subscription file, trying to synchronize with Greenbone CERT data Repository ..."
       notsynced=1
-      retried=0
 
       mkdir -p "$CERT_DIR"
       read feeduser < $ACCESSKEY
       custid=`head -1 $ACCESSKEY | cut -d @ -f 1`
-      if [ -z $feeduser ] || [ -z $custid ]
+      if [ -z "$feeduser" ] || [ -z "$custid" ]
       then
         log_err "Could not determine credentials, aborting synchronization."
         exit 1
@@ -975,7 +976,7 @@ while test $# -gt 0; do
           then
             shift
             if [ $# -gt 0 ]; then
-              psql_setup $1
+              psql_setup "$1"
             else
               echo "[e] --database argument missing"
               exit 1

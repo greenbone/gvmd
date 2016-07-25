@@ -131,23 +131,23 @@ SCAP_DB="$SCAP_DIR/scap.db"
 TIMESTAMP="$SCAP_DIR/timestamp"
 
 log_debug () {
-  $LOG_CMD -p daemon.debug $1
+  $LOG_CMD -p daemon.debug "$1"
 }
 
 log_info () {
-  $LOG_CMD -p daemon.info $1
+  $LOG_CMD -p daemon.info "$1"
 }
 
 log_notice () {
-  $LOG_CMD -p daemon.notice $1
+  $LOG_CMD -p daemon.notice "$1"
 }
 
 log_warning () {
-  $LOG_CMD -p daemon.warning $1
+  $LOG_CMD -p daemon.warning "$1"
 }
 
 log_err () {
-  $LOG_CMD -p daemon.err $1
+  $LOG_CMD -p daemon.err "$1"
 }
 
 ACCESSKEY="@OPENVAS_SYSCONF_DIR@/gsf-access-key"
@@ -174,7 +174,7 @@ then
   if [ $(id -u) -eq 0 ]
   then
     log_notice "Started as root, restarting as openvasmd"
-    su --shell /bin/sh --command "$0 $@" openvasmd
+    su --shell /bin/sh --command "$0 $*" openvasmd
     exit $?
   fi
 else
@@ -255,9 +255,9 @@ get_value ()
 {
   value=""
   key=$1
-  if which gos-state-manager 2>&1 1>/dev/null
+  if which gos-state-manager 1>/dev/null 2>&1
   then
-    if gos-state-manager get "$key.value" 2>&1 1>/dev/null
+    if gos-state-manager get "$key.value" 1>/dev/null 2>&1
     then
       value="$(gos-state-manager get "$key.value")"
     fi
@@ -792,7 +792,7 @@ for ovalfile in `find "$1" -name "*.xml" -type f`
     timestamp_raw=`xsltproc "$SCAP_RES_DIR/oval_timestamp.xsl" "$ovalfile" 2>/dev/null`
 
     if [ -n "$timestamp_raw" ] \
-       && [ -n `echo "$timestamp_raw" | egrep -x "[0-9]{4}\-(0[0-9]|1[012])\-([0-2][0-9]|3[01])[[:alnum:]]*"` ]
+       && [ -n "$(echo "$timestamp_raw" | egrep -x "[0-9]{4}\-(0[0-9]|1[012])\-([0-2][0-9]|3[01])[[:alnum:]]*")" ]
     then
       timestamp="`echo "$timestamp_raw" | sed -e 's/T.*//' | tr -d "-"`"
       echo "$timestamp$ovalfile"
@@ -1259,8 +1259,9 @@ update_scap_db() {
     xmlcount=$(ls $SCAP_DIR/nvdcve-2.0-*.xml 2> /dev/null | wc -l)
     if [ $xmlcount -ne 0 ]
     then
-      for cvefile in `ls $SCAP_DIR/nvdcve-2.0-*.xml`
+      for cvefile in $SCAP_DIR/nvdcve-2.0-*.xml
       do
+        [ -e "$cvefile" ] || break  # no file found
         filedate=`stat -c "%Y" "$cvefile" | cut -d " " -f 1 | tr -d "-"`
         filedate=$(( $filedate - ( $filedate % 60 ) ))
         if [ $filedate -gt $DB_LASTUPDATE ]
