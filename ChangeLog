@@ -1,3 +1,8 @@
+2016-07-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (print_report_port_xml): Print rounded numeric value
+	instead of string value of severity.
+
 2016-07-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (setup_ids): New function.

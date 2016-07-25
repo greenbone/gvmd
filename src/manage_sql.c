@@ -25920,12 +25920,12 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
                "<port>"
                "<host>%s</host>"
                "%s"
-               "<severity>%s</severity>"
+               "<severity>%1.1f</severity>"
                "<threat>%s</threat>"
                "</port>",
                item->host,
                item->port,
-               item->severity,
+               item->severity_double,
                severity_to_level (g_strtod (item->severity, NULL), 0));
         result_buffer_free (item);
       }
