@@ -1,5 +1,10 @@
 2016-07-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/report_formats/Anonymous_XML/Anonymous_XML.xsl: Also skip name in
+	REPORT/REPORT/TASK.
+
+2016-07-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (handle_get_reports): Skip task name for Anonymous XML.
 
 	* src/report_formats/Anonymous_XML/Anonymous_XML.xsl: Skip certificate
