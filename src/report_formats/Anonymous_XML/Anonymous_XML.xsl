@@ -117,6 +117,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:template match="task/name">
   </xsl:template>
 
+  <xsl:template match="scan/task/slave/name">
+  </xsl:template>
+
   <xsl:template match="node()|@*" >
     <xsl:copy>
       <xsl:apply-templates select="node()|@*" />
