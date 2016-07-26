@@ -1,3 +1,10 @@
+2016-07-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (handle_get_reports): Skip task name for Anonymous XML.
+
+	* src/report_formats/Anonymous_XML/Anonymous_XML.xsl: Skip certificate
+	host details and result owner.
+
 2016-07-25  Björn Ricks <bjoern.ricks@greenbone.net>
 
 	* tools/greenbone-certdata-sync.in, tools/greenbone-scapdata-sync.in: Fix some

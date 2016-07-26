@@ -17026,20 +17026,28 @@ handle_get_reports (omp_parser_t *omp_parser, GError **error)
           report_task (report, &task);
           if (task)
             {
-              gchar *report_task_uuid, *report_task_name;
+              gchar *report_task_uuid;
               task_uuid (task, &report_task_uuid);
-              report_task_name = task_name (task);
 
-              buffer_xml_append_printf
-                (prefix,
-                 "<task id=\"%s\">"
-                 "<name>%s</name>"
-                 "</task>",
-                 report_task_uuid,
-                 report_task_name);
+              buffer_xml_append_printf (prefix,
+                                        "<task id=\"%s\">",
+                                        report_task_uuid);
+
+              /* Skip task name for Anonymous XML report format. */
+              if (strcmp (get_reports_data->format_id,
+                          "5057e5cc-b825-11e4-9d0e-28d24461215b"))
+                {
+                  gchar *report_task_name;
+                  report_task_name = task_name (task);
+                  buffer_xml_append_printf (prefix,
+                                            "<name>%s</name>",
+                                            report_task_name);
+                  g_free (report_task_name);
+                }
+
+              buffer_xml_append_printf (prefix, "</task>");
 
               g_free (report_task_uuid);
-              g_free (report_task_name);
             }
 
             if (get_reports_data->format_id)
