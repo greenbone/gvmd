@@ -5150,7 +5150,7 @@ init_get_iterator2 (iterator_t* iterator, const char *type,
           || (strcmp (type, "result") == 0)))
     {
       first = 0;
-      max = manage_max_rows (-1);
+      max = -1;
     }
 
   if (resource && get->trash)

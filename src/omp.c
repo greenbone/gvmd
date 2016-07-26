@@ -17632,6 +17632,9 @@ handle_get_results (omp_parser_t *omp_parser, GError **error)
                               " status_text=\"" STATUS_OK_TEXT "\">");
       INIT_GET (result, Result);
 
+      // Do not allow ignore_pagination here
+      get_results_data->get.ignore_pagination = 0;
+
       init_result_get_iterator (&results, &get_results_data->get,
                                 0,  /* No report restriction */
                                 NULL, /* No host restriction */
