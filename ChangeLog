@@ -1,3 +1,7 @@
+2016-07-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/openvasmd.c (handle_sigsegv): Remove cleanup so that core is dumped.
+
 2016-07-26  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (init_get_iterator2): Always get all items in

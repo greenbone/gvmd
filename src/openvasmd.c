@@ -881,7 +881,12 @@ void
 handle_sigsegv (/* unused */ int given_signal)
 {
   manage_cleanup_process_error (given_signal);
-  cleanup ();
+
+  /* This previously called "cleanup", but it seems that the regular manager
+   * code runs again before the default handler is invoked, at least when the
+   * SIGKILL is sent from the command line.  This was leading to errors which
+   * were preventing the default handler from running and dumping core. */
+
   /* Raise signal again, to exit with the correct return value. */
   setup_signal_handler (given_signal, SIG_DFL, 0);
   raise (given_signal);
