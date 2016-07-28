@@ -1,3 +1,9 @@
+2016-07-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r25856.
+
+	* src/openvasmd.c (handle_sigsegv): Remove cleanup so that core is dumped.
+
 2016-07-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r25846.
