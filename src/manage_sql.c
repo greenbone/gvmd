@@ -28800,8 +28800,20 @@ run_report_format_script (gchar *report_format_id,
 
   script = g_build_filename (script_dir, "generate", NULL);
 
-  if (!g_file_test (script, G_FILE_TEST_EXISTS))
+  if (!g_file_test (script,
+                    G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR))
     {
+      g_warning ("%s: No generate script found at %s",
+                 __FUNCTION__, script);
+      g_free (script);
+      g_free (script_dir);
+      return -1;
+    }
+  else if (!g_file_test (script,
+                         G_FILE_TEST_IS_EXECUTABLE))
+    {
+      g_warning ("%s: script %s is not executable",
+                 __FUNCTION__, script);
       g_free (script);
       g_free (script_dir);
       return -1;
@@ -29219,6 +29231,8 @@ apply_report_format (gchar *report_format_id,
     }
   g_free (out_file_ext);
   g_free (out_file_part);
+
+  /* Add second half of input XML */
 
   if (print_report_xml_end (xml_start, xml_file, report_format))
     {

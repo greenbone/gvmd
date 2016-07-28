@@ -1,3 +1,9 @@
+2016-07-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (run_report_format_script): Check if script is a
+	regular file and executable.  Add warning messages about missing
+	or non-executable script.
+
 2016-07-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c (handle_sigsegv): Remove cleanup so that core is dumped.
