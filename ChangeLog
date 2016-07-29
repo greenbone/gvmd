@@ -1,4 +1,19 @@
-2016-07-27  Matthew Mundell <matthew.mundell@greenbone.net>
+2016-07-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Drop the GLOBAL element of report formats.
+
+	* src/omp.c (create_report_format_data_t, create_report_format_data_reset)
+	(handle_get_report_formats): Remove GLOBAL.
+	(omp_xml_handle_end_element): Always pass global as 0 to
+	create_report_format.
+	(omp_xml_handle_text): Remove GLOBAL.
+
+	* src/schema_formats/XML/OMP.xml.in: Add CHANGE about global.
+	(create_report_format, get_report_formats): Remove global.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+2016-07-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (GET_ITERATOR_COLUMNS): Correct type.
 	(REPORT_ITERATOR_COLUMNS): Add column for completeness.

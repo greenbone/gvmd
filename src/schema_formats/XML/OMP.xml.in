@@ -4801,7 +4801,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 CPE stands for Common Product Enumeration.  It is a
                 <truncated>...</truncated>
               </description>
-              <global>1</global>
               <predefined>1</predefined>
               <trust>
                 yes
@@ -16371,7 +16370,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>content_type</e>
           <e>summary</e>
           <e>description</e>
-          <e>global</e>
           <e>predefined</e>
           <o><e>alerts</e></o>
           <o>
@@ -16496,10 +16494,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>extension</name>
           <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>global</name>
-          <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
           <name>content_type</name>
@@ -16811,7 +16805,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               A single HTML page listing results of a scan.  Style information
               <truncated>...</truncated>
             </description>
-            <global>1</global>
             <predefined>1</predefined>
             <trust>
               no
@@ -16849,7 +16842,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               A single HTML page listing results of a scan.  Style information
               <truncated>...</truncated>
             </description>
-            <global>1</global>
             <predefined>1</predefined>
             <file name="HTML.xsl">
               PD9ldD4K
@@ -25867,6 +25859,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </response>
     </example>
   </command>
+  <change>
+    <command>GET_REPORT_FORMATS, CREATE_REPORT_FORMAT</command>
+    <summary>Element GLOBAL removed</summary>
+    <description>
+      <p>
+        The GLOBAL element has been removed from REPORT_FORMAT.  The element
+        will simply be ignored by CREATE_REPORT_FORMAT.
+      </p>
+    </description>
+    <version>7.0</version>
+  </change>
   <change>
     <command>DESCRIBE_AUTH, MODIFY_AUTH</command>
     <summary>Response attributes "key" and "value" moved to elements</summary>

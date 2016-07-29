@@ -1460,7 +1460,6 @@ typedef struct
   char *file;             ///< Current file during ...GRFR_REPORT_FORMAT_FILE.
   char *file_name;        ///< Name of current file.
   array_t *files;         ///< All files.
-  char *global;           ///< Global flag.
   char *id;               ///< ID.
   int import;             ///< Boolean.  Whether to import a format.
   char *name;             ///< Name.
@@ -1493,7 +1492,6 @@ create_report_format_data_reset (create_report_format_data_t *data)
   free (data->file);
   free (data->file_name);
   array_free (data->files);
-  free (data->global);
   free (data->id);
   free (data->name);
   free (data->copy);
@@ -17321,17 +17319,11 @@ handle_get_report_formats (omp_parser_t *omp_parser, GError **error)
             "<content_type>%s</content_type>"
             "<summary>%s</summary>"
             "<description>%s</description>"
-            "<global>%i</global>"
             "<predefined>%i</predefined>",
             report_format_iterator_extension (&report_formats),
             report_format_iterator_content_type (&report_formats),
             report_format_iterator_summary (&report_formats),
             report_format_iterator_description (&report_formats),
-            get_report_formats_data->get.trash
-              ? trash_report_format_global
-                  (get_iterator_resource (&report_formats))
-              : report_format_global
-                  (get_iterator_resource (&report_formats)),
             get_report_formats_data->get.trash
               ? 0
               : report_format_predefined
@@ -24354,9 +24346,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                              create_report_format_data->extension,
                              create_report_format_data->summary,
                              create_report_format_data->description,
-                             create_report_format_data->global
-                               && strcmp (create_report_format_data->global,
-                                          "0"),
+                             0,
                              create_report_format_data->files,
                              create_report_format_data->params,
                              create_report_format_data->params_options,
@@ -30770,9 +30760,6 @@ omp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_FILE,
               &create_report_format_data->file);
-
-      APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_GLOBAL,
-              &create_report_format_data->global);
 
       APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_NAME,
               &create_report_format_data->name);

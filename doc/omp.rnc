@@ -14023,7 +14023,6 @@ get_report_formats_response_report_format
        & get_report_formats_response_report_format_content_type
        & get_report_formats_response_report_format_summary
        & get_report_formats_response_report_format_description
-       & get_report_formats_response_report_format_global
        & get_report_formats_response_report_format_predefined
        & get_report_formats_response_report_format_alerts?
        & ( get_report_formats_response_report_format_file*
@@ -14163,12 +14162,6 @@ get_report_formats_response_report_format_extension
  = element extension
      {
        text
-     }
-
-get_report_formats_response_report_format_global
- = element global
-     {
-       boolean
      }
 
 get_report_formats_response_report_format_content_type

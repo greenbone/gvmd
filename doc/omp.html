@@ -9524,7 +9524,6 @@ create_report_format_copy
          CPE stands for Common Product Enumeration. It is a
          ...
        &lt;/description&gt;
-       &lt;global&gt;1&lt;/global&gt;
        &lt;predefined&gt;1&lt;/predefined&gt;
        &lt;trust&gt;
          yes
@@ -25353,10 +25352,6 @@ get_reports_response_report_count_page
               <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>global</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
               &lt;<b>predefined</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
@@ -25611,7 +25606,6 @@ get_report_formats_response_report_format
        &amp; get_report_formats_response_report_format_content_type
        &amp; get_report_formats_response_report_format_summary
        &amp; get_report_formats_response_report_format_description
-       &amp; get_report_formats_response_report_format_global
        &amp; get_report_formats_response_report_format_predefined
        &amp; get_report_formats_response_report_format_alerts?
        &amp; ( get_report_formats_response_report_format_file*
@@ -25737,12 +25731,6 @@ get_report_formats_response_report_format_extension
  = element extension
      {
        text
-     }
-
-get_report_formats_response_report_format_global
- = element global
-     {
-       boolean
      }
 
 get_report_formats_response_report_format_content_type
@@ -26012,7 +26000,6 @@ get_report_formats_response_report_format_count_page
        A single HTML page listing results of a scan. Style information
        ...
      &lt;/description&gt;
-     &lt;global&gt;1&lt;/global&gt;
      &lt;predefined&gt;1&lt;/predefined&gt;
      &lt;trust&gt;
        no
@@ -26048,7 +26035,6 @@ get_report_formats_response_report_format_count_page
        A single HTML page listing results of a scan. Style information
        ...
      &lt;/description&gt;
-     &lt;global&gt;1&lt;/global&gt;
      &lt;predefined&gt;1&lt;/predefined&gt;
      &lt;file name="HTML.xsl"&gt;
        PD9ldD4K
@@ -38800,6 +38786,16 @@ start_task_response_report_id
       7.0</h2>
 <div>
 <div><h3>8.1
+          Change in <tt>GET_REPORT_FORMATS, CREATE_REPORT_FORMAT</tt>
+</h3></div>
+<p>In short: Element GLOBAL removed.</p>
+<p>
+        The GLOBAL element has been removed from REPORT_FORMAT.  The element
+        will simply be ignored by CREATE_REPORT_FORMAT.
+      </p>
+</div>
+<div>
+<div><h3>8.2
           Change in <tt>DESCRIBE_AUTH, MODIFY_AUTH</tt>
 </h3></div>
 <p>In short: Response attributes "key" and "value" moved to elements.</p>
@@ -38810,7 +38806,7 @@ start_task_response_report_id
       </p>
 </div>
 <div>
-<div><h3>8.2
+<div><h3>8.3
           Change in <tt>All GET_... commands</tt>
 </h3></div>
 <p>In short: Limit on number of returned rows introduced.</p>
@@ -38826,7 +38822,7 @@ start_task_response_report_id
       </p>
 </div>
 <div>
-<div><h3>8.3
+<div><h3>8.4
           Change in <tt>GET_RESULTS</tt>
 </h3></div>
 <p>In short: Redundant filtering attributes removed.</p>
@@ -38838,7 +38834,7 @@ start_task_response_report_id
       </p>
 </div>
 <div>
-<div><h3>8.4
+<div><h3>8.5
           Change in <tt>GET_REPORTS</tt>
 </h3></div>
 <p>In short: Redundant filtering attributes removed.</p>
@@ -38852,7 +38848,7 @@ start_task_response_report_id
       </p>
 </div>
 <div>
-<div><h3>8.5
+<div><h3>8.6
           Change in <tt>GET_REPORTS</tt>
 </h3></div>
 <p>In short: Filter keywords in response changed to common format.</p>
@@ -38865,7 +38861,7 @@ start_task_response_report_id
       </p>
 </div>
 <div>
-<div><h3>8.6
+<div><h3>8.7
           Change in <tt>GET_CREDENTIALS</tt>
 </h3></div>
 <p>In short: Credential types renamed.</p>
@@ -38876,7 +38872,7 @@ start_task_response_report_id
       </p>
 </div>
 <div>
-<div><h3>8.7
+<div><h3>8.8
           Change in <tt>CREATE_LSC_CREDENTIAL, DELETE_LSC_CREDENTIAL, GET_LSC_CREDENTIALS, MODIFY_LSC_CREDENTIAL</tt>
 </h3></div>
 <p>In short: Resource type and commands renamed.</p>
@@ -38887,7 +38883,7 @@ start_task_response_report_id
       </p>
 </div>
 <div>
-<div><h3>8.8
+<div><h3>8.9
           Change in <tt>CREATE_SCANNER, GET_SCANNERS, MODIFY_SCANNER</tt>
 </h3></div>
 <p>In short: key_priv and key_pub replaced by credential.</p>
@@ -38897,7 +38893,7 @@ start_task_response_report_id
       </p>
 </div>
 <div>
-<div><h3>8.9
+<div><h3>8.10
           Change in <tt>CREATE_SLAVE, GET_SLAVES, MODIFY_SLAVE</tt>
 </h3></div>
 <p>In short: username and password replaced by credential.</p>
@@ -38907,7 +38903,7 @@ start_task_response_report_id
       </p>
 </div>
 <div>
-<div><h3>8.10
+<div><h3>8.11
           Change in <tt>GET_TARGETS</tt>
 </h3></div>
 <p>In short: "lsc_" removed from credential element names.</p>
