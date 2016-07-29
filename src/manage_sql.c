@@ -4248,7 +4248,7 @@ filter_clause (const char* type, const char* filter,
     "(SELECT name FROM users AS inner_users"                                    \
     " WHERE inner_users.id = " G_STRINGIFY (table) ".owner)",                   \
     "_owner",                                                                   \
-    KEYWORD_TYPE_INTEGER                                                        \
+    KEYWORD_TYPE_STRING                                                         \
   },                                                                            \
   { "owner", NULL, KEYWORD_TYPE_INTEGER }
 
@@ -20460,6 +20460,7 @@ report_add_result (report_t report, result_t result)
    { "start_time", "created", KEYWORD_TYPE_INTEGER },                        \
    { "end_time", "modified", KEYWORD_TYPE_INTEGER },                         \
    { "''", NULL, KEYWORD_TYPE_STRING },                                      \
+   { "0", NULL, KEYWORD_TYPE_INTEGER },                                      \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
  }
 
@@ -49301,7 +49302,7 @@ validate_param_value (report_format_t report_format,
         break;
       case REPORT_FORMAT_PARAM_TYPE_REPORT_FORMAT_LIST:
         {
-          if (g_regex_match_simple 
+          if (g_regex_match_simple
                 ("^(?:[[:alnum:]-_]+)?(?:,(?:[[:alnum:]-_])+)*$", value, 0, 0)
               == FALSE)
             return 1;

@@ -1,3 +1,9 @@
+2016-07-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (GET_ITERATOR_COLUMNS): Correct type.
+	(REPORT_ITERATOR_COLUMNS): Add column for completeness.
+	(validate_param_value): Flush trailing whitespace.
+
 2016-07-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (run_report_format_script): Check if script is a
