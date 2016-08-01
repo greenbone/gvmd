@@ -1,3 +1,21 @@
+2016-08-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage.c (manage_run_wizard): Allow wizard steps to generate
+	extra data that can be used internally and to modify the status
+	code and text returned by OMP.  Add new parameter command_error_code.
+
+	* src/manage.h (manage_run_wizard): Add new parameter.
+
+	* src/omp.c (omp_xml_handle_end_element): In RUN_WIZARD case, allow
+	replacing the status code and text in the with ones set by
+	manage_run_wizard.
+
+	* src/wizards/quick_first_scan.xml: Delete task and target if the task
+	could not be started and use custom status code and text.
+
+	* src/wizards/quick_task.xml: Delete task and related resources if the
+	task could not be started and use custom status code and text.
+
 2016-08-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Merge "global" report format idea into predefined report formats.

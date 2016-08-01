@@ -4137,7 +4137,8 @@ openvas_get_sync_script_feed_version (const gchar *, gchar **);
 
 int
 manage_run_wizard (const gchar *, int (*) (void*, gchar*, gchar**),
-                   void *, array_t *, int, const char*, gchar **, gchar **);
+                   void *, array_t *, int, const char*,
+                   gchar **, gchar **, gchar **);
 
 
 /* Helpers. */

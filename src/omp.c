@@ -29486,7 +29486,7 @@ create_task_fail:
       case CLIENT_RUN_WIZARD:
         if (run_wizard_data->name)
           {
-            gchar *command_error;
+            gchar *command_error, *command_error_code;
             gchar *response = NULL;
             int read_only;
 
@@ -29502,6 +29502,7 @@ create_task_fail:
                                        read_only,
                                        run_wizard_data->mode,
                                        &command_error,
+                                       &command_error_code,
                                        &response))
               {
                 case 3:
@@ -29512,10 +29513,14 @@ create_task_fail:
                     gchar *msg;
                     msg = g_strdup_printf
                            ("<run_wizard_response"
-                            " status=\"" STATUS_OK_REQUESTED "\""
-                            " status_text=\"" STATUS_OK_REQUESTED_TEXT "\">"
+                            " status=\"%s\""
+                            " status_text=\"%s\">"
                             "%s%s%s"
                             "</run_wizard_response>",
+                            command_error_code ? command_error_code
+                                               : STATUS_OK_REQUESTED,
+                            command_error ? command_error
+                                          : STATUS_OK_REQUESTED_TEXT,
                             response ? "<response>" : "",
                             response ? response : "",
                             response ? "</response>" : "");
@@ -29564,8 +29569,10 @@ create_task_fail:
                     gchar *msg;
                     msg = g_strdup_printf
                            ("<run_wizard_response"
-                            " status=\"" STATUS_ERROR_SYNTAX "\""
+                            " status=\"%s\""
                             " status_text=\"%s\"/>",
+                            command_error_code ? command_error_code
+                                               : STATUS_ERROR_SYNTAX,
                             command_error ? command_error : "Internal Error");
                     if (command_error)
                       g_free (command_error);

@@ -95,7 +95,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <param>
       <optional>1</optional>
       <name>start_minute</name>
-      <regex>^[0-5][0-9]$</regex>
+      <regex>^[0-5]?[0-9]$</regex>
     </param>
     <param>
       <optional>1</optional>
@@ -252,6 +252,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </xsl:template>
       </xsl:stylesheet>
     </command>
+    <extra_data>
+      <xsl:stylesheet
+            version="1.0"
+            xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+        <xsl:output
+          method="xml"
+          omit-xml-declaration="yes"
+          encoding="UTF-8"/>
+        <xsl:template match="/">
+          <target id="{/wizard/current/response/commands_response/create_target_response/@id}"/>
+          <alert id="{/wizard/current/response/commands_response/create_alert_response/@id}"/>
+        </xsl:template>
+      </xsl:stylesheet>
+    </extra_data>
   </step>
 
   <step>
@@ -288,6 +302,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </xsl:template>
       </xsl:stylesheet>
     </command>
+    <extra_data>
+      <xsl:stylesheet
+            version="1.0"
+            xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+        <xsl:output
+          method="xml"
+          omit-xml-declaration="yes"
+          encoding="UTF-8"/>
+        <xsl:template match="/">
+          <task id="{/wizard/current/response/create_task_response/@id}"/>
+          <xsl:copy-of select="/wizard/previous/extra_data/*"/>
+        </xsl:template>
+      </xsl:stylesheet>
+    </extra_data>
   </step>
 
   <step>
@@ -299,14 +327,75 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           method="xml"
           encoding="UTF-8"/>
         <xsl:template match="/">
-          <xsl:choose>
-            <xsl:when test="/wizard/params/param[name='auto_start']/value = 2">
+          <commands>
+            <xsl:if test="/wizard/params/param[name='auto_start']/value = 2">
               <start_task task_id="{/wizard/previous/response/create_task_response/@id}"/>
+            </xsl:if>
+          </commands>
+        </xsl:template>
+      </xsl:stylesheet>
+    </command>
+    <extra_data>
+      <xsl:stylesheet
+            version="1.0"
+            xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+        <xsl:output
+          method="xml"
+          omit-xml-declaration="yes"
+          encoding="UTF-8"/>
+        <xsl:template match="/">
+          <xsl:copy-of select="/wizard/previous/extra_data/*"/>
+          <xsl:choose>
+            <xsl:when test="/wizard/current/response/commands_response/start_task_response/@status = '200'">
+              <status_text>Task created and started successfully</status_text>
+              <status>201</status>
+            </xsl:when>
+            <xsl:when test="/wizard/current/response/commands_response/start_task_response/@status">
+              <status_text>Failed to start task: <xsl:value-of select="/wizard/current/response/commands_response/start_task_response/@status_text"/></status_text>
+              <status><xsl:value-of select="/wizard/current/response/commands_response/start_task_response/@status"/></status>
             </xsl:when>
             <xsl:otherwise>
-              <get_tasks task_id="{/wizard/previous/response/create_task_response/@id}"/>
+              <status_text>Task created successfully</status_text>
+              <status>201</status>
             </xsl:otherwise>
           </xsl:choose>
+        </xsl:template>
+      </xsl:stylesheet>
+    </extra_data>
+  </step>
+
+  <step>
+    <command>
+      <xsl:stylesheet
+            version="1.0"
+            xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+        <xsl:output
+          method="xml"
+          encoding="UTF-8"/>
+        <xsl:template match="/">
+          <commands>
+            <xsl:choose>
+              <xsl:when test="starts-with (/wizard/previous/extra_data/status, '2')">
+                <get_tasks task_id="{/wizard/previous/response/create_task_response/@id}"/>
+              </xsl:when>
+              <xsl:otherwise>
+                <commands>
+                  <xsl:if test="/wizard/previous/extra_data/task/@id != ''">
+                    <delete_task task_id="{/wizard/previous/extra_data/task/@id}" ultimate="1"/>
+                  </xsl:if>
+                  <xsl:if test="/wizard/previous/extra_data/schedule/@id != ''">
+                    <delete_schedule schedule_id="{/wizard/previous/extra_data/schedule/@id}" ultimate="1"/>
+                  </xsl:if>
+                  <xsl:if test="/wizard/previous/extra_data/target/@id != ''">
+                    <delete_target target_id="{/wizard/previous/extra_data/target/@id}" ultimate="1"/>
+                  </xsl:if>
+                  <xsl:if test="/wizard/previous/extra_data/alert/@id != ''">
+                    <delete_alert alert_id="{/wizard/previous/extra_data/alert/@id}" ultimate="1"/>
+                  </xsl:if>
+                </commands>
+              </xsl:otherwise>
+            </xsl:choose>
+          </commands>
         </xsl:template>
       </xsl:stylesheet>
     </command>

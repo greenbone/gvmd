@@ -8679,6 +8679,8 @@ openvas_current_sync (const gchar * sync_script, gchar ** timestamp,
  * @param[in]  mode              Name of the mode to run the wizard in.
  * @param[out] command_error     Address for error message from failed command
  *                               when return is 4, or NULL.
+ * @param[out] command_error_code Address for status code from failed command
+ *                                when return is 4, or NULL.
  * @param[out] ret_response      Address for response string of last command.
  *
  * @return 0 success, 1 name error, 2 process forked to run task, -10 process
@@ -8695,9 +8697,11 @@ manage_run_wizard (const gchar *name,
                    int read_only,
                    const char *mode,
                    gchar **command_error,
+                   gchar **command_error_code,
                    gchar **ret_response)
 {
-  gchar *file, *file_name, *response, *wizard;
+  GString *params_xml;
+  gchar *file, *file_name, *response, *extra, *extra_wrapped, *wizard;
   gsize wizard_len;
   GError *get_error;
   entity_t entity, mode_entity, params_entity, read_only_entity;
@@ -8713,6 +8717,12 @@ manage_run_wizard (const gchar *name,
 
   if (command_error)
     *command_error = NULL;
+
+  if (command_error_code)
+    *command_error_code = NULL;
+
+  if (ret_response)
+    *ret_response = NULL;
 
   point = name;
   while (*point && (isalnum (*point) || *point == '_')) point++;
@@ -8803,6 +8813,7 @@ manage_run_wizard (const gchar *name,
     }
 
   /* Check params */
+  params_xml = g_string_new ("");
   params_entity = entity_child (mode_entity, "params");
   if (params_entity)
     param_defs = params_entity->entities;
@@ -8871,6 +8882,7 @@ manage_run_wizard (const gchar *name,
                                               " parameter '%s'.",
                                               pair->value, name);
                           free_entity (entity);
+                          g_string_free (params_xml, TRUE);
                           return 6;
                         }
                     }
@@ -8891,20 +8903,42 @@ manage_run_wizard (const gchar *name,
       param_defs = next_entities (param_defs);
     }
 
+  /* Buffer params */
+  if (params)
+    {
+      guint index = params->len;
+      while (index--)
+        {
+          name_value_t *pair;
+
+          pair = (name_value_t*) g_ptr_array_index (params, index);
+          xml_string_append (params_xml,
+                             "<param>"
+                             "<name>%s</name>"
+                             "<value>%s</value>"
+                             "</param>",
+                             pair->name ? pair->name : "",
+                             pair->value ? pair->value : "");
+        }
+    }
+
   /* Run each step of the wizard. */
 
   response = NULL;
+  extra = NULL;
   steps = mode_entity->entities;
   while ((step = first_entity (steps)))
     {
       if (strcasecmp (entity_name (step), "step") == 0)
         {
-          entity_t command;
+          entity_t command, extra_xsl;
           gchar *omp;
           int xsl_fd, xml_fd;
           char xsl_file_name[] = "/tmp/openvasmd-xsl-XXXXXX";
           FILE *xsl_file, *xml_file;
           char xml_file_name[] = "/tmp/openvasmd-xml-XXXXXX";
+          char extra_xsl_file_name[] = "/tmp/openvasmd-extra-xsl-XXXXXX";
+          char extra_xml_file_name[] = "/tmp/openvasmd-extra-xml-XXXXXX";
 
           /* Get the command element. */
 
@@ -8915,6 +8949,8 @@ manage_run_wizard (const gchar *name,
                          __FUNCTION__);
               free_entity (entity);
               g_free (response);
+              g_free (extra);
+              g_string_free (params_xml, TRUE);
               return -1;
             }
 
@@ -8927,6 +8963,8 @@ manage_run_wizard (const gchar *name,
                          __FUNCTION__);
               free_entity (entity);
               g_free (response);
+              g_free (extra);
+              g_string_free (params_xml, TRUE);
               return -1;
             }
 
@@ -8938,6 +8976,8 @@ manage_run_wizard (const gchar *name,
               close (xsl_fd);
               free_entity (entity);
               g_free (response);
+              g_free (extra);
+              g_string_free (params_xml, TRUE);
               return -1;
             }
 
@@ -8955,6 +8995,8 @@ manage_run_wizard (const gchar *name,
               unlink (xsl_file_name);
               free_entity (entity);
               g_free (response);
+              g_free (extra);
+              g_string_free (params_xml, TRUE);
               return -1;
             }
 
@@ -8968,77 +9010,22 @@ manage_run_wizard (const gchar *name,
               close (xml_fd);
               free_entity (entity);
               g_free (response);
+              g_free (extra);
+              g_string_free (params_xml, TRUE);
               return -1;
-            }
-
-          if (fprintf (xml_file, "<wizard><params>") < 0)
-            {
-              fclose (xsl_file);
-              unlink (xsl_file_name);
-              fclose (xml_file);
-              free_entity (entity);
-              g_warning ("%s: Wizard failed to write XML\n",
-                         __FUNCTION__);
-              g_free (response);
-              return -1;
-            }
-
-          if (params)
-            {
-              guint index = params->len;
-              while (index--)
-                {
-                  name_value_t *pair;
-                  gchar *pair_name, *pair_value;
-
-                  pair = (name_value_t*) g_ptr_array_index (params, index);
-
-                  if (pair == NULL)
-                    continue;
-
-                  pair_name = pair->name
-                               ? g_markup_escape_text
-                                  (pair->name, strlen (pair->name))
-                               : g_strdup ("");
-
-                  pair_value = pair->value
-                                ? g_markup_escape_text
-                                   (pair->value, strlen (pair->value))
-                                : g_strdup ("");
-
-                  if (fprintf (xml_file,
-                               "<param>"
-                               "<name>%s</name>"
-                               "<value>%s</value>"
-                               "</param>",
-                               pair_name,
-                               pair_value)
-                      < 0)
-                    {
-                      g_free (pair_name);
-                      g_free (pair_value);
-                      fclose (xsl_file);
-                      unlink (xsl_file_name);
-                      fclose (xml_file);
-                      unlink (xml_file_name);
-                      free_entity (entity);
-                      g_warning ("%s: Wizard failed to write XML\n",
-                                 __FUNCTION__);
-                      g_free (response);
-                      return -1;
-                    }
-                  g_free (pair_name);
-                  g_free (pair_value);
-                }
             }
 
           if (fprintf (xml_file,
-                       "</params>"
+                       "<wizard>"
+                       "<params>%s</params>"
                        "<previous>"
                        "<response>%s</response>"
+                       "<extra_data>%s</extra_data>"
                        "</previous>"
                        "</wizard>\n",
-                       response ? response : "")
+                       params_xml->str ? params_xml->str : "",
+                       response ? response : "",
+                       extra ? extra : "")
               < 0)
             {
               fclose (xsl_file);
@@ -9049,6 +9036,8 @@ manage_run_wizard (const gchar *name,
               g_warning ("%s: Wizard failed to write XML\n",
                          __FUNCTION__);
               g_free (response);
+              g_free (extra);
+              g_string_free (params_xml, TRUE);
               return -1;
             }
 
@@ -9068,6 +9057,8 @@ manage_run_wizard (const gchar *name,
                          __FUNCTION__);
               free_entity (entity);
               g_free (response);
+              g_free (extra);
+              g_string_free (params_xml, TRUE);
               return -1;
             }
 
@@ -9090,6 +9081,8 @@ manage_run_wizard (const gchar *name,
               /* Process forked to run a task. */
               free_entity (entity);
               g_free (response);
+              g_free (extra);
+              g_string_free (params_xml, TRUE);
               return 2;
             }
           else if (ret == -10)
@@ -9097,6 +9090,8 @@ manage_run_wizard (const gchar *name,
               /* Process forked to run a task.  Task start failed. */
               free_entity (entity);
               g_free (response);
+              g_free (extra);
+              g_string_free (params_xml, TRUE);
               return -10;
             }
           else if (ret == -2)
@@ -9104,12 +9099,16 @@ manage_run_wizard (const gchar *name,
               /* to_scanner buffer full. */
               free_entity (entity);
               g_free (response);
+              g_free (extra);
+              g_string_free (params_xml, TRUE);
               return -2;
             }
           else
             {
               free_entity (entity);
               g_free (response);
+              g_free (extra);
+              g_string_free (params_xml, TRUE);
               return -1;
             }
 
@@ -9127,6 +9126,8 @@ manage_run_wizard (const gchar *name,
                              __FUNCTION__);
                   free_entity (entity);
                   g_free (response);
+                  g_free (extra);
+                  g_string_free (params_xml, TRUE);
                   return -1;
                 }
 
@@ -9143,20 +9144,169 @@ manage_run_wizard (const gchar *name,
                       if (text)
                         *command_error = g_strdup (text);
                     }
+                  if (command_error_code)
+                    {
+                      *command_error_code = g_strdup (status);
+                    }
                   free_entity (response_entity);
                   free_entity (entity);
                   g_free (response);
+                  g_free (extra);
+                  g_string_free (params_xml, TRUE);
                   return 4;
                 }
 
               free_entity (response_entity);
             }
+
+          /* Get the extra_data element. */
+
+          extra_xsl = entity_child (step, "extra_data");
+          if (extra_xsl)
+            {
+              /* Save the extra_data XSL from the element to a file. */
+
+              xsl_fd = mkstemp (extra_xsl_file_name);
+              if (xsl_fd == -1)
+                {
+                  g_warning ("%s: Wizard extra_data XSL file create failed\n",
+                            __FUNCTION__);
+                  free_entity (entity);
+                  g_free (response);
+                  g_free (extra);
+                  g_string_free (params_xml, TRUE);
+                  return -1;
+                }
+
+              xsl_file = fdopen (xsl_fd, "w");
+              if (xsl_file == NULL)
+                {
+                  g_warning ("%s: Wizard extra_data XSL file open failed\n",
+                            __FUNCTION__);
+                  close (xsl_fd);
+                  free_entity (entity);
+                  g_free (response);
+                  g_free (extra);
+                  g_string_free (params_xml, TRUE);
+                  return -1;
+                }
+
+              if (first_entity (extra_xsl->entities))
+                print_entity (xsl_file, first_entity (extra_xsl->entities));
+
+              /* Write the params as XML to a file. */
+
+              xml_fd = mkstemp (extra_xml_file_name);
+              if (xml_fd == -1)
+                {
+                  g_warning ("%s: Wizard XML file create failed\n",
+                            __FUNCTION__);
+                  fclose (xsl_file);
+                  unlink (xsl_file_name);
+                  free_entity (entity);
+                  g_free (response);
+                  g_free (extra);
+                  g_string_free (params_xml, TRUE);
+                  return -1;
+                }
+
+              xml_file = fdopen (xml_fd, "w");
+              if (xml_file == NULL)
+                {
+                  g_warning ("%s: Wizard XML file open failed\n",
+                            __FUNCTION__);
+                  fclose (xsl_file);
+                  unlink (xsl_file_name);
+                  close (xml_fd);
+                  free_entity (entity);
+                  g_free (response);
+                  g_free (extra);
+                  g_string_free (params_xml, TRUE);
+                  return -1;
+                }
+
+              if (fprintf (xml_file,
+                           "<wizard>"
+                           "<params>%s</params>"
+                           "<current>"
+                           "<response>%s</response>"
+                           "</current>"
+                           "<previous>"
+                           "<extra_data>%s</extra_data>"
+                           "</previous>"
+                           "</wizard>\n",
+                           params_xml->str ? params_xml->str : "",
+                           response ? response : "",
+                           extra ? extra : "")
+                  < 0)
+                {
+                  fclose (xsl_file);
+                  unlink (extra_xsl_file_name);
+                  fclose (xml_file);
+                  unlink (extra_xml_file_name);
+                  free_entity (entity);
+                  g_warning ("%s: Wizard failed to write XML\n",
+                            __FUNCTION__);
+                  g_free (response);
+                  g_free (extra);
+                  g_string_free (params_xml, TRUE);
+                  return -1;
+                }
+
+              fflush (xml_file);
+
+              g_free (extra);
+              extra = xsl_transform (extra_xsl_file_name, extra_xml_file_name,
+                                     NULL, NULL);
+              fclose (xsl_file);
+              unlink (extra_xsl_file_name);
+              fclose (xml_file);
+              unlink (extra_xml_file_name);
+            }
         }
       steps = next_entities (steps);
     }
-  *ret_response = g_strdup (response);
+
+  if (extra)
+    extra_wrapped = g_strdup_printf ("<extra_data>%s</extra_data>",
+                                     extra);
+  else
+    extra_wrapped = NULL;
+  g_free (extra);
+
+  *ret_response = response;
+
+  if (extra_wrapped && (forked == 0))
+    {
+      entity_t extra_entity, status_entity, status_text_entity;
+      ret = parse_entity (extra_wrapped, &extra_entity);
+      if (ret == 0)
+        {
+          status_entity = entity_child (extra_entity, "status");
+          status_text_entity = entity_child (extra_entity, "status_text");
+
+          if (status_text_entity && command_error)
+            {
+              *command_error = g_strdup (entity_text (status_text_entity));
+            }
+
+          if (status_entity && command_error_code)
+            {
+              *command_error_code = g_strdup (entity_text (status_entity));
+            }
+          free_entity (extra_entity);
+        }
+      else
+        {
+          g_warning ("%s: failed to parse extra data", __FUNCTION__);
+          free_entity (entity);
+          g_string_free (params_xml, TRUE);
+          return -1;
+        }
+    }
+
   free_entity (entity);
-  g_free (response);
+  g_string_free (params_xml, TRUE);
 
   /* All the steps succeeded. */
 
