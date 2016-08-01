@@ -1466,7 +1466,6 @@ main (int argc, char** argv)
   static gchar *manager_address_string_2 = NULL;
   static gchar *manager_port_string = NULL;
   static gchar *manager_port_string_2 = NULL;
-  static gchar *modify_report_format = NULL;
   static gchar *modify_setting = NULL;
   static gchar *predefined = NULL;
   static gchar *scanner_name = NULL;
@@ -1526,8 +1525,6 @@ main (int argc, char** argv)
         { "max-email-attachment-size", '\0', 0, G_OPTION_ARG_INT, &max_email_attachment_size, "Maximum size of alert email attachments, in bytes.", "<number>"},
         { "max-email-include-size", '\0', 0, G_OPTION_ARG_INT, &max_email_include_size, "Maximum size of inlined content in alert emails, in bytes.", "<number>"},
         { "migrate", 'm', 0, G_OPTION_ARG_NONE, &migrate_database, "Migrate the database and exit.", NULL },
-        { "modify-report-format", '\0', 0, G_OPTION_ARG_STRING, &modify_report_format,
-          "Modify report format <uuid> and exit.", "<uuid>" },
         { "modify-setting", '\0', 0, G_OPTION_ARG_STRING, &modify_setting,
           "Modify setting <uuid> and exit.", "<uuid>" },
         { "encrypt-all-credentials", '\0', 0, G_OPTION_ARG_NONE,
@@ -1727,44 +1724,6 @@ main (int argc, char** argv)
                                    scanner_ca_pub, scanner_key_pub,
                                    scanner_key_priv);
       g_free (stype);
-      log_config_free ();
-      switch (ret)
-        {
-          case 0:
-            return EXIT_SUCCESS;
-          case -2:
-            g_warning ("%s: database is wrong version\n", __FUNCTION__);
-            return EXIT_FAILURE;
-          case -3:
-            g_warning ("%s: database must be initialised"
-                       " (with --update or --rebuild)\n",
-                       __FUNCTION__);
-            return EXIT_FAILURE;
-          case -1:
-            g_warning ("%s: internal error\n", __FUNCTION__);
-            return EXIT_FAILURE;
-          default:
-            return EXIT_FAILURE;
-        }
-      return EXIT_SUCCESS;
-    }
-
-  if (modify_report_format)
-    {
-      int ret;
-
-      if (predefined == NULL && active == NULL)
-        {
-          g_warning ("%s: --modify-report-format needs --predefined and/or"
-                     " --active\n",
-                     __FUNCTION__);
-          return EXIT_FAILURE;
-        }
-
-      /* Modify the report format and then exit. */
-      ret = manage_modify_report_format (log_config, database,
-                                         modify_report_format,
-                                         predefined, active);
       log_config_free ();
       switch (ret)
         {

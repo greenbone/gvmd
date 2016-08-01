@@ -1,3 +1,7 @@
+2016-08-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/openvasmd.c (main): Remove --modify-report-format.
+
 2016-07-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Drop the GLOBAL element of report formats.
@@ -172,7 +176,7 @@
 2016-07-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (set_certs): New function.
-	(scanner_setup): Call set_certs and like it do the default check.
+	(scanner_setup): Call set_certs and let it do the default check.
 
 	* src/manage_sql.c (manage_scanner_set, verify_scanner): Use set_certs
 	instead of openvas_scanner_set_certs so that the default is checked.
