@@ -6809,19 +6809,6 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                          G_MARKUP_ERROR_UNKNOWN_ELEMENT,
                          "Command Unavailable");
           }
-        else if (current_credentials.uuid == NULL
-                 && strcasecmp ("CREATE_REPORT_FORMAT", element_name))
-          {
-            /* Only CREATE_REPORT_FORMAT may run without a user (via --xml). */
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_UNAVAILABLE ("omp",
-                                     "Service unavailable:"
-                                     " Command prohibited with --xml"));
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Command Unavailable");
-          }
         else if (strcasecmp ("AUTHENTICATE", element_name) == 0)
           {
             if (save_tasks ()) abort ();

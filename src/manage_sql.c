@@ -1551,7 +1551,10 @@ manage_xml (GSList *log_config, const gchar *database,
         }
    }
  else
-   uuid = NULL;
+   {
+     assert (0);
+     return -1;
+   }
 
   pid = fork_connection (&socket, &session, &credentials, uuid);
   g_free (uuid);
@@ -16584,7 +16587,7 @@ authenticate (credentials_t* credentials)
       if (authenticate_allow_all)
         {
           /* This flag is set when Manager makes a connection to itself, for
-           * scheduled tasks, alerts and --xml.  Take the stored uuid
+           * scheduled tasks and alerts.  Take the stored uuid
            * to be able to tell apart locally authenticated vs remotely
            * authenticated users (in order to fetch the correct rules). */
           credentials->uuid = get_scheduled_user_uuid ();
@@ -16634,13 +16637,6 @@ authenticate (credentials_t* credentials)
           return 0;
         }
       return fail;
-    }
-  else if (authenticate_allow_all
-           && (get_scheduled_user_uuid () == NULL))
-    {
-      /* --xml without --user. */
-      credentials->uuid = NULL;
-      return 0;
     }
   return 1;
 }
@@ -47442,17 +47438,11 @@ create_report_format (const char *uuid, const char *name,
   int format_trust = TRUST_UNKNOWN;
   create_report_format_param_t *param;
 
+  assert (current_credentials.uuid);
   assert (uuid);
   assert (name);
   assert (files);
   assert (params);
-
-  if (global == 0
-      && current_credentials.uuid == NULL)    /* --xml without --user. */
-    {
-      sql_rollback ();
-      return 99;
-    }
 
   /* Verify the signature. */
 
@@ -47553,9 +47543,7 @@ create_report_format (const char *uuid, const char *name,
       return 99;
     }
 
-  if (global
-      && current_credentials.uuid    /* NULL for --xml without --user. */
-      && acl_user_can_everything (current_credentials.uuid) == 0)
+  if (global && acl_user_can_everything (current_credentials.uuid) == 0)
     {
       sql_rollback ();
       return 99;

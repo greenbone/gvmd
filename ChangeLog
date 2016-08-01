@@ -1,5 +1,20 @@
 2016-08-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Require --user with --xml again.  Basically reverts r25767.
+
+	* src/manage_acl.c (acl_user_may): Remove --xml check.
+
+	* src/openvasmd.c (main): Require --user.
+
+	* src/omp.c (omp_xml_handle_start_element): Remove option to run
+	CREATE_REPORT_FORMAT without --user.
+
+	* src/manage_sql.c (manage_xml): Expect name.
+	(authenticate): Remove --xml case.
+	(create_report_format): Expect a current user again.
+
+2016-08-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c (main): Remove --modify-report-format.
 
 2016-07-29  Matthew Mundell <matthew.mundell@greenbone.net>

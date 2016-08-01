@@ -2042,6 +2042,12 @@ main (int argc, char** argv)
     {
       /* Process OMP, and then exit. */
 
+      if (user == NULL)
+        {
+          g_warning ("%s: --user required\n", __FUNCTION__);
+          return EXIT_FAILURE;
+        }
+
       if (strcmp (xml, "-") == 0)
         {
           GError *error;

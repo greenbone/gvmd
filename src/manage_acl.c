@@ -60,10 +60,6 @@ acl_user_may (const char *operation)
 
   assert (operation);
 
-  if (current_credentials.uuid == NULL)
-    /* Allow --xml without a --user to do anything. */
-    return 1;
-
   if (strlen (current_credentials.uuid) == 0)
     /* Allow the dummy user in init_manage to do anything. */
     return 1;
