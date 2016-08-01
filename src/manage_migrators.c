@@ -12905,17 +12905,18 @@ migrate_171_to_172 ()
   move_failed = 0;
   while (subdir_name && move_failed == 0)
     {
-      error = NULL;
       gchar *old_subdir_path, *new_subdir_path;
-      old_subdir_path = g_build_filename (old_dir_path, subdir_name, NULL);
-      new_subdir_path = g_build_filename (new_dir_path, subdir_name, NULL);
       GDir *new_subdir;
 
+      error = NULL;
+      old_subdir_path = g_build_filename (old_dir_path, subdir_name, NULL);
+      new_subdir_path = g_build_filename (new_dir_path, subdir_name, NULL);
       new_subdir = g_dir_open (new_subdir_path, 0, &error);
       if (new_subdir)
         {
           g_debug ("%s: Skipping '%s', directory already exists",
                      __FUNCTION__, new_subdir_path);
+          openvas_file_remove_recurse (old_subdir_path);
           g_dir_close (new_subdir);
         }
       else if (error->code == G_FILE_ERROR_NOENT)

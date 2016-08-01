@@ -1,5 +1,11 @@
 2016-08-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_migrators.c (migrate_171_to_172): Put variables at the
+	top of the block.  Remove old directories that already exist in the new
+	location.
+
+2016-08-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (report_format_dir): Correct path.
 
 2016-08-01  Matthew Mundell <matthew.mundell@greenbone.net>
