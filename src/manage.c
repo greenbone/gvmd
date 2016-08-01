@@ -6807,7 +6807,7 @@ get_report_format_files (const char *dir_name, GPtrArray **start)
  * @return Freshly allocated dir name.
  */
 gchar *
-report_format_dir (const gchar *uuid)
+predefined_report_format_dir (const gchar *uuid)
 {
   return g_build_filename (OPENVAS_DATA_DIR,
                            "openvasmd",
@@ -6835,8 +6835,8 @@ init_report_format_file_iterator (file_iterator_t* iterator,
   if (uuid == NULL)
     return -1;
 
-  if (report_format_global (report_format))
-    dir_name = report_format_dir (uuid);
+  if (report_format_predefined (report_format))
+    dir_name = predefined_report_format_dir (uuid);
   else
     {
       gchar *owner_uuid;

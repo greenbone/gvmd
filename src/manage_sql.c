@@ -130,7 +130,7 @@ int
 set_certs (const char *, const char *, const char *);
 
 gchar *
-report_format_dir (const gchar *);
+predefined_report_format_dir (const gchar *);
 
 int
 stop_task_internal (task_t);
@@ -14233,7 +14233,7 @@ check_db_port_lists ()
 }
 
 /**
- * @brief Bring UUIDs for single report format up to date.
+ * @brief Bring UUIDs for single predefined report format up to date.
  *
  * @param[in]  old  Old UUID.
  * @param[in]  new  New UUID.
@@ -14243,7 +14243,7 @@ update_report_format_uuid (const char *old, const char *new)
 {
   gchar *dir;
 
-  dir = report_format_dir (old);
+  dir = predefined_report_format_dir (old);
   if (g_file_test (dir, G_FILE_TEST_EXISTS))
     openvas_file_remove_recurse (dir);
   g_free (dir);
@@ -14917,34 +14917,9 @@ make_report_format_uuids_unique ()
 
       if (iterator_int64 (&rows, 3) == 0)
         {
-          /* Global report format. */
-
-          if (iterator_int64 (&rows, 5) == 0)
-            {
-              /* Shared subdir in the global dir, so copy. */
-              copy = 1;
-              dir = report_format_dir (old_uuid);
-              new_dir = report_format_dir (new_uuid);
-            }
-          else
-            {
-              const char *owner_uuid;
-              /* Dedicated subdir in global dir, but must be renamed. */
-              copy = 0;
-              owner_uuid = iterator_string (&rows, 6);
-              dir = g_build_filename (OPENVAS_STATE_DIR,
-                                      "openvasmd",
-                                      "report_formats",
-                                      owner_uuid,
-                                      old_uuid,
-                                      NULL);
-              new_dir = g_build_filename (OPENVAS_STATE_DIR,
-                                          "openvasmd",
-                                          "report_formats",
-                                          owner_uuid,
-                                          new_uuid,
-                                          NULL);
-            }
+          /* Old-style "global" report format.  I don't think this is possible
+           * with any released version, so ignore. */
+          continue;
         }
       else if (iterator_int64 (&rows, 5) == 0)
         {
@@ -28773,9 +28748,9 @@ run_report_format_script (gchar *report_format_id,
 
   report_format = get_iterator_resource (&formats);
 
-  if (report_format_global (report_format))
+  if (report_format_predefined (report_format))
     {
-      script_dir = report_format_dir (report_format_id);
+      script_dir = predefined_report_format_dir (report_format_id);
     }
   else
     {
@@ -47656,8 +47631,9 @@ create_report_format (const char *uuid, const char *name,
 
   /* Write files to disk. */
 
+  assert (global == 0);
   if (global)
-    dir = report_format_dir (new_uuid ? new_uuid : uuid);
+    dir = predefined_report_format_dir (new_uuid ? new_uuid : uuid);
   else
     {
       assert (current_credentials.uuid);
@@ -48027,7 +48003,7 @@ copy_report_format (const char* name, const char* source_uuid,
   report_format_t new, old;
   gchar *copy_uuid, *source_dir, *copy_dir;
   gchar *tmp_dir;
-  int global, ret;
+  int predefined, ret;
 
   assert (current_credentials.uuid);
 
@@ -48063,9 +48039,9 @@ copy_report_format (const char* name, const char* source_uuid,
 
   /* Copy files on disk. */
 
-  global = report_format_global (old);
-  if (global)
-    source_dir = report_format_dir (source_uuid);
+  predefined = report_format_predefined (old);
+  if (predefined)
+    source_dir = predefined_report_format_dir (source_uuid);
   else
     {
       gchar *owner_uuid;
@@ -48530,15 +48506,12 @@ delete_report_format (const char *report_format_id, int ultimate)
       return 3;
     }
 
-  if (report_format_global (report_format))
-    dir = report_format_dir (report_format_id);
-  else
-    dir = g_build_filename (OPENVAS_STATE_DIR,
-                            "openvasmd",
-                            "report_formats",
-                            current_credentials.uuid,
-                            report_format_id,
-                            NULL);
+  dir = g_build_filename (OPENVAS_STATE_DIR,
+                          "openvasmd",
+                          "report_formats",
+                          current_credentials.uuid,
+                          report_format_id,
+                          NULL);
 
   if (ultimate)
     {
@@ -48729,7 +48702,7 @@ verify_report_format_internal (report_format_t report_format)
            (format, "%s%s%s%i", uuid ? uuid : get_iterator_uuid (&formats),
             report_format_iterator_extension (&formats),
             report_format_iterator_content_type (&formats),
-            report_format_global (report_format) & 1);
+            report_format_predefined (report_format) & 1);
           g_free (uuid);
 
           init_report_format_file_iterator (&files, report_format);
@@ -49031,8 +49004,7 @@ report_format_writable (report_format_t report_format)
 int
 trash_report_format_writable (report_format_t report_format)
 {
-  return (trash_report_format_in_use (report_format) == 0
-          && trash_report_format_global (report_format) == 0);
+  return trash_report_format_in_use (report_format) == 0;
 }
 
 /**
@@ -49064,36 +49036,6 @@ set_report_format_name (report_format_t report_format, const char *name)
        quoted_name,
        report_format);
   g_free (quoted_name);
-}
-
-/**
- * @brief Return whether a report format is global.
- *
- * @param[in]  report_format  Report format.
- *
- * @return 1 if global, else 0.
- */
-int
-report_format_global (report_format_t report_format)
-{
-  return sql_int ("SELECT " ACL_IS_GLOBAL () " FROM report_formats"
-                  " WHERE id = %llu;",
-                  report_format);
-}
-
-/**
- * @brief Return whether a report format is global.
- *
- * @param[in]  report_format  Report format.
- *
- * @return 1 if global, else 0.
- */
-int
-trash_report_format_global (report_format_t report_format)
-{
-  return sql_int ("SELECT " ACL_IS_GLOBAL () " FROM report_formats_trash"
-                  " WHERE id = %llu;",
-                  report_format);
 }
 
 /**
@@ -56577,7 +56519,6 @@ manage_restore (const char *id)
       iterator_t params;
       report_format_t report_format;
       gchar *dir, *trash_dir, *resource_string;
-      int global;
       char *trash_uuid;
 
       if (sql_int ("SELECT count(*) FROM report_formats"
@@ -56647,8 +56588,6 @@ manage_restore (const char *id)
         }
       cleanup_iterator (&params);
 
-      global = trash_report_format_global (resource);
-
       trash_uuid = sql_string ("SELECT original_uuid FROM report_formats_trash"
                                " WHERE id = %llu;",
                                resource);
@@ -56674,15 +56613,12 @@ manage_restore (const char *id)
 
       /* Move the dir last, in case any SQL rolls back. */
 
-      if (global)
-        dir = report_format_dir (trash_uuid);
-      else
-        dir = g_build_filename (OPENVAS_STATE_DIR,
-                                "openvasmd",
-                                "report_formats",
-                                current_credentials.uuid,
-                                trash_uuid,
-                                NULL);
+      dir = g_build_filename (OPENVAS_STATE_DIR,
+                              "openvasmd",
+                              "report_formats",
+                              current_credentials.uuid,
+                              trash_uuid,
+                              NULL);
       free (trash_uuid);
 
       resource_string = g_strdup_printf ("%llu", resource);

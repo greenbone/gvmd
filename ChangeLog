@@ -1,5 +1,28 @@
 2016-08-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Merge "global" report format idea into predefined report formats.
+
+	* src/manage.c (report_format_dir): Remove.  Renamed.
+	(predefined_report_format_dir): New function.  Renamed.
+	(init_report_format_file_iterator): Use predefined check instead
+	of global.
+
+	* src/manage_sql.c (update_report_format_uuid): Use new name.
+	(make_report_format_uuids_unique): Just ignore in global case.
+	(run_report_format_script): Use new name.  Use predefined check.
+	(create_report_format): Use new name.
+	(copy_report_format, verify_report_format): Use predefined check.
+	(delete_report_format): Remove global case.  They are always predefined
+	now.
+	(report_format_writable): Remove trash global check.
+	(report_format_global, trash_report_format_global): Remove.  No longer
+	used.
+	(manage_restore): Remove global case.
+
+	* src/omp.c (client_state_t): Add note about global case.
+
+2016-08-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_migrators.c (migrate_171_to_172): Put variables at the
 	top of the block.  Remove old directories that already exist in the new
 	location.
