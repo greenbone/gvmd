@@ -1,5 +1,18 @@
 2016-08-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Move global report formats back to STATE dir.  Hence increase database
+	version to 175.  Add database migration from version 174 to 175.
+
+	* CMakeLists.txt: Update install locations.
+	(OPENVASMD_DATABASE_VERSION): Increase to 175.
+
+	* src/manage_migrators.c (migrate_174_to_175): New function.
+	(database_migrators): Add migrate_174_to_175.
+
+	* doc/db.png: Update for version change.
+
+2016-08-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Require --user with --xml again.  Basically reverts r25767.
 
 	* src/manage_acl.c (acl_user_may): Remove --xml check.

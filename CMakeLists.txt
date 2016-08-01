@@ -122,7 +122,7 @@ include (CPack)
 
 ## Variables
 
-set (OPENVASMD_DATABASE_VERSION 174)
+set (OPENVASMD_DATABASE_VERSION 175)
 
 set (OPENVASMD_SCAP_DATABASE_VERSION 15)
 
@@ -294,129 +294,133 @@ add_subdirectory (doc)
 
 ## Install
 
-install (CODE "file (MAKE_DIRECTORY \$ENV{DESTDIR}${OPENVAS_STATE_DIR}/openvasmd/report_formats)")
+install (CODE "file (MAKE_DIRECTORY \$ENV{DESTDIR}${OPENVAS_DATA_DIR}/openvasmd/report_formats)")
 
 install (FILES ${CMAKE_BINARY_DIR}/src/openvasmd_log.conf
                ${CMAKE_SOURCE_DIR}/src/pwpolicy.conf
          DESTINATION ${OPENVAS_SYSCONF_DIR})
 
+# Report formats.
+
 install (FILES src/report_formats/Anonymous_XML/Anonymous_XML.xsl
-         DESTINATION ${OPENVAS_STATE_DIR}/openvasmd/global_report_formats/5057e5cc-b825-11e4-9d0e-28d24461215b
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/5057e5cc-b825-11e4-9d0e-28d24461215b
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/report_formats/Anonymous_XML/generate
-         DESTINATION ${OPENVAS_STATE_DIR}/openvasmd/global_report_formats/5057e5cc-b825-11e4-9d0e-28d24461215b
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/5057e5cc-b825-11e4-9d0e-28d24461215b
          PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 install (FILES src/report_formats/ARF/ARF.xsl
-         DESTINATION ${OPENVAS_STATE_DIR}/openvasmd/global_report_formats/910200ca-dc05-11e1-954f-406186ea4fc5/
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/910200ca-dc05-11e1-954f-406186ea4fc5/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/report_formats/ARF/generate
-         DESTINATION ${OPENVAS_STATE_DIR}/openvasmd/global_report_formats/910200ca-dc05-11e1-954f-406186ea4fc5/
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/910200ca-dc05-11e1-954f-406186ea4fc5/
          PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 install (FILES src/report_formats/CPE/CPE.xsl
-         DESTINATION ${OPENVAS_STATE_DIR}/openvasmd/global_report_formats/5ceff8ba-1f62-11e1-ab9f-406186ea4fc5/
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/5ceff8ba-1f62-11e1-ab9f-406186ea4fc5/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/report_formats/CPE/generate
-         DESTINATION ${OPENVAS_STATE_DIR}/openvasmd/global_report_formats/5ceff8ba-1f62-11e1-ab9f-406186ea4fc5/
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/5ceff8ba-1f62-11e1-ab9f-406186ea4fc5/
          PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 install (FILES src/report_formats/CSV_Results/CSV_Results.xsl
-         DESTINATION ${OPENVAS_STATE_DIR}/openvasmd/global_report_formats/c1645568-627a-11e3-a660-406186ea4fc5
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/c1645568-627a-11e3-a660-406186ea4fc5
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/report_formats/CSV_Results/generate
-         DESTINATION ${OPENVAS_STATE_DIR}/openvasmd/global_report_formats/c1645568-627a-11e3-a660-406186ea4fc5
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/c1645568-627a-11e3-a660-406186ea4fc5
          PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 install (FILES src/report_formats/CSV_Hosts/CSV_Hosts.xsl
-         DESTINATION ${OPENVAS_STATE_DIR}/openvasmd/global_report_formats/9087b18c-626c-11e3-8892-406186ea4fc5
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/9087b18c-626c-11e3-8892-406186ea4fc5
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/report_formats/CSV_Hosts/generate
-         DESTINATION ${OPENVAS_STATE_DIR}/openvasmd/global_report_formats/9087b18c-626c-11e3-8892-406186ea4fc5
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/9087b18c-626c-11e3-8892-406186ea4fc5
          PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 install (FILES src/report_formats/HTML/HTML.xsl
-         DESTINATION ${OPENVAS_STATE_DIR}/openvasmd/global_report_formats/6c248850-1f62-11e1-b082-406186ea4fc5
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/6c248850-1f62-11e1-b082-406186ea4fc5
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/report_formats/HTML/generate
-         DESTINATION ${OPENVAS_STATE_DIR}/openvasmd/global_report_formats/6c248850-1f62-11e1-b082-406186ea4fc5
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/6c248850-1f62-11e1-b082-406186ea4fc5
          PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 install (FILES src/report_formats/ITG/ITG.xsl
-         DESTINATION ${OPENVAS_STATE_DIR}/openvasmd/global_report_formats/77bd6c4a-1f62-11e1-abf0-406186ea4fc5/
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/77bd6c4a-1f62-11e1-abf0-406186ea4fc5/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/report_formats/ITG/generate
-         DESTINATION ${OPENVAS_STATE_DIR}/openvasmd/global_report_formats/77bd6c4a-1f62-11e1-abf0-406186ea4fc5/
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/77bd6c4a-1f62-11e1-abf0-406186ea4fc5/
          PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 install (FILES src/report_formats/LaTeX/latex.xsl
-         DESTINATION ${OPENVAS_STATE_DIR}/openvasmd/global_report_formats/a684c02c-b531-11e1-bdc2-406186ea4fc5/
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/a684c02c-b531-11e1-bdc2-406186ea4fc5/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/report_formats/LaTeX/generate
-         DESTINATION ${OPENVAS_STATE_DIR}/openvasmd/global_report_formats/a684c02c-b531-11e1-bdc2-406186ea4fc5/
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/a684c02c-b531-11e1-bdc2-406186ea4fc5/
          PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 install (FILES src/report_formats/NBE/NBE.xsl
-         DESTINATION ${OPENVAS_STATE_DIR}/openvasmd/global_report_formats/9ca6fe72-1f62-11e1-9e7c-406186ea4fc5/
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/9ca6fe72-1f62-11e1-9e7c-406186ea4fc5/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/report_formats/NBE/generate
-         DESTINATION ${OPENVAS_STATE_DIR}/openvasmd/global_report_formats/9ca6fe72-1f62-11e1-9e7c-406186ea4fc5/
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/9ca6fe72-1f62-11e1-9e7c-406186ea4fc5/
          PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 install (FILES src/report_formats/LaTeX/latex.xsl
-         DESTINATION ${OPENVAS_STATE_DIR}/openvasmd/global_report_formats/c402cc3e-b531-11e1-9163-406186ea4fc5/
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/c402cc3e-b531-11e1-9163-406186ea4fc5/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/report_formats/PDF/generate
-         DESTINATION ${OPENVAS_STATE_DIR}/openvasmd/global_report_formats/c402cc3e-b531-11e1-9163-406186ea4fc5/
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/c402cc3e-b531-11e1-9163-406186ea4fc5/
          PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 install (FILES src/report_formats/Topology/hostvisdot-summary.xsl
-         DESTINATION ${OPENVAS_STATE_DIR}/openvasmd/global_report_formats/9e5e5deb-879e-4ecc-8be6-a71cd0875cdd/
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/9e5e5deb-879e-4ecc-8be6-a71cd0875cdd/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/report_formats/Topology/generate
-         DESTINATION ${OPENVAS_STATE_DIR}/openvasmd/global_report_formats/9e5e5deb-879e-4ecc-8be6-a71cd0875cdd/
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/9e5e5deb-879e-4ecc-8be6-a71cd0875cdd/
          PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 install (FILES src/report_formats/TXT/TXT.xsl
-         DESTINATION ${OPENVAS_STATE_DIR}/openvasmd/global_report_formats/a3810a62-1f62-11e1-9219-406186ea4fc5/
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/a3810a62-1f62-11e1-9219-406186ea4fc5/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/report_formats/TXT/generate
-         DESTINATION ${OPENVAS_STATE_DIR}/openvasmd/global_report_formats/a3810a62-1f62-11e1-9219-406186ea4fc5/
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/a3810a62-1f62-11e1-9219-406186ea4fc5/
          PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 install (FILES src/report_formats/XML/generate
-         DESTINATION ${OPENVAS_STATE_DIR}/openvasmd/global_report_formats/a994b278-1f62-11e1-96ac-406186ea4fc5/
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/a994b278-1f62-11e1-96ac-406186ea4fc5/
          PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 install (FILES src/report_formats/Verinice_ISM/Verinice_ISM.xsl
                src/report_formats/Verinice_ISM/classification.xsl
-         DESTINATION ${OPENVAS_STATE_DIR}/openvasmd/global_report_formats/c15ad349-bd8d-457a-880a-c7056532ee15/
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/c15ad349-bd8d-457a-880a-c7056532ee15/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/report_formats/Verinice_ISM/generate
-         DESTINATION ${OPENVAS_STATE_DIR}/openvasmd/global_report_formats/c15ad349-bd8d-457a-880a-c7056532ee15/
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/c15ad349-bd8d-457a-880a-c7056532ee15/
          PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 install (FILES src/report_formats/Verinice_ITG/Verinice_ITG.xsl
                src/report_formats/Verinice_ITG/classification-helpers.xsl
-         DESTINATION ${OPENVAS_STATE_DIR}/openvasmd/global_report_formats/50c9950a-f326-11e4-800c-28d24461215b/
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/50c9950a-f326-11e4-800c-28d24461215b/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/report_formats/Verinice_ITG/generate
-         DESTINATION ${OPENVAS_STATE_DIR}/openvasmd/global_report_formats/50c9950a-f326-11e4-800c-28d24461215b/
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/50c9950a-f326-11e4-800c-28d24461215b/
          PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+
+# Schema formats.
 
 install (FILES src/schema_formats/RNC/rnc.xsl
                src/schema_formats/HTML/HTML.xsl
@@ -451,6 +455,8 @@ install (FILES src/schema_formats/XML-brief/OMP.xsl
 install (FILES src/schema_formats/XML-brief/generate
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_schema_formats/d6cf255e-947c-11e1-829a-406186ea4fc5/
          PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+
+# Alert methods.
 
 install (FILES src/alert_methods/SCP/alert
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_alert_methods/2db07698-ec49-11e5-bcff-28d24461215b/
