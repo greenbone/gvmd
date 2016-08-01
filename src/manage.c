@@ -6809,9 +6809,9 @@ get_report_format_files (const char *dir_name, GPtrArray **start)
 gchar *
 report_format_dir (const gchar *uuid)
 {
-  return g_build_filename (OPENVAS_STATE_DIR,
+  return g_build_filename (OPENVAS_DATA_DIR,
                            "openvasmd",
-                           "global_report_formats",
+                           "report_formats",
                            uuid,
                            NULL);
 }

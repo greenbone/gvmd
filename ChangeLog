@@ -1,5 +1,9 @@
 2016-08-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (report_format_dir): Correct path.
+
+2016-08-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move global report formats back to STATE dir.  Hence increase database
 	version to 175.  Add database migration from version 174 to 175.
 
