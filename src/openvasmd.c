@@ -1425,7 +1425,6 @@ main (int argc, char** argv)
 {
   /* Process options. */
 
-  static gchar *active = NULL;
   static gboolean backup_database = FALSE;
   static gboolean check_alerts = FALSE;
   static gboolean migrate_database = FALSE;
@@ -1467,7 +1466,6 @@ main (int argc, char** argv)
   static gchar *manager_port_string = NULL;
   static gchar *manager_port_string_2 = NULL;
   static gchar *modify_setting = NULL;
-  static gchar *predefined = NULL;
   static gchar *scanner_name = NULL;
   static gchar *rc_name = NULL;
   static gchar *role = NULL;
@@ -1478,7 +1476,6 @@ main (int argc, char** argv)
   GOptionContext *option_context;
   static GOptionEntry option_entries[]
     = {
-        { "active", '\0', 0, G_OPTION_ARG_STRING, &active, "Active flag, for --modify-report-format.  0 or 1.", "<number>" },
         { "backup", '\0', 0, G_OPTION_ARG_NONE, &backup_database, "Backup the database.", NULL },
         { "check-alerts", '\0', 0, G_OPTION_ARG_NONE, &check_alerts, "Check SecInfo alerts.", NULL },
         { "database", 'd', 0, G_OPTION_ARG_STRING, &database, "Use <file/name> as database for SQLite/Postgres.", "<file/name>" },
@@ -1536,7 +1533,6 @@ main (int argc, char** argv)
         { "optimize", '\0', 0, G_OPTION_ARG_STRING, &optimize, "Run an optimization: vacuum, analyze, cleanup-config-prefs, remove-open-port-results, cleanup-port-names, cleanup-result-severities, rebuild-report-cache or update-report-cache.", "<name>" },
         { "port", 'p', 0, G_OPTION_ARG_STRING, &manager_port_string, "Use port number <number>.", "<number>" },
         { "port2", '\0', 0, G_OPTION_ARG_STRING, &manager_port_string_2, "Use port number <number> for address 2.", "<number>" },
-        { "predefined", '\0', 0, G_OPTION_ARG_STRING, &predefined, "Predefined flag, for --modify-report-format.  0 or 1.", "<number>" },
         { "progress", '\0', 0, G_OPTION_ARG_NONE, &progress, "Display progress during --rebuild and --update.", NULL },
         { "rebuild", '\0', 0, G_OPTION_ARG_NONE, &rebuild_nvt_cache, "Rebuild the NVT cache and exit.", NULL },
         { "role", '\0', 0, G_OPTION_ARG_STRING, &role, "Role for --create-user and --get-users.", "<role>" },
