@@ -1,3 +1,8 @@
+2016-08-02  Björn Ricks <bjoern.ricks@greenbone.net>
+
+	* src/manage_sql.c (ALL_INFO_UNION_COLUMNS_LIMIT, ALL_INFO_UNION_COLUMNS):
+	Fix: remove already deleted column summary from all info union columns.
+
 2016-08-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage.c (manage_run_wizard): Allow wizard steps to generate

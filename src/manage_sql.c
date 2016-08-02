@@ -60582,8 +60582,7 @@ manage_modify_setting (GSList *log_config, const gchar *database,
   "                  'cpe' AS type, title as extra, max_cvss as severity"      \
   "           FROM cpes"                                                       \
   " UNION ALL SELECT " GET_ITERATOR_COLUMNS_STRING ", '' AS _owner,"           \
-  "                  'nvt' AS type, CASE summary WHEN 'NOSUMMARY' THEN tag"    \
-  "                                  ELSE summary END AS extra,"               \
+  "                  'nvt' AS type, tag,"                                      \
   "                  CAST (cvss_base AS float) as severity"                    \
   "           FROM nvts"                                                       \
   " UNION ALL SELECT " GET_ITERATOR_COLUMNS_STRING ", '' AS _owner,"           \
@@ -60622,8 +60621,7 @@ manage_modify_setting (GSList *log_config, const gchar *database,
   " SELECT * FROM (SELECT " GET_ITERATOR_COLUMNS_STRING ","                    \
   "                       CAST ('' AS text) AS _owner,"                        \
   "                       CAST ('nvt' AS text) AS type,"                       \
-  "                       CASE summary WHEN 'NOSUMMARY' THEN tag"              \
-  "                                    ELSE summary END AS extra,"             \
+  "                       tag,"                                                 \
   "                       CAST (cvss_base AS float) as severity"               \
   "                FROM nvts"                                                  \
   "                %s)"                                                        \
