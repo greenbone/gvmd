@@ -20430,8 +20430,10 @@ report_add_result (report_t report, result_t result)
    { "iso_time (end_time)", NULL, KEYWORD_TYPE_STRING },                     \
    { "start_time", "created", KEYWORD_TYPE_INTEGER },                        \
    { "end_time", "modified", KEYWORD_TYPE_INTEGER },                         \
-   { "''", NULL, KEYWORD_TYPE_STRING },                                      \
-   { "0", NULL, KEYWORD_TYPE_INTEGER },                                      \
+   { "(SELECT name FROM users WHERE users.id = reports.owner)",              \
+     "_owner",                                                               \
+     KEYWORD_TYPE_STRING },                                                  \
+   { "owner", NULL, KEYWORD_TYPE_INTEGER },                                  \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
  }
 
