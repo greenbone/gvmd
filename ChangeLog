@@ -1,5 +1,12 @@
 2016-08-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (check_db_report_format): Create temporary table to
+	track changes.
+	(check_report_format): Update the report format modification time if
+	anything changed.
+
+2016-08-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (predefined_report_format_dir): Note about getting parent
 	dir.
 

@@ -15059,8 +15059,16 @@ check_db_report_formats ()
     }
   g_free (path);
 
+  sql ("CREATE TEMPORARY TABLE report_formats_check"
+       " AS SELECT id, uuid, name, owner, summary, description, extension,"
+       "           content_type, signature, trust, trust_time, flags,"
+       "           creation_time, modification_time"
+       "    FROM report_formats;");
+
   while ((report_format_path = g_dir_read_name (dir)))
     check_report_format (report_format_path);
+
+  sql ("DROP TABLE report_formats_check;");
 
   return 0;
 }
@@ -49671,21 +49679,41 @@ check_report_format (const gchar *uuid)
 
   if (sql_int ("SELECT count (*) FROM report_formats WHERE uuid = '%s';",
                quoted_uuid))
-    // FIX modification_time  did it actually change?
-    sql ("UPDATE report_formats"
-         " SET owner = NULL, name = '%s', summary = '%s', description = '%s',"
-         "     extension = '%s', content_type = '%s', signature = '',"
-         "     trust = %i, trust_time = %i, flags = %llu"
-         " WHERE uuid = '%s';",
-         g_strstrip (quoted_name),
-         g_strstrip (quoted_summary),
-         g_strstrip (quoted_description),
-         g_strstrip (quoted_extension),
-         g_strstrip (quoted_content_type),
-         TRUST_YES,
-         time (NULL),
-         (long long int) REPORT_FORMAT_FLAG_ACTIVE,
-         quoted_uuid);
+    {
+      sql ("UPDATE report_formats"
+           " SET owner = NULL, name = '%s', summary = '%s', description = '%s',"
+           "     extension = '%s', content_type = '%s', signature = '',"
+           "     trust = %i, trust_time = %i, flags = %llu"
+           " WHERE uuid = '%s';",
+           g_strstrip (quoted_name),
+           g_strstrip (quoted_summary),
+           g_strstrip (quoted_description),
+           g_strstrip (quoted_extension),
+           g_strstrip (quoted_content_type),
+           TRUST_YES,
+           time (NULL),
+           (long long int) REPORT_FORMAT_FLAG_ACTIVE,
+           quoted_uuid);
+
+      sql ("UPDATE report_formats SET modification_time = m_now ()"
+           " WHERE id"
+           " IN (SELECT report_formats.id"
+           "     FROM report_formats, report_formats_check"
+           "     WHERE report_formats.uuid = '%s'"
+           "     AND report_formats.id = report_formats_check.id"
+           "     AND (report_formats.owner != report_formats_check.owner"
+           "          OR report_formats.name != report_formats_check.name"
+           "          OR report_formats.summary != report_formats_check.summary"
+           "          OR report_formats.description"
+           "             != report_formats_check.description"
+           "          OR report_formats.extension"
+           "             != report_formats_check.extension"
+           "          OR report_formats.content_type"
+           "             != report_formats_check.content_type"
+           "          OR report_formats.trust != report_formats_check.trust"
+           "          OR report_formats.flags != report_formats_check.flags));",
+           quoted_uuid);
+    }
   else
     sql ("INSERT INTO report_formats"
          " (uuid, name, owner, summary, description, extension, content_type,"
