@@ -1,5 +1,10 @@
 2016-08-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (predefined_report_format_dir): Note about getting parent
+	dir.
+
+2016-08-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move definitions of predefined report formats into XML files located in
 	the report format's directory.  This makes it easier to define custom
 	predefined report formats.
