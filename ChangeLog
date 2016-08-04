@@ -1,3 +1,34 @@
+2016-08-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Move definitions of predefined report formats into XML files located in
+	the report format's directory.  This makes it easier to define custom
+	predefined report formats.
+
+	* CMakeLists.txt: Install report format definitions.
+
+	* src/manage_sql.c (VERINICE_ISM_CONTROL_DESCRIPTION): Remove.  No longer
+	used.
+	(check_db_report): Remove report format data.  Instead call
+	check_report_format for each report format that has a definition file.
+	(check_report_format): New function.  Creates or updates report format
+	data from file.
+
+	* src/report_formats/ARF/report_format.xml,
+	src/report_formats/Anonymous_XML/report_format.xml,
+	src/report_formats/CPE/report_format.xml,
+	src/report_formats/CSV_Hosts/report_format.xml,
+	src/report_formats/CSV_Results/report_format.xml,
+	src/report_formats/HTML/report_format.xml,
+	src/report_formats/ITG/report_format.xml,
+	src/report_formats/LaTeX/report_format.xml,
+	src/report_formats/NBE/report_format.xml,
+	src/report_formats/PDF/report_format.xml,
+	src/report_formats/TXT/report_format.xml,
+	src/report_formats/Topology/report_format.xml,
+	src/report_formats/Verinice_ISM/report_format.xml,
+	src/report_formats/Verinice_ITG/report_format.xml,
+	src/report_formats/XML/report_format.xml: New files.
+
 2016-08-02  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (REPORT_ITERATOR_COLUMNS): Use actual id and name of

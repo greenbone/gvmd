@@ -324,6 +324,9 @@ report_counts_id_full (report_t, int *, int *, int *, int *, int *, int *,
                        double *, const get_data_t*, const char* ,
                        int *, int *, int *, int *, int *, int *, double *);
 
+static int
+check_report_format (const gchar *);
+
 
 /* Variables. */
 
@@ -15026,20 +15029,6 @@ make_report_format_uuids_unique ()
 }
 
 /**
- * @brief Description for Verinice ISM report format.
- */
-#define VERINICE_ISM_CONTROL_DESCRIPTION                                        \
- "Dear IS Coordinator,\n"                                                       \
- "\n"                                                                           \
- "A new scan has been carried out and the results are now available in Verinice.\n"        \
- "If responsible persons are linked to the asset groups, the tasks are already created.\n" \
- "\n"                                                                           \
- "Please check the results in a timely manner.\n"                               \
- "\n"                                                                           \
- "Best regards\n"                                                               \
- "CIS"
-
-/**
  * @brief Ensure the predefined report formats exist.
  *
  * @return 0 success, -1 error.
@@ -15047,340 +15036,31 @@ make_report_format_uuids_unique ()
 static int
 check_db_report_formats ()
 {
+  GError *error;
+  GDir *dir;
+  gchar *path;
+  const gchar *report_format_path;
+
   /* Bring report format UUIDs in database up to date. */
   update_report_format_uuids ();
   if (make_report_format_uuids_unique ())
     return -1;
 
-  if (sql_int ("SELECT count(*) FROM report_formats"
-               " WHERE uuid = '5057e5cc-b825-11e4-9d0e-28d24461215b';")
-      == 0)
+  path = predefined_report_format_dir (NULL);
+
+  dir = g_dir_open (path, 0, &error);
+  if (dir == NULL)
     {
-      report_format_t report_format;
-      sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags,"
-           " creation_time, modification_time)"
-           " VALUES ('5057e5cc-b825-11e4-9d0e-28d24461215b', NULL, 'Anonymous XML',"
-           " 'Anonymous version of the raw XML report',"
-           " 'Complete scan report in OpenVAS Manager XML format.\n',"
-           " 'xml', 'text/xml', '', %i, %i, 1, m_now (), m_now ());",
-           TRUST_YES,
-           time (NULL));
-      report_format = sql_last_insert_id ();
-      resource_set_predefined ("report_format", report_format, 1);
-      verify_report_format_internal (report_format);
+      g_warning ("%s: Failed to open directory '%s': %s",
+                 __FUNCTION__, path, error->message);
+      g_error_free (error);
+      g_free (path);
+      return -1;
     }
+  g_free (path);
 
-  if (sql_int ("SELECT count(*) FROM report_formats"
-               " WHERE uuid = '910200ca-dc05-11e1-954f-406186ea4fc5';")
-      == 0)
-    {
-      report_format_t report_format;
-      sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags,"
-           " creation_time, modification_time)"
-           " VALUES ('910200ca-dc05-11e1-954f-406186ea4fc5', NULL, 'ARF',"
-           " 'Asset Reporting Format v1.0.0.',"
-           " 'NIST Asset Reporting Format 1.1 compliant document.\n',"
-           " 'xml', 'text/xml', '', %i, %i, 1, m_now (), m_now ());",
-           TRUST_YES,
-           time (NULL));
-      report_format = sql_last_insert_id ();
-      resource_set_predefined ("report_format", report_format, 1);
-      verify_report_format_internal (report_format);
-    }
-
-  if (sql_int ("SELECT count(*) FROM report_formats"
-                     " WHERE uuid = '5ceff8ba-1f62-11e1-ab9f-406186ea4fc5';")
-      == 0)
-    {
-      report_format_t report_format;
-      sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags,"
-           " creation_time, modification_time)"
-           " VALUES ('5ceff8ba-1f62-11e1-ab9f-406186ea4fc5', NULL, 'CPE',"
-           " 'Common Product Enumeration CSV table.',"
-           " 'CPE stands for Common Product Enumeration.  It is a structured naming scheme for\n"
-           "information technology systems, platforms, and packages.  In other words: CPE\n"
-           "provides a unique identifier for virtually any software product that is known for\n"
-           "a vulnerability.\n"
-           "\n"
-           "The CPE dictionary is maintained by MITRE and NIST.  MITRE also maintains CVE\n"
-           "(Common Vulnerability Enumeration) and other relevant security standards.\n"
-           "\n"
-           "The report selects all CPE tables from the results and forms a single table\n"
-           "as a comma separated values file.\n',"
-           " 'csv', 'text/csv', '', %i, %i, 1, m_now (), m_now ());",
-           TRUST_YES, time (NULL));
-      report_format = sql_last_insert_id ();
-      resource_set_predefined ("report_format", report_format, 1);
-      verify_report_format_internal (report_format);
-    }
-
-  if (sql_int ("SELECT count(*) FROM report_formats"
-               " WHERE uuid = 'c1645568-627a-11e3-a660-406186ea4fc5';")
-      == 0)
-    {
-      report_format_t report_format;
-      sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags,"
-           " creation_time, modification_time)"
-           " VALUES ('c1645568-627a-11e3-a660-406186ea4fc5', NULL, 'CSV Results',"
-           " 'CSV result list.',"
-           " 'List of results.',"
-           " 'csv', 'text/csv', '', %i, %i, 1, m_now (), m_now ());",
-           TRUST_YES, time (NULL));
-      report_format = sql_last_insert_id ();
-      resource_set_predefined ("report_format", report_format, 1);
-      verify_report_format_internal (report_format);
-    }
-
-  if (sql_int ("SELECT count(*) FROM report_formats"
-               " WHERE uuid = '9087b18c-626c-11e3-8892-406186ea4fc5';")
-      == 0)
-    {
-      report_format_t report_format;
-      sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags,"
-           " creation_time, modification_time)"
-           " VALUES ('9087b18c-626c-11e3-8892-406186ea4fc5', NULL, 'CSV Hosts',"
-           " 'CSV host summary.',"
-           " 'Base host information and result counts',"
-           " 'csv', 'text/csv', '', %i, %i, 1, m_now (), m_now ());",
-           TRUST_YES, time (NULL));
-      report_format = sql_last_insert_id ();
-      resource_set_predefined ("report_format", report_format, 1);
-      verify_report_format_internal (report_format);
-    }
-
-  if (sql_int ("SELECT count(*) FROM report_formats"
-               " WHERE uuid = '6c248850-1f62-11e1-b082-406186ea4fc5';")
-      == 0)
-    {
-      report_format_t report_format;
-      sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags,"
-           " creation_time, modification_time)"
-           " VALUES ('6c248850-1f62-11e1-b082-406186ea4fc5', NULL, 'HTML',"
-           " 'Single page HTML report.',"
-           " 'A single HTML page listing results of a scan.  Style information is embedded in\n"
-           "the HTML, so the page is suitable for viewing in a browser as is.\n',"
-           " 'html', 'text/html', '', %i, %i, 1, m_now (), m_now ());",
-           TRUST_YES, time (NULL));
-      report_format = sql_last_insert_id ();
-      resource_set_predefined ("report_format", report_format, 1);
-      verify_report_format_internal (report_format);
-    }
-
-  if (sql_int ("SELECT count(*) FROM report_formats"
-               " WHERE uuid = '77bd6c4a-1f62-11e1-abf0-406186ea4fc5';")
-      == 0)
-    {
-      report_format_t report_format;
-      sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags,"
-           " creation_time, modification_time)"
-           " VALUES ('77bd6c4a-1f62-11e1-abf0-406186ea4fc5', NULL, 'ITG',"
-           " 'German \"IT-Grundschutz-Kataloge\" report.',"
-           " 'Tabular report on the German \"IT-Grundschutz-Kataloge\",\n"
-           "as published and maintained by the German Federal Agency for IT-Security.\n',"
-           " 'csv', 'text/csv', '', %i, %i, 1, m_now (), m_now ());",
-           TRUST_YES, time (NULL));
-      report_format = sql_last_insert_id ();
-      resource_set_predefined ("report_format", report_format, 1);
-      verify_report_format_internal (report_format);
-    }
-
-  if (sql_int ("SELECT count(*) FROM report_formats"
-               " WHERE uuid = 'a684c02c-b531-11e1-bdc2-406186ea4fc5';")
-      == 0)
-    {
-      report_format_t report_format;
-      sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags,"
-           " creation_time, modification_time)"
-           " VALUES ('a684c02c-b531-11e1-bdc2-406186ea4fc5', NULL, 'LaTeX',"
-           " 'LaTeX source file.',"
-           " 'Report as LaTeX source file for further processing.\n',"
-           " 'tex', 'text/plain', '', %i, %i, 1, m_now (), m_now ());",
-           TRUST_YES, time (NULL));
-      report_format = sql_last_insert_id ();
-      resource_set_predefined ("report_format", report_format, 1);
-      verify_report_format_internal (report_format);
-    }
-
-  if (sql_int ("SELECT count(*) FROM report_formats"
-               " WHERE uuid = '9ca6fe72-1f62-11e1-9e7c-406186ea4fc5';")
-      == 0)
-    {
-      report_format_t report_format;
-      sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags,"
-           " creation_time, modification_time)"
-           " VALUES ('9ca6fe72-1f62-11e1-9e7c-406186ea4fc5', NULL, 'NBE',"
-           " 'Legacy OpenVAS report.',"
-           " 'The traditional OpenVAS Scanner text based format.',"
-           " 'nbe', 'text/plain', '', %i, %i, 1, m_now (), m_now ());",
-           TRUST_YES, time (NULL));
-      report_format = sql_last_insert_id ();
-      resource_set_predefined ("report_format", report_format, 1);
-      verify_report_format_internal (report_format);
-    }
-
-  if (sql_int ("SELECT count(*) FROM report_formats"
-               " WHERE uuid = 'c402cc3e-b531-11e1-9163-406186ea4fc5';")
-      == 0)
-    {
-      report_format_t report_format;
-      sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags,"
-           " creation_time, modification_time)"
-           " VALUES ('c402cc3e-b531-11e1-9163-406186ea4fc5', NULL, 'PDF',"
-           " 'Portable Document Format report.',"
-           " 'Scan results in Portable Document Format (PDF).',"
-           "'pdf', 'application/pdf', '', %i, %i, 1, m_now (), m_now ());",
-           TRUST_YES, time (NULL));
-      report_format = sql_last_insert_id ();
-      resource_set_predefined ("report_format", report_format, 1);
-      verify_report_format_internal (report_format);
-    }
-
-  if (sql_int ("SELECT count(*) FROM report_formats"
-               " WHERE uuid = 'a3810a62-1f62-11e1-9219-406186ea4fc5';")
-      == 0)
-    {
-      report_format_t report_format;
-      sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags,"
-           " creation_time, modification_time)"
-           " VALUES ('a3810a62-1f62-11e1-9219-406186ea4fc5', NULL, 'TXT',"
-           " 'Plain text report.',"
-           " 'Plain text report, best viewed with fixed font size.',"
-           " 'txt', 'text/plain', '', %i, %i, 1, m_now (), m_now ());",
-           TRUST_YES, time (NULL));
-      report_format = sql_last_insert_id ();
-      resource_set_predefined ("report_format", report_format, 1);
-      verify_report_format_internal (report_format);
-    }
-
-  if (sql_int ("SELECT count(*) FROM report_formats"
-               " WHERE uuid = 'a994b278-1f62-11e1-96ac-406186ea4fc5';")
-      == 0)
-    {
-      report_format_t report_format;
-      sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags,"
-           " creation_time, modification_time)"
-           " VALUES ('a994b278-1f62-11e1-96ac-406186ea4fc5', NULL, 'XML',"
-           " 'Raw XML report.',"
-           " 'Complete scan report in OpenVAS Manager XML format.',"
-           " 'xml', 'text/xml', '', %i, %i, 1, m_now (), m_now ());",
-           TRUST_YES, time (NULL));
-      report_format = sql_last_insert_id ();
-      resource_set_predefined ("report_format", report_format, 1);
-      verify_report_format_internal (report_format);
-    }
-
-  if (sql_int ("SELECT count(*) FROM report_formats"
-               " WHERE uuid = '9e5e5deb-879e-4ecc-8be6-a71cd0875cdd';")
-      == 0)
-    {
-      report_format_t report_format;
-      report_format_param_t report_format_param;
-
-      /* Create Topology report format */
-
-      sql ("INSERT INTO report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags,"
-           " creation_time, modification_time)"
-           " VALUES ('9e5e5deb-879e-4ecc-8be6-a71cd0875cdd', NULL, 'Topology SVG',"
-           " 'Network topology SVG image.',"
-           " 'Scan results in topologic structure as scalable vector graphics.\n',"
-           " 'svg', 'image/svg+xml', '', %i, %i, 1, m_now (), m_now ());",
-           TRUST_YES, time (NULL));
-      report_format = sql_last_insert_id ();
-
-      resource_set_predefined ("report_format", report_format, 1);
-
-      /* Create report "Graph Type" format parameter and parameter options */
-      sql ("INSERT INTO report_format_params (report_format, name, type, value,"
-           " type_min, type_max, type_regex, fallback)"
-           " VALUES (%lli, 'Graph Type', 2, 'twopi', -9223372036854775808,"
-           " 9223372036854775807,'','twopi');",
-           report_format);
-      report_format_param = sql_last_insert_id ();
-      sql ("INSERT INTO report_format_param_options (report_format_param, value)"
-           "VALUES (%lli, 'circo');",
-           report_format_param);
-      sql ("INSERT INTO report_format_param_options (report_format_param, value)"
-           "VALUES (%lli, 'dot');",
-           report_format_param);
-      sql ("INSERT INTO report_format_param_options (report_format_param, value)"
-           "VALUES (%lli, 'twopi');",
-           report_format_param);
-
-      /* Create report "Node Distance" format parameter */
-      sql ("INSERT INTO report_format_params (report_format, name, type, value,"
-           " type_min, type_max, type_regex, fallback)"
-           " VALUES (%lli, 'Node Distance', 1, 8, 1, 20, '', 8);",
-           report_format);
-    }
-
-  if (sql_int ("SELECT count(*) FROM report_formats"
-               " WHERE uuid = 'c15ad349-bd8d-457a-880a-c7056532ee15';")
-      == 0)
-    {
-      report_format_t report_format;
-      sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags,"
-           " creation_time, modification_time)"
-           " VALUES ('c15ad349-bd8d-457a-880a-c7056532ee15', NULL, 'Verinice ISM',"
-           " 'Greenbone Verinice ISM Report, v3.0.0.',"
-           " 'Information Security Management Report for Verinice import, version 3.0.0.\n',"
-           " 'vna', 'application/zip', '', %i, %i, 1, m_now (), m_now ());",
-           TRUST_YES, time (NULL));
-      report_format = sql_last_insert_id ();
-
-      resource_set_predefined ("report_format", report_format, 1);
-
-      /* Create report "Attach HTML report" format parameter */
-      sql ("INSERT INTO report_format_params (report_format, name, type, value,"
-           " type_min, type_max, type_regex, fallback)"
-           " VALUES (%lli, 'Attached report formats', %i, '%s', 0, 0, '', 1);",
-           report_format,
-           REPORT_FORMAT_PARAM_TYPE_REPORT_FORMAT_LIST,
-           "6c248850-1f62-11e1-b082-406186ea4fc5");
-
-      /* Create "ISM Control Description" parameter */
-      sql ("INSERT INTO report_format_params (report_format, name, type, value,"
-           " type_min, type_max, type_regex, fallback)"
-           " VALUES (%lli, 'ISM Control Description', %i, '%s', 0, 100000, '',"
-           "         '%s');",
-           report_format,
-           REPORT_FORMAT_PARAM_TYPE_TEXT,
-           VERINICE_ISM_CONTROL_DESCRIPTION,
-           VERINICE_ISM_CONTROL_DESCRIPTION);
-
-      verify_report_format_internal (report_format);
-    }
-
-  if (sql_int ("SELECT count(*) FROM report_formats"
-               " WHERE uuid = '50c9950a-f326-11e4-800c-28d24461215b';")
-      == 0)
-    {
-      report_format_t report_format;
-      sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags,"
-           " creation_time, modification_time)"
-           " VALUES ('50c9950a-f326-11e4-800c-28d24461215b', NULL, 'Verinice ITG',"
-           " 'Greenbone Verinice ITG Report, v1.0.1.',"
-           " 'IT-Grundschutz Report for Verinice import, version 1.0.1.\n',"
-           " 'vna', 'application/zip', '', %i, %i, 1, m_now (), m_now ());",
-           TRUST_YES, time (NULL));
-      report_format = sql_last_insert_id ();
-      resource_set_predefined ("report_format", report_format, 1);
-      verify_report_format_internal (report_format);
-    }
+  while ((report_format_path = g_dir_read_name (dir)))
+    check_report_format (report_format_path);
 
   return 0;
 }
@@ -49872,6 +49552,409 @@ manage_modify_report_format (GSList *log_config, const gchar *database,
   cleanup_manage_process (TRUE);
 
   return ret;
+}
+
+/**
+ * @brief Setup a predefined report format from disk.
+ *
+ * @param[in]  uuid  UUID of report format.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+check_report_format (const gchar *uuid)
+{
+  GError *error;
+  gchar *path, *config_path, *xml, *quoted_name, *quoted_summary;
+  gchar *quoted_description, *quoted_extension, *quoted_content_type;
+  gchar *quoted_uuid;
+  gsize xml_len;
+  const char *name, *summary, *description, *extension, *content_type;
+  entity_t entity, child, param;
+  entities_t entities;
+
+  g_debug ("%s: uuid: %s", __FUNCTION__, uuid);
+
+  path = predefined_report_format_dir (uuid);
+  g_debug ("%s: path: %s", __FUNCTION__, path);
+  config_path = g_build_filename (path, "report_format.xml", NULL);
+  g_free (path);
+
+  /* Read the file in. */
+
+  error = NULL;
+  g_file_get_contents (config_path, &xml, &xml_len, &error);
+  if (error)
+    {
+      g_warning ("%s: Failed to read '%s': %s\n",
+                  __FUNCTION__,
+                 config_path,
+                 error->message);
+      g_error_free (error);
+      g_free (config_path);
+      return -1;
+    }
+
+  /* Parse it as XML. */
+
+  if (parse_entity (xml, &entity))
+    {
+      g_warning ("%s: Failed to parse '%s'\n", __FUNCTION__, config_path);
+      g_free (config_path);
+      return -1;
+    }
+
+  /* Get the report format properties from the XML. */
+
+  child = entity_child (entity, "name");
+  if (child == NULL)
+    {
+      g_warning ("%s: Missing name in '%s'\n", __FUNCTION__, config_path);
+      g_free (config_path);
+      free_entity (entity);
+      return -1;
+    }
+  name = entity_text (child);
+
+  child = entity_child (entity, "summary");
+  if (child == NULL)
+    {
+      g_warning ("%s: Missing summary in '%s'\n", __FUNCTION__, config_path);
+      g_free (config_path);
+      free_entity (entity);
+      return -1;
+    }
+  summary = entity_text (child);
+
+  child = entity_child (entity, "description");
+  if (child == NULL)
+    {
+      g_warning ("%s: Missing description in '%s'\n",
+                 __FUNCTION__, config_path);
+      g_free (config_path);
+      free_entity (entity);
+      return -1;
+    }
+  description = entity_text (child);
+
+  child = entity_child (entity, "extension");
+  if (child == NULL)
+    {
+      g_warning ("%s: Missing extension in '%s'\n", __FUNCTION__, config_path);
+      g_free (config_path);
+      free_entity (entity);
+      return -1;
+    }
+  extension = entity_text (child);
+
+  child = entity_child (entity, "content_type");
+  if (child == NULL)
+    {
+      g_warning ("%s: Missing content_type in '%s'\n",
+                 __FUNCTION__, config_path);
+      g_free (config_path);
+      free_entity (entity);
+      return -1;
+    }
+  content_type = entity_text (child);
+
+  quoted_uuid = sql_quote (uuid);
+  quoted_name = sql_quote (name);
+  quoted_summary = sql_quote (summary);
+  quoted_description = sql_quote (description);
+  quoted_extension = sql_quote (extension);
+  quoted_content_type = sql_quote (content_type);
+
+  /* Create or update the report format. */
+
+  // FIX delete existing predefined report formats that are not in dir
+
+  if (sql_int ("SELECT count (*) FROM report_formats WHERE uuid = '%s';",
+               quoted_uuid))
+    // FIX modification_time  did it actually change?
+    sql ("UPDATE report_formats"
+         " SET owner = NULL, name = '%s', summary = '%s', description = '%s',"
+         "     extension = '%s', content_type = '%s', signature = '',"
+         "     trust = %i, trust_time = %i, flags = %llu"
+         " WHERE uuid = '%s';",
+         g_strstrip (quoted_name),
+         g_strstrip (quoted_summary),
+         g_strstrip (quoted_description),
+         g_strstrip (quoted_extension),
+         g_strstrip (quoted_content_type),
+         TRUST_YES,
+         time (NULL),
+         (long long int) REPORT_FORMAT_FLAG_ACTIVE,
+         quoted_uuid);
+  else
+    sql ("INSERT INTO report_formats"
+         " (uuid, name, owner, summary, description, extension, content_type,"
+         "  signature, trust, trust_time, flags, creation_time,"
+         "  modification_time)"
+         " VALUES ('%s', '%s', NULL, '%s', '%s', '%s', '%s', '', %i, %i, %i,"
+         "         m_now (), m_now ());",
+         quoted_uuid,
+         g_strstrip (quoted_name),
+         g_strstrip (quoted_summary),
+         g_strstrip (quoted_description),
+         g_strstrip (quoted_extension),
+         g_strstrip (quoted_content_type),
+         TRUST_YES,
+         time (NULL),
+         (long long int) REPORT_FORMAT_FLAG_ACTIVE);
+
+  g_free (quoted_name);
+  g_free (quoted_summary);
+  g_free (quoted_description);
+  g_free (quoted_extension);
+  g_free (quoted_content_type);
+
+  /* Add the parameters from the parsed XML. */
+
+  entities = entity->entities;
+  while ((param = first_entity (entities)))
+    {
+      g_debug ("%s: possible param: %s", __FUNCTION__, entity_name (param));
+
+      if (strcmp (entity_name (param), "param") == 0)
+        {
+          const char *value, *fallback;
+          gchar *quoted_value, *quoted_fallback, *type;
+          const char *min, *max;
+          array_t *opts;
+
+          opts = NULL;
+          min = max = NULL;
+
+          child = entity_child (param, "name");
+          if (child == NULL)
+            {
+              g_warning ("%s: Param missing name in '%s'\n",
+                         __FUNCTION__, config_path);
+              goto fail;
+            }
+          name = entity_text (child);
+
+          child = entity_child (param, "default");
+          if (child == NULL)
+            {
+              g_warning ("%s: Param missing default in '%s'\n",
+                         __FUNCTION__, config_path);
+              goto fail;
+            }
+          fallback = entity_text (child);
+
+          child = entity_child (param, "type");
+          if (child == NULL)
+            {
+              g_warning ("%s: Param missing type in '%s'\n",
+                         __FUNCTION__, config_path);
+              goto fail;
+            }
+          type = g_strstrip (g_strdup (entity_text (child)));
+          if (report_format_param_type_from_name (type)
+              == REPORT_FORMAT_PARAM_TYPE_ERROR)
+            {
+              g_warning ("%s: Error in param type in '%s'\n",
+                         __FUNCTION__, config_path);
+              goto fail;
+            }
+
+          if (strcmp (type, "report_format_list"))
+            {
+              entity_t bound;
+
+              bound = entity_child (child, "min");
+              if (bound && strlen (entity_text (bound)))
+                {
+                  long long int number;
+                  char *end;
+
+                  min = entity_text (bound);
+                  number = strtoll (min, &end, 0);
+                  if (*end != '\0'
+                      || number == LLONG_MAX
+                      || number == LLONG_MIN)
+                    {
+                      g_warning ("%s: Failed to parse min in '%s'\n",
+                                 __FUNCTION__, config_path);
+                      g_free (type);
+                      goto fail;
+                    }
+                }
+
+              bound = entity_child (child, "max");
+              if (bound && strlen (entity_text (bound)))
+                {
+                  long long int number;
+                  char *end;
+
+                  max = entity_text (bound);
+                  number = strtoll (max, &end, 0);
+                  if (*end != '\0'
+                      || number == LLONG_MAX
+                      || number == LLONG_MIN)
+                    {
+                      g_warning ("%s: Failed to parse max in '%s'\n",
+                                 __FUNCTION__, config_path);
+                      g_free (type);
+                      goto fail;
+                    }
+                }
+
+              if (strcmp (type, "selection") == 0)
+                {
+                  entity_t options, option;
+                  entities_t children;
+
+                  options = entity_child (child, "options");
+                  if (options == NULL)
+                    {
+                      g_warning ("%s: Selection missing options in '%s'\n",
+                                 __FUNCTION__, config_path);
+                      g_free (type);
+                      goto fail;
+                    }
+
+                  children = entity->entities;
+                  opts = make_array ();
+                  while ((option = first_entity (children)))
+                    {
+                      array_add (opts, entity_text (option));
+                      children = next_entities (children);
+                    }
+                }
+
+              child = entity_child (param, "value");
+              if (child == NULL)
+                {
+                  g_warning ("%s: Param missing value in '%s'\n",
+                             __FUNCTION__, config_path);
+                  goto fail;
+                }
+              value = entity_text (child);
+
+            }
+          else
+            {
+              entity_t report_format;
+
+              child = entity_child (param, "value");
+              if (child == NULL)
+                {
+                  g_warning ("%s: Param missing value in '%s'\n",
+                             __FUNCTION__, config_path);
+                  goto fail;
+                }
+
+              report_format = entity_child (child, "report_format");
+              if (report_format == NULL)
+                {
+                  g_warning ("%s: Param missing report format in '%s'\n",
+                             __FUNCTION__, config_path);
+                  g_free (type);
+                  goto fail;
+                }
+
+              value = entity_attribute (report_format, "id");
+              if (value == NULL)
+                {
+                  g_warning ("%s: Report format missing id in '%s'\n",
+                             __FUNCTION__, config_path);
+                  g_free (type);
+                  goto fail;
+                }
+            }
+
+          /* Add or update the param. */
+
+          quoted_name = g_strstrip (sql_quote (name));
+          quoted_value = g_strstrip (sql_quote (value));
+          quoted_fallback = g_strstrip (sql_quote (fallback));
+
+          g_debug ("%s: param: %s", __FUNCTION__, name);
+
+          if (sql_int ("SELECT count (*) FROM report_format_params"
+                       " WHERE name = '%s'"
+                       " AND report_format = (SELECT id FROM report_formats"
+                       "                      WHERE uuid = '%s');",
+                       quoted_name,
+                       quoted_uuid))
+            sql ("UPDATE report_format_params"
+                 " SET type = %u, value = '%s', type_min = %s,"
+                 "     type_max = %s, type_regex = '', fallback = '%s'"
+                 " WHERE name = '%s'"
+                 " AND report_format = (SELECT id FROM report_formats"
+                 "                      WHERE uuid = '%s');",
+                 report_format_param_type_from_name (type),
+                 quoted_value,
+                 min ? min : "NULL",
+                 max ? max : "NULL",
+                 quoted_fallback,
+                 quoted_name,
+                 quoted_uuid);
+          else
+            sql ("INSERT INTO report_format_params"
+                 " (report_format, name, type, value, type_min, type_max,"
+                 "  type_regex, fallback)"
+                 " VALUES"
+                 " ((SELECT id FROM report_formats WHERE uuid = '%s'),"
+                 "  '%s', %u, '%s', %s, %s, '', '%s');",
+                 quoted_uuid,
+                 quoted_name,
+                 report_format_param_type_from_name (type),
+                 quoted_value,
+                 min ? min : "NULL",
+                 max ? max : "NULL",
+                 quoted_fallback);
+
+          g_free (type);
+
+          if (opts)
+            {
+              int index;
+
+              index = 0;
+              while (opts && (index < opts->len))
+                {
+                  gchar *quoted_option;
+                  quoted_option = sql_quote (g_ptr_array_index (opts, index++));
+                  sql ("INSERT INTO report_format_param_options"
+                       " (report_format_param, value)"
+                       " VALUES ((SELECT id FROM report_format_params"
+                       "          WHERE name = '%s'"
+                       "          AND report_format = (SELECT id"
+                       "                               FROM report_formats"
+                       "                               WHERE uuid = '%s')),"
+                       "         '%s');",
+                       quoted_name,
+                       quoted_uuid,
+                       quoted_option);
+                  g_free (quoted_option);
+                }
+
+              /* array_free would try free the elements too. */
+              g_ptr_array_free (opts, TRUE);
+            }
+
+          g_free (quoted_name);
+          g_free (quoted_value);
+          g_free (quoted_fallback);
+        }
+      entities = next_entities (entities);
+    }
+  /* TODO Remove any that were not in list (by name).  Just delete all first?  but want to preserve mod time. */
+
+  free_entity (entity);
+  g_free (quoted_uuid);
+  g_free (config_path);
+  return 0;
+
+ fail:
+  g_free (quoted_uuid);
+  g_free (config_path);
+  free_entity (entity);
+  return -1;
 }
 
 
