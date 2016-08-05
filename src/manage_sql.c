@@ -6204,15 +6204,16 @@ static void
 resource_set_predefined (const gchar *type, resource_t resource, int enable)
 {
   assert (valid_type (type));
+
+  sql ("DELETE FROM resources_predefined"
+       " WHERE resource_type = '%s'"
+       " AND resource = %llu;",
+       type,
+       resource);
+
   if (enable)
     sql ("INSERT into resources_predefined (resource_type, resource)"
          " VALUES ('%s', %llu);",
-         type,
-         resource);
-  else
-    sql ("DELETE FROM resources_predefined"
-         " WHERE resource_type = '%s'"
-         " AND resource = %llu;",
          type,
          resource);
 }
@@ -15046,6 +15047,8 @@ check_db_report_formats ()
   if (make_report_format_uuids_unique ())
     return -1;
 
+  /* Open the global report format dir. */
+
   path = predefined_report_format_dir (NULL);
 
   dir = g_dir_open (path, 0, &error);
@@ -15059,15 +15062,48 @@ check_db_report_formats ()
     }
   g_free (path);
 
+  /* Remember existing global report formats. */
+
   sql ("CREATE TEMPORARY TABLE report_formats_check"
        " AS SELECT id, uuid, name, owner, summary, description, extension,"
        "           content_type, signature, trust, trust_time, flags,"
        "           creation_time, modification_time"
-       "    FROM report_formats;");
+       "    FROM report_formats"
+       "    WHERE owner IS NULL;");
+
+  sql ("CREATE TEMPORARY TABLE report_format_params_check"
+       " AS SELECT id, name, report_format, type, value, type_min, type_max,"
+       "           type_regex, fallback"
+       "    FROM report_format_params"
+       "    WHERE report_format IN (SELECT id FROM report_formats"
+       "                            WHERE owner IS NULL);");
+
+  /* Create or update global report formats from disk. */
 
   while ((report_format_path = g_dir_read_name (dir)))
     check_report_format (report_format_path);
 
+  /* Remove previous global report formats that were not defined. */
+
+  sql ("DELETE FROM report_format_param_options"
+       " WHERE report_format_param"
+       "       IN (SELECT id FROM report_format_params"
+       "           WHERE report_format"
+       "                 IN (SELECT id FROM report_formats"
+       "                     WHERE uuid IN (SELECT uuid"
+       "                                    FROM report_formats_check)));");
+
+  sql ("DELETE FROM report_format_params"
+       " WHERE report_format IN (SELECT id FROM report_formats"
+       "                         WHERE uuid IN (SELECT uuid"
+       "                                        FROM report_formats_check));");
+
+  sql ("DELETE FROM report_formats"
+       " WHERE uuid IN (SELECT uuid FROM report_formats_check);");
+
+  /* Forget the old global report formats. */
+
+  sql ("DROP TABLE report_format_params_check;");
   sql ("DROP TABLE report_formats_check;");
 
   return 0;
@@ -49580,9 +49616,12 @@ check_report_format (const gchar *uuid)
   const char *name, *summary, *description, *extension, *content_type;
   entity_t entity, child, param;
   entities_t entities;
+  int update_mod_time;
+  report_format_t report_format;
 
   g_debug ("%s: uuid: %s", __FUNCTION__, uuid);
 
+  update_mod_time = 0;
   path = predefined_report_format_dir (uuid);
   g_debug ("%s: path: %s", __FUNCTION__, path);
   config_path = g_build_filename (path, "report_format.xml", NULL);
@@ -49675,8 +49714,6 @@ check_report_format (const gchar *uuid)
 
   /* Create or update the report format. */
 
-  // FIX delete existing predefined report formats that are not in dir
-
   if (sql_int ("SELECT count (*) FROM report_formats WHERE uuid = '%s';",
                quoted_uuid))
     {
@@ -49736,6 +49773,23 @@ check_report_format (const gchar *uuid)
   g_free (quoted_description);
   g_free (quoted_extension);
   g_free (quoted_content_type);
+
+  switch (sql_int64 (&report_format,
+                     "SELECT id FROM report_formats WHERE uuid = '%s';",
+                     quoted_uuid))
+    {
+      case 0:
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case 1:        /* Too few rows in result of query. */
+      case -1:
+        g_warning ("%s: Report format missing: %s\n",
+                   __FUNCTION__, uuid);
+        goto fail;
+    }
+
+  resource_set_predefined ("report_format", report_format, 1);
 
   /* Add the parameters from the parsed XML. */
 
@@ -49844,7 +49898,7 @@ check_report_format (const gchar *uuid)
                       goto fail;
                     }
 
-                  children = entity->entities;
+                  children = options->entities;
                   opts = make_array ();
                   while ((option = first_entity (children)))
                     {
@@ -49908,35 +49962,97 @@ check_report_format (const gchar *uuid)
                        "                      WHERE uuid = '%s');",
                        quoted_name,
                        quoted_uuid))
-            sql ("UPDATE report_format_params"
-                 " SET type = %u, value = '%s', type_min = %s,"
-                 "     type_max = %s, type_regex = '', fallback = '%s'"
-                 " WHERE name = '%s'"
-                 " AND report_format = (SELECT id FROM report_formats"
-                 "                      WHERE uuid = '%s');",
-                 report_format_param_type_from_name (type),
-                 quoted_value,
-                 min ? min : "NULL",
-                 max ? max : "NULL",
-                 quoted_fallback,
-                 quoted_name,
-                 quoted_uuid);
+            {
+              g_debug ("%s: param: %s: updating", __FUNCTION__, name);
+
+              sql ("UPDATE report_format_params"
+                   " SET type = %u, value = '%s', type_min = %s,"
+                   "     type_max = %s, type_regex = '', fallback = '%s'"
+                   " WHERE name = '%s'"
+                   " AND report_format = (SELECT id FROM report_formats"
+                   "                      WHERE uuid = '%s');",
+                   report_format_param_type_from_name (type),
+                   quoted_value,
+                   min ? min : "NULL",
+                   max ? max : "NULL",
+                   quoted_fallback,
+                   quoted_name,
+                   quoted_uuid);
+
+               /* If any value changed, update the modification time. */
+
+               if (sql_int
+                    ("SELECT"
+                     " EXISTS"
+                     "  (SELECT *"
+                     "   FROM report_format_params,"
+                     "        report_format_params_check"
+                     "   WHERE report_format_params.name = '%s'"
+                     "   AND report_format_params_check.name = '%s'"
+                     "   AND report_format_params.report_format"
+                     "       = report_format_params_check.report_format"
+                     "   AND (report_format_params.type"
+                     "        != report_format_params_check.type"
+                     "        OR report_format_params.value"
+                     "           != report_format_params_check.value"
+                     "        OR report_format_params.type_min"
+                     "           != report_format_params_check.type_min"
+                     "        OR report_format_params.type_max"
+                     "           != report_format_params_check.type_max"
+                     "        OR report_format_params.fallback"
+                     "           != report_format_params_check.fallback));",
+                     quoted_name,
+                     quoted_name))
+                 update_mod_time = 1;
+
+              /* Delete existing param options.
+               *
+               * Predefined report formats can't be modified so the options
+               * don't really matter, so don't worry about them for updating
+               * the modification time. */
+
+              sql ("DELETE FROM report_format_param_options"
+                   " WHERE report_format_param"
+                   "       IN (SELECT id FROM report_format_params"
+                   "           WHERE name = '%s'"
+                   "           AND report_format = (SELECT id"
+                   "                                FROM report_formats"
+                   "                                WHERE uuid = '%s'));",
+                   quoted_name,
+                   quoted_uuid);
+            }
           else
-            sql ("INSERT INTO report_format_params"
-                 " (report_format, name, type, value, type_min, type_max,"
-                 "  type_regex, fallback)"
-                 " VALUES"
-                 " ((SELECT id FROM report_formats WHERE uuid = '%s'),"
-                 "  '%s', %u, '%s', %s, %s, '', '%s');",
-                 quoted_uuid,
-                 quoted_name,
-                 report_format_param_type_from_name (type),
-                 quoted_value,
-                 min ? min : "NULL",
-                 max ? max : "NULL",
-                 quoted_fallback);
+            {
+              g_debug ("%s: param: %s: creating", __FUNCTION__, name);
+
+              sql ("INSERT INTO report_format_params"
+                   " (report_format, name, type, value, type_min, type_max,"
+                   "  type_regex, fallback)"
+                   " VALUES"
+                   " ((SELECT id FROM report_formats WHERE uuid = '%s'),"
+                   "  '%s', %u, '%s', %s, %s, '', '%s');",
+                   quoted_uuid,
+                   quoted_name,
+                   report_format_param_type_from_name (type),
+                   quoted_value,
+                   min ? min : "NULL",
+                   max ? max : "NULL",
+                   quoted_fallback);
+              update_mod_time = 1;
+            }
 
           g_free (type);
+
+          /* Keep this param. */
+
+          sql ("DELETE FROM report_format_params_check"
+               " WHERE report_format = (SELECT id FROM report_formats"
+               "                        WHERE uuid = '%s')"
+               " AND name = '%s';",
+               quoted_uuid,
+               quoted_name);
+
+          /* Add any options. */
 
           if (opts)
             {
@@ -49971,7 +50087,40 @@ check_report_format (const gchar *uuid)
         }
       entities = next_entities (entities);
     }
-  /* TODO Remove any that were not in list (by name).  Just delete all first?  but want to preserve mod time. */
+
+  /* Remove any params that were not defined by the XML. */
+
+  if (sql_int ("SELECT count (*)"
+               " FROM report_format_params_check"
+               " WHERE report_format = (SELECT id FROM report_formats"
+               "                        WHERE uuid = '%s')",
+               quoted_uuid))
+    {
+      sql ("DELETE FROM report_format_param_options"
+           " WHERE report_format_param"
+           "       IN (SELECT id FROM report_format_params_check"
+           "           WHERE report_format = (SELECT id FROM report_formats"
+           "                                  WHERE uuid = '%s'));",
+           quoted_uuid);
+      sql ("DELETE FROM report_format_params"
+           " WHERE id IN (SELECT id FROM report_format_params_check"
+           "              WHERE report_format = (SELECT id FROM report_formats"
+           "                                     WHERE uuid = '%s'));",
+           quoted_uuid);
+      update_mod_time = 1;
+    }
+
+  /* Update modification time if report format changed. */
+
+  if (update_mod_time)
+    sql ("UPDATE report_formats SET modification_time = m_now ()"
+         " WHERE uuid = '%s';",
+         quoted_uuid);
+
+  /* Keep this report format. */
+
+  sql ("DELETE FROM report_formats_check WHERE uuid = '%s';",
+       quoted_uuid);
 
   free_entity (entity);
   g_free (quoted_uuid);

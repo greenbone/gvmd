@@ -1,3 +1,13 @@
+2016-08-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (resource_set_predefined): Delete first, in case called
+	multiple times to enable.
+	(check_db_report_formats): Create temporary table to track param changes.
+	Delete old global report formats.
+	(check_report_formats): Update modification time if param changed.  Ensure
+	report format is marked predefined.  Correct entity used to get options.
+	Remove old params.
+
 2016-08-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (check_db_report_format): Create temporary table to
