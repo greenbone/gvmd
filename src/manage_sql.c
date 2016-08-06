@@ -15119,6 +15119,10 @@ check_db_report_formats ()
        "                         WHERE uuid IN (SELECT uuid"
        "                                        FROM report_formats_check));");
 
+  sql ("DELETE FROM resources_predefined"
+       " WHERE resource_type = 'report_format'"
+       " AND resource IN (SELECT id FROM report_formats_check);");
+
   sql ("DELETE FROM report_formats"
        " WHERE uuid IN (SELECT uuid FROM report_formats_check);");
 

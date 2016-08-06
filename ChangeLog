@@ -1,5 +1,10 @@
 2016-08-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (check_db_report_formats): Remove report formats from
+	resources_predefined too.
+
+2016-08-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (check_db_report_formats): Warn when removing a report
 	format that is in use by an alert.
 
