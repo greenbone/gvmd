@@ -1,5 +1,10 @@
 2016-08-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (check_report_format_parse): New function.
+	(check_report_format): Move property extraction to new function.
+
+2016-08-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (check_report_format_create)
 	(check_report_format_add_params): New functions.
 	(check_report_format): Move large parts out to new functions.

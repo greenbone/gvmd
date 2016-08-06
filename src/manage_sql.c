@@ -50052,6 +50052,72 @@ check_report_format_add_params (const gchar *quoted_uuid, const gchar *config_pa
 /**
  * @brief Setup a predefined report format from disk.
  *
+ * @param[in]  entity        XML.
+ * @param[in]  config_path   Config path.
+ * @param[in]  name          Name.
+ * @param[in]  summary       Summary.
+ * @param[in]  description   Description.
+ * @param[in]  extension     Extension.
+ * @param[in]  content_type  Content type.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+check_report_format_parse (entity_t entity, const char *config_path,
+                           const char **name, const char **summary,
+                           const char **description, const char **extension,
+                           const char **content_type)
+{
+  entity_t child;
+
+  child = entity_child (entity, "name");
+  if (child == NULL)
+    {
+      g_warning ("%s: Missing name in '%s'\n", __FUNCTION__, config_path);
+      return -1;
+    }
+  *name = entity_text (child);
+
+  child = entity_child (entity, "summary");
+  if (child == NULL)
+    {
+      g_warning ("%s: Missing summary in '%s'\n", __FUNCTION__, config_path);
+      return -1;
+    }
+  *summary = entity_text (child);
+
+  child = entity_child (entity, "description");
+  if (child == NULL)
+    {
+      g_warning ("%s: Missing description in '%s'\n",
+                 __FUNCTION__, config_path);
+      return -1;
+    }
+  *description = entity_text (child);
+
+  child = entity_child (entity, "extension");
+  if (child == NULL)
+    {
+      g_warning ("%s: Missing extension in '%s'\n", __FUNCTION__, config_path);
+      return -1;
+    }
+  *extension = entity_text (child);
+
+  child = entity_child (entity, "content_type");
+  if (child == NULL)
+    {
+      g_warning ("%s: Missing content_type in '%s'\n",
+                 __FUNCTION__, config_path);
+      return -1;
+    }
+  *content_type = entity_text (child);
+
+  return 0;
+}
+
+/**
+ * @brief Setup a predefined report format from disk.
+ *
  * @param[in]  uuid  UUID of report format.
  *
  * @return 0 success, -1 error.
@@ -50063,7 +50129,7 @@ check_report_format (const gchar *uuid)
   gchar *path, *config_path, *xml, *quoted_uuid;
   gsize xml_len;
   const char *name, *summary, *description, *extension, *content_type;
-  entity_t entity, child;
+  entity_t entity;
   int update_mod_time;
   report_format_t report_format;
 
@@ -50101,57 +50167,13 @@ check_report_format (const gchar *uuid)
 
   /* Get the report format properties from the XML. */
 
-  child = entity_child (entity, "name");
-  if (child == NULL)
+  if (check_report_format_parse (entity, config_path, &name, &summary,
+                                 &description, &extension, &content_type))
     {
-      g_warning ("%s: Missing name in '%s'\n", __FUNCTION__, config_path);
       g_free (config_path);
       free_entity (entity);
       return -1;
     }
-  name = entity_text (child);
-
-  child = entity_child (entity, "summary");
-  if (child == NULL)
-    {
-      g_warning ("%s: Missing summary in '%s'\n", __FUNCTION__, config_path);
-      g_free (config_path);
-      free_entity (entity);
-      return -1;
-    }
-  summary = entity_text (child);
-
-  child = entity_child (entity, "description");
-  if (child == NULL)
-    {
-      g_warning ("%s: Missing description in '%s'\n",
-                 __FUNCTION__, config_path);
-      g_free (config_path);
-      free_entity (entity);
-      return -1;
-    }
-  description = entity_text (child);
-
-  child = entity_child (entity, "extension");
-  if (child == NULL)
-    {
-      g_warning ("%s: Missing extension in '%s'\n", __FUNCTION__, config_path);
-      g_free (config_path);
-      free_entity (entity);
-      return -1;
-    }
-  extension = entity_text (child);
-
-  child = entity_child (entity, "content_type");
-  if (child == NULL)
-    {
-      g_warning ("%s: Missing content_type in '%s'\n",
-                 __FUNCTION__, config_path);
-      g_free (config_path);
-      free_entity (entity);
-      return -1;
-    }
-  content_type = entity_text (child);
 
   quoted_uuid = sql_quote (uuid);
 
@@ -50166,6 +50188,9 @@ check_report_format (const gchar *uuid)
   if (check_report_format_add_params (quoted_uuid, config_path, entity,
                                       &update_mod_time))
     goto fail;
+
+  free_entity (entity);
+  g_free (config_path);
 
   /* Remove any params that were not defined by the XML. */
 
@@ -50201,9 +50226,7 @@ check_report_format (const gchar *uuid)
   sql ("DELETE FROM report_formats_check WHERE uuid = '%s';",
        quoted_uuid);
 
-  free_entity (entity);
   g_free (quoted_uuid);
-  g_free (config_path);
   return 0;
 
  fail:
