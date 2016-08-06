@@ -1,3 +1,8 @@
+2016-08-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (check_db_report_formats): Warn when removing a report
+	format that is in use by an alert.
+
 2016-08-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (resource_set_predefined): Delete first, in case called

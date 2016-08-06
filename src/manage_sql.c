@@ -15041,6 +15041,7 @@ check_db_report_formats ()
   GDir *dir;
   gchar *path;
   const gchar *report_format_path;
+  iterator_t report_formats;
 
   /* Bring report format UUIDs in database up to date. */
   update_report_format_uuids ();
@@ -15084,6 +15085,26 @@ check_db_report_formats ()
     check_report_format (report_format_path);
 
   /* Remove previous global report formats that were not defined. */
+
+  init_iterator (&report_formats,
+                 "SELECT id, uuid, name FROM report_formats"
+                 " WHERE uuid IN (SELECT uuid FROM report_formats_check)"
+                 " AND (EXISTS (SELECT * FROM alert_method_data_trash"
+                 "              WHERE data = report_formats.uuid"
+                 "              AND (name = 'notice_attach_format'"
+                 "                   OR name = 'notice_report_format'))"
+                 "      OR EXISTS (SELECT * FROM alert_method_data"
+                 "                 WHERE data = report_formats.uuid"
+                 "                 AND (name = 'notice_attach_format'"
+                 "                      OR name = 'notice_report_format')));");
+  while (next (&report_formats))
+    g_warning
+     ("Removing old report format %s (%s) which is in use by an alert.\n"
+      "Alert will fallback to TXT report format (%s), if TXT exists.",
+      iterator_string (&report_formats, 2),
+      iterator_string (&report_formats, 1),
+      "a3810a62-1f62-11e1-9219-406186ea4fc5");
+  cleanup_iterator (&report_formats);
 
   sql ("DELETE FROM report_format_param_options"
        " WHERE report_format_param"
