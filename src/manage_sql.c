@@ -49624,6 +49624,432 @@ manage_modify_report_format (GSList *log_config, const gchar *database,
 }
 
 /**
+ * @brief Create or update report format for check_report_format.
+ *
+ * @param[in]  quoted_uuid    UUID of report format, quoted for SQL.
+ * @param[in]  name           Name.
+ * @param[in]  summary        Summary.
+ * @param[in]  description    Description.
+ * @param[in]  extension      Extension.
+ * @param[in]  content_type   Content type.
+ * @param[out] report_format  Created report format.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+check_report_format_create (const gchar *quoted_uuid, const gchar *name,
+                            const gchar *summary, const gchar *description,
+                            const gchar *extension, const gchar *content_type,
+                            report_format_t *report_format)
+{
+  gchar *quoted_name, *quoted_summary, *quoted_description;
+  gchar *quoted_extension, *quoted_content_type;
+
+  quoted_name = sql_quote (name);
+  quoted_summary = sql_quote (summary);
+  quoted_description = sql_quote (description);
+  quoted_extension = sql_quote (extension);
+  quoted_content_type = sql_quote (content_type);
+
+  if (sql_int ("SELECT count (*) FROM report_formats WHERE uuid = '%s';",
+               quoted_uuid))
+    {
+      sql ("UPDATE report_formats"
+           " SET owner = NULL, name = '%s', summary = '%s', description = '%s',"
+           "     extension = '%s', content_type = '%s', signature = '',"
+           "     trust = %i, trust_time = %i, flags = %llu"
+           " WHERE uuid = '%s';",
+           g_strstrip (quoted_name),
+           g_strstrip (quoted_summary),
+           g_strstrip (quoted_description),
+           g_strstrip (quoted_extension),
+           g_strstrip (quoted_content_type),
+           TRUST_YES,
+           time (NULL),
+           (long long int) REPORT_FORMAT_FLAG_ACTIVE,
+           quoted_uuid);
+
+      sql ("UPDATE report_formats SET modification_time = m_now ()"
+           " WHERE id"
+           " IN (SELECT report_formats.id"
+           "     FROM report_formats, report_formats_check"
+           "     WHERE report_formats.uuid = '%s'"
+           "     AND report_formats.id = report_formats_check.id"
+           "     AND (report_formats.owner != report_formats_check.owner"
+           "          OR report_formats.name != report_formats_check.name"
+           "          OR report_formats.summary != report_formats_check.summary"
+           "          OR report_formats.description"
+           "             != report_formats_check.description"
+           "          OR report_formats.extension"
+           "             != report_formats_check.extension"
+           "          OR report_formats.content_type"
+           "             != report_formats_check.content_type"
+           "          OR report_formats.trust != report_formats_check.trust"
+           "          OR report_formats.flags != report_formats_check.flags));",
+           quoted_uuid);
+    }
+  else
+    sql ("INSERT INTO report_formats"
+         " (uuid, name, owner, summary, description, extension, content_type,"
+         "  signature, trust, trust_time, flags, creation_time,"
+         "  modification_time)"
+         " VALUES ('%s', '%s', NULL, '%s', '%s', '%s', '%s', '', %i, %i, %i,"
+         "         m_now (), m_now ());",
+         quoted_uuid,
+         g_strstrip (quoted_name),
+         g_strstrip (quoted_summary),
+         g_strstrip (quoted_description),
+         g_strstrip (quoted_extension),
+         g_strstrip (quoted_content_type),
+         TRUST_YES,
+         time (NULL),
+         (long long int) REPORT_FORMAT_FLAG_ACTIVE);
+
+  g_free (quoted_name);
+  g_free (quoted_summary);
+  g_free (quoted_description);
+  g_free (quoted_extension);
+  g_free (quoted_content_type);
+
+  switch (sql_int64 (report_format,
+                     "SELECT id FROM report_formats WHERE uuid = '%s';",
+                     quoted_uuid))
+    {
+      case 0:
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case 1:        /* Too few rows in result of query. */
+      case -1:
+        g_warning ("%s: Report format missing: %s\n",
+                   __FUNCTION__, quoted_uuid);
+        return -1;
+    }
+
+  resource_set_predefined ("report_format", *report_format, 1);
+
+  return 0;
+}
+
+/**
+ * @brief Add params for check_report_format.
+ *
+ * @param[in]  quoted_uuid      UUID of report format, quoted.
+ * @param[in]  config_path      Config path.
+ * @param[in]  entity           Parsed XML.
+ * @param[out] update_mod_time  Whether to update modification time.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+check_report_format_add_params (const gchar *quoted_uuid, const gchar *config_path,
+                                entity_t entity, int *update_mod_time)
+{
+  entities_t entities;
+  entity_t param;
+
+  entities = entity->entities;
+  while ((param = first_entity (entities)))
+    {
+      g_debug ("%s: possible param: %s", __FUNCTION__, entity_name (param));
+
+      if (strcmp (entity_name (param), "param") == 0)
+        {
+          const char *name, *value, *fallback;
+          gchar *quoted_name, *quoted_value, *quoted_fallback, *type;
+          const char *min, *max;
+          array_t *opts;
+          entity_t child;
+
+          opts = NULL;
+          min = max = NULL;
+
+          child = entity_child (param, "name");
+          if (child == NULL)
+            {
+              g_warning ("%s: Param missing name in '%s'\n",
+                         __FUNCTION__, config_path);
+              return -1;
+            }
+          name = entity_text (child);
+
+          child = entity_child (param, "default");
+          if (child == NULL)
+            {
+              g_warning ("%s: Param missing default in '%s'\n",
+                         __FUNCTION__, config_path);
+              return -1;
+            }
+          fallback = entity_text (child);
+
+          child = entity_child (param, "type");
+          if (child == NULL)
+            {
+              g_warning ("%s: Param missing type in '%s'\n",
+                         __FUNCTION__, config_path);
+              return -1;
+            }
+          type = g_strstrip (g_strdup (entity_text (child)));
+          if (report_format_param_type_from_name (type)
+              == REPORT_FORMAT_PARAM_TYPE_ERROR)
+            {
+              g_warning ("%s: Error in param type in '%s'\n",
+                         __FUNCTION__, config_path);
+              return -1;
+            }
+
+          if (strcmp (type, "report_format_list"))
+            {
+              entity_t bound;
+
+              bound = entity_child (child, "min");
+              if (bound && strlen (entity_text (bound)))
+                {
+                  long long int number;
+                  char *end;
+
+                  min = entity_text (bound);
+                  number = strtoll (min, &end, 0);
+                  if (*end != '\0'
+                      || number == LLONG_MAX
+                      || number == LLONG_MIN)
+                    {
+                      g_warning ("%s: Failed to parse min in '%s'\n",
+                                 __FUNCTION__, config_path);
+                      g_free (type);
+                      return -1;
+                    }
+                }
+
+              bound = entity_child (child, "max");
+              if (bound && strlen (entity_text (bound)))
+                {
+                  long long int number;
+                  char *end;
+
+                  max = entity_text (bound);
+                  number = strtoll (max, &end, 0);
+                  if (*end != '\0'
+                      || number == LLONG_MAX
+                      || number == LLONG_MIN)
+                    {
+                      g_warning ("%s: Failed to parse max in '%s'\n",
+                                 __FUNCTION__, config_path);
+                      g_free (type);
+                      return -1;
+                    }
+                }
+
+              if (strcmp (type, "selection") == 0)
+                {
+                  entity_t options, option;
+                  entities_t children;
+
+                  options = entity_child (child, "options");
+                  if (options == NULL)
+                    {
+                      g_warning ("%s: Selection missing options in '%s'\n",
+                                 __FUNCTION__, config_path);
+                      g_free (type);
+                      return -1;
+                    }
+
+                  children = options->entities;
+                  opts = make_array ();
+                  while ((option = first_entity (children)))
+                    {
+                      array_add (opts, entity_text (option));
+                      children = next_entities (children);
+                    }
+                }
+
+              child = entity_child (param, "value");
+              if (child == NULL)
+                {
+                  g_warning ("%s: Param missing value in '%s'\n",
+                             __FUNCTION__, config_path);
+                  g_free (type);
+                  return -1;
+                }
+              value = entity_text (child);
+
+            }
+          else
+            {
+              entity_t report_format;
+
+              child = entity_child (param, "value");
+              if (child == NULL)
+                {
+                  g_warning ("%s: Param missing value in '%s'\n",
+                             __FUNCTION__, config_path);
+                  g_free (type);
+                  return -1;
+                }
+
+              report_format = entity_child (child, "report_format");
+              if (report_format == NULL)
+                {
+                  g_warning ("%s: Param missing report format in '%s'\n",
+                             __FUNCTION__, config_path);
+                  g_free (type);
+                  return -1;
+                }
+
+              value = entity_attribute (report_format, "id");
+              if (value == NULL)
+                {
+                  g_warning ("%s: Report format missing id in '%s'\n",
+                             __FUNCTION__, config_path);
+                  g_free (type);
+                  return -1;
+                }
+            }
+
+          /* Add or update the param. */
+
+          quoted_name = g_strstrip (sql_quote (name));
+          quoted_value = g_strstrip (sql_quote (value));
+          quoted_fallback = g_strstrip (sql_quote (fallback));
+
+          g_debug ("%s: param: %s", __FUNCTION__, name);
+
+          if (sql_int ("SELECT count (*) FROM report_format_params"
+                       " WHERE name = '%s'"
+                       " AND report_format = (SELECT id FROM report_formats"
+                       "                      WHERE uuid = '%s');",
+                       quoted_name,
+                       quoted_uuid))
+            {
+              g_debug ("%s: param: %s: updating", __FUNCTION__, name);
+
+              sql ("UPDATE report_format_params"
+                   " SET type = %u, value = '%s', type_min = %s,"
+                   "     type_max = %s, type_regex = '', fallback = '%s'"
+                   " WHERE name = '%s'"
+                   " AND report_format = (SELECT id FROM report_formats"
+                   "                      WHERE uuid = '%s');",
+                   report_format_param_type_from_name (type),
+                   quoted_value,
+                   min ? min : "NULL",
+                   max ? max : "NULL",
+                   quoted_fallback,
+                   quoted_name,
+                   quoted_uuid);
+
+               /* If any value changed, update the modification time. */
+
+               if (sql_int
+                    ("SELECT"
+                     " EXISTS"
+                     "  (SELECT *"
+                     "   FROM report_format_params,"
+                     "        report_format_params_check"
+                     "   WHERE report_format_params.name = '%s'"
+                     "   AND report_format_params_check.name = '%s'"
+                     "   AND report_format_params.report_format"
+                     "       = report_format_params_check.report_format"
+                     "   AND (report_format_params.type"
+                     "        != report_format_params_check.type"
+                     "        OR report_format_params.value"
+                     "           != report_format_params_check.value"
+                     "        OR report_format_params.type_min"
+                     "           != report_format_params_check.type_min"
+                     "        OR report_format_params.type_max"
+                     "           != report_format_params_check.type_max"
+                     "        OR report_format_params.fallback"
+                     "           != report_format_params_check.fallback));",
+                     quoted_name,
+                     quoted_name))
+                 *update_mod_time = 1;
+
+              /* Delete existing param options.
+               *
+               * Predefined report formats can't be modified so the options
+               * don't really matter, so don't worry about them for updating
+               * the modification time. */
+
+              sql ("DELETE FROM report_format_param_options"
+                   " WHERE report_format_param"
+                   "       IN (SELECT id FROM report_format_params"
+                   "           WHERE name = '%s'"
+                   "           AND report_format = (SELECT id"
+                   "                                FROM report_formats"
+                   "                                WHERE uuid = '%s'));",
+                   quoted_name,
+                   quoted_uuid);
+            }
+          else
+            {
+              g_debug ("%s: param: %s: creating", __FUNCTION__, name);
+
+              sql ("INSERT INTO report_format_params"
+                   " (report_format, name, type, value, type_min, type_max,"
+                   "  type_regex, fallback)"
+                   " VALUES"
+                   " ((SELECT id FROM report_formats WHERE uuid = '%s'),"
+                   "  '%s', %u, '%s', %s, %s, '', '%s');",
+                   quoted_uuid,
+                   quoted_name,
+                   report_format_param_type_from_name (type),
+                   quoted_value,
+                   min ? min : "NULL",
+                   max ? max : "NULL",
+                   quoted_fallback);
+              *update_mod_time = 1;
+            }
+
+          g_free (type);
+
+          /* Keep this param. */
+
+          sql ("DELETE FROM report_format_params_check"
+               " WHERE report_format = (SELECT id FROM report_formats"
+               "                        WHERE uuid = '%s')"
+               " AND name = '%s';",
+               quoted_uuid,
+               quoted_name);
+
+          /* Add any options. */
+
+          if (opts)
+            {
+              int index;
+
+              index = 0;
+              while (opts && (index < opts->len))
+                {
+                  gchar *quoted_option;
+                  quoted_option = sql_quote (g_ptr_array_index (opts, index++));
+                  sql ("INSERT INTO report_format_param_options"
+                       " (report_format_param, value)"
+                       " VALUES ((SELECT id FROM report_format_params"
+                       "          WHERE name = '%s'"
+                       "          AND report_format = (SELECT id"
+                       "                               FROM report_formats"
+                       "                               WHERE uuid = '%s')),"
+                       "         '%s');",
+                       quoted_name,
+                       quoted_uuid,
+                       quoted_option);
+                  g_free (quoted_option);
+                }
+
+              /* array_free would try free the elements too. */
+              g_ptr_array_free (opts, TRUE);
+            }
+
+          g_free (quoted_name);
+          g_free (quoted_value);
+          g_free (quoted_fallback);
+        }
+      entities = next_entities (entities);
+    }
+
+  return 0;
+}
+
+/**
  * @brief Setup a predefined report format from disk.
  *
  * @param[in]  uuid  UUID of report format.
@@ -49634,13 +50060,10 @@ static int
 check_report_format (const gchar *uuid)
 {
   GError *error;
-  gchar *path, *config_path, *xml, *quoted_name, *quoted_summary;
-  gchar *quoted_description, *quoted_extension, *quoted_content_type;
-  gchar *quoted_uuid;
+  gchar *path, *config_path, *xml, *quoted_uuid;
   gsize xml_len;
   const char *name, *summary, *description, *extension, *content_type;
-  entity_t entity, child, param;
-  entities_t entities;
+  entity_t entity, child;
   int update_mod_time;
   report_format_t report_format;
 
@@ -49731,387 +50154,18 @@ check_report_format (const gchar *uuid)
   content_type = entity_text (child);
 
   quoted_uuid = sql_quote (uuid);
-  quoted_name = sql_quote (name);
-  quoted_summary = sql_quote (summary);
-  quoted_description = sql_quote (description);
-  quoted_extension = sql_quote (extension);
-  quoted_content_type = sql_quote (content_type);
 
   /* Create or update the report format. */
 
-  if (sql_int ("SELECT count (*) FROM report_formats WHERE uuid = '%s';",
-               quoted_uuid))
-    {
-      sql ("UPDATE report_formats"
-           " SET owner = NULL, name = '%s', summary = '%s', description = '%s',"
-           "     extension = '%s', content_type = '%s', signature = '',"
-           "     trust = %i, trust_time = %i, flags = %llu"
-           " WHERE uuid = '%s';",
-           g_strstrip (quoted_name),
-           g_strstrip (quoted_summary),
-           g_strstrip (quoted_description),
-           g_strstrip (quoted_extension),
-           g_strstrip (quoted_content_type),
-           TRUST_YES,
-           time (NULL),
-           (long long int) REPORT_FORMAT_FLAG_ACTIVE,
-           quoted_uuid);
+  if (check_report_format_create (quoted_uuid, name, summary, description,
+                                  extension, content_type, &report_format))
+    goto fail;
 
-      sql ("UPDATE report_formats SET modification_time = m_now ()"
-           " WHERE id"
-           " IN (SELECT report_formats.id"
-           "     FROM report_formats, report_formats_check"
-           "     WHERE report_formats.uuid = '%s'"
-           "     AND report_formats.id = report_formats_check.id"
-           "     AND (report_formats.owner != report_formats_check.owner"
-           "          OR report_formats.name != report_formats_check.name"
-           "          OR report_formats.summary != report_formats_check.summary"
-           "          OR report_formats.description"
-           "             != report_formats_check.description"
-           "          OR report_formats.extension"
-           "             != report_formats_check.extension"
-           "          OR report_formats.content_type"
-           "             != report_formats_check.content_type"
-           "          OR report_formats.trust != report_formats_check.trust"
-           "          OR report_formats.flags != report_formats_check.flags));",
-           quoted_uuid);
-    }
-  else
-    sql ("INSERT INTO report_formats"
-         " (uuid, name, owner, summary, description, extension, content_type,"
-         "  signature, trust, trust_time, flags, creation_time,"
-         "  modification_time)"
-         " VALUES ('%s', '%s', NULL, '%s', '%s', '%s', '%s', '', %i, %i, %i,"
-         "         m_now (), m_now ());",
-         quoted_uuid,
-         g_strstrip (quoted_name),
-         g_strstrip (quoted_summary),
-         g_strstrip (quoted_description),
-         g_strstrip (quoted_extension),
-         g_strstrip (quoted_content_type),
-         TRUST_YES,
-         time (NULL),
-         (long long int) REPORT_FORMAT_FLAG_ACTIVE);
+  /* Add or update the parameters from the parsed XML. */
 
-  g_free (quoted_name);
-  g_free (quoted_summary);
-  g_free (quoted_description);
-  g_free (quoted_extension);
-  g_free (quoted_content_type);
-
-  switch (sql_int64 (&report_format,
-                     "SELECT id FROM report_formats WHERE uuid = '%s';",
-                     quoted_uuid))
-    {
-      case 0:
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case 1:        /* Too few rows in result of query. */
-      case -1:
-        g_warning ("%s: Report format missing: %s\n",
-                   __FUNCTION__, uuid);
-        goto fail;
-    }
-
-  resource_set_predefined ("report_format", report_format, 1);
-
-  /* Add the parameters from the parsed XML. */
-
-  entities = entity->entities;
-  while ((param = first_entity (entities)))
-    {
-      g_debug ("%s: possible param: %s", __FUNCTION__, entity_name (param));
-
-      if (strcmp (entity_name (param), "param") == 0)
-        {
-          const char *value, *fallback;
-          gchar *quoted_value, *quoted_fallback, *type;
-          const char *min, *max;
-          array_t *opts;
-
-          opts = NULL;
-          min = max = NULL;
-
-          child = entity_child (param, "name");
-          if (child == NULL)
-            {
-              g_warning ("%s: Param missing name in '%s'\n",
-                         __FUNCTION__, config_path);
-              goto fail;
-            }
-          name = entity_text (child);
-
-          child = entity_child (param, "default");
-          if (child == NULL)
-            {
-              g_warning ("%s: Param missing default in '%s'\n",
-                         __FUNCTION__, config_path);
-              goto fail;
-            }
-          fallback = entity_text (child);
-
-          child = entity_child (param, "type");
-          if (child == NULL)
-            {
-              g_warning ("%s: Param missing type in '%s'\n",
-                         __FUNCTION__, config_path);
-              goto fail;
-            }
-          type = g_strstrip (g_strdup (entity_text (child)));
-          if (report_format_param_type_from_name (type)
-              == REPORT_FORMAT_PARAM_TYPE_ERROR)
-            {
-              g_warning ("%s: Error in param type in '%s'\n",
-                         __FUNCTION__, config_path);
-              goto fail;
-            }
-
-          if (strcmp (type, "report_format_list"))
-            {
-              entity_t bound;
-
-              bound = entity_child (child, "min");
-              if (bound && strlen (entity_text (bound)))
-                {
-                  long long int number;
-                  char *end;
-
-                  min = entity_text (bound);
-                  number = strtoll (min, &end, 0);
-                  if (*end != '\0'
-                      || number == LLONG_MAX
-                      || number == LLONG_MIN)
-                    {
-                      g_warning ("%s: Failed to parse min in '%s'\n",
-                                 __FUNCTION__, config_path);
-                      g_free (type);
-                      goto fail;
-                    }
-                }
-
-              bound = entity_child (child, "max");
-              if (bound && strlen (entity_text (bound)))
-                {
-                  long long int number;
-                  char *end;
-
-                  max = entity_text (bound);
-                  number = strtoll (max, &end, 0);
-                  if (*end != '\0'
-                      || number == LLONG_MAX
-                      || number == LLONG_MIN)
-                    {
-                      g_warning ("%s: Failed to parse max in '%s'\n",
-                                 __FUNCTION__, config_path);
-                      g_free (type);
-                      goto fail;
-                    }
-                }
-
-              if (strcmp (type, "selection") == 0)
-                {
-                  entity_t options, option;
-                  entities_t children;
-
-                  options = entity_child (child, "options");
-                  if (options == NULL)
-                    {
-                      g_warning ("%s: Selection missing options in '%s'\n",
-                                 __FUNCTION__, config_path);
-                      g_free (type);
-                      goto fail;
-                    }
-
-                  children = options->entities;
-                  opts = make_array ();
-                  while ((option = first_entity (children)))
-                    {
-                      array_add (opts, entity_text (option));
-                      children = next_entities (children);
-                    }
-                }
-
-              child = entity_child (param, "value");
-              if (child == NULL)
-                {
-                  g_warning ("%s: Param missing value in '%s'\n",
-                             __FUNCTION__, config_path);
-                  goto fail;
-                }
-              value = entity_text (child);
-
-            }
-          else
-            {
-              entity_t report_format;
-
-              child = entity_child (param, "value");
-              if (child == NULL)
-                {
-                  g_warning ("%s: Param missing value in '%s'\n",
-                             __FUNCTION__, config_path);
-                  goto fail;
-                }
-
-              report_format = entity_child (child, "report_format");
-              if (report_format == NULL)
-                {
-                  g_warning ("%s: Param missing report format in '%s'\n",
-                             __FUNCTION__, config_path);
-                  g_free (type);
-                  goto fail;
-                }
-
-              value = entity_attribute (report_format, "id");
-              if (value == NULL)
-                {
-                  g_warning ("%s: Report format missing id in '%s'\n",
-                             __FUNCTION__, config_path);
-                  g_free (type);
-                  goto fail;
-                }
-            }
-
-          /* Add or update the param. */
-
-          quoted_name = g_strstrip (sql_quote (name));
-          quoted_value = g_strstrip (sql_quote (value));
-          quoted_fallback = g_strstrip (sql_quote (fallback));
-
-          g_debug ("%s: param: %s", __FUNCTION__, name);
-
-          if (sql_int ("SELECT count (*) FROM report_format_params"
-                       " WHERE name = '%s'"
-                       " AND report_format = (SELECT id FROM report_formats"
-                       "                      WHERE uuid = '%s');",
-                       quoted_name,
-                       quoted_uuid))
-            {
-              g_debug ("%s: param: %s: updating", __FUNCTION__, name);
-
-              sql ("UPDATE report_format_params"
-                   " SET type = %u, value = '%s', type_min = %s,"
-                   "     type_max = %s, type_regex = '', fallback = '%s'"
-                   " WHERE name = '%s'"
-                   " AND report_format = (SELECT id FROM report_formats"
-                   "                      WHERE uuid = '%s');",
-                   report_format_param_type_from_name (type),
-                   quoted_value,
-                   min ? min : "NULL",
-                   max ? max : "NULL",
-                   quoted_fallback,
-                   quoted_name,
-                   quoted_uuid);
-
-               /* If any value changed, update the modification time. */
-
-               if (sql_int
-                    ("SELECT"
-                     " EXISTS"
-                     "  (SELECT *"
-                     "   FROM report_format_params,"
-                     "        report_format_params_check"
-                     "   WHERE report_format_params.name = '%s'"
-                     "   AND report_format_params_check.name = '%s'"
-                     "   AND report_format_params.report_format"
-                     "       = report_format_params_check.report_format"
-                     "   AND (report_format_params.type"
-                     "        != report_format_params_check.type"
-                     "        OR report_format_params.value"
-                     "           != report_format_params_check.value"
-                     "        OR report_format_params.type_min"
-                     "           != report_format_params_check.type_min"
-                     "        OR report_format_params.type_max"
-                     "           != report_format_params_check.type_max"
-                     "        OR report_format_params.fallback"
-                     "           != report_format_params_check.fallback));",
-                     quoted_name,
-                     quoted_name))
-                 update_mod_time = 1;
-
-              /* Delete existing param options.
-               *
-               * Predefined report formats can't be modified so the options
-               * don't really matter, so don't worry about them for updating
-               * the modification time. */
-
-              sql ("DELETE FROM report_format_param_options"
-                   " WHERE report_format_param"
-                   "       IN (SELECT id FROM report_format_params"
-                   "           WHERE name = '%s'"
-                   "           AND report_format = (SELECT id"
-                   "                                FROM report_formats"
-                   "                                WHERE uuid = '%s'));",
-                   quoted_name,
-                   quoted_uuid);
-            }
-          else
-            {
-              g_debug ("%s: param: %s: creating", __FUNCTION__, name);
-
-              sql ("INSERT INTO report_format_params"
-                   " (report_format, name, type, value, type_min, type_max,"
-                   "  type_regex, fallback)"
-                   " VALUES"
-                   " ((SELECT id FROM report_formats WHERE uuid = '%s'),"
-                   "  '%s', %u, '%s', %s, %s, '', '%s');",
-                   quoted_uuid,
-                   quoted_name,
-                   report_format_param_type_from_name (type),
-                   quoted_value,
-                   min ? min : "NULL",
-                   max ? max : "NULL",
-                   quoted_fallback);
-              update_mod_time = 1;
-            }
-
-          g_free (type);
-
-          /* Keep this param. */
-
-          sql ("DELETE FROM report_format_params_check"
-               " WHERE report_format = (SELECT id FROM report_formats"
-               "                        WHERE uuid = '%s')"
-               " AND name = '%s';",
-               quoted_uuid,
-               quoted_name);
-
-          /* Add any options. */
-
-          if (opts)
-            {
-              int index;
-
-              index = 0;
-              while (opts && (index < opts->len))
-                {
-                  gchar *quoted_option;
-                  quoted_option = sql_quote (g_ptr_array_index (opts, index++));
-                  sql ("INSERT INTO report_format_param_options"
-                       " (report_format_param, value)"
-                       " VALUES ((SELECT id FROM report_format_params"
-                       "          WHERE name = '%s'"
-                       "          AND report_format = (SELECT id"
-                       "                               FROM report_formats"
-                       "                               WHERE uuid = '%s')),"
-                       "         '%s');",
-                       quoted_name,
-                       quoted_uuid,
-                       quoted_option);
-                  g_free (quoted_option);
-                }
-
-              /* array_free would try free the elements too. */
-              g_ptr_array_free (opts, TRUE);
-            }
-
-          g_free (quoted_name);
-          g_free (quoted_value);
-          g_free (quoted_fallback);
-        }
-      entities = next_entities (entities);
-    }
+  if (check_report_format_add_params (quoted_uuid, config_path, entity,
+                                      &update_mod_time))
+    goto fail;
 
   /* Remove any params that were not defined by the XML. */
 
