@@ -1,3 +1,8 @@
+2016-08-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* CMakeLists.txt: Remove executable permission from report_format.xml
+	files.
+
 2016-08-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (check_report_format_parse): New function.

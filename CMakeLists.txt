@@ -420,7 +420,7 @@ install (FILES src/report_formats/LaTeX/latex.xsl
 
 install (FILES src/report_formats/PDF/report_format.xml
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/c402cc3e-b531-11e1-9163-406186ea4fc5/
-         PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/report_formats/PDF/generate
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/c402cc3e-b531-11e1-9163-406186ea4fc5/
@@ -452,7 +452,7 @@ install (FILES src/report_formats/TXT/generate
 
 install (FILES src/report_formats/XML/report_format.xml
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/a994b278-1f62-11e1-96ac-406186ea4fc5/
-         PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/report_formats/XML/generate
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/a994b278-1f62-11e1-96ac-406186ea4fc5/
