@@ -1,5 +1,11 @@
 2016-08-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c (main): Do not apply --scanner-host and --scanner-port
+	to --rebuild and --update.  This is simpler, and consistent with other
+	options like --scanner-ca-pub.
+
+2016-08-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* CMakeLists.txt: Remove executable permission from report_format.xml
 	files.
 

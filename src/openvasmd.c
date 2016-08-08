@@ -1496,13 +1496,13 @@ main (int argc, char** argv)
           "Modify scanner <scanner-uuid> and exit.", "<scanner-uuid>" },
         { "scanner-name", '\0', 0, G_OPTION_ARG_STRING, &scanner_name, "Name for --modify-scanner.", "<name>" },
         { "scanner-host", '\0', 0, G_OPTION_ARG_STRING, &scanner_host,
-          "Scanner host for --create-scanner, --rebuild and --update. Default is " OPENVASSD_ADDRESS ".",
+          "Scanner host for --create-scanner and --modify-scanner. Default is " OPENVASSD_ADDRESS ".",
           "<scanner-host>" },
         { "scanner-port", '\0', 0, G_OPTION_ARG_STRING, &scanner_port,
-          "Scanner port for --create-scanner, --rebuild and --update. Default is " G_STRINGIFY (OPENVASSD_PORT) ".",
+          "Scanner port for --create-scanner and --modify-scanner. Default is " G_STRINGIFY (OPENVASSD_PORT) ".",
           "<scanner-port>" },
         { "scanner-type", '\0', 0, G_OPTION_ARG_STRING, &scanner_type,
-          "Scanner type for --create-scanner. Either 'OpenVAS' or 'OSP'.",
+          "Scanner type for --create-scanner and --mdoify-scanner. Either 'OpenVAS' or 'OSP'.",
           "<scanner-type>" },
         { "scanner-ca-pub", '\0', 0, G_OPTION_ARG_STRING, &scanner_ca_pub,
           "Scanner CA Certificate path for --[create|modify]-scanner.", "<scanner-ca-pub>" },
@@ -2259,31 +2259,9 @@ main (int argc, char** argv)
   /* Complete option processing. */
   if (update_nvt_cache || rebuild_nvt_cache)
     {
-      /* Run the NVT caching manager: update NVT cache and then exit. */
       int ret;
 
-      /* If --scanner-host or --scanner-port are provided, use these, instead of
-       * the default scanner.
-       */
-      if (scanner_host || scanner_port)
-        {
-          if (!scanner_host)
-            scanner_host = OPENVASSD_ADDRESS;
-          if (!scanner_port)
-            scanner_port = G_STRINGIFY (OPENVASSD_PORT);
-          if (openvas_scanner_set_address (scanner_host, atoi (scanner_port)))
-            {
-              g_warning ("Failed to set %s:%s as scanner\n", scanner_host,
-                         scanner_port);
-              return EXIT_FAILURE;
-            }
-
-          if (openvas_scanner_connect () || openvas_scanner_init (1))
-            {
-              openvas_scanner_close ();
-              return EXIT_FAILURE;
-            }
-        }
+      /* Run the NVT caching manager: update NVT cache and then exit. */
 
       if (progress)
         {
