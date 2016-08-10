@@ -3040,6 +3040,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>commands</c>
           <c>create_agent</c>
           <c>create_alert</c>
+          <c>create_asset</c>
           <c>create_config</c>
           <c>create_credential</c>
           <c>create_filter</c>
@@ -3060,6 +3061,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>create_user</c>
           <c>delete_agent</c>
           <c>delete_alert</c>
+          <c>delete_asset</c>
           <c>delete_config</c>
           <c>delete_credential</c>
           <c>delete_filter</c>
@@ -3147,6 +3149,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>sync_scap</c>
           <c>sync_cert</c>
           <c>test_alert</c>
+          <c>verify_agent</c>
+          <c>verify_report_format</c>
+          <c>verify_scanner</c>
         </or>
       </any>
     </pattern>
@@ -3168,6 +3173,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>commands</r>
             <r>create_agent</r>
             <r>create_alert</r>
+            <r>create_asset</r>
             <r>create_config</r>
             <r>create_credential</r>
             <r>create_filter</r>
@@ -3187,6 +3193,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>create_user</r>
             <r>delete_agent</r>
             <r>delete_alert</r>
+            <r>delete_asset</r>
             <r>delete_config</r>
             <r>delete_credential</r>
             <r>delete_filter</r>
@@ -3274,6 +3281,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>sync_scap</r>
             <r>sync_cert</r>
             <r>test_alert</r>
+            <r>verify_agent</r>
+            <r>verify_report_format</r>
+            <r>verify_scanner</r>
           </or>
         </any>
       </pattern>
@@ -3375,6 +3385,102 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <create_agent_response status="201" status_text="OK, resource created"
                                id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
         </create_agent_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>create_asset</name>
+    <summary>Create an asset</summary>
+    <description>
+      <p>
+        The client uses the create_asset command to create a new asset.
+      </p>
+    </description>
+    <pattern>
+      <or>
+        <e>asset</e>
+        <e>report</e>
+      </or>
+    </pattern>
+    <ele>
+      <name>asset</name>
+      <pattern>
+        <e>name</e>
+        <e>comment</e>
+      </pattern>
+      <ele>
+        <name>name</name>
+        <summary>A name for the asset</summary>
+        <pattern>
+          <t>name</t>
+        </pattern>
+      </ele>
+      <ele>
+        <name>comment</name>
+        <summary>A comment on the asset</summary>
+        <pattern>
+          text
+        </pattern>
+      </ele>
+    </ele>
+    <ele>
+      <name>report</name>
+      <summary>Report from which to import assets</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+        <e>filter</e>
+      </pattern>
+      <ele>
+        <name>filter</name>
+        <summary>Filter, for min_qod and apply_overrides</summary>
+        <pattern>
+          <e>term</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+      </ele>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Create a target, giving a host list</summary>
+      <request>
+        <create_target>
+          <name>All GNU/Linux machines</name>
+          <hosts>192.168.1.0/24</hosts>
+        </create_target>
+      </request>
+      <response>
+        <create_target_response status="201"
+                                status_text="OK, resource created"
+                                id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_target_response>
       </response>
     </example>
   </command>
@@ -5921,6 +6027,51 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </request>
       <response>
         <delete_agent_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>delete_asset</name>
+    <summary>Delete an asset</summary>
+    <description>
+      <p>
+        The client uses the delete_asset command to delete an existing asset.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>asset_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete a asset</summary>
+      <request>
+        <delete_asset asset_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </delete_asset>
+      </request>
+      <response>
+        <delete_asset_response status="200" status_text="OK"/>
       </response>
     </example>
   </command>
@@ -8562,7 +8713,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </response>
     </example>
   </command>
-
   <command>
     <name>get_aggregates</name>
     <summary>Get aggregates of various resources</summary>
@@ -9157,7 +9307,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </response>
     </example>
   </command>
-
   <command>
     <name>get_alerts</name>
     <summary>Get one or many alerts</summary>
@@ -22660,10 +22809,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             COMMANDS               Run a list of commands.
             CREATE_AGENT           Create an agent.
             CREATE_ALERT           Create an alert.
+            CREATE_ASSET           Create an asset.
             CREATE_CONFIG          Create a config.
+            CREATE_CREDENTIAL      Create a credential.
             CREATE_FILTER          Create a filter.
             CREATE_GROUP           Create a group.
-            CREATE_CREDENTIAL      Create a credential.
             CREATE_NOTE            Create a note.
             CREATE_OVERRIDE        Create an override.
             CREATE_PERMISSION      Create a permission.
@@ -22681,10 +22831,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             CREATE_USER            Create a new user.
             DELETE_AGENT           Delete an agent.
             DELETE_ALERT           Delete an alert.
+            DELETE_ASSET           Delete an asset.
             DELETE_CONFIG          Delete a config.
+            DELETE_CREDENTIAL      Delete a credential.
             DELETE_FILTER          Delete a filter.
             DELETE_GROUP           Delete a group.
-            DELETE_CREDENTIAL      Delete a credential.
             DELETE_NOTE            Delete a note.
             DELETE_OVERRIDE        Delete an override.
             DELETE_PERMISSION      Delete a permission.
@@ -22705,43 +22856,46 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             DESCRIBE_FEED          Get details of the NVT feed this Manager uses.
             DESCRIBE_SCAP          Get details of the SCAP feed this Manager uses.
             EMPTY_TRASHCAN         Empty the trashcan.
-            GET_AGENTS             Get one or many agents.
-            GET_ALERTS             Get one or many alerts.
-            GET_CONFIGS            Get one or many configs.
-            GET_FILTERS            Get one or many filters.
-            GET_GROUPS             Get one or many groups.
+            GET_AGENTS             Get all agents.
+            GET_AGGREGATES         Get aggregates of resources.
+            GET_ALERTS             Get all alerts.
+            GET_ASSETS             Get all assets.
+            GET_CONFIGS            Get all configs.
+            GET_CREDENTIALS        Get all credentials.
+            GET_FILTERS            Get all filters.
+            GET_GROUPS             Get all groups.
             GET_INFO               Get raw information for a given item.
-            GET_CREDENTIALS        Get one or many credentials.
-            GET_NOTES              Get one or many notes.
+            GET_NOTES              Get all notes.
             GET_NVTS               Get one or all available NVTs.
             GET_NVT_FAMILIES       Get a list of all NVT families.
             GET_NVT_FEED_VERSION   Get NVT feed version.
-            GET_OVERRIDES          Get one or many overrides.
-            GET_PERMISSIONS        Get one or many permissions.
-            GET_PORT_LISTS         Get one or many port lists.
+            GET_OVERRIDES          Get all overrides.
+            GET_PERMISSIONS        Get all permissions.
+            GET_PORT_LISTS         Get all port lists.
             GET_PREFERENCES        Get preferences for all available NVTs.
-            GET_REPORTS            Get one or many reports.
-            GET_REPORT_FORMATS     Get one or many report formats.
+            GET_REPORTS            Get all reports.
+            GET_REPORT_FORMATS     Get all report formats.
             GET_RESULTS            Get results.
-            GET_ROLES              Get one or many roles.
-            GET_SCANNERS           Get one or many scanners.
-            GET_SCHEDULES          Get one or many schedules.
-            GET_SETTINGS           Get one or many settings.
-            GET_SLAVES             Get one or many slaves.
-            GET_SYSTEM_REPORTS     Get one or many system reports.
-            GET_TAGS               Get one or many tags.
-            GET_TARGETS            Get one or many targets.
-            GET_TASKS              Get one or many tasks.
-            GET_USERS              Get one or many users.
+            GET_ROLES              Get all roles.
+            GET_SCANNERS           Get all scanners.
+            GET_SCHEDULES          Get all schedules.
+            GET_SETTINGS           Get all settings.
+            GET_SLAVES             Get all slaves.
+            GET_SYSTEM_REPORTS     Get all system reports.
+            GET_TAGS               Get all tags.
+            GET_TARGETS            Get all targets.
+            GET_TASKS              Get all tasks.
+            GET_USERS              Get all users.
             GET_VERSION            Get the OpenVAS Manager Protocol version.
             HELP                   Get this help text.
             MODIFY_AGENT           Modify an existing agent.
             MODIFY_ALERT           Modify an existing alert.
+            MODIFY_ASSET           Modify an existing asset.
             MODIFY_AUTH            Modify the authentication methods.
             MODIFY_CONFIG          Update an existing config.
+            MODIFY_CREDENTIAL      Modify an existing credential.
             MODIFY_FILTER          Modify an existing filter.
             MODIFY_GROUP           Modify an existing group.
-            MODIFY_CREDENTIAL      Modify an existing credential.
             MODIFY_NOTE            Modify an existing note.
             MODIFY_OVERRIDE        Modify an existing override.
             MODIFY_PERMISSION      Modify an existing permission.
@@ -22757,18 +22911,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             MODIFY_TARGET          Modify an existing target.
             MODIFY_TASK            Update an existing task.
             MODIFY_USER            Modify a user.
+            MOVE_TASK              Reassign a task to another slave, even while running.
             RESTORE                Restore a resource.
-            RESUME_TASK            Resume a task.
+            RESUME_TASK            Resume a stopped task.
             RUN_WIZARD             Run a wizard.
             START_TASK             Manually start an existing task.
             STOP_TASK              Stop a running task.
             SYNC_CERT              Synchronize with a CERT feed.
-            SYNC_FEED              Synchronize with an NVT feed.
             SYNC_CONFIG            Synchronize a config with a scanner.
+            SYNC_FEED              Synchronize with an NVT feed.
             SYNC_SCAP              Synchronize with a SCAP feed.
             TEST_ALERT             Run an alert.
             VERIFY_AGENT           Verify an agent.
             VERIFY_REPORT_FORMAT   Verify a report format.
+            VERIFY_SCANNER         Verify a scanner.
         </help_response>
       </response>
     </example>
@@ -25856,6 +26012,49 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </request>
       <response>
         <verify_report_format_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>verify_scanner</name>
+    <summary>Verify a scanner</summary>
+    <description>
+      <p>
+        The client uses the verify_scanner command to verify whether it is
+        possible to connect to an existing scanner.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>scanner_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Verify a scanner</summary>
+      <request>
+        <verify_scanner scanner_id="6acd0832-df90-11e4-b9d5-28d24461215b">
+        </verify_scanner>
+      </request>
+      <response>
+        <verify_scanner_response status="200" status_text="OK">
+          <version>OTP/2.0</version>
+        </verify_scanner_response>
       </response>
     </example>
   </command>

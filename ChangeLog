@@ -1,3 +1,10 @@
+2016-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml.in (help): Update example.
+	(create_asset, delete_asset, verify_scanner): New commands.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2016-08-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (slave_setup): Remove stray "if" from last commit.
