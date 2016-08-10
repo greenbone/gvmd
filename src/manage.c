@@ -3267,8 +3267,6 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
   openvas_server_close (*socket, *session);
   slave_session = NULL;
   slave_socket = NULL;
-  if (ret_fail == ret_giveup)
-
   return ret_fail;
 
  giveup:
