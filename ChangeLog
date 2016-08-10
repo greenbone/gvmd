@@ -1,3 +1,9 @@
+2016-08-10  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* tools/greenbone-scapdata-sync.in: Reverting a changed line from
+	path r25838 as it breaks the oval update (timestamp not identied
+	properly anymore).
+
 2016-08-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c (main): Do not apply --scanner-host and --scanner-port
