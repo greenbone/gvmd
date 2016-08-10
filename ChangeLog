@@ -1,5 +1,11 @@
 2016-08-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r25978.
+
+	* src/manage.c (slave_setup): Remove stray "if" from last commit.
+
+2016-08-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r25975.
 
 	* src/manage.c (slave_setup): If the connection succeeds for
