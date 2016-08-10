@@ -1,3 +1,12 @@
+2016-08-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r25975.
+
+	* src/manage.c (slave_setup): If the connection succeeds for
+	CREATE_TARGET but the command fails then put the task in Internal
+	Error and giveup.  This prevents the master task from hanging in
+	Requested when the slave allows fewer targets than the master.
+
 2016-07-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r25856.

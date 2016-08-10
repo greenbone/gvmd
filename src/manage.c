@@ -1910,11 +1910,13 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
              lsc_credential_t target_esxi_credential,
              report_t last_stopped_report)
 {
-  int ret, next_result;
+  const int ret_giveup = 3;
+  int ret, ret_fail, next_result;
   iterator_t credentials, targets;
+  omp_delete_opts_t del_opts;
 
-  omp_delete_opts_t del_opts = omp_delete_opts_ultimate_defaults;
-
+  ret_fail = 1;
+  del_opts = omp_delete_opts_ultimate_defaults;
   slave_session = session;
   slave_socket = socket;
 
@@ -2221,11 +2223,17 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           g_free (exclude_hosts_copy);
           g_free (alive_tests_copy);
           g_free (port_range);
-          if (ret)
+          if (ret == -2)
             goto fail_esxi_credential;
+          if (ret)
+            {
+              set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
+              ret_fail = ret_giveup;
+              goto fail_esxi_credential;
+            }
 
           if (omp_get_targets (session, slave_target_uuid, 0, 0, &get_targets))
-            goto fail_esxi_credential;
+            goto fail_target;
           child = entity_child (get_targets, "target");
           if (child == NULL)
             {
@@ -2686,16 +2694,20 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
   omp_delete_lsc_credential_ext (session, slave_ssh_credential_uuid, del_opts);
   free (slave_ssh_credential_uuid);
  fail:
+  g_debug ("   %s: fail (%i)\n", __FUNCTION__, ret_fail);
   openvas_server_close (*socket, *session);
   slave_session = NULL;
   slave_socket = NULL;
-  return 1;
+  if (ret_fail == ret_giveup)
+
+  return ret_fail;
 
  giveup:
+  g_debug ("   %s: giveup (%i)\n", __FUNCTION__, ret_giveup);
   openvas_server_close (*socket, *session);
   slave_session = NULL;
   slave_socket = NULL;
-  return 3;
+  return ret_giveup;
 }
 
 /**
