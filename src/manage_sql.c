@@ -16123,8 +16123,8 @@ int
 manage_scanner_set (const char *uuid)
 {
   scanner_t scanner = 0;
-  char *host, *ca_pub, *key_pub, *key_priv;
-  int ret, port, type;
+  char *host;
+  int type, ret = 0;
 
   if (uuid == NULL)
     return -1;
@@ -16146,21 +16146,32 @@ manage_scanner_set (const char *uuid)
       return -1;
     }
   host = scanner_host (scanner);
-  port = scanner_port (scanner);
-  if (openvas_scanner_set_address (host, port))
+  if (host && *host == '/')
     {
-      g_warning ("Failed to set %s:%d as scanner\n", host, port);
-      g_free (host);
-      return -1;
+      /* XXX: Workaround for unix socket case. Should add a flag. */
+      openvas_scanner_set_unix (host);
     }
-  ca_pub = scanner_ca_pub (scanner);
-  key_pub = scanner_key_pub (scanner);
-  key_priv = scanner_key_priv (scanner);
-  ret = set_certs (ca_pub, key_pub, key_priv);
+  else
+    {
+      char *ca_pub, *key_pub, *key_priv;
+      int port;
+
+      port = scanner_port (scanner);
+      if (openvas_scanner_set_address (host, port))
+        {
+          g_warning ("Failed to set %s:%d as scanner\n", host, port);
+          g_free (host);
+          return -1;
+        }
+      ca_pub = scanner_ca_pub (scanner);
+      key_pub = scanner_key_pub (scanner);
+      key_priv = scanner_key_priv (scanner);
+      ret = set_certs (ca_pub, key_pub, key_priv);
+      g_free (ca_pub);
+      g_free (key_pub);
+      g_free (key_priv);
+    }
   g_free (host);
-  g_free (ca_pub);
-  g_free (key_pub);
-  g_free (key_priv);
   if (ret)
     return -2;
   return 0;
@@ -45785,22 +45796,28 @@ verify_scanner (const char *scanner_id, char **version)
     }
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVAS)
     {
-      if (openvas_scanner_set_address (scanner_iterator_host (&scanner),
-                                       scanner_iterator_port (&scanner))
-          == -1)
-        {
-          cleanup_iterator (&scanner);
-          return 2;
-        }
+      const char *host = scanner_iterator_host (&scanner);
 
-      if (set_certs (scanner_iterator_ca_pub (&scanner),
-                     scanner_iterator_key_pub (&scanner),
-                     scanner_iterator_key_priv (&scanner)))
+      if (host && *host == '/')
+        openvas_scanner_set_unix (host);
+      else
         {
-          cleanup_iterator (&scanner);
-          return 3;
-        }
+          if (openvas_scanner_set_address (scanner_iterator_host (&scanner),
+                                           scanner_iterator_port (&scanner))
+              == -1)
+            {
+              cleanup_iterator (&scanner);
+              return 2;
+            }
 
+          if (set_certs (scanner_iterator_ca_pub (&scanner),
+                         scanner_iterator_key_pub (&scanner),
+                         scanner_iterator_key_priv (&scanner)))
+            {
+              cleanup_iterator (&scanner);
+              return 3;
+            }
+        }
       cleanup_iterator (&scanner);
       if (openvas_scanner_connected ())
         openvas_scanner_close ();

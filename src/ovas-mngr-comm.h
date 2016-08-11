@@ -27,7 +27,6 @@
 #define OPENVAS_MANGER_OVAS_MNGR_COMM_H
 
 #include <glib.h>
-#include <gnutls/gnutls.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
@@ -47,15 +46,6 @@ sendf_to_server (const char*, ...);
 
 int
 sendn_to_server (const void *, size_t);
-
-int
-connect_to_server (int, struct sockaddr_in*, gnutls_session_t*, gboolean);
-
-int
-write_string_to_server (gnutls_session_t*, char* const);
-
-int
-write_to_server_buffer (gnutls_session_t*);
 
 unsigned int
 to_server_buffer_space ();

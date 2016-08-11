@@ -4328,6 +4328,12 @@ scanner_setup (scanner_t scanner)
 
   assert (scanner);
   host = scanner_host (scanner);
+  if (host && *host == '/')
+    {
+      /* XXX: Workaround for unix socket case. Should add a flag. */
+      openvas_scanner_set_unix (host);
+      return 0;
+    }
   port = scanner_port (scanner);
   ret = openvas_scanner_set_address (host, port);
   g_free (host);

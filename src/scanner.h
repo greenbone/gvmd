@@ -82,6 +82,9 @@ openvas_scanner_is_loading ();
 int
 openvas_scanner_set_address (const char *, int);
 
+int
+openvas_scanner_set_unix (const char *);
+
 void
 openvas_scanner_set_certs (const char *, const char *, const char *);
 

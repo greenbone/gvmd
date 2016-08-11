@@ -34,6 +34,7 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/stat.h>
+#include <sys/un.h>
 #include <fcntl.h>
 
 #include <openvas/misc/openvas_server.h>
@@ -52,6 +53,7 @@ struct sockaddr_in openvas_scanner_address;
 char *openvas_scanner_ca_pub = NULL;
 char *openvas_scanner_key_pub = NULL;
 char *openvas_scanner_key_priv = NULL;
+char *openvas_scanner_unix_path = NULL;
 
 /**
  * @brief Buffer of input from the scanner.
@@ -78,6 +80,147 @@ buffer_size_t from_scanner_size = 1048576;
  */
 buffer_size_t from_scanner_max_size = 1073741824;
 
+/* XXX: ovas-mngr-comm.c content should be moved to scanner.c to better abstract
+ * scanner reading/writing. */
+extern char to_server[];
+extern int to_server_end;
+extern int to_server_start;
+
+/**
+ * @brief Write as much as possible from a string to the server.
+ *
+ * @param[in]  string          The string.
+ *
+ * @return 0 wrote everything, -1 error, or the number of bytes written
+ *         when the server accepted fewer bytes than given in string.
+ */
+static int
+write_string_to_server (char* const string)
+{
+  char* point = string;
+  char* end = string + strlen (string);
+  while (point < end)
+    {
+      ssize_t count;
+
+      if (openvas_scanner_unix_path)
+        {
+          count = send (openvas_scanner_socket, point, end - point, 0);
+          if (count < 0)
+            {
+              if (errno == EAGAIN)
+                return -2;
+              else if (errno == EINTR)
+                return -3;
+              else
+                {
+                  g_warning ("%s: Failed to write to scanner: %s\n", __FUNCTION__,
+                             strerror (errno));
+                  return -1;
+                }
+            }
+        }
+      else
+        {
+          count = gnutls_record_send (openvas_scanner_session,
+                                      point, (size_t) (end - point));
+          if (count < 0)
+            {
+              if (count == GNUTLS_E_AGAIN)
+                /* Wrote as much as server accepted. */
+                return point - string;
+              if (count == GNUTLS_E_INTERRUPTED)
+                /* Interrupted, try write again. */
+                continue;
+              if (count == GNUTLS_E_REHANDSHAKE)
+                /** @todo Rehandshake. */
+                continue;
+              g_warning ("%s: failed to write to server: %s\n",
+                         __FUNCTION__,
+                         gnutls_strerror ((int) count));
+              return -1;
+            }
+        }
+#if LOG
+      if (count) logf ("=> server %.*s\n", (int) count, point);
+#endif
+      g_debug ("s> server  (string) %.*s\n", (int) count, point);
+      point += count;
+      g_debug ("=> server  (string) %zi bytes\n", count);
+    }
+  g_debug ("=> server  (string) done\n");
+  /* Wrote everything. */
+  return 0;
+}
+
+/**
+ * @brief Write as much as possible from the internal buffer to the server.
+ *
+ * @return 0 wrote everything, -1 error, -2 wrote as much as server accepted,
+ *         -3 interrupted.
+ */
+static int
+write_to_server_buffer ()
+{
+  while (to_server_start < to_server_end)
+    {
+      ssize_t count;
+
+      if (openvas_scanner_unix_path)
+        {
+          count = send (openvas_scanner_socket, to_server + to_server_start,
+                        to_server_end - to_server_start, 0);
+          if (count < 0)
+            {
+              if (errno == EAGAIN)
+                return -2;
+              else if (errno == EINTR)
+                return -3;
+              else
+                {
+                  g_warning ("%s: Failed to write to scanner: %s\n", __FUNCTION__,
+                             strerror (errno));
+                  return -1;
+                }
+            }
+        }
+      else
+        {
+          count = gnutls_record_send (openvas_scanner_session,
+                                      to_server + to_server_start,
+                                      (size_t) to_server_end - to_server_start);
+          if (count < 0)
+            {
+              if (count == GNUTLS_E_AGAIN)
+                /* Wrote as much as server accepted. */
+                return -2;
+              if (count == GNUTLS_E_INTERRUPTED)
+                /* Interrupted, try write again. */
+                return -3;
+              if (count == GNUTLS_E_REHANDSHAKE)
+                /** @todo Rehandshake. */
+                continue;
+              g_warning ("%s: failed to write to server: %s\n",
+                         __FUNCTION__,
+                         gnutls_strerror ((int) count));
+              return -1;
+            }
+        }
+#if LOG
+      if (count) logf ("=> server %.*s\n",
+                       (int) count,
+                       to_server + to_server_start);
+#endif
+      g_debug ("s> server  %.*s\n", (int) count, to_server + to_server_start);
+      to_server_start += count;
+      g_debug ("=> server  %zi bytes\n", count);
+    }
+  g_debug ("=> server  done\n");
+  to_server_start = to_server_end = 0;
+  /* Wrote everything. */
+  return 0;
+}
+
 /**
  * @brief Read as much from the server as the \ref from_scanner buffer will
  * @brief hold.
@@ -94,35 +237,57 @@ openvas_scanner_read ()
   while (!openvas_scanner_full ())
     {
       ssize_t count;
-      count = gnutls_record_recv (openvas_scanner_session,
-                                  from_scanner + from_scanner_end,
-                                  from_scanner_size - from_scanner_end);
-      if (count < 0)
+
+      if (openvas_scanner_unix_path)
         {
-          if (count == GNUTLS_E_AGAIN)
-            /* Got everything available, return to `select'. */
-            return 0;
-          if (count == GNUTLS_E_INTERRUPTED)
-            /* Interrupted, try read again. */
-            continue;
-          if (count == GNUTLS_E_REHANDSHAKE)
+          count = recv (openvas_scanner_socket, from_scanner + from_scanner_end,
+                        from_scanner_size - from_scanner_end, 0);
+          if (count < 0)
             {
-              /** @todo Rehandshake. */
-              g_debug ("   should rehandshake\n");
-              continue;
+              if (errno == EINTR)
+                continue;
+              else if (errno == EAGAIN)
+                return 0;
+              else
+                {
+                  g_warning ("%s: Failed to read from scanner: %s\n", __FUNCTION__,
+                             strerror (errno));
+                  return -1;
+                }
             }
-          if (gnutls_error_is_fatal (count) == 0
-              && (count == GNUTLS_E_WARNING_ALERT_RECEIVED
-                  || count == GNUTLS_E_FATAL_ALERT_RECEIVED))
+        }
+      else
+        {
+          count = gnutls_record_recv (openvas_scanner_session,
+                                      from_scanner + from_scanner_end,
+                                      from_scanner_size - from_scanner_end);
+          if (count < 0)
             {
-              int alert = gnutls_alert_get (openvas_scanner_session);
-              const char* alert_name = gnutls_alert_get_name (alert);
-              g_warning ("%s: TLS Alert %d: %s\n", __FUNCTION__, alert,
-                         alert_name);
+              if (count == GNUTLS_E_AGAIN)
+                /* Got everything available, return to `select'. */
+                return 0;
+              if (count == GNUTLS_E_INTERRUPTED)
+                /* Interrupted, try read again. */
+                continue;
+              if (count == GNUTLS_E_REHANDSHAKE)
+                {
+                  /** @todo Rehandshake. */
+                  g_debug ("   should rehandshake\n");
+                  continue;
+                }
+              if (gnutls_error_is_fatal (count) == 0
+                  && (count == GNUTLS_E_WARNING_ALERT_RECEIVED
+                      || count == GNUTLS_E_FATAL_ALERT_RECEIVED))
+                {
+                  int alert = gnutls_alert_get (openvas_scanner_session);
+                  const char* alert_name = gnutls_alert_get_name (alert);
+                  g_warning ("%s: TLS Alert %d: %s\n", __FUNCTION__, alert,
+                             alert_name);
+                }
+              g_warning ("%s: failed to read from server: %s\n", __FUNCTION__,
+                         gnutls_strerror (count));
+              return -1;
             }
-          g_warning ("%s: failed to read from server: %s\n", __FUNCTION__,
-                     gnutls_strerror (count));
-          return -1;
         }
       if (count == 0)
         /* End of file. */
@@ -171,14 +336,18 @@ openvas_scanner_realloc ()
 int
 openvas_scanner_write (int nvt_cache_mode)
 {
+  int ret = 0;
+
   if (openvas_scanner_socket == -1)
     return -1;
   switch (scanner_init_state)
     {
       case SCANNER_INIT_TOP:
-        switch (openvas_server_connect (openvas_scanner_socket,
+        if (!openvas_scanner_unix_path)
+          ret = openvas_server_connect (openvas_scanner_socket,
                                         &openvas_scanner_address,
-                                        &openvas_scanner_session))
+                                        &openvas_scanner_session);
+        switch (ret)
           {
             case 0:
               set_scanner_init_state (SCANNER_INIT_CONNECTED);
@@ -202,8 +371,7 @@ openvas_scanner_write (int nvt_cache_mode)
           char* string = "< OTP/2.0 >\n";
 
           scanner_init_offset = write_string_to_server
-                                 (&openvas_scanner_session,
-                                  string + scanner_init_offset);
+                                 (string + scanner_init_offset);
           if (scanner_init_offset == 0)
             set_scanner_init_state (SCANNER_INIT_SENT_VERSION);
           else if (scanner_init_offset == -1)
@@ -215,8 +383,7 @@ openvas_scanner_write (int nvt_cache_mode)
             {
               string = "CLIENT <|> NVT_INFO <|> CLIENT\n";
               scanner_init_offset = write_string_to_server
-                                     (&openvas_scanner_session,
-                                      string + scanner_init_offset);
+                                     (string + scanner_init_offset);
               if (scanner_init_offset == -1)
                 {
                   scanner_init_offset = 0;
@@ -235,8 +402,7 @@ openvas_scanner_write (int nvt_cache_mode)
           {
             static char* const ack = "CLIENT <|> COMPLETE_LIST <|> CLIENT\n";
             scanner_init_offset = write_string_to_server
-                                   (&openvas_scanner_session,
-                                    ack + scanner_init_offset);
+                                   (ack + scanner_init_offset);
             if (scanner_init_offset == 0)
               set_scanner_init_state (nvt_cache_mode == -1
                                       ? SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE
@@ -253,8 +419,7 @@ openvas_scanner_write (int nvt_cache_mode)
         {
           static char* const ack = "\n";
           scanner_init_offset = write_string_to_server
-                                 (&openvas_scanner_session,
-                                  ack + scanner_init_offset);
+                                 (ack + scanner_init_offset);
           if (scanner_init_offset == 0)
             {
               if (nvt_cache_mode == -1)
@@ -384,11 +549,14 @@ load_cas (gnutls_certificate_credentials_t *scanner_credentials)
 int
 openvas_scanner_close ()
 {
-  int rc;
+  int rc = 0;
   if (openvas_scanner_socket == -1)
     return -1;
-  rc = openvas_server_free (openvas_scanner_socket, openvas_scanner_session,
-                            openvas_scanner_credentials);
+  if (openvas_scanner_unix_path)
+    close (openvas_scanner_socket);
+  else
+    rc = openvas_server_free (openvas_scanner_socket, openvas_scanner_session,
+                              openvas_scanner_credentials);
   openvas_scanner_socket = -1;
   openvas_scanner_session = NULL;
   openvas_scanner_credentials = NULL;
@@ -413,6 +581,34 @@ openvas_scanner_fork ()
   reset_scanner_states ();
 }
 
+int
+openvas_scanner_connect_unix ()
+{
+  struct sockaddr_un addr;
+  int len;
+
+  openvas_scanner_socket = socket (AF_UNIX, SOCK_STREAM, 0);
+  if (openvas_scanner_socket == -1)
+    {
+      g_warning ("%s: failed to create scanner socket: %s\n", __FUNCTION__,
+                 strerror (errno));
+      return -1;
+    }
+
+  addr.sun_family = AF_UNIX;
+  strncpy (addr.sun_path, openvas_scanner_unix_path, 108);
+  len = strlen (addr.sun_path) + sizeof (addr.sun_family);
+  if (connect (openvas_scanner_socket, (struct sockaddr *) &addr, len) == -1)
+    {
+      g_warning ("%s: Failed to connect to scanner: %s\n", __FUNCTION__,
+                 strerror (errno));
+      return -1;
+    }
+
+  init_otp_data ();
+  return 0;
+}
+
 /**
  * @brief Create a new connection to the scanner and set it as current scanner.
  *
@@ -421,6 +617,9 @@ openvas_scanner_fork ()
 int
 openvas_scanner_connect ()
 {
+  if (openvas_scanner_unix_path)
+    return openvas_scanner_connect_unix ();
+
   openvas_scanner_socket = socket (PF_INET, SOCK_STREAM, 0);
   if (openvas_scanner_socket == -1)
     {
@@ -458,6 +657,7 @@ openvas_scanner_connect ()
 void
 openvas_scanner_free ()
 {
+  close (openvas_scanner_socket);
   openvas_scanner_socket = -1;
   if (openvas_scanner_session)
     gnutls_deinit (openvas_scanner_session);
@@ -469,9 +669,11 @@ openvas_scanner_free ()
   g_free (openvas_scanner_ca_pub);
   g_free (openvas_scanner_key_pub);
   g_free (openvas_scanner_key_priv);
+  g_free (openvas_scanner_unix_path);
   openvas_scanner_ca_pub = NULL;
   openvas_scanner_key_pub = NULL;
   openvas_scanner_key_priv = NULL;
+  openvas_scanner_unix_path = NULL;
 }
 
 /**
@@ -545,7 +747,10 @@ openvas_scanner_session_peek ()
 {
   if (openvas_scanner_socket == -1)
     return 0;
-  return !!gnutls_record_check_pending (openvas_scanner_session);
+  if (openvas_scanner_unix_path)
+    return 0;
+  else
+    return !!gnutls_record_check_pending (openvas_scanner_session);
 }
 
 /**
@@ -600,6 +805,11 @@ openvas_scanner_init (int cache_mode)
 int
 openvas_scanner_set_address (const char *addr, int port)
 {
+  if (openvas_scanner_unix_path)
+    {
+      g_free (openvas_scanner_unix_path);
+      openvas_scanner_unix_path = NULL;
+    }
   if (port < 1 || port > 65535)
     return -1;
   memset (&openvas_scanner_address, '\0', sizeof (openvas_scanner_address));
@@ -607,6 +817,26 @@ openvas_scanner_set_address (const char *addr, int port)
   openvas_scanner_address.sin_port = htons (port);
   if (openvas_resolve (addr, &openvas_scanner_address.sin_addr, AF_INET))
     return -1;
+
+  return 0;
+}
+
+/**
+ * @brief Set the scanner's unix socket path.
+ *
+ * @param[in]  path     Path to scanner unix socket.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+openvas_scanner_set_unix (const char *path)
+{
+  if (!path)
+    return -1;
+
+  openvas_scanner_free ();
+  memset (&openvas_scanner_address, '\0', sizeof (openvas_scanner_address));
+  openvas_scanner_unix_path = g_strdup (path);
 
   return 0;
 }
@@ -622,6 +852,11 @@ void
 openvas_scanner_set_certs (const char *ca_pub, const char *key_pub,
                            const char *key_priv)
 {
+  if (openvas_scanner_unix_path)
+    {
+      g_free (openvas_scanner_unix_path);
+      openvas_scanner_unix_path = NULL;
+    }
   if (ca_pub)
     openvas_scanner_ca_pub = g_strdup (ca_pub);
   if (key_pub)

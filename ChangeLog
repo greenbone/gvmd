@@ -1,3 +1,25 @@
+2016-08-11  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (scanner_setup): Adjust for unix socket case.
+
+	* src/manage_sql.c (manage_scanner_set), verify_scanner): Handle unix
+	socket case.
+
+	* src/ovas-mngr-comm.c (write_string_to_server, write_to_server_buffer):
+	Move to scanner.c to abstract the usage of gnutls sessions or unix
+	sockets. Handle unix socket case.
+
+	* src/ovas-mngr-comm.h: Remove function headers.
+
+	* src/scanner.c (openvas_scanner_read, openvas_scanner_write)
+	(openvas_scanner_close, openvas_scanner_connect, openvas_scanner_free)
+	(openvas_scanner_session_peek, openvas_scanner_set_address)
+	(openvas_scanner_set_certs): Support
+	unix socket case.
+	(openvas_scanner_unix, openvas_scanner_set_unix): New functions.
+
+	* src/scanner.h: Add function header.
+
 2016-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/XML/OMP.xml.in (help): Update example.

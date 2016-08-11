@@ -42,7 +42,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <glib.h>
-#include <gnutls/gnutls.h>
 #include <netinet/in.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -73,17 +72,17 @@
 /**
  * @brief Buffer of output to the server.
  */
-static char to_server[TO_SERVER_BUFFER_SIZE];
+char to_server[TO_SERVER_BUFFER_SIZE];
 
 /**
  * @brief The end of the data in the \ref to_server buffer.
  */
-static int to_server_end = 0;
+int to_server_end = 0;
 
 /**
  * @brief The start of the data in the \ref to_server buffer.
  */
-static int to_server_start = 0;
+int to_server_start = 0;
 
 /** @endcond */
 
@@ -159,99 +158,3 @@ sendf_to_server (const char* format, ...)
   return ret;
 }
 
-/**
- * @brief Write as much as possible from a string to the server.
- *
- * @param[in]  server_session  The server session.
- * @param[in]  string          The string.
- *
- * @return 0 wrote everything, -1 error, or the number of bytes written
- *         when the server accepted fewer bytes than given in string.
- */
-int
-write_string_to_server (gnutls_session_t* server_session, char* const string)
-{
-  char* point = string;
-  char* end = string + strlen (string);
-  while (point < end)
-    {
-      ssize_t count;
-      count = gnutls_record_send (*server_session,
-                                  point,
-                                  (size_t) (end - point));
-      if (count < 0)
-        {
-          if (count == GNUTLS_E_AGAIN)
-            /* Wrote as much as server accepted. */
-            return point - string;
-          if (count == GNUTLS_E_INTERRUPTED)
-            /* Interrupted, try write again. */
-            continue;
-          if (count == GNUTLS_E_REHANDSHAKE)
-            /** @todo Rehandshake. */
-            continue;
-          g_warning ("%s: failed to write to server: %s\n",
-                     __FUNCTION__,
-                     gnutls_strerror ((int) count));
-          return -1;
-        }
-#if LOG
-      if (count) logf ("=> server %.*s\n", (int) count, point);
-#endif
-      g_debug ("s> server  (string) %.*s\n", (int) count, point);
-      point += count;
-      g_debug ("=> server  (string) %zi bytes\n", count);
-    }
-  g_debug ("=> server  (string) done\n");
-  /* Wrote everything. */
-  return 0;
-}
-
-
-/**
- * @brief Write as much as possible from the internal buffer to the server.
- *
- * @param[in]  server_session  The server session.
- *
- * @return 0 wrote everything, -1 error, -2 wrote as much as server accepted,
- *         -3 interrupted.
- */
-int
-write_to_server_buffer (gnutls_session_t* server_session)
-{
-  while (to_server_start < to_server_end)
-    {
-      ssize_t count;
-      count = gnutls_record_send (*server_session,
-                                  to_server + to_server_start,
-                                  (size_t) to_server_end - to_server_start);
-      if (count < 0)
-        {
-          if (count == GNUTLS_E_AGAIN)
-            /* Wrote as much as server accepted. */
-            return -2;
-          if (count == GNUTLS_E_INTERRUPTED)
-            /* Interrupted, try write again. */
-            return -3;
-          if (count == GNUTLS_E_REHANDSHAKE)
-            /** @todo Rehandshake. */
-            continue;
-          g_warning ("%s: failed to write to server: %s\n",
-                     __FUNCTION__,
-                     gnutls_strerror ((int) count));
-          return -1;
-        }
-#if LOG
-      if (count) logf ("=> server %.*s\n",
-                       (int) count,
-                       to_server + to_server_start);
-#endif
-      g_debug ("s> server  %.*s\n", (int) count, to_server + to_server_start);
-      to_server_start += count;
-      g_debug ("=> server  %zi bytes\n", count);
-    }
-  g_debug ("=> server  done\n");
-  to_server_start = to_server_end = 0;
-  /* Wrote everything. */
-  return 0;
-}
