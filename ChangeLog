@@ -1,5 +1,10 @@
 2016-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (PERMISSION_ITERATOR_COLUMNS): Wrap comparison in CASE,
+	so that it's an integer, for Postgres.
+
+2016-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_check_alerts): Correct doc typo.
 
 2016-08-11  Matthew Mundell <matthew.mundell@greenbone.net>

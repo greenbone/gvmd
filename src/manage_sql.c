@@ -52471,7 +52471,15 @@ trash_permission_writable (permission_t permission)
    { "resource_location = " G_STRINGIFY (LOCATION_TRASH),                    \
      NULL,                                                                   \
      KEYWORD_TYPE_INTEGER },                                                 \
-   { "resource = -1", "orphan", KEYWORD_TYPE_INTEGER },                      \
+   {                                                                         \
+     "(CASE"                                                                 \
+     " WHEN resource = -1"                                                   \
+     " THEN 1"                                                               \
+     " ELSE 0"                                                               \
+     " END)",                                                                \
+     "orphan",                                                               \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
    { "subject_type", NULL, KEYWORD_TYPE_STRING },                            \
    {                                                                         \
      "(CASE"                                                                 \
