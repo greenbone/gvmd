@@ -1,3 +1,11 @@
+2016-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/openvasmd.c (main): Remove --xml.
+
+	* src/manage_sql.c (manage_xml): Remove.
+
+	* src/manage.h: Remove header accordingly.
+
 2016-08-11  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (scanner_setup): Adjust for unix socket case.
