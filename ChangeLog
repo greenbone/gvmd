@@ -1,5 +1,9 @@
 2016-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_check_alerts): Correct doc typo.
+
+2016-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c (main): Remove --xml.
 
 	* src/manage_sql.c (manage_xml): Remove.

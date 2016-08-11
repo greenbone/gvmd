@@ -6660,7 +6660,7 @@ DEF_ACCESS (task_role_iterator_uuid, 4);
 /* Events and Alerts. */
 
 /**
- * @brief Check if any SecInfo alers are due.
+ * @brief Check if any SecInfo alerts are due.
  *
  * @param[in]  log_config  Log configuration.
  * @param[in]  database    Location of manage database.
