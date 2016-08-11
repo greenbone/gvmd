@@ -1,5 +1,13 @@
 2016-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml.in (create_report): Replace report format
+	elements with report elements in example.  Also switch it to the existing
+	task case.
+
+	* doc/omp.html: Update from source.
+
+2016-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (PERMISSION_ITERATOR_COLUMNS): Wrap comparison in CASE,
 	so that it's an integer, for Postgres.
 

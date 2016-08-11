@@ -4819,29 +4819,33 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
     </response>
     <example>
-      <summary>Create a report in a new task</summary>
+      <summary>Create a report in an existing task</summary>
       <request>
         <create_report>
-          <report id="a0704abb-2120-489f-959f-251c9f4ffebd">
-            <name>CPE</name>
-            <extension>csv</extension>
-            <content_type>text/csv</content_type>
-            <summary>Common Product Enumeration CSV table.</summary>
-            <description>
-              CPE stands for Common Product Enumeration.  It is a
+          <report id="f0fdf522-276d-4893-9274-fb8699dc2270"
+                  format_id="d5da9f67-8551-4e51-807b-b6a873d70e34"
+                  extension="xml"
+                  content_type="text/xml">
+            <report id="f0fdf522-276d-4893-9274-fb8699dc2270">
+              <omp>
+                <version>7.0</version>
+              </omp>
               <truncated>...</truncated>
-            </description>
-            <global>1</global>
-            <predefined>1</predefined>
-            <trust>
-              yes
-              <time>Thu Dec  2 13:22:26 2010</time>
-            </trust>
-            <active>1</active>
+              <results start="1" max="-1">
+                <result id="634f7a2e-8ca1-43b7-b6d7-0d4841449508">
+                  <truncated>...</truncated>
+                </result>
+                <truncated>...</truncated>
+              </results>
+              <host_start>2010-02-02T19:11:21+00:00<host>127.0.1.1</host></host_start>
+              <host_end>2010-02-02T19:11:52+00:00<host>127.0.1.1</host></host_end>
+              <scan_end>2010-02-02T19:11:52+00:00</scan_end>
+              <errors>
+                <count>0</count>
+              </errors>
+            </report>
           </report>
-          <task>
-            <name>Imported reports</name>
-          </task>
+          <task id="76a4f237-9984-4345-a1f4-71fbcbf0611c"/>
         </create_report>
       </request>
       <response>

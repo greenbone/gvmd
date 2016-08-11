@@ -9626,29 +9626,40 @@ create_report_task_comment
      }
 </pre></div>
 </div>
-<h4>7.15.3 Example: Create a report in a new task</h4>
+<h4>7.15.3 Example: Create a report in an existing task</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_report&gt;
-   &lt;report id="a0704abb-2120-489f-959f-251c9f4ffebd"&gt;
-     &lt;name&gt;CPE&lt;/name&gt;
-     &lt;extension&gt;csv&lt;/extension&gt;
-     &lt;content_type&gt;text/csv&lt;/content_type&gt;
-     &lt;summary&gt;Common Product Enumeration CSV table.&lt;/summary&gt;
-     &lt;description&gt;
-       CPE stands for Common Product Enumeration. It is a
+   &lt;report id="f0fdf522-276d-4893-9274-fb8699dc2270"
+           format_id="d5da9f67-8551-4e51-807b-b6a873d70e34"
+           extension="xml"
+           content_type="text/xml"&gt;
+     &lt;report id="f0fdf522-276d-4893-9274-fb8699dc2270"&gt;
+       &lt;omp&gt;
+         &lt;version&gt;7.0&lt;/version&gt;
+       &lt;/omp&gt;
        ...
-     &lt;/description&gt;
-     &lt;global&gt;1&lt;/global&gt;
-     &lt;predefined&gt;1&lt;/predefined&gt;
-     &lt;trust&gt;
-       yes
-       &lt;time&gt;Thu Dec 2 13:22:26 2010&lt;/time&gt;
-     &lt;/trust&gt;
-     &lt;active&gt;1&lt;/active&gt;
+       &lt;results start="1"
+                max="-1"&gt;
+         &lt;result id="634f7a2e-8ca1-43b7-b6d7-0d4841449508"&gt;
+           ...
+         &lt;/result&gt;
+         ...
+       &lt;/results&gt;
+       &lt;host_start&gt;
+         2010-02-02T19:11:21+00:00
+         &lt;host&gt;127.0.1.1&lt;/host&gt;
+       &lt;/host_start&gt;
+       &lt;host_end&gt;
+         2010-02-02T19:11:52+00:00
+         &lt;host&gt;127.0.1.1&lt;/host&gt;
+       &lt;/host_end&gt;
+       &lt;scan_end&gt;2010-02-02T19:11:52+00:00&lt;/scan_end&gt;
+       &lt;errors&gt;
+         &lt;count&gt;0&lt;/count&gt;
+       &lt;/errors&gt;
+     &lt;/report&gt;
    &lt;/report&gt;
-   &lt;task&gt;
-     &lt;name&gt;Imported reports&lt;/name&gt;
-   &lt;/task&gt;
+   &lt;task id="76a4f237-9984-4345-a1f4-71fbcbf0611c"/&gt;
  &lt;/create_report&gt;
 </pre></div>
 <i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_report_response status="201"
