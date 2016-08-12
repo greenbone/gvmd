@@ -1,3 +1,7 @@
+2016-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/ovas-mngr-comm.c (TRACE): Remove.  No longer used.
+
 2016-08-12  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/scanner.c (write_string_to_server): Fix return values in unix

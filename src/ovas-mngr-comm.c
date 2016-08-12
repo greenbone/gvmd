@@ -32,13 +32,6 @@
  * which uses OTP as protocol.
  */
 
-/**
- * @brief Trace flag.
- *
- * 0 to turn off all tracing messages.
- */
-#define TRACE 1
-
 #include <errno.h>
 #include <fcntl.h>
 #include <glib.h>
