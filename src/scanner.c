@@ -109,9 +109,9 @@ write_string_to_server (char* const string)
           if (count < 0)
             {
               if (errno == EAGAIN)
-                return -2;
+                return point - string;
               else if (errno == EINTR)
-                return -3;
+                continue;
               else
                 {
                   g_warning ("%s: Failed to write to scanner: %s\n", __FUNCTION__,

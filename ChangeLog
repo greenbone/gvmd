@@ -1,3 +1,8 @@
+2016-08-12  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/scanner.c (write_string_to_server): Fix return values in unix
+	socket case.
+
 2016-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/XML/OMP.xml.in (create_report): Replace report format
