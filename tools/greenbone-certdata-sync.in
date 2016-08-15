@@ -583,72 +583,37 @@ scap_db_exists () {
 }
 
 update_cvss () {
-  if ! scap_db_exists
+  log_info "Calling openvasmd to update CVSS max"
+  if command -v openvasmd
   then
-    log_warning "SCAP database not found. Cannot update max_cvss."
+    if [ 0 -ne "$updated_cb" ]
+    then
+	  openvasmd --update-cvss-cert-bund 1
+    else
+      openvasmd --update-cvss-cert-bund 0
+    fi
+    if [ 0 -ne "$updated_dfn" ]
+    then
+	  openvasmd --update-cvss-dfn-cert 1
+	else
+	  openvasmd --update-cvss-dfn-cert 0
+    fi
+  elif [ -x "@SBINDIR@/openvasmd" ]
+  then
+    if [ 0 -ne "$updated_cb" ]
+    then
+      @SBINDIR@/openvasmd --update-cvss-cert-bund 1
+    else
+      @SBINDIR@/openvasmd --update-cvss-cert-bund 0
+    fi
+    if [ 0 -ne "$updated_dfn" ]
+    then
+      @SBINDIR@/openvasmd --update-cvss-dfn-cert 1
+    else
+      @SBINDIR@/openvasmd --update-cvss-dfn-cert 0
+    fi
   else
-    reset_sql_tries
-    until [ "$try_sql" -eq 0 ]
-    do
-      SCAP_DB_LASTUPDATE=`sql_scap "SELECT value FROM ${SCHEMA_SCAP}meta WHERE name = 'last_update';"`
-      test_sql_exit "Could not get last_update timestamp from SCAP database"
-    done
-
-    if [ 0 -ne "$updated_cb" ] || [ $SCAP_DB_LASTUPDATE -gt $DB_LASTUPDATE ]
-    then
-      log_info "Updating Max CVSS for CERT-Bund"
-
-      reset_sql_tries
-      until [ "$try_sql" -eq 0 ]
-      do
-        sql "${ATTACH_SCAP}
-             ${RECURSIVE_TRIGGERS_OFF}
-             UPDATE ${SCHEMA_CERT}cert_bund_advs
-               SET max_cvss =
-                   (
-                     SELECT max(cvss)
-                     FROM scap.cves
-                     WHERE name IN
-                       (
-                         SELECT cve_name
-                         FROM ${SCHEMA_CERT}cert_bund_cves
-                         WHERE adv_id=cert_bund_advs.id
-                       )
-                       AND cvss != 0.0
-                   );"
-        test_sql_exit "Could not update CVSS scores for CERT-Bund Advisories"
-      done
-    else
-      log_info "No CERT-Bund advisories updated and CERT DB newer than SCAP DB. Skipping CVSS recalculation."
-    fi
-
-    if [ 0 -ne "$updated_dfn" ] || [ $SCAP_DB_LASTUPDATE -gt $DB_LASTUPDATE ]
-    then
-      log_info "Updating Max CVSS for DFN-CERT"
-
-      reset_sql_tries
-      until [ "$try_sql" -eq 0 ]
-      do
-        sql "${ATTACH_SCAP}
-             ${RECURSIVE_TRIGGERS_OFF}
-             UPDATE ${SCHEMA_CERT}dfn_cert_advs
-               SET max_cvss =
-                   (
-                     SELECT max(cvss)
-                     FROM scap.cves
-                     WHERE name IN
-                       (
-                         SELECT cve_name
-                         FROM ${SCHEMA_CERT}dfn_cert_cves
-                         WHERE adv_id=dfn_cert_advs.id
-                       )
-                       AND cvss != 0.0
-                   );"
-        test_sql_exit "Could not update CVSS scores for DFN-CERT Advisories"
-      done
-    else
-      log_info "No DFN-CERT advisories updated and CERT DB newer than SCAP DB. Skipping CVSS recalculation."
-    fi
+    log_warning "Command openvasmd not found"
   fi
 }
 

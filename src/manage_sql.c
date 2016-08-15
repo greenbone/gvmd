@@ -103,6 +103,9 @@ void
 manage_attach_databases ();
 
 int
+manage_db_exists (const gchar *);
+
+int
 manage_cert_loaded ();
 
 int
@@ -62025,6 +62028,148 @@ DEF_ACCESS (all_info_iterator_extra, GET_ITERATOR_COLUMN_COUNT + 1);
  *         Freed by cleanup_iterator.
  */
 DEF_ACCESS (all_info_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 2);
+
+/**
+ * @brief Update CERT-Bund Max CVSS.
+ *
+ * @param[in]  log_config        Log configuration.
+ * @param[in]  database          Location of manage database.
+ * @param[in]  update_cert_bund  Whether CERT-Bund updated.
+ *
+ * @return 0 success, -1 error, -4 SCAP db not found.
+ */
+int
+manage_update_cvss_cert_bund (GSList *log_config, const gchar *database,
+                              int updated_cert_bund)
+{
+  const gchar *db;
+  int ret, last_scap_update, last_cert_update;
+
+  if (openvas_auth_init ())
+    return -1;
+
+  db = database ? database : sql_default_database ();
+
+  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
+  assert (ret != -4);
+  if (ret)
+    return ret;
+
+  init_manage_process (0, db);
+
+  /* TODO greenbone-certdata-sync did retries. */
+
+  if (manage_cert_loaded () == 0)
+    {
+      cleanup_manage_process (TRUE);
+      return -5;
+    }
+
+  if (manage_scap_loaded () == 0)
+    {
+      cleanup_manage_process (TRUE);
+      return -6;
+    }
+
+  last_scap_update = sql_int ("SELECT value FROM scap.meta"
+                              " WHERE name = 'last_update';");
+
+  last_cert_update = sql_int ("SELECT value FROM cert.meta"
+                              " WHERE name = 'last_update';");
+
+  if (updated_cert_bund || (last_scap_update > last_cert_update))
+    {
+      g_info ("Updating Max CVSS for CERT-Bund");
+      sql_recursive_triggers_off ();
+      sql ("UPDATE cert.cert_bund_advs"
+           " SET max_cvss = (SELECT max (cvss)"
+           "                 FROM scap.cves"
+           "                 WHERE name"
+           "                       IN (SELECT cve_name"
+           "                           FROM cert.cert_bund_cves"
+           "                           WHERE adv_id = cert_bund_advs.id)"
+           "                 AND cvss != 0.0);");
+
+      printf ("Updating CERT-Bund CVSS max succeeded.\n");
+    }
+  else
+    printf ("Updating CERT-Bund CVSS max succeeded (nothing to do).\n");
+
+  cleanup_manage_process (TRUE);
+
+  return 0;
+}
+
+/**
+ * @brief Update DFN-CERT Max CVSS.
+ *
+ * @param[in]  log_config       Log configuration.
+ * @param[in]  database         Location of manage database.
+ * @param[in]  update_dfn_cert  Whether CERT-Bund updated.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+manage_update_cvss_dfn_cert (GSList *log_config, const gchar *database,
+                             int updated_dfn_cert)
+{
+  const gchar *db;
+  int ret, last_scap_update, last_cert_update;
+
+  if (openvas_auth_init ())
+    return -1;
+
+  db = database ? database : sql_default_database ();
+
+  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
+  assert (ret != -4);
+  if (ret)
+    return ret;
+
+  init_manage_process (0, db);
+
+  /* TODO greenbone-certdata-sync did retries. */
+
+  if (manage_cert_loaded () == 0)
+    {
+      cleanup_manage_process (TRUE);
+      return -5;
+    }
+
+  if (manage_scap_loaded () == 0)
+    {
+      cleanup_manage_process (TRUE);
+      return -6;
+    }
+
+  last_scap_update = sql_int ("SELECT value FROM scap.meta"
+                              " WHERE name = 'last_update';");
+
+  last_cert_update = sql_int ("SELECT value FROM cert.meta"
+                              " WHERE name = 'last_update';");
+
+  if (updated_dfn_cert || (last_scap_update > last_cert_update))
+    {
+      g_info ("Updating Max CVSS for DFN-CERT");
+      sql_recursive_triggers_off ();
+      sql ("UPDATE cert.dfn_cert_advs"
+           " SET max_cvss = (SELECT max(cvss)"
+           "                 FROM scap.cves"
+           "                 WHERE name"
+           "                 IN (SELECT cve_name"
+           "                     FROM cert.dfn_cert_cves"
+           "                     WHERE adv_id = dfn_cert_advs.id)"
+           "                 AND cvss != 0.0);");
+
+      printf ("Updating DFN-CERT CVSS max succeeded.\n");
+    }
+  else
+    printf ("Updating DFN-CERT CVSS max succeeded (nothing to do).\n");
+
+  cleanup_manage_process (TRUE);
+
+  return 0;
+}
 
 
 /* Users. */

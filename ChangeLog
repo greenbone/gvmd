@@ -1,3 +1,22 @@
+2016-08-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Move CVSS Max updating from SCAP sync script into C code.
+
+	* src/manage_sql.c (manage_update_cvss_cert_bund)
+	(manage_update_cvss_dfn_cert): New functions.
+
+	* src/openvasmd.c (main): Add --update-cvss-cert-bund and
+	--update-cvss-dfn-cert.
+
+	* src/sql_pg.c (sql_recursive_triggers_off): New function.
+
+	* src/sql_sqlite3.c (sql_recursive_triggers_off): New function.
+
+	* src/sql.h: Add header accordingly.
+
+	* tools/greenbone-scapdata-sync.in (update_cvss): Call openvasmd to
+	do the work.
+
 2016-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/ovas-mngr-comm.c (TRACE): Remove.  No longer used.
