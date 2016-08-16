@@ -1098,8 +1098,9 @@ manage_create_sql_functions ()
            " RETURNS double precision AS $$"
            /* Calculate the severity of a task. */
            "  SELECT CASE"
-           "         WHEN (SELECT target IS NULL FROM tasks WHERE id = $1)"
-           "         THEN CAST (0.0 AS double precision)"
+           "         WHEN (SELECT target IS NULL OR target = 0"
+           "               FROM tasks WHERE id = $1)"
+           "         THEN CAST (NULL AS double precision)"
            "         WHEN dynamic_severity () AND CAST ($2 AS boolean)"
            /*        Dynamic severity, overrides on. */
            "         THEN (SELECT"

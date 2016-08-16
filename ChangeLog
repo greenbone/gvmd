@@ -1,5 +1,10 @@
 2016-08-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_pg.c (manage_create_sql_functions): Make task_severity
+	return NULL if target of task is NULL or 0.
+
+2016-08-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (filter_clause): Add special case for the "ip"
 	column that applies the order_inet function.
 
