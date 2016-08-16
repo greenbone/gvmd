@@ -86,9 +86,6 @@ sql_database ();
 const char *
 sql_default_database ();
 
-void
-sql_recursive_triggers_off ();
-
 int
 sql_is_open ();
 

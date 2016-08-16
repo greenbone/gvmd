@@ -1,3 +1,24 @@
+2016-08-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Revert r26018 from yesterday.  This feature must wait for the OpenVAS-9
+	release.
+
+	* src/manage_sql.c (manage_update_cvss_cert_bund)
+	(manage_update_cvss_dfn_cert): Remove.
+
+	* src/manage.h: Remove headers accordingly.
+
+	* src/openvasmd.c (main): Remove --update-cvss-cert-bund and
+	--update-cvss-dfn-cert.
+
+	* src/sql_pg.c (sql_recursive_triggers_off): Remove.
+
+	* src/sql_sqlite3.c (sql_recursive_triggers_off): Remove.
+
+	* src/sql.h: Remove header accordingly.
+
+	* tools/greenbone-scapdata-sync.in (update_cvss): Revert openvasmd call.
+
 2016-08-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Move CVSS Max updating from SCAP sync script into C code.
