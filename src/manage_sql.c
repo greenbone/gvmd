@@ -3165,6 +3165,17 @@ filter_clause (const char* type, const char* filter,
                                           " ORDER BY CAST (%s AS INTEGER) ASC",
                                           column);
                 }
+              else if (strcmp (keyword->string, "ip") == 0)
+                {
+                  gchar *column;
+                  column = columns_select_column (select_columns,
+                                                  where_columns,
+                                                  keyword->string);
+                  assert (column);
+                  g_string_append_printf (order,
+                                          " ORDER BY order_inet (%s) ASC",
+                                          column);
+                }
               else if ((strcmp (type, "note")
                         && strcmp (type, "override"))
                        || (strcmp (keyword->string, "nvt")
@@ -3299,6 +3310,17 @@ filter_clause (const char* type, const char* filter,
                   assert (column);
                   g_string_append_printf (order,
                                           " ORDER BY CAST (%s AS INTEGER) DESC",
+                                          column);
+                }
+              else if (strcmp (keyword->string, "ip") == 0)
+                {
+                  gchar *column;
+                  column = columns_select_column (select_columns,
+                                                  where_columns,
+                                                  keyword->string);
+                  assert (column);
+                  g_string_append_printf (order,
+                                          " ORDER BY order_inet (%s) DESC",
                                           column);
                 }
               else if ((strcmp (type, "note")

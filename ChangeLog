@@ -1,3 +1,12 @@
+2016-08-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (filter_clause): Add special case for the "ip"
+	column that applies the order_inet function.
+
+	* src/manage_sqlite3.c (sql_order_inet): Use regex to check if the
+	value is an IPv4 address and expand it by adding leading zeros instead
+	of converting it to an integer.
+
 2016-08-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Revert r26018 from yesterday.  This feature must wait for the OpenVAS-9

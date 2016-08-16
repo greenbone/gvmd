@@ -192,6 +192,8 @@ sql_order_inet (sqlite3_context *context, int argc, sqlite3_value** argv)
 {
   const char *ip;
   unsigned int one, two, three, four;
+  one = two = three = four = 0;
+  gchar *ip_expanded;
 
   assert (argc == 1);
 
@@ -200,10 +202,17 @@ sql_order_inet (sqlite3_context *context, int argc, sqlite3_value** argv)
     sqlite3_result_int (context, 0);
   else
     {
-      if (sscanf (ip, "%*3[0-9].%*3[0-9].%*3[0-9].%*3[0-9]") == 4
+      if (g_regex_match_simple ("^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$",
+                                ip, 0, 0)
           && sscanf (ip, "%u.%u.%u.%u", &one, &two, &three, &four) == 4)
-        sqlite3_result_int (context,
-                            one + (two << 8) + (three << 16) + (four << 24));
+        {
+          ip_expanded = g_strdup_printf ("%03u.%03u.%03u.%03u",
+                                         one, two, three, four);
+          sqlite3_result_text (context,
+                               ip_expanded,
+                               -1, SQLITE_TRANSIENT);
+          g_free (ip_expanded);
+        }
       else
         sqlite3_result_text (context, ip, -1, SQLITE_TRANSIENT);
     }
