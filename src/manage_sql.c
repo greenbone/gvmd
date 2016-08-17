@@ -60237,6 +60237,9 @@ modify_setting (const gchar *uuid, const gchar *name,
       else if (strcmp (uuid, "b20697c9-be0a-4cd4-8b4d-5fe7841ebb03") == 0)
         setting_name = g_strdup ("Default OSP Scanner");
 
+      else if (strcmp (uuid, "353304fc-645e-11e6-ba7a-28d24461215b") == 0)
+        setting_name = g_strdup ("Default Report Format");
+
       else if (strcmp (uuid, "778eedad-5550-4de0-abb6-1320d13b5e18") == 0)
         setting_name = g_strdup ("Default Schedule");
 
