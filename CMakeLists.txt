@@ -410,10 +410,6 @@ install (FILES src/report_formats/NBE/generate
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/9ca6fe72-1f62-11e1-9e7c-406186ea4fc5/
          PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
-install (FILES src/report_formats/LaTeX/report_format.xml
-         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/c402cc3e-b531-11e1-9163-406186ea4fc5/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
-
 install (FILES src/report_formats/LaTeX/latex.xsl
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/report_formats/c402cc3e-b531-11e1-9163-406186ea4fc5/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)

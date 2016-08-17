@@ -1,5 +1,10 @@
 2016-08-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* CMakeLists.txt: Remove extra LaTex report_format.xml.  This was
+	masking the PDF report format.
+
+2016-08-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (modify_setting): Add Default Report Format.
 
 2016-08-17  Hani Benhabiles <hani.benhabiles@greenbone.net>
