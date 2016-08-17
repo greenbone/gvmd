@@ -1,7 +1,8 @@
 2016-08-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* CMakeLists.txt: Remove extra LaTex report_format.xml.  This was
-	masking the PDF report format.
+	* src/manage_acl.c (acl_user_owns_name, acl_user_owns_uuid)
+	(acl_user_owns_uuid, acl_user_owns, acl_user_owns)
+	(acl_user_owns_trash_uuid): Make SQL hierarchy clearer.
 
 2016-08-17  Matthew Mundell <matthew.mundell@greenbone.net>
 

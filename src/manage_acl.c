@@ -550,8 +550,9 @@ acl_user_owns_name (const char *type, const char *value)
   quoted_value = sql_quote (value);
   ret = sql_int ("SELECT count(*) FROM %ss"
                  " WHERE name = '%s'"
-                 " AND ((owner IS NULL) OR (owner ="
-                 " (SELECT users.id FROM users WHERE users.uuid = '%s')));",
+                 " AND ((owner IS NULL)"
+                 "      OR (owner = (SELECT users.id FROM users"
+                 "                   WHERE users.uuid = '%s')));",
                  type,
                  quoted_value,
                  current_credentials.uuid);
@@ -625,16 +626,18 @@ acl_user_owns_uuid (const char *type, const char *uuid, int trash)
     ret = sql_int ("SELECT count(*) FROM results, reports"
                    " WHERE results.uuid = '%s'"
                    " AND results.report = reports.id"
-                   " AND ((reports.owner IS NULL) OR (reports.owner ="
-                   " (SELECT users.id FROM users WHERE users.uuid = '%s')));",
+                   " AND ((reports.owner IS NULL)"
+                   "      OR (reports.owner = (SELECT users.id FROM users"
+                   "                           WHERE users.uuid = '%s')));",
                    quoted_uuid,
                    current_credentials.uuid);
   else
     ret = sql_int ("SELECT count(*) FROM %ss%s"
                    " WHERE uuid = '%s'"
                    "%s"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT users.id FROM users WHERE users.uuid = '%s')));",
+                   " AND ((owner IS NULL)"
+                   "      OR (owner = (SELECT users.id FROM users"
+                   "                   WHERE users.uuid = '%s')));",
                    type,
                    (strcmp (type, "task") && trash) ? "_trash" : "",
                    quoted_uuid,
@@ -681,16 +684,18 @@ acl_user_owns (const char *type, resource_t resource, int trash)
     ret = sql_int ("SELECT count(*) FROM results, reports"
                    " WHERE results.id = %llu"
                    " AND results.report = reports.id"
-                   " AND ((reports.owner IS NULL) OR (reports.owner ="
-                   " (SELECT users.id FROM users WHERE users.uuid = '%s')));",
+                   " AND ((reports.owner IS NULL)"
+                   "      OR (reports.owner = (SELECT users.id FROM users"
+                   "                           WHERE users.uuid = '%s')));",
                    resource,
                    current_credentials.uuid);
   else
     ret = sql_int ("SELECT count(*) FROM %ss%s"
                    " WHERE id = %llu"
                    "%s"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT users.id FROM users WHERE users.uuid = '%s')));",
+                   " AND ((owner IS NULL)"
+                   "      OR (owner = (SELECT users.id FROM users"
+                   "                   WHERE users.uuid = '%s')));",
                    type,
                    (strcmp (type, "task") && trash) ? "_trash" : "",
                    resource,
@@ -728,8 +733,9 @@ acl_user_owns_trash_uuid (const char *type, const char *uuid)
   quoted_uuid = sql_quote (uuid);
   ret = sql_int ("SELECT count(*) FROM %ss_trash"
                  " WHERE uuid = '%s'"
-                 " AND ((owner IS NULL) OR (owner ="
-                 " (SELECT users.id FROM users WHERE users.uuid = '%s')));",
+                 " AND ((owner IS NULL)"
+                 "      OR (owner = (SELECT users.id FROM users"
+                 "                   WHERE users.uuid = '%s')));",
                  type,
                  quoted_uuid,
                  current_credentials.uuid);
