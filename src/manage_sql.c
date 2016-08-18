@@ -57608,6 +57608,40 @@ manage_report_host_add (report_t report, const char *host, time_t start,
 }
 
 /**
+ * @brief Tests if a report host is marked as dead.
+ *
+ * @param[in]  report_host  Report host.
+ * 
+ * @return 1 if the host is marked as dead, 0 otherwise.
+ */
+int
+report_host_dead (report_host_t report_host)
+{
+  return sql_int ("SELECT count(*) != 0 FROM report_host_details"
+                  " WHERE report_host = %llu"
+                  "   AND name = 'Host dead'"
+                  "   AND value != '0';",
+                  report_host);
+}
+
+/**
+ * @brief Counts.
+ *
+ * @param[in]  report_host  Report host.
+ * 
+ * @return 1 if the host is marked as dead, 0 otherwise.
+ */
+int
+report_host_result_count (report_host_t report_host)
+{
+  return sql_int ("SELECT count(*) FROM report_hosts, results"
+                  " WHERE report_hosts.id = %llu"
+                  "   AND results.report = report_hosts.report"
+                  "   AND report_hosts.host = results.host;",
+                  report_host);
+}
+
+/**
  * @brief Set end time of a report host.
  *
  * @param[in]  report_host  Report host.
@@ -59137,9 +59171,13 @@ create_asset_report (const char *report_id, const char *term)
       iterator_t details;
 
       host = host_iterator_host (&hosts);
-      host_notice (host, "ip", host, "Report Host", report_id, 0, 0);
-
       report_host = host_iterator_report_host (&hosts);
+
+      if (report_host_dead (report_host)
+          || report_host_result_count (report_host) == 0)
+        continue;
+
+      host_notice (host, "ip", host, "Report Host", report_id, 0, 0);
 
       init_report_host_details_iterator (&details, report_host);
       while (next (&details))

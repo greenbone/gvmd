@@ -3835,6 +3835,13 @@ manage_get_users (GSList *, const gchar *, const gchar *);
 report_host_t
 manage_report_host_add (report_t, const char *, time_t, time_t);
 
+int
+report_host_dead (report_host_t);
+
+int
+report_host_result_count (report_host_t);
+
+
 void
 report_host_set_end_time (report_host_t, time_t);
 

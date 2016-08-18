@@ -1,3 +1,17 @@
+2016-08-18  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (report_host_dead, report_host_result_count): New
+	functions.
+	(create_asset_report): Skip hosts that are marked as dead or that
+	have no results.
+
+	* src/manage.h (report_host_dead, report_host_result_count): New
+	function prototypes.
+
+	* src/otp.c (process_otp_scanner_input): Add hosts to assets after
+	the scan of the host has ended, not when the scan of the host has
+	started. Also do not add hosts marked as dead or that have no results.
+
 2016-08-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/wizards/modify_task.xml: Add trailing newline.
