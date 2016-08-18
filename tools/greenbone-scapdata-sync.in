@@ -381,8 +381,8 @@ is_feed_current () {
       then
         RSYNC_SSH_PROXY_CMD=""
       else
-        if [ -r /admin/proxyauth ] && [ -s /admin/proxyauth ]; then
-          RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p /admin/proxyauth\""
+        if [ -e $OPENVAS_SYSCONF_DIR/proxyauth ] && [ -r $OPENVAS_SYSCONF_DIR/proxyauth ]; then
+          RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p $OPENVAS_SYSCONF_DIR/proxyauth\""
         else
           RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p\""
         fi
@@ -1468,8 +1468,8 @@ sync_scapdata(){
         then
           RSYNC_SSH_PROXY_CMD=""
         else
-          if [ -r /admin/proxyauth ] && [ -s /admin/proxyauth ]; then
-            RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p /admin/proxyauth\""
+          if [ -e $OPENVAS_SYSCONF_DIR/proxyauth ] && [ -r $OPENVAS_SYSCONF_DIR/proxyauth ]; then
+            RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p $OPENVAS_SYSCONF_DIR/proxyauth\""
           else
             RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p\""
           fi

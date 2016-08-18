@@ -1,3 +1,9 @@
+2016-08-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* tools/greenbone-scapdata-sync.in,
+	tools/greenbone-certdata-sync.in: Expect proxy auth file in
+	OPENVAS_SYSCONF_DIR.  Patch by Sven Haardiek.
+
 2016-08-18  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (report_host_dead, report_host_result_count): New
