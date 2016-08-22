@@ -58519,7 +58519,7 @@ DEF_ACCESS (host_identifier_iterator_os_title,
  */
 #define HOST_ITERATOR_FILTER_COLUMNS                                        \
  { GET_ITERATOR_FILTER_COLUMNS, "severity", "os", "oss", "hostname", "ip",  \
-   "severity_level", NULL }
+   "severity_level", "updated", NULL }
 
 /**
  * @brief Host iterator columns.
@@ -58617,6 +58617,10 @@ DEF_ACCESS (host_identifier_iterator_os_title,
      "severity_level",                                                \
      KEYWORD_TYPE_STRING                                              \
    },                                                                 \
+   {                                                                  \
+     "modification_time", "updated", KEYWORD_TYPE_INTEGER             \
+   },                                                                 \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                               \
  }
 
 /**
@@ -58703,9 +58707,11 @@ DEF_ACCESS (asset_host_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 2);
 int
 asset_host_count (const get_data_t *get)
 {
-  static const char *extra_columns[] = HOST_ITERATOR_FILTER_COLUMNS;
+  static const char *filter_columns[] = HOST_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = HOST_ITERATOR_COLUMNS;
-  return count ("host", get, columns, NULL, extra_columns, 0, 0, 0, TRUE);
+  static column_t where_columns[] = HOST_ITERATOR_WHERE_COLUMNS;
+  return count2 ("host", get, columns, NULL, where_columns, NULL,
+                 filter_columns, 0, NULL, NULL, TRUE);
 }
 
 /**
@@ -64921,9 +64927,10 @@ column_is_timestamp (const char* column)
 {
   return (column
           && (strcmp (column, "created") == 0
-                      || strcmp (column, "date") == 0
-                      || strcmp (column, "modified") == 0
-                      || strcmp (column, "published") == 0));
+              || strcmp (column, "date") == 0
+              || strcmp (column, "modified") == 0
+              || strcmp (column, "published") == 0
+              || strcmp (column, "updated") == 0));
 }
 
 /**
