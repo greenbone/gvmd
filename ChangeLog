@@ -1,3 +1,24 @@
+2016-08-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Unify option handlers.  Do all the printing in the handlers.
+
+	* src/openvasmd.c (main): Remove processing of the returns from option
+	handlers.  This is now done more uniformly, in the handlers.
+
+	* src/manage_sql.c (manage_option_setup, manage_option_cleanup): New
+	functions.
+	(manage_encrypt_all_credentials): Remove decrypt flag.
+	(manage_decrypt_all_credentials): New function.  Use option setup
+	functions.
+	(manage_check_alerts, manage_create_scanner, manage_delete_scanner)
+	(manage_modify_scanner, manage_verify_scanner, manage_get_scanners)
+	(manage_modify_setting, manage_create_user, manage_delete_user)
+	(manage_get_users, manage_set_password, manage_optimize): Use option setup
+	functions.
+	(manage_modify_report_format): Remove.  No longer used.
+
+	* src/manage.h: Update headers accordingly.
+
 2016-08-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (HOST_ITERATOR_FILTER_COLUMNS): Add "updated".

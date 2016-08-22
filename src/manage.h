@@ -166,7 +166,10 @@ int
 manage_migrate (GSList*, const gchar*);
 
 int
-manage_encrypt_all_credentials (GSList *, const gchar *, gboolean);
+manage_encrypt_all_credentials (GSList *, const gchar *);
+
+int
+manage_decrypt_all_credentials (GSList *, const gchar *);
 
 
 /* Task structures. */
@@ -3035,10 +3038,6 @@ init_param_option_iterator (iterator_t*, report_format_param_t, int,
 
 const char*
 param_option_iterator_value (iterator_t *);
-
-int
-manage_modify_report_format (GSList *, const gchar *, const char *,
-                             const gchar *, const gchar *);
 
 
 /* Slaves. */

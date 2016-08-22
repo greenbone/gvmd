@@ -1492,6 +1492,61 @@ cert_check_time ()
                   "      END;");
 }
 
+/**
+ * @brief Setup for an option process.
+ *
+ * @param[in]  log_config  Log configuration.
+ * @param[in]  database    Database.
+ *
+ * @return 0 success, -1 error, -2 database is wrong version,
+ *         -3 database needs to be initialised from server.
+ */
+int
+manage_option_setup (GSList *log_config, const gchar *database)
+{
+  const gchar *db;
+  int ret;
+
+  if (openvas_auth_init ())
+    {
+      printf ("Authentication init failed\n");
+      return -1;
+    }
+
+  db = database ? database : sql_default_database ();
+
+  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
+  assert (ret != -4);
+  switch (ret)
+    {
+      case 0:
+        break;
+      case -2:
+        printf ("Database is wrong version.\n");
+        return ret;
+      case -3:
+        printf ("Database must be initialised"
+                " (with --update or --rebuild).\n");
+        return ret;
+      default:
+        printf ("Internal error.\n");
+        return ret;
+    }
+
+  init_manage_process (0, db);
+
+  return 0;
+}
+
+/**
+ * @brief Cleanup for an option process.
+ */
+void
+manage_option_cleanup ()
+{
+  cleanup_manage_process (TRUE);
+}
+
 
 /* Filter utilities. */
 
@@ -6389,7 +6444,7 @@ encrypt_all_credentials (gboolean decrypt_flag)
 }
 
 /**
- * @brief Driver to encrypt or re-encrypt all credentials
+ * @brief Encrypt or re-encrypt all credentials
  *
  * All plaintext credentials in the credentials table are
  * encrypted, all already encrypted credentials are encrypted again
@@ -6397,31 +6452,61 @@ encrypt_all_credentials (gboolean decrypt_flag)
  *
  * @param[in] log_config    Log configuration.
  * @param[in] database      Location of manage database.
- * @param[in] decrypt_flag  If true decrypt all credentials.
  *
  * @return 0 success, -1 error,
  *         -2 database is wrong version, -3 database needs to be initialised
  *         from server.
  */
 int
-manage_encrypt_all_credentials (GSList *log_config, const gchar *database,
-                                gboolean decrypt_flag)
+manage_encrypt_all_credentials (GSList *log_config, const gchar *database)
 {
   int ret;
-  const gchar *db;
 
-  db = database ? database : sql_default_database ();
+  g_info ("   (Re-)encrypting all credentials.\n");
 
-  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
-  assert (ret != -4);
+  ret = manage_option_setup (log_config, database);
   if (ret)
     return ret;
 
-  init_manage_process (0, db);
+  ret = encrypt_all_credentials (FALSE);
+  if (ret)
+    printf ("Encryption failed.\n");
+  else
+    printf ("Encryption succeeded.\n");
 
-  ret = encrypt_all_credentials (decrypt_flag);
+  manage_option_cleanup ();
 
-  cleanup_manage_process (TRUE);
+  return ret;
+}
+
+/**
+ * @brief Decrypt all credentials
+ *
+ * @param[in] log_config    Log configuration.
+ * @param[in] database      Location of manage database.
+ *
+ * @return 0 success, -1 error,
+ *         -2 database is wrong version, -3 database needs to be initialised
+ *         from server.
+ */
+int
+manage_decrypt_all_credentials (GSList *log_config, const gchar *database)
+{
+  int ret;
+
+  g_info ("   Decrypting all credentials.\n");
+
+  ret = manage_option_setup (log_config, database);
+  if (ret)
+    return ret;
+
+  ret = encrypt_all_credentials (TRUE);
+  if (ret)
+    printf ("Decryption failed.\n");
+  else
+    printf ("Decryption succeeded.\n");
+
+  manage_option_cleanup ();
 
   return ret;
 }
@@ -6697,20 +6782,13 @@ int
 manage_check_alerts (GSList *log_config, const gchar *database,
                      const gchar *name, const gchar *role_name)
 {
-  const gchar *db;
   int ret, max_time;
 
-  if (openvas_auth_init ())
-    return -1;
+  g_info ("   Checking alerts.\n");
 
-  db = database ? database : sql_default_database ();
-
-  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
-  assert (ret != -4);
+  ret = manage_option_setup (log_config, database);
   if (ret)
     return ret;
-
-  init_manage_process (0, db);
 
   /* Setup a dummy user, so that create_user will work. */
   current_credentials.uuid = "";
@@ -6774,7 +6852,7 @@ manage_check_alerts (GSList *log_config, const gchar *database,
 
   current_credentials.uuid = NULL;
 
-  cleanup_manage_process (TRUE);
+  manage_option_cleanup ();
 
   return ret;
 }
@@ -44151,7 +44229,6 @@ manage_create_scanner (GSList *log_config, const gchar *database,
                        const char *type, const char *ca_pub_path,
                        const char *key_pub_path, const char *key_priv_path)
 {
-  const gchar *db;
   int ret;
   char *ca_pub, *key_pub, *key_priv;
   GError *error = NULL;
@@ -44159,18 +44236,15 @@ manage_create_scanner (GSList *log_config, const gchar *database,
   gchar *credential_id;
   gchar *name_for_credential;
 
-  if (openvas_auth_init ())
-    return -1;
+  g_info ("   Creating scanner.\n");
 
-  db = database ? database : sql_default_database ();
-
-  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
-  assert (ret != -4);
+  ret = manage_option_setup (log_config, database);
   if (ret)
     return ret;
 
-  init_manage_process (0, db);
   current_credentials.uuid = "";
+
+  /* TODO cleanup and printf on error */
 
   if (!g_file_get_contents (ca_pub_path, &ca_pub, NULL, &error))
     {
@@ -44267,7 +44341,8 @@ manage_create_scanner (GSList *log_config, const gchar *database,
         printf ("Failed to create scanner.\n");
         break;
     }
-  cleanup_manage_process (TRUE);
+
+  manage_option_cleanup ();
 
   return ret;
 }
@@ -44287,27 +44362,21 @@ int
 manage_delete_scanner (GSList *log_config, const gchar *database,
                        const gchar *uuid)
 {
-  const gchar *db;
   int ret;
 
   assert (uuid);
+
+  g_info ("   Deleting scanner.\n");
+
   if (!strcmp (uuid, SCANNER_UUID_DEFAULT))
     {
       printf ("Default OpenVAS Scanner can't be deleted.\n");
       return 3;
     }
 
-  if (openvas_auth_init ())
-    return -1;
-
-  db = database ? database : sql_default_database ();
-
-  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
-  assert (ret != -4);
+  ret = manage_option_setup (log_config, database);
   if (ret)
     return ret;
-
-  init_manage_process (0, db);
 
   current_credentials.uuid = "";
   switch ((ret = delete_scanner (uuid, 1)))
@@ -44327,7 +44396,7 @@ manage_delete_scanner (GSList *log_config, const gchar *database,
     }
   current_credentials.uuid = NULL;
 
-  cleanup_manage_process (TRUE);
+  manage_option_cleanup ();
   return ret;
 }
 
@@ -44357,7 +44426,6 @@ manage_modify_scanner (GSList *log_config, const gchar *database,
                        const char *type, const char *ca_pub_path,
                        const char *key_pub_path, const char *key_priv_path)
 {
-  const gchar *db;
   int ret;
   char *ca_pub, *key_pub, *key_priv;
   GError *error = NULL;
@@ -44366,17 +44434,14 @@ manage_modify_scanner (GSList *log_config, const gchar *database,
   gchar *credential_id;
   gchar *name_for_credential;
 
-  if (openvas_auth_init ())
-    return -1;
+  g_info ("   Modifying scanner.\n");
 
-  db = database ? database : sql_default_database ();
-
-  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
-  assert (ret != -4);
+  ret = manage_option_setup (log_config, database);
   if (ret)
     return ret;
 
-  init_manage_process (0, db);
+  /* TODO cleanup and printf on error */
+
   current_credentials.uuid = "";
 
   if (scanner_id)
@@ -44520,7 +44585,8 @@ manage_modify_scanner (GSList *log_config, const gchar *database,
         printf ("Failed to modify scanner.\n");
         break;
     }
-  cleanup_manage_process (TRUE);
+
+  manage_option_cleanup ();
 
   return ret;
 }
@@ -44540,22 +44606,16 @@ int
 manage_verify_scanner (GSList *log_config, const gchar *database,
                        const gchar *uuid)
 {
-  const gchar *db;
   int ret;
   char *version;
 
   assert (uuid);
 
-  if (openvas_auth_init ())
-    return -1;
-  db = database ? database : sql_default_database ();
+  g_info ("   Verifying scanner.\n");
 
-  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
-  assert (ret != -4);
+  ret = manage_option_setup (log_config, database);
   if (ret)
     return ret;
-
-  init_manage_process (0, db);
 
   current_credentials.uuid = "";
   switch ((ret = verify_scanner (uuid, &version)))
@@ -44576,7 +44636,7 @@ manage_verify_scanner (GSList *log_config, const gchar *database,
     }
   current_credentials.uuid = NULL;
 
-  cleanup_manage_process (TRUE);
+  manage_option_cleanup ();
   return ret;
 }
 
@@ -45715,15 +45775,33 @@ manage_get_scanners (GSList *log_config, const gchar *database)
   const gchar *db;
   int ret;
 
+  g_info ("   Getting scanners.\n");
+
   if (openvas_auth_init ())
-    return -1;
+    {
+      printf ("Authentication init failed\n");
+      return -1;
+    }
 
   db = database ? database : sql_default_database ();
 
   ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
   assert (ret != -4);
-  if (ret)
-    return ret;
+  switch (ret)
+    {
+      case 0:
+        break;
+      case -2:
+        printf ("Database is wrong version.\n");
+        return ret;
+      case -3:
+        printf ("Database must be initialised"
+                " (with --update or --rebuild).\n");
+        return ret;
+      default:
+        printf ("Internal error.\n");
+        return ret;
+    }
 
   init_manage_process (0, db);
 
@@ -49438,69 +49516,6 @@ init_param_option_iterator (iterator_t* iterator,
  *         cleanup_iterator.
  */
 DEF_ACCESS (param_option_iterator_value, 1);
-
-/**
- * @brief Modify the given report format.
- *
- * @param[in]  log_config        Log configuration.
- * @param[in]  database          Location of manage database.
- * @param[in]  report_format_id  UUID of report_format.
- * @param[in]  predefined        Predefined flag.
- * @param[in]  active            Active flag.
- *
- * @return 0 success, 1 failed to find report format, 3 report_format_id
- *         required, 4 invalid value, 99 permission denied, -1 error,
- *         -2 database is wrong version, -3 database needs to be initialised
- *         from server.
- */
-int
-manage_modify_report_format (GSList *log_config, const gchar *database,
-                             const char *report_format_id,
-                             const gchar *predefined, const gchar *active)
-{
-  const gchar *db;
-  int ret;
-
-  if (openvas_auth_init ())
-    return -1;
-
-  db = database ? database : sql_default_database ();
-
-  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
-  assert (ret != -4);
-  if (ret)
-    return ret;
-
-  init_manage_process (0, db);
-  current_credentials.uuid = "";
-
-  ret = modify_report_format (report_format_id, NULL, NULL, active, NULL, NULL,
-                              predefined);
-  switch (ret)
-    {
-      case 0:
-        printf ("Report format modified.\n");
-        break;
-      case 1:
-        printf ("Failed to find report format.\n");
-        break;
-      case 2:
-        printf ("Report format ID required.\n");
-        break;
-      case 5:
-        printf ("Predefined flag must be 0 or 1.\n");
-        break;
-      case 99:
-        printf ("Permission denied.\n");
-        break;
-      default:
-        printf ("Failed to modify report format.\n");
-        break;
-    }
-  cleanup_manage_process (TRUE);
-
-  return ret;
-}
 
 /**
  * @brief Create or update report format for check_report_format.
@@ -57611,7 +57626,7 @@ manage_report_host_add (report_t report, const char *host, time_t start,
  * @brief Tests if a report host is marked as dead.
  *
  * @param[in]  report_host  Report host.
- * 
+ *
  * @return 1 if the host is marked as dead, 0 otherwise.
  */
 int
@@ -57628,7 +57643,7 @@ report_host_dead (report_host_t report_host)
  * @brief Counts.
  *
  * @param[in]  report_host  Report host.
- * 
+ *
  * @return 1 if the host is marked as dead, 0 otherwise.
  */
 int
@@ -60559,27 +60574,26 @@ manage_modify_setting (GSList *log_config, const gchar *database,
                        const gchar *name, const gchar *uuid, const char *value)
 {
   int ret;
-  const gchar *db;
   gchar *quoted_name, *quoted_description, *quoted_value, *normalised;
+
+  g_info ("   Modifying setting.\n");
 
   if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT)
       && strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE))
-    return 3;
+    {
+      printf ("Error in setting UUID.\n");
+      return 3;
+    }
 
   if (setting_verify (uuid, value, name))
-    return 5;
+    {
+      printf ("Syntax error in setting value.\n");
+      return 5;
+    }
 
-  if (openvas_auth_init ())
-    return -1;
-
-  db = database ? database : sql_default_database ();
-
-  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
-  assert (ret != -4);
+  ret = manage_option_setup (log_config, database);
   if (ret)
     return ret;
-
-  init_manage_process (0, db);
 
   sql_begin_immediate ();
 
@@ -60590,18 +60604,21 @@ manage_modify_setting (GSList *log_config, const gchar *database,
       if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
         {
           sql_rollback ();
+          printf ("Modifying this setting for a single user is forbidden.\n");
           return 4;
         }
 
       if (find_user_by_name (name, &user))
         {
           sql_rollback ();
+          printf ("Internal error.\n");
           return -1;
         }
 
       if (user == 0)
         {
           sql_rollback ();
+          printf ("Failed to find user.\n");
           return 1;
         }
 
@@ -60657,6 +60674,7 @@ manage_modify_setting (GSList *log_config, const gchar *database,
     }
 
   sql_commit ();
+  manage_option_cleanup ();
   return 0;
 }
 
@@ -62071,20 +62089,13 @@ manage_create_user (GSList *log_config, const gchar *database,
 {
   char *uuid;
   array_t *roles;
-  const gchar *db;
   int ret;
 
-  if (openvas_auth_init ())
-    return -1;
+  g_info ("   Creating user.\n");
 
-  db = database ? database : sql_default_database ();
-
-  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
-  assert (ret != -4);
+  ret = manage_option_setup (log_config, database);
   if (ret)
     return ret;
-
-  init_manage_process (0, db);
 
   roles = make_array ();
   if (role_name)
@@ -62135,7 +62146,7 @@ manage_create_user (GSList *log_config, const gchar *database,
   array_free (roles);
   free (uuid);
 
-  cleanup_manage_process (TRUE);
+  manage_option_cleanup ();
 
   return ret;
 }
@@ -62156,20 +62167,13 @@ int
 manage_delete_user (GSList *log_config, const gchar *database,
                     const gchar *name, const gchar *inheritor_name)
 {
-  const gchar *db;
   int ret;
 
-  if (openvas_auth_init ())
-    return -1;
+  g_info ("   Deleting user.\n");
 
-  db = database ? database : sql_default_database ();
-
-  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
-  assert (ret != -4);
+  ret = manage_option_setup (log_config, database);
   if (ret)
     return ret;
-
-  init_manage_process (0, db);
 
   /* Setup a dummy user, so that delete_user will work. */
   current_credentials.uuid = "";
@@ -62201,7 +62205,7 @@ manage_delete_user (GSList *log_config, const gchar *database,
 
   current_credentials.uuid = NULL;
 
-  cleanup_manage_process (TRUE);
+  manage_option_cleanup ();
 
   return ret;
 }
@@ -62220,34 +62224,27 @@ manage_get_users (GSList *log_config, const gchar *database,
                   const gchar* role_name)
 {
   iterator_t users;
-  const gchar *db;
   int ret;
 
-  if (openvas_auth_init ())
-    return -1;
+  g_info ("   Getting users.\n");
 
-  db = database ? database : sql_default_database ();
-
-  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
-  assert (ret != -4);
+  ret = manage_option_setup (log_config, database);
   if (ret)
     return ret;
-
-  init_manage_process (0, db);
 
   if (role_name)
     {
       role_t role;
       if (find_role_by_name (role_name, &role))
         {
-          cleanup_manage_process (TRUE);
           printf ("Internal Error.\n");
+          manage_option_cleanup ();
           return -1;
         }
       if (role == 0)
         {
-          cleanup_manage_process (TRUE);
           printf ("Failed to find role.\n");
+          manage_option_cleanup ();
           return -1;
         }
       init_iterator (&users,
@@ -62262,7 +62259,7 @@ manage_get_users (GSList *log_config, const gchar *database,
     printf ("%s\n", iterator_string (&users, 0));
   cleanup_iterator (&users);
 
-  cleanup_manage_process (TRUE);
+  manage_option_cleanup ();
 
   return 0;
 }
@@ -62312,7 +62309,7 @@ set_password (const gchar *name, const gchar *uuid, const gchar *password,
  * @param[in]  name      Name of user.
  * @param[in]  password  New password.
  *
- * @return 0 success, 1 failed to find user, -1 error.
+ * @return 0 success, -1 error.
  */
 int
 manage_set_password (GSList *log_config, const gchar *database,
@@ -62321,45 +62318,56 @@ manage_set_password (GSList *log_config, const gchar *database,
   user_t user;
   char *uuid;
   int ret;
-  const gchar *db;
 
-  if (openvas_auth_init ())
-    return -1;
+  g_info ("   Modifying user password.\n");
 
-  db = database ? database : sql_default_database ();
+  if (name == NULL)
+    {
+      printf ("--user required.\n");
+      return -1;
+    }
 
-  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
-  assert (ret != -4);
+  ret = manage_option_setup (log_config, database);
   if (ret)
     return ret;
-
-  init_manage_process (0, db);
 
   sql_begin_immediate ();
 
   if (find_user_by_name (name, &user))
     {
-      sql_rollback ();
-      return -1;
+      printf ("Failed to find user.\n");
+      goto fail;
     }
 
   if (user == 0)
     {
-      sql_rollback ();
-      return 1;
+      printf ("New password rejected.\n");
+      goto fail;
     }
 
   uuid = user_uuid (user);
   if (uuid == NULL)
     {
-      sql_rollback ();
-      return -1;
+      printf ("Failed to allocate UUID.\n");
+      goto fail;
     }
 
-  ret = set_password (name, uuid, password, NULL);
+  if (set_password (name, uuid, password, NULL))
+    {
+      printf ("New password rejected.\n");
+      free (uuid);
+      goto fail;
+    }
+
   sql_commit ();
   free (uuid);
+  manage_option_cleanup ();
   return ret;
+
+ fail:
+  sql_rollback ();
+  manage_option_cleanup ();
+  return -1;
 }
 
 /**
@@ -65368,9 +65376,10 @@ tags_set_orphans (const char *type, resource_t resource, int location)
 int
 manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
 {
-  const gchar *db;
   gchar *success_text;
   int ret;
+
+  g_info ("   Optimizing: %s.\n", name);
 
   if (name == NULL)
     {
@@ -65378,25 +65387,18 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
       return 1;
     }
 
-  if (openvas_auth_init ())
-    return -1;
-
-  db = database ? database : sql_default_database ();
-  success_text = NULL;
-
-  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
-  assert (ret != -4);
+  ret = manage_option_setup (log_config, database);
   if (ret)
     return ret;
-
-  init_manage_process (0, db);
 
   ret = 0;
   if (strcasecmp (name, "vacuum") == 0)
     {
+      const gchar *db;
       struct stat state;
       long long int old_size, new_size;
 
+      db = database ? database : sql_default_database ();
       old_size = 0LL;
       new_size = 0LL;
       ret = stat (db, &state);
@@ -65574,7 +65576,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
 
   current_credentials.uuid = NULL;
 
-  cleanup_manage_process (TRUE);
+  manage_option_cleanup ();
 
   return ret;
 }

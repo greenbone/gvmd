@@ -1654,33 +1654,12 @@ main (int argc, char** argv)
 
   if (optimize)
     {
-      g_message ("   Optimizing: %s.\n", optimize);
+      int ret;
 
-      /* Create the user and then exit. */
-      switch (manage_optimize (log_config, database, optimize))
-        {
-          case 0:
-            log_config_free ();
-            return EXIT_SUCCESS;
-          case 1:
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -2:
-            g_critical ("%s: database is wrong version\n", __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -3:
-            g_critical ("%s: database must be initialised"
-                        " (with --update or --rebuild)\n",
-                        __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -1:
-          default:
-            g_critical ("%s: internal error\n", __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-        }
+      ret = manage_optimize (log_config, database, optimize);
+      log_config_free ();
+      if (ret)
+        return EXIT_FAILURE;
       return EXIT_SUCCESS;
     }
 
@@ -1689,6 +1668,9 @@ main (int argc, char** argv)
       int ret;
       scanner_type_t type;
       char *stype;
+
+      /* Create the scanner and then exit. */
+
       if (!scanner_host)
         scanner_host = OPENVASSD_ADDRESS;
       if (!scanner_port)
@@ -1706,10 +1688,9 @@ main (int argc, char** argv)
         type = SCANNER_TYPE_OSP;
       else
         {
-          g_warning ("Invalid scanner type value.\n");
+          printf ("Invalid scanner type value.\n");
           return EXIT_FAILURE;
         }
-      /* Create the scanner and then exit. */
       stype = g_strdup_printf ("%u", type);
       ret = manage_create_scanner (log_config, database, create_scanner,
                                    scanner_host, scanner_port, stype,
@@ -1717,24 +1698,8 @@ main (int argc, char** argv)
                                    scanner_key_priv);
       g_free (stype);
       log_config_free ();
-      switch (ret)
-        {
-          case 0:
-            return EXIT_SUCCESS;
-          case -2:
-            g_warning ("%s: database is wrong version\n", __FUNCTION__);
-            return EXIT_FAILURE;
-          case -3:
-            g_warning ("%s: database must be initialised"
-                       " (with --update or --rebuild)\n",
-                       __FUNCTION__);
-            return EXIT_FAILURE;
-          case -1:
-            g_warning ("%s: internal error\n", __FUNCTION__);
-            return EXIT_FAILURE;
-          default:
-            return EXIT_FAILURE;
-        }
+      if (ret)
+        return EXIT_FAILURE;
       return EXIT_SUCCESS;
     }
 
@@ -1742,6 +1707,8 @@ main (int argc, char** argv)
     {
       int ret;
       char *stype;
+
+      /* Modify the scanner and then exit. */
 
       if (scanner_type)
         {
@@ -1762,321 +1729,115 @@ main (int argc, char** argv)
       else
         stype = NULL;
 
-      /* Modify the scanner and then exit. */
       ret = manage_modify_scanner (log_config, database, modify_scanner,
                                    scanner_name, scanner_host, scanner_port,
                                    stype, scanner_ca_pub, scanner_key_pub,
                                    scanner_key_priv);
       g_free (stype);
       log_config_free ();
-      switch (ret)
-        {
-          case 0:
-            return EXIT_SUCCESS;
-          case -2:
-            g_warning ("%s: database is wrong version\n", __FUNCTION__);
-            return EXIT_FAILURE;
-          case -3:
-            g_warning ("%s: database must be initialised"
-                       " (with --update or --rebuild)\n",
-                       __FUNCTION__);
-            return EXIT_FAILURE;
-          case -1:
-            g_warning ("%s: internal error\n", __FUNCTION__);
-            return EXIT_FAILURE;
-          default:
-            return EXIT_FAILURE;
-        }
+      if (ret)
+        return EXIT_FAILURE;
       return EXIT_SUCCESS;
     }
 
   if (check_alerts)
     {
-      g_info ("   Checking alerts.\n");
+      int ret;
 
-      /* Check the alerts and then exit. */
-      switch (manage_check_alerts (log_config, database, create_user, role))
-        {
-          case 0:
-            log_config_free ();
-            return EXIT_SUCCESS;
-          case -1:
-          default:
-            g_critical ("%s: internal error\n", __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-        }
+      ret = manage_check_alerts (log_config, database, create_user, role);
+      log_config_free ();
+      if (ret)
+        return EXIT_FAILURE;
       return EXIT_SUCCESS;
     }
 
   if (create_user)
     {
-      g_info ("   Creating admin user.\n");
+      int ret;
 
-      /* Create the user and then exit. */
-      switch (manage_create_user (log_config, database, create_user, role))
-        {
-          case 0:
-            log_config_free ();
-            return EXIT_SUCCESS;
-          case -2:
-            g_critical ("%s: database is wrong version\n", __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -3:
-            g_critical ("%s: database must be initialised"
-                        " (with --update or --rebuild)\n",
-                        __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -1:
-          default:
-            g_critical ("%s: internal error\n", __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-        }
+      ret = manage_create_user (log_config, database, create_user, role);
+      log_config_free ();
+      if (ret)
+        return EXIT_FAILURE;
       return EXIT_SUCCESS;
     }
 
   if (delete_user)
     {
-      g_info ("   Deleting user.\n");
+      int ret;
 
-      /* Delete the user and then exit. */
-      switch (manage_delete_user (log_config, database, delete_user, inheritor))
-        {
-          case 0:
-            log_config_free ();
-            return EXIT_SUCCESS;
-          case 2:
-            g_critical ("%s: failed to find user '%s'\n",
-                        __FUNCTION__,
-                        delete_user);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case 4:
-            g_critical ("%s: user has active tasks\n", __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case 6:
-            g_critical ("%s: inheritor not found\n", __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case 7:
-            g_critical ("%s: inheritor same as deleted user\n", __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case 8:
-            g_critical ("%s: invalid inheritor\n", __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -2:
-            g_critical ("%s: database is wrong version\n", __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -3:
-            g_critical ("%s: database must be initialised"
-                        " (with --update or --rebuild)\n",
-                        __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -1:
-          default:
-            g_critical ("%s: internal error\n", __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-        }
+      ret = manage_delete_user (log_config, database, delete_user, inheritor);
+      log_config_free ();
+      if (ret)
+        return EXIT_FAILURE;
+      return EXIT_SUCCESS;
     }
 
   if (get_users)
     {
-      /* List the users and then exit. */
-      switch (manage_get_users (log_config, database, role))
-        {
-          case 0:
-            log_config_free ();
-            return EXIT_SUCCESS;
-          case -2:
-            g_critical ("%s: database is wrong version\n", __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -3:
-            g_critical ("%s: database must be initialised"
-                        " (with --update or --rebuild)\n",
-                        __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -1:
-          default:
-            g_critical ("%s: internal error\n", __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-        }
+      int ret;
+
+      ret = manage_get_users (log_config, database, role);
+      log_config_free ();
+      if (ret)
+        return EXIT_FAILURE;
+      return EXIT_SUCCESS;
     }
 
   if (get_scanners)
     {
-      /* List the users and then exit. */
-      int ret = manage_get_scanners (log_config, database);
+      int ret;
+
+      ret = manage_get_scanners (log_config, database);
       log_config_free ();
-      switch (ret)
-        {
-          case 0:
-            return EXIT_SUCCESS;
-          case -2:
-            g_warning ("%s: database is wrong version\n", __FUNCTION__);
-            return EXIT_FAILURE;
-          case -3:
-            g_warning ("%s: database must be initialised"
-                       " (with --update or --rebuild)\n", __FUNCTION__);
-            return EXIT_FAILURE;
-          case -1:
-          default:
-            g_warning ("%s: internal error\n", __FUNCTION__);
-            return EXIT_FAILURE;
-        }
+      if (ret)
+        return EXIT_FAILURE;
+      return EXIT_SUCCESS;
     }
 
   if (delete_scanner)
     {
       int ret;
 
-      /* Delete the scanner and then exit. */
       ret = manage_delete_scanner (log_config, database, delete_scanner);
       log_config_free ();
-      switch (ret)
-        {
-          case 0:
-            return EXIT_SUCCESS;
-          case 1:
-          case 2:
-          case 3:
-            return EXIT_FAILURE;
-          case -2:
-            g_warning ("%s: database is wrong version\n", __FUNCTION__);
-            return EXIT_FAILURE;
-          case -3:
-            g_warning ("%s: database must be initialised"
-                       " (with --update or --rebuild)\n", __FUNCTION__);
-            return EXIT_FAILURE;
-          default:
-            g_warning ("%s: internal error\n", __FUNCTION__);
-            return EXIT_FAILURE;
-        }
+      if (ret)
+        return EXIT_FAILURE;
+      return EXIT_SUCCESS;
     }
 
   if (verify_scanner)
     {
       int ret;
 
-      /* Delete the scanner and then exit. */
       ret = manage_verify_scanner (log_config, database, verify_scanner);
       log_config_free ();
-      switch (ret)
-        {
-          case 0:
-            return EXIT_SUCCESS;
-          case 1:
-          case 2:
-          case 3:
-            return EXIT_FAILURE;
-          case -2:
-            g_warning ("%s: database is wrong version\n", __FUNCTION__);
-            return EXIT_FAILURE;
-          case -3:
-            g_warning ("%s: database must be initialised"
-                       " (with --update or --rebuild)\n", __FUNCTION__);
-            return EXIT_FAILURE;
-          default:
-            g_warning ("%s: internal error\n", __FUNCTION__);
-            return EXIT_FAILURE;
-        }
+      if (ret)
+        return EXIT_FAILURE;
+      return EXIT_SUCCESS;
     }
 
   if (new_password)
     {
-      /* Modify the password and then exit. */
+      int ret;
 
-      if (user == NULL)
-        {
-          g_warning ("%s: --user required\n", __FUNCTION__);
-          return EXIT_FAILURE;
-        }
-
-      switch (manage_set_password (log_config, database, user, new_password))
-        {
-          case 0:
-            log_config_free ();
-            return EXIT_SUCCESS;
-          case 1:
-            g_critical ("%s: failed to find user\n", __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -2:
-            g_critical ("%s: database is wrong version\n", __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -3:
-            g_critical ("%s: database must be initialised"
-                        " (with --update or --rebuild)\n",
-                        __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -1:
-          default:
-            g_critical ("%s: internal error\n", __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-        }
+      ret = manage_set_password (log_config, database, user, new_password);
+      log_config_free ();
+      if (ret)
+        return EXIT_FAILURE;
+      return EXIT_SUCCESS;
     }
 
   if (modify_setting)
     {
-      /* Modify a setting and then exit. */
+      int ret;
 
-      switch (manage_modify_setting (log_config, database, user,
-                                     modify_setting,
-                                     value))
-        {
-          case 0:
-            log_config_free ();
-            return EXIT_SUCCESS;
-          case 1:
-            g_critical ("%s: failed to find user\n", __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case 3:
-            g_critical ("%s: error in setting UUID\n",
-                        __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case 4:
-            g_critical ("%s: modifying this setting for a single user is"
-                        " forbidden\n",
-                        __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case 5:
-            g_critical ("%s: syntax error in setting value\n",
-                        __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -2:
-            g_critical ("%s: database is wrong version\n", __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -3:
-            g_critical ("%s: database must be initialised"
-                        " (with --update or --rebuild)\n",
-                        __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -1:
-          default:
-            g_critical ("%s: internal error\n", __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-        }
+      ret = manage_modify_setting (log_config, database, user,
+                                   modify_setting, value);
+      log_config_free ();
+      if (ret)
+        return EXIT_FAILURE;
+      return EXIT_SUCCESS;
     }
 
   if (migrate_database)
@@ -2127,67 +1888,26 @@ main (int argc, char** argv)
 
   if (encrypt_all_credentials)
     {
-      g_info ("   (Re-)encrypting all credentials.\n");
-      switch (manage_encrypt_all_credentials (log_config, database, FALSE))
-        {
-          case 0:
-            break;
-          case -2:
-            g_critical ("%s: database is wrong version\n", __FUNCTION__);
-            fprintf (stderr, "Decryption failed.\n");
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -3:
-            g_critical ("%s: database must be initialised"
-                        " (with --update or --rebuild)\n",
-                        __FUNCTION__);
-            fprintf (stderr, "Decryption failed.\n");
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -1:
-          default:
-            g_critical ("%s: internal error\n", __FUNCTION__);
-            fprintf (stderr, "Decryption failed.\n");
-            log_config_free ();
-            return EXIT_FAILURE;
-        }
-      fprintf (stderr, "Encryption succeeded.\n");
+      int ret;
+
+      ret = manage_encrypt_all_credentials (log_config, database);
       log_config_free ();
+      if (ret)
+        return EXIT_FAILURE;
       return EXIT_SUCCESS;
     }
 
   if (decrypt_all_credentials)
     {
-      g_info ("   Decrypting all credentials.\n");
-      switch (manage_encrypt_all_credentials (log_config, database, TRUE))
-        {
-          case 0:
-            break;
-          case -2:
-            g_critical ("%s: database is wrong version\n", __FUNCTION__);
-            fprintf (stderr, "Decryption failed.\n");
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -3:
-            g_critical ("%s: database must be initialised"
-                        " (with --update or --rebuild)\n",
-                        __FUNCTION__);
-            fprintf (stderr, "Decryption failed.\n");
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -1:
-          default:
-            g_critical ("%s: internal error\n", __FUNCTION__);
-            fprintf (stderr, "Decryption failed.\n");
-            log_config_free ();
-            return EXIT_FAILURE;
-        }
-      fprintf (stderr, "Decryption succeeded.\n");
+      int ret;
+
+      ret = manage_decrypt_all_credentials (log_config, database);
       log_config_free ();
+      if (ret)
+        return EXIT_FAILURE;
       return EXIT_SUCCESS;
     }
 
-  /* Complete option processing. */
   if (update_nvt_cache || rebuild_nvt_cache)
     {
       int ret;
