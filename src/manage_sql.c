@@ -44244,27 +44244,28 @@ manage_create_scanner (GSList *log_config, const gchar *database,
 
   current_credentials.uuid = "";
 
-  /* TODO cleanup and printf on error */
-
   if (!g_file_get_contents (ca_pub_path, &ca_pub, NULL, &error))
     {
-      g_warning ("%s: %s\n", __FUNCTION__, error->message);
+      printf ("%s.\n", error->message);
       g_error_free (error);
+      manage_option_cleanup ();
       return -1;
     }
   if (!g_file_get_contents (key_pub_path, &key_pub, NULL, &error))
     {
-      g_warning ("%s: %s\n", __FUNCTION__, error->message);
+      printf ("%s.\n", error->message);
       g_error_free (error);
       g_free (ca_pub);
+      manage_option_cleanup ();
       return -1;
     }
   if (!g_file_get_contents (key_priv_path, &key_priv, NULL, &error))
     {
-      g_warning ("%s: %s\n", __FUNCTION__, error->message);
+      printf ("%s.\n", error->message);
       g_error_free (error);
       g_free (ca_pub);
       g_free (key_pub);
+      manage_option_cleanup ();
       return -1;
     }
 
@@ -44315,6 +44316,11 @@ manage_create_scanner (GSList *log_config, const gchar *database,
                                   "private_key", key_priv, NULL);
       if (!secret)
         {
+          printf ("Failed to encrypt private key.\n");
+          g_free (ca_pub);
+          g_free (key_pub);
+          g_free (key_priv);
+          manage_option_cleanup ();
           return -1;
         }
       set_credential_data (new_credential, "secret", secret);
@@ -44440,8 +44446,6 @@ manage_modify_scanner (GSList *log_config, const gchar *database,
   if (ret)
     return ret;
 
-  /* TODO cleanup and printf on error */
-
   current_credentials.uuid = "";
 
   if (scanner_id)
@@ -44453,7 +44457,11 @@ manage_modify_scanner (GSList *log_config, const gchar *database,
       g_free (quoted_scanner_id);
     }
   else
-    return 3;
+    {
+      printf ("Scanner UUID required.\n");
+      manage_option_cleanup ();
+      return 3;
+    }
 
   if (name)
     name_for_credential = sql_quote (name);
@@ -44470,8 +44478,9 @@ manage_modify_scanner (GSList *log_config, const gchar *database,
         ca_pub = g_strdup ("");
       else if (g_file_get_contents (ca_pub_path, &ca_pub, NULL, &error) == 0)
         {
-          g_warning ("%s: %s\n", __FUNCTION__, error->message);
+          printf ("%s.\n", error->message);
           g_error_free (error);
+          manage_option_cleanup ();
           return -1;
         }
     }
@@ -44482,9 +44491,10 @@ manage_modify_scanner (GSList *log_config, const gchar *database,
     {
       if (g_file_get_contents (key_pub_path, &key_pub, NULL, &error) == 0)
         {
-          g_warning ("%s: %s\n", __FUNCTION__, error->message);
+          printf ("%s.\n", error->message);
           g_error_free (error);
           g_free (ca_pub);
+          manage_option_cleanup ();
           return -1;
         }
     }
@@ -44495,10 +44505,11 @@ manage_modify_scanner (GSList *log_config, const gchar *database,
     {
       if (!g_file_get_contents (key_priv_path, &key_priv, NULL, &error))
         {
-          g_warning ("%s: %s\n", __FUNCTION__, error->message);
+          printf ("%s.\n", error->message);
           g_error_free (error);
           g_free (ca_pub);
           g_free (key_pub);
+          manage_option_cleanup ();
           return -1;
         }
     }
@@ -44550,6 +44561,11 @@ manage_modify_scanner (GSList *log_config, const gchar *database,
                                       "private_key", key_priv, NULL);
           if (!secret)
             {
+              printf ("Failed to encrypt private key.\n");
+              g_free (ca_pub);
+              g_free (key_pub);
+              g_free (key_priv);
+              manage_option_cleanup ();
               return -1;
             }
           set_credential_data (new_credential, "secret", secret);

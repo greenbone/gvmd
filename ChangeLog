@@ -1,5 +1,10 @@
 2016-08-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_create_scanner): Always cleanup and printf
+	on error.
+
+2016-08-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Unify option handlers.  Do all the printing in the handlers.
 
 	* src/openvasmd.c (main): Remove processing of the returns from option
