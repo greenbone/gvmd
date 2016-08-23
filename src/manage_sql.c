@@ -1509,7 +1509,7 @@ manage_option_setup (GSList *log_config, const gchar *database)
 
   if (openvas_auth_init ())
     {
-      printf ("Authentication init failed\n");
+      fprintf (stderr, "Authentication init failed\n");
       return -1;
     }
 
@@ -1522,14 +1522,15 @@ manage_option_setup (GSList *log_config, const gchar *database)
       case 0:
         break;
       case -2:
-        printf ("Database is wrong version.\n");
+        fprintf (stderr, "Database is wrong version.\n");
         return ret;
       case -3:
-        printf ("Database must be initialised"
-                " (with --update or --rebuild).\n");
+        fprintf (stderr,
+                 "Database must be initialised"
+                 " (with --update or --rebuild).\n");
         return ret;
       default:
-        printf ("Internal error.\n");
+        fprintf (stderr, "Internal error.\n");
         return ret;
     }
 
@@ -44246,14 +44247,14 @@ manage_create_scanner (GSList *log_config, const gchar *database,
 
   if (!g_file_get_contents (ca_pub_path, &ca_pub, NULL, &error))
     {
-      printf ("%s.\n", error->message);
+      fprintf (stderr, "%s.\n", error->message);
       g_error_free (error);
       manage_option_cleanup ();
       return -1;
     }
   if (!g_file_get_contents (key_pub_path, &key_pub, NULL, &error))
     {
-      printf ("%s.\n", error->message);
+      fprintf (stderr, "%s.\n", error->message);
       g_error_free (error);
       g_free (ca_pub);
       manage_option_cleanup ();
@@ -44261,7 +44262,7 @@ manage_create_scanner (GSList *log_config, const gchar *database,
     }
   if (!g_file_get_contents (key_priv_path, &key_priv, NULL, &error))
     {
-      printf ("%s.\n", error->message);
+      fprintf (stderr, "%s.\n", error->message);
       g_error_free (error);
       g_free (ca_pub);
       g_free (key_pub);
@@ -44316,7 +44317,7 @@ manage_create_scanner (GSList *log_config, const gchar *database,
                                   "private_key", key_priv, NULL);
       if (!secret)
         {
-          printf ("Failed to encrypt private key.\n");
+          fprintf (stderr, "Failed to encrypt private key.\n");
           g_free (ca_pub);
           g_free (key_pub);
           g_free (key_priv);
@@ -44338,13 +44339,13 @@ manage_create_scanner (GSList *log_config, const gchar *database,
         printf ("Scanner created.\n");
         break;
       case 1:
-        printf ("Scanner exists already.\n");
+        fprintf (stderr, "Scanner exists already.\n");
         break;
       case 2:
-        printf ("Invalid value provided.\n");
+        fprintf (stderr, "Invalid value provided.\n");
         break;
       default:
-        printf ("Failed to create scanner.\n");
+        fprintf (stderr, "Failed to create scanner.\n");
         break;
     }
 
@@ -44376,7 +44377,7 @@ manage_delete_scanner (GSList *log_config, const gchar *database,
 
   if (!strcmp (uuid, SCANNER_UUID_DEFAULT))
     {
-      printf ("Default OpenVAS Scanner can't be deleted.\n");
+      fprintf (stderr, "Default OpenVAS Scanner can't be deleted.\n");
       return 3;
     }
 
@@ -44391,13 +44392,13 @@ manage_delete_scanner (GSList *log_config, const gchar *database,
         printf ("Scanner deleted.\n");
         break;
       case 1:
-        printf ("Scanner in use.\n");
+        fprintf (stderr, "Scanner in use.\n");
         break;
       case 2:
-        printf ("Failed to find scanner.\n");
+        fprintf (stderr, "Failed to find scanner.\n");
         break;
       default:
-        printf ("Internal Error.\n");
+        fprintf (stderr, "Internal Error.\n");
         break;
     }
   current_credentials.uuid = NULL;
@@ -44458,7 +44459,7 @@ manage_modify_scanner (GSList *log_config, const gchar *database,
     }
   else
     {
-      printf ("Scanner UUID required.\n");
+      fprintf (stderr, "Scanner UUID required.\n");
       manage_option_cleanup ();
       return 3;
     }
@@ -44478,7 +44479,7 @@ manage_modify_scanner (GSList *log_config, const gchar *database,
         ca_pub = g_strdup ("");
       else if (g_file_get_contents (ca_pub_path, &ca_pub, NULL, &error) == 0)
         {
-          printf ("%s.\n", error->message);
+          fprintf (stderr, "%s.\n", error->message);
           g_error_free (error);
           manage_option_cleanup ();
           return -1;
@@ -44491,7 +44492,7 @@ manage_modify_scanner (GSList *log_config, const gchar *database,
     {
       if (g_file_get_contents (key_pub_path, &key_pub, NULL, &error) == 0)
         {
-          printf ("%s.\n", error->message);
+          fprintf (stderr, "%s.\n", error->message);
           g_error_free (error);
           g_free (ca_pub);
           manage_option_cleanup ();
@@ -44505,7 +44506,7 @@ manage_modify_scanner (GSList *log_config, const gchar *database,
     {
       if (!g_file_get_contents (key_priv_path, &key_priv, NULL, &error))
         {
-          printf ("%s.\n", error->message);
+          fprintf (stderr, "%s.\n", error->message);
           g_error_free (error);
           g_free (ca_pub);
           g_free (key_pub);
@@ -44561,7 +44562,7 @@ manage_modify_scanner (GSList *log_config, const gchar *database,
                                       "private_key", key_priv, NULL);
           if (!secret)
             {
-              printf ("Failed to encrypt private key.\n");
+              fprintf (stderr, "Failed to encrypt private key.\n");
               g_free (ca_pub);
               g_free (key_pub);
               g_free (key_priv);
@@ -44586,19 +44587,19 @@ manage_modify_scanner (GSList *log_config, const gchar *database,
         printf ("Scanner modified.\n");
         break;
       case 2:
-        printf ("Scanner with new name exists already.\n");
+        fprintf (stderr, "Scanner with new name exists already.\n");
         break;
       case 3:
-        printf ("Scanner ID required.\n");
+        fprintf (stderr, "Scanner ID required.\n");
         break;
       case 4:
-        printf ("Invalid value.\n");
+        fprintf (stderr, "Invalid value.\n");
         break;
       case 99:
-        printf ("Permission denied.\n");
+        fprintf (stderr, "Permission denied.\n");
         break;
       default:
-        printf ("Failed to modify scanner.\n");
+        fprintf (stderr, "Failed to modify scanner.\n");
         break;
     }
 
@@ -44641,13 +44642,13 @@ manage_verify_scanner (GSList *log_config, const gchar *database,
         g_free (version);
         break;
       case 1:
-        printf ("Failed to find scanner.\n");
+        fprintf (stderr, "Failed to find scanner.\n");
         break;
       case 2:
-        printf ("Failed to verify scanner.\n");
+        fprintf (stderr, "Failed to verify scanner.\n");
         break;
       default:
-        printf ("Internal Error.\n");
+        fprintf (stderr, "Internal Error.\n");
         break;
     }
   current_credentials.uuid = NULL;
@@ -45788,38 +45789,13 @@ int
 manage_get_scanners (GSList *log_config, const gchar *database)
 {
   iterator_t scanners;
-  const gchar *db;
   int ret;
 
   g_info ("   Getting scanners.\n");
 
-  if (openvas_auth_init ())
-    {
-      printf ("Authentication init failed\n");
-      return -1;
-    }
-
-  db = database ? database : sql_default_database ();
-
-  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
-  assert (ret != -4);
-  switch (ret)
-    {
-      case 0:
-        break;
-      case -2:
-        printf ("Database is wrong version.\n");
-        return ret;
-      case -3:
-        printf ("Database must be initialised"
-                " (with --update or --rebuild).\n");
-        return ret;
-      default:
-        printf ("Internal error.\n");
-        return ret;
-    }
-
-  init_manage_process (0, db);
+  ret = manage_option_setup (log_config, database);
+  if (ret)
+    return ret;
 
   init_iterator (&scanners, "SELECT uuid, name FROM scanners;");
   while (next (&scanners))
@@ -45828,7 +45804,7 @@ manage_get_scanners (GSList *log_config, const gchar *database)
 
   cleanup_iterator (&scanners);
 
-  cleanup_manage_process (TRUE);
+  manage_option_cleanup ();
 
   return 0;
 }
@@ -60597,13 +60573,13 @@ manage_modify_setting (GSList *log_config, const gchar *database,
   if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT)
       && strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE))
     {
-      printf ("Error in setting UUID.\n");
+      fprintf (stderr, "Error in setting UUID.\n");
       return 3;
     }
 
   if (setting_verify (uuid, value, name))
     {
-      printf ("Syntax error in setting value.\n");
+      fprintf (stderr, "Syntax error in setting value.\n");
       return 5;
     }
 
@@ -60620,21 +60596,22 @@ manage_modify_setting (GSList *log_config, const gchar *database,
       if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
         {
           sql_rollback ();
-          printf ("Modifying this setting for a single user is forbidden.\n");
+          fprintf (stderr,
+                   "Modifying this setting for a single user is forbidden.\n");
           return 4;
         }
 
       if (find_user_by_name (name, &user))
         {
           sql_rollback ();
-          printf ("Internal error.\n");
+          fprintf (stderr, "Internal error.\n");
           return -1;
         }
 
       if (user == 0)
         {
           sql_rollback ();
-          printf ("Failed to find user.\n");
+          fprintf (stderr, "Failed to find user.\n");
           return 1;
         }
 
@@ -62121,14 +62098,14 @@ manage_create_user (GSList *log_config, const gchar *database,
         {
           array_free (roles);
           cleanup_manage_process (TRUE);
-          printf ("Internal Error.\n");
+          fprintf (stderr, "Internal Error.\n");
           return -1;
         }
       if (role == 0)
         {
           array_free (roles);
           cleanup_manage_process (TRUE);
-          printf ("Failed to find role.\n");
+          fprintf (stderr, "Failed to find role.\n");
           return -1;
         }
       array_add (roles, role_uuid (role));
@@ -62150,10 +62127,10 @@ manage_create_user (GSList *log_config, const gchar *database,
         printf ("User created with password '%s'.\n", uuid);
         break;
       case -2:
-        printf ("User exists already.\n");
+        fprintf (stderr, "User exists already.\n");
         break;
       default:
-        printf ("Failed to create user.\n");
+        fprintf (stderr, "Failed to create user.\n");
         break;
     }
 
@@ -62200,22 +62177,22 @@ manage_delete_user (GSList *log_config, const gchar *database,
         printf ("User deleted.\n");
         break;
       case 2:
-        printf ("Failed to find user.\n");
+        fprintf (stderr, "Failed to find user.\n");
         break;
       case 4:
-        printf ("User has active tasks.\n");
+        fprintf (stderr, "User has active tasks.\n");
         break;
       case 6:
-        printf ("Inheritor not found.\n");
+        fprintf (stderr, "Inheritor not found.\n");
         break;
       case 7:
-        printf ("Inheritor same as deleted user.\n");
+        fprintf (stderr, "Inheritor same as deleted user.\n");
         break;
       case 8:
-        printf ("Invalid inheritor.\n");
+        fprintf (stderr, "Invalid inheritor.\n");
         break;
       default:
-        printf ("Internal Error.\n");
+        fprintf (stderr, "Internal Error.\n");
         break;
     }
 
@@ -62253,13 +62230,13 @@ manage_get_users (GSList *log_config, const gchar *database,
       role_t role;
       if (find_role_by_name (role_name, &role))
         {
-          printf ("Internal Error.\n");
+          fprintf (stderr, "Internal Error.\n");
           manage_option_cleanup ();
           return -1;
         }
       if (role == 0)
         {
-          printf ("Failed to find role.\n");
+          fprintf (stderr, "Failed to find role.\n");
           manage_option_cleanup ();
           return -1;
         }
@@ -62339,7 +62316,7 @@ manage_set_password (GSList *log_config, const gchar *database,
 
   if (name == NULL)
     {
-      printf ("--user required.\n");
+      fprintf (stderr, "--user required.\n");
       return -1;
     }
 
@@ -62351,26 +62328,26 @@ manage_set_password (GSList *log_config, const gchar *database,
 
   if (find_user_by_name (name, &user))
     {
-      printf ("Failed to find user.\n");
+      fprintf (stderr, "Internal error.\n");
       goto fail;
     }
 
   if (user == 0)
     {
-      printf ("New password rejected.\n");
+      fprintf (stderr, "Failed to find user.\n");
       goto fail;
     }
 
   uuid = user_uuid (user);
   if (uuid == NULL)
     {
-      printf ("Failed to allocate UUID.\n");
+      fprintf (stderr, "Failed to allocate UUID.\n");
       goto fail;
     }
 
   if (set_password (name, uuid, password, NULL))
     {
-      printf ("New password rejected.\n");
+      fprintf (stderr, "New password rejected.\n");
       free (uuid);
       goto fail;
     }
@@ -65399,7 +65376,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
 
   if (name == NULL)
     {
-      printf ("Name required for optimize.\n");
+      fprintf (stderr, "Name required for optimize.\n");
       return 1;
     }
 
@@ -65579,7 +65556,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
     }
   else
     {
-      printf ("Error in optimize name.\n");
+      fprintf (stderr, "Error in optimize name.\n");
       ret = 1;
     }
 
