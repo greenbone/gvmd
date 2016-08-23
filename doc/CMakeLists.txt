@@ -163,6 +163,6 @@ install (FILES omp.html
          DESTINATION share/doc/openvas-manager/html/
          COMPONENT doc)
 
-install (FILES openvasmd.8
+install (FILES openvasmd.8 greenbone-certdata-sync.8 greenbone-scapdata-sync.8
   DESTINATION share/man/man8/
   COMPONENT doc)

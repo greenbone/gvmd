@@ -1,5 +1,11 @@
 2016-03-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/CMakeLists.txt: Install new Man pages.
+
+	* doc/greenbone-certdata-sync.8, doc/greenbone-scapdata-sync.8: New files.
+
+2016-03-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_option_setup, manage_create_scanner)
 	(manage_delete_scanner, manage_modify_scanner, manage_verify_scanner)
 	(manage_modify_setting, manage_create_user, manage_delete_user)
