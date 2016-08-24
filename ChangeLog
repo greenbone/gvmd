@@ -1,3 +1,14 @@
+2016-08-23  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* CMakeLists.txt, src/CMakeLists.txt (OPENVAS_PID_DIR): Rename to
+	OPENVAS_RUN_DIR.
+
+	* src/manage_sql.c (check_db_scanners): Set default scanner location to
+	OPENVAS_RUN_DIR/openvassd.sock.
+
+	* src/openvasmd.c (OPENVAS_ADDRESS): Change from 127.0.0.1 to
+	OPENVAS_RUN_DIR/openvassd.sock.
+
 2016-03-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* doc/CMakeLists.txt: Install new Man pages.

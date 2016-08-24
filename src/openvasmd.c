@@ -135,7 +135,7 @@
 /**
  * @brief Scanner (openvassd) address.
  */
-#define OPENVASSD_ADDRESS "127.0.0.1"
+#define OPENVASSD_ADDRESS OPENVAS_RUN_DIR "/openvassd.sock"
 
 /**
  * @brief Location of scanner certificate.

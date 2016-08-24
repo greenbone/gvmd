@@ -84,6 +84,11 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
+/**
+ * @brief Scanner (openvassd) address.
+ */
+#define OPENVASSD_ADDRESS OPENVAS_RUN_DIR "/openvassd.sock"
+
 
 /* Headers from backend specific manage_xxx.c file. */
 
@@ -13954,7 +13959,7 @@ check_db_scanners ()
            " (uuid, owner, name, host, port, type, ca_pub, credential,"
            "  creation_time, modification_time)"
            " VALUES ('" SCANNER_UUID_DEFAULT "', NULL, 'OpenVAS Default',"
-           " 'localhost', 9391, %d, '%s', NULL, m_now (), m_now ());",
+           " '" OPENVASSD_ADDRESS "', 0, %d, '%s', NULL, m_now (), m_now ());",
            SCANNER_TYPE_OPENVAS, quoted_ca_pub);
       g_free (quoted_ca_pub);
     }

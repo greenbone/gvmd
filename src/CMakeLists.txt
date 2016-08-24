@@ -154,9 +154,9 @@ if (OPENVAS_STATE_DIR)
   add_definitions (-DOPENVAS_STATE_DIR=\\\"${OPENVAS_STATE_DIR}\\\")
 endif (OPENVAS_STATE_DIR)
 
-if (OPENVAS_PID_DIR)
-  add_definitions (-DOPENVAS_PID_DIR=\\\"${OPENVAS_PID_DIR}\\\")
-endif (OPENVAS_PID_DIR)
+if (OPENVAS_RUN_DIR)
+  add_definitions (-DOPENVAS_RUN_DIR=\\\"${OPENVAS_RUN_DIR}\\\")
+endif (OPENVAS_RUN_DIR)
 
 if (OPENVAS_SYSCONF_DIR)
   add_definitions (-DOPENVAS_SYSCONF_DIR=\\\"${OPENVAS_SYSCONF_DIR}\\\")
