@@ -1,0 +1,125 @@
+<?xml version="1.0" standalone='no'?>
+<!DOCTYPE manpage SYSTEM "/usr/share/xmltoman/xmltoman.dtd">
+<?xml-stylesheet type="text/xsl" href="/usr/share/xmltoman/xmltoman.xsl" ?>
+
+<!-- OpenVAS
+ $Id$
+ Description: greenbone-certdata-sync manpage
+
+ Authors:
+ Matthew Mundell <matthew.mundell@greenbone.net>
+
+ Copyright:
+ Copyright (C) 2016 Greenbone Networks GmbH
+
+ This program is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public License
+ as published by the Free Software Foundation; either version 2
+ of the License, or (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this program; if not, write to the Free Software
+ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+-->
+
+<manpage name="greenbone-certdata-sync" section="8" desc="OpenVAS Manager SCAP sync script">
+
+  <synopsis>
+    <cmd>greenbone-certdata-sync OPTIONS</cmd>
+  </synopsis>
+
+  <description>
+    <p>
+      Update the CERT data from the feed server.
+    </p>
+  </description>
+
+  <options>
+    <option>
+      <p><opt>--version</opt></p>
+      <optdesc><p>Print version and exit.</p></optdesc>
+    </option>
+
+    <option>
+      <p><opt>--identify</opt></p>
+      <optdesc><p>Print machine readable identity information and exit.</p></optdesc>
+    </option>
+
+    <option>
+      <p><opt>--describe</opt></p>
+      <optdesc><p>Print human readable description.</p></optdesc>
+    </option>
+
+    <option>
+      <p><opt>--feedversion</opt></p>
+      <optdesc><p>Print feed version and exit.</p></optdesc>
+    </option>
+
+    <option>
+      <p><opt>--help</opt></p>
+      <optdesc><p>Print help message and exit.</p></optdesc>
+    </option>
+
+    <option>
+      <p><opt>--refresh</opt></p>
+      <optdesc><p>Only refresh the database.  Do not fetch any files.</p></optdesc>
+    </option>
+
+    <option>
+      <p><opt>--migrate</opt></p>
+      <optdesc>
+        <p>Only migrate the database.  Do not fetch any files.</p>
+      </optdesc>
+    </option>
+
+    <option>
+      <p><opt>--selftest</opt></p>
+      <optdesc>
+        <p>Perform self-test and exit.</p>
+      </optdesc>
+    </option>
+
+    <option>
+      <p><opt>--feedcurrent</opt></p>
+      <optdesc><p>Check whether feed is current.</p></optdesc>
+    </option>
+
+    <option>
+      <p><opt>--database=<arg>DATABASE</arg></opt></p>
+      <optdesc><p>The name of the database.  For Posgres backend only.  Default is tasks.</p></optdesc>
+    </option>
+  </options>
+
+  <section name="SEE ALSO">
+    <p>
+      <manref name="openvasmd" section="8"/>,
+      <manref name="greenbone-scapdata-sync" section="8"/>
+    </p>
+  </section>
+
+  <section name="MORE INFORMATION ABOUT THE OpenVAS PROJECT">
+    <p>
+      The canonical places where you will find more information
+      about the OpenVAS project are:
+
+      <url href="http://www.openvas.org/"/>
+        (Official site)
+
+      <url href="http://wald.intevation.org/projects/openvas/"/>
+        (Development Platform)
+    </p>
+  </section>
+
+  <section name="COPYRIGHT">
+    <p>
+      The OpenVAS Manager is released under the GNU GPL, version 2,
+      or, at your option, any later version.
+    </p>
+  </section>
+
+</manpage>

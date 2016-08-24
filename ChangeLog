@@ -1,3 +1,16 @@
+2016-03-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add Man pages for remaining sbin scripts.
+
+	* doc/CMakeLists.txt: Add new Man pages.
+
+	* doc/greenbone-certdata-sync.8, doc/greenbone-scapdata-sync.8: Update from source.
+
+	* doc/greenbone-certdata-sync.8.xml, doc/greenbone-scapdata-sync.8.xml,
+	doc/database-statistics-sqlite.8.xml, doc/database-statistics-sqlite.8,
+	doc/openvas-migrate-to-postgres.8.xml, doc/openvas-migrate-to-postgres.8,
+	doc/openvas-portnames-update.8, doc/openvas-portnames-update.8.xml: New files.
+
 2016-08-24  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/scanner.c (openvas_scanner_connect_unix): Extend log warning
