@@ -1,3 +1,8 @@
+2016-08-24  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/scanner.c (openvas_scanner_connect_unix): Extend log warning
+	with the name of the socket that failed to open.
+
 2016-08-24  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/openvasmd.c (main): Add --otp-scanner parameter. Use new parameter

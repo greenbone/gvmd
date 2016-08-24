@@ -600,8 +600,8 @@ openvas_scanner_connect_unix ()
   len = strlen (addr.sun_path) + sizeof (addr.sun_family);
   if (connect (openvas_scanner_socket, (struct sockaddr *) &addr, len) == -1)
     {
-      g_warning ("%s: Failed to connect to scanner: %s\n", __FUNCTION__,
-                 strerror (errno));
+      g_warning ("%s: Failed to connect to scanner (%s): %s\n", __FUNCTION__,
+                 openvas_scanner_unix_path, strerror (errno));
       return -1;
     }
 
