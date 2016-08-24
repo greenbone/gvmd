@@ -13256,6 +13256,40 @@ migrate_174_to_175 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 175 to version 175.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_175_to_176 ()
+{
+
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 175. */
+
+  if (manage_db_version () != 175)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Change the default scanner to use unix file sockets. */
+  sql ("UPDATE scanners SET host = '" OPENVAS_RUN_DIR "/openvassd.sock'"
+       " WHERE uuid = '" SCANNER_UUID_DEFAULT "';");
+
+  /* Set the database version to 176. */
+
+  set_db_version (176);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -13445,6 +13479,7 @@ static migrator_t database_migrators[]
     {173, migrate_172_to_173},
     {174, migrate_173_to_174},
     {175, migrate_174_to_175},
+    {176, migrate_175_to_176},
     /* End marker. */
     {-1, NULL}};
 

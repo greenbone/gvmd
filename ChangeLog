@@ -1,3 +1,14 @@
+2016-08-24  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	Change default scanner's location to OPENVAS_RUN_DIR/openvassd.sock unix
+	socket file.  Hence increase database version to 176. Add database
+	migration from version 175 to 176.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 176.
+
+	* src/manage_migrators.c (migrate_175_to_176): New function.
+	(database_migrators): Add migrate_175_to_176.
+
 2016-03-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* doc/openvasmd.8.xml: Add commas in SEE ALSO.
