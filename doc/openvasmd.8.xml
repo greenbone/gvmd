@@ -228,10 +228,10 @@
 
   <section name="SEE ALSO">
     <p>
-      <manref name="openvassd" section="8"/>
-      <manref name="openvasad" section="8"/>
-      <manref name="gsad" section="8"/>
-      <manref name="omp" section="8"/>
+      <manref name="openvassd" section="8"/>,
+      <manref name="openvasad" section="8"/>,
+      <manref name="gsad" section="8"/>,
+      <manref name="omp" section="8"/>,
       <manref name="gsd" section="8"/>
     </p>
   </section>

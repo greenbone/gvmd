@@ -1,4 +1,10 @@
-2016-03-23  Matthew Mundell <matthew.mundell@greenbone.net>
+2016-03-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* doc/openvasmd.8.xml: Add commas in SEE ALSO.
+
+	* doc/openvasmd.8: Update from source.
+
+2016-03-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add Man pages for remaining sbin scripts.
 
