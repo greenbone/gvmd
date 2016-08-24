@@ -1450,6 +1450,7 @@ main (int argc, char** argv)
   static gchar *create_scanner = NULL;
   static gchar *modify_scanner = NULL;
   static gchar *scanner_host = NULL;
+  static gchar *otp_scanner = NULL;
   static gchar *scanner_port = NULL;
   static gchar *scanner_type = NULL;
   static gchar *scanner_ca_pub = NULL;
@@ -1497,6 +1498,8 @@ main (int argc, char** argv)
         { "scanner-host", '\0', 0, G_OPTION_ARG_STRING, &scanner_host,
           "Scanner host for --create-scanner and --modify-scanner. Default is " OPENVASSD_ADDRESS ".",
           "<scanner-host>" },
+        { "otp-scanner", '\0', 0, G_OPTION_ARG_STRING, &otp_scanner,
+          "Path to scanner unix socket file. Used by --rebuild and --update", "<unixsocket>" },
         { "scanner-port", '\0', 0, G_OPTION_ARG_STRING, &scanner_port,
           "Scanner port for --create-scanner and --modify-scanner. Default is " G_STRINGIFY (OPENVASSD_PORT) ".",
           "<scanner-port>" },
@@ -1914,6 +1917,16 @@ main (int argc, char** argv)
 
       /* Run the NVT caching manager: update NVT cache and then exit. */
 
+      /* Use --otp-scanner if provided instead of default scanner. */
+      if (otp_scanner)
+        {
+          openvas_scanner_set_unix (otp_scanner);
+          if (openvas_scanner_connect () || openvas_scanner_init (1))
+            {
+              openvas_scanner_close ();
+              return EXIT_FAILURE;
+            }
+        }
       if (progress)
         {
           if (update_nvt_cache)

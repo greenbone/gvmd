@@ -1,3 +1,8 @@
+2016-08-24  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/openvasmd.c (main): Add --otp-scanner parameter. Use new parameter
+	to set scanner socket path in --rebuild and --update modes.
+
 2016-08-23  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* CMakeLists.txt, src/CMakeLists.txt (OPENVAS_PID_DIR): Rename to
