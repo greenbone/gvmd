@@ -1,3 +1,11 @@
+2016-08-24  Matthew Mundell <matthew.mundell at greenbone.net>
+
+	Backport r24792.
+
+	* src/manage_sql.c (scanner_task_iterator_readable): Correct offset.
+
+	* src/omp.c (handle_get_scanners): Use correct accessor function.
+
 2016-08-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r25978.

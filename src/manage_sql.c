@@ -41537,7 +41537,7 @@ int
 scanner_task_iterator_readable (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_int (iterator, 2);
+  return iterator_int (iterator, 3);
 }
 
 /**
