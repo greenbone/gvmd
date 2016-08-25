@@ -65563,6 +65563,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
     {
       fprintf (stderr, "Error in optimize name.\n");
       ret = 1;
+      success_text = NULL;
     }
 
   if (success_text)

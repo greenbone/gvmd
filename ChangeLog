@@ -1,3 +1,8 @@
+2016-03-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (manage_optimize): Init success_text so it is safe to
+	free it later.
+
 2016-08-24  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	Change default scanner's location to OPENVAS_RUN_DIR/openvassd.sock unix
