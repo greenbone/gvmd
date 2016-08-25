@@ -44456,11 +44456,16 @@ manage_modify_scanner (GSList *log_config, const gchar *database,
 
   if (scanner_id)
     {
-      gchar *quoted_scanner_id;
-      quoted_scanner_id = sql_quote (scanner_id);
-      sql_int64 (&scanner, "SELECT id FROM scanners WHERE uuid = '%s'",
-                 quoted_scanner_id);
-      g_free (quoted_scanner_id);
+      if (find_scanner (scanner_id, &scanner))
+        {
+          fprintf (stderr, "Error finding scanner.\n");
+          return -1;
+        }
+      if (scanner == 0)
+        {
+          fprintf (stderr, "Failed to find scanner %s.\n", scanner_id);
+          return 1;
+        }
     }
   else
     {

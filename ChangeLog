@@ -1,5 +1,10 @@
 2016-03-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_modify_scanner): Use find_scanner and check
+	result in case scanner does not exist.
+
+2016-03-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_optimize): Init success_text so it is safe to
 	free it later.
 
