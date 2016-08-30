@@ -1,3 +1,55 @@
+openvas-manager 6.0.9 (2016-08-30)
+
+This is the ninth maintenance release of the openvas-manager 6.0 module for
+the Open Vulnerability Assessment System release 8 (OpenVAS-8).
+
+This release adds the new 'SCP' and 'SNMP' alert methods and addresses a number
+of issues discovered after the release of OpenVAS Manager 6.0.8. It also
+incorporates several improvements from the development branch of OpenVAS.
+Please see below for a comprehensive list of changes.
+
+Many thanks to everyone who contributed to this release:
+Hani Benhabiles, Matthew Mundell and Timo Pollmeier.
+
+Main changes compared to 6.0.8:
+* Support for the new 'SCP' alert method has been added.
+* Support for the new 'SNMP' alert method has been added.
+* The documentation of the OMP protocol has been updated.
+* Handling of report deltas has been improved.
+* Handling of filtered host counts has been improved.
+* An issue which caused long OSP scans to terminate prematurely has been fixed.
+* Pagination handling has been improved.
+* Handling of unknown severities has been improved.
+* Handling of long inputs from the scanner has been improved.
+* Clones of predefined report formats are now implicitly trusted.
+* Handling of dependant resources in GET command responses has been improved.
+* Support for filtering for orphaned permissions has been added.
+* Log messages have been improved to include the resource name wherever
+  possible.
+* Log messages for internal error cases have been improved.
+* The process title of processes handling scans will now contain the report
+  UUID.
+* An issue which cause an unfinished task with a schedule to be restarted on
+  the second period instead of being resumed has been fixed.
+* Resuming of scheduled slave scans has been improved.
+* An issue which cause the NVT selection of an imported scan config to be empty
+  under certain circumstances has been fixed.
+* Handling of failed slave connections has been improved.
+* An issue which caused users to appear multiple times in an observer list
+  under certain circumstances has been fixed.
+* Handling of empty credentials has been improved.
+* Handling of targets belonging to another user has been improved.
+* An issue which caused unrelated error messages to be shown when creating new
+  tasks under certain circumstances has been fixed.
+* An issue which cause the alive check setting to revert to its default value
+  when cloning targets has been fixed.
+* Handling of internal database backups has been improved.
+* Results used in alerts are now sorted by severity.
+* The 'Anonymous_XML' report format now strips even more potentially sensitive
+  information.
+* Signal handling has been improved.
+
+
 openvas-manager 6.0.8 (2016-02-26)
 
 This is the eighth maintenance release of the openvas-manager 6.0 module for
