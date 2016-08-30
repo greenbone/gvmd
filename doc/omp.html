@@ -9548,6 +9548,12 @@ create_port_range_type
 </li>
 </ul>
 </li>
+<li>
+              &lt;<b>in_assets</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">(<a href="#element_boolean">boolean</a>)</div>
+<div style="margin-left: 15px; display: inline;">Whether to create or update assets using the report.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li>
 <li style="margin-top: 15px;">
@@ -9574,6 +9580,7 @@ create_port_range_type
      {
        create_report_report
        &amp; create_report_task
+       &amp; create_report_in_assets?
      }
 
 create_report_report
@@ -9615,6 +9622,11 @@ create_report_task_comment
  = element comment
      {
        text
+     }
+
+create_report_in_assets
+ = element in_assets    # type boolean
+     {
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>create_report_response

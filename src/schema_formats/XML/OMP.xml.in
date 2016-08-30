@@ -4768,6 +4768,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>
       <e>report</e>
       <e>task</e>
+      <o><e>in_assets</e></o>
     </pattern>
     <ele>
       <name>report</name>
@@ -4798,6 +4799,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <summary>Comment for the new task</summary>
         <pattern>text</pattern>
       </ele>
+    </ele>
+    <ele>
+      <name>in_assets</name>
+      <summary>Whether to create or update assets using the report</summary>
+      <type>boolean</type>
     </ele>
     <response>
       <pattern>

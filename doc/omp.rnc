@@ -4288,6 +4288,7 @@ create_report
      {
        create_report_report
        & create_report_task
+       & create_report_in_assets?
      }
 
 # A report wrapper, as in the GET_REPORTS response.
@@ -4333,6 +4334,12 @@ create_report_task_comment
  = element comment
      {
        text
+     }
+
+# Whether to create or update assets using the report.
+create_report_in_assets
+ = element in_assets    # type boolean
+     {
      }
 
 ## Command create_report_format

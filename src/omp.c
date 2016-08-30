@@ -1369,6 +1369,7 @@ typedef struct
   char *host_start;               ///< Start time for a host.
   char *host_start_host;          ///< Host name for start time.
   array_t *host_starts;           ///< All host starts.
+  char *in_assets;                ///< Whether to create assets from report.
   char *ip;                       ///< Current host for host details.
   char *result_description;       ///< Description of NVT for current result.
   char *result_host;              ///< Host for current result.
@@ -1411,6 +1412,7 @@ create_report_data_reset (create_report_data_t *data)
     }
   free (data->host_end);
   free (data->host_start);
+  free (data->in_assets);
   free (data->ip);
   free (data->result_description);
   free (data->result_host);
@@ -5311,6 +5313,7 @@ typedef enum
   CLIENT_CRF_GRFR_REPORT_FORMAT_TRUST,
   /* CREATE_REPORT. */
   CLIENT_CREATE_REPORT,
+  CLIENT_CREATE_REPORT_IN_ASSETS,
   CLIENT_CREATE_REPORT_REPORT,
   CLIENT_CREATE_REPORT_RR,
   CLIENT_CREATE_REPORT_RR_FILTERS,
@@ -9586,7 +9589,11 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         ELSE_ERROR ("create_role");
 
       case CLIENT_CREATE_REPORT:
-        if (strcasecmp ("REPORT", element_name) == 0)
+        if (strcasecmp ("IN_ASSETS", element_name) == 0)
+          {
+            set_client_state (CLIENT_CREATE_REPORT_IN_ASSETS);
+          }
+        else if (strcasecmp ("REPORT", element_name) == 0)
           {
             const gchar* attribute;
 
@@ -23955,6 +23962,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                          create_report_data->task_id,
                          create_report_data->task_name,
                          create_report_data->task_comment,
+                         create_report_data->in_assets,
                          create_report_data->scan_start,
                          create_report_data->scan_end,
                          create_report_data->host_starts,
@@ -23996,6 +24004,12 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                     "CREATE_REPORT TASK must be a container"));
                 log_event_fail ("report", "Report", NULL, "created");
                 break;
+              case -6:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_report",
+                                    "Permission to add to Assets denied"));
+                log_event_fail ("report", "Report", NULL, "created");
+                break;
               default:
                 {
                   SENDF_TO_CLIENT_OR_FAIL
@@ -24012,6 +24026,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
+      CLOSE (CLIENT_CREATE_REPORT, IN_ASSETS);
       CLOSE (CLIENT_CREATE_REPORT, REPORT);
       case CLIENT_CREATE_REPORT_RR:
         assert (strcasecmp ("REPORT", element_name) == 0);
@@ -30669,6 +30684,9 @@ omp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_PORT_RANGE_TYPE,
               &create_port_range_data->type);
 
+
+      APPEND (CLIENT_CREATE_REPORT_IN_ASSETS,
+              &create_report_data->in_assets);
 
       APPEND (CLIENT_CREATE_REPORT_RR_HOST_END,
               &create_report_data->host_end);

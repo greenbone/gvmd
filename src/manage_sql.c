@@ -19524,6 +19524,7 @@ insert_report_host_detail (report_t report, const char *host,
  * @param[in]   task_id       UUID of container task, or NULL to create new one.
  * @param[in]   task_name     Name for container task.
  * @param[in]   task_comment  Comment for container task.
+ * @param[in]   add_to_assets Whether to create assets from the report.
  * @param[in]   scan_start    Scan start time text.
  * @param[in]   scan_end      Scan end time text.
  * @param[in]   host_starts   Array of create_report_result_t pointers.  Host
@@ -19535,21 +19536,28 @@ insert_report_host_detail (report_t report, const char *host,
  *
  * @return 0 success, 99 permission denied, -1 error, -2 failed to generate ID,
  *         -3 task_name is NULL, -4 failed to find task, -5 task must be
- *         container.
+ *         container, -6 permission to create assets denied.
  */
 int
 create_report (array_t *results, const char *task_id, const char *task_name,
-               const char *task_comment, const char *scan_start,
-               const char *scan_end, array_t *host_starts,
-               array_t *host_ends, array_t *details, char **report_id)
+               const char *task_comment, const char *in_assets,
+               const char *scan_start, const char *scan_end,
+               array_t *host_starts, array_t *host_ends, array_t *details,
+               char **report_id)
 {
-  int index;
+  int index, in_assets_int;
   create_report_result_t *result, *end, *start;
   report_t report;
   user_t owner;
   task_t task;
   pid_t pid;
   host_detail_t *detail;
+
+  in_assets_int
+    = (in_assets && strcmp (in_assets, "") && strcmp (in_assets, "0"));
+
+  if (in_assets_int && acl_user_may ("create_asset") == 0)
+    return -6;
 
   g_debug ("%s", __FUNCTION__);
 
@@ -19757,6 +19765,11 @@ create_report (array_t *results, const char *task_id, const char *task_name,
   set_task_run_status (task, TASK_STATUS_DONE);
   current_scanner_task = 0;
   current_report = 0;
+
+  if (in_assets_int)
+    {
+      create_asset_report (*report_id, "");
+    }
 
   exit (EXIT_SUCCESS);
   return 0;
