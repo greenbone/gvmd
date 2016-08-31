@@ -18,7 +18,7 @@ $Id$
 Description: Report stylesheet for HTML format.
 
 Authors:
-Matthew Mundell <matthew.mundell@greenbone.de>
+Matthew Mundell <matthew.mundell@greenbone.net>
 
 Copyright:
 Copyright (C) 2010 Greenbone Networks GmbH

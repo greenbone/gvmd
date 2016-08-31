@@ -18,7 +18,7 @@ $Id$
 Description: Report stylesheet for Anonymous XML format.
 
 Authors:
-Matthew Mundell <matthew.mundell@greenbone.de>
+Matthew Mundell <matthew.mundell@greenbone.net>
 
 Copyright:
 Copyright (C) 2015 Greenbone Networks GmbH

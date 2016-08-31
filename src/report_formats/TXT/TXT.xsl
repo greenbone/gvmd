@@ -15,7 +15,7 @@ $Id$
 Description: Report stylesheet for TXT format.
 
 Authors:
-Felix Wolfsteller <felix.wolfsteller@greenbone.de>
+Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
 Copyright:
 Copyright (C) 2010 Greenbone Networks GmbH

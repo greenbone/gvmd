@@ -1,3 +1,12 @@
+2016-08-31  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/report_formats/Anonymous_XML/Anonymous_XML.xsl,
+	src/report_formats/HTML/HTML.xsl, src/report_formats/TXT/TXT.xsl,
+	src/schema_formats/HTML/HTML.xsl, src/schema_formats/RNC/RNC.xsl,
+	src/schema_formats/XML/OMP.xml.in,
+	src/schema_formats/XML-brief/OMP.xsl: Use consistent domain name in
+	mail addresses.
+
 2016-08-31  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_pg.c (manage_create_sql_functions): Use to_char instead of

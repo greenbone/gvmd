@@ -13,7 +13,7 @@ $Id$
 Description: OpenVAS Manager Protocol (OMP) RNC generator.
 
 Authors:
-Matthew Mundell <matthew.mundell@greenbone.de>
+Matthew Mundell <matthew.mundell@greenbone.net>
 
 Copyright:
 Copyright (C) 2010 Greenbone Networks GmbH

@@ -12,7 +12,7 @@ $Id$
 Description: OpenVAS Manager Protocol (OMP) single page HTML doc generator.
 
 Authors:
-Matthew Mundell <matthew.mundell@greenbone.de>
+Matthew Mundell <matthew.mundell@greenbone.net>
 
 Copyright:
 Copyright (C) 2010, 2012 Greenbone Networks GmbH
