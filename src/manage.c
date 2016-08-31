@@ -1314,18 +1314,6 @@ nvt_selector_plugins (config_t config)
     }
   cleanup_iterator (&families);
 
-  /* Always add all settings NVTs onto list. */
-  init_nvt_iterator (&nvts, 0, 0, 0, "2", 1, NULL);
-  while (next (&nvts))
-    {
-      if (first)
-        first = FALSE;
-      else
-        g_string_append_c (plugins, ';');
-      g_string_append (plugins, nvt_iterator_oid (&nvts));
-    }
-  cleanup_iterator (&nvts);
-
   return g_string_free (plugins, FALSE);
 }
 

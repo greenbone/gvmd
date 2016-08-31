@@ -1,3 +1,8 @@
+2016-08-31  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (nvt_selector_plugins): Don't automatically enable all
+	ACT_SETTINGS plugins.
+
 2016-08-31  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/report_formats/Anonymous_XML/Anonymous_XML.xsl,
