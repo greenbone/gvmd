@@ -1,3 +1,10 @@
+2016-08-31  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	Backport r26173.
+
+	* src/manage.c (nvt_selector_plugins): Don't automatically enable all
+	ACT_SETTINGS plugins.
+
 2016-08-30  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post release version bump.
