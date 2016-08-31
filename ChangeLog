@@ -1,3 +1,8 @@
+2016-08-31  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_pg.c (manage_create_sql_functions): Use to_char instead of
+	chr and make regex stricter.
+
 2016-08-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (create_report): Add parameter in_assets to add data
