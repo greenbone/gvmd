@@ -346,9 +346,9 @@ serve_client (int server_socket, int client_socket)
 
   if (openvas_server_attach (client_socket, &client_session))
     {
-      g_critical ("%s: failed to attach client session to socket %i\n",
-                  __FUNCTION__,
-                  client_socket);
+      g_debug ("%s: failed to attach client session to socket %i\n",
+               __FUNCTION__,
+              client_socket);
       goto fail;
     }
 

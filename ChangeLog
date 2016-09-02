@@ -1,3 +1,8 @@
+2016-09-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/openvasmd.c (serve_client): Downgrade message to debug, because
+	it is most likely due to the client, like when Scanner scans Manager.
+
 2016-08-31  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (nvt_selector_plugins): Don't automatically enable all
@@ -35,12 +40,12 @@
 
 	* doc/omp.html, doc/omp.rnc: Update from source.
 
-2016-03-25  Matthew Mundell <matthew.mundell@greenbone.net>
+2016-08-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_modify_scanner): Use find_scanner and check
 	result in case scanner does not exist.
 
-2016-03-25  Matthew Mundell <matthew.mundell@greenbone.net>
+2016-08-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_optimize): Init success_text so it is safe to
 	free it later.
@@ -56,13 +61,13 @@
 	* src/manage_migrators.c (migrate_175_to_176): New function.
 	(database_migrators): Add migrate_175_to_176.
 
-2016-03-24  Matthew Mundell <matthew.mundell@greenbone.net>
+2016-08-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* doc/openvasmd.8.xml: Add commas in SEE ALSO.
 
 	* doc/openvasmd.8: Update from source.
 
-2016-03-24  Matthew Mundell <matthew.mundell@greenbone.net>
+2016-08-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add Man pages for remaining sbin scripts.
 
@@ -96,13 +101,13 @@
 	* src/openvasmd.c (OPENVAS_ADDRESS): Change from 127.0.0.1 to
 	OPENVAS_RUN_DIR/openvassd.sock.
 
-2016-03-23  Matthew Mundell <matthew.mundell@greenbone.net>
+2016-08-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* doc/CMakeLists.txt: Install new Man pages.
 
 	* doc/greenbone-certdata-sync.8, doc/greenbone-scapdata-sync.8: New files.
 
-2016-03-23  Matthew Mundell <matthew.mundell@greenbone.net>
+2016-08-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_option_setup, manage_create_scanner)
 	(manage_delete_scanner, manage_modify_scanner, manage_verify_scanner)
