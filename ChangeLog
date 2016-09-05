@@ -1,3 +1,9 @@
+2016-09-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sqlite3.c (create_tables): Add index results_by_uuid.
+	This speeds up the resource_count calls for GET_RESULTS, in particular
+	when a single result is requested.
+
 2016-09-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c (serve_client): Downgrade message to debug, because
