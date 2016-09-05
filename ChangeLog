@@ -1,3 +1,11 @@
+2016-09-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r26186.
+
+	* src/manage_sqlite3.c (create_tables): Add index results_by_uuid.
+	This speeds up the resource_count calls for GET_RESULTS, in particular
+	when a single result is requested.
+
 2016-08-31  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	Backport r26173.

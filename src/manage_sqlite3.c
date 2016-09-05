@@ -2338,6 +2338,8 @@ create_tables ()
        " (id INTEGER PRIMARY KEY, uuid, task INTEGER, host, port, nvt,"
        "  type, description, report, nvt_version, severity REAL,"
        "  qod INTEGER, qod_type TEXT, owner INTEGER, date INTEGER)");
+  sql ("CREATE INDEX IF NOT EXISTS results_by_uuid"
+       " ON results (uuid);");
   sql ("CREATE INDEX IF NOT EXISTS results_by_host"
        " ON results (host);");
   sql ("CREATE INDEX IF NOT EXISTS results_by_report_host"
