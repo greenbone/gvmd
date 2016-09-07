@@ -1,3 +1,10 @@
+2016-09-07  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Backport r29196.
+
+	* src/report_formats/Verinice_ISM/classification.xsl: Set correct tag
+	when Microsoft Windows Server 2012 was detected.
+
 2016-09-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r26186.
