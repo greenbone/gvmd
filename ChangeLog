@@ -1,3 +1,12 @@
+2016-09-08  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Belatedly increase required openvas-libraries version due to changes
+	in the credentials_t struct.
+
+	* CMakeLists.txt: Raise required openvas-libraries version to 8.0.8.
+
+	* INSTALL: Update required openvas-libraries version.
+
 2016-09-07  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Backport r29196.
