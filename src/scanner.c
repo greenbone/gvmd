@@ -442,7 +442,7 @@ openvas_scanner_write (int nvt_cache_mode)
       case SCANNER_INIT_DONE_CACHE_MODE:
       case SCANNER_INIT_DONE_CACHE_MODE_UPDATE:
         while (1)
-          switch (write_to_server_buffer (&openvas_scanner_session))
+          switch (write_to_server_buffer ())
             {
               case  0: return 0;
               case -1: return -1;
