@@ -1290,9 +1290,13 @@ get_files_to_send (task_t task)
 static gchar*
 nvt_selector_plugins (config_t config)
 {
-  GString* plugins = g_string_new ("");
+  GString *plugins, *setting_nvts;
   iterator_t families, nvts;
-  gboolean first = TRUE;
+  gboolean first;
+
+  first = TRUE;
+  plugins = g_string_new ("");
+  setting_nvts = g_string_new ("");
 
   init_family_iterator (&families, 0, NULL, 1);
   while (next (&families))
@@ -1313,6 +1317,46 @@ nvt_selector_plugins (config_t config)
         }
     }
   cleanup_iterator (&families);
+
+  /* This is a transitional check because previously all NVTs that were
+   * matched by the iterator below were added to the scan, regardless of
+   * whether the NVTs were already selected or not.  Primarily this is the
+   * ACT_SETTINGS NVTs.  This behavior was removed because it made minimal
+   * scan configs execute many NVTs without need and thus impacted the
+   * performance when scanning large numbers of IPs.
+   *
+   * However, this code finds out those NVTs that previously were added
+   * and now are not anymore.
+   *
+   * Some special OIDs are exceptions.  Those are the ones that are
+   * automatically activated in case of Credentials have been provided.
+   * So no need to report them here as well.
+   *
+   * With the release 9.0 of OpenVAS Manager this can be finally removed. */
+  init_nvt_iterator (&nvts, 0, 0, 0, G_STRINGIFY (ACT_SETTINGS), 1, NULL);
+  while (next (&nvts))
+    {
+      const char *oid_str = nvt_iterator_oid (&nvts);
+
+      if (strstr (plugins->str, oid_str) == NULL
+          && strstr ("1.3.6.1.4.1.25623.1.0.90022;"
+                     "1.3.6.1.4.1.25623.1.0.90023;"
+                     "1.3.6.1.4.1.25623.1.0.105058;"
+                     "1.3.6.1.4.1.25623.1.0.105076;",
+                     oid_str)
+             == NULL)
+        {
+          g_string_append (setting_nvts, oid_str);
+          g_string_append_c (setting_nvts, ';');
+        }
+    }
+  cleanup_iterator (&nvts);
+  if (strlen (setting_nvts->str))
+    g_warning ("%s: NVTs not activated anymore for this config: %s."
+               " Please adjust the config if you think this is wrong.",
+               __FUNCTION__,
+               setting_nvts->str);
+  g_string_free (setting_nvts, TRUE);
 
   return g_string_free (plugins, FALSE);
 }
