@@ -1,3 +1,11 @@
+2016-09-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r26207.
+
+	* src/manage.c (nvt_selector_plugins): Log a list of NVTs that would have
+	been included in the scan when all ACT_SETTING NVTs were included.
+	Cleaned up patch from Jan-Oliver Wagner.
+
 2016-09-08  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Belatedly increase required openvas-libraries version due to changes
