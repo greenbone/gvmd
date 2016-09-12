@@ -1,5 +1,11 @@
 2016-09-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (openvas_sync_feed): Correct indent.
+
+	* src/manage_sql.c (nvt_info_count): Put doc arg in order.
+
+2016-09-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (nvt_selector_plugins): Log a list of NVTs that would have
 	been included in the scan when all ACT_SETTING NVTs were included.
 	Cleaned up patch from Jan-Oliver Wagner.

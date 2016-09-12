@@ -35437,9 +35437,9 @@ nvt_info_count (const get_data_t *get)
  * @param[in]  nvt         NVT to iterate over, all if 0.
  * @param[in]  config      Config to limit selection to.  NULL for all NVTs.
  *                         Overridden by \arg nvt.
- * @param[in]  category    Category to limit selection to.  NULL for all.
  * @param[in]  family      Family to limit selection to.  NULL for all NVTs.
  *                         Overridden by \arg config.
+ * @param[in]  category    Category to limit selection to.  NULL for all.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "id".
  */

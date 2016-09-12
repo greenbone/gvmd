@@ -8149,7 +8149,7 @@ openvas_sync_feed (const gchar * sync_script, const gchar * current_user,
     return 99;
 
   if (!openvas_get_sync_script_identification
-      (sync_script, &script_identification_string, feed_type))
+        (sync_script, &script_identification_string, feed_type))
     {
       g_warning ("No valid synchronization script supplied!");
       return -1;
