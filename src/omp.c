@@ -14317,10 +14317,12 @@ handle_get_assets (omp_parser_t *omp_parser, GError **error)
                                       (&details));
           cleanup_iterator (&details);
 
-          routes_xml = host_routes_xml (asset);
-
-          g_string_append (result, routes_xml);
-          g_free (routes_xml);
+          if (get_assets_data->details)
+            {
+              routes_xml = host_routes_xml (asset);
+              g_string_append (result, routes_xml);
+              g_free (routes_xml);
+            }
         }
 
       g_string_append_printf (result,

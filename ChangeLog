@@ -1,3 +1,17 @@
+2016-09-13  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_pg.c (create_tables): Add indexes host_details_by_host
+	and host_identifiers_by_host.
+
+	* src/manage_sql.c (host_routes_xml): Use JOIN instead of AND in WHERE
+	of routes iterator.
+
+	* src/manage_sqlite3.c (create_tables): Add indexes host_details_by_host
+	and host_identifiers_by_host.
+
+	* src/omp.c (handle_get_assets): Add routes of hosts only when details
+	are enabled.
+
 2016-09-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (openvas_sync_feed): Correct indent.

@@ -2631,6 +2631,8 @@ create_tables ()
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, host INTEGER, owner INTEGER, name,"
        "  comment, value, source_type, source_id, source_data, creation_time,"
        "  modification_time);");
+  sql ("CREATE INDEX IF NOT EXISTS host_identifiers_by_host"
+       " ON host_identifiers (host);");
   sql ("CREATE TABLE IF NOT EXISTS oss"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
        "  creation_time, modification_time);");
@@ -2652,6 +2654,8 @@ create_tables ()
        "  detail_source_description,"
        "  name,"
        "  value);");
+  sql ("CREATE INDEX IF NOT EXISTS host_details_by_host"
+       " ON host_details (host);");
   sql ("CREATE TABLE IF NOT EXISTS meta"
        " (id INTEGER PRIMARY KEY, name UNIQUE, value);");
   sql ("CREATE TABLE IF NOT EXISTS notes"
