@@ -1,3 +1,10 @@
+2016-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r26225.
+
+	* src/manage_sqlite3.c (backup_db): Use sqlite3_errmsg to keep
+	compatibility with older libsqlite versions.
+
 2016-09-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r26207.

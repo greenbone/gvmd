@@ -2773,7 +2773,7 @@ backup_db (const gchar *database, gchar **backup_file_arg)
         }
       g_warning ("%s: sqlite3_backup_step failed: %s\n",
                  __FUNCTION__,
-                 sqlite3_errstr (ret));
+                 sqlite3_errmsg (backup_db));
       sqlite3_backup_finish (backup);
       goto fail;
     }
