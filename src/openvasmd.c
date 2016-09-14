@@ -103,6 +103,7 @@
 #include <openvas/base/pidfile.h>
 #include <openvas/base/pwpolicy.h>
 
+#include "logf.h"
 #include "manage.h"
 #include "scanner.h"
 #include "ompd.h"

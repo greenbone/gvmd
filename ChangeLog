@@ -1,5 +1,9 @@
 2016-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c: Include logf.h for when LOG is 1.
+
+2016-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Merge feed DESCRIBE commands into GET_FEEDS.  Hence increase database
 	version to 177.  Add database migration from version 176 to 177.
 
@@ -17,6 +21,9 @@
 	(sync_script, scap_script, cert_script): Remove.  Renamed.
 	(nvt_sync_script, scap_sync_script, cert_sync_script): New variables.
 	From rename.
+	(client_state_t, omp_xml_handle_start_element): Merge commands.
+	(feed_type_name, get_feed, handle_get_feeds): New functions.
+	(omp_xml_handle_end_element): Merge commands.  Rename globals.
 
 	* doc/db.png: Update for version change.
 
