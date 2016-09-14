@@ -7922,8 +7922,8 @@ openvas_get_sync_script_identification (const gchar * sync_script,
   gchar **script_identification;
 
   if (!g_spawn_sync
-      (script_working_dir, argv, NULL, 0, NULL, NULL, &script_out, &script_err,
-       &script_exit, &error))
+        (script_working_dir, argv, NULL, 0, NULL, NULL, &script_out, &script_err,
+         &script_exit, &error))
     {
       g_warning ("Failed to execute %s: %s", sync_script, error->message);
 
@@ -7952,14 +7952,14 @@ openvas_get_sync_script_identification (const gchar * sync_script,
 
   if ((script_identification[0] == NULL)
       || (feed_type == NVT_FEED
-          && g_ascii_strncasecmp (script_identification[0],"NVTSYNC",7))
+          && g_ascii_strncasecmp (script_identification[0], "NVTSYNC", 7))
       || (feed_type == SCAP_FEED
-          && g_ascii_strncasecmp (script_identification[0],"SCAPSYNC",7))
+          && g_ascii_strncasecmp (script_identification[0], "SCAPSYNC", 7))
       || (feed_type == CERT_FEED
-          && g_ascii_strncasecmp (script_identification[0],"CERTSYNC",7))
+          && g_ascii_strncasecmp (script_identification[0], "CERTSYNC", 7))
       || g_ascii_strncasecmp (script_identification[0], script_identification[5], 7))
     {
-      g_warning ("%s is not a NVT synchronization script.", sync_script);
+      g_warning ("%s is not a feed synchronization script", sync_script);
 
       g_free (script_working_dir);
       g_strfreev (argv);
@@ -8079,8 +8079,8 @@ openvas_get_sync_script_feed_version (const gchar * sync_script,
   GError *error = NULL;
 
   if (!g_spawn_sync
-      (script_working_dir, argv, NULL, 0, NULL, NULL, &script_out, &script_err,
-       &script_exit, &error))
+        (script_working_dir, argv, NULL, 0, NULL, NULL, &script_out, &script_err,
+         &script_exit, &error))
     {
       g_warning ("Failed to execute %s: %s", sync_script, error->message);
 
@@ -8448,7 +8448,7 @@ openvas_migrate_secinfo (const gchar * sync_script, int feed_type)
     }
 
   if (!openvas_get_sync_script_identification
-      (sync_script, NULL, feed_type))
+        (sync_script, NULL, feed_type))
     {
       g_warning ("No valid synchronization script supplied!");
       return -1;

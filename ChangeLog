@@ -1,5 +1,11 @@
 2016-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (openvas_get_sync_script_identification)
+	(openvas_get_sync_script_feed_version, openvas_migrate_secinfo): Neaten
+	formatting.
+
+2016-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c: Include logf.h for when LOG is 1.
 
 2016-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
