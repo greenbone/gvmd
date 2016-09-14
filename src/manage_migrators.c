@@ -13327,7 +13327,8 @@ migrate_176_to_177 ()
        "       FROM permissions"
        "       WHERE (name = 'describe_feed'"
        "              OR name = 'describe_scap'"
-       "              OR name = 'describe_cert'));",
+       "              OR name = 'describe_cert'))"
+       "      AS subquery;",
        now,
        now);
 
