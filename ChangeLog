@@ -1,3 +1,25 @@
+2016-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Merge feed DESCRIBE commands into GET_FEEDS.  Hence increase database
+	version to 177.  Add database migration from version 176 to 177.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 177.
+
+	* src/manage_migrators.c (migrate_176_to_177): New function.
+	(database_migrators): Add migrate_176_to_177.
+
+	* src/manage_sql.c (omp_commands): Merge commands.
+
+	* src/omp.c (get_feeds_data_t): New type.
+	(get_feeds_data_reset): New function.
+	(command_data_t): Add new element.
+	(get_feeds_data): New variable.
+	(sync_script, scap_script, cert_script): Remove.  Renamed.
+	(nvt_sync_script, scap_sync_script, cert_sync_script): New variables.
+	From rename.
+
+	* doc/db.png: Update for version change.
+
 2016-09-13  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_pg.c (create_tables): Add indexes host_details_by_host

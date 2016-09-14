@@ -13257,7 +13257,7 @@ migrate_174_to_175 ()
 }
 
 /**
- * @brief Migrate the database from version 175 to version 175.
+ * @brief Migrate the database from version 175 to version 176.
  *
  * @return 0 success, -1 error.
  */
@@ -13284,6 +13284,61 @@ migrate_175_to_176 ()
   /* Set the database version to 176. */
 
   set_db_version (176);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 176 to version 177.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_176_to_177 ()
+{
+  int now;
+
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 176. */
+
+  if (manage_db_version () != 176)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The feed DESCRIBE commands were merged to new command GET_FEEDS. */
+
+  now = time (NULL);
+
+  sql ("INSERT INTO permissions"
+       " (uuid, owner, name, comment, resource_type, resource, resource_uuid,"
+       "  resource_location, subject_type, subject, subject_location,"
+       "  creation_time, modification_time)"
+       " SELECT make_uuid (), *, %i, %i"
+       " FROM (SELECT DISTINCT owner, 'get_feeds', comment, resource_type,"
+       "              resource, resource_uuid, resource_location,"
+       "              subject_type, subject, subject_location"
+       "       FROM permissions"
+       "       WHERE (name = 'describe_feed'"
+       "              OR name = 'describe_scap'"
+       "              OR name = 'describe_cert'));",
+       now,
+       now);
+
+  sql ("DELETE FROM permissions"
+       " WHERE (name = 'describe_feed'"
+       "        OR name = 'describe_scap'"
+       "        OR name = 'describe_cert');");
+
+  /* Set the database version to 177. */
+
+  set_db_version (177);
 
   sql_commit ();
 
@@ -13480,6 +13535,7 @@ static migrator_t database_migrators[]
     {174, migrate_173_to_174},
     {175, migrate_174_to_175},
     {176, migrate_175_to_176},
+    {177, migrate_176_to_177},
     /* End marker. */
     {-1, NULL}};
 
