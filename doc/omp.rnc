@@ -56,9 +56,6 @@ command
     | delete_task
     | delete_user
     | describe_auth
-    | describe_cert
-    | describe_feed
-    | describe_scap
     | empty_trashcan
     | get_agents
     | get_configs
@@ -66,6 +63,7 @@ command
     | get_alerts
     | get_assets
     | get_credentials
+    | get_feeds
     | get_filters
     | get_groups
     | get_info
@@ -177,9 +175,6 @@ response
     | delete_task_response
     | delete_user_response
     | describe_auth_response
-    | describe_cert_response
-    | describe_feed_response
-    | describe_scap_response
     | empty_trashcan_response
     | get_agents_response
     | get_configs_response
@@ -187,6 +182,7 @@ response
     | get_alerts_response
     | get_assets_response
     | get_credentials_response
+    | get_feeds_response
     | get_filters_response
     | get_groups_response
     | get_info_response
@@ -3330,15 +3326,13 @@ commands
            | delete_task
            | delete_user
            | describe_auth
-           | describe_cert
-           | describe_feed
-           | describe_scap
            | empty_trashcan
            | get_agents
            | get_alerts
            | get_assets
            | get_configs
            | get_credentials
+           | get_feeds
            | get_filters
            | get_groups
            | get_info
@@ -5355,36 +5349,6 @@ describe_auth
        ""
      }
 
-## Command describe_cert
-##
-## Describe the CERT feed.
-
-describe_cert
- = element describe_cert
-     {
-       ""
-     }
-
-## Command describe_feed
-##
-## Describe the NVT feed.
-
-describe_feed
- = element describe_feed
-     {
-       ""
-     }
-
-## Command describe_scap
-##
-## Describe the SCAP feed.
-
-describe_scap
- = element describe_scap
-     {
-       ""
-     }
-
 ## Command empty_trashcan
 ##
 ## Empty the trashcan.
@@ -5558,6 +5522,17 @@ get_credentials
        & # Whether to include a list of targets using the credentials.
        attribute targets { boolean }?
        & attribute format { xsd:token { pattern = "key|rpm|deb|exe" } }?
+     }
+
+## Command get_feeds
+##
+## Get one or many feeds.
+
+get_feeds
+ = element get_feeds
+     {
+       # Type of single feed to get: NVT, CERT or SCAP.
+       attribute type { text }?
      }
 
 ## Command get_filters
@@ -7815,9 +7790,6 @@ commands_response
            | delete_task_response
            | delete_user_response
            | describe_auth_response
-           | describe_cert_response
-           | describe_feed_response
-           | describe_scap_response
            | empty_trashcan_response
            | get_agents_response
            | get_alerts_response
@@ -7826,6 +7798,7 @@ commands_response
            | get_credentials_response
            | get_groups_response
            | get_info_response
+           | get_feeds_response
            | get_filters_response
            | get_notes_response
            | get_nvts_response
@@ -8354,234 +8327,6 @@ describe_auth_response_group_auth_conf_setting_certificate_info
        & certificate_info_expiration_time
        & certificate_info_issuer
        & certificate_info_md5_fingerprint
-     }
-
-## Response to describe_cert
-
-describe_cert_response
- = element describe_cert_response
-     {
-       attribute status { status }
-       & attribute status_text { text }
-       & describe_cert_response_cert
-     }
-
-describe_cert_response_cert
- = element cert
-     {
-       describe_cert_response_cert_name
-       & describe_cert_response_cert_version
-       & describe_cert_response_cert_description
-       & describe_cert_response_cert_sync_not_available?
-       & describe_cert_response_cert_currently_syncing?
-     }
-
-# The name of the CERT feed.
-describe_cert_response_cert_name
- = element name
-     {
-       text
-     }
-
-# The version of the CERT feed.
-describe_cert_response_cert_version
- = element version
-     {
-       text
-     }
-
-# A description of the CERT feed.
-describe_cert_response_cert_description
- = element description
-     {
-       text
-     }
-
-# Present if CERT syncing is not available.
-describe_cert_response_cert_sync_not_available
- = element sync_not_available
-     {
-       describe_cert_response_cert_sync_not_available_error
-     }
-
-# Description of why sync is not available.
-describe_cert_response_cert_sync_not_available_error
- = element error
-     {
-     }
-
-# Present if a CERT sync is underway.
-describe_cert_response_cert_currently_syncing
- = element currently_syncing
-     {
-       describe_cert_response_cert_currently_syncing_timestamp
-       & describe_cert_response_cert_currently_syncing_user
-     }
-
-# Time sync started.
-describe_cert_response_cert_currently_syncing_timestamp
- = element timestamp
-     {
-       text
-     }
-
-# Name of user who is performing sync.
-describe_cert_response_cert_currently_syncing_user
- = element user
-     {
-       text
-     }
-
-## Response to describe_feed
-
-describe_feed_response
- = element describe_feed_response
-     {
-       attribute status { status }
-       & attribute status_text { text }
-       & describe_feed_response_feed
-     }
-
-describe_feed_response_feed
- = element feed
-     {
-       describe_feed_response_feed_name
-       & describe_feed_response_feed_version
-       & describe_feed_response_feed_description
-       & describe_feed_response_feed_sync_not_available?
-       & describe_feed_response_feed_currently_syncing?
-     }
-
-# The name of the feed.
-describe_feed_response_feed_name
- = element name
-     {
-       text
-     }
-
-# The version of the feed.
-describe_feed_response_feed_version
- = element version
-     {
-       text
-     }
-
-# A description of the feed.
-describe_feed_response_feed_description
- = element description
-     {
-       text
-     }
-
-# Present if CERT syncing is not available.
-describe_feed_response_feed_sync_not_available
- = element sync_not_available
-     {
-       describe_feed_response_feed_sync_not_available_error
-     }
-
-# Description of why sync is not available.
-describe_feed_response_feed_sync_not_available_error
- = element error
-     {
-     }
-
-# Present if an NVT sync is underway.
-describe_feed_response_feed_currently_syncing
- = element currently_syncing
-     {
-       describe_feed_response_feed_currently_syncing_timestamp
-       & describe_feed_response_feed_currently_syncing_user
-     }
-
-# Time sync started.
-describe_feed_response_feed_currently_syncing_timestamp
- = element timestamp
-     {
-       text
-     }
-
-# Name of user who is performing sync.
-describe_feed_response_feed_currently_syncing_user
- = element user
-     {
-       text
-     }
-
-## Response to describe_scap
-
-describe_scap_response
- = element describe_scap_response
-     {
-       attribute status { status }
-       & attribute status_text { text }
-       & describe_scap_response_scap
-     }
-
-describe_scap_response_scap
- = element scap
-     {
-       describe_scap_response_scap_name
-       & describe_scap_response_scap_version
-       & describe_scap_response_scap_description
-       & describe_scap_response_scap_sync_not_available?
-       & describe_scap_response_scap_currently_syncing?
-     }
-
-# The name of the scap feed.
-describe_scap_response_scap_name
- = element name
-     {
-       text
-     }
-
-# The version of the scap feed.
-describe_scap_response_scap_version
- = element version
-     {
-       text
-     }
-
-# A description of the scap feed.
-describe_scap_response_scap_description
- = element description
-     {
-       text
-     }
-
-# Present if CERT syncing is not available.
-describe_scap_response_scap_sync_not_available
- = element sync_not_available
-     {
-       describe_scap_response_scap_sync_not_available_error
-     }
-
-# Description of why sync is not available.
-describe_scap_response_scap_sync_not_available_error
- = element error
-     {
-     }
-
-# Present if a CERT sync is underway.
-describe_scap_response_scap_currently_syncing
- = element currently_syncing
-     {
-       describe_scap_response_scap_currently_syncing_timestamp
-       & describe_scap_response_scap_currently_syncing_user
-     }
-
-# Time sync started.
-describe_scap_response_scap_currently_syncing_timestamp
- = element timestamp
-     {
-       text
-     }
-
-# Name of user who is performing sync.
-describe_scap_response_scap_currently_syncing_user
- = element user
-     {
-       text
      }
 
 ## Response to empty_trashcan
@@ -11165,6 +10910,90 @@ get_credentials_response_credential_count_page
  = element page
      {
        integer
+     }
+
+## Response to get_feeds
+
+get_feeds_response
+ = element get_feeds_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_feeds_response_feed*
+     }
+
+get_feeds_response_feed
+ = element feed
+     {
+       get_feeds_response_feed_type
+       & get_feeds_response_feed_name
+       & get_feeds_response_feed_version
+       & get_feeds_response_feed_description
+       & get_feeds_response_feed_sync_not_available?
+       & get_feeds_response_feed_currently_syncing?
+     }
+
+# The type of feed: NVT, CERT or SCAP.
+get_feeds_response_feed_type
+ = element type
+     {
+       text
+     }
+
+# The name of the feed.
+get_feeds_response_feed_name
+ = element name
+     {
+       text
+     }
+
+# The version of the feed.
+get_feeds_response_feed_version
+ = element version
+     {
+       text
+     }
+
+# A description of the feed.
+get_feeds_response_feed_description
+ = element description
+     {
+       text
+     }
+
+# Present if syncing is not available.
+get_feeds_response_feed_sync_not_available
+ = element sync_not_available
+     {
+       get_feeds_response_feed_sync_not_available_error
+     }
+
+# Description of why sync is not available.
+get_feeds_response_feed_sync_not_available_error
+ = element error
+     {
+     }
+
+# Present if a sync of this type is underway.
+get_feeds_response_feed_currently_syncing
+ = element currently_syncing
+     {
+       get_feeds_response_feed_currently_syncing_timestamp
+       & get_feeds_response_feed_currently_syncing_user
+     }
+
+# Time sync started.
+get_feeds_response_feed_currently_syncing_timestamp
+ = element timestamp
+     {
+       text
+     }
+
+# Name of user who is performing sync.
+get_feeds_response_feed_currently_syncing_user
+ = element user
+     {
+       text
      }
 
 ## Response to get_filters

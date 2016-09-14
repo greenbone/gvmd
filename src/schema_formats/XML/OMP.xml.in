@@ -3082,15 +3082,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>delete_task</c>
           <c>delete_user</c>
           <c>describe_auth</c>
-          <c>describe_cert</c>
-          <c>describe_feed</c>
-          <c>describe_scap</c>
           <c>empty_trashcan</c>
           <c>get_agents</c>
           <c>get_alerts</c>
           <c>get_assets</c>
           <c>get_configs</c>
           <c>get_credentials</c>
+          <c>get_feeds</c>
           <c>get_filters</c>
           <c>get_groups</c>
           <c>get_info</c>
@@ -3214,9 +3212,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>delete_task</r>
             <r>delete_user</r>
             <r>describe_auth</r>
-            <r>describe_cert</r>
-            <r>describe_feed</r>
-            <r>describe_scap</r>
             <r>empty_trashcan</r>
             <r>get_agents</r>
             <r>get_alerts</r>
@@ -3225,6 +3220,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>get_credentials</r>
             <r>get_groups</r>
             <r>get_info</r>
+            <r>get_feeds</r>
             <r>get_filters</r>
             <r>get_notes</r>
             <r>get_nvts</r>
@@ -7203,318 +7199,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
-    <name>describe_cert</name>
-    <summary>Describe the CERT feed</summary>
-    <description>
-      <p>
-        The client uses the "describe_cert" command to get details about
-        the CERT feed used by the Manager.
-      </p>
-      <p>
-        The Manager will reply with a cert element containing
-        information about the CERT feed.
-      </p>
-    </description>
-    <pattern>
-    </pattern>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-        <e>cert</e>
-      </pattern>
-      <ele>
-        <name>cert</name>
-        <pattern>
-          <e>name</e>
-          <e>version</e>
-          <e>description</e>
-          <o><e>sync_not_available</e></o>
-          <o><e>currently_syncing</e></o>
-        </pattern>
-        <ele>
-          <name>name</name>
-          <summary>The name of the CERT feed</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>version</name>
-          <summary>The version of the CERT feed</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>description</name>
-          <summary>A description of the CERT feed</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>sync_not_available</name>
-          <summary>Present if CERT syncing is not available</summary>
-          <pattern>
-            <e>error</e>
-          </pattern>
-          <ele>
-            <name>error</name>
-            <summary>Description of why sync is not available</summary>
-          </ele>
-        </ele>
-        <ele>
-          <name>currently_syncing</name>
-          <summary>Present if a CERT sync is underway</summary>
-          <pattern>
-            <e>timestamp</e>
-            <e>user</e>
-          </pattern>
-          <ele>
-            <name>timestamp</name>
-            <summary>Time sync started</summary>
-            <pattern>text</pattern>
-          </ele>
-          <ele>
-            <name>user</name>
-            <summary>Name of user who is performing sync</summary>
-            <pattern>text</pattern>
-          </ele>
-        </ele>
-      </ele>
-    </response>
-    <example>
-      <summary>Describe the CERT feed</summary>
-      <request>
-        <describe_cert>
-        </describe_cert>
-      </request>
-      <response>
-        <describe_cert_response status="200" status_text="OK">
-          <cert>
-            <name>OpenVAS CERT Feed</name>
-            <version>201301040805</version>
-            <description>
-              The 'OpenVAS CERT Feed' is provided by 'The OpenVAS Project'.
-              <truncated>...</truncated>
-            </description>
-          </cert>
-        </describe_cert_response>
-      </response>
-    </example>
-  </command>
-  <command>
-    <name>describe_feed</name>
-    <summary>Describe the NVT feed</summary>
-    <description>
-      <p>
-        The client uses the "describe_feed" command to get details about
-        the NVT feed used by the Manager.
-      </p>
-      <p>
-        The Manager will reply with a feed element containing
-        information about the NVT feed.
-      </p>
-    </description>
-    <pattern>
-    </pattern>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-        <e>feed</e>
-      </pattern>
-      <ele>
-        <name>feed</name>
-        <pattern>
-          <e>name</e>
-          <e>version</e>
-          <e>description</e>
-          <o><e>sync_not_available</e></o>
-          <o><e>currently_syncing</e></o>
-        </pattern>
-        <ele>
-          <name>name</name>
-          <summary>The name of the feed</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>version</name>
-          <summary>The version of the feed</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>description</name>
-          <summary>A description of the feed</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>sync_not_available</name>
-          <summary>Present if CERT syncing is not available</summary>
-          <pattern>
-            <e>error</e>
-          </pattern>
-          <ele>
-            <name>error</name>
-            <summary>Description of why sync is not available</summary>
-          </ele>
-        </ele>
-        <ele>
-          <name>currently_syncing</name>
-          <summary>Present if an NVT sync is underway</summary>
-          <pattern>
-            <e>timestamp</e>
-            <e>user</e>
-          </pattern>
-          <ele>
-            <name>timestamp</name>
-            <summary>Time sync started</summary>
-            <pattern>text</pattern>
-          </ele>
-          <ele>
-            <name>user</name>
-            <summary>Name of user who is performing sync</summary>
-            <pattern>text</pattern>
-          </ele>
-        </ele>
-      </ele>
-    </response>
-    <example>
-      <summary>Describe the feed</summary>
-      <request>
-        <describe_feed>
-        </describe_feed>
-      </request>
-      <response>
-        <describe_feed_response status="200" status_text="OK">
-          <feed>
-            <name>OpenVAS NVT Feed</name>
-            <version>201011221324</version>
-            <description>
-              The 'OpenVAS NVT Feed' is provided by 'The OpenVAS Project'.
-              <truncated>...</truncated>
-            </description>
-          </feed>
-        </describe_feed_response>
-      </response>
-    </example>
-  </command>
-  <command>
-    <name>describe_scap</name>
-    <summary>Describe the SCAP feed</summary>
-    <description>
-      <p>
-        The client uses the "describe_scap" command to get details about
-        the SCAP feed used by the Manager.
-      </p>
-      <p>
-        The Manager will reply with a scap element containing
-        information about the SCAP feed.
-      </p>
-    </description>
-    <pattern>
-    </pattern>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-        <e>scap</e>
-      </pattern>
-      <ele>
-        <name>scap</name>
-        <pattern>
-          <e>name</e>
-          <e>version</e>
-          <e>description</e>
-          <o><e>sync_not_available</e></o>
-          <o><e>currently_syncing</e></o>
-        </pattern>
-        <ele>
-          <name>name</name>
-          <summary>The name of the scap feed</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>version</name>
-          <summary>The version of the scap feed</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>description</name>
-          <summary>A description of the scap feed</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>sync_not_available</name>
-          <summary>Present if CERT syncing is not available</summary>
-          <pattern>
-            <e>error</e>
-          </pattern>
-          <ele>
-            <name>error</name>
-            <summary>Description of why sync is not available</summary>
-          </ele>
-        </ele>
-        <ele>
-          <name>currently_syncing</name>
-          <summary>Present if a CERT sync is underway</summary>
-          <pattern>
-            <e>timestamp</e>
-            <e>user</e>
-          </pattern>
-          <ele>
-            <name>timestamp</name>
-            <summary>Time sync started</summary>
-            <pattern>text</pattern>
-          </ele>
-          <ele>
-            <name>user</name>
-            <summary>Name of user who is performing sync</summary>
-            <pattern>text</pattern>
-          </ele>
-        </ele>
-      </ele>
-    </response>
-    <example>
-      <summary>Describe the scap feed</summary>
-      <request>
-        <describe_scap>
-        </describe_scap>
-      </request>
-      <response>
-        <describe_scap_response status="200" status_text="OK">
-          <scap>
-            <name>OpenVAS NVT SCAP</name>
-            <version>201011221324</version>
-            <description>
-              The 'OpenVAS SCAP Feed' is provided by 'The OpenVAS Project'.
-              <truncated>...</truncated>
-            </description>
-          </scap>
-        </describe_scap_response>
-      </response>
-    </example>
-  </command>
-  <command>
     <name>empty_trashcan</name>
     <summary>Empty the trashcan</summary>
     <description>
@@ -11219,6 +10903,128 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <package format="deb">ITxhcmNoPgpk...DmvF0AKAAACg==</package>
           </credential>
         </get_credentials_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_feeds</name>
+    <summary>Get one or many feeds</summary>
+    <description>
+      <p>
+        The client uses the get_feeds command to get feed information.
+        If the command sent by the client was valid, the manager will
+        reply with a list of feeds to the client.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>type</name>
+        <summary>Type of single feed to get: NVT, CERT or SCAP</summary>
+        <type>text</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>feed</e></any>
+      </pattern>
+      <ele>
+        <name>feed</name>
+        <pattern>
+          <e>type</e>
+          <e>name</e>
+          <e>version</e>
+          <e>description</e>
+          <o><e>sync_not_available</e></o>
+          <o><e>currently_syncing</e></o>
+        </pattern>
+        <ele>
+          <name>type</name>
+          <summary>The type of feed: NVT, CERT or SCAP</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>The name of the feed</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>version</name>
+          <summary>The version of the feed</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>description</name>
+          <summary>A description of the feed</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>sync_not_available</name>
+          <summary>Present if syncing is not available</summary>
+          <pattern>
+            <e>error</e>
+          </pattern>
+          <ele>
+            <name>error</name>
+            <summary>Description of why sync is not available</summary>
+          </ele>
+        </ele>
+        <ele>
+          <name>currently_syncing</name>
+          <summary>Present if a sync of this type is underway</summary>
+          <pattern>
+            <e>timestamp</e>
+            <e>user</e>
+          </pattern>
+          <ele>
+            <name>timestamp</name>
+            <summary>Time sync started</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>user</name>
+            <summary>Name of user who is performing sync</summary>
+            <pattern>text</pattern>
+          </ele>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get the feeds</summary>
+      <request>
+        <get_feeds>
+        </get_feeds>
+      </request>
+      <response>
+        <get_feeds_response status_text="OK" status="200">
+          <feed>
+            <type>NVT</type>
+            <name>Greenbone Security Feed</name>
+            <version>201608180124</version>
+            <description>This script synchronizes an NVT collection with...</description>
+          </feed>
+          <feed>
+            <type>CERT</type>
+            <name>Greenbone CERT Feed</name>
+            <version>201609130000</version>
+            <description>This script synchronizes a CERT collection with...</description>
+          </feed>
+          <feed>
+            <type>SCAP</type>
+            <name>Greenbone SCAP Feed</name>
+            <version>201608172300</version>
+            <description>This script synchronizes a SCAP collection with...</description>
+          </feed>
+        </get_feeds_response>
       </response>
     </example>
   </command>
@@ -22862,9 +22668,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             DELETE_TASK            Delete a task.
             DELETE_USER            Delete an existing user.
             DESCRIBE_AUTH          Get details about the used authentication methods.
-            DESCRIBE_CERT          Get details of the CERT feed this Manager uses.
-            DESCRIBE_FEED          Get details of the NVT feed this Manager uses.
-            DESCRIBE_SCAP          Get details of the SCAP feed this Manager uses.
             EMPTY_TRASHCAN         Empty the trashcan.
             GET_AGENTS             Get all agents.
             GET_AGGREGATES         Get aggregates of resources.
@@ -22872,6 +22675,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             GET_ASSETS             Get all assets.
             GET_CONFIGS            Get all configs.
             GET_CREDENTIALS        Get all credentials.
+            GET_FEEDS              Get details of one or all feeds this Manager uses.
             GET_FILTERS            Get all filters.
             GET_GROUPS             Get all groups.
             GET_INFO               Get raw information for a given item.
@@ -26068,6 +25872,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </response>
     </example>
   </command>
+  <change>
+    <command>DESCRIBE_FEED, DESCRIBE_SCAP, DESCRIBE_CERT</command>
+    <summary>Commands replaced with GET_FEEDS</summary>
+    <description>
+      <p>
+        The commands DESCRIBE_FEED, DESCRIBE_SCAP and DESCRIBE_CERT have been
+        replaced with a single command, GET_FEEDS.
+      </p>
+    </description>
+    <version>7.0</version>
+  </change>
   <change>
     <command>GET_REPORT_FORMATS, CREATE_REPORT_FORMAT</command>
     <summary>Element GLOBAL removed</summary>
