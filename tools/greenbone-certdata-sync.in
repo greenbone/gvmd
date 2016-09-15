@@ -344,13 +344,15 @@ is_feed_current () {
     if [ -e $ACCESSKEY ]
     then
       read feeduser < $ACCESSKEY
-      custid=`head -1 $ACCESSKEY | cut -d @ -f 1`
-      if [ -z "$feeduser" ] || [ -z "$custid" ]
+      custid_at_host=`head -1 $ACCESSKEY | cut -d : -f 1`
+
+      if [ -z "$feeduser" ] || [ -z "$custid_at_host" ]
       then
         log_err "CERT synchronization: Could not determine credentials, aborting synchronization."
         rm -rf "$FEED_INFO_TEMP_DIR"
         exit 1
       fi
+      echo "custid_at_host = '$custid_at_host'"
 
       gsmproxy=$(get_value proxy_feed | sed -r -e 's/^.*\/\///' -e 's/:([0-9]+)$/ \1/')
       syncport=$(get_value syncport)
@@ -371,7 +373,7 @@ is_feed_current () {
         fi
       fi
       create_tmp_key
-      rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $TMPACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid@feed.greenbone.net:/cert-data/timestamp "$FEED_INFO_TEMP_DIR"
+      rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $TMPACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid_at_host:/cert-data/timestamp "$FEED_INFO_TEMP_DIR"
       if [ $? -ne 0 ]
       then
         log_err "rsync failed, aborting synchronization."
@@ -866,8 +868,8 @@ sync_certdata(){
 
       mkdir -p "$CERT_DIR"
       read feeduser < $ACCESSKEY
-      custid=`head -1 $ACCESSKEY | cut -d @ -f 1`
-      if [ -z "$feeduser" ] || [ -z "$custid" ]
+      custid_at_host=`head -1 $ACCESSKEY | cut -d : -f 1`
+      if [ -z "$feeduser" ] || [ -z "$custid_at_host" ]
       then
         log_err "Could not determine credentials, aborting synchronization."
         exit 1
@@ -895,7 +897,7 @@ sync_certdata(){
           fi
         fi
         create_tmp_key
-        rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid@feed.greenbone.net:/cert-data/ $CERT_DIR
+        rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid_at_host:/cert-data/ $CERT_DIR
         if [ 0 -ne "$?" ] ; then
           log_err "rsync failed, aborting synchronization."
           remove_tmp_key

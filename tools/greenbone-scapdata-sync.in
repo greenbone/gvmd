@@ -361,8 +361,8 @@ is_feed_current () {
     if [ -e $ACCESSKEY ]
     then
       read feeduser < $ACCESSKEY
-      custid=`head -1 $ACCESSKEY | cut -d @ -f 1`
-      if [ -z $feeduser ] || [ -z $custid ]
+      custid_at_host=`head -1 $ACCESSKEY | cut -d : -f 1`
+      if [ -z $feeduser ] || [ -z $custid_at_host ]
       then
         log_err "Could not determine credentials, aborting synchronization."
         rm -rf $FEED_INFO_TEMP_DIR
@@ -388,7 +388,7 @@ is_feed_current () {
         fi
       fi
       create_tmp_key
-      rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $TMPACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid@feed.greenbone.net:/scap-data/timestamp $FEED_INFO_TEMP_DIR
+      rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $TMPACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid_at_host:/scap-data/timestamp $FEED_INFO_TEMP_DIR
       if [ $? -ne 0 ]
       then
         log_err "rsync failed, aborting synchronization."
@@ -1446,8 +1446,8 @@ sync_scapdata(){
 
       mkdir -p "$SCAP_DIR"
       read feeduser < $ACCESSKEY
-      custid=`head -1 $ACCESSKEY | cut -d @ -f 1`
-      if [ -z "$feeduser" ] || [ -z "$custid" ]
+      custid_at_host=`head -1 $ACCESSKEY | cut -d : -f 1`
+      if [ -z "$feeduser" ] || [ -z "$custid_at_host" ]
       then
         log_err "Could not determine credentials, aborting synchronization."
         exit 1
@@ -1475,7 +1475,7 @@ sync_scapdata(){
           fi
         fi
         create_tmp_key
-        rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid@feed.greenbone.net:/scap-data/ $SCAP_DIR
+        rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid_at_host:/scap-data/ $SCAP_DIR
         if [ 0 != "$?" ] ; then
           log_err "rsync failed, aborting synchronization."
           remove_tmp_key
