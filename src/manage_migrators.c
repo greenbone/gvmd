@@ -13346,6 +13346,76 @@ migrate_176_to_177 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 177 to version 178.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_177_to_178 ()
+{
+  credential_t credential;
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 177. */
+
+  if (manage_db_version () != 177)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Remove CA certificate from default scanner. */
+  sql ("UPDATE scanners SET ca_pub = NULL"
+       " WHERE uuid = '" SCANNER_UUID_DEFAULT "';");
+
+  /* Delete credential of default scanner if it is not used elsewhere. */
+  sql_int64 (&credential,
+             "SELECT credential FROM scanners"
+             " WHERE uuid = '" SCANNER_UUID_DEFAULT "'");
+
+  if ((sql_int ("SELECT count(*) FROM scanners"
+                " WHERE credential = %llu"
+                "   AND uuid != '" SCANNER_UUID_DEFAULT "';",
+                credential) == 0)
+      && (sql_int ("SELECT count(*) FROM scanners_trash"
+                   " WHERE credential = %llu"
+                   "   AND credential_location = %d;",
+                   credential, LOCATION_TABLE) == 0)
+      && (sql_int ("SELECT count(*) FROM targets_login_data"
+                   " WHERE credential = %llu;",
+                   credential) == 0)
+      && (sql_int ("SELECT count(*) FROM targets_trash_login_data"
+                   " WHERE credential = %llu"
+                   "   AND credential_location = %d;",
+                   credential, LOCATION_TABLE) == 0)
+      && (sql_int ("SELECT count(*) FROM slaves"
+                   " WHERE credential = %llu;",
+                   credential) == 0)
+      && (sql_int ("SELECT count(*) FROM slaves_trash"
+                   " WHERE credential = %llu"
+                   "   AND credential_location = %d;",
+                   credential, LOCATION_TABLE) == 0))
+    {
+      sql ("DELETE FROM credentials WHERE id = %llu",
+           credential);
+    }
+
+  /* Remove reference to credential from default scanner. */
+  sql ("UPDATE scanners SET credential = 0"
+       " WHERE uuid = '" SCANNER_UUID_DEFAULT "';");
+
+  /* Set the database version to 178. */
+
+  set_db_version (178);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -13537,6 +13607,7 @@ static migrator_t database_migrators[]
     {175, migrate_174_to_175},
     {176, migrate_175_to_176},
     {177, migrate_176_to_177},
+    {178, migrate_177_to_178},
     /* End marker. */
     {-1, NULL}};
 

@@ -1,3 +1,19 @@
+2016-09-20  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Remove CA certificate and credential from default scanner.  Hence
+	increase database version to 178.  Add database migration from version
+	177 to 178.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 178.
+
+	* src/manage_migrators.c (migrate_177_to_178): New function.
+	(database_migrators): Add migrate_177_to_178.
+
+	* src/manage_sql.c (check_db_scanners): Do not add CA certificate for
+	default scanner and do not create a credential.
+
+	* doc/db.png: Update for version change.
+
 2016-09-15  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* tools/greenbone-certdata-sync.in, tools/greenbone-scapdata-sync.in:
