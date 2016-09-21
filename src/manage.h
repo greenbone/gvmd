@@ -39,6 +39,7 @@
 #include <openvas/base/nvti.h> /* for nvti_t */
 #include <openvas/base/openvas_networking.h>
 #include <openvas/osp/osp.h>
+#include <openvas/misc/openvas_server.h>
 
 /**
  * @brief Flag with all Glib log levels.
@@ -66,9 +67,8 @@ typedef struct
 } name_value_t;
 
 int
-init_manage (GSList*, int, const gchar*, int, int, int, void (*) (),
-             int (*) (int *, gnutls_session_t *,
-                      gnutls_certificate_credentials_t *, gchar*),
+init_manage (GSList*, int, const gchar *, int, int, int, void (*) (),
+             int (*) (openvas_connection_t *, gchar *),
              int);
 
 int
@@ -2746,12 +2746,9 @@ void
 set_scheduled_user_uuid (gchar* uuid);
 
 int
-manage_schedule (int (*) (int *,
-                          gnutls_session_t *,
-                          gnutls_certificate_credentials_t *,
-                          gchar*),
+manage_schedule (int (*) (openvas_connection_t *, gchar *),
                  gboolean,
-                 sigset_t *sigmask_current);
+                 sigset_t *);
 
 char *
 schedule_uuid (schedule_t);

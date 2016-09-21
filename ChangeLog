@@ -1,3 +1,29 @@
+2016-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add option to server clients on UNIX socket instead of TLS.
+
+	* src/manage.c (manage_schedule): Use connection instead of session.
+
+	* src/manage_sql.c (escalate_2, init_manage): Use connection instead of session.
+
+	* src/omp.c (init_omp): Use connection instead of session.
+
+	* src/ompd.c (init_ompd): Use connection instead of session.
+	(read_from_client_unix, read_from_client_tls): New functions.
+	(read_from_client): Call through according to type.
+	(write_to_client_unix, write_to_client_tls): New functions.
+	(write_to_client): Call through according to type.
+	(session_clean, serve_omp): Use connection instead of session.
+
+	* src/manage.h, src/omp.h, src/ompd.h: Update headers accordingly.
+
+	* src/openvasmd.c (use_tls): New variable.
+	(serve_client, accept_and_maybe_fork, fork_connection_internal)
+	(fork_connection_for_scheduler, fork_connection_for_event)
+	(update_or_rebuild_nvt_cache): Use connection instead of socket.
+	(manager_listen): Listen on TCP or UNIX, depending on args.
+	(main): Add option --unix-socket.
+
 2016-09-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (task_average_scan_duration): New function.
@@ -17,7 +43,7 @@
 
 2016-09-21  Christian Fischer <christian.fischer@greenbone.net>
 
-	* INSTALL: Added apt-get install prerequisites 
+	* INSTALL: Added apt-get install prerequisites
 
 2016-09-20  Timo Pollmeier <timo.pollmeier@greenbone.net>
 

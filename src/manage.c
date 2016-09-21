@@ -6266,10 +6266,7 @@ reschedule_task (const gchar *task_id)
  * @return 0 success, 1 failed to get lock, -1 error.
  */
 int
-manage_schedule (int (*fork_connection) (int *,
-                                         gnutls_session_t *,
-                                         gnutls_certificate_credentials_t *,
-                                         gchar*),
+manage_schedule (int (*fork_connection) (openvas_connection_t *, gchar *),
                  gboolean run_tasks,
                  sigset_t *sigmask_current)
 {
@@ -6409,11 +6406,11 @@ manage_schedule (int (*fork_connection) (int *,
 
   while (starts)
     {
-      int socket, pid;
-      gnutls_session_t session;
-      gnutls_certificate_credentials_t credentials;
+      int pid;
+      openvas_connection_t connection;
       gchar *task_uuid, *owner, *owner_uuid;
       GSList *head;
+      omp_authenticate_info_opts_t auth_opts;
 
       owner = starts->data;
       assert (starts->next);
@@ -6470,7 +6467,7 @@ manage_schedule (int (*fork_connection) (int *,
 
       /* Run the callback to fork a child connected to the Manager. */
 
-      pid = fork_connection (&socket, &session, &credentials, owner_uuid);
+      pid = fork_connection (&connection, owner_uuid);
       switch (pid)
         {
           case 0:
@@ -6590,30 +6587,32 @@ manage_schedule (int (*fork_connection) (int *,
 
       /* Start the task. */
 
-      if (omp_authenticate (&session, owner, ""))
+      auth_opts = omp_authenticate_info_opts_defaults;
+      auth_opts.username = owner;
+      if (omp_authenticate_info_ext_c (&connection, auth_opts))
         {
           g_warning ("%s: omp_authenticate failed", __FUNCTION__);
           g_free (task_uuid);
           g_free (owner);
-          openvas_server_free (socket, session, credentials);
+          openvas_connection_free (&connection);
           exit (EXIT_FAILURE);
         }
 
       g_free (owner);
 
-      if (omp_resume_task_report (&session, task_uuid, NULL))
+      if (omp_resume_task_report_c (&connection, task_uuid, NULL))
         {
-          if (omp_start_task_report (&session, task_uuid, NULL))
+          if (omp_start_task_report_c (&connection, task_uuid, NULL))
             {
               g_warning ("%s: omp_start_task and omp_resume_task failed", __FUNCTION__);
               g_free (task_uuid);
-              openvas_server_free (socket, session, credentials);
+              openvas_connection_free (&connection);
               exit (EXIT_FAILURE);
             }
         }
 
       g_free (task_uuid);
-      openvas_server_free (socket, session, credentials);
+      openvas_connection_free (&connection);
       exit (EXIT_SUCCESS);
    }
 
@@ -6621,11 +6620,10 @@ manage_schedule (int (*fork_connection) (int *,
 
   while (stops)
     {
-      int socket;
-      gnutls_session_t session;
-      gnutls_certificate_credentials_t credentials;
+      openvas_connection_t connection;
       gchar *task_uuid, *owner, *owner_uuid;
       GSList *head;
+      omp_authenticate_info_opts_t auth_opts;
 
       owner = stops->data;
       assert (stops->next);
@@ -6643,7 +6641,7 @@ manage_schedule (int (*fork_connection) (int *,
 
       /* Run the callback to fork a child connected to the Manager. */
 
-      switch (fork_connection (&socket, &session, &credentials, owner_uuid))
+      switch (fork_connection (&connection, owner_uuid))
         {
           case 0:
             /* Child.  Break, stop task, exit. */
@@ -6679,28 +6677,30 @@ manage_schedule (int (*fork_connection) (int *,
 
       /* Stop the task. */
 
-      if (omp_authenticate (&session, owner, ""))
+      auth_opts = omp_authenticate_info_opts_defaults;
+      auth_opts.username = owner;
+      if (omp_authenticate_info_ext_c (&connection, auth_opts))
         {
           g_free (task_uuid);
           g_free (owner);
           g_free (owner_uuid);
-          openvas_server_free (socket, session, credentials);
+          openvas_connection_free (&connection);
           exit (EXIT_FAILURE);
         }
 
-      if (omp_stop_task (&session, task_uuid))
+      if (omp_stop_task_c (&connection, task_uuid))
         {
           g_free (task_uuid);
           g_free (owner);
           g_free (owner_uuid);
-          openvas_server_free (socket, session, credentials);
+          openvas_connection_free (&connection);
           exit (EXIT_FAILURE);
         }
 
       g_free (task_uuid);
       g_free (owner);
       g_free (owner_uuid);
-      openvas_server_free (socket, session, credentials);
+      openvas_connection_free (&connection);
       exit (EXIT_SUCCESS);
    }
 

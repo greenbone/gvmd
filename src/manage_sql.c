@@ -338,11 +338,7 @@ check_report_format (const gchar *);
 /**
  * @brief Function to fork a connection that will accept OMP requests.
  */
-int (*manage_fork_connection) (int *,
-                               gnutls_session_t *,
-                               gnutls_certificate_credentials_t *,
-                               gchar*)
- = NULL;
+int (*manage_fork_connection) (openvas_connection_t *, gchar*) = NULL;
 
 /**
  * @brief Function to mark progress.
@@ -11663,10 +11659,9 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
         }
       case ALERT_METHOD_START_TASK:
         {
-          int socket;
-          gnutls_session_t session;
-          gnutls_certificate_credentials_t credentials;
+          openvas_connection_t connection;
           char *task_id, *report_id;
+          omp_authenticate_info_opts_t auth_opts;
 
           if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
             {
@@ -11687,8 +11682,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
 
           task_id = alert_data (alert, "method", "start_task_task");
 
-          switch (manage_fork_connection (&socket, &session, &credentials,
-                                          current_credentials.uuid))
+          switch (manage_fork_connection (&connection, current_credentials.uuid))
             {
               case 0:
                 /* Child.  Break, stop task, exit. */
@@ -11710,22 +11704,24 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
 
           /* Start the task. */
 
-          if (omp_authenticate (&session, current_credentials.username, ""))
+          auth_opts = omp_authenticate_info_opts_defaults;
+          auth_opts.username = current_credentials.username;
+          if (omp_authenticate_info_ext_c (&connection, auth_opts))
             {
-              openvas_server_free (socket, session, credentials);
+              openvas_connection_free (&connection);
               exit (EXIT_FAILURE);
             }
 
-          if (omp_start_task_report (&session, task_id, &report_id))
+          if (omp_start_task_report_c (&connection, task_id, &report_id))
             {
               g_free (task_id);
-              openvas_server_free (socket, session, credentials);
+              openvas_connection_free (&connection);
               exit (EXIT_FAILURE);
             }
 
           g_free (task_id);
           g_free (report_id);
-          openvas_server_free (socket, session, credentials);
+          openvas_connection_free (&connection);
           exit (EXIT_SUCCESS);
         }
       case ALERT_METHOD_ERROR:
@@ -15545,10 +15541,7 @@ init_manage_internal (GSList *log_config,
                       void (*update_progress) (),
                       int stop_tasks,
                       int (*fork_connection)
-                             (int *,
-                              gnutls_session_t *,
-                              gnutls_certificate_credentials_t *,
-                              gchar*),
+                             (openvas_connection_t *, gchar *),
                       int skip_db_check,
                       int check_encryption_key)
 {
@@ -15684,10 +15677,7 @@ int
 init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
              int max_ips_per_target, int max_email_attachment_size,
              int max_email_include_size, void (*update_progress) (),
-             int (*fork_connection) (int *,
-                                     gnutls_session_t *,
-                                     gnutls_certificate_credentials_t *,
-                                     gchar*),
+             int (*fork_connection) (openvas_connection_t*, gchar*),
              int skip_db_check)
 {
   return init_manage_internal (log_config,

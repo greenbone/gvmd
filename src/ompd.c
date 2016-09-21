@@ -116,10 +116,7 @@ int
 init_ompd (GSList *log_config, int nvt_cache_mode, const gchar *database,
            int max_ips_per_target, int max_email_attachment_size,
            int max_email_include_size, void (*progress) (),
-           int (*fork_connection) (int *,
-                                   gnutls_session_t *,
-                                   gnutls_certificate_credentials_t *,
-                                   gchar*),
+           int (*fork_connection) (openvas_connection_t *, gchar*),
            int skip_db_check)
 {
   return init_omp (log_config, nvt_cache_mode, database, max_ips_per_target,
@@ -145,15 +142,52 @@ init_ompd_process (const gchar *database, gchar **disable)
 /**
  * @brief Read as much from the client as the \ref from_client buffer will hold.
  *
+ * @param[in]  client_socket  The socket.
+ *
+ * @return 0 on reading everything available, -1 on error, -2 if
+ *         from_client buffer is full or -3 on reaching end of file.
+ */
+static int
+read_from_client_unix (int client_socket)
+{
+  while (from_client_end < from_buffer_size)
+    {
+      int count;
+      count = read (client_socket,
+                    from_client + from_client_end,
+                    from_buffer_size - from_client_end);
+      if (count < 0)
+        {
+          if (errno == EAGAIN)
+            /* Got everything available, return to `select'. */
+            return 0;
+          if (errno == EINTR)
+            /* Interrupted, try read again. */
+            continue;
+          g_warning ("%s: failed to read from client: %s\n",
+                     __FUNCTION__, strerror (errno));
+          return -1;
+        }
+      if (count == 0)
+        /* End of file. */
+        return -3;
+      from_client_end += count;
+    }
+
+  /* Buffer full. */
+  return -2;
+}
+
+/**
+ * @brief Read as much from the client as the \ref from_client buffer will hold.
+ *
  * @param[in]  client_session  The TLS session with the client.
- * @param[in]  client_socket   The socket connected to the client.
  *
  * @return 0 on reading everything available, -1 on error, -2 if
  * from_client buffer is full or -3 on reaching end of file.
  */
 static int
-read_from_client (gnutls_session_t* client_session,
-                  /* unused */ int client_socket)
+read_from_client_tls (gnutls_session_t* client_session)
 {
   while (from_client_end < from_buffer_size)
     {
@@ -198,6 +232,23 @@ read_from_client (gnutls_session_t* client_session,
   return -2;
 }
 
+/**
+ * @brief Read as much from the client as the \ref from_client buffer will hold.
+ *
+ * @param[in]  client_session  The TLS session with the client.
+ * @param[in]  client_socket   The socket connected to the client.
+ *
+ * @return 0 on reading everything available, -1 on error, -2 if
+ * from_client buffer is full or -3 on reaching end of file.
+ */
+static int
+read_from_client (openvas_connection_t *client_connection)
+{
+  if (client_connection->tls)
+    return read_from_client_tls (&client_connection->session);
+  return read_from_client_unix (client_connection->socket);
+}
+
 /** @todo Move to openvas-libraries? */
 /**
  * @brief Write as much as possible from \ref to_client to the client.
@@ -207,7 +258,7 @@ read_from_client (gnutls_session_t* client_session,
  * @return 0 wrote everything, -1 error, -2 wrote as much as client accepted.
  */
 static int
-write_to_client (gnutls_session_t* client_session)
+write_to_client_tls (gnutls_session_t* client_session)
 {
   while (to_client_start < to_client_end)
     {
@@ -242,6 +293,63 @@ write_to_client (gnutls_session_t* client_session)
 
   /* Wrote everything. */
   return 0;
+}
+
+/**
+ * @brief Write as much as possible from \ref to_client to the client.
+ *
+ * @param[in]  client_socket  The client socket.
+ *
+ * @return 0 wrote everything, -1 error, -2 wrote as much as client accepted.
+ */
+static int
+write_to_client_unix (int client_socket)
+{
+  while (to_client_start < to_client_end)
+    {
+      ssize_t count;
+      count = write (client_socket,
+                     to_client + to_client_start,
+                     to_client_end - to_client_start);
+      if (count < 0)
+        {
+          if (errno == EAGAIN)
+            /* Wrote as much as client would accept. */
+            return -2;
+          if (errno == EINTR)
+            /* Interrupted, try write again. */
+            continue;
+          g_warning ("%s: failed to write to client: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          return -1;
+        }
+      logf ("=> client %.*s\n",
+            to_client_end - to_client_start,
+            to_client + to_client_start);
+      to_client_start += count;
+      g_debug ("=> client  %u bytes\n", (unsigned int) count);
+    }
+  g_debug ("=> client  done\n");
+  to_client_start = to_client_end = 0;
+
+  /* Wrote everything. */
+  return 0;
+}
+
+/**
+ * @brief Write as much as possible from \ref to_client to the client.
+ *
+ * @param[in]  client_connection  The client connection.
+ *
+ * @return 0 wrote everything, -1 error, -2 wrote as much as client accepted.
+ */
+static int
+write_to_client (openvas_connection_t *client_connection)
+{
+  if (client_connection->tls)
+    return write_to_client_tls (&client_connection->session);
+  return write_to_client_unix (client_connection->socket);
 }
 
 /**
@@ -306,18 +414,23 @@ ompd_send_to_client (const char* msg, void* write_to_client_data)
   return FALSE;
 }
 
+/**
+ * @brief Clean session.
+ *
+ * @param[in]  client_connection  Connection.
+ */
 static void
-session_clean (gnutls_session_t *sess, gnutls_certificate_credentials_t *creds)
+session_clean (openvas_connection_t *client_connection)
 {
-  if (sess && *sess)
+  if (client_connection->session)
     {
-      gnutls_deinit (*sess);
-      *sess = NULL;
+      gnutls_deinit (client_connection->session);
+      client_connection->session = NULL;
     }
-  if (creds && *creds)
+  if (client_connection->credentials)
     {
-      gnutls_certificate_free_credentials (*creds);
-      *creds = NULL;
+      gnutls_certificate_free_credentials (client_connection->credentials);
+      client_connection->credentials = NULL;
     }
 }
 
@@ -345,9 +458,7 @@ session_clean (gnutls_session_t *sess, gnutls_certificate_credentials_t *creds)
  *
  * If client_socket is 0 or less, then update the NVT cache and exit.
  *
- * @param[in]  client_session       The TLS session with the client.
- * @param[in]  client_credentials   The TSL client credentials.
- * @param[in]  client_socket        The socket connected to the client, if any.
+ * @param[in]  client_connection    Connection.
  * @param[in]  database             Location of manage database.
  * @param[in]  disable              Commands to disable.
  * @param[in]  progress             Function to mark progress, or NULL.
@@ -355,10 +466,8 @@ session_clean (gnutls_session_t *sess, gnutls_certificate_credentials_t *creds)
  * @return 0 success, 1 scanner still loading, -1 error, -2 scanner has no cert.
  */
 int
-serve_omp (gnutls_session_t* client_session,
-           gnutls_certificate_credentials_t* client_credentials,
-           int client_socket, const gchar* database, gchar **disable,
-           void (*progress) ())
+serve_omp (openvas_connection_t *client_connection, const gchar *database,
+           gchar **disable, void (*progress) ())
 {
   int nfds, scan_handler = 0, rc = 0;
   /* True if processing of the client input is waiting for space in the
@@ -366,10 +475,10 @@ serve_omp (gnutls_session_t* client_session,
   short client_input_stalled;
   /* Client status flag.  Set to 0 when the client closes the connection
    * while the scanner is active. */
-  short client_active = client_socket > 0;
+  short client_active = client_connection->socket > 0;
 
-  if (client_socket < 0)
-    ompd_nvt_cache_mode = client_socket;
+  if (client_connection->socket < 0)
+    ompd_nvt_cache_mode = client_connection->socket;
 
   if (ompd_nvt_cache_mode)
     g_info ("   Updating NVT cache.\n");
@@ -380,7 +489,7 @@ serve_omp (gnutls_session_t* client_session,
   init_omp_process (ompd_nvt_cache_mode,
                     database,
                     (int (*) (const char*, void*)) ompd_send_to_client,
-                    (void*) client_session,
+                    (void*) client_connection,
                     disable);
 #if 0
   /** @todo Consider free_omp_data (); on return. */
@@ -443,7 +552,7 @@ serve_omp (gnutls_session_t* client_session,
    *     to_scanner buffer filling up (during initialisation).
    */
 
-  nfds = openvas_scanner_get_nfds (client_socket);
+  nfds = openvas_scanner_get_nfds (client_connection->socket);
   while (1)
     {
       int ret;
@@ -462,10 +571,10 @@ serve_omp (gnutls_session_t* client_session,
         {
           /* See whether to read from the client.  */
           if (from_client_end < from_buffer_size)
-            FD_SET (client_socket, &readfds);
+            FD_SET (client_connection->socket, &readfds);
           /* See whether to write to the client.  */
           if (to_client_start < to_client_end)
-            FD_SET (client_socket, &writefds);
+            FD_SET (client_connection->socket, &writefds);
         }
 
       /* See whether we need to read from the scannner.  */
@@ -498,13 +607,15 @@ serve_omp (gnutls_session_t* client_session,
        * exhibit a problem in OpenVAS due to a different buffering
        * strategy.  */
       ret = 0;
-      if (client_socket > 0 && FD_ISSET (client_socket, &readfds)
-          && gnutls_record_check_pending (*client_session))
+      if (client_connection->socket > 0
+          && client_connection->tls
+          && FD_ISSET (client_connection->socket, &readfds)
+          && gnutls_record_check_pending (client_connection->session))
         {
           FD_ZERO (&readfds);
           FD_ZERO (&writefds);
           ret++;
-          FD_SET (client_socket, &readfds);
+          FD_SET (client_connection->socket, &readfds);
         }
       if (openvas_scanner_fd_isset (&readfds))
         {
@@ -555,11 +666,12 @@ serve_omp (gnutls_session_t* client_session,
         }
 
       /* Read any data from the client. */
-      if (client_socket > 0 && FD_ISSET (client_socket, &readfds))
+      if (client_connection->socket > 0
+          && FD_ISSET (client_connection->socket, &readfds))
         {
           buffer_size_t initial_start = from_client_end;
 
-          switch (read_from_client (client_session, client_socket))
+          switch (read_from_client (client_connection))
             {
               case  0:       /* Read everything. */
                 break;
@@ -604,7 +716,7 @@ serve_omp (gnutls_session_t* client_session,
                * without closing it, for usage by the child process. */
               set_scanner_init_state (SCANNER_INIT_TOP);
               openvas_scanner_free ();
-              nfds = openvas_scanner_get_nfds (client_socket);
+              nfds = openvas_scanner_get_nfds (client_connection->socket);
               client_input_stalled = 0;
               /* Skip the rest of the loop because the scanner socket is
                * a new socket.  This is asking for select trouble, really. */
@@ -616,7 +728,7 @@ serve_omp (gnutls_session_t* client_session,
                * successfully started the task.  Close the client
                * connection, as the parent process has continued the
                * session with the client. */
-              session_clean (client_session, client_credentials);
+              session_clean (client_connection);
               client_active = 0;
               client_input_stalled = 0;
               scan_handler = 1;
@@ -627,14 +739,14 @@ serve_omp (gnutls_session_t* client_session,
                * successfully completed.  Close the client connection,
                * and exit, as the parent process has continued the
                * session with the client. */
-              session_clean (client_session, client_credentials);
+              session_clean (client_connection);
               return 0;
             }
           else if (ret == -10)
             {
               /* Now in a process forked to run a task, which has
                * failed in starting the task. */
-              session_clean (client_session, client_credentials);
+              session_clean (client_connection);
               return -1;
             }
           else if (ret == -1 || ret == -4)
@@ -642,7 +754,7 @@ serve_omp (gnutls_session_t* client_session,
               /* Error.  Write rest of to_client to client, so that the
                * client gets any buffered output and the response to the
                * error. */
-              write_to_client (client_session);
+              write_to_client (client_connection);
               rc = -1;
               goto client_free;
             }
@@ -724,11 +836,12 @@ serve_omp (gnutls_session_t* client_session,
         }
 
       /* Write any data to the client. */
-      if (client_socket > 0 && FD_ISSET (client_socket, &writefds))
+      if (client_connection->socket > 0
+          && FD_ISSET (client_connection->socket, &writefds))
         {
           /* Write as much as possible to the client. */
 
-          switch (write_to_client (client_session))
+          switch (write_to_client (client_connection))
             {
               case  0:      /* Wrote everything in to_client. */
                 break;
@@ -757,7 +870,7 @@ serve_omp (gnutls_session_t* client_session,
                * without closing it, for usage by the child process. */
               openvas_scanner_free ();
               set_scanner_init_state (SCANNER_INIT_TOP);
-              nfds = openvas_scanner_get_nfds (client_socket);
+              nfds = openvas_scanner_get_nfds (client_connection->socket);
               /* Skip the rest of the loop because the scanner socket is
                * a new socket.  This is asking for select trouble, really. */
               continue;
@@ -768,7 +881,7 @@ serve_omp (gnutls_session_t* client_session,
                * successfully started the task.  Close the client
                * connection, as the parent process has continued the
                * session with the client. */
-              session_clean (client_session, client_credentials);
+              session_clean (client_connection);
               scan_handler = 1;
               client_active = 0;
             }
@@ -778,14 +891,14 @@ serve_omp (gnutls_session_t* client_session,
                * successfully completed.  Close the client connection,
                * and exit, as the parent process has continued the
                * session with the client. */
-              session_clean (client_session, client_credentials);
+              session_clean (client_connection);
               return 0;
             }
           else if (ret == -10)
             {
               /* Now in a process forked to run a task, which has
                * failed in starting the task. */
-              session_clean (client_session, client_credentials);
+              session_clean (client_connection);
               return -1;
             }
           else if (ret == -1)
@@ -793,7 +906,7 @@ serve_omp (gnutls_session_t* client_session,
               /* Error.  Write rest of to_client to client, so that the
                * client gets any buffered output and the response to the
                * error. */
-              write_to_client (client_session);
+              write_to_client (client_connection);
               rc = -1;
               goto client_free;
             }
@@ -833,7 +946,7 @@ serve_omp (gnutls_session_t* client_session,
               if (client_active == 0)
                 return 0;
               openvas_scanner_free ();
-              nfds = openvas_scanner_get_nfds (client_socket);
+              nfds = openvas_scanner_get_nfds (client_connection->socket);
             }
           else if (ret == 2)
             {
@@ -874,8 +987,6 @@ serve_omp (gnutls_session_t* client_session,
 
 client_free:
   if (client_active)
-    openvas_server_free (client_socket,
-                         *client_session,
-                         *client_credentials);
+    openvas_connection_free (client_connection);
   return rc;
 }

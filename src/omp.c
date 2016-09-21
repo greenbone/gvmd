@@ -31276,10 +31276,7 @@ int
 init_omp (GSList *log_config, int nvt_cache_mode, const gchar *database,
           int max_ips_per_target, int max_email_attachment_size,
           int max_email_include_size, void (*progress) (),
-          int (*fork_connection) (int *,
-                                  gnutls_session_t *,
-                                  gnutls_certificate_credentials_t *,
-                                  gchar*),
+          int (*fork_connection) (openvas_connection_t *, gchar*),
           int skip_db_check)
 {
   g_log_set_handler (G_LOG_DOMAIN,

@@ -93,6 +93,7 @@
 #include <string.h>
 #include <sys/select.h>
 #include <sys/socket.h>
+#include <sys/un.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -215,6 +216,11 @@ FILE* log_stream = NULL;
 #endif
 
 /**
+ * @brief Whether to use TLS for client connections.
+ */
+int use_tls = 0;
+
+/**
  * @brief The client session.
  */
 gnutls_session_t client_session;
@@ -327,7 +333,7 @@ set_gnutls_priority (gnutls_session_t *session, const char *priority)
  * @return EXIT_SUCCESS on success, EXIT_FAILURE on failure.
  */
 int
-serve_client (int server_socket, int client_socket)
+serve_client (int server_socket, openvas_connection_t *client_connection)
 {
   if (server_socket > 0)
     {
@@ -345,17 +351,18 @@ serve_client (int server_socket, int client_socket)
         }
     }
 
-  if (openvas_server_attach (client_socket, &client_session))
+  if (client_connection->tls
+      && openvas_server_attach (client_connection->socket, &client_session))
     {
       g_debug ("%s: failed to attach client session to socket %i\n",
                __FUNCTION__,
-              client_socket);
+              client_connection->socket);
       goto fail;
     }
 
   /* The socket must have O_NONBLOCK set, in case an "asynchronous network
    * error" removes the data between `select' and `read'. */
-  if (fcntl (client_socket, F_SETFL, O_NONBLOCK) == -1)
+  if (fcntl (client_connection->socket, F_SETFL, O_NONBLOCK) == -1)
     {
       g_warning ("%s: failed to set real client socket flag: %s\n",
                  __FUNCTION__,
@@ -366,15 +373,12 @@ serve_client (int server_socket, int client_socket)
   /* Serve OMP. */
 
   /* It's up to serve_omp to openvas_server_free client_*. */
-  if (serve_omp (&client_session, &client_credentials, client_socket, database,
-                 disabled_commands, NULL))
+  if (serve_omp (client_connection, database, disabled_commands, NULL))
     goto server_fail;
 
   return EXIT_SUCCESS;
  fail:
-  openvas_server_free (client_socket,
-                       client_session,
-                       client_credentials);
+  openvas_connection_free (client_connection);
  server_fail:
   return EXIT_FAILURE;
 }
@@ -422,6 +426,7 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
         {
           int ret;
           struct sigaction action;
+          openvas_connection_t client_connection;
 
           is_parent = 0;
 
@@ -455,7 +460,11 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
             }
           /* Reopen the database (required after fork). */
           cleanup_manage_process (FALSE);
-          ret = serve_client (server_socket, client_socket);
+          client_connection.tls = use_tls;
+          client_connection.socket = client_socket;
+          client_connection.session = client_session;
+          client_connection.credentials = client_credentials;
+          ret = serve_client (server_socket, &client_connection);
           /** @todo This should be done through libomp. */
           save_tasks ();
           exit (ret);
@@ -480,20 +489,14 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
 /**
  * @brief Fork a child connected to the Manager.
  *
- * @param[in]  client_socket           Client socket.
- * @param[in]  client_session_arg      Client session.
- * @param[in]  client_credentials_arg  Client credentials.
+ * @param[in]  client_connection       Client connection.
  * @param[in]  uuid                    UUID of schedule user.
  * @param[in]  scheduler               Whether this is for the scheduler.
  *
  * @return PID parent on success, 0 child on success, -1 error.
  */
 static int
-fork_connection_internal (int *client_socket,
-                          gnutls_session_t *client_session_arg,
-                          gnutls_certificate_credentials_t
-                          *client_credentials_arg,
-                          gchar* uuid,
+fork_connection_internal (openvas_connection_t *client_connection, gchar* uuid,
                           int scheduler)
 {
   int pid, parent_client_socket, ret;
@@ -586,31 +589,38 @@ fork_connection_internal (int *client_socket,
         manage_auth_allow_all (scheduler);
         set_scheduled_user_uuid (uuid);
 
-        /* Create a new session, because the parent may have been in the middle
-         * of using the old one. */
+        /* For TLS, create a new session, because the parent may have been in
+         * the middle of using the old one. */
 
-        if (openvas_server_new (GNUTLS_SERVER,
-                                CACERT,
-                                SCANNERCERT,
-                                SCANNERKEY,
-                                &client_session,
-                                &client_credentials))
+        if (use_tls)
           {
-            g_critical ("%s: client server initialisation failed\n",
-                        __FUNCTION__);
-            exit (EXIT_FAILURE);
+            if (openvas_server_new (GNUTLS_SERVER,
+                                    CACERT,
+                                    SCANNERCERT,
+                                    SCANNERKEY,
+                                    &client_session,
+                                    &client_credentials))
+              {
+                g_critical ("%s: client server initialisation failed\n",
+                            __FUNCTION__);
+                exit (EXIT_FAILURE);
+              }
+            set_gnutls_priority (&client_session, priorities_option);
+            if (dh_params_option
+                && set_gnutls_dhparams (client_credentials, dh_params_option))
+              g_warning ("Couldn't set DH parameters from %s\n", dh_params_option);
           }
-        set_gnutls_priority (&client_session, priorities_option);
-        if (dh_params_option
-            && set_gnutls_dhparams (client_credentials, dh_params_option))
-          g_warning ("Couldn't set DH parameters from %s\n", dh_params_option);
 
         /* Serve client. */
 
         g_debug ("%s: serving OMP to client on socket %i",
                  __FUNCTION__, parent_client_socket);
 
-        ret = serve_client (manager_socket, parent_client_socket);
+        client_connection->tls = use_tls;
+        client_connection->socket = parent_client_socket;
+        client_connection->session = client_session;
+        client_connection->credentials = client_credentials;
+        ret = serve_client (manager_socket, client_connection);
 
         /** @todo This should be done through libomp. */
         save_tasks ();
@@ -636,21 +646,26 @@ fork_connection_internal (int *client_socket,
         /** @todo Give the parent time to prepare. */
         openvas_sleep (5);
 
-        *client_socket = sockets[1];
+        client_connection->tls = use_tls;
+        client_connection->socket = sockets[1];
 
-        if (openvas_server_new (GNUTLS_CLIENT,
-                                CACERT,
-                                SCANNERCERT,
-                                SCANNERKEY,
-                                client_session_arg,
-                                client_credentials_arg))
-          exit (EXIT_FAILURE);
+        if (use_tls)
+          {
+            if (openvas_server_new (GNUTLS_CLIENT,
+                                    CACERT,
+                                    SCANNERCERT,
+                                    SCANNERKEY,
+                                    &client_connection->session,
+                                    &client_connection->credentials))
+              exit (EXIT_FAILURE);
 
-        if (openvas_server_attach (*client_socket, client_session_arg))
-          exit (EXIT_FAILURE);
+            if (openvas_server_attach (client_connection->socket,
+                                       &client_connection->session))
+              exit (EXIT_FAILURE);
+          }
 
         g_debug ("%s: all set to request OMP on socket %i",
-                 __FUNCTION__, *client_socket);
+                 __FUNCTION__, client_connection->socket);
 
         return 0;
         break;
@@ -663,22 +678,15 @@ fork_connection_internal (int *client_socket,
 /**
  * @brief Fork a child connected to the Manager.
  *
- * @param[in]  client_socket       Client socket.
- * @param[in]  client_session      Client session.
- * @param[in]  client_credentials  Client credentials.
+ * @param[in]  client_connection   Client connection.
  * @param[in]  uuid                UUID of schedule user.
  *
  * @return PID parent on success, 0 child on success, -1 error.
  */
 static int
-fork_connection_for_scheduler (int *client_socket,
-                               gnutls_session_t *client_session,
-                               gnutls_certificate_credentials_t
-                               *client_credentials,
-                               gchar* uuid)
+fork_connection_for_scheduler (openvas_connection_t *client_connection, gchar* uuid)
 {
-  return fork_connection_internal (client_socket, client_session,
-                                   client_credentials, uuid, 1);
+  return fork_connection_internal (client_connection, uuid, 1);
 }
 
 /**
@@ -692,14 +700,9 @@ fork_connection_for_scheduler (int *client_socket,
  * @return PID parent on success, 0 child on success, -1 error.
  */
 static int
-fork_connection_for_event (int *client_socket,
-                           gnutls_session_t *client_session,
-                           gnutls_certificate_credentials_t
-                           *client_credentials,
-                           gchar* uuid)
+fork_connection_for_event (openvas_connection_t *client_connection, gchar* uuid)
 {
-  return fork_connection_internal (client_socket, client_session,
-                                   client_credentials, uuid, 0);
+  return fork_connection_internal (client_connection, uuid, 0);
 }
 
 
@@ -965,6 +968,7 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
                              void (*progress) (), int skip_create_tables)
 {
   int ret;
+  openvas_connection_t connection;
 
   /* Initialise OMP daemon. */
 
@@ -1029,8 +1033,8 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
    * value.  This invokes a scanner-only manager loop which will
    * request and cache the plugins, then exit. */
 
-  ret = serve_omp (NULL, NULL, update_nvt_cache ? -1 : -2, database, NULL,
-                   progress);
+  connection.socket = update_nvt_cache ? -1 : -2;
+  ret = serve_omp (&connection, database, NULL, progress);
   openvas_scanner_close ();
   switch (ret)
     {
@@ -1317,65 +1321,131 @@ serve_and_schedule ()
 /**
  * @brief Set a socket to listen for connections.
  *
- * @param[in]   address_str     IP or hostname to bind to.
- * @param[in]   port_str        Port to bind to.
- * @param[out]  socket          Socket listened on.
+ * @param[in]   address_str_unix  IP or hostname to bind to.  NULL for TLS.
+ * @param[in]   address_str_tls   IP or hostname to bind to.
+ * @param[in]   port_str          Port to bind to, for TLS.
+ * @param[out]  socket            Socket listened on.
+ *
+ * @return 0 success, -1 error.
  */
 static int
-manager_listen (const char *address_str, const char *port_str, int *soc)
+manager_listen (const char *address_str_unix, const char *address_str_tls,
+                const char *port_str, int *soc)
 {
-  struct sockaddr_storage address;
-  struct sockaddr_in *addr4 = (struct sockaddr_in *) &address;
-  struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *) &address;
-  int port, optval;
+  struct sockaddr *address;
+  struct sockaddr_un address_unix;
+  struct sockaddr_storage address_tls;
+  int address_size;
 
-  if (!address_str)
-    return 0;
-  if (port_str)
+  memset (&address_tls, 0, sizeof (struct sockaddr_storage));
+  memset (&address_unix, 0, sizeof (struct sockaddr_un));
+
+  g_debug ("%s: address_str_unix: %s\n", __FUNCTION__, address_str_unix);
+  if (address_str_unix)
     {
-      port = atoi (port_str);
-      if (port <= 0 || port >= 65536)
+      struct stat state;
+
+      /* UNIX file socket. */
+
+      //address.ss_family = AF_UNIX;
+
+      address_unix.sun_family = AF_UNIX;
+      strncpy (address_unix.sun_path,
+               address_str_unix,
+               sizeof (address_unix.sun_path) - 1);
+
+      g_debug ("%s: address_unix.sun_path: %s\n",
+               __FUNCTION__,
+               address_unix.sun_path);
+
+      *soc = socket (AF_UNIX, SOCK_STREAM, 0);
+      if (*soc == -1)
         {
-          g_warning ("Manager port must be a number between 1 and 65535");
-          log_config_free ();
+          g_warning ("Failed to create manager socket (UNIX): %s",
+                     strerror (errno));
           return -1;
         }
-      port = htons (port);
+
+      if (stat (address_unix.sun_path, &state) == 0)
+        {
+          /* Remove socket so we can bind(). */
+          unlink (address_unix.sun_path);
+        }
+
+      address = (struct sockaddr *) &address_unix;
+      address_size = sizeof (address_unix);
     }
-  else
+  else if (address_str_tls)
     {
-      struct servent *servent = getservbyname ("otp", "tcp");
-      if (servent)
-        port = servent->s_port;
+      struct sockaddr_in *addr4;
+      struct sockaddr_in6 *addr6;
+      int port, optval;
+
+      /* TLS TCP socket. */
+
+      if (port_str)
+        {
+          port = atoi (port_str);
+          if (port <= 0 || port >= 65536)
+            {
+              g_warning ("Manager port must be a number between 1 and 65535");
+              log_config_free ();
+              return -1;
+            }
+          port = htons (port);
+        }
       else
-        port = htons (OPENVASMD_PORT);
-    }
+        {
+          struct servent *servent = getservbyname ("otp", "tcp");
+          if (servent)
+            port = servent->s_port;
+          else
+            port = htons (OPENVASMD_PORT);
+        }
 
-  if (inet_pton (AF_INET6, address_str, &addr6->sin6_addr) > 0)
-    {
-      address.ss_family = AF_INET6;
-      addr6->sin6_port = port;
-    }
-  else if (inet_pton (AF_INET, address_str, &addr4->sin_addr) > 0)
-    {
-      address.ss_family = AF_INET;
-      addr4->sin_port = port;
+      addr4 = (struct sockaddr_in *) &address_tls;
+      addr6 = (struct sockaddr_in6 *) &address_tls;
+      if (inet_pton (AF_INET6, address_str_tls, &addr6->sin6_addr) > 0)
+        {
+          address_tls.ss_family = AF_INET6;
+          addr6->sin6_port = port;
+        }
+      else if (inet_pton (AF_INET, address_str_tls, &addr4->sin_addr) > 0)
+        {
+          address_tls.ss_family = AF_INET;
+          addr4->sin_port = port;
+        }
+      else
+        {
+          g_warning ("Failed to create manager address %s", address_str_tls);
+          return -1;
+        }
+
+      if (address_tls.ss_family == AF_INET6)
+        *soc = socket (PF_INET6, SOCK_STREAM, 0);
+      else
+        *soc = socket (PF_INET, SOCK_STREAM, 0);
+      if (*soc == -1)
+        {
+          g_warning ("Failed to create manager socket (TLS): %s",
+                     strerror (errno));
+          return -1;
+        }
+
+      optval = 1;
+      if (setsockopt (*soc, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof (int)))
+        {
+          g_warning ("Failed to set SO_REUSEADDR on socket: %s",
+                     strerror (errno));
+          return -1;
+        }
+
+      address = (struct sockaddr *) &address_tls;
+      address_size = sizeof (address_tls);
     }
   else
-    {
-      g_warning ("Failed to create manager address %s", address_str);
-      return -1;
-    }
+    return 0;
 
-  if (address.ss_family == AF_INET6)
-    *soc = socket (PF_INET6, SOCK_STREAM, 0);
-  else
-    *soc = socket (PF_INET, SOCK_STREAM, 0);
-  if (manager_socket == -1)
-    {
-      g_warning ("Failed to create manager socket: %s", strerror (errno));
-      return -1;
-    }
   /* The socket must have O_NONBLOCK set, in case an "asynchronous network
    * error" removes the connection between `select' and `accept'. */
   if (fcntl (*soc, F_SETFL, O_NONBLOCK) == -1)
@@ -1384,19 +1454,14 @@ manager_listen (const char *address_str, const char *port_str, int *soc)
       return -1;
     }
 
-  optval = 1;
-  if (setsockopt (*soc, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof (int)))
-    {
-      g_warning ("Failed to set SO_REUSEADDR on socket: %s", strerror (errno));
-      return -1;
-    }
-
-  if (bind (*soc, (struct sockaddr *) &address, sizeof (address))
-      == -1)
+  if (bind (*soc, address, address_size) == -1)
     {
       g_warning ("Failed to bind manager socket: %s", strerror (errno));
       return -1;
     }
+
+  // FIX owner,mode for unix
+
   if (listen (*soc, MAX_CONNECTIONS) == -1)
     {
       g_warning ("Failed to listen on manager socket: %s", strerror (errno));
@@ -1465,6 +1530,7 @@ main (int argc, char** argv)
   static gchar *optimize = NULL;
   static gchar *manager_address_string = NULL;
   static gchar *manager_address_string_2 = NULL;
+  static gchar *manager_address_string_unix = NULL;
   static gchar *manager_port_string = NULL;
   static gchar *manager_port_string_2 = NULL;
   static gchar *modify_setting = NULL;
@@ -1540,6 +1606,7 @@ main (int argc, char** argv)
         { "rebuild", '\0', 0, G_OPTION_ARG_NONE, &rebuild_nvt_cache, "Rebuild the NVT cache and exit.", NULL },
         { "role", '\0', 0, G_OPTION_ARG_STRING, &role, "Role for --create-user and --get-users.", "<role>" },
         { "update", 'u', 0, G_OPTION_ARG_NONE, &update_nvt_cache, "Update the NVT cache and exit.", NULL },
+        { "unix-socket", 'c', 0, G_OPTION_ARG_STRING, &manager_address_string_unix, "Listen on UNIX socket at <filename>.", "<filename>" },
         { "user", '\0', 0, G_OPTION_ARG_STRING, &user, "User for --new-password.", "<username>" },
         { "gnutls-priorities", '\0', 0, G_OPTION_ARG_STRING, &priorities, "Sets the GnuTLS priorities for the Manager socket.", "<priorities-string>" },
         { "dh-params", '\0', 0, G_OPTION_ARG_STRING, &dh_params, "Diffie-Hellman parameters file", "<file>" },
@@ -1573,6 +1640,11 @@ main (int argc, char** argv)
          "There is NO WARRANTY, to the extent permitted by law.\n\n");
       exit (EXIT_SUCCESS);
     }
+
+  if (manager_address_string_unix == NULL)
+    use_tls = 1;
+  else
+    use_tls = 0;
 
   /* Set process title. */
   proctitle_init (argc, argv);
@@ -2068,31 +2140,44 @@ main (int argc, char** argv)
 
   /* Setup security. */
 
-  if (openvas_server_new (GNUTLS_SERVER,
-                          CACERT,
-                          SCANNERCERT,
-                          SCANNERKEY,
-                          &client_session,
-                          &client_credentials))
+  if (use_tls)
     {
-      g_critical ("%s: client server initialisation failed\n",
-                  __FUNCTION__);
-      exit (EXIT_FAILURE);
+      if (openvas_server_new (GNUTLS_SERVER,
+                              CACERT,
+                              SCANNERCERT,
+                              SCANNERKEY,
+                              &client_session,
+                              &client_credentials))
+        {
+          g_critical ("%s: client server initialisation failed\n",
+                      __FUNCTION__);
+          exit (EXIT_FAILURE);
+        }
+      priorities_option = priorities;
+      set_gnutls_priority (&client_session, priorities);
+      dh_params_option = dh_params;
+      if (dh_params && set_gnutls_dhparams (client_credentials, dh_params))
+        g_warning ("Couldn't set DH parameters from %s\n", dh_params);
     }
-  priorities_option = priorities;
-  set_gnutls_priority (&client_session, priorities);
-  dh_params_option = dh_params;
-  if (dh_params && set_gnutls_dhparams (client_credentials, dh_params))
-    g_warning ("Couldn't set DH parameters from %s\n", dh_params);
 
   if (disable_encrypted_credentials)
     g_message ("Encryption of credentials has been disabled.");
 
-  if (manager_listen (manager_address_string ?:
-                       ipv6_is_enabled () ? "::" : "0.0.0.0",
-                      manager_port_string, &manager_socket))
+  // FIX default socket
+  if (manager_listen (use_tls
+                       ? NULL
+                       : manager_address_string_unix,
+                      use_tls
+                       ? (manager_address_string
+                           ? manager_address_string
+                           : (ipv6_is_enabled () ? "::" : "0.0.0.0"))
+                       : NULL,
+                      manager_port_string,
+                      &manager_socket))
     return EXIT_FAILURE;
-  if (manager_listen (manager_address_string_2, manager_port_string_2,
+  if (manager_listen (NULL,
+                      manager_address_string_2,
+                      manager_port_string_2,
                       &manager_socket_2))
     return EXIT_FAILURE;
 
