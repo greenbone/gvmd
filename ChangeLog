@@ -1,5 +1,10 @@
 2016-09-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c (main): Default to a socket in OPENVAS_RUN_DIR if
+	none of the listen options are given.
+
+2016-09-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c (manager_listen): Add socket permission args.
 	(main): Add --listen-owner, --listen-group and --listen-mode.
 

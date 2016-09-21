@@ -1708,7 +1708,17 @@ main (int argc, char** argv)
   /* Check which type of socket to use. */
 
   if (manager_address_string_unix == NULL)
-    use_tls = 1;
+    {
+      if (manager_address_string || manager_address_string_2)
+        use_tls = 1;
+      else
+        {
+          use_tls = 0;
+          manager_address_string_unix = g_build_filename (OPENVAS_RUN_DIR,
+                                                          "openvasmd.sock",
+                                                          NULL);
+        }
+    }
   else
     {
       use_tls = 0;
@@ -2238,7 +2248,6 @@ main (int argc, char** argv)
   if (disable_encrypted_credentials)
     g_message ("Encryption of credentials has been disabled.");
 
-  // FIX default socket
   if (manager_listen (use_tls
                        ? NULL
                        : manager_address_string_unix,
