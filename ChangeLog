@@ -1,3 +1,7 @@
+2016-09-21  Christian Fischer <christian.fischer@greenbone.net>
+
+	* INSTALL: Added apt-get install prerequisites 
+
 2016-09-20  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Remove CA certificate and credential from default scanner.  Hence

@@ -25,6 +25,8 @@ Prerequisites for building documentation:
 Please see the section "Prerequisites for Optional Features" below additional
 optional prerequisites.
 
+Install prerequisites on Debian GNU/Linux 'Jessie' 8:
+# apt-get install libsqlite3-dev | libpq-dev
 
 Compiling openvas-manager
 -------------------------
