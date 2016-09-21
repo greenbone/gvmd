@@ -679,6 +679,9 @@ task_alterable (task_t);
 int
 trash_task_writable (task_t);
 
+int
+task_average_scan_duration (task_t);
+
 char*
 task_owner_name (task_t);
 
@@ -1236,6 +1239,9 @@ scan_start_time (report_t);
 
 int
 scan_start_time_epoch (report_t);
+
+char*
+scan_start_time_uuid (const char *);
 
 char*
 scan_end_time_uuid (const char *);

@@ -1,3 +1,20 @@
+2016-09-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (task_average_scan_duration): New function.
+	(scan_start_time_uuid): New function.
+
+	* src/manage.h (task_average_scan_duration): New function prototype.
+	(scan_start_time_uuid): New function prototype.
+
+	* src/omp.c (send_reports): Add scan start time to reports.
+	(handle_get_tasks): Add scan start time to reports and add average
+	scan duration.
+
+	* src/html/XML/OMP.xml (get_tasks): Add new average_duration response
+	element.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2016-09-21  Christian Fischer <christian.fischer@greenbone.net>
 
 	* INSTALL: Added apt-get install prerequisites 

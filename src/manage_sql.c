@@ -13067,6 +13067,24 @@ trash_task_writable (task_t task)
 }
 
 /**
+ * @brief Get the average duration of all finished reports of a task.
+ *
+ * @param[in]  uuid  The report associated with the scan.
+ *
+ * @return Average scan duration in seconds.
+ */
+int
+task_average_scan_duration (task_t task)
+{
+  return sql_int ("SELECT avg (end_time - start_time) FROM reports"
+                  " WHERE task = %llu"
+                  "   AND scan_run_status = %d"
+                  "   AND coalesce (end_time, 0) != 0"
+                  "   AND coalesce (start_time, 0) != 0;",
+                  task, TASK_STATUS_DONE);
+}
+
+/**
  * @brief Initialize the manage library for a process.
  *
  * Open the SQL database, attach secondary databases, and define functions.
@@ -22214,6 +22232,24 @@ scan_start_time_epoch (report_t report)
 {
   return sql_int ("SELECT start_time FROM reports WHERE id = %llu;",
                   report);
+}
+
+/**
+ * @brief Get the start time of a scan.
+ *
+ * @param[in]  uuid  The report associated with the scan.
+ *
+ * @return Start time of scan, in a newly allocated string.
+ */
+char*
+scan_start_time_uuid (const char *uuid)
+{
+  char *time, *quoted_uuid;
+  quoted_uuid = sql_quote (uuid);
+  time = sql_string ("SELECT iso_time (start_time)"
+                     " FROM reports WHERE uuid = '%s';",
+                     quoted_uuid);
+  return time ? time : g_strdup ("");
 }
 
 /**

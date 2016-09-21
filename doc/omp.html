@@ -31847,6 +31847,11 @@ get_targets_response_target_count_page
 </li></ul>
 </li>
 <li>
+              &lt;<b>average_duration</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Average scan duration in seconds.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>result_count</b>&gt;
               <div style="margin-left: 15px; display: inline;">Result count for the entire task.</div>
 <ul style="list-style: none"></ul>
@@ -32095,6 +32100,7 @@ get_tasks_response_task
            &amp; get_tasks_response_task_last_report?
            &amp; get_tasks_response_task_second_last_report?
            &amp; get_tasks_response_task_reports*
+           &amp; get_tasks_response_task_average_duration?
            &amp; get_tasks_response_task_result_count
            &amp; get_tasks_response_task_preferences )
            | ( get_tasks_response_task_name
@@ -32850,6 +32856,12 @@ get_tasks_response_task_reports_report_severity
  = element severity
      {
        severity
+     }
+
+get_tasks_response_task_average_duration
+ = element average_duration
+     {
+       text
      }
 
 get_tasks_response_task_result_count
@@ -34257,6 +34269,7 @@ help_response_schema_protocol_command
             GET_ASSETS             Get all assets.
             GET_CONFIGS            Get all configs.
             GET_CREDENTIALS        Get all credentials.
+            GET_FEEDS              Get details of one or all feeds this Manager uses.
             GET_FILTERS            Get all filters.
             GET_GROUPS             Get all groups.
             GET_INFO               Get raw information for a given item.

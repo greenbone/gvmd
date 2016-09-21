@@ -16869,6 +16869,7 @@ get_tasks_response_task
            & get_tasks_response_task_last_report?
            & get_tasks_response_task_second_last_report?
            & get_tasks_response_task_reports*
+           & get_tasks_response_task_average_duration?
            & get_tasks_response_task_result_count
            & get_tasks_response_task_preferences )
            | ( get_tasks_response_task_name
@@ -17692,6 +17693,13 @@ get_tasks_response_task_reports_report_severity
  = element severity
      {
        severity
+     }
+
+# Average scan duration in seconds.
+get_tasks_response_task_average_duration
+ = element average_duration
+     {
+       text
      }
 
 # Result count for the entire task.

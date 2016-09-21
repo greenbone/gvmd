@@ -10627,7 +10627,7 @@ send_reports (task_t task, int apply_overrides, int min_qod,
       gchar *uuid, *timestamp, *msg;
       int debugs, false_positives, holes, infos, logs, warnings, run_status;
       double severity;
-      char *scan_end;
+      char *scan_start, *scan_end;
 
       uuid = report_uuid (index);
 
@@ -10648,10 +10648,12 @@ send_reports (task_t task, int apply_overrides, int min_qod,
       g_debug ("     %s\n", uuid);
 
       report_scan_run_status (index, &run_status);
+      scan_start = scan_start_time (index);
       scan_end = scan_end_time (index);
       msg = g_strdup_printf ("<report"
                              " id=\"%s\">"
                              "<timestamp>%s</timestamp>"
+                             "<scan_start>%s</scan_start>"
                              "<scan_end>%s</scan_end>"
                              "<scan_run_status>%s</scan_run_status>"
                              "<result_count>"
@@ -10666,6 +10668,7 @@ send_reports (task_t task, int apply_overrides, int min_qod,
                              "</report>",
                              uuid,
                              timestamp,
+                             scan_start,
                              scan_end,
                              run_status_name
                               (run_status ? run_status
@@ -10677,6 +10680,7 @@ send_reports (task_t task, int apply_overrides, int min_qod,
                              warnings,
                              false_positives,
                              severity);
+      free (scan_start);
       free (scan_end);
       g_free (timestamp);
       if (send_to_client (msg, write_to_client, write_to_client_data))
@@ -19530,7 +19534,7 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
           if (running_report)
             {
               gchar *timestamp;
-              char *scan_end, *current_report_id;
+              char *scan_start, *scan_end, *current_report_id;
 
               current_report_id = report_uuid (running_report);
 
@@ -19539,6 +19543,7 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
                          " of report, aborting",
                          __FUNCTION__);
 
+              scan_start = scan_start_time_uuid (current_report_id),
               scan_end = scan_end_time_uuid (current_report_id),
 
               current_report = g_strdup_printf ("<current_report>"
@@ -19546,6 +19551,9 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
                                                 "<timestamp>"
                                                 "%s"
                                                 "</timestamp>"
+                                                "<scan_start>"
+                                                "%s"
+                                                "</scan_start>"
                                                 "<scan_end>"
                                                 "%s"
                                                 "</scan_end>"
@@ -19553,8 +19561,10 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
                                                 "</current_report>",
                                                 current_report_id,
                                                 timestamp,
+                                                scan_start,
                                                 scan_end);
               free (current_report_id);
+              free (scan_start);
               free (scan_end);
               g_free (timestamp);
             }
@@ -19565,7 +19575,7 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
           if (first_report_id)
             {
               gchar *timestamp;
-              char *scan_end;
+              char *scan_start, *scan_end;
 
               // TODO Could skip this count for tasks page.
               if (report_counts (first_report_id,
@@ -19582,13 +19592,15 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
                          " first report, aborting",
                          __FUNCTION__);
 
-              scan_end = scan_end_time_uuid (first_report_id),
+              scan_start = scan_start_time_uuid (first_report_id);
+              scan_end = scan_end_time_uuid (first_report_id);
 
               first_report = g_strdup_printf ("<first_report>"
                                               "<report id=\"%s\">"
                                               "<timestamp>"
                                               "%s"
                                               "</timestamp>"
+                                              "<scan_start>%s</scan_start>"
                                               "<scan_end>%s</scan_end>"
                                               "<result_count>"
                                               "<debug>%i</debug>"
@@ -19607,6 +19619,7 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
                                               "</first_report>",
                                               first_report_id,
                                               timestamp,
+                                              scan_start,
                                               scan_end,
                                               debugs,
                                               holes_2,
@@ -19615,6 +19628,7 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
                                               warnings_2,
                                               false_positives,
                                               severity_2);
+              free (scan_start);
               free (scan_end);
               g_free (timestamp);
             }
@@ -19625,7 +19639,7 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
           if (second_last_report_id)
             {
               gchar *timestamp;
-              char *scan_end;
+              char *scan_start, *scan_end;
 
               /* If the first report is the second last report then skip
                 * doing the count again. */
@@ -19646,12 +19660,14 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
                          " second report, aborting",
                          __FUNCTION__);
 
-              scan_end = scan_end_time_uuid (second_last_report_id),
+              scan_start = scan_start_time_uuid (second_last_report_id);
+              scan_end = scan_end_time_uuid (second_last_report_id);
 
               second_last_report = g_strdup_printf
                                     ("<second_last_report>"
                                      "<report id=\"%s\">"
                                      "<timestamp>%s</timestamp>"
+                                     "<scan_start>%s</scan_start>"
                                      "<scan_end>%s</scan_end>"
                                      "<result_count>"
                                      "<debug>%i</debug>"
@@ -19668,6 +19684,7 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
                                      "</second_last_report>",
                                      second_last_report_id,
                                      timestamp,
+                                     scan_start,
                                      scan_end,
                                      debugs,
                                      holes_2,
@@ -19676,6 +19693,7 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
                                      warnings_2,
                                      false_positives,
                                      severity_2);
+              free (scan_start);
               free (scan_end);
               g_free (timestamp);
             }
@@ -19686,7 +19704,7 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
           if (last_report_id)
             {
               gchar *timestamp;
-              char *scan_end;
+              char *scan_start, *scan_end;
 
               /* If the last report is the first report or the second
                 * last report, then reuse the counts from before. */
@@ -19719,11 +19737,13 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
                          " last report, aborting",
                          __FUNCTION__);
 
+              scan_start = scan_start_time_uuid (last_report_id);
               scan_end = scan_end_time_uuid (last_report_id);
 
               last_report = g_strdup_printf ("<last_report>"
                                              "<report id=\"%s\">"
                                              "<timestamp>%s</timestamp>"
+                                             "<scan_start>%s</scan_start>"
                                              "<scan_end>%s</scan_end>"
                                              "<result_count>"
                                              "<debug>%i</debug>"
@@ -19742,6 +19762,7 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
                                              "</last_report>",
                                              last_report_id,
                                              timestamp,
+                                             scan_start,
                                              scan_end,
                                              debugs,
                                              holes,
@@ -19750,6 +19771,7 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
                                              warnings,
                                              false_positives,
                                              severity);
+              free (scan_start);
               free (scan_end);
               g_free (timestamp);
             }
@@ -20053,6 +20075,15 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
                   "</alert>");
             }
           cleanup_iterator (&alerts);
+
+          if (get_tasks_data->get.details
+              || get_tasks_data->get.id)
+            {
+              SENDF_TO_CLIENT_OR_FAIL ("<average_duration>"
+                                       "%d"
+                                       "</average_duration>",
+                                       task_average_scan_duration (index));
+            }
 
           if (get_tasks_data->get.details)
             {
