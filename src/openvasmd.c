@@ -1641,12 +1641,23 @@ main (int argc, char** argv)
       exit (EXIT_SUCCESS);
     }
 
+  /* Check which type of socket to use. */
+
   if (manager_address_string_unix == NULL)
     use_tls = 1;
   else
-    use_tls = 0;
+    {
+      use_tls = 0;
+      if (manager_address_string || manager_address_string_2)
+        {
+          g_critical ("%s: --listen or --listen2 given with --unix-socket\n",
+                      __FUNCTION__);
+          return EXIT_FAILURE;
+        }
+    }
 
   /* Set process title. */
+
   proctitle_init (argc, argv);
   proctitle_set ("openvasmd: Initializing.");
 

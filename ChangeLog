@@ -1,6 +1,10 @@
-2016-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
+2016-09-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	Add option to server clients on UNIX socket instead of TLS.
+	* src/openvasmd.c (main): Check for conflicts with --unix-socket.
+
+2016-09-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add option to serve clients on UNIX socket instead of TLS.
 
 	* src/manage.c (manage_schedule): Use connection instead of session.
 
