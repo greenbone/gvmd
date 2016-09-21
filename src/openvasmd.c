@@ -84,9 +84,11 @@
 #include <glib.h>
 #include <glib/gstdio.h>
 #include <gnutls/gnutls.h>
+#include <grp.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
+#include <pwd.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -1321,16 +1323,20 @@ serve_and_schedule ()
 /**
  * @brief Set a socket to listen for connections.
  *
- * @param[in]   address_str_unix  IP or hostname to bind to.  NULL for TLS.
+ * @param[in]   address_str_unix  File name to bind to.  NULL for TLS.
  * @param[in]   address_str_tls   IP or hostname to bind to.
  * @param[in]   port_str          Port to bind to, for TLS.
+ * @param[out]  socket_owner      Owner of socket, for UNIX.
+ * @param[out]  socket_group      Group of socket, for UNIX.
+ * @param[out]  socket_mode       Mode of socket, in octal, for UNIX.
  * @param[out]  socket            Socket listened on.
  *
  * @return 0 success, -1 error.
  */
 static int
 manager_listen (const char *address_str_unix, const char *address_str_tls,
-                const char *port_str, int *soc)
+                const char *port_str, const char *socket_owner,
+                const char *socket_group, const char *socket_mode, int *soc)
 {
   struct sockaddr *address;
   struct sockaddr_un address_unix;
@@ -1346,8 +1352,6 @@ manager_listen (const char *address_str_unix, const char *address_str_tls,
       struct stat state;
 
       /* UNIX file socket. */
-
-      //address.ss_family = AF_UNIX;
 
       address_unix.sun_family = AF_UNIX;
       strncpy (address_unix.sun_path,
@@ -1460,7 +1464,58 @@ manager_listen (const char *address_str_unix, const char *address_str_tls,
       return -1;
     }
 
-  // FIX owner,mode for unix
+  if (address_str_unix)
+    {
+      mode_t omode;
+
+      if (socket_owner)
+        {
+          struct passwd *passwd;
+
+          passwd = getpwnam (socket_owner);
+          if (passwd == NULL)
+            {
+              g_warning ("%s: User %s not found.", __FUNCTION__, socket_owner);
+              return -1;
+            }
+          if (chown (address_str_unix, passwd->pw_uid, -1) == -1)
+            {
+              g_warning ("%s: chown: %s", __FUNCTION__, strerror (errno));
+              return -1;
+            }
+        }
+
+      if (socket_group)
+        {
+          struct group *group;
+
+          group = getgrnam (socket_group);
+          if (group == NULL)
+            {
+              g_warning ("%s: Group %s not found.", __FUNCTION__, socket_group);
+              return -1;
+            }
+          if (chown (address_str_unix, -1, group->gr_gid) == -1)
+            {
+              g_warning ("%s: chown: %s", __FUNCTION__, strerror (errno));
+              return -1;
+            }
+        }
+
+      if (!socket_mode)
+        socket_mode = "660";
+      omode = strtol (socket_mode, 0, 8);
+      if (omode <= 0 || omode > 4095)
+        {
+          g_warning ("%s: Erroneous --listen-mode value", __FUNCTION__);
+          return -1;
+        }
+      if (chmod (address_str_unix, omode) == -1)
+        {
+          g_warning ("%s: chmod: %s", __FUNCTION__, strerror (errno));
+          return -1;
+        }
+    }
 
   if (listen (*soc, MAX_CONNECTIONS) == -1)
     {
@@ -1526,6 +1581,9 @@ main (int argc, char** argv)
   static gchar *verify_scanner = NULL;
   static gchar *priorities = "NORMAL";
   static gchar *dh_params = NULL;
+  static gchar *listen_owner = NULL;
+  static gchar *listen_group = NULL;
+  static gchar *listen_mode = NULL;
   static gchar *new_password = NULL;
   static gchar *optimize = NULL;
   static gchar *manager_address_string = NULL;
@@ -1587,6 +1645,12 @@ main (int argc, char** argv)
         { "inheritor", '\0', 0, G_OPTION_ARG_STRING, &inheritor, "Have <username> inherit from deleted user.", "<username>" },
         { "listen", 'a', 0, G_OPTION_ARG_STRING, &manager_address_string, "Listen on <address>.", "<address>" },
         { "listen2", '\0', 0, G_OPTION_ARG_STRING, &manager_address_string_2, "Listen also on <address>.", "<address>" },
+        { "listen-owner", '\0', 0, G_OPTION_ARG_STRING, &listen_owner,
+          "Owner of the unix socket", "<string>" },
+        { "listen-group", '\0', 0, G_OPTION_ARG_STRING, &listen_group,
+          "Group of the unix socket", "<string>" },
+        { "listen-mode", '\0', 0, G_OPTION_ARG_STRING, &listen_mode,
+          "File mode of the unix socket", "<string>" },
         { "max-ips-per-target", '\0', 0, G_OPTION_ARG_INT, &max_ips_per_target, "Maximum number of IPs per target.", "<number>"},
         { "max-email-attachment-size", '\0', 0, G_OPTION_ARG_INT, &max_email_attachment_size, "Maximum size of alert email attachments, in bytes.", "<number>"},
         { "max-email-include-size", '\0', 0, G_OPTION_ARG_INT, &max_email_include_size, "Maximum size of inlined content in alert emails, in bytes.", "<number>"},
@@ -2184,11 +2248,17 @@ main (int argc, char** argv)
                            : (ipv6_is_enabled () ? "::" : "0.0.0.0"))
                        : NULL,
                       manager_port_string,
+                      listen_owner,
+                      listen_group,
+                      listen_mode,
                       &manager_socket))
     return EXIT_FAILURE;
   if (manager_listen (NULL,
                       manager_address_string_2,
                       manager_port_string_2,
+                      NULL,
+                      NULL,
+                      NULL,
                       &manager_socket_2))
     return EXIT_FAILURE;
 
