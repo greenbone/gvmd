@@ -13371,11 +13371,16 @@ migrate_177_to_178 ()
   sql ("UPDATE scanners SET ca_pub = NULL"
        " WHERE uuid = '" SCANNER_UUID_DEFAULT "';");
 
-  /* Delete credential of default scanner if it is not used elsewhere. */
+  /* Get credential to delete it if possible */
   sql_int64 (&credential,
              "SELECT credential FROM scanners"
              " WHERE uuid = '" SCANNER_UUID_DEFAULT "'");
 
+  /* Remove reference to credential from default scanner. */
+  sql ("UPDATE scanners SET credential = NULL"
+       " WHERE uuid = '" SCANNER_UUID_DEFAULT "';");
+
+  /* Delete credential of default scanner if it is not used elsewhere. */
   if ((sql_int ("SELECT count(*) FROM scanners"
                 " WHERE credential = %llu"
                 "   AND uuid != '" SCANNER_UUID_DEFAULT "';",
@@ -13399,13 +13404,11 @@ migrate_177_to_178 ()
                    "   AND credential_location = %d;",
                    credential, LOCATION_TABLE) == 0))
     {
+      sql ("DELETE FROM credentials_data WHERE credential = %llu",
+           credential);
       sql ("DELETE FROM credentials WHERE id = %llu",
            credential);
     }
-
-  /* Remove reference to credential from default scanner. */
-  sql ("UPDATE scanners SET credential = 0"
-       " WHERE uuid = '" SCANNER_UUID_DEFAULT "';");
 
   /* Set the database version to 178. */
 

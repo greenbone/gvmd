@@ -1,3 +1,13 @@
+2016-09-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_migrators.c (migrate_177_to_178): Set credential to NULL
+	instead of 0 so it works with postgres. Do so before attempting to
+	delete the credential and also delete credential data together with
+	the credential.
+
+	* src/manage_sql.c (check_db_scanners): Set credential to NULL instead
+	of 0 so it works with postgres.
+
 2016-09-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c (main): Check for conflicts with --unix-socket.

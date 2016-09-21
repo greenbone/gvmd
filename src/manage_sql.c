@@ -13958,7 +13958,7 @@ check_db_scanners ()
            " (uuid, owner, name, host, port, type, ca_pub, credential,"
            "  creation_time, modification_time)"
            " VALUES ('" SCANNER_UUID_DEFAULT "', NULL, 'OpenVAS Default',"
-           " '" OPENVASSD_ADDRESS "', 0, %d, NULL, 0, m_now (), m_now ());",
+           " '" OPENVASSD_ADDRESS "', 0, %d, NULL, NULL, m_now (), m_now ());",
            SCANNER_TYPE_OPENVAS);
     }
 
