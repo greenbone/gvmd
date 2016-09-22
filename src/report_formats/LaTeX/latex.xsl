@@ -214,6 +214,9 @@ TODOS: Solve Whitespace/Indentation problem of this file.
 \usepackage{url}
 \usepackage[utf8x]{inputenc}
 
+% Fontsetup
+\usepackage[T1]{fontenc}
+
 \DeclareUnicodeCharacter {135}{{\textascii ?}}
 \DeclareUnicodeCharacter {129}{{\textascii ?}}
 \DeclareUnicodeCharacter {128}{{\textascii ?}}
