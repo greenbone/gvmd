@@ -11752,14 +11752,29 @@ escalate_1 (alert_t alert, task_t task, report_t report, event_t event,
 {
   int ret;
   get_data_t get;
+  char *results_filter;
+
   memset (&get, 0, sizeof (get_data_t));
   get.details = 1;
-  get.filter = g_strdup_printf ("notes=1 overrides=1 sort-reverse=severity"
-                                " rows=%d",
-                                method == ALERT_METHOD_EMAIL ? 1000 : -1);
+
+  results_filter = setting_filter ("Results");
+  if (results_filter && strlen (results_filter))
+    {
+      get.filt_id = results_filter;
+      get.filter = filter_term (results_filter);
+    }
+  else
+    {
+      get.filt_id = g_strdup ("0");
+      get.filter = g_strdup_printf ("notes=1 overrides=1 sort-reverse=severity"
+                                    " rows=%d",
+                                    method == ALERT_METHOD_EMAIL ? 1000 : -1);
+    }
 
   ret = escalate_2 (alert, task, report, event, event_data, method, condition,
                     &get, 1, 1);
+  free (results_filter);
+  g_free (get.filter);
   return ret;
 }
 

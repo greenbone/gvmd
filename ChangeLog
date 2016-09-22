@@ -1,5 +1,10 @@
 2016-09-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (escalate_1): Get the filter from setting Results
+	Filter, if it is set.
+
+2016-09-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* CMakeLists.txt: Allow OPENVAS_RUN_DIR to be passed in.
 
 2016-09-22  Michael Wiegand <michael.wiegand@greenbone.net>
