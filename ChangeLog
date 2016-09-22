@@ -1,3 +1,10 @@
+2016-09-22  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Backport r26257.
+
+	* src/report_formats/LaTeX/latex.xsl: Use T1 font encoding to ensure
+	8-bit characters are rendered correctly.
+
 2016-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r26225.
