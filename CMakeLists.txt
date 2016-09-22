@@ -182,7 +182,6 @@ endif (NOT DEFINED OPENVAS_SQLITE_SLEEP_MAX)
 set (OPENVAS_DATA_DIR     "${DATADIR}/openvas")
 set (OPENVAS_STATE_DIR    "${LOCALSTATEDIR}/lib/openvas")
 set (OPENVAS_LOG_DIR      "${LOCALSTATEDIR}/log/openvas")
-set (OPENVAS_RUN_DIR      "${LOCALSTATEDIR}/run")
 set (OPENVAS_SYSCONF_DIR  "${SYSCONFDIR}/openvas")
 set (OPENVAS_SCAP_RES_DIR "${OPENVAS_DATA_DIR}/scap")
 set (OPENVAS_CERT_RES_DIR "${OPENVAS_DATA_DIR}/cert")
@@ -194,6 +193,10 @@ set (OPENVAS_SCANNER_KEY         "${OPENVAS_STATE_DIR}/private/CA/serverkey.pem"
 set (OPENVAS_CLIENT_CERTIFICATE  "${OPENVAS_STATE_DIR}/CA/clientcert.pem")
 set (OPENVAS_CLIENT_KEY          "${OPENVAS_STATE_DIR}/private/CA/clientkey.pem")
 set (OPENVAS_CA_CERTIFICATE      "${OPENVAS_STATE_DIR}/CA/cacert.pem")
+
+if (NOT OPENVAS_RUN_DIR)
+  set (OPENVAS_RUN_DIR      "${LOCALSTATEDIR}/run")
+endif (NOT OPENVAS_RUN_DIR)
 
 if (NOT OPENVAS_NVT_DIR)
   set (OPENVAS_NVT_DIR "${OPENVAS_STATE_DIR}/plugins/")
