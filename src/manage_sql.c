@@ -10266,7 +10266,7 @@ escalate_1 (alert_t alert, task_t task, report_t report, event_t event,
                      1,       /* Overrides details. */
                      0,       /* First results. */
                      /* Max results. */
-                     (method == ALERT_METHOD_EMAIL ? 1000 : -1),
+                     (method == ALERT_METHOD_EMAIL ? 2000 : -1),
                      NULL);   /* Timezone. */
 }
 

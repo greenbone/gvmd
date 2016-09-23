@@ -1,3 +1,7 @@
+2016-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (esalate_1): Increase the max email results to 2000.
+
 2016-09-22  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Backport r26257.
