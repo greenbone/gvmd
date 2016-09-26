@@ -4275,7 +4275,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <request>
         <create_note>
           <text>This issue should be resolved after the upgrade.</text>
-          <nvt>1.3.6.1.4.1.25623.1.0.10330</nvt>
+          <nvt oid="1.3.6.1.4.1.25623.1.0.10330"></nvt>
           <result>254cd3ef-bbe1-4d58-859d-21b8d0c046c6</result>
         </create_note>
       </request>
@@ -4439,7 +4439,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <request>
         <create_override>
           <text>This is actually of little concern.</text>
-          <nvt>1.3.6.1.4.1.25623.1.0.10330</nvt>
+          <nvt oid="1.3.6.1.4.1.25623.1.0.10330"></nvt>
           <new_threat>Low</new_threat>
           <result>254cd3ef-bbe1-4d58-859d-21b8d0c046c6</result>
         </create_override>
