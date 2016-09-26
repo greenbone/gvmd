@@ -1,3 +1,10 @@
+2016-09-26  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Backport r26273.
+
+	* src/report_formats/Verinice_ISM/classification.xsl: Set correct tag
+	when Microsoft Windows 8, 8.1 or 10 was detected.
+
 2016-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (esalate_1): Increase the max email results to 2000.
