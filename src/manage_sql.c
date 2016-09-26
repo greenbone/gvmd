@@ -19173,7 +19173,9 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   min_qod_clause = where_qod (min_qod_str);
   g_free (min_qod_str);
 
-  extra_where = g_strdup_printf("%s%s",
+  extra_where = g_strdup_printf("%s%s%s",
+                                " AND severity != "
+                                  G_STRINGIFY (SEVERITY_ERROR),
                                 min_qod_clause,
                                 get->trash
                                   ? "AND ((SELECT (hidden = 2) FROM tasks"
