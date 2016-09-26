@@ -139,6 +139,15 @@
         <xsl:when test="contains(value, 'cpe:/o:microsoft:windows_server_2012')">
           <xsl:text>gsm_system_Windows_Server</xsl:text>
         </xsl:when>
+        <xsl:when test="contains(value, 'cpe:/o:microsoft:windows_8')">
+          <xsl:text>gsm_system_Windows_Client</xsl:text>
+        </xsl:when>
+        <xsl:when test="contains(value, 'cpe:/o:microsoft:windows_8.1')">
+          <xsl:text>gsm_system_Windows_Client</xsl:text>
+        </xsl:when>
+        <xsl:when test="contains(value, 'cpe:/o:microsoft:windows_10')">
+          <xsl:text>gsm_system_Windows_Client</xsl:text>
+        </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:microsoft:windows_xp')">
           <xsl:text>gsm_system_Windows_Client</xsl:text>
         </xsl:when>

@@ -1,3 +1,8 @@
+2016-09-26  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/report_formats/Verinice_ISM/classification.xsl: Set correct tag
+	when Microsoft Windows 8, 8.1 or 10 was detected.
+
 2016-09-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (escalate_1): Get the filter from setting Results
