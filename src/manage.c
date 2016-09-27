@@ -4556,6 +4556,9 @@ run_task (const char *task_id, char **report_id, int from,
   report_t last_stopped_report;
   port_list_t port_list;
 
+  if (current_scanner_task)
+    return -6;
+
   task = 0;
   if (find_task_with_permission (task_id, &task, permission))
     return -1;
@@ -4647,16 +4650,12 @@ run_task (const char *task_id, char **report_id, int from,
       return -5;
     }
 
+  /* Mark task "Requested".
+   *
+   * Every fail exit from here must reset the run status. */
+
   if (set_task_requested (task, &run_status))
     return 1;
-
-  /* Every fail exit from here must reset the run status. */
-
-  if (current_scanner_task)
-    {
-      set_task_run_status (task, run_status);
-      return -6;
-    }
 
   /* Setup the task info required for the scan. */
 
@@ -4668,14 +4667,6 @@ run_task (const char *task_id, char **report_id, int from,
       return -1;
     }
 
-  hosts = target_hosts (target);
-  if (hosts == NULL)
-    {
-      g_debug ("   target hosts is NULL.\n");
-      set_task_run_status (task, run_status);
-      return -4;
-    }
-
   if ((from == 1)
       || ((from == 2)
           && (run_status == TASK_STATUS_STOPPED)))
@@ -4684,7 +4675,6 @@ run_task (const char *task_id, char **report_id, int from,
         {
           g_debug ("   error getting last stopped report.\n");
           set_task_run_status (task, run_status);
-          free (hosts);
           return -1;
         }
 
@@ -4714,7 +4704,6 @@ run_task (const char *task_id, char **report_id, int from,
       if (create_current_report (task, report_id, TASK_STATUS_REQUESTED))
         {
           set_task_run_status (task, run_status);
-          free (hosts);
           return -3;
         }
 
@@ -4724,8 +4713,15 @@ run_task (const char *task_id, char **report_id, int from,
     {
       /* "from" must be 0, 1 or 2. */
       assert (0);
-      free (hosts);
       return -1;
+    }
+
+  hosts = target_hosts (target);
+  if (hosts == NULL)
+    {
+      g_debug ("   target hosts is NULL.\n");
+      set_task_run_status (task, run_status);
+      return -4;
     }
 
   set_report_scheduled (current_report);
