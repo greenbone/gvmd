@@ -1,3 +1,8 @@
+2016-09-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (schedule_writable): Always return 1 to allow
+	modifying schedules that are in use.
+
 2016-09-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (run_task): Skip scanner setup for slave tasks.

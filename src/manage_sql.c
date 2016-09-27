@@ -46097,7 +46097,7 @@ trash_schedule_in_use (schedule_t schedule)
 int
 schedule_writable (schedule_t schedule)
 {
-  return (schedule_in_use (schedule) == 0);
+  return 1;
 }
 
 /**
