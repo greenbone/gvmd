@@ -1,3 +1,8 @@
+2016-09-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (run_task_setup): New function.
+	(run_task): Use run_task_setup to init all the task info variables.
+
 2016-09-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/html/XML/OMP.xml (create_override, create_note): Correct example.

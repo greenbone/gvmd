@@ -4384,6 +4384,138 @@ scanner_setup (scanner_t scanner)
 }
 
 /**
+ * @brief Initialise variables required for running a scan.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return 0 success, -1 error, 99 permission denied.
+ */
+static int
+run_task_setup (task_t task, target_t *target, port_list_t *port_list,
+                credential_t *ssh_credential, credential_t *smb_credential,
+                credential_t *esxi_credential, credential_t *snmp_credential)
+{
+  *target = task_target (task);
+  if (*target)
+    {
+      char *uuid;
+      target_t found;
+
+      uuid = target_uuid (*target);
+      if (find_target_with_permission (uuid, &found, "get_targets"))
+        {
+          g_free (uuid);
+          return -1;
+        }
+      g_free (uuid);
+      if (found == 0)
+        return 99;
+    }
+  else
+    {
+      g_debug ("   task target is 0.\n");
+      return -2;
+    }
+
+  *port_list = target_port_list (*target);
+  if (*port_list)
+    {
+      char *uuid;
+      port_list_t found;
+
+      uuid = port_list_uuid (*port_list);
+      if (find_port_list_with_permission (uuid, &found, "get_port_lists"))
+        {
+          g_free (uuid);
+          return -1;
+        }
+      g_free (uuid);
+      if (found == 0)
+        return 99;
+    }
+  else
+    return -1;
+
+  *ssh_credential = target_ssh_credential (*target);
+  if (*ssh_credential)
+    {
+      char *uuid;
+      credential_t found;
+
+      uuid = credential_uuid (*ssh_credential);
+      if (find_credential_with_permission (uuid,
+                                           &found,
+                                           "get_credentials"))
+        {
+          g_free (uuid);
+          return -1;
+        }
+      g_free (uuid);
+      if (found == 0)
+        return 99;
+    }
+
+  *smb_credential = target_smb_credential (*target);
+  if (*smb_credential)
+    {
+      char *uuid;
+      credential_t found;
+
+      uuid = credential_uuid (*smb_credential);
+      if (find_credential_with_permission (uuid,
+                                           &found,
+                                           "get_credentials"))
+        {
+          g_free (uuid);
+          return -1;
+        }
+      g_free (uuid);
+      if (found == 0)
+        return 99;
+    }
+
+  *esxi_credential = target_esxi_credential (*target);
+  if (*esxi_credential)
+    {
+      char *uuid;
+      credential_t found;
+
+      uuid = credential_uuid (*esxi_credential);
+      if (find_credential_with_permission (uuid,
+                                           &found,
+                                           "get_credentials"))
+        {
+          g_free (uuid);
+          return -1;
+        }
+      g_free (uuid);
+      if (found == 0)
+        return 99;
+    }
+
+  *snmp_credential = target_credential (*target, "snmp");
+  if (*snmp_credential)
+    {
+      char *uuid;
+      credential_t found;
+
+      uuid = credential_uuid (*snmp_credential);
+      if (find_credential_with_permission (uuid,
+                                           &found,
+                                           "get_credentials"))
+        {
+          g_free (uuid);
+          return -1;
+        }
+      g_free (uuid);
+      if (found == 0)
+        return 99;
+    }
+
+  return 0;
+}
+
+/**
  * @brief Start a task.
  *
  * Use \ref send_to_server to queue the task start sequence in the scanner
@@ -4415,7 +4547,7 @@ run_task (const char *task_id, char **report_id, int from,
   slave_t slave;
   char title[128], *hosts, *port_range, *port, *uuid;
   gchar *plugins;
-  int fail, pid;
+  int fail, pid, ret;
   GSList *files = NULL;
   GPtrArray *preference_files;
   task_status_t run_status;
@@ -4526,146 +4658,14 @@ run_task (const char *task_id, char **report_id, int from,
       return -6;
     }
 
-  target = task_target (task);
-  if (target)
-    {
-      char *uuid;
-      target_t found;
+  /* Setup the task info required for the scan. */
 
-      uuid = target_uuid (target);
-      if (find_target_with_permission (uuid, &found, "get_targets"))
-        {
-          g_free (uuid);
-          set_task_run_status (task, run_status);
-          return -1;
-        }
-      g_free (uuid);
-      if (found == 0)
-        {
-          set_task_run_status (task, run_status);
-          return 99;
-        }
-    }
-  else
+  ret = run_task_setup (task, &target, &port_list, &ssh_credential,
+                        &smb_credential, &esxi_credential, &snmp_credential);
+  if (ret)
     {
-      g_debug ("   task target is 0.\n");
       set_task_run_status (task, run_status);
-      return -2;
-    }
-
-  port_list = target_port_list (target);
-  if (port_list)
-    {
-      char *uuid;
-      port_list_t found;
-
-      uuid = port_list_uuid (port_list);
-      if (find_port_list_with_permission (uuid, &found, "get_port_lists"))
-        {
-          set_task_run_status (task, run_status);
-          g_free (uuid);
-          return -1;
-        }
-      g_free (uuid);
-      if (found == 0)
-        {
-          set_task_run_status (task, run_status);
-          return 99;
-        }
-    }
-  else
-    return -1;
-
-  ssh_credential = target_ssh_credential (target);
-  if (ssh_credential)
-    {
-      char *uuid;
-      credential_t found;
-
-      uuid = credential_uuid (ssh_credential);
-      if (find_credential_with_permission (uuid,
-                                           &found,
-                                           "get_credentials"))
-        {
-          g_free (uuid);
-          set_task_run_status (task, run_status);
-          return -1;
-        }
-      g_free (uuid);
-      if (found == 0)
-        {
-          set_task_run_status (task, run_status);
-          return 99;
-        }
-    }
-
-  smb_credential = target_smb_credential (target);
-  if (smb_credential)
-    {
-      char *uuid;
-      credential_t found;
-
-      uuid = credential_uuid (smb_credential);
-      if (find_credential_with_permission (uuid,
-                                           &found,
-                                           "get_credentials"))
-        {
-          g_free (uuid);
-          set_task_run_status (task, run_status);
-          return -1;
-        }
-      g_free (uuid);
-      if (found == 0)
-        {
-          set_task_run_status (task, run_status);
-          return 99;
-        }
-    }
-
-  esxi_credential = target_esxi_credential (target);
-  if (esxi_credential)
-    {
-      char *uuid;
-      credential_t found;
-
-      uuid = credential_uuid (esxi_credential);
-      if (find_credential_with_permission (uuid,
-                                           &found,
-                                           "get_credentials"))
-        {
-          g_free (uuid);
-          set_task_run_status (task, run_status);
-          return -1;
-        }
-      g_free (uuid);
-      if (found == 0)
-        {
-          set_task_run_status (task, run_status);
-          return 99;
-        }
-    }
-
-  snmp_credential = target_credential (target, "snmp");
-  if (snmp_credential)
-    {
-      char *uuid;
-      credential_t found;
-
-      uuid = credential_uuid (snmp_credential);
-      if (find_credential_with_permission (uuid,
-                                           &found,
-                                           "get_credentials"))
-        {
-          g_free (uuid);
-          set_task_run_status (task, run_status);
-          return -1;
-        }
-      g_free (uuid);
-      if (found == 0)
-        {
-          set_task_run_status (task, run_status);
-          return 99;
-        }
+      return -1;
     }
 
   hosts = target_hosts (target);
