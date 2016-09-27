@@ -4391,10 +4391,30 @@ scanner_setup (scanner_t scanner)
  * @return 0 success, -1 error, 99 permission denied.
  */
 static int
-run_task_setup (task_t task, target_t *target, port_list_t *port_list,
-                credential_t *ssh_credential, credential_t *smb_credential,
-                credential_t *esxi_credential, credential_t *snmp_credential)
+run_task_setup (task_t task, config_t *config, target_t *target,
+                port_list_t *port_list, credential_t *ssh_credential,
+                credential_t *smb_credential, credential_t *esxi_credential,
+                credential_t *snmp_credential, slave_t *slave)
 {
+  *config = task_config (task);
+  if (*config)
+    {
+      char *uuid;
+      config_t found;
+
+      uuid = config_uuid (*config);
+      if (find_config_with_permission (uuid, &found, "get_configs"))
+        {
+          g_free (uuid);
+          return -1;
+        }
+      g_free (uuid);
+      if (found == 0)
+        return 99;
+    }
+  else
+    return -1;
+
   *target = task_target (task);
   if (*target)
     {
@@ -4512,6 +4532,23 @@ run_task_setup (task_t task, target_t *target, port_list_t *port_list,
         return 99;
     }
 
+  *slave = task_slave (task);
+  if (*slave)
+    {
+      char *uuid;
+      slave_t found;
+
+      uuid = slave_uuid (*slave);
+      if (find_slave_with_permission (uuid, &found, "get_slaves"))
+        {
+          g_free (uuid);
+          return -1;
+        }
+      g_free (uuid);
+      if (found == 0)
+        return 99;
+    }
+
   return 0;
 }
 
@@ -4583,54 +4620,30 @@ run_task (const char *task_id, char **report_id, int from,
     }
   else
     assert (0);
+
   if (scanner_type (scanner) == SCANNER_TYPE_CVE)
     return run_cve_task  (task);
-
-  config = task_config (task);
-  if (config)
-    {
-      char *uuid;
-      config_t found;
-
-      if (from > 0 && config_type (config) > 0)
-        return 4;
-
-      uuid = config_uuid (config);
-      if (find_config_with_permission (uuid, &found, "get_configs"))
-        {
-          g_free (uuid);
-          return -1;
-        }
-      g_free (uuid);
-      if (found == 0)
-        return 99;
-    }
-  else
-    return -1;
 
   if (scanner_type (scanner) != SCANNER_TYPE_OPENVAS)
     return run_osp_task  (task);
 
-  slave = task_slave (task);
-  if (slave)
-    {
-      char *uuid;
-      slave_t found;
+  /* Setup the task info required for the scan. */
 
-      uuid = slave_uuid (slave);
-      if (find_slave_with_permission (uuid, &found, "get_slaves"))
-        {
-          g_free (uuid);
-          return -1;
-        }
-      g_free (uuid);
-      if (found == 0)
-        return 99;
-    }
-  else
-    {
-      /* Classic OpenVAS Scanner. If task has no scanner, use default one. */
+  ret = run_task_setup (task, &config, &target, &port_list, &ssh_credential,
+                        &smb_credential, &esxi_credential, &snmp_credential,
+                        &slave);
+  if (ret)
+    return -1;
 
+  /* When resuming, check that the scanner supports it. */
+
+  if (from > 0 && config_type (config) > 0)
+    return 4;
+
+  /* For local scans, setup the scanner. */
+
+  if (slave == 0)
+    {
       switch (scanner_setup (scanner))
         {
           case 0:
@@ -4659,15 +4672,7 @@ run_task (const char *task_id, char **report_id, int from,
   if (set_task_requested (task, &run_status))
     return 1;
 
-  /* Setup the task info required for the scan. */
-
-  ret = run_task_setup (task, &target, &port_list, &ssh_credential,
-                        &smb_credential, &esxi_credential, &snmp_credential);
-  if (ret)
-    {
-      set_task_run_status (task, run_status);
-      return -1;
-    }
+  /* Prepare the report. */
 
   if ((from == 1)
       || ((from == 2)

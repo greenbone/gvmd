@@ -1,5 +1,11 @@
 2016-09-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (run_task): Move config and slave variable setup into
+	run_task_setup.  Move run_task_setup up so the slave return can be
+	used in the scanner check.
+
+2016-09-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (run_task): Get hosts twice and move network_targets down,
 	to save freeing hosts so often.
 
