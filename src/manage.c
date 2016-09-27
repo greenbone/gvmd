@@ -4553,6 +4553,69 @@ run_task_setup (task_t task, config_t *config, target_t *target,
 }
 
 /**
+ * @brief Prepare report for running a task.
+ *
+ * @param[in]   task       The task.
+ * @param[out]  report_id  The report ID.
+ * @param[in]   from       0 start from beginning, 1 continue from stopped, 2
+ *                         continue if stopped else start from beginning.
+ *
+ * @return 0 success, -1 error, -3 creating the report failed.
+ */
+static int
+run_task_prepare_report (task_t task, char **report_id, int from,
+                         task_status_t run_status,
+                         report_t *last_stopped_report)
+{
+  if ((from == 1)
+      || ((from == 2)
+          && (run_status == TASK_STATUS_STOPPED)))
+    {
+      if (task_last_stopped_report (task, last_stopped_report))
+        {
+          g_debug ("   error getting last stopped report.\n");
+          return -1;
+        }
+
+      current_report = *last_stopped_report;
+      if (report_id) *report_id = report_uuid (*last_stopped_report);
+
+      /* Remove partial host information from the report. */
+
+      trim_partial_report (*last_stopped_report);
+
+      /* Ensure the report is marked as requested. */
+
+      set_report_scan_run_status (current_report, TASK_STATUS_REQUESTED);
+
+      /* Clear the end times of the task and partial report. */
+
+      set_task_start_time_epoch (task, scan_start_time_epoch (current_report));
+      set_task_end_time (task, NULL);
+      set_scan_end_time (*last_stopped_report, NULL);
+    }
+  else if ((from == 0) || (from == 2))
+    {
+      *last_stopped_report = 0;
+
+      /* Create the report. */
+
+      if (create_current_report (task, report_id, TASK_STATUS_REQUESTED))
+        return -3;
+
+      reset_task (task);
+    }
+  else
+    {
+      /* "from" must be 0, 1 or 2. */
+      assert (0);
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
  * @brief Start a task.
  *
  * Use \ref send_to_server to queue the task start sequence in the scanner
@@ -4560,11 +4623,12 @@ run_task_setup (task_t task, config_t *config, target_t *target,
  *
  * Only one task can run at a time in a process.
  *
- * @param[in]   task_id    The task ID.
- * @param[out]  report_id  The report ID.
- * @param[in]   from       0 start from beginning, 1 continue from stopped, 2
- *                         continue if stopped else start from beginning.
- * @param[in]   permission  Permission required on task.
+ * @param[in]   task_id     The task ID.
+ * @param[out]  report_id   The report ID.
+ * @param[in]   from        0 start from beginning, 1 continue from stopped, 2
+ *                          continue if stopped else start from beginning.
+ * @param[in]   run_status  Run status.
+ * @param[out]  last_stopped_report  Last stopped report.
  *
  * @return Before forking: 1 task is active already, 3 failed to find task,
  *         4 resuming task not supported, 99 permission denied, -1 error,
@@ -4622,10 +4686,10 @@ run_task (const char *task_id, char **report_id, int from,
     assert (0);
 
   if (scanner_type (scanner) == SCANNER_TYPE_CVE)
-    return run_cve_task  (task);
+    return run_cve_task (task);
 
   if (scanner_type (scanner) != SCANNER_TYPE_OPENVAS)
-    return run_osp_task  (task);
+    return run_osp_task (task);
 
   /* Setup the task info required for the scan. */
 
@@ -4674,54 +4738,15 @@ run_task (const char *task_id, char **report_id, int from,
 
   /* Prepare the report. */
 
-  if ((from == 1)
-      || ((from == 2)
-          && (run_status == TASK_STATUS_STOPPED)))
+  ret = run_task_prepare_report (task, report_id, from, run_status,
+                                 &last_stopped_report);
+  if (ret)
     {
-      if (task_last_stopped_report (task, &last_stopped_report))
-        {
-          g_debug ("   error getting last stopped report.\n");
-          set_task_run_status (task, run_status);
-          return -1;
-        }
-
-      current_report = last_stopped_report;
-      if (report_id) *report_id = report_uuid (last_stopped_report);
-
-      /* Remove partial host information from the report. */
-
-      trim_partial_report (last_stopped_report);
-
-      /* Ensure the report is marked as requested. */
-
-      set_report_scan_run_status (current_report, TASK_STATUS_REQUESTED);
-
-      /* Clear the end times of the task and partial report. */
-
-      set_task_start_time_epoch (task, scan_start_time_epoch (current_report));
-      set_task_end_time (task, NULL);
-      set_scan_end_time (last_stopped_report, NULL);
+      set_task_run_status (task, run_status);
+      return ret;
     }
-  else if ((from == 0) || (from == 2))
-    {
-      last_stopped_report = 0;
 
-      /* Create the report. */
-
-      if (create_current_report (task, report_id, TASK_STATUS_REQUESTED))
-        {
-          set_task_run_status (task, run_status);
-          return -3;
-        }
-
-      reset_task (task);
-    }
-  else
-    {
-      /* "from" must be 0, 1 or 2. */
-      assert (0);
-      return -1;
-    }
+  /* Check target. */
 
   if (target_hosts (target) == NULL)
     {
