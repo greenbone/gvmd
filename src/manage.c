@@ -4718,8 +4718,7 @@ run_task (const char *task_id, char **report_id, int from,
       return -1;
     }
 
-  hosts = target_hosts (target);
-  if (hosts == NULL)
+  if (target_hosts (target) == NULL)
     {
       g_debug ("   target hosts is NULL.\n");
       set_task_run_status (task, run_status);
@@ -4759,13 +4758,11 @@ run_task (const char *task_id, char **report_id, int from,
         set_task_run_status (task, run_status);
         set_report_scan_run_status (current_report, run_status);
         current_report = (report_t) 0;
-        free (hosts);
         return -9;
         break;
       default:
         /* Parent.  Return, in order to respond to client. */
         current_report = (report_t) 0;
-        free (hosts);
         return 0;
         break;
     }
@@ -4786,8 +4783,6 @@ run_task (const char *task_id, char **report_id, int from,
 
   if (slave)
     {
-      free (hosts);
-
       snprintf (title, sizeof (title),
                 "openvasmd: OTP: Handling slave scan %s",
                 uuid);
@@ -4827,7 +4822,6 @@ run_task (const char *task_id, char **report_id, int from,
 
   if (send_to_server ("CLIENT <|> PREFERENCES <|>\n"))
     {
-      free (hosts);
       g_warning ("%s: Failed to send OTP PREFERENCES", __FUNCTION__);
       set_task_run_status (task, run_status);
       set_report_scan_run_status (current_report, run_status);
@@ -4865,7 +4859,6 @@ run_task (const char *task_id, char **report_id, int from,
   free (plugins);
   if (fail)
     {
-      free (hosts);
       g_warning ("%s: Failed to send OTP plugin_set", __FUNCTION__);
       set_task_run_status (task, run_status);
       set_report_scan_run_status (current_report, run_status);
@@ -4877,7 +4870,6 @@ run_task (const char *task_id, char **report_id, int from,
 
   if (send_config_preferences (config, "SERVER_PREFS", NULL, NULL))
     {
-      free (hosts);
       g_warning ("%s: Failed to send OTP SERVER_PREFS", __FUNCTION__);
       set_task_run_status (task, run_status);
       set_report_scan_run_status (current_report, run_status);
@@ -4887,7 +4879,6 @@ run_task (const char *task_id, char **report_id, int from,
 
   if (send_task_preferences (task))
     {
-      free (hosts);
       g_warning ("%s: Failed to send OTP task preferences", __FUNCTION__);
       set_task_run_status (task, run_status);
       set_report_scan_run_status (current_report, run_status);
@@ -4902,7 +4893,6 @@ run_task (const char *task_id, char **report_id, int from,
                        port_range ? port_range : "default"))
     {
       free (port_range);
-      free (hosts);
       g_warning ("%s: Failed to send OTP port_range", __FUNCTION__);
       set_task_run_status (task, run_status);
       set_report_scan_run_status (current_report, run_status);
@@ -4936,7 +4926,6 @@ run_task (const char *task_id, char **report_id, int from,
     {
       g_ptr_array_free (preference_files, TRUE);
       slist_free (files);
-      free (hosts);
       g_warning ("%s: Failed to send OTP PLUGINS_PREFS", __FUNCTION__);
       set_task_run_status (task, run_status);
       set_report_scan_run_status (current_report, run_status);
@@ -4944,25 +4933,10 @@ run_task (const char *task_id, char **report_id, int from,
       return -10;
     }
 
-  /* Send network_targets preference. */
-
-  if (sendf_to_server ("network_targets <|> %s\n", hosts))
-    {
-      free (hosts);
-      g_ptr_array_add (preference_files, NULL);
-      array_free (preference_files);
-      slist_free (files);
-      g_warning ("%s: Failed to send OTP network_targets", __FUNCTION__);
-      set_task_run_status (task, run_status);
-      set_report_scan_run_status (current_report, run_status);
-      current_report = (report_t) 0;
-      return -10;
-    }
-
   /* Send other scanner preferences. */
+
   if (send_scanner_preferences (task, target, last_stopped_report))
     {
-      free (hosts);
       g_ptr_array_add (preference_files, NULL);
       array_free (preference_files);
       slist_free (files);
@@ -5000,7 +4974,6 @@ run_task (const char *task_id, char **report_id, int from,
 
             {
  fail:
-              free (hosts);
               cleanup_iterator (&credentials);
               g_ptr_array_add (preference_files, NULL);
               array_free (preference_files);
@@ -5051,7 +5024,6 @@ run_task (const char *task_id, char **report_id, int from,
                                   " <|> %s\n",
                                   password ? password : ""))
             {
-              free (hosts);
               cleanup_iterator (&credentials);
               g_ptr_array_add (preference_files, NULL);
               array_free (preference_files);
@@ -5084,7 +5056,6 @@ run_task (const char *task_id, char **report_id, int from,
                                   " <|> %s\n",
                                   password ? password : ""))
             {
-              free (hosts);
               cleanup_iterator (&credentials);
               g_ptr_array_add (preference_files, NULL);
               array_free (preference_files);
@@ -5140,7 +5111,6 @@ run_task (const char *task_id, char **report_id, int from,
                                   " <|> %s\n",
                                   privacy_algorithm ? privacy_algorithm : ""))
             {
-              free (hosts);
               cleanup_iterator (&credentials);
               g_ptr_array_add (preference_files, NULL);
               array_free (preference_files);
@@ -5162,7 +5132,6 @@ run_task (const char *task_id, char **report_id, int from,
 
   if (send_alive_test_preferences (target))
     {
-      free (hosts);
       array_free (preference_files);
       slist_free (files);
       g_warning ("%s: Failed to send OTP alive test preferences", __FUNCTION__);
@@ -5171,6 +5140,25 @@ run_task (const char *task_id, char **report_id, int from,
       current_report = (report_t) 0;
       return -10;
     }
+
+  /* Send network_targets preference. */
+
+  hosts = target_hosts (target);
+  assert (hosts);
+  if (sendf_to_server ("network_targets <|> %s\n", hosts ? hosts : ""))
+    {
+      free (hosts);
+      g_ptr_array_add (preference_files, NULL);
+      array_free (preference_files);
+      slist_free (files);
+      g_warning ("%s: Failed to send OTP network_targets", __FUNCTION__);
+      set_task_run_status (task, run_status);
+      set_report_scan_run_status (current_report, run_status);
+      current_report = (report_t) 0;
+      return -10;
+    }
+
+  /* End off preferences. */
 
   if (send_to_server ("<|> CLIENT\n"))
     {
