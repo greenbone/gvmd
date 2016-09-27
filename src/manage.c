@@ -4627,27 +4627,29 @@ run_task (const char *task_id, char **report_id, int from,
       if (found == 0)
         return 99;
     }
-
-  /* Classic OpenVAS Scanner. If task has no scanner, use default one. */
-
-  switch (scanner_setup (scanner))
+  else
     {
-      case 0:
-        break;
-      case 1:
-        return -7;
-      default:
+      /* Classic OpenVAS Scanner. If task has no scanner, use default one. */
+
+      switch (scanner_setup (scanner))
+        {
+          case 0:
+            break;
+          case 1:
+            return -7;
+          default:
+            return -5;
+        }
+
+      if (!openvas_scanner_connected ()
+          && (openvas_scanner_connect () || openvas_scanner_init (0)))
         return -5;
-    }
 
-  if (!openvas_scanner_connected ()
-      && (openvas_scanner_connect () || openvas_scanner_init (0)))
-    return -5;
-
-  if (openvas_scanner_is_loading ())
-    {
-      openvas_scanner_close ();
-      return -5;
+      if (openvas_scanner_is_loading ())
+        {
+          openvas_scanner_close ();
+          return -5;
+        }
     }
 
   /* Mark task "Requested".
