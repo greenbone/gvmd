@@ -1,5 +1,14 @@
 2016-09-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (check_available): New function.
+	(run_task): Use check_available.
+
+	* src/manage_sql.c (resource_name): New function.
+
+	* src/manage_sql.h: Add header accordingly.  For check_available.
+
+2016-09-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (run_otp_task): New function.  Body from run_task.
 	(run_task): Move the OTP case out to run_otp_task.
 

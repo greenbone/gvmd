@@ -390,4 +390,9 @@ int days_from_now (time_t *epoch_time);
 
 void set_report_scheduled (report_t);
 
+gchar *resource_uuid (const gchar *, resource_t);
+
+gboolean find_resource_with_permission (const char *, const char *,
+                                        resource_t *, const char *, int);
+
 #endif /* not OPENVAS_MANAGER_MANAGE_SQL_H */

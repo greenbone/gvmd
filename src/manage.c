@@ -5351,6 +5351,38 @@ run_otp_task (task_t task, scanner_t scanner, int from, target_t target,
 }
 
 /**
+ * @brief Check whether a resource is available.
+ *
+ * @param[in]   type        Type.
+ * @param[out]  resource    Resource.
+ * @param[out]  permission  Permission required for this operation.
+ *
+ * @return 0 success, -1 error, 99 permission denied.
+ */
+static int
+check_available (const gchar *type, resource_t resource,
+                 const gchar *permission)
+{
+  if (resource)
+    {
+      gchar *uuid;
+      resource_t found;
+
+      uuid = resource_uuid (type, resource);
+      if (find_resource_with_permission (type, uuid, &found, permission, 0))
+        {
+          g_free (uuid);
+          return -1;
+        }
+      g_free (uuid);
+      if (found == 0)
+        return 99;
+    }
+
+  return 0;
+}
+
+/**
  * @brief Start or resume a task.
  *
  * Use \ref send_to_server to queue the task start sequence in the scanner
@@ -5395,23 +5427,10 @@ run_task (const char *task_id, char **report_id, int from,
     return 3;
 
   scanner = task_scanner (task);
-  if (scanner)
-    {
-      char *uuid;
-      scanner_t found;
-
-      uuid = scanner_uuid (scanner);
-      if (find_scanner_with_permission (uuid, &found, "get_scanners"))
-        {
-          g_free (uuid);
-          return -1;
-        }
-      g_free (uuid);
-      if (found == 0)
-        return 99;
-    }
-  else
-    assert (0);
+  assert (scanner);
+  ret = check_available ("scanner", scanner, "get_scanners");
+  if (ret)
+    return ret;
 
   if (scanner_type (scanner) == SCANNER_TYPE_CVE)
     return run_cve_task (task);
