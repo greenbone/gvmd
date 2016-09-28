@@ -1,5 +1,10 @@
 2016-09-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (run_otp_task): New function.  Body from run_task.
+	(run_task): Move the OTP case out to run_otp_task.
+
+2016-09-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (handle_slave_task): New function.  Body from
 	run_slave_task.
 	(run_slave_task): Do the task starting that was previously in run_task.

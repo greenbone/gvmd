@@ -4757,92 +4757,37 @@ run_slave_task (task_t task, int from, target_t target, config_t config,
 }
 
 /**
- * @brief Start a task.
+ * @brief Start an OTP scanner task.
  *
- * Use \ref send_to_server to queue the task start sequence in the scanner
- * output buffer.
- *
- * Only one task can run at a time in a process.
- *
- * @param[in]   task_id     The task ID.
- * @param[out]  report_id   The report ID.
+ * @param[in]   task        The task.
+ * @param[in]   scanner     Scanner to use.
  * @param[in]   from        0 start from beginning, 1 continue from stopped, 2
  *                          continue if stopped else start from beginning.
- * @param[out]  permission  Permission required for this operation.
+ * @param[in]   target      Task target.
+ * @param[in]   config      Task config.
+ * @param[in]   ssh_credential   Target SSH credential.
+ * @param[in]   smb_credential   Target SMB credential.
+ * @param[in]   esxi_credential  Target ESXI credential.
+ * @param[in]   snmp_credential  Target SNMP credential.
+ * @param[out]  report_id   The report ID.
  *
  * @return Before forking: 1 task is active already, 3 failed to find task,
- *         4 resuming task not supported, 99 permission denied, -1 error,
- *         -2 task is missing a target,
- *         -3 creating the report failed, -4 target missing hosts, -5 scanner is
- *         down or still loading, -6 already a task running in this process,
- *         -7 no CA cert, -9 fork failed.  After forking: 0 success (parent),
- *         2 success (child), -10 error (child).
  */
-static int
-run_task (const char *task_id, char **report_id, int from,
-          const char *permission)
+int
+run_otp_task (task_t task, scanner_t scanner, int from, target_t target,
+              config_t config, credential_t ssh_credential,
+              credential_t smb_credential,
+              credential_t esxi_credential,
+              credential_t snmp_credential,
+              char **report_id)
 {
-  task_t task;
-  target_t target;
-  scanner_t scanner;
-  slave_t slave;
   char title[128], *hosts, *port_range, *port, *uuid;
   gchar *plugins;
   int fail, pid, ret;
   GSList *files = NULL;
   GPtrArray *preference_files;
   task_status_t run_status;
-  config_t config;
-  credential_t ssh_credential, smb_credential, esxi_credential, snmp_credential;
   report_t last_stopped_report;
-  port_list_t port_list;
-
-  if (current_scanner_task)
-    return -6;
-
-  task = 0;
-  if (find_task_with_permission (task_id, &task, permission))
-    return -1;
-  if (task == 0)
-    return 3;
-
-  scanner = task_scanner (task);
-  if (scanner)
-    {
-      char *uuid;
-      scanner_t found;
-
-      uuid = scanner_uuid (scanner);
-      if (find_scanner_with_permission (uuid, &found, "get_scanners"))
-        {
-          g_free (uuid);
-          return -1;
-        }
-      g_free (uuid);
-      if (found == 0)
-        return 99;
-    }
-  else
-    assert (0);
-
-  if (scanner_type (scanner) == SCANNER_TYPE_CVE)
-    return run_cve_task (task);
-
-  if (scanner_type (scanner) != SCANNER_TYPE_OPENVAS)
-    return run_osp_task (task);
-
-  /* Setup the task info required for the scan. */
-
-  ret = run_task_setup (task, &config, &target, &port_list, &ssh_credential,
-                        &smb_credential, &esxi_credential, &snmp_credential,
-                        &slave);
-  if (ret)
-    return ret;
-
-  if (slave)
-    return run_slave_task (task, from, target, config, ssh_credential,
-                           smb_credential, esxi_credential, snmp_credential,
-                           report_id);
 
   /* When resuming, check that the scanner supports it. */
 
@@ -5403,6 +5348,93 @@ run_task (const char *task_id, char **report_id, int from,
 #endif
 
   return 2;
+}
+
+/**
+ * @brief Start or resume a task.
+ *
+ * Use \ref send_to_server to queue the task start sequence in the scanner
+ * output buffer.
+ *
+ * Only one task can run at a time in a process.
+ *
+ * @param[in]   task_id     The task ID.
+ * @param[out]  report_id   The report ID.
+ * @param[in]   from        0 start from beginning, 1 continue from stopped, 2
+ *                          continue if stopped else start from beginning.
+ * @param[out]  permission  Permission required for this operation.
+ *
+ * @return Before forking: 1 task is active already, 3 failed to find task,
+ *         4 resuming task not supported, 99 permission denied, -1 error,
+ *         -2 task is missing a target,
+ *         -3 creating the report failed, -4 target missing hosts, -5 scanner is
+ *         down or still loading, -6 already a task running in this process,
+ *         -7 no CA cert, -9 fork failed.  After forking: 0 success (parent),
+ *         2 success (child), -10 error (child).
+ */
+static int
+run_task (const char *task_id, char **report_id, int from,
+          const char *permission)
+{
+  task_t task;
+  target_t target;
+  scanner_t scanner;
+  slave_t slave;
+  config_t config;
+  credential_t ssh_credential, smb_credential, esxi_credential, snmp_credential;
+  port_list_t port_list;
+  int ret;
+
+  if (current_scanner_task)
+    return -6;
+
+  task = 0;
+  if (find_task_with_permission (task_id, &task, permission))
+    return -1;
+  if (task == 0)
+    return 3;
+
+  scanner = task_scanner (task);
+  if (scanner)
+    {
+      char *uuid;
+      scanner_t found;
+
+      uuid = scanner_uuid (scanner);
+      if (find_scanner_with_permission (uuid, &found, "get_scanners"))
+        {
+          g_free (uuid);
+          return -1;
+        }
+      g_free (uuid);
+      if (found == 0)
+        return 99;
+    }
+  else
+    assert (0);
+
+  if (scanner_type (scanner) == SCANNER_TYPE_CVE)
+    return run_cve_task (task);
+
+  if (scanner_type (scanner) != SCANNER_TYPE_OPENVAS)
+    return run_osp_task (task);
+
+  /* Setup the task info required for the scan. */
+
+  ret = run_task_setup (task, &config, &target, &port_list, &ssh_credential,
+                        &smb_credential, &esxi_credential, &snmp_credential,
+                        &slave);
+  if (ret)
+    return ret;
+
+  if (slave)
+    return run_slave_task (task, from, target, config, ssh_credential,
+                           smb_credential, esxi_credential, snmp_credential,
+                           report_id);
+
+  return run_otp_task (task, scanner, from, target, config, ssh_credential,
+                       smb_credential, esxi_credential, snmp_credential,
+                       report_id);
 }
 
 /**
