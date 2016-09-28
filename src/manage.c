@@ -3323,12 +3323,12 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
  * @return 0 success, 1 login failed, -1 error.
  */
 static int
-run_slave_task (task_t task, target_t target,
-                credential_t target_ssh_credential,
-                credential_t target_smb_credential,
-                credential_t target_esxi_credential,
-                credential_t target_snmp_credential,
-                report_t last_stopped_report)
+handle_slave_task (task_t task, target_t target,
+                   credential_t target_ssh_credential,
+                   credential_t target_smb_credential,
+                   credential_t target_esxi_credential,
+                   credential_t target_snmp_credential,
+                   report_t last_stopped_report)
 {
   slave_t slave;
   char *host, *name, *uuid;
@@ -4616,6 +4616,147 @@ run_task_prepare_report (task_t task, char **report_id, int from,
 }
 
 /**
+ * @brief Start a task on a slave.
+ *
+ * @param[in]   task        The task.
+ * @param[in]   from        0 start from beginning, 1 continue from stopped, 2
+ *                          continue if stopped else start from beginning.
+ * @param[in]   target      Task target.
+ * @param[in]   config      Task config.
+ * @param[in]   ssh_credential   Target SSH credential.
+ * @param[in]   smb_credential   Target SMB credential.
+ * @param[in]   esxi_credential  Target ESXI credential.
+ * @param[in]   snmp_credential  Target SNMP credential.
+ * @param[out]  report_id   The report ID.
+ *
+ * @return Before forking: 1 task is active already, 3 failed to find task,
+ */
+int
+run_slave_task (task_t task, int from, target_t target, config_t config,
+                credential_t ssh_credential,
+                credential_t smb_credential,
+                credential_t esxi_credential,
+                credential_t snmp_credential,
+                char **report_id)
+{
+  int ret, pid;
+  task_status_t run_status;
+  report_t last_stopped_report;
+  char title[128], *uuid;
+
+  /* When resuming, check that the scanner supports it. */
+
+  if (from > 0 && config_type (config) > 0)
+    return 4;
+
+  /* Mark task "Requested".
+   *
+   * Every fail exit from here must reset the run status. */
+
+  if (set_task_requested (task, &run_status))
+    return 1;
+
+  /* Prepare the report. */
+
+  ret = run_task_prepare_report (task, report_id, from, run_status,
+                                 &last_stopped_report);
+  if (ret)
+    {
+      set_task_run_status (task, run_status);
+      return ret;
+    }
+
+  /* Check target. */
+
+  if (target_hosts (target) == NULL)
+    {
+      g_debug ("   target hosts is NULL.\n");
+      set_task_run_status (task, run_status);
+      return -4;
+    }
+
+  set_report_scheduled (current_report);
+
+  /* Every fail exit from here must reset to this run status, and must
+   * clear current_report. */
+
+  /** @todo On fail exits only, may need to honour request states that one of
+   *        the other processes has set on the task (stop_task,
+   *        request_delete_task). */
+
+  /** @todo Also reset status on report, as current_scanner_task is 0 here. */
+
+  run_status = TASK_STATUS_INTERNAL_ERROR;
+
+  /* Fork a child to start and handle the task while the parent responds to
+   * the client. */
+
+  pid = fork ();
+  switch (pid)
+    {
+      case 0:
+        /* Child.  Carry on starting the task, reopen the database (required
+         * after fork). */
+        reinit_manage_process ();
+        manage_session_init (current_credentials.uuid);
+        break;
+      case -1:
+        /* Parent when error. */
+        g_warning ("%s: Failed to fork task child: %s\n",
+                   __FUNCTION__,
+                   strerror (errno));
+        set_task_run_status (task, run_status);
+        set_report_scan_run_status (current_report, run_status);
+        current_report = (report_t) 0;
+        return -9;
+        break;
+      default:
+        /* Parent.  Return, in order to respond to client. */
+        current_report = (report_t) 0;
+        return 0;
+        break;
+    }
+
+  /* Reset any running information. */
+
+  {
+    char *iface;
+    iface = task_preference_value (task, "source_iface");
+    if (iface)
+      report_set_source_iface (current_report, iface);
+    else
+      report_set_source_iface (current_report, "");
+    free (iface);
+  }
+
+  uuid = report_uuid (current_report);
+  snprintf (title, sizeof (title),
+            "openvasmd: OTP: Handling slave scan %s",
+            uuid);
+  free (uuid);
+  proctitle_set (title);
+
+  switch (handle_slave_task (task, target, ssh_credential, smb_credential,
+                             esxi_credential, snmp_credential,
+                             last_stopped_report))
+    {
+      case 0:
+        break;
+      default:
+        assert (0);
+      case 1:
+        /* Auth failure. */
+      case -1:
+        /* Error. */
+        g_warning ("%s: handle_slave_task failed", __FUNCTION__);
+        set_task_run_status (task, run_status);
+        set_report_scan_run_status (current_report, run_status);
+        exit (EXIT_FAILURE);
+    }
+  exit (EXIT_SUCCESS);
+}
+
+/**
  * @brief Start a task.
  *
  * Use \ref send_to_server to queue the task start sequence in the scanner
@@ -4627,8 +4768,7 @@ run_task_prepare_report (task_t task, char **report_id, int from,
  * @param[out]  report_id   The report ID.
  * @param[in]   from        0 start from beginning, 1 continue from stopped, 2
  *                          continue if stopped else start from beginning.
- * @param[in]   run_status  Run status.
- * @param[out]  last_stopped_report  Last stopped report.
+ * @param[out]  permission  Permission required for this operation.
  *
  * @return Before forking: 1 task is active already, 3 failed to find task,
  *         4 resuming task not supported, 99 permission denied, -1 error,
@@ -4697,7 +4837,12 @@ run_task (const char *task_id, char **report_id, int from,
                         &smb_credential, &esxi_credential, &snmp_credential,
                         &slave);
   if (ret)
-    return -1;
+    return ret;
+
+  if (slave)
+    return run_slave_task (task, from, target, config, ssh_credential,
+                           smb_credential, esxi_credential, snmp_credential,
+                           report_id);
 
   /* When resuming, check that the scanner supports it. */
 
@@ -4706,27 +4851,24 @@ run_task (const char *task_id, char **report_id, int from,
 
   /* For local scans, setup the scanner. */
 
-  if (slave == 0)
+  switch (scanner_setup (scanner))
     {
-      switch (scanner_setup (scanner))
-        {
-          case 0:
-            break;
-          case 1:
-            return -7;
-          default:
-            return -5;
-        }
-
-      if (!openvas_scanner_connected ()
-          && (openvas_scanner_connect () || openvas_scanner_init (0)))
+      case 0:
+        break;
+      case 1:
+        return -7;
+      default:
         return -5;
+    }
 
-      if (openvas_scanner_is_loading ())
-        {
-          openvas_scanner_close ();
-          return -5;
-        }
+  if (!openvas_scanner_connected ()
+      && (openvas_scanner_connect () || openvas_scanner_init (0)))
+    return -5;
+
+  if (openvas_scanner_is_loading ())
+    {
+      openvas_scanner_close ();
+      return -5;
     }
 
   /* Mark task "Requested".
@@ -4810,35 +4952,6 @@ run_task (const char *task_id, char **report_id, int from,
   }
 
   uuid = report_uuid (current_report);
-
-  if (slave)
-    {
-      snprintf (title, sizeof (title),
-                "openvasmd: OTP: Handling slave scan %s",
-                uuid);
-      free (uuid);
-      proctitle_set (title);
-
-      switch (run_slave_task (task, target, ssh_credential, smb_credential,
-                              esxi_credential, snmp_credential,
-                              last_stopped_report))
-        {
-          case 0:
-            break;
-          default:
-            assert (0);
-          case 1:
-            /* Auth failure. */
-          case -1:
-            /* Error. */
-            g_warning ("%s: run_slave_task failed", __FUNCTION__);
-            set_task_run_status (task, run_status);
-            set_report_scan_run_status (current_report, run_status);
-            exit (EXIT_FAILURE);
-        }
-      exit (EXIT_SUCCESS);
-    }
-
   snprintf (title, sizeof (title), "openvasmd: OTP: Handling scan %s", uuid);
   free (uuid);
   proctitle_set (title);

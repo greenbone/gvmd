@@ -1,3 +1,10 @@
+2016-09-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (handle_slave_task): New function.  Body from
+	run_slave_task.
+	(run_slave_task): Do the task starting that was previously in run_task.
+	(run_task): Move the slave case out to run_slave_task.
+
 2016-09-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (run_task_prepare_report): New function.
