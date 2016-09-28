@@ -1,5 +1,14 @@
 2016-09-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (run_task_setup): Remove slave arg.
+	(check_available): Move up in file.
+	(run_slave_task, run_otp_task): Remove details args, instead call
+	run_task_setup directly.
+	(run_task): Remove run_task_setup.  Now done in the specific run
+	functions.
+
+2016-09-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (check_available): New function.
 	(run_task): Use check_available.
 

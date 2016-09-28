@@ -4394,7 +4394,7 @@ static int
 run_task_setup (task_t task, config_t *config, target_t *target,
                 port_list_t *port_list, credential_t *ssh_credential,
                 credential_t *smb_credential, credential_t *esxi_credential,
-                credential_t *snmp_credential, slave_t *slave)
+                credential_t *snmp_credential)
 {
   *config = task_config (task);
   if (*config)
@@ -4532,23 +4532,6 @@ run_task_setup (task_t task, config_t *config, target_t *target,
         return 99;
     }
 
-  *slave = task_slave (task);
-  if (*slave)
-    {
-      char *uuid;
-      slave_t found;
-
-      uuid = slave_uuid (*slave);
-      if (find_slave_with_permission (uuid, &found, "get_slaves"))
-        {
-          g_free (uuid);
-          return -1;
-        }
-      g_free (uuid);
-      if (found == 0)
-        return 99;
-    }
-
   return 0;
 }
 
@@ -4616,33 +4599,72 @@ run_task_prepare_report (task_t task, char **report_id, int from,
 }
 
 /**
+ * @brief Check whether a resource is available.
+ *
+ * @param[in]   type        Type.
+ * @param[out]  resource    Resource.
+ * @param[out]  permission  Permission required for this operation.
+ *
+ * @return 0 success, -1 error, 99 permission denied.
+ */
+static int
+check_available (const gchar *type, resource_t resource,
+                 const gchar *permission)
+{
+  if (resource)
+    {
+      gchar *uuid;
+      resource_t found;
+
+      uuid = resource_uuid (type, resource);
+      if (find_resource_with_permission (type, uuid, &found, permission, 0))
+        {
+          g_free (uuid);
+          return -1;
+        }
+      g_free (uuid);
+      if (found == 0)
+        return 99;
+    }
+
+  return 0;
+}
+
+/**
  * @brief Start a task on a slave.
  *
  * @param[in]   task        The task.
+ * @param[in]   slave       Slave to run task on.
  * @param[in]   from        0 start from beginning, 1 continue from stopped, 2
  *                          continue if stopped else start from beginning.
- * @param[in]   target      Task target.
- * @param[in]   config      Task config.
- * @param[in]   ssh_credential   Target SSH credential.
- * @param[in]   smb_credential   Target SMB credential.
- * @param[in]   esxi_credential  Target ESXI credential.
- * @param[in]   snmp_credential  Target SNMP credential.
  * @param[out]  report_id   The report ID.
  *
  * @return Before forking: 1 task is active already, 3 failed to find task,
  */
-int
-run_slave_task (task_t task, int from, target_t target, config_t config,
-                credential_t ssh_credential,
-                credential_t smb_credential,
-                credential_t esxi_credential,
-                credential_t snmp_credential,
-                char **report_id)
+static int
+run_slave_task (task_t task, slave_t slave, int from, char **report_id)
 {
   int ret, pid;
   task_status_t run_status;
   report_t last_stopped_report;
   char title[128], *uuid;
+  target_t target;
+  config_t config;
+  credential_t ssh_credential, smb_credential, esxi_credential, snmp_credential;
+  port_list_t port_list;
+
+  assert (slave);
+
+  /* Setup the task info required for the scan. */
+
+  ret = check_available ("slave", slave, "get_slaves");
+  if (ret)
+    return ret;
+
+  ret = run_task_setup (task, &config, &target, &port_list, &ssh_credential,
+                        &smb_credential, &esxi_credential, &snmp_credential);
+  if (ret)
+    return ret;
 
   /* When resuming, check that the scanner supports it. */
 
@@ -4774,12 +4796,7 @@ run_slave_task (task_t task, int from, target_t target, config_t config,
  * @return Before forking: 1 task is active already, 3 failed to find task,
  */
 int
-run_otp_task (task_t task, scanner_t scanner, int from, target_t target,
-              config_t config, credential_t ssh_credential,
-              credential_t smb_credential,
-              credential_t esxi_credential,
-              credential_t snmp_credential,
-              char **report_id)
+run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
 {
   char title[128], *hosts, *port_range, *port, *uuid;
   gchar *plugins;
@@ -4788,6 +4805,17 @@ run_otp_task (task_t task, scanner_t scanner, int from, target_t target,
   GPtrArray *preference_files;
   task_status_t run_status;
   report_t last_stopped_report;
+  target_t target;
+  config_t config;
+  credential_t ssh_credential, smb_credential, esxi_credential, snmp_credential;
+  port_list_t port_list;
+
+  /* Setup the task info required for the scan. */
+
+  ret = run_task_setup (task, &config, &target, &port_list, &ssh_credential,
+                        &smb_credential, &esxi_credential, &snmp_credential);
+  if (ret)
+    return ret;
 
   /* When resuming, check that the scanner supports it. */
 
@@ -5351,38 +5379,6 @@ run_otp_task (task_t task, scanner_t scanner, int from, target_t target,
 }
 
 /**
- * @brief Check whether a resource is available.
- *
- * @param[in]   type        Type.
- * @param[out]  resource    Resource.
- * @param[out]  permission  Permission required for this operation.
- *
- * @return 0 success, -1 error, 99 permission denied.
- */
-static int
-check_available (const gchar *type, resource_t resource,
-                 const gchar *permission)
-{
-  if (resource)
-    {
-      gchar *uuid;
-      resource_t found;
-
-      uuid = resource_uuid (type, resource);
-      if (find_resource_with_permission (type, uuid, &found, permission, 0))
-        {
-          g_free (uuid);
-          return -1;
-        }
-      g_free (uuid);
-      if (found == 0)
-        return 99;
-    }
-
-  return 0;
-}
-
-/**
  * @brief Start or resume a task.
  *
  * Use \ref send_to_server to queue the task start sequence in the scanner
@@ -5409,12 +5405,8 @@ run_task (const char *task_id, char **report_id, int from,
           const char *permission)
 {
   task_t task;
-  target_t target;
   scanner_t scanner;
   slave_t slave;
-  config_t config;
-  credential_t ssh_credential, smb_credential, esxi_credential, snmp_credential;
-  port_list_t port_list;
   int ret;
 
   if (current_scanner_task)
@@ -5438,22 +5430,11 @@ run_task (const char *task_id, char **report_id, int from,
   if (scanner_type (scanner) != SCANNER_TYPE_OPENVAS)
     return run_osp_task (task);
 
-  /* Setup the task info required for the scan. */
-
-  ret = run_task_setup (task, &config, &target, &port_list, &ssh_credential,
-                        &smb_credential, &esxi_credential, &snmp_credential,
-                        &slave);
-  if (ret)
-    return ret;
-
+  slave = task_slave (task);
   if (slave)
-    return run_slave_task (task, from, target, config, ssh_credential,
-                           smb_credential, esxi_credential, snmp_credential,
-                           report_id);
+    return run_slave_task (task, slave, from, report_id);
 
-  return run_otp_task (task, scanner, from, target, config, ssh_credential,
-                       smb_credential, esxi_credential, snmp_credential,
-                       report_id);
+  return run_otp_task (task, scanner, from, report_id);
 }
 
 /**
