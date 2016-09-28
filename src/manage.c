@@ -459,6 +459,40 @@ type_is_scap (const char* type)
          || (strcasecmp (type, "ovaldef") == 0);
 }
 
+/**
+ * @brief Check whether a resource is available.
+ *
+ * @param[in]   type        Type.
+ * @param[out]  resource    Resource.
+ * @param[out]  permission  Permission required for this operation.
+ *
+ * @return 0 success, -1 error, 99 permission denied.
+ */
+static int
+check_available (const gchar *type, resource_t resource,
+                 const gchar *permission)
+{
+  if (resource)
+    {
+      gchar *uuid;
+      resource_t found;
+
+      uuid = resource_uuid (type, resource);
+      if (find_resource_with_permission (type, uuid, &found, permission, 0))
+        {
+          g_free (uuid);
+          return -1;
+        }
+      g_free (uuid);
+      if (found == 0)
+        return 99;
+
+      return 0;
+    }
+
+  return -1;
+}
+
 
 /* Severity related functions. */
 
@@ -4396,141 +4430,50 @@ run_task_setup (task_t task, config_t *config, target_t *target,
                 credential_t *smb_credential, credential_t *esxi_credential,
                 credential_t *snmp_credential)
 {
-  *config = task_config (task);
-  if (*config)
-    {
-      char *uuid;
-      config_t found;
+  int ret;
 
-      uuid = config_uuid (*config);
-      if (find_config_with_permission (uuid, &found, "get_configs"))
-        {
-          g_free (uuid);
-          return -1;
-        }
-      g_free (uuid);
-      if (found == 0)
-        return 99;
-    }
-  else
-    return -1;
+  *config = task_config (task);
+  ret = check_available ("config", *config, "get_configs");
+  if (ret)
+    return ret;
 
   *target = task_target (task);
-  if (*target)
-    {
-      char *uuid;
-      target_t found;
-
-      uuid = target_uuid (*target);
-      if (find_target_with_permission (uuid, &found, "get_targets"))
-        {
-          g_free (uuid);
-          return -1;
-        }
-      g_free (uuid);
-      if (found == 0)
-        return 99;
-    }
-  else
-    {
-      g_debug ("   task target is 0.\n");
-      return -2;
-    }
+  ret = check_available ("target", *target, "get_targets");
+  if (ret)
+    return ret;
 
   *port_list = target_port_list (*target);
-  if (*port_list)
-    {
-      char *uuid;
-      port_list_t found;
-
-      uuid = port_list_uuid (*port_list);
-      if (find_port_list_with_permission (uuid, &found, "get_port_lists"))
-        {
-          g_free (uuid);
-          return -1;
-        }
-      g_free (uuid);
-      if (found == 0)
-        return 99;
-    }
-  else
-    return -1;
+  ret = check_available ("port_list", *port_list, "get_port_lists");
+  if (ret)
+    return ret;
 
   *ssh_credential = target_ssh_credential (*target);
-  if (*ssh_credential)
-    {
-      char *uuid;
-      credential_t found;
-
-      uuid = credential_uuid (*ssh_credential);
-      if (find_credential_with_permission (uuid,
-                                           &found,
-                                           "get_credentials"))
-        {
-          g_free (uuid);
-          return -1;
-        }
-      g_free (uuid);
-      if (found == 0)
-        return 99;
-    }
+  if (*ssh_credential
+      && ((ret = check_available ("credential",
+                                  *ssh_credential,
+                                  "get_credentials"))))
+    return ret;
 
   *smb_credential = target_smb_credential (*target);
-  if (*smb_credential)
-    {
-      char *uuid;
-      credential_t found;
-
-      uuid = credential_uuid (*smb_credential);
-      if (find_credential_with_permission (uuid,
-                                           &found,
-                                           "get_credentials"))
-        {
-          g_free (uuid);
-          return -1;
-        }
-      g_free (uuid);
-      if (found == 0)
-        return 99;
-    }
+  if (*smb_credential
+      && ((ret = check_available ("credential",
+                                  *smb_credential,
+                                  "get_credentials"))))
+    return ret;
 
   *esxi_credential = target_esxi_credential (*target);
-  if (*esxi_credential)
-    {
-      char *uuid;
-      credential_t found;
-
-      uuid = credential_uuid (*esxi_credential);
-      if (find_credential_with_permission (uuid,
-                                           &found,
-                                           "get_credentials"))
-        {
-          g_free (uuid);
-          return -1;
-        }
-      g_free (uuid);
-      if (found == 0)
-        return 99;
-    }
+  if (*esxi_credential
+      && ((ret = check_available ("credential",
+                                  *esxi_credential,
+                                  "get_credentials"))))
+    return ret;
 
   *snmp_credential = target_credential (*target, "snmp");
-  if (*snmp_credential)
-    {
-      char *uuid;
-      credential_t found;
-
-      uuid = credential_uuid (*snmp_credential);
-      if (find_credential_with_permission (uuid,
-                                           &found,
-                                           "get_credentials"))
-        {
-          g_free (uuid);
-          return -1;
-        }
-      g_free (uuid);
-      if (found == 0)
-        return 99;
-    }
+  if (*snmp_credential
+      && ((ret = check_available ("credential",
+                                  *snmp_credential,
+                                  "get_credentials"))))
+    return ret;
 
   return 0;
 }
@@ -4593,38 +4536,6 @@ run_task_prepare_report (task_t task, char **report_id, int from,
       /* "from" must be 0, 1 or 2. */
       assert (0);
       return -1;
-    }
-
-  return 0;
-}
-
-/**
- * @brief Check whether a resource is available.
- *
- * @param[in]   type        Type.
- * @param[out]  resource    Resource.
- * @param[out]  permission  Permission required for this operation.
- *
- * @return 0 success, -1 error, 99 permission denied.
- */
-static int
-check_available (const gchar *type, resource_t resource,
-                 const gchar *permission)
-{
-  if (resource)
-    {
-      gchar *uuid;
-      resource_t found;
-
-      uuid = resource_uuid (type, resource);
-      if (find_resource_with_permission (type, uuid, &found, permission, 0))
-        {
-          g_free (uuid);
-          return -1;
-        }
-      g_free (uuid);
-      if (found == 0)
-        return 99;
     }
 
   return 0;
