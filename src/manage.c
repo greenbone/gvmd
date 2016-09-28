@@ -1990,12 +1990,7 @@ gchar *slave_report_uuid = NULL;
 /**
  * @brief Slave session.
  */
-gnutls_session_t *slave_session = NULL;
-
-/**
- * @brief Slave socket.
- */
-int *slave_socket = NULL;
+openvas_connection_t *slave_connection = NULL;
 
 /**
  * @brief Update the locally cached task progress from the slave.
@@ -2022,6 +2017,26 @@ update_slave_progress (entity_t get_tasks)
   set_report_slave_progress (current_report,
                              atoi (entity_text (entity)));
 
+  return 0;
+}
+
+/**
+ * @brief Authenticate with a slave.
+ *
+ * @param[in]  connection  Connection.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+connection_authenticate (openvas_connection_t *connection)
+{
+  omp_authenticate_info_opts_t auth_opts;
+
+  auth_opts = omp_authenticate_info_opts_defaults;
+  auth_opts.username = connection->username;
+  auth_opts.password = connection->password;
+  if (omp_authenticate_info_ext_c (connection, auth_opts))
+    return -1;
   return 0;
 }
 
@@ -2061,20 +2076,18 @@ slave_authenticate (gnutls_session_t *session, slave_t slave)
 /**
  * @brief Connect to a slave.
  *
- * @param[in]   slave    Slave.
- * @param[in]   host     Host.
- * @param[out]  port     Port.
- * @param[out]  socket   Socket.
- * @param[out]  session  Session.
+ * @param[in]  connection  Connection.
  *
  * @return 0 success, -1 error, 1 auth failure.
  */
 static int
-slave_connect (slave_t slave, const char *host, int port, int *socket,
-               gnutls_session_t *session)
+slave_connect (openvas_connection_t *connection)
 {
-  *socket = openvas_server_open (session, host, port);
-  if (*socket == -1)
+  connection->tls = 1;
+  connection->socket = openvas_server_open (&connection->session,
+                                            connection->host_string,
+                                            connection->port);
+  if (connection->socket == -1)
     {
       g_warning ("%s: failed to open connection to server", __FUNCTION__);
       return -1;
@@ -2083,14 +2096,14 @@ slave_connect (slave_t slave, const char *host, int port, int *socket,
   {
     int optval;
     optval = 1;
-    if (setsockopt (*socket,
+    if (setsockopt (connection->socket,
                     SOL_SOCKET, SO_KEEPALIVE,
                     &optval, sizeof (int)))
       {
         g_warning ("%s: failed to set SO_KEEPALIVE on slave socket: %s\n",
                    __FUNCTION__,
                    strerror (errno));
-        openvas_server_close (*socket, *session);
+        openvas_connection_close (connection);
         return -1;
       }
   }
@@ -2099,9 +2112,9 @@ slave_connect (slave_t slave, const char *host, int port, int *socket,
 
   /* Authenticate using the slave login. */
 
-  if (slave_authenticate (session, slave))
+  if (connection_authenticate (connection))
     {
-      openvas_server_close (*socket, *session);
+      openvas_connection_close (connection);
       return 1;
     }
 
@@ -2113,18 +2126,13 @@ slave_connect (slave_t slave, const char *host, int port, int *socket,
 /**
  * @brief Sleep then connect to slave.  Retry until success or giveup requested.
  *
- * @param[in]   slave    Slave.
- * @param[in]   host     Host.
- * @param[in]   port     Port.
- * @param[in]   task     Local task.
- * @param[out]  socket   Socket.
- * @param[out]  session  Session.
+ * @param[in]  connection  Connection.
+ * @param[in]  task        Local task.
  *
  * @return 0 success, 3 giveup.
  */
 static int
-slave_sleep_connect (slave_t slave, const char *host, int port, task_t task,
-                     int *socket, gnutls_session_t *session)
+slave_sleep_connect (openvas_connection_t *connection, task_t task)
 {
   do
     {
@@ -2142,7 +2150,7 @@ slave_sleep_connect (slave_t slave, const char *host, int port, task_t task,
               RUN_SLAVE_TASK_SLEEP_SECONDS);
       openvas_sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
     }
-  while (slave_connect (slave, host, port, socket, session));
+  while (slave_connect (connection));
   g_debug ("   %s: connected\n", __FUNCTION__);
   return 0;
 }
@@ -2245,11 +2253,11 @@ update_end_times (entity_t report)
 static void
 cleanup_slave ()
 {
-  if (slave_session && slave_socket)
+  if (slave_connection)
     {
       if (slave_task_uuid)
-        omp_stop_task (slave_session, slave_task_uuid);
-      openvas_server_close (*slave_socket, *slave_session);
+        omp_stop_task (&slave_connection->session, slave_task_uuid);
+      openvas_connection_close (slave_connection);
     }
 }
 
@@ -2300,8 +2308,7 @@ get_tasks_last_report (entity_t get_tasks)
  * @return 0 success, 1 giveup.
  */
 static int
-setup_ids (slave_t slave, gnutls_session_t *session, int *socket,
-           const char *host, int port, task_t task,
+setup_ids (openvas_connection_t *connection, task_t task,
            entity_t get_tasks, gchar **slave_config_uuid,
            gchar **slave_target_uuid, gchar **slave_port_list_uuid,
            gchar **slave_ssh_credential_uuid, gchar **slave_smb_credential_uuid,
@@ -2336,7 +2343,8 @@ setup_ids (slave_t slave, gnutls_session_t *session, int *socket,
           entity_t get_targets;
           int ret;
 
-          while ((ret = omp_get_targets (session, *slave_target_uuid, 0, 0,
+          while ((ret = omp_get_targets (&connection->session,
+                                         *slave_target_uuid, 0, 0,
                                          &get_targets)))
             {
               if (ret == 404)
@@ -2346,9 +2354,8 @@ setup_ids (slave_t slave, gnutls_session_t *session, int *socket,
                 }
               else if (ret)
                 {
-                  openvas_server_close (*socket, *session);
-                  ret = slave_sleep_connect (slave, host, port, task, socket,
-                                             session);
+                  openvas_connection_close (connection);
+                  ret = slave_sleep_connect (connection, task);
                   if (ret == 3)
                     return 1;
                 }
@@ -2394,12 +2401,8 @@ setup_ids (slave_t slave, gnutls_session_t *session, int *socket,
 /**
  * @brief Setup a task on a slave.
  *
- * @param[in]   slave       Slave.
- * @param[in]   session     Session.
- * @param[in]   socket      Socket.
+ * @param[in]   connection  Connection to slave.
  * @param[in]   name        Name of task on slave.
- * @param[in]   host        Slave host.
- * @param[in]   port        Slave host port.
  * @param[in]   task        The task.
  * @param[out]  target      Task target.
  * @param[out]  target_ssh_credential    Target SSH credential.
@@ -2411,8 +2414,7 @@ setup_ids (slave_t slave, gnutls_session_t *session, int *socket,
  * @return 0 success, 1 retry, 3 giveup.
  */
 static int
-slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
-             const char *name, const char *host, int port, task_t task,
+slave_setup (openvas_connection_t *connection, const char *name, task_t task,
              target_t target, credential_t target_ssh_credential,
              credential_t target_smb_credential,
              credential_t target_esxi_credential,
@@ -2426,8 +2428,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
 
   ret_fail = 1;
   del_opts = omp_delete_opts_ultimate_defaults;
-  slave_session = session;
-  slave_socket = socket;
+  slave_connection = connection;
 
   /* Register a cleanup callback to stop the slave task if the process is
    * killed, for example by a reboot.  On restart Manager will set the task
@@ -2459,7 +2460,8 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
 
           /* Check if the task is running or complete on the slave. */
 
-          while ((ret = omp_get_tasks (session, slave_task_uuid, 0, 0, &get_tasks)))
+          while ((ret = omp_get_tasks (&connection->session, slave_task_uuid,
+                                       0, 0, &get_tasks)))
             {
               if (ret == 404)
                 {
@@ -2472,8 +2474,8 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
                 }
               else if (ret)
                 {
-                  openvas_server_close (*socket, *session);
-                  ret = slave_sleep_connect (slave, host, port, task, socket, session);
+                  openvas_connection_close (connection);
+                  ret = slave_sleep_connect (connection, task);
                   if (ret == 3)
                     goto giveup;
                 }
@@ -2503,7 +2505,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
                       goto fail;
                     }
 
-                  setup_ids (slave, session, socket, host, port, task,
+                  setup_ids (connection, task,
                              get_tasks, &slave_config_uuid, &slave_target_uuid,
                              &slave_port_list_uuid,
                              &slave_ssh_credential_uuid,
@@ -2514,13 +2516,14 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
               else
                 {
                   /* Task is there, try resume it. */
-                  switch (omp_resume_task_report (session, slave_task_uuid,
+                  switch (omp_resume_task_report (&connection->session,
+                                                  slave_task_uuid,
                                                   &slave_report_uuid))
                     {
                       case 0:
                         if (slave_report_uuid == NULL)
                           goto fail;
-                        setup_ids (slave, session, socket, host, port, task,
+                        setup_ids (connection, task,
                                    get_tasks, &slave_config_uuid,
                                    &slave_target_uuid,
                                    &slave_port_list_uuid,
@@ -2592,7 +2595,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
                 private_key_copy = NULL;
               opts.comment = "Slave SSH credential created by Master";
 
-              ret = omp_create_lsc_credential_ext (session, opts,
+              ret = omp_create_lsc_credential_ext (&connection->session, opts,
                                                    &slave_ssh_credential_uuid);
               g_free (user_copy);
               g_free (password_copy);
@@ -2633,7 +2636,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
               opts.passphrase = password_copy;
               opts.comment = "Slave SMB credential created by Master";
 
-              ret = omp_create_lsc_credential_ext (session, opts,
+              ret = omp_create_lsc_credential_ext (&connection->session, opts,
                                                    &slave_smb_credential_uuid);
               g_free (smb_name);
               g_free (user_copy);
@@ -2673,7 +2676,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
               opts.passphrase = password_copy;
               opts.comment = "Slave ESXi credential created by Master";
 
-              ret = omp_create_lsc_credential_ext (session, opts,
+              ret = omp_create_lsc_credential_ext (&connection->session, opts,
                                                    &slave_esxi_credential_uuid);
               g_free (esxi_name);
               g_free (user_copy);
@@ -2733,7 +2736,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
               opts.privacy_algorithm = privacy_algorithm_copy;
               opts.comment = "Slave SNMP credential created by Master";
 
-              ret = omp_create_lsc_credential_ext (session, opts,
+              ret = omp_create_lsc_credential_ext (&connection->session, opts,
                                                    &slave_snmp_credential_uuid);
               g_free (snmp_name);
               g_free (community_copy);
@@ -2815,7 +2818,8 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           opts.reverse_lookup_unify
             = reverse_lookup_unify ? atoi (reverse_lookup_unify) : 0;
 
-          ret = omp_create_target_ext (session, opts, &slave_target_uuid);
+          ret = omp_create_target_ext (&connection->session, opts,
+                                       &slave_target_uuid);
           g_free (hosts_copy);
           g_free (exclude_hosts_copy);
           g_free (alive_tests_copy);
@@ -2829,7 +2833,8 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
               goto fail_snmp_credential;
             }
 
-          if (omp_get_targets (session, slave_target_uuid, 0, 0, &get_targets))
+          if (omp_get_targets (&connection->session, slave_target_uuid, 0, 0,
+                               &get_targets))
             goto fail_target;
           child = entity_child (get_targets, "target");
           if (child == NULL)
@@ -2872,7 +2877,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
         if (config == 0)
           goto fail_target;
 
-        if (openvas_server_sendf (session,
+        if (openvas_server_sendf (&connection->session,
                                   "<create_config>"
                                   "<get_configs_response"
                                   " status=\"200\""
@@ -2897,7 +2902,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
             timeout = config_timeout_iterator_value (&prefs);
 
             if (timeout && strlen (timeout)
-                && openvas_server_sendf (session,
+                && openvas_server_sendf (&connection->session,
                                          "<preference>"
                                          "<nvt oid=\"%s\">"
                                          "<name>%s</name>"
@@ -2921,7 +2926,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           {
             GString *buffer = g_string_new ("");
             buffer_config_preference_xml (buffer, &prefs, config, 0);
-            if (openvas_server_sendf (session, "%s", buffer->str))
+            if (openvas_server_sendf (&connection->session, "%s", buffer->str))
               {
                 cleanup_iterator (&prefs);
                 goto fail_target;
@@ -2930,7 +2935,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           }
         cleanup_iterator (&prefs);
 
-        if (openvas_server_sendf (session,
+        if (openvas_server_sendf (&connection->session,
                                   "</preferences>"
                                   "<nvt_selectors>"))
           {
@@ -2946,7 +2951,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           {
             int type = nvt_selector_iterator_type (&selectors);
             if (openvas_server_sendf
-                 (session,
+                 (&connection->session,
                   "<nvt_selector>"
                   "<name>%s</name>"
                   "<include>%i</include>"
@@ -2963,12 +2968,14 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           }
         cleanup_iterator (&selectors);
 
-        if (openvas_server_sendf (session,
+        if (openvas_server_sendf (&connection->session,
                                   "</nvt_selectors>"
                                   "</config>"
                                   "</get_configs_response>"
                                   "</create_config>")
-            || (omp_read_create_response (session, &slave_config_uuid) != 201))
+            || (omp_read_create_response (&connection->session,
+                                          &slave_config_uuid)
+                != 201))
           goto fail_target;
       }
 
@@ -3018,7 +3025,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
         opts.schedule_id = NULL;
         opts.slave_id = NULL;
 
-        ret = omp_create_task_ext (session, opts, &slave_task_uuid);
+        ret = omp_create_task_ext (&connection->session, opts, &slave_task_uuid);
         g_free (comment);
         g_free (max_checks);
         g_free (max_hosts);
@@ -3030,7 +3037,8 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
 
       /* Start the task on the slave. */
 
-      if (omp_start_task_report (session, slave_task_uuid, &slave_report_uuid))
+      if (omp_start_task_report (&connection->session, slave_task_uuid,
+                                 &slave_report_uuid))
         goto fail_task;
       if (slave_report_uuid == NULL)
         goto fail_stop_task;
@@ -3060,7 +3068,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           case TASK_STATUS_DELETE_REQUESTED:
           case TASK_STATUS_DELETE_ULTIMATE_REQUESTED:
           case TASK_STATUS_STOP_REQUESTED:
-            switch (omp_stop_task (session, slave_task_uuid))
+            switch (omp_stop_task (&connection->session, slave_task_uuid))
               {
                 case 0:
                   break;
@@ -3106,7 +3114,8 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
             break;
         }
 
-      ret = omp_get_tasks (session, slave_task_uuid, 0, 0, &get_tasks);
+      ret = omp_get_tasks (&connection->session, slave_task_uuid, 0, 0,
+                           &get_tasks);
       if (ret == 404)
         {
           /* Resource Missing. */
@@ -3116,8 +3125,8 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
         }
       else if (ret)
         {
-          openvas_server_close (*socket, *session);
-          ret = slave_sleep_connect (slave, host, port, task, socket, session);
+          openvas_connection_close (connection);
+          ret = slave_sleep_connect (connection, task);
           if (ret == 3)
             goto giveup;
           continue;
@@ -3160,11 +3169,12 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
                            ? 0
                            : 1);
 
-          ret = omp_get_report_ext (session, opts, &get_report);
+          ret = omp_get_report_ext (&connection->session, opts, &get_report);
           if (ret)
             {
               opts.format_id = "d5da9f67-8551-4e51-807b-b6a873d70e34";
-              ret2 = omp_get_report_ext (session, opts, &get_report);
+              ret2 = omp_get_report_ext (&connection->session, opts,
+                                         &get_report);
             }
           g_free (opts.filter);
           if ((ret == 404) && (ret2 == 404))
@@ -3177,9 +3187,8 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           if (ret && ret2)
             {
               free_entity (get_tasks);
-              openvas_server_close (*socket, *session);
-              ret = slave_sleep_connect (slave, host, port, task, socket,
-                                         session);
+              openvas_connection_close (connection);
+              ret = slave_sleep_connect (connection, task);
               if (ret == 3)
                 goto giveup;
               continue;
@@ -3251,22 +3260,22 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
 
   current_scanner_task = (task_t) 0;
 
-  omp_delete_task_ext (session, slave_task_uuid, del_opts);
+  omp_delete_task_ext (&connection->session, slave_task_uuid, del_opts);
   set_report_slave_task_uuid (current_report, "");
-  omp_delete_config_ext (session, slave_config_uuid, del_opts);
-  omp_delete_target_ext (session, slave_target_uuid, del_opts);
-  omp_delete_port_list_ext (session, slave_port_list_uuid, del_opts);
+  omp_delete_config_ext (&connection->session, slave_config_uuid, del_opts);
+  omp_delete_target_ext (&connection->session, slave_target_uuid, del_opts);
+  omp_delete_port_list_ext (&connection->session, slave_port_list_uuid, del_opts);
   if (slave_ssh_credential_uuid)
-    omp_delete_lsc_credential_ext (session, slave_ssh_credential_uuid,
+    omp_delete_lsc_credential_ext (&connection->session, slave_ssh_credential_uuid,
                                    del_opts);
   if (slave_smb_credential_uuid)
-    omp_delete_lsc_credential_ext (session, slave_smb_credential_uuid,
+    omp_delete_lsc_credential_ext (&connection->session, slave_smb_credential_uuid,
                                    del_opts);
   if (slave_esxi_credential_uuid)
-    omp_delete_lsc_credential_ext (session, slave_esxi_credential_uuid,
+    omp_delete_lsc_credential_ext (&connection->session, slave_esxi_credential_uuid,
                                    del_opts);
   if (slave_snmp_credential_uuid)
-    omp_delete_lsc_credential_ext (session, slave_snmp_credential_uuid,
+    omp_delete_lsc_credential_ext (&connection->session, slave_snmp_credential_uuid,
                                    del_opts);
  succeed_stopped:
   free (slave_task_uuid);
@@ -3287,59 +3296,56 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
   slave_smb_credential_uuid = NULL;
   free (slave_ssh_credential_uuid);
   slave_ssh_credential_uuid = NULL;
-  openvas_server_close (*socket, *session);
-  slave_session = NULL;
-  slave_socket = NULL;
+  openvas_connection_close (connection);
+  slave_connection = NULL;
   g_debug ("   %s: succeed\n", __FUNCTION__);
   return 0;
 
  fail_stop_task:
-  omp_stop_task (session, slave_task_uuid);
+  omp_stop_task (&connection->session, slave_task_uuid);
   free (slave_report_uuid);
  fail_task:
-  omp_delete_task_ext (session, slave_task_uuid, del_opts);
+  omp_delete_task_ext (&connection->session, slave_task_uuid, del_opts);
   set_report_slave_task_uuid (current_report, "");
   free (slave_task_uuid);
  fail_config:
-  omp_delete_config_ext (session, slave_config_uuid, del_opts);
+  omp_delete_config_ext (&connection->session, slave_config_uuid, del_opts);
   free (slave_config_uuid);
  fail_target:
-  omp_delete_target_ext (session, slave_target_uuid, del_opts);
+  omp_delete_target_ext (&connection->session, slave_target_uuid, del_opts);
   free (slave_target_uuid);
-  omp_delete_port_list_ext (session, slave_port_list_uuid, del_opts);
+  omp_delete_port_list_ext (&connection->session, slave_port_list_uuid, del_opts);
   free (slave_port_list_uuid);
  fail_snmp_credential:
   if (slave_snmp_credential_uuid)
-    omp_delete_lsc_credential_ext (session, slave_snmp_credential_uuid,
+    omp_delete_lsc_credential_ext (&connection->session, slave_snmp_credential_uuid,
                                    del_opts);
   free (slave_snmp_credential_uuid);
  fail_esxi_credential:
   if (slave_esxi_credential_uuid)
-    omp_delete_lsc_credential_ext (session, slave_esxi_credential_uuid,
+    omp_delete_lsc_credential_ext (&connection->session, slave_esxi_credential_uuid,
                                    del_opts);
   free (slave_esxi_credential_uuid);
  fail_smb_credential:
   if (slave_smb_credential_uuid)
-    omp_delete_lsc_credential_ext (session, slave_smb_credential_uuid,
+    omp_delete_lsc_credential_ext (&connection->session, slave_smb_credential_uuid,
                                    del_opts);
   free (slave_smb_credential_uuid);
  fail_ssh_credential:
   if (slave_ssh_credential_uuid)
-    omp_delete_lsc_credential_ext (session, slave_ssh_credential_uuid,
+    omp_delete_lsc_credential_ext (&connection->session, slave_ssh_credential_uuid,
                                    del_opts);
   free (slave_ssh_credential_uuid);
  fail:
   g_debug ("   %s: fail (%i)\n", __FUNCTION__, ret_fail);
-  openvas_server_close (*socket, *session);
-  slave_session = NULL;
-  slave_socket = NULL;
+  openvas_connection_close (connection);
+  slave_connection = NULL;
   return ret_fail;
 
  giveup:
   g_debug ("   %s: giveup (%i)\n", __FUNCTION__, ret_giveup);
-  openvas_server_close (*socket, *session);
-  slave_session = NULL;
-  slave_socket = NULL;
+  openvas_connection_close (connection);
+  slave_connection = NULL;
   return ret_giveup;
 }
 
@@ -3365,10 +3371,10 @@ handle_slave_task (task_t task, target_t target,
                    report_t last_stopped_report)
 {
   slave_t slave;
-  char *host, *name, *uuid;
-  int port, socket, ret;
-  gnutls_session_t session;
+  char *name, *uuid;
+  int ret;
   gchar *slave_task_name;
+  openvas_connection_t connection;
 
   /* Some of the cases in here must write to the session outside an open
    * statement.  For example, the omp_create_lsc_credential must come after
@@ -3389,19 +3395,20 @@ handle_slave_task (task_t task, target_t target,
       return -1;
     }
 
-  host = slave_host (slave);
-  if (host == NULL)
+  connection.host_string = slave_host (slave);
+  if (connection.host_string == NULL)
     {
       g_warning ("%s: Slave has no host", __FUNCTION__);
       return -1;
     }
 
-  g_debug ("   %s: host: %s\n", __FUNCTION__, host);
+  g_debug ("   %s: connection.host: %s\n", __FUNCTION__,
+           connection.host_string);
 
-  port = slave_port (slave);
-  if (port == -1)
+  connection.port = slave_port (slave);
+  if (connection.port == -1)
     {
-      free (host);
+      free (connection.host_string);
       g_warning ("%s: Slave has no port", __FUNCTION__);
       return -1;
     }
@@ -3410,15 +3417,15 @@ handle_slave_task (task_t task, target_t target,
   name = slave_name (slave);
   report_set_slave_uuid (current_report, uuid);
   report_set_slave_name (current_report, name);
-  report_set_slave_port (current_report, port);
-  report_set_slave_host (current_report, host);
+  report_set_slave_port (current_report, connection.port);
+  report_set_slave_host (current_report, connection.host_string);
   free (uuid);
   free (name);
 
   uuid = openvas_uuid_make ();
   if (uuid == NULL)
     {
-      free (host);
+      free (connection.host_string);
       g_warning ("%s: Failed to make UUID", __FUNCTION__);
       return -1;
     }
@@ -3426,7 +3433,8 @@ handle_slave_task (task_t task, target_t target,
   name = task_name (task);
   if (name == NULL)
     {
-      free (host);
+      free (connection.host_string);
+      free (uuid);
       g_warning ("%s: Failed to get task name", __FUNCTION__);
       return -1;
     }
@@ -3434,7 +3442,27 @@ handle_slave_task (task_t task, target_t target,
   free (name);
   free (uuid);
 
-  while ((ret = slave_connect (slave, host, port, &socket, &session)))
+  connection.username = slave_login (slave);
+  if (connection.username == NULL)
+    {
+      free (connection.host_string);
+      g_free (slave_task_name);
+      g_warning ("%s: Slave has no login username", __FUNCTION__);
+      return -1;
+    }
+
+  connection.password = slave_password (slave);
+  if (connection.password == NULL)
+    {
+      free (connection.username);
+      free (connection.host_string);
+      g_free (slave_task_name);
+      g_warning ("%s: Slave has no login password", __FUNCTION__);
+      return -1;
+    }
+
+  connection.tls = 1;
+  while ((ret = slave_connect (&connection)))
     if (ret == 1)
       {
         result_t result;
@@ -3442,9 +3470,9 @@ handle_slave_task (task_t task, target_t target,
 
         /* Login failed. */
 
-        port_string = g_strdup_printf ("%i", port);
+        port_string = g_strdup_printf ("%i", connection.port);
         result = make_result (task,
-                              host,
+                              connection.host_string,
                               port_string,
                               /* NVT: Global variable settings. */
                               "1.3.6.1.4.1.25623.1.0.12288",
@@ -3454,7 +3482,10 @@ handle_slave_task (task_t task, target_t target,
         if (current_report)
           report_add_result (current_report, result);
 
-        free (host);
+        free (connection.host_string);
+        free (connection.username);
+        free (connection.password);
+        g_free (slave_task_name);
         return 1;
       }
     else
@@ -3463,7 +3494,9 @@ handle_slave_task (task_t task, target_t target,
             || (task_run_status (task) == TASK_STATUS_STOP_REQUESTED))
           {
             set_task_run_status (task, TASK_STATUS_STOPPED);
-            free (host);
+            free (connection.host_string);
+            free (connection.username);
+            free (connection.password);
             g_free (slave_task_name);
             return 0;
           }
@@ -3472,13 +3505,13 @@ handle_slave_task (task_t task, target_t target,
 
   while (1)
     {
-      ret = slave_setup (slave, &session, &socket, slave_task_name, host, port,
+      ret = slave_setup (&connection, slave_task_name,
                          task, target, target_ssh_credential,
                          target_smb_credential, target_esxi_credential,
                          target_snmp_credential, last_stopped_report);
       if (ret == 1)
         {
-          ret = slave_sleep_connect (slave, host, port, task, &socket, &session);
+          ret = slave_sleep_connect (&connection, task);
           if (ret == 3)
             /* User requested "giveup". */
             break;
@@ -3488,7 +3521,9 @@ handle_slave_task (task_t task, target_t target,
     }
 
   current_scanner_task = (task_t) 0;
-  free (host);
+  free (connection.host_string);
+  free (connection.username);
+  free (connection.password);
   g_free (slave_task_name);
 
   return 0;

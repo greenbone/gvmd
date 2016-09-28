@@ -1,3 +1,17 @@
+2016-09-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Pass slave information to the task running functions inside an
+	openvas_connection_t instead of passing a slave_t and getting the info
+	using the slave_t.  This opens the way to using the same task running
+	functions for OMP scanners.
+
+	* src/manage.c (slave_session, slave_socket): Remove.
+	(slave_connection): New variable.
+	(connection_authenticate): New function.
+	(slave_connect, slave_sleep_connect, setup_ids, slave_setup)
+	(handle_slave_task): Use connection instead of multiple args.
+	(cleanup_slave): Use connection instead of session and socket.
+
 2016-09-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (modify_schedule): Calculate schedule_next_time for
