@@ -1,3 +1,9 @@
+2016-09-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (handle_slave_task): Expect connection and slave details
+	as arguments, instead of getting them from the slave_t.
+	(run_slave_task): Pass details down to slave.
+
 2016-09-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Pass slave information to the task running functions inside an
