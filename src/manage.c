@@ -5408,13 +5408,6 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
 
   current_scanner_task = task;
 
-#if 0
-  /** @todo This is what the file based tasks did. */
-  if (task->open_ports) g_array_free (task->open_ports, TRUE);
-  task->open_ports = g_array_new (FALSE, FALSE, (guint) sizeof (port_t));
-  task->open_ports_size = 0;
-#endif
-
   return 2;
 }
 

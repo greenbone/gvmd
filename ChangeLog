@@ -1,5 +1,9 @@
 2016-09-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (run_otp_task): Remove old comment about open ports.
+
+2016-09-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add ability to start OMP scanner tasks.
 
 	* src/manage.c (slave_connect): Improve message.
