@@ -3361,7 +3361,7 @@ slave_setup (openvas_connection_t *connection, const char *name, task_t task,
  * @param[in]  last_stopped_report      Last stopped report if any, else 0.
  * @param[in]  connection               Connection, with slave info.
  * @param[in]  slave_id                 UUID of slave.
- * @param[in]  name                     Name of slave.
+ * @param[in]  slave_name               Name of slave.
  *
  * @return 0 success, 1 login failed, -1 error.
  */
@@ -4519,88 +4519,33 @@ run_task_prepare_report (task_t task, char **report_id, int from,
 }
 
 /**
- * @brief Start a task on a slave.
+ * @brief Start a slave/OMP task.
  *
- * @param[in]   task        The task.
- * @param[in]   slave       Slave to run task on.
- * @param[in]   from        0 start from beginning, 1 continue from stopped, 2
- *                          continue if stopped else start from beginning.
- * @param[out]  report_id   The report ID.
+ * @param[in]  task        The task.
+ * @param[in]  from        0 start from beginning, 1 continue from stopped, 2
+ *                         continue if stopped else start from beginning.
+ * @param[out] report_id   The report ID.
+ * @param[in]  connection  Connection, with slave info.
+ * @param[in]  slave_id    UUID of slave.
+ * @param[in]  slave_name  Name of slave.
  *
  * @return Before forking: 1 task is active already, 3 failed to find task,
  *         -1 error.
  */
 static int
-run_slave_task (task_t task, slave_t slave, int from, char **report_id)
+run_slave_or_omp_task (task_t task, int from, char **report_id,
+                       openvas_connection_t *connection,
+                       const gchar *slave_id,
+                       const gchar *slave_name)
 {
   int ret, pid;
   task_status_t run_status;
   report_t last_stopped_report;
-  char title[128], *uuid, *slave_id, *name;
+  char title[128], *uuid;
   target_t target;
   config_t config;
   credential_t ssh_credential, smb_credential, esxi_credential, snmp_credential;
   port_list_t port_list;
-  openvas_connection_t connection;
-
-  assert (slave);
-
-  g_debug ("   %s: slave: %llu\n", __FUNCTION__, slave);
-
-  /* Setup the task info required for the scan. */
-
-  ret = check_available ("slave", slave, "get_slaves");
-  if (ret)
-    return ret;
-
-  connection.host_string = slave_host (slave);
-  if (connection.host_string == NULL)
-    {
-      g_warning ("%s: Slave has no host", __FUNCTION__);
-      return -1;
-    }
-
-  g_debug ("   %s: connection.host: %s\n", __FUNCTION__,
-           connection.host_string);
-
-  connection.port = slave_port (slave);
-  if (connection.port == -1)
-    {
-      free (connection.host_string);
-      g_warning ("%s: Slave has no port", __FUNCTION__);
-      return -1;
-    }
-
-  connection.username = slave_login (slave);
-  if (connection.username == NULL)
-    {
-      free (connection.host_string);
-      g_warning ("%s: Slave has no login username", __FUNCTION__);
-      return -1;
-    }
-
-  connection.password = slave_password (slave);
-  if (connection.password == NULL)
-    {
-      free (connection.username);
-      free (connection.host_string);
-      g_warning ("%s: Slave has no login password", __FUNCTION__);
-      return -1;
-    }
-
-  slave_id = slave_uuid (slave);
-  name = slave_name (slave);
-
-  connection.tls = 1;
-
-#if 0
-  // FIX every return
-  free (connection.host_string);
-  free (connection.username);
-  free (connection.password);
-  free (slave_id);
-  free (name);
-#endif
 
   ret = run_task_setup (task, &config, &target, &port_list, &ssh_credential,
                         &smb_credential, &esxi_credential, &snmp_credential);
@@ -4701,7 +4646,8 @@ run_slave_task (task_t task, slave_t slave, int from, char **report_id)
 
   switch (handle_slave_task (task, target, ssh_credential, smb_credential,
                              esxi_credential, snmp_credential,
-                             last_stopped_report, &connection, slave_id, name))
+                             last_stopped_report, connection, slave_id,
+                             slave_name))
     {
       case 0:
         break;
@@ -4717,6 +4663,87 @@ run_slave_task (task_t task, slave_t slave, int from, char **report_id)
         exit (EXIT_FAILURE);
     }
   exit (EXIT_SUCCESS);
+}
+
+/**
+ * @brief Start a task on a slave.
+ *
+ * @param[in]   task        The task.
+ * @param[in]   slave       Slave to run task on.
+ * @param[in]   from        0 start from beginning, 1 continue from stopped, 2
+ *                          continue if stopped else start from beginning.
+ * @param[out]  report_id   The report ID.
+ *
+ * @return Before forking: 1 task is active already, 3 failed to find task,
+ *         -1 error.
+ */
+static int
+run_slave_task (task_t task, slave_t slave, int from, char **report_id)
+{
+  int ret;
+  openvas_connection_t connection;
+  char *slave_id, *name;
+
+  assert (slave);
+
+  g_debug ("   %s: slave: %llu\n", __FUNCTION__, slave);
+
+  /* Setup the task info required for the scan. */
+
+  ret = check_available ("slave", slave, "get_slaves");
+  if (ret)
+    return ret;
+
+  connection.host_string = slave_host (slave);
+  if (connection.host_string == NULL)
+    {
+      g_warning ("%s: Slave has no host", __FUNCTION__);
+      return -1;
+    }
+
+  g_debug ("   %s: connection.host: %s\n", __FUNCTION__,
+           connection.host_string);
+
+  connection.port = slave_port (slave);
+  if (connection.port == -1)
+    {
+      free (connection.host_string);
+      g_warning ("%s: Slave has no port", __FUNCTION__);
+      return -1;
+    }
+
+  connection.username = slave_login (slave);
+  if (connection.username == NULL)
+    {
+      free (connection.host_string);
+      g_warning ("%s: Slave has no login username", __FUNCTION__);
+      return -1;
+    }
+
+  connection.password = slave_password (slave);
+  if (connection.password == NULL)
+    {
+      free (connection.username);
+      free (connection.host_string);
+      g_warning ("%s: Slave has no login password", __FUNCTION__);
+      return -1;
+    }
+
+  slave_id = slave_uuid (slave);
+  name = slave_name (slave);
+
+  connection.tls = 1;
+
+  ret = run_slave_or_omp_task (task, from, report_id, &connection, slave_id,
+                               name);
+
+  free (connection.host_string);
+  free (connection.username);
+  free (connection.password);
+  free (slave_id);
+  free (name);
+
+  return ret;
 }
 
 /**
