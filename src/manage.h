@@ -244,11 +244,13 @@ typedef enum
  * These numbers are used in the database, so if the number associated with
  * any symbol changes then a migrator must be added to update existing data.
  */
-typedef enum scanner_type {
+typedef enum scanner_type
+{
   SCANNER_TYPE_NONE = 0,
   SCANNER_TYPE_OSP,
   SCANNER_TYPE_OPENVAS,
   SCANNER_TYPE_CVE,
+  SCANNER_TYPE_OMP,
   SCANNER_TYPE_MAX,
 } scanner_type_t;
 
@@ -2650,6 +2652,12 @@ scanner_key_pub (scanner_t);
 
 char *
 scanner_key_priv (scanner_t);
+
+char*
+scanner_login (scanner_t);
+
+char*
+scanner_password (scanner_t);
 
 int
 scanner_count (const get_data_t *);

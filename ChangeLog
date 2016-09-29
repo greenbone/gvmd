@@ -1,5 +1,19 @@
 2016-09-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add ability to start OMP scanner tasks.
+
+	* src/manage.c (slave_connect): Improve message.
+	(run_omp_task): New function.
+	(run_slave_task): Remove old comment.
+	(run_task): Add OMP scanner case.
+
+	* src/manage_sql.c (scanner_login, scanner_password): New functions.
+
+	* src/manage.h: Add headers accordingly.
+	(scanner_type_t): Add SCANNER_TYPE_OMP.
+
+2016-09-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (run_slave_or_omp_task): New function.  Body from
 	run_slave_task.
 	(run_slave_task): Do only the slave specific parts, and let

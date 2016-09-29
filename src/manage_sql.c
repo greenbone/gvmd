@@ -45584,6 +45584,66 @@ scanner_key_priv (scanner_t scanner)
 }
 
 /**
+ * @brief Return the login associated with a scanner.
+ *
+ * @param[in]  scanner  Scanner.
+ *
+ * @return Newly allocated login if available, else NULL.
+ */
+char*
+scanner_login (scanner_t scanner)
+{
+  return sql_string ("SELECT credentials_data.value"
+                     " FROM scanners, credentials_data"
+                     " WHERE scanners.id = %llu"
+                     "   AND credentials_data.credential = scanners.credential"
+                     "   AND credentials_data.type = 'username';",
+                     scanner);
+}
+
+/**
+ * @brief Return the password associated with a scanner.
+ *
+ * @param[in]  scanner  Scanner.
+ *
+ * @return Newly allocated password if available, else NULL.
+ */
+char*
+scanner_password (scanner_t scanner)
+{
+  gchar *password;
+
+  password = sql_string ("SELECT credentials_data.value"
+                         " FROM scanners, credentials_data"
+                         " WHERE scanners.id = %llu"
+                         "   AND credentials_data.credential"
+                         "         = scanners.credential"
+                         "   AND credentials_data.type = 'password';",
+                         scanner);
+
+  if (password == NULL)
+    {
+      gchar *secret;
+      lsc_crypt_ctx_t crypt_ctx;
+      crypt_ctx = lsc_crypt_new ();
+
+      secret = sql_string ("SELECT credentials_data.value"
+                           " FROM scanners, credentials_data"
+                           " WHERE scanners.id = %llu"
+                           "   AND credentials_data.credential"
+                           "         = scanners.credential"
+                           "   AND credentials_data.type = 'secret';",
+                           scanner);
+
+      password = g_strdup (lsc_crypt_get_password (crypt_ctx, secret));
+      lsc_crypt_release (crypt_ctx);
+      g_free (secret);
+    }
+
+  return password;
+}
+
+/**
  * @brief Count number of scanners.
  *
  * @param[in]  get  GET params.

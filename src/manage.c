@@ -2089,7 +2089,10 @@ slave_connect (openvas_connection_t *connection)
                                             connection->port);
   if (connection->socket == -1)
     {
-      g_warning ("%s: failed to open connection to server", __FUNCTION__);
+      g_warning ("%s: failed to open connection to %s on %i",
+                 __FUNCTION__,
+                 connection->host_string,
+                 connection->port);
       return -1;
     }
 
@@ -4666,6 +4669,77 @@ run_slave_or_omp_task (task_t task, int from, char **report_id,
 }
 
 /**
+ * @brief Start a task on an OMP scanner.
+ *
+ * @param[in]   task        The task.
+ * @param[in]   slave       Slave to run task on.
+ * @param[in]   from        0 start from beginning, 1 continue from stopped, 2
+ *                          continue if stopped else start from beginning.
+ * @param[out]  report_id   The report ID.
+ *
+ * @return Before forking: 1 task is active already, 3 failed to find task,
+ *         -1 error.
+ */
+static int
+run_omp_task (task_t task, scanner_t scanner, int from, char **report_id)
+{
+  int ret;
+  openvas_connection_t connection;
+  char *scanner_id, *name;
+
+  connection.host_string = scanner_host (scanner);
+  if (connection.host_string == NULL)
+    {
+      g_warning ("%s: Scanner has no host", __FUNCTION__);
+      return -1;
+    }
+
+  g_debug ("   %s: connection.host: %s\n", __FUNCTION__,
+           connection.host_string);
+
+  connection.port = scanner_port (scanner);
+  if (connection.port == -1)
+    {
+      free (connection.host_string);
+      g_warning ("%s: Scanner has no port", __FUNCTION__);
+      return -1;
+    }
+
+  connection.username = scanner_login (scanner);
+  if (connection.username == NULL)
+    {
+      free (connection.host_string);
+      g_warning ("%s: Scanner has no login username", __FUNCTION__);
+      return -1;
+    }
+
+  connection.password = scanner_password (scanner);
+  if (connection.password == NULL)
+    {
+      free (connection.username);
+      free (connection.host_string);
+      g_warning ("%s: Scanner has no login password", __FUNCTION__);
+      return -1;
+    }
+
+  scanner_id = scanner_uuid (scanner);
+  name = scanner_name (scanner);
+
+  connection.tls = 1;
+
+  ret = run_slave_or_omp_task (task, from, report_id, &connection, scanner_id,
+                               name);
+
+  free (connection.host_string);
+  free (connection.username);
+  free (connection.password);
+  free (scanner_id);
+  free (name);
+
+  return ret;
+}
+
+/**
  * @brief Start a task on a slave.
  *
  * @param[in]   task        The task.
@@ -4687,8 +4761,6 @@ run_slave_task (task_t task, slave_t slave, int from, char **report_id)
   assert (slave);
 
   g_debug ("   %s: slave: %llu\n", __FUNCTION__, slave);
-
-  /* Setup the task info required for the scan. */
 
   ret = check_available ("slave", slave, "get_slaves");
   if (ret)
@@ -5394,6 +5466,9 @@ run_task (const char *task_id, char **report_id, int from,
 
   if (scanner_type (scanner) == SCANNER_TYPE_CVE)
     return run_cve_task (task);
+
+  if (scanner_type (scanner) == SCANNER_TYPE_OMP)
+    return run_omp_task (task, scanner, from, report_id);
 
   if (scanner_type (scanner) != SCANNER_TYPE_OPENVAS)
     return run_osp_task (task);
