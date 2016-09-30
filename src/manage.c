@@ -4687,6 +4687,8 @@ run_omp_task (task_t task, scanner_t scanner, int from, char **report_id)
   openvas_connection_t connection;
   char *scanner_id, *name;
 
+  memset (&connection, 0, sizeof (connection));
+
   connection.host_string = scanner_host (scanner);
   if (connection.host_string == NULL)
     {
@@ -4759,6 +4761,8 @@ run_slave_task (task_t task, slave_t slave, int from, char **report_id)
   char *slave_id, *name;
 
   assert (slave);
+
+  memset (&connection, 0, sizeof (connection));
 
   g_debug ("   %s: slave: %llu\n", __FUNCTION__, slave);
 

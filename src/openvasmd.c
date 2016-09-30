@@ -462,6 +462,7 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
             }
           /* Reopen the database (required after fork). */
           cleanup_manage_process (FALSE);
+          memset (&client_connection, 0, sizeof (client_connection));
           client_connection.tls = use_tls;
           client_connection.socket = client_socket;
           client_connection.session = client_session;
@@ -618,6 +619,7 @@ fork_connection_internal (openvas_connection_t *client_connection, gchar* uuid,
         g_debug ("%s: serving OMP to client on socket %i",
                  __FUNCTION__, parent_client_socket);
 
+        memset (client_connection, 0, sizeof (*client_connection));
         client_connection->tls = use_tls;
         client_connection->socket = parent_client_socket;
         client_connection->session = client_session;
@@ -648,6 +650,7 @@ fork_connection_internal (openvas_connection_t *client_connection, gchar* uuid,
         /** @todo Give the parent time to prepare. */
         openvas_sleep (5);
 
+        memset (client_connection, 0, sizeof (*client_connection));
         client_connection->tls = use_tls;
         client_connection->socket = sockets[1];
 

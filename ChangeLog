@@ -1,5 +1,13 @@
 2016-09-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (run_omp_task, run_slave_task): Init connection, at
+	least so that credentials are only freed when set.
+
+	* src/openvasmd.c (accept_and_maybe_fork, fork_connection_internal): Init
+	connection.
+
+2016-09-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (run_otp_task): Remove old comment about open ports.
 
 2016-09-29  Matthew Mundell <matthew.mundell@greenbone.net>
