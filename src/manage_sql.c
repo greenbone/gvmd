@@ -129,7 +129,8 @@ const char *message_type_threat (const char *);
 
 int delete_reports (task_t);
 
-int delete_slave_task (slave_t, const char *);
+int delete_slave_task (const char *, int, const char *, const char *,
+                       const char *);
 
 int
 set_certs (const char *, const char *, const char *);
@@ -19814,16 +19815,58 @@ report_slave_host (report_t report)
 }
 
 /**
- * @brief Return the host of a report's slave.
+ * @brief Return the port of a report's slave.
  *
  * @param[in]  report  Report.
  *
- * @return Slave UUID.
+ * @return Slave port.
  */
 char*
 report_slave_port (report_t report)
 {
   return sql_string ("SELECT slave_port FROM reports WHERE id = %llu;",
+                     report);
+}
+
+/**
+ * @brief Return the port of a report's slave.
+ *
+ * @param[in]  report  Report.
+ *
+ * @return Slave port.
+ */
+int
+report_slave_port_int (report_t report)
+{
+  return sql_int ("SELECT slave_port FROM reports WHERE id = %llu;",
+                  report);
+}
+
+/**
+ * @brief Return the username of a report's slave.
+ *
+ * @param[in]  report  Report.
+ *
+ * @return Slave username.
+ */
+char*
+report_slave_username (report_t report)
+{
+  return sql_string ("SELECT slave_username FROM reports WHERE id = %llu;",
+                     report);
+}
+
+/**
+ * @brief Return the password of a report's slave.
+ *
+ * @param[in]  report  Report.
+ *
+ * @return Slave password.
+ */
+char*
+report_slave_password (report_t report)
+{
+  return sql_string ("SELECT slave_password FROM reports WHERE id = %llu;",
                      report);
 }
 
@@ -19904,6 +19947,40 @@ report_set_slave_port (report_t report, int port)
   sql ("UPDATE reports SET slave_port = %i WHERE id = %llu;",
        port,
        report);
+}
+
+/**
+ * @brief Set the username of the slave of a report.
+ *
+ * @param[in]  report  Report.
+ * @param[in]  host    Host.
+ */
+void
+report_set_slave_username (report_t report, const gchar *username)
+{
+  gchar *quoted_username;
+  quoted_username = sql_quote (username);
+  sql ("UPDATE reports SET slave_username = '%s' WHERE id = %llu;",
+       quoted_username,
+       report);
+  g_free (quoted_username);
+}
+
+/**
+ * @brief Set the password of the slave of a report.
+ *
+ * @param[in]  report  Report.
+ * @param[in]  host    Host.
+ */
+void
+report_set_slave_password (report_t report, const gchar *password)
+{
+  gchar *quoted_password;
+  quoted_password = sql_quote (password);
+  sql ("UPDATE reports SET slave_password = '%s' WHERE id = %llu;",
+       quoted_password,
+       report);
+  g_free (quoted_password);
 }
 
 /**
@@ -23257,18 +23334,28 @@ delete_report_internal (report_t report)
   /* Remove any associated slave task. */
 
   slave_task_uuid = report_slave_task_uuid (report);
+  g_debug ("%s: slave_task_uuid: %s", __FUNCTION__, slave_task_uuid);
   if (slave_task_uuid)
     {
-      slave_t slave;
+      char *host, *username, *password;
+      int port;
 
       /* A stopped report leaves the task on the slave.  Try delete the task. */
 
-      /** @todo Store slave on report, in case task is assigned new slave. */
-      /** @todo Even that may fail because the slave itself may change. */
-      slave = task_slave (task);
-      /* For now just forget about it if the slave is 0. */
-      if (slave)
-        delete_slave_task (slave, slave_task_uuid);
+      /* Try with values stored on report. */
+      host = report_slave_host (report);
+      port = report_slave_port_int (report);
+      username = report_slave_username (report);
+      password = report_slave_password (report);
+      if (host && username && password)
+        delete_slave_task (host, port, username, password, slave_task_uuid);
+      g_free (host);
+      g_free (username);
+      g_free (password);
+
+      /* TODO If that fails, try with the current values from the slave/scanner
+       *      stored on the report.  And if that fails, try with the values from
+       *      the current slave of the task. */
     }
 
   /* Remove the report data. */
@@ -45267,7 +45354,8 @@ DEF_ACCESS (scanner_iterator_key_pub, GET_ITERATOR_COLUMN_COUNT + 7);
  * @return Scanner private key, or NULL if iteration is complete. Freed by
  *         cleanup_iterator.
  */
-const char* scanner_iterator_key_priv (iterator_t* iterator)
+const char*
+scanner_iterator_key_priv (iterator_t* iterator)
 {
   const char *private_key;
 

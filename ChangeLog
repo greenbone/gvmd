@@ -1,3 +1,35 @@
+2016-10-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Store the slave username and password with the report instead of getting
+	these from the task's slave when deleting a report.  Hence increase
+	database version to 179.  Add database migration from version 178 to 179.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 179.
+
+	* src/manage_migrators.c (migrate_178_to_179): New function.
+	(database_migrators): Add migrate_178_to_179.
+
+	* src/manage_sqlite3.c (create_tables): Add login columns to slave.
+
+	* src/manage_pg.c (create_tables): Add login columns to slave.
+
+	* src/manage.c (handle_slave_task, run_otp_task): Set slave username and
+	password too.
+	(delete_slave_task): Take the slave details as args instead of getting
+	them from the slave_t.
+
+	* src/manage_sql.c (report_slave_port): Cleanup doc.
+	(report_slave_port_int, report_slave_username, report_slave_password)
+	(report_set_slave_username, report_set_slave_password): New functions.
+	(delete_report_internal): Delete according to the slave details on the
+	report, instead of using the slave details of the slave.
+
+	* src/manage.h: Add headers accordingly.
+
+	* doc/db_postgres.sql (reports): Add slave login columns.
+
+	* doc/db.png: Update from source.
+
 2016-09-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (run_omp_task, run_slave_task): Init connection, at

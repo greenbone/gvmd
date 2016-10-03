@@ -2772,8 +2772,8 @@ create_tables ()
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER,"
        "  task INTEGER, date INTEGER, start_time, end_time, nbefile, comment,"
        "  scan_run_status INTEGER, slave_progress, slave_task_uuid,"
-       "  slave_uuid, slave_name, slave_host, slave_port, source_iface,"
-       "  flags INTEGER);");
+       "  slave_uuid, slave_name, slave_host, slave_port, slave_password,"
+       "  slave_username, source_iface, flags INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS report_counts"
        " (id INTEGER PRIMARY KEY, report INTEGER, user INTEGER,"
        "  severity, count, override, end_time INTEGER, min_qod INTEGER);");

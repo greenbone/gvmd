@@ -1191,6 +1191,12 @@ void
 report_set_slave_port (report_t, int);
 
 void
+report_set_slave_username (report_t, const gchar *);
+
+void
+report_set_slave_password (report_t, const gchar *);
+
+void
 report_set_source_iface (report_t, const gchar *);
 
 int

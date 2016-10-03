@@ -13419,6 +13419,58 @@ migrate_177_to_178 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 178 to version 179.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_178_to_179 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 178. */
+
+  if (manage_db_version () != 178)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Reports got new columns for slave username and password. */
+
+  sql ("ALTER TABLE reports ADD COLUMN slave_username;");
+  sql ("ALTER TABLE reports ADD COLUMN slave_password;");
+
+  sql ("UPDATE reports"
+       " SET slave_username = (SELECT credentials_data.value"
+       "                       FROM slaves, credentials_data"
+       "                       WHERE slaves.id = (SELECT id FROM slaves"
+       "                                          WHERE uuid = slave_uuid)"
+       "                       AND credentials_data.credential"
+       "                           = slaves.credential"
+       "                       AND credentials_data.type = 'username');");
+
+  sql ("UPDATE reports"
+       " SET slave_password = (SELECT credentials_data.value"
+       "                       FROM slaves, credentials_data"
+       "                       WHERE slaves.id = (SELECT id FROM slaves"
+       "                                          WHERE uuid = slave_uuid)"
+       "                       AND credentials_data.credential"
+       "                           = slaves.credential"
+       "                       AND credentials_data.type = 'username');");
+
+  /* Set the database version to 179. */
+
+  set_db_version (179);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -13611,6 +13663,7 @@ static migrator_t database_migrators[]
     {176, migrate_175_to_176},
     {177, migrate_176_to_177},
     {178, migrate_177_to_178},
+    {179, migrate_178_to_179},
     /* End marker. */
     {-1, NULL}};
 

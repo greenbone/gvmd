@@ -3397,6 +3397,8 @@ handle_slave_task (task_t task, target_t target,
   report_set_slave_name (current_report, slave_name);
   report_set_slave_port (current_report, connection->port);
   report_set_slave_host (current_report, connection->host_string);
+  report_set_slave_username (current_report, connection->username);
+  report_set_slave_password (current_report, connection->password);
 
   uuid = openvas_uuid_make ();
   if (uuid == NULL)
@@ -4622,6 +4624,9 @@ run_slave_or_omp_task (task_t task, int from, char **report_id,
         return -9;
         break;
       default:
+        g_debug ("%s: forked %i to run slave/omp task\n",
+                 __FUNCTION__,
+                 pid);
         /* Parent.  Return, in order to respond to client. */
         current_report = (report_t) 0;
         return 0;
@@ -4977,6 +4982,8 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
   report_set_slave_name (current_report, "");
   report_set_slave_port (current_report, 0);
   report_set_slave_host (current_report, "");
+  report_set_slave_username (current_report, "");
+  report_set_slave_password (current_report, "");
 
   /* Send the preferences header. */
 
@@ -7279,50 +7286,39 @@ parse_tags (const char *scanner_tags, gchar **tags, gchar **cvss_base)
 /**
  * @brief Delete a task on a slave.
  *
- * @param[in]   slave            The slave.
- * @param[in]   slave_task_uuid  UUID of task on slave.
+ * @param[in]  host             Slave host.
+ * @param[in]  port             Slave port.
+ * @param[in]  username         Slave username.
+ * @param[in]  password         Slave password.
+ * @param[in]  slave_task_uuid  UUID of task on slave.
  *
  * @return 0 success, -1 error.
  */
 int
-delete_slave_task (slave_t slave, const char *slave_task_uuid)
+delete_slave_task (const gchar *host, int port, const gchar *username,
+                   const gchar *password, const char *slave_task_uuid)
 {
   int socket;
   gnutls_session_t session;
-  char *host;
-  int port;
   entity_t get_tasks, get_targets, entity, task, credential, port_list;
   const char *slave_config_uuid, *slave_target_uuid, *slave_port_list_uuid;
   const char *slave_ssh_credential_uuid, *slave_smb_credential_uuid;
 
   omp_delete_opts_t del_opts = omp_delete_opts_ultimate_defaults;
 
-  assert (slave);
-
   /* Connect to the slave. */
-
-  host = slave_host (slave);
-  if (host == NULL) return -1;
 
   g_debug ("   %s: host: %s\n", __FUNCTION__, host);
 
-  port = slave_port (slave);
-  if (port == -1)
-    {
-      free (host);
-      return -1;
-    }
-
   socket = openvas_server_open (&session, host, port);
-  free (host);
   if (socket == -1) return -1;
 
   g_debug ("   %s: connected\n", __FUNCTION__);
 
   /* Authenticate using the slave login. */
 
-  if (slave_authenticate (&session, slave))
-    goto fail;
+  if (omp_authenticate (&session, username, password))
+    return -1;
 
   g_debug ("   %s: authenticated\n", __FUNCTION__);
 
