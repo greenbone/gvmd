@@ -1,5 +1,10 @@
 2016-10-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* tools/greenbone-scapdata-sync.in: Set DROP_USER to default value
+	if it is not defined in current environment.
+
+2016-10-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* CMakeLists.txt (OPENVAS_DEFAULT_DROP_USER): New variable.
 
 	* tools/greenbone-certdata-sync.in, tools/greenbone-scapdata-sync.in:
