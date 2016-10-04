@@ -1,3 +1,12 @@
+2016-10-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* CMakeLists.txt (OPENVAS_DEFAULT_DROP_USER): New variable.
+
+	* tools/greenbone-certdata-sync.in, tools/greenbone-scapdata-sync.in:
+	Always check if root but only switch to a different user if one is
+	set in the DROP_USER variable, which uses OPENVAS_DEFAULT_DROP_USER
+	by default.
+
 2016-10-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Store the slave username and password with the report instead of getting

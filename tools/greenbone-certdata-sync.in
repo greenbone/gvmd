@@ -116,6 +116,10 @@ CERT_RES_DIR="@OPENVAS_CERT_RES_DIR@"
 CERT_DB="$CERT_DIR/cert.db"
 SCAP_DB="$SCAP_DIR/scap.db"
 
+if [ -z "$DROP_USER" ]; then
+  DROP_USER="@OPENVAS_DEFAULT_DROP_USER@"
+fi
+
 if [ ! $POSTGRES -eq 1 ] ; then
   ATTACH_SCAP="ATTACH DATABASE '$SCAP_DB' AS scap;"
 fi
@@ -144,6 +148,19 @@ log_err () {
 
 ACCESSKEY="@OPENVAS_SYSCONF_DIR@/gsf-access-key"
 
+# Note when running as root or restart as $DROP_USER if defined
+if [ $(id -u) -eq 0 ]
+then
+  if [ -z "$DROP_USER" ]
+  then
+    log_notice "Running as root"
+  else
+    log_notice "Started as root, restarting as $DROP_USER"
+    su --shell /bin/sh --command "$0 $*" "$DROP_USER"
+    exit $?
+  fi
+fi
+
 # Determine whether a GSF access key is present. If yes,
 # then use the Greenbone Security Feed. Else use the
 # Greenbone Community Feed.
@@ -161,13 +178,6 @@ then
 
   if [ -z "$FEED_HOME" ] ; then
     FEED_HOME="http://www.greenbone.net/technology/gsf.html"
-  fi
-
-  if [ $(id -u) -eq 0 ]
-  then
-    log_notice "Started as root, restarting as openvasmd"
-    su --shell /bin/sh --command "$0 $*" openvasmd
-    exit $?
   fi
 
 else

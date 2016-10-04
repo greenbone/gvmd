@@ -152,6 +152,19 @@ log_err () {
 
 ACCESSKEY="@OPENVAS_SYSCONF_DIR@/gsf-access-key"
 
+# Note when running as root or restart as $DROP_USER if defined
+if [ $(id -u) -eq 0 ]
+then
+  if [ -z "$DROP_USER" ]
+  then
+    log_notice "Running as root"
+  else
+    log_notice "Started as root, restarting as $DROP_USER"
+    su --shell /bin/sh --command "$0 $*" "$DROP_USER"
+    exit $?
+  fi
+fi
+
 # Determine whether a GSF access key is present. If yes,
 # then use the Greenbone Security Feed. Else use the
 # Greenbone Community Feed.
@@ -171,12 +184,6 @@ then
     FEED_HOME="http://www.greenbone.net/technology/gsf.html"
   fi
 
-  if [ $(id -u) -eq 0 ]
-  then
-    log_notice "Started as root, restarting as openvasmd"
-    su --shell /bin/sh --command "$0 $*" openvasmd
-    exit $?
-  fi
 else
   RESTRICTED=0
 

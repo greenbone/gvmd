@@ -210,6 +210,11 @@ if (NOT OPENVAS_SCAP_DATA_DIR)
   set (OPENVAS_SCAP_DATA_DIR "${OPENVAS_STATE_DIR}/scap-data")
 endif (NOT OPENVAS_SCAP_DATA_DIR)
 
+# System username to use when dropping privileges
+if (NOT OPENVAS_DEFAULT_DROP_USER)
+  set (OPENVAS_DEFAULT_DROP_USER "")
+endif (NOT OPENVAS_DEFAULT_DROP_USER)
+
 message ("-- Install prefix: ${CMAKE_INSTALL_PREFIX}")
 
 ## Dependency checks
