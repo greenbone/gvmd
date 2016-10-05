@@ -1,5 +1,10 @@
 2016-10-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (modify_task_check_config_scanner): Check OMP scanner
+	too.
+
+2016-10-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_task_check_config_scanner): Add OMP scanner.
 
 2016-10-05  Matthew Mundell <matthew.mundell@greenbone.net>

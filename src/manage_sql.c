@@ -33527,6 +33527,10 @@ modify_task_check_config_scanner (task_t task, const char *config_id,
   if (stype == SCANNER_TYPE_OPENVAS && ctype == 0)
     return 0;
 
+  /* OMP Scanner with OpenVAS config. */
+  if (stype == SCANNER_TYPE_OMP && ctype == 0)
+    return 0;
+
   /* Default Scanner with OpenVAS Config. */
   if (scanner == 0 && ctype == 0)
     return 0;
