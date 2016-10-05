@@ -1,5 +1,9 @@
 2016-10-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_task_check_config_scanner): Add OMP scanner.
+
+2016-10-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_migrators.c (migrate_178_to_179): Add column types for
 	Postgres.
 

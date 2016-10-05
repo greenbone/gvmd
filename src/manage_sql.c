@@ -33391,6 +33391,8 @@ create_task_check_config_scanner (config_t config, scanner_t scanner)
 
   if (ctype == 0 && stype == SCANNER_TYPE_OPENVAS)
     return 1;
+  if (ctype == 0 && stype == SCANNER_TYPE_OMP)
+    return 1;
   if (ctype == 1 && stype == SCANNER_TYPE_OSP)
     return 1;
 
