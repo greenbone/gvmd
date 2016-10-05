@@ -13441,8 +13441,8 @@ migrate_178_to_179 ()
 
   /* Reports got new columns for slave username and password. */
 
-  sql ("ALTER TABLE reports ADD COLUMN slave_username;");
-  sql ("ALTER TABLE reports ADD COLUMN slave_password;");
+  sql ("ALTER TABLE reports ADD COLUMN slave_username TEXT;");
+  sql ("ALTER TABLE reports ADD COLUMN slave_password TEXT;");
 
   sql ("UPDATE reports"
        " SET slave_username = (SELECT credentials_data.value"
