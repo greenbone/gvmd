@@ -20539,6 +20539,13 @@ handle_create_scanner (omp_parser_t *omp_parser, GError **error)
       case 4:
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("create_scanner",
+                            "Credential must be of type 'up'"
+                            " (client certificate)"));
+        log_event_fail ("scanner", "Scanner", NULL, "created");
+        break;
+      case 5:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("create_scanner",
                             "Credential must be of type 'cc'"
                             " (client certificate)"));
         log_event_fail ("scanner", "Scanner", NULL, "created");

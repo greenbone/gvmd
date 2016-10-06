@@ -1,5 +1,11 @@
 2016-10-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_scanner): Add OMP scanner credential check.
+
+	* src/omp.c (handle_create_scanner): Adjust for new returns.
+
+2016-10-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (modify_task_check_config_scanner): Check OMP scanner
 	too.
 

@@ -44788,8 +44788,8 @@ find_scanner_with_permission (const char* uuid, scanner_t* scanner,
  * @param[in]   ca_pub      CA Certificate for scanner.
  *
  * @return 0 success, 1 scanner exists already, 2 Invalid value,
- *         3 credential not found, 4 wrong credential type,
- *         99 permission denied.
+ *         3 credential not found, 4 credential should be 'up',
+ *         5 credential should be 'cc', 99 permission denied.
  */
 int
 create_scanner (const char* name, const char *comment, const char *host,
@@ -44842,11 +44842,20 @@ create_scanner (const char* name, const char *comment, const char *host,
       return 3;
     }
 
-  if (sql_int ("SELECT type != 'cc' FROM credentials WHERE id = %llu;",
-               credential))
+  if (itype == SCANNER_TYPE_OMP)
+    {
+      if (sql_int ("SELECT type != 'up' FROM credentials WHERE id = %llu;",
+                   credential))
+        {
+          sql_rollback ();
+          return 4;
+        }
+    }
+  else if (sql_int ("SELECT type != 'cc' FROM credentials WHERE id = %llu;",
+                    credential))
     {
       sql_rollback ();
-      return 4;
+      return 5;
     }
 
   quoted_name = sql_quote (name ?: "");
