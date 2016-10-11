@@ -1,5 +1,10 @@
 2016-10-11  Matthew Mundell <matthew.mundell at greenbone.net>
 
+	* src/manage_pg.c, doc/db_postgres.sql, doc/db.png: Files missed in last
+	commit.
+
+2016-10-11  Matthew Mundell <matthew.mundell at greenbone.net>
+
 	Backport r24560.
 
 	* src/manage_pg.c (create_tables): Add missing default_value column to

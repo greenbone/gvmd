@@ -323,14 +323,16 @@ CREATE TABLE config_preferences
   config integer REFERENCES configs (id) ON DELETE RESTRICT,
   type text, -- openvasrc section name or NULL for top-level prefs
   name text,
-  value text);
+  value text,
+  default_value text);
 
 CREATE TABLE config_preferences_trash
  (id SERIAL PRIMARY KEY,
   config integer REFERENCES configs_trash (id) ON DELETE RESTRICT,
   type text, -- openvasrc section name or NULL for top-level prefs
   name text,
-  value text);
+  value text,
+  default_value text);
 
 CREATE TABLE scanners
  (id SERIAL PRIMARY KEY,
