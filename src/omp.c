@@ -14347,7 +14347,7 @@ handle_get_assets (omp_parser_t *omp_parser, GError **error)
                                       (&details));
           cleanup_iterator (&details);
 
-          if (get_assets_data->details)
+          if (get_assets_data->details || get_assets_data->get.id)
             {
               routes_xml = host_routes_xml (asset);
               g_string_append (result, routes_xml);

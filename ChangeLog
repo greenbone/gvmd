@@ -1,5 +1,10 @@
 2016-10-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/omp.c (handle_get_assets): Add routes element also when host is
+	selected by id.
+
+2016-10-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (print_report_port_xml): Add parameter host_ports
 	to count number of ports per host.
 	(print_report_xml_start): Add number of ports and results per level
