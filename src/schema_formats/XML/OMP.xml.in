@@ -2715,6 +2715,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>asset</e>
           <e>start</e>
           <e>end</e>
+          <e>port_count</e>
+          <e>result_count</e>
           <any><e>detail</e></any>
         </pattern>
         <ele>
@@ -2742,6 +2744,95 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>end</name>
           <summary>Scan end time for this host</summary>
           <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>port_count</name>
+          <summary></summary>
+          <pattern>
+            <e>page</e>
+          </pattern>
+          <ele>
+            <name>page</name>
+            <summary>Number of ports of current host on current page</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>result_count</name>
+          <summary></summary>
+          <pattern>
+            <e>page</e>
+            <e>hole</e>
+            <e>warning</e>
+            <e>info</e>
+            <e>log</e>
+            <e>false_positive</e>
+          </pattern>
+          <ele>
+            <name>page</name>
+            <summary>Total number of results for current host on current page</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>hole</name>
+            <summary>Number of "hole" results (level "High")</summary>
+            <pattern>
+              <e>page</e>
+            </pattern>
+            <ele>
+              <name>page</name>
+              <summary>Number of results on current page</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>warning</name>
+            <summary>Number of "warning" results (level "Medium")</summary>
+            <pattern>
+              <e>page</e>
+            </pattern>
+            <ele>
+              <name>page</name>
+              <summary>Number of results on current page</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>info</name>
+            <summary>Number of "info" results (level "Low")</summary>
+            <pattern>
+              <e>page</e>
+            </pattern>
+            <ele>
+              <name>page</name>
+              <summary>Number of results on current page</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>log</name>
+            <summary>Number of "log" results</summary>
+            <pattern>
+              <e>page</e>
+            </pattern>
+            <ele>
+              <name>page</name>
+              <summary>Number of results on current page</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>false_positive</name>
+            <summary>Number of "false positive" results</summary>
+            <pattern>
+              <e>page</e>
+            </pattern>
+            <ele>
+              <name>page</name>
+              <summary>Number of results on current page</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>detail</name>

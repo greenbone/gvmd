@@ -4617,6 +4617,71 @@ result_overrides_override
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>port_count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>page</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of ports of current host on current page.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>result_count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>page</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Total number of results for current host on current page.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>hole</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of "hole" results (level "High").</div>
+<ul style="list-style: none"><li>
+              &lt;<b>page</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of results on current page.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>warning</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of "warning" results (level "Medium").</div>
+<ul style="list-style: none"><li>
+              &lt;<b>page</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of results on current page.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>info</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of "info" results (level "Low").</div>
+<ul style="list-style: none"><li>
+              &lt;<b>page</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of results on current page.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>log</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of "log" results.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>page</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of results on current page.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>false_positive</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of "false positive" results.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>page</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of results on current page.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+</ul>
+</li>
+<li>
               &lt;<b>detail</b>&gt;
               *<div style="margin-left: 15px; display: inline;">A detail associated with the host.</div>
 <ul style="list-style: none">
@@ -5694,6 +5759,8 @@ report_report_host
        &amp; report_report_host_asset
        &amp; report_report_host_start
        &amp; report_report_host_end
+       &amp; report_report_host_port_count
+       &amp; report_report_host_result_count
        &amp; report_report_host_detail*
      }
 
@@ -5719,6 +5786,95 @@ report_report_host_end
  = element end
      {
        text
+     }
+
+report_report_host_port_count
+ = element port_count
+     {
+       report_report_host_port_count_page
+     }
+
+report_report_host_port_count_page
+ = element page
+     {
+       integer
+     }
+
+report_report_host_result_count
+ = element result_count
+     {
+       report_report_host_result_count_page
+       &amp; report_report_host_result_count_hole
+       &amp; report_report_host_result_count_warning
+       &amp; report_report_host_result_count_info
+       &amp; report_report_host_result_count_log
+       &amp; report_report_host_result_count_false_positive
+     }
+
+report_report_host_result_count_page
+ = element page
+     {
+       integer
+     }
+
+report_report_host_result_count_hole
+ = element hole
+     {
+       report_report_host_result_count_hole_page
+     }
+
+report_report_host_result_count_hole_page
+ = element page
+     {
+       integer
+     }
+
+report_report_host_result_count_warning
+ = element warning
+     {
+       report_report_host_result_count_warning_page
+     }
+
+report_report_host_result_count_warning_page
+ = element page
+     {
+       integer
+     }
+
+report_report_host_result_count_info
+ = element info
+     {
+       report_report_host_result_count_info_page
+     }
+
+report_report_host_result_count_info_page
+ = element page
+     {
+       integer
+     }
+
+report_report_host_result_count_log
+ = element log
+     {
+       report_report_host_result_count_log_page
+     }
+
+report_report_host_result_count_log_page
+ = element page
+     {
+       integer
+     }
+
+report_report_host_result_count_false_positive
+ = element false_positive
+     {
+       report_report_host_result_count_false_positive_page
+     }
+
+report_report_host_result_count_false_positive_page
+ = element page
+     {
+       integer
      }
 
 report_report_host_detail

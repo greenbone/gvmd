@@ -25532,6 +25532,7 @@ print_report_assets_xml (FILE *out, const char *host, int first_result, int
  * @param[in]  min_qod          Minimum QoD of included results. All
  *                              results if NULL.
  * @param[in]  apply_overrides    Whether to apply overrides.
+ * @param[out] host_ports       Hash table for counting ports per host.
  *
  * @return 0 on success, -1 error.
  */
@@ -25540,7 +25541,8 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
                        int max_results, int sort_order, const char *sort_field,
                        const char *levels, int autofp,
                        const char *search_phrase, int search_phrase_exact,
-                       const char *min_qod, int apply_overrides)
+                       const char *min_qod, int apply_overrides,
+                       GHashTable *host_ports)
 {
   iterator_t results;
   result_buffer_t *last_item;
@@ -25665,6 +25667,9 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
 
     while ((item = g_array_index (ports, result_buffer_t*, index++)))
       {
+        int host_port_count
+              = GPOINTER_TO_INT (g_hash_table_lookup (host_ports, item->host));
+
         PRINT (out,
                "<port>"
                "<host>%s</host>"
@@ -25676,6 +25681,13 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
                item->port,
                item->severity_double,
                severity_to_level (g_strtod (item->severity, NULL), 0));
+
+        if (g_str_has_prefix(item->port, "general/") == FALSE)
+          {
+            g_hash_table_replace (host_ports,
+                                  g_strdup (item->host),
+                                  GINT_TO_POINTER (host_port_count + 1));
+          }
         result_buffer_free (item);
       }
     g_array_free (ports, TRUE);
@@ -27301,12 +27313,27 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   gchar *tz, *zone;
   GString *filters_buffer, *filters_extra_buffer, *host_summary_buffer;
   gchar *term_value;
+  GHashTable *f_host_ports;
+  GHashTable *f_host_holes, *f_host_warnings, *f_host_infos;
+  GHashTable *f_host_logs, *f_host_false_positives;
 
   /* Init some vars to prevent warnings from older compilers. */
   total_result_count = filtered_result_count = 0;
   orig_filtered_result_count = 0;
   orig_f_false_positives = orig_f_warnings = orig_f_logs = orig_f_infos = 0;
   orig_f_holes = orig_f_debugs = 0;
+  f_host_ports = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                        g_free, NULL);
+  f_host_holes = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                        g_free, NULL);
+  f_host_warnings = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                           g_free, NULL);
+  f_host_infos = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                      g_free, NULL);
+  f_host_logs = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                      g_free, NULL);
+  f_host_false_positives = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                  g_free, NULL);
 
   /** @todo Leaks on error in PRINT and PRINT_XML.  The process normally exits
    *        then anyway. */
@@ -27964,7 +27991,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                  ignore_pagination ? -1 : max_results,
                                  sort_order, sort_field, levels, autofp,
                                  search_phrase, search_phrase_exact,
-                                 min_qod, apply_overrides))
+                                 min_qod, apply_overrides, f_host_ports))
         {
           g_free (term);
           tz_revert (zone, tz);
@@ -28052,6 +28079,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     {
       while (next (&results))
         {
+          const char* level;
+          GHashTable *f_host_result_counts;
           GString *buffer = g_string_new ("");
           buffer_results_xml (buffer,
                               &results,
@@ -28071,6 +28100,33 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           if (result_hosts_only)
             array_add_new_string (result_hosts,
                                   result_iterator_host (&results));
+
+          level = result_iterator_level (&results);
+          if (strcasecmp (level, "log") == 0)
+            f_host_result_counts = f_host_logs;
+          else if (strcasecmp (level, "high") == 0)
+            f_host_result_counts = f_host_holes;
+          else if (strcasecmp (level, "medium") == 0)
+            f_host_result_counts = f_host_warnings;
+          else if (strcasecmp (level, "low") == 0)
+            f_host_result_counts = f_host_infos;
+          else if (strcasecmp (level, "false positive") == 0)
+            f_host_result_counts = f_host_false_positives;
+          else
+            f_host_result_counts = NULL;
+
+          if (f_host_result_counts)
+            {
+              const char *host = result_iterator_host (&results);
+              int result_count
+                    = GPOINTER_TO_INT
+                        (g_hash_table_lookup (f_host_result_counts, host));
+
+              g_hash_table_replace (f_host_result_counts,
+                                    g_strdup (host),
+                                    GINT_TO_POINTER (result_count + 1));
+            }
+
         }
       PRINT (out, "</results>");
     }
@@ -28173,6 +28229,32 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
             }
           if (present)
             {
+              const char *current_host;
+              int ports_count;
+              int holes_count, warnings_count, infos_count;
+              int logs_count, false_positives_count;
+
+              current_host = host_iterator_host (&hosts);
+
+              ports_count
+                = GPOINTER_TO_INT
+                    (g_hash_table_lookup (f_host_ports, current_host));
+              holes_count
+                = GPOINTER_TO_INT
+                    (g_hash_table_lookup ( f_host_holes, current_host));
+              warnings_count
+                = GPOINTER_TO_INT
+                    (g_hash_table_lookup ( f_host_warnings, current_host));
+              infos_count
+                = GPOINTER_TO_INT
+                    (g_hash_table_lookup ( f_host_infos, current_host));
+              logs_count
+                = GPOINTER_TO_INT
+                    (g_hash_table_lookup ( f_host_logs, current_host));
+              false_positives_count
+                = GPOINTER_TO_INT
+                    (g_hash_table_lookup ( f_host_false_positives, current_host));
+
               host_summary_append (host_summary_buffer,
                                    host,
                                    host_iterator_start_time (&hosts),
@@ -28182,7 +28264,16 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                      "<ip>%s</ip>"
                      "<asset asset_id=\"%s\"/>"
                      "<start>%s</start>"
-                     "<end>%s</end>",
+                     "<end>%s</end>"
+                     "<ports><page>%d</page></ports>"
+                     "<results>"
+                     "<page>%d</page>"
+                     "<hole><page>%d</page></hole>"
+                     "<warning><page>%d</page></warning>"
+                     "<info><page>%d</page></info>"
+                     "<log><page>%d</page></log>"
+                     "<false_positive><page>%d</page></false_positive>"
+                     "</results>",
                      host,
                      host_iterator_asset_uuid (&hosts)
                        ? host_iterator_asset_uuid (&hosts)
@@ -28190,7 +28281,15 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                      host_iterator_start_time (&hosts),
                      host_iterator_end_time (&hosts)
                        ? host_iterator_end_time (&hosts)
-                       : "");
+                       : "",
+                     ports_count,
+                     (holes_count + warnings_count + infos_count
+                      + logs_count + false_positives_count),
+                     holes_count,
+                     warnings_count,
+                     infos_count,
+                     logs_count,
+                     false_positives_count);
 
               if (print_report_host_details_xml
                   (host_iterator_report_host (&hosts), out))
@@ -28229,6 +28328,32 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       init_report_host_iterator (&hosts, report, NULL, 0);
       while (next (&hosts))
         {
+          const char *current_host;
+          int ports_count;
+          int holes_count, warnings_count, infos_count;
+          int logs_count, false_positives_count;
+
+          current_host = host_iterator_host (&hosts);
+
+          ports_count
+            = GPOINTER_TO_INT
+                (g_hash_table_lookup (f_host_ports, current_host));
+          holes_count
+            = GPOINTER_TO_INT
+                (g_hash_table_lookup (f_host_holes, current_host));
+          warnings_count
+            = GPOINTER_TO_INT
+                (g_hash_table_lookup (f_host_warnings, current_host));
+          infos_count
+            = GPOINTER_TO_INT
+                (g_hash_table_lookup (f_host_infos, current_host));
+          logs_count
+            = GPOINTER_TO_INT
+                (g_hash_table_lookup (f_host_logs, current_host));
+          false_positives_count
+            = GPOINTER_TO_INT
+                (g_hash_table_lookup (f_host_false_positives, current_host));
+
           host_summary_append (host_summary_buffer,
                                host_iterator_host (&hosts),
                                host_iterator_start_time (&hosts),
@@ -28238,7 +28363,16 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                  "<ip>%s</ip>"
                  "<asset asset_id=\"%s\"/>"
                  "<start>%s</start>"
-                 "<end>%s</end>",
+                 "<end>%s</end>"
+                 "<ports><page>%d</page></ports>"
+                 "<results>"
+                 "<page>%d</page>"
+                 "<hole><page>%d</page></hole>"
+                 "<warning><page>%d</page></warning>"
+                 "<info><page>%d</page></info>"
+                 "<log><page>%d</page></log>"
+                 "<false_positive><page>%d</page></false_positive>"
+                 "</results>",
                  host_iterator_host (&hosts),
                  host_iterator_asset_uuid (&hosts)
                    ? host_iterator_asset_uuid (&hosts)
@@ -28246,7 +28380,15 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                  host_iterator_start_time (&hosts),
                  host_iterator_end_time (&hosts)
                    ? host_iterator_end_time (&hosts)
-                   : "");
+                   : "",
+                 ports_count,
+                 (holes_count + warnings_count + infos_count
+                  + logs_count + false_positives_count),
+                 holes_count,
+                 warnings_count,
+                 infos_count,
+                 logs_count,
+                 false_positives_count);
 
           if (print_report_host_details_xml
               (host_iterator_report_host (&hosts), out))
