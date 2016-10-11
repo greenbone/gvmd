@@ -2805,6 +2805,8 @@ report_report_host
        report_report_host_ip
        & report_report_host_start
        & report_report_host_end
+       & report_report_host_port_count
+       & report_report_host_result_count
        & report_report_host_detail*
      }
 
@@ -2827,6 +2829,109 @@ report_report_host_end
  = element end
      {
        text
+     }
+
+# .
+report_report_host_port_count
+ = element port_count
+     {
+       report_report_host_port_count_page
+     }
+
+# Number of ports of current host on current page.
+report_report_host_port_count_page
+ = element page
+     {
+       integer
+     }
+
+# .
+report_report_host_result_count
+ = element result_count
+     {
+       report_report_host_result_count_page
+       & report_report_host_result_count_hole
+       & report_report_host_result_count_warning
+       & report_report_host_result_count_info
+       & report_report_host_result_count_log
+       & report_report_host_result_count_false_positive
+     }
+
+# Total number of results for current host on current page.
+report_report_host_result_count_page
+ = element page
+     {
+       integer
+     }
+
+# Number of "hole" results (level "High").
+report_report_host_result_count_hole
+ = element hole
+     {
+       report_report_host_result_count_hole_page
+     }
+
+# Number of results on current page.
+report_report_host_result_count_hole_page
+ = element page
+     {
+       integer
+     }
+
+# Number of "warning" results (level "Medium").
+report_report_host_result_count_warning
+ = element warning
+     {
+       report_report_host_result_count_warning_page
+     }
+
+# Number of results on current page.
+report_report_host_result_count_warning_page
+ = element page
+     {
+       integer
+     }
+
+# Number of "info" results (level "Low").
+report_report_host_result_count_info
+ = element info
+     {
+       report_report_host_result_count_info_page
+     }
+
+# Number of results on current page.
+report_report_host_result_count_info_page
+ = element page
+     {
+       integer
+     }
+
+# Number of "log" results.
+report_report_host_result_count_log
+ = element log
+     {
+       report_report_host_result_count_log_page
+     }
+
+# Number of results on current page.
+report_report_host_result_count_log_page
+ = element page
+     {
+       integer
+     }
+
+# Number of "false positive" results.
+report_report_host_result_count_false_positive
+ = element false_positive
+     {
+       report_report_host_result_count_false_positive_page
+     }
+
+# Number of results on current page.
+report_report_host_result_count_false_positive_page
+ = element page
+     {
+       integer
      }
 
 # A detail associated with the host.

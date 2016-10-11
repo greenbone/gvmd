@@ -1,3 +1,17 @@
+2016-10-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r26358.
+
+	* src/manage_sql.c (print_report_port_xml): Add parameter host_ports
+	to count number of ports per host.
+	(print_report_xml_start): Add number of ports and results per level
+	on the current page for each host.
+
+	* src/schema_formats/XML/OMP.xml.in (report): Add port_count and
+	result_count to host elements.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2016-10-11  Matthew Mundell <matthew.mundell at greenbone.net>
 
 	* src/manage_pg.c, doc/db_postgres.sql, doc/db.png: Files missed in last
