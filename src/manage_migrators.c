@@ -9921,7 +9921,7 @@ migrate_142_to_143 ()
   /* Update the database. */
 
   /* Set QoD of results to default value for various cases where
-   *  no QoD was specified during the creation of the result. */
+   * no QoD was specified during the creation of the result. */
 
   sql ("UPDATE results SET qod = " G_STRINGIFY (QOD_DEFAULT)
        " WHERE (qod IS NULL) OR (qod <= 0);");
@@ -10162,18 +10162,6 @@ migrate_148_to_149 ()
   return 0;
 }
 
-#define INSERT_PERMISSION(name, role)                                          \
-  sql ("INSERT INTO permissions"                                               \
-       " (uuid, owner, name, comment, resource_type, resource, resource_uuid," \
-       "  resource_location, subject_type, subject, subject_location,"         \
-       "  creation_time, modification_time)"                                   \
-       " VALUES"                                                               \
-       " (make_uuid (), NULL, '" G_STRINGIFY (name) "', '', '',"               \
-       "  0, '', " G_STRINGIFY (LOCATION_TABLE) ", 'role',"                    \
-       "  (SELECT id FROM roles WHERE uuid = '%s'),"                           \
-       "  " G_STRINGIFY (LOCATION_TABLE) ", m_now (), m_now ());",             \
-       role)
-
 /**
  * @brief Migrate the database from version 149 to version 150.
  *
@@ -10205,6 +10193,18 @@ migrate_149_to_150 ()
 
   return 0;
 }
+
+#define INSERT_PERMISSION(name, role)                                          \
+  sql ("INSERT INTO permissions"                                               \
+       " (uuid, owner, name, comment, resource_type, resource, resource_uuid," \
+       "  resource_location, subject_type, subject, subject_location,"         \
+       "  creation_time, modification_time)"                                   \
+       " VALUES"                                                               \
+       " (make_uuid (), NULL, '" G_STRINGIFY (name) "', '', '',"               \
+       "  0, '', " G_STRINGIFY (LOCATION_TABLE) ", 'role',"                    \
+       "  (SELECT id FROM roles WHERE uuid = '%s'),"                           \
+       "  " G_STRINGIFY (LOCATION_TABLE) ", m_now (), m_now ());",             \
+       role)
 
 /**
  * @brief Migrate the database from version 150 to version 151.
@@ -10545,7 +10545,7 @@ migrate_154_to_155 ()
 
   /* Update the database. */
 
-  /* Reports got a new column flags. */
+  /* Reports got a new column "flags". */
   sql ("ALTER TABLE reports ADD COLUMN flags INTEGER;");
   sql ("UPDATE reports SET flags = 0;");
 
@@ -11344,7 +11344,7 @@ migrate_158_to_159 ()
     }
   cleanup_iterator (&scanners);
 
-  /* Create new credentials for trashcan */
+  /* Create new credentials for trashcan. */
   init_iterator (&scanners,
                  "SELECT id, name, key_pub, key_priv, owner"
                  " FROM scanners_trash;");
@@ -11363,7 +11363,7 @@ migrate_158_to_159 ()
       key_priv = iterator_string (&scanners, 3);
       owner = iterator_int64 (&scanners, 4);
 
-      // Skip if scanner has no key (internal CVE scanner)
+      /* Skip if scanner has no key (internal CVE scanner). */
       if (key_pub == NULL || key_priv == NULL)
         continue;
 
@@ -11479,7 +11479,7 @@ migrate_158_to_159 ()
     }
   cleanup_iterator (&scanners);
 
-  /* Remove unused columns */
+  /* Remove unused columns. */
   if (sql_is_sqlite3 ())
     {
       sql ("ALTER TABLE scanners RENAME TO scanners_158;");
@@ -11530,7 +11530,7 @@ migrate_158_to_159 ()
 }
 
 /**
- * @brief Migrate the database from version 158 to version 159.
+ * @brief Migrate the database from version 159 to version 160.
  *
  * @return 0 success, -1 error.
  */

@@ -1,3 +1,10 @@
+2016-10-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_migrators.c (migrate_142_to_143): Neaten comment.
+	(INSERT_PERMISSION): Move to where it is used.
+	(migrate_154_to_155, migrate_158_to_159): Neaten/clarify comments.
+	(migrate_159_to_160): Correct version.
+
 2016-10-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/omp.c (handle_get_assets): Add routes element also when host is
