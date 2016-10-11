@@ -102,11 +102,12 @@ test_sql_exit () {
 }
 
 sqlite () {
+  log_debug "SQLite: $1"
   $SQLITE3 $SQLITE_DB "$1"
 }
 
 pg () {
-  log_debug "SQL: $1"
+  log_debug "    PG: $1"
   $PSQL -c "$1"
   exit_code=$?
   if [ 0 -ne "$exit_code" ]
@@ -171,7 +172,7 @@ do_help () {
   exit 0
 }
 
-create_tables_133() {
+create_tables_133 () {
   log_info "Creating tables."
 
   pg "CREATE TABLE IF NOT EXISTS current_credentials
@@ -371,7 +372,7 @@ create_tables_133() {
 
   pg "CREATE TABLE IF NOT EXISTS role_users_trash
        (id SERIAL PRIMARY KEY,
-        role integer REFERENCES roles (id) ON DELETE RESTRICT,
+        role integer REFERENCES roles_trash (id) ON DELETE RESTRICT,
         \"user\" integer REFERENCES users (id) ON DELETE RESTRICT);";
 
   pg "CREATE TABLE IF NOT EXISTS nvt_selectors
@@ -774,6 +775,9 @@ create_tables_133() {
         report_format_param integer REFERENCES report_format_params_trash (id) ON DELETE RESTRICT,
         value text);";
 
+  # attack_state has not been created by Manager since 2014-11-20 (and it is
+  # never migrated away by Manager), but create it here in case the SQLite
+  # database is older than the one of 2014-11-20.
   pg "CREATE TABLE IF NOT EXISTS report_hosts
        (id SERIAL PRIMARY KEY,
         report integer REFERENCES reports (id) ON DELETE RESTRICT,
@@ -961,7 +965,7 @@ create_tables_133() {
         modification_time integer);";
 }
 
-migrate_rest () {
+cleanup_sqlite_db () {
   # Remove stray task_alerts.
   sqlite "DELETE FROM task_alerts WHERE alert_location = 0 AND alert NOT IN (SELECT id FROM alerts);"
   test_sql_exit "Failed to clean up task_alerts"
@@ -1018,6 +1022,15 @@ migrate_rest () {
         UPDATE report_hosts SET end_time = strftime ('%s', substr (end_time, 21) || '-' || (select number from months where name = substr (end_time, 5, 3)) || '-' || replace (substr (end_time, 9, 2), ' ', '0') || 'T' || substr (end_time, 12, 9)) WHERE end_time GLOB '??? ??? ?? ??:??:?? ????';
         COMMIT;" | $SQLITE3 -batch $SQLITE_DB
   test_sql_exit "Failed to make end_time in report_hosts consistent"
+}
+
+copy_data () {
+
+  if [ $# -ne 1 ]
+  then
+    log_notice "Internal Error: copy_data must have an arg"
+	exit 1
+  fi
 
   log_info "Dumping SQLite3 data:"
   TEMP_DIR=`mktemp -d`
@@ -1028,10 +1041,9 @@ migrate_rest () {
   # To get all tables use ".tables" or
   #     SELECT tbl_name FROM sqlite_master WHERE type='table' and tbl_name not like 'sqlite_%'
   #
-  # These table are left out: report_counts nvts nvt_cves
-  #
-  TABLES="users configs config_preferences meta nvt_preferences nvt_selectors lsc_credentials lsc_credentials_trash port_lists port_ranges targets schedules slaves tasks reports report_hosts report_formats report_format_params report_format_param_options results report_results task_files configs_trash config_preferences_trash report_formats_trash report_format_params_trash report_format_param_options_trash schedules_trash slaves_trash targets_trash report_host_details task_preferences port_lists_trash port_ranges_trash alerts_trash alert_event_data_trash alert_method_data_trash alerts alert_condition_data alert_event_data alert_method_data task_alerts alert_condition_data_trash groups group_users filters filters_trash port_names settings roles role_users overrides overrides_trash notes notes_trash groups_trash roles_trash tags_trash group_users_trash role_users_trash scanners scanners_trash permissions_trash permissions tags"
+  # These tables are left out: report_counts nvts nvt_cves
 
+  TABLES=$1
   log_debug "TABLES: $TABLES"
   for TABLE in $TABLES; do
     # Get the Postgres columns because the import CSV must be in that order.
@@ -1081,56 +1093,454 @@ migrate_rest () {
   rm -rf $TEMP_DIR
 }
 
+#### Schema Migrators
+##
+## NB These only need to migrate the schema.
+##
+
+TABLES_133="users configs config_preferences meta nvt_preferences nvt_selectors lsc_credentials lsc_credentials_trash port_lists port_ranges targets schedules slaves tasks reports report_hosts report_formats report_format_params report_format_param_options results report_results task_files configs_trash config_preferences_trash report_formats_trash report_format_params_trash report_format_param_options_trash schedules_trash slaves_trash targets_trash report_host_details task_preferences port_lists_trash port_ranges_trash alerts_trash alert_event_data_trash alert_method_data_trash alerts alert_condition_data alert_event_data alert_method_data task_alerts alert_condition_data_trash groups group_users filters filters_trash port_names settings roles role_users overrides overrides_trash notes notes_trash groups_trash roles_trash tags_trash group_users_trash role_users_trash scanners scanners_trash permissions_trash permissions tags"
+
+migrate_133_to_134 () {
+  pg "ALTER TABLE targets ADD COLUMN esxi_lsc_credential integer;"
+  pg "ALTER TABLE targets_trash ADD COLUMN esxi_lsc_credential integer;"
+  pg "ALTER TABLE targets_trash ADD COLUMN esxi_location integer;"
+}
+
+TABLES_134="$TABLES_133"
+
+migrate_134_to_135 () {
+  pg "DROP TABLE report_results;"
+}
+
+TABLES_135="users configs config_preferences meta nvt_preferences nvt_selectors lsc_credentials lsc_credentials_trash port_lists port_ranges targets schedules slaves tasks reports report_hosts report_formats report_format_params report_format_param_options results task_files configs_trash config_preferences_trash report_formats_trash report_format_params_trash report_format_param_options_trash schedules_trash slaves_trash targets_trash report_host_details task_preferences port_lists_trash port_ranges_trash alerts_trash alert_event_data_trash alert_method_data_trash alerts alert_condition_data alert_event_data alert_method_data task_alerts alert_condition_data_trash groups group_users filters filters_trash port_names settings roles role_users overrides overrides_trash notes notes_trash groups_trash roles_trash tags_trash group_users_trash role_users_trash scanners scanners_trash permissions_trash permissions tags"
+
+migrate_135_to_136 () {
+  : # Schema stayed the same.
+}
+
+TABLES_136=$TABLES_135
+
+migrate_136_to_137 () {
+  : # Schema stayed the same.
+}
+
+TABLES_137=$TABLES_136
+
+migrate_137_to_138 () {
+  : # Schema stayed the same.
+}
+
+TABLES_138=$TABLES_137
+
+migrate_138_to_139 () {
+  pg "ALTER TABLE nvts ADD COLUMN solution_type text;"
+}
+
+TABLES_139=$TABLES_138
+
+migrate_139_to_140 () {
+  : # Schema stayed the same.
+}
+
+TABLES_140=$TABLES_139
+
+migrate_140_to_141 () {
+  pg "ALTER TABLE config_preferences ADD COLUMN default_value text;"
+  pg "ALTER TABLE config_preferences_trash ADD COLUMN default_value text;"
+}
+
+TABLES_141=$TABLES_140
+
+migrate_141_to_142 () {
+  : # Schema stayed the same.
+}
+
+TABLES_142=$TABLES_141
+
+migrate_142_to_143 () {
+  : # Schema stayed the same.
+}
+
+TABLES_143=$TABLES_142
+
+migrate_143_to_144 () {
+  pg "ALTER TABLE nvts ADD COLUMN qod INTEGER;"
+  pg "ALTER TABLE nvts ADD COLUMN qod_type TEXT;"
+  pg "ALTER TABLE results ADD COLUMN qod_type TEXT;"
+}
+
+TABLES_144=$TABLES_143
+
+migrate_144_to_145 () {
+  pg "ALTER TABLE tasks ADD COLUMN schedule_periods INTEGER;"
+}
+
+TABLES_145=$TABLES_144
+
+migrate_145_to_146 () {
+  pg "DROP VIEW IF EXISTS result_new_severities;"
+  pg "DROP VIEW IF EXISTS result_overrides;"
+}
+
+# FIX tables were added since 133?
+TABLES_146=$TABLES_145
+
+migrate_146_to_147 () {
+  pg "ALTER TABLE report_counts ADD COLUMN min_qod INTEGER;"
+}
+
+TABLES_147=$TABLES_146
+
+migrate_147_to_148 () {
+  : # Schema stayed the same.
+}
+
+TABLES_148=$TABLES_147
+
+migrate_148_to_149 () {
+  pg "ALTER TABLE tasks ADD COLUMN scanner_location INTEGER;"
+}
+
+TABLES_149=$TABLES_148
+
+migrate_149_to_150 () {
+  pg "DROP VIEW IF EXISTS result_new_severities;"
+}
+
+TABLES_150=$TABLES_149
+
+migrate_150_to_151 () {
+  : # Schema stayed the same.
+}
+
+TABLES_151=$TABLES_150
+
+
+## Migrate the schema of the Postgres database from version $1 to $2.
+##
 migrate () {
+
+  if [ $# -ne 2 ]
+  then
+    log_notice "Internal Error: migrate must have two args"
+	exit 1
+  fi
+
+  TO=$2
+
+  case $1 in
+    133)
+      migrate_133_to_134
+      if [ $TO -eq 134 ]
+      then
+          return
+      fi
+      migrate 134 $TO;;
+
+    134)
+      migrate_134_to_135
+      if [ $TO -eq 135 ]
+      then
+          return
+      fi
+      migrate 135 $TO;;
+
+    135)
+      migrate_135_to_136
+      if [ $TO -eq 136 ]
+      then
+          return
+      fi
+      migrate 136 $TO;;
+
+    136)
+      migrate_136_to_137
+      if [ $TO -eq 137 ]
+      then
+          return
+      fi
+      migrate 137 $TO;;
+
+    137)
+      migrate_137_to_138
+      if [ $TO -eq 138 ]
+      then
+          return
+      fi
+      migrate 138 $TO;;
+
+    138)
+      migrate_138_to_139
+      if [ $TO -eq 139 ]
+      then
+          return
+      fi
+      migrate 140 $TO;;
+
+    140)
+      migrate_140_to_141
+      if [ $TO -eq 141 ]
+      then
+          return
+      fi
+      migrate 141 $TO;;
+
+    141)
+      migrate_141_to_142
+      if [ $TO -eq 142 ]
+      then
+          return
+      fi
+      migrate 142 $TO;;
+
+    142)
+      migrate_142_to_143
+      if [ $TO -eq 143 ]
+      then
+          return
+      fi
+      migrate 143 $TO;;
+
+    143)
+      migrate_143_to_144
+      if [ $TO -eq 144 ]
+      then
+          return
+      fi
+      migrate 144 $TO;;
+
+    144)
+      migrate_144_to_145
+      if [ $TO -eq 145 ]
+      then
+          return
+      fi
+      migrate 145 $TO;;
+
+    145)
+      migrate_145_to_146
+      if [ $TO -eq 146 ]
+      then
+          return
+      fi
+      migrate 146 $TO;;
+
+    146)
+      migrate_146_to_147
+      if [ $TO -eq 147 ]
+      then
+          return
+      fi
+      migrate 147 $TO;;
+
+    147)
+      migrate_147_to_148
+      if [ $TO -eq 148 ]
+      then
+          return
+      fi
+      migrate 148 $TO;;
+
+    148)
+      migrate_148_to_149
+      if [ $TO -eq 149 ]
+      then
+          return
+      fi
+      migrate 149 $TO;;
+
+    149)
+      migrate_149_to_150
+      if [ $TO -eq 150 ]
+      then
+          return
+      fi
+      migrate 150 $TO;;
+
+    150)
+      migrate_150_to_151
+      if [ $TO -eq 151 ]
+      then
+          return
+      fi
+      migrate 151 $TO;;
+
+    151)
+      migrate_151_to_152
+      if [ $TO -eq 152 ]
+      then
+          return
+      fi
+      migrate 152 $TO;;
+
+    *)
+      log_notice "Version in Postgres database out of sync."
+      exit 1
+  esac
+}
+
+## Create a Postgres database based on the SQLite one.
+#
+# Migrate the Postgres schema from the 133 base version; then clean the SQLite
+# data; then copy the SQLite data to Postgres.
+#
+# There's no need to migrate to the latest version.  Postgres Manager will do
+# that.  Just get from the SQLite database to the same version, but under
+# Postgres.
+#
+create () {
   DB_VERSION=`sqlite "select value from meta where name = 'database_version';" 2>/dev/null | tr -d '\n\r' || echo 0`
   case "$DB_VERSION" in
     133)
-      log_info "Migrating database (version 133)."
-      create_tables_133;
-      migrate_rest;;
+      log_info "Creating Postgres database (version 133)."
+      create_tables_133
+      cleanup_sqlite_db
+      copy_data "$TABLES_133"
+      ;;
 
     134)
-      log_info "Migrating database (version 134)."
-      create_tables_133;
-
-      pg "ALTER TABLE targets ADD COLUMN esxi_lsc_credential integer;"
-      pg "ALTER TABLE targets_trash ADD COLUMN esxi_lsc_credential integer;"
-      pg "ALTER TABLE targets_trash ADD COLUMN esxi_location integer;"
-
-      migrate_rest;;
+      log_info "Creating Postgres database (version 134)."
+      create_tables_133
+      migrate 133 134
+      cleanup_sqlite_db
+      copy_data "$TABLES_134"
+      ;;
 
     135)
-      log_info "Migrating database (version 135)."
-      create_tables_133;
-
-      pg "ALTER TABLE targets ADD COLUMN esxi_lsc_credential integer;"
-      pg "ALTER TABLE targets_trash ADD COLUMN esxi_lsc_credential integer;"
-      pg "ALTER TABLE targets_trash ADD COLUMN esxi_location integer;"
-
-      migrate_rest
-
-      pg "DROP TABLE report_results;";;
+      log_info "Creating Postgres database (version 135)."
+      create_tables_133
+      migrate 133 135
+      cleanup_sqlite_db
+      copy_data "$TABLES_135"
+      ;;
 
     136)
-      log_info "Migrating database (version 136)."
-      create_tables_133;
+      log_info "Creating Postgres database (version 136)."
+      create_tables_133
+      migrate 133 136
+      cleanup_sqlite_db
+      copy_data "$TABLES_136"
+      ;;
 
-      pg "ALTER TABLE targets ADD COLUMN esxi_lsc_credential integer;"
-      pg "ALTER TABLE targets_trash ADD COLUMN esxi_lsc_credential integer;"
-      pg "ALTER TABLE targets_trash ADD COLUMN esxi_location integer;"
+    137)
+      log_info "Creating Postgres database (version 137)."
+      create_tables_133
+      migrate 133 137
+      cleanup_sqlite_db
+      copy_data "$TABLES_137"
+      ;;
 
-	  pg "UPDATE tasks
-	      SET end_time = (SELECT reports.end_time FROM reports
-		                  WHERE task = tasks.id ORDER BY id DESC LIMIT 1)
-		  WHERE EXISTS (SELECT id FROM reports WHERE task = tasks.id);"
+    138)
+      log_info "Creating Postgres database (version 138)."
+      create_tables_133
+      migrate 133 138
+      cleanup_sqlite_db
+      copy_data "$TABLES_138"
+      ;;
 
-	  pg "UPDATE tasks
-	      SET end_time = NULL
-		  WHERE NOT EXISTS (SELECT id FROM reports WHERE task = tasks.id);"
+    139)
+      log_info "Creating Postgres database (version 139)."
+      create_tables_139
+      migrate 133 139
+      cleanup_sqlite_db
+      copy_data "$TABLES_139"
+      ;;
 
-      migrate_rest
+    140)
+      log_info "Creating Postgres database (version 140)."
+      create_tables_133
+      migrate 133 140
+      cleanup_sqlite_db
+      copy_data "$TABLES_140"
+      ;;
 
-      pg "DROP TABLE report_results;";;
+    141)
+      log_info "Creating Postgres database (version 141)."
+      create_tables_133
+      migrate 133 141
+      cleanup_sqlite_db
+      copy_data "$TABLES_141"
+      ;;
+
+    142)
+      log_info "Creating Postgres database (version 142)."
+      create_tables_133
+      migrate 133 142
+      cleanup_sqlite_db
+      copy_data "$TABLES_142"
+      ;;
+
+    143)
+      log_info "Creating Postgres database (version 143)."
+      create_tables_133
+      migrate 133 143
+      cleanup_sqlite_db
+      copy_data "$TABLES_143"
+      ;;
+
+    144)
+      log_info "Creating Postgres database (version 144)."
+      create_tables_133
+      migrate 133 144
+      cleanup_sqlite_db
+      copy_data "$TABLES_144"
+      ;;
+
+    145)
+      log_info "Creating Postgres database (version 145)."
+      create_tables_133
+      migrate 133 145
+      cleanup_sqlite_db
+      copy_data "$TABLES_145"
+      ;;
+
+    146)
+      log_info "Creating Postgres database (version 146)."
+      create_tables_133
+      migrate 133 146
+      cleanup_sqlite_db
+      copy_data "$TABLES_146"
+	  ;;
+
+    147)
+      log_info "Creating Postgres database (version 147)."
+      create_tables_133
+      migrate 133 147
+      cleanup_sqlite_db
+      copy_data "$TABLES_147"
+      ;;
+
+    148)
+      log_info "Creating Postgres database (version 148)."
+      create_tables_133
+      migrate 133 148
+      cleanup_sqlite_db
+      copy_data "$TABLES_148"
+      ;;
+
+    149)
+      log_info "Creating Postgres database (version 149)."
+      create_tables_133
+      migrate 133 149
+      cleanup_sqlite_db
+      copy_data "$TABLES_149"
+      ;;
+
+    150)
+      log_info "Creating Postgres database (version 150)."
+      create_tables_133
+      migrate 133 150
+      cleanup_sqlite_db
+      copy_data "$TABLES_150"
+      ;;
+
+    151)
+      log_info "Creating Postgres database (version 151)."
+      create_tables_133
+      migrate 133 151
+      cleanup_sqlite_db
+      copy_data "$TABLES_151"
+      ;;
 
     *)
       log_notice "Database version not supported."
@@ -1204,7 +1614,7 @@ else
     exit 0
   fi
 fi
-migrate
+create
 log_info "Done."
 
 exit 0

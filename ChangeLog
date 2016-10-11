@@ -1,5 +1,34 @@
 2016-10-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Update SQLite-to-Postgres migration to handle db version 146.
+
+	* tools/openvas-migrate-to-postgres.in (sqlite): Add log.
+	(pg): Mark as PG in log.
+	(create_tables_133): Add space.  Correct reference in role_users_trash.
+	Was corrected in src/manage_pg.c 2015-03-17 in r21885.  Add note about
+	attack_state.  These were the only two differences between the schema
+	produced on startup and the schema produces by the migrate script.
+	(migrate_rest): Remove.
+	(cleanup_sqlite_db): New function.  From migrate_rest.
+	(copy_data): New function.  From migrate_rest.  Expect tables as
+	arguments.
+	(TABLES_133, TABLES_134, TABLES_135, TABLES_136, TABLES_137, TABLES_138)
+	(TABLES_139, TABLES_140, TABLES_141, TABLES_142, TABLES_143, TABLES_144)
+	(TABLES_145, TABLES_146, TABLES_147, TABLES_148, TABLES_149, TABLES_150)
+	(TABLES_151): New variables.  Lists of tables used to copy data.
+	(migrate_133_to_134, migrate_134_to_135, migrate_135_to_136)
+	(migrate_136_to_137, migrate_137_to_138, migrate_138_to_139)
+	(migrate_139_to_140, migrate_140_to_141, migrate_141_to_142)
+	(migrate_142_to_143, migrate_143_to_144, migrate_144_to_145)
+	(migrate_145_to_146, migrate_146_to_147, migrate_147_to_148)
+	(migrate_148_to_149, migrate_149_to_150, migrate_150_to_151): New
+	functions.  Schema migrators.
+	(migrate): Migrate schema from one version to next.
+	(create): New function.  Creates Postgres DB from SQLite one.
+	(main): Call create instead of migrate.
+
+2016-10-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_migrators.c (migrate_142_to_143): Neaten comment.
 	(INSERT_PERMISSION): Move to where it is used.
 	(migrate_154_to_155, migrate_158_to_159): Neaten/clarify comments.
