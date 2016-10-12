@@ -1448,6 +1448,11 @@ migrate () {
 
   TO=$2
 
+  if [ $1 -eq $TO ]
+  then
+      return
+  fi
+
   case $1 in
     133)
       migrate_133_to_134
@@ -1815,6 +1820,15 @@ migrate () {
   esac
 }
 
+## Create PG 133, migrate it to version $1, then clean SQLite db.
+#
+create_migrate_clean () {
+  log_info "Creating Postgres database (version $1)."
+  create_tables_133
+  migrate 133 $1
+  cleanup_sqlite_db
+}
+
 ## Create a Postgres database based on the SQLite one.
 #
 # Migrate the Postgres schema from the 133 base version; then clean the SQLite
@@ -1828,377 +1842,238 @@ create () {
   DB_VERSION=`sqlite "select value from meta where name = 'database_version';" 2>/dev/null | tr -d '\n\r' || echo 0`
   case "$DB_VERSION" in
     133)
-      log_info "Creating Postgres database (version 133)."
-      create_tables_133
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_133"
       ;;
 
     134)
-      log_info "Creating Postgres database (version 134)."
-      create_tables_133
-      migrate 133 134
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_134"
       ;;
 
     135)
-      log_info "Creating Postgres database (version 135)."
-      create_tables_133
-      migrate 133 135
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_135"
       ;;
 
     136)
-      log_info "Creating Postgres database (version 136)."
-      create_tables_133
-      migrate 133 136
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_136"
       ;;
 
     137)
-      log_info "Creating Postgres database (version 137)."
-      create_tables_133
-      migrate 133 137
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_137"
       ;;
 
     138)
-      log_info "Creating Postgres database (version 138)."
-      create_tables_133
-      migrate 133 138
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_138"
       ;;
 
     139)
-      log_info "Creating Postgres database (version 139)."
-      create_tables_139
-      migrate 133 139
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_139"
       ;;
 
     140)
-      log_info "Creating Postgres database (version 140)."
-      create_tables_133
-      migrate 133 140
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_140"
       ;;
 
     141)
-      log_info "Creating Postgres database (version 141)."
-      create_tables_133
-      migrate 133 141
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_141"
       ;;
 
     142)
-      log_info "Creating Postgres database (version 142)."
-      create_tables_133
-      migrate 133 142
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_142"
       ;;
 
     143)
-      log_info "Creating Postgres database (version 143)."
-      create_tables_133
-      migrate 133 143
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_143"
       ;;
 
     144)
-      log_info "Creating Postgres database (version 144)."
-      create_tables_133
-      migrate 133 144
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_144"
       ;;
 
     145)
-      log_info "Creating Postgres database (version 145)."
-      create_tables_133
-      migrate 133 145
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_145"
       ;;
 
     146)
-      log_info "Creating Postgres database (version 146)."
-      create_tables_133
-      migrate 133 146
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_146"
-	  ;;
+      ;;
 
     147)
-      log_info "Creating Postgres database (version 147)."
-      create_tables_133
-      migrate 133 147
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_147"
       ;;
 
     148)
-      log_info "Creating Postgres database (version 148)."
-      create_tables_133
-      migrate 133 148
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_148"
       ;;
 
     149)
-      log_info "Creating Postgres database (version 149)."
-      create_tables_133
-      migrate 133 149
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_149"
       ;;
 
     150)
-      log_info "Creating Postgres database (version 150)."
-      create_tables_133
-      migrate 133 150
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_150"
       ;;
 
     151)
-      log_info "Creating Postgres database (version 151)."
-      create_tables_133
-      migrate 133 $DB_VERSION
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_151"
       ;;
 
     152)
-      log_info "Creating Postgres database (version 152)."
-      create_tables_133
-      migrate 133 $DB_VERSION
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_152"
       ;;
 
     153)
-      log_info "Creating Postgres database (version 153)."
-      create_tables_133
-      migrate 133 $DB_VERSION
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_153"
       ;;
 
     154)
-      log_info "Creating Postgres database (version 154)."
-      create_tables_133
-      migrate 133 $DB_VERSION
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_154"
       ;;
 
     155)
-      log_info "Creating Postgres database (version 155)."
-      create_tables_133
-      migrate 133 $DB_VERSION
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_155"
       ;;
 
     156)
-      log_info "Creating Postgres database (version 156)."
-      create_tables_133
-      migrate 133 $DB_VERSION
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_156"
       ;;
 
     157)
-      log_info "Creating Postgres database (version 157)."
-      create_tables_133
-      migrate 133 $DB_VERSION
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_157"
       ;;
 
     158)
-      log_info "Creating Postgres database (version 158)."
-      create_tables_133
-      migrate 133 $DB_VERSION
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_158"
       ;;
 
     159)
-      log_info "Creating Postgres database (version 159)."
-      create_tables_133
-      migrate 133 $DB_VERSION
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_159"
       ;;
 
     160)
-      log_info "Creating Postgres database (version 160)."
-      create_tables_133
-      migrate 133 160
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_160"
       ;;
 
     161)
-      log_info "Creating Postgres database (version 161)."
-      create_tables_133
-      migrate 133 $DB_VERSION
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_161"
       ;;
 
     162)
-      log_info "Creating Postgres database (version 162)."
-      create_tables_133
-      migrate 133 $DB_VERSION
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_162"
       ;;
 
     163)
-      log_info "Creating Postgres database (version 163)."
-      create_tables_133
-      migrate 133 $DB_VERSION
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_163"
       ;;
 
     164)
-      log_info "Creating Postgres database (version 164)."
-      create_tables_133
-      migrate 133 $DB_VERSION
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_164"
       ;;
 
     165)
-      log_info "Creating Postgres database (version 165)."
-      create_tables_133
-      migrate 133 $DB_VERSION
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_165"
       ;;
 
     166)
-      log_info "Creating Postgres database (version 166)."
-      create_tables_133
-      migrate 133 $DB_VERSION
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_166"
       ;;
 
     167)
-      log_info "Creating Postgres database (version 167)."
-      create_tables_133
-      migrate 133 $DB_VERSION
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_167"
       ;;
 
     168)
-      log_info "Creating Postgres database (version 168)."
-      create_tables_133
-      migrate 133 $DB_VERSION
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_168"
       ;;
 
     169)
-      log_info "Creating Postgres database (version 169)."
-      create_tables_133
-      migrate 133 $DB_VERSION
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_169"
       ;;
 
     170)
-      log_info "Creating Postgres database (version 170)."
-      create_tables_133
-      migrate 133 170
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_170"
       ;;
 
     171)
-      log_info "Creating Postgres database (version 171)."
-      create_tables_133
-      migrate 133 $DB_VERSION
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_171"
       ;;
 
     172)
-      log_info "Creating Postgres database (version 172)."
-      create_tables_133
-      migrate 133 $DB_VERSION
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_172"
       ;;
 
     173)
-      log_info "Creating Postgres database (version 173)."
-      create_tables_133
-      migrate 133 $DB_VERSION
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_173"
       ;;
 
     174)
-      log_info "Creating Postgres database (version 174)."
-      create_tables_133
-      migrate 133 $DB_VERSION
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_174"
       ;;
 
     175)
-      log_info "Creating Postgres database (version 175)."
-      create_tables_133
-      migrate 133 $DB_VERSION
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_175"
       ;;
 
     176)
-      log_info "Creating Postgres database (version 176)."
-      create_tables_133
-      migrate 133 $DB_VERSION
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_176"
       ;;
 
     177)
-      log_info "Creating Postgres database (version 177)."
-      create_tables_133
-      migrate 133 $DB_VERSION
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_177"
       ;;
 
     178)
-      log_info "Creating Postgres database (version 178)."
-      create_tables_133
-      migrate 133 $DB_VERSION
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_178"
       ;;
 
     179)
       log_info "Creating Postgres database (version 179)."
-      create_tables_133
-      migrate 133 $DB_VERSION
-      cleanup_sqlite_db
+      create_migrate_clean $DB_VERSION
       copy_data "$TABLES_179"
       ;;
 

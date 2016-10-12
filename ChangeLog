@@ -1,5 +1,12 @@
 2016-10-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/openvas-migrate-to-postgres.in (migrate): Check if already at
+	the version.
+	(create_migrate_clean): New function.
+	(create): Use create_migrate_clean for convenience.
+
+2016-10-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/openvas-migrate-to-postgres.in (TABLES_151): Add new tables.
 	(migrate_151_to_152, migrate_152_to_153, migrate_153_to_154)
 	(migrate_154_to_155, migrate_155_to_156, migrate_156_to_157)
