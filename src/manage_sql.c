@@ -4860,7 +4860,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   apply_overrides_str = filter_term_value (filter ? filter : get->filter, "apply_overrides");
   apply_overrides = apply_overrides_str ? atoi (apply_overrides_str) : 1;
   min_qod_str = filter_term_value (filter ? filter : get->filter, "min_qod");
-  min_qod = min_qod_str ? atoi (min_qod_str) : MIN_QOD_DEFAULT;
+  min_qod = (min_qod_str && strcmp (min_qod_str, ""))
+              ? atoi (min_qod_str) : MIN_QOD_DEFAULT;
   g_free (apply_overrides_str);
   g_free (min_qod_str);
 

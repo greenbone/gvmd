@@ -1,5 +1,12 @@
 2016-10-12  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Backport r26381.
+
+	* src/manage_sql.c (init_aggregate_iterator): Also fall back to the
+	default qod value if min_qod_str is an empty string.
+
+2016-10-12  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Backport r26371 and r26374.
 
 	* src/manage_sql.c (print_report_xml): Create hash tables shortly
