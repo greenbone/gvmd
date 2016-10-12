@@ -28441,12 +28441,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                  host_iterator_start_time (&hosts));
         }
       cleanup_iterator (&hosts);
-      g_hash_table_destroy (f_host_ports);
-      g_hash_table_destroy (f_host_holes);
-      g_hash_table_destroy (f_host_warnings);
-      g_hash_table_destroy (f_host_infos);
-      g_hash_table_destroy (f_host_logs);
-      g_hash_table_destroy (f_host_false_positives);
 
       init_report_host_iterator (&hosts, report, NULL, 0);
       while (next (&hosts))
@@ -28458,6 +28452,14 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                   : "");
       cleanup_iterator (&hosts);
     }
+
+  g_hash_table_destroy (f_host_ports);
+  g_hash_table_destroy (f_host_holes);
+  g_hash_table_destroy (f_host_warnings);
+  g_hash_table_destroy (f_host_infos);
+  g_hash_table_destroy (f_host_logs);
+  g_hash_table_destroy (f_host_false_positives);
+
   end_time = scan_end_time (report);
   PRINT (out,
            "<scan_end>%s</scan_end>",
