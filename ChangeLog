@@ -1,5 +1,10 @@
 2016-10-12  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (init_aggregate_iterator): Also fall back to the
+	default qod value if min_qod_str is an empty string.
+
+2016-10-12  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (print_report_xml_start): Move g_hash_table_destroy
 	calls for success cases so they are always made after printing hosts.
 
