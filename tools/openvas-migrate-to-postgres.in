@@ -1228,7 +1228,210 @@ migrate_150_to_151 () {
   : # Schema stayed the same.
 }
 
-TABLES_151=$TABLES_150
+# FIX host_details added between 150 and 151  (at 151 they have to be there, at 150 coping will fail if they're not there (if missing from sqlite then ignore))
+TABLES_151="$TABLES_150 hosts oss host_identifiers host_details host_max_severities host_oss."
+
+migrate_151_to_152 () {
+  : # Schema stayed the same.
+}
+
+TABLES_152=$TABLES_151
+
+migrate_152_to_153 () {
+  : # Schema stayed the same.
+}
+
+TABLES_153=$TABLES_152
+
+migrate_153_to_154 () {
+  pg "DROP TABLE lsc_credentials;"
+  pg "DROP TABLE lsc_credentials_trash;"
+}
+
+TABLES_154="$TABLES_153 credentials credentials_trash credentials_data credentials_trash_data"
+
+migrate_154_to_155 () {
+  pg "ALTER TABLE reports ADD COLUMN flags INTEGER;"
+}
+
+TABLES_155=$TABLES_154
+
+migrate_155_to_156 () {
+  pg "ALTER TABLE targets DROP COLUMN lsc_credential;"
+  pg "ALTER TABLE targets DROP COLUMN ssh_port;"
+  pg "ALTER TABLE targets DROP COLUMN smb_lsc_credential;"
+  pg "ALTER TABLE targets DROP COLUMN esxi_lsc_credential;"
+  pg "ALTER TABLE targets RENAME COLUMN port_range TO port_list;"
+
+  pg "ALTER TABLE targets_trash DROP COLUMN lsc_credential;"
+  pg "ALTER TABLE targets_trash DROP COLUMN ssh_location;"
+  pg "ALTER TABLE targets_trash DROP COLUMN ssh_port;"
+  pg "ALTER TABLE targets_trash DROP COLUMN smb_lsc_credential;"
+  pg "ALTER TABLE targets_trash DROP COLUMN smb_location;"
+  pg "ALTER TABLE targets_trash DROP COLUMN esxi_lsc_credential;"
+  pg "ALTER TABLE targets_trash DROP COLUMN esxi_location;"
+  pg "ALTER TABLE targets_trash RENAME COLUMN port_range TO port_list;"
+}
+
+TABLES_156="$TABLES_155 targets_login_data targets_trash_login_data"
+
+migrate_156_to_157 () {
+  pg "ALTER TABLE slaves ADD COLUMN credential INTEGER REFERENCES credentials (id) ON DELETE RESTRICT;"
+  pg "ALTER TABLE slaves_trash ADD COLUMN credential INTEGER;"
+  pg "ALTER TABLE slaves_trash ADD COLUMN credential_location INTEGER;"
+
+  pg "ALTER TABLE slaves DROP COLUMN login;"
+  pg "ALTER TABLE slaves DROP COLUMN password;"
+  pg "ALTER TABLE slaves_trash DROP COLUMN login;"
+  pg "ALTER TABLE slaves_trash DROP COLUMN password;"
+}
+
+TABLES_157=$TABLES_156
+
+migrate_157_to_158 () {
+  pg "ALTER TABLE configs ADD COLUMN scanner INTEGER"
+	 " REFERENCES scanners (id) ON DELETE RESTRICT;"
+  pg "ALTER TABLE configs_trash ADD COLUMN scanner INTEGER"
+	 " REFERENCES scanners (id) ON DELETE RESTRICT;"
+}
+
+TABLES_158=$TABLES_157
+
+migrate_158_to_159 () {
+  pg "ALTER TABLE scanners ADD COLUMN credential INTEGER REFERENCES credentials (id) ON DELETE RESTRICT;"
+  pg "ALTER TABLE scanners_trash ADD COLUMN credential INTEGER;"
+  pg "ALTER TABLE scanners_trash ADD COLUMN credential_location INTEGER;"
+
+  pg "ALTER TABLE scanners DROP COLUMN key_pub;"
+  pg "ALTER TABLE scanners DROP COLUMN key_priv;"
+  pg "ALTER TABLE scanners_trash DROP COLUMN key_pub;"
+  pg "ALTER TABLE scanners_trash DROP COLUMN key_priv;"
+}
+
+TABLES_159=$TABLES_158
+
+migrate_159_to_160 () {
+  : # Schema stayed the same.
+}
+
+TABLES_160=$TABLES_159
+
+migrate_160_to_161 () {
+  : # Schema stayed the same.
+}
+
+TABLES_161=$TABLES_160
+
+migrate_161_to_162 () {
+  pg "ALTER TABLE credentials ADD COLUMN allow_insecure INTEGER;"
+  pg "ALTER TABLE credentials_trash ADD COLUMN allow_insecure INTEGER;"
+}
+
+TABLES_162=$TABLES_161
+
+migrate_162_to_163 () {
+  : # Schema stayed the same.
+}
+
+TABLES_163=$TABLES_162
+
+migrate_163_to_164 () {
+  : # Schema stayed the same.
+}
+
+TABLES_164=$TABLES_163
+
+migrate_164_to_165 () {
+  pg "ALTER TABLE config_preferences ADD COLUMN hr_name TEXT;"
+  pg "ALTER TABLE config_preferences_trash ADD COLUMN hr_name TEXT;"
+}
+
+TABLES_165=$TABLES_164
+
+migrate_165_to_166 () {
+  : # Schema stayed the same.
+}
+
+TABLES_166=$TABLES_165
+
+migrate_166_to_167 () {
+  : # Schema stayed the same.
+}
+
+TABLES_167="$TABLES_166 resources_predefined"
+
+migrate_167_to_168 () {
+  : # Schema stayed the same.
+}
+
+TABLES_168=$TABLES_167
+
+migrate_168_to_169 () {
+  : # Schema stayed the same.
+}
+
+TABLES_169=$TABLES_168
+
+migrate_169_to_170 () {
+  : # Schema stayed the same.
+}
+
+TABLES_170=$TABLES_169
+
+migrate_170_to_171 () {
+  : # Schema stayed the same.
+}
+
+TABLES_171=$TABLES_170
+
+migrate_171_to_172 () {
+  : # Schema stayed the same.
+}
+
+TABLES_172=$TABLES_171
+
+migrate_172_to_173 () {
+  pg "ALTER TABLE nvts DROP COLUMN summary;"
+}
+
+TABLES_173=$TABLES_172
+
+migrate_173_to_174 () {
+  : # Schema stayed the same.
+}
+
+TABLES_174=$TABLES_173
+
+migrate_174_to_175 () {
+  : # Schema stayed the same.
+}
+
+TABLES_175=$TABLES_174
+
+migrate_175_to_176 () {
+  : # Schema stayed the same.
+}
+
+TABLES_176=$TABLES_175
+
+migrate_176_to_177 () {
+  : # Schema stayed the same.
+}
+
+TABLES_177=$TABLES_176
+
+migrate_177_to_178 () {
+  : # Schema stayed the same.
+}
+
+TABLES_178=$TABLES_177
+
+migrate_178_to_179 () {
+  pg "ALTER TABLE reports ADD COLUMN slave_username TEXT;"
+  pg "ALTER TABLE reports ADD COLUMN slave_password TEXT;"
+}
+
+TABLES_179=$TABLES_178
 
 
 ## Migrate the schema of the Postgres database from version $1 to $2.
@@ -1240,6 +1443,8 @@ migrate () {
     log_notice "Internal Error: migrate must have two args"
 	exit 1
   fi
+
+  log_info "Migrating schema from $1 to $TO."
 
   TO=$2
 
@@ -1387,6 +1592,222 @@ migrate () {
           return
       fi
       migrate 152 $TO;;
+
+    152)
+      migrate_152_to_153
+      if [ $TO -eq 153 ]
+      then
+          return
+      fi
+      migrate 153 $TO;;
+
+    153)
+      migrate_153_to_154
+      if [ $TO -eq 154 ]
+      then
+          return
+      fi
+      migrate 154 $TO;;
+
+    154)
+      migrate_154_to_155
+      if [ $TO -eq 155 ]
+      then
+          return
+      fi
+      migrate 155 $TO;;
+
+    155)
+      migrate_155_to_156
+      if [ $TO -eq 156 ]
+      then
+          return
+      fi
+      migrate 156 $TO;;
+
+    156)
+      migrate_156_to_157
+      if [ $TO -eq 157 ]
+      then
+          return
+      fi
+      migrate 157 $TO;;
+
+    157)
+      migrate_157_to_158
+      if [ $TO -eq 158 ]
+      then
+          return
+      fi
+      migrate 158 $TO;;
+
+    158)
+      migrate_158_to_159
+      if [ $TO -eq 159 ]
+      then
+          return
+      fi
+      migrate 159 $TO;;
+
+    159)
+      migrate_159_to_160
+      if [ $TO -eq 160 ]
+      then
+          return
+      fi
+      migrate 160 $TO;;
+
+    160)
+      migrate_160_to_161
+      if [ $TO -eq 161 ]
+      then
+          return
+      fi
+      migrate 161 $TO;;
+
+    161)
+      migrate_161_to_162
+      if [ $TO -eq 162 ]
+      then
+          return
+      fi
+      migrate 162 $TO;;
+
+    162)
+      migrate_162_to_163
+      if [ $TO -eq 163 ]
+      then
+          return
+      fi
+      migrate 163 $TO;;
+
+    163)
+      migrate_163_to_164
+      if [ $TO -eq 164 ]
+      then
+          return
+      fi
+      migrate 164 $TO;;
+
+    164)
+      migrate_164_to_165
+      if [ $TO -eq 165 ]
+      then
+          return
+      fi
+      migrate 165 $TO;;
+
+    165)
+      migrate_165_to_166
+      if [ $TO -eq 166 ]
+      then
+          return
+      fi
+      migrate 166 $TO;;
+
+    166)
+      migrate_166_to_167
+      if [ $TO -eq 167 ]
+      then
+          return
+      fi
+      migrate 167 $TO;;
+
+    167)
+      migrate_167_to_168
+      if [ $TO -eq 168 ]
+      then
+          return
+      fi
+      migrate 168 $TO;;
+
+    168)
+      migrate_168_to_169
+      if [ $TO -eq 169 ]
+      then
+          return
+      fi
+      migrate 169 $TO;;
+
+    169)
+      migrate_169_to_170
+      if [ $TO -eq 170 ]
+      then
+          return
+      fi
+      migrate 170 $TO;;
+
+    170)
+      migrate_170_to_171
+      if [ $TO -eq 171 ]
+      then
+          return
+      fi
+      migrate 171 $TO;;
+
+    171)
+      migrate_171_to_172
+      if [ $TO -eq 172 ]
+      then
+          return
+      fi
+      migrate 172 $TO;;
+
+    172)
+      migrate_172_to_173
+      if [ $TO -eq 173 ]
+      then
+          return
+      fi
+      migrate 173 $TO;;
+
+    173)
+      migrate_173_to_174
+      if [ $TO -eq 174 ]
+      then
+          return
+      fi
+      migrate 174 $TO;;
+
+    174)
+      migrate_174_to_175
+      if [ $TO -eq 175 ]
+      then
+          return
+      fi
+      migrate 175 $TO;;
+
+    175)
+      migrate_175_to_176
+      if [ $TO -eq 176 ]
+      then
+          return
+      fi
+      migrate 176 $TO;;
+
+    176)
+      migrate_176_to_177
+      if [ $TO -eq 177 ]
+      then
+          return
+      fi
+      migrate 177 $TO;;
+
+    177)
+      migrate_177_to_178
+      if [ $TO -eq 178 ]
+      then
+          return
+      fi
+      migrate 178 $TO;;
+
+    178)
+      migrate_178_to_179
+      if [ $TO -eq 179 ]
+      then
+          return
+      fi
+      migrate 179 $TO;;
 
     *)
       log_notice "Version in Postgres database out of sync."
@@ -1552,9 +1973,233 @@ create () {
     151)
       log_info "Creating Postgres database (version 151)."
       create_tables_133
-      migrate 133 151
+      migrate 133 $DB_VERSION
       cleanup_sqlite_db
       copy_data "$TABLES_151"
+      ;;
+
+    152)
+      log_info "Creating Postgres database (version 152)."
+      create_tables_133
+      migrate 133 $DB_VERSION
+      cleanup_sqlite_db
+      copy_data "$TABLES_152"
+      ;;
+
+    153)
+      log_info "Creating Postgres database (version 153)."
+      create_tables_133
+      migrate 133 $DB_VERSION
+      cleanup_sqlite_db
+      copy_data "$TABLES_153"
+      ;;
+
+    154)
+      log_info "Creating Postgres database (version 154)."
+      create_tables_133
+      migrate 133 $DB_VERSION
+      cleanup_sqlite_db
+      copy_data "$TABLES_154"
+      ;;
+
+    155)
+      log_info "Creating Postgres database (version 155)."
+      create_tables_133
+      migrate 133 $DB_VERSION
+      cleanup_sqlite_db
+      copy_data "$TABLES_155"
+      ;;
+
+    156)
+      log_info "Creating Postgres database (version 156)."
+      create_tables_133
+      migrate 133 $DB_VERSION
+      cleanup_sqlite_db
+      copy_data "$TABLES_156"
+      ;;
+
+    157)
+      log_info "Creating Postgres database (version 157)."
+      create_tables_133
+      migrate 133 $DB_VERSION
+      cleanup_sqlite_db
+      copy_data "$TABLES_157"
+      ;;
+
+    158)
+      log_info "Creating Postgres database (version 158)."
+      create_tables_133
+      migrate 133 $DB_VERSION
+      cleanup_sqlite_db
+      copy_data "$TABLES_158"
+      ;;
+
+    159)
+      log_info "Creating Postgres database (version 159)."
+      create_tables_133
+      migrate 133 $DB_VERSION
+      cleanup_sqlite_db
+      copy_data "$TABLES_159"
+      ;;
+
+    160)
+      log_info "Creating Postgres database (version 160)."
+      create_tables_133
+      migrate 133 160
+      cleanup_sqlite_db
+      copy_data "$TABLES_160"
+      ;;
+
+    161)
+      log_info "Creating Postgres database (version 161)."
+      create_tables_133
+      migrate 133 $DB_VERSION
+      cleanup_sqlite_db
+      copy_data "$TABLES_161"
+      ;;
+
+    162)
+      log_info "Creating Postgres database (version 162)."
+      create_tables_133
+      migrate 133 $DB_VERSION
+      cleanup_sqlite_db
+      copy_data "$TABLES_162"
+      ;;
+
+    163)
+      log_info "Creating Postgres database (version 163)."
+      create_tables_133
+      migrate 133 $DB_VERSION
+      cleanup_sqlite_db
+      copy_data "$TABLES_163"
+      ;;
+
+    164)
+      log_info "Creating Postgres database (version 164)."
+      create_tables_133
+      migrate 133 $DB_VERSION
+      cleanup_sqlite_db
+      copy_data "$TABLES_164"
+      ;;
+
+    165)
+      log_info "Creating Postgres database (version 165)."
+      create_tables_133
+      migrate 133 $DB_VERSION
+      cleanup_sqlite_db
+      copy_data "$TABLES_165"
+      ;;
+
+    166)
+      log_info "Creating Postgres database (version 166)."
+      create_tables_133
+      migrate 133 $DB_VERSION
+      cleanup_sqlite_db
+      copy_data "$TABLES_166"
+      ;;
+
+    167)
+      log_info "Creating Postgres database (version 167)."
+      create_tables_133
+      migrate 133 $DB_VERSION
+      cleanup_sqlite_db
+      copy_data "$TABLES_167"
+      ;;
+
+    168)
+      log_info "Creating Postgres database (version 168)."
+      create_tables_133
+      migrate 133 $DB_VERSION
+      cleanup_sqlite_db
+      copy_data "$TABLES_168"
+      ;;
+
+    169)
+      log_info "Creating Postgres database (version 169)."
+      create_tables_133
+      migrate 133 $DB_VERSION
+      cleanup_sqlite_db
+      copy_data "$TABLES_169"
+      ;;
+
+    170)
+      log_info "Creating Postgres database (version 170)."
+      create_tables_133
+      migrate 133 170
+      cleanup_sqlite_db
+      copy_data "$TABLES_170"
+      ;;
+
+    171)
+      log_info "Creating Postgres database (version 171)."
+      create_tables_133
+      migrate 133 $DB_VERSION
+      cleanup_sqlite_db
+      copy_data "$TABLES_171"
+      ;;
+
+    172)
+      log_info "Creating Postgres database (version 172)."
+      create_tables_133
+      migrate 133 $DB_VERSION
+      cleanup_sqlite_db
+      copy_data "$TABLES_172"
+      ;;
+
+    173)
+      log_info "Creating Postgres database (version 173)."
+      create_tables_133
+      migrate 133 $DB_VERSION
+      cleanup_sqlite_db
+      copy_data "$TABLES_173"
+      ;;
+
+    174)
+      log_info "Creating Postgres database (version 174)."
+      create_tables_133
+      migrate 133 $DB_VERSION
+      cleanup_sqlite_db
+      copy_data "$TABLES_174"
+      ;;
+
+    175)
+      log_info "Creating Postgres database (version 175)."
+      create_tables_133
+      migrate 133 $DB_VERSION
+      cleanup_sqlite_db
+      copy_data "$TABLES_175"
+      ;;
+
+    176)
+      log_info "Creating Postgres database (version 176)."
+      create_tables_133
+      migrate 133 $DB_VERSION
+      cleanup_sqlite_db
+      copy_data "$TABLES_176"
+      ;;
+
+    177)
+      log_info "Creating Postgres database (version 177)."
+      create_tables_133
+      migrate 133 $DB_VERSION
+      cleanup_sqlite_db
+      copy_data "$TABLES_177"
+      ;;
+
+    178)
+      log_info "Creating Postgres database (version 178)."
+      create_tables_133
+      migrate 133 $DB_VERSION
+      cleanup_sqlite_db
+      copy_data "$TABLES_178"
+      ;;
+
+    179)
+      log_info "Creating Postgres database (version 179)."
+      create_tables_133
+      migrate 133 $DB_VERSION
+      cleanup_sqlite_db
+      copy_data "$TABLES_179"
       ;;
 
     *)

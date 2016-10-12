@@ -1,5 +1,25 @@
 2016-10-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/openvas-migrate-to-postgres.in (TABLES_151): Add new tables.
+	(migrate_151_to_152, migrate_152_to_153, migrate_153_to_154)
+	(migrate_154_to_155, migrate_155_to_156, migrate_156_to_157)
+	(migrate_157_to_158, migrate_158_to_159, migrate_159_to_160)
+	(migrate_160_to_161, migrate_161_to_162, migrate_162_to_163)
+	(migrate_163_to_164, migrate_164_to_165, migrate_165_to_166)
+	(migrate_166_to_167, migrate_167_to_168, migrate_168_to_169)
+	(migrate_169_to_170, migrate_170_to_171, migrate_171_to_172)
+	(migrate_172_to_173, migrate_173_to_174, migrate_174_to_175)
+	(migrate_175_to_176, migrate_176_to_177, migrate_177_to_178)
+	(migrate_178_to_179): New functions.
+	(TABLES_152, TABLES_153, TABLES_154, TABLES_155, TABLES_156, TABLES_157)
+	(TABLES_158, TABLES_159, TABLES_160, TABLES_161, TABLES_162, TABLES_163)
+	(TABLES_164, TABLES_165, TABLES_166, TABLES_167, TABLES_168, TABLES_169)
+	(TABLES_170, TABLES_171, TABLES_172, TABLES_173, TABLES_174, TABLES_175)
+	(TABLES_176, TABLES_177, TABLES_178, TABLES_179): New variables.
+	(migrate, create): Add remaining versions.
+
+2016-10-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/openvas-migrate-to-postgres.in (copy_data): Check that the
 	tables being copied include all the tables in the SQLite db.
 	(TABLES_133, TABLES_135): Add agents and agents_trash.
