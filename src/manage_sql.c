@@ -25640,16 +25640,11 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   orig_filtered_result_count = 0;
   orig_f_false_positives = orig_f_warnings = orig_f_logs = orig_f_infos = 0;
   orig_f_holes = orig_f_debugs = 0;
-  f_host_ports = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                        g_free, NULL);
-  f_host_holes = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                        g_free, NULL);
-  f_host_warnings = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                           g_free, NULL);
-  f_host_infos = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                      g_free, NULL);
-  f_host_logs = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                      g_free, NULL);
+  f_host_ports = NULL;
+  f_host_holes = NULL;
+  f_host_warnings = NULL;
+  f_host_infos = NULL;
+  f_host_logs = NULL;
   f_host_false_positives = g_hash_table_new_full (g_str_hash, g_str_equal,
                                                   g_free, NULL);
 
@@ -26305,6 +26300,9 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
   /* Port summary. */
 
+  f_host_ports = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                        g_free, NULL);
+
   if (get->details && (delta == 0))
     {
       if (print_report_port_xml (report, out,
@@ -26316,6 +26314,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                  f_host_ports))
         {
           tz_revert (zone, tz);
+          g_hash_table_destroy (f_host_ports);
           return -1;
         }
     }
@@ -26438,6 +26437,18 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   else
     /* Quiet erroneous compiler warning. */
     result_hosts = NULL;
+
+  f_host_holes = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                        g_free, NULL);
+  f_host_warnings = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                           g_free, NULL);
+  f_host_infos = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                      g_free, NULL);
+  f_host_logs = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                      g_free, NULL);
+  f_host_false_positives = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                  g_free, NULL);
+
   if (delta && get->details)
     {
       gboolean done, delta_done;
@@ -26674,6 +26685,12 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
               cleanup_iterator (&results);
               cleanup_iterator (&delta_results);
               tz_revert (zone, tz);
+              g_hash_table_destroy (f_host_ports);
+              g_hash_table_destroy (f_host_holes);
+              g_hash_table_destroy (f_host_warnings);
+              g_hash_table_destroy (f_host_infos);
+              g_hash_table_destroy (f_host_logs);
+              g_hash_table_destroy (f_host_false_positives);
               return -1;
             }
           PRINT_XML (out, buffer->str);
@@ -26977,6 +26994,12 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
               cleanup_iterator (&results);
               cleanup_iterator (&delta_results);
               tz_revert (zone, tz);
+              g_hash_table_destroy (f_host_ports);
+              g_hash_table_destroy (f_host_holes);
+              g_hash_table_destroy (f_host_warnings);
+              g_hash_table_destroy (f_host_infos);
+              g_hash_table_destroy (f_host_logs);
+              g_hash_table_destroy (f_host_false_positives);
               return -1;
             }
 
@@ -27282,15 +27305,15 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                      "<ip>%s</ip>"
                      "<start>%s</start>"
                      "<end>%s</end>"
-                     "<ports><page>%d</page></ports>"
-                     "<results>"
+                     "<port_count><page>%d</page></port_count>"
+                     "<result_count>"
                      "<page>%d</page>"
                      "<hole><page>%d</page></hole>"
                      "<warning><page>%d</page></warning>"
                      "<info><page>%d</page></info>"
                      "<log><page>%d</page></log>"
                      "<false_positive><page>%d</page></false_positive>"
-                     "</results>",
+                     "</result_count>",
                      host,
                      host_iterator_start_time (&hosts),
                      host_iterator_end_time (&hosts)
@@ -27311,6 +27334,12 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                   tz_revert (zone, tz);
                   if (host_summary_buffer)
                     g_string_free (host_summary_buffer, TRUE);
+                  g_hash_table_destroy (f_host_ports);
+                  g_hash_table_destroy (f_host_holes);
+                  g_hash_table_destroy (f_host_warnings);
+                  g_hash_table_destroy (f_host_infos);
+                  g_hash_table_destroy (f_host_logs);
+                  g_hash_table_destroy (f_host_false_positives);
                   return -1;
                 }
 
@@ -27377,15 +27406,15 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                  "<ip>%s</ip>"
                  "<start>%s</start>"
                  "<end>%s</end>"
-                 "<ports><page>%d</page></ports>"
-                 "<results>"
+                 "<port_count><page>%d</page></port_count>"
+                 "<result_count>"
                  "<page>%d</page>"
                  "<hole><page>%d</page></hole>"
                  "<warning><page>%d</page></warning>"
                  "<info><page>%d</page></info>"
                  "<log><page>%d</page></log>"
                  "<false_positive><page>%d</page></false_positive>"
-                 "</results>",
+                 "</result_count>",
                  host_iterator_host (&hosts),
                  host_iterator_start_time (&hosts),
                  host_iterator_end_time (&hosts)
@@ -27406,6 +27435,12 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
               tz_revert (zone, tz);
               if (host_summary_buffer)
                 g_string_free (host_summary_buffer, TRUE);
+              g_hash_table_destroy (f_host_ports);
+              g_hash_table_destroy (f_host_holes);
+              g_hash_table_destroy (f_host_warnings);
+              g_hash_table_destroy (f_host_infos);
+              g_hash_table_destroy (f_host_logs);
+              g_hash_table_destroy (f_host_false_positives);
               return -1;
             }
 
@@ -27429,6 +27464,14 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                   : "");
       cleanup_iterator (&hosts);
     }
+
+  g_hash_table_destroy (f_host_ports);
+  g_hash_table_destroy (f_host_holes);
+  g_hash_table_destroy (f_host_warnings);
+  g_hash_table_destroy (f_host_infos);
+  g_hash_table_destroy (f_host_logs);
+  g_hash_table_destroy (f_host_false_positives);
+
   end_time = scan_end_time (report);
   PRINT (out,
            "<scan_end>%s</scan_end>",
