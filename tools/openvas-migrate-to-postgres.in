@@ -1029,7 +1029,7 @@ copy_data () {
   if [ $# -ne 1 ]
   then
     log_notice "Internal Error: copy_data must have an arg"
-	exit 1
+    exit 1
   fi
 
   log_info "Copying SQLite3 data:"
@@ -1054,7 +1054,7 @@ copy_data () {
   if [ $? -ne 0 ]
   then
     log_notice "Internal Error: tables being copied do not match tables in SQLite db"
-	exit 1
+    exit 1
   fi
 
   log_info "Copying SQLite3 data: copying"
@@ -1290,9 +1290,9 @@ TABLES_157=$TABLES_156
 
 migrate_157_to_158 () {
   pg "ALTER TABLE configs ADD COLUMN scanner INTEGER"
-	 " REFERENCES scanners (id) ON DELETE RESTRICT;"
+     " REFERENCES scanners (id) ON DELETE RESTRICT;"
   pg "ALTER TABLE configs_trash ADD COLUMN scanner INTEGER"
-	 " REFERENCES scanners (id) ON DELETE RESTRICT;"
+     " REFERENCES scanners (id) ON DELETE RESTRICT;"
 }
 
 TABLES_158=$TABLES_157
@@ -1441,7 +1441,7 @@ migrate () {
   if [ $# -ne 2 ]
   then
     log_notice "Internal Error: migrate must have two args"
-	exit 1
+    exit 1
   fi
 
   log_info "Migrating schema from $1 to $TO."

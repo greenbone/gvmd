@@ -1,5 +1,9 @@
 2016-10-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/openvas-migrate-to-postgres.in: Convert tabs to spaces.
+
+2016-10-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/openvas-migrate-to-postgres.in (migrate): Check if already at
 	the version.
 	(create_migrate_clean): New function.
