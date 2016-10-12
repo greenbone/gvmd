@@ -1,5 +1,20 @@
 2016-10-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/openvas-migrate-to-postgres.in (cleanup_sqlite_db): Remove stray
+	task preferences.  The C migrator migrate_167_to_168 is leaving one of
+	these behind.  Remove escalator_condition_data_trash, which
+	migrate_56_to_57 leaves behind.
+	(TABLES_135): Generate from TABLES_134.
+	(migrate_150_to_151, migrate_153_to_154, migrate_154_to_155)
+	(migrate_166_to_167): Create tables that were introduced at this time.
+	(TABLES_151): Order to match create order.
+	(TABLES_153_NO_USERS): New variable.
+	(TABLES_154): Remove tables removed in migrator.
+	(create_migrate_clean): Clean before migrating, because migrating depends
+	on a clean db.
+
+2016-10-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/openvas-migrate-to-postgres.in: Convert tabs to spaces.
 
 2016-10-12  Matthew Mundell <matthew.mundell@greenbone.net>
