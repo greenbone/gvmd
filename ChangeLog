@@ -6,7 +6,7 @@
 2016-10-12  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (print_report_xml_start): Create hash tables shortly
-	before they are created and destroy them when no longer needed.  Also
+	before they are used and destroy them when no longer needed.  Also
 	rename elements ports and results in hosts to port_count and
 	result_count.
 
