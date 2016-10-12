@@ -27322,16 +27322,11 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   orig_filtered_result_count = 0;
   orig_f_false_positives = orig_f_warnings = orig_f_logs = orig_f_infos = 0;
   orig_f_holes = orig_f_debugs = 0;
-  f_host_ports = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                        g_free, NULL);
-  f_host_holes = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                        g_free, NULL);
-  f_host_warnings = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                           g_free, NULL);
-  f_host_infos = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                      g_free, NULL);
-  f_host_logs = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                      g_free, NULL);
+  f_host_ports = NULL;
+  f_host_holes = NULL;
+  f_host_warnings = NULL;
+  f_host_infos = NULL;
+  f_host_logs = NULL;
   f_host_false_positives = g_hash_table_new_full (g_str_hash, g_str_equal,
                                                   g_free, NULL);
 
@@ -27984,6 +27979,9 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   /* Port summary. */
 
+  f_host_ports = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                        g_free, NULL);
+
   if (get->details && (delta == 0))
     {
       if (print_report_port_xml (report, out,
@@ -27995,6 +27993,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
         {
           g_free (term);
           tz_revert (zone, tz);
+          g_hash_table_destroy (f_host_ports);
           return -1;
         }
     }
@@ -28018,6 +28017,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                 term, sort_field))
         {
           g_free (term);
+          g_hash_table_destroy (f_host_ports);
           return -1;
         }
       g_free (term);
@@ -28028,7 +28028,10 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       g_free (term);
       res = init_result_get_iterator (&results, get, report, NULL, NULL);
       if (res)
-        return -1;
+        {
+          g_hash_table_destroy (f_host_ports);
+          return -1;
+        }
     }
   else
     g_free (term);
@@ -28046,6 +28049,18 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   else
     /* Quiet erroneous compiler warning. */
     result_hosts = NULL;
+
+  f_host_holes = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                        g_free, NULL);
+  f_host_warnings = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                           g_free, NULL);
+  f_host_infos = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                      g_free, NULL);
+  f_host_logs = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                      g_free, NULL);
+  f_host_false_positives = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                  g_free, NULL);
+
   if (delta && get->details)
     {
       if (print_report_delta_xml (out, &results, &delta_results, delta_states,
@@ -28071,6 +28086,12 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           cleanup_iterator (&results);
           cleanup_iterator (&delta_results);
           tz_revert (zone, tz);
+          g_hash_table_destroy (f_host_ports);
+          g_hash_table_destroy (f_host_holes);
+          g_hash_table_destroy (f_host_warnings);
+          g_hash_table_destroy (f_host_infos);
+          g_hash_table_destroy (f_host_logs);
+          g_hash_table_destroy (f_host_false_positives);
 
           return -1;
         }
@@ -28265,15 +28286,15 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                      "<asset asset_id=\"%s\"/>"
                      "<start>%s</start>"
                      "<end>%s</end>"
-                     "<ports><page>%d</page></ports>"
-                     "<results>"
+                     "<port_count><page>%d</page></port_count>"
+                     "<result_count>"
                      "<page>%d</page>"
                      "<hole><page>%d</page></hole>"
                      "<warning><page>%d</page></warning>"
                      "<info><page>%d</page></info>"
                      "<log><page>%d</page></log>"
                      "<false_positive><page>%d</page></false_positive>"
-                     "</results>",
+                     "</result_count>",
                      host,
                      host_iterator_asset_uuid (&hosts)
                        ? host_iterator_asset_uuid (&hosts)
@@ -28297,6 +28318,12 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                   tz_revert (zone, tz);
                   if (host_summary_buffer)
                     g_string_free (host_summary_buffer, TRUE);
+                  g_hash_table_destroy (f_host_ports);
+                  g_hash_table_destroy (f_host_holes);
+                  g_hash_table_destroy (f_host_warnings);
+                  g_hash_table_destroy (f_host_infos);
+                  g_hash_table_destroy (f_host_logs);
+                  g_hash_table_destroy (f_host_false_positives);
                   return -1;
                 }
 
@@ -28364,15 +28391,15 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                  "<asset asset_id=\"%s\"/>"
                  "<start>%s</start>"
                  "<end>%s</end>"
-                 "<ports><page>%d</page></ports>"
-                 "<results>"
+                 "<port_count><page>%d</page></port_count>"
+                 "<result_count>"
                  "<page>%d</page>"
                  "<hole><page>%d</page></hole>"
                  "<warning><page>%d</page></warning>"
                  "<info><page>%d</page></info>"
                  "<log><page>%d</page></log>"
                  "<false_positive><page>%d</page></false_positive>"
-                 "</results>",
+                 "</result_count>",
                  host_iterator_host (&hosts),
                  host_iterator_asset_uuid (&hosts)
                    ? host_iterator_asset_uuid (&hosts)
@@ -28396,6 +28423,12 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
               tz_revert (zone, tz);
               if (host_summary_buffer)
                 g_string_free (host_summary_buffer, TRUE);
+              g_hash_table_destroy (f_host_ports);
+              g_hash_table_destroy (f_host_holes);
+              g_hash_table_destroy (f_host_warnings);
+              g_hash_table_destroy (f_host_infos);
+              g_hash_table_destroy (f_host_logs);
+              g_hash_table_destroy (f_host_false_positives);
               return -1;
             }
 
@@ -28408,6 +28441,12 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                  host_iterator_start_time (&hosts));
         }
       cleanup_iterator (&hosts);
+      g_hash_table_destroy (f_host_ports);
+      g_hash_table_destroy (f_host_holes);
+      g_hash_table_destroy (f_host_warnings);
+      g_hash_table_destroy (f_host_infos);
+      g_hash_table_destroy (f_host_logs);
+      g_hash_table_destroy (f_host_false_positives);
 
       init_report_host_iterator (&hosts, report, NULL, 0);
       while (next (&hosts))
