@@ -1,3 +1,10 @@
+2016-10-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* tools/openvas-migrate-to-postgres.in (copy_data): Check that the
+	tables being copied include all the tables in the SQLite db.
+	(TABLES_133, TABLES_135): Add agents and agents_trash.
+	(TABSES_134): Remove quotes to match others.
+
 2016-10-12  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (init_aggregate_iterator): Also fall back to the

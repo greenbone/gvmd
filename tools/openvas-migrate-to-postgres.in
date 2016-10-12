@@ -1032,19 +1032,33 @@ copy_data () {
 	exit 1
   fi
 
-  log_info "Dumping SQLite3 data:"
+  log_info "Copying SQLite3 data:"
   TEMP_DIR=`mktemp -d`
   log_debug "TEMP_DIR: $TEMP_DIR"
 
-  # These must be ordered to respect foreign keys.
-  #
-  # To get all tables use ".tables" or
-  #     SELECT tbl_name FROM sqlite_master WHERE type='table' and tbl_name not like 'sqlite_%'
+  # Tables must be ordered to respect foreign keys.
   #
   # These tables are left out: report_counts nvts nvt_cves
 
+  log_info "Copying SQLite3 data: checking that tables match"
+
   TABLES=$1
   log_debug "TABLES: $TABLES"
+
+  SQLITE_TABLES=`sqlite "SELECT tbl_name FROM sqlite_master WHERE type='table' and tbl_name not like 'sqlite_%';"`
+  test_sql_exit "Failed get table list"
+  log_debug "SQLITE_TABLES: $SQLITE_TABLES"
+
+  echo $SQLITE_TABLES | tr -s ' ' '\n' | sort - | grep --invert-match "^\(nvt_cves\|nvts\|report_counts\)" > $TEMP_DIR/sqlite_tables_sorted
+  echo $TABLES | tr -s ' ' '\n' | sort - | diff - $TEMP_DIR/sqlite_tables_sorted
+  if [ $? -ne 0 ]
+  then
+    log_notice "Internal Error: tables being copied do not match tables in SQLite db"
+	exit 1
+  fi
+
+  log_info "Copying SQLite3 data: copying"
+
   for TABLE in $TABLES; do
     # Get the Postgres columns because the import CSV must be in that order.
     #
@@ -1061,7 +1075,7 @@ copy_data () {
   # Force a --rebuild.
   pg "DELETE FROM meta WHERE name = 'nvts_feed_version';"
 
-  log_info "Resetting Postgres sequences"
+  log_info "Copying SQLite3 data: resetting Postgres sequences"
   # Reset ID sequences, because the COPY specified the ID values explicitly.
   pg "SELECT 'SELECT 1'
              || ' WHERE'
@@ -1098,7 +1112,7 @@ copy_data () {
 ## NB These only need to migrate the schema.
 ##
 
-TABLES_133="users configs config_preferences meta nvt_preferences nvt_selectors lsc_credentials lsc_credentials_trash port_lists port_ranges targets schedules slaves tasks reports report_hosts report_formats report_format_params report_format_param_options results report_results task_files configs_trash config_preferences_trash report_formats_trash report_format_params_trash report_format_param_options_trash schedules_trash slaves_trash targets_trash report_host_details task_preferences port_lists_trash port_ranges_trash alerts_trash alert_event_data_trash alert_method_data_trash alerts alert_condition_data alert_event_data alert_method_data task_alerts alert_condition_data_trash groups group_users filters filters_trash port_names settings roles role_users overrides overrides_trash notes notes_trash groups_trash roles_trash tags_trash group_users_trash role_users_trash scanners scanners_trash permissions_trash permissions tags"
+TABLES_133="users agents agents_trash configs config_preferences meta nvt_preferences nvt_selectors lsc_credentials lsc_credentials_trash port_lists port_ranges targets schedules slaves tasks reports report_hosts report_formats report_format_params report_format_param_options results report_results task_files configs_trash config_preferences_trash report_formats_trash report_format_params_trash report_format_param_options_trash schedules_trash slaves_trash targets_trash report_host_details task_preferences port_lists_trash port_ranges_trash alerts_trash alert_event_data_trash alert_method_data_trash alerts alert_condition_data alert_event_data alert_method_data task_alerts alert_condition_data_trash groups group_users filters filters_trash port_names settings roles role_users overrides overrides_trash notes notes_trash groups_trash roles_trash tags_trash group_users_trash role_users_trash scanners scanners_trash permissions_trash permissions tags"
 
 migrate_133_to_134 () {
   pg "ALTER TABLE targets ADD COLUMN esxi_lsc_credential integer;"
@@ -1106,13 +1120,13 @@ migrate_133_to_134 () {
   pg "ALTER TABLE targets_trash ADD COLUMN esxi_location integer;"
 }
 
-TABLES_134="$TABLES_133"
+TABLES_134=$TABLES_133
 
 migrate_134_to_135 () {
   pg "DROP TABLE report_results;"
 }
 
-TABLES_135="users configs config_preferences meta nvt_preferences nvt_selectors lsc_credentials lsc_credentials_trash port_lists port_ranges targets schedules slaves tasks reports report_hosts report_formats report_format_params report_format_param_options results task_files configs_trash config_preferences_trash report_formats_trash report_format_params_trash report_format_param_options_trash schedules_trash slaves_trash targets_trash report_host_details task_preferences port_lists_trash port_ranges_trash alerts_trash alert_event_data_trash alert_method_data_trash alerts alert_condition_data alert_event_data alert_method_data task_alerts alert_condition_data_trash groups group_users filters filters_trash port_names settings roles role_users overrides overrides_trash notes notes_trash groups_trash roles_trash tags_trash group_users_trash role_users_trash scanners scanners_trash permissions_trash permissions tags"
+TABLES_135="users agents agents_trash configs config_preferences meta nvt_preferences nvt_selectors lsc_credentials lsc_credentials_trash port_lists port_ranges targets schedules slaves tasks reports report_hosts report_formats report_format_params report_format_param_options results task_files configs_trash config_preferences_trash report_formats_trash report_format_params_trash report_format_param_options_trash schedules_trash slaves_trash targets_trash report_host_details task_preferences port_lists_trash port_ranges_trash alerts_trash alert_event_data_trash alert_method_data_trash alerts alert_condition_data alert_event_data alert_method_data task_alerts alert_condition_data_trash groups group_users filters filters_trash port_names settings roles role_users overrides overrides_trash notes notes_trash groups_trash roles_trash tags_trash group_users_trash role_users_trash scanners scanners_trash permissions_trash permissions tags"
 
 migrate_135_to_136 () {
   : # Schema stayed the same.
@@ -1182,12 +1196,13 @@ migrate_145_to_146 () {
   pg "DROP VIEW IF EXISTS result_overrides;"
 }
 
-# FIX tables were added since 133?
 TABLES_146=$TABLES_145
 
 migrate_146_to_147 () {
   pg "ALTER TABLE report_counts ADD COLUMN min_qod INTEGER;"
 }
+
+# FIX tables were added to rest?
 
 TABLES_147=$TABLES_146
 
