@@ -12535,6 +12535,11 @@ migrate_167_to_168 ()
        "               WHERE uuid = '%s');",
        uuid);
 
+  sql ("DELETE FROM task_preferences"
+       " WHERE task = (SELECT id FROM tasks"
+       "               WHERE uuid = '%s');",
+       uuid);
+
   sql ("DELETE FROM tasks WHERE uuid = '%s';",
        uuid);
 

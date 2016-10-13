@@ -1,4 +1,9 @@
-2016-10-12  Matthew Mundell <matthew.mundell@greenbone.net>
+2016-10-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_migrators.c (migrate_167_to_168): Delete task_preferences
+	too.
+
+2016-10-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_migrators.c (migrate_156_to_157, migrate_157_to_158)
 	(migrate_164_to_165, migrate_172_to_173): Neaten comments.
