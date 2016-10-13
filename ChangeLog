@@ -1,5 +1,9 @@
 2016-10-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_migrators.c (migrate_153_to_154): Reset sequences.
+
+2016-10-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/openvas-migrate-to-postgres.in (cleanup_sqlite_db): Remove stray
 	role_users_trash.
 	(copy_data): Adjust logs.

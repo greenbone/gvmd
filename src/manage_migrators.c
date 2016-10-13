@@ -10446,6 +10446,20 @@ migrate_153_to_154 ()
        " SELECT id, 'secret', password FROM lsc_credentials_trash"
        "  WHERE password IS NOT NULL AND private_key = ';;encrypted;;';");
 
+  /* Reset the sequences because we messed with the SERIAL column "id". */
+
+  sql ("SELECT setval ('credentials_id_seq',"
+       "               (SELECT max (id) + 1 FROM credentials));");
+
+  sql ("SELECT setval ('credentials_trash_id_seq',"
+       "               (SELECT max (id) + 1 FROM credentials_trash));");
+
+  sql ("SELECT setval ('credentials_data_id_seq',"
+       "               (SELECT max (id) + 1 FROM credentials_data));");
+
+  sql ("SELECT setval ('credentials_trash_data_id_seq',"
+       "               (SELECT max (id) + 1 FROM credentials_trash_data));");
+
   /* Set type for existing credentials */
   init_iterator (&credentials,
                  "SELECT id, password, private_key, 0"
