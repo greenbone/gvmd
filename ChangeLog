@@ -1,5 +1,10 @@
 2016-10-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_migrators.c (migrate_156_to_157, migrate_157_to_158)
+	(migrate_164_to_165, migrate_172_to_173): Neaten comments.
+
+2016-10-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/openvas-migrate-to-postgres.in (cleanup_sqlite_db): Remove stray
 	task preferences.  The C migrator migrate_167_to_168 is leaving one of
 	these behind.  Remove escalator_condition_data_trash, which

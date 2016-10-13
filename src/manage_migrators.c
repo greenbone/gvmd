@@ -10787,7 +10787,7 @@ migrate_156_to_157 ()
 
   /* Update the database. */
 
-  /* Add new columns to slaves tables */
+  /* Add new columns to slaves tables. */
   if (sql_is_sqlite3 ())
     {
       sql ("ALTER TABLE slaves ADD COLUMN credential INTEGER;");
@@ -10800,7 +10800,7 @@ migrate_156_to_157 ()
   sql ("ALTER TABLE slaves_trash ADD COLUMN credential INTEGER;");
   sql ("ALTER TABLE slaves_trash ADD COLUMN credential_location INTEGER;");
 
-  /* Create new credentials */
+  /* Create new credentials. */
   init_iterator (&slaves,
                  "SELECT id, name, login, password, owner FROM slaves;");
 
@@ -10929,7 +10929,7 @@ migrate_156_to_157 ()
     }
   cleanup_iterator (&slaves);
 
- /* Create new credentials for trashcan */
+  /* Create new credentials for trashcan. */
   init_iterator (&slaves,
                  "SELECT id, name, login, password, owner"
                  " FROM slaves_trash;");
@@ -11119,7 +11119,7 @@ migrate_157_to_158 ()
 
   /* Update the database. */
 
-  /* Add new column to configs tables */
+  /* Add new column to configs tables. */
   if (sql_is_sqlite3 ())
     {
       sql ("ALTER TABLE configs ADD COLUMN scanner INTEGER;");
@@ -11168,7 +11168,7 @@ migrate_158_to_159 ()
 
   /* Update the database. */
 
-  /* Add new columns to scanners tables */
+  /* Add new columns to scanners tables. */
   if (sql_is_sqlite3 ())
     {
       sql ("ALTER TABLE scanners ADD COLUMN credential INTEGER;");
@@ -12050,14 +12050,14 @@ migrate_164_to_165 ()
   /* Update database */
 
   /* Add hr_name column to config_preferences table
-   *  and initialize it with name for OSP results */
+   * and initialize it with name for OSP results. */
   sql ("ALTER TABLE config_preferences ADD COLUMN hr_name TEXT;");
   sql ("UPDATE config_preferences"
        " SET hr_name = name"
        " WHERE type != 'SERVER_PREFS' AND type != 'PLUGINS_PREFS';");
 
   /* Add hr_name column to config_preferences_trash table
-   *  and initialize it with name for OSP results */
+   * and initialize it with name for OSP results. */
   sql ("ALTER TABLE config_preferences_trash ADD COLUMN hr_name TEXT;");
   sql ("UPDATE config_preferences_trash"
        " SET hr_name = name"
@@ -13008,7 +13008,7 @@ migrate_172_to_173 ()
       return -1;
     }
 
-  /* Remove unused columns */
+  /* Remove unused columns. */
   if (sql_is_sqlite3 ())
     {
       sql ("ALTER TABLE nvts RENAME TO nvts_172;");
