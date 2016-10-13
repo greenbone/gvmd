@@ -966,6 +966,10 @@ create_tables_133 () {
 }
 
 cleanup_sqlite_db () {
+  # Remove stray role_users_trash.
+  sqlite "DELETE FROM role_users_trash WHERE role NOT IN (SELECT id FROM roles_trash);"
+  test_sql_exit "Failed to clean up role_users_trash"
+
   # Remove stray task_alerts.
   sqlite "DELETE FROM task_alerts WHERE alert_location = 0 AND alert NOT IN (SELECT id FROM alerts);"
   test_sql_exit "Failed to clean up task_alerts"
@@ -1066,7 +1070,7 @@ copy_data () {
     exit 1
   fi
 
-  log_info "Copying SQLite3 data: copying"
+  log_info "Copying SQLite3 data: copying tables"
 
   for TABLE in $TABLES; do
     # Get the Postgres columns because the import CSV must be in that order.
@@ -1074,6 +1078,7 @@ copy_data () {
     # This also works around extra columns that were hanging around in old
     # database.
     #
+    log_info "Copying SQLite3 data: copying table $TABLE"
     COLS=`pg "SELECT string_agg ('\"' || column_name || '\"', ',') from (select column_name from information_schema.columns where table_schema = 'public' and table_name = '$TABLE' order by ordinal_position) as sub;"`
     log_debug "COLS: $COLS"
     # Pipe SQLite CSV output into Postgres COPY FROM.
@@ -1571,9 +1576,9 @@ migrate () {
     exit 1
   fi
 
-  log_info "Migrating schema from $1 to $TO."
-
   TO=$2
+
+  log_info "Migrating schema from $1 to $TO."
 
   if [ $1 -eq $TO ]
   then
