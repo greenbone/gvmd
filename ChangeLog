@@ -1,5 +1,10 @@
 2016-10-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_migrators.c (migrate_153_to_154): Put closing parens on
+	same line.
+
+2016-10-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_migrators.c (migrate_153_to_154): Reset sequences.
 
 2016-10-13  Matthew Mundell <matthew.mundell@greenbone.net>

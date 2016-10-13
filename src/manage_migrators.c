@@ -10364,8 +10364,7 @@ migrate_153_to_154 ()
        "  modification_time integer,"
        "  type text);",
        primary_key_type,
-       sql_is_sqlite3() ? "" : " REFERENCES users (id) ON DELETE RESTRICT"
-      );
+       sql_is_sqlite3() ? "" : " REFERENCES users (id) ON DELETE RESTRICT");
 
   sql ("CREATE TABLE credentials_trash"
        " (id %s PRIMARY KEY,"
@@ -10377,8 +10376,7 @@ migrate_153_to_154 ()
        "  modification_time integer,"
        "  type text);",
        primary_key_type,
-       sql_is_sqlite3() ? "" : " REFERENCES users (id) ON DELETE RESTRICT"
-      );
+       sql_is_sqlite3() ? "" : " REFERENCES users (id) ON DELETE RESTRICT");
 
   sql ("CREATE TABLE credentials_data"
        " (id %s PRIMARY KEY,"
