@@ -1,5 +1,14 @@
 2016-10-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (check_db_configs): Recover lost Service Detection
+	NVTs.
+
+	* src/manage_config_discovery.c
+	(make_config_discovery_service_detection): New function.
+	(make_config_discovery): Use new function.
+
+2016-10-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (check_db_configs): Only check for removed Service
 	Detection NVTs when there are NVTs in the nvts table.
 
