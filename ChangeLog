@@ -1,3 +1,8 @@
+2016-10-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (check_db_configs): Only check for removed Service
+	Detection NVTs when there are NVTs in the nvts table.
+
 2016-10-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_migrators.c (migrate_153_to_154): Put closing parens on
