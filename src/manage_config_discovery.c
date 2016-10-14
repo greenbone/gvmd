@@ -45,21 +45,8 @@
  * @param[in]  selector_name  Name of NVT selector to use.
  */
 void
-make_config_discovery (char *const uuid, char *const selector_name)
+make_config_discovery_service_detection (char *const selector_name)
 {
-  sql_begin_exclusive ();
-
-  /* First, create the Discovery config. */
-  sql ("INSERT into configs (uuid, name, owner, nvt_selector, comment,"
-       " family_count, nvt_count, nvts_growing, families_growing,"
-       " type, creation_time, modification_time)"
-       " VALUES ('%s', 'Discovery', NULL,"
-       "         '%s', 'Network Discovery scan configuration.',"
-       "         0, 0, 0, 0, 0, m_now (), m_now ());",
-       uuid,
-       selector_name);
-
-  /* Setup the appropriate NVTs for the config. */
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11929", "Service detection");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900534", "Service detection");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902019", "Service detection");
@@ -576,6 +563,33 @@ make_config_discovery (char *const uuid, char *const selector_name)
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900371", "Service detection");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900374", "Service detection");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900376", "Service detection");
+}
+
+/**
+ * @brief Make Discovery Scan Config.
+ *
+ * Caller must lock the db.
+ *
+ * @param[in]  uuid           UUID for new scan config.
+ * @param[in]  selector_name  Name of NVT selector to use.
+ */
+void
+make_config_discovery (char *const uuid, char *const selector_name)
+{
+  sql_begin_exclusive ();
+
+  /* First, create the Discovery config. */
+  sql ("INSERT into configs (uuid, name, owner, nvt_selector, comment,"
+       " family_count, nvt_count, nvts_growing, families_growing,"
+       " type, creation_time, modification_time)"
+       " VALUES ('%s', 'Discovery', NULL,"
+       "         '%s', 'Network Discovery scan configuration.',"
+       "         0, 0, 0, 0, 0, m_now (), m_now ());",
+       uuid,
+       selector_name);
+
+  /* Setup the appropriate NVTs for the config. */
+  make_config_discovery_service_detection (selector_name);
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.17586", "Brute force attacks");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.17584", "Brute force attacks");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.17368", "Brute force attacks");

@@ -135,6 +135,9 @@ void
 make_config_discovery (char *const, const char * const);
 
 void
+make_config_discovery_service_detection (char * const);
+
+void
 make_config_host_discovery (char *const, const char * const);
 
 void
@@ -13053,6 +13056,16 @@ check_db_configs ()
       == 0)
     make_config_discovery (CONFIG_UUID_DISCOVERY,
                            MANAGE_NVT_SELECTOR_UUID_DISCOVERY);
+
+  /* Service Detection NVTs were all being accidentally removed by the
+   * checks below.  Recover them. */
+
+  if (sql_int ("SELECT count (*) FROM nvt_selectors"
+               " WHERE name = '" MANAGE_NVT_SELECTOR_UUID_DISCOVERY "'"
+               " AND family = 'Service detection'")
+      == 0)
+    make_config_discovery_service_detection
+     (MANAGE_NVT_SELECTOR_UUID_DISCOVERY);
 
   /* In the Service Detection family, NVTs sometimes move to Product
    * Detection, and once an NVT was removed.  So remove those NVTs
