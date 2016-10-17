@@ -77,6 +77,10 @@ make_config_system_discovery (char *const uuid, char *const selector_name)
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
        " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
+       "         '1.3.6.1.4.1.25623.1.0.51662', 'General');",
+       selector_name);
+  sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
+       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
        "         '1.3.6.1.4.1.25623.1.0.96207', 'Windows');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
@@ -185,4 +189,39 @@ make_config_system_discovery (char *const uuid, char *const selector_name)
        nvt_selector_family_count (selector_name, 0),
        nvt_selector_nvt_count (selector_name, NULL, 0),
        config);
+}
+
+/**
+ * @brief Ensure the Discovery config is up to date.
+ *
+ * @param[in]  uuid  UUID of config.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+check_config_system_discovery (const char *uuid)
+{
+  int update;
+
+  /* Check new NVT. */
+
+  if (sql_int ("SELECT count (*) FROM nvt_selectors"
+               " WHERE name = (SELECT nvt_selector FROM configs"
+               "               WHERE uuid = '%s')"
+               "       AND family_or_nvt = '1.3.6.1.4.1.25623.1.0.51662';",
+               uuid)
+      == 0)
+    {
+      sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
+           " VALUES ((SELECT nvt_selector FROM configs WHERE uuid = '%s'), 0,"
+           "         " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
+           "         '1.3.6.1.4.1.25623.1.0.51662', 'General');",
+           uuid);
+      update = 1;
+    }
+
+  if (update)
+    update_config_cache_init (uuid);
+
+  return 0;
 }

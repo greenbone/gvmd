@@ -1,3 +1,19 @@
+2016-10-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Ensure Discovery has "Report about unrechable Hosts" "no" and System
+	Discovery includes "Traceroute".
+
+	* src/manage_sql.c (check_db_configs): Call Discovery and System
+	Discovery checkers.
+
+	* src/manage_config_discovery.c (make_config_discovery): Default "Report
+	about unrechable Hosts" to "No".
+	(check_config_discovery): New function.
+
+	* src/manage_config_system_discovery.c
+	(make_config_system_discovery): Add NVT "Traceroute".
+	(check_config_system_discovery): New function.
+
 2016-10-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (check_db_configs): Recover lost Service Detection

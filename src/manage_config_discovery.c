@@ -949,7 +949,7 @@ make_config_discovery (char *const uuid, char *const selector_name)
        " VALUES ((SELECT id FROM configs WHERE uuid = '%s'),"
        "         'PLUGINS_PREFS',"
        "         'Ping Host[checkbox]:Report about unrechable Hosts',"
-       "         'yes');",
+       "         'no');",
        uuid);
 
   /* Add preferences for "Services" nvt in Discovery Scan Config. */
@@ -959,4 +959,26 @@ make_config_discovery (char *const uuid, char *const selector_name)
        "         'Services[radio]:Test SSL based services',"
        "         'All;Known SSL ports;None');",
        uuid);
+}
+
+/**
+ * @brief Ensure the Discovery config is up to date.
+ *
+ * @param[in]  uuid  UUID of config.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+check_config_discovery (const char *uuid)
+{
+  /* Check new preference. */
+
+  sql ("UPDATE config_preferences SET value = 'no'"
+       " WHERE config = (SELECT id FROM configs WHERE uuid = '%s')"
+       " AND type = 'PLUGINS_PREFS'"
+       " AND name = 'Ping Host[checkbox]:Report about unrechable Hosts'"
+       " AND value = 'yes';",
+       uuid);
+
+  return 0;
 }

@@ -174,8 +174,14 @@ make_config_host_discovery (char *const, const char * const);
 void
 make_config_system_discovery (char *const, const char * const);
 
+int
+check_config_discovery (const char *);
+
 void
 check_config_host_discovery (const char *);
+
+int
+check_config_system_discovery (const char *);
 
 
 /* Static headers. */
@@ -14778,6 +14784,8 @@ check_db_configs ()
          " AND NOT EXISTS (SELECT * FROM nvts"
          "                 WHERE oid = nvt_selectors.family_or_nvt);");
 
+  check_config_discovery (CONFIG_UUID_DISCOVERY);
+
   if (sql_int ("SELECT count(*) FROM configs"
                " WHERE uuid = '%s';",
                CONFIG_UUID_HOST_DISCOVERY)
@@ -14793,6 +14801,8 @@ check_db_configs ()
       == 0)
     make_config_system_discovery (CONFIG_UUID_SYSTEM_DISCOVERY,
                                   MANAGE_NVT_SELECTOR_UUID_SYSTEM_DISCOVERY);
+
+  check_config_system_discovery (CONFIG_UUID_SYSTEM_DISCOVERY);
 }
 
 /**
