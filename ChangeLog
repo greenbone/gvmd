@@ -1,5 +1,10 @@
 2016-10-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_migrators.c (migrate_165_to_166): Skip creating the
+	credential if the alert did not have login info.
+
+2016-10-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_migrators.c (migrate_165_to_166): Neaten comments.
 
 2016-10-17  Matthew Mundell <matthew.mundell@greenbone.net>

@@ -12135,6 +12135,10 @@ migrate_165_to_166 ()
       owner = iterator_int64 (&alert_data, 4);
       method = iterator_int (&alert_data, 5);
 
+      /* Skip the alert if it is missing login info. */
+      if (name == NULL || password == NULL)
+        continue;
+
       quoted_name = sql_quote (name);
       quoted_login = sql_quote (login);
 
@@ -12287,6 +12291,10 @@ migrate_165_to_166 ()
       password = iterator_string (&alert_data, 3);
       owner = iterator_int64 (&alert_data, 4);
       method = iterator_int (&alert_data, 5);
+
+      /* Skip the alert if it is missing login info. */
+      if (name == NULL || password == NULL)
+        continue;
 
       quoted_name = sql_quote (name);
       quoted_login = sql_quote (login);
