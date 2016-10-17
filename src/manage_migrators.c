@@ -12105,7 +12105,7 @@ migrate_165_to_166 ()
 
   /* Update the database. */
 
-  /* Create new credentials */
+  /* Create new credentials. */
   init_iterator (&alert_data,
                  "SELECT id, name,"
                  "       (SELECT data FROM alert_method_data"
@@ -12138,7 +12138,7 @@ migrate_165_to_166 ()
       quoted_name = sql_quote (name);
       quoted_login = sql_quote (login);
 
-      // Create basic credential
+      /* Create basic credential. */
       if (sql_int ("SELECT count(*) FROM credentials"
                    " WHERE name = 'Credential for Alert %s'"
                    "   AND owner = %llu;",
@@ -12162,7 +12162,7 @@ migrate_165_to_166 ()
              "  m_now (), m_now ());",
              quoted_name, owner);
 
-      // Add credential data
+      /* Add credential data. */
       new_credential = sql_last_insert_id ();
       new_credential_id = sql_string ("SELECT uuid FROM credentials"
                                       " WHERE id = %llu;",
@@ -12207,14 +12207,14 @@ migrate_165_to_166 ()
           g_free (quoted_secret);
         }
 
-      // Update alert_method_data
+      /* Update alert_method_data. */
       sql ("INSERT INTO alert_method_data (alert, name, data)"
            " VALUES (%llu, '%s_credential', '%s');",
            alert,
            method == 8 ? "scp" : "verinice_server",
            new_credential_id);
 
-      // Create permissions
+      /* Create permissions. */
       sql ("INSERT INTO"
            " permissions (uuid, owner, name,"
            "              comment, resource_type, resource,"
@@ -12258,7 +12258,7 @@ migrate_165_to_166 ()
     }
   cleanup_iterator (&alert_data);
 
-  /* Create new trash credentials */
+  /* Create new trash credentials. */
   init_iterator (&alert_data,
                  "SELECT id, name,"
                  "       (SELECT data FROM alert_method_data_trash"
@@ -12291,7 +12291,7 @@ migrate_165_to_166 ()
       quoted_name = sql_quote (name);
       quoted_login = sql_quote (login);
 
-      // Create basic credential
+      /* Create basic credential. */
 
       sql ("INSERT INTO credentials_trash"
            " (uuid, name, owner, comment, type,"
@@ -12307,7 +12307,7 @@ migrate_165_to_166 ()
                                       " WHERE id = %llu;",
                                       new_credential);
 
-      // Add credential data
+      /* Add credential data. */
       sql ("INSERT INTO credentials_trash_data (credential, type, value)"
            " VALUES (%llu, 'username', '%s');",
            new_credential, quoted_login);
@@ -12346,7 +12346,7 @@ migrate_165_to_166 ()
           g_free (quoted_secret);
         }
 
-      // Update alert_method_data
+      /* Update alert_method_data. */
       sql ("INSERT INTO alert_method_data_trash (alert, name, data)"
            " VALUES (%llu, '%s_credential', '%s');",
            alert,
@@ -12359,7 +12359,7 @@ migrate_165_to_166 ()
            method == 8 ? "scp" : "verinice_server",
            LOCATION_TRASH);
 
-      // Create permissions
+      /* Create permissions. */
       sql ("INSERT INTO"
            " permissions (uuid, owner, name,"
            "              comment, resource_type, resource,"
@@ -12406,7 +12406,7 @@ migrate_165_to_166 ()
     }
   cleanup_iterator (&alert_data);
 
-  /* Remove now obsolete rows from alert_method_data and ..._trash */
+  /* Remove now obsolete rows from alert_method_data and ..._trash. */
   sql ("DELETE FROM alert_method_data"
        " WHERE name='scp_username'"
        "   OR name='verinice_server_username'"

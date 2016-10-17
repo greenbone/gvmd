@@ -1,5 +1,9 @@
 2016-10-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_migrators.c (migrate_165_to_166): Neaten comments.
+
+2016-10-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Ensure Discovery has "Report about unrechable Hosts" "no" and System
 	Discovery includes "Traceroute".
 
