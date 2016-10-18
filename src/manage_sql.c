@@ -14964,6 +14964,81 @@ make_report_format_uuids_unique ()
 }
 
 /**
+ * @brief Check that trash report formats are correct.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+check_db_trash_report_formats ()
+{
+  gchar *dir;
+  struct stat state;
+
+  dir = g_build_filename (OPENVAS_STATE_DIR,
+                          "openvasmd",
+                          "report_formats_trash",
+                          NULL);
+
+  if (g_lstat (dir, &state))
+    {
+      iterator_t report_formats;
+      int count;
+
+      if (errno != ENOENT)
+        {
+          g_warning ("%s: g_lstat (%s) failed: %s\n",
+                     __FUNCTION__, dir, g_strerror (errno));
+          g_free (dir);
+          return -1;
+        }
+
+      /* Remove all trash report formats. */
+
+      count = 0;
+      init_iterator (&report_formats, "SELECT id FROM report_formats_trash;");
+      while (next (&report_formats))
+        {
+          report_format_t report_format;
+
+          report_format = iterator_int64 (&report_formats, 0);
+
+          sql ("DELETE FROM alert_method_data_trash"
+               " WHERE data = (SELECT original_uuid"
+               "               FROM report_formats_trash"
+               "               WHERE id = %llu)"
+               " AND (name = 'notice_attach_format'"
+               "      OR name = 'notice_report_format');",
+               report_format);
+
+          permissions_set_orphans ("report_format", report_format,
+                                   LOCATION_TRASH);
+          tags_set_orphans ("report_format", report_format, LOCATION_TRASH);
+
+          sql ("DELETE FROM report_format_param_options_trash"
+               " WHERE report_format_param"
+               " IN (SELECT id from report_format_params_trash"
+               "     WHERE report_format = %llu);",
+               report_format);
+          sql ("DELETE FROM report_format_params_trash WHERE report_format = %llu;",
+               report_format);
+          sql ("DELETE FROM report_formats_trash WHERE id = %llu;",
+               report_format);
+
+          count++;
+        }
+      cleanup_iterator (&report_formats);
+
+      if (count)
+        g_message ("Trash report format directory was missing."
+                   " Removed all %i trash report formats.",
+                   count);
+    }
+
+  g_free (dir);
+  return 0;
+}
+
+/**
  * @brief Ensure the predefined report formats exist.
  *
  * @return 0 success, -1 error.
@@ -14976,6 +15051,9 @@ check_db_report_formats ()
   gchar *path;
   const gchar *report_format_path;
   iterator_t report_formats;
+
+  if (check_db_trash_report_formats ())
+    return -1;
 
   /* Bring report format UUIDs in database up to date. */
   update_report_format_uuids ();

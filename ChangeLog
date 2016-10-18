@@ -1,3 +1,13 @@
+2016-10-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_migrators.c (migrate_170_to_171): If the old directory is
+	missing, just print a warning instead of trying to move directories
+	out of it.
+
+	* src/manage_sql.c (check_db_trash_report_formats): New function.  Removes
+	all trash report formats if the directory is missing.
+	(check_db_report_formats): Check trash.
+
 2016-10-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_migrators.c (migrate_165_to_166): Skip creating the

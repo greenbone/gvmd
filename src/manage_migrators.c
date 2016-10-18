@@ -12771,6 +12771,7 @@ int
 migrate_170_to_171 ()
 {
   gchar *old_dir, *new_dir;
+  struct stat state;
 
   sql_begin_exclusive ();
 
@@ -12803,54 +12804,71 @@ migrate_170_to_171 ()
                               "report_formats_trash",
                               NULL);
 
-  /* Ensure the old dir exists. */
-  g_mkdir_with_parents (old_dir, 0755 /* "rwxr-xr-x" */);
+  if (g_lstat (old_dir, &state))
+    {
+      /* The old dir is missing.  Assume there are no trash report formats.
+       * This helps when the database has been restored without the trash
+       * directory. */
 
-  {
-    gchar **cmd;
-    gchar *standard_out = NULL;
-    gchar *standard_err = NULL;
-    gint exit_status;
+      if (errno != ENOENT)
+        g_warning ("%s: g_lstat (%s) failed: %s\n",
+                   __FUNCTION__, old_dir, g_strerror (errno));
+      else
+        g_warning ("%s: trash report formats directory missing (%s)\n",
+                   __FUNCTION__, old_dir);
+      g_warning ("%s: any trash report formats will be removed on startup\n",
+                 __FUNCTION__);
+    }
+  else
+    {
+      gchar **cmd;
+      gchar *standard_out = NULL;
+      gchar *standard_err = NULL;
+      gint exit_status;
 
-    cmd = (gchar **) g_malloc (4 * sizeof (gchar *));
-    cmd[0] = g_strdup ("mv");
-    cmd[1] = old_dir;
-    cmd[2] = new_dir;
-    cmd[3] = NULL;
-    g_debug ("%s: Spawning in .: %s %s %s\n",
-             __FUNCTION__, cmd[0], cmd[1], cmd[2]);
-    if ((g_spawn_sync (".",
-                       cmd,
-                       NULL,                  /* Environment. */
-                       G_SPAWN_SEARCH_PATH,
-                       NULL,                  /* Setup function. */
-                       NULL,
-                       &standard_out,
-                       &standard_err,
-                       &exit_status,
-                       NULL)
-         == FALSE)
-        || (WIFEXITED (exit_status) == 0)
-        || WEXITSTATUS (exit_status))
-      {
-        g_warning ("%s: failed rename: %d (WIF %i, WEX %i)",
-                   __FUNCTION__,
-                   exit_status,
-                   WIFEXITED (exit_status),
-                 WEXITSTATUS (exit_status));
-        g_debug ("%s: stdout: %s\n", __FUNCTION__, standard_out);
-        g_debug ("%s: stderr: %s\n", __FUNCTION__, standard_err);
-        g_free (old_dir);
-        g_free (new_dir);
-        g_free (cmd[0]);
-        g_free (cmd);
-        sql_rollback ();
-        return -1;
-      }
+      /* Move the directory. */
 
-    g_free (cmd[0]);
-    g_free (cmd);
-  }
+      g_mkdir_with_parents (old_dir, 0755 /* "rwxr-xr-x" */);
+
+      cmd = (gchar **) g_malloc (4 * sizeof (gchar *));
+      cmd[0] = g_strdup ("mv");
+      cmd[1] = old_dir;
+      cmd[2] = new_dir;
+      cmd[3] = NULL;
+      g_debug ("%s: Spawning in .: %s %s %s\n",
+               __FUNCTION__, cmd[0], cmd[1], cmd[2]);
+      if ((g_spawn_sync (".",
+                         cmd,
+                         NULL,                  /* Environment. */
+                         G_SPAWN_SEARCH_PATH,
+                         NULL,                  /* Setup function. */
+                         NULL,
+                         &standard_out,
+                         &standard_err,
+                         &exit_status,
+                         NULL)
+           == FALSE)
+          || (WIFEXITED (exit_status) == 0)
+          || WEXITSTATUS (exit_status))
+        {
+          g_warning ("%s: failed rename: %d (WIF %i, WEX %i)",
+                     __FUNCTION__,
+                     exit_status,
+                     WIFEXITED (exit_status),
+                   WEXITSTATUS (exit_status));
+          g_debug ("%s: stdout: %s\n", __FUNCTION__, standard_out);
+          g_debug ("%s: stderr: %s\n", __FUNCTION__, standard_err);
+          g_free (old_dir);
+          g_free (new_dir);
+          g_free (cmd[0]);
+          g_free (cmd);
+          sql_rollback ();
+          return -1;
+        }
+
+      g_free (cmd[0]);
+      g_free (cmd);
+    }
 
   g_free (old_dir);
   g_free (new_dir);
