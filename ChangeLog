@@ -1,5 +1,10 @@
 2016-10-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/openvas-migrate-to-postgres.in (copy_data): Clear config count
+	caches to make it more obvious that a --rebuild is required.
+
+2016-10-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_migrators.c (migrate_153_to_154): Only reset sequences for
 	Postgres.
 

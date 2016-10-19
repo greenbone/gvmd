@@ -1088,6 +1088,7 @@ copy_data () {
 
   # Force a --rebuild.
   pg "DELETE FROM meta WHERE name = 'nvts_feed_version';"
+  pg "UPDATE configs SET family_count = 0, nvt_count = 0, families_growing = 0, nvts_growing = 0;"
 
   log_info "Copying SQLite3 data: resetting Postgres sequences"
   # Reset ID sequences, because the COPY specified the ID values explicitly.
