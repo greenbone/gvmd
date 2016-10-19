@@ -52456,7 +52456,30 @@ check_permission_args (const char *name_arg, const char *resource_type_arg,
           return 3;
         }
 
-      if (find_resource (*resource_type, resource_id_arg, resource))
+      if (strcasecmp (*resource_type, "asset") == 0)
+        {
+          g_free (*resource_type);
+          *resource_type = g_strdup ("host");
+          if (find_resource (*resource_type, resource_id_arg, resource))
+            {
+              g_free (*name);
+              g_free (*resource_type);
+              return -1;
+            }
+
+          if (*resource == 0)
+            {
+              g_free (*resource_type);
+              *resource_type = g_strdup ("os");
+              if (find_resource (*resource_type, resource_id_arg, resource))
+                {
+                  g_free (*name);
+                  g_free (*resource_type);
+                  return -1;
+                }
+            }
+        }
+      else if (find_resource (*resource_type, resource_id_arg, resource))
         {
           g_free (*name);
           g_free (*resource_type);
@@ -53231,6 +53254,9 @@ permission_iterator_resource_readable (iterator_t* iterator)
       || (strcmp (type, "cert_bund_adv") == 0)
       || (strcmp (type, "dfn_cert_adv") == 0))
     permission = g_strdup ("get_info");
+  else if ((strcmp (type, "host") == 0)
+           || (strcmp (type, "os") == 0))
+    permission = g_strdup ("get_assets");
   else
     permission = g_strdup_printf ("get_%ss", type);
 
