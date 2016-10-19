@@ -59236,7 +59236,7 @@ asset_host_count (const get_data_t *get)
  */
 #define OS_ITERATOR_FILTER_COLUMNS                                           \
  { GET_ITERATOR_FILTER_COLUMNS, "title", "hosts", "latest_severity",         \
-   "highest_severity", "average_severity", "average_severity_score" }
+   "highest_severity", "average_severity", "average_severity_score", NULL }
 
 /**
  * @brief OS iterator columns.
