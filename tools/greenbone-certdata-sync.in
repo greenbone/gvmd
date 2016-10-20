@@ -371,7 +371,6 @@ is_feed_current () {
         PORT="$syncport"
       fi
 
-      # --protocol=29 is a workaround for a known bug in rsync 3.0.3
       if [ -z "$gsmproxy" ] || [ "$gsmproxy" = "proxy_feed" ]
       then
         RSYNC_SSH_PROXY_CMD=""
@@ -383,7 +382,7 @@ is_feed_current () {
         fi
       fi
       create_tmp_key
-      rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $TMPACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid_at_host:/cert-data/timestamp "$FEED_INFO_TEMP_DIR"
+      rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $TMPACCESSKEY" -ltvrP --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid_at_host:/cert-data/timestamp "$FEED_INFO_TEMP_DIR"
       if [ $? -ne 0 ]
       then
         log_err "rsync failed, aborting synchronization."
@@ -895,7 +894,6 @@ sync_certdata(){
           PORT="$syncport"
         fi
 
-        # --protocol=29 is a workaround for a known bug in rsync 3.0.3
         if [ -z "$gsmproxy" ] || [ "$gsmproxy" = "proxy_feed" ]
         then
           RSYNC_SSH_PROXY_CMD=""
@@ -907,7 +905,7 @@ sync_certdata(){
           fi
         fi
         create_tmp_key
-        rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid_at_host:/cert-data/ $CERT_DIR
+        rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid_at_host:/cert-data/ $CERT_DIR
         if [ 0 -ne "$?" ] ; then
           log_err "rsync failed, aborting synchronization."
           remove_tmp_key

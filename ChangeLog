@@ -1,3 +1,9 @@
+2016-10-20  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* tools/greenbone-certdata-sync.in, tools/greenbone-scapdata-sync.in:
+	Drop the ancient convenience pinning to rsync protocol version 29
+	to circumvent a problem with rsnyc 3.0.3.
+
 2016-10-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* tools/openvas-migrate-to-postgres.in (copy_data): Clear config count
