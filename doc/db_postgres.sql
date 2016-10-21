@@ -459,13 +459,11 @@ CREATE TABLE tasks
   schedule integer REFERENCES schedules (id) ON DELETE RESTRICT,
   schedule_periods integer,
   schedule_next_time date,
-  slave integer REFERENCES slaves (id) ON DELETE RESTRICT,
   scanner integer REFERENCES scanners (id) ON DELETE RESTRICT,
   config_location integer,
   target_location integer,
   schedule_location integer,
   scanner_location integer,
-  slave_location integer,
   upload_result_count integer,
   hosts_ordering text,
   alterable integer,
@@ -854,31 +852,6 @@ CREATE TABLE settings
   name text NOT NULL,
   comment text,
   value text);
-
-CREATE TABLE slaves
- (id SERIAL PRIMARY KEY,
-  uuid text UNIQUE NOT NULL,
-  owner integer REFERENCES users (id) ON DELETE RESTRICT,
-  name text NOT NULL,
-  comment text,
-  host text,
-  port text,
-  credential integer REFERENCES credentials (id) ON DELETE RESTRICT,
-  creation_time date,
-  modification_time date);
-
-CREATE TABLE slaves_trash
- (id SERIAL PRIMARY KEY,
-  uuid text UNIQUE NOT NULL,
-  owner integer REFERENCES users (id) ON DELETE RESTRICT,
-  name text NOT NULL,
-  comment text,
-  host text,
-  port text,
-  credential integer,
-  credential_location integer,
-  creation_time date,
-  modification_time date);
 
 CREATE TABLE tags
  (id SERIAL PRIMARY KEY,

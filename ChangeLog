@@ -1,5 +1,12 @@
 2016-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/db_postgres.sql (tasks): Remove slave columns.
+	(slaves, slaves_trash): Remove.
+
+	* doc/db.png: Update from source.
+
+2016-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (scanner_iterator_credential): Correct doc.
 
 2016-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
