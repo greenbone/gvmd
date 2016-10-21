@@ -1,5 +1,9 @@
 2016-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (scanner_iterator_credential): Correct doc.
+
+2016-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Remove slaves, which have been replaced by OMP scanners.  Hence increase
 	database version to 180.  Add database migration from version 179 to 180.
 

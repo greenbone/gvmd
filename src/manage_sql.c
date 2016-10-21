@@ -45369,7 +45369,7 @@ DEF_ACCESS (scanner_iterator_credential_name, GET_ITERATOR_COLUMN_COUNT + 4);
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Credential of the slave or 0 if iteration is complete.
+ * @return Credential of the scanner or 0 if iteration is complete.
  */
 credential_t
 scanner_iterator_credential (iterator_t *iterator)
