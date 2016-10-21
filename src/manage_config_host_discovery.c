@@ -115,7 +115,7 @@ make_config_host_discovery (char *const uuid, char *const selector_name)
  * @return 0 success, -1 error.
  */
 int
-check_config_host_discovery (char *const uuid)
+check_config_host_discovery (const char *uuid)
 {
   int update;
 
