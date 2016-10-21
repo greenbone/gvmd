@@ -23975,8 +23975,8 @@ static compare_results_t
 result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
             const char* sort_field)
 {
-  const char *host, *delta_host, *port, *delta_port, *type, *delta_type;
-  const char *nvt, *delta_nvt, *name, *delta_name;
+  const char *host, *delta_host, *port, *delta_port;
+  const char *nvt, *delta_nvt, *name, *delta_name, *descr, *delta_descr;
   int ret;
   double severity, delta_severity;
 
@@ -23991,9 +23991,6 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
   port = result_iterator_port (results);
   delta_port = result_iterator_port (delta_results);
 
-  type = result_iterator_type (results);
-  delta_type = result_iterator_type (delta_results);
-
   severity = result_iterator_severity_double (results);
   delta_severity = result_iterator_severity_double (delta_results);
 
@@ -24003,150 +24000,135 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
   name = result_iterator_nvt_name (results);
   delta_name = result_iterator_nvt_name (delta_results);
 
-  /* sort_order 0 is descending. */
+  descr = result_iterator_descr (results);
+  delta_descr = result_iterator_descr (delta_results);
 
+  /*
+   * For delta reports to work correctly, the order must be the same as in
+   *  init_delta_iterators, except that description should not be checked
+   *  unless it is the sort_field.
+   */
+
+  /* Check sort_field first, also using sort_order (0´is descending). */
   if (strcmp (sort_field, "ROWID") == 0)
     {
       if (sort_order)
         return result_iterator_result (results)
                 > result_iterator_result (delta_results);
-      return result_iterator_result (results)
-              < result_iterator_result (delta_results);
+      else
+        return result_iterator_result (results)
+                < result_iterator_result (delta_results);
     }
-
-  ret = collate_ip (NULL, strlen (host), host, strlen (delta_host), delta_host);
-  g_debug ("   delta: %s: host: %s VS %s (%i)",
-          __FUNCTION__, host, delta_host, ret);
-  if (ret)
-    return ret;
-
-  if ((strcmp (sort_field, "port") == 0)
-      || (strcmp (sort_field, "location") == 0))
+  else if (strcmp (sort_field, "name") == 0
+           || strcmp (sort_field, "vulnerability") == 0)
     {
-      /* Sorting port first. */
-
-      g_debug ("   delta: %s: port first", __FUNCTION__);
-
-      ret = strcmp (port, delta_port);
-      g_debug ("   delta: %s: port: %s VS %s (%i)",
-              __FUNCTION__, port, delta_port, ret);
-      if (ret)
-        {
-          if (sort_order)
-            return ret;
-          return -ret;
-        }
-
-      g_debug ("   delta: %s: severity: %e VS %e",
-              __FUNCTION__, severity, delta_severity);
-      if (severity >= 0 && delta_severity >= 0)
-        {
-          if (severity > delta_severity)
-            return -1;
-          if (severity < delta_severity)
-            return 1;
-        }
-
-      ret = collate_message_type (NULL,
-                                  strlen (type), type,
-                                  strlen (delta_type), delta_type);
-      g_debug ("   delta: %s: threat: %s VS %s (%i)",
-              __FUNCTION__, type, delta_type, ret);
-      if (ret)
-        return -ret;
-
-      ret = strcmp (nvt, delta_nvt);
-      g_debug ("   delta: %s: NVT: %s VS %s (%i)",
-              __FUNCTION__, nvt, delta_nvt, ret);
+      ret = strcmp (name, delta_name);
+      if (sort_order == 0)
+        ret = -ret;
       if (ret)
         return ret;
-
-      return 0;
     }
-
-  if ((strcmp (sort_field, "name") == 0)
-      || (strcmp (sort_field, "vulnerability") == 0))
+  else if (strcmp (sort_field, "host") == 0)
     {
-      /* Sorting NVT name first. */
-
-      g_debug ("   delta: %s: name first", __FUNCTION__);
-
-      ret = strcasecmp (name, delta_name);
-      g_debug ("   delta: %s: name: %s VS %s (%i)",
-              __FUNCTION__, name, delta_name, ret);
-      if (ret)
-        {
-          if (sort_order)
-            return ret;
-          return -ret;
-        }
-
-      ret = strcmp (port, delta_port);
-      g_debug ("   delta: %s: port: %s VS %s (%i)",
-              __FUNCTION__, port, delta_port, ret);
+      ret = collate_ip (NULL,
+                        strlen (host), host, strlen (delta_host), delta_host);
+      if (sort_order == 0)
+        ret = -ret;
+      g_debug ("   delta: %s: host (%s): %s VS %s (%i)",
+               __FUNCTION__, sort_field ? "desc" : "asc",
+               host, delta_host, ret);
       if (ret)
         return ret;
-
-      g_debug ("   delta: %s: severity: %e VS %e",
-              __FUNCTION__, severity, delta_severity);
-      if (severity >= 0 && delta_severity >= 0)
-        {
-          if (severity > delta_severity)
-            return -1;
-          if (severity < delta_severity)
-            return 1;
-        }
-
-      ret = collate_message_type (NULL,
-                                  strlen (type), type,
-                                  strlen (delta_type), delta_type);
-      g_debug ("   delta: %s: threat: %s VS %s (%i)",
-              __FUNCTION__, type, delta_type, ret);
-      if (ret)
-        return -ret;
-
-      ret = strcmp (nvt, delta_nvt);
-      g_debug ("   delta: %s: NVT: %s VS %s (%i)",
-              __FUNCTION__, nvt, delta_nvt, ret);
-      if (ret)
-        return ret;
-
-      return 0;
     }
-
-  /* Sorting severity first. */
-
-  g_debug ("   delta: %s: severity first", __FUNCTION__);
-
-  g_debug ("   delta: %s: severity: %e VS %e",
-          __FUNCTION__, severity, delta_severity);
-  if (severity >= 0 && delta_severity >= 0)
+  else if (strcmp (sort_field, "port") == 0
+           || strcmp (sort_field, "location") == 0)
+    {
+      ret = strcmp (port, delta_port);
+      if (sort_order == 0)
+        ret = -ret;
+      g_debug ("   delta: %s: port (%s): %s VS %s (%i)",
+               __FUNCTION__, sort_field ? "desc" : "asc",
+               port, delta_port, ret);
+      if (ret)
+        return ret;
+    }
+  else if (strcmp (sort_field, "severity") == 0)
     {
       if (severity > delta_severity)
-        return -1;
-      if (severity < delta_severity)
-        return 1;
+        ret = sort_order ? 1 : -1;
+      else if (severity < delta_severity)
+        ret = sort_order ? -1 : 1;
+      else
+        ret = 0;
+      g_debug ("   delta: %s: severity (%s): %f VS %f (%i)",
+               __FUNCTION__, sort_field ? "desc" : "asc",
+               severity, delta_severity, ret);
+      if (ret)
+        return ret;
+    }
+  else if (strcmp (sort_field, "nvt") == 0)
+    {
+      ret = strcmp (nvt, delta_nvt);
+      if (sort_order)
+        ret = -ret;
+      g_debug ("   delta: %s: nvt (%s): %s VS %s (%i)",
+               __FUNCTION__, sort_field ? "desc" : "asc",
+               nvt, delta_nvt, ret);
+      if (ret)
+        return ret;
+    }
+  else if (strcmp (sort_field, "description") == 0)
+    {
+      ret = strcmp (descr, delta_descr);
+      if (sort_order == 0)
+        ret = -ret;
+      g_debug ("   delta: %s: description (%s): %s VS %s (%i)",
+               __FUNCTION__, sort_field ? "desc" : "asc",
+               descr, delta_descr, ret);
+      if (ret)
+        return ret;
     }
 
-  ret = collate_message_type (NULL,
-                              strlen (type), type,
-                              strlen (delta_type), delta_type);
-  g_debug ("   delta: %s: threat: %s VS %s (%i)",
-          __FUNCTION__, type, delta_type, ret);
-  if (ret)
-    return -ret;
-
-  ret = strcmp (port, delta_port);
-  g_debug ("   delta: %s: port: %s VS %s (%i)",
-          __FUNCTION__, port, delta_port, ret);
-  if (ret)
-    return ret;
-
-  ret = strcmp (nvt, delta_nvt);
-  g_debug ("   delta: %s: NVT: %s VS %s (%i)",
-          __FUNCTION__, nvt, delta_nvt, ret);
-  if (ret)
-    return ret;
+  /* Check remaining fields */
+  if (strcmp (sort_field, "host"))
+    {
+      ret = collate_ip (NULL,
+                        strlen (host), host, strlen (delta_host), delta_host);
+      g_debug ("   delta: %s: host: %s VS %s (%i)",
+               __FUNCTION__, host, delta_host, ret);
+      if (ret)
+        return ret;
+    }
+  if (strcmp (sort_field, "port")
+      && strcmp (sort_field, "location"))
+    {
+      ret = strcmp (port, delta_port);
+      g_debug ("   delta: %s: port: %s VS %s (%i)",
+               __FUNCTION__, port, delta_port, ret);
+      if (ret)
+        return ret;
+    }
+  if (strcmp (sort_field, "severity"))
+    {
+      if (severity > delta_severity)
+        ret = 1;
+      else if (severity < delta_severity)
+        ret = -1;
+      else
+        ret = 0;
+      g_debug ("   delta: %s: severity: %f VS %f (%i)",
+               __FUNCTION__, severity, delta_severity, ret);
+      if (ret)
+        return ret;
+    }
+  if (strcmp (sort_field, "nvt"))
+    {
+      ret = strcmp (nvt, delta_nvt);
+      g_debug ("   delta: %s: nvt: %s VS %s (%i)",
+               __FUNCTION__, nvt, delta_nvt, ret);
+      if (ret)
+        return ret;
+    }
 
   return 0;
 }
@@ -26572,6 +26554,10 @@ init_delta_iterators (report_t report, iterator_t *results, report_t delta,
   gchar *order;
   get_data_t delta_get;
 
+  /*
+   * Order must be the same as in result_cmp, except for description
+   *  which isn't checked there.
+   */
   if ((strcmp (sort_field, "name") == 0)
       || (strcmp (sort_field, "vulnerability") == 0))
     order = g_strdup (", host, port, severity, nvt, description");
@@ -26585,7 +26571,7 @@ init_delta_iterators (report_t report, iterator_t *results, report_t delta,
   else if (strcmp (sort_field, "nvt") == 0)
     order = g_strdup (", host, port, severity, description");
   else
-    order = g_strdup (", host, port, severity, description");
+    order = g_strdup (", host, port, severity, nvt, description");
 
   delta_get = *get;
   delta_get.filt_id = NULL;
