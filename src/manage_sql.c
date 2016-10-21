@@ -29737,7 +29737,7 @@ make_task (char* name, char* comment, int in_assets, int event)
        "  scanner_location, schedule_location, alterable,"
        "  creation_time, modification_time)"
        " VALUES ((SELECT id FROM users WHERE users.uuid = '%s'),"
-       "         '%s', '%s', 0, '%s', 0, 0, 0, 0, 0, 0, 0, 0, m_now (),"
+       "         '%s', '%s', 0, '%s', 0, 0, 0, 0, 0, 0, 0, m_now (),"
        "         m_now ());",
        current_credentials.uuid,
        uuid,
