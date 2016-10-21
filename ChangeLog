@@ -1,5 +1,9 @@
 2016-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (client_state_t): Order CREATE_TASK element.
+
+2016-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_config_host_discovery.c (check_config_host_discovery): Match
 	arg to header.
 
