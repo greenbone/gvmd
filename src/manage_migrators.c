@@ -13632,6 +13632,76 @@ migrate_179_to_180 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 180 to version 181.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_180_to_181 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 180. */
+
+  if (manage_db_version () != 180)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Unused column "time" was removed from table tasks.
+   *
+   * Remove slave columns from task at the same time. */
+
+  if (sql_is_sqlite3 ())
+    {
+      sql ("ALTER TABLE tasks RENAME TO tasks_180;");
+
+      sql ("CREATE TABLE IF NOT EXISTS tasks"
+           " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER,"
+           "  comment, run_status INTEGER, start_time, end_time,"
+           "  config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time,"
+           "  schedule_periods INTEGER, config_location INTEGER,"
+           "  target_location INTEGER, schedule_location INTEGER,"
+           "  scanner_location INTEGER, upload_result_count INTEGER,"
+           "  hosts_ordering, scanner, alterable, creation_time,"
+           "  modification_time);");
+
+      sql ("INSERT INTO tasks"
+           " (id, uuid, owner, name, hidden, comment, run_status, start_time,"
+           "  end_time, config, target, schedule, schedule_next_time,"
+           "  schedule_periods, config_location, target_location,"
+           "  schedule_location, scanner_location, upload_result_count,"
+           "  hosts_ordering, scanner, alterable, creation_time,"
+           "  modification_time)"
+           " SELECT id, uuid, owner, name, hidden, comment, run_status,"
+           "        start_time, end_time, config, target, schedule,"
+           "        schedule_next_time, schedule_periods, config_location,"
+           "        target_location, schedule_location, scanner_location,"
+           "        upload_result_count, hosts_ordering, scanner, alterable,"
+           "        creation_time, modification_time"
+           " FROM tasks_180;");
+
+      sql ("DROP TABLE tasks_180;");
+    }
+  else
+    {
+      sql ("ALTER TABLE tasks DROP COLUMN slave;");
+      sql ("ALTER TABLE tasks DROP COLUMN slave_location;");
+    }
+
+  /* Set the database version to 181. */
+
+  set_db_version (181);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -13826,6 +13896,7 @@ static migrator_t database_migrators[]
     {178, migrate_177_to_178},
     {179, migrate_178_to_179},
     {180, migrate_179_to_180},
+    {181, migrate_180_to_181},
     /* End marker. */
     {-1, NULL}};
 

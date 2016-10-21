@@ -1,5 +1,19 @@
 2016-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Remove column "time" from SQLite table tasks.  Hence increase database
+	version to 181.  Add database migration from version 180 to 181.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 181.
+
+	* src/manage_migrators.c (migrate_180_to_181): New functions.
+	(database_migrators): Add migrate_180_to_181.
+
+	* src/manage_sqlite3.c (tasks): Remove column "time".
+
+	* doc/db.png: Update for version change.
+
+2016-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* doc/db_postgres.sql (tasks): Remove slave columns.
 	(slaves, slaves_trash): Remove.
 
