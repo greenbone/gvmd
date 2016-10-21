@@ -10822,7 +10822,7 @@ migrate_156_to_157 ()
 
   while (next (&slaves))
     {
-      slave_t slave;
+      resource_t slave;
       const char *name, *login, *password;
       user_t owner;
       credential_t new_credential;
@@ -10952,7 +10952,7 @@ migrate_156_to_157 ()
 
   while (next (&slaves))
     {
-      slave_t slave;
+      resource_t slave;
       const char *name, *login, *password;
       user_t owner;
       credential_t new_credential;
@@ -13518,6 +13518,120 @@ migrate_178_to_179 ()
   return 0;
 }
 
+/**
+ * @brief Update a reference for migrate_179_to_180.
+ *
+ * @param[in]  table  Table.
+ * @param[in]  trash  Whether to update from scanners_trash.
+ *
+ * @return 0 success, -1 error.
+ */
+void
+migrate_179_to_180_update_ref (const gchar *table, int trash)
+{
+  sql ("UPDATE %s"
+       " SET resource_type = 'scanner',"
+       "     resource = (SELECT id FROM scanners%s"
+       "                 WHERE uuid = resource_uuid)"
+       " WHERE resource_type = 'slave'"
+       " AND resource_location = %i;",
+       table,
+       trash ? "_trash" : "",
+       trash ? LOCATION_TRASH : LOCATION_TABLE);
+}
+
+/**
+ * @brief Migrate the database from version 179 to version 180.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_179_to_180 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 179. */
+
+  if (manage_db_version () != 179)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Slaves were replaced by OMP scanners. */
+
+  sql ("DELETE FROM settings"
+       " WHERE uuid = 'aec201fa-8a82-4b61-bebe-a44ea93b2909'"
+       "       OR uuid = '2681c32a-8dfd-40c9-a9c6-8d4e2c7799eb';");
+
+  sql ("UPDATE filters"
+       " SET type = replace (type, 'slave', 'scanner');");
+
+  sql ("UPDATE filters_trash"
+       " SET type = replace (type, 'slave', 'scanner');");
+
+  sql ("INSERT INTO scanners (uuid, owner, name, comment, host, port,"
+       "                      creation_time, modification_time, credential,"
+       "                      type, ca_pub)"
+       " SELECT uuid, owner, name, comment, host, CAST (port AS INTEGER),"
+       "        creation_time, modification_time, credential, %i, NULL"
+       " FROM slaves;",
+       SCANNER_TYPE_OMP);
+
+  migrate_179_to_180_update_ref ("tags", 0);
+  migrate_179_to_180_update_ref ("tags_trash", 0);
+  migrate_179_to_180_update_ref ("permissions", 0);
+  migrate_179_to_180_update_ref ("permissions_trash", 0);
+
+  sql ("UPDATE tasks"
+       " SET scanner = (SELECT id FROM scanners"
+       "                WHERE uuid = (SELECT uuid FROM slaves"
+       "                              WHERE id = tasks.slave)),"
+       "     slave = 0"
+       " WHERE slave != 0"
+       " AND slave_location = " G_STRINGIFY (LOCATION_TABLE) ";");
+
+  sql ("INSERT INTO scanners_trash (uuid, owner, name, comment, host, port,"
+       "                            creation_time, modification_time,"
+       "                            credential, type, ca_pub)"
+       " SELECT uuid, owner, name, comment, host, CAST (port AS INTEGER),"
+       "        creation_time, modification_time, credential, %i, NULL"
+       " FROM slaves_trash;",
+       SCANNER_TYPE_OMP);
+
+  migrate_179_to_180_update_ref ("tags", 1);
+  migrate_179_to_180_update_ref ("tags_trash", 1);
+  migrate_179_to_180_update_ref ("permissions", 1);
+  migrate_179_to_180_update_ref ("permissions_trash", 1);
+
+  sql ("UPDATE permissions"
+       " SET name = replace (name, 'slave', 'scanner');");
+
+  sql ("UPDATE permissions_trash"
+       " SET name = replace (name, 'slave', 'scanner');");
+
+  sql ("UPDATE tasks"
+       " SET scanner = (SELECT id FROM scanners_trash"
+       "                WHERE uuid = (SELECT uuid FROM slaves_trash"
+       "                              WHERE id = tasks.slave)),"
+       "     slave = 0"
+       " WHERE slave != 0"
+       " AND slave_location = " G_STRINGIFY (LOCATION_TRASH) ";");
+
+  sql ("DROP TABLE slaves;");
+  sql ("DROP TABLE slaves_trash;");
+
+  /* Set the database version to 180. */
+
+  set_db_version (180);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -13711,6 +13825,7 @@ static migrator_t database_migrators[]
     {177, migrate_176_to_177},
     {178, migrate_177_to_178},
     {179, migrate_178_to_179},
+    {180, migrate_179_to_180},
     /* End marker. */
     {-1, NULL}};
 

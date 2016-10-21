@@ -2049,16 +2049,16 @@ connection_authenticate (openvas_connection_t *connection)
  * @return 0 success, -1 error.
  */
 int
-slave_authenticate (gnutls_session_t *session, slave_t slave)
+slave_authenticate (gnutls_session_t *session, scanner_t slave)
 {
   int ret;
   gchar *login, *password;
 
-  login = slave_login (slave);
+  login = scanner_login (slave);
   if (login == NULL)
     return -1;
 
-  password = slave_password (slave);
+  password = scanner_password (slave);
   if (password == NULL)
     {
       g_free (login);
@@ -4747,87 +4747,6 @@ run_omp_task (task_t task, scanner_t scanner, int from, char **report_id)
 }
 
 /**
- * @brief Start a task on a slave.
- *
- * @param[in]   task        The task.
- * @param[in]   slave       Slave to run task on.
- * @param[in]   from        0 start from beginning, 1 continue from stopped, 2
- *                          continue if stopped else start from beginning.
- * @param[out]  report_id   The report ID.
- *
- * @return Before forking: 1 task is active already, 3 failed to find task,
- *         -1 error.
- */
-static int
-run_slave_task (task_t task, slave_t slave, int from, char **report_id)
-{
-  int ret;
-  openvas_connection_t connection;
-  char *slave_id, *name;
-
-  assert (slave);
-
-  memset (&connection, 0, sizeof (connection));
-
-  g_debug ("   %s: slave: %llu\n", __FUNCTION__, slave);
-
-  ret = check_available ("slave", slave, "get_slaves");
-  if (ret)
-    return ret;
-
-  connection.host_string = slave_host (slave);
-  if (connection.host_string == NULL)
-    {
-      g_warning ("%s: Slave has no host", __FUNCTION__);
-      return -1;
-    }
-
-  g_debug ("   %s: connection.host: %s\n", __FUNCTION__,
-           connection.host_string);
-
-  connection.port = slave_port (slave);
-  if (connection.port == -1)
-    {
-      free (connection.host_string);
-      g_warning ("%s: Slave has no port", __FUNCTION__);
-      return -1;
-    }
-
-  connection.username = slave_login (slave);
-  if (connection.username == NULL)
-    {
-      free (connection.host_string);
-      g_warning ("%s: Slave has no login username", __FUNCTION__);
-      return -1;
-    }
-
-  connection.password = slave_password (slave);
-  if (connection.password == NULL)
-    {
-      free (connection.username);
-      free (connection.host_string);
-      g_warning ("%s: Slave has no login password", __FUNCTION__);
-      return -1;
-    }
-
-  slave_id = slave_uuid (slave);
-  name = slave_name (slave);
-
-  connection.tls = 1;
-
-  ret = run_slave_or_omp_task (task, from, report_id, &connection, slave_id,
-                               name);
-
-  free (connection.host_string);
-  free (connection.username);
-  free (connection.password);
-  free (slave_id);
-  free (name);
-
-  return ret;
-}
-
-/**
  * @brief Start an OTP scanner task.
  *
  * @param[in]   task        The task.
@@ -5450,7 +5369,6 @@ run_task (const char *task_id, char **report_id, int from,
 {
   task_t task;
   scanner_t scanner;
-  slave_t slave;
   int ret;
 
   if (current_scanner_task)
@@ -5476,10 +5394,6 @@ run_task (const char *task_id, char **report_id, int from,
 
   if (scanner_type (scanner) != SCANNER_TYPE_OPENVAS)
     return run_osp_task (task);
-
-  slave = task_slave (task);
-  if (slave)
-    return run_slave_task (task, slave, from, report_id);
 
   return run_otp_task (task, scanner, from, report_id);
 }
@@ -5583,6 +5497,8 @@ stop_task_internal (task_t task)
       set_task_run_status (task, TASK_STATUS_STOP_REQUESTED);
       return 1;
     }
+#if 0
+  // FIX if OMP scanner
   else if ((run_status == TASK_STATUS_DELETE_REQUESTED
             || run_status == TASK_STATUS_DELETE_WAITING
             || run_status == TASK_STATUS_DELETE_ULTIMATE_REQUESTED
@@ -5596,6 +5512,7 @@ stop_task_internal (task_t task)
       set_task_run_status (task, TASK_STATUS_STOP_REQUESTED_GIVEUP);
       return 1;
     }
+#endif
 
   return 0;
 }
@@ -5669,17 +5586,17 @@ resume_task (const char *task_id, char **report_id)
  * @param[in]  slave_id   UUID of slave.
  * @param[out] forked     Whether the current process is a fork of the caller.
  *
- * @return 0 success, 1 success, process forked,
- * 2 task not found, 3 slave not found, 4 slaves not supported by scanner,
- * 5 task cannot be stopped currently, 6 scanner does not allow stopping,
- * 98 stop and resume permission denied, 99 permission denied, -1 error.
+ * @return 0 success, 1 success, process forked, 2 task not found,
+ *         3 slave not found, 4 slaves not supported by scanner, 5 task cannot
+ *         be stopped currently, 6 scanner does not allow stopping, 98 stop
+ *         and resume permission denied, 99 permission denied, -1 error.
  */
 int
 move_task (const char *task_id, const char *slave_id)
 {
   task_t task;
   int task_scanner_type;
-  slave_t slave;
+  scanner_t slave;
   task_status_t status;
   int should_resume_task = 0;
 
@@ -5698,7 +5615,11 @@ move_task (const char *task_id, const char *slave_id)
 
   if (slave_id && strcmp (slave_id, ""))
     {
-      if (find_slave_with_permission (slave_id, &slave, "get_slaves"))
+      task_scanner_type = scanner_type (slave);
+      if (task_scanner_type != SCANNER_TYPE_OMP)
+        return 4;
+
+      if (find_scanner_with_permission (slave_id, &slave, "get_scanner"))
         return -1;
       if (slave == 0)
         return 3;
@@ -5707,7 +5628,8 @@ move_task (const char *task_id, const char *slave_id)
     slave = 0;
 
   task_scanner_type = scanner_type (task_scanner (task));
-  if (task_scanner_type != SCANNER_TYPE_OPENVAS)
+  if (task_scanner_type != SCANNER_TYPE_OPENVAS
+      || task_scanner_type != SCANNER_TYPE_OMP)
     return 4;
 
   status = task_run_status (task);
@@ -5760,7 +5682,7 @@ move_task (const char *task_id, const char *slave_id)
         break;
     }
 
-  sql ("UPDATE tasks SET slave = %llu WHERE id = %llu",
+  sql ("UPDATE tasks SET scanner = %llu WHERE id = %llu",
        (slave_id && strcmp (slave_id, "")) ? slave : 0, task);
 
   if (should_resume_task)
@@ -5902,7 +5824,7 @@ credential_full_type (const char* abbreviation)
  * @param[in]   required_type  Single type to limit types to.
  * @param[out]  types          Types on success.
  * @param[out]  start          Actual start of types, which caller must free.
- * @param[out]  slave_id       ID of slave.
+ * @param[out]  slave_id       ID of OMP slave.
  *
  * @return 0 if successful, 2 failed to find slave, -1 otherwise.
  */
@@ -5910,24 +5832,24 @@ static int
 get_slave_system_report_types (const char *required_type, gchar ***start,
                                gchar ***types, const char *slave_id)
 {
-  slave_t slave = 0;
+  scanner_t slave = 0;
   char *host, **end;
   int port, socket;
   gnutls_session_t session;
   entity_t get, report;
   entities_t reports;
 
-  if (find_slave (slave_id, &slave))
+  if (find_scanner (slave_id, &slave))
     return -1;
   if (slave == 0)
     return 2;
 
-  host = slave_host (slave);
+  host = scanner_host (slave);
   if (host == NULL) return -1;
 
   g_debug ("   %s: host: %s\n", __FUNCTION__, host);
 
-  port = slave_port (slave);
+  port = scanner_port (slave);
   if (port == -1)
     {
       free (host);
@@ -6187,7 +6109,8 @@ report_type_iterator_title (report_type_iterator_t* iterator)
  *
  * @param[in]   name      Name of report.
  * @param[in]   duration  Time range of report, in seconds.
- * @param[in]   slave_id  ID of slave to get report from.  0 for local.
+ * @param[in]   slave_id  ID of OMP scanner slave to get report from.
+ *                        0 for local.
  * @param[out]  report    On success, report in base64 if such a report exists
  *                        else NULL.  Arbitrary on error.
  *
@@ -6197,7 +6120,7 @@ static int
 slave_system_report (const char *name, const char *duration,
                      const char *slave_id, char **report)
 {
-  slave_t slave = 0;
+  scanner_t slave = 0;
   char *host;
   int port, socket;
   gnutls_session_t session;
@@ -6205,17 +6128,17 @@ slave_system_report (const char *name, const char *duration,
   entities_t reports;
   omp_get_system_reports_opts_t opts;
 
-  if (find_slave (slave_id, &slave))
+  if (find_scanner (slave_id, &slave))
     return -1;
   if (slave == 0)
     return 2;
 
-  host = slave_host (slave);
+  host = scanner_host (slave);
   if (host == NULL) return -1;
 
   g_debug ("   %s: host: %s\n", __FUNCTION__, host);
 
-  port = slave_port (slave);
+  port = scanner_port (slave);
   if (port == -1)
     {
       free (host);

@@ -261,7 +261,6 @@ typedef long long int alert_t;
 typedef long long int filter_t;
 typedef long long int group_t;
 typedef long long int host_t;
-typedef long long int slave_t;
 typedef long long int tag_t;
 typedef long long int target_t;
 typedef long long int task_t;
@@ -731,15 +730,6 @@ set_task_hosts_ordering (task_t, const char *);
 
 void
 set_task_scanner (task_t, scanner_t);
-
-slave_t
-task_slave (task_t);
-
-void
-set_task_slave (task_t, target_t);
-
-int
-task_slave_in_trash (task_t);
 
 char*
 task_description (task_t);
@@ -1790,9 +1780,6 @@ int
 modify_task_check_config_scanner (task_t, const char *, const char *);
 
 int
-modify_task_check_slave_scanner (task_t, const char *, const char *);
-
-int
 manage_set_config_preference (config_t, const char*, const char*,
                               const char*);
 
@@ -2176,18 +2163,6 @@ credential_scanner_iterator_name (iterator_t*);
 
 int
 credential_scanner_iterator_readable (iterator_t*);
-
-void
-init_credential_slave_iterator (iterator_t*, credential_t, int);
-
-const char*
-credential_slave_iterator_uuid (iterator_t*);
-
-const char*
-credential_slave_iterator_name (iterator_t*);
-
-int
-credential_slave_iterator_readable (iterator_t*);
 
 int
 trash_credential_in_use (credential_t);
@@ -3056,104 +3031,6 @@ init_param_option_iterator (iterator_t*, report_format_param_t, int,
 
 const char*
 param_option_iterator_value (iterator_t *);
-
-
-/* Slaves. */
-
-gboolean
-find_slave (const char*, slave_t*);
-
-gboolean
-find_slave_with_permission (const char*, slave_t*, const char *);
-
-int
-create_slave (const char*, const char*, const char*, const char*,
-              const char*, slave_t*);
-
-int
-copy_slave (const char*, const char*, const char *, slave_t *);
-
-int
-modify_slave (const char*, const char*, const char*, const char*, const char*,
-              const char*);
-
-int
-delete_slave (const char*, int);
-
-int
-init_slave_iterator (iterator_t*, const get_data_t *);
-
-const char*
-slave_iterator_host (iterator_t*);
-
-const char*
-slave_iterator_port (iterator_t*);
-
-const char*
-slave_iterator_login (iterator_t*);
-
-const char*
-slave_iterator_credential_name (iterator_t*);
-
-credential_t
-slave_iterator_credential (iterator_t*);
-
-int
-slave_iterator_credential_trash (iterator_t*);
-
-char*
-slave_uuid (slave_t);
-
-char*
-trash_slave_uuid (slave_t);
-
-char*
-slave_name (slave_t);
-
-char*
-trash_slave_name (slave_t);
-
-char*
-slave_host (slave_t);
-
-char*
-slave_login (slave_t);
-
-char*
-slave_password (slave_t);
-
-int
-slave_port (slave_t);
-
-int
-slave_in_use (slave_t);
-
-int
-trash_slave_in_use (slave_t);
-
-int
-trash_slave_writable (slave_t);
-
-int
-trash_slave_readable (slave_t);
-
-int
-slave_writable (slave_t);
-
-int
-slave_count (const get_data_t *);
-
-void
-init_slave_task_iterator (iterator_t*, slave_t);
-
-const char*
-slave_task_iterator_name (iterator_t*);
-
-const char*
-slave_task_iterator_uuid (iterator_t*);
-
-int
-slave_task_iterator_readable (iterator_t*);
 
 
 /* Groups. */

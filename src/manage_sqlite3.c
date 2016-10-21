@@ -2823,13 +2823,6 @@ create_tables ()
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment,"
        "  first_time, period, period_months, duration, timezone,"
        "  initial_offset, creation_time, modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS slaves"
-       " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, host,"
-       "  port, creation_time, modification_time, credential INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS slaves_trash"
-       " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, host,"
-       "  port, creation_time, modification_time, credential INTEGER,"
-       "  credential_location INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS settings"
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, value);");
   sql ("CREATE TABLE IF NOT EXISTS tags"
@@ -2879,11 +2872,11 @@ create_tables ()
        /* TODO Remove column time, no longer used. */
        "  time, comment, run_status INTEGER, start_time, end_time,"
        "  config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time,"
-       "  schedule_periods INTEGER, slave INTEGER, config_location INTEGER,"
+       "  schedule_periods INTEGER, config_location INTEGER,"
        "  target_location INTEGER, schedule_location INTEGER,"
-       "  slave_location INTEGER, scanner_location INTEGER,"
-       "  upload_result_count INTEGER, hosts_ordering, scanner, alterable,"
-       "  creation_time, modification_time);");
+       "  scanner_location INTEGER, upload_result_count INTEGER,"
+       "  hosts_ordering, scanner, alterable, creation_time,"
+       "  modification_time);");
   /* Field password contains the hash. */
   /* Field hosts_allow: 0 deny, 1 allow. */
   /* Field ifaces_allow: 0 deny, 1 allow. */

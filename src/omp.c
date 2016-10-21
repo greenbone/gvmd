@@ -1631,37 +1631,6 @@ create_schedule_data_reset (create_schedule_data_t *data)
 }
 
 /**
- * @brief Command data for the create_slave command.
- */
-typedef struct
-{
-  char *credential_id;           ///< UUID of Credential for login.
-  char *comment;                 ///< Comment.
-  char *host;                    ///< Host for new slave.
-  char *copy;                    ///< UUID of slave to copy.
-  char *name;                    ///< Name of new slave.
-  char *port;                    ///< Port on host.
-} create_slave_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-create_slave_data_reset (create_slave_data_t *data)
-{
-  free (data->credential_id);
-  free (data->comment);
-  free (data->copy);
-  free (data->host);
-  free (data->name);
-  free (data->port);
-
-  memset (data, 0, sizeof (create_slave_data_t));
-}
-
-/**
  * @brief Command data for the create_target command.
  */
 typedef struct
@@ -1771,7 +1740,6 @@ typedef struct
   array_t *preferences; ///< Preferences.
   char *schedule_id;    ///< ID of task schedule.
   char *schedule_periods; ///< Number of periods the schedule must run for.
-  char *slave_id;       ///< ID of task slave.
   char *target_id;      ///< ID of task target.
   task_t task;          ///< ID of new task.
 } create_task_data_t;
@@ -1809,7 +1777,6 @@ create_task_data_reset (create_task_data_t *data)
   array_free (data->preferences);
   free (data->schedule_id);
   free (data->schedule_periods);
-  free (data->slave_id);
   free (data->target_id);
 
   memset (data, 0, sizeof (create_task_data_t));
@@ -2233,28 +2200,6 @@ delete_schedule_data_reset (delete_schedule_data_t *data)
 }
 
 /**
- * @brief Command data for the delete_slave command.
- */
-typedef struct
-{
-  char *slave_id;   ///< ID of slave to delete.
-  int ultimate;     ///< Boolean.  Whether to remove entirely or to trashcan.
-} delete_slave_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-delete_slave_data_reset (delete_slave_data_t *data)
-{
-  free (data->slave_id);
-
-  memset (data, 0, sizeof (delete_slave_data_t));
-}
-
-/**
  * @brief Command data for the delete_tag command.
  */
 typedef struct
@@ -2581,7 +2526,6 @@ typedef struct
   char *format;      ///< Format requested: "key", "deb", ....
   get_data_t get;    ///< Get Args.
   int scanners;      ///< Boolean.  Whether to return scanners using credential.
-  int slaves;        ///< Boolean.  Whether to return slaves using credential.
   int targets;       ///< Boolean.  Whether to return targets using credential.
 } get_credentials_data_t;
 
@@ -3021,27 +2965,6 @@ get_settings_data_reset (get_settings_data_t *data)
   free (data->sort_field);
 
   memset (data, 0, sizeof (get_settings_data_t));
-}
-
-/**
- * @brief Command data for the get_slaves command.
- */
-typedef struct
-{
-  get_data_t get;      ///< Get args.
-  int tasks;           ///< Boolean.  Whether to include tasks that use this slave.
-} get_slaves_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-get_slaves_data_reset (get_slaves_data_t *data)
-{
-  get_data_reset (&data->get);
-  memset (data, 0, sizeof (get_slaves_data_t));
 }
 
 /**
@@ -3712,37 +3635,6 @@ modify_schedule_data_reset (modify_schedule_data_t *data)
 }
 
 /**
- * @brief Command data for the modify_slave command.
- */
-typedef struct
-{
-  char *comment;                 ///< Comment.
-  char *name;                    ///< Name of slave.
-  char *slave_id;                ///< Slave UUID.
-  char *host;                    ///< Slave hostname.
-  char *port;                    ///< Slave port.
-  char *credential_id;           ///< Slave login credential.
-} modify_slave_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-modify_slave_data_reset (modify_slave_data_t *data)
-{
-  free (data->comment);
-  free (data->name);
-  free (data->slave_id);
-  free (data->host);
-  free (data->port);
-  free (data->credential_id);
-
-  memset (data, 0, sizeof (modify_slave_data_t));
-}
-
-/**
  * @brief Command data for the modify_tag command.
  */
 typedef struct
@@ -3877,7 +3769,6 @@ typedef struct
   array_t *preferences;   ///< Preferences.
   char *schedule_id;   ///< ID of new schedule for task.
   char *schedule_periods; ///< Number of periods the schedule must run for.
-  char *slave_id;      ///< ID of new slave for task.
   char *target_id;     ///< ID of new target for task.
   char *task_id;       ///< ID of task to modify.
 } modify_task_data_t;
@@ -3919,7 +3810,6 @@ modify_task_data_reset (modify_task_data_t *data)
   array_free (data->preferences);
   free (data->schedule_id);
   free (data->schedule_periods);
-  free (data->slave_id);
   free (data->target_id);
   free (data->task_id);
 
@@ -4330,7 +4220,6 @@ typedef union
   create_role_data_t create_role;                     ///< create_role
   create_scanner_data_t create_scanner;               ///< create_scanner
   create_schedule_data_t create_schedule;             ///< create_schedule
-  create_slave_data_t create_slave;                   ///< create_slave
   create_tag_data_t create_tag;                       ///< create_tag
   create_target_data_t create_target;                 ///< create_target
   create_task_data_t create_task;                     ///< create_task
@@ -4352,7 +4241,6 @@ typedef union
   delete_role_data_t delete_role;                     ///< delete_role
   delete_scanner_data_t delete_scanner;               ///< delete_scanner
   delete_schedule_data_t delete_schedule;             ///< delete_schedule
-  delete_slave_data_t delete_slave;                   ///< delete_slave
   delete_tag_data_t delete_tag;                       ///< delete_tag
   delete_target_data_t delete_target;                 ///< delete_target
   delete_task_data_t delete_task;                     ///< delete_task
@@ -4381,7 +4269,6 @@ typedef union
   get_schedules_data_t get_schedules;                 ///< get_schedules
   get_scanners_data_t get_scanners;                   ///< get_scanners
   get_settings_data_t get_settings;                   ///< get_settings
-  get_slaves_data_t get_slaves;                       ///< get_slaves
   get_system_reports_data_t get_system_reports;       ///< get_system_reports
   get_tags_data_t get_tags;                           ///< get_tags
   get_targets_data_t get_targets;                     ///< get_targets
@@ -4404,7 +4291,6 @@ typedef union
   modify_scanner_data_t modify_scanner;               ///< modify_scanner
   modify_schedule_data_t modify_schedule;             ///< modify_schedule
   modify_setting_data_t modify_setting;               ///< modify_setting
-  modify_slave_data_t modify_slave;                   ///< modify_slave
   modify_tag_data_t modify_tag;                       ///< modify_tag
   modify_target_data_t modify_target;                 ///< modify_target
   modify_task_data_t modify_task;                     ///< modify_task
@@ -4542,12 +4428,6 @@ create_schedule_data_t *create_schedule_data
  = (create_schedule_data_t*) &(command_data.create_schedule);
 
 /**
- * @brief Parser callback data for CREATE_SLAVE.
- */
-create_slave_data_t *create_slave_data
- = (create_slave_data_t*) &(command_data.create_slave);
-
-/**
  * @brief Parser callback data for CREATE_TAG.
  */
 create_tag_data_t *create_tag_data
@@ -4672,12 +4552,6 @@ delete_scanner_data_t *delete_scanner_data
  */
 delete_schedule_data_t *delete_schedule_data
  = (delete_schedule_data_t*) &(command_data.delete_schedule);
-
-/**
- * @brief Parser callback data for DELETE_SLAVE.
- */
-delete_slave_data_t *delete_slave_data
- = (delete_slave_data_t*) &(command_data.delete_slave);
 
 /**
  * @brief Parser callback data for DELETE_TAG.
@@ -4848,12 +4722,6 @@ get_settings_data_t *get_settings_data
  = &(command_data.get_settings);
 
 /**
- * @brief Parser callback data for GET_SLAVES.
- */
-get_slaves_data_t *get_slaves_data
- = &(command_data.get_slaves);
-
-/**
  * @brief Parser callback data for GET_SYSTEM_REPORTS.
  */
 get_system_reports_data_t *get_system_reports_data
@@ -5002,12 +4870,6 @@ modify_schedule_data_t *modify_schedule_data
  */
 modify_setting_data_t *modify_setting_data
  = &(command_data.modify_setting);
-
-/**
- * @brief Parser callback data for MODIFY_SLAVE.
- */
-modify_slave_data_t *modify_slave_data
- = &(command_data.modify_slave);
 
 /**
  * @brief Parser callback data for MODIFY_TAG.
@@ -5433,13 +5295,6 @@ typedef enum
   CLIENT_CREATE_SCHEDULE_PERIOD,
   CLIENT_CREATE_SCHEDULE_PERIOD_UNIT,
   CLIENT_CREATE_SCHEDULE_TIMEZONE,
-  CLIENT_CREATE_SLAVE,
-  CLIENT_CREATE_SLAVE_COMMENT,
-  CLIENT_CREATE_SLAVE_COPY,
-  CLIENT_CREATE_SLAVE_CREDENTIAL,
-  CLIENT_CREATE_SLAVE_HOST,
-  CLIENT_CREATE_SLAVE_NAME,
-  CLIENT_CREATE_SLAVE_PORT,
   CLIENT_CREATE_TAG,
   CLIENT_CREATE_TAG_ACTIVE,
   CLIENT_CREATE_TAG_COMMENT,
@@ -5487,7 +5342,6 @@ typedef enum
   CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_VALUE,
   CLIENT_CREATE_TASK_SCHEDULE,
   CLIENT_CREATE_TASK_SCHEDULE_PERIODS,
-  CLIENT_CREATE_TASK_SLAVE,
   CLIENT_CREATE_TASK_TARGET,
   CLIENT_CREATE_USER,
   CLIENT_CREATE_USER_COPY,
@@ -5517,7 +5371,6 @@ typedef enum
   CLIENT_DELETE_ROLE,
   CLIENT_DELETE_SCANNER,
   CLIENT_DELETE_SCHEDULE,
-  CLIENT_DELETE_SLAVE,
   CLIENT_DELETE_TAG,
   CLIENT_DELETE_TARGET,
   CLIENT_DELETE_TASK,
@@ -5552,7 +5405,6 @@ typedef enum
   CLIENT_GET_SCANNERS,
   CLIENT_GET_SCHEDULES,
   CLIENT_GET_SETTINGS,
-  CLIENT_GET_SLAVES,
   CLIENT_GET_SYSTEM_REPORTS,
   CLIENT_GET_TAGS,
   CLIENT_GET_TARGETS,
@@ -5693,12 +5545,6 @@ typedef enum
   CLIENT_MODIFY_SETTING,
   CLIENT_MODIFY_SETTING_NAME,
   CLIENT_MODIFY_SETTING_VALUE,
-  CLIENT_MODIFY_SLAVE,
-  CLIENT_MODIFY_SLAVE_COMMENT,
-  CLIENT_MODIFY_SLAVE_CREDENTIAL,
-  CLIENT_MODIFY_SLAVE_HOST,
-  CLIENT_MODIFY_SLAVE_NAME,
-  CLIENT_MODIFY_SLAVE_PORT,
   CLIENT_MODIFY_TAG,
   CLIENT_MODIFY_TAG_ACTIVE,
   CLIENT_MODIFY_TAG_COMMENT,
@@ -5739,7 +5585,6 @@ typedef enum
   CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_VALUE,
   CLIENT_MODIFY_TASK_SCHEDULE,
   CLIENT_MODIFY_TASK_SCHEDULE_PERIODS,
-  CLIENT_MODIFY_TASK_SLAVE,
   CLIENT_MODIFY_TASK_TARGET,
   CLIENT_MODIFY_TASK_HOSTS_ORDERING,
   CLIENT_MODIFY_TASK_SCANNER,
@@ -6928,11 +6773,6 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_REPORT_FORMAT);
         else if (strcasecmp ("CREATE_SCANNER", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCANNER);
-        else if (strcasecmp ("CREATE_SLAVE", element_name) == 0)
-          {
-            openvas_append_string (&create_slave_data->comment, "");
-            set_client_state (CLIENT_CREATE_SLAVE);
-          }
         else if (strcasecmp ("CREATE_SCHEDULE", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE);
         else if (strcasecmp ("CREATE_TAG", element_name) == 0)
@@ -7151,18 +6991,6 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             else
               delete_schedule_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_SCHEDULE);
-          }
-        else if (strcasecmp ("DELETE_SLAVE", element_name) == 0)
-          {
-            const gchar* attribute;
-            append_attribute (attribute_names, attribute_values, "slave_id",
-                              &delete_slave_data->slave_id);
-            if (find_attribute (attribute_names, attribute_values,
-                                "ultimate", &attribute))
-              delete_slave_data->ultimate = strcmp (attribute, "0");
-            else
-              delete_slave_data->ultimate = 0;
-            set_client_state (CLIENT_DELETE_SLAVE);
           }
         else if (strcasecmp ("DELETE_TAG", element_name) == 0)
           {
@@ -7383,12 +7211,6 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               get_credentials_data->scanners = strcmp (attribute, "0");
             else
               get_credentials_data->scanners = 0;
-
-            if (find_attribute (attribute_names, attribute_values,
-                                "slaves", &attribute))
-              get_credentials_data->slaves = strcmp (attribute, "0");
-            else
-              get_credentials_data->slaves = 0;
 
             if (find_attribute (attribute_names, attribute_values,
                                 "targets", &attribute))
@@ -7779,19 +7601,6 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
             set_client_state (CLIENT_GET_SETTINGS);
           }
-        else if (strcasecmp ("GET_SLAVES", element_name) == 0)
-          {
-            const gchar* attribute;
-            get_data_parse_attributes (&get_slaves_data->get, "slave",
-                                       attribute_names,
-                                       attribute_values);
-            if (find_attribute (attribute_names, attribute_values,
-                                "tasks", &attribute))
-              get_slaves_data->tasks = strcmp (attribute, "0");
-            else
-              get_slaves_data->tasks = 0;
-            set_client_state (CLIENT_GET_SLAVES);
-          }
         else if (strcasecmp ("GET_TAGS", element_name) == 0)
           {
             const gchar* attribute;
@@ -8001,12 +7810,6 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               "setting_id",
                               &modify_setting_data->setting_id);
             set_client_state (CLIENT_MODIFY_SETTING);
-          }
-        else if (strcasecmp ("MODIFY_SLAVE", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "slave_id",
-                              &modify_slave_data->slave_id);
-            set_client_state (CLIENT_MODIFY_SLAVE);
           }
         else if (strcasecmp ("MODIFY_TAG", element_name) == 0)
           {
@@ -8736,35 +8539,6 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         ELSE_ERROR ("modify_setting");
 
-      case CLIENT_MODIFY_SLAVE:
-        if (strcasecmp ("COMMENT", element_name) == 0)
-          {
-            openvas_append_string (&modify_slave_data->comment, "");
-            set_client_state (CLIENT_MODIFY_SLAVE_COMMENT);
-          }
-        else if (strcasecmp ("CREDENTIAL", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "id",
-                              &modify_slave_data->credential_id);
-            set_client_state (CLIENT_MODIFY_SLAVE_CREDENTIAL);
-          }
-        else if (strcasecmp ("NAME", element_name) == 0)
-          {
-            openvas_append_string (&modify_slave_data->name, "");
-            set_client_state (CLIENT_MODIFY_SLAVE_NAME);
-          }
-        else if (strcasecmp ("HOST", element_name) == 0)
-          {
-            openvas_append_string (&modify_slave_data->host, "");
-            set_client_state (CLIENT_MODIFY_SLAVE_HOST);
-          }
-        else if (strcasecmp ("PORT", element_name) == 0)
-          {
-            openvas_append_string (&modify_slave_data->port, "");
-            set_client_state (CLIENT_MODIFY_SLAVE_PORT);
-          }
-        ELSE_ERROR ("modify_slave");
-
       case CLIENT_MODIFY_TAG:
         if (strcasecmp ("ACTIVE", element_name) == 0)
           {
@@ -8939,12 +8713,6 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("SCHEDULE_PERIODS", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TASK_SCHEDULE_PERIODS);
-        else if (strcasecmp ("SLAVE", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "id",
-                              &modify_task_data->slave_id);
-            set_client_state (CLIENT_MODIFY_TASK_SLAVE);
-          }
         else if (strcasecmp ("TARGET", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
@@ -10092,25 +9860,6 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_OVERRIDE_THREAT);
         ELSE_ERROR ("create_override");
 
-      case CLIENT_CREATE_SLAVE:
-        if (strcasecmp ("COMMENT", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SLAVE_COMMENT);
-        else if (strcasecmp ("COPY", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SLAVE_COPY);
-        else if (strcasecmp ("CREDENTIAL", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "id",
-                              &create_slave_data->credential_id);
-            set_client_state (CLIENT_CREATE_SLAVE_CREDENTIAL);
-          }
-        else if (strcasecmp ("HOST", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SLAVE_HOST);
-        else if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SLAVE_NAME);
-        else if (strcasecmp ("PORT", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SLAVE_PORT);
-        ELSE_ERROR ("create_slave");
-
       case CLIENT_CREATE_TAG:
         if (strcasecmp ("ACTIVE", element_name) == 0)
           {
@@ -10295,12 +10044,6 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("SCHEDULE_PERIODS", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_SCHEDULE_PERIODS);
-        else if (strcasecmp ("SLAVE", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "id",
-                              &create_task_data->slave_id);
-            set_client_state (CLIENT_CREATE_TASK_SLAVE);
-          }
         else if (strcasecmp ("TARGET", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
@@ -14919,31 +14662,6 @@ handle_get_credentials (omp_parser_t *omp_parser, GError **error)
           SEND_TO_CLIENT_OR_FAIL ("</scanners>");
         }
 
-      if (get_credentials_data->slaves)
-        {
-          iterator_t slaves;
-
-          SENDF_TO_CLIENT_OR_FAIL ("<slaves>");
-          init_credential_slave_iterator
-            (&slaves, get_iterator_resource (&credentials), 0);
-          while (next (&slaves))
-            {
-              SENDF_TO_CLIENT_OR_FAIL
-               ("<slave id=\"%s\">"
-                "<name>%s</name>",
-                credential_slave_iterator_uuid (&slaves),
-                credential_slave_iterator_name (&slaves));
-              if (credential_slave_iterator_readable (&slaves))
-                SEND_TO_CLIENT_OR_FAIL ("</slave>");
-              else
-                SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
-                                        "</slave>");
-            }
-          cleanup_iterator (&slaves);
-
-          SEND_TO_CLIENT_OR_FAIL ("</slaves>");
-        }
-
       if (get_credentials_data->targets)
         {
           iterator_t targets;
@@ -18551,137 +18269,6 @@ handle_get_settings (omp_parser_t *omp_parser, GError **error)
 }
 
 /**
- * @brief Handle end of GET_SLAVES element.
- *
- * @param[in]  omp_parser   OMP parser.
- * @param[in]  error        Error parameter.
- */
-static void
-handle_get_slaves (omp_parser_t *omp_parser, GError **error)
-{
-  if (get_slaves_data->tasks && get_slaves_data->get.trash)
-    SEND_TO_CLIENT_OR_FAIL
-     (XML_ERROR_SYNTAX ("get_slaves",
-                        "GET_SLAVES tasks given with trash"));
-  else
-    {
-      iterator_t slaves;
-      int count, filtered, ret, first;
-
-      INIT_GET (slave, Slave);
-
-      ret = init_slave_iterator (&slaves, &get_slaves_data->get);
-      if (ret)
-        {
-          switch (ret)
-            {
-              case 1:
-                if (send_find_error_to_client ("get_slaves",
-                                               "slave",
-                                               get_slaves_data->get.id,
-                                               omp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                break;
-              case 2:
-                if (send_find_error_to_client
-                      ("get_slaves", "filter",
-                       get_slaves_data->get.filt_id, omp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                break;
-              case -1:
-                SEND_TO_CLIENT_OR_FAIL
-                  (XML_INTERNAL_ERROR ("get_slaves"));
-                break;
-            }
-          get_slaves_data_reset (get_slaves_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          return;
-        }
-
-      SEND_GET_START ("slave");
-      while (1)
-        {
-          credential_t credential;
-          const char *credential_name;
-          gchar *credential_id;
-
-          ret = get_next (&slaves, &get_slaves_data->get, &first,
-                          &count, init_slave_iterator);
-          if (ret == 1)
-            break;
-          if (ret == -1)
-            {
-              internal_error_send_to_client (error);
-              return;
-            }
-
-          SEND_GET_COMMON (slave, &get_slaves_data->get, &slaves);
-
-          credential = slave_iterator_credential (&slaves);
-          credential_id = slave_iterator_credential_trash (&slaves)
-                            ? trash_credential_uuid (credential)
-                            : credential_uuid (credential);
-          credential_name = slave_iterator_credential_name (&slaves);
-
-          SENDF_TO_CLIENT_OR_FAIL ("<host>%s</host>"
-                                   "<port>%s</port>"
-                                   "<credential id=\"%s\">"
-                                   "<name>%s</name>"
-                                   "<login>%s</login>"
-                                   "<trash>%d</trash>"
-                                   "</credential>",
-                                   slave_iterator_host (&slaves),
-                                   slave_iterator_port (&slaves),
-                                   credential_id ? credential_id : "",
-                                   credential_name
-                                    ? credential_name : "",
-                                   slave_iterator_login (&slaves),
-                                   slave_iterator_credential_trash (&slaves));
-
-          if (get_slaves_data->tasks)
-            {
-              iterator_t tasks;
-
-              SEND_TO_CLIENT_OR_FAIL ("<tasks>");
-              init_slave_task_iterator (&tasks,
-                                        get_iterator_resource
-                                          (&slaves));
-              while (next (&tasks))
-                {
-                  SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
-                                           "<name>%s</name>",
-                                           slave_task_iterator_uuid (&tasks),
-                                           slave_task_iterator_name (&tasks));
-                  if (slave_task_iterator_readable (&tasks))
-                    SEND_TO_CLIENT_OR_FAIL ("</task>");
-                  else
-                    SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
-                                            "</task>");
-                }
-              cleanup_iterator (&tasks);
-              SEND_TO_CLIENT_OR_FAIL ("</tasks>");
-            }
-
-          SEND_TO_CLIENT_OR_FAIL ("</slave>");
-          count++;
-        }
-      cleanup_iterator (&slaves);
-      filtered = get_slaves_data->get.id
-                  ? 1
-                  : slave_count (&get_slaves_data->get);
-      SEND_GET_END ("slave", &get_slaves_data->get, count, filtered);
-    }
-  get_slaves_data_reset (get_slaves_data);
-  set_client_state (CLIENT_AUTHENTIC);
-}
-
-/**
  * @brief Handle end of GET_SYSTEM_REPORTS element.
  *
  * @param[in]  omp_parser   OMP parser.
@@ -19350,12 +18937,10 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
       task_t index;
       gchar *progress_xml;
       target_t target;
-      slave_t slave;
       scanner_t scanner;
       const char *first_report_id, *last_report_id;
       char *config_name, *config_uuid;
       char *task_target_uuid, *task_target_name;
-      char *task_slave_uuid, *task_slave_name;
       char *task_schedule_uuid, *task_schedule_name;
       char *task_scanner_uuid, *task_scanner_name;
       gchar *first_report, *last_report;
@@ -19368,7 +18953,7 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
       int target_in_trash, schedule_in_trash, scanner_in_trash;
       int debugs, holes = 0, infos = 0, logs, warnings = 0;
       int holes_2 = 0, infos_2 = 0, warnings_2 = 0;
-      int false_positives, task_scanner_type, slave_available;
+      int false_positives, task_scanner_type;
       int schedule_available, target_available, config_available;
       int scanner_available;
       double severity = 0, severity_2 = 0;
@@ -19390,7 +18975,6 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
 
       index = get_iterator_resource (&tasks);
       target = task_target (index);
-      slave = task_slave (index);
 
       if (get_tasks_data->schedules_only)
         {
@@ -19823,32 +19407,6 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
                          __FUNCTION__);
               config_available = (found > 0);
             }
-          slave_available = 1;
-          if (task_slave_in_trash (index))
-            {
-              task_slave_uuid = trash_slave_uuid (slave);
-              task_slave_name = trash_slave_name (slave);
-              slave_available = trash_slave_readable (slave);
-            }
-          else if (slave)
-            {
-              slave_t found;
-              task_slave_uuid = slave_uuid (slave);
-              task_slave_name = slave_name (slave);
-              if (find_slave_with_permission (task_slave_uuid,
-                                              &found,
-                                              "get_slaves"))
-                g_error ("%s: GET_TASKS: error finding task slave,"
-                         " aborting",
-                         __FUNCTION__);
-
-              slave_available = (found > 0);
-            }
-          else
-            {
-              task_slave_uuid = g_strdup ("");
-              task_slave_name = g_strdup ("");
-            }
           schedule_available = 1;
           schedule = task_schedule (index);
           if (schedule)
@@ -19932,11 +19490,6 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
                        "<trash>%i</trash>"
                        "%s"
                        "</scanner>"
-                       "<slave id=\"%s\">"
-                       "<name>%s</name>"
-                       "<trash>%i</trash>"
-                       "%s"
-                       "</slave>"
                        "<status>%s</status>"
                        "<progress>%s</progress>"
                        "<report_count>"
@@ -19969,10 +19522,6 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
                        task_scanner_type,
                        scanner_in_trash,
                        scanner_available ? "" : "<permissions/>",
-                       task_slave_uuid ?: "",
-                       task_slave_name ?: "",
-                       task_slave_in_trash (index),
-                       slave_available ? "" : "<permissions/>",
                        task_iterator_run_status_name (&tasks),
                        progress_xml,
                        task_iterator_total_reports (&tasks),
@@ -20003,8 +19552,6 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
           g_free (task_schedule_name);
           g_free (task_scanner_uuid);
           g_free (task_scanner_name);
-          free (task_slave_uuid);
-          free (task_slave_name);
           if (send_to_client (response,
                               omp_parser->client_writer,
                               omp_parser->client_writer_data))
@@ -21118,7 +20665,6 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CASE_DELETE (ROLE, role, "Role");
       CASE_DELETE (SCANNER, scanner, "Scanner");
       CASE_DELETE (SCHEDULE, schedule, "Schedule");
-      CASE_DELETE (SLAVE, slave, "Slave");
       CASE_DELETE (TAG, tag, "Tag");
       CASE_DELETE (TARGET, target, "Target");
 
@@ -21502,10 +21048,6 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_GET_SETTINGS:
         assert (strcasecmp ("GET_SETTINGS", element_name) == 0);
         return handle_get_settings (omp_parser, error);
-
-      case CLIENT_GET_SLAVES:
-        assert (strcasecmp ("GET_SLAVES", element_name) == 0);
-        return handle_get_slaves (omp_parser, error);
 
       case CLIENT_GET_SYSTEM_REPORTS:
         assert (strcasecmp ("GET_SYSTEM_REPORTS", element_name) == 0);
@@ -24796,157 +24338,6 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       CLOSE (CLIENT_CREATE_SCHEDULE_PERIOD, UNIT);
 
-      case CLIENT_CREATE_SLAVE:
-        {
-          slave_t new_slave;
-
-          assert (strcasecmp ("CREATE_SLAVE", element_name) == 0);
-
-          if (create_slave_data->copy)
-            switch (copy_slave (create_slave_data->name,
-                                create_slave_data->comment,
-                                create_slave_data->copy,
-                                &new_slave))
-              {
-                case 0:
-                  {
-                    char *uuid;
-                    uuid = slave_uuid (new_slave);
-                    SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_slave"),
-                                             uuid);
-                    log_event ("slave", "Slave", uuid, "created");
-                    free (uuid);
-                    break;
-                  }
-                case 1:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("create_slave",
-                                      "Slave exists already"));
-                  log_event_fail ("slave", "Slave", NULL, "created");
-                  break;
-                case 2:
-                  if (send_find_error_to_client ("create_slave", "slave",
-                                                 create_slave_data->copy,
-                                                 omp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  log_event_fail ("slave", "Slave", NULL, "created");
-                  break;
-                case 99:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("create_slave",
-                                      "Permission denied"));
-                  log_event_fail ("slave", "Slave", NULL, "created");
-                  break;
-                case -1:
-                default:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("create_slave"));
-                  log_event_fail ("slave", "Slave", NULL, "created");
-                  break;
-              }
-          else if (create_slave_data->credential_id == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_slave",
-                                "CREATE_SLAVE requires a CREDENTIAL"
-                                " with ID attribute"));
-          else if (create_slave_data->host == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_slave",
-                                "CREATE_SLAVE requires a HOST"));
-          else if (strlen (create_slave_data->host) == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_slave",
-                                "CREATE_SLAVE HOST must be at"
-                                " least one character long"));
-          else if (create_slave_data->name == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_slave",
-                                "CREATE_SLAVE requires a NAME"));
-          else if (strlen (create_slave_data->name) == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_slave",
-                                "CREATE_SLAVE NAME must be at"
-                                " least one character long"));
-          else if (create_slave_data->port == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_slave",
-                                "CREATE_SLAVE requires a PORT"));
-          else if (strlen (create_slave_data->port) == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_slave",
-                                "CREATE_SLAVE PORT must be at"
-                                " least one character long"));
-          /* Create slave from host string. */
-          else switch (create_slave
-                        (create_slave_data->name,
-                         create_slave_data->comment,
-                         create_slave_data->host,
-                         create_slave_data->port,
-                         create_slave_data->credential_id,
-                         &new_slave))
-            {
-              case 0:
-                {
-                  char *uuid = slave_uuid (new_slave);
-                  SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_slave"),
-                                           uuid);
-                  log_event ("slave", "Slave", uuid, "created");
-                  free (uuid);
-                  break;
-                }
-              case 1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_slave",
-                                    "Slave exists already"));
-                log_event_fail ("slave", "Slave", NULL, "created");
-                break;
-              case 2:
-                if (send_find_error_to_client ("create_slave", "credential",
-                                               modify_slave_data->credential_id,
-                                               omp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                log_event_fail ("slave", "Slave",
-                                modify_slave_data->slave_id,
-                                "modified");
-                break;
-              case 3:
-                SEND_TO_CLIENT_OR_FAIL
-                  (XML_ERROR_SYNTAX ("create_slave",
-                                    "Credential must be of type 'up'"
-                                    " (username + password)"));
-                log_event_fail ("slave", "Slave", NULL, "created");
-                break;
-              case 99:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_slave",
-                                    "Permission denied"));
-                log_event_fail ("slave", "Slave", NULL, "created");
-                break;
-              default:
-                assert (0);
-              case -1:
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_slave"));
-                log_event_fail ("slave", "Slave", NULL, "created");
-                break;
-            }
-
-          create_slave_data_reset (create_slave_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
-      CLOSE (CLIENT_CREATE_SLAVE, COMMENT);
-      CLOSE (CLIENT_CREATE_SLAVE, COPY);
-      CLOSE (CLIENT_CREATE_SLAVE, CREDENTIAL);
-      CLOSE (CLIENT_CREATE_SLAVE, HOST);
-      CLOSE (CLIENT_CREATE_SLAVE, NAME);
-      CLOSE (CLIENT_CREATE_SLAVE, PORT);
-
       case CLIENT_CREATE_TAG:
         {
           tag_t new_tag;
@@ -25416,7 +24807,6 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           config_t config = 0;
           target_t target = 0;
           scanner_t scanner = 0;
-          slave_t slave = 0;
           char *tsk_uuid = NULL, *name;
           guint index;
 
@@ -25502,14 +24892,6 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
           if (create_task_data->scanner_id == NULL)
             create_task_data->scanner_id = g_strdup (SCANNER_UUID_DEFAULT);
-          if (strcmp (create_task_data->scanner_id, SCANNER_UUID_DEFAULT)
-              && create_task_data->slave_id)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_task",
-                                  "Slave used with non-default Scanner."));
-              goto create_task_fail;
-            }
 
           /* Check permissions. */
 
@@ -25768,25 +25150,8 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 error_send_to_client (error);
               goto create_task_fail;
             }
-          if (create_task_data->slave_id
-              && find_slave_with_permission (create_task_data->slave_id,
-                                             &slave,
-                                             "get_slaves"))
-            {
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
-              goto create_task_fail;
-            }
-          if (create_task_data->slave_id && slave == 0)
-            {
-              if (send_find_error_to_client ("create_task", "slave",
-                                             create_task_data->slave_id,
-                                             omp_parser))
-                error_send_to_client (error);
-              goto create_task_fail;
-            }
 
           set_task_config (create_task_data->task, config);
-          set_task_slave (create_task_data->task, slave);
           set_task_target (create_task_data->task, target);
           set_task_scanner (create_task_data->task, scanner);
           set_task_hosts_ordering (create_task_data->task,
@@ -25825,7 +25190,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
 
-create_task_fail:
+ create_task_fail:
           request_delete_task (&create_task_data->task);
           g_free (tsk_uuid);
           create_task_data_reset (create_task_data);
@@ -25845,7 +25210,6 @@ create_task_fail:
       CLOSE (CLIENT_CREATE_TASK, TARGET);
       CLOSE (CLIENT_CREATE_TASK, SCHEDULE);
       CLOSE (CLIENT_CREATE_TASK, SCHEDULE_PERIODS);
-      CLOSE (CLIENT_CREATE_TASK, SLAVE);
 
       CLOSE (CLIENT_CREATE_TASK_OBSERVERS, GROUP);
 
@@ -27900,105 +27264,6 @@ create_task_fail:
       CLOSE (CLIENT_MODIFY_SETTING, NAME);
       CLOSE (CLIENT_MODIFY_SETTING, VALUE);
 
-      case CLIENT_MODIFY_SLAVE:
-        {
-          assert (strcasecmp ("MODIFY_SLAVE", element_name) == 0);
-
-          switch (modify_slave
-                   (modify_slave_data->slave_id,
-                    modify_slave_data->name,
-                    modify_slave_data->comment,
-                    modify_slave_data->host,
-                    modify_slave_data->port,
-                    modify_slave_data->credential_id))
-            {
-              case 0:
-                SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_slave"));
-                log_event ("slave", "Slave", modify_slave_data->slave_id,
-                           "modified");
-                break;
-              case 1:
-                if (send_find_error_to_client ("modify_slave", "slave",
-                                               modify_slave_data->slave_id,
-                                               omp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                log_event_fail ("slave", "Slave",
-                                modify_slave_data->slave_id,
-                                "modified");
-                break;
-              case 2:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_slave",
-                                    "Slave with new name exists already"));
-                log_event_fail ("slave", "Slave",
-                                modify_slave_data->slave_id,
-                                "modified");
-                break;
-              case 3:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_slave",
-                                    "MODIFY_SLAVE requires a slave_id"));
-                log_event_fail ("slave", "Slave",
-                                modify_slave_data->slave_id,
-                                "modified");
-                break;
-              case 4:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_slave",
-                                    "MODIFY_SLAVE requires a credential_id"));
-                log_event_fail ("slave", "Slave",
-                                modify_slave_data->credential_id,
-                                "modified");
-                break;
-              case 5:
-                if (send_find_error_to_client ("modify_slave", "credential",
-                                               modify_slave_data->credential_id,
-                                               omp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                log_event_fail ("slave", "Slave",
-                                modify_slave_data->slave_id,
-                                "modified");
-                break;
-              case 6:
-                SEND_TO_CLIENT_OR_FAIL
-                  (XML_ERROR_SYNTAX ("modify_slave",
-                                     "Credential must be of type 'up'"
-                                     " (username + password)"));
-                log_event_fail ("slave", "Slave", NULL, "modified");
-                break;
-              case 99:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_slave",
-                                    "Permission denied"));
-                log_event_fail ("slave", "Slave",
-                                modify_slave_data->slave_id,
-                                "modified");
-                break;
-              default:
-              case -1:
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_slave"));
-                log_event_fail ("slave", "Slave",
-                                modify_slave_data->slave_id,
-                                "modified");
-                break;
-            }
-
-          modify_slave_data_reset (modify_slave_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
-      CLOSE (CLIENT_MODIFY_SLAVE, COMMENT);
-      CLOSE (CLIENT_MODIFY_SLAVE, CREDENTIAL);
-      CLOSE (CLIENT_MODIFY_SLAVE, NAME);
-      CLOSE (CLIENT_MODIFY_SLAVE, HOST);
-      CLOSE (CLIENT_MODIFY_SLAVE, PORT);
-
       case CLIENT_MODIFY_TAG:
         {
           assert (strcasecmp ("MODIFY_TAG", element_name) == 0);
@@ -28422,18 +27687,11 @@ create_task_fail:
                                   "Too many parameters at once"));
             else if ((task_target (task) == 0)
                      && (modify_task_data->alerts->len
-                         || modify_task_data->schedule_id
-                         || modify_task_data->slave_id))
+                         || modify_task_data->schedule_id))
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("modify_task",
                                   "For container tasks only name, comment and"
                                   " observers can be modified"));
-            else if (!modify_task_check_slave_scanner
-                       (task, modify_task_data->slave_id,
-                        modify_task_data->scanner_id))
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("modify_task",
-                                  "Slave used with non-default Scanner."));
             else if ((ret = modify_task_check_config_scanner
                               (task, modify_task_data->config_id,
                                modify_task_data->scanner_id)))
@@ -28781,37 +28039,6 @@ create_task_fail:
                    (modify_task_data->task_id,
                     atoi (modify_task_data->schedule_periods));
 
-                if (fail == 0 && modify_task_data->slave_id)
-                  {
-                    slave_t slave = 0;
-
-                    if (strcmp (modify_task_data->slave_id, "0") == 0)
-                      {
-                        set_task_slave (task, 0);
-                      }
-                    else if ((fail = find_slave_with_permission
-                                      (modify_task_data->slave_id,
-                                       &slave,
-                                       "get_slaves")))
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_INTERNAL_ERROR ("modify_task"));
-                    else if (slave == 0)
-                      {
-                        if (send_find_error_to_client
-                             ("modify_task", "slave",
-                              modify_task_data->slave_id, omp_parser))
-                          {
-                            error_send_to_client (error);
-                            return;
-                          }
-                        fail = 1;
-                      }
-                    else
-                      {
-                        set_task_slave (task, slave);
-                      }
-                  }
-
                 if (fail == 0 && modify_task_data->target_id)
                   {
                     target_t target = 0;
@@ -28902,7 +28129,6 @@ create_task_fail:
       CLOSE (CLIENT_MODIFY_TASK, PREFERENCES);
       CLOSE (CLIENT_MODIFY_TASK, SCHEDULE);
       CLOSE (CLIENT_MODIFY_TASK, SCHEDULE_PERIODS);
-      CLOSE (CLIENT_MODIFY_TASK, SLAVE);
       CLOSE (CLIENT_MODIFY_TASK, TARGET);
       CLOSE (CLIENT_MODIFY_TASK, FILE);
 
@@ -30812,22 +30038,6 @@ omp_xml_handle_text (/* unused */ GMarkupParseContext* context,
               &create_schedule_data->timezone);
 
 
-      APPEND (CLIENT_CREATE_SLAVE_COMMENT,
-              &create_slave_data->comment);
-
-      APPEND (CLIENT_CREATE_SLAVE_HOST,
-              &create_slave_data->host);
-
-      APPEND (CLIENT_CREATE_SLAVE_COPY,
-              &create_slave_data->copy);
-
-      APPEND (CLIENT_CREATE_SLAVE_NAME,
-              &create_slave_data->name);
-
-      APPEND (CLIENT_CREATE_SLAVE_PORT,
-              &create_slave_data->port);
-
-
       APPEND (CLIENT_CREATE_TAG_ACTIVE,
               &create_tag_data->active);
 
@@ -31155,19 +30365,6 @@ omp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_SCHEDULE_TIMEZONE,
               &modify_schedule_data->timezone);
-
-
-      APPEND (CLIENT_MODIFY_SLAVE_COMMENT,
-              &modify_slave_data->comment);
-
-      APPEND (CLIENT_MODIFY_SLAVE_NAME,
-              &modify_slave_data->name);
-
-      APPEND (CLIENT_MODIFY_SLAVE_HOST,
-              &modify_slave_data->host);
-
-      APPEND (CLIENT_MODIFY_SLAVE_PORT,
-              &modify_slave_data->port);
 
 
       APPEND (CLIENT_MODIFY_TAG_ACTIVE,

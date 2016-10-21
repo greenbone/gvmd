@@ -1,3 +1,72 @@
+2016-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Remove slaves, which have been replaced by OMP scanners.  Hence increase
+	database version to 180.  Add database migration from version 179 to 180.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 180.
+
+	* src/manage_migrators.c (migrate_156_to_157): Use resource_t instead of
+	slave_t.
+	(migrate_179_to_180_update_ref, migrate_179_to_180): New functions.
+	(database_migrators): Add migrate_179_to_180.
+
+	* src/manage_pg.c (create_tables): Remove slaves.
+
+	* src/manage_sqlite3.c (create_tables): Remove slaves.
+
+	* src/manage.c (slave_authenticate): Use scanner instead of slave.
+	(run_slave_task): Remove.
+	(run_task): Remove slave case.
+	(stop_task_internal): Disable giveup for now.
+	(move_task): Use scanner instead of slave.  Allow the task to be an OMP
+	scanner task too.
+	(get_slave_system_report_types, slave_system_report): Use scanner instead
+	of slave.
+
+	* src/manage_sql.c (omp_commands): Remove slave commands.
+	(filter_clause, valid_type, type_pretty_name, type_db_name): Remove slave
+	cases.
+	(task_slave, set_task_slave, task_slave_in_trash): Remove.
+	(make_task): Remove slave field and args.
+	(modify_task_check_slave_scanner): Remove.
+	(delete_credential, credential_in_use, trash_credential_in_use): Remove slave cases.
+	(init_credential_slave_iterator, credential_slave_iterator_uuid)
+	(credential_slave_iterator_name)
+	(credential_slave_iterator_readable, find_slave)
+	(find_slave_with_permission, create_slave, copy_slave, modify_slave)
+	(delete_slave, slave_writable, trash_slave_writable)
+	(trash_slave_readable, SLAVE_ITERATOR_FILTER_COLUMNS)
+	(SLAVE_ITERATOR_COLUMNS, SLAVE_ITERATOR_TRASH_COLUMNS, slave_count)
+	(init_slave_iterator, slave_iterator_host, slave_iterator_port)
+	(slave_iterator_login, slave_iterator_credential_name)
+	(slave_iterator_credential, slave_iterator_credential_trash)
+	(slave_uuid, trash_slave_uuid, slave_name, trash_slave_name)
+	(slave_host, slave_login, slave_password, slave_port, slave_in_use)
+	(trash_slave_in_use, init_slave_task_iterator, slave_task_iterator_name)
+	(slave_task_iterator_uuid, slave_task_iterator_readable): Remove.
+	(manage_restore, manage_empty_trashcan, modify_setting)
+	(delete_user): Remove slave cases.
+
+	* src/manage.h: Remove headers accordingly.
+	(slave_t): Remove.
+
+	* src/omp.c (create_slave_data_t, create_slave_data_reset): Remove.
+	(create_task_data_t, create_task_data_reset): Remove slaves.
+	(delete_slave_data_t, delete_slave_data_reset): Remove.
+	(get_credentials_data_t): Remove slaves.
+	(get_slaves_data_t, get_slaves_data_reset, modify_slave_data_t)
+	(modify_slave_data_reset): Remove.
+	(modify_task_data_t, modify_task_data_reset): Remove slave.
+	(command_data_t): Remove slave commands.
+	(create_slave_data, delete_slave_data, get_slaves_data)
+	(modify_slave_data): Remove.
+	(client_state_t, handle_get_tasks): Remove slave cases.
+	(xml_handle_start_element, handle_get_credentials)
+	(handle_get_slaves, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Remove slave commands.
+
+	* doc/db.png: Update for version change.
+
 2016-10-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (result_cmp): Rewrite to make order same as in

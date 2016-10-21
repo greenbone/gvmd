@@ -406,7 +406,6 @@ command_t omp_commands[]
     {"CREATE_ROLE", "Create a role."},
     {"CREATE_SCANNER", "Create a scanner."},
     {"CREATE_SCHEDULE", "Create a schedule."},
-    {"CREATE_SLAVE", "Create a slave."},
     {"CREATE_TAG", "Create a tag."},
     {"CREATE_TARGET", "Create a target."},
     {"CREATE_TASK", "Create a task."},
@@ -428,7 +427,6 @@ command_t omp_commands[]
     {"DELETE_ROLE", "Delete a role."},
     {"DELETE_SCANNER", "Delete a scanner."},
     {"DELETE_SCHEDULE", "Delete a schedule."},
-    {"DELETE_SLAVE", "Delete a slave."},
     {"DELETE_TAG", "Delete a tag."},
     {"DELETE_TARGET", "Delete a target."},
     {"DELETE_TASK", "Delete a task."},
@@ -460,7 +458,6 @@ command_t omp_commands[]
     {"GET_SCANNERS", "Get all scanners."},
     {"GET_SCHEDULES", "Get all schedules."},
     {"GET_SETTINGS", "Get all settings."},
-    {"GET_SLAVES", "Get all slaves."},
     {"GET_SYSTEM_REPORTS", "Get all system reports."},
     {"GET_TAGS", "Get all tags."},
     {"GET_TARGETS", "Get all targets."},
@@ -486,7 +483,6 @@ command_t omp_commands[]
     {"MODIFY_SCANNER", "Modify an existing scanner."},
     {"MODIFY_SCHEDULE", "Modify an existing schedule."},
     {"MODIFY_SETTING", "Modify an existing setting."},
-    {"MODIFY_SLAVE", "Modify an existing slave."},
     {"MODIFY_TAG", "Modify an existing tag."},
     {"MODIFY_TARGET", "Modify an existing target."},
     {"MODIFY_TASK", "Update an existing task."},
@@ -3135,13 +3131,8 @@ filter_clause (const char* type, const char* filter,
 
           if (first_order)
             {
-              if ((strcmp (type, "slave") == 0)
-                  && (strcmp (keyword->string, "port") == 0))
-                g_string_append_printf (order,
-                                        " ORDER BY CAST (port AS INTEGER)"
-                                        " ASC");
-              else if ((strcmp (type, "task") == 0)
-                       && (strcmp (keyword->string, "threat") == 0))
+              if ((strcmp (type, "task") == 0)
+                  && (strcmp (keyword->string, "threat") == 0))
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
@@ -3282,13 +3273,8 @@ filter_clause (const char* type, const char* filter,
 
           if (first_order)
             {
-              if ((strcmp (type, "slave") == 0)
-                  && (strcmp (keyword->string, "port") == 0))
-                g_string_append_printf (order,
-                                        " ORDER BY CAST (port AS INTEGER)"
-                                        " DESC");
-              else if ((strcmp (type, "task") == 0)
-                       && (strcmp (keyword->string, "threat") == 0))
+              if ((strcmp (type, "task") == 0)
+                  && (strcmp (keyword->string, "threat") == 0))
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
@@ -4218,7 +4204,6 @@ valid_type (const char* type)
          || (strcasecmp (type, "role") == 0)
          || (strcasecmp (type, "scanner") == 0)
          || (strcasecmp (type, "schedule") == 0)
-         || (strcasecmp (type, "slave") == 0)
          || (strcasecmp (type, "tag") == 0)
          || (strcasecmp (type, "target") == 0)
          || (strcasecmp (type, "task") == 0)
@@ -4267,8 +4252,6 @@ type_pretty_name (const char* type)
     return "Scanner";
   if (strcasecmp (type, "schedule") == 0)
     return "Schedule";
-  if (strcasecmp (type, "slave") == 0)
-    return "Slave";
   if (strcasecmp (type, "tag") == 0)
     return "Tag";
   if (strcasecmp (type, "target") == 0)
@@ -4328,8 +4311,6 @@ type_db_name (const char* type)
     return "scanner";
   if (strcasecmp (type, "Schedule") == 0)
     return "schedule";
-  if (strcasecmp (type, "Slave") == 0)
-    return "slave";
   if (strcasecmp (type, "Tag") == 0)
     return "tag";
   if (strcasecmp (type, "Target") == 0)
@@ -16899,63 +16880,6 @@ task_scanner_in_trash (task_t task)
 {
   return sql_int ("SELECT scanner_location = " G_STRINGIFY (LOCATION_TRASH)
                   " FROM tasks WHERE id = %llu;", task);
-}
-
-/**
- * @brief Return the slave of a task.
- *
- * @param[in]  task  Task.
- *
- * @return Slave of task.
- */
-slave_t
-task_slave (task_t task)
-{
-  slave_t slave = 0;
-  switch (sql_int64 (&slave,
-                     "SELECT slave FROM tasks WHERE id = %llu;",
-                     task))
-    {
-      case 0:
-        return slave;
-        break;
-      case 1:        /* Too few rows in result of query. */
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        return 0;
-        break;
-    }
-}
-
-/**
- * @brief Set the slave of a task.
- *
- * @param[in]  task   Task.
- * @param[in]  slave  Slave.
- */
-void
-set_task_slave (task_t task, slave_t slave)
-{
-  sql ("UPDATE tasks SET slave = %llu, modification_time = m_now ()"
-       " WHERE id = %llu;",
-       slave,
-       task);
-}
-
-/**
- * @brief Return whether the slave of a task is in the trashcan.
- *
- * @param[in]  task  Task.
- *
- * @return 1 if in trash, else 0.
- */
-int
-task_slave_in_trash (task_t task)
-{
-  return sql_int ("SELECT slave_location = " G_STRINGIFY (LOCATION_TRASH)
-                  " FROM tasks WHERE id = %llu;",
-                  task);
 }
 
 /**
@@ -29809,11 +29733,11 @@ make_task (char* name, char* comment, int in_assets, int event)
   quoted_comment = comment ? sql_quote ((gchar*) comment) : NULL;
   sql ("INSERT into tasks"
        " (owner, uuid, name, hidden, comment, schedule,"
-       "  schedule_next_time, slave, config_location, target_location,"
-       "  scanner_location, schedule_location, slave_location, alterable,"
-       " creation_time, modification_time)"
+       "  schedule_next_time, config_location, target_location,"
+       "  scanner_location, schedule_location, alterable,"
+       "  creation_time, modification_time)"
        " VALUES ((SELECT id FROM users WHERE users.uuid = '%s'),"
-       "         '%s', '%s', 0, '%s', 0, 0, 0, 0, 0, 0, 0, 0, 0, m_now (),"
+       "         '%s', '%s', 0, '%s', 0, 0, 0, 0, 0, 0, 0, 0, m_now (),"
        "         m_now ());",
        current_credentials.uuid,
        uuid,
@@ -29964,10 +29888,10 @@ copy_task (const char* name, const char* comment, const char *task_id,
   // FIX task names are allowed to clash
   ret = copy_resource_lock ("task", name, comment, task_id,
                             "config, target, schedule, schedule_periods,"
-                            " scanner, schedule_next_time, slave,"
+                            " scanner, schedule_next_time,"
                             " config_location, target_location,"
                             " schedule_location, scanner_location,"
-                            " slave_location, hosts_ordering",
+                            " hosts_ordering",
                             1, &new, &old);
   if (ret)
     {
@@ -33674,68 +33598,6 @@ create_task_check_config_scanner (config_t config, scanner_t scanner)
     return 1;
 
   return 0;
-}
-
-/**
- * @brief Check scanner and slave values match for a task.
- *
- * @param[in]  task         Task.
- * @param[in]  slave_id     ID of slave. "0" to use task's config.
- * @param[in]  scanner_id   ID of scanner.
- *
- * @return 1 if slave and scanner values match, 0 otherwise.
- */
-int
-modify_task_check_slave_scanner (task_t task, const char *slave_id,
-                                 const char *scanner_id)
-{
-  gchar *existing_scanner_id;
-
-  /* If slave ID is NULL caller will leave the slave as it is. */
-
-  if (slave_id == NULL)
-    {
-      /* If scanner ID is NULL or 0, caller will leave the scanner alone
-       * too.  They should already match, so that's fine. */
-      if ((scanner_id == NULL) || (strcmp (scanner_id, "0") == 0))
-        return 1;
-
-      if (task_slave (task))
-        {
-          /* Scanner will change, so ensure the new one accepts slaves. */
-          if (strcmp (scanner_id, SCANNER_UUID_DEFAULT))
-            return 0;
-        }
-      return 1;
-    }
-
-  /* If slave ID is 0 caller will clear the slave, which is always fine. */
-
-  if (slave_id && (strcmp (slave_id, "0") == 0))
-    return 1;
-
-  /* Otherwise, caller will set an existing slave on the task. */
-
-  if ((scanner_id == NULL) || (strcmp (scanner_id, "0") == 0))
-    /* Scanner ID is NULL or 0, caller will leave the scanner as it is. */
-    existing_scanner_id = scanner_uuid (task_scanner (task));
-  else
-    /* Caller will set a new scanner on the task. */
-    existing_scanner_id = NULL;
-
-  /* Either way, ensure that the scanner accepts slaves. */
-
-  if (existing_scanner_id == NULL && scanner_id == NULL)
-    return 1;
-
-  if (strcmp (existing_scanner_id ? existing_scanner_id : scanner_id,
-              SCANNER_UUID_DEFAULT))
-    {
-      g_free (existing_scanner_id);
-      return 0;
-    }
-  g_free (existing_scanner_id);
-  return 1;
 }
 
 /**
@@ -40045,14 +39907,11 @@ delete_credential (const char *credential_id, int ultimate)
           return 0;
         }
 
-      /* Check if it's in use by a target, scanner or slave in the trashcan. */
+      /* Check if it's in use by a target or scanner in the trashcan. */
       if (sql_int ("SELECT count(*) FROM targets_trash_login_data"
                    " WHERE credential = %llu AND credential_location = %s;",
                    credential, G_STRINGIFY (LOCATION_TRASH))
           || sql_int ("SELECT count(*) FROM scanners_trash"
-                      " WHERE credential = %llu AND credential_location = %s;",
-                      credential, G_STRINGIFY (LOCATION_TRASH))
-          || sql_int ("SELECT count(*) FROM slaves_trash"
                       " WHERE credential = %llu AND credential_location = %s;",
                       credential, G_STRINGIFY (LOCATION_TRASH)))
         {
@@ -40072,14 +39931,11 @@ delete_credential (const char *credential_id, int ultimate)
       return 0;
     }
 
-  /* Check if it's in use by a target or slave */
+  /* Check if it's in use by a target or scanner. */
   if (sql_int ("SELECT count(*) FROM targets_login_data"
                " WHERE credential = %llu;",
                credential)
       || sql_int ("SELECT count(*) FROM scanners"
-                  " WHERE credential = %llu;",
-                  credential)
-      || sql_int ("SELECT count(*) FROM slaves"
                   " WHERE credential = %llu;",
                   credential))
     {
@@ -40107,9 +39963,9 @@ delete_credential (const char *credential_id, int ultimate)
            " WHERE credential = %llu",
            trash_credential, credential);
 
-      /* Update the credential references in any trashcan targets or slaves.
+      /* Update the credential references in any trashcan targets or scanners.
        * This situation is possible if the user deletes the credential when
-       * the target or slave is in the trashcan. */
+       * the target or scanner is in the trashcan. */
       sql ("UPDATE targets_trash_login_data"
            " SET credential_location = " G_STRINGIFY (LOCATION_TRASH) ","
            "     credential = %llu"
@@ -40118,13 +39974,6 @@ delete_credential (const char *credential_id, int ultimate)
            trash_credential,
            credential);
       sql ("UPDATE scanners_trash"
-           " SET credential_location = " G_STRINGIFY (LOCATION_TRASH) ","
-           "     credential = %llu"
-           " WHERE credential = %llu"
-           "   AND credential_location = " G_STRINGIFY (LOCATION_TABLE) ";",
-           trash_credential,
-           credential);
-      sql ("UPDATE slaves_trash"
            " SET credential_location = " G_STRINGIFY (LOCATION_TRASH) ","
            "     credential = %llu"
            " WHERE credential = %llu"
@@ -40294,9 +40143,6 @@ credential_in_use (credential_t credential)
                      credential)
             || sql_int ("SELECT count (*) FROM scanners"
                         " WHERE credential = %llu;",
-                        credential)
-            || sql_int ("SELECT count (*) FROM slaves"
-                        " WHERE credential = %llu;",
                         credential));
 }
 
@@ -40316,11 +40162,6 @@ trash_credential_in_use (credential_t credential)
                      "      = " G_STRINGIFY (LOCATION_TRASH) ";",
                      credential)
             || sql_int ("SELECT count (*) FROM scanners_trash"
-                        " WHERE credential = %llu"
-                        " AND credential_location"
-                        "      = " G_STRINGIFY (LOCATION_TRASH) ";",
-                        credential)
-            || sql_int ("SELECT count (*) FROM slaves_trash"
                         " WHERE credential = %llu"
                         " AND credential_location"
                         "      = " G_STRINGIFY (LOCATION_TRASH) ";",
@@ -41210,79 +41051,6 @@ DEF_ACCESS (credential_scanner_iterator_name, 1);
  */
 int
 credential_scanner_iterator_readable (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return iterator_int (iterator, 2);
-}
-
-/**
- * @brief Initialise a Credential slave iterator.
- *
- * Iterates over all slaves that use the credential.
- *
- * @param[in]  iterator        Iterator.
- * @param[in]  credential      Name of credential.
- * @param[in]  ascending       Whether to sort ascending or descending.
- */
-void
-init_credential_slave_iterator (iterator_t* iterator,
-                                credential_t credential,
-                                int ascending)
-{
-  gchar *available;
-  get_data_t get;
-  array_t *permissions;
-
-  assert (credential);
-
-  get.trash = 0;
-  permissions = make_array ();
-  array_add (permissions, g_strdup ("get_slaves"));
-  available = acl_where_owned ("slave", &get, 1, "any", 0, permissions);
-  array_free (permissions);
-
-  init_iterator (iterator,
-                 "SELECT uuid, name, %s FROM slaves"
-                 " WHERE id IN"
-                 "   (SELECT id FROM slaves"
-                 "    WHERE credential = %llu)"
-                 " ORDER BY name %s;",
-                 available,
-                 credential,
-                 ascending ? "ASC" : "DESC");
-
-  g_free (available);
-}
-
-/**
- * @brief Get the uuid from an Credential Slave iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Uuid, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (credential_slave_iterator_uuid, 0);
-
-/**
- * @brief Get the name from an Credential Slave iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Name, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (credential_slave_iterator_name, 1);
-
-/**
- * @brief Get the read permission status from a GET iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return 1 if may read, else 0.
- */
-int
-credential_slave_iterator_readable (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return iterator_int (iterator, 2);
@@ -50593,860 +50361,7 @@ check_report_format (const gchar *uuid)
 }
 
 
-/* Slaves. */
-
-/**
- * @brief Find a slave given a UUID.
- *
- * @param[in]   uuid   UUID of slave.
- * @param[out]  slave  Slave return, 0 if succesfully failed to find slave.
- *
- * @return FALSE on success (including if failed to find slave), TRUE on error.
- */
-gboolean
-find_slave (const char* uuid, slave_t* slave)
-{
-  return find_resource ("slave", uuid, slave);
-}
-
-/**
- * @brief Find a slave for a specific permission, given a UUID.
- *
- * @param[in]   uuid        UUID of slave.
- * @param[out]  slave       Slave return, 0 if succesfully failed to find slave.
- * @param[in]   permission  Permission.
- *
- * @return FALSE on success (including if failed to find slave), TRUE on error.
- */
-gboolean
-find_slave_with_permission (const char* uuid, slave_t* slave,
-                            const char *permission)
-{
-  return find_resource_with_permission ("slave", uuid, slave, permission, 0);
-}
-
-/**
- * @brief Create a slave.
- *
- * @param[in]   name            Name of slave.
- * @param[in]   comment         Comment on slave.
- * @param[in]   host            Host of slave.
- * @param[in]   port            Port on host.
- * @param[in]   credential_id   UUID of credential used for login.
- * @param[out]  slave           NULL, or address for created slave.
- *
- * @return 0 success, 1 slave exists already, 2 credential not found,
- *         3 credentials is wrong type, 99 permission denied, -1 error.
- */
-int
-create_slave (const char* name, const char* comment, const char* host,
-              const char* port, const char* credential_id, slave_t* slave)
-{
-  gchar *quoted_name, *quoted_host, *quoted_port;
-  credential_t credential;
-
-  assert (name);
-  assert (host);
-  assert (port);
-  assert (credential_id);
-  assert (current_credentials.uuid);
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("create_slave") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-
-  /* Check whether a slave with the same name exists already. */
-  if (resource_with_name_exists (name, "slave", 0))
-    {
-      sql_rollback ();
-      return 1;
-    }
-
-  credential = 0;
-  if (find_credential_with_permission (credential_id, &credential,
-                                       "get_credentials"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (credential == 0)
-    {
-      sql_rollback ();
-      return 2;
-    }
-
-  if (sql_int ("SELECT type != 'up' FROM credentials WHERE id = %llu",
-               credential))
-    {
-      sql_rollback ();
-      return 3;
-    }
-
-  quoted_name = sql_quote (name);
-  quoted_host = sql_quote (host);
-  quoted_port = sql_quote (port);
-
-  if (comment)
-    {
-      gchar *quoted_comment = sql_quote (comment);
-      sql ("INSERT INTO slaves"
-           " (uuid, name, owner, comment, host, port, credential,"
-           "  creation_time, modification_time)"
-           " VALUES (make_uuid (), '%s',"
-           " (SELECT id FROM users WHERE users.uuid = '%s'),"
-           " '%s', '%s', '%s', %llu, m_now (), m_now ());",
-           quoted_name, current_credentials.uuid, quoted_comment, quoted_host,
-           quoted_port, credential);
-      g_free (quoted_comment);
-    }
-  else
-    sql ("INSERT INTO slaves"
-         " (uuid, name, owner, comment, host, port, login, password,"
-         " creation_time, modification_time)"
-         " VALUES (make_uuid (), '%s',"
-         " (SELECT id FROM users WHERE users.uuid = '%s'),"
-         " '%s', '', '%s', %llu, m_now (), m_now ());",
-         quoted_name, current_credentials.uuid, quoted_host, quoted_port,
-         credential);
-
-  if (slave)
-    *slave = sql_last_insert_id ();
-
-  g_free (quoted_name);
-  g_free (quoted_host);
-  g_free (quoted_port);
-
-  sql_commit ();
-
-  return 0;
-}
-
-/**
- * @brief Create a slave from an existing slave.
- *
- * @param[in]  name          Name of new slave. NULL to copy from existing.
- * @param[in]  comment       Comment on new slave. NULL to copy from
- *                           existing.
- * @param[in]  slave_id      UUID of existing slave.
- * @param[out] new_slave     New slave.
- *
- * @return 0 success, 1 slave exists already, 2 failed to find existing slave,
- *         -1 error.
- */
-int
-copy_slave (const char* name, const char* comment, const char *slave_id,
-             slave_t* new_slave)
-{
-  return copy_resource ("slave", name, comment, slave_id,
-                        "host, port, credential",
-                        1, new_slave);
-}
-
-/**
- * @brief Modify a slave.
- *
- * @param[in]   slave_id        UUID of slave.
- * @param[in]   name            Name of slave.
- * @param[in]   comment         Comment on slave.
- * @param[in]   host            Host of slave.
- * @param[in]   port            Port on host.
- * @param[in]   credential_id   UUID of credential for login.
- *
- * @return 0 success, 1 failed to find slave, 2 slave with new name exists,
- *         3 slave_id required, 4 credential_id required,
- *         5 credential not found, 6 credential is of wrong type,
- *         99 permission denied, -1 internal error.
- */
-int
-modify_slave (const char *slave_id, const char *name, const char *comment,
-              const char *host, const char *port, const char* credential_id)
-{
-  gchar *quoted_name, *quoted_comment, *quoted_host, *quoted_port;
-  slave_t slave;
-  credential_t credential;
-
-  if (slave_id == NULL)
-    return 3;
-
-  if (credential_id == NULL)
-    return 4;
-
-  sql_begin_immediate ();
-
-  assert (current_credentials.uuid);
-
-  if (acl_user_may ("modify_slave") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  slave = 0;
-  if (find_slave_with_permission (slave_id, &slave, "modify_slave"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (slave == 0)
-    {
-      sql_rollback ();
-      return 1;
-    }
-
-  credential = 0;
-  if (find_credential_with_permission (credential_id, &credential,
-                                       "get_credentials"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (credential == 0)
-    {
-      sql_rollback ();
-      return 5;
-    }
-
-  if (sql_int ("SELECT type != 'up' FROM credentials WHERE id = %llu",
-               credential))
-    {
-      sql_rollback ();
-      return 6;
-    }
-
-  /* Check whether a slave with the same name exists already. */
-  if (name)
-    {
-      if (resource_with_name_exists (name, "slave", slave))
-        {
-          sql_rollback ();
-          return 2;
-        }
-    }
-
-  quoted_name = sql_quote(name ?: "");
-  quoted_comment = sql_quote (comment ? comment : "");
-  quoted_host = sql_quote (host ? host : "");
-  quoted_port = sql_quote (port ? port : "");
-
-  sql ("UPDATE slaves SET"
-       " name = '%s',"
-       " comment = '%s',"
-       " host = '%s',"
-       " port = '%s',"
-       " credential = %llu,"
-       " modification_time = m_now ()"
-       " WHERE id = %llu;",
-       quoted_name,
-       quoted_comment,
-       quoted_host,
-       quoted_port,
-       credential,
-       slave);
-
-  g_free (quoted_comment);
-  g_free (quoted_name);
-  g_free (quoted_host);
-  g_free (quoted_port);
-
-  sql_commit ();
-
-  return 0;
-}
-
-/**
- * @brief Delete a slave.
- *
- * @param[in]  slave_id  UUID of slave.
- * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
- *
- * @return 0 success, 1 fail because a task refers to the slave, 2 failed to
- *         find agent, 99 permission denied, -1 error.
- */
-int
-delete_slave (const char *slave_id, int ultimate)
-{
-  slave_t slave = 0;
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("delete_slave") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  if (find_slave_with_permission (slave_id, &slave, "delete_slave"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (slave == 0)
-    {
-      if (find_trash ("slave", slave_id, &slave))
-        {
-          sql_rollback ();
-          return -1;
-        }
-      if (slave == 0)
-        {
-          sql_rollback ();
-          return 2;
-        }
-      if (ultimate == 0)
-        {
-          /* It's already in the trashcan. */
-          sql_commit ();
-          return 0;
-        }
-
-      /* Check if it's in use by a task in the trashcan. */
-      if (sql_int ("SELECT count(*) FROM tasks"
-                   " WHERE slave = %llu"
-                   " AND slave_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-                   slave))
-        {
-          sql_rollback ();
-          return 1;
-        }
-
-      permissions_set_orphans ("slave", slave, LOCATION_TRASH);
-      tags_set_orphans ("slave", slave, LOCATION_TRASH);
-
-      sql ("DELETE FROM slaves_trash WHERE id = %llu;", slave);
-      sql_commit ();
-      return 0;
-    }
-
-  if (ultimate == 0)
-    {
-      if (sql_int ("SELECT count(*) FROM tasks"
-                   " WHERE slave = %llu"
-                   " AND slave_location = " G_STRINGIFY (LOCATION_TABLE)
-                   " AND (hidden = 0 OR hidden = 1);",
-                   slave))
-        {
-          sql_rollback ();
-          return 1;
-        }
-
-      sql ("INSERT INTO slaves_trash"
-           "  (uuid, owner, name, comment, host, port, credential,"
-           "   credential_location,"
-           "   creation_time, modification_time)"
-           " SELECT"
-           "  uuid, owner, name, comment, host, port, credential,"
-           "  " G_STRINGIFY (LOCATION_TABLE) ","
-           "  creation_time, modification_time"
-           " FROM slaves WHERE id = %llu;",
-           slave);
-
-      /* Update the location of the slave in any trashcan tasks. */
-      sql ("UPDATE tasks"
-           " SET slave = %llu,"
-           "     slave_location = " G_STRINGIFY (LOCATION_TRASH)
-           " WHERE slave = %llu"
-           " AND slave_location = " G_STRINGIFY (LOCATION_TABLE) ";",
-           sql_last_insert_id (),
-           slave);
-
-      permissions_set_locations ("slave", slave,
-                                 sql_last_insert_id (),
-                                 LOCATION_TRASH);
-      tags_set_locations ("slave", slave,
-                          sql_last_insert_id (),
-                          LOCATION_TRASH);
-    }
-  else if (sql_int ("SELECT count(*) FROM tasks"
-                    " WHERE slave = %llu"
-                    " AND slave_location = " G_STRINGIFY (LOCATION_TABLE),
-                    slave))
-    {
-      sql_rollback ();
-      return 1;
-    }
-  else
-    {
-      permissions_set_orphans ("slave", slave, LOCATION_TABLE);
-      tags_set_orphans ("slave", slave, LOCATION_TABLE);
-    }
-
-  sql ("DELETE FROM slaves WHERE id = %llu;", slave);
-  sql_commit ();
-  return 0;
-}
-
-/**
- * @brief Return whether a slave is writable.
- *
- * @param[in]  slave  Slave.
- *
- * @return 1 if writable, else 0.
- */
-int
-slave_writable (slave_t slave)
-{
-  return 1;
-}
-
-/**
- * @brief Return whether a trashcan slave is writable.
- *
- * @param[in]  slave  Slave.
- *
- * @return 1 if writable, else 0.
- */
-int
-trash_slave_writable (slave_t slave)
-{
-  return 1;
-}
-
-/**
- * @brief Return whether a trashcan slave is readable.
- *
- * @param[in]  slave  Slave.
- *
- * @return 1 if readable, else 0.
- */
-int
-trash_slave_readable (slave_t slave)
-{
-  char *uuid;
-  slave_t found = 0;
-
-  if (slave == 0)
-    return 0;
-  uuid = slave_uuid (slave);
-  if (find_trash ("slave", uuid, &found))
-    {
-      g_free (uuid);
-      return 0;
-    }
-  g_free (uuid);
-  return found > 0;
-}
-
-/**
- * @brief Filter columns for slave iterator.
- */
-#define SLAVE_ITERATOR_FILTER_COLUMNS                                         \
- { GET_ITERATOR_FILTER_COLUMNS, "host", "port", "login", "credential",        \
-   NULL }
-
-/**
- * @brief Slave iterator columns.
- */
-#define SLAVE_ITERATOR_COLUMNS                                          \
- {                                                                      \
-   GET_ITERATOR_COLUMNS (slaves),                                       \
-   { "host", NULL, KEYWORD_TYPE_STRING },                               \
-   { "port", NULL, KEYWORD_TYPE_INTEGER },                              \
-   { "credential_value (credential, 0, 'username')",                    \
-     "login",                                                           \
-     KEYWORD_TYPE_STRING },                                             \
-   {                                                                    \
-     "(SELECT name FROM credentials WHERE id = credential)",            \
-     "credential",                                                      \
-     KEYWORD_TYPE_STRING                                                \
-   },                                                                   \
-   { "credential", NULL, KEYWORD_TYPE_INTEGER },                        \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                 \
- }
-
-/**
- * @brief Slave iterator columns for trash case.
- */
-#define SLAVE_ITERATOR_TRASH_COLUMNS                                    \
- {                                                                      \
-   GET_ITERATOR_COLUMNS (slaves_trash),                                 \
-   { "host", NULL, KEYWORD_TYPE_STRING },                               \
-   { "port", NULL, KEYWORD_TYPE_INTEGER },                              \
-   { "credential_value (credential, credential_location, 'username')",  \
-     "login",                                                           \
-     KEYWORD_TYPE_STRING },                                             \
-   {                                                                    \
-     "(SELECT CASE"                                                     \
-     " WHEN credential_location = " G_STRINGIFY (LOCATION_TABLE)        \
-     " THEN (SELECT name FROM credentials WHERE id = credential)"       \
-     " ELSE (SELECT name FROM credentials_trash WHERE id = credential)" \
-     " END)",                                                           \
-     "credential",                                                      \
-     KEYWORD_TYPE_STRING                                                \
-   },                                                                   \
-   { "credential", NULL, KEYWORD_TYPE_INTEGER },                        \
-   { "credential_location", NULL, KEYWORD_TYPE_INTEGER },               \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                 \
- }
-
-/**
- * @brief Count the number of slaves.
- *
- * @param[in]  get  GET params.
- *
- * @return Total number of slaves filtered set.
- */
-int
-slave_count (const get_data_t *get)
-{
-  static const char *filter_columns[] = SLAVE_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = SLAVE_ITERATOR_COLUMNS;
-  static column_t trash_columns[] = SLAVE_ITERATOR_TRASH_COLUMNS;
-
-  return count ("slave", get, columns, trash_columns, filter_columns,
-                0, 0, 0, TRUE);
-}
-
-/**
- * @brief Initialise a slave iterator.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  get         GET data.
- *
- * @return 0 success, 1 failed to find slave, failed to find filter,
- *         -1 error.
- */
-int
-init_slave_iterator (iterator_t* iterator, const get_data_t *get)
-{
-  static const char *filter_columns[] = SLAVE_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = SLAVE_ITERATOR_COLUMNS;
-  static column_t trash_columns[] = SLAVE_ITERATOR_TRASH_COLUMNS;
-
-  return init_get_iterator (iterator,
-                            "slave",
-                            get,
-                            columns,
-                            trash_columns,
-                            filter_columns,
-                            0,
-                            NULL,
-                            NULL,
-                            TRUE);
-}
-
-/**
- * @brief Get the host of the slave from a slave iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Host of the slave or NULL if iteration is complete.
- */
-DEF_ACCESS (slave_iterator_host, GET_ITERATOR_COLUMN_COUNT);
-
-/**
- * @brief Get the port of the slave from a slave iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Port of the slave or NULL if iteration is complete.
- */
-DEF_ACCESS (slave_iterator_port, GET_ITERATOR_COLUMN_COUNT + 1);
-
-/**
- * @brief Get the login of the slave from a slave iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Login of the slave or NULL if iteration is complete.
- */
-DEF_ACCESS (slave_iterator_login, GET_ITERATOR_COLUMN_COUNT + 2);
-
-/**
- * @brief Get the credential name of the slave from a slave iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Credential name of the slave or NULL if iteration is complete.
- */
-DEF_ACCESS (slave_iterator_credential_name, GET_ITERATOR_COLUMN_COUNT + 3);
-
-/**
- * @brief Get the credential of the slave from a slave iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Credential of the slave or 0 if iteration is complete.
- */
-credential_t
-slave_iterator_credential (iterator_t *iterator)
-{
-  if (iterator->done)
-    return 0;
-  else
-    return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
-}
-
-/**
- * @brief Get the credential location of the slave from a slave iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Location of the slave or NULL if iteration is complete.
- */
-int
-slave_iterator_credential_trash (iterator_t *iterator)
-{
-  if (iterator->done)
-    return 0;
-  else
-    return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
-}
-
-/**
- * @brief Return the UUID of a slave.
- *
- * @param[in]  slave  Slave.
- *
- * @return Newly allocated UUID if available, else NULL.
- */
-char*
-slave_uuid (slave_t slave)
-{
-  return sql_string ("SELECT uuid FROM slaves WHERE id = %llu;",
-                     slave);
-}
-
-/**
- * @brief Return the UUID of a slave in the trashcan.
- *
- * @param[in]  slave  Slave.
- *
- * @return Newly allocated UUID if available, else NULL.
- */
-char*
-trash_slave_uuid (slave_t slave)
-{
-  return sql_string ("SELECT uuid FROM slaves_trash WHERE id = %llu;",
-                     slave);
-}
-
-/**
- * @brief Return the name of a slave.
- *
- * @param[in]  slave  Slave.
- *
- * @return Newly allocated name if available, else NULL.
- */
-char*
-slave_name (slave_t slave)
-{
-  return sql_string ("SELECT name FROM slaves WHERE id = %llu;",
-                     slave);
-}
-
-/**
- * @brief Return the name of a slave in the trashcan.
- *
- * @param[in]  slave  Slave.
- *
- * @return Newly allocated name if available, else NULL.
- */
-char*
-trash_slave_name (slave_t slave)
-{
-  return sql_string ("SELECT name FROM slaves_trash WHERE id = %llu;",
-                     slave);
-}
-
-/**
- * @brief Return the host associated with a slave.
- *
- * @param[in]  slave  Slave.
- *
- * @return Newly allocated host if available, else NULL.
- */
-char*
-slave_host (slave_t slave)
-{
-  return sql_string ("SELECT host FROM slaves WHERE id = %llu;",
-                     slave);
-}
-
-/**
- * @brief Return the login associated with a slave.
- *
- * @param[in]  slave  Slave.
- *
- * @return Newly allocated login if available, else NULL.
- */
-char*
-slave_login (slave_t slave)
-{
-  return sql_string ("SELECT credentials_data.value"
-                     " FROM slaves, credentials_data"
-                     " WHERE slaves.id = %llu"
-                     "   AND credentials_data.credential = slaves.credential"
-                     "   AND credentials_data.type = 'username';",
-                     slave);
-}
-
-/**
- * @brief Return the password associated with a slave.
- *
- * @param[in]  slave  Slave.
- *
- * @return Newly allocated password if available, else NULL.
- */
-char*
-slave_password (slave_t slave)
-{
-  gchar *password;
-
-  password = sql_string ("SELECT credentials_data.value"
-                         " FROM slaves, credentials_data"
-                         " WHERE slaves.id = %llu"
-                         "   AND credentials_data.credential"
-                         "         = slaves.credential"
-                         "   AND credentials_data.type = 'password';",
-                         slave);
-
-  if (password == NULL)
-    {
-      gchar *secret;
-      lsc_crypt_ctx_t crypt_ctx;
-      crypt_ctx = lsc_crypt_new ();
-
-      secret = sql_string ("SELECT credentials_data.value"
-                           " FROM slaves, credentials_data"
-                           " WHERE slaves.id = %llu"
-                           "   AND credentials_data.credential"
-                           "         = slaves.credential"
-                           "   AND credentials_data.type = 'secret';",
-                           slave);
-
-      password = g_strdup (lsc_crypt_get_password (crypt_ctx, secret));
-      lsc_crypt_release (crypt_ctx);
-      g_free (secret);
-    }
-
-  return password;
-}
-
-/**
- * @brief Return the port associated with a slave.
- *
- * @param[in]  slave  Slave.
- *
- * @return Port number on success; -1 on error.
- */
-int
-slave_port (slave_t slave)
-{
-  int ret;
-  char *port = sql_string ("SELECT port FROM slaves WHERE id = %llu;",
-                           slave);
-  if (port == NULL)
-    return -1;
-  ret = atoi (port);
-  free (port);
-  return ret;
-}
-
-/**
- * @brief Return whether a slave is referenced by a task
- *
- * @param[in]  slave  Slave.
- *
- * @return 1 if in use, else 0.
- */
-int
-slave_in_use (slave_t slave)
-{
-  return !!sql_int ("SELECT count(*) FROM tasks"
-                    " WHERE slave = %llu AND hidden = 0;",
-                    slave);
-}
-
-/**
- * @brief Return whether a slave is referenced by a task
- *
- * @param[in]  slave  Slave.
- *
- * @return 1 if in use, else 0.
- */
-int
-trash_slave_in_use (slave_t slave)
-{
-  return !!sql_int ("SELECT count(*) FROM tasks"
-                    " WHERE slave = %llu"
-                    " AND slave_location = " G_STRINGIFY (LOCATION_TRASH),
-                    slave);
-}
-
-/**
- * @brief Initialise a slave task iterator.
- *
- * Iterates over all tasks that use the slave.
- *
- * @param[in]  iterator   Iterator.
- * @param[in]  slave      Slave.
- */
-void
-init_slave_task_iterator (iterator_t* iterator, slave_t slave)
-{
-  gchar *available;
-  get_data_t get;
-  array_t *permissions;
-
-  assert (current_credentials.uuid);
-
-  get.trash = 0;
-  permissions = make_array ();
-  array_add (permissions, g_strdup ("get_tasks"));
-  available = acl_where_owned ("task", &get, 1, "any", 0, permissions);
-  array_free (permissions);
-  init_iterator (iterator,
-                 "SELECT id, uuid, name, %s FROM tasks"
-                 " WHERE slave = %llu AND hidden = 0"
-                 " ORDER BY name ASC;",
-                 available,
-                 slave,
-                 current_credentials.uuid);
-  g_free (available);
-}
-
-/**
- * @brief Get the name from a slave task iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The name of the host, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (slave_task_iterator_name, 2);
-
-/**
- * @brief Get the uuid from a slave task iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The uuid of the host, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (slave_task_iterator_uuid, 1);
-
-/**
- * @brief Get the read permission status from a GET iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return 1 if may read, else 0.
- */
-int
-slave_task_iterator_readable (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return iterator_int (iterator, 3);
-}
+/* OMP slave scanners. */
 
 /**
  * @brief Update the local task from the slave task.
@@ -57089,13 +56004,6 @@ manage_restore (const char *id)
            " AND credential_location = " G_STRINGIFY (LOCATION_TRASH) ";",
            credential,
            resource);
-      sql ("UPDATE slaves_trash"
-           " SET credential_location = " G_STRINGIFY (LOCATION_TABLE) ","
-           "     credential = %llu"
-           " WHERE credential = %llu"
-           " AND credential_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-           credential,
-           resource);
 
       permissions_set_locations ("credential", resource, credential,
                                  LOCATION_TABLE);
@@ -57548,66 +56456,6 @@ manage_restore (const char *id)
       return 0;
     }
 
-  /* Slave. */
-
-  if (find_trash ("slave", id, &resource))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (resource)
-    {
-      if (sql_int ("SELECT count(*) FROM slaves"
-                   " WHERE name ="
-                   " (SELECT name FROM slaves_trash WHERE id = %llu)"
-                   " AND " ACL_USER_OWNS () ";",
-                   resource,
-                   current_credentials.uuid))
-        {
-          sql_rollback ();
-          return 3;
-        }
-
-      /* Check if it uses a credential in the trashcan. */
-      if (sql_int ("SELECT credential_location = " G_STRINGIFY (LOCATION_TRASH)
-                   " FROM slaves_trash WHERE id = %llu;",
-                   resource))
-        {
-          sql_rollback ();
-          return 1;
-        }
-
-      sql ("INSERT INTO slaves"
-           "  (uuid, owner, name, comment, host, port, credential,"
-           "   creation_time, modification_time)"
-           " SELECT"
-           "  uuid, owner, name, comment, host, port, credential,"
-           "  creation_time, modification_time"
-           " FROM slaves_trash WHERE id = %llu;",
-           resource);
-
-      /* Update the slave in any trashcan tasks. */
-      sql ("UPDATE tasks"
-           " SET slave = %llu,"
-           "     slave_location = " G_STRINGIFY (LOCATION_TABLE)
-           " WHERE slave = %llu"
-           " AND slave_location = " G_STRINGIFY (LOCATION_TRASH),
-           sql_last_insert_id (),
-           resource);
-
-      permissions_set_locations ("slave", resource,
-                                 sql_last_insert_id (),
-                                 LOCATION_TABLE);
-      tags_set_locations ("slave", resource,
-                          sql_last_insert_id (),
-                          LOCATION_TABLE);
-
-      sql ("DELETE FROM slaves_trash WHERE id = %llu;", resource);
-      sql_commit ();
-      return 0;
-    }
-
   /* Tag */
 
   if (find_trash ("tag", id, &resource))
@@ -57733,7 +56581,6 @@ manage_restore (const char *id)
                    " OR (config_location = " G_STRINGIFY (LOCATION_TRASH) ")"
                    " OR (schedule_location = " G_STRINGIFY (LOCATION_TRASH) ")"
                    " OR (scanner_location = " G_STRINGIFY (LOCATION_TRASH) ")"
-                   " OR (slave_location = " G_STRINGIFY (LOCATION_TRASH) ")"
                    " OR (SELECT count(*) > 0 FROM task_alerts"
                    "     WHERE task = tasks.id"
                    "     AND alert_location = " G_STRINGIFY (LOCATION_TRASH) ")"
@@ -57877,7 +56724,6 @@ manage_empty_trashcan ()
   sql ("DELETE FROM roles_trash" WHERE_OWNER);
   sql ("DELETE FROM scanners_trash" WHERE_OWNER);
   sql ("DELETE FROM schedules_trash" WHERE_OWNER);
-  sql ("DELETE FROM slaves_trash" WHERE_OWNER);
   sql ("DELETE FROM tags_trash" WHERE_OWNER);
   sql ("DELETE FROM targets_trash_login_data"
        " WHERE target IN (SELECT id from targets_trash"
@@ -60731,8 +59577,6 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("Roles Filter");
       else if (strcmp (uuid, "a83e321b-d994-4ae8-beec-bfb5fe3e7336") == 0)
         setting_name = g_strdup ("Schedules Filter");
-      else if (strcmp (uuid, "2681c32a-8dfd-40c9-a9c6-8d4e2c7799eb") == 0)
-        setting_name = g_strdup ("Slaves Filter");
       else if (strcmp (uuid, "108eea3b-fc61-483c-9da9-046762f137a8") == 0)
         setting_name = g_strdup ("Tags Filter");
       else if (strcmp (uuid, "236e2e41-9771-4e7a-8124-c432045985e0") == 0)
@@ -60789,9 +59633,6 @@ modify_setting (const gchar *uuid, const gchar *name,
 
       else if (strcmp (uuid, "778eedad-5550-4de0-abb6-1320d13b5e18") == 0)
         setting_name = g_strdup ("Default Schedule");
-
-      else if (strcmp (uuid, "aec201fa-8a82-4b61-bebe-a44ea93b2909") == 0)
-        setting_name = g_strdup ("Default Slave");
 
       else if (strcmp (uuid, "23409203-940a-4b4a-b70c-447475f18323") == 0)
         setting_name = g_strdup ("Default Target");
@@ -63457,10 +62298,6 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
            inheritor, user);
       sql ("UPDATE schedules_trash SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
-      sql ("UPDATE slaves SET owner = %llu WHERE owner = %llu;",
-           inheritor, user);
-      sql ("UPDATE slaves_trash SET owner = %llu WHERE owner = %llu;",
-           inheritor, user);
       sql ("UPDATE settings SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
       sql ("UPDATE tags SET owner = %llu WHERE owner = %llu;",
@@ -63640,8 +62477,6 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   sql ("DELETE FROM permissions_trash WHERE owner = %llu;", user);
   sql ("DELETE FROM schedules WHERE owner = %llu;", user);
   sql ("DELETE FROM schedules_trash WHERE owner = %llu;", user);
-  sql ("DELETE FROM slaves WHERE owner = %llu;", user);
-  sql ("DELETE FROM slaves_trash WHERE owner = %llu;", user);
   sql ("DELETE FROM settings WHERE owner = %llu;", user);
   sql ("DELETE FROM tags WHERE owner = %llu;", user);
   sql ("DELETE FROM tags_trash WHERE owner = %llu;", user);
