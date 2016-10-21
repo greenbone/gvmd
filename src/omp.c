@@ -20087,7 +20087,7 @@ handle_create_scanner (omp_parser_t *omp_parser, GError **error)
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("create_scanner",
                             "Credential must be of type 'up'"
-                            " (client certificate)"));
+                            " (username + password)"));
         log_event_fail ("scanner", "Scanner", NULL, "created");
         break;
       case 5:
@@ -20192,6 +20192,14 @@ handle_modify_scanner (omp_parser_t *omp_parser, GError **error)
          (XML_ERROR_SYNTAX ("modify_scanner",
                             "Credential must be of type 'cc'"
                             " (client certificate)"));
+        log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
+                        "modified");
+        break;
+      case 7:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("modify_scanner",
+                            "Credential must be of type 'up'"
+                            " (username + password)"));
         log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
                         "modified");
         break;

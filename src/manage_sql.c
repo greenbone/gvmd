@@ -44970,7 +44970,8 @@ copy_scanner (const char* name, const char* comment, const char *scanner_id,
  *
  * @return 0 success, 1 failed to find scanner, 2 scanner with new name exists,
  *         3 scanner_id required, 4 invalid value, 5 credential not found,
- *         6 wrong credential type, 99 permission denied, -1 internal error.
+ *         6 credential should be 'cc', 7 credential should be 'up',
+ *         99 permission denied, -1 internal error.
  */
 int
 modify_scanner (const char *scanner_id, const char *name, const char *comment,
@@ -45004,25 +45005,10 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
         return 4;
     }
   else
-    /* Keep compiler quiet. */
     itype = 0;
 
   if (host && (openvas_get_host_type (host) == -1))
     return 4;
-
-  if (credential_id)
-    {
-      if (find_credential_with_permission (credential_id, &credential,
-                                           "get_credentials"))
-        return -1;
-
-      if (credential == 0)
-        return 5;
-
-      if (sql_int ("SELECT type != 'cc' FROM credentials WHERE id = %llu;",
-                   credential))
-        return 6;
-    }
 
   sql_begin_immediate ();
 
@@ -45041,6 +45027,41 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
     {
       sql_rollback ();
       return 1;
+    }
+
+  if (credential_id)
+    {
+      if (find_credential_with_permission (credential_id, &credential,
+                                           "get_credentials"))
+        {
+          sql_rollback ();
+          return -1;
+        }
+
+      if (credential == 0)
+        {
+          sql_rollback ();
+          return 5;
+        }
+
+      if (itype == 0)
+        itype = sql_int ("SELECT type FROM scanners WHERE id = %llu;", scanner);
+
+      if (itype == SCANNER_TYPE_OMP)
+        {
+          if (sql_int ("SELECT type != 'up' FROM credentials WHERE id = %llu;",
+                       credential))
+            {
+              sql_rollback ();
+              return 7;
+            }
+        }
+      else if (sql_int ("SELECT type != 'cc' FROM credentials WHERE id = %llu;",
+                   credential))
+        {
+          sql_rollback ();
+          return 6;
+        }
     }
 
   /* Check whether a scanner with the same name exists already. */
