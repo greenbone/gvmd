@@ -1,5 +1,9 @@
 2016-10-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (omp_commands): Add "scanner" to the MOVE_TASK summary.
+
+2016-10-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Get MOVE_TASK working for OMP scanners.
 
 	* src/manage.c (move_task): Default to the default scanner instead of 0.

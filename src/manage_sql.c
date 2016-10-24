@@ -487,7 +487,7 @@ command_t omp_commands[]
     {"MODIFY_TARGET", "Modify an existing target."},
     {"MODIFY_TASK", "Update an existing task."},
     {"MODIFY_USER", "Modify a user."},
-    {"MOVE_TASK", "Reassign a task to another slave, even while running."},
+    {"MOVE_TASK", "Assign task to another slave scanner, even while running."},
     {"RESTORE", "Restore a resource."},
     {"RESUME_TASK", "Resume a stopped task."},
     {"RUN_WIZARD", "Run a wizard."},
