@@ -18281,7 +18281,7 @@ handle_get_system_reports (omp_parser_t *omp_parser, GError **error)
   report_type_iterator_t types;
 
   ret = init_system_report_type_iterator
-          (&types,
+         (&types,
           get_system_reports_data->name,
           get_system_reports_data->slave_id);
   switch (ret)

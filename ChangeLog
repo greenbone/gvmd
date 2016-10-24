@@ -1,5 +1,9 @@
 2016-10-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (handle_get_system_reports): Align arg.
+
+2016-10-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (stop_task_internal): Adjust special giveup handling
 	for OMP scanners.
 
