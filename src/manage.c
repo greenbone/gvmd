@@ -5497,22 +5497,25 @@ stop_task_internal (task_t task)
       set_task_run_status (task, TASK_STATUS_STOP_REQUESTED);
       return 1;
     }
-#if 0
-  // FIX if OMP scanner
-  else if ((run_status == TASK_STATUS_DELETE_REQUESTED
-            || run_status == TASK_STATUS_DELETE_WAITING
-            || run_status == TASK_STATUS_DELETE_ULTIMATE_REQUESTED
-            || run_status == TASK_STATUS_DELETE_ULTIMATE_WAITING
-            || run_status == TASK_STATUS_STOP_REQUESTED
-            || run_status == TASK_STATUS_STOP_WAITING)
-           && task_slave (task))
+  else if (run_status == TASK_STATUS_DELETE_REQUESTED
+           || run_status == TASK_STATUS_DELETE_WAITING
+           || run_status == TASK_STATUS_DELETE_ULTIMATE_REQUESTED
+           || run_status == TASK_STATUS_DELETE_ULTIMATE_WAITING
+           || run_status == TASK_STATUS_STOP_REQUESTED
+           || run_status == TASK_STATUS_STOP_WAITING)
     {
-      /* A special request from the user to get the task out of a requested
-       * state when contact with the slave is lost. */
-      set_task_run_status (task, TASK_STATUS_STOP_REQUESTED_GIVEUP);
-      return 1;
+      scanner_t scanner;
+
+      scanner = task_scanner (task);
+      assert (scanner);
+      if (scanner_type (scanner) == SCANNER_TYPE_OMP)
+        {
+          /* A special request from the user to get the task out of a requested
+           * state when contact with the slave is lost. */
+          set_task_run_status (task, TASK_STATUS_STOP_REQUESTED_GIVEUP);
+          return 1;
+        }
     }
-#endif
 
   return 0;
 }
