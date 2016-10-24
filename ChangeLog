@@ -1,5 +1,15 @@
 2016-10-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml.in (create_slave, delete_slave)
+	(get_slaves, modify_slave): Remove.
+	(create_task, get_tasks): Remove SLAVE.
+	(get_credentials): Remove "slave" attribute and SLAVE.
+	(get_system_reports, move_task): Add scanner to summary.  Correct example.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+2016-10-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (omp_commands): Add "scanner" to the MOVE_TASK summary.
 
 2016-10-24  Matthew Mundell <matthew.mundell@greenbone.net>

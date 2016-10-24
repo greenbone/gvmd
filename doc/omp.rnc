@@ -28,7 +28,6 @@ command
     | create_role
     | create_scanner
     | create_schedule
-    | create_slave
     | create_tag
     | create_target
     | create_task
@@ -50,7 +49,6 @@ command
     | delete_role
     | delete_scanner
     | delete_schedule
-    | delete_slave
     | delete_tag
     | delete_target
     | delete_task
@@ -82,7 +80,6 @@ command
     | get_scanners
     | get_schedules
     | get_settings
-    | get_slaves
     | get_system_reports
     | get_tags
     | get_targets
@@ -107,7 +104,6 @@ command
     | modify_scanner
     | modify_schedule
     | modify_setting
-    | modify_slave
     | modify_target
     | modify_tag
     | modify_task
@@ -147,7 +143,6 @@ response
     | create_role_response
     | create_scanner_response
     | create_schedule_response
-    | create_slave_response
     | create_tag_response
     | create_target_response
     | create_task_response
@@ -169,7 +164,6 @@ response
     | delete_role_response
     | delete_scanner_response
     | delete_schedule_response
-    | delete_slave_response
     | delete_tag_response
     | delete_target_response
     | delete_task_response
@@ -201,7 +195,6 @@ response
     | get_scanners_response
     | get_schedules_response
     | get_settings_response
-    | get_slaves_response
     | get_system_reports_response
     | get_tags_response
     | get_targets_response
@@ -226,7 +219,6 @@ response
     | modify_scanner_response
     | modify_schedule_response
     | modify_setting_response
-    | modify_slave_response
     | modify_target_response
     | modify_tag_response
     | modify_task_response
@@ -3403,7 +3395,6 @@ commands
            | create_role
            | create_scanner
            | create_schedule
-           | create_slave
            | create_tag
            | create_target
            | create_task
@@ -3425,7 +3416,6 @@ commands
            | delete_port_range
            | delete_scanner
            | delete_schedule
-           | delete_slave
            | delete_tag
            | delete_target
            | delete_task
@@ -3456,7 +3446,6 @@ commands
            | get_scanners
            | get_schedules
            | get_settings
-           | get_slaves
            | get_system_reports
            | get_tags
            | get_targets
@@ -3481,7 +3470,6 @@ commands
            | modify_scanner
            | modify_schedule
            | modify_setting
-           | modify_slave
            | modify_tag
            | modify_target
            | modify_task
@@ -4687,64 +4675,6 @@ create_schedule_timezone
        timezone
      }
 
-## Command create_slave
-##
-## Create a slave.
-
-create_slave
- = element create_slave
-     {
-       create_slave_name
-       & create_slave_comment?
-       & create_slave_copy?
-       & create_slave_host
-       & create_slave_port
-       & create_slave_credential
-     }
-
-# A name for the slave.
-create_slave_name
- = element name
-     {
-       name
-     }
-
-# A comment on the slave.
-create_slave_comment
- = element comment
-     {
-       text
-     }
-
-# The UUID of an existing slave.
-create_slave_copy
- = element copy
-     {
-       uuid
-     }
-
-# The host that the slave Manager is running on.
-create_slave_host
- = element host
-     {
-       text
-     }
-
-# The port that the slave Manager is serving on the host.
-create_slave_port
- = element port
-     {
-       text
-     }
-
-# Login credential for the slave Manager.
-create_slave_credential
- = element credential
-     {
-       # UUID of the credential.
-       attribute id { uuid }
-     }
-
 ## Command create_tag
 ##
 ## Create a tag.
@@ -4998,7 +4928,6 @@ create_task
        & create_task_alert*
        & create_task_schedule?
        & create_task_schedule_periods?
-       & create_task_slave?
        & create_task_observers?
        & create_task_preferences?
      }
@@ -5078,13 +5007,6 @@ create_task_schedule_periods
  = element schedule_periods
      {
        integer
-     }
-
-# Slave that the task will run on.
-create_task_slave
- = element slave
-     {
-       attribute id { uuid }
      }
 
 # Users allowed to observe this task.
@@ -5379,18 +5301,6 @@ delete_schedule
        attribute ultimate { boolean }
      }
 
-## Command delete_slave
-##
-## Delete a slave.
-
-delete_slave
- = element delete_slave
-     {
-       attribute slave_id { uuid }
-       & # Whether to remove entirely, or to the trashcan.
-       attribute ultimate { boolean }
-     }
-
 ## Command delete_tag
 ##
 ## Delete a tag.
@@ -5620,8 +5530,6 @@ get_credentials
        attribute filt_id { uuid }?
        & # Whether to include a list of scanners using the credentials.
        attribute scanners { boolean }?
-       & # Whether to include a list of slaves using the credentials.
-       attribute slaves { boolean }?
        & # Whether to get the trashcan credentials instead.
        attribute trash { boolean }?
        & # Whether to include a list of targets using the credentials.
@@ -5998,25 +5906,6 @@ get_settings
        & attribute sort_field { text }?
      }
 
-## Command get_slaves
-##
-## Get one or many slaves.
-
-get_slaves
- = element get_slaves
-     {
-       # ID of single slave to get.
-       attribute slave_id { uuid }?
-       & # Filter term to use to filter query.
-       attribute filter { text }?
-       & # ID of filter to use to filter query.
-       attribute filt_id { uuid }?
-       & # Whether to get the trashcan slaves instead.
-       attribute trash { boolean }?
-       & # Whether to include a list of tasks using the slave.
-       attribute tasks { boolean }?
-     }
-
 ## Command get_system_reports
 ##
 ## Get one or many system reports.
@@ -6030,7 +5919,7 @@ get_system_reports
        attribute duration { integer }?
        & # Whether to include the actual reports.
        attribute brief { boolean }?
-       & # Slave from which to get report.
+       & # OMP scanner from which to get report.
        attribute slave_id { uuid }?
      }
 
@@ -7194,58 +7083,6 @@ modify_setting_value
        text
      }
 
-## Command modify_slave
-##
-## Modify an existing slave.
-
-modify_slave
- = element modify_slave
-     {
-       # ID of slave to modify.
-       attribute slave_id { uuid }
-       & modify_slave_name
-       & modify_slave_comment?
-       & modify_slave_host
-       & modify_slave_port
-       & modify_slave_credential
-     }
-
-# A name for the slave.
-modify_slave_name
- = element name
-     {
-       name
-     }
-
-# A comment on the slave.
-modify_slave_comment
- = element comment
-     {
-       text
-     }
-
-# The host that the slave Manager is running on.
-modify_slave_host
- = element host
-     {
-       text
-     }
-
-# The port that the slave Manager is serving on the host.
-modify_slave_port
- = element port
-     {
-       text
-     }
-
-# Login credential for the slave Manager.
-modify_slave_credential
- = element credential
-     {
-       # UUID of the credential.
-       attribute id { uuid }
-     }
-
 ## Command modify_target
 ##
 ## Modify an existing target.
@@ -7461,7 +7298,6 @@ modify_task
            | modify_task_schedule
            | modify_task_schedule_periods
            | modify_task_scanner
-           | modify_task_slave
            | modify_task_file )
      }
 
@@ -7536,13 +7372,6 @@ modify_task_schedule_periods
 # Task scanner.
 modify_task_scanner
  = element scanner
-     {
-       attribute id { uuid }
-     }
-
-# Task slave.
-modify_task_slave
- = element slave
      {
        attribute id { uuid }
      }
@@ -7629,7 +7458,7 @@ modify_user_sources
 ## Command move_task
 ##
 ## 
-      Moves an existing task to another slave or the master
+      Moves an existing task to another OMP slave scanner or the master
     .
 
 move_task
@@ -7867,7 +7696,6 @@ commands_response
            | create_role_response
            | create_scanner_response
            | create_schedule_response
-           | create_slave_response
            | create_tag_response
            | create_target_response
            | create_task_response
@@ -7889,7 +7717,6 @@ commands_response
            | delete_role_response
            | delete_scanner_response
            | delete_schedule_response
-           | delete_slave_response
            | delete_tag_response
            | delete_target_response
            | delete_task_response
@@ -7917,7 +7744,6 @@ commands_response
            | get_report_formats_response
            | get_results_response
            | get_roles_response
-           | get_slaves_response
            | get_scanners_response
            | get_schedules_response
            | get_settings_response
@@ -7945,7 +7771,6 @@ commands_response
            | modify_scanner_response
            | modify_schedule_response
            | modify_setting_response
-           | modify_slave_response
            | modify_tag_response
            | modify_target_response
            | modify_task_response
@@ -8129,16 +7954,6 @@ create_scanner_response
 
 create_schedule_response
  = element create_schedule_response
-     {
-       attribute status { status }
-       & attribute status_text { text }
-       & attribute id { uuid }
-     }
-
-## Response to create_slave
-
-create_slave_response
- = element create_slave_response
      {
        attribute status { status }
        & attribute status_text { text }
@@ -8333,15 +8148,6 @@ delete_scanner_response
 
 delete_schedule_response
  = element delete_schedule_response
-     {
-       attribute status { status }
-       & attribute status_text { text }
-     }
-
-## Response to delete_slave
-
-delete_slave_response
- = element delete_slave_response
      {
        attribute status { status }
        & attribute status_text { text }
@@ -10618,7 +10424,6 @@ get_credentials_response_credential
        & get_credentials_response_credential_privacy?
        & get_credentials_response_credential_certificate_info?
        & get_credentials_response_credential_scanners?
-       & get_credentials_response_credential_slaves?
        & get_credentials_response_credential_targets?
        & ( get_credentials_response_credential_public_key
            | get_credentials_response_credential_package )
@@ -10830,35 +10635,6 @@ get_credentials_response_credential_scanners_scanner_name
 
 # Permissions the user has on the scanner.
 get_credentials_response_credential_scanners_scanner_permissions
- = element permissions
-     {
-       ""
-     }
-
-# All slaves using this credential.
-get_credentials_response_credential_slaves
- = element slaves
-     {
-       get_credentials_response_credential_slaves_slave*
-     }
-
-get_credentials_response_credential_slaves_slave
- = element slave
-     {
-       attribute id { uuid }
-       & get_credentials_response_credential_slaves_slave_name
-       & get_credentials_response_credential_slaves_slave_permissions?
-     }
-
-# The name of the slave.
-get_credentials_response_credential_slaves_slave_name
- = element name
-     {
-       name
-     }
-
-# Permissions the user has on the slave.
-get_credentials_response_credential_slaves_slave_permissions
  = element permissions
      {
        ""
@@ -15748,344 +15524,6 @@ get_settings_response_setting_count_page
        integer
      }
 
-## Response to get_slaves
-
-get_slaves_response
- = element get_slaves_response
-     {
-       attribute status { status }
-       & attribute status_text { text }
-       & get_slaves_response_slave*
-       & get_slaves_response_filters
-       & get_slaves_response_sort
-       & get_slaves_response_slaves
-       & get_slaves_response_slave_count
-     }
-
-get_slaves_response_slave
- = element slave
-     {
-       attribute id { uuid }
-       & get_slaves_response_slave_owner
-       & get_slaves_response_slave_name
-       & get_slaves_response_slave_comment
-       & get_slaves_response_slave_creation_time
-       & get_slaves_response_slave_modification_time
-       & get_slaves_response_slave_writable
-       & get_slaves_response_slave_in_use
-       & get_slaves_response_slave_permissions
-       & get_slaves_response_slave_user_tags
-       & get_slaves_response_slave_host
-       & get_slaves_response_slave_port
-       & get_slaves_response_slave_credential
-       & get_slaves_response_slave_tasks?
-     }
-
-# Owner of the slave.
-get_slaves_response_slave_owner
- = element owner
-     {
-       get_slaves_response_slave_owner_name
-     }
-
-# The name of the owner.
-get_slaves_response_slave_owner_name
- = element name
-     {
-       name
-     }
-
-# The name of the slave.
-get_slaves_response_slave_name
- = element name
-     {
-       name
-     }
-
-# The comment on the slave.
-get_slaves_response_slave_comment
- = element comment
-     {
-       text
-     }
-
-get_slaves_response_slave_creation_time
- = element creation_time
-     {
-       iso_time
-     }
-
-get_slaves_response_slave_modification_time
- = element modification_time
-     {
-       iso_time
-     }
-
-# Whether the slave is writable.
-get_slaves_response_slave_writable
- = element writable
-     {
-       boolean
-     }
-
-# Whether any slaves are using the slave.
-get_slaves_response_slave_in_use
- = element in_use
-     {
-       boolean
-     }
-
-# Permissions that the current user has on the slave.
-get_slaves_response_slave_permissions
- = element permissions
-     {
-       get_slaves_response_slave_permissions_permission*
-     }
-
-get_slaves_response_slave_permissions_permission
- = element permission
-     {
-       get_slaves_response_slave_permissions_permission_name
-     }
-
-# The name of the permission.
-get_slaves_response_slave_permissions_permission_name
- = element name
-     {
-       name
-     }
-
-# Info on tags attached to the slave.
-get_slaves_response_slave_user_tags
- = element user_tags
-     {
-       get_slaves_response_slave_user_tags_count
-       & get_slaves_response_slave_user_tags_tag*
-     }
-
-# Number of attached tags.
-get_slaves_response_slave_user_tags_count
- = element count
-     {
-       integer
-     }
-
-# Short info on an individual tag (only if details were requested).
-get_slaves_response_slave_user_tags_tag
- = element tag
-     {
-       # UUID of the tag.
-       attribute id { uuid }
-       & get_slaves_response_slave_user_tags_tag_name
-       & get_slaves_response_slave_user_tags_tag_value
-       & get_slaves_response_slave_user_tags_tag_comment
-     }
-
-# Name of the tag (usually namespace:predicate).
-get_slaves_response_slave_user_tags_tag_name
- = element name
-     {
-       text
-     }
-
-# Value of the tag.
-get_slaves_response_slave_user_tags_tag_value
- = element value
-     {
-       text
-     }
-
-# Comment for the tag.
-get_slaves_response_slave_user_tags_tag_comment
- = element comment
-     {
-       text
-     }
-
-# The host that the slave Manager is running on.
-get_slaves_response_slave_host
- = element host
-     {
-       text
-     }
-
-# The port that the slave Manager is serving on the host.
-get_slaves_response_slave_port
- = element port
-     {
-       text
-     }
-
-# Credential for login on the slave Manager.
-get_slaves_response_slave_credential
- = element credential
-     {
-       attribute id { uuid }
-       & get_slaves_response_slave_credential_name
-       & get_slaves_response_slave_credential_login
-       & get_slaves_response_slave_credential_trash
-     }
-
-# Name of the credential.
-get_slaves_response_slave_credential_name
- = element name
-     {
-       text
-     }
-
-# Username from credential used to login.
-get_slaves_response_slave_credential_login
- = element login
-     {
-       text
-     }
-
-# Whether the credential is in the trashcan.
-get_slaves_response_slave_credential_trash
- = element trash
-     {
-       boolean
-     }
-
-get_slaves_response_slave_tasks
- = element tasks
-     {
-       get_slaves_response_slave_tasks_task*
-     }
-
-get_slaves_response_slave_tasks_task
- = element task
-     {
-       attribute id { uuid }
-       & get_slaves_response_slave_tasks_task_name
-       & get_slaves_response_slave_tasks_task_permissions?
-     }
-
-# The name of the task.
-get_slaves_response_slave_tasks_task_name
- = element name
-     {
-       name
-     }
-
-# Permissions the user has on the task.
-get_slaves_response_slave_tasks_task_permissions
- = element permissions
-     {
-       ""
-     }
-
-get_slaves_response_filters
- = element filters
-     {
-       # UUID of filter if any, else 0.
-       attribute id { uuid }
-       & get_slaves_response_filters_term
-       & get_slaves_response_filters_name?
-       & get_slaves_response_filters_keywords
-     }
-
-# Filter term.
-get_slaves_response_filters_term
- = element term
-     {
-       text
-     }
-
-# Filter name, if applicable.
-get_slaves_response_filters_name
- = element name
-     {
-       text
-     }
-
-# Filter broken down into keywords.
-get_slaves_response_filters_keywords
- = element keywords
-     {
-       get_slaves_response_filters_keywords_keyword*
-     }
-
-get_slaves_response_filters_keywords_keyword
- = element keyword
-     {
-       get_slaves_response_filters_keywords_keyword_column
-       & get_slaves_response_filters_keywords_keyword_relation
-       & get_slaves_response_filters_keywords_keyword_value
-     }
-
-# Column prefix.
-get_slaves_response_filters_keywords_keyword_column
- = element column
-     {
-       text
-     }
-
-# Relation operator.
-get_slaves_response_filters_keywords_keyword_relation
- = element relation
-     {
-       
-        ERROR
-      
-     }
-
-# The filter text.
-get_slaves_response_filters_keywords_keyword_value
- = element value
-     {
-       text
-     }
-
-get_slaves_response_sort
- = element sort
-     {
-       text
-       & get_slaves_response_sort_field
-     }
-
-get_slaves_response_sort_field
- = element field
-     {
-       get_slaves_response_sort_field_order
-     }
-
-get_slaves_response_sort_field_order
- = element order
-     {
-       xsd:token { pattern = "ascending|descending" }
-     }
-
-get_slaves_response_slaves
- = element slaves
-     {
-       # First slave.
-       attribute start { integer }
-       & # Maximum number of slaves.
-       attribute max { integer }
-     }
-
-get_slaves_response_slave_count
- = element slave_count
-     {
-       get_slaves_response_slave_count_filtered
-       & get_slaves_response_slave_count_page
-     }
-
-# Number of slaves after filtering.
-get_slaves_response_slave_count_filtered
- = element filtered
-     {
-       integer
-     }
-
-# Number of slaves on current page.
-get_slaves_response_slave_count_page
- = element page
-     {
-       integer
-     }
-
 ## Response to get_system_reports
 
 get_system_reports_response
@@ -16966,7 +16404,6 @@ get_tasks_response_task
            & get_tasks_response_task_observers
            & get_tasks_response_task_schedule
            & get_tasks_response_task_schedule_periods
-           & get_tasks_response_task_slave
            & get_tasks_response_task_report_count
            & get_tasks_response_task_trend
            & get_tasks_response_task_current_report?
@@ -17387,37 +16824,6 @@ get_tasks_response_task_schedule_periods
  = element schedule_periods
      {
        integer
-     }
-
-# The slave that the task will run on.
-get_tasks_response_task_slave
- = element slave
-     {
-       attribute id { uuid }
-       & get_tasks_response_task_slave_name
-       & get_tasks_response_task_slave_permissions?
-       & get_tasks_response_task_slave_trash
-     }
-
-# The name of the slave.
-get_tasks_response_task_slave_name
- = element name
-     {
-       name
-     }
-
-# Permissions the user has on the slave.
-get_tasks_response_task_slave_permissions
- = element permissions
-     {
-       ""
-     }
-
-# Whether the slave is in the trashcan.
-get_tasks_response_task_slave_trash
- = element trash
-     {
-       boolean
      }
 
 # Number of reports.
@@ -18590,15 +17996,6 @@ modify_schedule_response
 
 modify_setting_response
  = element modify_setting_response
-     {
-       attribute status { status }
-       & attribute status_text { text }
-     }
-
-## Response to modify_slave
-
-modify_slave_response
- = element modify_slave_response
      {
        attribute status { status }
        & attribute status_text { text }
