@@ -77,6 +77,8 @@
  * \htmlinclude doc/openvasmd.html
  */
 
+#include <locale.h>
+
 #include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>
@@ -1683,12 +1685,19 @@ main (int argc, char** argv)
         { NULL }
       };
 
+  /* Set locale based on environment variables. */
+
+  setlocale (LC_ALL, "");
+
+  /* Process options. */
+
   option_context = g_option_context_new ("- Manager of the Open Vulnerability Assessment System");
   g_option_context_add_main_entries (option_context, option_entries, NULL);
   if (!g_option_context_parse (option_context, &argc, &argv, &error))
     {
       g_option_context_free (option_context);
-      g_critical ("%s: %s\n\n", __FUNCTION__, error->message);
+      g_critical ("%s: g_option_context_parse: %s\n\n", __FUNCTION__,
+                  error->message);
       exit (EXIT_FAILURE);
     }
   g_option_context_free (option_context);
