@@ -20019,6 +20019,12 @@ handle_create_scanner (omp_parser_t *omp_parser, GError **error)
             }
           log_event_fail ("scanner", "Scanner", NULL, "created");
           goto create_scanner_leave;
+        case 98:
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("create_scanner", "It is not possible to clone a "
+                              "CVE scanner "));
+          log_event_fail ("scanner", "Scanner", NULL, "created");
+          goto create_scanner_leave;
         case 99:
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("create_scanner", "Permission denied"));
