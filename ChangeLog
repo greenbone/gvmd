@@ -1,3 +1,11 @@
+2016-10-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* INSTALL: Update description of cleanup-config-prefs.
+
+	* src/manage_sql.c (manage_optimize): In cleanup-config-prefs correct
+	scanner_plugins_timeout preferences that were set to
+	"SCANNER_NVT_TIMEOUT" instead of the actual timeout value.
+
 2016-10-25 Björn Ricks <bjoern.ricks@greenbone.net>
 
 	* src/manage_sql.c (copy_scanner): Fix function description and return code 98

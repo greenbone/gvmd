@@ -214,7 +214,9 @@ analyze
   database back-end you are using.
 
 cleanup-config-prefs
-  This option removes duplicate preferences from Scan Configs.
+  This option removes duplicate preferences from Scan Configs and corrects
+  some broken preference values.  For the latter, make sure the NVT preferences
+  in the database are up to date, e.g. by running openvasmd --rebuild.
 
 remove-open-port-results
   This option removes results which were used in older versions of OpenVAS to

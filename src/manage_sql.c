@@ -64801,15 +64801,23 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
     }
   else if (strcasecmp (name, "cleanup-config-prefs") == 0)
     {
-      int changes;
+      int removed, fixed_values;
       sql ("DELETE FROM config_preferences WHERE id NOT IN"
            " (SELECT min(id) FROM config_preferences"
            "  GROUP BY config, type, name, value);");
-      changes = sql_changes();
+      removed = sql_changes();
+
+      sql ("UPDATE config_preferences"
+           " SET value = (SELECT value FROM nvt_preferences"
+           "              WHERE name='scanner_plugins_timeout')"
+           " WHERE name = 'scanner_plugins_timeout'"
+           "   AND value = 'SCANNER_NVT_TIMEOUT';");
+      fixed_values = sql_changes();
+
       success_text = g_strdup_printf ("Optimized: cleanup-config-prefs."
                                       " Duplicate config preferences removed:"
-                                      " %d.",
-                                      changes);
+                                      " %d. Corrected preference values: %d",
+                                      removed, fixed_values);
     }
   else if (strcasecmp (name, "remove-open-port-results") == 0)
     {
