@@ -1,5 +1,17 @@
 2016-10-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Get MOVE_TASK working for OMP scanners.
+
+	* src/manage.c (move_task): Default to the default scanner instead of 0.
+	Find destination scanner before getting type.  Correct command name.
+	Allow the destination scanner to be an OTP scanner.  Use a separate return
+	for the destination check.  Correct boolean operator in check of current
+	scanner type.
+
+	* src/omp.c (omp_xml_handle_end_element): Handle new move_task return.
+
+2016-10-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (handle_get_system_reports): Align arg.
 
 2016-10-24  Matthew Mundell <matthew.mundell@greenbone.net>

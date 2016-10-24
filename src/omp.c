@@ -28380,6 +28380,12 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                    "Scanner does not allow stopping"
                                    " the Task."));
               break;
+            case 7:
+              SEND_TO_CLIENT_OR_FAIL
+                (XML_ERROR_SYNTAX ("move_task",
+                                   "Destination scanner does not support"
+                                   " slaves."));
+              break;
             case 98:
               SEND_TO_CLIENT_OR_FAIL
                 (XML_ERROR_SYNTAX ("move_task",

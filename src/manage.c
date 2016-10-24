@@ -5591,15 +5591,16 @@ resume_task (const char *task_id, char **report_id)
  *
  * @return 0 success, 1 success, process forked, 2 task not found,
  *         3 slave not found, 4 slaves not supported by scanner, 5 task cannot
- *         be stopped currently, 6 scanner does not allow stopping, 98 stop
- *         and resume permission denied, 99 permission denied, -1 error.
+ *         be stopped currently, 6 scanner does not allow stopping, 7 new
+ *         scanner does not support slaves, 98 stop and resume permission
+ *         denied, 99 permission denied, -1 error.
  */
 int
 move_task (const char *task_id, const char *slave_id)
 {
   task_t task;
-  int task_scanner_type;
-  scanner_t slave;
+  int task_scanner_type, slave_scanner_type;
+  scanner_t slave, scanner;
   task_status_t status;
   int should_resume_task = 0;
 
@@ -5611,29 +5612,40 @@ move_task (const char *task_id, const char *slave_id)
   if (acl_user_may ("modify_task") == 0)
     return 99;
 
+  /* Find the task. */
+
   if (find_task_with_permission (task_id, &task, "get_tasks"))
     return -1;
   if (task == 0)
     return 2;
 
-  if (slave_id && strcmp (slave_id, ""))
-    {
-      task_scanner_type = scanner_type (slave);
-      if (task_scanner_type != SCANNER_TYPE_OMP)
-        return 4;
+  /* Make sure destination scanner supports slavery. */
 
-      if (find_scanner_with_permission (slave_id, &slave, "get_scanner"))
-        return -1;
-      if (slave == 0)
-        return 3;
-    }
-  else
-    slave = 0;
+  if (strcmp (slave_id, "") == 0)
+    slave_id = SCANNER_UUID_DEFAULT;
 
-  task_scanner_type = scanner_type (task_scanner (task));
+  if (find_scanner_with_permission (slave_id, &slave, "get_scanners"))
+    return -1;
+  if (slave == 0)
+    return 3;
+
+  slave_scanner_type = scanner_type (slave);
+  if (slave_scanner_type != SCANNER_TYPE_OPENVAS
+      && slave_scanner_type != SCANNER_TYPE_OMP)
+    return 7;
+
+  /* Make sure current scanner supports slavery. */
+
+  scanner = task_scanner (task);
+  if (scanner == 0)
+    return -1;
+
+  task_scanner_type = scanner_type (scanner);
   if (task_scanner_type != SCANNER_TYPE_OPENVAS
-      || task_scanner_type != SCANNER_TYPE_OMP)
+      && task_scanner_type != SCANNER_TYPE_OMP)
     return 4;
+
+  /* Stop task if required. */
 
   status = task_run_status (task);
 
@@ -5685,8 +5697,12 @@ move_task (const char *task_id, const char *slave_id)
         break;
     }
 
+  /* Update scanner. */
+
   sql ("UPDATE tasks SET scanner = %llu WHERE id = %llu",
-       (slave_id && strcmp (slave_id, "")) ? slave : 0, task);
+       slave, task);
+
+  /* Resume task if required. */
 
   if (should_resume_task)
     {
