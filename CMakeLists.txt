@@ -278,6 +278,7 @@ set (OPENVASMD_VERSION "${PROJECT_VERSION_STRING}")
 # Configure Doxyfile with version number
 configure_file (doc/Doxyfile.in doc/Doxyfile)
 configure_file (doc/Doxyfile_full.in doc/Doxyfile_full)
+configure_file (doc/example-openvas-manage-certs.conf.in doc/example-openvas-manage-certs.conf @ONLY)
 configure_file (VERSION.in VERSION)
 configure_file (src/openvasmd_log_conf.cmake_in src/openvasmd_log.conf)
 configure_file (src/schema_formats/XML/OMP.xml.in src/schema_formats/XML/OMP.xml @ONLY)
@@ -285,6 +286,7 @@ configure_file (tools/greenbone-scapdata-sync.in tools/greenbone-scapdata-sync @
 configure_file (tools/greenbone-certdata-sync.in tools/greenbone-certdata-sync @ONLY)
 configure_file (tools/openvas-portnames-update.in tools/openvas-portnames-update @ONLY)
 configure_file (tools/openvas-migrate-to-postgres.in tools/openvas-migrate-to-postgres @ONLY)
+configure_file (tools/openvas-manage-certs.in tools/openvas-manage-certs @ONLY)
 
 ## Program
 
@@ -654,5 +656,16 @@ if (BACKEND STREQUAL SQLITE3)
            PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
                        GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 endif (BACKEND STREQUAL SQLITE3)
+
+install (FILES ${CMAKE_BINARY_DIR}/tools/openvas-manage-certs
+         DESTINATION ${BINDIR}
+         PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
+                     GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+
+install (FILES ${CMAKE_SOURCE_DIR}/doc/openvas-manage-certs.1
+          DESTINATION ${DATADIR}/man/man1 )
+
+install (FILES ${CMAKE_BINARY_DIR}/doc/example-openvas-manage-certs.conf
+         DESTINATION ${DATADIR}/doc/openvas-manager/ )
 
 ## End
