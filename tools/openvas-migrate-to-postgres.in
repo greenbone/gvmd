@@ -966,6 +966,14 @@ create_tables_133 () {
 }
 
 cleanup_sqlite_db () {
+  # Remove stray port_ranges.
+  sqlite "DELETE FROM port_ranges WHERE port_list NOT IN (SELECT id FROM port_lists);"
+  test_sql_exit "Failed to clean up port_lists"
+
+  # Remove stray port_ranges_trash.
+  sqlite "DELETE FROM port_ranges_trash WHERE port_list NOT IN (SELECT id FROM port_lists_trash);"
+  test_sql_exit "Failed to clean up port_lists_trash"
+
   # Remove stray role_users_trash.
   sqlite "DELETE FROM role_users_trash WHERE role NOT IN (SELECT id FROM roles_trash);"
   test_sql_exit "Failed to clean up role_users_trash"
