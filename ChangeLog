@@ -1,3 +1,9 @@
+2016-10-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (create_report_format): Ensure the symlink directory
+	exists before making the link.  Improve the error message when making
+	the report format dir.
+
 2016-10-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c (main): Setup locale based on environment variables,

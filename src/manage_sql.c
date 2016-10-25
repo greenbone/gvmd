@@ -47490,7 +47490,7 @@ create_report_format (const char *uuid, const char *name,
                   " WHERE original_uuid = '%s';",
                   uuid))
     {
-      gchar *base, *new, *old;
+      gchar *base, *new, *old, *path;
       char *real_old;
 
       /* Make a new UUID, because a report format exists with the given UUID. */
@@ -47558,9 +47558,22 @@ create_report_format (const char *uuid, const char *name,
         }
       g_free (base);
 
+      path = g_build_filename (OPENVAS_NVT_DIR, "private", "report_formats",
+                               NULL);
+
+      if (g_mkdir_with_parents (path, 0755 /* "rwxr-xr-x" */))
+        {
+          g_warning ("%s: failed to create dir %s: %s",
+                     __FUNCTION__, path, strerror (errno));
+          g_free (old);
+          g_free (path);
+          sql_rollback ();
+          return -1;
+        }
+
       base = g_strdup_printf ("%s.asc", new_uuid);
-      new = g_build_filename (OPENVAS_NVT_DIR, "private", "report_formats",
-                              base, NULL);
+      new = g_build_filename (path, base, NULL);
+      g_free (path);
       g_free (base);
       if (symlink (old, new))
         {
@@ -47617,7 +47630,8 @@ create_report_format (const char *uuid, const char *name,
 
   if (g_mkdir_with_parents (dir, 0755 /* "rwxr-xr-x" */))
     {
-      g_warning ("%s: failed to create dir %s", __FUNCTION__, dir);
+      g_warning ("%s: failed to create dir %s: %s",
+                 __FUNCTION__, dir, strerror (errno));
       g_free (dir);
       g_free (quoted_name);
       g_free (new_uuid);
