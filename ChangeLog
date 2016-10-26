@@ -1,5 +1,10 @@
 2016-10-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_migrators.c (migrate_174_to_175): Add small note about new
+	dir permissions.
+
+2016-10-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_migrators.c (migrate_171_to_172): Skip the moves if the old
 	dir is missing.
 

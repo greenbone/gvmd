@@ -13196,6 +13196,8 @@ migrate_174_to_175 ()
                                    "report_formats",
                                    NULL);
 
+  /* The new dir should exist already, so this will work even if we don't
+   * have write permission in OPENVAS_DATA_DIR. */
   if (g_mkdir_with_parents (new_dir_path, 0755 /* "rwxr-xr-x" */))
     {
       g_warning ("%s: failed to create dir %s", __FUNCTION__, new_dir_path);
