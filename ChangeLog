@@ -1,3 +1,8 @@
+2016-10-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_migrators.c (migrate_171_to_172): Skip the moves if the old
+	dir is missing.
+
 2016-10-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* tools/openvas-migrate-to-postgres.in (cleanup_sqlite_db): Remove stray

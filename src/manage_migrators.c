@@ -12895,10 +12895,9 @@ int
 migrate_171_to_172 ()
 {
   GError *error;
-  int move_failed;
   gchar *old_dir_path, *new_dir_path;
   const gchar *subdir_name;
-  GDir *old_dir;
+  struct stat state;
 
   sql_begin_exclusive ();
 
@@ -12931,102 +12930,120 @@ migrate_171_to_172 ()
                                    "global_report_formats",
                                    NULL);
 
-  /* Ensure the old dir exists. */
-  g_mkdir_with_parents (old_dir_path, 0755 /* "rwxr-xr-x" */);
-
-  /* Iterate over subdirectories of old dir */
-  error = NULL;
-  old_dir = g_dir_open (old_dir_path, 0, &error);
-  if (old_dir == NULL)
+  if (g_lstat (old_dir_path, &state))
     {
-      g_warning ("%s: Failed to open directory '%s': %s",
-                 __FUNCTION__, old_dir_path, error->message);
-      g_error_free (error);
-      g_free (old_dir_path);
-      g_free (new_dir_path);
-      sql_rollback ();
-      return -1;
+      /* The old dir is missing.  Probably we are on a fresh install with an
+       * old db, so skip the moves.  There are no report formats files around
+       * to move anyway, and the Manager install should have put the actual
+       * files in the right place. */
+      if (errno != ENOENT)
+        g_warning ("%s: g_lstat (%s) failed: %s\n",
+                   __FUNCTION__, old_dir_path, g_strerror (errno));
+      else
+        g_info ("%s: old global report formats directory missing (%s)\n",
+                __FUNCTION__, old_dir_path);
     }
-
-  subdir_name = g_dir_read_name (old_dir);
-  move_failed = 0;
-  while (subdir_name && move_failed == 0)
+  else
     {
-      gchar *old_subdir_path, *new_subdir_path;
-      GDir *new_subdir;
+      GDir *old_dir;
+      int move_failed;
+
+      /* Iterate over subdirectories of old dir */
 
       error = NULL;
-      old_subdir_path = g_build_filename (old_dir_path, subdir_name, NULL);
-      new_subdir_path = g_build_filename (new_dir_path, subdir_name, NULL);
-      new_subdir = g_dir_open (new_subdir_path, 0, &error);
-      if (new_subdir)
+      old_dir = g_dir_open (old_dir_path, 0, &error);
+      if (old_dir == NULL)
         {
-          g_debug ("%s: Skipping '%s', directory already exists",
-                     __FUNCTION__, new_subdir_path);
-          openvas_file_remove_recurse (old_subdir_path);
-          g_dir_close (new_subdir);
+          g_warning ("%s: Failed to open directory '%s': %s",
+                     __FUNCTION__, old_dir_path, error->message);
+          g_error_free (error);
+          g_free (old_dir_path);
+          g_free (new_dir_path);
+          sql_rollback ();
+          return -1;
         }
-      else if (error->code == G_FILE_ERROR_NOENT)
-        {
-          gchar **cmd;
-          gchar *standard_out = NULL;
-          gchar *standard_err = NULL;
-          gint exit_status;
 
-          cmd = (gchar **) g_malloc (4 * sizeof (gchar *));
-          cmd[0] = g_strdup ("mv");
-          cmd[1] = old_subdir_path;
-          cmd[2] = new_subdir_path;
-          cmd[3] = NULL;
-          g_debug ("%s: Spawning in .: %s %s %s\n",
-                  __FUNCTION__, cmd[0], cmd[1], cmd[2]);
-          if ((g_spawn_sync (".",
-                            cmd,
-                            NULL,                  /* Environment. */
-                            G_SPAWN_SEARCH_PATH,
-                            NULL,                  /* Setup function. */
-                            NULL,
-                            &standard_out,
-                            &standard_err,
-                            &exit_status,
-                            NULL)
-              == FALSE)
-              || (WIFEXITED (exit_status) == 0)
-              || WEXITSTATUS (exit_status))
+      subdir_name = g_dir_read_name (old_dir);
+      move_failed = 0;
+      while (subdir_name && move_failed == 0)
+        {
+          gchar *old_subdir_path, *new_subdir_path;
+          GDir *new_subdir;
+
+          error = NULL;
+          old_subdir_path = g_build_filename (old_dir_path, subdir_name, NULL);
+          new_subdir_path = g_build_filename (new_dir_path, subdir_name, NULL);
+          new_subdir = g_dir_open (new_subdir_path, 0, &error);
+          if (new_subdir)
             {
-              g_warning ("%s: failed rename: %d (WIF %i, WEX %i)",
-                        __FUNCTION__,
-                        exit_status,
-                        WIFEXITED (exit_status),
-                      WEXITSTATUS (exit_status));
-              g_debug ("%s: stdout: %s\n", __FUNCTION__, standard_out);
-              g_debug ("%s: stderr: %s\n", __FUNCTION__, standard_err);
+              g_debug ("%s: Skipping '%s', directory already exists",
+                         __FUNCTION__, new_subdir_path);
+              openvas_file_remove_recurse (old_subdir_path);
+              g_dir_close (new_subdir);
+            }
+          else if (error->code == G_FILE_ERROR_NOENT)
+            {
+              gchar **cmd;
+              gchar *standard_out = NULL;
+              gchar *standard_err = NULL;
+              gint exit_status;
+
+              cmd = (gchar **) g_malloc (4 * sizeof (gchar *));
+              cmd[0] = g_strdup ("mv");
+              cmd[1] = old_subdir_path;
+              cmd[2] = new_subdir_path;
+              cmd[3] = NULL;
+              g_debug ("%s: Spawning in .: %s %s %s\n",
+                      __FUNCTION__, cmd[0], cmd[1], cmd[2]);
+              if ((g_spawn_sync (".",
+                                cmd,
+                                NULL,                  /* Environment. */
+                                G_SPAWN_SEARCH_PATH,
+                                NULL,                  /* Setup function. */
+                                NULL,
+                                &standard_out,
+                                &standard_err,
+                                &exit_status,
+                                NULL)
+                  == FALSE)
+                  || (WIFEXITED (exit_status) == 0)
+                  || WEXITSTATUS (exit_status))
+                {
+                  g_warning ("%s: failed rename: %d (WIF %i, WEX %i)",
+                            __FUNCTION__,
+                            exit_status,
+                            WIFEXITED (exit_status),
+                          WEXITSTATUS (exit_status));
+                  g_debug ("%s: stdout: %s\n", __FUNCTION__, standard_out);
+                  g_debug ("%s: stderr: %s\n", __FUNCTION__, standard_err);
+                  move_failed = 1;
+                }
+              g_free (cmd[0]);
+              g_free (cmd);
+            }
+          else
+            {
+              g_warning ("%s: failed to check directory '%s' : %s",
+                         __FUNCTION__, new_subdir_path, error->message);
               move_failed = 1;
             }
-          g_free (cmd[0]);
-          g_free (cmd);
+          g_free (old_subdir_path);
+          g_free (new_subdir_path);
+          if (error)
+            g_error_free (error);
+          subdir_name = g_dir_read_name (old_dir);
         }
-      else
+
+      g_dir_close (old_dir);
+
+      if (move_failed)
         {
-          g_warning ("%s: failed to check directory '%s' : %s",
-                     __FUNCTION__, new_subdir_path, error->message);
-          move_failed = 1;
+          sql_rollback ();
+          return -1;
         }
-      g_free (old_subdir_path);
-      g_free (new_subdir_path);
-      if (error)
-        g_error_free (error);
-      subdir_name = g_dir_read_name (old_dir);
     }
   g_free (old_dir_path);
   g_free (new_dir_path);
-  g_dir_close (old_dir);
-
-  if (move_failed)
-    {
-      sql_rollback ();
-      return -1;
-    }
 
   /* Set the database version to 172. */
 
