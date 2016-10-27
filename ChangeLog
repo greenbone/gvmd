@@ -1,5 +1,22 @@
 2016-10-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Move report format user signature directory from the feed to
+	STATE/openvasmd/signatures/report_formats.  Hence increase database
+	version to 182.  Add database migration from version 181 to 182.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 182.
+
+	* src/manage_migrators.c (migrate_181_to_182_move)
+	(migrate_181_to_182): New functions.
+	(database_migrators): Add migrate_181_to_182.
+
+	* src/manage_sql.c (find_signature, create_report_format)
+	(delete_report_format): Use STATE dir instead of feed dir.
+
+	* doc/db.png: Update for version change.
+
+2016-10-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (find_signature): Add notes to make it more obvious
 	that the private directory is not checked if "uuid" is NULL, which is the
 	case for agents.  Add some debug logs.

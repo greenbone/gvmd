@@ -13721,6 +13721,160 @@ migrate_180_to_181 ()
   return 0;
 }
 
+/**
+ * @brief Move signatures.
+ *
+ * @param[in]  dest  Destination directory basename.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_181_to_182_move (const char *dest)
+{
+  gchar *new_dir_path, *old_dir_path;
+  GError *error;
+  GDir *old_dir;
+  const gchar *asc_name;
+  int move_failed;
+
+  new_dir_path = g_build_filename (OPENVAS_STATE_DIR,
+                                   "openvasmd",
+                                   "signatures",
+                                   dest,
+                                   NULL);
+
+  if (g_mkdir_with_parents (new_dir_path, 0755 /* "rwxr-xr-x" */))
+    {
+      g_warning ("%s: failed to create dir %s", __FUNCTION__, new_dir_path);
+      g_free (new_dir_path);
+      return -1;
+    }
+
+  old_dir_path = g_build_filename (OPENVAS_NVT_DIR,
+                                   "private",
+                                   dest,
+                                   NULL);
+
+  error = NULL;
+  old_dir = g_dir_open (old_dir_path, 0, &error);
+  if (old_dir == NULL)
+    {
+      g_warning ("%s: Failed to open directory '%s': %s",
+                 __FUNCTION__, old_dir_path, error->message);
+      g_error_free (error);
+      g_free (old_dir_path);
+      g_free (new_dir_path);
+      return -1;
+    }
+
+  asc_name = g_dir_read_name (old_dir);
+  move_failed = 0;
+  while (asc_name && move_failed == 0)
+    {
+      gchar *old_asc_path, *new_asc_path;
+
+      gchar **cmd;
+      gchar *standard_out = NULL;
+      gchar *standard_err = NULL;
+      gint exit_status;
+
+      error = NULL;
+      old_asc_path = g_build_filename (old_dir_path, asc_name, NULL);
+      new_asc_path = g_build_filename (new_dir_path, asc_name, NULL);
+
+      cmd = (gchar **) g_malloc (4 * sizeof (gchar *));
+      cmd[0] = g_strdup ("mv");
+      cmd[1] = old_asc_path;
+      cmd[2] = new_asc_path;
+      cmd[3] = NULL;
+      g_debug ("%s: Spawning in .: %s %s %s\n",
+              __FUNCTION__, cmd[0], cmd[1], cmd[2]);
+      if ((g_spawn_sync (".",
+                        cmd,
+                        NULL,                  /* Environment. */
+                        G_SPAWN_SEARCH_PATH,
+                        NULL,                  /* Setup function. */
+                        NULL,
+                        &standard_out,
+                        &standard_err,
+                        &exit_status,
+                        NULL)
+          == FALSE)
+          || (WIFEXITED (exit_status) == 0)
+          || WEXITSTATUS (exit_status))
+        {
+          g_warning ("%s: failed rename: %d (WIF %i, WEX %i)",
+                    __FUNCTION__,
+                    exit_status,
+                    WIFEXITED (exit_status),
+                  WEXITSTATUS (exit_status));
+          g_debug ("%s: stdout: %s\n", __FUNCTION__, standard_out);
+          g_debug ("%s: stderr: %s\n", __FUNCTION__, standard_err);
+          move_failed = 1;
+        }
+      g_free (cmd[0]);
+      g_free (cmd);
+      g_free (old_asc_path);
+      g_free (new_asc_path);
+      if (error)
+        g_error_free (error);
+      asc_name = g_dir_read_name (old_dir);
+    }
+  g_free (new_dir_path);
+  g_dir_close (old_dir);
+
+  if (move_failed)
+    {
+      g_free (old_dir_path);
+      return -1;
+    }
+
+  openvas_file_remove_recurse (old_dir_path);
+  g_free (old_dir_path);
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 181 to version 182.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_181_to_182 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 181. */
+
+  if (manage_db_version () != 181)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The directories used by users to provide report format signatures for
+   * their own report formats and agents moved from
+   * FEED/plugins/private/report_formats to
+   * STATE/var/lib/openvas/openvasmd/report_formats. */
+
+  if (migrate_181_to_182_move ("report_formats"))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Set the database version to 182. */
+
+  set_db_version (182);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -13916,6 +14070,7 @@ static migrator_t database_migrators[]
     {179, migrate_178_to_179},
     {180, migrate_179_to_180},
     {181, migrate_180_to_181},
+    {182, migrate_181_to_182},
     /* End marker. */
     {-1, NULL}};
 

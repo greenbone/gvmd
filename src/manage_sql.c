@@ -41127,9 +41127,9 @@ find_signature (const gchar *location, const gchar *installer_filename,
 
               g_error_free (error);
               error = NULL;
-              g_free (signature_filename);
-              signature_filename = g_build_filename (OPENVAS_NVT_DIR,
-                                                     "private",
+              signature_filename = g_build_filename (OPENVAS_STATE_DIR,
+                                                     "openvasmd",
+                                                     "signatures",
                                                      location,
                                                      signature_basename,
                                                      NULL);
@@ -47542,8 +47542,12 @@ create_report_format (const char *uuid, const char *name,
           /* Signature may be in private directory. */
 
           g_free (old);
-          old = g_build_filename (OPENVAS_NVT_DIR, "private", "report_formats",
-                                  base, NULL);
+          old = g_build_filename (OPENVAS_STATE_DIR,
+                                  "openvasmd",
+                                  "signatures",
+                                  "report_formats",
+                                  base,
+                                  NULL);
           if (lstat (old, &state))
             {
               /* No.  Signature may not exist in the feed yet. */
@@ -47577,8 +47581,8 @@ create_report_format (const char *uuid, const char *name,
         }
       g_free (base);
 
-      path = g_build_filename (OPENVAS_NVT_DIR, "private", "report_formats",
-                               NULL);
+      path = g_build_filename (OPENVAS_STATE_DIR, "openvasmd",
+                               "signatures", "report_formats", NULL);
 
       if (g_mkdir_with_parents (path, 0755 /* "rwxr-xr-x" */))
         {
@@ -48482,9 +48486,9 @@ delete_report_format (const char *report_format_id, int ultimate)
         }
       g_free (dir);
 
-      /* Signature links in the feed. */
-      dir = g_build_filename (OPENVAS_NVT_DIR, "private", "report_formats",
-                              base, NULL);
+      /* Links to the feed signatures. */
+      dir = g_build_filename (OPENVAS_STATE_DIR, "openvasmd", "signatures",
+                              "report_formats", base, NULL);
       g_free (base);
       unlink (dir);
       g_free (dir);
