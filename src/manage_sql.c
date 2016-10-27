@@ -41084,7 +41084,8 @@ find_agent_with_permission (const char* uuid, agent_t* agent,
  * @param[out]  signature_size      Size of installer signature.
  * @param[out]  uuid                Address for basename of linked signature
  *                                  when the signature was found in the private
- *                                  directory, if desired, else NULL.
+ *                                  directory, if desired, else NULL.  Private
+ *                                  directory is only checked if this is given.
  *
  * @return 0 success, -1 error.
  */
@@ -41092,7 +41093,9 @@ static int
 find_signature (const gchar *location, const gchar *installer_filename,
                 gchar **signature, gsize *signature_size, gchar **uuid)
 {
-  gchar *installer_basename = g_path_get_basename (installer_filename);
+  gchar *installer_basename;
+
+  installer_basename = g_path_get_basename (installer_filename);
 
   if (uuid)
     *uuid = NULL;
@@ -41112,7 +41115,6 @@ find_signature (const gchar *location, const gchar *installer_filename,
 
       g_file_get_contents (signature_filename, signature, signature_size,
                            &error);
-      g_free (signature_filename);
       if (error)
         {
           if (uuid && (error->code == G_FILE_ERROR_NOENT))
@@ -41120,8 +41122,12 @@ find_signature (const gchar *location, const gchar *installer_filename,
               char *real;
               gchar **split;
 
+              /* Note: this only happens if uuid is given, so it does not
+               * happen for agents. */
+
               g_error_free (error);
               error = NULL;
+              g_free (signature_filename);
               signature_filename = g_build_filename (OPENVAS_NVT_DIR,
                                                      "private",
                                                      location,
@@ -41153,6 +41159,13 @@ find_signature (const gchar *location, const gchar *installer_filename,
               free (real);
               return 0;
             }
+          else
+            {
+              g_debug ("%s: failed to read %s: %s\n", __FUNCTION__,
+                       signature_filename, error->message);
+              g_free (signature_filename);
+            }
+
           g_free (signature_basename);
           g_error_free (error);
           return -1;
@@ -41819,6 +41832,8 @@ verify_agent (const char *agent_id)
 
       signature_64 = agent_iterator_installer_signature_64 (&agents);
 
+      g_debug ("%s: finding signature\n", __FUNCTION__);
+
       find_signature ("agents",
                       agent_iterator_installer_filename (&agents),
                       &agent_signature,
@@ -41841,6 +41856,8 @@ verify_agent (const char *agent_id)
 
               /* Try the signature from the database. */
 
+              g_debug ("%s: trying database signature\n", __FUNCTION__);
+
               signature = (gchar*) g_base64_decode (signature_64,
                                                     &signature_length);
 
@@ -41862,6 +41879,8 @@ verify_agent (const char *agent_id)
                || (agent_trust == TRUST_UNKNOWN))
               && agent_signature)
             {
+              g_debug ("%s: trying feed signature\n", __FUNCTION__);
+
               if (verify_signature (installer, installer_size, agent_signature,
                                     strlen (agent_signature), &agent_trust))
                 {
