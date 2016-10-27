@@ -1,5 +1,11 @@
 2016-10-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c (main): Init LC_ALL to "C.UTF-8" instead of "".  This
+	ensures that decimals are formatted with "." for SQL, and still allows the
+	user to pass UTF-8 options to openvasmd.
+
+2016-10-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move report format user signature directory from the feed to
 	STATE/openvasmd/signatures/report_formats.  Hence increase database
 	version to 182.  Add database migration from version 181 to 182.

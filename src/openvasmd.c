@@ -1687,7 +1687,7 @@ main (int argc, char** argv)
 
   /* Set locale based on environment variables. */
 
-  setlocale (LC_ALL, "");
+  setlocale (LC_ALL, "C.UTF-8");
 
   /* Process options. */
 
