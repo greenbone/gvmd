@@ -2084,9 +2084,14 @@ static int
 slave_connect (openvas_connection_t *connection)
 {
   connection->tls = 1;
-  connection->socket = openvas_server_open (&connection->session,
-                                            connection->host_string,
-                                            connection->port);
+  connection->socket = openvas_server_open_verify
+                        (&connection->session,
+                         connection->host_string,
+                         connection->port,
+                         connection->ca_cert,
+                         connection->pub_key,
+                         connection->priv_key,
+                         1);
   if (connection->socket == -1)
     {
       g_warning ("%s: failed to open connection to %s on %i",
@@ -4729,6 +4734,8 @@ run_omp_task (task_t task, scanner_t scanner, int from, char **report_id)
       return -1;
     }
 
+  connection.ca_cert = scanner_ca_pub (scanner);
+
   scanner_id = scanner_uuid (scanner);
   name = scanner_name (scanner);
 
@@ -4740,6 +4747,7 @@ run_omp_task (task_t task, scanner_t scanner, int from, char **report_id)
   free (connection.host_string);
   free (connection.username);
   free (connection.password);
+  free (connection.ca_cert);
   free (scanner_id);
   free (name);
 

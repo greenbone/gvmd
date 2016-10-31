@@ -1,3 +1,9 @@
+2016-10-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (slave_connect): Connect with CA cert, forcing
+	verification.
+	(run_omp_task): Setup CA cert from scanner.
+
 2016-10-31  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/report_formats/Verinice_ISM/classification.xsl: Set correct tag
