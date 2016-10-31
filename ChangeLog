@@ -1,3 +1,8 @@
+2016-10-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_migrators.c (migrate_181_to_182_move): Succeed if
+	private/report_format does not exist, because that's fine.
+
 2016-10-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c (main): Init LC_ALL to "C.UTF-8" instead of "".  This

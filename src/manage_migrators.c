@@ -13759,6 +13759,9 @@ migrate_181_to_182_move (const char *dest)
   old_dir = g_dir_open (old_dir_path, 0, &error);
   if (old_dir == NULL)
     {
+      if (error->code == G_FILE_ERROR_NOENT)
+        /* No directory means no signatures to copy. */
+        goto free_exit;
       g_warning ("%s: Failed to open directory '%s': %s",
                  __FUNCTION__, old_dir_path, error->message);
       g_error_free (error);
@@ -13830,6 +13833,7 @@ migrate_181_to_182_move (const char *dest)
     }
 
   openvas_file_remove_recurse (old_dir_path);
+ free_exit:
   g_free (old_dir_path);
 
   return 0;
