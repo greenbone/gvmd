@@ -151,6 +151,9 @@
         <xsl:when test="contains(value, 'cpe:/o:microsoft:windows_xp')">
           <xsl:text>gsm_system_Windows_Client</xsl:text>
         </xsl:when>
+        <xsl:when test="contains(value, 'cpe:/o:microsoft:windows_embedded')">
+          <xsl:text>gsm_system_Windows_Embedded</xsl:text>
+        </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:microsoft:windows')">
           <xsl:text>gsm_system_windows_unknown</xsl:text>
         </xsl:when>
