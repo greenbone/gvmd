@@ -13879,6 +13879,67 @@ migrate_181_to_182 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 182 to version 183.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_182_to_183 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 182. */
+
+  if (manage_db_version () != 182)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Slave usernames and passwords were removed from table reports. */
+
+  if (sql_is_sqlite3 ())
+    {
+      sql ("ALTER TABLE reports RENAME TO reports_182;");
+
+      sql ("CREATE TABLE reports"
+           " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER,"
+           "  task INTEGER, date INTEGER, start_time, end_time, nbefile, comment,"
+           "  scan_run_status INTEGER, slave_progress, slave_task_uuid,"
+           "  slave_uuid, slave_name, slave_host, slave_port, source_iface,"
+           "  flags INTEGER);");
+
+      sql ("INSERT INTO reports"
+           " (id, uuid, owner, hidden, task, date, start_time, end_time,"
+           "  nbefile, comment, scan_run_status, slave_progress,"
+           "  slave_task_uuid, slave_uuid, slave_name, slave_host,"
+           "  slave_port, source_iface, flags)"
+           " SELECT id, uuid, owner, hidden, task, date, start_time, end_time,"
+           "        nbefile, comment, scan_run_status, slave_progress,"
+           "        slave_task_uuid, slave_uuid, slave_name, slave_host,"
+           "        slave_port, source_iface, flags"
+           " FROM reports_182;");
+
+      sql ("DROP TABLE reports_182;");
+    }
+  else
+    {
+      sql ("ALTER TABLE reports DROP COLUMN slave_username;");
+      sql ("ALTER TABLE reports DROP COLUMN slave_password;");
+    }
+
+  /* Set the database version to 183. */
+
+  set_db_version (183);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -14075,6 +14136,7 @@ static migrator_t database_migrators[]
     {180, migrate_179_to_180},
     {181, migrate_180_to_181},
     {182, migrate_181_to_182},
+    {183, migrate_182_to_183},
     /* End marker. */
     {-1, NULL}};
 

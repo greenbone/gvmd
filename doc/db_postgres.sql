@@ -523,8 +523,6 @@ CREATE TABLE reports
   slave_name text,
   slave_host text,
   slave_port integer,
-  slave_username text,
-  slave_password text,
   source_iface text,
   flags integer);
 

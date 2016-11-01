@@ -19875,34 +19875,6 @@ report_slave_port_int (report_t report)
 }
 
 /**
- * @brief Return the username of a report's slave.
- *
- * @param[in]  report  Report.
- *
- * @return Slave username.
- */
-char*
-report_slave_username (report_t report)
-{
-  return sql_string ("SELECT slave_username FROM reports WHERE id = %llu;",
-                     report);
-}
-
-/**
- * @brief Return the password of a report's slave.
- *
- * @param[in]  report  Report.
- *
- * @return Slave password.
- */
-char*
-report_slave_password (report_t report)
-{
-  return sql_string ("SELECT slave_password FROM reports WHERE id = %llu;",
-                     report);
-}
-
-/**
  * @brief Return the source interface of a report.
  *
  * @param[in]  report  Report.
@@ -19979,40 +19951,6 @@ report_set_slave_port (report_t report, int port)
   sql ("UPDATE reports SET slave_port = %i WHERE id = %llu;",
        port,
        report);
-}
-
-/**
- * @brief Set the username of the slave of a report.
- *
- * @param[in]  report  Report.
- * @param[in]  host    Host.
- */
-void
-report_set_slave_username (report_t report, const gchar *username)
-{
-  gchar *quoted_username;
-  quoted_username = sql_quote (username);
-  sql ("UPDATE reports SET slave_username = '%s' WHERE id = %llu;",
-       quoted_username,
-       report);
-  g_free (quoted_username);
-}
-
-/**
- * @brief Set the password of the slave of a report.
- *
- * @param[in]  report  Report.
- * @param[in]  host    Host.
- */
-void
-report_set_slave_password (report_t report, const gchar *password)
-{
-  gchar *quoted_password;
-  quoted_password = sql_quote (password);
-  sql ("UPDATE reports SET slave_password = '%s' WHERE id = %llu;",
-       quoted_password,
-       report);
-  g_free (quoted_password);
 }
 
 /**
@@ -23369,25 +23307,37 @@ delete_report_internal (report_t report)
   g_debug ("%s: slave_task_uuid: %s", __FUNCTION__, slave_task_uuid);
   if (slave_task_uuid)
     {
-      char *host, *username, *password;
-      int port;
+      scanner_t slave;
 
       /* A stopped report leaves the task on the slave.  Try delete the task. */
 
-      /* Try with values stored on report. */
-      host = report_slave_host (report);
-      port = report_slave_port_int (report);
-      username = report_slave_username (report);
-      password = report_slave_password (report);
-      if (host && username && password)
-        delete_slave_task (host, port, username, password, slave_task_uuid);
-      g_free (host);
-      g_free (username);
-      g_free (password);
+      slave = task_scanner (task);
+      if (slave)
+        {
+          char *username, *password;
 
-      /* TODO If that fails, try with the current values from the slave/scanner
-       *      stored on the report.  And if that fails, try with the values from
-       *      the current slave of the task. */
+          username = scanner_login (slave);
+          password = scanner_password (slave);
+          if (username && password)
+            {
+              char *host;
+              int port;
+
+              /* Try with values stored on report. */
+              host = report_slave_host (report);
+              port = report_slave_port_int (report);
+              if (host)
+                delete_slave_task (host, port, username, password,
+                                   slave_task_uuid);
+              g_free (host);
+
+              /* TODO If that fails, try with the current values from the
+               *      slave/scanner stored on the report.  And if that fails,
+               *      try with the values from the current slave of the task. */
+            }
+          free (username);
+          free (password);
+        }
     }
 
   /* Remove the report data. */

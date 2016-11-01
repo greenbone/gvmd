@@ -1,3 +1,32 @@
+2016-11-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	When deleting a slave report use the login info from the task's current
+	slave instead of login info that was stored at the time of the scan.
+	Hence increase database version to 183.  Add database migration from
+	version 182 to 183.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 183.
+
+	* src/manage_migrators.c (migrate_182_to_183): New function.
+	(database_migrators): Add migrate_182_to_183.
+
+	* src/manage.c (handle_slave_task, run_otp_task): Remove setting of
+	login info.
+
+	* src/manage_sql.c (report_slave_username, report_slave_password)
+	(report_set_slave_username, report_set_slave_password): Remove.  No longer
+	used.
+	(delete_report_internal): Use the login details from the current slave,
+	instead of from the reports table.
+
+	* src/manage_pg.c (create_tables): Remove login fields.
+
+	* src/manage_sqlite3.c (create_tables): Remove login fields.
+
+	* doc/db_postgres.sql (reports): Remove login fields.
+
+	* doc/db.png: Update from source.
+
 2016-10-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (slave_connect): Connect with CA cert, forcing

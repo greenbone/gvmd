@@ -3402,8 +3402,6 @@ handle_slave_task (task_t task, target_t target,
   report_set_slave_name (current_report, slave_name);
   report_set_slave_port (current_report, connection->port);
   report_set_slave_host (current_report, connection->host_string);
-  report_set_slave_username (current_report, connection->username);
-  report_set_slave_password (current_report, connection->password);
 
   uuid = openvas_uuid_make ();
   if (uuid == NULL)
@@ -4909,8 +4907,6 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
   report_set_slave_name (current_report, "");
   report_set_slave_port (current_report, 0);
   report_set_slave_host (current_report, "");
-  report_set_slave_username (current_report, "");
-  report_set_slave_password (current_report, "");
 
   /* Send the preferences header. */
 
