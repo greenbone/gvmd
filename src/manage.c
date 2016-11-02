@@ -2083,12 +2083,19 @@ slave_authenticate (gnutls_session_t *session, scanner_t slave)
 static int
 slave_connect (openvas_connection_t *connection)
 {
+  char *ca_cert;
+
   connection->tls = 1;
+  if (connection->ca_cert == NULL)
+    ca_cert = sql_string ("SELECT value FROM settings"
+                          " WHERE uuid = '" SETTING_UUID_DEFAULT_CA_CERT "';");
+  else
+    ca_cert = NULL;
   connection->socket = openvas_server_open_verify
                         (&connection->session,
                          connection->host_string,
                          connection->port,
-                         connection->ca_cert,
+                         ca_cert ? ca_cert : connection->ca_cert,
                          connection->pub_key,
                          connection->priv_key,
                          1);

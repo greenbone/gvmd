@@ -1,3 +1,7 @@
+2016-11-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (slave_connect): Use "Default CA Cert" if cert is NULL.
+
 2016-11-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	When deleting a slave report use the login info from the task's current
