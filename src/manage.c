@@ -1375,6 +1375,7 @@ nvt_selector_plugins (config_t config)
       if (strstr (plugins->str, oid_str) == NULL
           && strstr ("1.3.6.1.4.1.25623.1.0.90022;"
                      "1.3.6.1.4.1.25623.1.0.90023;"
+                     "1.3.6.1.4.1.25623.1.0.103591;"
                      "1.3.6.1.4.1.25623.1.0.105058;"
                      "1.3.6.1.4.1.25623.1.0.105076;",
                      oid_str)
@@ -1386,10 +1387,10 @@ nvt_selector_plugins (config_t config)
     }
   cleanup_iterator (&nvts);
   if (strlen (setting_nvts->str))
-    g_warning ("%s: NVTs not activated anymore for this config: %s."
-               " Please adjust the config if you think this is wrong.",
-               __FUNCTION__,
-               setting_nvts->str);
+    g_info ("%s: NVTs not explicitly activated anymore for this config: %s."
+            " Please adjust the config if you think this is wrong.",
+            __FUNCTION__,
+            setting_nvts->str);
   g_string_free (setting_nvts, TRUE);
 
   return g_string_free (plugins, FALSE);
