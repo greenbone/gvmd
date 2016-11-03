@@ -25074,33 +25074,37 @@ report_error_count (report_t report)
 /**
  * @brief Write report host detail to file stream.
  *
+ * On error close stream.
+ *
  * @param[in]   stream    Stream to write to.
- * @param[in]   details   Pointer to report host details iterator.
+ * @param[in]   details   Report host details iterator.
+ *
+ * @return 0 success, -1 error.
  */
-#define PRINT_REPORT_HOST_DETAIL(stream, details)                          \
-  do                                                                       \
-    {                                                                      \
-      PRINT(stream,                                                        \
-            "<detail>"                                                     \
-            "<name>%s</name>"                                              \
-            "<value>%s</value>"                                            \
-            "<source>"                                                     \
-            "<type>%s</type>"                                              \
-            "<name>%s</name>"                                              \
-            "<description>%s</description>"                                \
-            "</source>"                                                    \
-            "<extra>%s</extra>"                                            \
-            "</detail>",                                                   \
-            report_host_details_iterator_name (details),                   \
-            report_host_details_iterator_value (details),                  \
-            report_host_details_iterator_source_type (details),            \
-            report_host_details_iterator_source_name (details),            \
-            report_host_details_iterator_source_desc (details),            \
-            report_host_details_iterator_extra (details) ?                 \
-             report_host_details_iterator_extra (details)                  \
-             : "");                                                        \
-    }                                                                      \
-  while (0)
+int
+print_report_host_detail (FILE *stream, iterator_t *details)
+{
+  PRINT (stream,
+        "<detail>"
+        "<name>%s</name>"
+        "<value>%s</value>"
+        "<source>"
+        "<type>%s</type>"
+        "<name>%s</name>"
+        "<description>%s</description>"
+        "</source>"
+        "<extra>%s</extra>"
+        "</detail>",
+        report_host_details_iterator_name (details),
+        report_host_details_iterator_value (details),
+        report_host_details_iterator_source_type (details),
+        report_host_details_iterator_source_name (details),
+        report_host_details_iterator_source_desc (details),
+        report_host_details_iterator_extra (details) ?
+         report_host_details_iterator_extra (details)
+         : "");
+  return 0;
+}
 
 /**
  * @brief Print the XML for a report's host details to a file stream.
@@ -25117,7 +25121,8 @@ print_report_host_details_xml (report_host_t report_host, FILE *stream)
   init_report_host_details_iterator
    (&details, report_host);
   while (next (&details))
-    PRINT_REPORT_HOST_DETAIL (stream, &details);
+    if (print_report_host_detail (stream, &details))
+      return -1;
   cleanup_iterator (&details);
 
   return 0;
@@ -25366,7 +25371,8 @@ print_report_assets_xml (FILE *out, const char *host, int first_result, int
                   const char *value;
                   value = report_host_details_iterator_value (&details);
 
-                  PRINT_REPORT_HOST_DETAIL (out, &details);
+                  if (print_report_host_detail (out, &details))
+                    return -1;
 
                   if (manage_scap_loaded ()
                       && get->details
