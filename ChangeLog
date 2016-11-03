@@ -1,6 +1,7 @@
-2016-11-02  Matthew Mundell <matthew.mundell@greenbone.net>
+2016-11-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/manage.c (slave_connect): Use "Default CA Cert" if cert is NULL.
+	* src/manage.c (run_task_setup): Init args first, to avoid a "may be used
+	uninitialized" warning in the caller.
 
 2016-11-02  Matthew Mundell <matthew.mundell@greenbone.net>
 

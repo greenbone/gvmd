@@ -4426,42 +4426,43 @@ run_task_setup (task_t task, config_t *config, target_t *target,
   int ret;
 
   *config = task_config (task);
+  *target = task_target (task);
+  *port_list = target_port_list (*target);
+  *ssh_credential = target_ssh_credential (*target);
+  *smb_credential = target_smb_credential (*target);
+  *esxi_credential = target_esxi_credential (*target);
+  *snmp_credential = target_credential (*target, "snmp");
+
   ret = check_available ("config", *config, "get_configs");
   if (ret)
     return ret;
 
-  *target = task_target (task);
   ret = check_available ("target", *target, "get_targets");
   if (ret)
     return ret;
 
-  *port_list = target_port_list (*target);
   ret = check_available ("port_list", *port_list, "get_port_lists");
   if (ret)
     return ret;
 
-  *ssh_credential = target_ssh_credential (*target);
   if (*ssh_credential
       && ((ret = check_available ("credential",
                                   *ssh_credential,
                                   "get_credentials"))))
     return ret;
 
-  *smb_credential = target_smb_credential (*target);
   if (*smb_credential
       && ((ret = check_available ("credential",
                                   *smb_credential,
                                   "get_credentials"))))
     return ret;
 
-  *esxi_credential = target_esxi_credential (*target);
   if (*esxi_credential
       && ((ret = check_available ("credential",
                                   *esxi_credential,
                                   "get_credentials"))))
     return ret;
 
-  *snmp_credential = target_credential (*target, "snmp");
   if (*snmp_credential
       && ((ret = check_available ("credential",
                                   *snmp_credential,
