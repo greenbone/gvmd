@@ -1,5 +1,10 @@
 2016-11-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (run_task): Get permission from the "from" arg.
+	(start_task, resume_task): Drop permission arg.
+
+2016-11-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (PRINT_REPORT_HOST_DETAIL): Remove.  Now a function.
 	It's only used twice.
 	(print_report_host_detail): New function.  Was a macro.

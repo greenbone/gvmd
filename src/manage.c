@@ -5366,7 +5366,6 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
  * @param[out]  report_id   The report ID.
  * @param[in]   from        0 start from beginning, 1 continue from stopped, 2
  *                          continue if stopped else start from beginning.
- * @param[out]  permission  Permission required for this operation.
  *
  * @return Before forking: 1 task is active already, 3 failed to find task,
  *         4 resuming task not supported, 99 permission denied, -1 error,
@@ -5377,15 +5376,25 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
  *         2 success (child), -10 error (child).
  */
 static int
-run_task (const char *task_id, char **report_id, int from,
-          const char *permission)
+run_task (const char *task_id, char **report_id, int from)
 {
   task_t task;
   scanner_t scanner;
   int ret;
+  const char *permission;
 
   if (current_scanner_task)
     return -6;
+
+  if (from == 0)
+    permission = "start_task";
+  else if (from == 1)
+    permission = "resume_task";
+  else
+    {
+      assert (0);
+      permission = "internal_error";
+    }
 
   task = 0;
   if (find_task_with_permission (task_id, &task, permission))
@@ -5436,7 +5445,7 @@ start_task (const char *task_id, char **report_id)
   if (acl_user_may ("start_task") == 0)
     return 99;
 
-  return run_task (task_id, report_id, 0, "start_task");
+  return run_task (task_id, report_id, 0);
 }
 
 static int
@@ -5591,7 +5600,7 @@ resume_task (const char *task_id, char **report_id)
 
   run_status = task_run_status (task);
   if (run_status == TASK_STATUS_STOPPED)
-    return run_task (task_id, report_id, 1, "resume_task");
+    return run_task (task_id, report_id, 1);
   return 22;
 }
 
