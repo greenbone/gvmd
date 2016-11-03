@@ -28338,6 +28338,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               /* Forked task process: success. */
               forked = 1;
               current_error = 2;
+              g_debug ("   %s: move_task fork success\n", __FUNCTION__);
               g_set_error (error,
                             G_MARKUP_ERROR,
                             G_MARKUP_ERROR_INVALID_CONTENT,
@@ -28579,6 +28580,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     case 2:
                       /* Forked task process: success. */
                       current_error = 2;
+                      g_debug ("   %s: resume_task fork success\n", __FUNCTION__);
                       g_set_error (error,
                                    G_MARKUP_ERROR,
                                    G_MARKUP_ERROR_INVALID_CONTENT,
@@ -28612,6 +28614,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     case -10:
                       /* Forked task process: error. */
                       current_error = -10;
+                      g_debug ("   %s: resume_task fork error\n", __FUNCTION__);
                       g_set_error (error,
                                    G_MARKUP_ERROR,
                                    G_MARKUP_ERROR_INVALID_CONTENT,
@@ -28748,6 +28751,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   {
                     /* Process forked to run a task. */
                     current_error = 2;
+                    g_debug ("   %s: run_wizard fork success\n", __FUNCTION__);
                     g_set_error (error,
                                  G_MARKUP_ERROR,
                                  G_MARKUP_ERROR_INVALID_CONTENT,
@@ -28836,6 +28840,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   {
                     /* Process forked to run a task.  Task start failed. */
                     current_error = -10;
+                    g_debug ("   %s: run_wizard fork error\n", __FUNCTION__);
                     g_set_error (error,
                                  G_MARKUP_ERROR,
                                  G_MARKUP_ERROR_INVALID_CONTENT,
@@ -28916,6 +28921,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     case 2:
                       /* Forked task process: success. */
                       current_error = 2;
+                      g_debug ("   %s: start_task fork success\n", __FUNCTION__);
                       g_set_error (error,
                                    G_MARKUP_ERROR,
                                    G_MARKUP_ERROR_INVALID_CONTENT,
@@ -28988,6 +28994,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     case -10:
                       /* Forked task process: error. */
                       current_error = -10;
+                      g_debug ("   %s: start_task fork error\n", __FUNCTION__);
                       g_set_error (error,
                                    G_MARKUP_ERROR,
                                    G_MARKUP_ERROR_INVALID_CONTENT,
@@ -29092,12 +29099,14 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             case 2:
               /* Forked sync process: success. */
               current_error = 4;
+              g_debug ("   %s: sync_cert fork success\n", __FUNCTION__);
               g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
                            "Dummy error for current_error");
               break;
             case 11:
               /* Forked sync process: success busy. */
               current_error = 4;
+              g_debug ("   %s: sync_cert fork success busy\n", __FUNCTION__);
               g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
                            "Dummy error for current_error");
               break;
@@ -29109,6 +29118,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             case -10:
               /* Forked sync process: error. */
               current_error = -10;
+              g_debug ("   %s: sync_cert fork error\n", __FUNCTION__);
               g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
                            "Dummy error for current_error");
               break;
@@ -29141,18 +29151,21 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             case 2:
               /* Forked sync process: success. */
               current_error = 4;
+              g_debug ("   %s: sync_feed fork success\n", __FUNCTION__);
               g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
                            "Dummy error for current_error");
               break;
             case 11:
               /* Forked sync process: success busy. */
               current_error = 4;
+              g_debug ("   %s: sync_feed fork success busy\n", __FUNCTION__);
               g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
                            "Dummy error for current_error");
               break;
             case -10:
               /* Forked sync process: error. */
               current_error = -10;
+              g_debug ("   %s: sync_feed fork error\n", __FUNCTION__);
               g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
                            "Dummy error for current_error");
               break;
@@ -29193,12 +29206,14 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             case 2:
               /* Forked sync process: success. */
               current_error = 4;
+              g_debug ("   %s: sync_scap fork success\n", __FUNCTION__);
               g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
                            "Dummy error for current_error");
               break;
             case 11:
               /* Forked sync process: success busy. */
               current_error = 4;
+              g_debug ("   %s: sync_scap fork success busy\n", __FUNCTION__);
               g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
                            "Dummy error for current_error");
               break;
@@ -29210,6 +29225,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             case -10:
               /* Forked sync process: error. */
               current_error = -10;
+              g_debug ("   %s: sync_scap fork error\n", __FUNCTION__);
               g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
                            "Dummy error for current_error");
               break;

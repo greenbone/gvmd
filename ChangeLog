@@ -1,5 +1,10 @@
 2016-11-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Add trace messages for
+	fork cases.
+
+2016-11-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (print_report_prognostic_xml)
 	(print_report_xml_start): Neaten some indenting.
 
