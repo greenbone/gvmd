@@ -446,7 +446,6 @@ command_t omp_commands[]
     {"GET_NOTES", "Get all notes."},
     {"GET_NVTS", "Get one or all available NVTs."},
     {"GET_NVT_FAMILIES", "Get a list of all NVT families."},
-    {"GET_NVT_FEED_VERSION", "Get NVT feed version."},
     {"GET_OVERRIDES", "Get all overrides."},
     {"GET_PERMISSIONS", "Get all permissions."},
     {"GET_PORT_LISTS", "Get all port lists."},

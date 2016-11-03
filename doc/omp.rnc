@@ -68,7 +68,6 @@ command
     | get_notes
     | get_nvts
     | get_nvt_families
-    | get_nvt_feed_version
     | get_overrides
     | get_permissions
     | get_port_lists
@@ -183,7 +182,6 @@ response
     | get_notes_response
     | get_nvts_response
     | get_nvt_families_response
-    | get_nvt_feed_version_response
     | get_overrides_response
     | get_permissions_response
     | get_port_lists_response
@@ -3434,7 +3432,6 @@ commands
            | get_notes
            | get_nvts
            | get_nvt_families
-           | get_nvt_feed_version
            | get_overrides
            | get_permissions
            | get_port_lists
@@ -5661,15 +5658,6 @@ get_nvt_families
        attribute sort_order { sort_order }?
      }
 
-## Command get_nvt_feed_version
-##
-## Get NVT Feed version.
-
-get_nvt_feed_version
- = element get_nvt_feed_version
-     {
-     }
-
 ## Command get_overrides
 ##
 ## Get one or many overrides.
@@ -7735,7 +7723,6 @@ commands_response
            | get_notes_response
            | get_nvts_response
            | get_nvt_families_response
-           | get_nvt_feed_version_response
            | get_overrides_response
            | get_permissions_response
            | get_port_lists_response
@@ -12644,22 +12631,6 @@ get_nvt_families_response_families_family_max_nvt_count
  = element max_nvt_count
      {
        integer
-     }
-
-## Response to get_nvt_feed_version
-
-get_nvt_feed_version_response
- = element get_nvt_feed_version_response
-     {
-       attribute status { status }
-       & attribute status_text { text }
-       & get_nvt_feed_version_response_version
-     }
-
-# NVT Feed version.
-get_nvt_feed_version_response_version
- = element version    # type integer
-     {
      }
 
 ## Response to get_overrides

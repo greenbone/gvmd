@@ -5393,7 +5393,6 @@ typedef enum
   CLIENT_GET_NOTES,
   CLIENT_GET_NVTS,
   CLIENT_GET_NVT_FAMILIES,
-  CLIENT_GET_NVT_FEED_VERSION,
   CLIENT_GET_OVERRIDES,
   CLIENT_GET_PERMISSIONS,
   CLIENT_GET_PORT_LISTS,
@@ -7273,8 +7272,6 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
             set_client_state (CLIENT_GET_NOTES);
           }
-        else if (strcasecmp ("GET_NVT_FEED_VERSION", element_name) == 0)
-            set_client_state (CLIENT_GET_NVT_FEED_VERSION);
         else if (strcasecmp ("GET_NVTS", element_name) == 0)
           {
             const gchar* attribute;
@@ -15662,37 +15659,6 @@ handle_get_notes (omp_parser_t *omp_parser, GError **error)
 }
 
 /**
- * @brief Handle end of GET_NVT_FEED_VERSION element.
- *
- * @param[in]  omp_parser   OMP parser.
- * @param[in]  error        Error parameter.
- */
-static void
-handle_get_nvt_feed_version (omp_parser_t *omp_parser, GError **error)
-{
-  char *feed_version;
-
-  if (acl_user_may ("get_nvt_feed_version") == 0)
-    SEND_TO_CLIENT_OR_FAIL
-      (XML_ERROR_SYNTAX ("get_nvt_feed_version",
-                         "Permission denied"));
-  else if ((feed_version = nvts_feed_version ()))
-    {
-      SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_version_response"
-                              " status=\"" STATUS_OK "\""
-                              " status_text=\"" STATUS_OK_TEXT "\">"
-                              "<version>");
-      SEND_TO_CLIENT_OR_FAIL (feed_version);
-      free (feed_version);
-      SEND_TO_CLIENT_OR_FAIL ("</version>"
-                              "</get_nvt_feed_version_response>");
-    }
-  else
-    SEND_XML_SERVICE_DOWN ("get_nvt_feed_version");
-  set_client_state (CLIENT_AUTHENTIC);
-}
-
-/**
  * @brief Handle end of GET_NVTS element.
  *
  * @param[in]  omp_parser   OMP parser.
@@ -21006,10 +20972,6 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_GET_NOTES:
         assert (strcasecmp ("GET_NOTES", element_name) == 0);
         return handle_get_notes (omp_parser, error);
-
-      case CLIENT_GET_NVT_FEED_VERSION:
-        assert (strcasecmp ("GET_NVT_FEED_VERSION", element_name) == 0);
-        return handle_get_nvt_feed_version (omp_parser, error);
 
       case CLIENT_GET_NVTS:
         assert (strcasecmp ("GET_NVTS", element_name) == 0);

@@ -1,5 +1,19 @@
 2016-11-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Remove OMP GET_NVT_FEED_VERSION.
+
+	* src/omp.c (client_state_t, omp_xml_handle_start_element)
+	(omp_xml_handle_end_element): Remove GET_NVT_FEED_VERSION.
+	(handle_get_nvt_feed_version): Remove.
+
+	* src/manage_sql.c (omp_commands): Remove GET_NVT_FEED_VERSION.
+
+	* src/html/XML/OMP.xml (get_nvt_feed_version): Remove.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+2016-11-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Add trace messages for
 	fork cases.
 

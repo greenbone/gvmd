@@ -3184,7 +3184,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>get_notes</c>
           <c>get_nvts</c>
           <c>get_nvt_families</c>
-          <c>get_nvt_feed_version</c>
           <c>get_overrides</c>
           <c>get_permissions</c>
           <c>get_port_lists</c>
@@ -3310,7 +3309,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>get_notes</r>
             <r>get_nvts</r>
             <r>get_nvt_families</r>
-            <r>get_nvt_feed_version</r>
             <r>get_overrides</r>
             <r>get_permissions</r>
             <r>get_port_lists</r>
@@ -13754,54 +13752,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
-    <name>get_nvt_feed_version</name>
-    <summary>Get NVT Feed version</summary>
-    <description>
-      <p>
-        The client uses the get_nvt_feed_version command to request a
-        feed version for the complete NVT collection available through this
-        manager.
-      </p>
-      <p>
-        If the manager possesses such a collection, it will reply with a
-        response code indicating success, and the feed version files. If the
-        manager cannot access a list of available NVTs at present, it will reply
-        with the 503 response.
-      </p>
-    </description>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-        <e>version</e>
-      </pattern>
-      <ele>
-        <name>version</name>
-        <summary>NVT Feed version</summary>
-        <type>integer</type>
-      </ele>
-    </response>
-    <example>
-      <summary>Get the NVT feed version</summary>
-      <request>
-        <get_nvt_feed_version></get_nvt_feed_version>
-      </request>
-      <response>
-        <get_nvt_feed_version_response status="200" status_text="OK">
-          <version>201303060811</version>
-        </get_nvt_feed_version_response>
-      </response>
-    </example>
-  </command>
-  <command>
     <name>get_overrides</name>
     <summary>Get one or many overrides</summary>
     <description>
@@ -22070,7 +22020,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             GET_NOTES              Get all notes.
             GET_NVTS               Get one or all available NVTs.
             GET_NVT_FAMILIES       Get a list of all NVT families.
-            GET_NVT_FEED_VERSION   Get NVT feed version.
             GET_OVERRIDES          Get all overrides.
             GET_PERMISSIONS        Get all permissions.
             GET_PORT_LISTS         Get all port lists.
@@ -25156,6 +25105,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </response>
     </example>
   </command>
+  <change>
+    <command>GET_NVT_FEED_VERSION</command>
+    <summary>Command removed</summary>
+    <description>
+      <p>
+        The GET_NVT_FEED_VERSION command has been removed, as it has been
+        superseded by the GET_FEEDS command.
+      </p>
+    </description>
+    <version>7.0</version>
+  </change>
   <change>
     <command>GET_TASKS, MODIFY_TASK</command>
     <summary>Element SLAVE removed</summary>
