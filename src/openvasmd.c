@@ -1917,7 +1917,7 @@ main (int argc, char** argv)
     {
       int ret;
 
-      ret = manage_check_alerts (log_config, database, create_user, role);
+      ret = manage_check_alerts (log_config, database);
       log_config_free ();
       if (ret)
         return EXIT_FAILURE;

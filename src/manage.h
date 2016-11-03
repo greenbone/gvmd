@@ -484,7 +484,7 @@ typedef enum
 } alert_condition_t;
 
 int
-manage_check_alerts (GSList *, const gchar *, const gchar *, const gchar *);
+manage_check_alerts (GSList *, const gchar *);
 
 int
 create_alert (const char*, const char*, const char*, event_t, GPtrArray*,

@@ -6781,16 +6781,13 @@ DEF_ACCESS (task_role_iterator_uuid, 4);
  *
  * @param[in]  log_config  Log configuration.
  * @param[in]  database    Location of manage database.
- * @param[in]  name        Name of user.
- * @param[in]  role_name   Role of user.  Admin if NULL.
  *
  * @return 0 success, -1 error,
  *         -2 database is wrong version, -3 database needs to be initialised
  *         from server.
  */
 int
-manage_check_alerts (GSList *log_config, const gchar *database,
-                     const gchar *name, const gchar *role_name)
+manage_check_alerts (GSList *log_config, const gchar *database)
 {
   int ret, max_time;
 
