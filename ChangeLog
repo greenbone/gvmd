@@ -1,5 +1,10 @@
 2016-11-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (print_report_prognostic_xml)
+	(print_report_xml_start): Neaten some indenting.
+
+2016-11-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (run_task): Get permission from the "from" arg.
 	(start_task, resume_task): Drop permission arg.
 

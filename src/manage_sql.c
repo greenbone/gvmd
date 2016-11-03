@@ -26020,7 +26020,7 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
                  h_infos);
 
           if (print_report_host_details_xml
-              (buffer_host->report_host, out))
+               (buffer_host->report_host, out))
             {
               array_free (apps);
               return -1;
@@ -28284,7 +28284,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                      false_positives_count);
 
               if (print_report_host_details_xml
-                  (host_iterator_report_host (&hosts), out))
+                   (host_iterator_report_host (&hosts), out))
                 {
                   tz_revert (zone, tz);
                   if (host_summary_buffer)
@@ -28302,19 +28302,19 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                      "</host>");
 
               PRINT (out,
-                       "<host_start>"
-                       "<host>%s</host>%s"
-                       "</host_start>",
-                       host,
-                       host_iterator_start_time (&hosts));
+                     "<host_start>"
+                     "<host>%s</host>%s"
+                     "</host_start>",
+                     host,
+                     host_iterator_start_time (&hosts));
               PRINT (out,
-                       "<host_end>"
-                       "<host>%s</host>%s"
-                       "</host_end>",
-                       host,
-                       host_iterator_end_time (&hosts)
-                         ? host_iterator_end_time (&hosts)
-                         : "");
+                     "<host_end>"
+                     "<host>%s</host>%s"
+                     "</host_end>",
+                     host,
+                     host_iterator_end_time (&hosts)
+                       ? host_iterator_end_time (&hosts)
+                       : "");
             }
           cleanup_iterator (&hosts);
         }
@@ -28389,7 +28389,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                  false_positives_count);
 
           if (print_report_host_details_xml
-              (host_iterator_report_host (&hosts), out))
+               (host_iterator_report_host (&hosts), out))
             {
               tz_revert (zone, tz);
               if (host_summary_buffer)
@@ -28416,11 +28416,11 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       init_report_host_iterator (&hosts, report, NULL, 0);
       while (next (&hosts))
         PRINT (out,
-                 "<host_end><host>%s</host>%s</host_end>",
-                 host_iterator_host (&hosts),
-                 host_iterator_end_time (&hosts)
-                  ? host_iterator_end_time (&hosts)
-                  : "");
+               "<host_end><host>%s</host>%s</host_end>",
+               host_iterator_host (&hosts),
+               host_iterator_end_time (&hosts)
+                ? host_iterator_end_time (&hosts)
+                : "");
       cleanup_iterator (&hosts);
     }
 
