@@ -113,6 +113,7 @@
 #include "scanner.h"
 #include "ompd.h"
 #include "ovas-mngr-comm.h"
+#include "utils.h"
 
 #ifdef SVN_REV_AVAILABLE
 #include "svnrevision.h"

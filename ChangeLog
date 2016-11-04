@@ -1,9 +1,24 @@
+2016-11-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Move generic sleep functions out of sql.c.
+
+	* src/sql.c (openvas_usleep, openvas_sleep): Remove.  Now in utils.c.
+
+	* src/sql.h: Remove headers accordingly.
+
+	* src/utils.c, src/utils.h: New files.
+
+	* src/CMakeLists.txt: Add utils.c.
+
+	* src/manage.c, src/openvasmd.c, src/scanner.h, src/sql_sqlite3.c: Include
+	utils.h for sleep functions.
+
 2016-11-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage.c (slave_system_report): Add params start_time and
 	end_time.
 	(manage_system_report): Add params start_time and end_time.
-	
+
 	* src/manage.h (manage_system_report): Add new params.
 
 	* src/manage_sql.c (parse_iso_time): Make non-static and allow

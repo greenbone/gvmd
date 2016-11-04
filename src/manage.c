@@ -44,10 +44,11 @@
 
 #include "manage.h"
 #include "scanner.h"
-#include "sql.h"
+#include "sql.h"                // FIX shouldn't be sql in here
 #include "manage_acl.h"
 #include "manage_sql.h"
 #include "ovas-mngr-comm.h"
+#include "utils.h"
 
 #include <assert.h>
 #include <ctype.h>

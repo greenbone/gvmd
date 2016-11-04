@@ -57,12 +57,6 @@ typedef struct
 /* Helpers. */
 
 int
-openvas_usleep (unsigned int);
-
-int
-openvas_sleep (unsigned int);
-
-int
 sql_is_sqlite3 ();
 
 const char *

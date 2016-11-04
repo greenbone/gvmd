@@ -24,6 +24,7 @@
  */
 
 #include "sql.h"
+#include "utils.h"
 
 #include <assert.h>
 #include <sqlite3.h>

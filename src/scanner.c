@@ -27,6 +27,7 @@
 #include "ompd.h"
 #include "otp.h"
 #include "ovas-mngr-comm.h"
+#include "utils.h"
 
 #include <dirent.h>
 #include <assert.h>

@@ -52,7 +52,7 @@ add_library (manage STATIC
              manage_config_host_discovery.c manage_config_system_discovery.c
              manage_sql.c manage_migrators.c scanner.c
 			 ${BACKEND_FILES}
-             lsc_user.c lsc_crypt.c)
+             lsc_user.c lsc_crypt.c utils.c)
 
 if (BACKEND STREQUAL SQLITE3)
   target_link_libraries (manage m ${SQLITE3_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS} ${LIBOPENVAS_OMP_LDFLAGS} ${LIBOPENVAS_MISC_LDFLAGS} ${LIBOPENVAS_BASE_LDFLAGS} ${LIBOPENVAS_OSP_LDFLAGS} ${LINKER_HARDENING_FLAGS})
@@ -227,7 +227,7 @@ set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/openvasmd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/ovas-mngr-comm.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/lsc_user.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/lsc_crypt.c" "${CMAKE_CURRENT_SOURCE_DIR}/sql.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/sql_sqlite3.c")
+  "${CMAKE_CURRENT_SOURCE_DIR}/sql_sqlite3.c" "${CMAKE_CURRENT_SOURCE_DIR}/utils.c")
 add_custom_target (etags COMMENT "Building TAGS..."
                    COMMAND etags ${C_FILES})
 add_custom_target (ctags COMMENT "Building tags..."
