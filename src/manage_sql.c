@@ -61518,6 +61518,16 @@ init_ovaldi_file_iterator (iterator_t* iterator)
                   : "SELECT * FROM meta WHERE 1 = 0;");
 }
 
+/**
+ * @brief Get the name from an ovaldi file iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The name of the file, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (ovaldi_file_iterator_name, 0);
+
 
 /* Users. */
 

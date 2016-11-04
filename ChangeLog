@@ -1,5 +1,13 @@
 2016-11-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (ovaldi_file_iterator_name): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (get_ovaldi_files): Use accessor instead of sql function.
+
+2016-11-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (schedule_duration): Correct doc.
 
 2016-11-04  Matthew Mundell <matthew.mundell@greenbone.net>

@@ -3672,6 +3672,9 @@ all_info_iterator_severity (iterator_t*);
 void
 init_ovaldi_file_iterator (iterator_t*);
 
+const char*
+ovaldi_file_iterator_name (iterator_t*);
+
 
 /* Settings. */
 

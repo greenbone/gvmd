@@ -13136,7 +13136,7 @@ get_ovaldi_files ()
   while (next (&iterator))
     {
       char *tmp;
-      const char *fname = iterator_string (&iterator, 0);
+      const char *fname = ovaldi_file_iterator_name (&iterator);
 
       if (!fname)
         continue;
