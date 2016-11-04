@@ -2975,7 +2975,9 @@ typedef struct
   int brief;        ///< Boolean.  Whether respond in brief.
   char *name;       ///< Name of single report to get.
   char *duration;   ///< Duration into the past to report on.
+  char *end_time; ///< Time of the last data point to report on.
   char *slave_id;   ///< Slave that reports apply to, 0 for local Manager.
+  char *start_time; ///< Time of the first data point to report on.
 } get_system_reports_data_t;
 
 /**
@@ -2988,7 +2990,9 @@ get_system_reports_data_reset (get_system_reports_data_t *data)
 {
   free (data->name);
   free (data->duration);
+  free (data->end_time);
   free (data->slave_id);
+  free (data->start_time);
 
   memset (data, 0, sizeof (get_system_reports_data_t));
 }
@@ -7620,8 +7624,12 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &get_system_reports_data->name);
             append_attribute (attribute_names, attribute_values, "duration",
                               &get_system_reports_data->duration);
+            append_attribute (attribute_names, attribute_values, "end_time",
+                              &get_system_reports_data->end_time);
             append_attribute (attribute_names, attribute_values, "slave_id",
                               &get_system_reports_data->slave_id);
+            append_attribute (attribute_names, attribute_values, "start_time",
+                              &get_system_reports_data->start_time);
             if (find_attribute (attribute_names, attribute_values,
                                 "brief", &attribute))
               get_system_reports_data->brief = strcmp (attribute, "0");
@@ -18302,8 +18310,10 @@ handle_get_system_reports (omp_parser_t *omp_parser, GError **error)
                 report_type_iterator_name (&types),
                 report_type_iterator_title (&types));
             else if ((report_ret = manage_system_report
-                                    (report_type_iterator_name (&types),
+                                     (report_type_iterator_name (&types),
                                       get_system_reports_data->duration,
+                                      get_system_reports_data->start_time,
+                                      get_system_reports_data->end_time,
                                       get_system_reports_data->slave_id,
                                       &report))
                       && (report_ret != 3))
@@ -18318,16 +18328,25 @@ handle_get_system_reports (omp_parser_t *omp_parser, GError **error)
                  ("<system_report>"
                   "<name>%s</name>"
                   "<title>%s</title>"
-                  "<report format=\"%s\" duration=\"%s\">"
+                  "<report format=\"%s\""
+                  " start_time=\"%s\" end_time=\"%s\""
+                  " duration=\"%s\">"
                   "%s"
                   "</report>"
                   "</system_report>",
                   report_type_iterator_name (&types),
                   report_type_iterator_title (&types),
                   (ret == 3 ? "txt" : "png"),
+                  get_system_reports_data->start_time
+                    ? get_system_reports_data->start_time : "",
+                  get_system_reports_data->end_time
+                    ? get_system_reports_data->end_time : "",
                   get_system_reports_data->duration
                     ? get_system_reports_data->duration
-                    : "86400",
+                    : (get_system_reports_data->start_time
+                       && get_system_reports_data->end_time)
+                      ? ""
+                      : "86400",
                   report);
                 free (report);
               }

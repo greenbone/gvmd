@@ -18707,6 +18707,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>integer</type>
       </attrib>
       <attrib>
+        <name>start_time</name>
+        <summary>
+          The start of the time interval the report should include
+        </summary>
+        <type>iso_time</type>
+      </attrib>
+      <attrib>
+        <name>end_time</name>
+        <summary>
+          The end of the time interval the report should include
+        </summary>
+        <type>iso_time</type>
+      </attrib>
+      <attrib>
         <name>brief</name>
         <summary>Whether to include the actual reports</summary>
         <type>boolean</type>

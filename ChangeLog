@@ -1,3 +1,27 @@
+2016-11-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage.c (slave_system_report): Add params start_time and
+	end_time.
+	(manage_system_report): Add params start_time and end_time.
+	
+	* src/manage.h (manage_system_report): Add new params.
+
+	* src/manage_sql.c (parse_iso_time): Make non-static and allow
+	date-times without a timezone offset.
+
+	* src/manage_sql.h (parse_iso_time): New function prototype.
+
+	* src/omp.c (get_system_reports_data_t, get_system_reports_data_reset):
+	Add fields start_time and end_time.
+	(omp_xml_handle_start_element): In GET_SYSTEM_REPORTS case add
+	attributes start_time and end_time.
+	(handle_get_system_reports): Add start_time and end_time.
+
+	* src/schema_formats/XML/OMP.xml.in (get_system_reports): Add command
+	attributes start_time and end_time.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2016-11-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Remove OMP GET_NVT_FEED_VERSION.

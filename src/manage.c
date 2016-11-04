@@ -6148,17 +6148,20 @@ report_type_iterator_title (report_type_iterator_t* iterator)
 /**
  * @brief Get a system report from a slave.
  *
- * @param[in]   name      Name of report.
- * @param[in]   duration  Time range of report, in seconds.
- * @param[in]   slave_id  ID of OMP scanner slave to get report from.
+ * @param[in]  name       Name of report.
+ * @param[in]  duration   Time range of report, in seconds.
+ * @param[in]  start_time Time of first data point in report.
+ * @param[in]  end_time   Time of last data point in report.
+ * @param[in]  slave_id   ID of OMP scanner slave to get report from.
  *                        0 for local.
- * @param[out]  report    On success, report in base64 if such a report exists
+ * @param[out] report     On success, report in base64 if such a report exists
  *                        else NULL.  Arbitrary on error.
  *
  * @return 0 if successful, 2 failed to find slave, -1 otherwise.
  */
 static int
 slave_system_report (const char *name, const char *duration,
+                     const char *start_time, const char *end_time,
                      const char *slave_id, char **report)
 {
   scanner_t slave = 0;
@@ -6202,6 +6205,8 @@ slave_system_report (const char *name, const char *duration,
   opts = omp_get_system_reports_opts_defaults;
   opts.name = name;
   opts.duration = duration;
+  opts.start_time = start_time;
+  opts.end_time = end_time;
   opts.brief = 0;
 
   if (omp_get_system_reports_ext (&session, opts, &get))
@@ -6237,13 +6242,17 @@ slave_system_report (const char *name, const char *duration,
 "produce more powerful reports.  Please contact your system administrator\n" \
 "for more information.\n\n"
 
+#define DEFAULT_DURATION 86400L
+
 /**
  * @brief Get a system report.
  *
- * @param[in]   name      Name of report.
- * @param[in]   duration  Time range of report, in seconds.
- * @param[in]   slave_id  ID of slave to get report from.  0 for local.
- * @param[out]  report    On success, report in base64 if such a report exists
+ * @param[in]  name       Name of report.
+ * @param[in]  duration   Time range of report, in seconds.
+ * @param[in]  start_time Time of first data point in report.
+ * @param[in]  end_time   Time of last data point in report.
+ * @param[in]  slave_id   ID of slave to get report from.  0 for local.
+ * @param[out] report     On success, report in base64 if such a report exists
  *                        else NULL.  Arbitrary on error.
  *
  * @return 0 if successful (including failure to find report), -1 on error,
@@ -6251,6 +6260,7 @@ slave_system_report (const char *name, const char *duration,
  */
 int
 manage_system_report (const char *name, const char *duration,
+                      const char *start_time, const char *end_time,
                       const char *slave_id, char **report)
 {
   gchar *astdout = NULL;
@@ -6258,17 +6268,96 @@ manage_system_report (const char *name, const char *duration,
   GError *err = NULL;
   gint exit_status;
   gchar *command;
+  time_t start_time_num, end_time_num, duration_num;
+  start_time_num = 0;
+  end_time_num = 0;
+  duration_num = 0;
 
   assert (name);
 
-  if (duration == NULL)
-    duration = "86400";
+  if (duration && strcmp (duration, ""))
+    {
+      duration_num = atol (duration);
+      if (duration_num == 0)
+        return manage_system_report ("blank", NULL, NULL, NULL,
+                                     NULL, report);
+    }
+  if (start_time && strcmp (start_time, ""))
+    {
+      start_time_num = parse_iso_time (start_time);
+      if (start_time_num == 0)
+        return manage_system_report ("blank", NULL, NULL, NULL,
+                                     NULL, report);
+    }
+  if (end_time && strcmp (end_time, ""))
+    {
+      end_time_num = parse_iso_time (end_time);
+      if (end_time_num == 0)
+        return manage_system_report ("blank", NULL, NULL, NULL,
+                                     NULL, report);
+    }
 
   if (slave_id && strcmp (slave_id, "0"))
-    return slave_system_report (name, duration, slave_id, report);
+    return slave_system_report (name, duration, start_time, end_time,
+                                slave_id, report);
 
   /* For simplicity, it's up to the command to do the base64 encoding. */
-  command = g_strdup_printf ("openvasmr %s %s", duration, name);
+  if (start_time && strcmp (start_time, ""))
+    {
+      if (end_time && strcmp (end_time, ""))
+        {
+          command = g_strdup_printf ("openvasmr %ld %ld %s",
+                                     start_time_num,
+                                     end_time_num,
+                                     name);
+        }
+      else if (duration && strcmp (duration, ""))
+        {
+          command = g_strdup_printf ("openvasmr %ld %ld %s",
+                                     start_time_num,
+                                     start_time_num + duration_num,
+                                     name);
+        }
+      else
+        {
+          command = g_strdup_printf ("openvasmr %ld %ld %s",
+                                     start_time_num,
+                                     start_time_num + DEFAULT_DURATION,
+                                     name);
+        }
+    }
+  else if (end_time && strcmp (end_time, ""))
+    {
+      if (duration && strcmp (duration, ""))
+        {
+          command = g_strdup_printf ("openvasmr %ld %ld %s",
+                                     end_time_num - duration_num,
+                                     end_time_num,
+                                     name);
+        }
+      else
+        {
+          command = g_strdup_printf ("openvasmr %ld %ld %s",
+                                     end_time_num - DEFAULT_DURATION,
+                                     end_time_num,
+                                     name);
+        }
+    }
+  else
+    {
+      if (duration && strcmp (duration, ""))
+        {
+          command = g_strdup_printf ("openvasmr %ld %s",
+                                     duration_num,
+                                     name);
+        }
+      else
+        {
+          command = g_strdup_printf ("openvasmr %ld %s",
+                                     DEFAULT_DURATION,
+                                     name);
+        }
+    }
 
   g_debug ("   command: %s", command);
 
@@ -6340,7 +6429,8 @@ manage_system_report (const char *name, const char *duration,
       g_free (astdout);
       if (strcmp (name, "blank") == 0)
         return -1;
-      return manage_system_report ("blank", duration, NULL, report);
+      return manage_system_report ("blank", NULL, NULL, NULL,
+                                   NULL, report);
     }
   else
     *report = astdout;

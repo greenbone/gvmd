@@ -838,39 +838,73 @@ parse_ctime (const char *text_time)
  *
  * @return Time since epoch.  0 on error.
  */
-static int
+int
 parse_iso_time (const char *text_time)
 {
   int epoch_time;
   struct tm tm;
+  memset (&tm, 0, sizeof (struct tm));
+  tm.tm_isdst = -1;
 
   if (strptime ((char*) text_time, "%FT%T%z", &tm) == NULL)
     {
       gchar *tz;
 
       if (strptime ((char*) text_time, "%FT%TZ", &tm) == NULL)
-        return parse_ctime (text_time);
-
-      /* Store current TZ. */
-      tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
-
-      if (setenv ("TZ", "UTC", 1) == -1)
         {
-          g_warning ("%s: Failed to switch to UTC", __FUNCTION__);
-          if (tz != NULL)
-            setenv ("TZ", tz, 1);
-          g_free (tz);
-          return 0;
+          /* Try time without timezone suffix, applying timezone of user */
+
+          if (strptime ((char*) text_time, "%FT%T", &tm) == NULL)
+            return parse_ctime (text_time);
+
+          /* Store current TZ. */
+          tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
+
+          if (setenv ("TZ", current_credentials.timezone, 1) == -1)
+            {
+              g_warning ("%s: Failed to switch to timezone %s",
+                         __FUNCTION__, current_credentials.timezone);
+              if (tz != NULL)
+                setenv ("TZ", tz, 1);
+              g_free (tz);
+              return 0;
+            }
+
+          if (strptime ((char*) text_time, "%FT%T", &tm) == NULL)
+            {
+              assert (0);
+              g_warning ("%s: Failed to parse time", __FUNCTION__);
+              if (tz != NULL)
+                setenv ("TZ", tz, 1);
+              g_free (tz);
+              return 0;
+            }
         }
-
-      if (strptime ((char*) text_time, "%FT%TZ", &tm) == NULL)
+      else
         {
-          assert (0);
-          g_warning ("%s: Failed to parse time", __FUNCTION__);
-          if (tz != NULL)
-            setenv ("TZ", tz, 1);
-          g_free (tz);
-          return 0;
+          /* Time has "Z" suffix for UTC */
+
+          /* Store current TZ. */
+          tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
+
+          if (setenv ("TZ", "UTC", 1) == -1)
+            {
+              g_warning ("%s: Failed to switch to UTC", __FUNCTION__);
+              if (tz != NULL)
+                setenv ("TZ", tz, 1);
+              g_free (tz);
+              return 0;
+            }
+
+          if (strptime ((char*) text_time, "%FT%TZ", &tm) == NULL)
+            {
+              assert (0);
+              g_warning ("%s: Failed to parse time", __FUNCTION__);
+              if (tz != NULL)
+                setenv ("TZ", tz, 1);
+              g_free (tz);
+              return 0;
+            }
         }
 
       epoch_time = mktime (&tm);

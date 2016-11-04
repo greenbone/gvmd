@@ -28462,6 +28462,16 @@ get_settings_response_setting_count_page
           The number of seconds into the past that the report should include.
           </li>
 <li>
+          @<b>start_time</b>
+          (<a href="#type_iso_time">iso_time</a>)
+          The start of the time interval the report should include.
+          </li>
+<li>
+          @<b>end_time</b>
+          (<a href="#type_iso_time">iso_time</a>)
+          The end of the time interval the report should include.
+          </li>
+<li>
           @<b>brief</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to include the actual reports.
@@ -28521,6 +28531,8 @@ get_settings_response_setting_count_page
      {
        attribute name { text }?
        &amp; attribute duration { integer }?
+       &amp; attribute start_time { iso_time }?
+       &amp; attribute end_time { iso_time }?
        &amp; attribute brief { boolean }?
        &amp; attribute slave_id { uuid }?
      }

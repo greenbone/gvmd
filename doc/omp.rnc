@@ -5905,6 +5905,10 @@ get_system_reports
        attribute name { text }?
        & # The number of seconds into the past that the report should include.
        attribute duration { integer }?
+       & # The start of the time interval the report should include.
+       attribute start_time { iso_time }?
+       & # The end of the time interval the report should include.
+       attribute end_time { iso_time }?
        & # Whether to include the actual reports.
        attribute brief { boolean }?
        & # OMP scanner from which to get report.

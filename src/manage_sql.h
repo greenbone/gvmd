@@ -386,6 +386,8 @@ void check_generate_scripts ();
 
 void auto_delete_reports ();
 
+int parse_iso_time (const char *);
+
 int days_from_now (time_t *epoch_time);
 
 void set_report_scheduled (report_t);
