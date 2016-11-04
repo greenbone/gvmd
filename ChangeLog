@@ -1,5 +1,9 @@
 2016-11-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (schedule_duration): Correct doc.
+
+2016-11-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Remove direct SQL that has crept out of manage_sql.c.
 
 	* src/manage_pg.c (manage_session_set_timezone): New function.

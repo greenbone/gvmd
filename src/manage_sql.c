@@ -46458,11 +46458,11 @@ schedule_period (schedule_t schedule)
 }
 
 /**
- * @brief Return the period of a schedule.
+ * @brief Return the duration of a schedule.
  *
  * @param[in]  schedule  Schedule.
  *
- * @return Period in seconds.
+ * @return Duration in seconds.
  */
 int
 schedule_duration (schedule_t schedule)
