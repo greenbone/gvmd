@@ -1,5 +1,24 @@
 2016-11-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Remove direct SQL that has crept out of manage_sql.c.
+
+	* src/manage_pg.c (manage_session_set_timezone): New function.
+
+	* src/manage_sqlite3.c (manage_session_set_timezone): New function.
+
+	* src/manage_sql.c (report_host_noticeable, schedule_info)
+	(init_ovaldi_file_iterator): New functions.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (get_ovaldi_files, handle_get_tasks)
+	(omp_xml_handle_end_element): Replace direct SQL with calls into "manage"
+	layer.
+
+	* src/otp.c (process_otp_scanner_input): Replace direct SQL.
+
+2016-11-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move generic sleep functions out of sql.c.
 
 	* src/sql.c (openvas_usleep, openvas_sleep): Remove.  Now in utils.c.

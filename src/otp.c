@@ -1494,19 +1494,10 @@ process_otp_scanner_input (void (*progress) ())
                 }
               case SCANNER_TIME_HOST_END_TIME:
                 {
-                  report_host_t report_host = 0;
                   assert (current_host);
                   assert (current_report);
 
-                  sql_int64 (&report_host,
-                             "SELECT id FROM report_hosts"
-                             " WHERE report = %llu"
-                             "   AND host = '%s'",
-                             current_report,
-                             current_host);
-                  if (report_host
-                      && report_host_dead (report_host) == 0
-                      && report_host_result_count (report_host) > 0)
+                  if (report_host_noticeable (current_report, current_host))
                     {
                       char *uuid;
                       uuid = report_uuid (current_report);

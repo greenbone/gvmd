@@ -100,6 +100,17 @@ manage_session_init (const char *uuid)
     sql ("INSERT INTO current_credentials (uuid) VALUES ('%s');", uuid);
 }
 
+/**
+ * @brief Setup session timezone.
+ *
+ * @param[in]  timezone  Timezone.
+ */
+void
+manage_session_set_timezone (const char *timezone)
+{
+  return;
+}
+
 
 /* Helpers. */
 

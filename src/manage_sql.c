@@ -29468,6 +29468,30 @@ report_host_ip (const char *host)
   return ret;
 }
 
+/**
+ * @brief Check if a report host is alive and has at least one result.
+ *
+ * @param[in]  report  Report.
+ * @param[in]  host    Host name or IP.
+ *
+ * @return 0 if dead, else alive.
+ */
+int
+report_host_noticeable (report_t report, const gchar *host)
+{
+  report_host_t report_host;
+
+  sql_int64 (&report_host,
+             "SELECT id FROM report_hosts"
+             " WHERE report = %llu AND host = '%s';",
+             report,
+             host);
+
+  return report_host
+         && report_host_dead (report_host) == 0
+         && report_host_result_count (report_host) > 0;
+}
+
 
 /* More task stuff. */
 
@@ -46448,6 +46472,42 @@ schedule_duration (schedule_t schedule)
 }
 
 /**
+ * @brief Return info about a schedule.
+ *
+ * @param[in]  schedule  Schedule.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+schedule_info (schedule_t schedule, time_t *first_time, time_t *next_time,
+               int *period, int *period_months, int *duration)
+{
+  iterator_t schedules;
+
+  init_iterator (&schedules,
+                 "SELECT"
+                 " first_time,"
+                 " next_time (first_time, period,"
+                 "            period_months),"
+                 " period, period_months, duration"
+                 " FROM schedules"
+                 " WHERE id = %llu",
+                 schedule);
+  if (next (&schedules))
+    {
+      *first_time = iterator_int (&schedules, 0);
+      *next_time = iterator_int (&schedules, 1);
+      *period = iterator_int (&schedules, 2);
+      *period_months = iterator_int (&schedules, 3);
+      *duration = iterator_int (&schedules, 4);
+      cleanup_iterator (&schedules);
+      return 0;
+    }
+  cleanup_iterator (&schedules);
+  return -1;
+}
+
+/**
  * @brief Filter columns for schedule iterator.
  */
 #define SCHEDULE_ITERATOR_FILTER_COLUMNS                                      \
@@ -61442,6 +61502,21 @@ DEF_ACCESS (all_info_iterator_extra, GET_ITERATOR_COLUMN_COUNT + 1);
  *         Freed by cleanup_iterator.
  */
 DEF_ACCESS (all_info_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 2);
+
+/**
+ * @brief Initialise an ovaldi file iterator.
+ *
+ * @param[in]  iterator        Iterator.
+ */
+void
+init_ovaldi_file_iterator (iterator_t* iterator)
+{
+  init_iterator (iterator,
+                 sql_is_sqlite3 ()
+                  ? "SELECT DISTINCT xml_file FROM ovaldefs;"
+                  // FIX Until we have SCAP in Postgres.
+                  : "SELECT * FROM meta WHERE 1 = 0;");
+}
 
 
 /* Users. */

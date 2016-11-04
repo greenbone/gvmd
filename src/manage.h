@@ -171,6 +171,9 @@ manage_encrypt_all_credentials (GSList *, const gchar *);
 int
 manage_decrypt_all_credentials (GSList *, const gchar *);
 
+void
+manage_session_set_timezone (const char *);
+
 
 /* Task structures. */
 
@@ -2753,6 +2756,9 @@ int
 schedule_period (schedule_t);
 
 int
+schedule_info (schedule_t, time_t *, time_t *, int *, int *, int *);
+
+int
 init_schedule_iterator (iterator_t*, const get_data_t *);
 
 time_t
@@ -3663,6 +3669,9 @@ all_info_iterator_extra (iterator_t*);
 const char*
 all_info_iterator_severity (iterator_t*);
 
+void
+init_ovaldi_file_iterator (iterator_t*);
+
 
 /* Settings. */
 
@@ -3736,6 +3745,8 @@ report_host_dead (report_host_t);
 int
 report_host_result_count (report_host_t);
 
+int
+report_host_noticeable (report_t, const gchar *);
 
 void
 report_host_set_end_time (report_host_t, time_t);

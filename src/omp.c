@@ -13132,11 +13132,7 @@ get_ovaldi_files ()
   iterator_t iterator;
   char *result = NULL;
 
-  init_iterator (&iterator,
-                 sql_is_sqlite3 ()
-                  ? "SELECT DISTINCT xml_file FROM ovaldefs;"
-                  // FIX Until we have SCAP in Postgres.
-                  : "SELECT * FROM meta WHERE 1 = 0;");
+  init_ovaldi_file_iterator (&iterator);
   while (next (&iterator))
     {
       char *tmp;
@@ -19002,57 +18998,38 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
 
           if (schedule_available && schedule)
             {
-              iterator_t schedule_iterator;
               time_t first_time, next_time;
               int period, period_months, duration;
 
-              init_iterator (&schedule_iterator,
-                             "SELECT"
-                             " first_time,"
-                             " next_time (first_time, period,"
-                             "            period_months),"
-                             " period, period_months, duration"
-                             " FROM schedules"
-                             " WHERE id = %llu",
-                             schedule);
-
-              next (&schedule_iterator);
-
-              first_time = iterator_int (&schedule_iterator, 0);
-              next_time = iterator_int (&schedule_iterator, 1);
-              period = iterator_int (&schedule_iterator, 2);
-              period_months = iterator_int (&schedule_iterator, 3);
-              duration = iterator_int (&schedule_iterator, 4);
-
-              SENDF_TO_CLIENT_OR_FAIL ("<schedule id=\"%s\">"
-                                       "<name>%s</name>"
-                                       "<next_time>%s</next_time>"
-                                       "<trash>%d</trash>"
-                                       "<first_time>%s</first_time>"
-                                       "<period>%d</period>"
-                                       "<period_months>"
-                                       "%d"
-                                       "</period_months>"
-                                       "<duration>%d</duration>"
-                                       "</schedule>"
-                                       "<schedule_periods>"
-                                       "%d"
-                                       "</schedule_periods>",
-                                       task_schedule_uuid,
-                                       task_schedule_name,
-                                       next_time
-                                        ? iso_time (&next_time)
-                                        : "over",
-                                       schedule_in_trash,
-                                       first_time
-                                        ? iso_time (&first_time)
-                                        : "",
-                                       period,
-                                       period_months,
-                                       duration,
-                                       task_schedule_periods (index));
-
-              cleanup_iterator (&schedule_iterator);
+              if (schedule_info (schedule, &first_time, &next_time, &period,
+                                 &period_months, &duration))
+                SENDF_TO_CLIENT_OR_FAIL ("<schedule id=\"%s\">"
+                                         "<name>%s</name>"
+                                         "<next_time>%s</next_time>"
+                                         "<trash>%d</trash>"
+                                         "<first_time>%s</first_time>"
+                                         "<period>%d</period>"
+                                         "<period_months>"
+                                         "%d"
+                                         "</period_months>"
+                                         "<duration>%d</duration>"
+                                         "</schedule>"
+                                         "<schedule_periods>"
+                                         "%d"
+                                         "</schedule_periods>",
+                                         task_schedule_uuid,
+                                         task_schedule_name,
+                                         next_time
+                                          ? iso_time (&next_time)
+                                          : "over",
+                                         schedule_in_trash,
+                                         first_time
+                                          ? iso_time (&first_time)
+                                          : "",
+                                         period,
+                                         period_months,
+                                         duration,
+                                         task_schedule_periods (index));
             }
           else
             {
@@ -20480,9 +20457,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     }
                   tzset ();
 
-                  // Set timezone for Postgres session
-                  if (sql_is_sqlite3() == 0)
-                    sql ("SET SESSION TIME ZONE '%s';", timezone);
+                  manage_session_set_timezone (timezone);
 
                   severity = setting_severity ();
                   pw_warning = openvas_validate_password
