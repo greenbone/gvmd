@@ -18222,6 +18222,51 @@ auto_delete_reports ()
   sql_commit ();
 }
 
+
+/**
+ * @brief Get definitions file from a task's config.
+ *
+ * @param[in]  uuid  UUID of result.
+ *
+ * @return Definitions file.
+ */
+char *
+task_definitions_file (task_t task)
+{
+  assert (task);
+  return sql_string ("SELECT value FROM config_preferences"
+                     " WHERE name = 'definitions_file' AND config = %llu;",
+                     task_config (task));
+}
+
+/**
+ * @brief Set a task's schedule so that it runs again next scheduling round.
+ *
+ * @param  task_id  UUID of task.
+ */
+void
+reschedule_task (const gchar *task_id)
+{
+  task_t task;
+  task = 0;
+  switch (sql_int64 (&task,
+                     "SELECT id FROM tasks WHERE uuid = '%s'"
+                     " AND hidden != 2;",
+                     task_id))
+    {
+      case 0:
+        g_warning ("%s: rescheduling task '%s'\n", __FUNCTION__, task_id);
+        set_task_schedule_next_time (task, time (NULL) - 1);
+        break;
+      case 1:        /* Too few rows in result of query. */
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        break;
+    }
+}
+
 
 /* Results. */
 
@@ -29490,6 +29535,137 @@ report_host_noticeable (report_t report, const gchar *host)
   return report_host
          && report_host_dead (report_host) == 0
          && report_host_result_count (report_host) > 0;
+}
+
+/**
+ * @brief Parse an OSP report.
+ *
+ * @param[in]  task        Task.
+ * @param[in]  report      Report.
+ * @param[in]  report_xml  Report XML.
+ */
+void
+parse_osp_report (task_t task, report_t report, const char *report_xml)
+{
+  entity_t entity, child;
+  entities_t results;
+  const char *str;
+  char *defs_file = NULL;
+  time_t start_time, end_time;
+
+  assert (task);
+  assert (report);
+  assert (report_xml);
+
+  if (parse_entity (report_xml, &entity))
+    {
+      g_warning ("Couldn't parse %s OSP scan report\n", report_xml);
+      return;
+    }
+
+  sql_begin_immediate ();
+  /* Set the report's start and end times. */
+  str = entity_attribute (entity, "start_time");
+  if (!str)
+    {
+      g_warning ("Missing start_time in OSP report %s", report_xml);
+      goto end_parse_osp_report;
+    }
+  start_time = atoi (str);
+  set_scan_start_time_epoch (report, start_time);
+  str = entity_attribute (entity, "end_time");
+  if (!str)
+    {
+      g_warning ("Missing end_time in OSP report %s", report_xml);
+      goto end_parse_osp_report;
+    }
+  end_time = atoi (str);
+  set_scan_end_time_epoch (report, end_time);
+
+  /* Insert results. */
+  child = entity_child (entity, "results");
+  if (!child)
+    {
+      g_warning ("Missing results element in OSP report %s", report_xml);
+      goto end_parse_osp_report;
+    }
+  results = child->entities;
+  defs_file = task_definitions_file (task);
+  while (results)
+    {
+      result_t result;
+      const char *type, *name, *severity, *host, *test_id, *port, *qod;
+      char *desc = NULL, *nvt_id = NULL, *severity_str = NULL;
+      entity_t r_entity = results->data;
+      int qod_int;
+
+      if (strcmp (entity_name (r_entity), "result"))
+        {
+          g_warning ("Erroneous entry in OSP results %s",
+                     entity_name (r_entity));
+          results = next_entities (results);
+          continue;
+        }
+      type = entity_attribute (r_entity, "type");
+      name = entity_attribute (r_entity, "name");
+      severity = entity_attribute (r_entity, "severity");
+      test_id = entity_attribute (r_entity, "test_id");
+      host = entity_attribute (r_entity, "host");
+      port = entity_attribute (r_entity, "port") ?: "";
+      qod = entity_attribute (r_entity, "qod") ?: "";
+      if (!name || !type || !severity || !test_id || !host)
+        {
+          GString *string = g_string_new ("");
+
+          print_entity_to_string (r_entity, string);
+          g_warning ("Erroneous attribute in OSP result %s", string->str);
+          g_string_free (string, TRUE);
+          results = next_entities (results);
+          continue;
+        }
+
+      /* Add report host if it doesn't exist. */
+      manage_report_host_add (report, host, start_time, end_time);
+      if (!strcmp (type, "Host Detail"))
+        {
+          insert_report_host_detail (report, host, "osp", "", "OSP Host Detail",
+                                     name, entity_text (r_entity));
+          results = next_entities (results);
+          continue;
+        }
+      else if (g_str_has_prefix (test_id, "1.3.6.1.4.1.25623.1.0."))
+        {
+          nvt_id = g_strdup (test_id);
+          severity_str = nvt_severity (test_id, type);
+          desc = g_strdup (entity_text (r_entity));
+        }
+      else if (g_str_has_prefix (test_id, "oval:"))
+        {
+          nvt_id = ovaldef_uuid (test_id, defs_file);
+          severity_str = ovaldef_severity (nvt_id);
+        }
+      else
+        {
+          nvt_id = g_strdup (name);
+          desc = g_strdup (entity_text (r_entity));
+        }
+
+      qod_int = atoi (qod);
+      if (qod_int <= 0 || qod_int > 100)
+        qod_int = QOD_DEFAULT;
+      result = make_osp_result (task, host, nvt_id, type, desc, port ?: "",
+                                severity_str ?: severity, qod_int);
+      report_add_result (report, result);
+      g_free (nvt_id);
+      g_free (desc);
+      g_free (severity_str);
+      results = next_entities (results);
+    }
+
+ end_parse_osp_report:
+  sql_commit ();
+  g_free (defs_file);
+  free_entity (entity);
 }
 
 
@@ -60113,6 +60289,18 @@ manage_modify_setting (GSList *log_config, const gchar *database,
   return 0;
 }
 
+/**
+ * @brief Get the default CA cert.
+ *
+ * @return Freshly allocated value of Default CA Cert setting.
+ */
+char *
+manage_default_ca_cert ()
+{
+  return sql_string ("SELECT value FROM settings"
+                     " WHERE uuid = '" SETTING_UUID_DEFAULT_CA_CERT "';");
+}
+
 
 /* SCAP. */
 
@@ -63053,6 +63241,84 @@ int
 trash_user_writable (user_t user)
 {
   return 1;
+}
+
+/**
+ * @brief Return the ifaces of a user.
+ *
+ * @param[in]  uuid  UUID of user.
+ *
+ * @return Newly allocated ifaces value if available, else NULL.
+ */
+gchar*
+user_ifaces (const char *uuid)
+{
+  gchar *name, *quoted_uuid;
+
+  quoted_uuid = sql_quote (uuid);
+  name = sql_string ("SELECT ifaces FROM users WHERE uuid = '%s';",
+                     quoted_uuid);
+  g_free (quoted_uuid);
+  return name;
+}
+
+/**
+ * @brief Return whether ifaces value of a user denotes allowed.
+ *
+ * @param[in]  uuid  UUID of user.
+ *
+ * @return 1 if allow, else 0.
+ */
+int
+user_ifaces_allow (const char *uuid)
+{
+  gchar *quoted_uuid;
+  int allow;
+
+  quoted_uuid = sql_quote (uuid);
+  allow = sql_int ("SELECT ifaces_allow FROM users WHERE uuid = '%s';",
+                   quoted_uuid);
+  g_free (quoted_uuid);
+  return allow;
+}
+
+/**
+ * @brief Return the hosts of a user.
+ *
+ * @param[in]  uuid  UUID of user.
+ *
+ * @return Newly allocated hosts value if available, else NULL.
+ */
+gchar*
+user_hosts (const char *uuid)
+{
+  gchar *name, *quoted_uuid;
+
+  quoted_uuid = sql_quote (uuid);
+  name = sql_string ("SELECT hosts FROM users WHERE uuid = '%s';",
+                     quoted_uuid);
+  g_free (quoted_uuid);
+  return name;
+}
+
+/**
+ * @brief Return whether hosts value of a user denotes allowed.
+ *
+ * @param[in]  uuid  UUID of user.
+ *
+ * @return 1 if allow, else 0.
+ */
+int
+user_hosts_allow (const char *uuid)
+{
+  gchar *quoted_uuid;
+  int allow;
+
+  quoted_uuid = sql_quote (uuid);
+  allow = sql_int ("SELECT hosts_allow FROM users WHERE uuid = '%s';",
+                   quoted_uuid);
+  g_free (quoted_uuid);
+  return allow;
 }
 
 /**

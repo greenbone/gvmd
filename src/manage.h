@@ -3724,6 +3724,9 @@ modify_setting (const gchar *, const gchar *, const gchar *, gchar **);
 int
 manage_modify_setting (GSList *, const gchar *, const gchar *, const gchar *, const char *);
 
+char *
+manage_default_ca_cert ();
+
 
 /* Users. */
 
@@ -3868,6 +3871,18 @@ user_name (const char *);
 
 char*
 user_uuid (user_t);
+
+gchar*
+user_ifaces (const char *);
+
+int
+user_ifaces_allow (const char *);
+
+gchar*
+user_hosts (const char *);
+
+int
+user_hosts_allow (const char *);
 
 void
 manage_get_ldap_info (int *, gchar **, gchar **, int *, gchar **);

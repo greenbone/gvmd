@@ -397,4 +397,10 @@ gchar *resource_uuid (const gchar *, resource_t);
 gboolean find_resource_with_permission (const char *, const char *,
                                         resource_t *, const char *, int);
 
+char *task_definitions_file (task_t);
+
+void parse_osp_report (task_t, report_t, const char *);
+
+void reschedule_task (const gchar *);
+
 #endif /* not OPENVAS_MANAGER_MANAGE_SQL_H */

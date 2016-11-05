@@ -1,5 +1,21 @@
 2016-11-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Remove more direct SQL that has crept out of manage_sql.c.
+
+	* src/manage.c (send_ifaces_access_preferences)
+	(send_hosts_access_preferences, slave_connect, set_certs, move_task): Use
+	manage_sql.c functions instead of direct SQL.
+	(get_definitions_file, parse_osp_report, reschedule_task): Remove.
+	Replaced in manage_sql.c.
+
+	* src/manage_sql.c (task_definitions_file, reschedule_task)
+	(parse_osp_report, manage_default_ca_cert, user_ifaces)
+	(user_ifaces_allow, user_hosts, user_hosts_allow): New functions.
+
+	* src/manage_sql.h, src/manage.h: Add headers accordingly.
+
+2016-11-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (ovaldi_file_iterator_name): New function.
 
 	* src/manage.h: Add header accordingly.

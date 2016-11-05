@@ -44,7 +44,6 @@
 
 #include "manage.h"
 #include "scanner.h"
-#include "sql.h"                // FIX shouldn't be sql in here
 #include "manage_acl.h"
 #include "manage_sql.h"
 #include "ovas-mngr-comm.h"
@@ -1613,10 +1612,8 @@ send_ifaces_access_preferences (void)
   char *ifaces;
   int ifaces_allow;
 
-  ifaces = sql_string ("SELECT ifaces FROM users WHERE uuid = '%s';",
-                       current_credentials.uuid);
-  ifaces_allow = sql_int ("SELECT ifaces_allow FROM users WHERE uuid = '%s';",
-                          current_credentials.uuid);
+  ifaces = user_ifaces (current_credentials.uuid);
+  ifaces_allow = user_ifaces_allow (current_credentials.uuid);
 
   if (ifaces && strlen (ifaces))
     {
@@ -1653,10 +1650,8 @@ send_hosts_access_preferences (void)
   char *hosts;
   int hosts_allow;
 
-  hosts = sql_string ("SELECT hosts FROM users WHERE uuid = '%s';",
-                      current_credentials.uuid);
-  hosts_allow = sql_int ("SELECT hosts_allow FROM users WHERE uuid = '%s';",
-                         current_credentials.uuid);
+  hosts = user_hosts (current_credentials.uuid);
+  hosts_allow = user_hosts_allow (current_credentials.uuid);
 
   if (hosts && strlen (hosts))
     {
@@ -2089,8 +2084,7 @@ slave_connect (openvas_connection_t *connection)
 
   connection->tls = 1;
   if (connection->ca_cert == NULL)
-    ca_cert = sql_string ("SELECT value FROM settings"
-                          " WHERE uuid = '" SETTING_UUID_DEFAULT_CA_CERT "';");
+    ca_cert = manage_default_ca_cert ();
   else
     ca_cert = NULL;
   connection->socket = openvas_server_open_verify
@@ -3586,139 +3580,6 @@ task_scanner_options (task_t task, target_t target)
   return table;
 }
 
-static char *
-get_definitions_file (task_t task)
-{
-  assert (task);
-  return sql_string ("SELECT value FROM config_preferences"
-                     " WHERE name = 'definitions_file' AND config = %llu;",
-                     task_config (task));
-}
-
-static void
-parse_osp_report (task_t task, report_t report, const char *report_xml)
-{
-  entity_t entity, child;
-  entities_t results;
-  const char *str;
-  char *defs_file = NULL;
-  time_t start_time, end_time;
-
-  assert (task);
-  assert (report);
-  assert (report_xml);
-
-  if (parse_entity (report_xml, &entity))
-    {
-      g_warning ("Couldn't parse %s OSP scan report\n", report_xml);
-      return;
-    }
-
-  sql_begin_immediate ();
-  /* Set the report's start and end times. */
-  str = entity_attribute (entity, "start_time");
-  if (!str)
-    {
-      g_warning ("Missing start_time in OSP report %s", report_xml);
-      goto end_parse_osp_report;
-    }
-  start_time = atoi (str);
-  set_scan_start_time_epoch (report, start_time);
-  str = entity_attribute (entity, "end_time");
-  if (!str)
-    {
-      g_warning ("Missing end_time in OSP report %s", report_xml);
-      goto end_parse_osp_report;
-    }
-  end_time = atoi (str);
-  set_scan_end_time_epoch (report, end_time);
-
-  /* Insert results. */
-  child = entity_child (entity, "results");
-  if (!child)
-    {
-      g_warning ("Missing results element in OSP report %s", report_xml);
-      goto end_parse_osp_report;
-    }
-  results = child->entities;
-  defs_file = get_definitions_file (task);
-  while (results)
-    {
-      result_t result;
-      const char *type, *name, *severity, *host, *test_id, *port, *qod;
-      char *desc = NULL, *nvt_id = NULL, *severity_str = NULL;
-      entity_t r_entity = results->data;
-      int qod_int;
-
-      if (strcmp (entity_name (r_entity), "result"))
-        {
-          g_warning ("Erroneous entry in OSP results %s",
-                     entity_name (r_entity));
-          results = next_entities (results);
-          continue;
-        }
-      type = entity_attribute (r_entity, "type");
-      name = entity_attribute (r_entity, "name");
-      severity = entity_attribute (r_entity, "severity");
-      test_id = entity_attribute (r_entity, "test_id");
-      host = entity_attribute (r_entity, "host");
-      port = entity_attribute (r_entity, "port") ?: "";
-      qod = entity_attribute (r_entity, "qod") ?: "";
-      if (!name || !type || !severity || !test_id || !host)
-        {
-          GString *string = g_string_new ("");
-
-          print_entity_to_string (r_entity, string);
-          g_warning ("Erroneous attribute in OSP result %s", string->str);
-          g_string_free (string, TRUE);
-          results = next_entities (results);
-          continue;
-        }
-
-      /* Add report host if it doesn't exist. */
-      manage_report_host_add (report, host, start_time, end_time);
-      if (!strcmp (type, "Host Detail"))
-        {
-          insert_report_host_detail (report, host, "osp", "", "OSP Host Detail",
-                                     name, entity_text (r_entity));
-          results = next_entities (results);
-          continue;
-        }
-      else if (g_str_has_prefix (test_id, "1.3.6.1.4.1.25623.1.0."))
-        {
-          nvt_id = g_strdup (test_id);
-          severity_str = nvt_severity (test_id, type);
-          desc = g_strdup (entity_text (r_entity));
-        }
-      else if (g_str_has_prefix (test_id, "oval:"))
-        {
-          nvt_id = ovaldef_uuid (test_id, defs_file);
-          severity_str = ovaldef_severity (nvt_id);
-        }
-      else
-        {
-          nvt_id = g_strdup (name);
-          desc = g_strdup (entity_text (r_entity));
-        }
-
-      qod_int = atoi (qod);
-      if (qod_int <= 0 || qod_int > 100)
-        qod_int = QOD_DEFAULT;
-      result = make_osp_result (task, host, nvt_id, type, desc, port ?: "",
-                                severity_str ?: severity, qod_int);
-      report_add_result (report, result);
-      g_free (nvt_id);
-      g_free (desc);
-      g_free (severity_str);
-      results = next_entities (results);
-    }
-
-end_parse_osp_report:
-  sql_commit ();
-  g_free (defs_file);
-  free_entity (entity);
-}
-
 static void
 delete_osp_scan (const char *report_id, const char *host, int port,
                  const char *ca_pub, const char *key_pub, const char *key_priv)
@@ -4361,8 +4222,7 @@ set_certs (const char *ca_pub, const char *key_pub, const char *key_priv)
   const char *fallback;
 
   if (ca_pub == NULL)
-    fallback = sql_string ("SELECT value FROM settings"
-                          " WHERE uuid = '" SETTING_UUID_DEFAULT_CA_CERT "';");
+    fallback = manage_default_ca_cert ();
   else
     fallback = NULL;
 
@@ -5722,8 +5582,7 @@ move_task (const char *task_id, const char *slave_id)
 
   /* Update scanner. */
 
-  sql ("UPDATE tasks SET scanner = %llu WHERE id = %llu",
-       slave, task);
+  set_task_scanner (task, slave);
 
   /* Resume task if required. */
 
@@ -6485,34 +6344,6 @@ void
 set_scheduled_user_uuid (gchar* user_uuid)
 {
   schedule_user_uuid = user_uuid;
-}
-
-/**
- * @brief Set a task's schedule so that it runs again next scheduling round.
- *
- * @param  task_id  UUID of task.
- */
-void
-reschedule_task (const gchar *task_id)
-{
-  task_t task;
-  task = 0;
-  switch (sql_int64 (&task,
-                     "SELECT id FROM tasks WHERE uuid = '%s'"
-                     " AND hidden != 2;",
-                     task_id))
-    {
-      case 0:
-        g_warning ("%s: rescheduling task '%s'\n", __FUNCTION__, task_id);
-        set_task_schedule_next_time (task, time (NULL) - 1);
-        break;
-      case 1:        /* Too few rows in result of query. */
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        break;
-    }
 }
 
 /**
