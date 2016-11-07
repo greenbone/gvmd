@@ -332,8 +332,8 @@ set_gnutls_priority (gnutls_session_t *session, const char *priority)
  *
  * In all cases, close client_socket before returning.
  *
- * @param[in]  client_socket  The socket connected to the client.
- * @param[in]  server_socket  The socket connected to the Manager.
+ * @param[in]  server_socket      The socket connected to the Manager.
+ * @param[in]  client_connection  The connection to the client.
  *
  * @return EXIT_SUCCESS on success, EXIT_FAILURE on failure.
  */
@@ -700,10 +700,8 @@ fork_connection_for_scheduler (openvas_connection_t *client_connection, gchar* u
 /**
  * @brief Fork a child connected to the Manager.
  *
- * @param[in]  client_socket       Client socket.
- * @param[in]  client_session      Client session.
- * @param[in]  client_credentials  Client credentials.
- * @param[in]  uuid                UUID of user.
+ * @param[in]  client_connection  Client connection.
+ * @param[in]  uuid               UUID of user.
  *
  * @return PID parent on success, 0 child on success, -1 error.
  */
@@ -908,6 +906,8 @@ handle_sigsegv (/* unused */ int given_signal)
  * @brief Handle a SIGCHLD signal.
  *
  * @param[in]  given_signal  The signal that caused this function to run.
+ * @param[in]  info          Signal info.
+ * @param[in]  ucontext      User context.
  */
 void
 handle_sigchld (/* unused */ int given_signal, siginfo_t *info, void *ucontext)
@@ -1335,7 +1335,7 @@ serve_and_schedule ()
  * @param[out]  socket_owner      Owner of socket, for UNIX.
  * @param[out]  socket_group      Group of socket, for UNIX.
  * @param[out]  socket_mode       Mode of socket, in octal, for UNIX.
- * @param[out]  socket            Socket listened on.
+ * @param[out]  soc               Socket listened on.
  *
  * @return 0 success, -1 error.
  */

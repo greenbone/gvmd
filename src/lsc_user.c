@@ -90,7 +90,7 @@ check_is_file (const char *name)
  *
  * @param[in]  comment     Comment to use.
  * @param[in]  passphrase  Passphrase for key, must be longer than 4 characters.
- * @param[in]  filepath    Path to file of public key (a .pub will be stripped).
+ * @param[in]  privpath    Filename of the key file.
  *
  * @return 0 if successful, -1 otherwise.
  */

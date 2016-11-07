@@ -117,7 +117,7 @@ manage_session_set_timezone (const char *timezone)
 /**
  * @brief Check whether database is empty.
  *
- * @param[in]  1 if empty, else 0;
+ * @return 1 if empty, else 0;
  */
 int
 manage_db_empty ()
@@ -3180,9 +3180,9 @@ manage_scap_loaded ()
 /**
  * @brief Backup the database to a file.
  *
- * @param[in]   database     Database to backup.
- * @param[out]  backup_file  Location for freshly allocated name of backup
- *                           file, or NULL.  Only set on success.
+ * @param[in]   database         Database to backup.
+ * @param[out]  backup_file_arg  Location for freshly allocated name of backup
+ *                               file, or NULL.  Only set on success.
  *
  * @return 0 success, -1 error.
  */
@@ -3335,9 +3335,6 @@ migrate_51_to_52_sql_convert (sqlite3_context *context, int argc,
 
 /**
  * @brief Setup SQL function for migrate_51_to_52.
- *
- * @param[in]  stmt      Statement.
- * @param[in]  position  Column position.
  *
  * @return 0 success, -1 error.
  */

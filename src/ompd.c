@@ -235,8 +235,7 @@ read_from_client_tls (gnutls_session_t* client_session)
 /**
  * @brief Read as much from the client as the \ref from_client buffer will hold.
  *
- * @param[in]  client_session  The TLS session with the client.
- * @param[in]  client_socket   The socket connected to the client.
+ * @param[in]  client_connection  The connection with the client.
  *
  * @return 0 on reading everything available, -1 on error, -2 if
  * from_client buffer is full or -3 on reaching end of file.

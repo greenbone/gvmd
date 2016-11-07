@@ -1,3 +1,21 @@
+2016-11-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Clear out Doxygen warnings.
+
+	* src/lsc_user.c, src/manage_acl.c, src/manage_config_discovery.c,
+	src/manage_pg.c, src/manage_sql.c, src/manage_sqlite3.c, src/omp.c,
+	src/ompd.c, src/openvasmd.c: Update doc strings.
+
+	* src/manage_sql.c: Update doc strings.
+	(cve_app_location): Remove.  Now app_location.
+	(app_location): New function.  Was cve_app_location.  Remove unused
+	arg.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/manage.c: Update doc strings.
+	(cve_scan_host): Update cve_app_location call.
+
 2016-11-07  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* CMakeLists.txt: Create OpenVAS Manager state dir when installing

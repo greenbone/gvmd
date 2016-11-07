@@ -1476,8 +1476,7 @@ parse_time (const gchar *string, int *seconds)
 /**
  * @brief Get last time NVT alerts were checked.
  *
- * @param[in]  nvts_list    List of nvti_t to insert.
- * @param[in]  mode         -1 updating, -2 rebuilding.
+ * @return Last check time.
  */
 static int
 nvts_check_time ()
@@ -1494,9 +1493,6 @@ nvts_check_time ()
 
 /**
  * @brief Get last time SCAP SecInfo alerts were checked.
- *
- * @param[in]  nvts_list    List of nvti_t to insert.
- * @param[in]  mode         -1 updating, -2 rebuilding.
  */
 static int
 scap_check_time ()
@@ -1512,10 +1508,7 @@ scap_check_time ()
 }
 
 /**
- * @brief Get last time SecInfo alerts were checked.
- *
- * @param[in]  nvts_list    List of nvti_t to insert.
- * @param[in]  mode         -1 updating, -2 rebuilding.
+ * @brief Get last time CERT SecInfo alerts were checked.
  */
 static int
 cert_check_time ()
@@ -3048,9 +3041,10 @@ keyword_applies_to_column (keyword_t *keyword, const char* column)
  *
  * @param[in]  type     Resource type.
  * @param[in]  filter   Filter term.
- * @param[out] trash    Whether the trash table is being queried.
- * @param[in]  columns  Columns in the SQL statement.
- * @param[in]  where_columns Columns in SQL that only appear in WHERE clause.
+ * @param[in]  filter_columns  Filter columns.
+ * @param[in]  select_columns  SELECT columns.
+ * @param[in]  where_columns   Columns in SQL that only appear in WHERE clause.
+ * @param[out] trash           Whether the trash table is being queried.
  * @param[out] order_return  If given then order clause.
  * @param[out] first_return  If given then first row.
  * @param[out] max_return    If given then max rows.
@@ -5268,7 +5262,7 @@ type_where_columns (const char *type, int);
  * @param[in]  columns         Array.
  * @param[in]  column_name     Name of column.
  * @param[in]  select_columns  Definition of "SELECT" columns.
- * @param[in]  select_columns  Definition of "WHERE" columns.
+ * @param[in]  where_columns   Definition of "WHERE" columns.
  */
 static void
 append_column (GArray *columns, const gchar *column_name,
@@ -5313,9 +5307,6 @@ append_column (GArray *columns, const gchar *column_name,
  * @param[in]  iterator        Iterator.
  * @param[in]  type            Type of resource.
  * @param[in]  get             GET data.
- * @param[in]  columns         Columns for SQL.
- * @param[in]  trash_columns   Columns for SQL trash case.
- * @param[in]  filter_columns  Columns for filter.
  * @param[in]  distinct        Whether the query should be distinct.  Skipped
  *                             for trash and single resource.
  * @param[in]  data_columns    Columns to calculate statistics for.
@@ -5323,12 +5314,12 @@ append_column (GArray *columns, const gchar *column_name,
  * @param[in]  subgroup_column Column to further group data by.
  * @param[in]  text_columns    Columns to get text from.
  * @param[in]  sort_data       GArray of sorting data.
+ * @param[in]  first_group     Row number to start iterating from.
+ * @param[in]  max_groups      Maximum number of rows.
  * @param[in]  extra_tables    Join tables.  Skipped for trash and single
  *                             resource.
  * @param[in]  extra_where     Extra WHERE clauses.  Skipped for single
  *                             resource.
- * @param[in]  no_pagination   Ignore max and first limits.
- * @param[in]  owned           Only get items owned by the current user.
  *
  * @return 0 success, 1 failed to find resource, 2 failed to find filter,
  *         3 invalid stat_column, 4 invalid group_column, 5 invalid type,
@@ -6136,9 +6127,10 @@ info_name_count (const char *type, const char *name)
 }
 
 /**
- * @brief Return whether a report format is predefined.
+ * @brief Return whether a resource is predefined.
  *
- * @param[in]  report_format  Report format.
+ * @param[in]  type      Type of resource.
+ * @param[in]  resource  Resource.
  *
  * @return 1 if predefined, else 0.
  */
@@ -8938,12 +8930,12 @@ http_get (const char *url)
 }
 
 /**
- * @brief Send a report to a host via TCP.
+ * @brief Run an alert's "alert" script.
  *
- * @param[in]  host         Address of host.
- * @param[in]  port         Port of host.
- * @param[in]  report      Report that should be sent.
- * @param[in]  report_size Size of the report.
+ * @param[in]  alert_id      ID of alert.
+ * @param[in]  command_args  Args for the "alert" script.
+ * @param[in]  report        Report that should be sent.
+ * @param[in]  report_size   Size of the report.
  *
  * @return 0 success, -1 error.
  */
@@ -9241,8 +9233,9 @@ run_alert_script (const char *alert_id, const char *command_args,
 /**
  * @brief Send an SNMP TRAP to a host.
  *
- * @param[in]  host         Address of host.
- * @param[in]  port         Port of host.
+ * @param[in]  community  Community.
+ * @param[in]  agent      Agent.
+ * @param[in]  message    Message.
  *
  * @return 0 success, -1 error.
  */
@@ -9318,7 +9311,7 @@ send_to_host (const char *host, const char *port,
  * @param[in]  username     Username.
  * @param[in]  host         Address of host.
  * @param[in]  path         Destination filename with path.
- * @param[in]  known_host   Content for known_hosts file.
+ * @param[in]  known_hosts  Content for known_hosts file.
  * @param[in]  report       Report that should be sent.
  * @param[in]  report_size  Size of the report.
  *
@@ -10230,10 +10223,14 @@ alert_subject_print (const gchar *subject, event_t event,
  * @param[in]  event        Event.
  * @param[in]  event_data   Event data.
  * @param[in]  task         Task.
+ * @param[in]  alert        Alert.
+ * @param[in]  condition    Alert condition.
  * @param[in]  format_name  Report format name.
  * @param[in]  filter       Filter.
  * @param[in]  term         Filter term.
- * @param[in]  content      The report, for inlining.
+ * @param[in]  zone         Timezone.
+ * @param[in]  host_summary    Host summary.
+ * @param[in]  content         The report, for inlining.
  * @param[in]  content_length  Length of content.
  * @param[in]  truncated       Whether the report was truncated.
  * @param[in]  total        Total number of resources (for SecInfo alerts).
@@ -10518,6 +10515,8 @@ scp_alert_path_print (const gchar *message, task_t task)
  * @param[in]  event_data  Event data.
  * @param[in]  method      Method from alert.
  * @param[in]  condition   Condition from alert, which was met by event.
+ * @param[in]  to_address    To address.
+ * @param[in]  from_address  From address.
  *
  * @return 0 success, -1 error, -2 failed to find report format, -3 failed to
  *         find filter.
@@ -13120,7 +13119,7 @@ trash_task_writable (task_t task)
 /**
  * @brief Get the average duration of all finished reports of a task.
  *
- * @param[in]  uuid  The report associated with the scan.
+ * @param[in]  task  Task.
  *
  * @return Average scan duration in seconds.
  */
@@ -15678,6 +15677,9 @@ cleanup_tables ()
  * @param[in]  max_email_include_size     Max size of email inclusions.
  * @param[in]  update_progress     Function to update progress, or NULL. *
  * @param[in]  stop_tasks          Stop any active tasks.
+ * @param[in]  fork_connection     Function to fork a connection that will
+ *                                 accept OMP requests.  Used to start tasks
+ *                                 with OMP when an alert occurs.
  * @param[in]  skip_db_check       Skip DB check.
  * @param[in]  check_encryption_key  Check encryption key if doing DB check.
  *
@@ -15821,6 +15823,9 @@ init_manage_internal (GSList *log_config,
  * @param[in]  max_email_attachment_size  Max size of email attachments.
  * @param[in]  max_email_include_size     Max size of email inclusions.
  * @param[in]  update_progress     Function to update progress, or NULL. *
+ * @param[in]  fork_connection     Function to fork a connection that will
+ *                                 accept OMP requests.  Used to start tasks
+ *                                 with OMP when an alert occurs.
  * @param[in]  skip_db_check       Skip DB check.
  *
  * @return 0 success, -1 error, -2 database is wrong version, -3 database needs
@@ -15854,7 +15859,6 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
  * itself calls init_manage, including in NVT cache mode (--rebuild/update).
  *
  * @param[in]  log_config      Log configuration.
- * @param[in]  nvt_cache_mode  True when running in NVT caching mode.
  * @param[in]  database        Location of database.
  * @param[in]  max_ips_per_target  Max number of IPs per target.
  * @param[in]  update_progress     Function to update progress, or NULL. *
@@ -17088,7 +17092,7 @@ task_running_report (task_t task)
 /**
  * @brief Return the current report of a task.
  *
- * @param[in]  task  Task.
+ * @param[in]  iterator  Iterator.
  *
  * @return Current report of task if task is active, else (report_t) 0.
  */
@@ -17605,7 +17609,7 @@ task_schedule (task_t task)
 /**
  * @brief Return the schedule of a task.
  *
- * @param[in]  task  Task.
+ * @param[in]  task_id  ID of task.
  *
  * @return Schedule.
  */
@@ -18226,7 +18230,7 @@ auto_delete_reports ()
 /**
  * @brief Get definitions file from a task's config.
  *
- * @param[in]  uuid  UUID of result.
+ * @param[in]  task  Task.
  *
  * @return Definitions file.
  */
@@ -18323,6 +18327,7 @@ find_result_with_permission (const char* uuid, result_t* result,
  * @param[in]  description  Description of the result.
  * @param[in]  port         Result port.
  * @param[in]  severity     Result severity.
+ * @param[in]  qod          Quality of detection.
  *
  * @return A result descriptor for the new result, 0 if error.
  */
@@ -18519,9 +18524,10 @@ host_identify (const char *host_name, const char *identifier_name,
  * @param[in]  source_id         Source identifier.
  * @param[in]  check_add_to_assets  Whether to check the 'Add to Assets'
  *                                  task preference.
- * @param[in]  check_for_identifier Whether to check for an existing identifier
- *                                  like this one.  Used for slaves, which call
- *                                  this repeatedly.
+ * @param[in]  check_for_existing_identifier  Whether to check for an existing
+ *                                            identifier like this one.  Used
+ *                                            for slaves, which call this
+ *                                            repeatedly.
  *
  * @return Host if existed, else 0.
  */
@@ -18987,22 +18993,19 @@ prognosis_iterator_cvss_double (iterator_t* iterator)
 }
 
 /**
- * @brief Initialise an App location iterator.
+ * @brief Get the location of an App for a report's host.
  *
- * @param[in]  iterator     Iterator.
  * @param[in]  report_host  Report host.
  * @param[in]  app          CPE.
  */
 gchar *
-cve_app_location (report_host_t report_host, const gchar *cve,
-                  const gchar *app)
+app_location (report_host_t report_host, const gchar *app)
 {
-  gchar *quoted_app, *quoted_cve, *ret;
+  gchar *quoted_app, *ret;
 
-  assert (cve && app);
+  assert (app);
 
   quoted_app = sql_quote (app);
-  quoted_cve = sql_quote (cve);
 
   ret = sql_string ("SELECT value FROM report_host_details"
                     " WHERE report_host = %llu"
@@ -19020,7 +19023,6 @@ cve_app_location (report_host_t report_host, const gchar *cve,
                     quoted_app);
 
   g_free (quoted_app);
-  g_free (quoted_cve);
 
   return ret;
 }
@@ -19535,7 +19537,7 @@ host_detail_free (host_detail_t *detail)
 }
 
 /**
- * @brief Create the current report for a task.
+ * @brief Insert a host detail into a report.
  *
  * @param[in]   report      The detail's report.
  * @param[in]   host        The detail's host.
@@ -19543,7 +19545,7 @@ host_detail_free (host_detail_t *detail)
  * @param[in]   s_name      The detail's source name.
  * @param[in]   s_desc      The detail's source description.
  * @param[in]   name        The detail's name.
- * @param[in]   type        The detail's type.
+ * @param[in]   value       The detail's value.
  */
 void
 insert_report_host_detail (report_t report, const char *host,
@@ -19585,7 +19587,7 @@ insert_report_host_detail (report_t report, const char *host,
  * @param[in]   task_id       UUID of container task, or NULL to create new one.
  * @param[in]   task_name     Name for container task.
  * @param[in]   task_comment  Comment for container task.
- * @param[in]   add_to_assets Whether to create assets from the report.
+ * @param[in]   in_assets     Whether to create assets from the report.
  * @param[in]   scan_start    Scan start time text.
  * @param[in]   scan_end      Scan end time text.
  * @param[in]   host_starts   Array of create_report_result_t pointers.  Host
@@ -22856,6 +22858,7 @@ report_severity_data (report_t report, const char *host,
  * @param[out]  severity     Maximum severity score.
  * @param[in]   override     Whether to override the threat.
  * @param[in]   autofp       Whether to apply the auto FP filter.
+ * @param[in]   min_qod      Min QOD.
  *
  * @return 0 on success, -1 on error.
  */
@@ -23249,10 +23252,8 @@ report_counts_id_full (report_t report, int* debugs, int* holes, int* infos,
  * @param[out]  warnings  Number of warning messages.
  * @param[out]  false_positives  Number of false positive messages.
  * @param[out]  severity  Maximum severity score.
- * @param[in]   override  Whether to override the threat.
+ * @param[in]   get       Get data.
  * @param[in]   host      Host to which to limit the count.  NULL to allow all.
- * @param[in]   autofp    Whether to apply the auto FP filter.
- * @param[in]   min_qod   Minimum QoD of results to count.
  *
  * @return 0 on success, -1 on error.
  */
@@ -25211,6 +25212,7 @@ print_report_host_details_xml (report_host_t report_host, FILE *stream)
  *
  * @param[in]   stream      Stream to write to.
  * @param[in]   errors      Pointer to report error messages iterator.
+ * @param[in]   asset_id    Asset ID.
  */
 #define PRINT_REPORT_ERROR(stream, errors, asset_id)                       \
   do                                                                       \
@@ -26410,7 +26412,9 @@ severity_class_xml (const gchar *severity)
 /**
  * @brief Restore original TZ.
  *
- * @param[in]  tz  Original TZ.  Freed here.
+ * @param[in]  zone  Only revert if this is at least one character.  Freed here
+ *                   always.
+ * @param[in]  tz    Original TZ.  Freed here if revert occurs.
  *
  * @return 0 success, -1 error.
  */
@@ -26444,8 +26448,8 @@ tz_revert (gchar *zone, char *tz)
  *
  * @param[in]  host_summary_buffer  Summary.
  * @param[in]  host                 Host.
- * @param[in]  start                Start time, in ISO format.
- * @param[in]  end                  End time, in ISO format.
+ * @param[in]  start_iso            Start time, in ISO format.
+ * @param[in]  end_iso              End time, in ISO format.
  */
 static void
 host_summary_append (GString *host_summary_buffer, const char *host,
@@ -26495,6 +26499,7 @@ host_summary_append (GString *host_summary_buffer, const char *host,
  * @param[in]  results        Report result iterator.
  * @param[in]  delta          Delta report.
  * @param[in]  delta_results  Delta report result iterator.
+ * @param[in]  get            GET command data.
  * @param[in]  term           Filter term.
  * @param[out] sort_field     Sort field.
  *
@@ -26598,8 +26603,19 @@ init_delta_iterators (report_t report, iterator_t *results, report_t delta,
  * @param[in]  out            File stream to write to.
  * @param[in]  results        Report result iterator.
  * @param[in]  delta_results  Delta report result iterator.
- * @param[in]  term           Filter term.
- * @param[in]  sort_field     Sort field.
+ * @param[in]  delta_states   String describing delta states to include in count
+ *                            (for example, "sngc" Same, New, Gone and Changed).
+ *                            All levels if NULL.
+ * @param[in]  first_result   First result.
+ * @param[in]  max_results    Max results.
+ * @param[in]  task           The task.
+ * @param[in]  notes          Whether to include notes.
+ * @param[in]  notes_details  Whether to include note details.
+ * @param[in]  overrides          Whether to include overrides.
+ * @param[in]  overrides_details  Whether to include override details.
+ * @param[in]  sort_order         Sort order.
+ * @param[in]  sort_field         Sort field.
+ * @param[in]  result_hosts_only  Whether to only include hosts with results.
  * @param[in]  orig_filtered_result_count  Result count.
  * @param[in]  filtered_result_count       Result count.
  * @param[in]  orig_f_debugs  Result count.
@@ -27304,7 +27320,7 @@ print_report_delta_xml (FILE *out, iterator_t *results,
  * @param[in]  report      The report.
  * @param[in]  delta       Report to compare with the report.
  * @param[in]  task        Task associated with report.
- * @param[in]  xml_body    File name.
+ * @param[in]  xml_start   File name.
  * @param[in]  get         GET command data.
  * @param[in]  type               Type of report, NULL, "scan" or "assets".
  * @param[in]  notes_details      If notes, Whether to include details.
@@ -28720,7 +28736,7 @@ manage_report (report_t report, const get_data_t *get,
  * @brief Runs the script of a report format.
  *
  * @param[in]   report_format_id    UUID of the report format.
- * @param[in]   xml_start           Path to main part of the report XML.
+ * @param[in]   xml_file            Path to main part of the report XML.
  * @param[in]   xml_dir             Path of the dir with XML and subreports.
  * @param[in]   report_format_extra Extra data for report format.
  * @param[in]   output_file         Path to write report to.
@@ -29028,7 +29044,7 @@ run_report_format_script (gchar *report_format_id,
 /**
  * @brief Applies a report format to an XML report.
  *
- * @param[in]  report_format      Report format to apply.
+ * @param[in]  report_format_id   Report format to apply.
  * @param[in]  xml_start          Path to the main part of the report XML.
  * @param[in]  xml_file           Path to the report XML file.
  * @param[in]  xml_dir            Path to the temporary dir.
@@ -29781,7 +29797,7 @@ task_trend_calc (int holes_a, int warns_a, int infos_a, double severity_a,
 /**
  * @brief Return the trend of a task, given counts.
  *
- * @param[in]  task      Task.
+ * @param[in]  iterator  Task iterator.
  * @param[in]  holes_a   Number of holes on earlier report.
  * @param[in]  warns_a   Number of warnings on earlier report.
  * @param[in]  infos_a   Number of infos on earlier report.
@@ -31191,7 +31207,6 @@ target_credential (target_t target, const char* type)
  * @brief Get a credential from a target in the trashcan.
  *
  * @param[in]  target         The target.
- * @param[in]  trash          Whether target is in trashcan.
  * @param[in]  type           The credential type (e.g. "ssh" or "smb").
  *
  * @return  0 on success, -1 on error, 1 credential not found, 99 permission
@@ -33553,7 +33568,6 @@ get_scanner_params (scanner_t scanner)
  *
  * @param[in]   param   OSP parameter to insert.
  * @param[in]   config  Config to insert parameter into.
- * @param[in]   log     Add log message if parameter wasn't present.
  *
  * @return 1 if added, 0 otherwise.
  */
@@ -33602,6 +33616,9 @@ insert_osp_parameter (osp_param_t *param, config_t config)
  * @brief Create a config from an OSP scanner.
  *
  * @param[in]   scanner_id  UUID of scanner to create config from.
+ * @param[in]   name        Name for config.
+ * @param[in]   comment     Comment for config.
+ * @param[out]  uuid        Config UUID, on success.
  *
  * @return 0 success, 1 couldn't find scanner, 2 scanner not of OSP type,
  *         3 config name exists already, 4 couldn't get params from scanner,
@@ -34556,7 +34573,6 @@ trash_config_readable_uuid (const gchar *config_id)
  *
  * @param[in]  iterator  Iterator.
  * @param[in]  config    Config.
- * @param[in]  section   Preference section, NULL for general preferences.
  */
 void
 init_preference_iterator (iterator_t* iterator, config_t config)
@@ -36243,8 +36259,8 @@ insert_nvt_from_nvti (gpointer nvti, gpointer mode_pointer)
 /**
  * @brief Insert a NVT preferences.
  *
- * @param[in] nvti          nvti_t to insert in nvts table.
- * @param[in] mode_pointer  Mode.  -1 updating, -2 rebuilding.
+ * @param[in] nvt_preference  Preference.
+ * @param[in] mode_pointer    Mode.  -1 updating, -2 rebuilding.
  *
  */
 static void
@@ -36431,9 +36447,10 @@ alert_url_print (const gchar *url, const gchar *oid, const gchar *type)
 /**
  * @brief Create list for New NVTs event.
  *
- * @param[in]  event    Event.
- * @param[in]  alert    Alert.
- * @param[in]  example  Whether the message is an example only.
+ * @param[in]  event         Event.
+ * @param[in]  event_data    Event type specific details.
+ * @param[in]  alert         Alert.
+ * @param[in]  example       Whether the message is an example only.
  * @param[out] count_return  NULL, or address for row count.
  *
  * @return Freshly allocated list.
@@ -36510,9 +36527,10 @@ new_nvts_list (event_t event, const void* event_data, alert_t alert,
 /**
  * @brief Create list for New CVEs event.
  *
- * @param[in]  event  Event.
- * @param[in]  alert  Alert.
- * @param[in]  example  Whether the message is an example only.
+ * @param[in]  event         Event.
+ * @param[in]  event_data    Event type specific details.
+ * @param[in]  alert         Alert.
+ * @param[in]  example       Whether the message is an example only.
  * @param[out] count_return  NULL, or address for row count.
  *
  * @return Freshly allocated message.
@@ -36600,9 +36618,10 @@ new_cves_list (event_t event, const void* event_data, alert_t alert,
 /**
  * @brief Create list for New CPEs event.
  *
- * @param[in]  event    Event.
- * @param[in]  alert    Alert.
- * @param[in]  example  Whether the message is an example only.
+ * @param[in]  event         Event.
+ * @param[in]  event_data    Event type specific details.
+ * @param[in]  alert         Alert.
+ * @param[in]  example       Whether the message is an example only.
  * @param[out] count_return  NULL, or address for row count.
  *
  * @return Freshly allocated list.
@@ -36689,9 +36708,10 @@ new_cpes_list (event_t event, const void* event_data, alert_t alert,
 /**
  * @brief Create list for "New CERT-Bund Advisories" event message.
  *
- * @param[in]  event    Event.
- * @param[in]  alert    Alert.
- * @param[in]  example  Whether the message is an example only.
+ * @param[in]  event         Event.
+ * @param[in]  event_data    Event data.
+ * @param[in]  alert         Alert.
+ * @param[in]  example       Whether the message is an example only.
  * @param[out] count_return  NULL, or address for row count.
  *
  * @return Freshly allocated string.
@@ -36775,9 +36795,10 @@ new_cert_bunds_list (event_t event, const void* event_data, alert_t alert,
 /**
  * @brief Create list for "New DFN-CERT Advisories" event message.
  *
- * @param[in]  event    Event.
- * @param[in]  alert    Alert.
- * @param[in]  example  Whether the message is an example only.
+ * @param[in]  event         Event.
+ * @param[in]  event_data    Event type specific details.
+ * @param[in]  alert         Alert.
+ * @param[in]  example       Whether the message is an example only.
  * @param[out] count_return  NULL, or address for row count.
  *
  * @return Freshly allocated string.
@@ -36861,9 +36882,10 @@ new_dfn_certs_list (event_t event, const void* event_data, alert_t alert,
 /**
  * @brief Create list for "New OVAL Definitions" event.
  *
- * @param[in]  event    Event.
- * @param[in]  alert    Alert.
- * @param[in]  example  Whether the message is an example only.
+ * @param[in]  event         Event.
+ * @param[in]  event_data    Event type specific details.
+ * @param[in]  alert         Alert.
+ * @param[in]  example       Whether the message is an example only.
  * @param[out] count_return  NULL, or address for row count.
  *
  * @return Freshly allocated list.
@@ -37002,8 +37024,9 @@ new_secinfo_list (event_t event, const void* event_data, alert_t alert,
 /**
  * @brief Create message for New NVTs event.
  *
- * @param[in]  event  Event.
- * @param[in]  alert  Alert.
+ * @param[in]  event       Event.
+ * @param[in]  event_data  Event type specific details.
+ * @param[in]  alert       Alert.
  *
  * @return Freshly allocated message.
  */
@@ -38890,11 +38913,6 @@ update_nvt_family (const char *oid, const char *old_family,
  *
  * When the family of an NVT is changed in the feed, then the config
  * refers to the wrong family.
- *
- * @param[in]  config      Config.
- * @param[in]  oid         NVT OID.
- * @param[in]  old_family  Name of old family.
- * @param[in]  new_family  Name of new family.
  *
  * @return 0 success, -1 error.
  */
@@ -44744,6 +44762,7 @@ manage_delete_scanner (GSList *log_config, const gchar *database,
  *
  * @param[in]  log_config       Log configuration.
  * @param[in]  database         Location of manage database.
+ * @param[in]  scanner_id       ID of scanner.
  * @param[in]  name             Name of scanner.
  * @param[in]  host             Host of scanner.
  * @param[in]  port             Port of scanner.
@@ -45035,7 +45054,9 @@ find_scanner_with_permission (const char* uuid, scanner_t* scanner,
  * @param[in]   host        Host of scanner.
  * @param[in]   port        Port of scanner.
  * @param[in]   type        Type of scanner.
- * @param[in]   ca_pub      CA Certificate for scanner.
+ * @param[out]  new_scanner    The created scanner.
+ * @param[in]   ca_pub         CA Certificate for scanner.
+ * @param[in]   credential_id  ID of credential for scanner.
  *
  * @return 0 success, 1 scanner exists already, 2 Invalid value,
  *         3 credential not found, 4 credential should be 'up',
@@ -46072,9 +46093,9 @@ osp_scanner_connect (scanner_t scanner)
  * @param[out]  s_name      Scanner name.
  * @param[out]  s_ver       Scanner version.
  * @param[out]  d_name      Daemon name.
- * @param[out]  d_name      Daemon version.
+ * @param[out]  d_ver       Daemon version.
  * @param[out]  p_name      Protocol name.
- * @param[out]  p_name      Protocol version.
+ * @param[out]  p_ver       Protocol version.
  *
  * @return 0 success, 1 for failure.
  */
@@ -46650,7 +46671,12 @@ schedule_duration (schedule_t schedule)
 /**
  * @brief Return info about a schedule.
  *
- * @param[in]  schedule  Schedule.
+ * @param[in]  schedule    Schedule.
+ * @param[out] first_time  First time schedule ran.
+ * @param[out] next_time   Next time schedule will run.
+ * @param[out] period      Period.
+ * @param[out] period_months  Period months.
+ * @param[out] duration       Duration.
  *
  * @return 0 success, -1 error.
  */
@@ -51565,7 +51591,7 @@ find_permission (const char* uuid, permission_t* permission)
  *
  * @param[in]   name_arg        Name of permission.
  * @param[in]   resource_type_arg  Type of resource, for special permissions.
- * @param[in]   resource_id     UUID of resource.
+ * @param[in]   resource_id_arg    UUID of resource.
  * @param[in]   subject_type    Type of subject.
  * @param[in]   subject_id      UUID of subject.
  * @param[out]  name            Name return.
@@ -52694,13 +52720,13 @@ strdown (gchar *string)
 /**
  * @brief Modify a permission.
  *
- * @param[in]   permission_id   UUID of permission.
- * @param[in]   name_arg        Name of permission.
- * @param[in]   comment         Comment on permission.
- * @param[in]   resource_id_arg UUID of resource.
- * @param[in]   resource_type   Type of resource, for Super permissions.
- * @param[in]   subject_type    Type of subject.
- * @param[in]   subject_id      UUID of subject.
+ * @param[in]   permission_id      UUID of permission.
+ * @param[in]   name_arg           Name of permission.
+ * @param[in]   comment            Comment on permission.
+ * @param[in]   resource_id_arg    UUID of resource.
+ * @param[in]   resource_type_arg  Type of resource, for Super permissions.
+ * @param[in]   subject_type       Type of subject.
+ * @param[in]   subject_id         UUID of subject.
  *
  * @return 0 success, 1 failed to find permission, 2 failed to find subject,
  *         3 failed to find resource, 4 permission_id required, 5 error in
@@ -57592,7 +57618,9 @@ hosts_set_identifiers ()
 /**
  * @brief Set the maximum severity of each host in a scan.
  *
- * @param[in]  report  The report associated with the scan.
+ * @param[in]  report         The report associated with the scan.
+ * @param[in]  overrides_arg  Whether override should be applied.
+ * @param[in]  min_qod_arg    Min QOD to use.
  */
 void
 hosts_set_max_severity (report_t report, int *overrides_arg, int *min_qod_arg)
@@ -57719,7 +57747,7 @@ hosts_set_details (report_t report)
 /**
  * @brief Get XML of a detailed host route.
  *
- * @param[in]  report  The report associated with the scan.
+ * @param[in]  host  The host.
  */
 gchar*
 host_routes_xml (host_t host)
@@ -58684,7 +58712,7 @@ identifier_name (const char *name)
 /**
  * @brief Create a host asset.
  *
- * @param[in]  host_id      Host UUID.
+ * @param[in]  host_name    Host Name.
  * @param[in]  comment      Comment.
  * @param[out] host_return  Created asset.
  *
@@ -61461,7 +61489,7 @@ ovaldef_uuid (const char *name, const char *fname)
 /**
  * @brief Get the severity of an OVALDEF using an ID.
  *
- * @param[in]  uuid     Oval definition ID.
+ * @param[in]  id  Oval definition ID.
  *
  * @return The severity of the OVAL definition from the SCAP directory.
  *         Freed by g_free.
@@ -61482,7 +61510,7 @@ ovaldef_severity (const char *id)
 /**
  * @brief Get the version of an OVALDEF using an ID.
  *
- * @param[in]  uuid     Oval definition ID.
+ * @param[in]  id  Oval definition ID.
  *
  * @return The version of the OVAL definition from the SCAP directory.
  *         Freed by g_free.
@@ -61503,7 +61531,7 @@ ovaldef_version (const char *id)
 /**
  * @brief Get the CVE names of an OVALDEF as ", " separated str.
  *
- * @param[in]  uuid     Oval definition ID.
+ * @param[in]  id  Oval definition ID.
  *
  * @return String of CVEs affecting of the OVAL definition, NULL otherwise.
  *         Freed by g_free.
@@ -63611,7 +63639,7 @@ user_role_iterator_readable (iterator_t* iterator)
  * @brief Get LDAP info.
  *
  * @param[out]  enabled    Whether LDAP is enabled.
- * @param[out]  ldap_host  Freshly allocated LDAP host.
+ * @param[out]  host       Freshly allocated host.
  * @param[out]  authdn     Freshly allocated Auth DN.
  * @param[out]  plaintext  Whether plaintext auth is allowed.
  * @param[out]  cacert     CA cert if there's one, else NULL.

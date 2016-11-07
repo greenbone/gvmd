@@ -71,7 +71,7 @@ manage_session_set_timezone (const char *timezone)
 /**
  * @brief Check whether database is empty.
  *
- * @param[in]  1 if empty, else 0;
+ * @return 1 if empty, else 0.
  */
 int
 manage_db_empty ()
@@ -2641,9 +2641,6 @@ manage_backup_db (const gchar *database)
 
 /**
  * @brief Dummy for SQLite3 compatibility.
- *
- * @param[in]  stmt      Statement.
- * @param[in]  position  Column position.
  *
  * @return 0 success, -1 error.
  */

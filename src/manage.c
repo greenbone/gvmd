@@ -344,7 +344,8 @@ certificate_iso_time (time_t time)
 /**
  * @brief Tests the activation and expiration time of a certificate.
  *
- * @param[in] activated  The activation.
+ * @param[in] activates  Activation time.
+ * @param[in] expires    Expiration time.
  *
  * @return Static status string.
  */
@@ -2312,9 +2313,18 @@ get_tasks_last_report (entity_t get_tasks)
 }
 
 /**
- * @brief Get last report from GET_TASKS response.
+ * @brief Setup ID variables for slave_setup.
  *
- * @param[in]  get_tasks  GET_TASKS response.
+ * @param[in]   connection  Connection to slave.
+ * @param[in]   task        The task.
+ * @param[in]   get_tasks   GET_TASKS response.
+ * @param[out]  slave_config_uuid           UUID of slave config.
+ * @param[out]  slave_target_uuid           UUID of slave target.
+ * @param[out]  slave_port_list_uuid        UUID of slave port list.
+ * @param[out]  slave_ssh_credential_uuid   UUID of slave SSH credential.
+ * @param[out]  slave_smb_credential_uuid   UUID of slave SMB credential.
+ * @param[out]  slave_esxi_credential_uuid  UUID of slave ESXi credential.
+ * @param[out]  slave_snmp_credential_uuid  UUID of slave SNMP credential.
  *
  * @return 0 success, 1 giveup.
  */
@@ -3765,6 +3775,7 @@ get_osp_task_options (task_t task, target_t target)
  * @param[in]   task        The task.
  * @param[in]   target      The target.
  * @param[out]  scan_id     The new scan uuid.
+ * @param[out]  error       Error return.
  *
  * @return 0 success, -1 if scanner is down.
  */
@@ -4001,7 +4012,7 @@ cve_scan_host (task_t task, openvas_host_t *openvas_host)
 
               app = prognosis_iterator_cpe (&prognosis);
               cve = prognosis_iterator_cve (&prognosis);
-              location = cve_app_location (report_host, cve, app);
+              location = app_location (report_host, app);
 
               desc = g_strdup_printf ("The host carries the product: %s\n"
                                       "It is vulnerable according to: %s.\n"
@@ -4170,7 +4181,7 @@ fork_cve_scan_handler (task_t task, target_t target)
 /**
  * @brief Start a CVE task.
  *
- * @param[in]   task_id    The task ID.
+ * @param[in]   task    The task.
  *
  * @return 0 success, 99 permission denied, -1 error.
  */
@@ -4274,7 +4285,14 @@ scanner_setup (scanner_t scanner)
 /**
  * @brief Initialise variables required for running a scan.
  *
- * @param[in]  task  Task.
+ * @param[in]  task             Task.
+ * @param[out] config           Config.
+ * @param[out] target           Target.
+ * @param[out] port_list        Port list.
+ * @param[out] ssh_credential   SSH credential.
+ * @param[out] smb_credential   SMB credential.
+ * @param[out] esxi_credential  ESXI credential.
+ * @param[out] snmp_credential  SNMP credential.
  *
  * @return 0 success, -1 error, 99 permission denied.
  */
@@ -4336,10 +4354,12 @@ run_task_setup (task_t task, config_t *config, target_t *target,
 /**
  * @brief Prepare report for running a task.
  *
- * @param[in]   task       The task.
- * @param[out]  report_id  The report ID.
- * @param[in]   from       0 start from beginning, 1 continue from stopped, 2
- *                         continue if stopped else start from beginning.
+ * @param[in]   task        The task.
+ * @param[out]  report_id   The report ID.
+ * @param[in]   from        0 start from beginning, 1 continue from stopped, 2
+ *                          continue if stopped else start from beginning.
+ * @param[in]   run_status  The task's run status.
+ * @param[in]   last_stopped_report  Last stopped report of task.
  *
  * @return 0 success, -1 error, -3 creating the report failed.
  */
@@ -4550,7 +4570,7 @@ run_slave_or_omp_task (task_t task, int from, char **report_id,
  * @brief Start a task on an OMP scanner.
  *
  * @param[in]   task        The task.
- * @param[in]   slave       Slave to run task on.
+ * @param[in]   scanner     Slave scanner to run task on.
  * @param[in]   from        0 start from beginning, 1 continue from stopped, 2
  *                          continue if stopped else start from beginning.
  * @param[out]  report_id   The report ID.
@@ -4629,12 +4649,6 @@ run_omp_task (task_t task, scanner_t scanner, int from, char **report_id)
  * @param[in]   scanner     Scanner to use.
  * @param[in]   from        0 start from beginning, 1 continue from stopped, 2
  *                          continue if stopped else start from beginning.
- * @param[in]   target      Task target.
- * @param[in]   config      Task config.
- * @param[in]   ssh_credential   Target SSH credential.
- * @param[in]   smb_credential   Target SMB credential.
- * @param[in]   esxi_credential  Target ESXI credential.
- * @param[in]   snmp_credential  Target SNMP credential.
  * @param[out]  report_id   The report ID.
  *
  * @return Before forking: 1 task is active already, 3 failed to find task,
@@ -5470,7 +5484,6 @@ resume_task (const char *task_id, char **report_id)
  *
  * @param[in]  task_id    UUID of task.
  * @param[in]  slave_id   UUID of slave.
- * @param[out] forked     Whether the current process is a fork of the caller.
  *
  * @return 0 success, 1 success, process forked, 2 task not found,
  *         3 slave not found, 4 slaves not supported by scanner, 5 task cannot

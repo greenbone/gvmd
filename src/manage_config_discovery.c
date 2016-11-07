@@ -47,7 +47,6 @@
  *
  * Caller must lock the db.
  *
- * @param[in]  uuid           UUID for new scan config.
  * @param[in]  selector_name  Name of NVT selector to use.
  */
 void

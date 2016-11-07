@@ -548,7 +548,7 @@ check_certificate (const char *cert_str)
 /**
  * @brief Check that a string represents a valid Private Key.
  *
- * @param[in]  cert_str     Private Key string.
+ * @param[in]  key_str  Private Key string.
  *
  * @return 0 if valid, 1 otherwise.
  */
@@ -5797,6 +5797,7 @@ make_xml_error_syntax (const char *tag, const char *text)
  * @brief Expand to XML for a STATUS_SERVICE_UNAVAILABLE response.
  *
  * @param  tag   Name of the command generating the response.
+ * @param  text  Status text.
  */
 #define XML_ERROR_UNAVAILABLE(tag, text)                  \
  "<" tag "_response"                                      \
@@ -6515,7 +6516,6 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
  * @param[in]   type        Resource type.
  * @param[in]   type_name   Resource type name.
  * @param[in]   id          Resource id.
- * @param[in]   get_name    Whether to include name in the log message.
  * @param[in]   action      Action done.
  * @param[in]   fail        Whether it is a fail event.
  */
@@ -6571,7 +6571,6 @@ log_event_internal (const char *type, const char *type_name, const char *id,
  * @param[in]   type        Resource type.
  * @param[in]   type_name   Resource type name.
  * @param[in]   id          Resource id.
- * @param[in]   get_name    Whether to include name in the log message.
  * @param[in]   action      Action done.
  */
 static void
@@ -6587,7 +6586,6 @@ log_event (const char *type, const char *type_name, const char *id,
  * @param[in]   type        Resource type.
  * @param[in]   type_name   Resource type name.
  * @param[in]   id          Resource id.
- * @param[in]   get_name    Whether to include name in the log message.
  * @param[in]   action      Action done.
  */
 static void
@@ -10352,6 +10350,7 @@ send_nvt (iterator_t *nvts, int details, int preferences, int pref_count,
  *
  * @param[in]  task             The task.
  * @param[in]  apply_overrides  Whether to apply overrides.
+ * @param[in]  min_qod          Min QOD.
  * @param[in]  write_to_client       Function to write to client.
  * @param[in]  write_to_client_data  Argument to \p write_to_client.
  *
@@ -11781,6 +11780,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
  * @param[in]  sort_data_list    GList of sort data.
  * @param[out] group_column_type     Type of the group_column.
  * @param[out] subgroup_column_type  Type of the group_column.
+ * @param[out] data_column_types     Types of the data_column.
  * @param[out] data_columns      data_column_list copied to a GArray.
  * @param[out] text_column_types Types of the text_columns.
  * @param[out] text_columns      text_column_list copied to a GArray.
@@ -11924,8 +11924,8 @@ strcasecmp_reverse (gchar *s1, gchar *s2)
 /**
  * @brief Helper function for comparing word count structs by count.
  *
- * @param[in]  s1     The first count struct to compare
- * @param[in]  s2     The second count struct to compare
+ * @param[in]  c1     The first count struct to compare
+ * @param[in]  c2     The second count struct to compare
  * @param[in]  dummy  Dummy parameter required by glib.
  *
  * @return A value > 0 if c1 > c2, a value < 0 if c1 < c2, 0 if c1 = c2.
@@ -11939,8 +11939,8 @@ compare_count_data (gconstpointer c1, gconstpointer c2, gpointer dummy)
 /**
  * @brief Helper function for comparing word count structs by count in reverse.
  *
- * @param[in]  s1     The first count struct to compare
- * @param[in]  s2     The second count struct to compare
+ * @param[in]  c1     The first count struct to compare
+ * @param[in]  c2     The second count struct to compare
  * @param[in]  dummy  Dummy parameter required by glib.
  *
  * @return A value > 0 if c1 < c2, a value < 0 if c1 > c2, 0 if c1 = c2.
@@ -14728,9 +14728,10 @@ feed_type_name (int feed_type)
 /**
  * @brief Get a single feed.
  *
- * @param[in]  error        Error parameter.
  * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
  * @param[in]  sync_script  Sync script.
+ * @param[in]  feed_type    Type of feed.
  */
 static void
 get_feed (omp_parser_t *omp_parser, GError **error, const gchar *sync_script,

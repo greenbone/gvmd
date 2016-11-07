@@ -87,7 +87,7 @@ acl_user_may (const char *operation)
 /**
  * @brief Check whether a role has Super Admin capability.
  *
- * @param[in]  uuid  Uuid of user.
+ * @param[in]  role_id  ID of role.
  *
  * @return 1 if role can Super Admin, else 0.
  */
@@ -522,8 +522,8 @@ acl_user_has_super_on_resource (const char *type, const char *field,
  * A Super permissions can give a user effective ownership of another
  * user's resource.
  *
- * @param[in]  type  Type of resource, for example "report_format".
- * @param[in]  name  Name of resource.
+ * @param[in]  type   Type of resource, for example "report_format".
+ * @param[in]  value  Name of resource.
  *
  * @return 1 if user owns resource, else 0.
  */
