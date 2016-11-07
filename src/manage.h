@@ -27,7 +27,7 @@
 #ifndef OPENVAS_MANAGER_MANAGE_H
 #define OPENVAS_MANAGER_MANAGE_H
 
-#include "sql.h"
+#include "iterator.h"
 
 #include <stdio.h>
 #include <glib.h>
@@ -56,6 +56,11 @@
                             G_LOG_LEVEL_INFO,     \
                             __VA_ARGS__)
 #endif /* g_info not defined */
+
+/**
+ * @brief A resource, like a task or target.
+ */
+typedef long long int resource_t;
 
 /**
  * @brief Name value pair.

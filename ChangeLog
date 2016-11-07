@@ -1,3 +1,17 @@
+2016-11-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Remove the SQL interface from the external interface to the "manage"
+	library.  SQL should only be run internally in the "manage" library.  This
+	is to prevent us from doing direct SQL externally, like in omp.c.
+
+	* src/sql.h (sql_stmt_t, iterator_t, cleanup_iterator, next): Remove.
+	Now in iterator.h.
+
+	* src/manage.h: Include iterator.h and define resource_t, instead of
+	including sql.h.
+
+	* src/iterator.h: New file.
+
 2016-11-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Remove more direct SQL that has crept out of manage_sql.c.

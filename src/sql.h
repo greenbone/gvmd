@@ -26,7 +26,8 @@
 #ifndef OPENVAS_MANAGER_SQL_H
 #define OPENVAS_MANAGER_SQL_H
 
-#include "lsc_crypt.h"  /* For lsc_crypt_ctx_t. */
+#include "iterator.h"
+
 #include <glib.h>
 
 
@@ -36,22 +37,6 @@
  * @brief A resource, like a task or target.
  */
 typedef long long int resource_t;
-
-/**
- * @brief A prepared SQL statement.
- */
-typedef struct sql_stmt sql_stmt_t;
-
-/**
- * @brief A generic SQL iterator.
- */
-typedef struct
-{
-  sql_stmt_t* stmt;          ///< SQL statement.
-  gboolean done;             ///< End flag.
-  int prepared;              ///< Prepared flag.
-  lsc_crypt_ctx_t crypt_ctx; ///< Encryption context.
-} iterator_t;
 
 
 /* Helpers. */
@@ -161,6 +146,9 @@ sql_rollback ();
 
 /* Iterators. */
 
+/* These functions are for "internal" use.  They may only be accessed by code
+ * that is allowed to run SQL statements directly. */
+
 void
 init_prepared_iterator (iterator_t*, sql_stmt_t*);
 
@@ -187,12 +175,6 @@ iterator_column_name (iterator_t*, int);
 
 int
 iterator_column_count (iterator_t*);
-
-void
-cleanup_iterator (iterator_t*);
-
-gboolean
-next (iterator_t*);
 
 
 /* Prepared statements. */
