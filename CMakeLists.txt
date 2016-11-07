@@ -185,7 +185,8 @@ set (OPENVAS_LOG_DIR      "${LOCALSTATEDIR}/log/openvas")
 set (OPENVAS_SYSCONF_DIR  "${SYSCONFDIR}/openvas")
 set (OPENVAS_SCAP_RES_DIR "${OPENVAS_DATA_DIR}/scap")
 set (OPENVAS_CERT_RES_DIR "${OPENVAS_DATA_DIR}/cert")
-set (OPENVAS_CA_DIR        "${OPENVAS_STATE_DIR}/openvasmd/trusted_certs")
+set (OPENVASMD_STATE_DIR  "${OPENVAS_STATE_DIR}/openvasmd")
+set (OPENVAS_CA_DIR       "${OPENVASMD_STATE_DIR}/trusted_certs")
 set (OPENVAS_LIB_INSTALL_DIR     "${LIBDIR}")
 
 set (OPENVAS_SCANNER_CERTIFICATE "${OPENVAS_STATE_DIR}/CA/servercert.pem")
@@ -305,6 +306,8 @@ add_subdirectory (doc)
 ## Install
 
 install (CODE "file (MAKE_DIRECTORY \$ENV{DESTDIR}${OPENVAS_DATA_DIR}/openvasmd/report_formats)")
+
+install (DIRECTORY DESTINATION ${OPENVASMD_STATE_DIR})
 
 install (FILES ${CMAKE_BINARY_DIR}/src/openvasmd_log.conf
                ${CMAKE_SOURCE_DIR}/src/pwpolicy.conf

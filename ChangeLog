@@ -1,3 +1,8 @@
+2016-11-07  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* CMakeLists.txt: Create OpenVAS Manager state dir when installing
+	since it is expected to exist when a GPGME context is created.
+
 2016-11-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	GET_NVT_FEED_VERSION was removed.  Hence increase database version to
