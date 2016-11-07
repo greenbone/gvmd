@@ -1,5 +1,17 @@
 2016-11-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	GET_NVT_FEED_VERSION was removed.  Hence increase database version to
+	184.  Add database migration from version 183 to 184.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 184.
+
+	* src/manage_migrators.c (migrate_183_to_184): New function.
+	(database_migrators): Add migrate_183_to_184.
+
+	* doc/db.png: Update for version change.
+
+2016-11-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Remove the SQL interface from the external interface to the "manage"
 	library.  SQL should only be run internally in the "manage" library.  This
 	is to prevent us from doing direct SQL externally, like in omp.c.

@@ -13940,6 +13940,41 @@ migrate_182_to_183 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 183 to version 184.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_183_to_184 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 183. */
+
+  if (manage_db_version () != 183)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* OMP command GET_NVT_FEED_VERSION was removed. */
+
+  sql ("DELETE FROM permissions WHERE name = 'get_nvt_feed_version';");
+
+  sql ("DELETE FROM permissions_trash WHERE name = 'get_nvt_feed_version';");
+
+  /* Set the database version to 184. */
+
+  set_db_version (184);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -14137,6 +14172,7 @@ static migrator_t database_migrators[]
     {181, migrate_180_to_181},
     {182, migrate_181_to_182},
     {183, migrate_182_to_183},
+    {184, migrate_183_to_184},
     /* End marker. */
     {-1, NULL}};
 
