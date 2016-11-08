@@ -21978,19 +21978,18 @@ init_report_host_details_iterator (iterator_t* iterator,
    * reports as they are only used internally for product detection. */
   init_iterator (iterator,
                  "SELECT id, name, value, source_type, source_name,"
-                 " source_description, NULL"
+                 "       source_description, NULL"
                  " FROM report_host_details WHERE report_host = %llu"
                  " AND NOT name IN ('detected_at', 'detected_by')"
-                 " UNION"
-                 " SELECT 0, 'Closed CVE', cve, 'openvasmd', oid,"
-                 "  nvts.name, cvss_base"
-                 " FROM nvts, report_host_details"
-                 " WHERE cve != 'NOCVE'"
-                 " AND family IN (" LSC_FAMILY_LIST ")"
-                 " AND nvts.oid = report_host_details.source_name"
-                 " AND report_host = %llu"
-                 " AND report_host_details.name = 'EXIT_CODE'"
-                 " AND report_host_details.value = 'EXIT_NOTVULN';",
+                 " UNION SELECT 0, 'Closed CVE', cve, 'openvasmd', oid,"
+                 "              nvts.name, cvss_base"
+                 "       FROM nvts, report_host_details"
+                 "       WHERE cve != 'NOCVE'"
+                 "       AND family IN (" LSC_FAMILY_LIST ")"
+                 "       AND nvts.oid = report_host_details.source_name"
+                 "       AND report_host = %llu"
+                 "       AND report_host_details.name = 'EXIT_CODE'"
+                 "       AND report_host_details.value = 'EXIT_NOTVULN';",
                  report_host,
                  report_host);
 }

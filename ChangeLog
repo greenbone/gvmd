@@ -1,5 +1,10 @@
 2016-11-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_report_host_details_iterator): Indent SQL to make
+	UNION more obvious.
+
+2016-11-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml.in (create_alert): Move into right order.
 	(create_asset): Correct example.
 
