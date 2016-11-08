@@ -1,5 +1,12 @@
 2016-11-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml.in (create_alert): Move into right order.
+	(create_asset): Correct example.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+2016-11-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* doc/Doxyfile.in, doc/Doxyfile_full.in: Exclude DEF_ACCESS macro calls
 	from processing, because it's handy to give them doc strings.
 

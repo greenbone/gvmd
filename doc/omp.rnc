@@ -12,9 +12,9 @@ command
   = authenticate
     | commands
     | create_agent
+    | create_alert
     | create_asset
     | create_config
-    | create_alert
     | create_credential
     | create_filter
     | create_group
@@ -127,9 +127,9 @@ response
   = authenticate_response
     | commands_response
     | create_agent_response
+    | create_alert_response
     | create_asset_response
     | create_config_response
-    | create_alert_response
     | create_credential_response
     | create_filter_response
     | create_group_response
@@ -3570,94 +3570,6 @@ create_agent_howto_use
        base64
      }
 
-## Command create_asset
-##
-## Create an asset.
-
-create_asset
- = element create_asset
-     {
-       ( create_asset_asset
-           | create_asset_report )
-     }
-
-create_asset_asset
- = element asset
-     {
-       create_asset_asset_name
-       & create_asset_asset_comment
-     }
-
-# A name for the asset.
-create_asset_asset_name
- = element name
-     {
-       name
-     }
-
-# A comment on the asset.
-create_asset_asset_comment
- = element comment
-     {
-       text
-     }
-
-# Report from which to import assets.
-create_asset_report
- = element report
-     {
-       attribute id { uuid }
-       & create_asset_report_filter
-     }
-
-# Filter, for min_qod and apply_overrides.
-create_asset_report_filter
- = element filter
-     {
-       create_asset_report_filter_term
-     }
-
-# Filter term.
-create_asset_report_filter_term
- = element term
-     {
-       text
-     }
-
-## Command create_config
-##
-## Create a config.
-
-create_config
- = element create_config
-     {
-       create_config_comment?
-       & ( create_config_copy
-           | get_configs_response )
-       & create_config_name
-     }
-
-# A comment on the config.
-create_config_comment
- = element comment
-     {
-       text
-     }
-
-# The UUID of an existing config.
-create_config_copy
- = element copy
-     {
-       uuid
-     }
-
-# A name for the config.
-create_config_name
- = element name
-     {
-       name
-     }
-
 ## Command create_alert
 ##
 ## Create an alert.
@@ -3769,6 +3681,94 @@ create_alert_filter
  = element filter
      {
        attribute id { uuid }
+     }
+
+## Command create_asset
+##
+## Create an asset.
+
+create_asset
+ = element create_asset
+     {
+       ( create_asset_asset
+           | create_asset_report )
+     }
+
+create_asset_asset
+ = element asset
+     {
+       create_asset_asset_name
+       & create_asset_asset_comment
+     }
+
+# A name for the asset.
+create_asset_asset_name
+ = element name
+     {
+       name
+     }
+
+# A comment on the asset.
+create_asset_asset_comment
+ = element comment
+     {
+       text
+     }
+
+# Report from which to import assets.
+create_asset_report
+ = element report
+     {
+       attribute id { uuid }
+       & create_asset_report_filter
+     }
+
+# Filter, for min_qod and apply_overrides.
+create_asset_report_filter
+ = element filter
+     {
+       create_asset_report_filter_term
+     }
+
+# Filter term.
+create_asset_report_filter_term
+ = element term
+     {
+       text
+     }
+
+## Command create_config
+##
+## Create a config.
+
+create_config
+ = element create_config
+     {
+       create_config_comment?
+       & ( create_config_copy
+           | get_configs_response )
+       & create_config_name
+     }
+
+# A comment on the config.
+create_config_comment
+ = element comment
+     {
+       text
+     }
+
+# The UUID of an existing config.
+create_config_copy
+ = element copy
+     {
+       uuid
+     }
+
+# A name for the config.
+create_config_name
+ = element name
+     {
+       name
      }
 
 ## Command create_credential
@@ -7842,6 +7842,16 @@ create_agent_response
        & attribute id { uuid }
      }
 
+## Response to create_alert
+
+create_alert_response
+ = element create_alert_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
+     }
+
 ## Response to create_asset
 
 create_asset_response
@@ -7856,16 +7866,6 @@ create_asset_response
 
 create_config_response
  = element create_config_response
-     {
-       attribute status { status }
-       & attribute status_text { text }
-       & attribute id { uuid }
-     }
-
-## Response to create_alert
-
-create_alert_response
- = element create_alert_response
      {
        attribute status { status }
        & attribute status_text { text }

@@ -191,16 +191,16 @@
 <td id="index"><div style="margin-left: 15px;">Create an agent.</div></td>
 </tr>
 <tr id="index">
+<td id="index"><a href="#command_create_alert">create_alert</a></td>
+<td id="index"><div style="margin-left: 15px;">Create an alert.</div></td>
+</tr>
+<tr id="index">
 <td id="index"><a href="#command_create_asset">create_asset</a></td>
 <td id="index"><div style="margin-left: 15px;">Create an asset.</div></td>
 </tr>
 <tr id="index">
 <td id="index"><a href="#command_create_config">create_config</a></td>
 <td id="index"><div style="margin-left: 15px;">Create a config.</div></td>
-</tr>
-<tr id="index">
-<td id="index"><a href="#command_create_alert">create_alert</a></td>
-<td id="index"><div style="margin-left: 15px;">Create an alert.</div></td>
 </tr>
 <tr id="index">
 <td id="index"><a href="#command_create_credential">create_credential</a></td>
@@ -640,9 +640,9 @@ command
   = authenticate
     | commands
     | create_agent
+    | create_alert
     | create_asset
     | create_config
-    | create_alert
     | create_credential
     | create_filter
     | create_group
@@ -755,9 +755,9 @@ response
   = authenticate_response
     | commands_response
     | create_agent_response
+    | create_alert_response
     | create_asset_response
     | create_config_response
-    | create_alert_response
     | create_credential_response
     | create_filter_response
     | create_group_response
@@ -7704,279 +7704,7 @@ create_agent_howto_use
 </div>
 </div>
 <div>
-<div><h3 id="command_create_asset">7.4
-        Command <tt>create_asset</tt>
-</h3></div>
-<p>In short: Create an asset.</p>
-<p>
-        The client uses the create_asset command to create a new asset.
-      </p>
-<h4>7.4.1 Structure</h4>
-<ul style="list-style: none">
-<li>
-<i>Command</i><ul style="list-style: none"><li>
-<i>One of</i><b></b><ul style="list-style: none">
-<li>
-              &lt;<b>asset</b>&gt;
-              <ul style="list-style: none">
-<li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">A name for the asset.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>comment</b>&gt;
-              <div style="margin-left: 15px; display: inline;">A comment on the asset.</div>
-<ul style="list-style: none"></ul>
-</li>
-</ul>
-</li>
-<li>
-              &lt;<b>report</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Report from which to import assets.</div>
-<ul style="list-style: none">
-<li>
-          @<b>id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li>
-<li>
-              &lt;<b>filter</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Filter, for min_qod and apply_overrides.</div>
-<ul style="list-style: none"><li>
-              &lt;<b>term</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Filter term.</div>
-<ul style="list-style: none"></ul>
-</li></ul>
-</li>
-</ul>
-</li>
-</ul>
-</li></ul>
-</li>
-<li style="margin-top: 15px;">
-<i>Response</i><ul style="list-style: none">
-<li>
-          @<b>status</b>
-          (<a href="#type_status">status</a>)
-          </li>
-<li>
-          @<b>status_text</b>
-          (text)
-          </li>
-<li>
-          @<b>id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li>
-</ul>
-</li>
-</ul>
-<h4>7.4.2 RNC</h4>
-<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>create_asset
- = element create_asset
-     {
-       ( create_asset_asset
-           | create_asset_report )
-     }
-
-create_asset_asset
- = element asset
-     {
-       create_asset_asset_name
-       &amp; create_asset_asset_comment
-     }
-
-create_asset_asset_name
- = element name
-     {
-       name
-     }
-
-create_asset_asset_comment
- = element comment
-     {
-       text
-     }
-
-create_asset_report
- = element report
-     {
-       attribute id { uuid }
-       &amp; create_asset_report_filter
-     }
-
-create_asset_report_filter
- = element filter
-     {
-       create_asset_report_filter_term
-     }
-
-create_asset_report_filter_term
- = element term
-     {
-       text
-     }
-</pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>create_asset_response
- = element create_asset_response
-     {
-       attribute status { status }
-       &amp; attribute status_text { text }
-       &amp; attribute id { uuid }
-     }
-</pre></div>
-</div>
-<h4>7.4.3 Example: Create a target, giving a host list</h4>
-<div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_target&gt;
-   &lt;name&gt;All GNU/Linux machines&lt;/name&gt;
-   &lt;hosts&gt;192.168.1.0/24&lt;/hosts&gt;
- &lt;/create_target&gt;
-</pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_target_response status="201"
-                         status_text="OK, resource created"
-                         id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
-</pre></div>
-</div>
-</div>
-<div>
-<div><h3 id="command_create_config">7.5
-        Command <tt>create_config</tt>
-</h3></div>
-<p>In short: Create a config.</p>
-<p>
-        The client uses the create_config command to create a new config.
-      </p>
-<p>This command can be called in three ways:<ul>
-<li>
-          With a copy element.  The new config is a copy of the existing
-          config, with the given name.
-        </li>
-<li>
-          With an embedded get_configs response element.  The config is
-          created as defined by the get_configs response element.  Name is
-          actually optional in this case.  The config is given the name of
-          the config in the get_configs response.  If there is already a
-          config with this name, then a number is attached to the name to
-          make it unique.
-        </li>
-</ul></p>
-<h4>7.5.1 Structure</h4>
-<ul style="list-style: none">
-<li>
-<i>Command</i><ul style="list-style: none">
-<li>
-              &lt;<b>comment</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">A comment on the config.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-<i>One of</i><b></b><ul style="list-style: none">
-<li>
-              &lt;<b>copy</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The UUID of an existing config.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-          &lt;<b>get_configs_response&gt;</b><div style="margin-left: 15px; display: inline;">
-            Response to <a href="#command_get_configs">get_configs</a> command.
-          </div>
-</li>
-</ul>
-</li>
-<li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">A name for the config.</div>
-<ul style="list-style: none"></ul>
-</li>
-</ul>
-</li>
-<li style="margin-top: 15px;">
-<i>Response</i><ul style="list-style: none">
-<li>
-          @<b>status</b>
-          (<a href="#type_status">status</a>)
-          </li>
-<li>
-          @<b>status_text</b>
-          (text)
-          </li>
-<li>
-          @<b>id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li>
-</ul>
-</li>
-</ul>
-<h4>7.5.2 RNC</h4>
-<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>create_config
- = element create_config
-     {
-       create_config_comment?
-       &amp; ( create_config_copy
-           | get_configs_response )
-       &amp; create_config_name
-     }
-
-create_config_comment
- = element comment
-     {
-       text
-     }
-
-create_config_copy
- = element copy
-     {
-       uuid
-     }
-
-create_config_name
- = element name
-     {
-       name
-     }
-</pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>create_config_response
- = element create_config_response
-     {
-       attribute status { status }
-       &amp; attribute status_text { text }
-       &amp; attribute id { uuid }
-     }
-</pre></div>
-</div>
-<h4>7.5.3 Example: Copy a config</h4>
-<div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_config&gt;
-   &lt;copy&gt;daba56c8-73ec-11df-a475-002264764cea&lt;/copy&gt;
-   &lt;name&gt;Full&lt;/name&gt;
- &lt;/create_config&gt;
-</pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_config_response status="201"
-                         status_text="OK, resource created"
-                         id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
-</pre></div>
-</div>
-<h4>7.5.3 Example: Create a config from a GET_CONFIGS response</h4>
-<div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_config&gt;
-   &lt;get_configs_response&gt;
-     &lt;config id="daba56c8-73ec-11df-a475-002264764cea"&gt;
-       &lt;name&gt;Full and fast&lt;/name&gt;
-       ...
-     &lt;/config&gt;
-   &lt;/get_configs_response&gt;
- &lt;/create_config&gt;
-</pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_config_response status="201"
-                         status_text="OK, resource created"
-                         id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
-</pre></div>
-</div>
-</div>
-<div>
-<div><h3 id="command_create_alert">7.6
+<div><h3 id="command_create_alert">7.4
         Command <tt>create_alert</tt>
 </h3></div>
 <p>In short: Create an alert.</p>
@@ -7984,7 +7712,7 @@ create_config_name
         The client uses the create_alert command to create a new
         alert.
       </p>
-<h4>7.6.1 Structure</h4>
+<h4>7.4.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -8069,7 +7797,7 @@ create_config_name
 </ul>
 </li>
 </ul>
-<h4>7.6.2 RNC</h4>
+<h4>7.4.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>create_alert
  = element create_alert
@@ -8176,7 +7904,7 @@ create_alert_filter
      }
 </pre></div>
 </div>
-<h4>7.6.3 Example: Create an alert</h4>
+<h4>7.4.3 Example: Create an alert</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_alert&gt;
    &lt;name&gt;emergency&lt;/name&gt;
@@ -8210,6 +7938,280 @@ create_alert_filter
 <i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_alert_response status="201"
                         status_text="OK, resource created"
                         id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
+</pre></div>
+</div>
+</div>
+<div>
+<div><h3 id="command_create_asset">7.5
+        Command <tt>create_asset</tt>
+</h3></div>
+<p>In short: Create an asset.</p>
+<p>
+        The client uses the create_asset command to create a new asset.
+      </p>
+<h4>7.5.1 Structure</h4>
+<ul style="list-style: none">
+<li>
+<i>Command</i><ul style="list-style: none"><li>
+<i>One of</i><b></b><ul style="list-style: none">
+<li>
+              &lt;<b>asset</b>&gt;
+              <ul style="list-style: none">
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">A name for the asset.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              <div style="margin-left: 15px; display: inline;">A comment on the asset.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>report</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Report from which to import assets.</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>filter</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter, for min_qod and apply_overrides.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>term</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter term.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li></ul>
+</li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>7.5.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<i>Command</i><div style="margin-left: 5%"><pre>create_asset
+ = element create_asset
+     {
+       ( create_asset_asset
+           | create_asset_report )
+     }
+
+create_asset_asset
+ = element asset
+     {
+       create_asset_asset_name
+       &amp; create_asset_asset_comment
+     }
+
+create_asset_asset_name
+ = element name
+     {
+       name
+     }
+
+create_asset_asset_comment
+ = element comment
+     {
+       text
+     }
+
+create_asset_report
+ = element report
+     {
+       attribute id { uuid }
+       &amp; create_asset_report_filter
+     }
+
+create_asset_report_filter
+ = element filter
+     {
+       create_asset_report_filter_term
+     }
+
+create_asset_report_filter_term
+ = element term
+     {
+       text
+     }
+</pre></div>
+<i>Response</i><div style="margin-left: 5%"><pre>create_asset_response
+ = element create_asset_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+       &amp; attribute id { uuid }
+     }
+</pre></div>
+</div>
+<h4>7.5.3 Example: Create an asset</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_asset&gt;
+   &lt;asset&gt;
+     &lt;type&gt;host&lt;/type&gt;
+     &lt;name&gt;Localhost&lt;/name&gt;
+   &lt;/asset&gt;
+ &lt;/create_asset&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_asset_response status="201"
+                        status_text="OK, resource created"
+                        id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
+</pre></div>
+</div>
+</div>
+<div>
+<div><h3 id="command_create_config">7.6
+        Command <tt>create_config</tt>
+</h3></div>
+<p>In short: Create a config.</p>
+<p>
+        The client uses the create_config command to create a new config.
+      </p>
+<p>This command can be called in three ways:<ul>
+<li>
+          With a copy element.  The new config is a copy of the existing
+          config, with the given name.
+        </li>
+<li>
+          With an embedded get_configs response element.  The config is
+          created as defined by the get_configs response element.  Name is
+          actually optional in this case.  The config is given the name of
+          the config in the get_configs response.  If there is already a
+          config with this name, then a number is attached to the name to
+          make it unique.
+        </li>
+</ul></p>
+<h4>7.6.1 Structure</h4>
+<ul style="list-style: none">
+<li>
+<i>Command</i><ul style="list-style: none">
+<li>
+              &lt;<b>comment</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">A comment on the config.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<i>One of</i><b></b><ul style="list-style: none">
+<li>
+              &lt;<b>copy</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The UUID of an existing config.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>get_configs_response&gt;</b><div style="margin-left: 15px; display: inline;">
+            Response to <a href="#command_get_configs">get_configs</a> command.
+          </div>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">A name for the config.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>7.6.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<i>Command</i><div style="margin-left: 5%"><pre>create_config
+ = element create_config
+     {
+       create_config_comment?
+       &amp; ( create_config_copy
+           | get_configs_response )
+       &amp; create_config_name
+     }
+
+create_config_comment
+ = element comment
+     {
+       text
+     }
+
+create_config_copy
+ = element copy
+     {
+       uuid
+     }
+
+create_config_name
+ = element name
+     {
+       name
+     }
+</pre></div>
+<i>Response</i><div style="margin-left: 5%"><pre>create_config_response
+ = element create_config_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+       &amp; attribute id { uuid }
+     }
+</pre></div>
+</div>
+<h4>7.6.3 Example: Copy a config</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_config&gt;
+   &lt;copy&gt;daba56c8-73ec-11df-a475-002264764cea&lt;/copy&gt;
+   &lt;name&gt;Full&lt;/name&gt;
+ &lt;/create_config&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_config_response status="201"
+                         status_text="OK, resource created"
+                         id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
+</pre></div>
+</div>
+<h4>7.6.3 Example: Create a config from a GET_CONFIGS response</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_config&gt;
+   &lt;get_configs_response&gt;
+     &lt;config id="daba56c8-73ec-11df-a475-002264764cea"&gt;
+       &lt;name&gt;Full and fast&lt;/name&gt;
+       ...
+     &lt;/config&gt;
+   &lt;/get_configs_response&gt;
+ &lt;/create_config&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_config_response status="201"
+                         status_text="OK, resource created"
+                         id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
 </pre></div>
 </div>
 </div>

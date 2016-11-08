@@ -3480,205 +3480,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
-    <name>create_asset</name>
-    <summary>Create an asset</summary>
-    <description>
-      <p>
-        The client uses the create_asset command to create a new asset.
-      </p>
-    </description>
-    <pattern>
-      <or>
-        <e>asset</e>
-        <e>report</e>
-      </or>
-    </pattern>
-    <ele>
-      <name>asset</name>
-      <pattern>
-        <e>name</e>
-        <e>comment</e>
-      </pattern>
-      <ele>
-        <name>name</name>
-        <summary>A name for the asset</summary>
-        <pattern>
-          <t>name</t>
-        </pattern>
-      </ele>
-      <ele>
-        <name>comment</name>
-        <summary>A comment on the asset</summary>
-        <pattern>
-          text
-        </pattern>
-      </ele>
-    </ele>
-    <ele>
-      <name>report</name>
-      <summary>Report from which to import assets</summary>
-      <pattern>
-        <attrib>
-          <name>id</name>
-          <type>uuid</type>
-          <required>1</required>
-        </attrib>
-        <e>filter</e>
-      </pattern>
-      <ele>
-        <name>filter</name>
-        <summary>Filter, for min_qod and apply_overrides</summary>
-        <pattern>
-          <e>term</e>
-        </pattern>
-        <ele>
-          <name>term</name>
-          <summary>Filter term</summary>
-          <pattern>
-            text
-          </pattern>
-        </ele>
-      </ele>
-    </ele>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>id</name>
-          <type>uuid</type>
-          <required>1</required>
-        </attrib>
-      </pattern>
-    </response>
-    <example>
-      <summary>Create a target, giving a host list</summary>
-      <request>
-        <create_target>
-          <name>All GNU/Linux machines</name>
-          <hosts>192.168.1.0/24</hosts>
-        </create_target>
-      </request>
-      <response>
-        <create_target_response status="201"
-                                status_text="OK, resource created"
-                                id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
-        </create_target_response>
-      </response>
-    </example>
-  </command>
-  <command>
-    <name>create_config</name>
-    <summary>Create a config</summary>
-    <description>
-      <p>
-        The client uses the create_config command to create a new config.
-      </p>
-      <l>
-        <lh>This command can be called in three ways:</lh>
-        <li>
-          With a copy element.  The new config is a copy of the existing
-          config, with the given name.
-        </li>
-        <li>
-          With an embedded get_configs response element.  The config is
-          created as defined by the get_configs response element.  Name is
-          actually optional in this case.  The config is given the name of
-          the config in the get_configs response.  If there is already a
-          config with this name, then a number is attached to the name to
-          make it unique.
-        </li>
-      </l>
-    </description>
-    <pattern>
-      <o><e>comment</e></o>
-      <or>
-        <e>copy</e>
-        <r>get_configs</r>
-      </or>
-      <e>name</e>
-    </pattern>
-    <ele>
-      <name>comment</name>
-      <summary>A comment on the config</summary>
-      <pattern>
-        text
-      </pattern>
-    </ele>
-    <ele>
-      <name>copy</name>
-      <!-- TODO UUIDs are normally in attributes. -->
-      <summary>The UUID of an existing config</summary>
-      <pattern>
-        <t>uuid</t>
-      </pattern>
-    </ele>
-    <ele>
-      <name>name</name>
-      <summary>A name for the config</summary>
-      <pattern><t>name</t></pattern>
-    </ele>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>id</name>
-          <type>uuid</type>
-          <required>1</required>
-        </attrib>
-      </pattern>
-    </response>
-    <example>
-      <summary>Copy a config</summary>
-      <request>
-        <create_config>
-          <copy>daba56c8-73ec-11df-a475-002264764cea</copy>
-          <name>Full</name>
-        </create_config>
-      </request>
-      <response>
-        <create_config_response status="201" status_text="OK, resource created"
-                                id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
-        </create_config_response>
-      </response>
-    </example>
-    <example>
-      <summary>Create a config from a GET_CONFIGS response</summary>
-      <request>
-        <create_config>
-          <get_configs_response>
-            <config id="daba56c8-73ec-11df-a475-002264764cea">
-              <name>Full and fast</name>
-              <truncated>...</truncated>
-            </config>
-          </get_configs_response>
-        </create_config>
-      </request>
-      <response>
-        <create_config_response status="201" status_text="OK, resource created"
-                                id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
-        </create_config_response>
-      </response>
-    </example>
-  </command>
-  <command>
     <name>create_alert</name>
     <summary>Create an alert</summary>
     <description>
@@ -3855,6 +3656,207 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                                status_text="OK, resource created"
                                id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
         </create_alert_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>create_asset</name>
+    <summary>Create an asset</summary>
+    <description>
+      <p>
+        The client uses the create_asset command to create a new asset.
+      </p>
+    </description>
+    <pattern>
+      <or>
+        <e>asset</e>
+        <e>report</e>
+      </or>
+    </pattern>
+    <ele>
+      <name>asset</name>
+      <pattern>
+        <e>name</e>
+        <e>comment</e>
+      </pattern>
+      <ele>
+        <name>name</name>
+        <summary>A name for the asset</summary>
+        <pattern>
+          <t>name</t>
+        </pattern>
+      </ele>
+      <ele>
+        <name>comment</name>
+        <summary>A comment on the asset</summary>
+        <pattern>
+          text
+        </pattern>
+      </ele>
+    </ele>
+    <ele>
+      <name>report</name>
+      <summary>Report from which to import assets</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+        <e>filter</e>
+      </pattern>
+      <ele>
+        <name>filter</name>
+        <summary>Filter, for min_qod and apply_overrides</summary>
+        <pattern>
+          <e>term</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+      </ele>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Create an asset</summary>
+      <request>
+        <create_asset>
+          <asset>
+            <type>host</type>
+            <name>Localhost</name>
+          </asset>
+        </create_asset>
+      </request>
+      <response>
+        <create_asset_response status="201"
+                                status_text="OK, resource created"
+                                id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_asset_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>create_config</name>
+    <summary>Create a config</summary>
+    <description>
+      <p>
+        The client uses the create_config command to create a new config.
+      </p>
+      <l>
+        <lh>This command can be called in three ways:</lh>
+        <li>
+          With a copy element.  The new config is a copy of the existing
+          config, with the given name.
+        </li>
+        <li>
+          With an embedded get_configs response element.  The config is
+          created as defined by the get_configs response element.  Name is
+          actually optional in this case.  The config is given the name of
+          the config in the get_configs response.  If there is already a
+          config with this name, then a number is attached to the name to
+          make it unique.
+        </li>
+      </l>
+    </description>
+    <pattern>
+      <o><e>comment</e></o>
+      <or>
+        <e>copy</e>
+        <r>get_configs</r>
+      </or>
+      <e>name</e>
+    </pattern>
+    <ele>
+      <name>comment</name>
+      <summary>A comment on the config</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>copy</name>
+      <!-- TODO UUIDs are normally in attributes. -->
+      <summary>The UUID of an existing config</summary>
+      <pattern>
+        <t>uuid</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>name</name>
+      <summary>A name for the config</summary>
+      <pattern><t>name</t></pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Copy a config</summary>
+      <request>
+        <create_config>
+          <copy>daba56c8-73ec-11df-a475-002264764cea</copy>
+          <name>Full</name>
+        </create_config>
+      </request>
+      <response>
+        <create_config_response status="201" status_text="OK, resource created"
+                                id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_config_response>
+      </response>
+    </example>
+    <example>
+      <summary>Create a config from a GET_CONFIGS response</summary>
+      <request>
+        <create_config>
+          <get_configs_response>
+            <config id="daba56c8-73ec-11df-a475-002264764cea">
+              <name>Full and fast</name>
+              <truncated>...</truncated>
+            </config>
+          </get_configs_response>
+        </create_config>
+      </request>
+      <response>
+        <create_config_response status="201" status_text="OK, resource created"
+                                id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_config_response>
       </response>
     </example>
   </command>
