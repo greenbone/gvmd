@@ -1417,6 +1417,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <e>family</e>
         <e>cvss_base</e>
         <e>cve</e>
+        <e>cpe</e>
         <e>bid</e>
         <e>tags</e>
         <e>cert</e>
@@ -1445,6 +1446,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <ele>
         <name>cve</name>
         <summary>CVE associated with the NVT</summary>
+        <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>cpe</name>
+        <summary>The CPE which produced the CVE (for "cve" results)</summary>
         <pattern>text</pattern>
       </ele>
       <ele>
@@ -3204,6 +3210,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>help</c>
           <c>modify_agent</c>
           <c>modify_alert</c>
+          <c>modify_asset</c>
           <c>modify_auth</c>
           <c>modify_config</c>
           <c>modify_credential</c>
@@ -3329,6 +3336,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>help</r>
             <r>modify_agent</r>
             <r>modify_alert</r>
+            <r>modify_asset</r>
             <r>modify_auth</r>
             <r>modify_config</r>
             <r>modify_credential</r>
@@ -5456,7 +5464,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>name</e>
       <o><e>comment</e></o>
       <o><e>copy</e></o>
-      <e>hosts</e>
+      <or>
+        <e>asset_hosts</e>
+        <e>hosts</e>
+      </or>
       <o><e>exclude_hosts</e></o>
       <o><e>ssh_credential</e></o>
       <o><e>smb_credential</e></o>
@@ -5498,6 +5509,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>The UUID of an existing target</summary>
       <pattern>
         <t>uuid</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>asset_hosts</name>
+      <summary>Hosts from which to create the target</summary>
+      <pattern>
+        <attrib>
+          <name>filter</name>
+          <type>text</type>
+          <summary>Filter term that defines the list of hosts</summary>
+          <required>1</required>
+        </attrib>
       </pattern>
     </ele>
     <ele>
@@ -6021,11 +6044,25 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </p>
     </description>
     <pattern>
-      <attrib>
-        <name>asset_id</name>
-        <type>uuid</type>
-        <required>1</required>
-      </attrib>
+      <or>
+        <attrib>
+          <name>asset_id</name>
+          <summary>Single asset to delete</summary>
+          <description>
+           <p>
+             Overrides report_id.
+           </p>
+          </description>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>report_id</name>
+          <summary>Report from which to get all assets to delete</summary>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </or>
     </pattern>
     <response>
       <pattern>
@@ -9859,6 +9896,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>
             <e>title</e>
             <e>installs</e>
+            <e>latest_severity</e>
+            <e>highest_severity</e>
+            <e>average_severity</e>
             <e>hosts</e>
           </pattern>
           <ele>
@@ -9871,6 +9911,39 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <name>installs</name>
             <summary>Number of hosts on which OS has been detected</summary>
             <pattern>integer</pattern>
+          </ele>
+          <ele>
+            <name>latest_severity</name>
+            <summary>Latest severity</summary>
+            <pattern>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>value</name>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>highest_severity</name>
+            <summary>Highest severity</summary>
+            <pattern>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>value</name>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>average_severity</name>
+            <summary>Average severity</summary>
+            <pattern>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>value</name>
+              <pattern>text</pattern>
+            </ele>
           </ele>
           <ele>
             <name>hosts</name>
@@ -9888,11 +9961,23 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                   <required>1</required>
                 </attrib>
                 <e>name</e>
+                <e>severity</e>
               </pattern>
               <ele>
                 <name>name</name>
                 <summary>The name of the host</summary>
                 <pattern><t>name</t></pattern>
+              </ele>
+              <ele>
+                <name>severity</name>
+                <summary>Severity of the host</summary>
+                <pattern>
+                  <e>value</e>
+                </pattern>
+                <ele>
+                  <name>value</name>
+                  <pattern>text</pattern>
+                </ele>
               </ele>
             </ele>
           </ele>
@@ -22391,6 +22476,55 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <response>
         <modify_alert_response status="200" status_text="OK">
         </modify_alert_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>modify_asset</name>
+    <summary>Modify an existing asset</summary>
+    <description>
+      <p>
+        The client uses the modify_asset command to change an existing asset.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>asset_id</name>
+        <summary>ID of asset to modify</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <o><e>comment</e></o>
+    </pattern>
+    <ele>
+      <name>comment</name>
+      <summary>Comment on asset</summary>
+      <pattern>text</pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Modify the comment of an asset</summary>
+      <request>
+        <modify_asset asset_id='914b59f8-25f5-4c8f-832c-2379cd625236'>
+          <comment>New comment</comment>
+        </modify_asset>
+      </request>
+      <response>
+        <modify_asset_response status="200" status_text="OK">
+        </modify_asset_response>
       </response>
     </example>
   </command>

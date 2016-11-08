@@ -1,3 +1,14 @@
+2016-11-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml.in (result): Add CPE to NVT, for results
+	from the CVE scanner.
+	(modify_asset): New command.
+	(create_target): Add ASSET_HOSTS.
+	(delete_asset): Add report_id attribute.
+	(get_assets): Add severity elements to OS and ASSET.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2016-11-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Clear out Doxygen warnings.
@@ -2344,7 +2355,7 @@
 
 2016-06-21  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
-	* CMakeLists.txt: Imcrease dependency for gnutls from 2.8 to
+	* CMakeLists.txt: Increase dependency for gnutls from 2.8 to
 	3.2.15 in order to enforce the presence of newer (more secure)
 	TLS and ciphers.
 
@@ -2870,8 +2881,8 @@
 
 2016-05-11  Björn Ricks <bjoern.ricks@greenbone.net>
 
-	* src/manage_sql.c (OVERRIDE_ITERATOR_FILTER_COLUMNS,
-	OVERRIDE_ITERATOR_COLUMNS): Add active_days column and filter.
+	* src/manage_sql.c (OVERRIDE_ITERATOR_FILTER_COLUMNS)
+	(OVERRIDE_ITERATOR_COLUMNS): Add active_days column and filter.
 
 2016-05-11  Björn Ricks <bjoern.ricks@greenbone.net>
 
@@ -3412,7 +3423,7 @@
 
 	Add new "human readable" name column "hr_name" to config_preferences
 	and config_preferences_trash.  Hence increase database version to 165.
-	Add database migration from version 163 to 164.
+	Add database migration from version 164 to 165.
 
 	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 165.
 
@@ -6591,7 +6602,7 @@
 	(init_os_host_iterator): Round severity to single decimal place.
 	(asset_os_iterator_installs, asset_os_iterator_title)
 	(asset_os_iterator_latest_severity)
-	(asset_os_iterator_average_severity): Correct offset.<
+	(asset_os_iterator_average_severity): Correct offset.
 
 2015-09-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
@@ -8041,7 +8052,7 @@
 
 2015-05-22  Benoît Allard  <benoit.allard@greenbone.net>
 
-	* src/manage_sql.ci (modify_task_check_slave_scanner): Make sure
+	* src/manage_sql.c (modify_task_check_slave_scanner): Make sure
 	  existing_scanner_id and scanner_id aren't both NULL at the same time.
 
 2015-05-22  Benoît Allard  <benoit.allard@greenbone.net>

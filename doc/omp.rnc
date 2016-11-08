@@ -88,6 +88,7 @@ command
     | help
     | modify_agent
     | modify_alert
+    | modify_asset
     | modify_auth
     | modify_config
     | modify_credential
@@ -202,6 +203,7 @@ response
     | help_response
     | modify_agent_response
     | modify_alert_response
+    | modify_asset_response
     | modify_auth_response
     | modify_config_response
     | modify_credential_response
@@ -1561,6 +1563,7 @@ result_nvt
        & result_nvt_family
        & result_nvt_cvss_base
        & result_nvt_cve
+       & result_nvt_cpe
        & result_nvt_bid
        & result_nvt_tags
        & result_nvt_cert
@@ -1598,6 +1601,13 @@ result_nvt_cvss_base
 # CVE associated with the NVT.
 result_nvt_cve
  = element cve
+     {
+       text
+     }
+
+# The CPE which produced the CVE (for "cve" results).
+result_nvt_cpe
+ = element cpe
      {
        text
      }
@@ -3452,6 +3462,7 @@ commands
            | help
            | modify_agent
            | modify_alert
+           | modify_asset
            | modify_auth
            | modify_config
            | modify_credential
@@ -4748,7 +4759,8 @@ create_target
        create_target_name
        & create_target_comment?
        & create_target_copy?
-       & create_target_hosts
+       & ( create_target_asset_hosts
+           | create_target_hosts )
        & create_target_exclude_hosts?
        & create_target_ssh_credential?
        & create_target_smb_credential?
@@ -4791,6 +4803,14 @@ create_target_copy
  = element copy
      {
        uuid
+     }
+
+# Hosts from which to create the target.
+create_target_asset_hosts
+ = element asset_hosts
+     {
+       # Filter term that defines the list of hosts.
+       attribute filter { text }
      }
 
 # A textual list of hosts, which may be empty.
@@ -5119,7 +5139,10 @@ delete_agent
 delete_asset
  = element delete_asset
      {
+       ( # Single asset to delete.
        attribute asset_id { uuid }
+           | # Report from which to get all assets to delete.
+       attribute report_id { uuid } )
      }
 
 ## Command delete_config
@@ -6146,6 +6169,25 @@ modify_alert_filter
  = element filter
      {
        attribute id { uuid }
+     }
+
+## Command modify_asset
+##
+## Modify an existing asset.
+
+modify_asset
+ = element modify_asset
+     {
+       # ID of asset to modify.
+       attribute asset_id { uuid }
+       & modify_asset_comment?
+     }
+
+# Comment on asset.
+modify_asset_comment
+ = element comment
+     {
+       text
      }
 
 ## Command modify_auth
@@ -7747,6 +7789,7 @@ commands_response
            | help_response
            | modify_agent_response
            | modify_alert_response
+           | modify_asset_response
            | modify_auth_response
            | modify_config_response
            | modify_credential_response
@@ -10149,6 +10192,9 @@ get_assets_response_asset_os
      {
        get_assets_response_asset_os_title
        & get_assets_response_asset_os_installs
+       & get_assets_response_asset_os_latest_severity
+       & get_assets_response_asset_os_highest_severity
+       & get_assets_response_asset_os_average_severity
        & get_assets_response_asset_os_hosts
      }
 
@@ -10166,6 +10212,45 @@ get_assets_response_asset_os_installs
        integer
      }
 
+# Latest severity.
+get_assets_response_asset_os_latest_severity
+ = element latest_severity
+     {
+       get_assets_response_asset_os_latest_severity_value
+     }
+
+get_assets_response_asset_os_latest_severity_value
+ = element value
+     {
+       text
+     }
+
+# Highest severity.
+get_assets_response_asset_os_highest_severity
+ = element highest_severity
+     {
+       get_assets_response_asset_os_highest_severity_value
+     }
+
+get_assets_response_asset_os_highest_severity_value
+ = element value
+     {
+       text
+     }
+
+# Average severity.
+get_assets_response_asset_os_average_severity
+ = element average_severity
+     {
+       get_assets_response_asset_os_average_severity_value
+     }
+
+get_assets_response_asset_os_average_severity_value
+ = element value
+     {
+       text
+     }
+
 # Hosts on which this OS has been detected.
 get_assets_response_asset_os_hosts
  = element hosts
@@ -10179,6 +10264,7 @@ get_assets_response_asset_os_hosts_asset
      {
        attribute id { uuid }
        & get_assets_response_asset_os_hosts_asset_name
+       & get_assets_response_asset_os_hosts_asset_severity
      }
 
 # The name of the host.
@@ -10186,6 +10272,19 @@ get_assets_response_asset_os_hosts_asset_name
  = element name
      {
        name
+     }
+
+# Severity of the host.
+get_assets_response_asset_os_hosts_asset_severity
+ = element severity
+     {
+       get_assets_response_asset_os_hosts_asset_severity_value
+     }
+
+get_assets_response_asset_os_hosts_asset_severity_value
+ = element value
+     {
+       text
      }
 
 # Whether any tasks are using the asset.
@@ -17836,6 +17935,15 @@ modify_agent_response
 
 modify_alert_response
  = element modify_alert_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to modify_asset
+
+modify_asset_response
+ = element modify_asset_response
      {
        attribute status { status }
        & attribute status_text { text }
