@@ -73,12 +73,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <param>
       <optional>1</optional>
       <name>start_hour</name>
-      <regex>^[01][0-9]|2[0-3]$</regex>
+      <regex>^[01]?[0-9]|2[0-3]$</regex>
     </param>
     <param>
       <optional>1</optional>
       <name>start_minute</name>
-      <regex>^[0-5][0-9]$</regex>
+      <regex>^[0-5]?[0-9]$</regex>
     </param>
     <param>
       <optional>1</optional>
