@@ -4704,6 +4704,11 @@ result_overrides_override
 </li>
 </ul>
 </li>
+<li>
+              &lt;<b>extra</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Extra info (NVT CVSS for closed CVE results).</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -5871,6 +5876,7 @@ report_report_host_detail
        report_report_host_detail_name
        &amp; report_report_host_detail_value
        &amp; report_report_host_detail_source
+       &amp; report_report_host_detail_extra
      }
 
 report_report_host_detail_name
@@ -5907,6 +5913,12 @@ report_report_host_detail_source_name
 
 report_report_host_detail_source_description
  = element description
+     {
+       text
+     }
+
+report_report_host_detail_extra
+ = element extra
      {
        text
      }

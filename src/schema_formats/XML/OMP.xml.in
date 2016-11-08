@@ -2847,6 +2847,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <e>name</e>
             <e>value</e>
             <e>source</e>
+            <e>extra</e>
           </pattern>
           <ele>
             <name>name</name>
@@ -2881,6 +2882,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <summary>A description of the detail source</summary>
               <pattern>text</pattern>
             </ele>
+          </ele>
+          <ele>
+            <name>extra</name>
+            <summary>Extra info (NVT CVSS for closed CVE results)</summary>
+            <pattern>text</pattern>
           </ele>
         </ele>
       </ele>

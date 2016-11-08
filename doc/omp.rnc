@@ -3151,6 +3151,7 @@ report_report_host_detail
        report_report_host_detail_name
        & report_report_host_detail_value
        & report_report_host_detail_source
+       & report_report_host_detail_extra
      }
 
 # The name of the detail.
@@ -3193,6 +3194,13 @@ report_report_host_detail_source_name
 # A description of the detail source.
 report_report_host_detail_source_description
  = element description
+     {
+       text
+     }
+
+# Extra info (NVT CVSS for closed CVE results).
+report_report_host_detail_extra
+ = element extra
      {
        text
      }

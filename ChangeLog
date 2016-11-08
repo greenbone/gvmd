@@ -1,5 +1,11 @@
 2016-11-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml.in (report): Add EXTRA to HOST/DETAIL.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+2016-11-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml.in (result): Add CPE to NVT, for results
 	from the CVE scanner.
 	(modify_asset): New command.
