@@ -14551,7 +14551,7 @@ handle_get_credentials (omp_parser_t *omp_parser, GError **error)
         type ? type : "",
         type ? credential_full_type (type) : "");
 
-      if (strcmp (type, "snmp") == 0)
+      if (type && (strcmp (type, "snmp") == 0))
         {
           const char *auth_algorithm, *privacy_algorithm;
           auth_algorithm
@@ -16394,6 +16394,11 @@ handle_get_preferences (omp_parser_t *omp_parser, GError **error)
 static void
 handle_get_reports (omp_parser_t *omp_parser, GError **error)
 {
+  report_t request_report = 0, delta_report = 0, report;
+  report_format_t report_format;
+  iterator_t reports;
+  int count, filtered, ret, first;
+
   if (current_credentials.username == NULL)
     {
       get_reports_data_reset (get_reports_data);
@@ -16401,11 +16406,6 @@ handle_get_reports (omp_parser_t *omp_parser, GError **error)
       set_client_state (CLIENT_AUTHENTIC);
       return;
     }
-
-  report_t request_report = 0, delta_report = 0, report;
-  report_format_t report_format;
-  iterator_t reports;
-  int count, filtered, ret, first;
 
   if (acl_user_may ("get_reports") == 0)
     {
@@ -16822,6 +16822,7 @@ handle_get_reports (omp_parser_t *omp_parser, GError **error)
       return;
     }
 
+  count = 0;
   if (get_reports_data->alert_id == NULL)
     SEND_GET_START ("report");
   while (next_report (&reports, &report))
@@ -16939,9 +16940,10 @@ handle_get_reports (omp_parser_t *omp_parser, GError **error)
                                 get_reports_data->overrides_details,
                                 get_reports_data->ignore_pagination,
                                 /* Special case the XML report, bah. */
-                                strcmp
-                                  (get_reports_data->format_id,
-                                  "a994b278-1f62-11e1-96ac-406186ea4fc5")
+                                get_reports_data->format_id
+                                && strcmp
+                                    (get_reports_data->format_id,
+                                     "a994b278-1f62-11e1-96ac-406186ea4fc5")
                                 && strcmp
                                     (get_reports_data->format_id,
                                       "5057e5cc-b825-11e4-9d0e-28d24461215b"),
@@ -17712,7 +17714,6 @@ handle_get_scanners (omp_parser_t *omp_parser, GError **error)
 
       SEND_GET_COMMON (scanner, &get_scanners_data->get, &scanners);
 
-      credential_id = credential_uuid (scanner_iterator_credential (&scanners));
       SENDF_TO_CLIENT_OR_FAIL
        ("<host>%s</host>"
         "<port>%d</port>"

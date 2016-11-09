@@ -203,6 +203,8 @@ check_config_system_discovery (const char *uuid)
 {
   int update;
 
+  update = 0;
+
   /* Check new NVT. */
 
   if (sql_int ("SELECT count (*) FROM nvt_selectors"

@@ -1,5 +1,21 @@
 2016-11-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (manage_run_wizard): Only assign to ret_response when it is
+	given.
+
+	* src/manage_config_system_discovery.c
+	(check_config_system_discovery): Init update.
+
+	* src/omp.c (handle_get_certificate): Check type before using it.
+	(handle_get_reports): Move arg definitions to top of block so they're more
+	visible.  Init count.  Check get_reports_data->format_id before using it.
+	(handle_get_scanners): Remove duplicate init of credential_id.
+
+	* src/manage_sql.c (print_report_xml_start): Remove duplicate init of
+	f_host_false_positives.
+
+2016-11-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.h, src/sql.h (resource_t): Remove.  Now in iterator.h.
 	Prevents redefinition.
 

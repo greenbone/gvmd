@@ -8928,7 +8928,8 @@ manage_run_wizard (const gchar *name,
       if (mode_found == 0)
         {
           free_entity (entity);
-          *ret_response = g_strdup ("");
+          if (ret_response)
+            *ret_response = g_strdup ("");
 
           if (forked)
             return 3;
@@ -9416,7 +9417,8 @@ manage_run_wizard (const gchar *name,
     extra_wrapped = NULL;
   g_free (extra);
 
-  *ret_response = response;
+  if (ret_response)
+    *ret_response = response;
 
   if (extra_wrapped && (forked == 0))
     {

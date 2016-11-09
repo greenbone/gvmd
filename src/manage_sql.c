@@ -27391,8 +27391,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   f_host_warnings = NULL;
   f_host_infos = NULL;
   f_host_logs = NULL;
-  f_host_false_positives = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                  g_free, NULL);
+  f_host_false_positives = NULL;
 
   /** @todo Leaks on error in PRINT and PRINT_XML.  The process normally exits
    *        then anyway. */
