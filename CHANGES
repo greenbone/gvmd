@@ -1,3 +1,97 @@
+openvas-manager 7.0.0 (2016-11-09)
+
+This is the first release of the openvas-manager 7.0 module for the Open
+Vulnerability Assessment System release 9 (OpenVAS-9). The OpenVAS Manager is
+the central management service between the actual security scanners and the
+user clients.
+
+OpenVAS Manager 7.0 introduces an explicit asset management and the built-in
+CVE scanner. It also replaces the 'Slaves' type by the new Scanner type
+'OMP Slave'.  Please see the comprehensive list below for more details.
+
+Please make sure to read the INSTALL file for important installation and
+migration information, even and especially if you have used OpenVAS Manager
+before.
+
+Many thanks to everyone who has contributed to this release:
+Benoît Allard, Hani Benhabiles, Sven Haardiek, Matthew Mundell, Timo Pollmeier,
+Jan-Oliver Wagner and Michael Wiegand.
+
+Main changes compared to the 6.0 series:
+* Added asset management for hosts and operating systems.
+* Added internal CVE Scanner.
+* Added SecInfo alerts.
+* The type 'Slaves' was replaced by the 'Scanner' type 'OMP Slave'.
+* The OMP protocol version is now OMP 7.0.
+* Added support for communicating via Unix domain sockets with OTP scanners
+  and with clients.
+* GET_REPORTS now uses regular powerfilter.
+* Authentication configuration (for example LDAP) is now handled within
+  the database and not in a separate file ('auth.conf') anymore.
+* Several new OMP commands and some changes/renaming to existing commands.
+  Please refer to the OMP documentation for details about new and changed
+  commands.
+* Consolidation of credentials into the the type Credentials.
+* New Alerts 'SCP' and TCP upload.
+* Improved OSP support, permissions management, QoD handling,  built-in
+  report formats, alerts.
+* Merging openvas-scapdata-sync into greenbone-scapdata-sync.
+* Merging openvas-certdata-sync into greenbone-certdata-sync.
+* Minimum required version GnuTLS raised to 3.2.15.
+* Minimum required version GLib raised to 2.32.
+* Minimum required version CMake raised to 2.8.
+
+Main changes since 6.1+beta3:
+* The concept of slaves has been replaced by OMP slaves.
+* The OMP protocol version is now OMP 7.
+* Support for grouping data by two columns has been added.
+* Support for the new 'SNMP' alert method has been added.
+* A new "Max Rows Per Page" setting has been introduced which defaults to 1000,
+  please see the INSTALL file for details.
+* The handling of Internal Errors has been made more consistent.
+* A support scripts for gathering statistics on the SQLite3 back-end has been
+  added.
+* Credentials are now consistently handled as credential objects.
+* Support for sorting by multiple fields in OMP command GET_AGGREGATES has been
+  added.
+* The process title of processes handling scans will now contain the report
+  UUID.
+* Resuming of scheduled slave scans has been improved.
+* Internal use of logging has been made more consistent.
+* Support for migrating data from an SQLite3 database to a PostgreSQL database
+  has been improved.
+* Handling of slave scans has been improved.
+* The handling of report format plugins has been improved.
+* The LDAP CA certificate is now stored in the internal database instead as a
+  separate file on disk.
+* The predefined target 'Localhost' has been removed.
+* Users are now allowed to access feed descriptions.
+* Support for including the result of one report format in the result of another
+  report format has been added.
+* The 'Anonymous_XML' report format now strips even more potentially sensitive
+  information.
+* Support for custom predefined report formats has been improved.
+* Support for communicating via Unix domain sockets has been added and now is
+  the default for communication with OTP scanners and with clients.
+* NVTs in the ACT_SETTINGS family are no longer automatically enabled.
+* Log messages have been improved to include the resource name wherever
+  possible.
+* The 'openvas-manage-certs' support script has been moved here from OpenVAS
+  Scanner.
+* The minimum required version of the GnuTLS library has been raised to 3.2.15
+  in order to enforce the presence of newer (more secure) TLS and ciphers.
+* The minimum required version of the OpenVAS libraries has been raised to
+  9.0.0.
+* The minimum required version of the GLib library has been raised to 2.32 in
+  order to allow the use of newer API elements.
+* The minimum required version of the CMake build framework has been raised to
+  2.8.
+* Numerous code cleanups.
+* The build process has been improved.
+* Code documentation has been updated.
+* Support for PostgreSQL has been improved.
+
+
 openvas-manager 6.1+beta3 (2016-04-14)
 
 This is the third beta version of the upcoming 6.1 release of the
