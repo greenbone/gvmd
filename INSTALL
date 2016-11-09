@@ -31,6 +31,7 @@ optional prerequisites.
 Install prerequisites on Debian GNU/Linux 'Jessie' 8:
 # apt-get install libsqlite3-dev | libpq-dev
 
+
 Compiling openvas-manager
 -------------------------
 
@@ -65,15 +66,6 @@ Thereafter, the following commands are useful.
     $ make install        # install the build
     $ make rebuild_cache  # rebuild the cmake cache
 
-In case you want to install openvas-manager to a different path from the
-other OpenVAS modules, you might need to set some paths explicitly
-before running cmake:
-
-Adjust any values in the Variables section of CMakeLists.txt:
-The certificate and key locations in OPENVAS_SERVER_CERTIFICATE,
-OPENVAS_SERVER_KEY, OPENVAS_CLIENT_CERTIFICATE, OPENVAS_CLIENT_KEY and
-OPENVAS_CA_CERTIFICATE may need modifying.
-
 
 Choosing the Connection Type
 -----------------------------
@@ -97,30 +89,23 @@ To use a TCP socket, call openvasmd with the --listen option, for example
 Certificate Generation
 ----------------------
 
-All communication with OpenVAS Manager uses the TLS protocol to establish
-secure connections and for authentication and authorization.
+All TCP-based communication with OpenVAS Manager uses the TLS protocol to
+establish secure connections and for authentication and authorization.
 This requires the presence of a certificate infrastructure consisting of a
 certificate authority (CA) and a server and client certificate signed by the
 CA.
 
 OpenVAS Manager uses a client certificate when connecting to a scanner via the
-OTP or OSP protocol.
+OSP protocol.
 
 The easiest way to generate this certificate is to use the
-"openvas-manage-certs" script provided with the openvas-scanner module. If you
-have already executed the "openvas-manage-certs -a" command when setting up
-OpenVAS Scanner you are all set; the client certificate already exists, is
-signed by the CA and installed in the location where OpenVAS Manager expects it
-to be.
+"openvas-manage-certs" script. A quick way to set up required certificates
+on the local system is to execute the command "openvas-manage-certs -a".
 
-Please note that for this to work both OpenVAS Manager and OpenVAS Scanner need
-to be installed on the same system.
-
-If you intend to use Scanner and Manager on separate systems you need to make
-sure the CA certificate used by both daemons is identical and that both server
-and client certificate are signed by this CA. The "openvas-manage-certs" script
-can assist you in setting up your infrastructure. Please refer to the
-documentation provided with the script for usage details.
+If you intend to use OSP scanners and Manager on separate systems you need to make
+sure that the mutual trust is properly configured via the TLS certificates.
+The "openvas-manage-certs" script can assist you in setting up your infrastructure.
+Please refer to the documentation provided with the script for usage details.
 
 If certificates expired or in other ways there is need to update certificates
 for scanners, please see also section "Updating Scanner Certificates".
@@ -440,11 +425,11 @@ Where:
              the scanner. This option can be dropped if the scanner uses
              a certificate that corresponds with the default CA certficate of Manager
 <clientcert> refers to the certificate Manager uses to authenticate when
-             connecting to the scanner. For a default OpenVAS Scanner setup
+             connecting to the scanner. For a default OSP scanner setup
              with self-signed certificates this would be
              /var/lib/openvas/CA/clientcert.pem
 <clientkey>  refers to the private key Manager uses to authenticate when
-             connecting to the scanner. For a default OpenVAS Scanner setup
+             connecting to the scanner. For a default OSP scanner setup
              with self-signed certificates this would be
              /var/lib/openvas/private/CA/clientkey.pem
 
