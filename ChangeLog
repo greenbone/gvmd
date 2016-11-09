@@ -1,3 +1,9 @@
+2016-11-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/wizards/quick_task.xml: Return status from create_... commands
+	if they fail.  Put schedule into extra_data so it can be deleted on
+	error.
+
 2016-11-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (manage_run_wizard): Only assign to ret_response when it is
