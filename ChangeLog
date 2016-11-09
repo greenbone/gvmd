@@ -1,3 +1,8 @@
+2016-11-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* INSTALL: Add section about connection type.  Improve some wording
+	slightly.  Remove --create-credentials-encryption-key reference.
+
 2016-11-09  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* INSTALL: Add prerequisite for GNUTLS certool.

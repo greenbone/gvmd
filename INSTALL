@@ -75,6 +75,25 @@ OPENVAS_SERVER_KEY, OPENVAS_CLIENT_CERTIFICATE, OPENVAS_CLIENT_KEY and
 OPENVAS_CA_CERTIFICATE may need modifying.
 
 
+Choosing the Connection Type
+-----------------------------
+
+OpenVAS Manager can serve client connections on either a TCP socket or a UNIX
+domain socket.
+
+The default is a UNIX domain socket, at
+
+	<install-prefix>/var/run/openvas/openvasmd.sock
+
+This location can be overridden with the --unix-socket option, and the
+permissions of the socket can be specified with the --list-owner,
+--listen-group and --listen-mode options.
+
+To use a TCP socket, call openvasmd with the --listen option, for example
+
+    openvasmd --listen=127.0.0.1
+
+
 Certificate Generation
 ----------------------
 
@@ -159,7 +178,7 @@ The new user's password is printed on success.
 An administrator user can later create further users or
 administrators via clients like the Greenbone Security Assistant (GSA).
 
-Also, the new user can change her password via GSA.
+Also, the new user can change their password via GSA.
 
 
 Logging Configuration
@@ -287,10 +306,8 @@ this is to create backup of the entire directory tree
 
 and store it at a safe place independent from the database backups.
 This needs to be done only once after the key has been created or
-changed.  The Manager creates the key on the fly if it does not
-exists.  If needed the key can also be created in advance using:
-
-    $ openvasmd --create-credentials-encryption-key
+changed.  The Manager creates the key at startup if it does not
+exist.
 
 To check whether the key has been generated you may use the command
 
@@ -307,7 +324,7 @@ but another keyid (1B55390F) and another creation date (2013-01-18).
 Older versions of the Manager didn't used encrypted credentials.  Thus
 for old installations the database may hold a mix of cleartext and
 encrypted credentials.  Note, that after changing a cleartext
-credentials it will be saved encrypted.
+credential it will be saved encrypted.
 
 To encrypt all existing credentials you may use
 
@@ -367,8 +384,8 @@ Finally, reset all credentials, by hand.
 Migrating Encrypted Credentials from OpenVAS Manager 5.0 to 6.0
 ---------------------------------------------------------------
 
-While OpenVAS Manager 5.0 initially place the credential encryption key in
-<install-prefix>/var/lib/openvas/gnupg, OpenVAS Manager 6.0 has switched to using
+While OpenVAS Manager 5.0 initially placed the credential encryption key in
+<install-prefix>/var/lib/openvas/gnupg, OpenVAS Manager 6.0 switched to using
 <install-prefix>/var/lib/openvas/openvasmd/gnupg to make it easier to back up all
 Manager data.
 
@@ -384,7 +401,7 @@ Migrating Encrypted Credentials from OpenVAS Manager 4.0 to 5.0
 ---------------------------------------------------------------
 
 While OpenVAS Manager 4.0 initially place the credential encryption key in
-<install-prefix>/etc/openvas/gnupg, OpenVAS Manager 5.0 has switched to using
+<install-prefix>/etc/openvas/gnupg, OpenVAS Manager 5.0 switched to using
 <install-prefix>/var/lib/openvas/gnupg for better FHS compliance and to set the
 key apart from the one used for signature verification.
 
