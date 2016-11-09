@@ -31,14 +31,6 @@
 #include <glib.h>
 
 
-/* Types. */
-
-/**
- * @brief A resource, like a task or target.
- */
-typedef long long int resource_t;
-
-
 /* Helpers. */
 
 int

@@ -37,6 +37,11 @@
 /* Types. */
 
 /**
+ * @brief A resource, like a task or target.
+ */
+typedef long long int resource_t;
+
+/**
  * @brief A prepared SQL statement.
  */
 typedef struct sql_stmt sql_stmt_t;

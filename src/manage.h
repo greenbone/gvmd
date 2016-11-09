@@ -58,11 +58,6 @@
 #endif /* g_info not defined */
 
 /**
- * @brief A resource, like a task or target.
- */
-typedef long long int resource_t;
-
-/**
  * @brief Name value pair.
  */
 typedef struct
