@@ -17,6 +17,9 @@ Prerequisites:
 * sqlite3 library or PostgreSQL database
 * pkg-config
 
+Prerequisites for certificate generation:
+* GnuTLS certtool
+
 Prerequisites for building documentation:
 * Doxygen
 * xmltoman (optional, for building man page)
