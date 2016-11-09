@@ -174,6 +174,12 @@ manage_decrypt_all_credentials (GSList *, const gchar *);
 void
 manage_session_set_timezone (const char *);
 
+void
+manage_transaction_start ();
+
+void
+manage_transaction_stop (gboolean);
+
 
 /* Task structures. */
 
@@ -1160,6 +1166,25 @@ host_detail_free (host_detail_t *);
 void
 insert_report_host_detail (report_t, const char *, const char *, const char *,
                            const char *, const char *, const char *);
+
+int
+manage_report_host_detail (report_t, const char *, const char *);
+
+void
+hosts_set_identifiers ();
+
+void
+hosts_set_max_severity (report_t, int*, int*);
+
+void
+hosts_set_details (report_t report);
+
+void
+clear_duration_schedules (task_t);
+
+void
+update_duration_schedule_periods (task_t);
+
 int
 create_report (array_t*, const char *, const char *, const char *, const char *,
                const char *, const char *, array_t*, array_t*, array_t*,

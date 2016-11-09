@@ -45,7 +45,6 @@
 #include "otp.h"
 #include "manage.h"
 #include "scanner.h"
-#include "manage_sql.h"
 #include "types.h"
 
 #include <assert.h>

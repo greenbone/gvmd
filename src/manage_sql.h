@@ -263,19 +263,6 @@ array_add_new_string (array_t *, const gchar *);
 
 int manage_db_empty ();
 
-void manage_transaction_start ();
-
-void manage_transaction_stop (gboolean);
-
-void
-hosts_set_identifiers ();
-
-void
-hosts_set_max_severity (report_t, int*, int*);
-
-void
-hosts_set_details (report_t report);
-
 gchar*
 host_routes_xml (host_t);
 
@@ -358,17 +345,11 @@ time_t task_schedule_iterator_initial_offset (iterator_t *);
 
 int set_task_schedule_uuid (const gchar*, schedule_t, int);
 
-void clear_duration_schedules (task_t);
-
-void update_duration_schedule_periods (task_t);
-
 void reinit_manage_process ();
 
 int manage_update_nvti_cache ();
 
 int manage_report_host_details (report_t, const char *, entity_t);
-
-int manage_report_host_detail (report_t, const char *, const char *);
 
 const char *run_status_name_internal (task_status_t);
 

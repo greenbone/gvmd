@@ -1,3 +1,16 @@
+2016-11-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/otp.c: Remove manage_sql.h include, because that's for internal use
+	in the "manage" library.
+
+	* src/manage_sql.h (manage_transaction_start, manage_transaction_stop)
+	(hosts_set_identifiers, hosts_set_max_severity, hosts_set_details)
+	(clear_duration_schedules, update_duration_schedule_periods)
+	(manage_report_host_detail): Remove.  Move to manage.h so otp.c can use
+	them.
+
+	* src/manage.h: Add headers accordingly.
+
 2016-11-09  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post-release version bump.
@@ -23,6 +36,8 @@
 	error.
 
 2016-11-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Solve a few small issues found by Clang.
 
 	* src/manage.c (manage_run_wizard): Only assign to ret_response when it is
 	given.
