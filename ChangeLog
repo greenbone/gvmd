@@ -1,3 +1,9 @@
+2016-11-09  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Post-release version bump.
+
+	* CMakeLists.txt: Updated version to 7.0.1.
+
 2016-11-09  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/openvasmd.c (main): Update (C) year.
