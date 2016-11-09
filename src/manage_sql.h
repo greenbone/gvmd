@@ -384,4 +384,6 @@ void parse_osp_report (task_t, report_t, const char *);
 
 void reschedule_task (const gchar *);
 
+void insert_port_range (port_list_t, port_protocol_t, int, int);
+
 #endif /* not OPENVAS_MANAGER_MANAGE_SQL_H */

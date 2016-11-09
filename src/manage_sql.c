@@ -53749,6 +53749,28 @@ delete_port_list (const char *port_list_id, int ultimate)
 }
 
 /**
+ * @brief Create a port range.
+ *
+ * @param[in]  port_range  Port range to insert into.
+ * @param[in]  type        Protocol: PORT_PROTOCOL_UDP or PORT_PROTOCOL_TCP.
+ * @param[in]  start       Start of range.
+ * @param[in]  end         End of range.
+ */
+void
+insert_port_range (port_list_t port_list, port_protocol_t type, int start,
+                   int end)
+{
+  sql ("INSERT INTO port_ranges"
+       " (uuid, port_list, type, start, \"end\", comment, exclude)"
+       " VALUES"
+       " (make_uuid (), %llu, %i, '%i', '%i', '', 0);",
+       port_list,
+       type,
+       start,
+       end);
+}
+
+/**
  * @brief Delete a port range.
  *
  * @param[in]  port_range_id  UUID of port_range.

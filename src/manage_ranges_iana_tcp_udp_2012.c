@@ -23,8 +23,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "manage.h"
-#include "sql.h"
+#include "manage_sql.h"
 
 #undef G_LOG_DOMAIN
 /**
@@ -36,15 +35,7 @@
  * @brief Insert a port range.
  */
 #define RANGE(type, start, end)                                      \
-  sql ("INSERT INTO port_ranges"                                     \
-       " (uuid, port_list, type, start, \"end\", comment, exclude)"  \
-       " VALUES"                                                     \
-       " (make_uuid (), %llu, %i,"                                   \
-       "  '" G_STRINGIFY (start) "',"                                \
-       "  '" G_STRINGIFY (end) "',"                                  \
-       "  '', 0)",                                                   \
-       list,                                                         \
-       type)
+  insert_port_range (list, type, start, end)
 
 /**
  * @brief Make port ranges for IANA TCP and UDP 2012.
