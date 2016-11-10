@@ -1,5 +1,18 @@
 2016-11-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r26617.
+
+	Bring SQLite to Postgres migration up to date with current version.
+
+	* tools/openvas-migrate-to-postgres.in (migrate_179_to_180)
+	(migrate_180_to_181, migrate_181_to_182, migrate_182_to_183)
+	(migrate_183_to_184): New functions.
+	(TABLES_180, TABLES_181, TABLES_182, TABLES_183, TABLES_184): New
+	variables.
+	(migrate, create): Add new versions.
+
+2016-11-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c: Include manage_utis.h, for SEVERITY_*.
 
 2016-11-10  Matthew Mundell <matthew.mundell@greenbone.net>
