@@ -25,6 +25,7 @@
 
 #include "sql.h"
 #include "manage.h"
+#include "manage_utils.h"
 #include "manage_acl.h"
 
 #undef G_LOG_DOMAIN
