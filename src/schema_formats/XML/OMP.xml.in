@@ -24,44 +24,14 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
 
-<!-- Changes between 1.0 and 2.0.
-
-   report_formats
-       new  CREATE_REPORT_FORMAT, DELETE_REPORT_FORMAT, GET_REPORTS_FORMATS
-            VERIFY_REPORT_FORMAT, MODIFY_REPORT_FORMAT
-       GET_REPORTS  req  attrib format_id instead of attrib format
-                    resp  + attribs id, format_id, extension, content_type
-                          entire xml report inside report entity, like others
-   Add CVE and BID to RESULT.
-       in GET_RESULTS resp
-       in GET_NOTES,OVERRIDES resp  when attrib result is true
-   slaves
-       CREATE_TASK  req  + SLAVE
-       new  CREATE_SLAVE, DELETE_SLAVE, GET_SLAVES
-       GET_TASKS  resp  + SLAVE
-       MODIFY_TASK  req  + SLAVE
-       GET_SYSTEM_REPORTS  req  + slave_id attrib
-   agent trust
-       GET_AGENTS  resp  + TRUST and TRUST/TIME
-       new  VERIFY_AGENT
-   lsc credentials
-       new  MODIFY_LSC_CREDENTIAL
-   HELP  req  + format attrib
-         resp  + SCHEMA
-   report filtered result counts
-      GET_REPORTS/REPORT/RESULT_COUNT  + FILTERED and FULL
-   target port ranges
-      CREATE_TARGET,GET_TARGETS  + PORT_RANGE
-   per-protocol target credentials
-      CREATE_TARGET,GET_TARGETS  + SSH,SMB_LSC_CREDENTIAL, - LSC_CREDENTIAL
-   GET_TASKS  - RESULT_COUNT
--->
-
 <protocol>
   <name>OpenVAS Management Protocol</name>
   <abbreviation>OMP</abbreviation>
   <summary>The "management" protocol of the Open Vulnerability Assessment System</summary>
   <version>@OMP_VERSION@</version>
+
+  <!-- Types. -->
+
   <type>
     <name>alive_test</name>
     <summary>An alive test</summary>
@@ -243,6 +213,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <summary>A Universally Unique Identifier (UUID), or the empty string</summary>
     <pattern>xsd:token { pattern = "[0-9abcdefABCDEF\-]{0,40}" }</pattern>
   </type>
+
+  <!-- Elements. -->
+
   <element>
     <name>c</name>
     <summary>A reference to a command</summary>
@@ -3021,6 +2994,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </ele>
     </ele>
   </element>
+
+  <!-- Commands. -->
+
   <command>
     <name>authenticate</name>
     <summary>Authenticate with the manager</summary>
@@ -25261,6 +25237,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </response>
     </example>
   </command>
+
+  <!-- Compatibility changes between versions. -->
+
   <change>
     <command>GET_NVT_FEED_VERSION</command>
     <summary>Command removed</summary>
@@ -25781,4 +25760,38 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </p>
     </description>
   </change>
+
+  <!-- Changes between 1.0 and 2.0.
+
+     report_formats
+         new  CREATE_REPORT_FORMAT, DELETE_REPORT_FORMAT, GET_REPORTS_FORMATS
+              VERIFY_REPORT_FORMAT, MODIFY_REPORT_FORMAT
+         GET_REPORTS  req  attrib format_id instead of attrib format
+                      resp  + attribs id, format_id, extension, content_type
+                            entire xml report inside report entity, like others
+     Add CVE and BID to RESULT.
+         in GET_RESULTS resp
+         in GET_NOTES,OVERRIDES resp  when attrib result is true
+     slaves
+         CREATE_TASK  req  + SLAVE
+         new  CREATE_SLAVE, DELETE_SLAVE, GET_SLAVES
+         GET_TASKS  resp  + SLAVE
+         MODIFY_TASK  req  + SLAVE
+         GET_SYSTEM_REPORTS  req  + slave_id attrib
+     agent trust
+         GET_AGENTS  resp  + TRUST and TRUST/TIME
+         new  VERIFY_AGENT
+     lsc credentials
+         new  MODIFY_LSC_CREDENTIAL
+     HELP  req  + format attrib
+           resp  + SCHEMA
+     report filtered result counts
+        GET_REPORTS/REPORT/RESULT_COUNT  + FILTERED and FULL
+     target port ranges
+        CREATE_TARGET,GET_TARGETS  + PORT_RANGE
+     per-protocol target credentials
+        CREATE_TARGET,GET_TARGETS  + SSH,SMB_LSC_CREDENTIAL, - LSC_CREDENTIAL
+     GET_TASKS  - RESULT_COUNT
+  -->
+
 </protocol>
