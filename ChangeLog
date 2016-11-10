@@ -1,5 +1,9 @@
 2016-11-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (insert_port_range): Correct doc arg.
+
+2016-11-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml.in: Move old change list to end.  Add
 	headings.
 

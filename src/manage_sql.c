@@ -53807,7 +53807,7 @@ delete_port_list (const char *port_list_id, int ultimate)
 /**
  * @brief Create a port range.
  *
- * @param[in]  port_range  Port range to insert into.
+ * @param[in]  port_list   Port list to insert into.
  * @param[in]  type        Protocol: PORT_PROTOCOL_UDP or PORT_PROTOCOL_TCP.
  * @param[in]  start       Start of range.
  * @param[in]  end         End of range.
