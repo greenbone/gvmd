@@ -1574,6 +1574,39 @@ migrate_178_to_179 () {
 
 TABLES_179=$TABLES_178
 
+migrate_179_to_180 () {
+  pg "DROP TABLE slaves;"
+  pg "DROP TABLE slaves_trash;"
+}
+
+TABLES_180=`echo $TABLES_178 | sed -e "s/ slaves_trash//g" | sed -e "s/ slaves//g"`
+
+migrate_180_to_181 () {
+  pg "ALTER TABLE tasks DROP COLUMN slave;"
+  pg "ALTER TABLE tasks DROP COLUMN slave_location;"
+}
+
+TABLES_181=$TABLES_180
+
+migrate_181_to_182 () {
+  : # Schema stayed the same.
+}
+
+TABLES_182=$TABLES_181
+
+migrate_182_to_183 () {
+  pg "ALTER TABLE reports DROP COLUMN slave_username;"
+  pg "ALTER TABLE reports DROP COLUMN slave_password;"
+}
+
+TABLES_183=$TABLES_182
+
+migrate_183_to_184 () {
+  : # Schema stayed the same.
+}
+
+TABLES_184=$TABLES_183
+
 
 ## Migrate the schema of the Postgres database from version $1 to $2.
 ##
@@ -1955,6 +1988,46 @@ migrate () {
       fi
       migrate 179 $TO;;
 
+    179)
+      migrate_179_to_180
+      if [ $TO -eq 180 ]
+      then
+          return
+      fi
+      migrate 180 $TO;;
+
+    180)
+      migrate_180_to_181
+      if [ $TO -eq 181 ]
+      then
+          return
+      fi
+      migrate 181 $TO;;
+
+    181)
+      migrate_181_to_182
+      if [ $TO -eq 182 ]
+      then
+          return
+      fi
+      migrate 182 $TO;;
+
+    182)
+      migrate_182_to_183
+      if [ $TO -eq 183 ]
+      then
+          return
+      fi
+      migrate 183 $TO;;
+
+    183)
+      migrate_183_to_184
+      if [ $TO -eq 184 ]
+      then
+          return
+      fi
+      migrate 184 $TO;;
+
     *)
       log_notice "Version in Postgres database out of sync."
       exit 1
@@ -2213,9 +2286,33 @@ create () {
       ;;
 
     179)
-      log_info "Creating Postgres database (version 179)."
       create_migrate_clean $DB_VERSION
       copy_data "$TABLES_179"
+      ;;
+
+    180)
+      create_migrate_clean $DB_VERSION
+      copy_data "$TABLES_180"
+      ;;
+
+    181)
+      create_migrate_clean $DB_VERSION
+      copy_data "$TABLES_181"
+      ;;
+
+    182)
+      create_migrate_clean $DB_VERSION
+      copy_data "$TABLES_182"
+      ;;
+
+    183)
+      create_migrate_clean $DB_VERSION
+      copy_data "$TABLES_183"
+      ;;
+
+    184)
+      create_migrate_clean $DB_VERSION
+      copy_data "$TABLES_184"
       ;;
 
     *)
