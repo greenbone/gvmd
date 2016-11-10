@@ -37228,6 +37228,7 @@ manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list,
                                   int mode)
 {
   iterator_t configs;
+  int count;
 
   if (mode == -2)
     {
@@ -37300,6 +37301,12 @@ manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list,
 
   if (mode == -2)
     sql_commit ();
+
+  count = sql_int ("SELECT count (*) FROM nvts;");
+  if (mode == -2)
+    g_info ("Rebuilding NVT cache... done (%i NVTs).", count);
+  else
+    g_info ("Updating NVT cache... done (%i NVTs).", count);
 
   if (progress)
     progress ();

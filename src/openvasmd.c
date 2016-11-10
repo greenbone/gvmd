@@ -983,12 +983,12 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
   if (update_nvt_cache == 0)
     {
       proctitle_set ("openvasmd: Rebuilding");
-      g_info ("%s: Rebuilding NVT cache\n", __FUNCTION__);
+      g_info ("%s: Rebuilding NVT cache...\n", __FUNCTION__);
     }
   else
     {
       proctitle_set ("openvasmd: Updating");
-      g_info ("%s: Updating NVT cache\n", __FUNCTION__);
+      g_info ("%s: Updating NVT cache...\n", __FUNCTION__);
     }
 
   switch (init_ompd (log_config,

@@ -1,5 +1,14 @@
 2016-11-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_complete_nvt_cache_update): Add log message
+	to confirm that update has completed, with NVT count to help out if you
+	forget to sync the NVTS initially.
+
+	* src/openvasmd.c (update_or_rebuild_nvt_cache): Match update message
+	to end one.
+
+2016-11-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Bring SQLite to Postgres migration up to date with current version.
 
 	* tools/openvas-migrate-to-postgres.in (migrate_179_to_180)
