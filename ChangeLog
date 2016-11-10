@@ -1,3 +1,21 @@
+2016-11-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Remove another case of manage_sql.h being used outside the "manage"
+	library.
+
+	* src/omp.c: Remove manage_sql.h include.
+	(send_get_common, log_event_internal, handle_get_settings)
+	(omp_xml_handle_end_element): Use alternatives to internal symbols.
+
+	* src/manage_sql.c (manage_resource_name, manage_trash_resource_name)
+	(scanner_uuid_default, permission_is_admin)
+	(setting_is_default_ca_cert): New functions.
+
+	* src/manage.h: Add headers accordingly.
+	(resource_name): Remove.  Not used externally anymore.
+
+	* src/manage_sql.h: Remove headers accordingly.
+
 2016-11-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_ranges_all_tcp_nmap_5_51_top_100.c,

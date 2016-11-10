@@ -4941,6 +4941,36 @@ resource_name (const char *type, const char *uuid, int location, char **name)
 }
 
 /**
+ * @brief Get the name of a resource.
+ *
+ * @param[in]  type      Type.
+ * @param[in]  uuid      UUID.
+ * @param[out] name      Return for freshly allocated name.
+ *
+ * @return 0 success, 1 error in type.
+ */
+int
+manage_resource_name (const char *type, const char *uuid, char **name)
+{
+  return resource_name (type, uuid, LOCATION_TABLE, name);
+}
+
+/**
+ * @brief Get the name of a trashcan resource.
+ *
+ * @param[in]  type      Type.
+ * @param[in]  uuid      UUID.
+ * @param[out] name      Return for freshly allocated name.
+ *
+ * @return 0 success, 1 error in type.
+ */
+int
+manage_trash_resource_name (const char *type, const char *uuid, char **name)
+{
+  return resource_name (type, uuid, LOCATION_TRASH, name);
+}
+
+/**
  * @brief Get the UUID of a resource.
  *
  * @param[in]  type      Type.
@@ -45853,6 +45883,17 @@ scanner_uuid (scanner_t scanner)
 }
 
 /**
+ * @brief Return the UUID of the default scanner.
+ *
+ * @return UUID.
+ */
+const char *
+scanner_uuid_default ()
+{
+  return SCANNER_UUID_DEFAULT;
+}
+
+/**
  * @brief Return the host of a scanner.
  *
  * @param[in]  scanner  Scanner.
@@ -52132,6 +52173,21 @@ permission_is_predefined (permission_t permission)
                     "                  OR uuid = '" ROLE_UUID_SUPER_ADMIN "'"
                     "                  OR uuid = '" ROLE_UUID_OBSERVER "')))",
                     permission);
+}
+
+/**
+ * @brief Test whether a permission is the special Admin permission.
+ *
+ * @param[in]  permission_id  UUID of permission.
+ *
+ * @return 1 permission is Admin, else 0.
+ */
+int
+permission_is_admin (const char *permission_id)
+{
+  if (permission_id)
+    return strcmp (permission_id, PERMISSION_UUID_ADMIN_EVERYTHING);
+  return 0;
 }
 
 /**
@@ -60136,6 +60192,19 @@ setting_name (const gchar *uuid)
   if (strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE) == 0)
     return "Max Rows Per Page";
   return NULL;
+}
+
+/**
+ * @brief Check whether a setting is the Default CA Cert setting.
+ *
+ * @param[in]  uuid  UUID of setting.
+ *
+ * @return 1 if Default CA Cert, else 0.
+ */
+int
+setting_is_default_ca_cert (const gchar *uuid)
+{
+  return strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0;
 }
 
 /**

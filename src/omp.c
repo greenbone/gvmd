@@ -93,7 +93,6 @@
 #include "omp.h"
 #include "manage.h"
 #include "manage_acl.h"
-#include "manage_sql.h"
 /** @todo For access to scanner_t scanner. */
 #include "otp.h"
 
@@ -6014,8 +6013,7 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
                || (strcmp (type, "report_format") == 0))
               && get_iterator_uuid (iterator)
               /* ... but not the special Admin permission. */
-              && strcmp (get_iterator_uuid (iterator),
-                         PERMISSION_UUID_ADMIN_EVERYTHING))
+              && permission_is_admin (get_iterator_uuid (iterator)))
           && acl_user_can_everything (current_credentials.uuid)))
     {
       buffer_xml_append_printf (buffer,
@@ -6531,10 +6529,10 @@ log_event_internal (const char *type, const char *type_name, const char *id,
     {
       char *name;
 
-      if (resource_name (type, id, LOCATION_TABLE, &name))
+      if (manage_resource_name (type, id, &name))
         name = NULL;
       else if ((name == NULL)
-               && resource_name (type, id, LOCATION_TRASH, &name))
+               && manage_trash_resource_name (type, id, &name))
         name = NULL;
 
       if (name)
@@ -18184,9 +18182,7 @@ handle_get_settings (omp_parser_t *omp_parser, GError **error)
                                setting_iterator_comment (&settings),
                                setting_iterator_value (&settings));
 
-      if ((strcmp (setting_iterator_uuid (&settings),
-                   SETTING_UUID_DEFAULT_CA_CERT)
-           == 0)
+      if (setting_is_default_ca_cert (setting_iterator_uuid (&settings))
           && setting_iterator_value (&settings)
           && strlen (setting_iterator_value (&settings)))
         {
@@ -24863,7 +24859,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             }
 
           if (create_task_data->scanner_id == NULL)
-            create_task_data->scanner_id = g_strdup (SCANNER_UUID_DEFAULT);
+            create_task_data->scanner_id = g_strdup (scanner_uuid_default ());
 
           /* Check permissions. */
 

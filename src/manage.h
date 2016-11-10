@@ -343,7 +343,10 @@ get_iterator_owner (iterator_t*);
 /* Resources. */
 
 int
-resource_name (const char *, const char *, int, char **);
+manage_resource_name (const char *, const char *, char **);
+
+int
+manage_trash_resource_name (const char *, const char *, char **);
 
 int
 resource_count (const char *, const get_data_t *);
@@ -2124,6 +2127,9 @@ const char*
 credential_iterator_privacy_algorithm (iterator_t*);
 
 const char*
+credential_iterator_password (iterator_t*);
+
+const char*
 credential_iterator_community (iterator_t*);
 
 const char*
@@ -2645,6 +2651,9 @@ scanner_writable (scanner_t);
 char *
 scanner_uuid (scanner_t);
 
+const char *
+scanner_uuid_default ();
+
 char *
 scanner_host (scanner_t);
 
@@ -3118,6 +3127,9 @@ permission_uuid (permission_t);
 
 char *
 permission_name (permission_t);
+
+int
+permission_is_admin (const char *);
 
 int
 permission_in_use (permission_t);
@@ -3709,6 +3721,9 @@ manage_max_rows (int);
 int
 setting_count (const char *);
 
+int
+setting_is_default_ca_cert (const gchar *);
+
 char *
 setting_filter (const char *);
 
@@ -3781,6 +3796,9 @@ report_host_noticeable (report_t, const gchar *);
 
 void
 report_host_set_end_time (report_host_t, time_t);
+
+gchar*
+host_routes_xml (host_t);
 
 int
 manage_set_password (GSList *, const gchar *, const gchar *, const gchar *);

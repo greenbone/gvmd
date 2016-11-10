@@ -263,9 +263,6 @@ array_add_new_string (array_t *, const gchar *);
 
 int manage_db_empty ();
 
-gchar*
-host_routes_xml (host_t);
-
 gboolean
 host_nthlast_report_host (const char *, report_host_t *, int);
 
@@ -305,7 +302,6 @@ char* target_port_range (target_t);
 credential_t target_ssh_credential (target_t);
 credential_t target_smb_credential (target_t);
 credential_t target_esxi_credential (target_t);
-const char *credential_iterator_password (iterator_t *);
 
 int create_current_report (task_t, char **, task_status_t);
 
