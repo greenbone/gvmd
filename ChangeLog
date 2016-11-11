@@ -1,3 +1,9 @@
+2016-11-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (ALL_INFO_UNION_COLUMNS_LIMIT): Add specifier for order
+	clause.
+	(init_all_info_iterator): Add order clause to subqueries.
+
 2016-11-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_complete_nvt_cache_update): Add log message
