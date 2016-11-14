@@ -5000,7 +5000,7 @@ static GMarkupParser xml_parser;
 /**
  * @brief The nvt synchronization script for this daemon.
  */
-static const gchar *nvt_sync_script = SBINDIR "/openvas-nvt-sync";
+static const gchar *nvt_sync_script = SBINDIR "/greenbone-nvt-sync";
 
 /**
  * @brief The scap synchronization script for this daemon.

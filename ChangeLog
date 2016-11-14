@@ -1,3 +1,7 @@
+2016-11-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (nvt_sync_script): Update for script rename.
+
 2016-11-14  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* tools/greenbone-certdata-sync.in (check_alerts),
