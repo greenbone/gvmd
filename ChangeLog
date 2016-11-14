@@ -1,5 +1,11 @@
 2016-11-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (ALL_INFO_UNION_COLUMNS)
+	(ALL_INFO_UNION_COLUMNS_LIMIT): Name the tag column selection "extra" in
+	the NVTs case, because the filtering may expect an "extra" column.
+
+2016-11-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (ALL_INFO_UNION_COLUMNS): Capitalise "AS" always.
 
 2016-11-14  Matthew Mundell <matthew.mundell@greenbone.net>
