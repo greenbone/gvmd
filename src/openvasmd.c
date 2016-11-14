@@ -1743,6 +1743,14 @@ main (int argc, char** argv)
         }
     }
 
+  if (use_tls == 0
+      && (manager_port_string || manager_port_string_2))
+    {
+      g_critical ("%s: --port or --port2 given when listening on UNIX socket\n",
+                  __FUNCTION__);
+      return EXIT_FAILURE;
+    }
+
   /* Set process title. */
 
   proctitle_init (argc, argv);

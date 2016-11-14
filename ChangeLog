@@ -1,3 +1,9 @@
+2016-11-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r26641.
+
+	* src/openvasmd.c (main): Check if port option is given with UNIX socket.
+
 2016-11-14  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	Backport r26634.
