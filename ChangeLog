@@ -1,3 +1,10 @@
+2016-11-14  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	Backport r26634.
+
+	* README: Updated. Also replaced the long command syntax by just a hint
+	on --help as this part is too volatile.
+
 2016-11-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r26617.
