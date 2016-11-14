@@ -1,3 +1,9 @@
+2016-11-14  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* tools/greenbone-certdata-sync.in (check_alerts),
+	tools/greenbone-scapdata-sync.in (check_alerts): Redirect output of
+	'command' to /dev/null to prevent it from showing up on stdout.
+
 2016-11-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c (main): Check if port option is given with UNIX socket.
