@@ -60623,6 +60623,7 @@ manage_default_ca_cert ()
   "                       CAST ('cve' AS text) AS type,"                       \
   "                       description as extra, cvss as severity"              \
   "                FROM cves"                                                  \
+  "                %s%s"                                                       \
   "                %s"                                                         \
   "                %s)"                                                        \
   "               AS union_sub_1"                                              \
@@ -60632,6 +60633,7 @@ manage_default_ca_cert ()
   "                       CAST ('cpe' AS text) AS type, title as extra,"       \
   "                       max_cvss as severity"                                \
   "                FROM cpes"                                                  \
+  "                %s%s"                                                       \
   "                %s"                                                         \
   "                %s)"                                                        \
   "               AS union_sub_2"                                              \
@@ -60642,6 +60644,7 @@ manage_default_ca_cert ()
   "                       tag,"                                                \
   "                       CAST (cvss_base AS float) as severity"               \
   "                FROM nvts"                                                  \
+  "                %s%s"                                                       \
   "                %s"                                                         \
   "                %s)"                                                        \
   "               AS union_sub_3"                                              \
@@ -60652,6 +60655,7 @@ manage_default_ca_cert ()
   "                       title as extra,"                                     \
   "                       max_cvss as severity"                                \
   "                FROM cert_bund_advs"                                        \
+  "                %s%s"                                                       \
   "                %s"                                                         \
   "                %s)"                                                        \
   "               AS union_sub_4"                                              \
@@ -60662,6 +60666,7 @@ manage_default_ca_cert ()
   "                       title as extra,"                                     \
   "                       max_cvss as severity"                                \
   "                FROM dfn_cert_advs"                                         \
+  "                %s%s"                                                       \
   "                %s"                                                         \
   "                %s)"                                                        \
   "               AS union_sub_5"                                              \
@@ -60671,6 +60676,7 @@ manage_default_ca_cert ()
   "                       CAST ('ovaldef' AS text) AS type, title as extra,"   \
   "                       max_cvss as severity"                                \
   "                FROM ovaldefs"                                              \
+  "                %s%s"                                                       \
   "                %s"                                                         \
   "                %s)"                                                        \
   "               AS union_sub_6)"                                             \
@@ -61743,6 +61749,7 @@ init_all_info_iterator (iterator_t* iterator, get_data_t *get,
   static column_t select_columns[] = ALL_INFO_ITERATOR_COLUMNS;
   int first, max;
   gchar *columns, *clause, *filter, *order, *limit_clause;
+  gchar *subselect_limit_clause;
 
   if (get->filt_id && strcmp (get->filt_id, "0"))
     {
@@ -61758,6 +61765,9 @@ init_all_info_iterator (iterator_t* iterator, get_data_t *get,
                           &order, &first, &max, NULL, NULL);
   columns = columns_build_select (select_columns);
 
+  subselect_limit_clause = g_strdup_printf ("LIMIT %s",
+                                            sql_select_limit (max + first));
+
   limit_clause = g_strdup_printf ("LIMIT %s OFFSET %i",
                                   sql_select_limit (max),
                                   first);
@@ -61765,27 +61775,40 @@ init_all_info_iterator (iterator_t* iterator, get_data_t *get,
   init_iterator (iterator,
                  "SELECT %s"
                  " FROM " ALL_INFO_UNION_COLUMNS_LIMIT
-                 " %s%s"
                  " %s"
                  " %s;",
+                 /* For the outer SELECT. */
                  columns,
-                 order,
-                 limit_clause,
-                 order,
-                 limit_clause,
-                 order,
-                 limit_clause,
-                 order,
-                 limit_clause,
-                 order,
-                 limit_clause,
-                 order,
-                 limit_clause,
+                 /* For the inner SELECTs. */
                  clause ? "WHERE " : "",
-                 clause ? clause   : "",
+                 clause ? clause : "",
+                 order,
+                 subselect_limit_clause,
+                 clause ? "WHERE " : "",
+                 clause ? clause : "",
+                 order,
+                 subselect_limit_clause,
+                 clause ? "WHERE " : "",
+                 clause ? clause : "",
+                 order,
+                 subselect_limit_clause,
+                 clause ? "WHERE " : "",
+                 clause ? clause : "",
+                 order,
+                 subselect_limit_clause,
+                 clause ? "WHERE " : "",
+                 clause ? clause : "",
+                 order,
+                 subselect_limit_clause,
+                 clause ? "WHERE " : "",
+                 clause ? clause : "",
+                 order,
+                 subselect_limit_clause,
+                 /* For the outer SELECT. */
                  order,
                  limit_clause);
 
+  g_free (subselect_limit_clause);
   g_free (limit_clause);
   g_free (order);
   g_free (filter);

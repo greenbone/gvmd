@@ -1,3 +1,12 @@
+2016-11-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (ALL_INFO_UNION_COLUMNS): Add specifiers for filter
+	clause.
+	(init_all_info_iterator): Remove the OFFSETs from the subselects, because
+	the offset only makes sense when the subselects are combined.  Move the
+	filtering down into the subselects because the LIMIT only works after
+	filtering.
+
 2016-11-14  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* README: Updated. Also replaced the long command syntax by just a hint
