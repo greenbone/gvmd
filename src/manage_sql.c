@@ -60616,6 +60616,7 @@ manage_default_ca_cert ()
   "                       CAST ('cve' AS text) AS type,"                       \
   "                       description as extra, cvss as severity"              \
   "                FROM cves"                                                  \
+  "                %s"                                                         \
   "                %s)"                                                        \
   "               AS union_sub_1"                                              \
   " UNION ALL"                                                                 \
@@ -60624,15 +60625,17 @@ manage_default_ca_cert ()
   "                       CAST ('cpe' AS text) AS type, title as extra,"       \
   "                       max_cvss as severity"                                \
   "                FROM cpes"                                                  \
+  "                %s"                                                         \
   "                %s)"                                                        \
   "               AS union_sub_2"                                              \
   " UNION ALL"                                                                 \
   " SELECT * FROM (SELECT " GET_ITERATOR_COLUMNS_STRING ","                    \
   "                       CAST ('' AS text) AS _owner,"                        \
   "                       CAST ('nvt' AS text) AS type,"                       \
-  "                       tag,"                                                 \
+  "                       tag,"                                                \
   "                       CAST (cvss_base AS float) as severity"               \
   "                FROM nvts"                                                  \
+  "                %s"                                                         \
   "                %s)"                                                        \
   "               AS union_sub_3"                                              \
   " UNION ALL"                                                                 \
@@ -60642,6 +60645,7 @@ manage_default_ca_cert ()
   "                       title as extra,"                                     \
   "                       max_cvss as severity"                                \
   "                FROM cert_bund_advs"                                        \
+  "                %s"                                                         \
   "                %s)"                                                        \
   "               AS union_sub_4"                                              \
   " UNION ALL"                                                                 \
@@ -60651,6 +60655,7 @@ manage_default_ca_cert ()
   "                       title as extra,"                                     \
   "                       max_cvss as severity"                                \
   "                FROM dfn_cert_advs"                                         \
+  "                %s"                                                         \
   "                %s)"                                                        \
   "               AS union_sub_5"                                              \
   " UNION ALL"                                                                 \
@@ -60659,6 +60664,7 @@ manage_default_ca_cert ()
   "                       CAST ('ovaldef' AS text) AS type, title as extra,"   \
   "                       max_cvss as severity"                                \
   "                FROM ovaldefs"                                              \
+  "                %s"                                                         \
   "                %s)"                                                        \
   "               AS union_sub_6)"                                             \
   " AS allinfo"
@@ -61751,16 +61757,22 @@ init_all_info_iterator (iterator_t* iterator, get_data_t *get,
 
   init_iterator (iterator,
                  "SELECT %s"
-                 " FROM" ALL_INFO_UNION_COLUMNS_LIMIT
+                 " FROM " ALL_INFO_UNION_COLUMNS_LIMIT
                  " %s%s"
                  " %s"
                  " %s;",
                  columns,
+                 order,
                  limit_clause,
+                 order,
                  limit_clause,
+                 order,
                  limit_clause,
+                 order,
                  limit_clause,
+                 order,
                  limit_clause,
+                 order,
                  limit_clause,
                  clause ? "WHERE " : "",
                  clause ? clause   : "",
