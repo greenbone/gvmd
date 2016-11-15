@@ -60581,6 +60581,27 @@ manage_default_ca_cert ()
  }
 
 /**
+ * @brief All SecInfo iterator columns.
+ */
+#define ALL_INFO_ITERATOR_COLUMNS_ARGS(type, extra, severity)           \
+ {                                                                      \
+   { "id", NULL, KEYWORD_TYPE_INTEGER },                                \
+   { "uuid", NULL, KEYWORD_TYPE_STRING },                               \
+   { "name", NULL, KEYWORD_TYPE_STRING },                               \
+   { "comment", NULL, KEYWORD_TYPE_STRING },                            \
+   { "iso_time (created)", NULL, KEYWORD_TYPE_STRING },                 \
+   { "iso_time (modified)", NULL, KEYWORD_TYPE_STRING },                \
+   { "created", NULL, KEYWORD_TYPE_INTEGER },                           \
+   { "modified", NULL, KEYWORD_TYPE_INTEGER },                          \
+   { "''", "_owner", KEYWORD_TYPE_STRING },                             \
+   { "0", NULL, KEYWORD_TYPE_INTEGER },                                 \
+   { type, "type", KEYWORD_TYPE_STRING },                               \
+   { extra, "extra", KEYWORD_TYPE_STRING },                             \
+   { severity, "severity", KEYWORD_TYPE_DOUBLE },                       \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                 \
+ }
+
+ /**
  * @brief All SecInfo iterator column union.
  */
 #define ALL_INFO_UNION_COLUMNS                                                 \
@@ -61740,9 +61761,35 @@ init_all_info_iterator (iterator_t* iterator, get_data_t *get,
 {
   static const char *filter_columns[] = ALL_INFO_ITERATOR_FILTER_COLUMNS;
   static column_t select_columns[] = ALL_INFO_ITERATOR_COLUMNS;
+  static column_t cve_select_columns[] = ALL_INFO_ITERATOR_COLUMNS_ARGS
+                                          ("CAST ('cve' AS text)",
+                                           "description",
+                                           "cvss");
+  static column_t cpe_select_columns[] = ALL_INFO_ITERATOR_COLUMNS_ARGS
+                                          ("CAST ('cpe' AS text)",
+                                           "title",
+                                           "max_cvss");
+  static column_t nvt_select_columns[] = ALL_INFO_ITERATOR_COLUMNS_ARGS
+                                          ("CAST ('nvt' AS text)",
+                                           "tag",
+                                           "cvss_base");
+  static column_t cert_select_columns[] = ALL_INFO_ITERATOR_COLUMNS_ARGS
+                                           ("CAST ('cert_bund_adv' AS text)",
+                                            "title",
+                                            "max_cvss");
+  static column_t dfn_select_columns[] = ALL_INFO_ITERATOR_COLUMNS_ARGS
+                                          ("CAST ('dfn_cert_adv' AS text)",
+                                           "title",
+                                           "max_cvss");
+  static column_t ovaldef_select_columns[] = ALL_INFO_ITERATOR_COLUMNS_ARGS
+                                              ("CAST ('ovaldef' AS text)",
+                                               "title",
+                                               "max_cvss");
   int first, max;
   gchar *columns, *clause, *filter, *order, *limit_clause;
-  gchar *subselect_limit_clause;
+  gchar *subselect_limit_clause, *cve_clause, *cpe_clause, *nvt_clause;
+  gchar *cert_clause, *dfn_clause, *ovaldef_clause, *cve_order;
+  gchar *cpe_order, *nvt_order, *cert_order, *dfn_order, *ovaldef_order;
 
   if (get->filt_id && strcmp (get->filt_id, "0"))
     {
@@ -61765,39 +61812,62 @@ init_all_info_iterator (iterator_t* iterator, get_data_t *get,
                                   sql_select_limit (max),
                                   first);
 
+  cve_clause = filter_clause ("allinfo", filter ? filter : get->filter,
+                              filter_columns, cve_select_columns, NULL,
+                              get->trash, &cve_order, NULL, NULL, NULL, NULL);
+  cpe_clause = filter_clause ("allinfo", filter ? filter : get->filter,
+                              filter_columns, cpe_select_columns, NULL,
+                              get->trash, &cpe_order, NULL, NULL, NULL, NULL);
+  nvt_clause = filter_clause ("allinfo", filter ? filter : get->filter,
+                              filter_columns, nvt_select_columns, NULL,
+                              get->trash, &nvt_order, NULL, NULL, NULL, NULL);
+  cert_clause = filter_clause ("allinfo", filter ? filter : get->filter,
+                               filter_columns, cert_select_columns, NULL,
+                               get->trash, &cert_order, NULL, NULL, NULL, NULL);
+  dfn_clause = filter_clause ("allinfo", filter ? filter : get->filter,
+                              filter_columns, dfn_select_columns, NULL,
+                              get->trash, &dfn_order, NULL, NULL, NULL, NULL);
+  ovaldef_clause = filter_clause ("allinfo", filter ? filter : get->filter,
+                                  filter_columns, ovaldef_select_columns, NULL,
+                                  get->trash, &ovaldef_order, NULL, NULL, NULL,
+                                  NULL);
+
   init_iterator (iterator,
                  "SELECT %s"
                  " FROM " ALL_INFO_UNION_COLUMNS_LIMIT
+                 " %s%s"
                  " %s"
                  " %s;",
                  /* For the outer SELECT. */
                  columns,
                  /* For the inner SELECTs. */
-                 clause ? "WHERE " : "",
-                 clause ? clause : "",
-                 order,
+                 cve_clause ? "WHERE " : "",
+                 cve_clause ? cve_clause : "",
+                 cve_order,
                  subselect_limit_clause,
-                 clause ? "WHERE " : "",
-                 clause ? clause : "",
-                 order,
+                 cpe_clause ? "WHERE " : "",
+                 cpe_clause ? cpe_clause : "",
+                 cpe_order,
                  subselect_limit_clause,
-                 clause ? "WHERE " : "",
-                 clause ? clause : "",
-                 order,
+                 nvt_clause ? "WHERE " : "",
+                 nvt_clause ? nvt_clause : "",
+                 nvt_order,
                  subselect_limit_clause,
-                 clause ? "WHERE " : "",
-                 clause ? clause : "",
-                 order,
+                 cert_clause ? "WHERE " : "",
+                 cert_clause ? cert_clause : "",
+                 cert_order,
                  subselect_limit_clause,
-                 clause ? "WHERE " : "",
-                 clause ? clause : "",
-                 order,
+                 dfn_clause ? "WHERE " : "",
+                 dfn_clause ? dfn_clause : "",
+                 dfn_order,
                  subselect_limit_clause,
-                 clause ? "WHERE " : "",
-                 clause ? clause : "",
-                 order,
+                 ovaldef_clause ? "WHERE " : "",
+                 ovaldef_clause ? ovaldef_clause : "",
+                 ovaldef_order,
                  subselect_limit_clause,
                  /* For the outer SELECT. */
+                 clause ? "WHERE " : "",
+                 clause ? clause : "",
                  order,
                  limit_clause);
 
@@ -61807,6 +61877,18 @@ init_all_info_iterator (iterator_t* iterator, get_data_t *get,
   g_free (filter);
   g_free (columns);
   g_free (clause);
+  g_free (cve_clause);
+  g_free (cpe_clause);
+  g_free (nvt_clause);
+  g_free (cert_clause);
+  g_free (dfn_clause);
+  g_free (ovaldef_clause);
+  g_free (cve_order);
+  g_free (cpe_order);
+  g_free (nvt_order);
+  g_free (cert_order);
+  g_free (dfn_order);
+  g_free (ovaldef_order);
   return 0;
 }
 
