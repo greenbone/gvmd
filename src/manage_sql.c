@@ -60585,25 +60585,25 @@ manage_default_ca_cert ()
  */
 #define ALL_INFO_UNION_COLUMNS                                                 \
   "(SELECT " GET_ITERATOR_COLUMNS_STRING ", '' AS _owner, 'cve' AS type,"      \
-  "        description as extra, cvss as severity"                             \
+  "        description AS extra, cvss AS severity"                             \
   " FROM cves"                                                                 \
   " UNION ALL SELECT " GET_ITERATOR_COLUMNS_STRING ", '' AS _owner,"           \
-  "                  'cpe' AS type, title as extra, max_cvss as severity"      \
+  "                  'cpe' AS type, title AS extra, max_cvss AS severity"      \
   "           FROM cpes"                                                       \
   " UNION ALL SELECT " GET_ITERATOR_COLUMNS_STRING ", '' AS _owner,"           \
   "                  'nvt' AS type, tag,"                                      \
-  "                  CAST (cvss_base AS float) as severity"                    \
+  "                  CAST (cvss_base AS float) AS severity"                    \
   "           FROM nvts"                                                       \
   " UNION ALL SELECT " GET_ITERATOR_COLUMNS_STRING ", '' AS _owner,"           \
-  "                  'cert_bund_adv' AS type, title as extra,"                 \
-  "                  max_cvss as severity"                                     \
+  "                  'cert_bund_adv' AS type, title AS extra,"                 \
+  "                  max_cvss AS severity"                                     \
   "           FROM cert_bund_advs"                                             \
   " UNION ALL SELECT " GET_ITERATOR_COLUMNS_STRING ", '' AS _owner,"           \
-  "                  'dfn_cert_adv' AS type, title as extra,"                  \
-  "                  max_cvss as severity"                                     \
+  "                  'dfn_cert_adv' AS type, title AS extra,"                  \
+  "                  max_cvss AS severity"                                     \
   "           FROM dfn_cert_advs"                                              \
   " UNION ALL SELECT " GET_ITERATOR_COLUMNS_STRING ", '' AS _owner,"           \
-  "                  'ovaldef' AS type, title as extra, max_cvss as severity"  \
+  "                  'ovaldef' AS type, title AS extra, max_cvss AS severity"  \
   "           FROM ovaldefs)"                                                  \
   " AS allinfo"
 

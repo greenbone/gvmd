@@ -1,5 +1,9 @@
 2016-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c: File missed in last commit.
+
+2016-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport 26639.
 
 	* src/manage_sql.c (ALL_INFO_UNION_COLUMNS): Capitalise "AS" always.
