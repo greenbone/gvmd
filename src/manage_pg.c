@@ -24,7 +24,7 @@
  */
 
 #include "sql.h"
-#include "manage.h"
+#include "manage_sql.h"
 #include "manage_utils.h"
 #include "manage_acl.h"
 

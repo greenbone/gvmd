@@ -1,3 +1,9 @@
+2016-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_pg.c: Include manage_sql.h for LOCATION_TABLE.
+
+	* src/manage_acl.h: Include manage_sql.h for LOCATION_TABLE.
+
 2016-11-15  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/manage.c (openvas_sync_feed, openvas_migrate_secinfo): Change

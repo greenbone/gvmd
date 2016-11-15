@@ -26,7 +26,7 @@
 #ifndef OPENVAS_MANAGER_MANAGE_ACL_H
 #define OPENVAS_MANAGER_MANAGE_ACL_H
 
-#include "manage.h"
+#include "manage_sql.h"
 #include <glib.h>
 
 /**
