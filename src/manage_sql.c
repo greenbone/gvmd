@@ -74,7 +74,7 @@
 /**
  * @brief Absolute maximum number of IPs per target.
  *
- * The number of 70000 is choosen to cover "192.168.0.0-192.168.255.255".
+ * The number of 70000 is chosen to cover "192.168.0.0-192.168.255.255".
  */
 #define ABSOLUTE_MAX_IPS_PER_TARGET 70000
 
@@ -689,7 +689,7 @@ array_add_new_string (array_t *array, const gchar *string)
  *
  * @param[in]   type      Type of resource.
  * @param[in]   uuid      UUID of resource.
- * @param[out]  resource  Resource return, 0 if succesfully failed to find
+ * @param[out]  resource  Resource return, 0 if successfully failed to find
  *                        resource.
  *
  * @return FALSE on success (including if failed to find resource), TRUE on
@@ -4414,7 +4414,7 @@ type_trash_in_table (const char *type)
  *
  * @param[in]   type       Type of resource.
  * @param[in]   uuid       UUID of resource.
- * @param[out]  resource   Resource return, 0 if succesfully failed to find resource.
+ * @param[out]  resource   Resource return, 0 if successfully failed to find resource.
  *
  * @return FALSE on success (including if failed to find resource), TRUE on error.
  */
@@ -4458,7 +4458,7 @@ find_resource (const char* type, const char* uuid, resource_t* resource)
  *
  * @param[in]   type        Type of resource.
  * @param[in]   uuid        UUID of resource.
- * @param[out]  resource    Resource return, 0 if succesfully failed to find
+ * @param[out]  resource    Resource return, 0 if successfully failed to find
  *                          resource.
  * @param[in]   permission  Permission.
  * @param[in]   trash       Whether resource is in trashcan.
@@ -4514,7 +4514,7 @@ find_resource_with_permission (const char* type, const char* uuid,
  *
  * @param[in]   type      Type of resource.
  * @param[in]   name      A resource name.
- * @param[out]  resource  Resource return, 0 if succesfully failed to find
+ * @param[out]  resource  Resource return, 0 if successfully failed to find
  *                        resource.
  *
  * @return FALSE on success (including if failed to find resource), TRUE on
@@ -4554,7 +4554,7 @@ find_resource_by_name (const char* type, const char* name, resource_t *resource)
  *
  * @param[in]   type        Type of resource.
  * @param[in]   name        Name of resource.
- * @param[out]  resource    Resource return, 0 if succesfully failed to find
+ * @param[out]  resource    Resource return, 0 if successfully failed to find
  *                          resource.
  * @param[in]   permission  Permission.
  *
@@ -6923,7 +6923,7 @@ manage_check_alerts (GSList *log_config, const gchar *database)
  * @brief Find a alert for a specific permission, given a UUID.
  *
  * @param[in]   uuid        UUID of alert.
- * @param[out]  alert       Alert return, 0 if succesfully failed to find alert.
+ * @param[out]  alert       Alert return, 0 if successfully failed to find alert.
  * @param[in]   permission  Permission.
  *
  * @return FALSE on success (including if failed to find alert), TRUE on error.
@@ -17245,7 +17245,7 @@ set_task_start_time_otp (task_t task, char* time)
  * @brief Get the report from the most recently completed invocation of task.
  *
  * @param[in]  task    The task.
- * @param[out] report  Report return, 0 if succesfully failed to select report.
+ * @param[out] report  Report return, 0 if successfully failed to select report.
  *
  * @return 0 success, -1 error.
  */
@@ -17278,7 +17278,7 @@ task_last_report (task_t task, report_t *report)
  * @brief Get the report from second most recently completed invocation of task.
  *
  * @param[in]  task    The task.
- * @param[out] report  Report return, 0 if succesfully failed to select report.
+ * @param[out] report  Report return, 0 if successfully failed to select report.
  *
  * @return 0 success, -1 error.
  */
@@ -17311,7 +17311,7 @@ task_second_last_report (task_t task, report_t *report)
  * @brief Get the report from the most recently stopped invocation of task.
  *
  * @param[in]  task    The task.
- * @param[out] report  Report return, 0 if succesfully failed to select report.
+ * @param[out] report  Report return, 0 if successfully failed to select report.
  *
  * @return 0 success, -1 error.
  */
@@ -18308,7 +18308,7 @@ reschedule_task (const gchar *task_id)
  * @brief Find a result for a set of permissions, given a UUID.
  *
  * @param[in]   uuid        UUID of result.
- * @param[out]  result      Result return, 0 if succesfully failed to find
+ * @param[out]  result      Result return, 0 if successfully failed to find
  *                          result.
  * @param[in]   permission  Permission.
  *
@@ -18543,7 +18543,7 @@ host_identify (const char *host_name, const char *identifier_name,
  * @brief Notice a host.
  *
  * When a host is detected during a scan, this makes the decision about which
- * asset host is used for the host, as decribed in \ref asset_rules.  This
+ * asset host is used for the host, as described in \ref asset_rules.  This
  * decision is revised at the end of the scan by \ref hosts_set_identifiers if
  * there are any identifiers for the host.
  *
@@ -19886,7 +19886,7 @@ report_uuid (report_t report)
  * @brief Return the task of a report.
  *
  * @param[in]   report  A report.
- * @param[out]  task    Task return, 0 if succesfully failed to find task.
+ * @param[out]  task    Task return, 0 if successfully failed to find task.
  *
  * @return FALSE on success (including if failed to find report), TRUE on error.
  */
@@ -30567,7 +30567,7 @@ set_scan_ports (report_t report, const char* host, unsigned int current,
  * @brief Find a task given an identifier.
  *
  * @param[in]   uuid  A task identifier.
- * @param[out]  task  Task return, 0 if succesfully failed to find task.
+ * @param[out]  task  Task return, 0 if successfully failed to find task.
  *
  * @return FALSE on success (including if failed to find task), TRUE on error.
  */
@@ -30603,7 +30603,7 @@ find_task (const char* uuid, task_t* task)
  * @brief Find a task for a specific permission, given a UUID.
  *
  * @param[in]   uuid      UUID of task.
- * @param[out]  task      Task return, 0 if succesfully failed to find task.
+ * @param[out]  task      Task return, 0 if successfully failed to find task.
  * @param[in]   permission  Permission.
  *
  * @return FALSE on success (including if failed to find task), TRUE on error.
@@ -30619,7 +30619,7 @@ find_task_with_permission (const char* uuid, task_t* task,
  * @brief Find a task in the trashcan for a specific permission, given a UUID.
  *
  * @param[in]   uuid      UUID of task.
- * @param[out]  task      Task return, 0 if succesfully failed to find task.
+ * @param[out]  task      Task return, 0 if successfully failed to find task.
  * @param[in]   permission  Permission.
  *
  * @return FALSE on success (including if failed to find task), TRUE on error.
@@ -30635,7 +30635,7 @@ find_trash_task_with_permission (const char* uuid, task_t* task,
  * @brief Find a task in the trashcan, given an identifier.
  *
  * @param[in]   uuid  A task identifier.
- * @param[out]  task  Task return, 0 if succesfully failed to find task.
+ * @param[out]  task  Task return, 0 if successfully failed to find task.
  *
  * @return FALSE on success (including if failed to find task), TRUE on error.
  */
@@ -30671,7 +30671,7 @@ find_trash_task (const char* uuid, task_t* task)
  * @brief Find a report for a specific permission, given a UUID.
  *
  * @param[in]   uuid        UUID of report.
- * @param[out]  report      Report return, 0 if succesfully failed to find
+ * @param[out]  report      Report return, 0 if successfully failed to find
  *                          report.
  * @param[in]   permission  Permission.
  *
@@ -30850,7 +30850,7 @@ manage_set_max_hosts (int new_max)
  * @brief Find a target for a specific permission, given a UUID.
  *
  * @param[in]   uuid        UUID of target.
- * @param[out]  target      Target return, 0 if succesfully failed to find target.
+ * @param[out]  target      Target return, 0 if successfully failed to find target.
  * @param[in]   permission  Permission.
  *
  * @return FALSE on success (including if failed to find target), TRUE on error.
@@ -33261,7 +33261,7 @@ target_task_iterator_readable (iterator_t* iterator)
  * @brief Find a config given a UUID.
  *
  * @param[in]   uuid    Config UUID.
- * @param[out]  config  Config return, 0 if succesfully failed to find config.
+ * @param[out]  config  Config return, 0 if successfully failed to find config.
  *
  * @return FALSE on success (including if failed to find config), TRUE on error.
  */
@@ -33299,7 +33299,7 @@ find_config (const char* uuid, config_t* config)
  * @brief Find a config for a set of permissions, given a UUID.
  *
  * @param[in]   uuid        UUID of config.
- * @param[out]  config      Config return, 0 if succesfully failed to find
+ * @param[out]  config      Config return, 0 if successfully failed to find
  *                          config.
  * @param[in]   permission  Permission.
  *
@@ -35469,7 +35469,7 @@ set_nvts_feed_version (const char *feed_version)
  * @brief Find an NVT given an identifier.
  *
  * @param[in]   oid  An NVT identifier.
- * @param[out]  nvt  NVT return, 0 if succesfully failed to find task.
+ * @param[out]  nvt  NVT return, 0 if successfully failed to find task.
  *
  * @return FALSE on success (including if failed to find NVT), TRUE on error.
  */
@@ -37374,7 +37374,7 @@ manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list,
 
 /* These could handle strange cases, like when a family is
  * included then excluded, or all is included then later excluded.
- * However, OMP prevents those cases from occuring. */
+ * However, OMP prevents those cases from occurring. */
 
 /**
  * @brief Get the number of families selected by an NVT selector.
@@ -39372,7 +39372,7 @@ check_db_encryption_key ()
  * @brief Find a credential for a specific permission, given a UUID.
  *
  * @param[in]   uuid            UUID of credential.
- * @param[out]  credential      Credential return, 0 if succesfully failed
+ * @param[out]  credential      Credential return, 0 if successfully failed
  *                              to find Credential.
  * @param[in]   permission      Permission.
  *
@@ -41302,7 +41302,7 @@ credential_scanner_iterator_readable (iterator_t* iterator)
  * @brief Find a agent for a specific permission, given a UUID.
  *
  * @param[in]   uuid        UUID of agent.
- * @param[out]  agent       Agent return, 0 if succesfully failed to find agent.
+ * @param[out]  agent       Agent return, 0 if successfully failed to find agent.
  * @param[in]   permission  Permission.
  *
  * @return FALSE on success (including if failed to find agent), TRUE on error.
@@ -42508,7 +42508,7 @@ agent_count (const get_data_t *get)
  * @brief Find a note for a specific permission, given a UUID.
  *
  * @param[in]   uuid        UUID of note.
- * @param[out]  note        Note return, 0 if succesfully failed to find note.
+ * @param[out]  note        Note return, 0 if successfully failed to find note.
  * @param[in]   permission  Permission.
  *
  * @return FALSE on success (including if failed to find note), TRUE on error.
@@ -43469,7 +43469,7 @@ DEF_ACCESS (note_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 13);
  * @brief Find a override for a specific permission, given a UUID.
  *
  * @param[in]   uuid        UUID of override.
- * @param[out]  override    Override return, 0 if succesfully failed to find
+ * @param[out]  override    Override return, 0 if successfully failed to find
  *                          override.
  * @param[in]   permission  Permission.
  *
@@ -45052,7 +45052,7 @@ manage_verify_scanner (GSList *log_config, const gchar *database,
  * @brief Find a scanner given a UUID.
  *
  * @param[in]   uuid    UUID of scanner.
- * @param[out]  scanner Scanner return, 0 if succesfully failed to find scanner.
+ * @param[out]  scanner Scanner return, 0 if successfully failed to find scanner.
  *
  * @return FALSE on success (including if failed to find scanner), TRUE on error.
  */
@@ -45066,7 +45066,7 @@ find_scanner (const char* uuid, scanner_t *scanner)
  * @brief Find a scanner for a specific permission, given a UUID.
  *
  * @param[in]   uuid        UUID of scanner.
- * @param[out]  scanner     Scanner return, 0 if succesfully failed to find
+ * @param[out]  scanner     Scanner return, 0 if successfully failed to find
  *                          scanner.
  * @param[in]   permission  Permission.
  *
@@ -46312,7 +46312,7 @@ manage_get_scanners (GSList *log_config, const gchar *database)
  * @brief Find a schedule for a specific permission, given a UUID.
  *
  * @param[in]   uuid        UUID of schedule.
- * @param[out]  schedule    Schedule return, 0 if succesfully failed to find schedule.
+ * @param[out]  schedule    Schedule return, 0 if successfully failed to find schedule.
  * @param[in]   permission  Permission.
  *
  * @return FALSE on success (including if failed to find schedule), TRUE on error.
@@ -47557,7 +47557,7 @@ typedef enum
  * @brief Find a reportformat for a specific permission, given a UUID.
  *
  * @param[in]   uuid        UUID of report format.
- * @param[out]  report_format  Report format return, 0 if succesfully failed to
+ * @param[out]  report_format  Report format return, 0 if successfully failed to
  *                             find report_format.
  * @param[in]   permission  Permission.
  *
@@ -47577,7 +47577,7 @@ find_report_format_with_permission (const char* uuid,
  * @brief Find a report format given a name.
  *
  * @param[in]   name           Name of report_format.
- * @param[out]  report_format  Report format return, 0 if succesfully failed to
+ * @param[out]  report_format  Report format return, 0 if successfully failed to
  *                             find report_format.
  *
  * @return FALSE on success (including if failed to find report format), TRUE
@@ -50851,7 +50851,7 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
  * @brief Find a group given a UUID.
  *
  * @param[in]   uuid   UUID of group.
- * @param[out]  group  Group return, 0 if succesfully failed to find group.
+ * @param[out]  group  Group return, 0 if successfully failed to find group.
  *
  * @return FALSE on success (including if failed to find group), TRUE on
  *         error.
@@ -50866,7 +50866,7 @@ find_group (const char* uuid, group_t* group)
  * @brief Find a group for a specific permission, given a UUID.
  *
  * @param[in]   uuid        UUID of group.
- * @param[out]  group       Group return, 0 if succesfully failed to find group.
+ * @param[out]  group       Group return, 0 if successfully failed to find group.
  * @param[in]   permission  Permission.
  *
  * @return FALSE on success (including if failed to find group), TRUE on error.
@@ -51620,7 +51620,7 @@ permissions_set_subjects (const char *type, resource_t old, resource_t new,
  * @brief Find a permission given a UUID.
  *
  * @param[in]   uuid        UUID of permission.
- * @param[out]  permission  Permission return, 0 if succesfully failed to find
+ * @param[out]  permission  Permission return, 0 if successfully failed to find
  *                          permission.
  *
  * @return FALSE on success (including if failed to find permission), TRUE on
@@ -52625,7 +52625,7 @@ permission_iterator_subject_readable (iterator_t* iterator)
  * @brief Find a permission with a given permission, given a UUID.
  *
  * @param[in]   uuid        UUID of permission.
- * @param[out]  resource    Permission return, 0 if succesfully failed to find
+ * @param[out]  resource    Permission return, 0 if successfully failed to find
  *                          permission.
  * @param[in]   permission  Required permission, for example "delete".
  *
@@ -52954,7 +52954,7 @@ modify_permission (const char *permission_id, const char *name_arg,
  * @brief Find a port list given a UUID.
  *
  * @param[in]   uuid       UUID of port_list.
- * @param[out]  port_list  Port_List return, 0 if succesfully failed to find
+ * @param[out]  port_list  Port_List return, 0 if successfully failed to find
  *                         port_list.
  *
  * @return FALSE on success (including if failed to find port_list), TRUE on error.
@@ -52994,7 +52994,7 @@ find_port_list (const char* uuid, port_list_t* port_list)
  * @brief Find a port list for a specific permission, given a UUID.
  *
  * @param[in]   uuid        UUID of port list.
- * @param[out]  port_list   Port list return, 0 if succesfully failed to find
+ * @param[out]  port_list   Port list return, 0 if successfully failed to find
  *                          port list.
  * @param[in]   permission  Permission.
  *
@@ -53039,7 +53039,7 @@ port_range_port_list_uuid (const char *port_range)
  * @brief Find a port range given a UUID.
  *
  * @param[in]   uuid        UUID of port_range.
- * @param[out]  port_range  Port range return, 0 if succesfully failed to find
+ * @param[out]  port_range  Port range return, 0 if successfully failed to find
  *                          port range.
  * @param[in]   permission  UUID of port_range.
  *
@@ -54743,7 +54743,7 @@ delete_role (const char *role_id, int ultimate)
  * @brief Find a role given a UUID.
  *
  * @param[in]   uuid   UUID of role.
- * @param[out]  role  Role return, 0 if succesfully failed to find role.
+ * @param[out]  role  Role return, 0 if successfully failed to find role.
  *
  * @return FALSE on success (including if failed to find role), TRUE on
  *         error.
@@ -54758,7 +54758,7 @@ find_role (const char* uuid, role_t* role)
  * @brief Find a role for a specific permission, given a UUID.
  *
  * @param[in]   uuid        UUID of role.
- * @param[out]  role        Role return, 0 if succesfully failed to find role.
+ * @param[out]  role        Role return, 0 if successfully failed to find role.
  * @param[in]   permission  Permission.
  *
  * @return FALSE on success (including if failed to find role), TRUE on error.
@@ -54774,7 +54774,7 @@ find_role_with_permission (const char* uuid, role_t* role,
  * @brief Find a role given a name.
  *
  * @param[in]   name  A role name.
- * @param[out]  role  Role return, 0 if succesfully failed to find role.
+ * @param[out]  role  Role return, 0 if successfully failed to find role.
  *
  * @return FALSE on success (including if failed to find role), TRUE on error.
  */
@@ -55031,7 +55031,7 @@ init_role_iterator (iterator_t* iterator, const get_data_t *get)
  * @brief Find a filter given a UUID.
  *
  * @param[in]   uuid    UUID of filter.
- * @param[out]  filter  Filter return, 0 if succesfully failed to find filter.
+ * @param[out]  filter  Filter return, 0 if successfully failed to find filter.
  *
  * @return FALSE on success (including if failed to find filter), TRUE on error.
  */
@@ -55045,7 +55045,7 @@ find_filter (const char* uuid, filter_t* filter)
  * @brief Find a filter for a specific permission, given a UUID.
  *
  * @param[in]   uuid        UUID of filter.
- * @param[out]  filter      Filter return, 0 if succesfully failed to find
+ * @param[out]  filter      Filter return, 0 if successfully failed to find
  *                          filter.
  * @param[in]   permission  Permission.
  *
@@ -58763,7 +58763,7 @@ DEF_ACCESS (host_detail_iterator_source_id, 4);
  * @brief Find a host for a specific permission, given a UUID.
  *
  * @param[in]   uuid        UUID of host.
- * @param[out]  host      Host return, 0 if succesfully failed to find host.
+ * @param[out]  host      Host return, 0 if successfully failed to find host.
  * @param[in]   permission  Permission.
  *
  * @return FALSE on success (including if failed to find host), TRUE on error.
@@ -61019,11 +61019,11 @@ DEF_ACCESS (cve_info_iterator_integrity_impact, GET_ITERATOR_COLUMN_COUNT + 4);
 DEF_ACCESS (cve_info_iterator_availability_impact, GET_ITERATOR_COLUMN_COUNT + 5);
 
 /**
- * @brief Get a space seperated list of CPEs affected by this CVE.
+ * @brief Get a space separated list of CPEs affected by this CVE.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return A space seperated list of CPEs or NULL if iteration is
+ * @return A space separated list of CPEs or NULL if iteration is
  *         complete. Freed by cleanup_iterator.
  */
 DEF_ACCESS (cve_info_iterator_products, GET_ITERATOR_COLUMN_COUNT + 6);
@@ -62263,7 +62263,7 @@ manage_set_password (GSList *log_config, const gchar *database,
  * @brief Find a user for a specific permission, given a UUID.
  *
  * @param[in]   uuid        UUID of user.
- * @param[out]  user        User return, 0 if succesfully failed to find user.
+ * @param[out]  user        User return, 0 if successfully failed to find user.
  * @param[in]   permission  Permission.
  *
  * @return FALSE on success (including if failed to find user), TRUE on error.
@@ -62279,7 +62279,7 @@ find_user_with_permission (const char* uuid, user_t* user,
  * @brief Find a user given a name.
  *
  * @param[in]   name  A user name.
- * @param[out]  user  User return, 0 if succesfully failed to find user.
+ * @param[out]  user  User return, 0 if successfully failed to find user.
  * @param[in]   permission  Permission.
  *
  * @return FALSE on success (including if failed to find user), TRUE on error.
@@ -62295,7 +62295,7 @@ find_user_by_name_with_permission (const char* name, user_t *user,
  * @brief Find a user given a name.
  *
  * @param[in]   name  A user name.
- * @param[out]  user  User return, 0 if succesfully failed to find user.
+ * @param[out]  user  User return, 0 if successfully failed to find user.
  *
  * @return FALSE on success (including if failed to find user), TRUE on error.
  */
@@ -64016,7 +64016,7 @@ manage_set_radius_info (int enabled, gchar *host, gchar *key)
  * @brief Find a tag for a specific permission, given a UUID.
  *
  * @param[in]   uuid        UUID of tag.
- * @param[out]  tag         Tag return, 0 if succesfully failed to find tag.
+ * @param[out]  tag         Tag return, 0 if successfully failed to find tag.
  * @param[in]   permission  Permission.
  *
  * @return FALSE on success (including if failed to find tag), TRUE on error.

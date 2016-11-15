@@ -921,12 +921,12 @@ migrate_4_to_5 ()
   /* Update the database. */
 
   /* Every table got an "id INTEGER PRIMARY KEY" column.  As the column is a
-   * primary key, every table must be recreated and the data transfered.
+   * primary key, every table must be recreated and the data transferred.
    *
    * Also, starting from revision 5726 on 2009-10-26 (just before 0.9.2),
    * the Manager converts semicolons in OTP NVT descriptions to newlines
    * before entering them in the database.  Convert the existing
-   * semicolons while transfering the data.  This should have been an
+   * semicolons while transferring the data.  This should have been an
    * entirely separate version and migration between the current 4 and 5. */
 
   /* Ensure that all tables exist that will be adjusted below. */

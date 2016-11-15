@@ -407,7 +407,7 @@ do_encrypt (lsc_crypt_ctx_t ctx, const void *plaintext, size_t plaintextlen)
 
 
 /**
- * @brief Decrypt data encrypted tothe standard key
+ * @brief Decrypt data encrypted to the standard key
  *
  * Decrypt the base64 encoded ciphersting.  On success store the size
  * of the plaintext at R_PLAINTEXTSIZE and return an allocated buffer

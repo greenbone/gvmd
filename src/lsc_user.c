@@ -249,7 +249,7 @@ get_rpm_generator_path ()
  * @param[in]  public_key_path  Location of public key.
  * @param[in]  to_filename      Destination filename for RPM.
  *
- * @return Path to rpm file if successfull, NULL otherwise.
+ * @return Path to rpm file if successful, NULL otherwise.
  */
 static gboolean
 lsc_user_rpm_create (const gchar *username,

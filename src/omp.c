@@ -11892,7 +11892,7 @@ init_aggregate_lists (const gchar* group_column,
 typedef struct
 {
   gchar *string;  ///< The string counted.
-  int count;      ///< The number of occurences.
+  int count;      ///< The number of occurrences.
 } count_data_t;
 
 /**

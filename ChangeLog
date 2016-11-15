@@ -1,3 +1,8 @@
+2016-11-15  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/lsc_crypt.c, src/lsc_user.c, src/manage_migrators.c,
+	src/manage_sql.c, src/omp.c: Fix typos in comments.
+
 2016-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (ALL_INFO_ITERATOR_COLUMNS_ARGS): New macro.
