@@ -1,5 +1,16 @@
 2016-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r26638.
+
+	* src/manage_sql.c (ALL_INFO_UNION_COLUMNS): Add specifiers for filter
+	clause.
+	(init_all_info_iterator): Remove the OFFSETs from the subselects, because
+	the offset only makes sense when the subselects are combined.  Move the
+	filtering down into the subselects because the LIMIT only works after
+	filtering.
+
+2016-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c: File missed in last commit.
 
 2016-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
