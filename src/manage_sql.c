@@ -60591,7 +60591,7 @@ manage_default_ca_cert ()
   "                  'cpe' AS type, title AS extra, max_cvss AS severity"      \
   "           FROM cpes"                                                       \
   " UNION ALL SELECT " GET_ITERATOR_COLUMNS_STRING ", '' AS _owner,"           \
-  "                  'nvt' AS type, tag,"                                      \
+  "                  'nvt' AS type, tag AS extra,"                             \
   "                  CAST (cvss_base AS float) AS severity"                    \
   "           FROM nvts"                                                       \
   " UNION ALL SELECT " GET_ITERATOR_COLUMNS_STRING ", '' AS _owner,"           \
@@ -60634,7 +60634,7 @@ manage_default_ca_cert ()
   " SELECT * FROM (SELECT " GET_ITERATOR_COLUMNS_STRING ","                    \
   "                       CAST ('' AS text) AS _owner,"                        \
   "                       CAST ('nvt' AS text) AS type,"                       \
-  "                       tag,"                                                \
+  "                       tag AS extra,"                                       \
   "                       CAST (cvss_base AS float) as severity"               \
   "                FROM nvts"                                                  \
   "                %s%s"                                                       \
