@@ -1,3 +1,11 @@
+2016-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r26632.
+
+	* src/manage_sql.c (ALL_INFO_UNION_COLUMNS_LIMIT): Add specifier for order
+	clause.
+	(init_all_info_iterator): Add order clause to subqueries.
+
 2016-11-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r26644.
