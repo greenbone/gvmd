@@ -1,5 +1,11 @@
 2016-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r26663.
+
+	* doc/openvasmd.html: Update for source change from 2016-08-24.
+
+2016-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r26662.
 
 	* doc/postgres-HOWTO: Update script names.
