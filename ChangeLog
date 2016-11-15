@@ -1,5 +1,11 @@
 2016-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport 26639.
+
+	* src/manage_sql.c (ALL_INFO_UNION_COLUMNS): Capitalise "AS" always.
+
+2016-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r26638.
 
 	* src/manage_sql.c (ALL_INFO_UNION_COLUMNS): Add specifiers for filter
