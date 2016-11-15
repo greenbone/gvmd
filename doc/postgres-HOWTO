@@ -54,9 +54,9 @@ Migrating from SQLite to PostgreSQL
 
 2 Run "openvasmd --rebuild".
 
-3 Run "openvas-scapdata-sync".
+3 Run "greenbone-scapdata-sync".
 
-4 Run "openvas-certdata-sync".
+4 Run "greenbone-certdata-sync".
 
 
 Handy script to drop all data
