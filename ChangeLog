@@ -1,5 +1,9 @@
 2016-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/openvasmd.html: Update for source change from 2016-08-24.
+
+2016-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* doc/postgres-HOWTO: Update script names.
 
 2016-11-15  Michael Wiegand <michael.wiegand@greenbone.net>
