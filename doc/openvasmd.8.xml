@@ -44,15 +44,11 @@
       The OpenVAS Manager is a OTP client and adds various management
       functionalities to handle and organise scan results.
       Thus OpenVAS Manager acts as a layer between the
-      OpenVAS Scanner and its own clients (for example omp(8),
-      gsad(8) or gsd(8)) which connect via the OMP protocol
+      OpenVAS Scanner and its own clients (for example omp(8) or
+      gsad(8)) which connect via the OMP protocol
       to the OpenVAS Manager.
     </p>
 
-    <p>
-      A related service is OpenVAS Administrator, openvasad(8) which
-      among other tasks also manages user accounts for OpenVAS.
-    </p>
   </description>
 
   <options>
@@ -229,10 +225,8 @@
   <section name="SEE ALSO">
     <p>
       <manref name="openvassd" section="8"/>,
-      <manref name="openvasad" section="8"/>,
       <manref name="gsad" section="8"/>,
       <manref name="omp" section="8"/>,
-      <manref name="gsd" section="8"/>
     </p>
   </section>
 

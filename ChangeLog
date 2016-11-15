@@ -1,3 +1,8 @@
+2016-11-15  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* doc/openvasmd.8.xml: Eliminate references to openvasad and gsd.
+	These modules are unsupported since a long time.
+
 2016-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* doc/openvasmd.html: Update for source change from 2016-08-24.
