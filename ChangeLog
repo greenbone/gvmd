@@ -1,3 +1,10 @@
+2016-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (ALL_INFO_ITERATOR_COLUMNS_ARGS): New macro.
+	(init_all_info_iterator): Use separate filter and order clause for each
+	SecInfo type, in order to use the actual column in the clauses, because
+	Postgres refuses to use column aliases after WHERE.
+
 2016-11-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (nvt_sync_script): Update for script rename.
