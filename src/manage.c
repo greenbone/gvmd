@@ -8416,14 +8416,14 @@ openvas_sync_feed (const gchar * sync_script, const gchar * current_user,
 
         /* Child.  Become the sync process. */
 
-        sync_out = freopen ("/tmp/openvasad_sync_out", "w", stdout);
+        sync_out = freopen ("/tmp/openvasmd_sync_out", "w", stdout);
         if (sync_out == NULL)
           {
             g_warning ("Failed to reopen stdout: %s", strerror (errno));
             exit (EXIT_FAILURE);
           }
 
-        sync_err = freopen ("/tmp/openvasad_sync_err", "w", stderr);
+        sync_err = freopen ("/tmp/openvasmd_sync_err", "w", stderr);
         if (sync_err == NULL)
           {
             g_warning ("Failed to reopen stderr: %s", strerror (errno));
@@ -8652,14 +8652,14 @@ openvas_migrate_secinfo (const gchar * sync_script, int feed_type)
 
         /* Child.  Become the sync process. */
 
-        sync_out = freopen ("/tmp/openvasad_sync_out", "w", stdout);
+        sync_out = freopen ("/tmp/openvasmd_sync_out", "w", stdout);
         if (sync_out == NULL)
           {
             g_warning ("Failed to reopen stdout: %s", strerror (errno));
             exit (EXIT_FAILURE);
           }
 
-        sync_err = freopen ("/tmp/openvasad_sync_err", "w", stderr);
+        sync_err = freopen ("/tmp/openvasmd_sync_err", "w", stderr);
         if (sync_err == NULL)
           {
             g_warning ("Failed to reopen stderr: %s", strerror (errno));

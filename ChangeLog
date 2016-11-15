@@ -1,5 +1,10 @@
 2016-11-15  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	* src/manage.c (openvas_sync_feed, openvas_migrate_secinfo): Change
+	temporary filename from "openvasad" to "openvasmd".
+
+2016-11-15  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	* doc/openvasmd.8.xml: Eliminate references to openvasad and gsd.
 	These modules are unsupported since a long time.
 
