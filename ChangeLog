@@ -1,5 +1,11 @@
 2016-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r26662.
+
+	* doc/postgres-HOWTO: Update script names.
+
+2016-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r26649.
 
 	* src/manage_sql.c (ALL_INFO_ITERATOR_COLUMNS_ARGS): New macro.
@@ -8,6 +14,8 @@
 	Postgres refuses to use column aliases after WHERE.
 
 2016-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r26640.
 
 	* src/manage_sql.c (ALL_INFO_UNION_COLUMNS)
 	(ALL_INFO_UNION_COLUMNS_LIMIT): Name the tag column selection "extra" in
