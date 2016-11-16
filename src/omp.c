@@ -19000,7 +19000,7 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
               int period, period_months, duration;
 
               if (schedule_info (schedule, &first_time, &next_time, &period,
-                                 &period_months, &duration))
+                                 &period_months, &duration) == 0)
                 SENDF_TO_CLIENT_OR_FAIL ("<schedule id=\"%s\">"
                                          "<name>%s</name>"
                                          "<next_time>%s</next_time>"
