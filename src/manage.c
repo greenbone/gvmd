@@ -6377,6 +6377,7 @@ manage_schedule (int (*fork_connection) (openvas_connection_t *, gchar *),
                  gboolean run_tasks,
                  sigset_t *sigmask_current)
 {
+  char title[128];
   iterator_t schedules;
   GSList *starts = NULL, *stops = NULL;
   int ret;
@@ -6598,6 +6599,11 @@ manage_schedule (int (*fork_connection) (openvas_connection_t *, gchar *),
 
               /* Parent.  Wait for child, to check return. */
 
+              snprintf (title, sizeof (title),
+                        "openvasmd: scheduler: waiting for %i",
+                        pid);
+              proctitle_set (title);
+
               g_debug ("%s: %i fork_connectioned %i",
                        __FUNCTION__, getpid (), pid);
 
@@ -6694,6 +6700,11 @@ manage_schedule (int (*fork_connection) (openvas_connection_t *, gchar *),
 
       /* Start the task. */
 
+      snprintf (title, sizeof (title),
+                "openvasmd: scheduler: starting %s",
+                task_uuid);
+      proctitle_set (title);
+
       auth_opts = omp_authenticate_info_opts_defaults;
       auth_opts.username = owner;
       if (omp_authenticate_info_ext_c (&connection, auth_opts))
@@ -6783,6 +6794,11 @@ manage_schedule (int (*fork_connection) (openvas_connection_t *, gchar *),
         }
 
       /* Stop the task. */
+
+      snprintf (title, sizeof (title),
+                "openvasmd: scheduler: stopping %s",
+                task_uuid);
+      proctitle_set (title);
 
       auth_opts = omp_authenticate_info_opts_defaults;
       auth_opts.username = owner;
@@ -8330,6 +8346,13 @@ openvas_sync_feed (const gchar * sync_script, const gchar * current_user,
       return 0;
       break;
     }
+
+  if (feed_type == NVT_FEED)
+    proctitle_set ("openvasmd: Syncing NVT feed");
+  else if (feed_type == SCAP_FEED)
+    proctitle_set ("openvasmd: Syncing SCAP feed");
+  else if (feed_type == CERT_FEED)
+    proctitle_set ("openvasmd: Syncing CERT feed");
 
   /* Open the lock file. */
 

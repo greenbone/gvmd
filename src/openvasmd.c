@@ -435,6 +435,8 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
 
           is_parent = 0;
 
+          proctitle_set ("openvasmd: Serving client");
+
           /* Restore the sigmask that was blanked for pselect. */
           pthread_sigmask (SIG_SETMASK, sigmask_current, NULL);
 
@@ -559,6 +561,8 @@ fork_connection_internal (openvas_connection_t *client_connection, gchar* uuid,
       case 0:
         /* Child.  Serve the scheduler OMP, then exit. */
 
+        proctitle_set ("openvasmd: Serving OMP internally");
+
         parent_client_socket = sockets[0];
 
         memset (&action, '\0', sizeof (action));
@@ -645,6 +649,8 @@ fork_connection_internal (openvas_connection_t *client_connection, gchar* uuid,
         /* Parent.  */
 
         g_debug ("%s: %i forked %i", __FUNCTION__, getpid (), pid);
+
+        proctitle_set ("openvasmd: Requesting OMP internally");
 
         /* This process is returned as the child of
          * fork_connection_for_scheduler so that the returned parent can wait
@@ -1150,6 +1156,8 @@ fork_update_nvt_cache ()
     {
       case 0:
         /* Child.   */
+
+        proctitle_set ("openvasmd: Updating the NVT cache");
 
         /* Clean up the process. */
 
@@ -2031,6 +2039,9 @@ main (int argc, char** argv)
       g_info ("   Migrating database.\n");
 
       /* Migrate the database to the version supported by this manager. */
+
+      proctitle_set ("openvasmd: Migrating database");
+
       switch (manage_migrate (log_config, database))
         {
           case 0:
@@ -2396,7 +2407,7 @@ main (int argc, char** argv)
 
   /* Enter the main forever-loop. */
 
-  proctitle_set ("openvasmd");
+  proctitle_set ("openvasmd: Waiting for incoming connections");
   serve_and_schedule ();
 
   return EXIT_SUCCESS;

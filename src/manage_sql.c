@@ -65,6 +65,7 @@
 #include <openvas/misc/ldap_connect_auth.h>
 #include <openvas/misc/radius.h>
 #include <openvas/misc/openvas_logging.h>
+#include <openvas/misc/openvas_proctitle.h>
 #include <openvas/misc/openvas_uuid.h>
 #include <openvas/misc/openvas_server.h>
 #include <openvas/misc/openvas_ssh.h>
@@ -9102,6 +9103,8 @@ run_alert_script (const char *alert_id, const char *command_args,
 
                 cleanup_manage_process (FALSE);
 
+                proctitle_set ("openvasmd: Running alert script");
+
                 if (setgroups (0,NULL))
                   {
                     g_warning ("%s (child): setgroups: %s\n",
@@ -9560,6 +9563,8 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                 /* Child.  Drop privileges, run command, exit. */
                 cleanup_manage_process (FALSE);
 
+                proctitle_set ("openvasmd: Sending to Sourcefire");
+
                 if (setgroups (0,NULL))
                   {
                     g_warning ("%s (child): setgroups: %s\n",
@@ -9881,6 +9886,8 @@ send_to_verinice (const char *url, const char *username, const char *password,
           case 0:
               {
                 /* Child.  Drop privileges, run command, exit. */
+
+                proctitle_set ("openvasmd: Sending to Verinice");
 
                 cleanup_manage_process (FALSE);
 
@@ -19743,6 +19750,8 @@ create_report (array_t *results, const char *task_id, const char *task_name,
         break;
     }
 
+  proctitle_set ("openvasmd: Importing results");
+
   /* Add the results. */
 
   if (sql_int64 (&owner,
@@ -28912,6 +28921,8 @@ run_report_format_script (gchar *report_format_id,
           case 0:
             {
               /* Child.  Drop privileges, run command, exit. */
+
+              proctitle_set ("openvasmd: Generating report");
 
               cleanup_manage_process (FALSE);
 

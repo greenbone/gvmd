@@ -1,3 +1,16 @@
+2016-08-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (manage_schedule, openvas_sync_feed): Set proctitle after
+	forking.
+
+	* src/manage_sql.c (run_alert_script, send_to_sourcefire)
+	(send_to_verinice, create_report, run_report_format_script): Set proctitle
+	after forking.
+
+	* src/manage_sql.c (accept_and_maybe_fork, fork_connection_internal)
+	(fork_update_nvt_cache): Set proctitle after forking.
+	(main): Set proctitle when migrating.  Name main process like Scanner.
+
 2016-08-16  Björn Ricks <bjoern.ricks@greenbone.net>
 
 	* src/omp.c (handle_get_tasks): Fix getting the schedule info. schedule_info
