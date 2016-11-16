@@ -3503,6 +3503,12 @@ manage_read_info (gchar *, gchar *, gchar *, gchar **);
 int
 info_name_count (const gchar *, const gchar *);
 
+int
+manage_update_cvss_cert_bund (GSList *, const gchar *, int);
+
+int
+manage_update_cvss_dfn_cert (GSList *, const gchar *, int);
+
 /* SCAP. */
 
 int

@@ -182,6 +182,15 @@ sql_default_database ()
 }
 
 /**
+ * @brief Turn off recursive triggers.
+ */
+void
+sql_recursive_triggers_off ()
+{
+  sql ("PRAGMA recursive_triggers = OFF;");
+}
+
+/**
  * @brief Open the database.
  *
  * @param[in]  database  Database, or NULL for default.
