@@ -1,3 +1,8 @@
+2016-08-16  Björn Ricks <bjoern.ricks@greenbone.net>
+
+	* src/omp.c (handle_get_tasks): Fix getting the schedule info. schedule_info
+	returns 0 on success.
+
 2016-11-16  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* tools/greenbone-certdata-sync.in: Redirect unneeded stdout
