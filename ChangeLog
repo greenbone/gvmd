@@ -1,4 +1,9 @@
-2016-08-16  Matthew Mundell <matthew.mundell@greenbone.net>
+2016-11-16  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* tools/greenbone-certdata-sync.in: Redirect unneeded stdout
+	to /dev/null
+
+2016-11-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Move CVSS Max updating from SCAP sync script into C code.
 
