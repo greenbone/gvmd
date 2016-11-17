@@ -61954,11 +61954,7 @@ DEF_ACCESS (all_info_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 2);
 void
 init_ovaldi_file_iterator (iterator_t* iterator)
 {
-  init_iterator (iterator,
-                 sql_is_sqlite3 ()
-                  ? "SELECT DISTINCT xml_file FROM ovaldefs;"
-                  // FIX Until we have SCAP in Postgres.
-                  : "SELECT * FROM meta WHERE 1 = 0;");
+  init_iterator (iterator, "SELECT DISTINCT xml_file FROM ovaldefs;");
 }
 
 /**

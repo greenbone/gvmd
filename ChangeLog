@@ -1,9 +1,14 @@
-2016-08-17  Matthew Mundell <matthew.mundell@greenbone.net>
+2016-11-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_ovaldi_file_iterator): Remove check now that
+	SCAP is available in Postgres.
+
+2016-11-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c (main): Set proctitle when running operation options
 	like --create-user.
 
-2016-08-16  Matthew Mundell <matthew.mundell@greenbone.net>
+2016-11-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (manage_schedule, openvas_sync_feed): Set proctitle after
 	forking.
@@ -16,7 +21,7 @@
 	(fork_update_nvt_cache): Set proctitle after forking.
 	(main): Set proctitle when migrating.  Name main process like Scanner.
 
-2016-08-16  Björn Ricks <bjoern.ricks@greenbone.net>
+2016-11-16  Björn Ricks <bjoern.ricks@greenbone.net>
 
 	* src/omp.c (handle_get_tasks): Fix getting the schedule info. schedule_info
 	returns 0 on success.
@@ -28,7 +33,7 @@
 
 2016-11-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	Move CVSS Max updating from SCAP sync script into C code.
+	Move CVSS Max updating from CERT sync script into C code.
 
 	* src/manage_sql.c (manage_update_cvss_cert_bund)
 	(manage_update_cvss_dfn_cert): New functions.
@@ -44,7 +49,7 @@
 
 	* src/sql.h: Add header accordingly.
 
-	* tools/greenbone-scapdata-sync.in (update_cvss): Call openvasmd to
+	* tools/greenbone-certdata-sync.in (update_cvss): Call openvasmd to
 	do the work.
 
 2016-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
