@@ -1766,7 +1766,7 @@ main (int argc, char** argv)
   /* Set process title. */
 
   proctitle_init (argc, argv);
-  proctitle_set ("openvasmd: Initializing.");
+  proctitle_set ("openvasmd: Initializing");
 
   /* Setup initial signal handlers. */
 
@@ -1811,9 +1811,12 @@ main (int argc, char** argv)
 
   if (backup_database)
     {
+      /* Backup the database and then exit. */
+
+      proctitle_set ("openvasmd: Backing up database");
+
       g_info ("   Backing up database.\n");
 
-      /* Backup the database and then exit. */
       switch (manage_backup_db (database))
         {
           case 0:
@@ -1850,6 +1853,8 @@ main (int argc, char** argv)
     {
       int ret;
 
+      proctitle_set ("openvasmd: Optimizing");
+
       ret = manage_optimize (log_config, database, optimize);
       log_config_free ();
       if (ret)
@@ -1864,6 +1869,8 @@ main (int argc, char** argv)
       char *stype;
 
       /* Create the scanner and then exit. */
+
+      proctitle_set ("openvasmd: Creating scanner");
 
       if (!scanner_host)
         scanner_host = OPENVASSD_ADDRESS;
@@ -1904,6 +1911,8 @@ main (int argc, char** argv)
 
       /* Modify the scanner and then exit. */
 
+      proctitle_set ("openvasmd: Modifying scanner");
+
       if (scanner_type)
         {
           scanner_type_t type;
@@ -1938,6 +1947,8 @@ main (int argc, char** argv)
     {
       int ret;
 
+      proctitle_set ("openvasmd: Checking alerts");
+
       ret = manage_check_alerts (log_config, database);
       log_config_free ();
       if (ret)
@@ -1948,6 +1959,8 @@ main (int argc, char** argv)
   if (create_user)
     {
       int ret;
+
+      proctitle_set ("openvasmd: Creating user");
 
       ret = manage_create_user (log_config, database, create_user, role);
       log_config_free ();
@@ -1960,6 +1973,8 @@ main (int argc, char** argv)
     {
       int ret;
 
+      proctitle_set ("openvasmd: Deleting user");
+
       ret = manage_delete_user (log_config, database, delete_user, inheritor);
       log_config_free ();
       if (ret)
@@ -1970,6 +1985,8 @@ main (int argc, char** argv)
   if (get_users)
     {
       int ret;
+
+      proctitle_set ("openvasmd: Getting users");
 
       ret = manage_get_users (log_config, database, role);
       log_config_free ();
@@ -1982,6 +1999,8 @@ main (int argc, char** argv)
     {
       int ret;
 
+      proctitle_set ("openvasmd: Getting scanners");
+
       ret = manage_get_scanners (log_config, database);
       log_config_free ();
       if (ret)
@@ -1992,6 +2011,8 @@ main (int argc, char** argv)
   if (delete_scanner)
     {
       int ret;
+
+      proctitle_set ("openvasmd: Deleting scanner");
 
       ret = manage_delete_scanner (log_config, database, delete_scanner);
       log_config_free ();
@@ -2004,6 +2025,8 @@ main (int argc, char** argv)
     {
       int ret;
 
+      proctitle_set ("openvasmd: Verifying scanner");
+
       ret = manage_verify_scanner (log_config, database, verify_scanner);
       log_config_free ();
       if (ret)
@@ -2014,6 +2037,8 @@ main (int argc, char** argv)
   if (new_password)
     {
       int ret;
+
+      proctitle_set ("openvasmd: Modifying user password");
 
       ret = manage_set_password (log_config, database, user, new_password);
       log_config_free ();
@@ -2026,6 +2051,8 @@ main (int argc, char** argv)
     {
       int ret;
 
+      proctitle_set ("openvasmd: Modifying setting");
+
       ret = manage_modify_setting (log_config, database, user,
                                    modify_setting, value);
       log_config_free ();
@@ -2036,11 +2063,11 @@ main (int argc, char** argv)
 
   if (migrate_database)
     {
-      g_info ("   Migrating database.\n");
-
       /* Migrate the database to the version supported by this manager. */
 
       proctitle_set ("openvasmd: Migrating database");
+
+      g_info ("   Migrating database.\n");
 
       switch (manage_migrate (log_config, database))
         {
@@ -2087,6 +2114,8 @@ main (int argc, char** argv)
     {
       int ret;
 
+      proctitle_set ("openvasmd: Encrypting all credentials");
+
       ret = manage_encrypt_all_credentials (log_config, database);
       log_config_free ();
       if (ret)
@@ -2097,6 +2126,8 @@ main (int argc, char** argv)
   if (decrypt_all_credentials)
     {
       int ret;
+
+      proctitle_set ("openvasmd: Decrypting all credentials");
 
       ret = manage_decrypt_all_credentials (log_config, database);
       log_config_free ();
@@ -2148,6 +2179,8 @@ main (int argc, char** argv)
     {
       /* Update CVSS max and then exit. */
 
+      proctitle_set ("openvasmd: Updating CERT-Bund CVSS max");
+
       g_info ("   Updating CERT-Bund CVSS max.\n");
 
       switch (manage_update_cvss_cert_bund (log_config,
@@ -2192,7 +2225,9 @@ main (int argc, char** argv)
     {
       /* Update CVSS max and then exit. */
 
-      g_info ("   Updating CERT-Bund CVSS max.\n");
+      proctitle_set ("openvasmd: Updating DFN-Cert CVSS max");
+
+      g_info ("   Updating DFN-CERT CVSS max.\n");
 
       switch (manage_update_cvss_dfn_cert (log_config,
                                            database,
