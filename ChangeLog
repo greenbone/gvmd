@@ -1,5 +1,13 @@
 2016-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_pg.c (manage_update_cert_db_init): Match to the SQLite
+	changes.  Correct return.
+	(manage_update_cert_db_cleanup): Match to init.
+
+	* src/manage_sql.c (update_cert_xml): Just INSERT, as promised in comment.
+
+2016-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Get --update-cert-db working again with SQLite3.
 
 	* src/manage_pg.c (manage_update_cert_db_init): Add return.

@@ -62143,7 +62143,7 @@ update_cert_xml (const gchar *xml_path, int last_cert_update,
                               quoted_point = sql_quote (*point);
                               /* There's no primary key, so just INSERT, even
                                * for Postgres. */
-                              sql ("INSERT OR REPLACE INTO dfn_cert_cves"
+                              sql ("INSERT INTO dfn_cert_cves"
                                    " (adv_id, cve_name)"
                                    " VALUES"
                                    " ((SELECT id FROM dfn_cert_advs"

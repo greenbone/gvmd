@@ -98,8 +98,6 @@ manage_update_cert_db_init ()
 {
   sql ("CREATE OR REPLACE FUNCTION merge_dfn_cert_adv"
        "                            (uuid_arg TEXT,"
-       "                             name_arg TEXT,"
-       "                             comment_arg TEXT,"
        "                             creation_time_arg INTEGER,"
        "                             modification_time_arg INTEGER,"
        "                             title_arg TEXT,"
@@ -109,8 +107,8 @@ manage_update_cert_db_init ()
        " BEGIN"
        "   LOOP"
        "     UPDATE dfn_cert_advs"
-       "     SET name = name_arg,"
-       "         comment = comment_arg,"
+       "     SET name = uuid_arg,"
+       "         comment = '',"
        "         creation_time = creation_time_arg,"
        "         modification_time = modification_time_arg,"
        "         title = title_arg,"
@@ -124,7 +122,7 @@ manage_update_cert_db_init ()
        "       INSERT INTO dfn_cert_advs (uuid, name, comment, creation_time,"
        "                                  modification_time, title, summary,"
        "                                  cve_refs)"
-       "       VALUES (uuid_arg, name_arg, comment_arg, creation_time_arg,"
+       "       VALUES (uuid_arg, uuid_arg, '', creation_time_arg,"
        "               modification_time_arg, title_arg, summary_arg,"
        "               cve_refs_arg);"
        "       RETURN;"
@@ -134,7 +132,7 @@ manage_update_cert_db_init ()
        "   END LOOP;"
        " END;"
        "$$ LANGUAGE plpgsql;");
-  return -1;
+  return 0;
 }
 
 /**
@@ -144,8 +142,6 @@ void
 manage_update_cert_db_cleanup ()
 {
   sql ("DROP FUNCTION merge_dfn_cert_adv (uuid_arg TEXT,"
-       "                                  name_arg TEXT,"
-       "                                  comment_arg TEXT,"
        "                                  creation_time_arg INTEGER,"
        "                                  modification_time_arg INTEGER,"
        "                                  title_arg TEXT,"
