@@ -62106,8 +62106,7 @@ update_cert_xml (const gchar *xml_path, int last_cert_update,
               quoted_title = sql_quote (entity_text (title));
               quoted_summary = sql_quote (entity_text (summary));
               sql ("SELECT merge_dfn_cert_adv"
-                   "        ('%s', '%s', '', %i, %i, '%s', '%s', %i);",
-                   quoted_refnum,
+                   "        ('%s', %i, %i, '%s', '%s', %i);",
                    quoted_refnum,
                    parse_iso_time (entity_text (published)),
                    parse_iso_time (entity_text (updated)),
@@ -62226,7 +62225,11 @@ manage_update_cert_db (GSList *log_config, const gchar *database)
   last_dfn_update = sql_int ("SELECT max (modification_time)"
                              " FROM cert.dfn_cert_advs;");
 
-  manage_update_cert_db_init ();
+  if (manage_update_cert_db_init ())
+    {
+      cleanup_manage_process (TRUE);
+      return -1;
+    }
 
   g_debug ("%s: VS: " OPENVAS_CERT_DATA_DIR "/dfn-cert-*.xml", __FUNCTION__);
   count = 0;

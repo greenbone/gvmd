@@ -1,5 +1,21 @@
 2016-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Get --update-cert-db working again with SQLite3.
+
+	* src/manage_pg.c (manage_update_cert_db_init): Add return.
+
+	* src/manage_sqlite3.c (sql_merge_dfn_cert_adv): Use right types.
+	(manage_update_cert_db_init): Add return.  Correct arg count.
+	(manage_update_cert_db_cleanup): Correct arg count.  Remove bogus
+	return.
+
+	* src/manage_sql.c (update_cert_xml): Correct merge_dfn_cert_adv call.
+	(manage_update_cert_db): Check return.
+
+	* src/manage_sql.h: Update header accordingly.
+
+2016-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Get --update-cert-db working with Postgres.
 
 	* src/manage_pg.c (manage_update_cert_db_init)

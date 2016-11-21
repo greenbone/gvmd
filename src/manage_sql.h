@@ -382,7 +382,7 @@ void reschedule_task (const gchar *);
 
 void insert_port_range (port_list_t, port_protocol_t, int, int);
 
-void manage_update_cert_db_init ();
+int manage_update_cert_db_init ();
 
 void manage_update_cert_db_cleanup ();
 

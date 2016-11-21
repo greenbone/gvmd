@@ -91,9 +91,9 @@ manage_db_empty ()
 /**
  * @brief Database specific setup for CERT update.
  *
- * @return 1 if empty, else 0.
+ * @return 0 success, -1 error.
  */
-void
+int
 manage_update_cert_db_init ()
 {
   sql ("CREATE OR REPLACE FUNCTION merge_dfn_cert_adv"
@@ -134,12 +134,11 @@ manage_update_cert_db_init ()
        "   END LOOP;"
        " END;"
        "$$ LANGUAGE plpgsql;");
+  return -1;
 }
 
 /**
  * @brief Database specific cleanup after CERT update.
- *
- * @return 1 if empty, else 0.
  */
 void
 manage_update_cert_db_cleanup ()

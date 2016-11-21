@@ -474,11 +474,10 @@ void
 sql_merge_dfn_cert_adv (sqlite3_context *context, int argc,
                         sqlite3_value** argv)
 {
-  const unsigned char *proposed_name, *type, *suffix;
-  gchar *candidate_name, *quoted_candidate_name;
-  unsigned int number;
-  sqlite3_int64 owner;
+  const unsigned char *refnum, *title, *summary;
   time_t published, updated;
+  gchar *quoted_refnum, *quoted_title, *quoted_summary;
+  int cve_refs;
 
   assert (argc == 6);
 
@@ -508,9 +507,9 @@ sql_merge_dfn_cert_adv (sqlite3_context *context, int argc,
 
   cve_refs = sqlite3_value_int (argv[5]);
 
-  quoted_refnum = sql_quote (refnum);
-  quoted_title = sql_quote (title);
-  quoted_summary = sql_quote (summary);
+  quoted_refnum = sql_quote ((const char*) refnum);
+  quoted_title = sql_quote ((const char*) title);
+  quoted_summary = sql_quote ((const char*) summary);
 
   sql ("INSERT OR REPLACE INTO dfn_cert_advs"
        " (uuid, name, comment, creation_time, modification_time,"
@@ -3246,14 +3245,14 @@ manage_scap_loaded ()
 /**
  * @brief Database specific setup for CERT update.
  *
- * @return 1 if empty, else 0.
+ * @return 0 success, -1 error.
  */
-void
+int
 manage_update_cert_db_init ()
 {
   if (sqlite3_create_function (task_db,
                                "merge_dfn_cert_adv",
-                               8,               /* Number of args. */
+                               6,               /* Number of args. */
                                SQLITE_UTF8,
                                NULL,            /* Callback data. */
                                sql_merge_dfn_cert_adv,
@@ -3265,7 +3264,7 @@ manage_update_cert_db_init ()
       return -1;
     }
 
-  return;
+  return 0;
 }
 
 /**
@@ -3278,19 +3277,14 @@ manage_update_cert_db_cleanup ()
 {
   if (sqlite3_create_function (task_db,
                                "merge_dfn_cert_adv",
-                               8,               /* Number of args. */
+                               6,               /* Number of args. */
                                SQLITE_UTF8,
                                NULL,            /* Callback data. */
                                NULL,
                                NULL,            /* xStep. */
                                NULL)            /* xFinal. */
       != SQLITE_OK)
-    {
-      g_warning ("%s: failed to remove merge_dfn_cert_adv", __FUNCTION__);
-      return -1;
-    }
-
-  return;
+    g_warning ("%s: failed to remove merge_dfn_cert_adv", __FUNCTION__);
 }
 
 
