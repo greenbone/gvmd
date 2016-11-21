@@ -1,5 +1,20 @@
 2016-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Get --update-cert-db working with Postgres.
+
+	* src/manage_pg.c (manage_update_cert_db_init)
+	(manage_update_cert_db_cleanup): New functions.
+
+	* src/manage_sqlite3.c (manage_update_cert_db_init)
+	(manage_update_cert_db_cleanup): New functions.
+
+	* src/manage_sql.c (update_cert_xml): Use merge_dfn_cert_adv for Postgres.
+	(manage_update_cert_db): Setup merge_dfn_cert_adv around inserts.
+
+	* src/manage_sql.h: Add headers accordingly.
+
+2016-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (update_cert_xml, manage_update_cert_db): New
 	functions.
 

@@ -62105,12 +62105,8 @@ update_cert_xml (const gchar *xml_path, int last_cert_update,
               quoted_refnum = sql_quote (entity_text (refnum));
               quoted_title = sql_quote (entity_text (title));
               quoted_summary = sql_quote (entity_text (summary));
-              // FIX Needs to match dfn_cert_update_pg.xsl to work with Postgres.
-              sql ("INSERT OR REPLACE INTO dfn_cert_advs"
-                   " (uuid, name, comment, creation_time, modification_time,"
-                   "  title, summary, cve_refs)"
-                   " VALUES"
-                   " ('%s', '%s', '', %i, %i, '%s', '%s', %i);",
+              sql ("SELECT merge_dfn_cert_adv"
+                   "        ('%s', '%s', '', %i, %i, '%s', '%s', %i);",
                    quoted_refnum,
                    quoted_refnum,
                    parse_iso_time (entity_text (published)),
@@ -62146,6 +62142,8 @@ update_cert_xml (const gchar *xml_path, int last_cert_update,
                               gchar *quoted_point;
 
                               quoted_point = sql_quote (*point);
+                              /* There's no primary key, so just INSERT, even
+                               * for Postgres. */
                               sql ("INSERT OR REPLACE INTO dfn_cert_cves"
                                    " (adv_id, cve_name)"
                                    " VALUES"
@@ -62228,6 +62226,8 @@ manage_update_cert_db (GSList *log_config, const gchar *database)
   last_dfn_update = sql_int ("SELECT max (modification_time)"
                              " FROM cert.dfn_cert_advs;");
 
+  manage_update_cert_db_init ();
+
   g_debug ("%s: VS: " OPENVAS_CERT_DATA_DIR "/dfn-cert-*.xml", __FUNCTION__);
   count = 0;
   while ((xml_path = g_dir_read_name (dir)))
@@ -62243,6 +62243,8 @@ manage_update_cert_db (GSList *log_config, const gchar *database)
 
   if (count == 0)
     g_warning ("No DFN-CERT advisories found in %s", OPENVAS_CERT_DATA_DIR);
+
+  manage_update_cert_db_cleanup ();
 
   g_dir_close (dir);
 

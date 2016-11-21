@@ -462,6 +462,75 @@ sql_clean_hosts (sqlite3_context *context, int argc, sqlite3_value** argv)
 }
 
 /**
+ * @brief Insert or replace a DFN-Cert Advisory.
+ *
+ * This is a callback for a scalar SQL function of six argument.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_merge_dfn_cert_adv (sqlite3_context *context, int argc,
+                        sqlite3_value** argv)
+{
+  const unsigned char *proposed_name, *type, *suffix;
+  gchar *candidate_name, *quoted_candidate_name;
+  unsigned int number;
+  sqlite3_int64 owner;
+  time_t published, updated;
+
+  assert (argc == 6);
+
+  refnum = sqlite3_value_text (argv[0]);
+  if (refnum == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get refnum argument", -1);
+      return;
+    }
+
+  published = sqlite3_value_int (argv[1]);
+  updated = sqlite3_value_int (argv[2]);
+
+  title = sqlite3_value_text (argv[3]);
+  if (title == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get title argument", -1);
+      return;
+    }
+
+  summary = sqlite3_value_text (argv[4]);
+  if (summary == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get summary argument", -1);
+      return;
+    }
+
+  cve_refs = sqlite3_value_int (argv[5]);
+
+  quoted_refnum = sql_quote (refnum);
+  quoted_title = sql_quote (title);
+  quoted_summary = sql_quote (summary);
+
+  sql ("INSERT OR REPLACE INTO dfn_cert_advs"
+       " (uuid, name, comment, creation_time, modification_time,"
+       "  title, summary, cve_refs)"
+       " VALUES"
+       " ('%s', '%s', '', %i, %i, '%s', '%s', %i);",
+       quoted_refnum,
+       quoted_refnum,
+       published,
+       updated,
+       quoted_title,
+       quoted_summary,
+       cve_refs);
+
+  g_free (quoted_refnum);
+  g_free (quoted_title);
+  g_free (quoted_summary);
+}
+
+/**
  * @brief Make a name unique.
  *
  * This is a callback for a scalar SQL function of four argument.
@@ -3172,6 +3241,56 @@ manage_scap_loaded ()
   loaded = !!sql_int ("SELECT count(*) FROM scap.sqlite_master"
                       " WHERE type = 'table' AND name = 'cves';");
   return loaded;
+}
+
+/**
+ * @brief Database specific setup for CERT update.
+ *
+ * @return 1 if empty, else 0.
+ */
+void
+manage_update_cert_db_init ()
+{
+  if (sqlite3_create_function (task_db,
+                               "merge_dfn_cert_adv",
+                               8,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_merge_dfn_cert_adv,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create merge_dfn_cert_adv", __FUNCTION__);
+      return -1;
+    }
+
+  return;
+}
+
+/**
+ * @brief Database specific cleanup after CERT update.
+ *
+ * @return 1 if empty, else 0.
+ */
+void
+manage_update_cert_db_cleanup ()
+{
+  if (sqlite3_create_function (task_db,
+                               "merge_dfn_cert_adv",
+                               8,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               NULL,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to remove merge_dfn_cert_adv", __FUNCTION__);
+      return -1;
+    }
+
+  return;
 }
 
 

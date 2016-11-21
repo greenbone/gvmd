@@ -86,6 +86,75 @@ manage_db_empty ()
 }
 
 
+/* SCAP. */
+
+/**
+ * @brief Database specific setup for CERT update.
+ *
+ * @return 1 if empty, else 0.
+ */
+void
+manage_update_cert_db_init ()
+{
+  sql ("CREATE OR REPLACE FUNCTION merge_dfn_cert_adv"
+       "                            (uuid_arg TEXT,"
+       "                             name_arg TEXT,"
+       "                             comment_arg TEXT,"
+       "                             creation_time_arg INTEGER,"
+       "                             modification_time_arg INTEGER,"
+       "                             title_arg TEXT,"
+       "                             summary_arg TEXT,"
+       "                             cve_refs_arg INTEGER)"
+       " RETURNS VOID AS $$"
+       " BEGIN"
+       "   LOOP"
+       "     UPDATE dfn_cert_advs"
+       "     SET name = name_arg,"
+       "         comment = comment_arg,"
+       "         creation_time = creation_time_arg,"
+       "         modification_time = modification_time_arg,"
+       "         title = title_arg,"
+       "         summary = summary_arg,"
+       "         cve_refs = cve_refs_arg"
+       "     WHERE uuid = uuid_arg;"
+       "     IF found THEN"
+       "       RETURN;"
+       "     END IF;"
+       "     BEGIN"
+       "       INSERT INTO dfn_cert_advs (uuid, name, comment, creation_time,"
+       "                                  modification_time, title, summary,"
+       "                                  cve_refs)"
+       "       VALUES (uuid_arg, name_arg, comment_arg, creation_time_arg,"
+       "               modification_time_arg, title_arg, summary_arg,"
+       "               cve_refs_arg);"
+       "       RETURN;"
+       "     EXCEPTION WHEN unique_violation THEN"
+       "       NULL;"  /* Try again. */
+       "     END;"
+       "   END LOOP;"
+       " END;"
+       "$$ LANGUAGE plpgsql;");
+}
+
+/**
+ * @brief Database specific cleanup after CERT update.
+ *
+ * @return 1 if empty, else 0.
+ */
+void
+manage_update_cert_db_cleanup ()
+{
+  sql ("DROP FUNCTION merge_dfn_cert_adv (uuid_arg TEXT,"
+       "                                  name_arg TEXT,"
+       "                                  comment_arg TEXT,"
+       "                                  creation_time_arg INTEGER,"
+       "                                  modification_time_arg INTEGER,"
+       "                                  title_arg TEXT,"
+       "                                  summary_arg TEXT,"
+       "                                  cve_refs_arg INTEGER);");
+}
+
+
 /* SQL functions. */
 
 /**
