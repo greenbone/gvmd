@@ -1,5 +1,19 @@
 2016-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Move DFN-CERT update from script into Manager.
+
+	* tools/greenbone-certdata-sync.in (update_cvss): Check openvasmd return.
+	(update_cert_db_rest): New function.
+	(update_cert_db): Call update_cert_db_rest, so that openvasmd does the
+	DFN-CERT update.
+
+	* tools/dfn_cert_update_pg.xsl, tools/dfn_cert_update.xsl: Remove. No
+	longer used.
+
+	* CMakeLists.txt: Remove dfn_cert_update.xsl.
+
+2016-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (manage_update_cert_db_init): Match to the SQLite
 	changes.  Correct return.
 	(manage_update_cert_db_cleanup): Match to init.

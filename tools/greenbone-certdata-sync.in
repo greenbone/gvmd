@@ -603,11 +603,19 @@ update_cvss () {
     else
       openvasmd --update-cvss-cert-bund 0
     fi
+    if [ $? -ne 0 ] ; then
+      log_err "Calling openvasmd to update CVSS max... failed."
+      exit 1
+    fi
     if [ 0 -ne "$updated_dfn" ]
     then
       openvasmd --update-cvss-dfn-cert 1
     else
       openvasmd --update-cvss-dfn-cert 0
+    fi
+    if [ $? -ne 0 ] ; then
+      log_err "Calling openvasmd to update CVSS max... failed."
+      exit 1
     fi
   elif [ -x "@SBINDIR@/openvasmd" ]
   then
@@ -617,15 +625,46 @@ update_cvss () {
     else
       @SBINDIR@/openvasmd --update-cvss-cert-bund 0
     fi
+    if [ $? -ne 0 ] ; then
+      log_err "Calling openvasmd to update CVSS max... failed."
+      exit 1
+    fi
     if [ 0 -ne "$updated_dfn" ]
     then
       @SBINDIR@/openvasmd --update-cvss-dfn-cert 1
     else
       @SBINDIR@/openvasmd --update-cvss-dfn-cert 0
     fi
+    if [ $? -ne 0 ] ; then
+      log_err "Calling openvasmd to update CVSS max... failed."
+      exit 1
+    fi
   else
     log_warning "Command openvasmd not found"
   fi
+}
+
+update_cert_db_rest () {
+  log_info "Calling openvasmd to update CERT db"
+  if command -v openvasmd > /dev/null
+  then
+    openvasmd --update-cert-db
+    if [ $? -ne 0 ] ; then
+      log_err "Calling openvasmd to update CERT db... failed."
+      exit 1
+    fi
+  elif [ -x "@SBINDIR@/openvasmd" ]
+  then
+    @SBINDIR@/openvasmd --update-cert-db
+    if [ $? -ne 0 ] ; then
+      log_err "Calling openvasmd to update CERT db... failed."
+      exit 1
+    fi
+  else
+    log_warning "Command openvasmd not found"
+  fi
+
+  update_cvss
 }
 
 ensure_sqlite3_wal_mode () {
@@ -759,42 +798,7 @@ update_cert_db() {
     log_warning "No CERT-Bund advisories found in $CERT_DIR"
   fi
 
-  # Update DFN-CERT
-  xmlcount=$(ls $CERT_DIR/dfn-cert-*.xml 2> /dev/null | wc -l)
-  if [ $xmlcount -ne 0 ]
-  then
-    for certfile in $CERT_DIR/dfn-cert-*.xml
-    do
-      [ -e "$certfile" ] || break  # no file found
-      filedate=`stat -c "%Y" $certfile | cut -d " " -f 1 | tr -d "-"`
-      filedate=$(( $filedate - ( $filedate % 60 ) ))
-      if [ $filedate -gt $DB_LASTUPDATE ]
-      then
-        log_info "Updating $certfile"
-        reset_sql_tries
-        until [ "$try_sql" -eq 0 ]
-        do
-          exec 4>&1
-          exit_codes=$(
-            (
-              set_interrupt_trap
-              (xsltproc --stringparam refdate "$DFN_REFDATE" $CERT_RES_DIR/dfn_cert_update.xsl $certfile || echo "xsltproc:$?" >&3) | \
-              (sql | sed '/^\s*$/d' || echo "sqlite3:$?" >&3)
-            ) 3>&1 >&4
-          )
-          exec 4>&-
-          test_exit_codes "Update of DFN-CERT Advisories failed at file '$certfile'"
-        done
-        updated_dfn=1
-      else
-        log_info "Skipping $certfile, file is older than last revision"
-      fi
-    done
-  else
-    log_warning "No DFN-CERT advisories found in $CERT_DIR"
-  fi
-
-  update_cvss
+  update_cert_db_rest
 
   LAST_UPDATE_TIMESTAMP=`sed 's/^\(.\{8\}\)/\1 /' $TIMESTAMP | env TZ="UTC" date +%s -f -`
 
