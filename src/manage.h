@@ -3504,6 +3504,9 @@ int
 info_name_count (const gchar *, const gchar *);
 
 int
+manage_update_cert_db (GSList *, const gchar *);
+
+int
 manage_update_cvss_cert_bund (GSList *, const gchar *, int);
 
 int

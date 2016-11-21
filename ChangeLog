@@ -1,3 +1,12 @@
+2016-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (update_cert_xml, manage_update_cert_db): New
+	functions.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/openvasmd.c (main): Add option --update-cert-db.
+
 2016-11-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_ovaldi_file_iterator): Remove check now that

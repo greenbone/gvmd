@@ -1569,8 +1569,9 @@ main (int argc, char** argv)
   static gboolean disable_scheduling = FALSE;
   static gboolean get_users = FALSE;
   static gboolean get_scanners = FALSE;
-  static gchar *update_cvss_cert_bund = FALSE;
-  static gchar *update_cvss_dfn_cert = FALSE;
+  static gchar *update_cvss_cert_bund = NULL;
+  static gchar *update_cvss_dfn_cert = NULL;
+  static gboolean update_cert_db = FALSE;
   static gboolean update_nvt_cache = FALSE;
   static gboolean rebuild_nvt_cache = FALSE;
   static gboolean foreground = FALSE;
@@ -1686,6 +1687,7 @@ main (int argc, char** argv)
         { "rebuild", '\0', 0, G_OPTION_ARG_NONE, &rebuild_nvt_cache, "Rebuild the NVT cache and exit.", NULL },
         { "role", '\0', 0, G_OPTION_ARG_STRING, &role, "Role for --create-user and --get-users.", "<role>" },
         { "update", 'u', 0, G_OPTION_ARG_NONE, &update_nvt_cache, "Update the NVT cache and exit.", NULL },
+        { "update-cert-db", '\0', 0, G_OPTION_ARG_NONE, &update_cert_db, "Update CERT info.", NULL },
         { "update-cvss-cert-bund", '\0', 0, G_OPTION_ARG_STRING, &update_cvss_cert_bund, "Update CERT-Bund Max CVSS and exit.", NULL },
         { "update-cvss-dfn-cert", '\0', 0, G_OPTION_ARG_STRING, &update_cvss_dfn_cert, "Update DFN-CERT Max CVSS and exit.", NULL },
         { "unix-socket", 'c', 0, G_OPTION_ARG_STRING, &manager_address_string_unix, "Listen on UNIX socket at <filename>.", "<filename>" },
@@ -2173,6 +2175,47 @@ main (int argc, char** argv)
           fflush (stdout);
         }
       return ret;
+    }
+
+  if (update_cert_db)
+    {
+      /* Update CERT info and then exit. */
+
+      g_info ("   Updating CERT info.\n");
+
+      switch (manage_update_cert_db (log_config, database))
+        {
+          case 0:
+            log_config_free ();
+            return EXIT_SUCCESS;
+          case -2:
+            g_critical ("%s: database is wrong version\n", __FUNCTION__);
+            log_config_free ();
+            return EXIT_FAILURE;
+          case -3:
+            g_critical ("%s: database must be initialised"
+                        " (with --update or --rebuild)\n",
+                        __FUNCTION__);
+            log_config_free ();
+            return EXIT_FAILURE;
+          case -5:
+            g_critical
+             ("%s: CERT database not found. Cannot update CERT info.\n",
+              __FUNCTION__);
+            log_config_free ();
+            return EXIT_FAILURE;
+          case -6:
+            g_critical
+             ("%s: SCAP database not found. Cannot update max_cvss.\n",
+              __FUNCTION__);
+            log_config_free ();
+            return EXIT_FAILURE;
+          case -1:
+          default:
+            g_critical ("%s: internal error\n", __FUNCTION__);
+            log_config_free ();
+            return EXIT_FAILURE;
+        }
     }
 
   if (update_cvss_cert_bund)

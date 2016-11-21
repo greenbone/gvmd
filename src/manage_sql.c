@@ -45,6 +45,7 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
+#include <fnmatch.h>
 #include <gcrypt.h>
 #include <glib/gstdio.h>
 #include <locale.h>
@@ -25482,6 +25483,7 @@ print_report_assets_xml (FILE *out, const char *host, int first_result, int
                      "</source>"
                      "</detail>",
                      logs);
+
               /* Print all the host details. */
 
               highest_cvss = -1;
@@ -61966,6 +61968,290 @@ init_ovaldi_file_iterator (iterator_t* iterator)
  *         cleanup_iterator.
  */
 DEF_ACCESS (ovaldi_file_iterator_name, 0);
+
+/**
+ * @brief Update CERT info from a single XML feed file.
+ *
+ * @param[in]  xml_path          XML path.
+ * @param[in]  last_cert_update  Time of last CERT update.
+ * @param[in]  last_dfn_update   Time of last update to a DFN.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+update_cert_xml (const gchar *xml_path, int last_cert_update,
+                 int last_dfn_update)
+{
+  GError *error;
+  entity_t entity, child;
+  entities_t children;
+  gchar *xml, *full_path;
+  gsize xml_len;
+  GStatBuf state;
+
+  full_path = g_build_filename (OPENVAS_CERT_DATA_DIR, xml_path, NULL);
+
+  if (g_stat (full_path, &state))
+    {
+      g_warning ("%s: Failed to stat CERT file: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
+      return -1;
+    }
+
+  if ((state.st_mtime - (state.st_mtime % 60)) <= last_cert_update)
+    {
+      // FIX printf?
+      g_info ("Skipping %s, file is older than last revision",
+              full_path);
+      g_free (full_path);
+      return 0;
+    }
+
+  // FIX printf?  more...
+  g_info ("Updating %s", full_path);
+
+  error = NULL;
+  g_file_get_contents (full_path, &xml, &xml_len, &error);
+  if (error)
+    {
+      g_warning ("%s: Failed to get contents: %s\n",
+                 __FUNCTION__,
+                 error->message);
+      g_error_free (error);
+      g_free (full_path);
+      return -1;
+    }
+
+  if (parse_entity (xml, &entity))
+    {
+      g_free (xml);
+      g_warning ("%s: Failed to parse entity\n", __FUNCTION__);
+      g_free (full_path);
+      return -1;
+    }
+  g_free (xml);
+
+  sql_begin_immediate ();
+  children = entity->entities;
+  while ((child = first_entity (children)))
+    {
+      if (strcmp (entity_name (child), "entry") == 0)
+        {
+          entity_t updated;
+
+          updated = entity_child (child, "updated");
+          if (updated == NULL)
+            {
+              g_warning ("%s: UPDATED missing\n", __FUNCTION__);
+              free_entity (entity);
+              goto fail;
+            }
+
+          if (parse_iso_time (entity_text (updated)) > last_dfn_update)
+            {
+              entity_t refnum, published, summary, title, cve;
+              entities_t cves;
+              gchar *quoted_refnum, *quoted_title, *quoted_summary;
+              int cve_refs;
+
+              refnum = entity_child (child, "dfncert:refnum");
+              if (refnum == NULL)
+                {
+                  GString *string;
+
+                  string = g_string_new ("");
+                  g_warning ("%s: REFNUM missing\n", __FUNCTION__);
+                  print_entity_to_string (child, string);
+                  g_debug ("child:\n%s\n", string->str);
+                  g_string_free (string, TRUE);
+                  free_entity (entity);
+                  goto fail;
+                }
+
+              published = entity_child (child, "published");
+              if (published == NULL)
+                {
+                  g_warning ("%s: PUBLISHED missing\n", __FUNCTION__);
+                  free_entity (entity);
+                  goto fail;
+                }
+
+              title = entity_child (child, "title");
+              if (title == NULL)
+                {
+                  g_warning ("%s: TITLE missing\n", __FUNCTION__);
+                  free_entity (entity);
+                  goto fail;
+                }
+
+              summary = entity_child (child, "summary");
+              if (summary == NULL)
+                {
+                  g_warning ("%s: SUMMARY missing\n", __FUNCTION__);
+                  free_entity (entity);
+                  goto fail;
+                }
+
+              cve_refs = 0;
+              cves = child->entities;
+              while ((cve = first_entity (cves)))
+                {
+                  if (strcmp (entity_name (cve), "dfncert:cve") == 0)
+                    cve_refs++;
+                  cves = next_entities (cves);
+                }
+
+              quoted_refnum = sql_quote (entity_text (refnum));
+              quoted_title = sql_quote (entity_text (title));
+              quoted_summary = sql_quote (entity_text (summary));
+              // FIX Needs to match dfn_cert_update_pg.xsl to work with Postgres.
+              sql ("INSERT OR REPLACE INTO dfn_cert_advs"
+                   " (uuid, name, comment, creation_time, modification_time,"
+                   "  title, summary, cve_refs)"
+                   " VALUES"
+                   " ('%s', '%s', '', %i, %i, '%s', '%s', %i);",
+                   quoted_refnum,
+                   quoted_refnum,
+                   parse_iso_time (entity_text (published)),
+                   parse_iso_time (entity_text (updated)),
+                   quoted_title,
+                   quoted_summary,
+                   cve_refs);
+              g_free (quoted_title);
+              g_free (quoted_summary);
+
+              cves = child->entities;
+              while ((cve = first_entity (cves)))
+                {
+                  if (strcmp (entity_name (cve), "dfncert:cve") == 0)
+                    {
+                      gchar **split, **point;
+                      gchar *text, *start;
+
+                      text = g_strdup (entity_text (cve));
+                      start = text;
+                      while ((start = strstr (start, "CVE ")))
+                        start[3] = '-';
+
+                      split = g_strsplit (text, " ", 0);
+                      g_free (text);
+                      point = split;
+                      while (*point)
+                        {
+                          if (g_str_has_prefix (*point, "CVE-")
+                              && (strlen (*point) >= 13)
+                              && atoi (*point + 4) > 0)
+                            {
+                              gchar *quoted_point;
+
+                              quoted_point = sql_quote (*point);
+                              sql ("INSERT OR REPLACE INTO dfn_cert_cves"
+                                   " (adv_id, cve_name)"
+                                   " VALUES"
+                                   " ((SELECT id FROM dfn_cert_advs"
+                                   "   WHERE name = '%s'),"
+                                   "  '%s')",
+                                   quoted_refnum,
+                                   quoted_point);
+                              g_free (quoted_point);
+                            }
+                          point++;
+                        }
+                      g_strfreev (split);
+                    }
+
+                  cves = next_entities (cves);
+                }
+
+              g_free (quoted_refnum);
+            }
+        }
+      children = next_entities (children);
+    }
+
+  free_entity (entity);
+  g_free (full_path);
+  sql_commit ();
+  return 0;
+
+ fail:
+  g_warning ("Update of DFN-CERT Advisories failed at file '%s'",
+             full_path);
+  g_free (full_path);
+  sql_commit ();
+  return -1;
+}
+
+/**
+ * @brief Update CERT DB.
+ *
+ * @param[in]  log_config        Log configuration.
+ * @param[in]  database          Location of manage database.
+ *
+ * @return 0 success, -1 error, -4 SCAP db not found.
+ */
+int
+manage_update_cert_db (GSList *log_config, const gchar *database)
+{
+  GError *error;
+  const gchar *db, *xml_path;
+  int ret, count, last_cert_update, last_dfn_update;
+  GDir *dir;
+
+  if (openvas_auth_init ())
+    return -1;
+
+  db = database ? database : sql_default_database ();
+
+  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
+  assert (ret != -4);
+  if (ret)
+    return ret;
+
+  init_manage_process (0, db);
+
+  error = NULL;
+  dir = g_dir_open (OPENVAS_CERT_DATA_DIR, 0, &error);
+  if (dir == NULL)
+    {
+      g_warning ("%s: Failed to open directory '%s': %s",
+                 __FUNCTION__, OPENVAS_CERT_DATA_DIR, error->message);
+      g_error_free (error);
+      cleanup_manage_process (TRUE);
+      return -1;
+    }
+
+  last_cert_update = sql_int ("SELECT value FROM cert.meta"
+                              " WHERE name = 'last_update';");
+
+  last_dfn_update = sql_int ("SELECT max (modification_time)"
+                             " FROM cert.dfn_cert_advs;");
+
+  g_debug ("%s: VS: " OPENVAS_CERT_DATA_DIR "/dfn-cert-*.xml", __FUNCTION__);
+  count = 0;
+  while ((xml_path = g_dir_read_name (dir)))
+    if ((fnmatch ("dfn-cert-*.xml", xml_path, 0) == 0)
+        && update_cert_xml (xml_path, last_cert_update, last_dfn_update))
+      {
+        g_dir_close (dir);
+        cleanup_manage_process (TRUE);
+        return -1;
+      }
+    else
+      count++;
+
+  if (count == 0)
+    g_warning ("No DFN-CERT advisories found in %s", OPENVAS_CERT_DATA_DIR);
+
+  g_dir_close (dir);
+
+  printf ("Updating CERT info succeeded.\n");
+
+  cleanup_manage_process (TRUE);
+
+  return 0;
+}
 
 /**
  * @brief Update CERT-Bund Max CVSS.
