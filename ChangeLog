@@ -1,3 +1,10 @@
+2016-11-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r26712.
+
+	* src/manage_sql.c (manage_check_alert): Only try access SCAP and CERT if
+	they are loaded.
+
 2016-11-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r26695, by Bjoern Ricks.
