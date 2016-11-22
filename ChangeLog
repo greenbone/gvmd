@@ -1,3 +1,8 @@
+2016-11-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (manage_check_alert): Only try access SCAP and CERT if
+	they are loaded.
+
 2016-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Move DFN-CERT update from script into Manager.

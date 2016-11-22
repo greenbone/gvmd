@@ -6849,7 +6849,7 @@ DEF_ACCESS (task_role_iterator_uuid, 4);
 int
 manage_check_alerts (GSList *log_config, const gchar *database)
 {
-  int ret, max_time;
+  int ret;
 
   g_info ("   Checking alerts.\n");
 
@@ -6860,61 +6860,71 @@ manage_check_alerts (GSList *log_config, const gchar *database)
   /* Setup a dummy user, so that create_user will work. */
   current_credentials.uuid = "";
 
-  max_time
-   = sql_int ("SELECT %s"
-              "        ((SELECT max (modification_time) FROM scap.cves),"
-              "         (SELECT max (modification_time) FROM scap.cpes),"
-              "         (SELECT max (modification_time) FROM scap.ovaldefs),"
-              "         (SELECT max (creation_time) FROM scap.cves),"
-              "         (SELECT max (creation_time) FROM scap.cpes),"
-              "         (SELECT max (creation_time) FROM scap.ovaldefs));",
-              sql_greatest ());
-
-  if (sql_int ("SELECT NOT EXISTS (SELECT * FROM meta"
-               "                   WHERE name = 'scap_check_time')"))
-    sql ("INSERT INTO meta (name, value)"
-         " VALUES ('scap_check_time', %i);",
-         max_time);
-  else if (sql_int ("SELECT value = '0' FROM meta"
-                    " WHERE name = 'scap_check_time';"))
-    sql ("UPDATE meta SET value = %i"
-         " WHERE name = 'scap_check_time';",
-         max_time);
-  else
+  if (manage_scap_loaded ())
     {
-      check_for_new_scap ();
-      check_for_updated_scap ();
-      sql ("UPDATE meta SET value = %i"
-           " WHERE name = 'scap_check_time';",
-           max_time);
+      int max_time;
+
+      max_time
+       = sql_int ("SELECT %s"
+                  "        ((SELECT max (modification_time) FROM scap.cves),"
+                  "         (SELECT max (modification_time) FROM scap.cpes),"
+                  "         (SELECT max (modification_time) FROM scap.ovaldefs),"
+                  "         (SELECT max (creation_time) FROM scap.cves),"
+                  "         (SELECT max (creation_time) FROM scap.cpes),"
+                  "         (SELECT max (creation_time) FROM scap.ovaldefs));",
+                  sql_greatest ());
+
+      if (sql_int ("SELECT NOT EXISTS (SELECT * FROM meta"
+                   "                   WHERE name = 'scap_check_time')"))
+        sql ("INSERT INTO meta (name, value)"
+             " VALUES ('scap_check_time', %i);",
+             max_time);
+      else if (sql_int ("SELECT value = '0' FROM meta"
+                        " WHERE name = 'scap_check_time';"))
+        sql ("UPDATE meta SET value = %i"
+             " WHERE name = 'scap_check_time';",
+             max_time);
+      else
+        {
+          check_for_new_scap ();
+          check_for_updated_scap ();
+          sql ("UPDATE meta SET value = %i"
+               " WHERE name = 'scap_check_time';",
+               max_time);
+        }
     }
 
-  max_time
-   = sql_int ("SELECT"
-              " %s"
-              "  ((SELECT max (modification_time) FROM cert.cert_bund_advs),"
-              "   (SELECT max (modification_time) FROM cert.dfn_cert_advs),"
-              "   (SELECT max (creation_time) FROM cert.cert_bund_advs),"
-              "   (SELECT max (creation_time) FROM cert.dfn_cert_advs));",
-              sql_greatest ());
-
-  if (sql_int ("SELECT NOT EXISTS (SELECT * FROM meta"
-               "                   WHERE name = 'cert_check_time')"))
-    sql ("INSERT INTO meta (name, value)"
-         " VALUES ('cert_check_time', %i);",
-         max_time);
-  else if (sql_int ("SELECT value = '0' FROM meta"
-                    " WHERE name = 'cert_check_time';"))
-    sql ("UPDATE meta SET value = %i"
-         " WHERE name = 'cert_check_time';",
-         max_time);
-  else
+  if (manage_cert_loaded ())
     {
-      check_for_new_cert ();
-      check_for_updated_cert ();
-      sql ("UPDATE meta SET value = %i"
-           " WHERE name = 'cert_check_time';",
-           max_time);
+      int max_time;
+
+      max_time
+       = sql_int ("SELECT"
+                  " %s"
+                  "  ((SELECT max (modification_time) FROM cert.cert_bund_advs),"
+                  "   (SELECT max (modification_time) FROM cert.dfn_cert_advs),"
+                  "   (SELECT max (creation_time) FROM cert.cert_bund_advs),"
+                  "   (SELECT max (creation_time) FROM cert.dfn_cert_advs));",
+                  sql_greatest ());
+
+      if (sql_int ("SELECT NOT EXISTS (SELECT * FROM meta"
+                   "                   WHERE name = 'cert_check_time')"))
+        sql ("INSERT INTO meta (name, value)"
+             " VALUES ('cert_check_time', %i);",
+             max_time);
+      else if (sql_int ("SELECT value = '0' FROM meta"
+                        " WHERE name = 'cert_check_time';"))
+        sql ("UPDATE meta SET value = %i"
+             " WHERE name = 'cert_check_time';",
+             max_time);
+      else
+        {
+          check_for_new_cert ();
+          check_for_updated_cert ();
+          sql ("UPDATE meta SET value = %i"
+               " WHERE name = 'cert_check_time';",
+               max_time);
+        }
     }
 
   current_credentials.uuid = NULL;
