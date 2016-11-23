@@ -1545,10 +1545,7 @@ do_self_test () {
 
 check_alerts (){
   log_info "Calling openvasmd to check for alerts"
-  if command -v openvasmd > /dev/null
-  then
-    openvasmd --check-alerts
-  elif [ -x "@SBINDIR@/openvasmd" ]
+  if [ -x "@SBINDIR@/openvasmd" ]
   then
     @SBINDIR@/openvasmd --check-alerts
   else

@@ -1,5 +1,13 @@
 2016-11-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/greenbone-certdata-sync.in (update_cvss, update_cert_db_rest)
+	(check_alerts): Just use the SBINDIR openvasmd, because openvasmd and the
+	script should always be at the same prefix.
+
+	* tools/greenbone-scapdata-sync.in (check_alerts): Ditto.
+
+2016-11-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_check_alert): Only try access SCAP and CERT if
 	they are loaded.
 
