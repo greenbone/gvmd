@@ -1,3 +1,11 @@
+2016-11-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r26724.
+
+	* tools/openvas-migrate-to-postgres.in (cleanup_sqlite_db): Correct table
+	name.  This was removing all task preferences, which was causing Manager
+	to abort when receiving host details from Scanner.
+
 2016-11-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r26712.
