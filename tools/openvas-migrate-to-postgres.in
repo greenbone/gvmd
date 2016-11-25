@@ -985,7 +985,7 @@ cleanup_sqlite_db () {
   test_sql_exit "Failed to clean up task_alerts (trash alerts)"
 
   # Remove stray task_preferences.
-  sqlite "DELETE FROM task_preferences WHERE task NOT IN (SELECT id FROM alerts);"
+  sqlite "DELETE FROM task_preferences WHERE task NOT IN (SELECT id FROM tasks);"
   test_sql_exit "Failed to clean up task_preferences"
 
   # Remove stray report_format_params_trash.
