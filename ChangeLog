@@ -1,3 +1,41 @@
+2016-11-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add new get_vulns OMP command.
+
+	* src/manage_pg.c (manage_create_sql_functions): Add functions
+	"user_has_access_uuid" and "vuln_results".
+	(create_tables): Add view "vulns" and index "results_by_nvt".
+
+	* src/manage_sql.c (omp_commands): Add command GET_VULNS.
+	(filter_clause): Add column "results".
+	(type_owned): Handle "vuln" as unowned type.
+	(resource_count): Replace nested conditionals for extra_where with
+	simpler if conditions and variable.  Add case for type "vuln".
+	(VULN_ITERATOR_FILTER_COLUMNS, VULN_ITERATOR_COLUMNS): New iterator
+	column definitions.
+	(vuln_iterator_opts_table, vuln_iterator_opts_from_filter)
+	(init_vuln_iterator, vuln_iterator_results, vuln_iterator_hosts)
+	(vuln_iterator_severity, vuln_count): New functions.
+
+	* src/manage_sqlite3.c (sql_user_has_access_uuid, sql_vuln_results):
+	New functions.
+	(manage_create_sql_functions): Add functions "user_has_access_uuid" and
+	"vuln_results".
+	(create_tables): Add view "vulns".
+
+	* src/manage.h (init_vuln_iterator, vuln_iterator_results)
+	(vuln_iterator_hosts, vuln_iterator_severity, vuln_count): New function
+	prototypes.
+
+	* src/omp.c (get_vulns_data_t, get_vulns_data_reset): New command data
+	structure and clear function.
+	(command_data_t): Add get_vulns.
+	(get_vulns_data): New variable.
+	(client_state_t, omp_xml_handle_start_element): Add cases for new
+	GET_VULNS command.
+	(handle_get_vulns): New command handler function.
+	(omp_xml_handle_end_element): Add case for new GET_VULNS command.
+
 2016-11-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* tools/openvas-migrate-to-postgres.in (cleanup_sqlite_db): Correct table

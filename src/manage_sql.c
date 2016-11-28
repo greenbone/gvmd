@@ -468,6 +468,7 @@ command_t omp_commands[]
     {"GET_TASKS", "Get all tasks."},
     {"GET_USERS", "Get all users."},
     {"GET_VERSION", "Get the OpenVAS Manager Protocol version."},
+    {"GET_VULNS", "Get all vulnerabilities."},
     {"HELP", "Get this help text."},
     {"MODIFY_AGENT", "Modify an existing agent."},
     {"MODIFY_ALERT", "Modify an existing alert."},
@@ -3226,6 +3227,7 @@ filter_clause (const char* type, const char* filter,
                        || (strcmp (keyword->string, "false_positive") == 0)
                        || (strcmp (keyword->string, "hosts") == 0)
                        || (strcmp (keyword->string, "result_hosts") == 0)
+                       || (strcmp (keyword->string, "results") == 0)
                        || (strcmp (keyword->string, "latest_severity") == 0)
                        || (strcmp (keyword->string, "highest_severity") == 0)
                        || (strcmp (keyword->string, "average_severity") == 0))
@@ -3368,6 +3370,7 @@ filter_clause (const char* type, const char* filter,
                        || (strcmp (keyword->string, "false_positive") == 0)
                        || (strcmp (keyword->string, "hosts") == 0)
                        || (strcmp (keyword->string, "result_hosts") == 0)
+                       || (strcmp (keyword->string, "results") == 0)
                        || (strcmp (keyword->string, "latest_severity") == 0)
                        || (strcmp (keyword->string, "highest_severity") == 0)
                        || (strcmp (keyword->string, "average_severity") == 0))
@@ -4398,7 +4401,8 @@ type_owned (const char* type)
           && strcasecmp (type, "ovaldef")
           && strcasecmp (type, "cert_bund_adv")
           && strcasecmp (type, "dfn_cert_adv")
-          && strcasecmp (type, "allinfo"));
+          && strcasecmp (type, "allinfo")
+          && strcasecmp (type, "vuln"));
 }
 
 /**
@@ -16463,6 +16467,8 @@ resource_count (const char *type, const get_data_t *get)
   static column_t select_columns[] = {{ "owner", NULL }, { NULL, NULL }};
   get_data_t count_get;
 
+  const char *extra_where;
+
   memset (&count_get, '\0', sizeof (count_get));
   count_get.trash = get->trash;
   if (type_owned (type))
@@ -16470,21 +16476,38 @@ resource_count (const char *type, const get_data_t *get)
   else
     count_get.filter = "rows=-1 first=1 permission=any";
 
+  if (strcmp (type, "task") == 0)
+    {
+      extra_where = get->trash
+                     ? " AND hidden = 2"
+                     : " AND hidden = 0";
+    }
+  else if (strcmp (type, "report") == 0
+           || strcmp (type, "result") == 0)
+    {
+      extra_where = " AND (SELECT hidden FROM tasks"
+                    "      WHERE tasks.id = task)"
+                    "     = 0";
+    }
+  else if (strcmp (type, "vuln") == 0)
+    {
+      extra_where = " AND (vuln_results (vulns.uuid,"
+                    "                    cast (null AS integer),"
+                    "                    cast (null AS integer),"
+                    "                    cast (null AS text),"
+                    "                    0)"
+                    "      > 0)";
+    }
+  else
+    extra_where = NULL;
+
   return count (get->subtype ? get->subtype : type,
                 &count_get,
                 type_owned (type) ? select_columns : NULL,
                 type_owned (type) ? select_columns : NULL,
                 type_owned (type) ? filter_columns : NULL,
                 0, NULL,
-                strcmp (type, "task")
-                 ? ((strcmp (type, "report") && strcmp (type, "result"))
-                     ? NULL
-                     : " AND (SELECT hidden FROM tasks"
-                       "      WHERE tasks.id = task)"
-                       "     = 0")
-                 : (get->trash
-                     ? " AND hidden = 2"
-                     : " AND hidden = 0"),
+                extra_where,
                 type_owned (type));
 }
 
@@ -64299,6 +64322,296 @@ user_role_iterator_readable (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return iterator_int (iterator, 4);
+}
+
+/**
+ * @brief Filter columns for vuln iterator.
+ */
+#define VULN_ITERATOR_FILTER_COLUMNS                                         \
+ { GET_ITERATOR_FILTER_COLUMNS, "results", "hosts", "severity", NULL }
+
+#define VULN_ITERATOR_COLUMNS                                                \
+ {                                                                           \
+   /* The following must match GET_ITERATOR_COLUMNS */                       \
+   { "id", "id", KEYWORD_TYPE_INTEGER },                                     \
+   { "uuid", "uuid", KEYWORD_TYPE_STRING },                                  \
+   { "name", "name", KEYWORD_TYPE_STRING },                                  \
+   { "''", "comment", KEYWORD_TYPE_STRING },                                 \
+   { "iso_time (creation_time)", NULL, KEYWORD_TYPE_STRING },                \
+   { "iso_time (modification_time)", NULL, KEYWORD_TYPE_STRING },            \
+   { "creation_time", "created", KEYWORD_TYPE_INTEGER },                     \
+   { "modification_time", "modified", KEYWORD_TYPE_INTEGER },                \
+   { "cast (null AS text)", "_owner", KEYWORD_TYPE_INTEGER },                \
+   { "''", "owner", KEYWORD_TYPE_STRING },                                   \
+   /* Type specific columns */                                               \
+   {                                                                         \
+     "vuln_results (uuid, opts.task, opts.report, opts.host, opts.min_qod)", \
+     "results",                                                              \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
+     "(SELECT count(*) FROM"                                                 \
+     "  (SELECT results.host FROM results"                                   \
+     "    WHERE nvt = vulns.oid"                                             \
+     "      AND (opts.report IS NULL OR results.report = opts.report)"       \
+     "      AND (opts.task IS NULL OR results.task = opts.task)"             \
+     "      AND (opts.host IS NULL OR results.host = opts.host)"             \
+     "      AND (results.qod >= opts.min_qod)"                               \
+     "      AND (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")"      \
+     "      AND (SELECT hidden = 0 FROM tasks"                               \
+     "            WHERE tasks.id = results.task)"                            \
+     "      AND user_has_access_uuid ('result', results.uuid,"               \
+     "                                'get_results', 0)"                     \
+     "      GROUP BY results.host) AS hosts_subquery)",                      \
+     "hosts",                                                                \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
+     "cvss_base",                                                            \
+     "severity",                                                             \
+     KEYWORD_TYPE_DOUBLE                                                     \
+   },                                                                        \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
+ }
+
+/**
+ * @brief Generate the extra_tables string for a vuln iterator.
+ *
+ * @param[in]  task_id    UUID of the task to limit vulns to.
+ * @param[in]  report_id  UUID of the report to limit vulns to.
+ * @param[in]  host       IP address of the task to limit vulns to.
+ * @param[in]  min_qod    Minimum QoD.
+ *
+ * @return Newly allocated string with the extra_tables clause.
+ */
+static gchar*
+vuln_iterator_opts_table (const gchar *task_id, const gchar *report_id,
+                          const gchar *host, int min_qod)
+{
+  GString *ret;
+
+  ret = g_string_new (", (SELECT");
+
+  if (task_id && strcmp (task_id, ""))
+    {
+      task_t task = 0;
+      find_task_with_permission (task_id, &task, "get_tasks");
+      g_string_append_printf (ret, " %llu AS task,", task);
+    }
+  else
+    {
+      g_string_append (ret, " cast (null AS integer) AS task,");
+    }
+
+  if (report_id && strcmp (report_id, ""))
+    {
+      report_t report = 0;
+      find_report_with_permission (report_id, &report, "get_reports");
+      g_string_append_printf (ret, " %llu AS report,", report);
+    }
+  else
+    {
+      g_string_append (ret, " cast (null AS integer) AS report,");
+    }
+
+  if (host && strcmp (host, ""))
+    {
+      gchar *quoted_host = sql_quote (host);
+      g_string_append_printf (ret, " '%s' AS host,", quoted_host);
+      g_free (quoted_host);
+    }
+  else
+    {
+      g_string_append (ret, " cast (null AS text) AS host,");
+    }
+
+  g_string_append_printf (ret, " %d AS min_qod) AS opts", min_qod);
+
+  return g_string_free (ret, FALSE);
+}
+
+/**
+ * @brief Generate the extra_tables string for a vuln iterator using a filter.
+ *
+ * @param[in]  filter     The filter term to use.
+ *
+ * @return Newly allocated string with the extra_tables clause.
+ */
+static gchar*
+vuln_iterator_opts_from_filter (const gchar *filter)
+{
+  gchar *task_id, *report_id, *host, *min_qod_str;
+  int min_qod;
+  gchar *ret;
+
+  assert (filter);
+
+  task_id = filter_term_value (filter, "task_id");
+  report_id = filter_term_value (filter, "report_id");
+  host = filter_term_value (filter, "host");
+  min_qod_str = filter_term_value (filter, "min_qod");
+  min_qod = (min_qod_str && strcmp (min_qod_str, ""))
+              ? atoi (min_qod_str) : MIN_QOD_DEFAULT;
+
+  ret = vuln_iterator_opts_table (task_id, report_id, host, min_qod);
+
+  g_free (task_id);
+  g_free (report_id);
+  g_free (host);
+  g_free (min_qod_str);
+
+  return ret;
+}
+
+/**
+ * @brief Initialise a vulnerability iterator, including observed vulns.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find vuln, 2 failed to find filter (filt_id),
+ *         -1 error.
+ */
+int
+init_vuln_iterator (iterator_t* iterator, const get_data_t *get)
+{
+  int ret;
+  gchar *filter;
+  gchar *extra_tables, *extra_where;
+  static const char *filter_columns[] = VULN_ITERATOR_FILTER_COLUMNS;
+  static column_t select_columns[] = VULN_ITERATOR_COLUMNS;
+
+  if (get->filt_id && strcmp (get->filt_id, "0"))
+    {
+      if (get->filter_replacement)
+        /* Replace the filter term with one given by the caller.  This is
+         * used by GET_REPORTS to use the default filter with any task (when
+         * given the special value of -3 in filt_id). */
+        filter = g_strdup (get->filter_replacement);
+      else
+        filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        return 2;
+    }
+  else
+    filter = NULL;
+
+  extra_tables 
+    = vuln_iterator_opts_from_filter (filter ? filter : get->filter);
+
+  extra_where 
+    = g_strdup (" AND (vuln_results (uuid, opts.task, opts.report,"
+                "                    opts.host, opts.min_qod) > 0)");
+
+  ret = init_get_iterator2 (iterator,
+                            "vuln",
+                            get,
+                            select_columns,
+                            NULL, /* trash_select_columns */
+                            NULL, /* where_columns */
+                            NULL, /* trash_where_columns */
+                            filter_columns,
+                            0     /* distinct */,
+                            extra_tables, /* extra_tables */
+                            extra_where,  /* extra_where, */
+                            0,    /* owned */
+                            0,    /* ignore_id */
+                            NULL);/* extra_order */
+
+  g_free (extra_tables);
+  g_free (extra_where);
+
+  return ret;
+}
+
+/**
+ * @brief Get the number of results from a vuln iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The number of results.
+ */
+int
+vuln_iterator_results (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 0);
+}
+
+/**
+ * @brief Get the number of hosts from a vuln iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The number of hosts.
+ */
+int
+vuln_iterator_hosts (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 1);
+}
+
+/**
+ * @brief Get the severity from a vuln iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The severity.
+ */
+double
+vuln_iterator_severity (iterator_t* iterator)
+{
+  if (iterator->done) return SEVERITY_MISSING;
+  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 2);
+}
+
+/**
+ * @brief Count number of agents.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of agents in filtered set.
+ */
+int
+vuln_count (const get_data_t *get)
+{
+  gchar *filter;
+  static const char *filter_columns[] = VULN_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = VULN_ITERATOR_COLUMNS;
+  gchar *extra_tables, *extra_where;
+  int ret;
+
+  if (get->filt_id && strcmp (get->filt_id, "0"))
+    {
+      if (get->filter_replacement)
+        /* Replace the filter term with one given by the caller.  This is
+         * used by GET_REPORTS to use the default filter with any task (when
+         * given the special value of -3 in filt_id). */
+        filter = g_strdup (get->filter_replacement);
+      else
+        filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        return 2;
+    }
+  else
+    filter = NULL;
+
+  extra_tables 
+    = vuln_iterator_opts_from_filter (filter ? filter : get->filter);
+
+  extra_where
+    = g_strdup (" AND (vuln_results (uuid, opts.task, opts.report,"
+                "                    opts.host, opts.min_qod) > 0)");
+
+  ret = count ("vuln", get, columns, NULL /*trash_columns*/, filter_columns, 0,
+               extra_tables, extra_where, FALSE);
+
+  g_free (filter);
+  g_free (extra_tables);
+  g_free (extra_where);
+
+  return ret;
 }
 
 /**

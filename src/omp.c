@@ -3057,6 +3057,24 @@ get_users_data_reset (get_users_data_t * data)
 }
 
 /**
+ * @brief Command data for the get_vulns command.
+ */
+typedef struct
+{
+  get_data_t get;    ///< Get args.
+} get_vulns_data_t;
+
+/**
+ * @brief Reset GET_USERS data.
+ */
+static void
+get_vulns_data_reset (get_vulns_data_t * data)
+{
+  get_data_reset (&data->get);
+  memset (data, 0, sizeof (get_vulns_data_t));
+}
+
+/**
  * @brief Command data for the modify_config command.
  */
 typedef struct
@@ -4277,6 +4295,7 @@ typedef union
   get_targets_data_t get_targets;                     ///< get_targets
   get_tasks_data_t get_tasks;                         ///< get_tasks
   get_users_data_t get_users;                         ///< get_users
+  get_vulns_data_t get_vulns;                         ///< get_vulns
   help_data_t help;                                   ///< help
   modify_agent_data_t modify_agent;                   ///< modify_agent
   modify_alert_data_t modify_alert;                   ///< modify_alert
@@ -4753,6 +4772,12 @@ get_tasks_data_t *get_tasks_data
  */
 get_users_data_t *get_users_data
  = &(command_data.get_users);
+
+/**
+ * @brief Parser callback data for GET_VULNS.
+ */
+get_vulns_data_t *get_vulns_data
+ = &(command_data.get_vulns);
 
 /**
  * @brief Parser callback data for HELP.
@@ -5414,6 +5439,7 @@ typedef enum
   CLIENT_GET_USERS,
   CLIENT_GET_VERSION,
   CLIENT_GET_VERSION_AUTHENTIC,
+  CLIENT_GET_VULNS,
   CLIENT_HELP,
   CLIENT_MODIFY_AGENT,
   CLIENT_MODIFY_AGENT_COMMENT,
@@ -7688,6 +7714,13 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("GET_VERSION", element_name) == 0)
           set_client_state (CLIENT_GET_VERSION_AUTHENTIC);
+        else if (strcasecmp ("GET_VULNS", element_name) == 0)
+          {
+            get_data_parse_attributes (&get_vulns_data->get, "vuln",
+                                       attribute_names,
+                                       attribute_values);
+            set_client_state (CLIENT_GET_VULNS);
+          }
         else if (strcasecmp ("HELP", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "format",
@@ -19865,6 +19898,80 @@ handle_get_version (omp_parser_t *omp_parser, GError **error)
 }
 
 /**
+ * @brief Handle end of GET_VULNS element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_vulns (omp_parser_t *omp_parser, GError **error)
+{
+  get_data_t *get;
+  int count, filtered, first;
+  int ret;
+  iterator_t vulns;
+
+  get = &get_vulns_data->get;
+
+  // Assumes that second param is only used for plural
+  INIT_GET (vuln, Vulnerabilitie);
+
+  ret = init_vuln_iterator (&vulns, get);
+  switch (ret)
+    {
+      case 0:
+        break;
+      default:
+        internal_error_send_to_client (error);
+        get_vulns_data_reset (get_vulns_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        return;
+    }
+
+  SEND_GET_START ("vuln");
+
+  while (next (&vulns))
+    {
+      SENDF_TO_CLIENT_OR_FAIL ("<vuln id=\"%s\">"
+                               "<name>%s</name>"
+                               "<creation_time>%s</creation_time>"
+                               "<modification_time>%s</modification_time>"
+                               "<severity>%1.1f</severity>",
+                               get_iterator_uuid (&vulns),
+                               get_iterator_name (&vulns),
+                               get_iterator_creation_time (&vulns),
+                               get_iterator_modification_time (&vulns),
+                               vuln_iterator_severity (&vulns));
+
+      // results for the vulnerability
+      SENDF_TO_CLIENT_OR_FAIL ("<results>"
+                               "<count>%d</count>",
+                               vuln_iterator_results (&vulns));
+
+      SEND_TO_CLIENT_OR_FAIL ("</results>");
+
+      // hosts with the vulnerability
+      SENDF_TO_CLIENT_OR_FAIL ("<hosts>"
+                               "<count>%d</count>",
+                               vuln_iterator_hosts (&vulns));
+
+      SEND_TO_CLIENT_OR_FAIL ("</hosts>");
+
+      // closing tag
+      SEND_TO_CLIENT_OR_FAIL ("</vuln>");
+    }
+
+  cleanup_iterator (&vulns);
+
+  filtered = vuln_count (get);
+
+  SEND_GET_END ("vuln", &get_vulns_data->get, count, filtered);
+
+  get_vulns_data_reset (get_vulns_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
  * @brief Handle end of SYNC_CONFIG element.
  *
  * @param[in]  omp_parser   OMP parser.
@@ -21041,6 +21148,10 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_GET_VERSION_AUTHENTIC:
         assert (strcasecmp ("GET_VERSION", element_name) == 0);
         return handle_get_version (omp_parser, error);
+
+      case CLIENT_GET_VULNS:
+        assert (strcasecmp ("GET_VULNS", element_name) == 0);
+        return handle_get_vulns (omp_parser, error);
 
       case CLIENT_HELP:
         if (acl_user_may ("help") == 0)

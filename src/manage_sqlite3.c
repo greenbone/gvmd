@@ -1955,6 +1955,54 @@ sql_user_can_everything (sqlite3_context *context, int argc,
 }
 
 /**
+ * @brief Check if a user has a given permission for a resource.
+ *
+ * This is a callback for a scalar SQL function of four arguments.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_user_has_access_uuid (sqlite3_context *context, int argc,
+                          sqlite3_value** argv)
+{
+  const unsigned char *type, *uuid, *permission;
+  int trash;
+  int ret;
+
+  assert (argc == 4);
+
+  type = sqlite3_value_text (argv[0]);
+  if (type == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get type argument", -1);
+      return;
+    }
+
+  uuid = sqlite3_value_text (argv[1]);
+  if (type == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get uuid argument", -1);
+      return;
+    }
+
+  permission = sqlite3_value_text (argv[2]);
+  if (type == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get permission argument", -1);
+      return;
+    }
+
+  trash = sqlite3_value_int (argv[3]);
+
+  ret = acl_user_has_access_uuid ((char*)type, (char*)uuid, (char *)permission,
+                                  trash);
+
+  sqlite3_result_int (context, ret);
+}
+
+/**
  * @brief Check if a user owns or effectively owns a resource.
  *
  * This is a callback for a scalar SQL function of two arguments.
@@ -1987,6 +2035,79 @@ sql_user_owns (sqlite3_context *context, int argc,
     }
 
   sqlite3_result_int (context, acl_user_owns ((char *) type, resource, 0));
+}
+
+/**
+ * @brief Gets the number of results for a Vulnerability.
+ *
+ * This is a callback for a scalar SQL function of four arguments.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_vuln_results (sqlite3_context *context, int argc,
+                  sqlite3_value** argv)
+{
+  const unsigned char *nvt_oid, *host;
+  gchar *nvt_oid_quoted, *host_quoted;
+  long long int task, report;
+  int task_null, report_null, min_qod;
+  int ret;
+
+  assert (argc == 5);
+
+  nvt_oid = sqlite3_value_text (argv[0]);
+  if (nvt_oid == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get nvt_oid argument", -1);
+      return;
+    }
+  nvt_oid_quoted = sql_quote ((char*) nvt_oid);
+
+  task = sqlite3_value_int64 (argv[1]);
+  task_null = sqlite3_value_type (argv[1]) == SQLITE_NULL;
+
+  report = sqlite3_value_int64 (argv[2]);
+  report_null = sqlite3_value_type (argv[2]) == SQLITE_NULL;
+
+  host = sqlite3_value_text (argv[3]);
+  if (host)
+    host_quoted = sql_quote ((char*) host);
+  else
+    host_quoted = NULL;
+
+  if (sqlite3_value_type (argv[4]) != SQLITE_NULL)
+    min_qod = sqlite3_value_int (argv[4]);
+  else
+    min_qod = MIN_QOD_DEFAULT;
+
+  ret
+    = sql_int ("SELECT count(*) FROM results"
+               " WHERE results.nvt = '%s'"
+               "   AND (%d OR results.report = %llu)"
+               "   AND (%d OR results.task = %llu)"
+               "   AND (%d OR results.host = '%s')"
+               "   AND (results.qod >= %d)"
+               "   AND (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")"
+               "   AND (SELECT hidden = 0 FROM tasks"
+               "         WHERE tasks.id = results.task)"
+               "   AND user_has_access_uuid ('result', results.uuid,"
+               "                             'get_results', 0)",
+               nvt_oid_quoted,
+               report_null,
+               report,
+               task_null,
+               task,
+               host == NULL,
+               host ? (char*)host : "",
+               min_qod);
+
+  g_free (nvt_oid_quoted);
+  g_free (host_quoted);
+
+  sqlite3_result_int (context, ret);
 }
 
 /**
@@ -2600,6 +2721,20 @@ manage_create_sql_functions ()
     }
 
   if (sqlite3_create_function (task_db,
+                               "user_has_access_uuid",
+                               4,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_user_has_access_uuid,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create user_has_access_uuid", __FUNCTION__);
+      return -1;
+    }
+
+  if (sqlite3_create_function (task_db,
                                "user_owns",
                                2,               /* Number of args. */
                                SQLITE_UTF8,
@@ -2610,6 +2745,20 @@ manage_create_sql_functions ()
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create user_owns", __FUNCTION__);
+      return -1;
+    }
+
+  if (sqlite3_create_function (task_db,
+                               "vuln_results",
+                               5,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_vuln_results,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create user_has_access_uuid", __FUNCTION__);
       return -1;
     }
 
@@ -3115,6 +3264,11 @@ create_tables ()
        "  (SELECT 0 AS autofp_selection"
        "   UNION SELECT 1 AS autofp_selection"
        "   UNION SELECT 2 AS autofp_selection) AS autofp_opts;");
+
+  /* Vulnerabilities view */
+  sql ("DROP VIEW IF EXISTS vulns;");
+  sql ("CREATE VIEW vulns AS"
+       " SELECT * FROM nvts;");
 }
 
 /**

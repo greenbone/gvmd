@@ -3936,6 +3936,21 @@ user_hosts (const char *);
 int
 user_hosts_allow (const char *);
 
+int
+init_vuln_iterator (iterator_t*, const get_data_t*);
+
+int
+vuln_iterator_results (iterator_t*);
+
+int
+vuln_iterator_hosts (iterator_t*);
+
+double
+vuln_iterator_severity (iterator_t*);
+
+int
+vuln_count (const get_data_t*);
+
 void
 manage_get_ldap_info (int *, gchar **, gchar **, int *, gchar **);
 

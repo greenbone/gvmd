@@ -858,6 +858,64 @@ manage_create_sql_functions ()
        " END;"
        "$$ LANGUAGE plpgsql;");
 
+  sql ("CREATE OR REPLACE FUNCTION user_has_access_uuid (arg_type text,"
+       "                                                 arg_uuid text,"
+       "                                                 arg_permission text,"
+       "                                                 arg_trash integer)"
+       " RETURNS boolean AS $$"
+       " DECLARE"
+       "  resource bigint;"
+       "  task_uuid text;"
+       "  is_get boolean;"
+       "  user_id bigint;"
+       "  ret boolean;"
+       " BEGIN"
+       "  EXECUTE"
+       "    'SELECT id FROM ' || $1 || 's WHERE uuid = $2'"
+       "    USING arg_type, arg_uuid"
+       "    INTO resource;"
+       "  ret = user_owns (arg_type, resource::integer);"
+       "  IF (ret)"
+       "  THEN"
+       "    RETURN ret;"
+       "  END IF;"
+       "  CASE"
+       "  WHEN arg_type = 'result'"
+       "  THEN"
+       "    task_uuid = (SELECT uuid FROM tasks"
+       "                WHERE id = (SELECT task FROM results"
+       "                             WHERE uuid = arg_uuid));"
+       "  WHEN arg_type = 'report'"
+       "  THEN"
+       "    task_uuid = (SELECT uuid FROM tasks"
+       "                WHERE id = (SELECT task FROM reports"
+       "                             WHERE uuid = arg_uuid));"
+       "  ELSE"
+       "    task_uuid = null;"
+       "  END CASE;"
+       "  is_get = substr (arg_permission, 0, 4) = 'get';"
+       "  user_id = (SELECT id FROM users"
+       "              WHERE uuid = (SELECT uuid FROM current_credentials));"
+       "  ret = (SELECT count(*) FROM permissions"
+       "          WHERE resource_uuid = coalesce (task_uuid, arg_uuid)"
+       "            AND subject_location = " G_STRINGIFY (LOCATION_TABLE)
+       "            AND ((subject_type = 'user'"
+       "                  AND subject = user_id)"
+       "                 OR (subject_type = 'group'"
+       "                     AND subject"
+       "                         IN (SELECT DISTINCT \"group\""
+       "                             FROM group_users"
+       "                             WHERE \"user\" = user_id))"
+       "                 OR (subject_type = 'role'"
+       "                     AND subject"
+       "                         IN (SELECT DISTINCT role"
+       "                             FROM role_users"
+       "                             WHERE \"user\" = user_id)))"
+       "            AND (is_get OR name = arg_permission)) > 0;"
+       "  RETURN ret;"
+       " END;"
+       "$$ LANGUAGE plpgsql;");
+
   /* Functions in SQL. */
 
   sql ("CREATE OR REPLACE FUNCTION t () RETURNS boolean AS $$"
@@ -1533,6 +1591,21 @@ manage_create_sql_functions ()
   sql ("CREATE OR REPLACE FUNCTION lower (integer)"
        " RETURNS integer AS $$"
        "  SELECT $1;"
+       "$$ LANGUAGE SQL;");
+
+  sql ("CREATE OR REPLACE FUNCTION vuln_results (text, bigint, bigint, text, integer)"
+       " RETURNS bigint AS $$"
+       " SELECT count(*) FROM results"
+       " WHERE results.nvt = $1"
+       "   AND ($2 IS NULL OR results.report = $2)"
+       "   AND ($3 IS NULL OR results.task = $3)"
+       "   AND ($4 IS NULL OR results.host = $4)"
+       "   AND (results.qod >= $5)"
+       "   AND (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")"
+       "   AND (SELECT hidden = 0 FROM tasks"
+       "         WHERE tasks.id = results.task)"
+       "   AND user_has_access_uuid ('result', results.uuid,"
+       "                             'get_results', 0)"
        "$$ LANGUAGE SQL;");
 
   return 0;
@@ -2539,6 +2612,9 @@ create_tables ()
        "   UNION SELECT 1 AS autofp_selection"
        "   UNION SELECT 2 AS autofp_selection) AS autofp_opts;");
 
+  sql ("CREATE OR REPLACE VIEW vulns AS"
+       " SELECT * FROM nvts;");
+
   /* Create indexes. */
 
   sql ("SELECT create_index ('host_details_by_host',"
@@ -2590,6 +2666,7 @@ create_tables ()
        "         'report_hosts',"
        "         'report, host');");
   sql ("SELECT create_index ('results_by_report', 'results', 'report');");
+  sql ("SELECT create_index ('results_by_nvt', 'results', 'nvt');");
 }
 
 /**
