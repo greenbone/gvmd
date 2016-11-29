@@ -3942,6 +3942,12 @@ init_vuln_iterator (iterator_t*, const get_data_t*);
 int
 vuln_iterator_results (iterator_t*);
 
+const char*
+vuln_iterator_oldest (iterator_t*);
+
+const char*
+vuln_iterator_newest (iterator_t*);
+
 int
 vuln_iterator_hosts (iterator_t*);
 

@@ -64612,8 +64612,20 @@ user_role_iterator_readable (iterator_t* iterator)
 #define VULN_ITERATOR_FILTER_COLUMNS                                         \
  {                                                                           \
    GET_ITERATOR_FILTER_COLUMNS, "results", "hosts", "severity", "qod",       \
-   NULL                                                                      \
+   "oldest", "newest", NULL                                                  \
  }
+
+#define VULN_RESULTS_WHERE \
+     "  WHERE nvt = vulns.oid"                                               \
+     "    AND (opts.report IS NULL OR results.report = opts.report)"         \
+     "    AND (opts.task IS NULL OR results.task = opts.task)"               \
+     "    AND (opts.host IS NULL OR results.host = opts.host)"               \
+     "    AND (results.qod >= opts.min_qod)"                                 \
+     "    AND (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")"        \
+     "    AND (SELECT hidden = 0 FROM tasks"                                 \
+     "          WHERE tasks.id = results.task)"                              \
+     "    AND user_has_access_uuid ('result', results.uuid,"                 \
+     "                              'get_results', 0)"                       \
 
 #define VULN_ITERATOR_COLUMNS                                                \
  {                                                                           \
@@ -64637,16 +64649,7 @@ user_role_iterator_readable (iterator_t* iterator)
    {                                                                         \
      "(SELECT count(*) FROM"                                                 \
      "  (SELECT results.host FROM results"                                   \
-     "    WHERE nvt = vulns.oid"                                             \
-     "      AND (opts.report IS NULL OR results.report = opts.report)"       \
-     "      AND (opts.task IS NULL OR results.task = opts.task)"             \
-     "      AND (opts.host IS NULL OR results.host = opts.host)"             \
-     "      AND (results.qod >= opts.min_qod)"                               \
-     "      AND (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")"      \
-     "      AND (SELECT hidden = 0 FROM tasks"                               \
-     "            WHERE tasks.id = results.task)"                            \
-     "      AND user_has_access_uuid ('result', results.uuid,"               \
-     "                                'get_results', 0)"                     \
+     VULN_RESULTS_WHERE                                                      \
      "      GROUP BY results.host) AS hosts_subquery)",                      \
      "hosts",                                                                \
      KEYWORD_TYPE_INTEGER                                                    \
@@ -64658,6 +64661,30 @@ user_role_iterator_readable (iterator_t* iterator)
    },                                                                        \
    {                                                                         \
      "qod", NULL, KEYWORD_TYPE_INTEGER                                       \
+   },                                                                        \
+   {                                                                         \
+     "(SELECT iso_time (min (date)) FROM results"                            \
+     VULN_RESULTS_WHERE ")",                                                 \
+     NULL,                                                                   \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
+     "(SELECT iso_time (max (date)) FROM results"                            \
+     VULN_RESULTS_WHERE ")",                                                 \
+     NULL,                                                                   \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
+     "(SELECT min (date) FROM results"                                       \
+     VULN_RESULTS_WHERE ")",                                                 \
+     "oldest",                                                               \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
+     "(SELECT max (date) FROM results"                                       \
+     VULN_RESULTS_WHERE ")",                                                 \
+     "newest",                                                               \
+     KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
  }
@@ -64864,8 +64891,36 @@ vuln_iterator_severity (iterator_t* iterator)
 int
 vuln_iterator_qod (iterator_t* iterator)
 {
-  if (iterator->done) return SEVERITY_MISSING;
+  if (iterator->done) return -1;
   return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
+}
+
+/**
+ * @brief Get the date of the oldest result from a vuln iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The oldest result date.
+ */
+const char*
+vuln_iterator_oldest (iterator_t* iterator)
+{
+  if (iterator->done) return NULL;
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
+}
+
+/**
+ * @brief Get the date of the oldest result from a vuln iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The oldest result date.
+ */
+const char*
+vuln_iterator_newest (iterator_t* iterator)
+{
+  if (iterator->done) return NULL;
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
 }
 
 /**

@@ -1,3 +1,18 @@
+2016-11-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (VULN_ITERATOR_FILTER_COLUMNS)
+	(VULN_ITERATOR_COLUMNS): Add columns "oldest" and "newest".
+	(VULN_RESULTS_WHERE): New #define for common part of get_vulns result
+	selection.
+	(vuln_iterator_qod): Return -1 if iterator is done.
+	(vuln_iterator_oldest, vuln_iterator_newest): New iterator functions.
+
+	* src/manage.h (vuln_iterator_oldest, vuln_iterator_newest): New
+	function prototypes.
+
+	* src/omp.c (handle_get_vulns): Add dates of oldest and newest result
+	for each vulnerability.
+
 2016-11-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add CERT-Bund update to --update-cert-db.

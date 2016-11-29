@@ -19947,8 +19947,12 @@ handle_get_vulns (omp_parser_t *omp_parser, GError **error)
 
       // results for the vulnerability
       SENDF_TO_CLIENT_OR_FAIL ("<results>"
-                               "<count>%d</count>",
-                               vuln_iterator_results (&vulns));
+                               "<count>%d</count>"
+                               "<oldest>%s</oldest>"
+                               "<newest>%s</newest>",
+                               vuln_iterator_results (&vulns),
+                               vuln_iterator_oldest (&vulns),
+                               vuln_iterator_newest (&vulns));
 
       SEND_TO_CLIENT_OR_FAIL ("</results>");
 
