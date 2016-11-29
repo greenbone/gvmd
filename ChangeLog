@@ -1,3 +1,8 @@
+2016-11-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_pg.c (manage_create_sql_functions): Fix swapped task and
+	report params in vuln_results function.
+
 2016-11-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Add new get_vulns OMP command.
