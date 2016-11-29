@@ -62003,7 +62003,7 @@ init_ovaldi_file_iterator (iterator_t* iterator)
 DEF_ACCESS (ovaldi_file_iterator_name, 0);
 
 /**
- * @brief Update CERT info from a single XML feed file.
+ * @brief Update DFN-CERT info from a single XML feed file.
  *
  * @param[in]  xml_path          XML path.
  * @param[in]  last_cert_update  Time of last CERT update.
@@ -62012,8 +62012,8 @@ DEF_ACCESS (ovaldi_file_iterator_name, 0);
  * @return 0 success, -1 error.
  */
 static int
-update_cert_xml (const gchar *xml_path, int last_cert_update,
-                 int last_dfn_update)
+update_dfn_xml (const gchar *xml_path, int last_cert_update,
+                int last_dfn_update)
 {
   GError *error;
   entity_t entity, child;
@@ -62214,6 +62214,312 @@ update_cert_xml (const gchar *xml_path, int last_cert_update,
 }
 
 /**
+ * @brief Update CERT-Bund info from a single XML feed file.
+ *
+ * @param[in]  xml_path          XML path.
+ * @param[in]  last_cert_update  Time of last CERT update.
+ * @param[in]  last_dfn_update   Time of last update to a DFN.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+update_bund_xml (const gchar *xml_path, int last_cert_update,
+                 int last_dfn_update)
+{
+  GError *error;
+  entity_t entity, child;
+  entities_t children;
+  gchar *xml, *full_path;
+  gsize xml_len;
+  GStatBuf state;
+
+  full_path = g_build_filename (OPENVAS_CERT_DATA_DIR, xml_path, NULL);
+
+  if (g_stat (full_path, &state))
+    {
+      g_warning ("%s: Failed to stat CERT file: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
+      return -1;
+    }
+
+  if ((state.st_mtime - (state.st_mtime % 60)) <= last_cert_update)
+    {
+      // FIX printf?
+      g_info ("Skipping %s, file is older than last revision",
+              full_path);
+      g_free (full_path);
+      return 0;
+    }
+
+  // FIX printf?  more...
+  g_info ("Updating %s", full_path);
+
+  error = NULL;
+  g_file_get_contents (full_path, &xml, &xml_len, &error);
+  if (error)
+    {
+      g_warning ("%s: Failed to get contents: %s\n",
+                 __FUNCTION__,
+                 error->message);
+      g_error_free (error);
+      g_free (full_path);
+      return -1;
+    }
+
+  if (parse_entity (xml, &entity))
+    {
+      g_free (xml);
+      g_warning ("%s: Failed to parse entity\n", __FUNCTION__);
+      g_free (full_path);
+      return -1;
+    }
+  g_free (xml);
+
+  sql_begin_immediate ();
+  children = entity->entities;
+  while ((child = first_entity (children)))
+    {
+      if (strcmp (entity_name (child), "Advisory") == 0)
+        {
+          entity_t date;
+
+          date = entity_child (child, "Date");
+          if (date == NULL)
+            {
+              g_warning ("%s: Date missing\n", __FUNCTION__);
+              free_entity (entity);
+              goto fail;
+            }
+
+          if (parse_iso_time (entity_text (date)) > last_dfn_update)
+            {
+              entity_t refnum, description, title, cve, cve_list;
+              gchar *quoted_refnum, *quoted_title, *quoted_summary;
+              int cve_refs;
+              GString *summary;
+
+              refnum = entity_child (child, "Ref_Num");
+              if (refnum == NULL)
+                {
+                  GString *string;
+
+                  string = g_string_new ("");
+                  g_warning ("%s: Ref_Num missing\n", __FUNCTION__);
+                  print_entity_to_string (child, string);
+                  g_debug ("child:\n%s\n", string->str);
+                  g_string_free (string, TRUE);
+                  free_entity (entity);
+                  goto fail;
+                }
+
+              title = entity_child (child, "Title");
+              if (title == NULL)
+                {
+                  g_warning ("%s: Title missing\n", __FUNCTION__);
+                  free_entity (entity);
+                  goto fail;
+                }
+
+              summary = g_string_new ("");
+              description = entity_child (child, "Description");
+              if (description)
+                {
+                  entities_t elements;
+                  entity_t element;
+
+                  elements = description->entities;
+                  while ((element = first_entity (elements)))
+                    {
+                      if (strcmp (entity_name (element), "Element") == 0)
+                        {
+                          entity_t text_block;
+                          text_block = entity_child (element, "TextBlock");
+                          if (text_block)
+                            g_string_append (summary, entity_text (text_block));
+                        }
+                      elements = next_entities (elements);
+                    }
+                }
+
+              cve_refs = 0;
+              cve_list = entity_child (child, "CVEList");
+              if (cve_list)
+                {
+                  entities_t cves;
+                  cves = cve_list->entities;
+                  while ((cve = first_entity (cves)))
+                    {
+                      if (strcmp (entity_name (cve), "CVE") == 0)
+                        cve_refs++;
+                      cves = next_entities (cves);
+                    }
+                }
+
+              quoted_refnum = sql_quote (entity_text (refnum));
+              quoted_title = sql_quote (entity_text (title));
+              quoted_summary = sql_quote (summary->str);
+              g_string_free (summary, TRUE);
+              sql ("SELECT merge_bund_adv"
+                   "        ('%s', %i, %i, '%s', '%s', %i);",
+                   quoted_refnum,
+                   parse_iso_time (entity_text (date)),
+                   parse_iso_time (entity_text (date)),
+                   quoted_title,
+                   quoted_summary,
+                   cve_refs);
+              g_free (quoted_title);
+              g_free (quoted_summary);
+
+              cve_list = entity_child (child, "CVEList");
+              if (cve_list)
+                {
+                  entities_t cves;
+                  cves = cve_list->entities;
+                  while ((cve = first_entity (cves)))
+                    {
+                      if ((strcmp (entity_name (cve), "CVE") == 0)
+                          && strlen (entity_text (cve)))
+                        {
+                          gchar *quoted_cve;
+                          quoted_cve = sql_quote (entity_text (cve));
+                          /* There's no primary key, so just INSERT, even
+                           * for Postgres. */
+                          sql ("INSERT INTO cert_bund_cves"
+                               " (adv_id, cve_name)"
+                               " VALUES"
+                               " ((SELECT id FROM cert_bund_advs"
+                               "   WHERE name = '%s'),"
+                               "  '%s')",
+                               quoted_refnum,
+                               quoted_cve);
+                          g_free (quoted_cve);
+                        }
+
+                      cves = next_entities (cves);
+                    }
+                }
+
+              g_free (quoted_refnum);
+            }
+        }
+      children = next_entities (children);
+    }
+
+  free_entity (entity);
+  g_free (full_path);
+  sql_commit ();
+  return 0;
+
+ fail:
+  g_warning ("Update of CERT-Bund Advisories failed at file '%s'",
+             full_path);
+  g_free (full_path);
+  sql_commit ();
+  return -1;
+}
+
+/**
+ * @brief Update DFN-CERTs.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+update_dfn_cert_advisories ()
+{
+  GError *error;
+  int count, last_cert_update, last_dfn_update;
+  GDir *dir;
+  const gchar *xml_path;
+
+  error = NULL;
+  dir = g_dir_open (OPENVAS_CERT_DATA_DIR, 0, &error);
+  if (dir == NULL)
+    {
+      g_warning ("%s: Failed to open directory '%s': %s",
+                 __FUNCTION__, OPENVAS_CERT_DATA_DIR, error->message);
+      g_error_free (error);
+      return -1;
+    }
+
+  last_cert_update = sql_int ("SELECT value FROM cert.meta"
+                              " WHERE name = 'last_update';");
+
+  last_dfn_update = sql_int ("SELECT max (modification_time)"
+                             " FROM cert.dfn_cert_advs;");
+
+  g_debug ("%s: VS: " OPENVAS_CERT_DATA_DIR "/dfn-cert-*.xml", __FUNCTION__);
+  count = 0;
+  while ((xml_path = g_dir_read_name (dir)))
+    if (fnmatch ("dfn-cert-*.xml", xml_path, 0) == 0)
+      {
+        if (update_dfn_xml (xml_path, last_cert_update, last_dfn_update))
+          {
+            g_dir_close (dir);
+            return -1;
+          }
+        else
+          count++;
+      }
+
+  if (count == 0)
+    g_warning ("No DFN-CERT advisories found in %s", OPENVAS_CERT_DATA_DIR);
+
+  g_dir_close (dir);
+  return 0;
+}
+
+/**
+ * @brief Update CERT-Bunds.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+update_cert_bund_advisories ()
+{
+  GError *error;
+  int count, last_cert_update, last_bund_update;
+  GDir *dir;
+  const gchar *xml_path;
+
+  error = NULL;
+  dir = g_dir_open (OPENVAS_CERT_DATA_DIR, 0, &error);
+  if (dir == NULL)
+    {
+      g_warning ("%s: Failed to open directory '%s': %s",
+                 __FUNCTION__, OPENVAS_CERT_DATA_DIR, error->message);
+      g_error_free (error);
+      return -1;
+    }
+
+  last_cert_update = sql_int ("SELECT value FROM cert.meta"
+                              " WHERE name = 'last_update';");
+
+  last_bund_update = sql_int ("SELECT max (modification_time)"
+                              " FROM cert.cert_bund_advs;");
+
+  g_debug ("%s: VS: " OPENVAS_CERT_DATA_DIR "/CB-K*.xml", __FUNCTION__);
+  count = 0;
+  while ((xml_path = g_dir_read_name (dir)))
+    if (fnmatch ("CB-K*.xml", xml_path, 0) == 0)
+      {
+        if (update_bund_xml (xml_path, last_cert_update, last_bund_update))
+          {
+            g_dir_close (dir);
+            return -1;
+          }
+        else
+          count++;
+      }
+
+  if (count == 0)
+    g_warning ("No CERT-Bund advisories found in %s", OPENVAS_CERT_DATA_DIR);
+
+  g_dir_close (dir);
+  return 0;
+}
+
+/**
  * @brief Update CERT DB.
  *
  * @param[in]  log_config        Log configuration.
@@ -62224,10 +62530,8 @@ update_cert_xml (const gchar *xml_path, int last_cert_update,
 int
 manage_update_cert_db (GSList *log_config, const gchar *database)
 {
-  GError *error;
-  const gchar *db, *xml_path;
-  int ret, count, last_cert_update, last_dfn_update;
-  GDir *dir;
+  const gchar *db;
+  int ret;
 
   if (openvas_auth_init ())
     return -1;
@@ -62241,51 +62545,29 @@ manage_update_cert_db (GSList *log_config, const gchar *database)
 
   init_manage_process (0, db);
 
-  error = NULL;
-  dir = g_dir_open (OPENVAS_CERT_DATA_DIR, 0, &error);
-  if (dir == NULL)
-    {
-      g_warning ("%s: Failed to open directory '%s': %s",
-                 __FUNCTION__, OPENVAS_CERT_DATA_DIR, error->message);
-      g_error_free (error);
-      cleanup_manage_process (TRUE);
-      return -1;
-    }
-
-  last_cert_update = sql_int ("SELECT value FROM cert.meta"
-                              " WHERE name = 'last_update';");
-
-  last_dfn_update = sql_int ("SELECT max (modification_time)"
-                             " FROM cert.dfn_cert_advs;");
-
   if (manage_update_cert_db_init ())
     {
       cleanup_manage_process (TRUE);
       return -1;
     }
 
-  g_debug ("%s: VS: " OPENVAS_CERT_DATA_DIR "/dfn-cert-*.xml", __FUNCTION__);
-  count = 0;
-  while ((xml_path = g_dir_read_name (dir)))
-    if ((fnmatch ("dfn-cert-*.xml", xml_path, 0) == 0)
-        && update_cert_xml (xml_path, last_cert_update, last_dfn_update))
-      {
-        g_dir_close (dir);
-        cleanup_manage_process (TRUE);
-        return -1;
-      }
-    else
-      count++;
+  if (update_dfn_cert_advisories ())
+    {
+      manage_update_cert_db_cleanup ();
+      cleanup_manage_process (TRUE);
+      return -1;
+    }
 
-  if (count == 0)
-    g_warning ("No DFN-CERT advisories found in %s", OPENVAS_CERT_DATA_DIR);
-
-  manage_update_cert_db_cleanup ();
-
-  g_dir_close (dir);
+  if (update_cert_bund_advisories ())
+    {
+      manage_update_cert_db_cleanup ();
+      cleanup_manage_process (TRUE);
+      return -1;
+    }
 
   printf ("Updating CERT info succeeded.\n");
 
+  manage_update_cert_db_cleanup ();
   cleanup_manage_process (TRUE);
 
   return 0;

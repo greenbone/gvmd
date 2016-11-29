@@ -1,3 +1,19 @@
+2016-11-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add CERT-Bund update to --update-cert-db.
+
+	* src/manage_sql.c (update_dfn_xml, update_bund_xml)
+	(update_dfn_cert_advisories, update_cert_bund_advisories): New functions.
+	(manage_update_cert_db): Move DFN update out to
+	update_dfn_cert_advisories.  Add CERT-Bund update.
+
+	* src/manage_sqlite3.c (sql_merge_bund_adv): New function.
+	(manage_update_cert_db_init, manage_update_cert_db_cleanup): Add
+	merge_bund_adv.
+
+	* src/manage_pg.c (manage_update_cert_db_init)
+	(manage_update_cert_db_cleanup): Add merge_bund_adv.
+
 2016-11-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (VULN_ITERATOR_FILTER_COLUMNS)
@@ -294,7 +310,7 @@
 
 2016-11-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/manage_pg.c: Include manage_utis.h, for SEVERITY_*.
+	* src/manage_pg.c: Include manage_utils.h, for SEVERITY_*.
 
 2016-11-10  Matthew Mundell <matthew.mundell@greenbone.net>
 

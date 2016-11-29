@@ -132,6 +132,44 @@ manage_update_cert_db_init ()
        "   END LOOP;"
        " END;"
        "$$ LANGUAGE plpgsql;");
+
+  sql ("CREATE OR REPLACE FUNCTION merge_bund_adv"
+       "                            (uuid_arg TEXT,"
+       "                             creation_time_arg INTEGER,"
+       "                             modification_time_arg INTEGER,"
+       "                             title_arg TEXT,"
+       "                             summary_arg TEXT,"
+       "                             cve_refs_arg INTEGER)"
+       " RETURNS VOID AS $$"
+       " BEGIN"
+       "   LOOP"
+       "     UPDATE cert_bund_advs"
+       "     SET name = uuid_arg,"
+       "         comment = '',"
+       "         creation_time = creation_time_arg,"
+       "         modification_time = modification_time_arg,"
+       "         title = title_arg,"
+       "         summary = summary_arg,"
+       "         cve_refs = cve_refs_arg"
+       "     WHERE uuid = uuid_arg;"
+       "     IF found THEN"
+       "       RETURN;"
+       "     END IF;"
+       "     BEGIN"
+       "       INSERT INTO cert_bund_advs (uuid, name, comment, creation_time,"
+       "                                   modification_time, title, summary,"
+       "                                   cve_refs)"
+       "       VALUES (uuid_arg, uuid_arg, '', creation_time_arg,"
+       "               modification_time_arg, title_arg, summary_arg,"
+       "               cve_refs_arg);"
+       "       RETURN;"
+       "     EXCEPTION WHEN unique_violation THEN"
+       "       NULL;"  /* Try again. */
+       "     END;"
+       "   END LOOP;"
+       " END;"
+       "$$ LANGUAGE plpgsql;");
+
   return 0;
 }
 
@@ -147,6 +185,15 @@ manage_update_cert_db_cleanup ()
        "                                  title_arg TEXT,"
        "                                  summary_arg TEXT,"
        "                                  cve_refs_arg INTEGER);");
+
+  sql ("DROP FUNCTION merge_bund_adv (uuid_arg TEXT,"
+       "                              name_arg TEXT,"
+       "                              comment_arg TEXT,"
+       "                              creation_time_arg INTEGER,"
+       "                              modification_time_arg INTEGER,"
+       "                              title_arg TEXT,"
+       "                              summary_arg TEXT,"
+       "                              cve_refs_arg INTEGER);");
 }
 
 

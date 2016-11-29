@@ -530,6 +530,74 @@ sql_merge_dfn_cert_adv (sqlite3_context *context, int argc,
 }
 
 /**
+ * @brief Insert or replace a CERT-Bund Advisory.
+ *
+ * This is a callback for a scalar SQL function of six argument.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_merge_bund_adv (sqlite3_context *context, int argc,
+                    sqlite3_value** argv)
+{
+  const unsigned char *refnum, *title, *summary;
+  time_t published, updated;
+  gchar *quoted_refnum, *quoted_title, *quoted_summary;
+  int cve_refs;
+
+  assert (argc == 6);
+
+  refnum = sqlite3_value_text (argv[0]);
+  if (refnum == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get refnum argument", -1);
+      return;
+    }
+
+  published = sqlite3_value_int (argv[1]);
+  updated = sqlite3_value_int (argv[2]);
+
+  title = sqlite3_value_text (argv[3]);
+  if (title == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get title argument", -1);
+      return;
+    }
+
+  summary = sqlite3_value_text (argv[4]);
+  if (summary == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get summary argument", -1);
+      return;
+    }
+
+  cve_refs = sqlite3_value_int (argv[5]);
+
+  quoted_refnum = sql_quote ((const char*) refnum);
+  quoted_title = sql_quote ((const char*) title);
+  quoted_summary = sql_quote ((const char*) summary);
+
+  sql ("INSERT OR REPLACE INTO cert_bund_advs"
+       " (uuid, name, comment, creation_time, modification_time,"
+       "  title, summary, cve_refs)"
+       " VALUES"
+       " ('%s', '%s', '', %i, %i, '%s', '%s', %i);",
+       quoted_refnum,
+       quoted_refnum,
+       published,
+       updated,
+       quoted_title,
+       quoted_summary,
+       cve_refs);
+
+  g_free (quoted_refnum);
+  g_free (quoted_title);
+  g_free (quoted_summary);
+}
+
+/**
  * @brief Make a name unique.
  *
  * This is a callback for a scalar SQL function of four argument.
@@ -3418,6 +3486,20 @@ manage_update_cert_db_init ()
       return -1;
     }
 
+  if (sqlite3_create_function (task_db,
+                               "merge_bund_adv",
+                               6,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_merge_bund_adv,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create merge_bund_adv", __FUNCTION__);
+      return -1;
+    }
+
   return 0;
 }
 
@@ -3439,6 +3521,17 @@ manage_update_cert_db_cleanup ()
                                NULL)            /* xFinal. */
       != SQLITE_OK)
     g_warning ("%s: failed to remove merge_dfn_cert_adv", __FUNCTION__);
+
+  if (sqlite3_create_function (task_db,
+                               "merge_bund_adv",
+                               6,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               NULL,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    g_warning ("%s: failed to remove merge_bund_adv", __FUNCTION__);
 }
 
 
