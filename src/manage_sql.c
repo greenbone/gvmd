@@ -64328,7 +64328,10 @@ user_role_iterator_readable (iterator_t* iterator)
  * @brief Filter columns for vuln iterator.
  */
 #define VULN_ITERATOR_FILTER_COLUMNS                                         \
- { GET_ITERATOR_FILTER_COLUMNS, "results", "hosts", "severity", NULL }
+ {                                                                           \
+   GET_ITERATOR_FILTER_COLUMNS, "results", "hosts", "severity", "qod",       \
+   NULL                                                                      \
+ }
 
 #define VULN_ITERATOR_COLUMNS                                                \
  {                                                                           \
@@ -64370,6 +64373,9 @@ user_role_iterator_readable (iterator_t* iterator)
      "cvss_base",                                                            \
      "severity",                                                             \
      KEYWORD_TYPE_DOUBLE                                                     \
+   },                                                                        \
+   {                                                                         \
+     "qod", NULL, KEYWORD_TYPE_INTEGER                                       \
    },                                                                        \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
  }
@@ -64564,6 +64570,20 @@ vuln_iterator_severity (iterator_t* iterator)
 {
   if (iterator->done) return SEVERITY_MISSING;
   return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 2);
+}
+
+/**
+ * @brief Get the QoD from a vuln iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The QoD.
+ */
+int
+vuln_iterator_qod (iterator_t* iterator)
+{
+  if (iterator->done) return SEVERITY_MISSING;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
 }
 
 /**

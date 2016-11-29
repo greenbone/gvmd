@@ -1,5 +1,15 @@
 2016-11-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (VULN_ITERATOR_FILTER_COLUMNS)
+	(VULN_ITERATOR_COLUMNS): Add column "qod".
+	(vuln_iterator_qod): New iterator column getter function.
+
+	* src/manage.h (vuln_iterator_qod): New function prototype.
+
+	* src/omp.c (handle_get_vulns): Add "qod" element.
+
+2016-11-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_pg.c (manage_create_sql_functions): Fix swapped task and
 	report params in vuln_results function.
 

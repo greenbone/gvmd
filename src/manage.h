@@ -3949,6 +3949,9 @@ double
 vuln_iterator_severity (iterator_t*);
 
 int
+vuln_iterator_qod (iterator_t*);
+
+int
 vuln_count (const get_data_t*);
 
 void

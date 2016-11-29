@@ -19936,12 +19936,14 @@ handle_get_vulns (omp_parser_t *omp_parser, GError **error)
                                "<name>%s</name>"
                                "<creation_time>%s</creation_time>"
                                "<modification_time>%s</modification_time>"
-                               "<severity>%1.1f</severity>",
+                               "<severity>%1.1f</severity>"
+                               "<qod>%d</qod>",
                                get_iterator_uuid (&vulns),
                                get_iterator_name (&vulns),
                                get_iterator_creation_time (&vulns),
                                get_iterator_modification_time (&vulns),
-                               vuln_iterator_severity (&vulns));
+                               vuln_iterator_severity (&vulns),
+                               vuln_iterator_qod (&vulns));
 
       // results for the vulnerability
       SENDF_TO_CLIENT_OR_FAIL ("<results>"
