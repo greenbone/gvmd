@@ -16494,8 +16494,7 @@ resource_count (const char *type, const get_data_t *get)
       extra_where = " AND (vuln_results (vulns.uuid,"
                     "                    cast (null AS integer),"
                     "                    cast (null AS integer),"
-                    "                    cast (null AS text),"
-                    "                    0)"
+                    "                    cast (null AS text))"
                     "      > 0)";
     }
   else
@@ -64620,7 +64619,6 @@ user_role_iterator_readable (iterator_t* iterator)
      "    AND (opts.report IS NULL OR results.report = opts.report)"         \
      "    AND (opts.task IS NULL OR results.task = opts.task)"               \
      "    AND (opts.host IS NULL OR results.host = opts.host)"               \
-     "    AND (results.qod >= opts.min_qod)"                                 \
      "    AND (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")"        \
      "    AND (SELECT hidden = 0 FROM tasks"                                 \
      "          WHERE tasks.id = results.task)"                              \
@@ -64642,7 +64640,7 @@ user_role_iterator_readable (iterator_t* iterator)
    { "''", "owner", KEYWORD_TYPE_STRING },                                   \
    /* Type specific columns */                                               \
    {                                                                         \
-     "vuln_results (uuid, opts.task, opts.report, opts.host, opts.min_qod)", \
+     "vuln_results (uuid, opts.task, opts.report, opts.host)",               \
      "results",                                                              \
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
@@ -64816,7 +64814,8 @@ init_vuln_iterator (iterator_t* iterator, const get_data_t *get)
 
   extra_where 
     = g_strdup (" AND (vuln_results (uuid, opts.task, opts.report,"
-                "                    opts.host, opts.min_qod) > 0)");
+                "                    opts.host) > 0)"
+                " AND (qod >= opts.min_qod)");
 
   ret = init_get_iterator2 (iterator,
                             "vuln",
@@ -64959,7 +64958,8 @@ vuln_count (const get_data_t *get)
 
   extra_where
     = g_strdup (" AND (vuln_results (uuid, opts.task, opts.report,"
-                "                    opts.host, opts.min_qod) > 0)");
+                "                    opts.host) > 0)"
+                " AND (qod >= opts.min_qod)");
 
   ret = count ("vuln", get, columns, NULL /*trash_columns*/, filter_columns, 0,
                extra_tables, extra_where, FALSE);

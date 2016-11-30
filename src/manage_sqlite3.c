@@ -2121,10 +2121,10 @@ sql_vuln_results (sqlite3_context *context, int argc,
   const unsigned char *nvt_oid, *host;
   gchar *nvt_oid_quoted, *host_quoted;
   long long int task, report;
-  int task_null, report_null, min_qod;
+  int task_null, report_null;
   int ret;
 
-  assert (argc == 5);
+  assert (argc == 4);
 
   nvt_oid = sqlite3_value_text (argv[0]);
   if (nvt_oid == NULL)
@@ -2146,18 +2146,12 @@ sql_vuln_results (sqlite3_context *context, int argc,
   else
     host_quoted = NULL;
 
-  if (sqlite3_value_type (argv[4]) != SQLITE_NULL)
-    min_qod = sqlite3_value_int (argv[4]);
-  else
-    min_qod = MIN_QOD_DEFAULT;
-
   ret
     = sql_int ("SELECT count(*) FROM results"
                " WHERE results.nvt = '%s'"
                "   AND (%d OR results.report = %llu)"
                "   AND (%d OR results.task = %llu)"
                "   AND (%d OR results.host = '%s')"
-               "   AND (results.qod >= %d)"
                "   AND (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")"
                "   AND (SELECT hidden = 0 FROM tasks"
                "         WHERE tasks.id = results.task)"
@@ -2169,8 +2163,7 @@ sql_vuln_results (sqlite3_context *context, int argc,
                task_null,
                task,
                host == NULL,
-               host ? (char*)host : "",
-               min_qod);
+               host ? (char*)host : "");
 
   g_free (nvt_oid_quoted);
   g_free (host_quoted);
@@ -2818,7 +2811,7 @@ manage_create_sql_functions ()
 
   if (sqlite3_create_function (task_db,
                                "vuln_results",
-                               5,               /* Number of args. */
+                               4,               /* Number of args. */
                                SQLITE_UTF8,
                                NULL,            /* Callback data. */
                                sql_vuln_results,

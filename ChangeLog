@@ -1,3 +1,15 @@
+2016-11-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_pg.c (manage_create_sql_functions): Remove min_qod
+	parameter in vuln_results function.
+
+	* src/manage_sql.c (resource_count, VULN_RESULTS_WHERE)
+	(VULN_ITERATOR_COLUMNS, init_vuln_iterator, vuln_count): Ignore QoD
+	of results and use QoD from NVT instead where applicable.
+
+	* src/manage_sqlite3.c (sql_vuln_results, manage_create_sql_functions):
+	Remove min_qod parameter in vuln_results function.
+
 2016-11-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* CMakeLists.txt: Remove install of removed CERT sync files.

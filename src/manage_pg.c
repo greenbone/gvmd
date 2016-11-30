@@ -1640,14 +1640,15 @@ manage_create_sql_functions ()
        "  SELECT $1;"
        "$$ LANGUAGE SQL;");
 
-  sql ("CREATE OR REPLACE FUNCTION vuln_results (text, bigint, bigint, text, integer)"
+  sql ("DROP FUNCTION IF EXISTS"
+       " vuln_results (text, bigint, bigint, text, integer);");
+  sql ("CREATE OR REPLACE FUNCTION vuln_results (text, bigint, bigint, text)"
        " RETURNS bigint AS $$"
        " SELECT count(*) FROM results"
        " WHERE results.nvt = $1"
        "   AND ($2 IS NULL OR results.task = $2)"
        "   AND ($3 IS NULL OR results.report = $3)"
        "   AND ($4 IS NULL OR results.host = $4)"
-       "   AND (results.qod >= $5)"
        "   AND (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")"
        "   AND (SELECT hidden = 0 FROM tasks"
        "         WHERE tasks.id = results.task)"
