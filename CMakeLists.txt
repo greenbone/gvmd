@@ -603,16 +603,12 @@ install (FILES tools/cert_bund_getbyname.xsl tools/dfn_cert_getbyname.xsl
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 if (BACKEND STREQUAL SQLITE3)
-  install (FILES tools/cert_db_init.sql tools/cert_bund_update.xsl
+  install (FILES tools/cert_db_init.sql
 		   DESTINATION ${OPENVAS_CERT_RES_DIR}
 		   PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 else (BACKEND STREQUAL SQLITE3)
   install (FILES tools/cert_db_init_pg.sql
            RENAME cert_db_init.sql
-		   DESTINATION ${OPENVAS_CERT_RES_DIR}
-		   PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
-  install (FILES tools/cert_bund_update_pg.xsl
-           RENAME cert_bund_update.xsl
 		   DESTINATION ${OPENVAS_CERT_RES_DIR}
 		   PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 endif (BACKEND STREQUAL SQLITE3)

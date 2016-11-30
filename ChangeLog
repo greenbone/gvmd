@@ -1,5 +1,9 @@
 2016-11-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* CMakeLists.txt: Remove install of removed CERT sync files.
+
+2016-11-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/greenbone-certdata-sync.in (update_cert_db): Remove CERT-Bund
 	update.  Now done by openvasmd.
 
