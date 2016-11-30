@@ -734,41 +734,6 @@ update_cert_db() {
 
   log_notice "Updating data from feed"
 
-  # Update CERT-Bund
-  xmlcount=$(ls $CERT_DIR/CB-K*.xml 2> /dev/null | wc -l)
-  if [ $xmlcount -ne 0 ]
-  then
-    for certfile in $CERT_DIR/CB-K*.xml
-    do
-      [ -e "$certfile" ] || break  # No file found
-      filedate=`stat -c "%Y" $certfile | cut -d " " -f 1 | tr -d "-"`
-      filedate=$(( $filedate - ( $filedate % 60 ) ))
-      if [ $filedate -gt $DB_LASTUPDATE ]
-      then
-        log_info "Updating $certfile"
-        reset_sql_tries
-        until [ "$try_sql" -eq 0 ]
-        do
-          exec 4>&1
-          exit_codes=$(
-            (
-              set_interrupt_trap
-              (xsltproc --stringparam refdate "$CB_REFDATE" $CERT_RES_DIR/cert_bund_update.xsl $certfile || echo "xsltproc:$?" >&3) | \
-              (sql | sed '/^\s*$/d' || echo "sqlite3:$?" >&3)
-            ) 3>&1 >&4
-          )
-          exec 4>&-
-          test_exit_codes "Update of CERT-Bund Advisories failed at file '$certfile'"
-        done
-        updated_cb=1
-      else
-        log_info "Skipping $certfile, file is older than last revision"
-      fi
-    done
-  else
-    log_warning "No CERT-Bund advisories found in $CERT_DIR"
-  fi
-
   update_cert_db_rest
 
   LAST_UPDATE_TIMESTAMP=`sed 's/^\(.\{8\}\)/\1 /' $TIMESTAMP | env TZ="UTC" date +%s -f -`

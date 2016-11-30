@@ -1,3 +1,11 @@
+2016-11-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* tools/greenbone-certdata-sync.in (update_cert_db): Remove CERT-Bund
+	update.  Now done by openvasmd.
+
+	* tools/cert_bund_update_pg.xsl, tools/cert_bund_update.xsl: Remove.  No
+	longer used.
+
 2016-11-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (VULN_ITERATOR_FILTER_COLUMNS)
