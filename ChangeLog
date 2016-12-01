@@ -1,3 +1,7 @@
+2016-12-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_pg.c (manage_update_cert_db_cleanup): Correct args.
+
 2016-11-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_pg.c (manage_create_sql_functions): Remove min_qod

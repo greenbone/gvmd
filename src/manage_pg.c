@@ -187,8 +187,6 @@ manage_update_cert_db_cleanup ()
        "                                  cve_refs_arg INTEGER);");
 
   sql ("DROP FUNCTION merge_bund_adv (uuid_arg TEXT,"
-       "                              name_arg TEXT,"
-       "                              comment_arg TEXT,"
        "                              creation_time_arg INTEGER,"
        "                              modification_time_arg INTEGER,"
        "                              title_arg TEXT,"
