@@ -1,3 +1,10 @@
+2016-12-02  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Make it possible to compile openvas-manager on FreeBSD.
+
+	* src/manage_migrators.c: Include sys/wait.h to ensure WIFEXITED and
+	WEXITSTATUS are defined.
+
 2016-12-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (manage_update_cert_db_cleanup): Correct args.

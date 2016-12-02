@@ -129,6 +129,10 @@
 #include <glib/gstdio.h>
 #include <assert.h>
 #include <sys/stat.h>
+#include <sys/param.h>
+#ifdef __FreeBSD__
+#include <sys/wait.h>
+#endif
 #include <ctype.h>
 #include <dirent.h>
 
