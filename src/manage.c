@@ -67,7 +67,8 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <openvas/base/cvss.h>
+#include <gvm/base/cvss.h>
+
 #include <openvas/base/gpgme_util.h>
 #include <openvas/base/openvas_string.h>
 #include <openvas/base/openvas_file.h>

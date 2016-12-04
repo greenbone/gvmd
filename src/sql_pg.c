@@ -35,7 +35,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <openvas/base/array.h>
+#include <gvm/base/array.h>
 
 #undef G_LOG_DOMAIN
 /**

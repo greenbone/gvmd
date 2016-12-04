@@ -1,3 +1,15 @@
+2016-12-04  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* CMakeLists.txt, INSTALL: Require libgvm_base.
+
+	* src/CMakeLists.txt: Link gvmlibs-base.
+
+	* src/manage.h, src/sql_pg.c: Adjust include path for array.h.
+
+	* src/manage.c: Adjust include path for cvss.h.
+
+	* src/openvasmd.c: Adjust include path for pidfile.h.
+
 2016-12-02  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Make it possible to compile openvas-manager on FreeBSD.
