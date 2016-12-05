@@ -1,3 +1,8 @@
+2016-12-05  Benoît Allard  <benoit.allard@greenbone.net>
+
+	* CMakeLists.txt: Dont use the hardening flags when building in debug
+	  mode.
+
 2016-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Update CVSS in --update-cert-db.  Remoe --update-cvss-cert-bund and
