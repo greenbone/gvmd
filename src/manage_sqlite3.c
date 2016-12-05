@@ -3519,6 +3519,16 @@ manage_db_init (const gchar *name)
 }
 
 /**
+ * @brief Ensure db is in WAL mode.
+ */
+int
+manage_db_check_mode ()
+{
+  if (strcasecmp (name, "cert") == 0)
+    sql ("PRAGMA cert.journal_mode=WAL;");
+}
+
+/**
  * @brief Check whether CERT is available.
  *
  * @return 1 if CERT database is loaded, else 0.
@@ -3588,6 +3598,29 @@ manage_scap_loaded ()
   loaded = !!sql_int ("SELECT count(*) FROM scap.sqlite_master"
                       " WHERE type = 'table' AND name = 'cves';");
   return loaded;
+}
+
+/**
+ * @brief Check if CERT db exists.
+ *
+ * @return 1 if exists, else 0.
+ */
+int
+manage_cert_db_exists ()
+{
+  if (access (OPENVAS_CERT_DATA_DIR "/cert.db", R_OK))
+    switch (errno)
+      {
+        case ENOENT:
+          return 0;
+          break;
+        default:
+          g_warning ("%s: failed to stat CERT database: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          return 1;
+      }
+  return 1;
 }
 
 /**

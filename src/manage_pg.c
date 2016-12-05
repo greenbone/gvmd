@@ -89,6 +89,21 @@ manage_db_empty ()
 /* SCAP. */
 
 /**
+ * @brief Check if CERT db exists.
+ *
+ * @return 1 if exists, else 0.
+ */
+int
+manage_cert_db_exists ()
+{
+  if (sql_int ("SELECT exists (SELECT schema_name"
+               "               FROM information_schema.schemata"
+               "               WHERE schema_name = 'cert');"))
+    return 1;
+  return 0;
+}
+
+/**
  * @brief Database specific setup for CERT update.
  *
  * @return 0 success, -1 error.
@@ -2790,6 +2805,10 @@ manage_db_remove (const gchar *name)
 
 /**
  * @brief Init external database.
+ *
+ * @param[in]  name  Name.  "cert" or "scap".
+ *
+ * @return 0 success, -1 error.
  */
 int
 manage_db_init (const gchar *name)
@@ -2896,6 +2915,17 @@ manage_db_init (const gchar *name)
     }
 
   return 0;
+}
+
+/**
+ * @brief Dummy function.
+ *
+ * @param[in]  name  Dummy arg.
+ */
+void
+manage_db_check_mode (const gchar *name)
+{
+  return;
 }
 
 /**

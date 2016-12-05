@@ -62598,6 +62598,46 @@ update_cert_timestamp ()
 }
 
 /**
+ * @brief Reinit CERT db.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+cert_db_reinit ()
+{
+  g_info ("Reinitialization of the database necessary");
+  manage_db_remove ("cert");
+  if (manage_db_init ("cert"))
+    {
+      g_warning ("Could not reinitialize CERT database");
+      return -1;
+    }
+  return 0;
+}
+
+/**
+ * @brief Ensure CERT db is at the right version, and in the right mode.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+check_cert_db_version ()
+{
+  switch (manage_cert_db_version ())
+    {
+      case 0:
+      case 1:
+      case 2:
+      case 3:
+      case 4:
+      case 5:
+       return cert_db_reinit ();
+       break;
+    }
+  return 0;
+}
+
+/**
  * @brief Update CERT DB.
  *
  * @param[in]  log_config        Log configuration.
@@ -62622,6 +62662,24 @@ manage_update_cert_db (GSList *log_config, const gchar *database)
     return ret;
 
   init_manage_process (0, db);
+
+  if (manage_cert_db_exists ())
+    {
+      g_info ("Database exists already");
+
+      if (check_cert_db_version ())
+        return -1;
+      manage_db_check_mode ("cert");
+    }
+  else
+    {
+      g_info ("Initializing CERT database");
+      if (manage_db_init ("cert"))
+        {
+          g_warning ("Could not initialize CERT database");
+          return -1;
+        }
+    }
 
   g_info ("Updating data from feed");
 

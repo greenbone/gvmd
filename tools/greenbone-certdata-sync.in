@@ -522,18 +522,6 @@ reinit () {
   done
 }
 
-check_db_version () {
-  DB_VERSION=`sql "select value from ${SCHEMA_CERT}meta where name = 'database_version';" 2>/dev/null | tr -d '\n\r' || echo 0`
-  case "$DB_VERSION" in
-    0) reinit;;
-    1) reinit;;
-    2) reinit;;
-    3) reinit;;
-    4) reinit;;
-    5) reinit;;
-  esac
-}
-
 do_help () {
   echo "$0: Sync CERT data"
 
@@ -561,22 +549,6 @@ do_help () {
   exit 0
 }
 
-cert_db_exists () {
-  if [ $POSTGRES -eq 1 ] ;
-  then
-    EXISTS=`sql_pg "SELECT exists (SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'cert');" 2>/tmp/ERR | tr -d '\n\r' || echo 0`
-    if [ "$EXISTS" = "f" ] ;
-    then
-      return 1;
-    fi
-    return 0;
-  elif [ -f "$CERT_DB" ]
-  then
-    return 0;
-  fi
-  return 1;
-}
-
 update_cert_db_rest () {
   log_info "Calling openvasmd to update CERT db"
   if [ -x "@SBINDIR@/openvasmd" ]
@@ -591,51 +563,7 @@ update_cert_db_rest () {
   fi
 }
 
-ensure_sqlite3_wal_mode () {
-  if [ $POSTGRES -eq 1 ] ; then
-    return
-  fi
-  if [ ! -e $CERT_DB ]
-  then
-    log_err "database missing, aborting synchronization."
-    exit 1
-  fi
-  reset_sql_tries
-  until [ "$try_sql" -eq 0 ]
-  do
-    DUMMY=`$SQLITE3 $CERT_DB "PRAGMA journal_mode=WAL;"`
-    test_sql_exit "Could not set journal mode to WAL"
-  done
-}
-
 update_cert_db() {
-  if [ -z "$updated_cb" ]
-  then
-    updated_cb=0
-  fi
-
-  if [ -z "$updated_dfn" ]
-  then
-    updated_dfn=0
-  fi
-
-  if cert_db_exists
-  then
-    log_info "Database exists already"
-
-    check_db_version
-
-    ensure_sqlite3_wal_mode
-  else
-    log_notice "Initializing CERT database."
-    reset_sql_tries
-    until [ "$try_sql" -eq 0 ]
-    do
-      sql < $CERT_RES_DIR/cert_db_init.sql
-      test_sql_exit "Could not initialize CERT database"
-    done
-  fi
-
   update_cert_db_rest
 }
 

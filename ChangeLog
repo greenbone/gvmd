@@ -1,5 +1,26 @@
 2016-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Move database preparation from CERT sync script to openvasmd.
+
+	* src/manage_pg.c (manage_cert_db_exists): New function.
+	(manage_db_init): Add missing arg doc.
+	(manage_db_check_mode): New function.
+
+	* src/manage_sqlite3.c (manage_cert_db_exists, manage_db_check_mode): New
+	function.
+
+	* src/manage_sql.c (cert_db_reinit, check_cert_db_version): New functions.
+	(manage_update_cert_db): Ensure that db exists and is the right version
+	beforehand.
+
+	* src/manage_sql.h: Add headers accordingly.
+
+	* tools/greenbone-certdata-sync.in (check_db_version, cert_db_exists)
+	(ensure_sqlite3_wal_mode): Remove.
+	(update_cert_db): Remove initial checks.
+
+2016-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c: Add missing headers.
 
 2016-12-05  Benoît Allard  <benoit.allard@greenbone.net>

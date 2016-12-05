@@ -386,4 +386,8 @@ int manage_update_cert_db_init ();
 
 void manage_update_cert_db_cleanup ();
 
+int manage_cert_db_exists ();
+
+void manage_db_check_mode (const gchar *);
+
 #endif /* not OPENVAS_MANAGER_MANAGE_SQL_H */
