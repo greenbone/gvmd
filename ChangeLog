@@ -1,5 +1,10 @@
 2016-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/greenbone-certdata-sync.in (update_cert_db_rest): Remove.
+	(update_cert_db): Do what update_cert_db_rest did, instead of calling it.
+
+2016-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sqlite3.c (manage_db_check_mode): Add missing arg.
 
 2016-12-05  Matthew Mundell <matthew.mundell@greenbone.net>

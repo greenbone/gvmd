@@ -549,7 +549,7 @@ do_help () {
   exit 0
 }
 
-update_cert_db_rest () {
+update_cert_db () {
   log_info "Calling openvasmd to update CERT db"
   if [ -x "@SBINDIR@/openvasmd" ]
   then
@@ -561,10 +561,6 @@ update_cert_db_rest () {
   else
     log_warning "Command @SBINDIR@/openvasmd not found"
   fi
-}
-
-update_cert_db() {
-  update_cert_db_rest
 }
 
 do_rsync_community_feed () {
