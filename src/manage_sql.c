@@ -353,6 +353,12 @@ report_counts_id_full (report_t, int *, int *, int *, int *, int *, int *,
 static int
 check_report_format (const gchar *);
 
+static int
+update_cvss_dfn_cert (int, int, int);
+
+static int
+update_cvss_cert_bund (int, int, int);
+
 
 /* Variables. */
 
