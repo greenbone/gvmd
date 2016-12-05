@@ -511,17 +511,6 @@ cert_db_remove () {
   fi
 }
 
-reinit () {
-  log_notice "Reinitialization of the database necessary."
-  cert_db_remove
-  reset_sql_tries
-  until [ "$try_sql" -eq 0 ]
-  do
-    sql < $CERT_RES_DIR/cert_db_init.sql
-    test_sql_exit "Could not reinitialize CERT database"
-  done
-}
-
 do_help () {
   echo "$0: Sync CERT data"
 
@@ -687,16 +676,6 @@ do_self_test () {
   fi
 }
 
-check_alerts (){
-  log_info "Calling openvasmd to check for alerts"
-  if [ -x "@SBINDIR@/openvasmd" ]
-  then
-    @SBINDIR@/openvasmd --check-alerts
-  else
-    log_warning "Command @SBINDIR@/openvasmd not found"
-  fi
-}
-
 psql_setup "tasks"
 while test $# -gt 0; do
  case "$1" in
@@ -792,6 +771,5 @@ else
   fi
 fi
 sync_certdata
-check_alerts
 
 exit 0
