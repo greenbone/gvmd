@@ -6855,27 +6855,13 @@ DEF_ACCESS (task_role_iterator_uuid, 4);
 /**
  * @brief Check if any SecInfo alerts are due.
  *
- * @param[in]  log_config  Log configuration.
- * @param[in]  database    Location of manage database.
- *
  * @return 0 success, -1 error,
  *         -2 database is wrong version, -3 database needs to be initialised
  *         from server.
  */
-int
-manage_check_alerts (GSList *log_config, const gchar *database)
+void
+check_alerts ()
 {
-  int ret;
-
-  g_info ("   Checking alerts.\n");
-
-  ret = manage_option_setup (log_config, database);
-  if (ret)
-    return ret;
-
-  /* Setup a dummy user, so that create_user will work. */
-  current_credentials.uuid = "";
-
   if (manage_scap_loaded ())
     {
       int max_time;
@@ -6942,6 +6928,33 @@ manage_check_alerts (GSList *log_config, const gchar *database)
                max_time);
         }
     }
+}
+
+/**
+ * @brief Check if any SecInfo alerts are due.
+ *
+ * @param[in]  log_config  Log configuration.
+ * @param[in]  database    Location of manage database.
+ *
+ * @return 0 success, -1 error,
+ *         -2 database is wrong version, -3 database needs to be initialised
+ *         from server.
+ */
+int
+manage_check_alerts (GSList *log_config, const gchar *database)
+{
+  int ret;
+
+  g_info ("   Checking alerts.\n");
+
+  ret = manage_option_setup (log_config, database);
+  if (ret)
+    return ret;
+
+  /* Setup a dummy user, so that create_user will work. */
+  current_credentials.uuid = "";
+
+  check_alerts ();
 
   current_credentials.uuid = NULL;
 
@@ -62435,6 +62448,8 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
 /**
  * @brief Update DFN-CERTs.
  *
+ * Assume that the databases are attached.
+ *
  * @param[in]  last_cert_update  Time of last CERT update from meta.
  *
  * @return 0 success, -1 error.
@@ -62483,6 +62498,8 @@ update_dfn_cert_advisories (int last_cert_update)
 
 /**
  * @brief Update CERT-Bunds.
+ *
+ * Assume that the databases are attached.
  *
  * @param[in]  last_cert_update  Time of last CERT update from meta.
  *
@@ -62690,6 +62707,7 @@ manage_update_cert_db (GSList *log_config, const gchar *database)
                                 "                 '0');");
   g_debug ("%s: last_cert_update: %i", __FUNCTION__, last_cert_update);
 
+  // FIX if was missing creates twice
   if (last_cert_update == 0)
     {
       /* Happens when initial sync was aborted. */
@@ -62755,6 +62773,11 @@ manage_update_cert_db (GSList *log_config, const gchar *database)
   printf ("Updating CERT info succeeded.\n");
 
   manage_update_cert_db_cleanup ();
+
+  g_info ("Checking for alerts");
+
+  check_alerts ();
+
   cleanup_manage_process (TRUE);
 
   return 0;
