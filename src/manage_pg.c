@@ -2775,6 +2775,130 @@ manage_attach_databases ()
 }
 
 /**
+ * @brief Attach external databases.
+ */
+void
+manage_db_remove (const gchar *name)
+{
+  if (strcasecmp (name, "cert") == 0)
+    sql ("DROP SCHEMA IF EXISTS cert CASCADE;");
+  else if (strcasecmp (name, "scap") == 0)
+    sql ("DROP SCHEMA IF EXISTS scap CASCADE;");
+  else
+    assert (0);
+}
+
+/**
+ * @brief Init external database.
+ */
+int
+manage_db_init (const gchar *name)
+{
+  if (strcasecmp (name, "cert") == 0)
+    {
+      sql ("DROP SCHEMA IF EXISTS cert CASCADE;");
+      sql ("CREATE SCHEMA cert;");
+
+      /* Create tables and indexes. */
+
+      sql ("CREATE TABLE cert.meta"
+           " (id SERIAL PRIMARY KEY,"
+           "  name text UNIQUE,"
+           "  value text);");
+
+      sql ("CREATE TABLE cert.cert_bund_advs"
+           " (id SERIAL PRIMARY KEY,"
+           "  uuid text UNIQUE,"
+           "  name text UNIQUE,"
+           "  comment TEXT,"
+           "  creation_time integer,"
+           "  modification_time integer,"
+           "  title TEXT,"
+           "  summary TEXT,"
+           "  cve_refs INTEGER,"
+           "  max_cvss FLOAT);");
+      sql ("CREATE UNIQUE INDEX cert_bund_advs_idx"
+           " ON cert.cert_bund_advs (name);");
+      sql ("CREATE INDEX cert_bund_advs_by_creation_time"
+           " ON cert.cert_bund_advs (creation_time);");
+
+      sql ("CREATE TABLE cert.cert_bund_cves"
+           " (adv_id INTEGER,"
+           "  cve_name VARCHAR(20));");
+      sql ("CREATE INDEX cert_bund_cves_adv_idx"
+           " ON cert.cert_bund_cves (adv_id);");
+      sql ("CREATE INDEX cert_bund_cves_cve_idx"
+           " ON cert.cert_bund_cves (cve_name);");
+
+      sql ("CREATE TABLE cert.dfn_cert_advs"
+           " (id SERIAL PRIMARY KEY,"
+           "  uuid text UNIQUE,"
+           "  name text UNIQUE,"
+           "  comment TEXT,"
+           "  creation_time integer,"
+           "  modification_time integer,"
+           "  title TEXT,"
+           "  summary TEXT,"
+           "  cve_refs INTEGER,"
+           "  max_cvss FLOAT);");
+      sql ("CREATE UNIQUE INDEX dfn_cert_advs_idx"
+           " ON cert.dfn_cert_advs (name);");
+      sql ("CREATE INDEX dfn_cert_advs_by_creation_time"
+           " ON cert.dfn_cert_advs (creation_time);");
+
+      sql ("CREATE TABLE cert.dfn_cert_cves"
+           " (adv_id INTEGER,"
+           "  cve_name text);");
+      sql ("CREATE INDEX dfn_cert_cves_adv_idx"
+           " ON cert.dfn_cert_cves (adv_id);");
+      sql ("CREATE INDEX dfn_cert_cves_cve_idx"
+           " ON cert.dfn_cert_cves (cve_name);");
+
+      /* Create deletion triggers. */
+
+      sql ("CREATE OR REPLACE FUNCTION cert.cert_delete_bund_adv ()"
+           " RETURNS TRIGGER AS $$"
+           " BEGIN"
+           "   DELETE FROM cert_bund_cves where adv_id = old.id;"
+           "   RETURN old;"
+           " END;"
+           "$$ LANGUAGE plpgsql;");
+
+      sql ("CREATE TRIGGER bund_delete"
+           " AFTER DELETE ON cert.cert_bund_advs"
+           " FOR EACH ROW EXECUTE PROCEDURE cert.cert_delete_bund_adv ();");
+
+      sql ("CREATE OR REPLACE FUNCTION cert.cert_delete_cve ()"
+           " RETURNS TRIGGER AS $$"
+           " BEGIN"
+           "   DELETE FROM dfn_cert_cves where adv_id = old.id;"
+           "   RETURN old;"
+           " END;"
+           "$$ LANGUAGE plpgsql;");
+
+      sql ("CREATE TRIGGER cve_delete"
+           " AFTER DELETE ON cert.dfn_cert_advs"
+           " FOR EACH ROW EXECUTE PROCEDURE cert.cert_delete_cve ();");
+
+      /* Init tables. */
+
+      sql ("INSERT INTO cert.meta (name, value)"
+           " VALUES ('database_version', '6');");
+      sql ("INSERT INTO cert.meta (name, value)"
+           " VALUES ('last_update', '0');");
+    }
+  else if (strcasecmp (name, "scap") == 0)
+    assert (0); // FIX
+  else
+    {
+      assert (0);
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
  * @brief Check whether CERT is available.
  *
  * @return 1 if CERT database is loaded, else 0.

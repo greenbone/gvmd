@@ -1,3 +1,22 @@
+2016-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Move more of the CERT update script into openvasmd --update-cert-db.
+
+	* src/manage_pg.c (manage_db_remove, manage_db_init): New functions.
+
+	* src/manage_sqlite3.c (manage_db_remove, manage_db_init): New functions.
+
+	* src/manage_sql.c (update_dfn_cert_advisories)
+	(update_cert_bund_advisories): Add arg last_cert_update.
+	(update_cert_timestamp): New function.
+	(manage_update_cert_db): Get last CERT update time here instead of in both
+	Bund and DFN functions.  Init DB if data was inconsistent.  Update
+	timestamp at the end.
+
+	* tools/greenbone-certdata-sync.in (update_cert_db): Remove unused args.
+	Remove "Inconsistent data" check and timestamp update, which are now in
+	openvasmd.
+
 2016-12-04  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* CMakeLists.txt, INSTALL: Require libgvm_base.

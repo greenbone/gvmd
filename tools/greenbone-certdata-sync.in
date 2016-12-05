@@ -595,6 +595,7 @@ scap_db_exists () {
 
 update_cvss () {
   log_info "Calling openvasmd to update CVSS max"
+  # FIX updated_* no longer set by update_cert_db
   if [ -x "@SBINDIR@/openvasmd" ]
   then
     if [ 0 -ne "$updated_cb" ]
@@ -635,6 +636,7 @@ update_cert_db_rest () {
     log_warning "Command @SBINDIR@/openvasmd not found"
   fi
 
+  # FIX move into manager before timestamp
   update_cvss
 }
 
@@ -672,20 +674,6 @@ update_cert_db() {
 
     check_db_version
 
-    reset_sql_tries
-    until [ "$try_sql" -eq 0 ]
-    do
-      CB_REFDATE=`sql "SELECT max(modification_time) from ${SCHEMA_CERT}cert_bund_advs;"`
-      test_sql_exit "Could not get CERT-Bund reference date from database"
-    done
-
-    reset_sql_tries
-    until [ "$try_sql" -eq 0 ]
-    do
-      DFN_REFDATE=`sql "SELECT max(modification_time) from ${SCHEMA_CERT}dfn_cert_advs;"`
-      test_sql_exit "Could not get DFN-CERT reference date from database"
-    done
-
     ensure_sqlite3_wal_mode
   else
     log_notice "Initializing CERT database."
@@ -695,55 +683,9 @@ update_cert_db() {
       sql < $CERT_RES_DIR/cert_db_init.sql
       test_sql_exit "Could not initialize CERT database"
     done
-    DB_LASTUPDATE=0
   fi
-
-  reset_sql_tries
-  until [ "$try_sql" -eq 0 ]
-  do
-    DB_LASTUPDATE=`sql "select value from ${SCHEMA_CERT}meta where name = 'last_update';"`
-    test_sql_exit "Could not get last_update timestamp from CERT database"
-  done
-
-  if [ -z "$CB_REFDATE" ]
-  then
-    CB_REFDATE=0
-  fi
-
-  if [ -z "$DFN_REFDATE" ]
-  then
-    DFN_REFDATE=0
-  fi
-
-  if [ -z "$DB_LASTUPDATE" ]
-  then
-    # Happens when initial sync was aborted
-    log_warning "Inconsistent data. Resetting CERT database."
-    cert_db_remove
-
-    reset_sql_tries
-    until [ "$try_sql" -eq 0 ]
-    do
-      sql < $CERT_RES_DIR/cert_db_init.sql
-      test_sql_exit "Could not reinitialize CERT database"
-    done
-    CB_REFDATE=0
-    DFN_REFDATE=0
-    DB_LASTUPDATE=0
-  fi
-
-  log_notice "Updating data from feed"
 
   update_cert_db_rest
-
-  LAST_UPDATE_TIMESTAMP=`sed 's/^\(.\{8\}\)/\1 /' $TIMESTAMP | env TZ="UTC" date +%s -f -`
-
-  reset_sql_tries
-  until [ "$try_sql" -eq 0 ]
-  do
-    sql "UPDATE ${SCHEMA_CERT}meta SET value ='$LAST_UPDATE_TIMESTAMP' WHERE name = 'last_update';"
-    test_sql_exit "Could not update last_update timestamp in CERT database"
-  done
 }
 
 do_rsync_community_feed () {

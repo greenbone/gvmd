@@ -118,6 +118,12 @@ manage_cert_loaded ();
 int
 manage_scap_loaded ();
 
+void
+manage_db_remove (const gchar *);
+
+int
+manage_db_init (const gchar *);
+
 
 /* Headers for symbols defined in manage.c which are private to libmanage. */
 
@@ -62021,6 +62027,8 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
   gsize xml_len;
   GStatBuf state;
 
+  g_info ("%s: %s", __FUNCTION__, xml_path);
+
   full_path = g_build_filename (OPENVAS_CERT_DATA_DIR, xml_path, NULL);
 
   if (g_stat (full_path, &state))
@@ -62421,13 +62429,15 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
 /**
  * @brief Update DFN-CERTs.
  *
+ * @param[in]  last_cert_update  Time of last CERT update from meta.
+ *
  * @return 0 success, -1 error.
  */
 static int
-update_dfn_cert_advisories ()
+update_dfn_cert_advisories (int last_cert_update)
 {
   GError *error;
-  int count, last_cert_update, last_dfn_update;
+  int count, last_dfn_update;
   GDir *dir;
   const gchar *xml_path;
 
@@ -62440,9 +62450,6 @@ update_dfn_cert_advisories ()
       g_error_free (error);
       return -1;
     }
-
-  last_cert_update = sql_int ("SELECT value FROM cert.meta"
-                              " WHERE name = 'last_update';");
 
   last_dfn_update = sql_int ("SELECT max (modification_time)"
                              " FROM cert.dfn_cert_advs;");
@@ -62471,13 +62478,15 @@ update_dfn_cert_advisories ()
 /**
  * @brief Update CERT-Bunds.
  *
+ * @param[in]  last_cert_update  Time of last CERT update from meta.
+ *
  * @return 0 success, -1 error.
  */
 static int
-update_cert_bund_advisories ()
+update_cert_bund_advisories (int last_cert_update)
 {
   GError *error;
-  int count, last_cert_update, last_bund_update;
+  int count, last_bund_update;
   GDir *dir;
   const gchar *xml_path;
 
@@ -62491,13 +62500,9 @@ update_cert_bund_advisories ()
       return -1;
     }
 
-  last_cert_update = sql_int ("SELECT value FROM cert.meta"
-                              " WHERE name = 'last_update';");
-
   last_bund_update = sql_int ("SELECT max (modification_time)"
                               " FROM cert.cert_bund_advs;");
 
-  g_debug ("%s: VS: " OPENVAS_CERT_DATA_DIR "/CB-K*.xml", __FUNCTION__);
   count = 0;
   while ((xml_path = g_dir_read_name (dir)))
     if (fnmatch ("CB-K*.xml", xml_path, 0) == 0)
@@ -62519,6 +62524,74 @@ update_cert_bund_advisories ()
 }
 
 /**
+ * @brief Update timestamp in CERT db from feed timestamp.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+update_cert_timestamp ()
+{
+  struct tm tm;
+  GError *error;
+  gchar *timestamp;
+  gsize len;
+  time_t stamp;
+
+  error = NULL;
+  g_file_get_contents (OPENVAS_CERT_DATA_DIR "/timestamp", &timestamp, &len,
+                       &error);
+  if (error)
+    {
+      if (error->code == G_FILE_ERROR_NOENT)
+        stamp = 0;
+      else
+        {
+          g_warning ("%s: Failed to get timestamp: %s\n",
+                     __FUNCTION__,
+                     error->message);
+          return -1;
+        }
+    }
+  else
+    {
+      if (strlen (timestamp) < 8)
+        {
+          g_warning ("%s: Feed timestamp too short: %s\n",
+                     __FUNCTION__,
+                     timestamp);
+          g_free (timestamp);
+          return -1;
+        }
+
+      timestamp[8] = '\0';
+      g_debug ("%s: parsing: %s", __FUNCTION__, timestamp);
+      // FIX UTC
+      memset (&tm, 0, sizeof (struct tm));
+      if (strptime (timestamp, "%Y%m%d", &tm) == NULL)
+        {
+          g_warning ("%s: failed to parse timestamp: %s\n", __FUNCTION__,
+                     timestamp);
+          g_free (timestamp);
+          return -1;
+        }
+      g_free (timestamp);
+
+      stamp = mktime (&tm);
+      if (stamp == -1)
+        {
+          g_warning ("%s: mktime error\n", __FUNCTION__);
+          return -1;
+        }
+    }
+
+  g_debug ("%s: setting last_update: %lld", __FUNCTION__, (long long) stamp);
+  sql ("UPDATE cert.meta SET value = '%lld' WHERE name = 'last_update';",
+       (long long) stamp);
+
+  return 0;
+}
+
+/**
  * @brief Update CERT DB.
  *
  * @param[in]  log_config        Log configuration.
@@ -62530,7 +62603,7 @@ int
 manage_update_cert_db (GSList *log_config, const gchar *database)
 {
   const gchar *db;
-  int ret;
+  int ret, last_cert_update;
 
   if (openvas_auth_init ())
     return -1;
@@ -62544,20 +62617,56 @@ manage_update_cert_db (GSList *log_config, const gchar *database)
 
   init_manage_process (0, db);
 
+  g_info ("Updating data from feed");
+
+  last_cert_update = 0;
+  if (manage_cert_loaded ())
+    last_cert_update = sql_int ("SELECT coalesce ((SELECT value FROM cert.meta"
+                                "                  WHERE name = 'last_update'),"
+                                "                 '0');");
+  g_debug ("%s: last_cert_update: %i", __FUNCTION__, last_cert_update);
+
+  if (last_cert_update == 0)
+    {
+      /* Happens when initial sync was aborted. */
+      g_warning ("Inconsistent data. Resetting CERT database.");
+      manage_db_remove ("cert");
+      if (manage_db_init ("cert"))
+        {
+          g_warning ("Could not reinitialize CERT database");
+          return -1;
+        }
+    }
+
+  g_debug ("%s: cert db init", __FUNCTION__);
+
   if (manage_update_cert_db_init ())
     {
       cleanup_manage_process (TRUE);
       return -1;
     }
 
-  if (update_dfn_cert_advisories ())
+  g_debug ("%s: update dfn", __FUNCTION__);
+
+  if (update_dfn_cert_advisories (last_cert_update))
     {
       manage_update_cert_db_cleanup ();
       cleanup_manage_process (TRUE);
       return -1;
     }
 
-  if (update_cert_bund_advisories ())
+  g_debug ("%s: update bund", __FUNCTION__);
+
+  if (update_cert_bund_advisories (last_cert_update))
+    {
+      manage_update_cert_db_cleanup ();
+      cleanup_manage_process (TRUE);
+      return -1;
+    }
+
+  g_debug ("%s: update timestamp", __FUNCTION__);
+
+  if (update_cert_timestamp ())
     {
       manage_update_cert_db_cleanup ();
       cleanup_manage_process (TRUE);
@@ -62619,6 +62728,11 @@ manage_update_cvss_cert_bund (GSList *log_config, const gchar *database,
 
   last_cert_update = sql_int ("SELECT value FROM cert.meta"
                               " WHERE name = 'last_update';");
+
+  g_debug ("%s: last_scap_update: %lld", __FUNCTION__,
+           (long long) last_scap_update);
+  g_debug ("%s: last_cert_update: %lld", __FUNCTION__,
+           (long long) last_cert_update);
 
   if (updated_cert_bund || (last_scap_update > last_cert_update))
     {
@@ -64809,10 +64923,10 @@ init_vuln_iterator (iterator_t* iterator, const get_data_t *get)
   else
     filter = NULL;
 
-  extra_tables 
+  extra_tables
     = vuln_iterator_opts_from_filter (filter ? filter : get->filter);
 
-  extra_where 
+  extra_where
     = g_strdup (" AND (vuln_results (uuid, opts.task, opts.report,"
                 "                    opts.host) > 0)"
                 " AND (qod >= opts.min_qod)");
@@ -64953,7 +65067,7 @@ vuln_count (const get_data_t *get)
   else
     filter = NULL;
 
-  extra_tables 
+  extra_tables
     = vuln_iterator_opts_from_filter (filter ? filter : get->filter);
 
   extra_where
