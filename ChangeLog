@@ -1,5 +1,9 @@
 2016-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sqlite3.c (manage_db_check_mode): Add missing arg.
+
+2016-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move database preparation from CERT sync script to openvasmd.
 
 	* src/manage_pg.c (manage_cert_db_exists): New function.

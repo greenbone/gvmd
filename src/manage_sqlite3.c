@@ -3520,9 +3520,11 @@ manage_db_init (const gchar *name)
 
 /**
  * @brief Ensure db is in WAL mode.
+ *
+ * @param[in]  name  Name, like "cert" or "scap".
  */
-int
-manage_db_check_mode ()
+void
+manage_db_check_mode (const gchar *name)
 {
   if (strcasecmp (name, "cert") == 0)
     sql ("PRAGMA cert.journal_mode=WAL;");
