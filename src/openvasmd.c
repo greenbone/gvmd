@@ -1569,8 +1569,6 @@ main (int argc, char** argv)
   static gboolean disable_scheduling = FALSE;
   static gboolean get_users = FALSE;
   static gboolean get_scanners = FALSE;
-  static gchar *update_cvss_cert_bund = NULL;
-  static gchar *update_cvss_dfn_cert = NULL;
   static gboolean update_cert_db = FALSE;
   static gboolean update_nvt_cache = FALSE;
   static gboolean rebuild_nvt_cache = FALSE;
@@ -1688,8 +1686,6 @@ main (int argc, char** argv)
         { "role", '\0', 0, G_OPTION_ARG_STRING, &role, "Role for --create-user and --get-users.", "<role>" },
         { "update", 'u', 0, G_OPTION_ARG_NONE, &update_nvt_cache, "Update the NVT cache and exit.", NULL },
         { "update-cert-db", '\0', 0, G_OPTION_ARG_NONE, &update_cert_db, "Update CERT info.", NULL },
-        { "update-cvss-cert-bund", '\0', 0, G_OPTION_ARG_STRING, &update_cvss_cert_bund, "Update CERT-Bund Max CVSS and exit.", NULL },
-        { "update-cvss-dfn-cert", '\0', 0, G_OPTION_ARG_STRING, &update_cvss_dfn_cert, "Update DFN-CERT Max CVSS and exit.", NULL },
         { "unix-socket", 'c', 0, G_OPTION_ARG_STRING, &manager_address_string_unix, "Listen on UNIX socket at <filename>.", "<filename>" },
         { "user", '\0', 0, G_OPTION_ARG_STRING, &user, "User for --new-password.", "<username>" },
         { "gnutls-priorities", '\0', 0, G_OPTION_ARG_STRING, &priorities, "Sets the GnuTLS priorities for the Manager socket.", "<priorities-string>" },
@@ -2201,98 +2197,6 @@ main (int argc, char** argv)
           case -5:
             g_critical
              ("%s: CERT database not found. Cannot update CERT info.\n",
-              __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -6:
-            g_critical
-             ("%s: SCAP database not found. Cannot update max_cvss.\n",
-              __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -1:
-          default:
-            g_critical ("%s: internal error\n", __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-        }
-    }
-
-  if (update_cvss_cert_bund)
-    {
-      /* Update CVSS max and then exit. */
-
-      proctitle_set ("openvasmd: Updating CERT-Bund CVSS max");
-
-      g_info ("   Updating CERT-Bund CVSS max.\n");
-
-      switch (manage_update_cvss_cert_bund (log_config,
-                                            database,
-                                            strcmp (update_cvss_cert_bund,
-                                                    "0")))
-        {
-          case 0:
-            log_config_free ();
-            return EXIT_SUCCESS;
-          case -2:
-            g_critical ("%s: database is wrong version\n", __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -3:
-            g_critical ("%s: database must be initialised"
-                        " (with --update or --rebuild)\n",
-                        __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -5:
-            g_critical
-             ("%s: CERT database not found. Cannot update max_cvss.\n",
-              __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -6:
-            g_critical
-             ("%s: SCAP database not found. Cannot update max_cvss.\n",
-              __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -1:
-          default:
-            g_critical ("%s: internal error\n", __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-        }
-    }
-
-  if (update_cvss_dfn_cert)
-    {
-      /* Update CVSS max and then exit. */
-
-      proctitle_set ("openvasmd: Updating DFN-Cert CVSS max");
-
-      g_info ("   Updating DFN-CERT CVSS max.\n");
-
-      switch (manage_update_cvss_dfn_cert (log_config,
-                                           database,
-                                           strcmp (update_cvss_dfn_cert,
-                                                   "0")))
-        {
-          case 0:
-            log_config_free ();
-            return EXIT_SUCCESS;
-          case -2:
-            g_critical ("%s: database is wrong version\n", __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -3:
-            g_critical ("%s: database must be initialised"
-                        " (with --update or --rebuild)\n",
-                        __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -5:
-            g_critical
-             ("%s: CERT database not found. Cannot update max_cvss.\n",
               __FUNCTION__);
             log_config_free ();
             return EXIT_FAILURE;

@@ -1,5 +1,30 @@
 2016-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Update CVSS in --update-cert-db.  Remoe --update-cvss-cert-bund and
+	--update-cvss-dfn-cert.
+
+	* src/manage_sql.c (manage_update_cert_db): Update CVSS too.
+	(manage_update_cvss_cert_bund, manage_update_cvss_dfn_cert): Remove.
+	(update_cvss_cert_bund, update_cvss_dfn_cert): New functions.
+
+	* src/openvasmd.c (main): Remove options.
+
+	* tools/greenbone-certdata-sync.in (scap_db_exists, update_cvss): Remove.
+	(update_cert_db_rest): Remove call to update_cvss.
+
+update_dfn_cert_advisories)
+	(update_cert_bund_advisories): Add arg last_cert_update.
+	(update_cert_timestamp): New function.
+	(manage_update_cert_db): Get last CERT update time here instead of in both
+	Bund and DFN functions.  Init DB if data was inconsistent.  Update
+	timestamp at the end.
+
+	* tools/greenbone-certdata-sync.in (update_cert_db): Remove unused args.
+	Remove "Inconsistent data" check and timestamp update, which are now in
+	openvasmd.
+
+2016-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move more of the CERT update script into openvasmd --update-cert-db.
 
 	* src/manage_pg.c (manage_db_remove, manage_db_init): New functions.

@@ -62603,7 +62603,7 @@ int
 manage_update_cert_db (GSList *log_config, const gchar *database)
 {
   const gchar *db;
-  int ret, last_cert_update;
+  int ret, last_cert_update, last_scap_update;
 
   if (openvas_auth_init ())
     return -1;
@@ -62664,6 +62664,21 @@ manage_update_cert_db (GSList *log_config, const gchar *database)
       return -1;
     }
 
+  g_debug ("%s: update cvss", __FUNCTION__);
+
+  // FIX think needs scap
+  last_scap_update = 0;
+  if (manage_scap_loaded ())
+    last_scap_update = sql_int ("SELECT coalesce ((SELECT value FROM scap.meta"
+                                "                  WHERE name = 'last_update'),"
+                                "                 '0');");
+  g_debug ("%s: last_scap_update: %i", __FUNCTION__, last_scap_update);
+
+  // FIX pass update state from above
+  // FIX return
+  update_cvss_dfn_cert (1, last_cert_update, last_scap_update);
+  update_cvss_cert_bund (1, last_cert_update, last_scap_update);
+
   g_debug ("%s: update timestamp", __FUNCTION__);
 
   if (update_cert_timestamp ())
@@ -62684,33 +62699,19 @@ manage_update_cert_db (GSList *log_config, const gchar *database)
 /**
  * @brief Update CERT-Bund Max CVSS.
  *
- * @param[in]  log_config        Log configuration.
- * @param[in]  database          Location of manage database.
  * @param[in]  update_cert_bund  Whether CERT-Bund updated.
+ * @param[in]  last_cert_update  Time of last CERT update.
+ * @param[in]  last_scap_update  Time of last SCAP update.
  *
  * @return 0 success, -1 error, -4 SCAP db not found.
  */
-int
-manage_update_cvss_cert_bund (GSList *log_config, const gchar *database,
-                              int updated_cert_bund)
+static int
+update_cvss_cert_bund (int updated_cert_bund, int last_cert_update,
+                       int last_scap_update)
 {
-  const gchar *db;
-  int ret, last_scap_update, last_cert_update;
-
-  if (openvas_auth_init ())
-    return -1;
-
-  db = database ? database : sql_default_database ();
-
-  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
-  assert (ret != -4);
-  if (ret)
-    return ret;
-
-  init_manage_process (0, db);
-
   /* TODO greenbone-certdata-sync did retries. */
 
+  // FIX
   if (manage_cert_loaded () == 0)
     {
       cleanup_manage_process (TRUE);
@@ -62722,17 +62723,6 @@ manage_update_cvss_cert_bund (GSList *log_config, const gchar *database,
       cleanup_manage_process (TRUE);
       return -6;
     }
-
-  last_scap_update = sql_int ("SELECT value FROM scap.meta"
-                              " WHERE name = 'last_update';");
-
-  last_cert_update = sql_int ("SELECT value FROM cert.meta"
-                              " WHERE name = 'last_update';");
-
-  g_debug ("%s: last_scap_update: %lld", __FUNCTION__,
-           (long long) last_scap_update);
-  g_debug ("%s: last_cert_update: %lld", __FUNCTION__,
-           (long long) last_cert_update);
 
   if (updated_cert_bund || (last_scap_update > last_cert_update))
     {
@@ -62752,41 +62742,25 @@ manage_update_cvss_cert_bund (GSList *log_config, const gchar *database,
   else
     printf ("Updating CERT-Bund CVSS max succeeded (nothing to do).\n");
 
-  cleanup_manage_process (TRUE);
-
   return 0;
 }
 
 /**
  * @brief Update DFN-CERT Max CVSS.
  *
- * @param[in]  log_config       Log configuration.
- * @param[in]  database         Location of manage database.
  * @param[in]  update_dfn_cert  Whether CERT-Bund updated.
+ * @param[in]  last_cert_update  Time of last CERT update.
+ * @param[in]  last_scap_update  Time of last SCAP update.
  *
  * @return 0 success, -1 error.
  */
-int
-manage_update_cvss_dfn_cert (GSList *log_config, const gchar *database,
-                             int updated_dfn_cert)
+static int
+update_cvss_dfn_cert (int updated_dfn_cert, int last_cert_update,
+                      int last_scap_update)
 {
-  const gchar *db;
-  int ret, last_scap_update, last_cert_update;
-
-  if (openvas_auth_init ())
-    return -1;
-
-  db = database ? database : sql_default_database ();
-
-  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
-  assert (ret != -4);
-  if (ret)
-    return ret;
-
-  init_manage_process (0, db);
-
   /* TODO greenbone-certdata-sync did retries. */
 
+  // FIX
   if (manage_cert_loaded () == 0)
     {
       cleanup_manage_process (TRUE);
@@ -62798,12 +62772,6 @@ manage_update_cvss_dfn_cert (GSList *log_config, const gchar *database,
       cleanup_manage_process (TRUE);
       return -6;
     }
-
-  last_scap_update = sql_int ("SELECT value FROM scap.meta"
-                              " WHERE name = 'last_update';");
-
-  last_cert_update = sql_int ("SELECT value FROM cert.meta"
-                              " WHERE name = 'last_update';");
 
   if (updated_dfn_cert || (last_scap_update > last_cert_update))
     {
@@ -62822,8 +62790,6 @@ manage_update_cvss_dfn_cert (GSList *log_config, const gchar *database,
     }
   else
     printf ("Updating DFN-CERT CVSS max succeeded (nothing to do).\n");
-
-  cleanup_manage_process (TRUE);
 
   return 0;
 }

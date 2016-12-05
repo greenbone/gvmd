@@ -577,52 +577,6 @@ cert_db_exists () {
   return 1;
 }
 
-scap_db_exists () {
-  if [ $POSTGRES -eq 1 ] ;
-  then
-    EXISTS=`sql_pg "SELECT exists (SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'scap');" 2>/tmp/ERR | tr -d '\n\r' || echo 0`
-    if [ "$EXISTS" = "f" ] ;
-    then
-      return 1;
-    fi
-    return 0;
-  elif [ -f "$SCAP_DB" ]
-  then
-    return 0;
-  fi
-  return 1;
-}
-
-update_cvss () {
-  log_info "Calling openvasmd to update CVSS max"
-  # FIX updated_* no longer set by update_cert_db
-  if [ -x "@SBINDIR@/openvasmd" ]
-  then
-    if [ 0 -ne "$updated_cb" ]
-    then
-      @SBINDIR@/openvasmd --update-cvss-cert-bund 1
-    else
-      @SBINDIR@/openvasmd --update-cvss-cert-bund 0
-    fi
-    if [ $? -ne 0 ] ; then
-      log_err "Calling openvasmd to update CVSS max... failed."
-      exit 1
-    fi
-    if [ 0 -ne "$updated_dfn" ]
-    then
-      @SBINDIR@/openvasmd --update-cvss-dfn-cert 1
-    else
-      @SBINDIR@/openvasmd --update-cvss-dfn-cert 0
-    fi
-    if [ $? -ne 0 ] ; then
-      log_err "Calling openvasmd to update CVSS max... failed."
-      exit 1
-    fi
-  else
-    log_warning "Command @SBINDIR@/openvasmd not found"
-  fi
-}
-
 update_cert_db_rest () {
   log_info "Calling openvasmd to update CERT db"
   if [ -x "@SBINDIR@/openvasmd" ]
@@ -635,9 +589,6 @@ update_cert_db_rest () {
   else
     log_warning "Command @SBINDIR@/openvasmd not found"
   fi
-
-  # FIX move into manager before timestamp
-  update_cvss
 }
 
 ensure_sqlite3_wal_mode () {
