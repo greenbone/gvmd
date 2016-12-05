@@ -121,7 +121,7 @@ manage_update_cert_db_init ()
        " RETURNS VOID AS $$"
        " BEGIN"
        "   LOOP"
-       "     UPDATE dfn_cert_advs"
+       "     UPDATE cert.dfn_cert_advs"
        "     SET name = uuid_arg,"
        "         comment = '',"
        "         creation_time = creation_time_arg,"
@@ -134,9 +134,9 @@ manage_update_cert_db_init ()
        "       RETURN;"
        "     END IF;"
        "     BEGIN"
-       "       INSERT INTO dfn_cert_advs (uuid, name, comment, creation_time,"
-       "                                  modification_time, title, summary,"
-       "                                  cve_refs)"
+       "       INSERT INTO cert.dfn_cert_advs"
+       "                    (uuid, name, comment, creation_time,"
+       "                     modification_time, title, summary, cve_refs)"
        "       VALUES (uuid_arg, uuid_arg, '', creation_time_arg,"
        "               modification_time_arg, title_arg, summary_arg,"
        "               cve_refs_arg);"
@@ -158,7 +158,7 @@ manage_update_cert_db_init ()
        " RETURNS VOID AS $$"
        " BEGIN"
        "   LOOP"
-       "     UPDATE cert_bund_advs"
+       "     UPDATE cert.cert_bund_advs"
        "     SET name = uuid_arg,"
        "         comment = '',"
        "         creation_time = creation_time_arg,"
@@ -171,9 +171,9 @@ manage_update_cert_db_init ()
        "       RETURN;"
        "     END IF;"
        "     BEGIN"
-       "       INSERT INTO cert_bund_advs (uuid, name, comment, creation_time,"
-       "                                   modification_time, title, summary,"
-       "                                   cve_refs)"
+       "       INSERT INTO cert.cert_bund_advs"
+       "                    (uuid, name, comment, creation_time,"
+       "                     modification_time, title, summary, cve_refs)"
        "       VALUES (uuid_arg, uuid_arg, '', creation_time_arg,"
        "               modification_time_arg, title_arg, summary_arg,"
        "               cve_refs_arg);"
@@ -2817,6 +2817,10 @@ manage_db_init (const gchar *name)
     {
       sql ("DROP SCHEMA IF EXISTS cert CASCADE;");
       sql ("CREATE SCHEMA cert;");
+
+      sql ("SELECT set_config ('search_path',"
+           "                   current_setting ('search_path') || ',cert',"
+           "                   false);");
 
       /* Create tables and indexes. */
 

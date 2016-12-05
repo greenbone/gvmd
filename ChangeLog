@@ -1,5 +1,11 @@
 2016-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_pg.c (manage_update_cert_db_init): Remove schema
+	qualifications, because they will be found in search path.
+	(manage_db_init): Add schema to search path after recreating schema.
+
+2016-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* ChangeLog: Correct last entry.
 
 	* tools/greenbone-certdata-sync.in: Remove call to check_alerts,
