@@ -1,3 +1,11 @@
+2016-12-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* tools/greenbone-certdata-sync.in: Remove all SQL facitilies.  No longer
+	used.
+	(POSTGRES, SCHEMA_CERT, SCHEMA_SCAP, RECURSIVE_TRIGGERS_OFF, psql_setup)
+	(reset_sql_tries, test_exit_codes, test_sql_exit, sql_pg, sql_scap)
+	(sql): Remove.
+
 2016-12-06  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (create_scanner, modify_scanner): Adjust to not set

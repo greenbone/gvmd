@@ -31,18 +31,6 @@ VERSION=@OPENVASMD_VERSION@
 # SETTINGS
 # ========
 
-POSTGRES=0
-SCHEMA_CERT=""
-SCHEMA_SCAP=""
-RECURSIVE_TRIGGERS_OFF="PRAGMA recursive_triggers = OFF;"
-ATTACH_SCAP=""
-if [ "@BACKEND@" = "POSTGRESQL" ]; then
-  POSTGRES=1
-  SCHEMA_CERT="cert."
-  SCHEMA_SCAP="scap."
-  RECURSIVE_TRIGGERS_OFF=""
-fi
-
 # PRIVATE_SUBDIR defines a subdirectory of the CERT data directory
 # where files not part of the feed or database will not be deleted by rsync.
 if [ -z "$PRIVATE_SUBDIR" ]
@@ -82,26 +70,6 @@ ENABLED=1
 # Manager database. This can be controlled via the --refresh parameter.
 REFRESH_ONLY=0
 
-# The call with default parameters of sqlite3.
-SQLITE3="sqlite3 -noheader -bail"
-
-# PSQL defines the name of the Postgres binary to call, along with additional
-# parameters.
-PSQL=""
-psql_setup () {
-  PSQL="psql -v ON_ERROR_STOP=1 -q --pset pager=off --no-align -d $1 -t"
-}
-
-# Maximum number of retries if database is locked
-if [ -z "$MAX_SQL_RETRIES" ]; then
-  MAX_SQL_RETRIES="1" # 0 : try only once
-fi
-
-# Delay between retries
-if [ -z "$SQL_RETRY_DELAY" ]; then
-  SQL_RETRY_DELAY="10m" # allowed unit suffixes: see sleep command
-fi
-
 # LOG_CMD defines the command to use for logging. To have logger log to stderr
 # as well as syslog, add "-s" here.
 LOG_CMD="logger -t $SCRIPT_NAME"
@@ -118,10 +86,6 @@ SCAP_DB="$SCAP_DIR/scap.db"
 
 if [ -z "$DROP_USER" ]; then
   DROP_USER="@OPENVAS_DEFAULT_DROP_USER@"
-fi
-
-if [ ! $POSTGRES -eq 1 ] ; then
-  ATTACH_SCAP="ATTACH DATABASE '$SCAP_DB' AS scap;"
 fi
 
 TIMESTAMP="$CERT_DIR/timestamp"
@@ -258,82 +222,6 @@ get_value ()
   echo "$value"
 }
 
-reset_sql_tries () {
-  try_sql=1
-  sql_retries=0
-}
-
-test_exit_codes () {
-  try_sql=0
-  if [ -n "$exit_codes" ]
-  then
-    for item in $exit_codes
-    do
-      command=`echo "$item" | cut -d':' -f1`
-      code=`echo "$item" | cut -d':' -f2`
-
-      if [ "X" = "$code" ]
-      then
-        log_err "$1: Sync script was interrupted"
-        exit 1
-      elif [ "sqlite3" = "$command" ] \
-           && ( [ "5" = "$code" ] || [ "1" = "$code" ] )
-      then
-        if [ "5" = "$code" ]
-        then
-          log_warning "CERT database is locked"
-        else
-          log_warning "Could not access CERT database, file may be locked."
-        fi
-
-        if [ "$MAX_SQL_RETRIES" -gt "$sql_retries" ]
-        then
-          sql_retries=$((sql_retries + 1))
-          log_notice "Will try to access database again later in $SQL_RETRY_DELAY. (Retry $sql_retries of $MAX_SQL_RETRIES)"
-          try_sql=1
-          sleep "$SQL_RETRY_DELAY"
-        else
-          log_err "$1: Gave up trying to access SCAP database."
-          exit 1
-        fi
-      else
-        log_err "$1: $command exited with code $code"
-        exit 1
-      fi
-    done
-  fi
-}
-
-test_sql_exit () {
-  # TODO For Postgres the exit check is done before this, in sql_pg.
-  exit_code=$?
-  try_sql=0
-  if ( [ "5" = "$exit_code" ] || [ "1" = "$exit_code" ] )
-  then
-    if [ "5" = "$exit_code" ]
-    then
-      log_warning "CERT database is locked."
-    else
-      log_warning "Could not access CERT database, file may be locked."
-    fi
-
-    if [ "$MAX_SQL_RETRIES" -gt "$sql_retries" ]
-    then
-      sql_retries=$((sql_retries + 1))
-      log_notice "Will try to access database again later in $SQL_RETRY_DELAY. (Retry $sql_retries of $MAX_SQL_RETRIES)"
-      try_sql=1
-      sleep "$SQL_RETRY_DELAY"
-    else
-      log_err "$1: Gave up trying to access CERT database."
-      exit 1
-    fi
-  elif [ 0 -ne "$exit_code" ]
-  then
-    log_err "$1: sqlite3 exited with code $exit_code."
-    exit 1
-  fi
-}
-
 is_feed_current () {
   if [ $REFRESH_ONLY -eq 0 ]
   then
@@ -448,59 +336,6 @@ is_db_broken () {
   fi
 }
 
-sql_pg () {
-  if [ "$#" -gt 0 ]
-  then
-    $PSQL -c "$1"
-  else
-    $PSQL -f -
-  fi
-  exit_code=$?
-  if [ 0 -ne "$exit_code" ]
-  then
-    log_err "psql exited with code $exit_code for sql: $1."
-    exit 1
-  fi
-}
-
-sql_scap () {
-  if [ $POSTGRES -eq 1 ]
-  then
-    if [ "$#" -gt 0 ]
-    then
-      sql_pg "$1"
-    else
-      sql_pg $*
-    fi
-  else
-    if [ "$#" -gt 0 ]
-    then
-      $SQLITE $SCAP_DB "$1"
-    else
-      $SQLITE $SCAP_DB $*
-    fi
-  fi
-}
-
-sql () {
-  if [ $POSTGRES -eq 1 ]
-  then
-    if [ "$#" -gt 0 ]
-    then
-      sql_pg "$1"
-    else
-      sql_pg $*
-    fi
-  else
-    if [ "$#" -gt 0 ]
-    then
-      $SQLITE $CERT_DB "$1"
-    else
-      $SQLITE $CERT_DB $*
-    fi
-  fi
-}
-
 do_help () {
   echo "$0: Sync CERT data"
 
@@ -509,11 +344,6 @@ do_help () {
     echo "GSF access key found: Using Greenbone Security Feed"
   else
     echo "No GSF access key found: Using Community Feed"
-  fi
-
-  if [ $POSTGRES -eq 1 ];
-  then
-    echo " --database     database name"
   fi
 
   echo " --describe     display current feed info"
@@ -633,29 +463,6 @@ do_self_test () {
     SELFTEST_STDERR=0
   fi
 
-  if [ $POSTGRES -eq 1 ] ;
-  then
-    POSTGRESQL=`command -v psql`
-    if [ -z "$POSTGRESQL" ]; then
-      if [ 0 -ne $SELFTEST_STDERR ]
-      then
-        echo "psql not found (required)." 1>&2
-      fi
-      log_err "psql not found (required)."
-      SELFTEST_FAIL=1
-    fi
-  else
-    SQLITE=`command -v sqlite3`
-    if [ -z "$SQLITE" ]; then
-      if [ 0 -ne $SELFTEST_STDERR ]
-      then
-        echo "sqlite3 not found (required)." 1>&2
-      fi
-      log_err "sqlite3 not found (required)."
-      SELFTEST_FAIL=1
-    fi
-  fi
-
   if [ -z "$RSYNC" ]
   then
     if [ 0 -ne $SELFTEST_STDERR ]
@@ -667,24 +474,8 @@ do_self_test () {
   fi
 }
 
-psql_setup "tasks"
 while test $# -gt 0; do
  case "$1" in
-        --database)
-          if [ $POSTGRES -eq 1 ] ;
-          then
-            shift
-            if [ $# -gt 0 ]; then
-              psql_setup "$1"
-            else
-              echo "[e] --database argument missing"
-              exit 1
-            fi
-          else
-            echo "[e] --database option available only for Postgres"
-            exit 1
-          fi
-          ;;
         --version)
           echo $VERSION
           exit 0
