@@ -1,3 +1,8 @@
+2016-12-06  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (create_scanner, modify_scanner): Adjust to not set
+	scanner credential and ca certificate when using a unix file socket.
+
 2016-12-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sqlite3.c (manage_db_check): New function.  Check db like

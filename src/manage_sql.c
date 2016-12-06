@@ -45176,7 +45176,7 @@ create_scanner (const char* name, const char *comment, const char *host,
                 const char *ca_pub, const char *credential_id)
 {
   char *quoted_name, *quoted_comment, *quoted_host, *quoted_ca_pub;
-  int iport, itype;
+  int iport, itype, unix_socket = 0;
   credential_t credential;
 
   assert (current_credentials.uuid);
@@ -45190,7 +45190,14 @@ create_scanner (const char* name, const char *comment, const char *host,
       return 99;
     }
 
-  if (!host || !port || !type || !credential_id)
+  if (!host || !port || !type)
+    return 2;
+  if (*host == '/')
+    {
+      unix_socket = 1;
+      ca_pub = NULL;
+    }
+  if (!unix_socket && !credential_id)
     return 2;
   iport = atoi (port);
   itype = atoi (type);
@@ -45200,7 +45207,7 @@ create_scanner (const char* name, const char *comment, const char *host,
     return 2;
   /* XXX: Workaround for unix socket case. Should add a host type flag, or
    * remove otp over tcp case entirely. */
-  if (openvas_get_host_type (host) == -1 && *host != '/')
+  if (openvas_get_host_type (host) == -1 && !unix_socket)
     return 2;
   if (resource_with_name_exists (name, "scanner", 0))
     {
@@ -45208,33 +45215,35 @@ create_scanner (const char* name, const char *comment, const char *host,
       return 1;
     }
 
-  if (find_credential_with_permission (credential_id, &credential,
-                                       "get_credentials"))
+  if (!unix_socket)
     {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (credential == 0)
-    {
-      sql_rollback ();
-      return 3;
-    }
-
-  if (itype == SCANNER_TYPE_OMP)
-    {
-      if (sql_int ("SELECT type != 'up' FROM credentials WHERE id = %llu;",
-                   credential))
+      if (find_credential_with_permission
+           (credential_id, &credential, "get_credentials"))
         {
           sql_rollback ();
-          return 4;
+          return -1;
         }
-    }
-  else if (sql_int ("SELECT type != 'cc' FROM credentials WHERE id = %llu;",
-                    credential))
-    {
-      sql_rollback ();
-      return 5;
+
+      if (credential == 0)
+        {
+          sql_rollback ();
+          return 3;
+        }
+      if (itype == SCANNER_TYPE_OMP)
+        {
+          if (sql_int ("SELECT type != 'up' FROM credentials WHERE id = %llu;",
+                       credential))
+            {
+              sql_rollback ();
+              return 4;
+            }
+        }
+      else if (sql_int ("SELECT type != 'cc' FROM credentials WHERE id = %llu;",
+                        credential))
+        {
+          sql_rollback ();
+          return 5;
+        }
     }
 
   quoted_name = sql_quote (name ?: "");
@@ -45242,20 +45251,22 @@ create_scanner (const char* name, const char *comment, const char *host,
   quoted_host = sql_quote (host ?: "");
   quoted_ca_pub = sql_quote (ca_pub ?: "");
   sql ("INSERT INTO scanners (uuid, name, owner, comment, host, port, type,"
-       "                      ca_pub, credential, creation_time,"
-       "                      modification_time)"
+       "                      ca_pub,creation_time, modification_time)"
        " VALUES (make_uuid (), '%s',"
        "  (SELECT id FROM users WHERE users.uuid = '%s'),"
-       "  '%s', '%s', %d, %d, %s%s%s, %llu, m_now (), m_now ());",
+       "  '%s', '%s', %d, %d, %s%s%s, m_now (), m_now ());",
        quoted_name, current_credentials.uuid, quoted_comment, quoted_host,
        iport, itype,
        ca_pub ? "'" : "",
        ca_pub ? quoted_ca_pub : "NULL",
-       ca_pub ? "'" : "",
-       credential);
+       ca_pub ? "'" : "");
 
   if (new_scanner)
     *new_scanner = sql_last_insert_id ();
+
+  if (!unix_socket)
+    sql ("UPDATE scanners SET credential = %llu WHERE id = %llu;", credential,
+         sql_last_insert_id ());
 
   sql_commit ();
   g_free (quoted_host);
@@ -45316,7 +45327,7 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
   gchar *quoted_name, *quoted_comment, *quoted_host, *new_port, *new_type;
   scanner_t scanner = 0;
   credential_t credential = 0;
-  int iport, itype;
+  int iport, itype, unix_socket;
 
   assert (current_credentials.uuid);
 
@@ -45364,7 +45375,15 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
       return 1;
     }
 
-  if (credential_id)
+  if (host)
+    unix_socket = (*host == '/');
+  else
+    {
+      char *old_host = scanner_host (scanner);
+      unix_socket = (*old_host == '/');
+      g_free (old_host);
+    }
+  if (credential_id && !unix_socket)
     {
       if (find_credential_with_permission (credential_id, &credential,
                                            "get_credentials"))
@@ -45434,7 +45453,7 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
   g_free (quoted_comment);
   g_free (quoted_name);
 
-  if (ca_pub)
+  if (ca_pub && !unix_socket)
     {
       if (*ca_pub)
         {
@@ -45448,7 +45467,7 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
         sql ("UPDATE scanners SET ca_pub = NULL WHERE id = %llu;", scanner);
     }
 
-  if (credential_id)
+  if (credential_id && !unix_socket)
     {
       sql ("UPDATE scanners SET credential = %llu WHERE id = %llu;",
            credential, scanner);
