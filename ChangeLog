@@ -1,5 +1,16 @@
 2016-12-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sqlite3.c (manage_db_check): New function.  Check db like
+	manage_check_cert_db did, and also check if db exists.
+
+	* src/manage_pg.c (manage_db_check): New function.
+
+	* src/manage_sql.h: Add header accordingly.
+
+	* src/manage_sql.c (manage_check_cert_db): Use db backend function.
+
+2016-12-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move DB integrity check from CERT sync script into openvasmd.
 
 	* src/manage_sql.c (manage_check_cert_db): New function.

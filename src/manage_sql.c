@@ -62807,22 +62807,18 @@ manage_check_cert_db (GSList *log_config, const gchar *database)
   /* Setup a dummy user. */
   current_credentials.uuid = "";
 
-  ret = 0;
-  if (sql_is_sqlite3 ())
+  ret = manage_db_check ("cert");
+  switch (ret)
     {
-      char *ok;
-
-      ok = sql_string ("PRAGMA cert.integrity_check;");
-      if (ok == NULL)
-        ret = -1;
-      else if (strcmp (ok, "ok") == 0)
+      case 0:
         puts ("0");
-      else
-        {
-          g_info ("Integrity check failed, removing CERT database.");
-          manage_db_remove ("cert");
-          puts ("1");
-        }
+        break;
+      case 1:
+        g_info ("Integrity check failed, removing CERT database.");
+        manage_db_remove ("cert");
+        puts ("1");
+        ret = 0;
+        break;
     }
 
   current_credentials.uuid = NULL;

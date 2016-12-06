@@ -3531,6 +3531,42 @@ manage_db_check_mode (const gchar *name)
 }
 
 /**
+ * @brief Check integrity of db.
+ *
+ * @param[in]  name  Name, like "cert" or "scap".
+ *
+ * @return 0 fine, 1 broken, -1 error.
+ */
+int
+manage_db_check (const gchar *name)
+{
+  if (strcasecmp (name, "cert") == 0)
+    {
+      char *ok;
+      int ret;
+
+      if (access (OPENVAS_CERT_DATA_DIR "/cert.db", R_OK))
+        {
+          if (errno == ENOENT)
+            return 0;
+
+          g_warning ("%s: failed to stat CERT database: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          return -1;
+        }
+
+      ok = sql_string ("PRAGMA cert.integrity_check;");
+      if (ok == NULL)
+        return -1;
+      ret = (strcmp (ok, "ok") == 0);
+      g_free (ok);
+      return ret;
+    }
+  return 0;
+}
+
+/**
  * @brief Check whether CERT is available.
  *
  * @return 1 if CERT database is loaded, else 0.

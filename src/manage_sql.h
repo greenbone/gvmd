@@ -390,4 +390,6 @@ int manage_cert_db_exists ();
 
 void manage_db_check_mode (const gchar *);
 
+int manage_db_check (const gchar *);
+
 #endif /* not OPENVAS_MANAGER_MANAGE_SQL_H */
