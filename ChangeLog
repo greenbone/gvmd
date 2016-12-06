@@ -1,3 +1,17 @@
+2016-12-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Move DB integrity check from CERT sync script into openvasmd.
+
+	* src/manage_sql.c (manage_check_cert_db): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/openvasmd.c (main): Add option --check-cert-db.
+
+	* tools/greenbone-certdata-sync.in: Let is_db_broken do removal.
+	(is_db_broken): Call openvasmd to do the work.
+	(cert_db_remove): Remove.  No longer used.
+
 2016-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (manage_update_cert_db_init): Remove schema

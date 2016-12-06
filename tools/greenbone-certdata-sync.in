@@ -392,7 +392,7 @@ is_feed_current () {
       fi
       remove_tmp_key
     else
-      log_notice "No Greenbone Security Feed accees key found, falling back to Greenbone Community Feed"
+      log_notice "No Greenbone Security Feed access key found, falling back to Greenbone Community Feed"
       eval "$RSYNC -ltvrP \"$COMMUNITY_CERT_RSYNC_FEED/timestamp\" \"$FEED_INFO_TEMP_DIR\""
       if [ $? -ne 0 ]
       then
@@ -429,23 +429,22 @@ is_feed_current () {
 
 is_db_broken () {
   DB_BROKEN=0
-  if [ $POSTGRES -eq 1 ] ; then
-    return
-  fi
-  if [ ! -e $CERT_DB ]
+
+  log_info "Calling openvasmd to check CERT db"
+  if [ -x "@SBINDIR@/openvasmd" ]
   then
-    return
-  fi
-  reset_sql_tries
-  until [ "$try_sql" -eq 0 ]
-  do
-    DB_INTEGRITY=`$SQLITE3 $CERT_DB "PRAGMA integrity_check;"`
-    test_sql_exit "Could not check CERT database integrity"
-  done
-  if [ "$DB_INTEGRITY" != "ok" ]
-  then
-    DB_BROKEN=1
-    log_warning "Database integrity check failed."
+    OK=`@SBINDIR@/openvasmd --check-cert-db`
+    if [ $? -ne 0 ] ; then
+      log_err "Calling openvasmd to check CERT db... failed."
+      exit 1
+    fi
+    if [ "$OK" = "1" ]; then
+      log_notice "Purged corrupted database."
+      DB_BROKEN=1
+    fi
+  else
+    log_err "Command @SBINDIR@/openvasmd not found"
+    exit 1
   fi
 }
 
@@ -502,15 +501,6 @@ sql () {
   fi
 }
 
-cert_db_remove () {
-  if [ $POSTGRES -eq 1 ] ;
-  then
-    sql_pg "DROP SCHEMA IF EXISTS cert CASCADE;"
-  else
-    rm -f $CERT_DB
-  fi
-}
-
 do_help () {
   echo "$0: Sync CERT data"
 
@@ -548,7 +538,8 @@ update_cert_db () {
       exit 1
     fi
   else
-    log_warning "Command @SBINDIR@/openvasmd not found"
+    log_err "Command @SBINDIR@/openvasmd not found"
+    exit 1
   fi
 }
 
@@ -758,11 +749,8 @@ then
 fi
 
 is_db_broken
-if [ $DB_BROKEN -eq 1 ]
+if [ $DB_BROKEN -ne 1 ]
 then
-  log_notice "Purging corrupted database."
-  cert_db_remove
-else
   is_feed_current
   if [ $FEED_CURRENT -eq 1 ]
   then
