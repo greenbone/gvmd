@@ -1,5 +1,10 @@
 2016-12-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_update_cert_db): Use -1 to mark the "missing
+	meta" case, because 0 is used already when initialising the db.
+
+2016-12-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/greenbone-certdata-sync.in: Remove all SQL facitilies.  No longer
 	used.
 	(POSTGRES, SCHEMA_CERT, SCHEMA_SCAP, RECURSIVE_TRIGGERS_OFF, psql_setup)

@@ -62723,11 +62723,10 @@ manage_update_cert_db (GSList *log_config, const gchar *database)
   if (manage_cert_loaded ())
     last_cert_update = sql_int ("SELECT coalesce ((SELECT value FROM cert.meta"
                                 "                  WHERE name = 'last_update'),"
-                                "                 '0');");
+                                "                 '-1');");
   g_debug ("%s: last_cert_update: %i", __FUNCTION__, last_cert_update);
 
-  // FIX if was missing creates twice
-  if (last_cert_update == 0)
+  if (last_cert_update == -1)
     {
       /* Happens when initial sync was aborted. */
       g_warning ("Inconsistent data. Resetting CERT database.");
