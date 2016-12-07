@@ -62052,7 +62052,7 @@ DEF_ACCESS (ovaldi_file_iterator_name, 0);
  * @param[in]  last_cert_update  Time of last CERT update.
  * @param[in]  last_dfn_update   Time of last update to a DFN.
  *
- * @return 0 success, -1 error.
+ * @return 0 nothing to do, 1 updated, -1 error.
  */
 static int
 update_dfn_xml (const gchar *xml_path, int last_cert_update,
@@ -62064,7 +62064,9 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
   gchar *xml, *full_path;
   gsize xml_len;
   GStatBuf state;
+  int updated_dfn_cert;
 
+  updated_dfn_cert = 0;
   g_info ("%s: %s", __FUNCTION__, xml_path);
 
   full_path = g_build_filename (OPENVAS_CERT_DATA_DIR, xml_path, NULL);
@@ -62239,6 +62241,7 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
                   cves = next_entities (cves);
                 }
 
+              updated_dfn_cert = 1;
               g_free (quoted_refnum);
             }
         }
@@ -62248,7 +62251,7 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
   free_entity (entity);
   g_free (full_path);
   sql_commit ();
-  return 0;
+  return updated_dfn_cert;
 
  fail:
   g_warning ("Update of DFN-CERT Advisories failed at file '%s'",
@@ -62265,7 +62268,7 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
  * @param[in]  last_cert_update  Time of last CERT update.
  * @param[in]  last_dfn_update   Time of last update to a DFN.
  *
- * @return 0 success, -1 error.
+ * @return 0 nothing to do, 1 updated, -1 error.
  */
 static int
 update_bund_xml (const gchar *xml_path, int last_cert_update,
@@ -62277,7 +62280,9 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
   gchar *xml, *full_path;
   gsize xml_len;
   GStatBuf state;
+  int updated_cert_bund;
 
+  updated_cert_bund = 0;
   full_path = g_build_filename (OPENVAS_CERT_DATA_DIR, xml_path, NULL);
 
   if (g_stat (full_path, &state))
@@ -62445,6 +62450,7 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
                     }
                 }
 
+              updated_cert_bund = 1;
               g_free (quoted_refnum);
             }
         }
@@ -62454,7 +62460,7 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
   free_entity (entity);
   g_free (full_path);
   sql_commit ();
-  return 0;
+  return updated_cert_bund;
 
  fail:
   g_warning ("Update of CERT-Bund Advisories failed at file '%s'",
@@ -62471,13 +62477,13 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
  *
  * @param[in]  last_cert_update  Time of last CERT update from meta.
  *
- * @return 0 success, -1 error.
+ * @return 0 nothing to do, 1 updated, -1 error.
  */
 static int
 update_dfn_cert_advisories (int last_cert_update)
 {
   GError *error;
-  int count, last_dfn_update;
+  int count, last_dfn_update, updated_dfn_cert;
   GDir *dir;
   const gchar *xml_path;
 
@@ -62496,23 +62502,29 @@ update_dfn_cert_advisories (int last_cert_update)
 
   g_debug ("%s: VS: " OPENVAS_CERT_DATA_DIR "/dfn-cert-*.xml", __FUNCTION__);
   count = 0;
+  updated_dfn_cert = 0;
   while ((xml_path = g_dir_read_name (dir)))
     if (fnmatch ("dfn-cert-*.xml", xml_path, 0) == 0)
       {
-        if (update_dfn_xml (xml_path, last_cert_update, last_dfn_update))
+        switch (update_dfn_xml (xml_path, last_cert_update, last_dfn_update))
           {
-            g_dir_close (dir);
-            return -1;
+            case 0:
+              break;
+            case 1:
+              updated_dfn_cert = 1;
+              break;
+            default:
+              g_dir_close (dir);
+              return -1;
           }
-        else
-          count++;
+        count++;
       }
 
   if (count == 0)
     g_warning ("No DFN-CERT advisories found in %s", OPENVAS_CERT_DATA_DIR);
 
   g_dir_close (dir);
-  return 0;
+  return updated_dfn_cert;
 }
 
 /**
@@ -62522,13 +62534,13 @@ update_dfn_cert_advisories (int last_cert_update)
  *
  * @param[in]  last_cert_update  Time of last CERT update from meta.
  *
- * @return 0 success, -1 error.
+ * @return 0 nothing to do, 1 updated, -1 error.
  */
 static int
 update_cert_bund_advisories (int last_cert_update)
 {
   GError *error;
-  int count, last_bund_update;
+  int count, last_bund_update, updated_cert_bund;
   GDir *dir;
   const gchar *xml_path;
 
@@ -62546,23 +62558,29 @@ update_cert_bund_advisories (int last_cert_update)
                               " FROM cert.cert_bund_advs;");
 
   count = 0;
+  updated_cert_bund = 0;
   while ((xml_path = g_dir_read_name (dir)))
     if (fnmatch ("CB-K*.xml", xml_path, 0) == 0)
       {
-        if (update_bund_xml (xml_path, last_cert_update, last_bund_update))
+        switch (update_bund_xml (xml_path, last_cert_update, last_bund_update))
           {
-            g_dir_close (dir);
-            return -1;
+            case 0:
+              break;
+            case 1:
+              updated_cert_bund = 1;
+              break;
+            default:
+              g_dir_close (dir);
+              return -1;
           }
-        else
-          count++;
+        count++;
       }
 
   if (count == 0)
     g_warning ("No CERT-Bund advisories found in %s", OPENVAS_CERT_DATA_DIR);
 
   g_dir_close (dir);
-  return 0;
+  return updated_cert_bund;
 }
 
 /**
@@ -62685,7 +62703,8 @@ int
 manage_update_cert_db (GSList *log_config, const gchar *database)
 {
   const gchar *db;
-  int ret, last_cert_update, last_scap_update;
+  int ret, last_cert_update, last_scap_update, updated_dfn_cert;
+  int updated_cert_bund;
 
   if (openvas_auth_init ())
     return -1;
@@ -62748,7 +62767,8 @@ manage_update_cert_db (GSList *log_config, const gchar *database)
 
   g_debug ("%s: update dfn", __FUNCTION__);
 
-  if (update_dfn_cert_advisories (last_cert_update))
+  updated_dfn_cert = update_dfn_cert_advisories (last_cert_update);
+  if (updated_dfn_cert == -1)
     {
       manage_update_cert_db_cleanup ();
       cleanup_manage_process (TRUE);
@@ -62757,7 +62777,8 @@ manage_update_cert_db (GSList *log_config, const gchar *database)
 
   g_debug ("%s: update bund", __FUNCTION__);
 
-  if (update_cert_bund_advisories (last_cert_update))
+  updated_cert_bund = update_cert_bund_advisories (last_cert_update);
+  if (updated_cert_bund == -1)
     {
       manage_update_cert_db_cleanup ();
       cleanup_manage_process (TRUE);
@@ -62774,9 +62795,8 @@ manage_update_cert_db (GSList *log_config, const gchar *database)
                                 "                 '0');");
   g_debug ("%s: last_scap_update: %i", __FUNCTION__, last_scap_update);
 
-  // FIX pass update state from above
-  update_cvss_dfn_cert (1, last_cert_update, last_scap_update);
-  update_cvss_cert_bund (1, last_cert_update, last_scap_update);
+  update_cvss_dfn_cert (updated_dfn_cert, last_cert_update, last_scap_update);
+  update_cvss_cert_bund (updated_cert_bund, last_cert_update, last_scap_update);
 
   g_debug ("%s: update timestamp", __FUNCTION__);
 
