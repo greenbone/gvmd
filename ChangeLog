@@ -1,5 +1,9 @@
 2016-12-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sqlite3.c (manage_db_check): Correct test.
+
+2016-12-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/cert_db_init.sql, tools/cert_db_init_pd.sql: Remove.  Now in C.
 
 	* CMakeLists.txt: Remove files.

@@ -3559,7 +3559,7 @@ manage_db_check (const gchar *name)
       ok = sql_string ("PRAGMA cert.integrity_check;");
       if (ok == NULL)
         return -1;
-      ret = (strcmp (ok, "ok") == 0);
+      ret = (strcmp (ok, "ok") ? 1 : 0);
       g_free (ok);
       return ret;
     }
