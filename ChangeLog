@@ -1,5 +1,12 @@
 2016-12-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (update_dfn_xml, update_bund_xml): Remove notes about
+	printf.
+	(manage_update_cert_db, update_cvss_cert_bund, update_cvss_dfn_cert): Use
+	g_info instead of printf, for consistency.
+
+2016-12-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (parse_utc_time): New function.  Body from
 	parse_otp_time, but also clears struct tm beforehand.
 	(parse_otp_time): Call parse_utc_time.

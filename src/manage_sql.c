@@ -62111,14 +62111,12 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
 
   if ((state.st_mtime - (state.st_mtime % 60)) <= last_cert_update)
     {
-      // FIX printf?
       g_info ("Skipping %s, file is older than last revision",
               full_path);
       g_free (full_path);
       return 0;
     }
 
-  // FIX printf?  more...
   g_info ("Updating %s", full_path);
 
   error = NULL;
@@ -62325,14 +62323,12 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
 
   if ((state.st_mtime - (state.st_mtime % 60)) <= last_cert_update)
     {
-      // FIX printf?
       g_info ("Skipping %s, file is older than last revision",
               full_path);
       g_free (full_path);
       return 0;
     }
 
-  // FIX printf?  more...
   g_info ("Updating %s", full_path);
 
   error = NULL;
@@ -62822,7 +62818,7 @@ manage_update_cert_db (GSList *log_config, const gchar *database)
       return -1;
     }
 
-  printf ("Updating CERT info succeeded.\n");
+  g_info ("Updating CERT info succeeded.\n");
 
   manage_update_cert_db_cleanup ();
 
@@ -62906,10 +62902,10 @@ update_cvss_cert_bund (int updated_cert_bund, int last_cert_update,
            "                           WHERE adv_id = cert_bund_advs.id)"
            "                 AND cvss != 0.0);");
 
-      printf ("Updating CERT-Bund CVSS max succeeded.\n");
+      g_info ("Updating CERT-Bund CVSS max succeeded.\n");
     }
   else
-    printf ("Updating CERT-Bund CVSS max succeeded (nothing to do).\n");
+    g_info ("Updating CERT-Bund CVSS max succeeded (nothing to do).\n");
 }
 
 /**
@@ -62938,10 +62934,10 @@ update_cvss_dfn_cert (int updated_dfn_cert, int last_cert_update,
            "                     WHERE adv_id = dfn_cert_advs.id)"
            "                 AND cvss != 0.0);");
 
-      printf ("Updating DFN-CERT CVSS max succeeded.\n");
+      g_info ("Updating DFN-CERT CVSS max succeeded.\n");
     }
   else
-    printf ("Updating DFN-CERT CVSS max succeeded (nothing to do).\n");
+    g_info ("Updating DFN-CERT CVSS max succeeded (nothing to do).\n");
 }
 
 
