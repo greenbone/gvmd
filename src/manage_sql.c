@@ -353,10 +353,10 @@ report_counts_id_full (report_t, int *, int *, int *, int *, int *, int *,
 static int
 check_report_format (const gchar *);
 
-static int
+static void
 update_cvss_dfn_cert (int, int, int);
 
-static int
+static void
 update_cvss_cert_bund (int, int, int);
 
 
@@ -62775,7 +62775,6 @@ manage_update_cert_db (GSList *log_config, const gchar *database)
   g_debug ("%s: last_scap_update: %i", __FUNCTION__, last_scap_update);
 
   // FIX pass update state from above
-  // FIX return
   update_cvss_dfn_cert (1, last_cert_update, last_scap_update);
   update_cvss_cert_bund (1, last_cert_update, last_scap_update);
 
@@ -62852,27 +62851,12 @@ manage_check_cert_db (GSList *log_config, const gchar *database)
  * @param[in]  update_cert_bund  Whether CERT-Bund updated.
  * @param[in]  last_cert_update  Time of last CERT update.
  * @param[in]  last_scap_update  Time of last SCAP update.
- *
- * @return 0 success, -1 error, -4 SCAP db not found.
  */
-static int
+static void
 update_cvss_cert_bund (int updated_cert_bund, int last_cert_update,
                        int last_scap_update)
 {
   /* TODO greenbone-certdata-sync did retries. */
-
-  // FIX
-  if (manage_cert_loaded () == 0)
-    {
-      cleanup_manage_process (TRUE);
-      return -5;
-    }
-
-  if (manage_scap_loaded () == 0)
-    {
-      cleanup_manage_process (TRUE);
-      return -6;
-    }
 
   if (updated_cert_bund || (last_scap_update > last_cert_update))
     {
@@ -62891,8 +62875,6 @@ update_cvss_cert_bund (int updated_cert_bund, int last_cert_update,
     }
   else
     printf ("Updating CERT-Bund CVSS max succeeded (nothing to do).\n");
-
-  return 0;
 }
 
 /**
@@ -62901,27 +62883,12 @@ update_cvss_cert_bund (int updated_cert_bund, int last_cert_update,
  * @param[in]  update_dfn_cert  Whether CERT-Bund updated.
  * @param[in]  last_cert_update  Time of last CERT update.
  * @param[in]  last_scap_update  Time of last SCAP update.
- *
- * @return 0 success, -1 error.
  */
-static int
+static void
 update_cvss_dfn_cert (int updated_dfn_cert, int last_cert_update,
                       int last_scap_update)
 {
   /* TODO greenbone-certdata-sync did retries. */
-
-  // FIX
-  if (manage_cert_loaded () == 0)
-    {
-      cleanup_manage_process (TRUE);
-      return -5;
-    }
-
-  if (manage_scap_loaded () == 0)
-    {
-      cleanup_manage_process (TRUE);
-      return -6;
-    }
 
   if (updated_dfn_cert || (last_scap_update > last_cert_update))
     {
@@ -62940,8 +62907,6 @@ update_cvss_dfn_cert (int updated_dfn_cert, int last_cert_update,
     }
   else
     printf ("Updating DFN-CERT CVSS max succeeded (nothing to do).\n");
-
-  return 0;
 }
 
 

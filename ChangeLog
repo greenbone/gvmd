@@ -1,3 +1,10 @@
+2016-12-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (manage_update_cert_db): Remove note about checking
+	return.
+	(update_cvss_cert_bund, update_cvss_dfn_cert): Remove "loaded" checks, as
+	the caller already is sure the db is loaded.  Hence remove return.
+
 2016-12-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_update_cert_db): Use -1 to mark the "missing
