@@ -750,16 +750,15 @@ find_trash (const char *type, const char *uuid, resource_t *resource)
 }
 
 /**
- * @brief Convert an OTP time into seconds since epoch.
+ * @brief Convert a UTC time into seconds since epoch.
  *
- * Use UTC as timezone.
+ * @param[in]  format     Format of time.
+ * @param[in]  text_time  Time as text.
  *
- * @param[in]  text_time  Time as text in ctime format.
- *
- * @return Time since epoch.
+ * @return Time since epoch.  0 on error.
  */
 static int
-parse_otp_time (const char *text_time)
+parse_utc_time (const char *format, const char *text_time)
 {
   int epoch_time;
   struct tm tm;
@@ -779,7 +778,10 @@ parse_otp_time (const char *text_time)
       return 0;
     }
 
-  if (strptime ((char*) text_time, "%a %b %d %H:%M:%S %Y", &tm) == NULL)
+  g_debug ("%s: text_time: %s", __FUNCTION__, text_time);
+  g_debug ("%s: format: %s", __FUNCTION__, format);
+  memset (&tm, 0, sizeof (struct tm));
+  if (strptime ((char*) text_time, format, &tm) == NULL)
     {
       g_warning ("%s: Failed to parse time", __FUNCTION__);
       if (tz != NULL)
@@ -812,6 +814,34 @@ parse_otp_time (const char *text_time)
 
   g_free (tz);
   return epoch_time;
+}
+
+/**
+ * @brief Convert an OTP time into seconds since epoch.
+ *
+ * Use UTC as timezone.
+ *
+ * @param[in]  text_time  Time as text in ctime format.
+ *
+ * @return Time since epoch.  0 on error.
+ */
+static int
+parse_otp_time (const char *text_time)
+{
+  return parse_utc_time ("%a %b %d %H:%M:%S %Y", text_time);
+}
+
+/**
+ * @brief Convert a feed timestamp into seconds since epoch.
+ *
+ * @param[in]  text_time  Time as text in ctime format.
+ *
+ * @return Time since epoch.  0 on error.
+ */
+static int
+parse_feed_timestamp (const char *text_time)
+{
+  return parse_utc_time ("%Y%m%d", text_time);
 }
 
 /**
@@ -62591,7 +62621,6 @@ update_cert_bund_advisories (int last_cert_update)
 static int
 update_cert_timestamp ()
 {
-  struct tm tm;
   GError *error;
   gchar *timestamp;
   gsize len;
@@ -62625,23 +62654,10 @@ update_cert_timestamp ()
 
       timestamp[8] = '\0';
       g_debug ("%s: parsing: %s", __FUNCTION__, timestamp);
-      // FIX UTC
-      memset (&tm, 0, sizeof (struct tm));
-      if (strptime (timestamp, "%Y%m%d", &tm) == NULL)
-        {
-          g_warning ("%s: failed to parse timestamp: %s\n", __FUNCTION__,
-                     timestamp);
-          g_free (timestamp);
-          return -1;
-        }
+      stamp = parse_feed_timestamp (timestamp);
       g_free (timestamp);
-
-      stamp = mktime (&tm);
-      if (stamp == -1)
-        {
-          g_warning ("%s: mktime error\n", __FUNCTION__);
-          return -1;
-        }
+      if (stamp == 0)
+        return -1;
     }
 
   g_debug ("%s: setting last_update: %lld", __FUNCTION__, (long long) stamp);

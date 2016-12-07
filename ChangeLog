@@ -1,5 +1,13 @@
 2016-12-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (parse_utc_time): New function.  Body from
+	parse_otp_time, but also clears struct tm beforehand.
+	(parse_otp_time): Call parse_utc_time.
+	(parse_feed_timestamp): New function.
+	(update_cert_timestamp): Use parse_feed_timestamp, so that UTC is used.
+
+2016-12-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_update_cert_db): Remove note about requiring
 	SCAP.  The script also did the update even when the SCAP db was missing.
 
