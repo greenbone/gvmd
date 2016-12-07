@@ -1,5 +1,11 @@
 2016-12-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/cert_db_init.sql, tools/cert_db_init_pd.sql: Remove.  Now in C.
+
+	* CMakeLists.txt: Remove files.
+
+2016-12-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (update_dfn_xml, update_bund_xml): Remove notes about
 	printf.
 	(manage_update_cert_db, update_cvss_cert_bund, update_cvss_dfn_cert): Use
