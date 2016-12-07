@@ -1,5 +1,10 @@
 2016-12-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_update_cert_db): Remove note about requiring
+	SCAP.  The script also did the update even when the SCAP db was missing.
+
+2016-12-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (update_dfn_xml, update_bund_xml)
 	(update_dfn_cert_advisories, update_cert_bund_advisories): Return 1 if
 	anything updated.

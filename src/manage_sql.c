@@ -62787,7 +62787,6 @@ manage_update_cert_db (GSList *log_config, const gchar *database)
 
   g_debug ("%s: update cvss", __FUNCTION__);
 
-  // FIX think needs scap
   last_scap_update = 0;
   if (manage_scap_loaded ())
     last_scap_update = sql_int ("SELECT coalesce ((SELECT value FROM scap.meta"
