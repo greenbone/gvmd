@@ -1,3 +1,10 @@
+2016-12-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r26845.
+
+	* src/report_formats/CSV_Results/CSV_Results.xsl (nvt_name): Double up
+	the double quotes inside the name to escape them.
+
 2016-11-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r26724.
