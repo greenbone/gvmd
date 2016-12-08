@@ -135,10 +135,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
 <!-- Substitute "Open Port" if the NVT name is empty -->
 <xsl:template name="nvt_name">
-  <xsl:variable name="name_without_quotes" select="translate(nvt/name, &quot;&apos;&quot;, '')" />
+  <xsl:variable name="name_without_single_quotes"
+                select="translate(nvt/name, &quot;&apos;&quot;, '')" />
   <xsl:choose>
-    <xsl:when test="string-length($name_without_quotes) > 0">
-      <xsl:value-of select="$name_without_quotes"/>
+    <xsl:when test="string-length($name_without_single_quotes) > 0">
+      <xsl:value-of select="str:replace ($name_without_single_quotes, $quote, $two-quotes)"/>
     </xsl:when>
     <xsl:otherwise>Open Port</xsl:otherwise>
   </xsl:choose>
