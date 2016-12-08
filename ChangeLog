@@ -1,5 +1,13 @@
 2016-12-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r26846.
+
+	* src/report_formats/CSV_Results/report_format.xml,
+	src/report_formats/CSV_Hosts/report_format.xml: Swap these two, they
+	were the wrong way round.
+
+2016-12-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r26845.
 
 	* src/report_formats/CSV_Results/CSV_Results.xsl (nvt_name): Double up
