@@ -102,10 +102,11 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include <gvm/base/pidfile.h>
+
 #include <openvas/misc/openvas_logging.h>
 #include <openvas/misc/openvas_proctitle.h>
 #include <openvas/misc/openvas_server.h>
-#include <openvas/base/pidfile.h>
 #include <openvas/base/pwpolicy.h>
 
 #include "logf.h"
