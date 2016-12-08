@@ -59,8 +59,9 @@
 #include <sys/time.h>
 #include <grp.h>
 
+#include <gvm/base/fileutils.h>
+
 #include <openvas/base/openvas_string.h>
-#include <openvas/base/openvas_file.h>
 #include <openvas/base/openvas_hosts.h>
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/misc/ldap_connect_auth.h>
@@ -9330,7 +9331,7 @@ run_alert_script (const char *alert_id, const char *command_args,
 
     /* Remove the directory. */
 
-    openvas_file_remove_recurse (report_dir);
+    gvm_file_remove_recurse (report_dir);
 
     return 0;
   }
@@ -9793,7 +9794,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
 
     /* Remove the directory. */
 
-    openvas_file_remove_recurse (report_dir);
+    gvm_file_remove_recurse (report_dir);
 
     return 0;
   }
@@ -10119,7 +10120,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
 
     /* Remove the directory. */
 
-    openvas_file_remove_recurse (archive_dir);
+    gvm_file_remove_recurse (archive_dir);
 
     return 0;
   }
@@ -11137,11 +11138,11 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                               report);
 
               file_name
-                = openvas_export_file_name (fname_format,
-                                            current_credentials.username,
-                                            "report", report_id,
-                                            creation_time, modification_time,
-                                            name, format_name);
+                = gvm_export_file_name (fname_format,
+                                        current_credentials.username,
+                                        "report", report_id,
+                                        creation_time, modification_time,
+                                        name, format_name);
               ret = email (to_address, from_address, subject, body, base64,
                            type, file_name ? file_name : "openvas-report",
                            extension);
@@ -14283,7 +14284,7 @@ update_report_format_uuid (const char *old, const char *new)
 
   dir = predefined_report_format_dir (old);
   if (g_file_test (dir, G_FILE_TEST_EXISTS))
-    openvas_file_remove_recurse (dir);
+    gvm_file_remove_recurse (dir);
   g_free (dir);
 
   sql ("UPDATE report_formats"
@@ -15343,7 +15344,7 @@ check_db_report_formats_trash ()
               /* Remove the directory. */
 
               entry_path = g_build_filename (dir, entry, NULL);
-              ret = openvas_file_remove_recurse (entry_path);
+              ret = gvm_file_remove_recurse (entry_path);
               g_free (entry_path);
               if (ret)
                 {
@@ -28702,7 +28703,7 @@ print_report_xml_end (gchar *xml_start, gchar *xml_full,
   FILE *out;
   iterator_t params;
 
-  if (openvas_file_copy (xml_start, xml_full) == FALSE)
+  if (gvm_file_copy (xml_start, xml_full) == FALSE)
     {
       g_warning ("%s: failed to copy xml_start file", __FUNCTION__);
       return -1;
@@ -28852,7 +28853,7 @@ manage_report (report_t report, const get_data_t *get,
 
   /* Remove the directory. */
 
-  openvas_file_remove_recurse (xml_dir);
+  gvm_file_remove_recurse (xml_dir);
 
   /* Return the output. */
 
@@ -29376,7 +29377,7 @@ apply_report_format (gchar *report_format_id,
   cleanup:
   while (temp_dirs)
     {
-      openvas_file_remove_recurse (temp_dirs->data);
+      gvm_file_remove_recurse (temp_dirs->data);
       g_free (temp_dirs->data);
       temp_dirs = g_list_remove (temp_dirs, temp_dirs->data);
     }
@@ -29629,7 +29630,7 @@ manage_send_report (report_t report, report_t delta_report,
 
   /* Remove the directory. */
 
-  openvas_file_remove_recurse (xml_dir);
+  gvm_file_remove_recurse (xml_dir);
 
   /* Return the output. */
 
@@ -48057,7 +48058,7 @@ create_report_format (const char *uuid, const char *name,
                               NULL);
     }
 
-  if (g_file_test (dir, G_FILE_TEST_EXISTS) && openvas_file_remove_recurse (dir))
+  if (g_file_test (dir, G_FILE_TEST_EXISTS) && gvm_file_remove_recurse (dir))
     {
       g_warning ("%s: failed to remove dir %s", __FUNCTION__, dir);
       g_free (dir);
@@ -48129,7 +48130,7 @@ create_report_format (const char *uuid, const char *name,
 
       if (strlen (file_name) == 0)
         {
-          openvas_file_remove_recurse (dir);
+          gvm_file_remove_recurse (dir);
           g_free (dir);
           g_free (quoted_name);
           g_free (new_uuid);
@@ -48155,7 +48156,7 @@ create_report_format (const char *uuid, const char *name,
         {
           g_warning ("%s: %s", __FUNCTION__, error->message);
           g_error_free (error);
-          openvas_file_remove_recurse (dir);
+          gvm_file_remove_recurse (dir);
           g_free (full_file_name);
           g_free (dir);
           g_free (quoted_name);
@@ -48173,7 +48174,7 @@ create_report_format (const char *uuid, const char *name,
           g_warning ("%s: chmod failed: %s\n",
                      __FUNCTION__,
                      strerror (errno));
-          openvas_file_remove_recurse (dir);
+          gvm_file_remove_recurse (dir);
           g_free (full_file_name);
           g_free (dir);
           g_free (quoted_name);
@@ -48250,7 +48251,7 @@ create_report_format (const char *uuid, const char *name,
 
       if (param->type == NULL)
         {
-          openvas_file_remove_recurse (dir);
+          gvm_file_remove_recurse (dir);
           g_free (dir);
           sql_rollback ();
           return 7;
@@ -48259,7 +48260,7 @@ create_report_format (const char *uuid, const char *name,
       if (report_format_param_type_from_name (param->type)
           == REPORT_FORMAT_PARAM_TYPE_ERROR)
         {
-          openvas_file_remove_recurse (dir);
+          gvm_file_remove_recurse (dir);
           g_free (dir);
           sql_rollback ();
           return 9;
@@ -48275,7 +48276,7 @@ create_report_format (const char *uuid, const char *name,
           min = strtoll (param->type_min, NULL, 0);
           if (min == LLONG_MIN)
             {
-              openvas_file_remove_recurse (dir);
+              gvm_file_remove_recurse (dir);
               g_free (dir);
               sql_rollback ();
               return 6;
@@ -48289,7 +48290,7 @@ create_report_format (const char *uuid, const char *name,
           max = strtoll (param->type_max, NULL, 0);
           if (max == LLONG_MAX)
             {
-              openvas_file_remove_recurse (dir);
+              gvm_file_remove_recurse (dir);
               g_free (dir);
               sql_rollback ();
               return 6;
@@ -48300,7 +48301,7 @@ create_report_format (const char *uuid, const char *name,
 
       if (param->fallback == NULL)
         {
-          openvas_file_remove_recurse (dir);
+          gvm_file_remove_recurse (dir);
           g_free (dir);
           sql_rollback ();
           return 5;
@@ -48314,7 +48315,7 @@ create_report_format (const char *uuid, const char *name,
                    report_format_rowid))
         {
           g_free (quoted_param_name);
-          openvas_file_remove_recurse (dir);
+          gvm_file_remove_recurse (dir);
           g_free (dir);
           sql_rollback ();
           return 8;
@@ -48350,7 +48351,7 @@ create_report_format (const char *uuid, const char *name,
         if (options == NULL)
           {
             g_warning ("%s: options was NULL", __FUNCTION__);
-            openvas_file_remove_recurse (dir);
+            gvm_file_remove_recurse (dir);
             g_free (dir);
             sql_rollback ();
             return -1;
@@ -48372,7 +48373,7 @@ create_report_format (const char *uuid, const char *name,
       if (validate_param_value (report_format_rowid, param_rowid, param->name,
                                 param->value))
         {
-          openvas_file_remove_recurse (dir);
+          gvm_file_remove_recurse (dir);
           g_free (dir);
           sql_rollback ();
           return 3;
@@ -48381,7 +48382,7 @@ create_report_format (const char *uuid, const char *name,
       if (validate_param_value (report_format_rowid, param_rowid, param->name,
                                 param->fallback))
         {
-          openvas_file_remove_recurse (dir);
+          gvm_file_remove_recurse (dir);
           g_free (dir);
           sql_rollback ();
           return 4;
@@ -48497,7 +48498,7 @@ copy_report_format (const char* name, const char* source_uuid,
                                NULL);
 
   if (g_file_test (copy_dir, G_FILE_TEST_EXISTS)
-      && openvas_file_remove_recurse (copy_dir))
+      && gvm_file_remove_recurse (copy_dir))
     {
       g_warning ("%s: failed to remove dir %s", __FUNCTION__, copy_dir);
       g_free (source_dir);
@@ -48594,7 +48595,7 @@ copy_report_format (const char* name, const char* source_uuid,
             source_file = g_build_filename (source_dir, filename, NULL);
             copy_file = g_build_filename (copy_dir, filename, NULL);
 
-            if (openvas_file_copy (source_file, copy_file) == FALSE)
+            if (gvm_file_copy (source_file, copy_file) == FALSE)
               {
                 g_warning ("%s: copy of %s to %s failed.\n",
                            __FUNCTION__, source_file, copy_file);
@@ -48724,7 +48725,7 @@ static int
 move_report_format_dir (const char *dir, const char *new_dir)
 {
   if (g_file_test (dir, G_FILE_TEST_EXISTS)
-      && openvas_file_check_is_dir (dir))
+      && gvm_file_check_is_dir (dir))
     {
       if (rename (dir, new_dir))
         {
@@ -48760,7 +48761,7 @@ move_report_format_dir (const char *dir, const char *new_dir)
                   gchar *entry_path, *new_path;
                   entry_path = g_build_filename (dir, entry, NULL);
                   new_path = g_build_filename (new_dir, entry, NULL);
-                  if (openvas_file_move (entry_path, new_path) == FALSE)
+                  if (gvm_file_move (entry_path, new_path) == FALSE)
                     {
                       g_warning ("%s: failed to move %s to %s",
                                  __FUNCTION__, entry_path, new_path);
@@ -48775,7 +48776,7 @@ move_report_format_dir (const char *dir, const char *new_dir)
 
               g_dir_close (directory);
 
-              openvas_file_remove_recurse (dir);
+              gvm_file_remove_recurse (dir);
             }
           else
             {
@@ -48893,7 +48894,7 @@ delete_report_format (const char *report_format_id, int ultimate)
       report_format_string = g_strdup_printf ("%llu", report_format);
       dir = report_format_trash_dir (report_format_string);
       g_free (report_format_string);
-      if (g_file_test (dir, G_FILE_TEST_EXISTS) && openvas_file_remove_recurse (dir))
+      if (g_file_test (dir, G_FILE_TEST_EXISTS) && gvm_file_remove_recurse (dir))
         {
           g_free (dir);
           g_free (base);
@@ -48954,7 +48955,7 @@ delete_report_format (const char *report_format_id, int ultimate)
 
       /* Remove directory. */
 
-      if (g_file_test (dir, G_FILE_TEST_EXISTS) && openvas_file_remove_recurse (dir))
+      if (g_file_test (dir, G_FILE_TEST_EXISTS) && gvm_file_remove_recurse (dir))
         {
           g_free (dir);
           sql_rollback ();
@@ -56120,7 +56121,7 @@ manage_schema (gchar *format, gchar **output_return, gsize *output_length,
 
         /* Remove the output directory. */
 
-        openvas_file_remove_recurse (output_dir);
+        gvm_file_remove_recurse (output_dir);
 
         /* Return the output. */
 
@@ -57302,7 +57303,7 @@ manage_empty_trashcan ()
       dir = report_format_trash_dir (name);
       g_free (name);
 
-      if (g_file_test (dir, G_FILE_TEST_EXISTS) && openvas_file_remove_recurse (dir))
+      if (g_file_test (dir, G_FILE_TEST_EXISTS) && gvm_file_remove_recurse (dir))
         {
           g_warning ("%s: failed to remove trash dir %s", __FUNCTION__, dir);
           g_free (dir);

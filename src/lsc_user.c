@@ -35,7 +35,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-#include <openvas/base/openvas_file.h>
+#include <gvm/base/fileutils.h>
 
 #undef G_LOG_DOMAIN
 /**
@@ -204,7 +204,7 @@ lsc_user_keys_create (const gchar *password,
  free_exit:
 
   g_free (key_path);
-  openvas_file_remove_recurse (key_dir);
+  gvm_file_remove_recurse (key_dir);
   return ret;
 }
 
@@ -282,7 +282,7 @@ lsc_user_rpm_create (const gchar *username,
   g_debug ("%s: copy key to temporary directory\n", __FUNCTION__);
   pubkey_basename = g_strdup_printf ("%s.pub", username);
   new_pubkey_filename = g_build_filename (tmpdir, pubkey_basename, NULL);
-  if (openvas_file_copy (public_key_path, new_pubkey_filename)
+  if (gvm_file_copy (public_key_path, new_pubkey_filename)
       == FALSE)
     {
       g_debug ("%s: failed to copy key file %s to %s",
@@ -352,7 +352,7 @@ lsc_user_rpm_create (const gchar *username,
 
   /* Move the RPM from the temporary directory to the given destination. */
 
-  if (openvas_file_move (rpm_path, to_filename) == FALSE && success == TRUE)
+  if (gvm_file_move (rpm_path, to_filename) == FALSE && success == TRUE)
     {
       g_debug ("%s: failed to move RPM %s to %s",
                __FUNCTION__, rpm_path, to_filename);
@@ -361,7 +361,7 @@ lsc_user_rpm_create (const gchar *username,
 
   /* Remove the copy of the public key and the temporary directory. */
 
-  if (openvas_file_remove_recurse (tmpdir) != 0 && success == TRUE)
+  if (gvm_file_remove_recurse (tmpdir) != 0 && success == TRUE)
     {
       g_debug ("%s: failed to remove temporary directory %s",
                __FUNCTION__, tmpdir);
@@ -471,13 +471,13 @@ lsc_user_rpm_recreate (const gchar *name, const char *public_key,
 
  rm_exit:
 
-  openvas_file_remove_recurse (rpm_dir);
+  gvm_file_remove_recurse (rpm_dir);
 
  free_exit:
 
   g_free (public_key_path);
 
-  openvas_file_remove_recurse (key_dir);
+  gvm_file_remove_recurse (key_dir);
 
   return ret;
 }
@@ -652,13 +652,13 @@ lsc_user_deb_recreate (const gchar *name, const char *rpm, gsize rpm_size,
 
  rm_exit:
 
-  openvas_file_remove_recurse (deb_dir);
+  gvm_file_remove_recurse (deb_dir);
 
  free_exit:
 
   g_free (rpm_path);
 
-  openvas_file_remove_recurse (rpm_dir);
+  gvm_file_remove_recurse (rpm_dir);
 
   return ret;
 }
@@ -918,7 +918,7 @@ lsc_user_exe_recreate (const gchar *name, const gchar *password,
 
  rm_exit:
 
-  openvas_file_remove_recurse (exe_dir);
+  gvm_file_remove_recurse (exe_dir);
 
   g_free (exe_path);
 

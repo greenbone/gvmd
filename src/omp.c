@@ -113,10 +113,11 @@
 
 #include <gnutls/x509.h>
 
+#include <gvm/base/fileutils.h>
+
 #include <openvas/base/nvti.h>
 #include <openvas/osp/osp.h>
 #include <openvas/base/openvas_string.h>
-#include <openvas/base/openvas_file.h>
 #include <openvas/base/pwpolicy.h>
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/misc/openvas_logging.h>
@@ -11197,7 +11198,7 @@ strdiff (const gchar *one, const gchar *two)
     {
       g_warning ("%s", error->message);
       g_error_free (error);
-      openvas_file_remove_recurse (dir);
+      gvm_file_remove_recurse (dir);
       g_free (one_file);
       return NULL;
     }
@@ -11209,7 +11210,7 @@ strdiff (const gchar *one, const gchar *two)
     {
       g_warning ("%s", error->message);
       g_error_free (error);
-      openvas_file_remove_recurse (dir);
+      gvm_file_remove_recurse (dir);
       g_free (one_file);
       g_free (two_file);
       return NULL;
@@ -11291,7 +11292,7 @@ strdiff (const gchar *one, const gchar *two)
   g_free (standard_err);
   g_free (one_file);
   g_free (two_file);
-  openvas_file_remove_recurse (dir);
+  gvm_file_remove_recurse (dir);
 
   return ret;
 }

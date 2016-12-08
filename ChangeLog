@@ -1,5 +1,50 @@
 2016-12-08  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	* src/omp.c: Change include from openvas/base/openvas_file.h
+	to gvm/base/fileutils.h.
+	(strdiff): Adjust function call from
+	openvas_file_remove_recurse to gvm_file_remove_recurse.
+
+	* src/manage_sql.c: Change include from openvas/base/openvas_file.h
+	to gvm/base/fileutils.h.
+	(run_alert_script, send_to_sourcefire, send_to_verinice,
+	update_report_format_uuid, check_db_report_formats_trash, manage_report,
+	apply_report_format, manage_send_report, create_report_format,
+	copy_report_format, move_report_format_dir, delete_report_format,
+	manage_schema, manage_empty_trashcan): Adjust function call from
+	openvas_file_remove_recurse to gvm_file_remove_recurse.
+	(escalate_2): Adjust function call from
+	openvas_export_file_name to gvm_export_file_name.
+	(print_report_xml_end, copy_report_format): Adjust function call from
+	openvas_file_copy to gvm_file_copy.
+	(move_report_format_dir): Adjust function call from
+	openvas_file_check_is_dir to gvm_file_check_is_dir.
+	(move_report_format_dir): Adjust function call from
+	openvas_file_move to gvm_file_move.
+
+	* src/lsc_user.c: Change include from openvas/base/openvas_file.h
+	to gvm/base/fileutils.h.
+	(lsc_user_rpm_create): Adjust function call from
+	openvas_file_move to gvm_file_move.
+	Adjust function call from openvas_file_copy to gvm_file_copy.
+	(lsc_user_rpm_create, lsc_user_keys_create, lsc_user_rpm_recreate,
+	lsc_user_deb_recreate, lsc_user_exe_recreate): Adjust function call from
+	openvas_file_remove_recurse to gvm_file_remove_recurse.
+
+	* src/manage.c: Change include from openvas/base/openvas_file.h
+	to gvm/base/fileutils.h.
+	(task_scanner_options): Adjust function call from
+	openvas_file_as_base64 to gvm_file_as_base64.
+
+	* src/manage_migrators.c: Change include from openvas/base/openvas_file.h
+	to gvm/base/fileutils.h.
+	(migrate_21_to_22, migrate_37_to_38, migrate_54_to_55_format,
+	migrate_79_to_80, migrate_171_to_172, migrate_174_to_175,
+	migrate_181_to_182_move): Adjust function call from
+	openvas_file_remove_recurse to gvm_file_remove_recurse.
+
+2016-12-08  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	* src/openvasmd.c: Change include file from openvas/base/pidfile.h
 	to gvm/base/pidfile.h.
 

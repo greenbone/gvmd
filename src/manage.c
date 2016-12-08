@@ -68,10 +68,10 @@
 #include <unistd.h>
 
 #include <gvm/base/cvss.h>
+#include <gvm/base/fileutils.h>
 
 #include <openvas/base/gpgme_util.h>
 #include <openvas/base/openvas_string.h>
-#include <openvas/base/openvas_file.h>
 #include <openvas/base/openvas_hosts.h>
 #include <openvas/omp/omp.h>
 #include <openvas/misc/openvas_server.h>
@@ -3579,7 +3579,7 @@ task_scanner_options (task_t task, target_t target)
             continue;
           fname = g_strdup_printf ("%s/%s", OPENVAS_SCAP_DATA_DIR "/",
                                    preference_iterator_value (&prefs));
-          value = openvas_file_as_base64 (fname);
+          value = gvm_file_as_base64 (fname);
           if (!value)
             continue;
         }

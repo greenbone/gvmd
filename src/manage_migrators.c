@@ -139,8 +139,9 @@
 #include "manage_sql.h"
 #include "sql.h"
 
+#include <gvm/base/fileutils.h>
+
 #include <openvas/misc/openvas_uuid.h>
-#include <openvas/base/openvas_file.h>
 #include <openvas/misc/openvas_logging.h>
 
 #undef G_LOG_DOMAIN
@@ -2305,7 +2306,7 @@ migrate_21_to_22 ()
       if (g_file_test (new_dir, G_FILE_TEST_EXISTS))
         {
           if (g_file_test (old_dir, G_FILE_TEST_EXISTS)
-              && openvas_file_remove_recurse (old_dir))
+              && gvm_file_remove_recurse (old_dir))
             g_warning ("%s: failed to remove %s\n",
                        __FUNCTION__,
                        old_dir);
@@ -3141,7 +3142,7 @@ migrate_37_to_38 ()
                               "global_report_formats",
                               NULL);
 
-  openvas_file_remove_recurse (old_dir);
+  gvm_file_remove_recurse (old_dir);
   g_free (old_dir);
 
   /* Move user uploaded report formats. */
@@ -3949,7 +3950,7 @@ migrate_54_to_55_format (const char *old_uuid, const char *new_uuid)
                           old_uuid,
                           NULL);
 
-  if (g_file_test (dir, G_FILE_TEST_EXISTS) && openvas_file_remove_recurse (dir))
+  if (g_file_test (dir, G_FILE_TEST_EXISTS) && gvm_file_remove_recurse (dir))
     {
       g_warning ("%s: failed to remove dir %s", __FUNCTION__, dir);
       g_free (dir);
@@ -6773,14 +6774,14 @@ migrate_79_to_80 ()
                    __FUNCTION__, dir, g_strerror (errno));
     }
   else
-    openvas_file_remove_recurse (dir);
+    gvm_file_remove_recurse (dir);
 
   g_free (dir);
 
   /* Remove user dirs. */
 
   for (index = 0; index < dirs->len; index++)
-    openvas_file_remove_recurse (g_ptr_array_index (dirs, index));
+    gvm_file_remove_recurse (g_ptr_array_index (dirs, index));
   array_free (dirs);
 
   /* Set the database version to 80. */
@@ -12982,7 +12983,7 @@ migrate_171_to_172 ()
             {
               g_debug ("%s: Skipping '%s', directory already exists",
                          __FUNCTION__, new_subdir_path);
-              openvas_file_remove_recurse (old_subdir_path);
+              gvm_file_remove_recurse (old_subdir_path);
               g_dir_close (new_subdir);
             }
           else if (error->code == G_FILE_ERROR_NOENT)
@@ -13249,7 +13250,7 @@ migrate_174_to_175 ()
         {
           g_debug ("%s: Skipping '%s', directory already exists",
                    __FUNCTION__, new_subdir_path);
-          openvas_file_remove_recurse (old_subdir_path);
+          gvm_file_remove_recurse (old_subdir_path);
           g_dir_close (new_subdir);
         }
       else if (error->code == G_FILE_ERROR_NOENT)
@@ -13314,7 +13315,7 @@ migrate_174_to_175 ()
       return -1;
     }
 
-  openvas_file_remove_recurse (old_dir_path);
+  gvm_file_remove_recurse (old_dir_path);
   g_free (old_dir_path);
 
   /* Set the database version to 175. */
@@ -13836,7 +13837,7 @@ migrate_181_to_182_move (const char *dest)
       return -1;
     }
 
-  openvas_file_remove_recurse (old_dir_path);
+  gvm_file_remove_recurse (old_dir_path);
  free_exit:
   g_free (old_dir_path);
 
