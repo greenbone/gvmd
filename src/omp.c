@@ -115,7 +115,6 @@
 
 #include <gvm/base/fileutils.h>
 
-#include <openvas/base/nvti.h>
 #include <openvas/osp/osp.h>
 #include <openvas/base/openvas_string.h>
 #include <openvas/base/pwpolicy.h>
