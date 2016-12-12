@@ -1,3 +1,8 @@
+2016-12-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/alert_methods/SCP/alert: Add /etc/ssh/ssh_known_hosts to the list of
+	known host files.  Log an error message to syslog if sshpass fails.
+
 2016-12-12  Benoît Allard  <benoit.allard@greenbone.net>
 
 	* src/omp.c (handle_get_reports): Consider a format_id of "" as a void
