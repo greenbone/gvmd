@@ -16507,7 +16507,7 @@ handle_get_reports (omp_parser_t *omp_parser, GError **error)
       return;
     }
 
-  if (get_reports_data->format_id == NULL)
+  if ((get_reports_data->format_id == NULL) || (strcmp(get_reports_data->format_id, "") == 0))
     get_reports_data->format_id
       = g_strdup ("a994b278-1f62-11e1-96ac-406186ea4fc5");
 

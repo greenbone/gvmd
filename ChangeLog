@@ -1,3 +1,8 @@
+2016-12-12  Benoît Allard  <benoit.allard@greenbone.net>
+
+	* src/omp.c (handle_get_reports): Consider a format_id of "" as a void
+	  one.
+
 2016-12-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_manage_internal): Set task_db_name to NULL if
