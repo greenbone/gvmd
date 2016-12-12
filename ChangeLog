@@ -1,3 +1,8 @@
+2016-12-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (parse_ctime): Add time to error messages.
+	(parse_iso_time): Also try "2016-03-01 00:00:00" format if ISO fails.
+
 2016-12-09  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/manage.h: Change include from openvas/base/nvti.h to

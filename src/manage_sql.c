@@ -864,13 +864,13 @@ parse_ctime (const char *text_time)
 
   if (strptime ((char*) text_time, "%a %b %d %H:%M:%S %Y", &tm) == NULL)
     {
-      g_warning ("%s: Failed to parse time", __FUNCTION__);
+      g_warning ("%s: Failed to parse time '%s'", __FUNCTION__, text_time);
       return 0;
     }
   epoch_time = mktime (&tm);
   if (epoch_time == -1)
     {
-      g_warning ("%s: Failed to make time", __FUNCTION__);
+      g_warning ("%s: Failed to make time '%s'", __FUNCTION__, text_time);
       return 0;
     }
 
@@ -901,9 +901,10 @@ parse_iso_time (const char *text_time)
 
       if (strptime ((char*) text_time, "%FT%TZ", &tm) == NULL)
         {
-          /* Try time without timezone suffix, applying timezone of user */
+          /* Try time without timezone suffix, applying timezone of user. */
 
-          if (strptime ((char*) text_time, "%FT%T", &tm) == NULL)
+          if ((strptime ((char*) text_time, "%FT%T", &tm) == NULL)
+              && (strptime ((char*) text_time, "%F %T", &tm) == NULL))
             return parse_ctime (text_time);
 
           /* Store current TZ. */
@@ -919,7 +920,8 @@ parse_iso_time (const char *text_time)
               return 0;
             }
 
-          if (strptime ((char*) text_time, "%FT%T", &tm) == NULL)
+          if ((strptime ((char*) text_time, "%FT%T", &tm) == NULL)
+              && (strptime ((char*) text_time, "%F %T", &tm) == NULL))
             {
               assert (0);
               g_warning ("%s: Failed to parse time", __FUNCTION__);
