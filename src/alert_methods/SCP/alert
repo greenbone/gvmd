@@ -38,9 +38,31 @@ PASSWORD_FILE=`mktemp` || exit 1
 echo $PASSWORD > $PASSWORD_FILE
 
 # Escape destination twice because it is also expanded on the remote end.
-sshpass -f ${PASSWORD_FILE} scp -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2" "${REPORT_FILE}" "${USERNAME}@${HOST}:'${DEST}'"
+sshpass -f ${PASSWORD_FILE} scp -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2 /etc/ssh/ssh_known_hosts" "${REPORT_FILE}" "${USERNAME}@${HOST}:'${DEST}'"
 
-#echo $? > /tmp/EXIT_CODE
+EXIT_CODE=$?
+if [ $EXIT_CODE -eq 1 ]
+then
+  logger "SCP alert: sshpass failed with exit code ${EXIT_CODE}: Invalid command line argument"
+elif [ $EXIT_CODE -eq 2 ]
+then
+  logger "SCP alert: sshpass failed with exit code ${EXIT_CODE}: Conflicting arguments given"
+elif [ $EXIT_CODE -eq 3 ]
+then
+  logger "SCP alert: sshpass failed with exit code ${EXIT_CODE}: General runtime error"
+elif [ $EXIT_CODE -eq 4 ]
+then
+  logger "SCP alert: sshpass failed with exit code ${EXIT_CODE}: Unrecognized response from ssh (parse error)"
+elif [ $EXIT_CODE -eq 5 ]
+then
+  logger "SCP alert: sshpass failed with exit code ${EXIT_CODE}: Invalid/incorrect password"
+elif [ $EXIT_CODE -eq 6 ]
+then
+  logger "SCP alert: sshpass failed with exit code ${EXIT_CODE}: Host public key is unknown."
+elif [ $EXIT_CODE -ne 0 ]
+then
+  logger "SCP alert: sshpass failed with exit code ${EXIT_CODE}"
+fi
 
 rm $KNOWN_HOSTS_FILE
 rm $PASSWORD_FILE
