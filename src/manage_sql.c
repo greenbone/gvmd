@@ -15913,7 +15913,7 @@ init_manage_internal (GSList *log_config,
     update_nvti_cache ();
 
   sql_close ();
-  task_db_name = g_strdup (database);
+  task_db_name = database ? g_strdup (database) : NULL;
   if (fork_connection)
     manage_fork_connection = fork_connection;
   return 0;

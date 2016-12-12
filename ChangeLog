@@ -1,4 +1,9 @@
-2016-12-08  Matthew Mundell <matthew.mundell@greenbone.net>
+2016-12-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_manage_internal): Set task_db_name to NULL if
+	database is not given, instead of trying to strdup NULL.
+
+2016-12-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (parse_ctime): Add time to error messages.
 	(parse_iso_time): Also try "2016-03-01 00:00:00" format if ISO fails.
