@@ -1,3 +1,10 @@
+2016-12-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r26889.
+
+	* src/alert_methods/SCP/alert: Add /etc/ssh/ssh_known_hosts to the list of
+	known host files.  Log an error message to syslog if sshpass fails.
+
 2016-12-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r26845.
