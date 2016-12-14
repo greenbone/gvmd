@@ -1,3 +1,35 @@
+2016-12-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add cache of which users may get which tasks and use it to improve
+	performance of get_vulns.
+
+	* src/manage_pg.c (manage_create_sql_functions): Check if table
+	permissions_get_tasks before creating vuln_results function and use
+	the cached permissions from that table.
+	(create_tables): Add new table permissions_get_tasks.
+
+	* src/manage_sql.c (make_task_complete, copy_task, delete_task)
+	(delete_group, modify_group, create_permission_internal)
+	(delete_permission, modify_permission, delete_role, modify_role)
+	(manage_restore, create_user, copy_user, delete_user, modify_user):
+	Manage the permissions cache of the appropriate users and tasks.
+	(VULN_RESULTS_WHERE): Use the cached permissions from the table
+	permissions_get_tasks.
+	(all_users_array, cache_permissions_for_resource)
+	(cache_permissions_for_users, cache_all_permissions_for_users)
+	(delete_permissions_cache_for_resource)
+	(delete_permissions_cache_for_user): New functions.
+	(manage_optimize): Add new option rebuild-permissions-cache.
+
+	* src/manage_sqlite3.c (sql_vuln_results): Use the cached permissions
+	from the table permissions_get_tasks.
+	(create_tables): Add new table permissions_get_tasks.
+
+	* src/manage.h (cache_permissions_for_resource)
+	(cache_permissions_for_users, cache_all_permissions_for_users)
+	(delete_permissions_cache_for_resource)
+	(delete_permissions_cache_for_user): New function prototypes.
+
 2016-12-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/alert_methods/SCP/alert: Add /etc/ssh/ssh_known_hosts to the list of

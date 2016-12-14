@@ -1653,21 +1653,33 @@ manage_create_sql_functions ()
        "  SELECT $1;"
        "$$ LANGUAGE SQL;");
 
-  sql ("DROP FUNCTION IF EXISTS"
-       " vuln_results (text, bigint, bigint, text, integer);");
-  sql ("CREATE OR REPLACE FUNCTION vuln_results (text, bigint, bigint, text)"
-       " RETURNS bigint AS $$"
-       " SELECT count(*) FROM results"
-       " WHERE results.nvt = $1"
-       "   AND ($2 IS NULL OR results.task = $2)"
-       "   AND ($3 IS NULL OR results.report = $3)"
-       "   AND ($4 IS NULL OR results.host = $4)"
-       "   AND (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")"
-       "   AND (SELECT hidden = 0 FROM tasks"
-       "         WHERE tasks.id = results.task)"
-       "   AND user_has_access_uuid ('result', results.uuid,"
-       "                             'get_results', 0)"
-       "$$ LANGUAGE SQL;");
+  if (sql_int ("SELECT (EXISTS (SELECT * FROM information_schema.tables"
+               "               WHERE table_catalog = '%s'"
+               "               AND table_schema = 'public'"
+               "               AND table_name = 'permissions_get_tasks'))"
+               " ::integer;",
+               sql_database ()))
+    {
+      sql ("DROP FUNCTION IF EXISTS"
+           " vuln_results (text, bigint, bigint, text, integer);");
+      sql ("CREATE OR REPLACE FUNCTION"
+           " vuln_results (text, bigint, bigint, text)"
+           " RETURNS bigint AS $$"
+           " SELECT count(*) FROM results"
+           " WHERE results.nvt = $1"
+           "   AND ($2 IS NULL OR results.task = $2)"
+           "   AND ($3 IS NULL OR results.report = $3)"
+           "   AND ($4 IS NULL OR results.host = $4)"
+           "   AND (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")"
+           "   AND (SELECT hidden = 0 FROM tasks"
+           "         WHERE tasks.id = results.task)"
+           "   AND (SELECT has_permission FROM permissions_get_tasks"
+           "         WHERE \"user\" = (SELECT id FROM users"
+           "                           WHERE uuid ="
+           "                            (SELECT uuid FROM current_credentials))"
+           "           AND task = results.task)"
+           "$$ LANGUAGE SQL;");
+    }
 
   return 0;
 }
@@ -1860,6 +1872,12 @@ create_tables ()
        "  term text,"
        "  creation_time integer,"
        "  modification_time integer);");
+
+  sql ("CREATE TABLE IF NOT EXISTS permissions_get_tasks"
+       " (\"user\" integer REFERENCES users ON DELETE CASCADE,"
+       "  task integer REFERENCES tasks ON DELETE CASCADE,"
+       "  has_permission boolean,"
+       "  UNIQUE (\"user\", task));");
 
   sql ("CREATE TABLE IF NOT EXISTS groups"
        " (id SERIAL PRIMARY KEY,"

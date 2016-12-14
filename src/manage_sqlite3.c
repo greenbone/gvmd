@@ -2155,8 +2155,12 @@ sql_vuln_results (sqlite3_context *context, int argc,
                "   AND (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")"
                "   AND (SELECT hidden = 0 FROM tasks"
                "         WHERE tasks.id = results.task)"
-               "   AND user_has_access_uuid ('result', results.uuid,"
-               "                             'get_results', 0)",
+               "   AND (SELECT has_permission FROM permissions_get_tasks"
+               "         WHERE \"user\" = (SELECT id FROM users"
+               "                           WHERE uuid ="
+               "                             (SELECT uuid"
+               "                              FROM current_credentials))"
+               "           AND task = results.task)",
                nvt_oid_quoted,
                report_null,
                report,
@@ -3007,6 +3011,9 @@ create_tables ()
        "  resource_type, resource, resource_uuid, resource_location,"
        "  subject_type, subject, subject_location,"
        "  creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS permissions_get_tasks"
+       " (\"user\" integer, task integer, has_permission boolean,"
+       "  UNIQUE (\"user\", task));");
   /* Overlapping port ranges will cause problems, at least for the port
    * counting.  OMP CREATE_PORT_LIST and CREATE_PORT_RANGE check for this,
    * but whoever creates a predefined port list must check this manually. */

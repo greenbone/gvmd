@@ -30119,6 +30119,8 @@ make_task_complete (const char *uuid)
   if (task == 0)
     return;
 
+  cache_permissions_for_resource ("task", task, NULL);
+
   event (task, 0, EVENT_TASK_RUN_STATUS_CHANGED, (void*) TASK_STATUS_NEW);
 }
 
@@ -30278,6 +30280,8 @@ copy_task (const char* name, const char* comment, const char *task_id,
       sql_rollback ();
       return ret;
     }
+
+  cache_permissions_for_resource ("task", new, NULL);
 
   sql_commit ();
   if (new_task) *new_task = new;
@@ -30546,6 +30550,8 @@ delete_task (task_t task, int ultimate)
 
       sql ("UPDATE tasks SET hidden = 2 WHERE id = %llu;", task);
     }
+
+  delete_permissions_cache_for_resource ("task", task);
 
   return 0;
 }
@@ -51277,6 +51283,8 @@ int
 delete_group (const char *group_id, int ultimate)
 {
   group_t group = 0;
+  GArray *affected_users;
+  iterator_t users_iter;
 
   sql_begin_immediate ();
 
@@ -51402,8 +51410,23 @@ delete_group (const char *group_id, int ultimate)
 
   tags_set_orphans ("group", group, LOCATION_TABLE);
 
+  affected_users = g_array_new (TRUE, TRUE, sizeof (user_t));
+  init_iterator (&users_iter,
+                  "SELECT \"user\" FROM group_users"
+                  " WHERE \"group\" = %llu",
+                  group);
+  while (next (&users_iter))
+    {
+      user_t user = iterator_int64 (&users_iter, 0);
+      g_array_append_val (affected_users, user);
+    }
+  cleanup_iterator (&users_iter);
+
   sql ("DELETE FROM group_users WHERE \"group\" = %llu;", group);
   sql ("DELETE FROM groups WHERE id = %llu;", group);
+
+  cache_all_permissions_for_users (affected_users);
+  g_array_free (affected_users, TRUE);
 
   sql_commit ();
   return 0;
@@ -51582,6 +51605,8 @@ modify_group (const char *group_id, const char *name, const char *comment,
   int ret;
   gchar *quoted_name, *quoted_comment;
   group_t group;
+  GArray *affected_users;
+  iterator_t users_iter;
 
   assert (current_credentials.uuid);
 
@@ -51635,9 +51660,58 @@ modify_group (const char *group_id, const char *name, const char *comment,
   g_free (quoted_comment);
   g_free (quoted_name);
 
+  affected_users = g_array_new (TRUE, TRUE, sizeof (user_t));
+  init_iterator (&users_iter,
+                 "SELECT \"user\" FROM group_users"
+                 " WHERE \"group\" = %llu",
+                 group);
+  while (next (&users_iter))
+    {
+      user_t user = iterator_int64 (&users_iter, 0);
+      g_array_append_val (affected_users, user);
+    }
+  cleanup_iterator (&users_iter);
+
   sql ("DELETE FROM group_users WHERE \"group\" = %llu;", group);
 
   ret = add_users ("group", group, users);
+
+  init_iterator (&users_iter,
+                 "SELECT \"user\" FROM group_users"
+                 " WHERE \"group\" = %llu",
+                 group);
+
+  // users not looked for in this above loop were removed
+  //  -> possible permissions change
+  while (next (&users_iter))
+    {
+      int index, found_user;
+      user_t user = iterator_int64 (&users_iter, 0);
+
+      found_user = 0;
+      for (index = 0; index < affected_users->len && found_user == 0; index++)
+        {
+          if (g_array_index (affected_users, user_t, index) == user)
+            found_user = 1;
+        }
+
+      if (found_user)
+        {
+          // users found here stay in the group -> no change in permissions
+          g_array_remove_index_fast (affected_users, index);
+        }
+      else
+        {
+          // user added to group -> possible permissions change
+          g_array_append_val (affected_users, user);
+        }
+    }
+
+  cleanup_iterator (&users_iter);
+
+  cache_all_permissions_for_users (affected_users);
+
+  g_array_free (affected_users, TRUE);
 
   if (ret)
     sql_rollback ();
@@ -52038,6 +52112,11 @@ create_permission_internal (const char *name_arg, const char *comment,
        subject_id ? subject_type : "NULL",
        subject_id ? "'" : "",
        subject);
+
+  if (strcasecmp (name, "super") == 0)
+    cache_all_permissions_for_users (NULL);
+  else if (resource_type && resource)
+    cache_permissions_for_resource (resource_type, resource, NULL);
 
   g_free (quoted_comment);
   g_free (quoted_name);
@@ -52802,8 +52881,8 @@ int
 delete_permission (const char *permission_id, int ultimate)
 {
   permission_t permission = 0;
-  char *subject_type;
-  resource_t subject;
+  char *name, *subject_type, *resource_type;
+  resource_t subject, resource;
 
   if (strcasecmp (permission_id, PERMISSION_UUID_ADMIN_EVERYTHING) == 0)
     return 3;
@@ -52881,7 +52960,18 @@ delete_permission (const char *permission_id, int ultimate)
   else
     tags_set_orphans ("permission", permission, LOCATION_TABLE);
 
+  name = permission_name (permission);
+  resource_type = permission_resource_type (permission);
+  resource = permission_resource (permission);
+
   sql ("DELETE FROM permissions WHERE id = %llu;", permission);
+
+  if (strcasecmp (name, "super") == 0)
+    cache_all_permissions_for_users (NULL);
+  else if (resource_type && resource)
+    cache_permissions_for_resource (resource_type, resource, NULL);
+
+  free (resource_type);
 
   sql_commit ();
   return 0;
@@ -52933,6 +53023,8 @@ modify_permission (const char *permission_id, const char *name_arg,
   char *new_resource_id, *new_subject_type, *new_subject_id;
   gchar *name, *quoted_name, *resource_type;
   const char *resource_id;
+  char *old_name, *old_resource_type;
+  resource_t old_resource;
 
   if (permission_id == NULL)
     return 4;
@@ -53043,6 +53135,10 @@ modify_permission (const char *permission_id, const char *name_arg,
   quoted_name = sql_quote (name);
   g_free (name);
 
+  old_name = permission_name (permission);
+  old_resource_type = permission_resource_type (permission);
+  old_resource = permission_resource (permission);
+
   sql ("UPDATE permissions SET"
        " name = '%s',"
        " resource_type = '%s',"
@@ -53061,11 +53157,25 @@ modify_permission (const char *permission_id, const char *name_arg,
        subject,
        permission);
 
+  if (strcasecmp (name, "super") == 0 || strcasecmp (old_name, "super") == 0)
+    cache_all_permissions_for_users (NULL);
+  else
+    {
+      if (new_resource_type && new_resource_id && strcmp (resource_id, ""))
+        cache_permissions_for_resource (resource_type, resource, NULL);
+
+      if ((resource != old_resource)
+          || strcmp (resource_type, old_resource_type))
+        cache_permissions_for_resource (old_resource_type, old_resource, NULL);
+    }
+
   g_free (quoted_name);
   free (new_resource_type);
   free (new_resource_id);
   free (existing_subject_type);
   free (new_subject_id);
+  free (old_name);
+  free (old_resource_type);
 
   sql_commit ();
 
@@ -54728,6 +54838,8 @@ int
 delete_role (const char *role_id, int ultimate)
 {
   role_t role = 0;
+  GArray *affected_users;
+  iterator_t users_iter;
 
   sql_begin_immediate ();
 
@@ -54857,8 +54969,23 @@ delete_role (const char *role_id, int ultimate)
       tags_set_orphans ("role", role, LOCATION_TABLE);
     }
 
+  affected_users = g_array_new (TRUE, TRUE, sizeof (user_t));
+  init_iterator (&users_iter,
+                  "SELECT \"user\" FROM role_users"
+                  " WHERE \"role\" = %llu",
+                  role);
+  while (next (&users_iter))
+    {
+      user_t user = iterator_int64 (&users_iter, 0);
+      g_array_append_val (affected_users, user);
+    }
+  cleanup_iterator (&users_iter);
+
   sql ("DELETE FROM role_users WHERE \"role\" = %llu;", role);
   sql ("DELETE FROM roles WHERE id = %llu;", role);
+
+  cache_all_permissions_for_users (affected_users);
+  g_array_free (affected_users, TRUE);
 
   sql_commit ();
   return 0;
@@ -55015,6 +55142,8 @@ modify_role (const char *role_id, const char *name, const char *comment,
   int ret;
   gchar *quoted_name, *quoted_comment;
   role_t role;
+  GArray *affected_users;
+  iterator_t users_iter;
 
   assert (current_credentials.uuid);
 
@@ -55068,9 +55197,58 @@ modify_role (const char *role_id, const char *name, const char *comment,
   g_free (quoted_comment);
   g_free (quoted_name);
 
+  affected_users = g_array_new (TRUE, TRUE, sizeof (user_t));
+  init_iterator (&users_iter,
+                 "SELECT \"user\" FROM role_users"
+                 " WHERE \"role\" = %llu",
+                 role);
+  while (next (&users_iter))
+    {
+      user_t user = iterator_int64 (&users_iter, 0);
+      g_array_append_val (affected_users, user);
+    }
+  cleanup_iterator (&users_iter);
+
   sql ("DELETE FROM role_users WHERE \"role\" = %llu;", role);
 
   ret = add_users ("role", role, users);
+
+  init_iterator (&users_iter,
+                 "SELECT \"user\" FROM role_users"
+                 " WHERE \"role\" = %llu",
+                 role);
+
+  // users not looked for in this loop were removed
+  //  -> possible permissions change
+  while (next (&users_iter))
+    {
+      int index, found_user;
+      user_t user = iterator_int64 (&users_iter, 0);
+
+      found_user = 0;
+      for (index = 0; index < affected_users->len && found_user == 0; index++)
+        {
+          if (g_array_index (affected_users, user_t, index) == user)
+            found_user = 1;
+        }
+
+      if (found_user)
+        {
+          // users found here stay in the role -> no change in permissions
+          g_array_remove_index_fast (affected_users, index);
+        }
+      else
+        {
+          // user added to role -> possible permissions change
+          g_array_append_val (affected_users, user);
+        }
+    }
+
+  cleanup_iterator (&users_iter);
+
+  cache_all_permissions_for_users (affected_users);
+
+  g_array_free (affected_users, TRUE);
 
   if (ret)
     sql_rollback ();
@@ -56423,6 +56601,8 @@ manage_restore (const char *id)
   if (resource)
     {
       group_t group;
+      GArray *affected_users;
+      iterator_t users_iter;
 
       if (sql_int ("SELECT count(*) FROM groups"
                    " WHERE name ="
@@ -56459,6 +56639,21 @@ manage_restore (const char *id)
 
       sql ("DELETE FROM group_users_trash WHERE \"group\" = %llu;", resource);
       sql ("DELETE FROM groups_trash WHERE id = %llu;", resource);
+
+      affected_users = g_array_new (TRUE, TRUE, sizeof (user_t));
+      init_iterator (&users_iter,
+                     "SELECT \"user\" FROM group_users"
+                     " WHERE \"group\" = %llu",
+                     group);
+      while (next (&users_iter))
+        {
+          user_t user = iterator_int64 (&users_iter, 0);
+          g_array_append_val (affected_users, user);
+        }
+      cleanup_iterator (&users_iter);
+      cache_all_permissions_for_users (affected_users);
+      g_array_free (affected_users, TRUE);
+
       sql_commit ();
       return 0;
     }
@@ -56604,6 +56799,10 @@ manage_restore (const char *id)
 
   if (resource)
     {
+      permission_t permission;
+      char *name, *resource_type;
+      resource_t perm_resource;
+
       sql ("INSERT INTO permissions"
            " (uuid, owner, name, comment, resource_type, resource,"
            "  resource_uuid, resource_location, subject_type, subject,"
@@ -56615,9 +56814,21 @@ manage_restore (const char *id)
            " WHERE id = %llu;",
            resource);
 
-      tags_set_locations ("permission", resource,
-                          sql_last_insert_id (),
-                          LOCATION_TABLE);
+      permission = sql_last_insert_id ();
+      name = permission_name (permission);
+      resource_type = permission_resource_type (permission);
+      perm_resource = permission_resource (permission);
+
+      tags_set_locations ("permission", resource, permission, LOCATION_TABLE);
+
+      if (strcasecmp (name, "super") == 0)
+        cache_all_permissions_for_users (NULL);
+      else if (perm_resource != 0
+               && resource_type && strcmp (resource_type, ""))
+        cache_permissions_for_resource (resource_type, perm_resource, NULL);
+
+      free (name);
+      free (resource_type);
 
       sql ("DELETE FROM permissions_trash WHERE id = %llu;", resource);
       sql_commit ();
@@ -56826,6 +57037,8 @@ manage_restore (const char *id)
   if (resource)
     {
       role_t role;
+      GArray *affected_users;
+      iterator_t users_iter;
 
       if (sql_int ("SELECT count(*) FROM roles"
                    " WHERE name ="
@@ -56861,6 +57074,21 @@ manage_restore (const char *id)
 
       sql ("DELETE FROM role_users_trash WHERE role = %llu;", resource);
       sql ("DELETE FROM roles_trash WHERE id = %llu;", resource);
+
+      affected_users = g_array_new (TRUE, TRUE, sizeof (user_t));
+      init_iterator (&users_iter,
+                     "SELECT \"user\" FROM role_users"
+                     " WHERE \"role\" = %llu",
+                     role);
+      while (next (&users_iter))
+        {
+          user_t user = iterator_int64 (&users_iter, 0);
+          g_array_append_val (affected_users, user);
+        }
+      cleanup_iterator (&users_iter);
+      cache_all_permissions_for_users (affected_users);
+      g_array_free (affected_users, TRUE);
+
       sql_commit ();
       return 0;
     }
@@ -57135,6 +57363,9 @@ manage_restore (const char *id)
            resource);
 
       sql ("UPDATE tasks SET hidden = 0 WHERE id = %llu;", resource);
+
+      cache_permissions_for_resource ("task", resource, NULL);
+
       sql_commit ();
       return 0;
     }
@@ -63329,6 +63560,7 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
   gchar *clean, *generated;
   int index, max;
   user_t user;
+  GArray *cache_users;
 
   assert (name);
   assert (password);
@@ -63519,6 +63751,11 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
   if (new_user)
     *new_user = user;
 
+  cache_users = g_array_new (TRUE, TRUE, sizeof (user_t));
+  g_array_append_val (cache_users, user);
+  cache_all_permissions_for_users (cache_users);
+  g_free (g_array_free (cache_users, TRUE));
+
   sql_commit ();
   return 0;
 }
@@ -63541,6 +63778,7 @@ copy_user (const char* name, const char* comment, const char *user_id,
   user_t user;
   int ret;
   gchar *quoted_uuid;
+  GArray *cache_users;
 
   if (acl_user_can_super_everyone (user_id))
     return 99;
@@ -63574,6 +63812,11 @@ copy_user (const char* name, const char* comment, const char *user_id,
        quoted_uuid);
 
   g_free (quoted_uuid);
+
+  cache_users = g_array_new (TRUE, TRUE, sizeof (user_t));
+  g_array_append_val (cache_users, user);
+  cache_all_permissions_for_users (cache_users);
+  g_free (g_array_free (cache_users, TRUE));
 
   sql_commit ();
 
@@ -63870,6 +64113,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       sql ("DELETE FROM role_users WHERE \"user\" = %llu;", user);
       sql ("DELETE FROM role_users_trash WHERE \"user\" = %llu;", user);
 
+      delete_permissions_cache_for_user (user);
+
       sql ("DELETE FROM users WHERE id = %llu;", user);
 
       sql_commit ();
@@ -64096,6 +64341,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
   gchar *quoted_new_name;
   user_t user;
   int max, was_admin, is_admin;
+  GArray *cache_users;
 
   if (r_errdesc)
     *r_errdesc = NULL;
@@ -64356,6 +64602,11 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
           index++;
         }
     }
+
+  cache_users = g_array_new (TRUE, TRUE, sizeof (user_t));
+  g_array_append_val (cache_users, user);
+  cache_all_permissions_for_users (cache_users);
+  g_free (g_array_free (cache_users, TRUE));
 
   sql_commit ();
 
@@ -64851,8 +65102,11 @@ user_role_iterator_readable (iterator_t* iterator)
      "    AND (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")"        \
      "    AND (SELECT hidden = 0 FROM tasks"                                 \
      "          WHERE tasks.id = results.task)"                              \
-     "    AND user_has_access_uuid ('result', results.uuid,"                 \
-     "                              'get_results', 0)"                       \
+     "    AND (SELECT has_permission FROM permissions_get_tasks"                   \
+     "         WHERE \"user\" = (SELECT id FROM users"                       \
+     "                           WHERE uuid ="                               \
+     "                             (SELECT uuid FROM current_credentials))"  \
+     "           AND task = results.task)"                                   \
 
 #define VULN_ITERATOR_COLUMNS                                                \
  {                                                                           \
@@ -66672,6 +66926,222 @@ tags_set_orphans (const char *type, resource_t resource, int location)
        location);
 }
 
+/**
+ * @brief  Get a GArray of all users as user_t.
+ *
+ * @return  Newly allocated GArray containing all users.
+ */
+static GArray*
+all_users_array ()
+{
+  iterator_t users_iter;
+  GArray *ret;
+
+  ret = g_array_new (TRUE, TRUE, sizeof (resource_t));
+
+  init_iterator (&users_iter, "SELECT id FROM users;");
+
+  while (next (&users_iter))
+    {
+      user_t user = iterator_int64 (&users_iter, 0);
+      g_array_append_val (ret, user);
+    }
+
+  cleanup_iterator (&users_iter);
+
+  return ret;
+}
+
+/**
+ * @brief Update permissions cache for a resource.
+ *
+ * @param[in]  type         Resource type.
+ * @param[in]  resource     The resource to update the cache for.
+ * @param[in]  cache_users  GArray of users to create cache for or NULL for all.
+ */
+void
+cache_permissions_for_resource (const char *type, resource_t resource,
+                                GArray *cache_users)
+{
+  int free_users;
+
+  if (type == NULL || resource == 0)
+    return;
+
+  if (cache_users == NULL)
+    {
+      g_debug ("%s: Getting all users", __FUNCTION__);
+      free_users = 1;
+      cache_users = all_users_array ();
+    }
+  else
+    free_users = 0;
+
+  if (strcmp (type, "task") == 0)
+    {
+      char* old_current_user_id;
+      gchar *resource_id;
+      int user_index;
+
+      old_current_user_id = current_credentials.uuid;
+      resource_id = resource_uuid (type, resource);
+
+      g_debug ("%s: Caching permissions on %s \"%s\" for %d user(s)",
+               __FUNCTION__, type, resource_id, cache_users->len);
+
+      for (user_index = 0; user_index < cache_users->len; user_index++)
+        {
+          user_t user;
+          gchar *user_id;
+
+          user = g_array_index (cache_users, user_t, user_index);
+          user_id = user_uuid (user);
+
+          current_credentials.uuid = user_id;
+          manage_session_init (user_id);
+
+          if (sql_int ("SELECT count(*) FROM permissions_get_%ss"
+                       " WHERE \"user\" = %llu"
+                       "   AND %s = %llu;",
+                       type,
+                       user,
+                       type,
+                       resource))
+            {
+              sql ("UPDATE permissions_get_%ss"
+                   "  SET has_permission"
+                   "       = user_has_access_uuid (cast ('%s' as text),"
+                   "                               cast ('%s' as text),"
+                   "                               cast ('get_%ss' as text),"
+                   "                               0)"
+                   " WHERE \"user\" = %llu"
+                   "   AND %s = %llu;",
+                   type,
+                   type,
+                   resource_id,
+                   type,
+                   user,
+                   type,
+                   resource);
+            }
+          else
+            {
+              sql ("INSERT INTO permissions_get_%ss"
+                   "              (\"user\", %s, has_permission)"
+                   "  SELECT %llu, %llu,"
+                   "         user_has_access_uuid (cast ('%s' as text),"
+                   "                               cast ('%s' as text),"
+                   "                               cast ('get_%ss' as text),"
+                   "                               0);",
+                   type,
+                   type,
+                   user,
+                   resource,
+                   type,
+                   resource_id,
+                   type);
+            }
+
+          g_free (user_id);
+          current_credentials.uuid = NULL;
+        }
+
+      current_credentials.uuid = old_current_user_id;
+      manage_session_init (old_current_user_id);
+
+      g_free (resource_id);
+    }
+
+  if (free_users)
+    g_array_free (cache_users, TRUE);
+}
+
+/**
+ * @brief Update permissions cache for a given type and selection of users.
+ *
+ * @param[in]  type         Type.
+ * @param[in]  cache_users  GArray of users to create cache for.
+ */
+void
+cache_permissions_for_users (const char *type, GArray *cache_users)
+{
+  int free_users;
+
+  if (type == NULL)
+    return;
+
+  if (cache_users == NULL)
+    {
+      g_debug ("%s: Getting all users", __FUNCTION__);
+      free_users = 1;
+      cache_users = all_users_array ();
+    }
+  else
+    free_users = 0;
+
+  if (strcmp (type, "task") == 0)
+    {
+      iterator_t resources;
+
+      init_iterator (&resources, "SELECT id FROM %ss;", type);
+
+      while (next (&resources))
+        {
+          resource_t resource = iterator_int64 (&resources, 0);
+          cache_permissions_for_resource (type, resource, cache_users);
+        }
+
+      cleanup_iterator (&resources);
+    }
+
+  if (free_users)
+    g_array_free (cache_users, TRUE);
+}
+
+/**
+ * @brief Update permissions cache for a resource.
+ *
+ * @param[in]  type      Type.
+ */
+void
+cache_all_permissions_for_users (GArray *cache_users)
+{
+  int free_users;
+
+  if (cache_users == NULL)
+    {
+      g_debug ("%s: Getting all users", __FUNCTION__);
+      free_users = 1;
+      cache_users = all_users_array ();
+    }
+  else
+    free_users = 0;
+
+  cache_permissions_for_users ("task", cache_users);
+
+  if (free_users)
+    g_array_free (cache_users, TRUE);
+}
+
+void
+delete_permissions_cache_for_resource (const char* type, resource_t resource)
+{
+  if (type == NULL || resource == 0)
+    return;
+
+  if (strcmp (type, "task") == 0)
+    {
+      sql ("DELETE FROM permissions_get_%ss WHERE %s = %llu",
+           type, type, resource);
+    }
+}
+
+void
+delete_permissions_cache_for_user (user_t user)
+{
+  sql ("DELETE FROM permissions_get_tasks WHERE user = %llu;", user);
+}
+
 
 /* Optimize. */
 
@@ -66851,6 +67321,19 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
                                       " Missing severity scores added: %d.",
                                       missing_severity_changes);
 
+    }
+  else if (strcasecmp (name, "rebuild-permissions-cache") == 0)
+    {
+      sql_begin_exclusive ();
+
+      sql ("DELETE FROM permissions_get_tasks");
+
+      cache_all_permissions_for_users (NULL);
+
+      sql_commit ();
+
+      success_text = g_strdup_printf ("Optimized: rebuild-permissions-cache."
+                                      " Permission cache rebuilt.");
     }
   else if (strcasecmp (name, "rebuild-report-cache") == 0)
     {

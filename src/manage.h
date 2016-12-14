@@ -3190,6 +3190,22 @@ int
 modify_permission (const char *, const char *, const char *, const char *,
                    const char *, const char *, const char *);
 
+/* Permission caching */
+void
+cache_permissions_for_resource (const char *, resource_t, GArray*);
+
+void
+cache_permissions_for_users (const char *, GArray*);
+
+void
+cache_all_permissions_for_users (GArray*);
+
+void
+delete_permissions_cache_for_resource (const char*, resource_t);
+
+void
+delete_permissions_cache_for_user (user_t);
+
 
 /* Port lists. */
 
