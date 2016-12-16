@@ -1,5 +1,11 @@
 2016-12-16  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	* src/manage_sql.c (iso_time_internal): Check tm->tm_gmtoff instead of
+	timezone on FreeBSD to compensate for platform-dependent behaviour of
+	localtime call.
+
+2016-12-16  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	* src/manage_sql.c: Remove now superfluous include for string.h.
 	(find_signature): Use g_path_get_basename consistently instead of GNU
 	basename to improve portability.

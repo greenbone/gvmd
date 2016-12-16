@@ -1100,7 +1100,11 @@ iso_time_internal (time_t *epoch_time, const char **abbrev)
   static char time_string[100];
 
   tm = localtime (epoch_time);
+#ifdef __FreeBSD__
+  if (tm->tm_gmtoff == 0)
+#else
   if (timezone == 0)
+#endif
     {
       if (strftime (time_string, 98, "%FT%TZ", tm) == 0)
         return NULL;
