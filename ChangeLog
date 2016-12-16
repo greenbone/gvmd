@@ -1,3 +1,9 @@
+2016-12-16  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/manage_sql.c: Remove now superfluous include for string.h.
+	(find_signature): Use g_path_get_basename consistently instead of GNU
+	basename to improve portability.
+
 2016-12-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Add cache of which users may get which tasks and use it to improve

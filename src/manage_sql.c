@@ -51,7 +51,6 @@
 #include <locale.h>
 #include <pwd.h>
 #include <stdlib.h>
-#include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -41471,6 +41470,7 @@ find_signature (const gchar *location, const gchar *installer_filename,
           if (uuid && (error->code == G_FILE_ERROR_NOENT))
             {
               char *real;
+              gchar *real_basename;
               gchar **split;
 
               /* Note: this only happens if uuid is given, so it does not
@@ -41500,12 +41500,14 @@ find_signature (const gchar *location, const gchar *installer_filename,
               g_debug ("real pathname: %s\n", real);
               if (real == NULL)
                 return -1;
-              split = g_strsplit (basename (real), ".", 2);
+              real_basename = g_path_get_basename (real);
+              split = g_strsplit (real_basename, ".", 2);
               if (*split)
                 *uuid = g_strdup (*split);
               else
-                *uuid = g_strdup (basename (real));
+                *uuid = g_strdup (real_basename);
               g_debug ("*uuid: %s\n", *uuid);
+              g_free (real_basename);
               g_strfreev (split);
               free (real);
               return 0;
