@@ -113,7 +113,7 @@
 
 #include <gnutls/x509.h>
 
-#include <gvm/base/fileutils.h>
+#include <gvm/util/fileutils.h>
 
 #include <openvas/osp/osp.h>
 #include <openvas/base/openvas_string.h>

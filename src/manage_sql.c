@@ -58,7 +58,7 @@
 #include <sys/time.h>
 #include <grp.h>
 
-#include <gvm/base/fileutils.h>
+#include <gvm/util/fileutils.h>
 
 #include <openvas/base/openvas_string.h>
 #include <openvas/base/openvas_hosts.h>

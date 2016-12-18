@@ -226,6 +226,7 @@ message ("-- Install prefix: ${CMAKE_INSTALL_PREFIX}")
 ## might occur.
 
 pkg_check_modules (LIBGVM_BASE REQUIRED libgvm_base>=1.0.0)
+pkg_check_modules (LIBGVM_UTIL REQUIRED libgvm_util>=1.0.0)
 pkg_check_modules (LIBOPENVAS_OMP REQUIRED libopenvas_omp>=9.0.0)
 pkg_check_modules (LIBOPENVAS_MISC REQUIRED libopenvas_misc>=9.0.0)
 pkg_check_modules (LIBOPENVAS_BASE REQUIRED libopenvas_base>=9.0.0)

@@ -1,3 +1,13 @@
+2016-12-18  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/lsc_user.c, src/manage.c, src/manage_migrators.c,
+	src/manage_sql.c, src/omp.c: Changed include of fileutils.h from
+	gvm/base to gvm/util.
+
+	* CMakeLists.txt: Require gvm-util.
+
+	* src/CMakeLists.txt: Add  gvm-util.
+
 2016-12-16  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/manage_sql.c (iso_time_internal): Check tm->tm_gmtoff instead of

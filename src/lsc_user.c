@@ -35,7 +35,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-#include <gvm/base/fileutils.h>
+#include <gvm/util/fileutils.h>
 
 #undef G_LOG_DOMAIN
 /**

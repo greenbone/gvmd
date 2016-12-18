@@ -139,7 +139,7 @@
 #include "manage_sql.h"
 #include "sql.h"
 
-#include <gvm/base/fileutils.h>
+#include <gvm/util/fileutils.h>
 
 #include <openvas/misc/openvas_uuid.h>
 #include <openvas/misc/openvas_logging.h>

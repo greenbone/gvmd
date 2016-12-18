@@ -68,7 +68,7 @@
 #include <unistd.h>
 
 #include <gvm/base/cvss.h>
-#include <gvm/base/fileutils.h>
+#include <gvm/util/fileutils.h>
 
 #include <openvas/base/gpgme_util.h>
 #include <openvas/base/openvas_string.h>
