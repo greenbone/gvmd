@@ -1,3 +1,8 @@
+2016-12-19  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/manage_pg.c, src/scanner.c: Add missing includes due to cleaning
+	header files in the libraries.
+
 2016-12-18  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/lsc_user.c, src/manage.c, src/manage_migrators.c,

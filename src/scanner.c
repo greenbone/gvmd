@@ -31,6 +31,7 @@
 
 #include <dirent.h>
 #include <assert.h>
+#include <errno.h>  /* for errno */
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/time.h>
