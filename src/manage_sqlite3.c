@@ -30,7 +30,11 @@
 #include "manage_utils.h"
 #include "manage_acl.h"
 
+#include <assert.h>
+#include <errno.h>
 #include <sqlite3.h>
+#include <string.h>
+#include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
 

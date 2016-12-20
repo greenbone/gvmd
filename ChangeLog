@@ -1,3 +1,8 @@
+2016-12-20  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sqlite3.c: Add #includes of assert.h, errno.h, string.h
+	and stdlib.h.
+
 2016-12-19  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/manage_pg.c, src/scanner.c: Add missing includes due to cleaning
