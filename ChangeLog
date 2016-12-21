@@ -1,5 +1,15 @@
 2016-12-21  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	Make location of access key configurable.
+
+	* CMakeLists.txt: Expose OPENVAS_ACCESS_KEY_DIR, defaulting to
+	OPENVAS_SYSCONF_DIR.
+
+	* tools/greenbone-certdata-sync.in, tools/greenbone-scapdata-sync.in:
+	Use OPENVAS_ACCESS_KEY_DIR to determine location of access key.
+
+2016-12-21  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	Use OPENVASMD_STATE_DIR consistently in the code instead of
 	independently constructing it from OPENVAS_STATE_DIR and "openvasmd".
 

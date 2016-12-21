@@ -110,7 +110,7 @@ log_err () {
   $LOG_CMD -p daemon.err "$1"
 }
 
-ACCESSKEY="@OPENVAS_SYSCONF_DIR@/gsf-access-key"
+ACCESSKEY="@OPENVAS_ACCESS_KEY_DIR@/gsf-access-key"
 
 # Note when running as root or restart as $DROP_USER if defined
 if [ $(id -u) -eq 0 ]
