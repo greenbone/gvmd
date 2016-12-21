@@ -7014,8 +7014,7 @@ init_report_format_file_iterator (file_iterator_t* iterator,
       owner_uuid = report_format_owner_uuid (report_format);
       if (owner_uuid == NULL)
         return -1;
-      dir_name = g_build_filename (OPENVAS_STATE_DIR,
-                                   "openvasmd",
+      dir_name = g_build_filename (OPENVASMD_STATE_DIR,
                                    "report_formats",
                                    owner_uuid,
                                    uuid,
