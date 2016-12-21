@@ -1,3 +1,9 @@
+2016-12-21  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Backported r27023.
+
+	* CMakeLists.txt: Make OPENVASMD_STATE_DIR configurable.
+
 2016-12-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r26889.
