@@ -1,3 +1,7 @@
+2016-12-21  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* CMakeLists.txt: Make OPENVASMD_STATE_DIR configurable.
+
 2016-12-20  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sqlite3.c: Add #includes of assert.h, errno.h, string.h
