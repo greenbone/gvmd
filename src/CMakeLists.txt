@@ -154,6 +154,10 @@ if (OPENVAS_STATE_DIR)
   add_definitions (-DOPENVAS_STATE_DIR=\\\"${OPENVAS_STATE_DIR}\\\")
 endif (OPENVAS_STATE_DIR)
 
+if (OPENVASMD_STATE_DIR)
+  add_definitions (-DOPENVASMD_STATE_DIR=\\\"${OPENVASMD_STATE_DIR}\\\")
+endif (OPENVASMD_STATE_DIR)
+
 if (OPENVAS_RUN_DIR)
   add_definitions (-DOPENVAS_RUN_DIR=\\\"${OPENVAS_RUN_DIR}\\\")
 endif (OPENVAS_RUN_DIR)

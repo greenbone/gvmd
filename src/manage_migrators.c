@@ -3142,8 +3142,7 @@ migrate_37_to_38 ()
 
   /* Move user uploaded report formats. */
 
-  new_dir = g_build_filename (OPENVAS_STATE_DIR,
-                              "openvasmd",
+  new_dir = g_build_filename (OPENVASMD_STATE_DIR,
                               NULL);
 
   if (g_mkdir_with_parents (new_dir, 0755 /* "rwxr-xr-x" */))
@@ -12791,8 +12790,7 @@ migrate_170_to_171 ()
 
   /* The report formats trash moved to an FHS compliant location. */
 
-  new_dir = g_build_filename (OPENVAS_STATE_DIR,
-                              "openvasmd",
+  new_dir = g_build_filename (OPENVASMD_STATE_DIR,
                               NULL);
 
   if (g_mkdir_with_parents (new_dir, 0755 /* "rwxr-xr-x" */))
@@ -12913,8 +12911,7 @@ migrate_171_to_172 ()
 
   /* The global report formats moved to an FHS compliant location. */
 
-  new_dir_path = g_build_filename (OPENVAS_STATE_DIR,
-                                   "openvasmd",
+  new_dir_path = g_build_filename (OPENVASMD_STATE_DIR,
                                    NULL);
 
   if (g_mkdir_with_parents (new_dir_path, 0755 /* "rwxr-xr-x" */))
@@ -13206,8 +13203,7 @@ migrate_174_to_175 ()
       return -1;
     }
 
-  old_dir_path = g_build_filename (OPENVAS_STATE_DIR,
-                                   "openvasmd",
+  old_dir_path = g_build_filename (OPENVASMD_STATE_DIR,
                                    "global_report_formats",
                                    NULL);
 
@@ -13737,8 +13733,7 @@ migrate_181_to_182_move (const char *dest)
   const gchar *asc_name;
   int move_failed;
 
-  new_dir_path = g_build_filename (OPENVAS_STATE_DIR,
-                                   "openvasmd",
+  new_dir_path = g_build_filename (OPENVASMD_STATE_DIR,
                                    "signatures",
                                    dest,
                                    NULL);
