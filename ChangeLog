@@ -1,31 +1,5 @@
 2016-12-21  Michael Wiegand <michael.wiegand@greenbone.net>
 
-	Backport r27025.
-
-	Use OPENVASMD_STATE_DIR consistently in the code instead of
-	independently constructing it from OPENVAS_STATE_DIR and "openvasmd".
-
-	* src/CMakeLists.txt: Add definition of OPENVASMD_STATE_DIR to
-	compiler call.
-
-	* src/manage.c (init_report_format_file_iterator): Use
-	OPENVASMD_STATE_DIR directly instead of concatenating
-	OPENVAS_STATE_DIR and "openvasmd".
-
-	* src/manage_migrators.c (migrate_37_to_38, migrate_170_to_171)
-	(migrate_171_to_172, migrate_174_to_175, migrate_181_to_182_move): Use
-	OPENVASMD_STATE_DIR directly instead of concatenating
-	OPENVAS_STATE_DIR and "openvasmd".
-
-	* src/manage_sql.c (make_report_format_uuids_unique)
-	(check_db_trash_report_formats, report_format_trash_dir)
-	(check_generate_scripts, run_report_format_script, find_signature)
-	(create_report_format, copy_report_format, delete_report_format)
-	(manage_restore): Use OPENVASMD_STATE_DIR directly instead of
-	concatenating OPENVAS_STATE_DIR and "openvasmd".
-
-2016-12-21  Michael Wiegand <michael.wiegand@greenbone.net>
-
 	Backported r27023.
 
 	* CMakeLists.txt: Make OPENVASMD_STATE_DIR configurable.

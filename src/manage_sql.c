@@ -14915,12 +14915,14 @@ make_report_format_uuids_unique ()
           /* Dedicated subdir in user dir, but must be renamed. */
           copy = 0;
           owner_uuid = iterator_string (&rows, 4);
-          dir = g_build_filename (OPENVASMD_STATE_DIR,
+          dir = g_build_filename (OPENVAS_STATE_DIR,
+                                  "openvasmd",
                                   "report_formats",
                                   owner_uuid,
                                   old_uuid,
                                   NULL);
-          new_dir = g_build_filename (OPENVASMD_STATE_DIR,
+          new_dir = g_build_filename (OPENVAS_STATE_DIR,
+                                      "openvasmd",
                                       "report_formats",
                                       owner_uuid,
                                       new_uuid,
@@ -14940,12 +14942,14 @@ make_report_format_uuids_unique ()
                  && original_owner_uuid
                  && (strcmp (owner_uuid, original_owner_uuid) == 0);
 
-          dir = g_build_filename (OPENVASMD_STATE_DIR,
+          dir = g_build_filename (OPENVAS_STATE_DIR,
+                                  "openvasmd",
                                   "report_formats",
                                   owner_uuid,
                                   old_uuid,
                                   NULL);
-          new_dir = g_build_filename (OPENVASMD_STATE_DIR,
+          new_dir = g_build_filename (OPENVAS_STATE_DIR,
+                                      "openvasmd",
                                       "report_formats",
                                       owner_uuid,
                                       new_uuid,
@@ -15020,7 +15024,8 @@ check_db_trash_report_formats ()
   gchar *dir;
   struct stat state;
 
-  dir = g_build_filename (OPENVASMD_STATE_DIR,
+  dir = g_build_filename (OPENVAS_STATE_DIR,
+                          "openvasmd",
                           "report_formats_trash",
                           NULL);
 
@@ -15203,12 +15208,14 @@ static gchar *
 report_format_trash_dir (const gchar *report_format_id)
 {
   if (report_format_id)
-    return g_build_filename (OPENVASMD_STATE_DIR,
+    return g_build_filename (OPENVAS_STATE_DIR,
+                             "openvasmd",
                              "report_formats_trash",
                              report_format_id,
                              NULL);
 
-  return g_build_filename (OPENVASMD_STATE_DIR,
+  return g_build_filename (OPENVAS_STATE_DIR,
+                           "openvasmd",
                            "report_formats_trash",
                            NULL);
 }
@@ -15588,7 +15595,8 @@ check_generate_scripts ()
           if (user_uuid == NULL)
             continue;
 
-          path = g_build_filename (OPENVASMD_STATE_DIR,
+          path = g_build_filename (OPENVAS_STATE_DIR,
+                                   "openvasmd",
                                    "report_formats",
                                    user_uuid,
                                    report_format_uuid,
@@ -28814,7 +28822,8 @@ run_report_format_script (gchar *report_format_id,
                           " WHERE id = (SELECT owner FROM"
                           "             report_formats WHERE id = %llu);",
                           report_format);
-      script_dir = g_build_filename (OPENVASMD_STATE_DIR,
+      script_dir = g_build_filename (OPENVAS_STATE_DIR,
+                                     "openvasmd",
                                      "report_formats",
                                      owner,
                                      report_format_id,
@@ -41360,7 +41369,8 @@ find_signature (const gchar *location, const gchar *installer_filename,
 
               g_error_free (error);
               error = NULL;
-              signature_filename = g_build_filename (OPENVASMD_STATE_DIR,
+              signature_filename = g_build_filename (OPENVAS_STATE_DIR,
+                                                     "openvasmd",
                                                      "signatures",
                                                      location,
                                                      signature_basename,
@@ -47829,7 +47839,8 @@ create_report_format (const char *uuid, const char *name,
           /* Signature may be in private directory. */
 
           g_free (old);
-          old = g_build_filename (OPENVASMD_STATE_DIR,
+          old = g_build_filename (OPENVAS_STATE_DIR,
+                                  "openvasmd",
                                   "signatures",
                                   "report_formats",
                                   base,
@@ -47867,7 +47878,7 @@ create_report_format (const char *uuid, const char *name,
         }
       g_free (base);
 
-      path = g_build_filename (OPENVASMD_STATE_DIR,
+      path = g_build_filename (OPENVAS_STATE_DIR, "openvasmd",
                                "signatures", "report_formats", NULL);
 
       if (g_mkdir_with_parents (path, 0755 /* "rwxr-xr-x" */))
@@ -47919,7 +47930,8 @@ create_report_format (const char *uuid, const char *name,
   else
     {
       assert (current_credentials.uuid);
-      dir = g_build_filename (OPENVASMD_STATE_DIR,
+      dir = g_build_filename (OPENVAS_STATE_DIR,
+                              "openvasmd",
                               "report_formats",
                               current_credentials.uuid,
                               new_uuid ? new_uuid : uuid,
@@ -47953,7 +47965,8 @@ create_report_format (const char *uuid, const char *name,
 
       /* glib seems to apply the mode to the first dir only. */
 
-      report_dir = g_build_filename (OPENVASMD_STATE_DIR,
+      report_dir = g_build_filename (OPENVAS_STATE_DIR,
+                                     "openvasmd",
                                      "report_formats",
                                      current_credentials.uuid,
                                      NULL);
@@ -48328,7 +48341,8 @@ copy_report_format (const char* name, const char* source_uuid,
       gchar *owner_uuid;
       owner_uuid = report_format_owner_uuid (old);
       assert (owner_uuid);
-      source_dir = g_build_filename (OPENVASMD_STATE_DIR,
+      source_dir = g_build_filename (OPENVAS_STATE_DIR,
+                                     "openvasmd",
                                      "report_formats",
                                      owner_uuid,
                                      source_uuid,
@@ -48356,7 +48370,8 @@ copy_report_format (const char* name, const char* source_uuid,
 
   /* Prepare directory to copy into. */
 
-  copy_dir = g_build_filename (OPENVASMD_STATE_DIR,
+  copy_dir = g_build_filename (OPENVAS_STATE_DIR,
+                               "openvasmd",
                                "report_formats",
                                current_credentials.uuid,
                                copy_uuid,
@@ -48385,7 +48400,8 @@ copy_report_format (const char* name, const char* source_uuid,
 
   /* Correct permissions as glib doesn't seem to do so. */
 
-  tmp_dir = g_build_filename (OPENVASMD_STATE_DIR,
+  tmp_dir = g_build_filename (OPENVAS_STATE_DIR,
+                              "openvasmd",
                               "report_formats",
                               current_credentials.uuid,
                               NULL);
@@ -48405,7 +48421,8 @@ copy_report_format (const char* name, const char* source_uuid,
     }
   g_free (tmp_dir);
 
-  tmp_dir = g_build_filename (OPENVASMD_STATE_DIR,
+  tmp_dir = g_build_filename (OPENVAS_STATE_DIR,
+                              "openvasmd",
                               "report_formats",
                               current_credentials.uuid,
                               copy_uuid,
@@ -48767,7 +48784,7 @@ delete_report_format (const char *report_format_id, int ultimate)
       g_free (dir);
 
       /* Links to the feed signatures. */
-      dir = g_build_filename (OPENVASMD_STATE_DIR, "signatures",
+      dir = g_build_filename (OPENVAS_STATE_DIR, "openvasmd", "signatures",
                               "report_formats", base, NULL);
       g_free (base);
       unlink (dir);
@@ -48783,7 +48800,8 @@ delete_report_format (const char *report_format_id, int ultimate)
       return 3;
     }
 
-  dir = g_build_filename (OPENVASMD_STATE_DIR,
+  dir = g_build_filename (OPENVAS_STATE_DIR,
+                          "openvasmd",
                           "report_formats",
                           current_credentials.uuid,
                           report_format_id,
@@ -56650,7 +56668,8 @@ manage_restore (const char *id)
 
       /* Move the dir last, in case any SQL rolls back. */
 
-      dir = g_build_filename (OPENVASMD_STATE_DIR,
+      dir = g_build_filename (OPENVAS_STATE_DIR,
+                              "openvasmd",
                               "report_formats",
                               current_credentials.uuid,
                               trash_uuid,
