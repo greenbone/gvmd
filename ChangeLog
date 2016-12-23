@@ -1,3 +1,11 @@
+2016-12-23  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/manage.h: Include gvm/base/networking.h instead of
+	openvas/base/openvas_networking.h.
+
+	* src/scanner.c (openvas_scanner_set_address): Use gvm_resolve instead
+	of openvas_resolve.
+
 2016-12-21  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Make location of access key configurable.

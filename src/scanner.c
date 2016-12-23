@@ -817,7 +817,7 @@ openvas_scanner_set_address (const char *addr, int port)
   memset (&openvas_scanner_address, '\0', sizeof (openvas_scanner_address));
   openvas_scanner_address.sin_family = AF_INET;
   openvas_scanner_address.sin_port = htons (port);
-  if (openvas_resolve (addr, &openvas_scanner_address.sin_addr, AF_INET))
+  if (gvm_resolve (addr, &openvas_scanner_address.sin_addr, AF_INET))
     return -1;
 
   return 0;
