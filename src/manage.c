@@ -71,7 +71,6 @@
 #include <gvm/util/fileutils.h>
 
 #include <openvas/base/gpgme_util.h>
-#include <openvas/base/openvas_string.h>
 #include <openvas/base/openvas_hosts.h>
 #include <openvas/omp/omp.h>
 #include <openvas/misc/openvas_server.h>
@@ -374,8 +373,6 @@ certificate_time_status (time_t activates, time_t expires)
  *
  * @param[in]  list  The list.
  */
-/** @todo Duplicate in openvas_string module (openvas_string_list_free) .
-  *       Find proper module to place this function. */
 void
 slist_free (GSList* list)
 {

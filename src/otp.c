@@ -55,7 +55,8 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <openvas/base/openvas_string.h>
+#include <gvm/base/strings.h>
+
 #include <openvas/misc/nvt_categories.h>
 
 #undef G_LOG_DOMAIN
@@ -940,7 +941,7 @@ process_otp_scanner_input (void (*progress) ())
           input = messages;
 
           /* Strip leading and trailing whitespace. */
-          field = openvas_strip_space (message, match);
+          field = gvm_strip_space (message, match);
           blank_control_chars (field);
 
           g_debug ("   scanner old state %i\n", scanner_state);

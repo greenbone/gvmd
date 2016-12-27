@@ -1,3 +1,22 @@
+2016-12-27  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/manage.c: Remove unneeded include. Removed a todo entry
+	about a strings module which is not suitable anymore (the cited
+	function does not exist in the strings module).
+
+	* src/manage_sql.c: Removed uneeded include.
+
+	* src/omp.c (append_attribute): Use gvm_append_string instead
+	of openvas_append_string.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element, APPEND,
+	omp_xml_handle_text): Use gvm_append_string instead of
+	openvas_append_string.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Use
+	gvm_free_string_var instead of openvas_free_string_var.
+
+	* src/otp.c (process_otp_scanner_input): Use gvm_strip_space
+	instead of openvas_strip_space.
+
 2016-12-23  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/manage.h: Include gvm/base/networking.h instead of

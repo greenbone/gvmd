@@ -60,7 +60,6 @@
 
 #include <gvm/util/fileutils.h>
 
-#include <openvas/base/openvas_string.h>
 #include <openvas/base/openvas_hosts.h>
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/misc/ldap_connect_auth.h>
