@@ -1,3 +1,24 @@
+2017-01-02  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_pg.c (create_tables): Change vulns view to a union of
+	the nvts, cves and ovaldefs.
+
+	* src/manage_sql.c (init_get_iterator2): Use uuid instead of id to
+	select non-distinct resources list.
+	(VULN_ITERATOR_FILTER_COLUMNS): Add "type" column.
+	(VULN_RESULTS_WHERE): Change vulns.oid to vulns.uuid.
+	(VULN_ITERATOR_COLUMNS): Change "cvss_base" to "severity" for
+	"severity" column and add "type" column.
+	(vuln_iterator_type): New function.
+
+	* src/manage_sqlite3.c (create_tables): Change vulns view to a union of
+	the nvts, cves and ovaldefs.
+
+	* src/manage.h (vuln_iterator_type): New function prototype.
+
+	* src/omp.c (handle_get_vulns): Add "type" subelement to "vuln"
+	elements in response.
+
 2017-01-02  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/manage.h: Include gvm/base/credentials.h instead of

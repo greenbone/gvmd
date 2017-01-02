@@ -3968,6 +3968,9 @@ vuln_iterator_oldest (iterator_t*);
 const char*
 vuln_iterator_newest (iterator_t*);
 
+const char*
+vuln_iterator_type (iterator_t*);
+
 int
 vuln_iterator_hosts (iterator_t*);
 

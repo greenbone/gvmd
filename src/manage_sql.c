@@ -5249,11 +5249,11 @@ init_get_iterator2 (iterator_t* iterator, const char *type,
     init_iterator (iterator,
                    "SELECT %s"
                    " FROM %ss %s"
-                   " WHERE id IN (SELECT id"
-                   "              FROM %ss %s"
-                   "              WHERE %s"
-                   "              %s%s%s%s%s"
-                   "              LIMIT %s OFFSET %i)"
+                   " WHERE uuid IN (SELECT uuid"
+                   "                FROM %ss %s"
+                   "                WHERE %s"
+                   "                %s%s%s%s%s"
+                   "                LIMIT %s OFFSET %i)"
                    "%s%s;",
                    columns,
                    type,
@@ -65077,18 +65077,18 @@ user_role_iterator_readable (iterator_t* iterator)
 #define VULN_ITERATOR_FILTER_COLUMNS                                         \
  {                                                                           \
    GET_ITERATOR_FILTER_COLUMNS, "results", "hosts", "severity", "qod",       \
-   "oldest", "newest", NULL                                                  \
+   "oldest", "newest", "type", NULL                                          \
  }
 
 #define VULN_RESULTS_WHERE \
-     "  WHERE nvt = vulns.oid"                                               \
+     "  WHERE nvt = vulns.uuid"                                              \
      "    AND (opts.report IS NULL OR results.report = opts.report)"         \
      "    AND (opts.task IS NULL OR results.task = opts.task)"               \
      "    AND (opts.host IS NULL OR results.host = opts.host)"               \
      "    AND (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")"        \
      "    AND (SELECT hidden = 0 FROM tasks"                                 \
      "          WHERE tasks.id = results.task)"                              \
-     "    AND (SELECT has_permission FROM permissions_get_tasks"                   \
+     "    AND (SELECT has_permission FROM permissions_get_tasks"             \
      "         WHERE \"user\" = (SELECT id FROM users"                       \
      "                           WHERE uuid ="                               \
      "                             (SELECT uuid FROM current_credentials))"  \
@@ -65122,9 +65122,7 @@ user_role_iterator_readable (iterator_t* iterator)
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "cvss_base",                                                            \
-     "severity",                                                             \
-     KEYWORD_TYPE_DOUBLE                                                     \
+     "severity", NULL, KEYWORD_TYPE_DOUBLE                                   \
    },                                                                        \
    {                                                                         \
      "qod", NULL, KEYWORD_TYPE_INTEGER                                       \
@@ -65140,6 +65138,9 @@ user_role_iterator_readable (iterator_t* iterator)
      VULN_RESULTS_WHERE ")",                                                 \
      NULL,                                                                   \
      KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
+     "type", NULL, KEYWORD_TYPE_INTEGER                                      \
    },                                                                        \
    {                                                                         \
      "(SELECT min (date) FROM results"                                       \
@@ -65389,6 +65390,20 @@ vuln_iterator_newest (iterator_t* iterator)
 {
   if (iterator->done) return NULL;
   return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
+}
+
+/**
+ * @brief Get the QoD from a vuln iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The QoD.
+ */
+const char*
+vuln_iterator_type (iterator_t* iterator)
+{
+  if (iterator->done) return NULL;
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
 }
 
 /**

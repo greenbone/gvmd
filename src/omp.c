@@ -19931,12 +19931,14 @@ handle_get_vulns (omp_parser_t *omp_parser, GError **error)
     {
       SENDF_TO_CLIENT_OR_FAIL ("<vuln id=\"%s\">"
                                "<name>%s</name>"
+                               "<type>%s</type>"
                                "<creation_time>%s</creation_time>"
                                "<modification_time>%s</modification_time>"
                                "<severity>%1.1f</severity>"
                                "<qod>%d</qod>",
                                get_iterator_uuid (&vulns),
                                get_iterator_name (&vulns),
+                               vuln_iterator_type (&vulns),
                                get_iterator_creation_time (&vulns),
                                get_iterator_modification_time (&vulns),
                                vuln_iterator_severity (&vulns),
