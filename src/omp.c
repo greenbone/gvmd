@@ -115,9 +115,9 @@
 
 #include <gvm/base/strings.h>
 #include <gvm/util/fileutils.h>
+#include <gvm/base/pwpolicy.h>
 
 #include <openvas/osp/osp.h>
-#include <openvas/base/pwpolicy.h>
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/misc/openvas_logging.h>
 #include <openvas/misc/openvas_ssh.h>
@@ -20570,7 +20570,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   manage_session_set_timezone (timezone);
 
                   severity = setting_severity ();
-                  pw_warning = openvas_validate_password
+                  pw_warning = gvm_validate_password
                                 (current_credentials.password,
                                  current_credentials.username);
 

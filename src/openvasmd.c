@@ -103,11 +103,11 @@
 #include <unistd.h>
 
 #include <gvm/base/pidfile.h>
+#include <gvm/base/pwpolicy.h>
 
 #include <openvas/misc/openvas_logging.h>
 #include <openvas/misc/openvas_proctitle.h>
 #include <openvas/misc/openvas_server.h>
-#include <openvas/base/pwpolicy.h>
 
 #include "logf.h"
 #include "manage.h"
@@ -1836,7 +1836,7 @@ main (int argc, char** argv)
     }
 
   if (disable_password_policy)
-    openvas_disable_password_policy ();
+    gvm_disable_password_policy ();
   else
     {
       gchar *password_policy;

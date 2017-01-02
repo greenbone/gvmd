@@ -1,3 +1,20 @@
+2017-01-02  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/manage_sql.c: Include gvm/base/pwpolicy.h instead of
+	openvas/base/pwpolicy.h.
+	(set_password, create_user, modify_user): Use gvm_validate_password
+	instead of openvas_validate_password.
+
+	* src/omp.c: Include gvm/base/pwpolicy.h instead of
+	openvas/base/pwpolicy.h.
+	(omp_xml_handle_end_element): Use gvm_validate_password
+	instead of openvas_validate_password.
+
+	* src/openvasmd.c: Include gvm/base/pwpolicy.h instead of
+	openvas/base/pwpolicy.h.
+	(main): Use gvm_disable_password_policy instead of
+	openvas_disable_password_policy.
+
 2017-01-02  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_pg.c (create_tables): Change vulns view to a union of
