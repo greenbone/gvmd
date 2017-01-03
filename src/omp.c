@@ -15609,8 +15609,8 @@ handle_get_notes (omp_parser_t *omp_parser, GError **error)
   else if (get_notes_data->task_id && task == 0)
     {
       if (send_find_error_to_client ("get_notes",
-                                      "task", get_notes_data->task_id,
-                                      omp_parser))
+                                     "task", get_notes_data->task_id,
+                                     omp_parser))
         {
           error_send_to_client (error);
           return;

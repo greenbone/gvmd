@@ -14484,14 +14484,14 @@ check_db_settings ()
 }
 
 /**
- * @brief Add permission to role.
+ * @brief Add command permission to role.
  *
  * Caller must ensure args are SQL escaped.
  *
  * @param[in]  role        Role.
  * @param[in]  permission  Permission.
  */
-void
+static void
 add_role_permission (const gchar *role, const gchar *permission)
 {
   sql ("INSERT INTO permissions"
@@ -16268,7 +16268,7 @@ user_exists (const gchar *name)
  *
  * @return 0 if success, -1 if error, -2 scanner has no cert.
  */
-int
+static int
 manage_scanner_set (const char *uuid)
 {
   scanner_t scanner = 0;
@@ -43305,9 +43305,8 @@ init_note_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
     {
       result_clause = g_strdup_printf
                        (" AND (notes.task = %llu OR notes.task = 0)"
-                        " AND nvt IN"
-                        " (SELECT DISTINCT nvt FROM results"
-                        "  WHERE results.task = %llu)"
+                        " AND nvt IN (SELECT DISTINCT nvt FROM results"
+                        "             WHERE results.task = %llu)"
                         " AND (notes.result = 0"
                         "      OR (SELECT task FROM results"
                         "          WHERE results.id = notes.result)"
@@ -50912,7 +50911,7 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
  */
 gboolean
 find_group_with_permission (const char* uuid, group_t* group,
-                           const char *permission)
+                            const char *permission)
 {
   return find_resource_with_permission ("group", uuid, group, permission, 0);
 }
@@ -63883,7 +63882,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
 
       real_inheritor_id = user_uuid (inheritor);
 
-      /* only the current user, owned users or global users may inherit */
+      /* Only the current user, owned users or global users may inherit. */
       if (strcmp (real_inheritor_id, current_credentials.uuid)
           && ! acl_user_owns ("user", inheritor, 0)
           && sql_int ("SELECT owner != 0 FROM users WHERE id = %llu",

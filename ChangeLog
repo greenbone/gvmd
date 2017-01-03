@@ -1,5 +1,18 @@
 2017-01-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (add_role_permission): Make static.  Improve doc.
+	(manage_scanner_set): Make static.
+	(init_note_iterator): Indent SQL "rvalue" right of operator, to make the
+	AND clauses easier to understand.
+	(find_group_with_permission): Neaten indent.
+	(delete_user): Clean comment.
+
+	* src/manage.h (manage_scanner_set): Remove.  Now static.
+
+	* src/omp.c (handle_get_notes): Neaten indent.
+
+2017-01-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add required permission checks when finding resources.  This was causing
 	some commands to behave incorrectly when the resource was owned by someone
 	else (for example when task_id was included in the filter of GET_NOTES).
