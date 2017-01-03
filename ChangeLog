@@ -1,3 +1,10 @@
+2017-01-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sqlite3.c (manage_session_init): Create temporary view
+	"vulns" here.
+	(create_tables): Remove creation of "vulns" view because it has to be
+	temporary in SQLite.
+
 2017-01-02  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/manage_sql.c: Include gvm/base/pwpolicy.h instead of

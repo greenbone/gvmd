@@ -102,6 +102,30 @@ manage_session_init (const char *uuid)
   sql ("DELETE FROM current_credentials;");
   if (uuid)
     sql ("INSERT INTO current_credentials (uuid) VALUES ('%s');", uuid);
+
+  /* Vulnerabilities view must be created as temporary to allow using
+   * tables from SCAP database */
+  sql ("DROP VIEW IF EXISTS vulns;");
+  if (manage_scap_loaded ())
+    sql ("CREATE TEMPORARY VIEW vulns AS"
+         " SELECT id, uuid, name, creation_time, modification_time,"
+         "        cast (cvss_base AS double precision) AS severity, qod,"
+         "        'nvt' AS type"
+         " FROM nvts"
+         " UNION ALL SELECT id, uuid, name, creation_time, modification_time,"
+         "       cvss AS severity, " G_STRINGIFY (QOD_DEFAULT) " AS qod,"
+         "       'cve' AS type"
+         " FROM scap.cves"
+         " UNION ALL SELECT id, uuid, name, creation_time, modification_time,"
+         "       max_cvss AS severity, " G_STRINGIFY (QOD_DEFAULT) " AS qod,"
+         "       'ovaldef' AS type"
+         " FROM scap.ovaldefs");
+  else
+    sql ("CREATE TEMPORARY VIEW vulns AS"
+         " SELECT id, uuid, name, creation_time, modification_time,"
+         "        cast (cvss_base AS double precision) AS severity, qod,"
+         "        'nvt' AS type"
+         " FROM nvts");
 }
 
 /**
@@ -3337,28 +3361,8 @@ create_tables ()
        "   UNION SELECT 1 AS autofp_selection"
        "   UNION SELECT 2 AS autofp_selection) AS autofp_opts;");
 
-  /* Vulnerabilities view */
-  sql ("DROP VIEW IF EXISTS vulns;");
-  if (manage_scap_loaded ())
-    sql ("CREATE OR REPLACE VIEW vulns AS"
-         " SELECT id, uuid, name, creation_time, modification_time,"
-         "        cast (cvss_base AS double precision) AS severity, qod,"
-         "        'nvt' AS type"
-         " FROM nvts"
-         " UNION SELECT id, uuid, name, creation_time, modification_time,"
-         "       cvss AS severity, " G_STRINGIFY (QOD_DEFAULT) " AS qod,"
-         "       'cve' AS type"
-         " FROM cves"
-         " UNION SELECT id, uuid, name, creation_time, modification_time,"
-         "       max_cvss AS severity, " G_STRINGIFY (QOD_DEFAULT) " AS qod,"
-         "       'ovaldef' AS type"
-         " FROM ovaldefs");
-  else
-    sql ("CREATE OR REPLACE VIEW vulns AS"
-         " SELECT id, uuid, name, creation_time, modification_time,"
-         "        cast (cvss_base AS double precision) AS severity, qod,"
-         "        'nvt' AS type"
-         " FROM nvts");
+  /* Vulnerabilities view is created in manage_session_init because
+     it must be temporary to allow using the attached SCAP database */
 }
 
 /**
