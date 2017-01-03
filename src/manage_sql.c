@@ -358,6 +358,9 @@ update_cvss_dfn_cert (int, int, int);
 static void
 update_cvss_cert_bund (int, int, int);
 
+static gchar*
+vulns_extra_where ();
+
 
 /* Variables. */
 
@@ -5404,8 +5407,8 @@ append_column (GArray *columns, const gchar *column_name,
  * @param[in]  max_groups      Maximum number of rows.
  * @param[in]  extra_tables    Join tables.  Skipped for trash and single
  *                             resource.
- * @param[in]  extra_where     Extra WHERE clauses.  Skipped for single
- *                             resource.
+ * @param[in]  given_extra_where  Extra WHERE clauses.  Skipped for single
+ *                                resource.
  *
  * @return 0 success, 1 failed to find resource, 2 failed to find filter,
  *         3 invalid stat_column, 4 invalid group_column, 5 invalid type,
@@ -5419,10 +5422,12 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                          const char *group_column, const char *subgroup_column,
                          GArray *text_columns, GArray *sort_data,
                          int first_group, int max_groups,
-                         const char *extra_tables, const char *extra_where)
+                         const char *extra_tables,
+                         const char *given_extra_where)
 {
   int owned;
   gchar *autofp_str, *apply_overrides_str, *min_qod_str;
+  gchar *task_id, *report_id, *host;
   int autofp, apply_overrides, min_qod;
   column_t *select_columns, *where_columns;
   gchar *columns;
@@ -5430,7 +5435,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   gchar *opts_table;
   const char **filter_columns;
   int first, max;
-  gchar *from_table, *trash_extra, *clause, *filter_order, *filter;
+  gchar *from_table, *extra_where, *clause, *filter_order, *filter;
   gchar *owned_clause;
   array_t *permissions;
   resource_t resource = 0;
@@ -5488,6 +5493,12 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   min_qod_str = filter_term_value (filter ? filter : get->filter, "min_qod");
   min_qod = (min_qod_str && strcmp (min_qod_str, ""))
               ? atoi (min_qod_str) : MIN_QOD_DEFAULT;
+  task_id = filter_term_value (filter ? filter : get->filter,
+                               "task_id");
+  report_id = filter_term_value (filter ? filter : get->filter,
+                                 "report_id");
+  host = filter_term_value (filter ? filter : get->filter,
+                            "host");
   g_free (apply_overrides_str);
   g_free (min_qod_str);
 
@@ -5496,7 +5507,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   trash_columns = type_trash_columns (type, apply_overrides);
   where_columns = type_where_columns (type, apply_overrides);
   filter_columns = type_filter_columns (type, apply_overrides);
-  opts_table = type_opts_table (type, autofp, apply_overrides, min_qod);
+  opts_table = type_opts_table (type, autofp, apply_overrides, min_qod,
+                                task_id, report_id, host);
 
   if (columns == NULL || filter_columns == NULL)
     {
@@ -5579,32 +5591,40 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
     owned_clause = acl_where_owned (type, get, owned, owner_filter, resource,
                                 permissions);
 
-  if (strcasecmp (type, "TASK") == 0)
+  if (given_extra_where)
+    {
+      extra_where = g_strdup (given_extra_where);
+    }
+  else if (strcasecmp (type, "TASK") == 0)
     {
       if (get->trash)
-        trash_extra = g_strdup (" AND hidden = 2");
+        extra_where = g_strdup (" AND hidden = 2");
       else
-        trash_extra = g_strdup (" AND hidden = 0");
+        extra_where = g_strdup (" AND hidden = 0");
     }
   else if (strcasecmp (type, "REPORT") == 0)
     {
       if (get->trash)
-        trash_extra = g_strdup (" AND (SELECT hidden FROM tasks"
+        extra_where = g_strdup (" AND (SELECT hidden FROM tasks"
                                 "      WHERE tasks.id = task)"
                                 "     = 2");
       else
-        trash_extra = g_strdup (" AND (SELECT hidden FROM tasks"
+        extra_where = g_strdup (" AND (SELECT hidden FROM tasks"
                                 "      WHERE tasks.id = task)"
                                 "     = 0");
     }
   else if (strcasecmp (type, "RESULT") == 0)
     {
-      trash_extra = results_extra_where (get, 0, NULL, autofp, apply_overrides,
+      extra_where = results_extra_where (get, 0, NULL, autofp, apply_overrides,
                                          setting_dynamic_severity_int (),
                                          filter ? filter : get->filter);
     }
+  else if (strcasecmp (type, "VULN") == 0)
+    {
+      extra_where = vulns_extra_where ();
+    }
   else
-    trash_extra = g_strdup ("");
+    extra_where = g_strdup ("");
 
   g_free (owner_filter);
   array_free (permissions);
@@ -5881,7 +5901,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                  "       FROM %s%s%s"
                  "       WHERE"
                  "       %s%s"
-                 "       %s%s%s%s"
+                 "       %s%s%s"
                  "       %s)"
                  "      AS agg_sub"
                  " GROUP BY outer_group_column, outer_subgroup_column %s"
@@ -5895,11 +5915,10 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                  opts_table ? opts_table : "",
                  extra_tables ? extra_tables : "",
                  owned_clause,
-                 trash_extra,
+                 extra_where,
                  clause ? " AND (" : "",
                  clause ? clause : "",
                  clause ? ")" : "",
-                 extra_where ? extra_where : "",
                  aggregate_group_by,
                  order_clause->str,
                  sql_select_limit (max_groups),
@@ -5909,7 +5928,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   g_free (trash_columns);
   g_free (opts_table);
   g_free (owned_clause);
-  g_free (trash_extra);
+  g_free (extra_where);
   g_free (filter_order);
   g_string_free (order_clause, TRUE);
   g_free (clause);
@@ -65283,9 +65302,7 @@ init_vuln_iterator (iterator_t* iterator, const get_data_t *get)
     = vuln_iterator_opts_from_filter (filter ? filter : get->filter);
 
   extra_where
-    = g_strdup (" AND (vuln_results (uuid, opts.task, opts.report,"
-                "                    opts.host) > 0)"
-                " AND (qod >= opts.min_qod)");
+    = vulns_extra_where ();
 
   ret = init_get_iterator2 (iterator,
                             "vuln",
@@ -65441,9 +65458,7 @@ vuln_count (const get_data_t *get)
     = vuln_iterator_opts_from_filter (filter ? filter : get->filter);
 
   extra_where
-    = g_strdup (" AND (vuln_results (uuid, opts.task, opts.report,"
-                "                    opts.host) > 0)"
-                " AND (qod >= opts.min_qod)");
+    = vulns_extra_where ();
 
   ret = count ("vuln", get, columns, NULL /*trash_columns*/, filter_columns, 0,
                extra_tables, extra_where, FALSE);
@@ -65453,6 +65468,14 @@ vuln_count (const get_data_t *get)
   g_free (extra_where);
 
   return ret;
+}
+
+static gchar*
+vulns_extra_where ()
+{
+  return g_strdup (" AND (vuln_results (uuid, opts.task, opts.report,"
+                   "                    opts.host) > 0)"
+                   " AND (qod >= opts.min_qod)");
 }
 
 /**
@@ -66537,6 +66560,11 @@ type_columns (const char *type, int apply_overrides)
       static column_t columns[] = RESULT_ITERATOR_COLUMNS;
       return columns_build_select (columns);
     }
+  else if (strcasecmp (type, "VULN") == 0)
+    {
+      static column_t columns[] = VULN_ITERATOR_COLUMNS;
+      return columns_build_select (columns);
+    }
   else if (strcasecmp (type, "HOST") == 0)
     {
       static column_t columns[] = HOST_ITERATOR_COLUMNS;
@@ -66613,6 +66641,7 @@ type_select_columns (const char *type, int apply_overrides)
   static column_t task_columns[] = TASK_ITERATOR_COLUMNS;
   static column_t report_columns[] = REPORT_ITERATOR_COLUMNS;
   static column_t result_columns[] = RESULT_ITERATOR_COLUMNS;
+  static column_t vuln_columns[] = VULN_ITERATOR_COLUMNS;
   static column_t host_columns[] = HOST_ITERATOR_COLUMNS;
   static column_t os_columns[] = OS_ITERATOR_COLUMNS;
   static column_t allinfo_columns[] = ALL_INFO_ITERATOR_COLUMNS;
@@ -66634,6 +66663,8 @@ type_select_columns (const char *type, int apply_overrides)
     return report_columns;
   else if (strcasecmp (type, "RESULT") == 0)
     return result_columns;
+  else if (strcasecmp (type, "VULN") == 0)
+    return vuln_columns;
   else if (strcasecmp (type, "HOST") == 0)
     return host_columns;
   else if (strcasecmp (type, "OS") == 0)
@@ -66716,6 +66747,11 @@ type_filter_columns (const char *type, int apply_overrides)
   else if (strcasecmp (type, "RESULT") == 0)
     {
       static const char *ret[] = RESULT_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
+  else if (strcasecmp (type, "VULN") == 0)
+    {
+      static const char *ret[] = VULN_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
   else if (strcasecmp (type, "HOST") == 0)
@@ -66817,11 +66853,15 @@ type_trash_columns (const char *type, int apply_overrides)
  * @param[in]  autofp           Whether to apply auto FP filter.
  * @param[in]  apply_overrides  Whether to apply overrides.
  * @param[in]  min_qod          Minimum QoD.
+ * @param[in]  task_id          UUID of task to limit results to.
+ * @param[in]  report_id        UUID of report to limit results to.
+ * @param[in]  host             IP address of host to limit results to.
  *
  * @return The SQL subquery definition.
  */
 gchar*
-type_opts_table (const char *type, int autofp, int apply_overrides, int min_qod)
+type_opts_table (const char *type, int autofp, int apply_overrides, int min_qod,
+                 const char *task_id, const char *report_id, const char *host)
 {
   if (type == NULL)
     return NULL;
@@ -66837,6 +66877,10 @@ type_opts_table (const char *type, int autofp, int apply_overrides, int min_qod)
     {
       return result_iterator_opts_table (autofp, apply_overrides,
                                          setting_dynamic_severity_int ());
+    }
+  else if (strcasecmp (type, "VULN") == 0)
+    {
+      return vuln_iterator_opts_table (task_id, report_id, host, min_qod);
     }
   else
     return NULL;

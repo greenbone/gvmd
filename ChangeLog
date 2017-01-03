@@ -1,5 +1,21 @@
 2017-01-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (init_aggregate_iterator): Rename extra_where param
+	to given_extra_where and trash_extra to extra_where.  Add task_id,
+	report_id and host for type_opts_table.  Use either extra where clause
+	from parameter or default type specific one.  Add case for type "vuln".
+	(init_vuln_iterator, vuln_count): Get extra_where using new function
+	vulns_extra_where.
+	(vulns_extra_where): New function.
+	(type_columns, type_select_columns, type_filter_columns): Add cases for
+	type "vuln".
+	(type_opts_table): Add params task_id, report_id and host.  Add case
+	for type "vuln".
+
+	* src/manage.h (type_opts_table): Add new parameters.
+
+2017-01-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sqlite3.c (manage_session_init): Create temporary view
 	"vulns" here.
 	(create_tables): Remove creation of "vulns" view because it has to be
