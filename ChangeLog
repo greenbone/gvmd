@@ -1,3 +1,34 @@
+2017-01-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add required permission checks when finding resources.  This was causing
+	some commands to behave incorrectly when the resource was owned by someone
+	else (for example when task_id was included in the filter of GET_NOTES).
+
+	Remove a couple of excess uses of find_* functions at the same time.
+
+	* src/manage_sql.c (copy_resource): Add return arg old_resource.  Update
+	all callers.
+	(set_task_groups, create_report, note_count, init_note_iterator)
+	(override_count, init_override_iterator, create_user, modify_user): Find
+	resources with the relevant permission, because they may belong to another
+	user.
+	(make_task_complete): Take a task instead of a UUID, to remove the need
+	for find_task.
+	(find_task, find_config, find_group, find_role, find_filter): Remove.  No
+	longer used.
+	(copy_target, copy_credential): Use the target returned by copy_resource,
+	to reduce the usage of find_resource, in order to simplify the transition
+	to explicit permissions for globals.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (buffer_get_filter_xml, handle_get_notes)
+	(handle_get_overrides, handle_get_preferences, handle_modify_config): Find
+	resources with the relevant permission, because they may belong to another
+	user.
+	(omp_xml_handle_end_element): Update doc.  Pass task to
+	make_task_complete.
+
 2017-01-03  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* CMakeLists.txt: Add setting GVM_SYSCONF_DIR and install

@@ -866,7 +866,7 @@ task_t
 make_task (char*, char*, int, int);
 
 void
-make_task_complete (const char *);
+make_task_complete (task_t);
 
 int
 copy_task (const char*, const char*, const char *, int, task_t*);
@@ -876,9 +876,6 @@ load_tasks ();
 
 int
 save_tasks ();
-
-gboolean
-find_task (const char* id, task_t*);
 
 gboolean
 find_task_with_permission (const char*, task_t*, const char *);
@@ -1735,9 +1732,6 @@ sync_config (const char *);
 
 gboolean
 find_config_with_permission (const char*, config_t*, const char *);
-
-gboolean
-find_config (const char*, config_t*);
 
 char *
 config_uuid (config_t);

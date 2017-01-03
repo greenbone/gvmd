@@ -258,9 +258,6 @@ static gboolean
 find_user_by_name (const char *, user_t *user);
 
 gboolean
-find_group (const char*, group_t*);
-
-gboolean
 find_role (const char *, group_t *);
 
 gboolean
@@ -357,6 +354,9 @@ update_cvss_dfn_cert (int, int, int);
 
 static void
 update_cvss_cert_bund (int, int, int);
+
+gboolean
+find_group_with_permission (const char *, group_t *, const char *);
 
 static gchar*
 vulns_extra_where ();
@@ -4857,6 +4857,7 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
  * @param[in]  make_name_unique  When name NULL, whether to make existing name
  *                               unique.
  * @param[out] new_resource  New resource.
+ * @param[out] old_resource  Address for existing resource, or NULL.
  *
  * @return 0 success, 1 resource exists already, 2 failed to find existing
  *         resource, 99 permission denied, -1 error.
@@ -4864,7 +4865,8 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
 int
 copy_resource (const char *type, const char *name, const char *comment,
                const char *resource_id, const char *columns,
-               int make_name_unique, resource_t* new_resource)
+               int make_name_unique, resource_t* new_resource,
+               resource_t *old_resource)
 {
   int ret;
 
@@ -4873,7 +4875,7 @@ copy_resource (const char *type, const char *name, const char *comment,
   sql_begin_immediate ();
 
   ret = copy_resource_lock (type, name, comment, resource_id, columns,
-                            make_name_unique, new_resource, NULL);
+                            make_name_unique, new_resource, old_resource);
 
   if (ret)
     sql_rollback ();
@@ -17587,7 +17589,7 @@ set_task_groups (task_t task, array_t *groups, gchar **group_id_return)
           continue;
         }
 
-      if (find_group (group_id, &group))
+      if (find_group_with_permission (group_id, &group, "modify_group"))
         {
           sql_rollback ();
           return -1;
@@ -19781,7 +19783,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
     {
       int rc = 0;
 
-      if (find_task (task_id, &task))
+      if (find_task_with_permission (task_id, &task, "modify_task"))
         rc = -1;
       else if (task == 0)
         rc = -4;
@@ -30121,16 +30123,9 @@ make_task (char* name, char* comment, int in_assets, int event)
  * @param[in]  uuid     The UUID of the task.
  */
 void
-make_task_complete (const char *uuid)
+make_task_complete (task_t task)
 {
-  task_t task;
-
-  if (find_task (uuid, &task))
-    return;
-
-  if (task == 0)
-    return;
-
+  assert (task);
   cache_permissions_for_resource ("task", task, NULL);
 
   event (task, 0, EVENT_TASK_RUN_STATUS_CHANGED, (void*) TASK_STATUS_NEW);
@@ -30685,42 +30680,6 @@ set_scan_ports (report_t report, const char* host, unsigned int current,
   sql ("UPDATE report_hosts SET current_port = %i, max_port = %i"
        " WHERE host = '%s' AND report = %llu;",
        current, max, host, report);
-}
-
-/**
- * @brief Find a task given an identifier.
- *
- * @param[in]   uuid  A task identifier.
- * @param[out]  task  Task return, 0 if successfully failed to find task.
- *
- * @return FALSE on success (including if failed to find task), TRUE on error.
- */
-gboolean
-find_task (const char* uuid, task_t* task)
-{
-  if (acl_user_owns_uuid ("task", uuid, 0) == 0)
-    {
-      *task = 0;
-      return FALSE;
-    }
-  switch (sql_int64 (task,
-                     "SELECT id FROM tasks WHERE uuid = '%s'"
-                     " AND hidden != 2;",
-                     uuid))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *task = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        return TRUE;
-        break;
-    }
-
-  return FALSE;
 }
 
 /**
@@ -31812,24 +31771,22 @@ copy_target (const char* name, const char* comment, const char *target_id,
              target_t* new_target)
 {
   int ret;
-  target_t target;
+  target_t old_target;
+
   assert (new_target);
 
   ret = copy_resource ("target", name, comment, target_id,
                        "hosts, exclude_hosts, port_list, reverse_lookup_only,"
                        " reverse_lookup_unify, alive_test",
-                       1, new_target);
+                       1, new_target, &old_target);
   if (ret)
     return ret;
-
-  if (find_resource ("target", target_id, &target))
-    return -1;
 
   sql ("INSERT INTO targets_login_data (target, type, credential, port)"
        " SELECT %llu, type, credential, port"
        "   FROM targets_login_data"
        "  WHERE target = %llu;",
-       *new_target, target);
+       *new_target, old_target);
 
   return 0;
 }
@@ -33380,44 +33337,6 @@ target_task_iterator_readable (iterator_t* iterator)
 
 
 /* Configs. */
-
-/**
- * @brief Find a config given a UUID.
- *
- * @param[in]   uuid    Config UUID.
- * @param[out]  config  Config return, 0 if successfully failed to find config.
- *
- * @return FALSE on success (including if failed to find config), TRUE on error.
- */
-gboolean
-find_config (const char* uuid, config_t* config)
-{
-  gchar *quoted_uuid = sql_quote (uuid);
-  if (acl_user_owns_uuid ("config", quoted_uuid, 0) == 0)
-    {
-      g_free (quoted_uuid);
-      *config = 0;
-      return FALSE;
-    }
-  switch (sql_int64 (config,
-                     "SELECT id FROM configs WHERE uuid = '%s';",
-                     quoted_uuid))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *config = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_uuid);
-        return TRUE;
-        break;
-    }
-  g_free (quoted_uuid);
-  return FALSE;
-}
 
 /**
  * @brief Find a config for a set of permissions, given a UUID.
@@ -40040,13 +39959,11 @@ copy_credential (const char* name, const char* comment,
   credential_t credential;
 
   assert (new_credential);
+
   ret = copy_resource ("credential", name, comment, credential_id,
-                       "type", 1, new_credential);
+                       "type", 1, new_credential, &credential);
   if (ret)
     return ret;
-
-  if (find_resource ("credential", credential_id, &credential))
-    return -1;
 
   sql ("INSERT INTO credentials_data (credential, type, value)"
        " SELECT %llu, type, value FROM credentials_data"
@@ -41947,7 +41864,7 @@ copy_agent (const char* name, const char* comment, const char *agent_id,
                         "installer, installer_64, installer_filename,"
                         " installer_signature_64, installer_trust,"
                         " installer_trust_time, howto_install, howto_use",
-                        1, new_agent);
+                        1, new_agent, NULL);
 }
 
 /**
@@ -42793,7 +42710,7 @@ copy_note (const char *note_id, note_t* new_note)
   return copy_resource ("note", NULL, NULL, note_id,
                         "nvt, text, hosts, port, severity, task, result,"
                         "end_time",
-                        1, new_note);
+                        1, new_note, NULL);
 }
 
 /**
@@ -43195,7 +43112,7 @@ note_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
 
   if (task_id)
     {
-      find_task (task_id, &task);
+      find_task_with_permission (task_id, &task, "get_tasks");
       g_free (task_id);
     }
 
@@ -43333,7 +43250,7 @@ init_note_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
 
   if (task_id)
     {
-      find_task (task_id, &task);
+      find_task_with_permission (task_id, &task, "get_tasks");
       g_free (task_id);
     }
 
@@ -43822,7 +43739,7 @@ copy_override (const char *override_id, override_t* new_override)
   return copy_resource ("override", NULL, NULL, override_id,
                         "nvt, text, hosts, port, severity, new_severity, task,"
                         " result, end_time",
-                        1, new_override);
+                        1, new_override, NULL);
 }
 
 /**
@@ -44297,7 +44214,7 @@ override_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
 
   if (task_id)
     {
-      find_task (task_id, &task);
+      find_task_with_permission (task_id, &task, "get_tasks");
       g_free (task_id);
     }
 
@@ -44436,7 +44353,7 @@ init_override_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
 
   if (task_id)
     {
-      find_task (task_id, &task);
+      find_task_with_permission (task_id, &task, "get_tasks");
       g_free (task_id);
     }
 
@@ -45351,7 +45268,7 @@ copy_scanner (const char* name, const char* comment, const char *scanner_id,
 
   return copy_resource ("scanner", name, comment, scanner_id,
                         "host, port, type, ca_pub, credential", 1,
-                        new_scanner);
+                        new_scanner, NULL);
 }
 
 /**
@@ -46596,7 +46513,7 @@ copy_schedule (const char* name, const char* comment, const char *schedule_id,
   return copy_resource ("schedule", name, comment, schedule_id,
                         "first_time, period, period_months, duration,"
                         " timezone, initial_offset",
-                        1, new_schedule);
+                        1, new_schedule, NULL);
 }
 
 /**
@@ -50985,21 +50902,6 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
 /* Groups. */
 
 /**
- * @brief Find a group given a UUID.
- *
- * @param[in]   uuid   UUID of group.
- * @param[out]  group  Group return, 0 if successfully failed to find group.
- *
- * @return FALSE on success (including if failed to find group), TRUE on
- *         error.
- */
-gboolean
-find_group (const char* uuid, group_t* group)
-{
-  return find_resource ("group", uuid, group);
-}
-
-/**
  * @brief Find a group for a specific permission, given a UUID.
  *
  * @param[in]   uuid        UUID of group.
@@ -54998,21 +54900,6 @@ delete_role (const char *role_id, int ultimate)
 }
 
 /**
- * @brief Find a role given a UUID.
- *
- * @param[in]   uuid   UUID of role.
- * @param[out]  role  Role return, 0 if successfully failed to find role.
- *
- * @return FALSE on success (including if failed to find role), TRUE on
- *         error.
- */
-gboolean
-find_role (const char* uuid, role_t* role)
-{
-  return find_resource ("role", uuid, role);
-}
-
-/**
  * @brief Find a role for a specific permission, given a UUID.
  *
  * @param[in]   uuid        UUID of role.
@@ -55337,20 +55224,6 @@ init_role_iterator (iterator_t* iterator, const get_data_t *get)
 /* Filters. */
 
 /**
- * @brief Find a filter given a UUID.
- *
- * @param[in]   uuid    UUID of filter.
- * @param[out]  filter  Filter return, 0 if successfully failed to find filter.
- *
- * @return FALSE on success (including if failed to find filter), TRUE on error.
- */
-gboolean
-find_filter (const char* uuid, filter_t* filter)
-{
-  return find_resource ("filter", uuid, filter);
-}
-
-/**
  * @brief Find a filter for a specific permission, given a UUID.
  *
  * @param[in]   uuid        UUID of filter.
@@ -55605,7 +55478,7 @@ copy_filter (const char* name, const char* comment, const char *filter_id,
              filter_t* new_filter)
 {
   return copy_resource ("filter", name, comment, filter_id, "term, type",
-                        1, new_filter);
+                        1, new_filter, NULL);
 }
 
 /**
@@ -63692,7 +63565,7 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
           continue;
         }
 
-      if (find_group (group_id, &group))
+      if (find_group_with_permission (group_id, &group, "modify_group"))
         {
           sql_rollback ();
           return -1;
@@ -63733,7 +63606,7 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
           return 99;
         }
 
-      if (find_role (role_id, &role))
+      if (find_role_with_permission (role_id, &role, "get_roles"))
         {
           sql_rollback ();
           return -1;
@@ -64535,7 +64408,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
               continue;
             }
 
-          if (find_group (group_id, &group))
+          if (find_group_with_permission (group_id, &group, "modify_group"))
             {
               sql_rollback ();
               return -1;
@@ -64581,7 +64454,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
               continue;
             }
 
-          if (find_role (role_id, &role))
+          if (find_role_with_permission (role_id, &role, "get_roles"))
             {
               sql_rollback ();
               return -1;
@@ -65676,7 +65549,7 @@ copy_tag (const char* name, const char* comment, const char *tag_id,
   return copy_resource ("tag", name, comment, tag_id,
                         "value, resource_type, resource, resource_location,"
                         " resource_uuid, active",
-                        1, new_tag);
+                        1, new_tag, NULL);
 }
 
 /**

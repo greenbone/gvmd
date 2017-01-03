@@ -6176,7 +6176,8 @@ buffer_get_filter_xml (GString *msg, const char* type,
 
   if (get->filt_id
       && strcmp (get->filt_id, "")
-      && (find_filter (get->filt_id, &filter) == 0)
+      && (find_filter_with_permission (get->filt_id, &filter, "get_filters")
+          == 0)
       && filter != 0)
     buffer_xml_append_printf (msg,
                               "<name>%s</name>",
@@ -15602,7 +15603,8 @@ handle_get_notes (omp_parser_t *omp_parser, GError **error)
                         "Only one of the note_id and task_id"
                         " attributes may be given"));
   else if (get_notes_data->task_id
-            && find_task (get_notes_data->task_id, &task))
+           && find_task_with_permission (get_notes_data->task_id, &task,
+                                         "get_tasks"))
     SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_notes"));
   else if (get_notes_data->task_id && task == 0)
     {
@@ -15966,7 +15968,8 @@ handle_get_overrides (omp_parser_t *omp_parser, GError **error)
                         "Only one of the override_id and task_id"
                         " attributes may be given"));
   else if (get_overrides_data->task_id
-            && find_task (get_overrides_data->task_id, &task))
+           && find_task_with_permission (get_overrides_data->task_id, &task,
+                                         "get_tasks"))
     SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_overrides"));
   else if (get_overrides_data->task_id && task == 0)
     {
@@ -16361,7 +16364,9 @@ handle_get_preferences (omp_parser_t *omp_parser, GError **error)
         }
     }
   else if (get_preferences_data->config_id
-            && find_config (get_preferences_data->config_id, &config))
+           && find_config_with_permission (get_preferences_data->config_id,
+                                           &config,
+                                           "get_configs"))
     SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_preferences"));
   else if (get_preferences_data->config_id && config == 0)
     {
@@ -20335,7 +20340,8 @@ handle_modify_config (omp_parser_t *omp_parser, GError **error)
      (XML_ERROR_SYNTAX ("modify_config",
                         "MODIFY_CONFIG requires either a PREFERENCE or"
                         " an NVT_SELECTION or a FAMILY_SELECTION"));
-  else if (find_config (modify_config_data->config_id, &config))
+  else if (find_config_with_permission (modify_config_data->config_id, &config,
+                                        "modify_config"))
     SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
   else if (config == 0)
     {
@@ -20492,7 +20498,7 @@ extern char client_address[];
  * the change (with \ref set_client_state).  Call \ref send_to_client to queue
  * any responses for the client.  Call the task utilities to adjust the
  * tasks (for example \ref start_task, \ref stop_task, \ref set_task_parameter,
- * \ref delete_task and \ref find_task ).
+ * \ref delete_task and \ref find_task_with_permission ).
  *
  * Set error parameter on encountering an error.
  *
@@ -25011,7 +25017,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               set_task_target (create_task_data->task, 0);
               SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_task"),
                                        tsk_uuid);
-              make_task_complete (tsk_uuid);
+              make_task_complete (create_task_data->task);
               log_event ("task", "Task", tsk_uuid, "created");
               g_free (tsk_uuid);
               create_task_data_reset (create_task_data);
@@ -25267,7 +25273,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
           SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_task"),
                                    tsk_uuid);
-          make_task_complete (tsk_uuid);
+          make_task_complete (create_task_data->task);
           log_event ("task", "Task", tsk_uuid, "created");
           g_free (tsk_uuid);
           create_task_data_reset (create_task_data);
