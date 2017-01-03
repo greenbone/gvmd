@@ -1840,7 +1840,7 @@ main (int argc, char** argv)
   else
     {
       gchar *password_policy;
-      password_policy = g_build_filename (OPENVAS_SYSCONF_DIR,
+      password_policy = g_build_filename (GVM_SYSCONF_DIR,
                                           "pwpolicy.conf",
                                           NULL);
       if (g_file_test (password_policy, G_FILE_TEST_EXISTS) == FALSE)

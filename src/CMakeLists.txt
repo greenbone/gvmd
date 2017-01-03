@@ -168,6 +168,10 @@ if (OPENVAS_SYSCONF_DIR)
   add_definitions (-DOPENVAS_SYSCONF_DIR=\\\"${OPENVAS_SYSCONF_DIR}\\\")
 endif (OPENVAS_SYSCONF_DIR)
 
+if (GVM_SYSCONF_DIR)
+  add_definitions (-DGVM_SYSCONF_DIR=\\\"${GVM_SYSCONF_DIR}\\\")
+endif (GVM_SYSCONF_DIR)
+
 if (OPENVAS_DATA_DIR)
   add_definitions (-DOPENVAS_DATA_DIR=\\\"${OPENVAS_DATA_DIR}\\\")
 endif (OPENVAS_DATA_DIR)

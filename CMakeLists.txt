@@ -179,6 +179,8 @@ endif (NOT DEFINED OPENVAS_SQLITE_SLEEP_MAX)
 #  set (SYSCONFDIR "${CMAKE_INSTALL_PREFIX}/etc")
 #endif (NOT SYSCONFDIR)
 
+set (GVM_SYSCONF_DIR  "${SYSCONFDIR}/gvm")
+
 set (OPENVAS_DATA_DIR     "${DATADIR}/openvas")
 set (OPENVAS_STATE_DIR    "${LOCALSTATEDIR}/lib/openvas")
 set (OPENVAS_LOG_DIR      "${LOCALSTATEDIR}/log/openvas")
@@ -321,8 +323,10 @@ install (CODE "file (MAKE_DIRECTORY \$ENV{DESTDIR}${OPENVAS_DATA_DIR}/openvasmd/
 install (DIRECTORY DESTINATION ${OPENVASMD_STATE_DIR})
 
 install (FILES ${CMAKE_BINARY_DIR}/src/openvasmd_log.conf
-               ${CMAKE_SOURCE_DIR}/src/pwpolicy.conf
          DESTINATION ${OPENVAS_SYSCONF_DIR})
+
+install (FILES ${CMAKE_SOURCE_DIR}/src/pwpolicy.conf
+         DESTINATION ${GVM_SYSCONF_DIR})
 
 # Report formats.
 
