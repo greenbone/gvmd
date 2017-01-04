@@ -1647,7 +1647,7 @@ main (int argc, char** argv)
           "Scanner port for --create-scanner and --modify-scanner. Default is " G_STRINGIFY (OPENVASSD_PORT) ".",
           "<scanner-port>" },
         { "scanner-type", '\0', 0, G_OPTION_ARG_STRING, &scanner_type,
-          "Scanner type for --create-scanner and --mdoify-scanner. Either 'OpenVAS' or 'OSP'.",
+          "Scanner type for --create-scanner and --modify-scanner. Either 'OpenVAS' or 'OSP'.",
           "<scanner-type>" },
         { "scanner-ca-pub", '\0', 0, G_OPTION_ARG_STRING, &scanner_ca_pub,
           "Scanner CA Certificate path for --[create|modify]-scanner.", "<scanner-ca-pub>" },
