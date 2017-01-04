@@ -1,3 +1,8 @@
+2017-01-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (manage_report, manage_send_report): Delete temp
+	directory on errors.
+
 2017-01-04  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/openvasmd.c (main): Fix typo in command line help.
