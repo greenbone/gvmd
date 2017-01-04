@@ -28716,6 +28716,7 @@ manage_report (report_t report, const get_data_t *get,
   if (ret)
     {
       g_free (xml_start);
+      openvas_file_remove_recurse (xml_dir);
       return NULL;
     }
 
@@ -28739,6 +28740,7 @@ manage_report (report_t report, const get_data_t *get,
   /* Read the script output from file. */
   if (output_file == NULL)
     {
+      openvas_file_remove_recurse (xml_dir);
       return NULL;
     }
 
@@ -28756,6 +28758,7 @@ manage_report (report_t report, const get_data_t *get,
       g_error_free (get_error);
       if (extension) g_free (*extension);
       if (content_type) g_free (*content_type);
+      openvas_file_remove_recurse (xml_dir);
       return NULL;
     }
 
@@ -29428,6 +29431,7 @@ manage_send_report (report_t report, report_t delta_report,
   if (ret)
     {
       g_free (xml_start);
+      openvas_file_remove_recurse (xml_dir);
       if (ret == 2)
         return 2;
       return -1;
@@ -29459,6 +29463,7 @@ manage_send_report (report_t report, report_t delta_report,
       g_warning ("%s: %s\n",
                   __FUNCTION__,
                   strerror (errno));
+      openvas_file_remove_recurse (xml_dir);
       return -1;
     }
 
@@ -29466,6 +29471,7 @@ manage_send_report (report_t report, report_t delta_report,
     {
       fclose (stream);
       g_warning ("%s: send prefix error\n", __FUNCTION__);
+      openvas_file_remove_recurse (xml_dir);
       return -1;
     }
 
@@ -29485,6 +29491,7 @@ manage_send_report (report_t report, report_t delta_report,
             {
               fclose (stream);
               g_warning ("%s: error after fread\n", __FUNCTION__);
+              openvas_file_remove_recurse (xml_dir);
               return -1;
             }
           left -= ret;
@@ -29510,6 +29517,7 @@ manage_send_report (report_t report, report_t delta_report,
                   g_free (chunk64);
                   fclose (stream);
                   g_warning ("%s: send error\n", __FUNCTION__);
+                  openvas_file_remove_recurse (xml_dir);
                   return -1;
                 }
               g_free (chunk64);
@@ -29521,6 +29529,7 @@ manage_send_report (report_t report, report_t delta_report,
                 {
                   fclose (stream);
                   g_warning ("%s: send error\n", __FUNCTION__);
+                  openvas_file_remove_recurse (xml_dir);
                   return -1;
                 }
             }
