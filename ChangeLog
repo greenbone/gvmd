@@ -1,3 +1,10 @@
+2017-01-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r27107.
+
+	* src/manage_sql.c (manage_report, manage_send_report): Delete temp
+	directory on errors.
+
 2016-12-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r26889.

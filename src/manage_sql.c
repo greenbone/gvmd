@@ -27630,6 +27630,7 @@ manage_report (report_t report, report_format_t report_format,
   if (ret)
     {
       g_free (xml_file);
+      openvas_file_remove_recurse (xml_dir);
       return NULL;
     }
 
@@ -27652,6 +27653,7 @@ manage_report (report_t report, report_format_t report_format,
       {
         g_free (xml_file);
         cleanup_iterator (&formats);
+        openvas_file_remove_recurse (xml_dir);
         return NULL;
       }
 
@@ -27697,6 +27699,7 @@ manage_report (report_t report, report_format_t report_format,
         if (extension) g_free (*extension);
         if (content_type) g_free (*content_type);
         g_free (xml_file);
+        openvas_file_remove_recurse (xml_dir);
         return NULL;
       }
 
@@ -27720,6 +27723,7 @@ manage_report (report_t report, report_format_t report_format,
           g_free (xml_file);
           if (extension) g_free (*extension);
           if (content_type) g_free (*content_type);
+          openvas_file_remove_recurse (xml_dir);
           return NULL;
         }
 
@@ -27734,6 +27738,7 @@ manage_report (report_t report, report_format_t report_format,
           g_free (xml_file);
           if (extension) g_free (*extension);
           if (content_type) g_free (*content_type);
+          openvas_file_remove_recurse (xml_dir);
           return NULL;
         }
       g_free (script_dir);
@@ -27771,6 +27776,7 @@ manage_report (report_t report, report_format_t report_format,
               g_free (xml_file);
               if (extension) g_free (*extension);
               if (content_type) g_free (*content_type);
+              openvas_file_remove_recurse (xml_dir);
               return NULL;
             }
           g_free (xml_file);
@@ -27837,6 +27843,7 @@ manage_report (report_t report, report_format_t report_format,
                 g_free (command);
                 if (extension) g_free (*extension);
                 if (content_type) g_free (*content_type);
+                openvas_file_remove_recurse (xml_dir);
                 return NULL;
                 break;
 
@@ -27861,6 +27868,7 @@ manage_report (report_t report, report_format_t report_format,
                           g_free (output_file);
                           if (extension) g_free (*extension);
                           if (content_type) g_free (*content_type);
+                          openvas_file_remove_recurse (xml_dir);
                           return NULL;
                         }
                       if (errno == EINTR)
@@ -27875,6 +27883,7 @@ manage_report (report_t report, report_format_t report_format,
                       g_free (output_file);
                       if (extension) g_free (*extension);
                       if (content_type) g_free (*content_type);
+                      openvas_file_remove_recurse (xml_dir);
                       return NULL;
                     }
                   if (WIFEXITED (status))
@@ -27894,6 +27903,7 @@ manage_report (report_t report, report_format_t report_format,
                           g_free (output_file);
                           if (extension) g_free (*extension);
                           if (content_type) g_free (*content_type);
+                          openvas_file_remove_recurse (xml_dir);
                           return NULL;
                       }
                   else
@@ -27908,6 +27918,7 @@ manage_report (report_t report, report_format_t report_format,
                       g_free (output_file);
                       if (extension) g_free (*extension);
                       if (content_type) g_free (*content_type);
+                      openvas_file_remove_recurse (xml_dir);
                       return NULL;
                     }
 
@@ -27938,6 +27949,7 @@ manage_report (report_t report, report_format_t report_format,
               g_free (command);
               if (extension) g_free (*extension);
               if (content_type) g_free (*content_type);
+              openvas_file_remove_recurse (xml_dir);
               return NULL;
             }
 
@@ -27960,6 +27972,7 @@ manage_report (report_t report, report_format_t report_format,
             g_free (output_file);
             if (extension) g_free (*extension);
             if (content_type) g_free (*content_type);
+            openvas_file_remove_recurse (xml_dir);
             return NULL;
           }
         g_free (previous_dir);
@@ -27980,6 +27993,7 @@ manage_report (report_t report, report_format_t report_format,
             g_error_free (get_error);
             if (extension) g_free (*extension);
             if (content_type) g_free (*content_type);
+            openvas_file_remove_recurse (xml_dir);
             return NULL;
           }
 
@@ -28161,6 +28175,7 @@ manage_send_report (report_t report, report_t delta_report,
   if (ret)
     {
       g_free (xml_file);
+      openvas_file_remove_recurse (xml_dir);
       if (ret == 2)
         return 2;
       return -1;
@@ -28185,6 +28200,7 @@ manage_send_report (report_t report, report_t delta_report,
       {
         g_free (xml_file);
         cleanup_iterator (&formats);
+        openvas_file_remove_recurse (xml_dir);
         return -1;
       }
 
@@ -28220,6 +28236,7 @@ manage_send_report (report_t report, report_t delta_report,
         g_free (script);
         g_free (script_dir);
         g_free (xml_file);
+        openvas_file_remove_recurse (xml_dir);
         return -1;
       }
 
@@ -28241,6 +28258,7 @@ manage_send_report (report_t report, report_t delta_report,
           g_free (script);
           g_free (script_dir);
           g_free (xml_file);
+          openvas_file_remove_recurse (xml_dir);
           return -1;
         }
 
@@ -28253,6 +28271,7 @@ manage_send_report (report_t report, report_t delta_report,
           g_free (script);
           g_free (script_dir);
           g_free (xml_file);
+          openvas_file_remove_recurse (xml_dir);
           return -1;
         }
       g_free (script_dir);
@@ -28288,6 +28307,7 @@ manage_send_report (report_t report, report_t delta_report,
               g_free (previous_dir);
               g_free (xml_file);
               g_free (output_file);
+              openvas_file_remove_recurse (xml_dir);
               return -1;
             }
 
@@ -28353,6 +28373,7 @@ manage_send_report (report_t report, report_t delta_report,
                 g_free (previous_dir);
                 g_free (output_file);
                 g_free (command);
+                openvas_file_remove_recurse (xml_dir);
                 return -1;
                 break;
 
@@ -28375,6 +28396,7 @@ manage_send_report (report_t report, report_t delta_report,
                                        __FUNCTION__);
                           g_free (previous_dir);
                           g_free (output_file);
+                          openvas_file_remove_recurse (xml_dir);
                           return -1;
                         }
                       if (errno == EINTR)
@@ -28387,6 +28409,7 @@ manage_send_report (report_t report, report_t delta_report,
                                    __FUNCTION__);
                       g_free (previous_dir);
                       g_free (output_file);
+                      openvas_file_remove_recurse (xml_dir);
                       return -1;
                     }
                   if (WIFEXITED (status))
@@ -28404,6 +28427,7 @@ manage_send_report (report_t report, report_t delta_report,
                                        __FUNCTION__);
                           g_free (previous_dir);
                           g_free (output_file);
+                          openvas_file_remove_recurse (xml_dir);
                           return -1;
                       }
                   else
@@ -28416,6 +28440,7 @@ manage_send_report (report_t report, report_t delta_report,
                                    __FUNCTION__);
                       g_free (previous_dir);
                       g_free (output_file);
+                      openvas_file_remove_recurse (xml_dir);
                       return -1;
                     }
 
@@ -28448,6 +28473,7 @@ manage_send_report (report_t report, report_t delta_report,
               g_free (previous_dir);
               g_free (command);
               g_free (output_file);
+              openvas_file_remove_recurse (xml_dir);
               return -1;
             }
 
@@ -28467,6 +28493,7 @@ manage_send_report (report_t report, report_t delta_report,
                        strerror (errno));
             g_free (previous_dir);
             g_free (output_file);
+            openvas_file_remove_recurse (xml_dir);
             return -1;
           }
         g_free (previous_dir);
@@ -28480,6 +28507,7 @@ manage_send_report (report_t report, report_t delta_report,
             g_warning ("%s: %s\n",
                        __FUNCTION__,
                        strerror (errno));
+            openvas_file_remove_recurse (xml_dir);
             return -1;
           }
 
@@ -28487,6 +28515,7 @@ manage_send_report (report_t report, report_t delta_report,
           {
             fclose (stream);
             g_warning ("%s: send prefix error\n", __FUNCTION__);
+            openvas_file_remove_recurse (xml_dir);
             return -1;
           }
 
@@ -28506,6 +28535,7 @@ manage_send_report (report_t report, report_t delta_report,
                   {
                     fclose (stream);
                     g_warning ("%s: error after fread\n", __FUNCTION__);
+                    openvas_file_remove_recurse (xml_dir);
                     return -1;
                   }
                 left -= ret;
@@ -28531,6 +28561,7 @@ manage_send_report (report_t report, report_t delta_report,
                         g_free (chunk64);
                         fclose (stream);
                         g_warning ("%s: send error\n", __FUNCTION__);
+                        openvas_file_remove_recurse (xml_dir);
                         return -1;
                       }
                     g_free (chunk64);
@@ -28542,6 +28573,7 @@ manage_send_report (report_t report, report_t delta_report,
                       {
                         fclose (stream);
                         g_warning ("%s: send error\n", __FUNCTION__);
+                        openvas_file_remove_recurse (xml_dir);
                         return -1;
                       }
                   }
