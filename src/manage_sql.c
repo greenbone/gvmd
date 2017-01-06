@@ -60295,6 +60295,10 @@ modify_setting (const gchar *uuid, const gchar *name,
       else if (strcmp (uuid, "0b8ae70d-d8fc-4418-8a72-e65ac8d2828e") == 0)
         setting_name = g_strdup ("Results Top Dashboard Configuration");
 
+      /* Vulns dashboard settings */
+      else if (strcmp (uuid, "43690dcb-3174-4d84-aa88-58c1936c7f5c") == 0)
+        setting_name = g_strdup ("Vulnerabilities Top Dashboard Configuration");
+
       /* Notes dashboard settings */
       else if (strcmp (uuid, "ce7b121-c609-47b0-ab57-fd020a0336f4") == 0)
         setting_name = g_strdup ("Notes Top Dashboard Configuration");

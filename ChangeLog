@@ -1,3 +1,8 @@
+2017-01-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (modify_setting): Add case for "Vulnerabilities Top
+	Dashboard Configuration".
+
 2017-01-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (manage_report, manage_send_report): Delete temp
