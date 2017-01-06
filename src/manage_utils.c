@@ -27,7 +27,7 @@
 
 #include <assert.h>
 
-#include <openvas/base/openvas_hosts.h>
+#include <gvm/base/hosts.h>
 
 /**
  * @file  manage_utils.c
@@ -185,19 +185,19 @@ int
 manage_count_hosts_FIX (const char *given_hosts, const char *exclude_hosts)
 {
   int count;
-  openvas_hosts_t *hosts;
+  gvm_hosts_t *hosts;
 
   // FIX 4095 s/b manage_max_host () but this is used on pg side
-  hosts = openvas_hosts_new_with_max (given_hosts, 4095);
+  hosts = gvm_hosts_new_with_max (given_hosts, 4095);
   if (hosts == NULL)
     return -1;
 
   if (exclude_hosts)
     /* Don't resolve hostnames in excluded hosts. */
-    openvas_hosts_exclude (hosts, exclude_hosts, 0);
+    gvm_hosts_exclude (hosts, exclude_hosts, 0);
 
-  count = openvas_hosts_count (hosts);
-  openvas_hosts_free (hosts);
+  count = gvm_hosts_count (hosts);
+  gvm_hosts_free (hosts);
 
   return count;
 }

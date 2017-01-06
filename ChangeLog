@@ -1,3 +1,25 @@
+2017-01-06  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	src/manage.c (cve_scan_host): Use gvm_host_value_str instead of
+	openvas_host_value_str.
+	(fork_cve_scan_handler): Use gvm_host_t, gvm_hosts_new, gvm_hosts_next,
+	gvm_hosts_free and gvm_hosts_t instead of openvas_host_t,
+	openvas_hosts_new, openvas_hosts_next, openvas_hosts_free and
+	openvas_hosts_t.
+
+	* src/manage_sql.c (validate_scp_data, validate_send_data): Use
+	gvm_get_host_type instead of openvas_get_host_type.
+	(manage_count_hosts): Use gvm_hosts_t, gvm_hosts_count, gvm_hosts_free
+	and gvm_hosts_new_with_max instead of openvas_hosts_t,
+	openvas_hosts_count, openvas_hosts_free and openvas_hosts_new_with_max.
+	(create_scanner): Use gvm_get_host_type instead of openvas_get_host_type.
+
+	* manage_utils.c (manage_count_hosts_FIX): Use gvm_hosts_t,
+	gvm_hosts_exclude, gvm_hosts_count, gvm_hosts_free and
+	gvm_hosts_new_with_max instead of openvas_hosts_t,
+	openvas_hosts_exclude, openvas_hosts_count, openvas_hosts_free and
+	openvas_hosts_new_with_max.
+
 2017-01-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (modify_setting): Add case for "Vulnerabilities Top

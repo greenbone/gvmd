@@ -68,10 +68,10 @@
 #include <unistd.h>
 
 #include <gvm/base/cvss.h>
+#include <gvm/base/hosts.h>
 #include <gvm/util/fileutils.h>
 
 #include <openvas/base/gpgme_util.h>
-#include <openvas/base/openvas_hosts.h>
 #include <openvas/omp/omp.h>
 #include <openvas/misc/openvas_server.h>
 #include <openvas/misc/nvt_categories.h>
@@ -3951,12 +3951,12 @@ run_osp_task (task_t task)
  * @return 0 success, 1 failed to get nthlast report for a host.
  */
 static int
-cve_scan_host (task_t task, openvas_host_t *openvas_host)
+cve_scan_host (task_t task, gvm_host_t *openvas_host)
 {
   report_host_t report_host;
   gchar *ip, *host;
 
-  host = openvas_host_value_str (openvas_host);
+  host = gvm_host_value_str (openvas_host);
 
   ip = report_host_ip (host);
   if (ip == NULL)
@@ -4087,8 +4087,8 @@ fork_cve_scan_handler (task_t task, target_t target)
 {
   int pid;
   char *report_id, title[128], *hosts;
-  openvas_hosts_t *openvas_hosts;
-  openvas_host_t *openvas_host;
+  gvm_hosts_t *openvas_hosts;
+  gvm_host_t *openvas_host;
 
   assert (task);
   assert (target);
@@ -4152,18 +4152,18 @@ fork_cve_scan_handler (task_t task, target_t target)
 
   /* Add the results. */
 
-  openvas_hosts = openvas_hosts_new (hosts);
+  openvas_hosts = gvm_hosts_new (hosts);
   free (hosts);
-  while ((openvas_host = openvas_hosts_next (openvas_hosts)))
+  while ((openvas_host = gvm_hosts_next (openvas_hosts)))
     if (cve_scan_host (task, openvas_host))
       {
         g_warning ("%s: cve_scan_host failed", __FUNCTION__);
         set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
         set_report_scan_run_status (current_report, TASK_STATUS_INTERNAL_ERROR);
-        openvas_hosts_free (openvas_hosts);
+        gvm_hosts_free (openvas_hosts);
         exit (1);
       }
-  openvas_hosts_free (openvas_hosts);
+  gvm_hosts_free (openvas_hosts);
 
   /* Set the end states. */
 

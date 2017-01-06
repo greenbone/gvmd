@@ -58,10 +58,10 @@
 #include <sys/time.h>
 #include <grp.h>
 
+#include <gvm/base/hosts.h>
 #include <gvm/base/pwpolicy.h>
 #include <gvm/util/fileutils.h>
 
-#include <openvas/base/openvas_hosts.h>
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/misc/ldap_connect_auth.h>
 #include <openvas/misc/radius.h>
@@ -7314,7 +7314,7 @@ validate_scp_data (alert_method_t method, const gchar *name, gchar **data)
       gchar *stripped;
 
       stripped = g_strstrip (g_strdup (*data));
-      type = openvas_get_host_type (stripped);
+      type = gvm_get_host_type (stripped);
       g_free (stripped);
       if ((type != HOST_TYPE_IPV4)
           && (type != HOST_TYPE_IPV6)
@@ -7359,7 +7359,7 @@ validate_send_data (alert_method_t method, const gchar *name, gchar **data)
       gchar *stripped;
 
       stripped = g_strstrip (g_strdup (*data));
-      type = openvas_get_host_type (stripped);
+      type = gvm_get_host_type (stripped);
       g_free (stripped);
       if ((type != HOST_TYPE_IPV4)
           && (type != HOST_TYPE_IPV6)
@@ -30966,18 +30966,18 @@ int
 manage_count_hosts (const char *given_hosts, const char *exclude_hosts)
 {
   int count;
-  openvas_hosts_t *hosts;
+  gvm_hosts_t *hosts;
 
-  hosts = openvas_hosts_new_with_max (given_hosts, manage_max_hosts ());
+  hosts = gvm_hosts_new_with_max (given_hosts, manage_max_hosts ());
   if (hosts == NULL)
     return -1;
 
   if (exclude_hosts)
     /* Don't resolve hostnames in excluded hosts. */
-    openvas_hosts_exclude (hosts, exclude_hosts, 0);
+    gvm_hosts_exclude (hosts, exclude_hosts, 0);
 
-  count = openvas_hosts_count (hosts);
-  openvas_hosts_free (hosts);
+  count = gvm_hosts_count (hosts);
+  gvm_hosts_free (hosts);
 
   return count;
 }
@@ -45185,7 +45185,7 @@ create_scanner (const char* name, const char *comment, const char *host,
     return 2;
   /* XXX: Workaround for unix socket case. Should add a host type flag, or
    * remove otp over tcp case entirely. */
-  if (openvas_get_host_type (host) == -1 && !unix_socket)
+  if (gvm_get_host_type (host) == -1 && !unix_socket)
     return 2;
   if (resource_with_name_exists (name, "scanner", 0))
     {
@@ -45331,7 +45331,7 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
   else
     itype = 0;
 
-  if (host && (openvas_get_host_type (host) == -1))
+  if (host && (gvm_get_host_type (host) == -1))
     return 4;
 
   sql_begin_immediate ();
