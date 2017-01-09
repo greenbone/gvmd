@@ -30129,7 +30129,7 @@ make_task (char* name, char* comment, int in_assets, int event)
 /**
  * @brief Complete the creation of a task.
  *
- * @param[in]  uuid     The UUID of the task.
+ * @param[in]  task     The task.
  */
 void
 make_task_complete (task_t task)
@@ -67028,11 +67028,6 @@ cache_permissions_for_users (const char *type, GArray *cache_users)
     g_array_free (cache_users, TRUE);
 }
 
-/**
- * @brief Update permissions cache for a resource.
- *
- * @param[in]  type      Type.
- */
 void
 cache_all_permissions_for_users (GArray *cache_users)
 {
