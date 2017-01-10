@@ -361,6 +361,9 @@ find_group_with_permission (const char *, group_t *, const char *);
 static gchar*
 vulns_extra_where ();
 
+static gboolean
+lookup_report_format (const char*, report_format_t*);
+
 
 /* Variables. */
 
@@ -4468,8 +4471,12 @@ type_trash_in_table (const char *type)
   return strcasecmp (type, "task") == 0;
 }
 
+/* TODO Only used by find_scanner, find_permission and check_permission_args. */
 /**
  * @brief Find a resource given a UUID.
+ *
+ * This only looks for resources owned (or effectively owned) by the current user.
+ * So no shared resources and no globals.
  *
  * @param[in]   type       Type of resource.
  * @param[in]   uuid       UUID of resource.
@@ -11144,7 +11151,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                 = sql_string ("SELECT value FROM settings"
                               " WHERE name"
                               "       = 'Report Export File Name'"
-                              " AND " ACL_USER_OWNS ()
+                              " AND " ACL_GLOBAL_OR_USER_OWNS ()
                               " ORDER BY coalesce (owner, 0) DESC LIMIT 1;",
                               current_credentials.uuid);
 
@@ -14508,6 +14515,53 @@ add_role_permission (const gchar *role, const gchar *permission)
 }
 
 /**
+ * @brief Add resource permission to role.
+ *
+ * Caller must ensure args are SQL escaped.
+ *
+ * @param[in]  role_id      Role ID.
+ * @param[in]  permission   Permission.
+ * @param[in]  type         Resource type.
+ * @param[in]  resource_id  Resource ID.
+ */
+static void
+add_role_permission_resource (const gchar *role_id, const gchar *permission,
+                              const gchar *type, const gchar *resource_id)
+{
+  if (sql_int ("SELECT EXISTS (SELECT * FROM permissions"
+               "               WHERE owner IS NULL"
+               "               AND name = lower ('%s')"
+               "               AND resource_type = '%s'"
+               "               AND resource = (SELECT id FROM %ss"
+               "                               WHERE uuid = '%s')"
+               "               AND subject_type = 'role'"
+               "               AND subject = (SELECT id FROM roles"
+               "                              WHERE uuid = '%s'));",
+               permission,
+               type,
+               type,
+               resource_id,
+               role_id)
+      == 0)
+    sql ("INSERT INTO permissions"
+         " (uuid, owner, name, comment, resource_type, resource, resource_uuid,"
+         "  resource_location, subject_type, subject, subject_location,"
+         "  creation_time, modification_time)"
+         " VALUES"
+         " (make_uuid (), NULL, lower ('%s'), '', '%s',"
+         "  (SELECT id FROM %ss WHERE uuid = '%s'), '%s',"
+         "  " G_STRINGIFY (LOCATION_TABLE) ", 'role',"
+         "  (SELECT id FROM roles WHERE uuid = '%s'),"
+         "  " G_STRINGIFY (LOCATION_TABLE) ", m_now (), m_now ());",
+         permission,
+         type,
+         type,
+         resource_id,
+         resource_id,
+         role_id);
+}
+
+/**
  * @brief Refresh nvt_cves table.
  *
  * Caller must organise transaction.
@@ -15381,6 +15435,107 @@ check_db_report_formats_trash ()
 }
 
 /**
+ * @brief Add permissions for all global resources.
+ *
+ * @param[in]  role_uuid  UUID of role.
+ */
+static void
+add_permissions_on_globals (const gchar *role_uuid)
+{
+  if (sql_int ("SELECT count(*) FROM permissions"
+               " WHERE owner is NULL"
+               " AND subject_type = 'role'"
+               " AND subject = (SELECT id FROM roles"
+               "                WHERE uuid = '%s')"
+               " AND resource != 0"
+               " AND name != 'get_report_formats';",
+               role_uuid)
+      == 0)
+    {
+      /* Clean-up any remaining permissions. */
+      sql ("DELETE FROM permissions"
+           " WHERE owner IS NULL"
+           " AND name != 'get_report_formats'"
+           " AND subject_type = 'role'"
+           " AND resource != 0"
+           " AND subject = (SELECT id FROM roles"
+           "                WHERE uuid = '%s');",
+           role_uuid);
+
+      /* Global configs. */
+      add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
+                                    CONFIG_UUID_FULL_AND_FAST);
+      add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
+                                    CONFIG_UUID_FULL_AND_FAST_ULTIMATE);
+      add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
+                                    CONFIG_UUID_FULL_AND_VERY_DEEP);
+      add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
+                                    CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE);
+      add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
+                                    CONFIG_UUID_EMPTY);
+      add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
+                                    CONFIG_UUID_DISCOVERY);
+      add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
+                                    CONFIG_UUID_HOST_DISCOVERY);
+      add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
+                                    CONFIG_UUID_SYSTEM_DISCOVERY);
+
+      /* Global port lists. */
+      add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
+                                    "port_list", PORT_LIST_UUID_DEFAULT);
+      add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
+                                    "port_list", PORT_LIST_UUID_ALL_TCP);
+      add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
+                                    "port_list",
+                                    PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100);
+      add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
+                                    "port_list",
+                                    PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000);
+      add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
+                                    "port_list",
+                                    PORT_LIST_UUID_ALL_PRIV_TCP);
+      add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
+                                    "port_list",
+                                    PORT_LIST_UUID_ALL_PRIV_TCP_UDP);
+      add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
+                                    "port_list",
+                                    PORT_LIST_UUID_ALL_IANA_TCP_2012);
+      add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
+                                    "port_list",
+                                    PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012);
+      add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
+                                    "port_list",
+                                    PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100);
+
+      add_role_permission_resource (role_uuid, "GET_SCANNERS",
+                                    "scanner",
+                                    SCANNER_UUID_DEFAULT);
+      add_role_permission_resource (role_uuid, "GET_SCANNERS",
+                                    "scanner",
+                                    SCANNER_UUID_CVE);
+
+      add_role_permission_resource (role_uuid, "GET_ROLES",
+                                    "role",
+                                    ROLE_UUID_ADMIN);
+      add_role_permission_resource (role_uuid, "GET_ROLES",
+                                    "role",
+                                    ROLE_UUID_GUEST);
+      add_role_permission_resource (role_uuid, "GET_ROLES",
+                                    "role",
+                                    ROLE_UUID_INFO);
+      add_role_permission_resource (role_uuid, "GET_ROLES",
+                                    "role",
+                                    ROLE_UUID_MONITOR);
+      add_role_permission_resource (role_uuid, "GET_ROLES",
+                                    "role",
+                                    ROLE_UUID_USER);
+      add_role_permission_resource (role_uuid, "GET_ROLES",
+                                    "role",
+                                    ROLE_UUID_OBSERVER);
+    }
+}
+
+/**
  * @brief Ensure the predefined permissions exists.
  */
 static void
@@ -15537,6 +15692,11 @@ check_db_permissions ()
       add_role_permission (ROLE_UUID_OBSERVER, "HELP");
       add_role_permission (ROLE_UUID_OBSERVER, "MODIFY_SETTING");
     }
+
+  add_permissions_on_globals (ROLE_UUID_ADMIN);
+  add_permissions_on_globals (ROLE_UUID_GUEST);
+  add_permissions_on_globals (ROLE_UUID_OBSERVER);
+  add_permissions_on_globals (ROLE_UUID_USER);
 }
 
 /**
@@ -16280,6 +16440,8 @@ manage_scanner_set (const char *uuid)
 
   if (!current_credentials.uuid)
     current_credentials.uuid = "";
+  /* This is only used to find the default scanner, so it needs to include
+   * globals. */
   if (find_scanner (uuid, &scanner) || scanner == 0)
     {
       g_warning ("Failed to find scanner %s\n", uuid);
@@ -16376,21 +16538,21 @@ credentials_setup (credentials_t *credentials)
   credentials->severity_class
     = sql_string ("SELECT value FROM settings"
                   " WHERE name = 'Severity Class'"
-                  " AND " ACL_USER_OWNS ()
+                  " AND " ACL_GLOBAL_OR_USER_OWNS ()
                   " ORDER BY coalesce (owner, 0) DESC LIMIT 1;",
                   credentials->uuid);
 
   credentials->dynamic_severity
     = sql_int ("SELECT value FROM settings"
                 " WHERE name = 'Dynamic Severity'"
-                " AND " ACL_USER_OWNS ()
+                " AND " ACL_GLOBAL_OR_USER_OWNS ()
                 " ORDER BY coalesce (owner, 0) DESC LIMIT 1;",
                 credentials->uuid);
 
   credentials->default_severity
     = sql_double ("SELECT value FROM settings"
                   " WHERE name = 'Default Severity'"
-                  " AND " ACL_USER_OWNS ()
+                  " AND " ACL_GLOBAL_OR_USER_OWNS ()
                   " ORDER BY coalesce (owner, 0) DESC LIMIT 1;",
                   credentials->uuid);
 
@@ -44888,6 +45050,8 @@ manage_modify_scanner (GSList *log_config, const gchar *database,
 
   if (scanner_id)
     {
+      /* This is only used to find the default scanner, so it needs to include
+       * globals. */
       if (find_scanner (scanner_id, &scanner))
         {
           fprintf (stderr, "Error finding scanner.\n");
@@ -47653,41 +47817,10 @@ find_report_format_with_permission (const char* uuid,
  * @return FALSE on success (including if failed to find report format), TRUE
  *         on error.
  */
-gboolean
+static gboolean
 lookup_report_format (const char* name, report_format_t* report_format)
 {
-  gchar *quoted_name;
-
-  assert (current_credentials.uuid);
-
-  if (acl_user_owns_name ("report_format", name) == 0)
-    {
-      *report_format = 0;
-      return FALSE;
-    }
-  quoted_name = sql_quote (name);
-  switch (sql_int64 (report_format,
-                     "SELECT id FROM report_formats"
-                     " WHERE name = '%s'"
-                     " AND " ACL_USER_OWNS () ";",
-                     quoted_name,
-                     current_credentials.uuid))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *report_format = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_name);
-        return TRUE;
-        break;
-    }
-
-  g_free (quoted_name);
-  return FALSE;
+  return acl_user_has_access_name ("report_format", name, report_format);
 }
 
 /**
@@ -50244,6 +50377,15 @@ check_report_format_create (const gchar *quoted_uuid, const gchar *name,
          time (NULL),
          (long long int) REPORT_FORMAT_FLAG_ACTIVE);
 
+  add_role_permission_resource (ROLE_UUID_ADMIN, "GET_REPORT_FORMATS",
+                                "report_format", quoted_uuid);
+  add_role_permission_resource (ROLE_UUID_GUEST, "GET_REPORT_FORMATS",
+                                "report_format", quoted_uuid);
+  add_role_permission_resource (ROLE_UUID_OBSERVER, "GET_REPORT_FORMATS",
+                                "report_format", quoted_uuid);
+  add_role_permission_resource (ROLE_UUID_USER, "GET_REPORT_FORMATS",
+                                "report_format", quoted_uuid);
+
   g_free (quoted_name);
   g_free (quoted_summary);
   g_free (quoted_description);
@@ -52103,6 +52245,8 @@ copy_permission (const char* comment, const char *permission_id,
   sql_begin_immediate ();
 
   permission = 0;
+  /* There are no permissions on permissions, so no need for the
+   * "_with_permission" version. */
   if (find_permission (permission_id, &permission))
     {
       sql_rollback ();
@@ -52954,6 +53098,8 @@ modify_permission (const char *permission_id, const char *name_arg,
     }
 
   permission = 0;
+  /* There are no permissions on permissions, so no need for the
+   * "_with_permission" version. */
   if (find_permission (permission_id, &permission))
     {
       sql_rollback ();
@@ -59663,7 +59809,7 @@ char *
 setting_filter (const char *resource)
 {
   return sql_string ("SELECT value FROM settings WHERE name = '%s Filter'"
-                     " AND " ACL_USER_OWNS () ""
+                     " AND " ACL_GLOBAL_OR_USER_OWNS () ""
                      " ORDER BY coalesce (owner, 0) DESC;",
                      resource,
                      current_credentials.uuid);
@@ -59755,7 +59901,7 @@ init_setting_iterator (iterator_t *iterator, const char *uuid,
                    "SELECT %s"
                    " FROM settings"
                    " WHERE uuid = '%s'"
-                   " AND " ACL_USER_OWNS ()
+                   " AND " ACL_GLOBAL_OR_USER_OWNS ()
                    /* Force the user's setting to come before the default. */
                    " ORDER BY coalesce (owner, 0) DESC;",
                    columns,
@@ -59851,7 +59997,7 @@ setting_value_int (const char *uuid, int *value)
   if (sql_int ("SELECT count (*)"
                " FROM settings"
                " WHERE uuid = '%s'"
-               " AND " ACL_USER_OWNS () ";",
+               " AND " ACL_GLOBAL_OR_USER_OWNS () ";",
                quoted_uuid,
                current_credentials.uuid)
       == 0)
@@ -59864,7 +60010,7 @@ setting_value_int (const char *uuid, int *value)
   *value = sql_int ("SELECT value"
                     " FROM settings"
                     " WHERE uuid = '%s'"
-                    " AND " ACL_USER_OWNS ()
+                    " AND " ACL_GLOBAL_OR_USER_OWNS ()
                     /* Force the user's setting to come before the default. */
                     " ORDER BY coalesce (owner, 0) DESC;",
                     quoted_uuid,
@@ -63897,6 +64043,9 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
 
       /* Only the current user, owned users or global users may inherit. */
       if (strcmp (real_inheritor_id, current_credentials.uuid)
+          && sql_int ("SELECT NOT (" ACL_IS_GLOBAL () ")"
+                      " FROM users WHERE id = %llu",
+                      inheritor)
           && ! acl_user_owns ("user", inheritor, 0)
           && sql_int ("SELECT owner != 0 FROM users WHERE id = %llu",
                       inheritor))

@@ -1,3 +1,31 @@
+2017-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Remove the implicit permission that any user had to access globals.
+	Instead add explicit permissions on globals for certain roles.
+
+	* src/manage.h (lookup_report_format): Remove.  Now static.
+
+	* src/manage_acl.c (acl_user_owns_name): Remove.  No longer used.
+	(acl_user_has_access_name): New function.
+	(acl_user_owns_uuid): Remove global check, but keep it for permissions.
+	(acl_user_owns, acl_user_owns_trash_uuid, acl_where_owned_user): Remove
+	global check.
+
+	* src/manage_acl.h (ACL_USER_OWNS): Remove global check.
+	(ACL_GLOBAL_OR_USER_OWNS): New macro.
+	(acl_user_has_access_name): New function.
+
+	* src/manage_sql.c (find_resource): Qualify global behaviour.
+	(escalate_2, credentials_setup, setting_filter, init_setting_iterator)
+	(setting_value_int): Include globals in settings, because they're used for
+	the defaults.
+	(add_role_permission_resource, add_permissions_on_globals): New functions.
+	(check_db_permissions): Add explicit permissions for certain roles.
+	(lookup_report_format): Make static to reduce scope.  Let
+	acl_user_has_access_name do the work.
+	(check_report_format_create): Add explicit permission for certain roles.
+	(delete_user): Add NULL version of global check.
+
 2017-01-09  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/manage_sql.c (make_task_complete): Fix parameter name in

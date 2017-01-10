@@ -82,7 +82,19 @@
  *
  * Caller must organise the single argument, the user's UUID, as a string.
  */
-#define ACL_USER_OWNS()                                        \
+#define ACL_USER_OWNS()                                    \
+  " (owner = (SELECT users.id FROM users"                  \
+  "           WHERE users.uuid = '%s'))"
+
+/**
+ * @brief Generate SQL for user ownership check.
+ *
+ * This is the SQL clause for selecting global resources and resources owned
+ * directly by the user.
+ *
+ * Caller must organise the single argument, the user's UUID, as a string.
+ */
+#define ACL_GLOBAL_OR_USER_OWNS()                              \
   " ((" ACL_IS_GLOBAL () ")"                                   \
   "  OR (owner = (SELECT users.id FROM users"                  \
   "               WHERE users.uuid = '%s')))"
@@ -131,6 +143,9 @@ acl_user_owns_trash_uuid (const char *resource, const char *uuid);
 
 int
 acl_user_has_access_uuid (const char *, const char *, const char *, int);
+
+int
+acl_user_has_access_name (const char *, const char *, resource_t *);
 
 gchar *
 acl_where_owned_user (const char *, const char *, const char *, const get_data_t *,
