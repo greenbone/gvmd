@@ -53646,10 +53646,8 @@ create_port_list (const char* id, const char* name, const char* comment,
 
       quoted_id = sql_quote (id);
       if (sql_int ("SELECT COUNT(*) FROM port_lists"
-                   " WHERE uuid = '%s'"
-                   " AND " ACL_USER_OWNS () ";",
-                   quoted_id,
-                   current_credentials.uuid))
+                   " WHERE uuid = '%s';",
+                   quoted_id))
         {
           g_free (quoted_id);
           sql_rollback ();
@@ -53657,10 +53655,8 @@ create_port_list (const char* id, const char* name, const char* comment,
         }
 
       if (sql_int ("SELECT COUNT(*) FROM port_lists_trash"
-                   " WHERE uuid = '%s'"
-                   " AND " ACL_USER_OWNS () ";",
-                   quoted_id,
-                   current_credentials.uuid))
+                   " WHERE uuid = '%s';",
+                   quoted_id))
         {
           g_free (quoted_id);
           sql_rollback ();

@@ -1,5 +1,10 @@
 2017-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_port_list): Remove the owner clause when
+	checking if the port list exists already, to avoid UUID conflicts.
+
+2017-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (check_permission_args): When creating or modifying
 	a permission, ensure that the user has permission to access the
 	permission's resource.
