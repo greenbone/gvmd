@@ -1,5 +1,10 @@
 2017-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_report): Check that the user has permission
+	to create the task.
+
+2017-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Remove the implicit permission that any user had to access globals.
 	Instead add explicit permissions on globals for certain roles.
 

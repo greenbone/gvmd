@@ -19958,10 +19958,18 @@ create_report (array_t *results, const char *task_id, const char *task_name,
         }
     }
   else
-    task = make_task (g_strdup (task_name),
-                      task_comment ? g_strdup (task_comment) : NULL,
-                      1,  /* Include in assets. */
-                      1); /* Log and generate event. */
+    {
+      if (acl_user_may ("create_task") == 0)
+        {
+          sql_rollback ();
+          return 99;
+        }
+
+      task = make_task (g_strdup (task_name),
+                        task_comment ? g_strdup (task_comment) : NULL,
+                        1,  /* Include in assets. */
+                        1); /* Log and generate event. */
+    }
 
   /* Generate report UUID. */
 
