@@ -1,5 +1,10 @@
 2017-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (copy_role): Also copy global permissions, so that
+	access to globals is preserved.
+
+2017-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (escalate_2): Indent.
 	(VULN_RESULTS_WHERE): Neaten wrap markers.
 

@@ -54785,7 +54785,7 @@ copy_role (const char *name, const char *comment, const char *role_id,
        " WHERE subject_type = 'role'"
        " AND subject = %llu"
        " AND subject_location = " G_STRINGIFY (LOCATION_TABLE)
-       " AND resource = 0;",
+       " AND (resource = 0 OR owner IS NULL);",
        current_credentials.uuid,
        new_role,
        old_role);
