@@ -51998,11 +51998,19 @@ check_permission_args (const char *name_arg, const char *resource_type_arg,
                 }
             }
         }
-      else if (find_resource (*resource_type, resource_id_arg, resource))
+      else
         {
-          g_free (*name);
-          g_free (*resource_type);
-          return -1;
+          gchar *get_permission;
+          get_permission = g_strdup_printf ("get_%ss", *resource_type);
+          if (find_resource_with_permission (*resource_type, resource_id_arg,
+                                             resource, get_permission, 0))
+            {
+              g_free (*name);
+              g_free (*resource_type);
+              g_free (get_permission);
+              return -1;
+            }
+          g_free (get_permission);
         }
 
       if (*resource == 0)

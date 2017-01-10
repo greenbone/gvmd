@@ -1,5 +1,11 @@
 2017-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (check_permission_args): When creating or modifying
+	a permission, ensure that the user has permission to access the
+	permission's resource.
+
+2017-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_report): Check that the user has permission
 	to create the task.
 
