@@ -11752,7 +11752,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               g_free (format_uuid);
             }
           else if (lookup_report_format ("Verinice ISM", &report_format)
-              || (report_format == 0))
+                   || (report_format == 0))
             {
               g_warning ("Could not find default verinice RFP");
               return -2;
@@ -65145,7 +65145,7 @@ user_role_iterator_readable (iterator_t* iterator)
    "oldest", "newest", "type", NULL                                          \
  }
 
-#define VULN_RESULTS_WHERE \
+#define VULN_RESULTS_WHERE                                                   \
      "  WHERE nvt = vulns.uuid"                                              \
      "    AND (opts.report IS NULL OR results.report = opts.report)"         \
      "    AND (opts.task IS NULL OR results.task = opts.task)"               \
@@ -65157,7 +65157,7 @@ user_role_iterator_readable (iterator_t* iterator)
      "         WHERE \"user\" = (SELECT id FROM users"                       \
      "                           WHERE uuid ="                               \
      "                             (SELECT uuid FROM current_credentials))"  \
-     "           AND task = results.task)"                                   \
+     "           AND task = results.task)"
 
 #define VULN_ITERATOR_COLUMNS                                                \
  {                                                                           \
