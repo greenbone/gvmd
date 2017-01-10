@@ -76,7 +76,7 @@ else (BACKEND STREQUAL SQLITE3)
 endif (BACKEND STREQUAL SQLITE3)
 
 add_executable (${BINARY_NAME} openvasmd.c ompd.c)
-target_link_libraries (${BINARY_NAME} ovas-mngr-comm omp otp manage ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${GCRYPT_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS})
+target_link_libraries (${BINARY_NAME} ovas-mngr-comm omp otp manage ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS})
 
 set_target_properties (${BINARY_NAME} PROPERTIES LINKER_LANGUAGE C)
 

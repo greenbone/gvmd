@@ -258,17 +258,6 @@ else (BACKEND STREQUAL SQLITE3)
   endif (NOT PostgreSQL_FOUND)
 endif (BACKEND STREQUAL SQLITE3)
 
-message (STATUS "Looking for libgcrypt...")
-find_library (LIBGCRYPT gcrypt)
-if (NOT LIBGCRYPT)
-  message (SEND_ERROR "The libgcrypt library is required.")
-else (NOT LIBGCRYPT)
-  message (STATUS "Looking for libgcrypt... ${LIBGCRYPT}")
-  execute_process (COMMAND libgcrypt-config --cflags
-    OUTPUT_VARIABLE GCRYPT_CFLAGS
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
-endif (NOT LIBGCRYPT)
-
 message (STATUS "Looking for gpgme...")
 find_library (GPGME gpgme)
 if (NOT GPGME)

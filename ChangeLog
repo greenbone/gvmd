@@ -1,3 +1,12 @@
+2017-01-10  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (set_password, create_user, modify_user): Adjust
+	get_password_hashes() calls.
+
+	* CMakeLists.txt: Remove check for unused libgcrypt.
+
+	* src/CMakeLists.txt: Don't link against libgcrypt.
+
 2017-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (copy_role): Also copy global permissions, so that

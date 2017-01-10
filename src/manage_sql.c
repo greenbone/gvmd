@@ -46,7 +46,6 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fnmatch.h>
-#include <gcrypt.h>
 #include <glib/gstdio.h>
 #include <locale.h>
 #include <pwd.h>
@@ -63446,7 +63445,7 @@ set_password (const gchar *name, const gchar *uuid, const gchar *password,
         g_free (errstr);
       return -1;
     }
-  hash = get_password_hashes (GCRY_MD_MD5, password);
+  hash = get_password_hashes (password);
   sql ("UPDATE users SET password = '%s', modification_time = m_now ()"
        " WHERE uuid = '%s';",
        hash,
@@ -63685,7 +63684,7 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
 
   /* Get the password hashes. */
 
-  hash = get_password_hashes (GCRY_MD_MD5, password);
+  hash = get_password_hashes (password);
 
   /* Add the user to the database. */
 
@@ -64513,7 +64512,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
   /* Get the password hashes. */
 
   if (password)
-    hash = get_password_hashes (GCRY_MD_MD5, password);
+    hash = get_password_hashes (password);
   else
     hash = NULL;
 
