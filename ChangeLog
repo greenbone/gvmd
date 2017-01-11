@@ -1,3 +1,9 @@
+2017-01-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_acl.c (acl_user_has_access_name): Add arg to doc.
+
+	* ChangeLog: Correct typos.
+
 2017-01-10  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (set_password, create_user, modify_user): Adjust
@@ -492,7 +498,7 @@
 
 2016-12-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* tools/greenbone-certdata-sync.in: Remove all SQL facitilies.  No longer
+	* tools/greenbone-certdata-sync.in: Remove all SQL facilities.  No longer
 	used.
 	(POSTGRES, SCHEMA_CERT, SCHEMA_SCAP, RECURSIVE_TRIGGERS_OFF, psql_setup)
 	(reset_sql_tries, test_exit_codes, test_sql_exit, sql_pg, sql_scap)
@@ -589,7 +595,7 @@
 
 2016-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	Update CVSS in --update-cert-db.  Remoe --update-cvss-cert-bund and
+	Update CVSS in --update-cert-db.  Remove --update-cvss-cert-bund and
 	--update-cvss-dfn-cert.
 
 	* src/manage_sql.c (manage_update_cert_db): Update CVSS too.

@@ -525,8 +525,9 @@ acl_user_has_super_on_resource (const char *type, const char *field,
  * A Super permissions can give a user effective ownership of another
  * user's resource.
  *
- * @param[in]  type   Type of resource, for example "report_format".
- * @param[in]  name  Name of resource.
+ * @param[in]  type      Type of resource, for example "report_format".
+ * @param[in]  name      Name of resource.
+ * @param[out] resource  Resource return.
  *
  * @return 1 if user owns resource, else 0.
  */
