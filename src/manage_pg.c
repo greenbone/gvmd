@@ -2146,9 +2146,10 @@ create_tables ()
        "  families_growing integer,"
        "  nvts_growing integer,"
        "  type integer,"
-       "  scanner integer REFERENCES scanners (id) ON DELETE RESTRICT,"
+       "  scanner integer," /* REFERENCES scanners (id) */
        "  creation_time integer,"
-       "  modification_time integer);");
+       "  modification_time integer,"
+       "  scanner_location integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS config_preferences"
        " (id SERIAL PRIMARY KEY,"

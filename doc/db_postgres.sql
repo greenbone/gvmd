@@ -394,7 +394,8 @@ CREATE TABLE configs_trash
   type integer,
   scanner integer REFERENCES scanners (id) ON DELETE RESTRICT,
   creation_time date,
-  modification_time date);
+  modification_time date,
+  scanner_location integer);
 
 CREATE TABLE config_preferences
  (id SERIAL PRIMARY KEY,

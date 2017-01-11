@@ -13686,6 +13686,22 @@ get_agents_response_agent_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>scanner</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The scanner used by the config if it is an OSP one.</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the scanner.
+          </li>
+<li>
+              &lt;<b>trash</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the scanner is in the trashcan.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
               &lt;<b>in_use</b>&gt;
               <div style="margin-left: 15px; display: inline;">Whether any tasks are using the config.</div>
 <ul style="list-style: none"></ul>
@@ -14010,6 +14026,7 @@ get_configs_response_config
        &amp; get_configs_response_config_type
        &amp; get_configs_response_config_max_nvt_count
        &amp; get_configs_response_config_known_nvt_count
+       &amp; get_configs_response_config_scanner?
        &amp; get_configs_response_config_in_use
        &amp; get_configs_response_config_writable
        &amp; get_configs_response_config_permissions
@@ -14098,6 +14115,20 @@ get_configs_response_config_known_nvt_count
  = element known_nvt_count
      {
        integer
+     }
+
+get_configs_response_config_scanner
+ = element scanner
+     {
+       text # RNC limitation: text
+       &amp; attribute id { uuid }
+       &amp; get_configs_response_config_scanner_trash
+     }
+
+get_configs_response_config_scanner_trash
+ = element trash
+     {
+       boolean
      }
 
 get_configs_response_config_in_use
@@ -27151,6 +27182,28 @@ get_roles_response_role_count_page
 </ul>
 </li>
 <li>
+              &lt;<b>configs</b>&gt;
+              ?<ul style="list-style: none"><li>
+              &lt;<b>config</b>&gt;
+              *<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the config.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the config.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>tasks</b>&gt;
               ?<ul style="list-style: none"><li>
               &lt;<b>task</b>&gt;
@@ -27305,6 +27358,7 @@ get_scanners_response_scanner
        &amp; get_scanners_response_scanner_type
        &amp; get_scanners_response_scanner_ca_pub
        &amp; get_scanners_response_scanner_credential
+       &amp; get_scanners_response_scanner_configs?
        &amp; get_scanners_response_scanner_tasks?
      }
 
@@ -27482,6 +27536,32 @@ get_scanners_response_scanner_credential_trash
  = element trash
      {
        boolean
+     }
+
+get_scanners_response_scanner_configs
+ = element configs
+     {
+       get_scanners_response_scanner_configs_config*
+     }
+
+get_scanners_response_scanner_configs_config
+ = element config
+     {
+       attribute id { uuid }
+       &amp; get_scanners_response_scanner_configs_config_name
+       &amp; get_scanners_response_scanner_configs_config_permissions?
+     }
+
+get_scanners_response_scanner_configs_config_name
+ = element name
+     {
+       name
+     }
+
+get_scanners_response_scanner_configs_config_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_scanners_response_scanner_tasks

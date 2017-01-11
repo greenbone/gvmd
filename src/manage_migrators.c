@@ -13975,6 +13975,63 @@ migrate_183_to_184 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 184 to version 185.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_184_to_185 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 184. */
+
+  if (manage_db_version () != 184)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Add missing scanner_location for configs in trashcan */
+
+  sql ("ALTER TABLE configs_trash ADD COLUMN scanner_location INTEGER;");
+  sql ("UPDATE configs_trash"
+       "   SET scanner_location = " G_STRINGIFY (LOCATION_TABLE));
+
+  /* Remove the foreign key constraint in Postgres */
+  if (! sql_is_sqlite3 ())
+    {
+      iterator_t fkeys;
+      init_iterator (&fkeys,
+                     "SELECT ccu.constraint_name"
+                     "  FROM information_schema.constraint_column_usage AS ccu"
+                     "  JOIN information_schema.table_constraints AS tc"
+                     "    ON tc.constraint_name = ccu.constraint_name"
+                     " WHERE tc.table_name = 'configs_trash'"
+                     "  AND tc.constraint_type = 'FOREIGN KEY'"
+                     "  AND ccu.table_name = 'scanners';");
+      while (next (&fkeys))
+        {
+          const char* constraint_name;
+          constraint_name = iterator_string (&fkeys, 0);
+          sql ("ALTER TABLE configs_trash DROP constraint %s",
+               constraint_name);
+        }
+
+    }
+
+  /* Set the database version to 184. */
+
+  set_db_version (185);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -14173,6 +14230,7 @@ static migrator_t database_migrators[]
     {182, migrate_181_to_182},
     {183, migrate_182_to_183},
     {184, migrate_183_to_184},
+    {185, migrate_184_to_185},
     /* End marker. */
     {-1, NULL}};
 

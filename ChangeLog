@@ -1,3 +1,57 @@
+2017-01-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Allow configs in trashcan to refer to scanners also in trash, hence 
+	increase database version to 145.  Also add a list of configs using
+	a scanner to get_scanners details.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 145.
+
+	* src/manage_migrators.c (migrate_144_to_145): New.
+	(database_migrators): Add migrate_144_to_145.
+
+	* src/manage_pg.c (create_tables): Remove REFERENCES constraint on
+	"scanner" column in table "configs_trash" and add column
+	"scanner_location".
+
+	* src/manage_sql.c (delete_config): Set scanner_location in record
+	added to configs_trash table.
+	(CONFIG_ITERATOR_COLUMNS, CONFIG_ITERATOR_TRASH_COLUMNS): Add columns
+	"scanner" and "scanner_location".
+	(config_iterator_scanner, config_iterator_scanner_trash): New functions.
+	(delete_scanner): Check if scanner is still in use
+	by configs and update "scanner" column of configs in trashcan.
+	(init_scanner_config_iterator, scanner_config_iterator_uuid)
+	(scanner_config_iterator_name, scanner_config_iterator_readable): New
+	functions.
+	(scanner_in_use, trash_scanner_in_use): Check configs as well.
+	(trash_scanner_name, trash_scanner_uuid): New functions.
+	(manage_restore): Test if scanner is in trashcan when restoring a
+	config.  Update scanner_location for configs when restoring a scanner.
+
+	* src/manage_sqlite3.c (delete_scanner): (create_tables): Add column
+	"scanner_location" to table "configs_trash".
+
+	* src/manage.h (config_iterator_scanner, config_iterator_scanner_trash)
+	(config_iterator_scanner, config_iterator_scanner_trash)
+	(init_scanner_config_iterator, scanner_config_iterator_uuid)
+	(scanner_config_iterator_name, scanner_config_iterator_readable): New
+	function prototypes.
+
+	* src/omp.c (handle_get_configs): Check if scanner is in trash and add
+	trash subelement to scanner.
+	(handle_get_scanners): Add list of configs to details.
+
+	* src/schema_formats/XML/OMP.xml.in (get_configs): Add scanner
+	subelement to config elements in response
+	(get_scanners): Add configs element to response.
+
+	* doc/db_postgres.sql (reports): Add column "scanner_location" to
+	table configs_trash.
+
+	* doc/db.png: Update for version change.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2017-01-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_acl.c (acl_user_has_access_name): Add arg to doc.

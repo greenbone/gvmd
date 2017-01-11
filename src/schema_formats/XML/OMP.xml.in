@@ -7795,6 +7795,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>type</e>
           <e>max_nvt_count</e>
           <e>known_nvt_count</e>
+          <o><e>scanner</e></o>
           <e>in_use</e>
           <e>writable</e>
           <e>permissions</e>
@@ -7887,6 +7888,27 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>
             <t>integer</t>
           </pattern>
+        </ele>
+        <ele>
+          <name>scanner</name>
+          <summary>The scanner used by the config if it is an OSP one</summary>
+          <pattern>
+            <t>text</t>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <summary>UUID of the scanner</summary>
+              <required>1</required>
+            </attrib>
+            <e>trash</e>
+          </pattern>
+          <ele>
+            <name>trash</name>
+            <summary>Whether the scanner is in the trashcan</summary>
+            <pattern>
+              <t>boolean</t>
+            </pattern>
+          </ele>
         </ele>
         <ele>
           <name>in_use</name>
@@ -17733,6 +17755,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>type</e>
           <e>ca_pub</e>
           <e>credential</e>
+          <o><e>configs</e></o>
           <o><e>tasks</e></o>
         </pattern>
         <ele>
@@ -17907,6 +17930,34 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <pattern>
               <t>boolean</t>
             </pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>configs</name>
+          <pattern>
+            <any><e>config</e></any>
+          </pattern>
+          <ele>
+            <name>config</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <o><e>permissions</e></o>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the config</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>permissions</name>
+              <summary>Permissions the user has on the config</summary>
+              <pattern></pattern>
+            </ele>
           </ele>
         </ele>
         <ele>

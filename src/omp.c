@@ -14312,12 +14312,26 @@ handle_get_configs (omp_parser_t *omp_parser, GError **error)
           char *s_uuid, *s_name;
 
           assert (config);
+          scanner = config_iterator_scanner (&configs);
 
-          scanner = config_scanner (config);
-          s_uuid = scanner_uuid (scanner);
-          s_name = scanner_name (scanner);
-          SENDF_TO_CLIENT_OR_FAIL ("<scanner id='%s'>%s</scanner>",
-                                   s_uuid, s_name);
+          if (config_iterator_scanner_trash (&configs))
+            {
+              s_uuid = trash_scanner_uuid (scanner);
+              s_name = trash_scanner_name (scanner);
+            }
+          else
+            {
+              s_uuid = scanner_uuid (scanner);
+              s_name = scanner_name (scanner);
+            }
+
+          SENDF_TO_CLIENT_OR_FAIL ("<scanner id='%s'>"
+                                   "%s"
+                                   "<trash>%d</trash>"
+                                   "</scanner>",
+                                   s_uuid, s_name,
+                                   config_iterator_scanner_trash (&configs));
+
           g_free (s_uuid);
           g_free (s_name);
           SEND_TO_CLIENT_OR_FAIL ("<preferences>");
@@ -17840,7 +17854,31 @@ handle_get_scanners (omp_parser_t *omp_parser, GError **error)
       count++;
       if (get_scanners_data->get.details)
         {
-          iterator_t tasks;
+          iterator_t configs, tasks;
+
+          SEND_TO_CLIENT_OR_FAIL ("<configs>");
+          init_scanner_config_iterator (&configs,
+                                        get_iterator_resource (&scanners));
+          while (next (&configs))
+            {
+              if (scanner_task_iterator_readable (&configs) == 0)
+                /* Only show configs the user may see. */
+                continue;
+
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<config id=\"%s\">"
+                "<name>%s</name>",
+                scanner_config_iterator_uuid (&configs),
+                scanner_config_iterator_name (&configs));
+
+              if (scanner_config_iterator_readable (&configs))
+                SEND_TO_CLIENT_OR_FAIL ("</config>");
+              else
+                SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                        "</config>");
+            }
+          cleanup_iterator (&configs);
+          SEND_TO_CLIENT_OR_FAIL ("</configs>");
 
           SEND_TO_CLIENT_OR_FAIL ("<tasks>");
           init_scanner_task_iterator (&tasks,

@@ -1769,6 +1769,12 @@ config_iterator_type (iterator_t*);
 int
 config_iterator_families_growing (iterator_t*);
 
+scanner_t
+config_iterator_scanner (iterator_t*);
+
+int
+config_iterator_scanner_trash (iterator_t*);
+
 char*
 config_nvt_selector (config_t);
 
@@ -2707,6 +2713,18 @@ const char*
 scanner_iterator_key_priv (iterator_t *);
 
 void
+init_scanner_config_iterator (iterator_t*, scanner_t);
+
+const char*
+scanner_config_iterator_uuid (iterator_t *);
+
+const char*
+scanner_config_iterator_name (iterator_t *);
+
+int
+scanner_config_iterator_readable (iterator_t *);
+
+void
 init_scanner_task_iterator (iterator_t*, scanner_t);
 
 const char*
@@ -2723,6 +2741,12 @@ scanner_name (scanner_t);
 
 char *
 scanner_uuid (scanner_t);
+
+char *
+trash_scanner_name (scanner_t);
+
+char *
+trash_scanner_uuid (scanner_t);
 
 int
 osp_get_version_from_iterator (iterator_t *, char **, char **, char **, char **,
