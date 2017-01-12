@@ -16439,9 +16439,11 @@ manage_scanner_set (const char *uuid)
 
   if (!current_credentials.uuid)
     current_credentials.uuid = "";
-  /* This is only used to find the default scanner, so it needs to include
-   * globals. */
-  if (find_scanner (uuid, &scanner) || scanner == 0)
+  /* This is only ever used to find the default scanner.  If the credentials
+   * are empty, for example during --rebuild, this will find the scanner
+   * regardless of permissions and ownership. */
+  if (find_scanner_with_permission (uuid, &scanner, "get_scanners")
+      || scanner == 0)
     {
       g_warning ("Failed to find scanner %s\n", uuid);
       return -1;
@@ -45094,9 +45096,9 @@ manage_modify_scanner (GSList *log_config, const gchar *database,
 
   if (scanner_id)
     {
-      /* This is only used to find the default scanner, so it needs to include
-       * globals. */
-      if (find_scanner (scanner_id, &scanner))
+      /* Because the credentials are empty this will find the scanner regardless
+       * of permissions and ownership, but that's the intention. */
+      if (find_scanner_with_permission (scanner_id, &scanner, "get_scanners"))
         {
           fprintf (stderr, "Error finding scanner.\n");
           return -1;
@@ -45305,20 +45307,6 @@ manage_verify_scanner (GSList *log_config, const gchar *database,
 
   manage_option_cleanup ();
   return ret;
-}
-
-/**
- * @brief Find a scanner given a UUID.
- *
- * @param[in]   uuid    UUID of scanner.
- * @param[out]  scanner Scanner return, 0 if successfully failed to find scanner.
- *
- * @return FALSE on success (including if failed to find scanner), TRUE on error.
- */
-gboolean
-find_scanner (const char* uuid, scanner_t *scanner)
-{
-  return find_resource ("scanner", uuid, scanner);
 }
 
 /**

@@ -2614,9 +2614,6 @@ manage_verify_scanner (GSList *, const gchar *, const gchar *);
 int
 manage_get_scanners (GSList *, const gchar *);
 
-gboolean
-find_scanner (const char *, scanner_t *);
-
 int
 create_scanner (const char*, const char *, const char *, const char *,
                 const char *, scanner_t *, const char *, const char *);

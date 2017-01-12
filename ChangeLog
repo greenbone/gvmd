@@ -1,5 +1,17 @@
 2017-01-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (get_slave_system_report_types, slave_system_report): Find
+	slaves with permission checks.
+
+	* src/manage_sql.c (manage_scanner_set, manage_modify_scanner): Use the
+	permission function to find the scanner, so that it succeeds when there
+	is no credential (like during --rebuild).
+	(find_scanner): Remove.  No longer used.
+
+	* src/manage.h: Remove header accordingly.
+
+2017-01-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (lookup_report_format): Init report_format, in case
 	there is no suitable report format.
 

@@ -5751,7 +5751,7 @@ get_slave_system_report_types (const char *required_type, gchar ***start,
   entity_t get, report;
   entities_t reports;
 
-  if (find_scanner (slave_id, &slave))
+  if (find_scanner_with_permission (slave_id, &slave, "get_scanners"))
     return -1;
   if (slave == 0)
     return 2;
@@ -6043,7 +6043,7 @@ slave_system_report (const char *name, const char *duration,
   entities_t reports;
   omp_get_system_reports_opts_t opts;
 
-  if (find_scanner (slave_id, &slave))
+  if (find_scanner_with_permission (slave_id, &slave, "get_slaves"))
     return -1;
   if (slave == 0)
     return 2;
