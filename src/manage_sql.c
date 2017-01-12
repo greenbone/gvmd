@@ -47980,7 +47980,42 @@ find_report_format_with_permission (const char* uuid,
 static gboolean
 lookup_report_format (const char* name, report_format_t* report_format)
 {
-  return acl_user_has_access_name ("report_format", name, report_format);
+  iterator_t report_formats;
+  gchar *quoted_name;
+
+  assert (report_format);
+
+  quoted_name = sql_quote (name);
+  init_iterator (&report_formats,
+                 "SELECT id, uuid FROM report_formats"
+                 " WHERE name = '%s'"
+                 " AND CAST (flags & %llu AS boolean)"
+                 " ORDER BY (CASE WHEN " ACL_USER_OWNS () " THEN 0"
+                 "                WHEN owner is NULL THEN 1"
+                 "                ELSE 2"
+                 "           END);",
+                 quoted_name,
+                 (long long int) REPORT_FORMAT_FLAG_ACTIVE,
+                 current_credentials.uuid);
+  g_free (quoted_name);
+  while (next (&report_formats))
+    {
+      const char *uuid;
+
+      uuid = iterator_string (&report_formats, 1);
+      if (uuid
+          && acl_user_has_access_uuid ("report_format",
+                                       uuid,
+                                       "get_report_formats",
+                                       0))
+        {
+          *report_format = iterator_int64 (&report_formats, 0);
+          break;
+        }
+    }
+  cleanup_iterator (&report_formats);
+
+  return FALSE;
 }
 
 /**

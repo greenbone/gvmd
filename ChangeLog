@@ -1,6 +1,15 @@
+2017-01-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_acl.c (acl_user_has_access_name): Remove.  No longer used.
+
+	* src/manage_acl.h: Remove header accordingly.
+
+	* src/manage_sql.c (lookup_report_format): Iterate through all matching
+	report formats, in order to do a full permission check.
+
 2017-01-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
-	Allow configs in trashcan to refer to scanners also in trash, hence 
+	Allow configs in trashcan to refer to scanners also in trash, hence
 	increase database version to 145.  Also add a list of configs using
 	a scanner to get_scanners details.
 
