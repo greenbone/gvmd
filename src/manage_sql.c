@@ -47985,6 +47985,7 @@ lookup_report_format (const char* name, report_format_t* report_format)
 
   assert (report_format);
 
+  *report_format = 0;
   quoted_name = sql_quote (name);
   init_iterator (&report_formats,
                  "SELECT id, uuid FROM report_formats"

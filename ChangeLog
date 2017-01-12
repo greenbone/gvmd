@@ -1,5 +1,10 @@
 2017-01-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (lookup_report_format): Init report_format, in case
+	there is no suitable report format.
+
+2017-01-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_acl.c (acl_user_has_access_name): Remove.  No longer used.
 
 	* src/manage_acl.h: Remove header accordingly.
