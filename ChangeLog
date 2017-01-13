@@ -1,3 +1,10 @@
+2017-01-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (parse_ctime, parse_iso_time, parse_keyword)
+	(host_summary_append): Always clear the struct tm before doing a
+	strptime.  Even do so after a previous call of strptime returned NULL,
+	just to be sure.
+
 2017-01-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (get_slave_system_report_types, slave_system_report): Find

@@ -865,6 +865,7 @@ parse_ctime (const char *text_time)
 
   /* ctime format: "Wed Jun 30 21:49:08 1993". */
 
+  memset (&tm, 0, sizeof (struct tm));
   if (strptime ((char*) text_time, "%a %b %d %H:%M:%S %Y", &tm) == NULL)
     {
       g_warning ("%s: Failed to parse time '%s'", __FUNCTION__, text_time);
@@ -895,20 +896,28 @@ parse_iso_time (const char *text_time)
 {
   int epoch_time;
   struct tm tm;
+
   memset (&tm, 0, sizeof (struct tm));
   tm.tm_isdst = -1;
-
   if (strptime ((char*) text_time, "%FT%T%z", &tm) == NULL)
     {
       gchar *tz;
 
+      memset (&tm, 0, sizeof (struct tm));
+      tm.tm_isdst = -1;
       if (strptime ((char*) text_time, "%FT%TZ", &tm) == NULL)
         {
           /* Try time without timezone suffix, applying timezone of user. */
 
-          if ((strptime ((char*) text_time, "%FT%T", &tm) == NULL)
-              && (strptime ((char*) text_time, "%F %T", &tm) == NULL))
-            return parse_ctime (text_time);
+          memset (&tm, 0, sizeof (struct tm));
+          tm.tm_isdst = -1;
+          if (strptime ((char*) text_time, "%FT%T", &tm) == NULL)
+            {
+              memset (&tm, 0, sizeof (struct tm));
+              tm.tm_isdst = -1;
+              if (strptime ((char*) text_time, "%F %T", &tm) == NULL)
+                return parse_ctime (text_time);
+            }
 
           /* Store current TZ. */
           tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
@@ -923,15 +932,21 @@ parse_iso_time (const char *text_time)
               return 0;
             }
 
-          if ((strptime ((char*) text_time, "%FT%T", &tm) == NULL)
-              && (strptime ((char*) text_time, "%F %T", &tm) == NULL))
+          memset (&tm, 0, sizeof (struct tm));
+          tm.tm_isdst = -1;
+          if (strptime ((char*) text_time, "%FT%T", &tm) == NULL)
             {
-              assert (0);
-              g_warning ("%s: Failed to parse time", __FUNCTION__);
-              if (tz != NULL)
-                setenv ("TZ", tz, 1);
-              g_free (tz);
-              return 0;
+              memset (&tm, 0, sizeof (struct tm));
+              tm.tm_isdst = -1;
+              if (strptime ((char*) text_time, "%F %T", &tm) == NULL)
+                {
+                  assert (0);
+                  g_warning ("%s: Failed to parse time", __FUNCTION__);
+                  if (tz != NULL)
+                    setenv ("TZ", tz, 1);
+                  g_free (tz);
+                  return 0;
+                }
             }
         }
       else
@@ -950,6 +965,8 @@ parse_iso_time (const char *text_time)
               return 0;
             }
 
+          memset (&tm, 0, sizeof (struct tm));
+          tm.tm_isdst = -1;
           if (strptime ((char*) text_time, "%FT%TZ", &tm) == NULL)
             {
               assert (0);
@@ -1032,6 +1049,8 @@ parse_iso_time (const char *text_time)
 
       /* Parse time again under the new timezone. */
 
+      memset (&tm, 0, sizeof (struct tm));
+      tm.tm_isdst = -1;
       if (strptime ((char*) text_time, "%FT%T%z", &tm) == NULL)
         {
           assert (0);
@@ -1474,14 +1493,30 @@ parse_time (const gchar *string, int *seconds)
   /* 2011-08-09 08:20:34 +0200 (Tue, 09 Aug 2011) */
   /* $Date: 2012-02-17 16:05:26 +0100 (Fr, 17. Feb 2012) $ */
   /* $Date: Fri, 11 Nov 2011 14:42:28 +0100 $ */
-  if ((strptime ((char*) string, "%F %T %z", &tm) == NULL)
-      && (strptime ((char*) string, "$Date: %F %T %z", &tm) == NULL)
-      && (strptime ((char*) string, "%a %b %d %T %Y %z", &tm) == NULL)
-      && (strptime ((char*) string, "$Date: %a, %d %b %Y %T %z", &tm) == NULL)
-      && (strptime ((char*) string, "$Date: %a %b %d %T %Y %z", &tm) == NULL))
+  memset (&tm, 0, sizeof (struct tm));
+  if (strptime ((char*) string, "%F %T %z", &tm) == NULL)
     {
-      g_warning ("%s: Failed to parse time: %s", __FUNCTION__, string);
-      return -1;
+      memset (&tm, 0, sizeof (struct tm));
+      if (strptime ((char*) string, "$Date: %F %T %z", &tm) == NULL)
+        {
+          memset (&tm, 0, sizeof (struct tm));
+          if (strptime ((char*) string, "%a %b %d %T %Y %z", &tm) == NULL)
+            {
+              memset (&tm, 0, sizeof (struct tm));
+              if (strptime ((char*) string, "$Date: %a, %d %b %Y %T %z", &tm)
+                  == NULL)
+                {
+                  memset (&tm, 0, sizeof (struct tm));
+                  if (strptime ((char*) string, "$Date: %a %b %d %T %Y %z", &tm)
+                      == NULL)
+                    {
+                      g_warning ("%s: Failed to parse time: %s",
+                                 __FUNCTION__, string);
+                      return -1;
+                    }
+                }
+            }
+        }
     }
   epoch_time = mktime (&tm);
   if (epoch_time == -1)
@@ -1805,7 +1840,8 @@ parse_keyword (keyword_t* keyword)
           keyword->integer_value = mktime (&date);
           keyword->type = KEYWORD_TYPE_INTEGER;
         }
-      else if (strptime (keyword->string, "%Y-%m-%d", &date))
+      else if (memset (&date, 0, sizeof (date)),
+               strptime (keyword->string, "%Y-%m-%d", &date))
         {
           keyword->integer_value = mktime (&date);
           keyword->type = KEYWORD_TYPE_INTEGER;
@@ -26779,6 +26815,7 @@ host_summary_append (GString *host_summary_buffer, const char *host,
       struct tm start_tm, end_tm;
       char start[200], end[200];
 
+      memset (&start_tm, 0, sizeof (struct tm));
       if (strptime (start_iso, "%FT%H:%M:%S", &start_tm) == NULL)
         {
           g_warning ("%s: Failed to parse start", __FUNCTION__);
@@ -26791,6 +26828,7 @@ host_summary_append (GString *host_summary_buffer, const char *host,
           return;
         }
 
+      memset (&start_tm, 0, sizeof (struct tm));
       if (strptime (end_iso, "%FT%H:%M:%S", &end_tm) == NULL)
         {
           g_warning ("%s: Failed to parse end", __FUNCTION__);
