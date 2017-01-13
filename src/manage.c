@@ -71,7 +71,6 @@
 #include <gvm/base/hosts.h>
 #include <gvm/util/fileutils.h>
 
-#include <openvas/base/gpgme_util.h>
 #include <openvas/omp/omp.h>
 #include <openvas/misc/openvas_server.h>
 #include <openvas/misc/nvt_categories.h>

@@ -1,3 +1,13 @@
+2017-01-13  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/lsc_crypt.c: Include gvm/util/gpgmeutils.h instead of
+	openvas/base/gpgme_util.h.
+	(find_the_key, lsc_crypt_new): Apply gvm_init_gpgme_ctx_from_dir()
+	instead of openvas_init_gpgme_ctx() and define the gpg directory
+	directly.
+
+	* src/manage.c: Remove unneeded include.
+
 2017-01-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* ChangeLog: Clean up last entry.

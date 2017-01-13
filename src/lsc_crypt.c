@@ -30,7 +30,7 @@
 #include <stdarg.h>
 #include <stdint.h>
 
-#include <openvas/base/gpgme_util.h>
+#include <gvm/util/gpgmeutils.h>
 
 #include "lsc_crypt.h"
 
@@ -289,9 +289,12 @@ find_the_key (lsc_crypt_ctx_t ctx, gboolean no_create)
 
   if (err)
     {
+      char * path = g_build_filename (OPENVAS_STATE_DIR, "openvasmd", "gnupg", NULL);
+
       /* We better reset the gpgme context after an error.  */
       gpgme_release (ctx->encctx);
-      ctx->encctx = openvas_init_gpgme_ctx ("openvasmd");
+      ctx->encctx = gvm_init_gpgme_ctx_from_dir (path);
+      g_free (path);
       if (!ctx->encctx)
         {
           g_critical ("%s: can't continue w/o a gpgme context\n", G_STRFUNC);
@@ -506,10 +509,12 @@ do_decrypt (lsc_crypt_ctx_t ctx, const char *cipherstring,
 lsc_crypt_ctx_t
 lsc_crypt_new ()
 {
+  char * path = g_build_filename (OPENVAS_STATE_DIR, "openvasmd", "gnupg", NULL);
   lsc_crypt_ctx_t ctx;
 
   ctx = g_malloc0 (sizeof *ctx);
-  ctx->encctx = openvas_init_gpgme_ctx ("openvasmd");
+  ctx->encctx = gvm_init_gpgme_ctx_from_dir (path);
+  g_free (path);
   if (!ctx->encctx)
     {
       g_critical ("%s: can't continue w/o a gpgme context\n", G_STRFUNC);
