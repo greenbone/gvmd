@@ -3313,6 +3313,7 @@ migrate_51_to_52_sql_convert (sqlite3_context *context, int argc,
        */
       if (text_time && (strlen ((char*) text_time) > 0))
         {
+          memset (&tm, 0, sizeof (struct tm));
           if (strptime ((char*) text_time, "%a %b %d %H:%M:%S %Y", &tm) == NULL)
             {
               sqlite3_result_error (context, "Failed to parse time", -1);
