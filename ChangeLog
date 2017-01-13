@@ -1,3 +1,14 @@
+2017-01-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r27203.
+
+	* src/manage_sql.c (parse_ctime, parse_iso_time, parse_time)
+	(parse_keyword, host_summary_append): Always clear the struct tm before
+	doing a strptime.  Even do so after a previous call of strptime returned
+	NULL, just to be sure.
+
+	* src/manage_sqlite3.c (migrate_51_to_52_sql_convert): Ditto.
+
 2017-01-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r27107.
