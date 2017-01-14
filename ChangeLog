@@ -1,3 +1,8 @@
+2017-01-14  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* CMakeLists.txt, INSTALL, src/CMakeLists.txt: Removed handling of
+	libopenvas_base which is not needed anymore.
+
 2017-01-13  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/lsc_crypt.c: Include gvm/util/gpgmeutils.h instead of
