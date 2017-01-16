@@ -15487,6 +15487,8 @@ add_permissions_on_globals (const gchar *role_uuid)
                role_uuid)
       == 0)
     {
+      iterator_t scanners;
+
       /* Clean-up any remaining permissions. */
       sql ("DELETE FROM permissions"
            " WHERE owner IS NULL"
@@ -15542,12 +15544,14 @@ add_permissions_on_globals (const gchar *role_uuid)
                                     "port_list",
                                     PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100);
 
-      add_role_permission_resource (role_uuid, "GET_SCANNERS",
-                                    "scanner",
-                                    SCANNER_UUID_DEFAULT);
-      add_role_permission_resource (role_uuid, "GET_SCANNERS",
-                                    "scanner",
-                                    SCANNER_UUID_CVE);
+      /* Scanners are global when created from the command line. */
+      init_iterator (&scanners,
+                     "SELECT id, uuid FROM scanners WHERE owner is NULL;");
+      while (next (&scanners))
+        add_role_permission_resource (role_uuid, "GET_SCANNERS",
+                                      "scanner",
+                                      iterator_string (&scanners, 1));
+      cleanup_iterator (&scanners);
 
       add_role_permission_resource (role_uuid, "GET_ROLES",
                                     "role",
@@ -44918,6 +44922,7 @@ manage_create_scanner (GSList *log_config, const gchar *database,
   credential_t new_credential;
   gchar *credential_id;
   gchar *name_for_credential;
+  scanner_t scanner;
 
   g_info ("   Creating scanner.\n");
 
@@ -45010,7 +45015,7 @@ manage_create_scanner (GSList *log_config, const gchar *database,
     }
   credential_id = credential_uuid (new_credential);
 
-  ret = create_scanner (name, NULL, host, port, type, NULL, ca_pub,
+  ret = create_scanner (name, NULL, host, port, type, &scanner, ca_pub,
                         credential_id);
   g_free (ca_pub);
   g_free (key_pub);
@@ -45018,6 +45023,22 @@ manage_create_scanner (GSList *log_config, const gchar *database,
   switch (ret)
     {
       case 0:
+        {
+          gchar *uuid;
+
+          uuid = sql_string ("SELECT uuid FROM scanners WHERE id = %llu;",
+                             scanner);
+          add_role_permission_resource (ROLE_UUID_ADMIN, "GET_SCANNERS",
+                                        "scanner", uuid);
+          add_role_permission_resource (ROLE_UUID_GUEST, "GET_SCANNERS",
+                                        "scanner", uuid);
+          add_role_permission_resource (ROLE_UUID_OBSERVER, "GET_SCANNERS",
+                                        "scanner", uuid);
+          add_role_permission_resource (ROLE_UUID_USER, "GET_SCANNERS",
+                                        "scanner", uuid);
+          g_free (uuid);
+        }
+
         printf ("Scanner created.\n");
         break;
       case 1:

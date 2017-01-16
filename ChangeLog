@@ -1,3 +1,9 @@
+2017-01-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (add_permissions_on_globals): Add all global scanner.
+	(manage_create_scanner): Add explicit permissions for the scanner to be
+	accessed by the usual roles.
+
 2017-01-14  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* CMakeLists.txt, INSTALL, src/CMakeLists.txt: Removed handling of
