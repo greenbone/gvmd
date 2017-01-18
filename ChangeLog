@@ -1,5 +1,12 @@
 2017-01-18  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	* src/manage_sql.h: Include gvm/util/xmlutils.h instead of
+	openvas/omp/xml.h.
+
+	* src/omp.c: Remove unneeded include.
+
+2017-01-18  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	Rename type and function calls with changing from module
 	"openvas_server" to "serverutils".
 

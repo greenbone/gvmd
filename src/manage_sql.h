@@ -27,9 +27,10 @@
 #ifndef OPENVAS_MANAGER_MANAGE_SQL_H
 #define OPENVAS_MANAGER_MANAGE_SQL_H
 
+#include <gvm/util/xmlutils.h> /* for entity_t */
+
 #include "manage.h"
 #include "manage_utils.h"
-#include <openvas/omp/xml.h>
 
 /* Internal types and preprocessor definitions. */
 

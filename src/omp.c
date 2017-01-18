@@ -121,7 +121,6 @@
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/misc/openvas_logging.h>
 #include <openvas/misc/openvas_ssh.h>
-#include <openvas/omp/xml.h>
 
 #undef G_LOG_DOMAIN
 /**
