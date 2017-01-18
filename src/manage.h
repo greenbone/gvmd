@@ -37,10 +37,10 @@
 #include <gvm/base/credentials.h> /* for credentials_t */
 #include <gvm/base/nvti.h>        /* for nvti_t */
 #include <gvm/base/networking.h>  /* for port_protocol_t */
+#include <gvm/util/serverutils.h> /* for gvm_connection_t */
 
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/osp/osp.h>
-#include <openvas/misc/openvas_server.h>
 
 /**
  * @brief Flag with all Glib log levels.
@@ -69,7 +69,7 @@ typedef struct
 
 int
 init_manage (GSList*, int, const gchar *, int, int, int, void (*) (),
-             int (*) (openvas_connection_t *, gchar *),
+             int (*) (gvm_connection_t *, gchar *),
              int);
 
 int
@@ -2789,7 +2789,7 @@ void
 set_scheduled_user_uuid (gchar* uuid);
 
 int
-manage_schedule (int (*) (openvas_connection_t *, gchar *),
+manage_schedule (int (*) (gvm_connection_t *, gchar *),
                  gboolean,
                  sigset_t *);
 

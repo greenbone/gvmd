@@ -27,7 +27,7 @@
 #define OPENVAS_MANAGER_OMPD_H
 
 #include "types.h"
-#include <openvas/misc/openvas_server.h>
+#include <gvm/util/serverutils.h>
 #include <glib.h>
 #include <netinet/in.h>
 #include <gnutls/gnutls.h>
@@ -57,14 +57,14 @@ extern struct sockaddr_in scanner_address;
 
 int
 init_ompd (GSList*, int, const gchar*, int, int, int, void (*) (),
-           int (*) (openvas_connection_t *, gchar *),
+           int (*) (gvm_connection_t *, gchar *),
            int);
 
 void
 init_ompd_process (const gchar *, gchar **);
 
 int
-serve_omp (openvas_connection_t*, const gchar*, gchar**, void (*progress) ());
+serve_omp (gvm_connection_t*, const gchar*, gchar**, void (*progress) ());
 
 /** @todo Temporarily declared here, for omp.c SEND_TO_CLIENT. */
 extern char to_client[];

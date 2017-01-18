@@ -104,10 +104,10 @@
 
 #include <gvm/base/pidfile.h>
 #include <gvm/base/pwpolicy.h>
+#include <gvm/util/serverutils.h>
 
 #include <openvas/misc/openvas_logging.h>
 #include <openvas/misc/openvas_proctitle.h>
-#include <openvas/misc/openvas_server.h>
 
 #include "logf.h"
 #include "manage.h"
@@ -339,7 +339,7 @@ set_gnutls_priority (gnutls_session_t *session, const char *priority)
  * @return EXIT_SUCCESS on success, EXIT_FAILURE on failure.
  */
 int
-serve_client (int server_socket, openvas_connection_t *client_connection)
+serve_client (int server_socket, gvm_connection_t *client_connection)
 {
   if (server_socket > 0)
     {
@@ -358,7 +358,7 @@ serve_client (int server_socket, openvas_connection_t *client_connection)
     }
 
   if (client_connection->tls
-      && openvas_server_attach (client_connection->socket, &client_session))
+      && gvm_server_attach (client_connection->socket, &client_session))
     {
       g_debug ("%s: failed to attach client session to socket %i\n",
                __FUNCTION__,
@@ -378,13 +378,13 @@ serve_client (int server_socket, openvas_connection_t *client_connection)
 
   /* Serve OMP. */
 
-  /* It's up to serve_omp to openvas_server_free client_*. */
+  /* It's up to serve_omp to gvm_server_free client_*. */
   if (serve_omp (client_connection, database, disabled_commands, NULL))
     goto server_fail;
 
   return EXIT_SUCCESS;
  fail:
-  openvas_connection_free (client_connection);
+  gvm_connection_free (client_connection);
  server_fail:
   return EXIT_FAILURE;
 }
@@ -432,7 +432,7 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
         {
           int ret;
           struct sigaction action;
-          openvas_connection_t client_connection;
+          gvm_connection_t client_connection;
 
           is_parent = 0;
 
@@ -505,7 +505,7 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
  * @return PID parent on success, 0 child on success, -1 error.
  */
 static int
-fork_connection_internal (openvas_connection_t *client_connection, gchar* uuid,
+fork_connection_internal (gvm_connection_t *client_connection, gchar* uuid,
                           int scheduler)
 {
   int pid, parent_client_socket, ret;
@@ -605,12 +605,12 @@ fork_connection_internal (openvas_connection_t *client_connection, gchar* uuid,
 
         if (use_tls)
           {
-            if (openvas_server_new (GNUTLS_SERVER,
-                                    CACERT,
-                                    SCANNERCERT,
-                                    SCANNERKEY,
-                                    &client_session,
-                                    &client_credentials))
+            if (gvm_server_new (GNUTLS_SERVER,
+                                CACERT,
+                                SCANNERCERT,
+                                SCANNERKEY,
+                                &client_session,
+                                &client_credentials))
               {
                 g_critical ("%s: client server initialisation failed\n",
                             __FUNCTION__);
@@ -666,16 +666,16 @@ fork_connection_internal (openvas_connection_t *client_connection, gchar* uuid,
 
         if (use_tls)
           {
-            if (openvas_server_new (GNUTLS_CLIENT,
-                                    CACERT,
-                                    SCANNERCERT,
-                                    SCANNERKEY,
-                                    &client_connection->session,
-                                    &client_connection->credentials))
+            if (gvm_server_new (GNUTLS_CLIENT,
+                                CACERT,
+                                SCANNERCERT,
+                                SCANNERKEY,
+                                &client_connection->session,
+                                &client_connection->credentials))
               exit (EXIT_FAILURE);
 
-            if (openvas_server_attach (client_connection->socket,
-                                       &client_connection->session))
+            if (gvm_server_attach (client_connection->socket,
+                                   &client_connection->session))
               exit (EXIT_FAILURE);
           }
 
@@ -699,7 +699,7 @@ fork_connection_internal (openvas_connection_t *client_connection, gchar* uuid,
  * @return PID parent on success, 0 child on success, -1 error.
  */
 static int
-fork_connection_for_scheduler (openvas_connection_t *client_connection, gchar* uuid)
+fork_connection_for_scheduler (gvm_connection_t *client_connection, gchar* uuid)
 {
   return fork_connection_internal (client_connection, uuid, 1);
 }
@@ -713,7 +713,7 @@ fork_connection_for_scheduler (openvas_connection_t *client_connection, gchar* u
  * @return PID parent on success, 0 child on success, -1 error.
  */
 static int
-fork_connection_for_event (openvas_connection_t *client_connection, gchar* uuid)
+fork_connection_for_event (gvm_connection_t *client_connection, gchar* uuid)
 {
   return fork_connection_internal (client_connection, uuid, 0);
 }
@@ -983,7 +983,7 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
                              void (*progress) (), int skip_create_tables)
 {
   int ret;
-  openvas_connection_t connection;
+  gvm_connection_t connection;
 
   /* Initialise OMP daemon. */
 
@@ -2349,12 +2349,12 @@ main (int argc, char** argv)
 
   if (use_tls)
     {
-      if (openvas_server_new (GNUTLS_SERVER,
-                              CACERT,
-                              SCANNERCERT,
-                              SCANNERKEY,
-                              &client_session,
-                              &client_credentials))
+      if (gvm_server_new (GNUTLS_SERVER,
+                          CACERT,
+                          SCANNERCERT,
+                          SCANNERKEY,
+                          &client_session,
+                          &client_credentials))
         {
           g_critical ("%s: client server initialisation failed\n",
                       __FUNCTION__);

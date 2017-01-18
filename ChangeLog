@@ -1,3 +1,55 @@
+2017-01-18  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	Rename type and function calls with changing from module
+	"openvas_server" to "serverutils".
+
+	* src/manage.c: Include gvm/util/serverutils.h instead of
+	openvas/misc/openvas_server.h. Use gvm_connection_t instead
+	of openvas_connection_t, gvm_server_open_verify instead of
+	openvas_server_open_verify, gvm_connection_close instead
+	of openvas_connection_close, gvm_server_sendf instead of
+	openvas_server_sendf, gvm_server_open instead of openvas_server_open,
+	gvm_connection_free instead of openvas_connection_free.
+
+	* src/manage.h: Include gvm/util/serverutils.h instead of
+	openvas/misc/openvas_server.h.  Use gvm_connection_t instead
+	of openvas_connection_t.
+
+	* src/manage_sql.c Include gvm/util/serverutils.h instead of
+	openvas/misc/openvas_server.h.  Use gvm_connection_t instead
+	of openvas_connection_t, gvm_connection_free instead of
+	openvas_connection_free.
+
+	* src/omp.c (init_omp): Use gvm_connection_t instead of
+	openvas_connection_t.
+
+	* src/omp.h: Include gvm/util/serverutils.h instead of
+	openvas/misc/openvas_server.h.  Use gvm_connection_t instead of
+	openvas_connection_t.
+
+	* src/ompd.c Include gvm/util/serverutils.h instead of
+	openvas/misc/openvas_server.h.  Use gvm_connection_t instead of
+	openvas_connection_t, gvm_connection_free instead of
+	openvas_connection_free.
+
+	* src/ompd.h Include gvm/util/serverutils.h instead of
+	openvas/misc/openvas_server.h.  Use gvm_connection_t instead of
+	openvas_connection_t.
+
+	* src/openvasmd.c: Include gvm/util/serverutils.h instead of
+	openvas/misc/openvas_server.h.  Use gvm_connection_t instead of
+	openvas_connection_t, gvm_server_attach instead of
+	openvas_server_attach, gvm_connection_free instead of
+	openvas_connection_free, gvm_server_new instead of
+	openvas_server_new., gvm_server_attach instead of
+	openvas_server_attach.
+
+	* src/scanner.c: Include gvm/util/serverutils.h instead of
+	openvas/misc/openvas_server.h. Use gvm_server_connect instead of
+	openvas_server_connect, gvm_server_free instead of
+	openvas_server_free, gvm_server_new_mem instead of
+	openvas_server_new_mem.
+
 2017-01-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (add_permissions_on_globals): Add all global scanner.

@@ -70,9 +70,9 @@
 #include <gvm/base/cvss.h>
 #include <gvm/base/hosts.h>
 #include <gvm/util/fileutils.h>
+#include <gvm/util/serverutils.h>
 
 #include <openvas/omp/omp.h>
-#include <openvas/misc/openvas_server.h>
 #include <openvas/misc/nvt_categories.h>
 #include <openvas/misc/openvas_uuid.h>
 #include <openvas/misc/openvas_proctitle.h>
@@ -1985,7 +1985,7 @@ gchar *slave_report_uuid = NULL;
 /**
  * @brief Slave session.
  */
-openvas_connection_t *slave_connection = NULL;
+gvm_connection_t *slave_connection = NULL;
 
 /**
  * @brief Update the locally cached task progress from the slave.
@@ -2023,7 +2023,7 @@ update_slave_progress (entity_t get_tasks)
  * @return 0 success, -1 error.
  */
 static int
-connection_authenticate (openvas_connection_t *connection)
+connection_authenticate (gvm_connection_t *connection)
 {
   omp_authenticate_info_opts_t auth_opts;
 
@@ -2076,7 +2076,7 @@ slave_authenticate (gnutls_session_t *session, scanner_t slave)
  * @return 0 success, -1 error, 1 auth failure.
  */
 static int
-slave_connect (openvas_connection_t *connection)
+slave_connect (gvm_connection_t *connection)
 {
   char *ca_cert;
 
@@ -2085,7 +2085,7 @@ slave_connect (openvas_connection_t *connection)
     ca_cert = manage_default_ca_cert ();
   else
     ca_cert = NULL;
-  connection->socket = openvas_server_open_verify
+  connection->socket = gvm_server_open_verify
                         (&connection->session,
                          connection->host_string,
                          connection->port,
@@ -2112,7 +2112,7 @@ slave_connect (openvas_connection_t *connection)
         g_warning ("%s: failed to set SO_KEEPALIVE on slave socket: %s\n",
                    __FUNCTION__,
                    strerror (errno));
-        openvas_connection_close (connection);
+        gvm_connection_close (connection);
         return -1;
       }
   }
@@ -2123,7 +2123,7 @@ slave_connect (openvas_connection_t *connection)
 
   if (connection_authenticate (connection))
     {
-      openvas_connection_close (connection);
+      gvm_connection_close (connection);
       return 1;
     }
 
@@ -2141,7 +2141,7 @@ slave_connect (openvas_connection_t *connection)
  * @return 0 success, 3 giveup.
  */
 static int
-slave_sleep_connect (openvas_connection_t *connection, task_t task)
+slave_sleep_connect (gvm_connection_t *connection, task_t task)
 {
   do
     {
@@ -2266,7 +2266,7 @@ cleanup_slave ()
     {
       if (slave_task_uuid)
         omp_stop_task (&slave_connection->session, slave_task_uuid);
-      openvas_connection_close (slave_connection);
+      gvm_connection_close (slave_connection);
     }
 }
 
@@ -2326,7 +2326,7 @@ get_tasks_last_report (entity_t get_tasks)
  * @return 0 success, 1 giveup.
  */
 static int
-setup_ids (openvas_connection_t *connection, task_t task,
+setup_ids (gvm_connection_t *connection, task_t task,
            entity_t get_tasks, gchar **slave_config_uuid,
            gchar **slave_target_uuid, gchar **slave_port_list_uuid,
            gchar **slave_ssh_credential_uuid, gchar **slave_smb_credential_uuid,
@@ -2372,7 +2372,7 @@ setup_ids (openvas_connection_t *connection, task_t task,
                 }
               else if (ret)
                 {
-                  openvas_connection_close (connection);
+                  gvm_connection_close (connection);
                   ret = slave_sleep_connect (connection, task);
                   if (ret == 3)
                     return 1;
@@ -2432,7 +2432,7 @@ setup_ids (openvas_connection_t *connection, task_t task,
  * @return 0 success, 1 retry, 3 giveup.
  */
 static int
-slave_setup (openvas_connection_t *connection, const char *name, task_t task,
+slave_setup (gvm_connection_t *connection, const char *name, task_t task,
              target_t target, credential_t target_ssh_credential,
              credential_t target_smb_credential,
              credential_t target_esxi_credential,
@@ -2492,7 +2492,7 @@ slave_setup (openvas_connection_t *connection, const char *name, task_t task,
                 }
               else if (ret)
                 {
-                  openvas_connection_close (connection);
+                  gvm_connection_close (connection);
                   ret = slave_sleep_connect (connection, task);
                   if (ret == 3)
                     goto giveup;
@@ -2895,19 +2895,19 @@ slave_setup (openvas_connection_t *connection, const char *name, task_t task,
         if (config == 0)
           goto fail_target;
 
-        if (openvas_server_sendf (&connection->session,
-                                  "<create_config>"
-                                  "<get_configs_response"
-                                  " status=\"200\""
-                                  " status_text=\"OK\">"
-                                  "<config id=\"XXX\">"
-                                  "<type>0</type>"
-                                  "<name>%s</name>"
-                                  "<comment>"
-                                  "Slave config created by Master"
-                                  "</comment>"
-                                  "<preferences>",
-                                  name))
+        if (gvm_server_sendf (&connection->session,
+                              "<create_config>"
+                              "<get_configs_response"
+                              " status=\"200\""
+                              " status_text=\"OK\">"
+                              "<config id=\"XXX\">"
+                              "<type>0</type>"
+                              "<name>%s</name>"
+                              "<comment>"
+                              "Slave config created by Master"
+                              "</comment>"
+                              "<preferences>",
+                              name))
           goto fail_target;
 
         /* Send NVT timeout preferences where a timeout has been
@@ -2920,18 +2920,18 @@ slave_setup (openvas_connection_t *connection, const char *name, task_t task,
             timeout = config_timeout_iterator_value (&prefs);
 
             if (timeout && strlen (timeout)
-                && openvas_server_sendf (&connection->session,
-                                         "<preference>"
-                                         "<nvt oid=\"%s\">"
-                                         "<name>%s</name>"
-                                         "</nvt>"
-                                         "<name>Timeout</name>"
-                                         "<type>entry</type>"
-                                         "<value>%s</value>"
-                                         "</preference>",
-                                         config_timeout_iterator_oid (&prefs),
-                                         config_timeout_iterator_nvt_name (&prefs),
-                                         timeout))
+                && gvm_server_sendf (&connection->session,
+                                     "<preference>"
+                                     "<nvt oid=\"%s\">"
+                                     "<name>%s</name>"
+                                     "</nvt>"
+                                     "<name>Timeout</name>"
+                                     "<type>entry</type>"
+                                     "<value>%s</value>"
+                                     "</preference>",
+                                     config_timeout_iterator_oid (&prefs),
+                                     config_timeout_iterator_nvt_name (&prefs),
+                                     timeout))
               {
                 cleanup_iterator (&prefs);
                 goto fail_target;
@@ -2944,7 +2944,7 @@ slave_setup (openvas_connection_t *connection, const char *name, task_t task,
           {
             GString *buffer = g_string_new ("");
             buffer_config_preference_xml (buffer, &prefs, config, 0);
-            if (openvas_server_sendf (&connection->session, "%s", buffer->str))
+            if (gvm_server_sendf (&connection->session, "%s", buffer->str))
               {
                 cleanup_iterator (&prefs);
                 goto fail_target;
@@ -2953,9 +2953,9 @@ slave_setup (openvas_connection_t *connection, const char *name, task_t task,
           }
         cleanup_iterator (&prefs);
 
-        if (openvas_server_sendf (&connection->session,
-                                  "</preferences>"
-                                  "<nvt_selectors>"))
+        if (gvm_server_sendf (&connection->session,
+                              "</preferences>"
+                              "<nvt_selectors>"))
           {
             cleanup_iterator (&prefs);
             goto fail_target;
@@ -2968,7 +2968,7 @@ slave_setup (openvas_connection_t *connection, const char *name, task_t task,
         while (next (&selectors))
           {
             int type = nvt_selector_iterator_type (&selectors);
-            if (openvas_server_sendf
+            if (gvm_server_sendf
                  (&connection->session,
                   "<nvt_selector>"
                   "<name>%s</name>"
@@ -2986,11 +2986,11 @@ slave_setup (openvas_connection_t *connection, const char *name, task_t task,
           }
         cleanup_iterator (&selectors);
 
-        if (openvas_server_sendf (&connection->session,
-                                  "</nvt_selectors>"
-                                  "</config>"
-                                  "</get_configs_response>"
-                                  "</create_config>")
+        if (gvm_server_sendf (&connection->session,
+                              "</nvt_selectors>"
+                              "</config>"
+                              "</get_configs_response>"
+                              "</create_config>")
             || (omp_read_create_response (&connection->session,
                                           &slave_config_uuid)
                 != 201))
@@ -3143,7 +3143,7 @@ slave_setup (openvas_connection_t *connection, const char *name, task_t task,
         }
       else if (ret)
         {
-          openvas_connection_close (connection);
+          gvm_connection_close (connection);
           ret = slave_sleep_connect (connection, task);
           if (ret == 3)
             goto giveup;
@@ -3205,7 +3205,7 @@ slave_setup (openvas_connection_t *connection, const char *name, task_t task,
           if (ret && ret2)
             {
               free_entity (get_tasks);
-              openvas_connection_close (connection);
+              gvm_connection_close (connection);
               ret = slave_sleep_connect (connection, task);
               if (ret == 3)
                 goto giveup;
@@ -3314,7 +3314,7 @@ slave_setup (openvas_connection_t *connection, const char *name, task_t task,
   slave_smb_credential_uuid = NULL;
   free (slave_ssh_credential_uuid);
   slave_ssh_credential_uuid = NULL;
-  openvas_connection_close (connection);
+  gvm_connection_close (connection);
   slave_connection = NULL;
   g_debug ("   %s: succeed\n", __FUNCTION__);
   return 0;
@@ -3356,13 +3356,13 @@ slave_setup (openvas_connection_t *connection, const char *name, task_t task,
   free (slave_ssh_credential_uuid);
  fail:
   g_debug ("   %s: fail (%i)\n", __FUNCTION__, ret_fail);
-  openvas_connection_close (connection);
+  gvm_connection_close (connection);
   slave_connection = NULL;
   return ret_fail;
 
  giveup:
   g_debug ("   %s: giveup (%i)\n", __FUNCTION__, ret_giveup);
-  openvas_connection_close (connection);
+  gvm_connection_close (connection);
   slave_connection = NULL;
   return ret_giveup;
 }
@@ -3390,7 +3390,7 @@ handle_slave_task (task_t task, target_t target,
                    credential_t target_esxi_credential,
                    credential_t target_snmp_credential,
                    report_t last_stopped_report,
-                   openvas_connection_t *connection,
+                   gvm_connection_t *connection,
                    const gchar *slave_id,
                    const gchar *slave_name)
 {
@@ -4429,7 +4429,7 @@ run_task_prepare_report (task_t task, char **report_id, int from,
  */
 static int
 run_slave_or_omp_task (task_t task, int from, char **report_id,
-                       openvas_connection_t *connection,
+                       gvm_connection_t *connection,
                        const gchar *slave_id,
                        const gchar *slave_name)
 {
@@ -4579,7 +4579,7 @@ static int
 run_omp_task (task_t task, scanner_t scanner, int from, char **report_id)
 {
   int ret;
-  openvas_connection_t connection;
+  gvm_connection_t connection;
   char *scanner_id, *name;
 
   memset (&connection, 0, sizeof (connection));
@@ -5767,7 +5767,7 @@ get_slave_system_report_types (const char *required_type, gchar ***start,
       return -1;
     }
 
-  socket = openvas_server_open (&session, host, port);
+  socket = gvm_server_open (&session, host, port);
   free (host);
   if (socket == -1) return -1;
 
@@ -5783,7 +5783,7 @@ get_slave_system_report_types (const char *required_type, gchar ***start,
   if (omp_get_system_reports (&session, required_type, 1, &get))
     goto fail;
 
-  openvas_server_close (socket, session);
+  gvm_server_close (socket, session);
 
   reports = get->entities;
   end = *types = *start = g_malloc ((xml_count_entities (reports) + 1)
@@ -5821,7 +5821,7 @@ get_slave_system_report_types (const char *required_type, gchar ***start,
   return 0;
 
  fail:
-  openvas_server_close (socket, session);
+  gvm_server_close (socket, session);
   return -1;
 }
 
@@ -6059,7 +6059,7 @@ slave_system_report (const char *name, const char *duration,
       return -1;
     }
 
-  socket = openvas_server_open (&session, host, port);
+  socket = gvm_server_open (&session, host, port);
   free (host);
   if (socket == -1) return -1;
 
@@ -6082,7 +6082,7 @@ slave_system_report (const char *name, const char *duration,
   if (omp_get_system_reports_ext (&session, opts, &get))
     goto fail;
 
-  openvas_server_close (socket, session);
+  gvm_server_close (socket, session);
 
   reports = get->entities;
   if ((entity = first_entity (reports))
@@ -6100,7 +6100,7 @@ slave_system_report (const char *name, const char *duration,
   return -1;
 
  fail:
-  openvas_server_close (socket, session);
+  gvm_server_close (socket, session);
   return -1;
 }
 
@@ -6370,7 +6370,7 @@ set_scheduled_user_uuid (gchar* user_uuid)
  * @return 0 success, 1 failed to get lock, -1 error.
  */
 int
-manage_schedule (int (*fork_connection) (openvas_connection_t *, gchar *),
+manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
                  gboolean run_tasks,
                  sigset_t *sigmask_current)
 {
@@ -6512,7 +6512,7 @@ manage_schedule (int (*fork_connection) (openvas_connection_t *, gchar *),
   while (starts)
     {
       int pid;
-      openvas_connection_t connection;
+      gvm_connection_t connection;
       gchar *task_uuid, *owner, *owner_uuid;
       GSList *head;
       omp_authenticate_info_opts_t auth_opts;
@@ -6709,7 +6709,7 @@ manage_schedule (int (*fork_connection) (openvas_connection_t *, gchar *),
           g_warning ("%s: omp_authenticate failed", __FUNCTION__);
           g_free (task_uuid);
           g_free (owner);
-          openvas_connection_free (&connection);
+          gvm_connection_free (&connection);
           exit (EXIT_FAILURE);
         }
 
@@ -6721,13 +6721,13 @@ manage_schedule (int (*fork_connection) (openvas_connection_t *, gchar *),
             {
               g_warning ("%s: omp_start_task and omp_resume_task failed", __FUNCTION__);
               g_free (task_uuid);
-              openvas_connection_free (&connection);
+              gvm_connection_free (&connection);
               exit (EXIT_FAILURE);
             }
         }
 
       g_free (task_uuid);
-      openvas_connection_free (&connection);
+      gvm_connection_free (&connection);
       exit (EXIT_SUCCESS);
    }
 
@@ -6735,7 +6735,7 @@ manage_schedule (int (*fork_connection) (openvas_connection_t *, gchar *),
 
   while (stops)
     {
-      openvas_connection_t connection;
+      gvm_connection_t connection;
       gchar *task_uuid, *owner, *owner_uuid;
       GSList *head;
       omp_authenticate_info_opts_t auth_opts;
@@ -6804,7 +6804,7 @@ manage_schedule (int (*fork_connection) (openvas_connection_t *, gchar *),
           g_free (task_uuid);
           g_free (owner);
           g_free (owner_uuid);
-          openvas_connection_free (&connection);
+          gvm_connection_free (&connection);
           exit (EXIT_FAILURE);
         }
 
@@ -6813,14 +6813,14 @@ manage_schedule (int (*fork_connection) (openvas_connection_t *, gchar *),
           g_free (task_uuid);
           g_free (owner);
           g_free (owner_uuid);
-          openvas_connection_free (&connection);
+          gvm_connection_free (&connection);
           exit (EXIT_FAILURE);
         }
 
       g_free (task_uuid);
       g_free (owner);
       g_free (owner_uuid);
-      openvas_connection_free (&connection);
+      gvm_connection_free (&connection);
       exit (EXIT_SUCCESS);
    }
 
@@ -7221,7 +7221,7 @@ delete_slave_task (const gchar *host, int port, const gchar *username,
 
   g_debug ("   %s: host: %s\n", __FUNCTION__, host);
 
-  socket = openvas_server_open (&session, host, port);
+  socket = gvm_server_open (&session, host, port);
   if (socket == -1) return -1;
 
   g_debug ("   %s: connected\n", __FUNCTION__);
@@ -7296,7 +7296,7 @@ delete_slave_task (const gchar *host, int port, const gchar *username,
 
   free_entity (get_targets);
   free_entity (get_tasks);
-  openvas_server_close (socket, session);
+  gvm_server_close (socket, session);
   return 0;
 
  fail_config:
@@ -7312,7 +7312,7 @@ delete_slave_task (const gchar *host, int port, const gchar *username,
  fail_free_task:
   free_entity (get_tasks);
  fail:
-  openvas_server_close (socket, session);
+  gvm_server_close (socket, session);
   return -1;
 }
 

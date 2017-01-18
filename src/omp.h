@@ -27,7 +27,7 @@
 #define OPENVAS_MANAGER_OMP_H
 
 #include "types.h"
-#include <openvas/misc/openvas_server.h>
+#include <gvm/util/serverutils.h>
 #include <glib.h>
 #include <gnutls/gnutls.h>
 #include <sys/types.h>
@@ -39,7 +39,7 @@
 
 int
 init_omp (GSList*, int, const gchar*, int, int, int, void (*) (),
-          int (*) (openvas_connection_t *, gchar*),
+          int (*) (gvm_connection_t *, gchar*),
           int);
 
 void

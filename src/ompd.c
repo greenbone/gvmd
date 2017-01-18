@@ -56,7 +56,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include <openvas/misc/openvas_server.h>
+#include <gvm/util/serverutils.h>
 
 #if FROM_BUFFER_SIZE > SSIZE_MAX
 #error FROM_BUFFER_SIZE too big for "read"
@@ -116,7 +116,7 @@ int
 init_ompd (GSList *log_config, int nvt_cache_mode, const gchar *database,
            int max_ips_per_target, int max_email_attachment_size,
            int max_email_include_size, void (*progress) (),
-           int (*fork_connection) (openvas_connection_t *, gchar*),
+           int (*fork_connection) (gvm_connection_t *, gchar*),
            int skip_db_check)
 {
   return init_omp (log_config, nvt_cache_mode, database, max_ips_per_target,
@@ -241,7 +241,7 @@ read_from_client_tls (gnutls_session_t* client_session)
  * from_client buffer is full or -3 on reaching end of file.
  */
 static int
-read_from_client (openvas_connection_t *client_connection)
+read_from_client (gvm_connection_t *client_connection)
 {
   if (client_connection->tls)
     return read_from_client_tls (&client_connection->session);
@@ -344,7 +344,7 @@ write_to_client_unix (int client_socket)
  * @return 0 wrote everything, -1 error, -2 wrote as much as client accepted.
  */
 static int
-write_to_client (openvas_connection_t *client_connection)
+write_to_client (gvm_connection_t *client_connection)
 {
   if (client_connection->tls)
     return write_to_client_tls (&client_connection->session);
@@ -419,7 +419,7 @@ ompd_send_to_client (const char* msg, void* write_to_client_data)
  * @param[in]  client_connection  Connection.
  */
 static void
-session_clean (openvas_connection_t *client_connection)
+session_clean (gvm_connection_t *client_connection)
 {
   if (client_connection->session)
     {
@@ -465,7 +465,7 @@ session_clean (openvas_connection_t *client_connection)
  * @return 0 success, 1 scanner still loading, -1 error, -2 scanner has no cert.
  */
 int
-serve_omp (openvas_connection_t *client_connection, const gchar *database,
+serve_omp (gvm_connection_t *client_connection, const gchar *database,
            gchar **disable, void (*progress) ())
 {
   int nfds, scan_handler = 0, rc = 0;
@@ -986,6 +986,6 @@ serve_omp (openvas_connection_t *client_connection, const gchar *database,
 
 client_free:
   if (client_active)
-    openvas_connection_free (client_connection);
+    gvm_connection_free (client_connection);
   return rc;
 }

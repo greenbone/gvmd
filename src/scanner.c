@@ -39,7 +39,7 @@
 #include <sys/un.h>
 #include <fcntl.h>
 
-#include <openvas/misc/openvas_server.h>
+#include <gvm/util/serverutils.h>
 
 #undef G_LOG_DOMAIN
 /**
@@ -346,9 +346,9 @@ openvas_scanner_write (int nvt_cache_mode)
     {
       case SCANNER_INIT_TOP:
         if (!openvas_scanner_unix_path)
-          ret = openvas_server_connect (openvas_scanner_socket,
-                                        &openvas_scanner_address,
-                                        &openvas_scanner_session);
+          ret = gvm_server_connect (openvas_scanner_socket,
+                                    &openvas_scanner_address,
+                                    &openvas_scanner_session);
         switch (ret)
           {
             case 0:
@@ -557,8 +557,8 @@ openvas_scanner_close ()
   if (openvas_scanner_unix_path)
     close (openvas_scanner_socket);
   else
-    rc = openvas_server_free (openvas_scanner_socket, openvas_scanner_session,
-                              openvas_scanner_credentials);
+    rc = gvm_server_free (openvas_scanner_socket, openvas_scanner_session,
+                          openvas_scanner_credentials);
   openvas_scanner_socket = -1;
   openvas_scanner_session = NULL;
   openvas_scanner_credentials = NULL;
@@ -631,7 +631,7 @@ openvas_scanner_connect ()
     }
 
   /* Make the scanner socket. */
-  if (openvas_server_new_mem
+  if (gvm_server_new_mem
        (GNUTLS_CLIENT, openvas_scanner_ca_pub, openvas_scanner_key_pub,
         openvas_scanner_key_priv, &openvas_scanner_session,
         &openvas_scanner_credentials))
