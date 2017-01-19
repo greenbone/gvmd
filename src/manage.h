@@ -38,9 +38,10 @@
 #include <gvm/base/nvti.h>        /* for nvti_t */
 #include <gvm/base/networking.h>  /* for port_protocol_t */
 #include <gvm/util/serverutils.h> /* for gvm_connection_t */
+#include <gvm/osp/osp.h>          /* for osp_connection_t */
 
 #include <openvas/misc/openvas_auth.h>
-#include <openvas/osp/osp.h>
+
 
 /**
  * @brief Flag with all Glib log levels.

@@ -117,7 +117,6 @@
 #include <gvm/util/fileutils.h>
 #include <gvm/base/pwpolicy.h>
 
-#include <openvas/osp/osp.h>
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/misc/openvas_logging.h>
 #include <openvas/misc/openvas_ssh.h>
