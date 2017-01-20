@@ -71,10 +71,10 @@
 #include <gvm/base/hosts.h>
 #include <gvm/util/fileutils.h>
 #include <gvm/util/serverutils.h>
+#include <gvm/util/uuidutils.h>
 
 #include <openvas/omp/omp.h>
 #include <openvas/misc/nvt_categories.h>
-#include <openvas/misc/openvas_uuid.h>
 #include <openvas/misc/openvas_proctitle.h>
 
 #undef G_LOG_DOMAIN
@@ -1508,7 +1508,7 @@ send_config_preferences (config_t config, const char* section_name,
 
               if (head == NULL)
                 {
-                  uuid = openvas_uuid_make ();
+                  uuid = gvm_uuid_make ();
                   if (uuid == NULL)
                     {
                       g_free (value);
@@ -3413,7 +3413,7 @@ handle_slave_task (task_t task, target_t target,
   report_set_slave_port (current_report, connection->port);
   report_set_slave_host (current_report, connection->host_string);
 
-  uuid = openvas_uuid_make ();
+  uuid = gvm_uuid_make ();
   if (uuid == NULL)
     {
       g_warning ("%s: Failed to make UUID", __FUNCTION__);
@@ -4959,7 +4959,7 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
 
           if (credential_iterator_private_key (&credentials))
             {
-              char *uuid = openvas_uuid_make ();
+              char *uuid = gvm_uuid_make ();
               if (uuid == NULL)
                 goto fail;
 

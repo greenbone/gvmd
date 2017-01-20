@@ -140,8 +140,8 @@
 #include "sql.h"
 
 #include <gvm/util/fileutils.h>
+#include <gvm/util/uuidutils.h>
 
-#include <openvas/misc/openvas_uuid.h>
 #include <openvas/misc/openvas_logging.h>
 
 #undef G_LOG_DOMAIN
@@ -1317,7 +1317,7 @@ migrate_9_to_10 ()
       uuid = migrate_9_to_10_user_uuid (iterator_string (&rows, 1));
       if (uuid == NULL)
         {
-          uuid = openvas_uuid_make ();
+          uuid = gvm_uuid_make ();
           if (uuid == NULL)
             {
               cleanup_iterator (&rows);
@@ -1523,7 +1523,7 @@ migrate_12_to_13 ()
       if (strcmp (iterator_string (&rows, 0), "All") == 0)
         continue;
 
-      uuid = openvas_uuid_make ();
+      uuid = gvm_uuid_make ();
       if (uuid == NULL)
         {
           cleanup_iterator (&rows);

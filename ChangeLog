@@ -1,3 +1,10 @@
+2017-01-20  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/manage.c, src/manage_migrators.c, src/manage_sql.c,
+	src/manage_sqlite3.c: Include gvm/util/uuidutils.h instead of
+	openvas/misc/openvas_uuid.h.
+	Use gvm_uuid_make instead of openvas_uuid_make.
+
 2017-01-19  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* CMakeLists.txt: Require libgvm_osp instead of libopenvas_osp.

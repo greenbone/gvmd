@@ -38,7 +38,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <openvas/misc/openvas_uuid.h>
+#include <gvm/util/uuidutils.h>
 
 #undef G_LOG_DOMAIN
 /**
@@ -399,7 +399,7 @@ sql_make_uuid (sqlite3_context *context, int argc, sqlite3_value** argv)
 
   assert (argc == 0);
 
-  uuid = openvas_uuid_make ();
+  uuid = gvm_uuid_make ();
   if (uuid == NULL)
     {
       sqlite3_result_error (context, "Failed to create UUID", -1);

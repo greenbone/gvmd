@@ -61,13 +61,13 @@
 #include <gvm/base/pwpolicy.h>
 #include <gvm/util/fileutils.h>
 #include <gvm/util/serverutils.h>
+#include <gvm/util/uuidutils.h>
 
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/misc/ldap_connect_auth.h>
 #include <openvas/misc/radius.h>
 #include <openvas/misc/openvas_logging.h>
 #include <openvas/misc/openvas_proctitle.h>
-#include <openvas/misc/openvas_uuid.h>
 #include <openvas/misc/openvas_ssh.h>
 #include <openvas/omp/omp.h>
 
@@ -12153,7 +12153,7 @@ manage_test_alert (const char *alert_id)
                     0,  /* Exclude from assets. */
                     0); /* Skip event and log. */
 
-  report_id = openvas_uuid_make ();
+  report_id = gvm_uuid_make ();
   if (report_id == NULL)
     return -1;
   task_uuid (task, &task_id);
@@ -19857,7 +19857,7 @@ create_current_report (task_t task, char **report_id, task_status_t status)
 
   /* Generate report UUID. */
 
-  *report_id = openvas_uuid_make ();
+  *report_id = gvm_uuid_make ();
   if (*report_id == NULL) return -2;
 
   /* Create the report. */
@@ -20014,7 +20014,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
 
   /* Generate report UUID. */
 
-  *report_id = openvas_uuid_make ();
+  *report_id = gvm_uuid_make ();
   if (*report_id == NULL) return -2;
 
   /* Create the report. */
@@ -30298,7 +30298,7 @@ task_t
 make_task (char* name, char* comment, int in_assets, int event)
 {
   task_t task;
-  char* uuid = openvas_uuid_make ();
+  char* uuid = gvm_uuid_make ();
   gchar *quoted_name, *quoted_comment;
   if (uuid == NULL) abort ();
   quoted_name = name ? sql_quote ((gchar*) name) : NULL;
@@ -33747,7 +33747,7 @@ create_config (const char* proposed_name, const char* comment,
 
   if (proposed_name == NULL || strlen (proposed_name) == 0) return -2;
 
-  selector_uuid = openvas_uuid_make ();
+  selector_uuid = gvm_uuid_make ();
   if (selector_uuid == NULL)
     return -1;
 
@@ -48254,7 +48254,7 @@ create_report_format (const char *uuid, const char *name,
 
       /* Make a new UUID, because a report format exists with the given UUID. */
 
-      new_uuid = openvas_uuid_make ();
+      new_uuid = gvm_uuid_make ();
       if (new_uuid == NULL)
         {
           sql_rollback ();
@@ -63528,7 +63528,7 @@ manage_create_user (GSList *log_config, const gchar *database,
   else
     array_add (roles, g_strdup (ROLE_UUID_ADMIN));
 
-  uuid = openvas_uuid_make ();
+  uuid = gvm_uuid_make ();
 
   /* Setup a dummy user, so that create_user will work. */
   current_credentials.uuid = "";
@@ -63890,7 +63890,7 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
   if (allowed_methods &&
       (!strcmp (g_ptr_array_index (allowed_methods, 0), "ldap_connect")
        || !strcmp (g_ptr_array_index (allowed_methods, 0), "radius_connect")))
-    password = generated = openvas_uuid_make ();
+    password = generated = gvm_uuid_make ();
   else
     generated = NULL;
 
