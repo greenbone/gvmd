@@ -1,3 +1,11 @@
+2017-01-22  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/openvasmd.c (main): Enable GNUTLS bugging if the
+	respective environment variable is set. This code
+	was moved from the function setup_log_handlers() to
+	this place in order to not make gnutls a mandatory
+	requirement for the general logging module.
+
 2017-01-20  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/manage.c, src/manage_migrators.c, src/manage_sql.c,

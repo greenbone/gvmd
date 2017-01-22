@@ -1798,6 +1798,15 @@ main (int argc, char** argv)
     log_config = load_log_configuration (rc_name);
   g_free (rc_name);
   setup_log_handlers (log_config);
+  /* Enable GNUTLS debugging if requested via env variable.  */
+  {
+    const char *s;
+    if ((s=getenv ("OPENVAS_GNUTLS_DEBUG")))
+      {
+        gnutls_global_set_log_function (log_func_for_gnutls);
+        gnutls_global_set_log_level (atoi (s));
+      }
+  }
 
 #ifdef OPENVASMD_SVN_REVISION
   g_message ("   OpenVAS Manager version %s (SVN revision %i) (DB revision %i)\n",
