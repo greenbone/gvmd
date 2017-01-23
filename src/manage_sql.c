@@ -59,6 +59,7 @@
 
 #include <gvm/base/hosts.h>
 #include <gvm/base/pwpolicy.h>
+#include <gvm/base/logging.h>
 #include <gvm/util/fileutils.h>
 #include <gvm/util/serverutils.h>
 #include <gvm/util/uuidutils.h>
@@ -66,7 +67,6 @@
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/misc/ldap_connect_auth.h>
 #include <openvas/misc/radius.h>
-#include <openvas/misc/openvas_logging.h>
 #include <openvas/misc/openvas_proctitle.h>
 #include <openvas/misc/openvas_ssh.h>
 #include <openvas/omp/omp.h>
@@ -16088,7 +16088,7 @@ init_manage_internal (GSList *log_config,
 
   g_log_set_handler (G_LOG_DOMAIN,
                      ALL_LOG_LEVELS,
-                     (GLogFunc) openvas_log_func,
+                     (GLogFunc) gvm_log_func,
                      log_config);
 
   memset (&current_credentials, '\0', sizeof (current_credentials));

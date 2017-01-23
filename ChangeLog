@@ -1,3 +1,20 @@
+2017-01-23  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/openvasmd.c: Include gvm/base/logging.h instead of
+	openvas/misc/openvas_logging.h.
+
+	* src/manage_migrators.c Include gvm/base/logging.h instead of
+	openvas/misc/openvas_logging.h.
+	Use gvm_log_func instead of openvas_log_func.
+
+	* src/manage_sql.c: Include gvm/base/logging.h instead of
+	openvas/misc/openvas_logging.h.
+	Use gvm_log_func instead of openvas_log_func.
+
+	* src/omp.c: Include gvm/base/logging.h instead of
+	openvas/misc/openvas_logging.h.
+	Use gvm_log_func instead of openvas_log_func.
+
 2017-01-22  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/openvasmd.c (main): Enable GNUTLS bugging if the

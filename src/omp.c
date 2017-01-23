@@ -114,11 +114,11 @@
 #include <gnutls/x509.h>
 
 #include <gvm/base/strings.h>
+#include <gvm/base/logging.h>
 #include <gvm/util/fileutils.h>
 #include <gvm/base/pwpolicy.h>
 
 #include <openvas/misc/openvas_auth.h>
-#include <openvas/misc/openvas_logging.h>
 #include <openvas/misc/openvas_ssh.h>
 
 #undef G_LOG_DOMAIN
@@ -30633,7 +30633,7 @@ init_omp (GSList *log_config, int nvt_cache_mode, const gchar *database,
 {
   g_log_set_handler (G_LOG_DOMAIN,
                      ALL_LOG_LEVELS,
-                     (GLogFunc) openvas_log_func,
+                     (GLogFunc) gvm_log_func,
                      log_config);
   command_data_init (&command_data);
   return init_manage (log_config, nvt_cache_mode, database, max_ips_per_target,

@@ -104,9 +104,9 @@
 
 #include <gvm/base/pidfile.h>
 #include <gvm/base/pwpolicy.h>
+#include <gvm/base/logging.h>
 #include <gvm/util/serverutils.h>
 
-#include <openvas/misc/openvas_logging.h>
 #include <openvas/misc/openvas_proctitle.h>
 
 #include "logf.h"

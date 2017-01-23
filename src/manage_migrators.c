@@ -139,10 +139,10 @@
 #include "manage_sql.h"
 #include "sql.h"
 
+#include <gvm/base/logging.h>
 #include <gvm/util/fileutils.h>
 #include <gvm/util/uuidutils.h>
 
-#include <openvas/misc/openvas_logging.h>
 
 #undef G_LOG_DOMAIN
 /**
@@ -14248,7 +14248,7 @@ manage_migrate_needs_timezone (GSList *log_config, const gchar *database)
   int db_version;
   g_log_set_handler (G_LOG_DOMAIN,
                      ALL_LOG_LEVELS,
-                     (GLogFunc) openvas_log_func,
+                     (GLogFunc) gvm_log_func,
                      log_config);
   init_manage_process (0, database);
   db_version = manage_db_version ();
@@ -14303,7 +14303,7 @@ manage_migrate (GSList *log_config, const gchar *database)
 
   g_log_set_handler (G_LOG_DOMAIN,
                      ALL_LOG_LEVELS,
-                     (GLogFunc) openvas_log_func,
+                     (GLogFunc) gvm_log_func,
                      log_config);
 
   init_manage_process (0, database);
