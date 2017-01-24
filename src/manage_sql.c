@@ -42830,6 +42830,32 @@ find_note_with_permission (const char* uuid, note_t* note,
   return find_resource_with_permission ("note", uuid, note, permission, 0);
 }
 
+gboolean
+nvt_exists(const char* nvt)
+{
+  gchar *quoted_nvt;
+
+  quoted_nvt = sql_quote (nvt);
+  if (g_str_has_prefix (nvt, "CVE-"))
+    {
+      if (sql_int ("SELECT count (*) FROM cves WHERE uuid = '%s'", quoted_nvt)
+          != 0)
+        {
+          g_free (quoted_nvt);
+          return 1;
+        }
+    }
+  else if (strcmp (nvt, "0")
+           && (sql_int ("SELECT count (*) FROM nvts WHERE oid = '%s'", quoted_nvt)
+               != 0))
+    {
+      g_free (quoted_nvt);
+      return 1;
+    }
+  g_free (quoted_nvt);
+  return 0;
+}
+
 /**
  * @brief Create a note.
  *
@@ -42854,7 +42880,6 @@ create_note (const char* active, const char* nvt, const char* text,
              const char* threat, task_t task, result_t result, note_t *note)
 {
   gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_severity;
-  gchar *quoted_nvt;
   double severity_dbl;
 
   if (acl_user_may ("create_note") == 0)
@@ -42863,24 +42888,8 @@ create_note (const char* active, const char* nvt, const char* text,
   if (nvt == NULL)
     return -1;
 
-  quoted_nvt = sql_quote (nvt);
-  if (g_str_has_prefix (nvt, "CVE-"))
-    {
-      if (sql_int ("SELECT count (*) FROM cves WHERE uuid = '%s'", quoted_nvt)
-          == 0)
-        {
-          g_free (quoted_nvt);
-          return 1;
-        }
-    }
-  else if (strcmp (nvt, "0")
-           && (sql_int ("SELECT count (*) FROM nvts WHERE oid = '%s'", quoted_nvt)
-               == 0))
-    {
-      g_free (quoted_nvt);
-      return 1;
-    }
-  g_free (quoted_nvt);
+  if (!nvt_exists (nvt))
+    return 1;
 
   if (port && validate_results_port (port))
     return 2;
@@ -43085,6 +43094,7 @@ note_uuid (note_t note, char ** id)
  * @param[in]  note        Note.
  * @param[in]  active      NULL or -2 leave as is, -1 on, 0 off, n on for n
  *                         days.
+ * @param[in]  nvt         OID of noted NVT.
  * @param[in]  text        Note text.
  * @param[in]  hosts       Hosts to apply note to, NULL for any host.
  * @param[in]  port        Port to apply note to, NULL for any port.
@@ -43095,21 +43105,25 @@ note_uuid (note_t note, char ** id)
  * @param[in]  result      Result to apply note to, 0 for any result.
  *
  * @return 0 success, -1 error, 1 syntax error in active, 2 invalid port,
- *         3 invalid severity.
+ *         3 invalid severity, 4 failed to find NVT.
  */
 int
-modify_note (note_t note, const char *active, const char* text,
+modify_note (note_t note, const char *active, const char *nvt, const char* text,
              const char* hosts, const char* port, const char* severity,
              const char* threat, task_t task, result_t result)
 {
   gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_severity;
   double severity_dbl;
+  gchar *quoted_nvt;
 
   if (note == 0)
     return -1;
 
   if (text == NULL)
     return -1;
+
+  if (nvt && !nvt_exists (nvt))
+    return 4;
 
   if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
       && strcmp (threat, "Low") && strcmp (threat, "Log")
@@ -43123,6 +43137,7 @@ modify_note (note_t note, const char *active, const char* text,
   quoted_text = sql_insert (text);
   quoted_hosts = sql_insert (hosts);
   quoted_port = sql_insert (port);
+  quoted_nvt = sql_insert (nvt);
 
   severity_dbl = 0.0;
   if (severity != NULL && strcmp (severity, ""))
@@ -43163,6 +43178,7 @@ modify_note (note_t note, const char *active, const char* text,
          " hosts = %s,"
          " port = %s,"
          " severity = %s,"
+         " %s%s%s"
          " task = %llu,"
          " result = %llu"
          " WHERE id = %llu;",
@@ -43171,6 +43187,9 @@ modify_note (note_t note, const char *active, const char* text,
          quoted_hosts,
          quoted_port,
          quoted_severity,
+         nvt ? "nvt = " : "",
+         nvt ? quoted_nvt : "",
+         nvt ? "," : "",
          task,
          result,
          note);
@@ -43191,6 +43210,7 @@ modify_note (note_t note, const char *active, const char* text,
            " hosts = %s,"
            " port = %s,"
            " severity = %s,"
+           "%s%s%s"
            " task = %llu,"
            " result = %llu"
            " WHERE id = %llu;",
@@ -43204,6 +43224,9 @@ modify_note (note_t note, const char *active, const char* text,
            quoted_hosts,
            quoted_port,
            quoted_severity,
+           nvt ? "nvt = " : "",
+           nvt ? quoted_nvt : "",
+           nvt ? "," : "",
            task,
            result,
            note);
@@ -43213,6 +43236,7 @@ modify_note (note_t note, const char *active, const char* text,
   g_free (quoted_hosts);
   g_free (quoted_port);
   g_free (quoted_severity);
+  g_free (quoted_nvt);
 
   return 0;
 }
@@ -43820,7 +43844,6 @@ create_override (const char* active, const char* nvt, const char* text,
                  override_t* override)
 {
   gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_severity;
-  gchar *quoted_nvt;
   double severity_dbl, new_severity_dbl;
 
   if (acl_user_may ("create_override") == 0)
@@ -43832,24 +43855,8 @@ create_override (const char* active, const char* nvt, const char* text,
   if (text == NULL)
     return -1;
 
-  quoted_nvt = sql_quote (nvt);
-  if (g_str_has_prefix (nvt, "CVE-"))
-    {
-      if (sql_int ("SELECT count (*) FROM cves WHERE uuid = '%s'", quoted_nvt)
-          == 0)
-        {
-          g_free (quoted_nvt);
-          return 1;
-        }
-    }
-  else if (strcmp (nvt, "0")
-           && (sql_int ("SELECT count (*) FROM nvts WHERE oid = '%s'", quoted_nvt)
-               == 0))
-    {
-      g_free (quoted_nvt);
-      return 1;
-    }
-  g_free (quoted_nvt);
+  if (!nvt_exists (nvt))
+    return 1;
 
   if (port && validate_results_port (port))
     return 2;
@@ -44102,6 +44109,7 @@ delete_override (const char *override_id, int ultimate)
  * @param[in]  override    Override.
  * @param[in]  active      NULL or -2 leave as is, -1 on, 0 off, n on for n
  *                         days.
+ * @param[in]  nvt         OID of noted NVT.
  * @param[in]  text        Override text.
  * @param[in]  hosts       Hosts to apply override to, NULL for any host.
  * @param[in]  port        Port to apply override to, NULL for any port.
@@ -44113,16 +44121,18 @@ delete_override (const char *override_id, int ultimate)
  * @param[in]  result      Result to apply override to, 0 for any result.
  *
  * @return 0 success, -1 error, 1 syntax error in active, 2 invalid port,
- *         3 invalid severity score.
+ *         3 invalid severity score, 4 failed to find NVT.
  */
 int
-modify_override (override_t override, const char *active, const char* text,
-                 const char* hosts, const char* port, const char* threat,
-                 const char* new_threat, const char* severity,
-                 const char* new_severity, task_t task, result_t result)
+modify_override (override_t override, const char *active, const char *nvt,
+                 const char* text, const char* hosts, const char* port,
+                 const char* threat, const char* new_threat,
+                 const char* severity, const char* new_severity, task_t task,
+                 result_t result)
 {
   gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_severity;
   double severity_dbl, new_severity_dbl;
+  gchar *quoted_nvt;
 
   if (override == 0)
     return -1;
@@ -44132,6 +44142,9 @@ modify_override (override_t override, const char *active, const char* text,
 
   if (port && validate_results_port (port))
     return 2;
+
+  if (nvt && !nvt_exists (nvt))
+    return 4;
 
   if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
       && strcmp (threat, "Low") && strcmp (threat, "Log")
@@ -44219,6 +44232,7 @@ modify_override (override_t override, const char *active, const char* text,
   quoted_text = sql_insert (text);
   quoted_hosts = sql_insert (hosts);
   quoted_port = sql_insert (port);
+  quoted_nvt = sql_insert (nvt);
 
   if ((active == NULL) || (strcmp (active, "-2") == 0))
     sql ("UPDATE overrides SET"
@@ -44227,6 +44241,7 @@ modify_override (override_t override, const char *active, const char* text,
          " hosts = %s,"
          " port = %s,"
          " severity = %s,"
+         " %s%s%s"
          " new_severity = %f,"
          " task = %llu,"
          " result = %llu"
@@ -44236,6 +44251,9 @@ modify_override (override_t override, const char *active, const char* text,
          quoted_hosts,
          quoted_port,
          quoted_severity,
+         nvt ? "nvt = " : "",
+         nvt ? quoted_nvt : "",
+         nvt ? "," : "",
          new_severity_dbl,
          task,
          result,
@@ -44257,6 +44275,7 @@ modify_override (override_t override, const char *active, const char* text,
            " hosts = %s,"
            " port = %s,"
            " severity = %s,"
+           " %s%s%s"
            " new_severity = %f,"
            " task = %llu,"
            " result = %llu"
@@ -44271,6 +44290,9 @@ modify_override (override_t override, const char *active, const char* text,
            quoted_hosts,
            quoted_port,
            quoted_severity,
+           nvt ? "nvt = " : "",
+           nvt ? quoted_nvt : "",
+           nvt ? "," : "",
            new_severity_dbl,
            task,
            result,
@@ -44281,6 +44303,7 @@ modify_override (override_t override, const char *active, const char* text,
   g_free (quoted_hosts);
   g_free (quoted_port);
   g_free (quoted_severity);
+  g_free (quoted_nvt);
 
   reports_clear_count_cache (1);
 

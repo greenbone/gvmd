@@ -2422,7 +2422,7 @@ note_uuid (note_t, char **);
 
 int
 modify_note (note_t, const char*, const char*, const char*, const char*,
-             const char*, const char*, task_t, result_t);
+             const char*, const char*, const char*, task_t, result_t);
 
 int
 note_count (const get_data_t *, nvt_t, result_t, task_t);
@@ -2494,8 +2494,8 @@ delete_override (const char *, int);
 
 int
 modify_override (override_t, const char*, const char*, const char*, const char*,
-                 const char*, const char*, const char*, const char*, task_t,
-                 result_t);
+                 const char*, const char*, const char*, const char*,
+                 const char*, task_t, result_t);
 
 int
 override_count (const get_data_t *, nvt_t, result_t, task_t);

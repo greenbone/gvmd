@@ -34962,6 +34962,14 @@ modify_group_users
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>nvt</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">NVT to which note applies.</div>
+<ul style="list-style: none"><li>
+          @<b>oid</b>
+          (<a href="#type_oid">oid</a>)
+          </li></ul>
+</li>
+<li>
               &lt;<b>hosts</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">A textual list of hosts.</div>
 <ul style="list-style: none"></ul>
@@ -35024,6 +35032,7 @@ modify_group_users
      {
        attribute note_id { uuid }
        &amp; modify_note_active?
+       &amp; modify_note_nvt?
        &amp; modify_note_hosts?
        &amp; modify_note_port?
        &amp; modify_note_result?
@@ -35037,6 +35046,12 @@ modify_note_active
  = element active
      {
        integer
+     }
+
+modify_note_nvt
+ = element nvt
+     {
+       attribute oid { oid }
      }
 
 modify_note_hosts
@@ -35129,6 +35144,14 @@ modify_note_result
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>nvt</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">NVT to which override applies.</div>
+<ul style="list-style: none"><li>
+          @<b>oid</b>
+          (<a href="#type_oid">oid</a>)
+          </li></ul>
+</li>
+<li>
               &lt;<b>hosts</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">A textual list of hosts.</div>
 <ul style="list-style: none"></ul>
@@ -35201,6 +35224,7 @@ modify_note_result
      {
        attribute override_id { uuid }
        &amp; modify_override_active?
+       &amp; modify_override_nvt?
        &amp; modify_override_hosts?
        &amp; modify_override_new_severity?
        &amp; modify_override_new_threat?
@@ -35216,6 +35240,12 @@ modify_override_active
  = element active
      {
        integer
+     }
+
+modify_override_nvt
+ = element nvt
+     {
+       attribute oid { oid }
      }
 
 modify_override_hosts

@@ -5512,6 +5512,7 @@ typedef enum
   CLIENT_MODIFY_NOTE_TASK,
   CLIENT_MODIFY_NOTE_TEXT,
   CLIENT_MODIFY_NOTE_THREAT,
+  CLIENT_MODIFY_NOTE_NVT,
   CLIENT_MODIFY_OVERRIDE,
   CLIENT_MODIFY_OVERRIDE_ACTIVE,
   CLIENT_MODIFY_OVERRIDE_HOSTS,
@@ -5523,6 +5524,7 @@ typedef enum
   CLIENT_MODIFY_OVERRIDE_TASK,
   CLIENT_MODIFY_OVERRIDE_TEXT,
   CLIENT_MODIFY_OVERRIDE_THREAT,
+  CLIENT_MODIFY_OVERRIDE_NVT,
   CLIENT_MODIFY_PERMISSION,
   CLIENT_MODIFY_PERMISSION_COMMENT,
   CLIENT_MODIFY_PERMISSION_NAME,
@@ -10234,6 +10236,12 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_NOTE_TEXT);
         else if (strcasecmp ("THREAT", element_name) == 0)
           set_client_state (CLIENT_MODIFY_NOTE_THREAT);
+        else if (strcasecmp ("NVT", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "oid",
+                              &modify_note_data->nvt_oid);
+            set_client_state (CLIENT_MODIFY_NOTE_NVT);
+          }
         ELSE_ERROR ("modify_note");
 
       case CLIENT_MODIFY_OVERRIDE:
@@ -10277,6 +10285,12 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_OVERRIDE_TEXT);
         else if (strcasecmp ("THREAT", element_name) == 0)
           set_client_state (CLIENT_MODIFY_OVERRIDE_THREAT);
+        else if (strcasecmp ("NVT", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "oid",
+                              &modify_override_data->nvt_oid);
+            set_client_state (CLIENT_MODIFY_OVERRIDE_NVT);
+          }
         ELSE_ERROR ("modify_override");
 
       case CLIENT_RUN_WIZARD:
@@ -26553,6 +26567,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             }
           else switch (modify_note (note,
                                     modify_note_data->active,
+                                    modify_note_data->nvt_oid,
                                     modify_note_data->text,
                                     modify_note_data->hosts,
                                     modify_note_data->port,
@@ -26582,6 +26597,13 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 log_event_fail ("note", "Note", modify_note_data->note_id,
                                 "modified");
                 break;
+              case 4:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_note",
+                                    "Invalid nvt oid"));
+                log_event_fail ("note", "Note", modify_note_data->note_id,
+                                "modified");
+                break;
               default:
                 assert (0);
                 SEND_TO_CLIENT_OR_FAIL
@@ -26600,6 +26622,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_NOTE, TASK);
       CLOSE (CLIENT_MODIFY_NOTE, TEXT);
       CLOSE (CLIENT_MODIFY_NOTE, THREAT);
+      CLOSE (CLIENT_MODIFY_NOTE, NVT);
 
       case CLIENT_MODIFY_OVERRIDE:
         {
@@ -26680,6 +26703,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             }
           else switch (modify_override (override,
                                         modify_override_data->active,
+                                        modify_override_data->nvt_oid,
                                         modify_override_data->text,
                                         modify_override_data->hosts,
                                         modify_override_data->port,
@@ -26714,6 +26738,14 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                 modify_override_data->override_id,
                                 "modified");
                 break;
+              case 4:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_override",
+                                    "Invalid nvt oid"));
+                log_event_fail ("override", "Override",
+                                modify_override_data->override_id,
+                                "modified");
+                break;
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_INTERNAL_ERROR ("modify_override"));
@@ -26738,6 +26770,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_OVERRIDE, TASK);
       CLOSE (CLIENT_MODIFY_OVERRIDE, TEXT);
       CLOSE (CLIENT_MODIFY_OVERRIDE, THREAT);
+      CLOSE (CLIENT_MODIFY_OVERRIDE, NVT);
 
       case CLIENT_MODIFY_PERMISSION:
         {
@@ -30403,6 +30436,9 @@ omp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_NOTE_THREAT,
               &modify_note_data->threat);
+
+      APPEND (CLIENT_MODIFY_NOTE_NVT,
+              &modify_note_data->nvt_oid);
 
 
       APPEND (CLIENT_MODIFY_OVERRIDE_ACTIVE,

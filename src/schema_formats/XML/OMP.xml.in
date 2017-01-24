@@ -23225,6 +23225,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <required>1</required>
       </attrib>
       <o><e>active</e></o>
+      <o><e>nvt</e></o>
       <o><e>hosts</e></o>
       <o><e>port</e></o>
       <o><e>result</e></o>
@@ -23237,6 +23238,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <name>active</name>
       <summary>Seconds note will be active.  -1 on always, 0 off</summary>
       <pattern><t>integer</t></pattern>
+    </ele>
+    <ele>
+      <name>nvt</name>
+      <summary>NVT to which note applies</summary>
+      <pattern>
+        <attrib>
+          <name>oid</name>
+          <type>oid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
     </ele>
     <ele>
       <name>hosts</name>
@@ -23344,6 +23356,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <required>1</required>
       </attrib>
       <o><e>active</e></o>
+      <o><e>nvt</e></o>
       <o><e>hosts</e></o>
       <o><e>new_severity</e></o>
       <o><e>new_threat</e></o>
@@ -23358,6 +23371,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <name>active</name>
       <summary>Seconds override will be active.  -1 on always, 0 off</summary>
       <pattern><t>integer</t></pattern>
+    </ele>
+    <ele>
+      <name>nvt</name>
+      <summary>NVT to which override applies</summary>
+      <pattern>
+        <attrib>
+          <name>oid</name>
+          <type>oid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
     </ele>
     <ele>
       <name>hosts</name>
