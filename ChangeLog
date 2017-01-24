@@ -1,3 +1,13 @@
+2017-01-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (RESULT_ITERATOR_FILTER_COLUMNS)
+	(RESULT_ITERATOR_COLUMNS): Add column "hostname".
+
+	* src/schema_formats/XML/OMP.xml.in (get_reports, get_results): Add
+	filter column "hostname" and add that "host" refers to the IP address.
+
+	* doc/omp.html: Update from source.
+
 2017-01-23  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/openvasmd.c: Include gvm/base/logging.h instead of

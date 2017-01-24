@@ -21248,7 +21248,7 @@ where_qod (const char* min_qod)
     "type", "original_type", "auto_type",                                     \
     "description", "task", "report", "cvss_base", "nvt_version",              \
     "severity", "original_severity", "vulnerability", "date", "report_id",    \
-    "solution_type", "qod", "qod_type", "task_id", "cve", NULL }
+    "solution_type", "qod", "qod_type", "task_id", "cve", "hostname", NULL }
 
 /**
  * @brief Result iterator columns.
@@ -21324,6 +21324,14 @@ where_qod (const char* min_qod)
       "task_id",                                                              \
       KEYWORD_TYPE_STRING },                                                  \
     { "(SELECT cve FROM nvts WHERE oid = nvt)", "cve", KEYWORD_TYPE_STRING }, \
+    { "(SELECT value FROM report_host_details"                                \
+      " WHERE name = 'hostname'"                                              \
+      "   AND report_host = (SELECT id FROM report_hosts"                     \
+      "                       WHERE report_hosts.host=results.host"           \
+      "                         AND report_hosts.report = results.report))",  \
+      "hostname",                                                             \
+      KEYWORD_TYPE_STRING                                                     \
+    },                                                                        \
     { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
   }
 

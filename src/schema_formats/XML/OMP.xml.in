@@ -15419,7 +15419,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <column>
             <name>host</name>
             <type>text</type>
-            <summary>Host of the result</summary>
+            <summary>Host IP address of the result</summary>
+          </column>
+          <column>
+            <name>hostname</name>
+            <type>text</type>
+            <summary>Hostname of the result</summary>
           </column>
           <column>
             <name>location</name>
@@ -16845,7 +16850,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <column>
             <name>host</name>
             <type>text</type>
-            <summary>Host of the result</summary>
+            <summary>Host IP address of the result</summary>
+          </column>
+          <column>
+            <name>hostname</name>
+            <type>text</type>
+            <summary>Hostname of the result</summary>
           </column>
           <column>
             <name>location</name>
