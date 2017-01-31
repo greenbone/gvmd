@@ -30,7 +30,8 @@ if [ "@BACKEND@" = "POSTGRESQL" ]; then
 fi
 
 do_help () {
-  echo "Update port names data from a port names XML file.\n";
+  echo "Update port names data from a port names XML file.";
+  echo
   echo "Currently supports the official IANA Services Names list.";
   echo "In order to update the DB, download the port names list and";
   echo "provide its path as an argument to this script.";
