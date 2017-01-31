@@ -1,3 +1,59 @@
+2017-01-31  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* INSTALL: Require libgvm_gmp instead of libopenvas_omp.
+
+	* CMakeLists.txt: Consider LIBGVM_GMP instead of LIBOPENVAS_OMP.
+
+	* src/CMakeLists.txt: Consider LIBGVM_GMP instead of LIBOPENVAS_OMP.
+
+	* src/manage.c: Include gvm/gmp/gmp.h instead of openvas/omp/omp.h.
+	Use gmp_authenticate_info_opts_t instead of
+	omp_authenticate_info_opts_t,
+	gmp_authenticate_info_opts_defaults instead of
+	omp_authenticate_info_opts_defaults,
+	gmp_authenticate_info_ext_c instead of omp_authenticate_info_ext_c,
+	gmp_authenticate instead of omp_authenticate,
+	gmp_stop_task instead of omp_stop_task,
+	gmp_stop_task_c instead of omp_stop_task_c,
+	gmp_get_targets instead of omp_get_targets,
+	gmp_delete_opts_t instead of omp_delete_opts_t,
+	gmp_delete_opts_ultimate_defaults instead of
+	omp_delete_opts_ultimate_defaults,
+	gmp_get_tasks instead of omp_get_tasks,
+	gmp_task_status instead of omp_task_status,
+	gmp_resume_task_report instead of omp_resume_task_report,
+	gmp_create_lsc_credential_opts_t instead of
+	omp_create_lsc_credential_opts_t,
+	gmp_create_lsc_credential_opts_defaults instead of
+	omp_create_lsc_credential_opts_defaults,
+	gmp_create_lsc_credential_ext instead of omp_create_lsc_credential_ext,
+	gmp_create_target_opts_t instead of omp_create_target_opts_t,
+	gmp_create_target_opts_defaults instead of
+	omp_create_target_opts_defaults,
+	gmp_create_target_ext instead of omp_create_target_ext,
+	gmp_read_create_response instead of omp_read_create_response,
+	gmp_create_task_opts_t instead of omp_create_task_opts_t,
+	gmp_create_task_opts_defaults instead of omp_create_task_opts_defaults,
+	gmp_create_task_ext instead of omp_create_task_ext,
+	gmp_start_task_report instead of omp_start_task_report,
+	gmp_start_task_report_c instead of omp_start_task_report_c,
+	gmp_get_report_opts_t instead of omp_get_report_opts_t,
+	gmp_get_report_opts_defaults instead of omp_get_report_opts_defaults,
+	gmp_get_report_ext instead of omp_get_report_ext,
+	gmp_delete_task_ext instead of omp_delete_task_ext,
+	gmp_delete_config_ext instead of omp_delete_config_ext,
+	gmp_delete_target_ext instead of omp_delete_target_ext,
+	gmp_delete_port_list_ext instead of omp_delete_port_list_ext,
+	gmp_delete_lsc_credential_ext instead of omp_delete_lsc_credential_ext,
+	gmp_get_system_reports instead of omp_get_system_reports and
+	gmp_get_system_reports_ext instead of omp_get_system_reports_ext.
+
+	* src/manage_sql.c: Include gvm/gmp/gmp.h instead of openvas/omp/omp.h.
+	Use gmp_authenticate_info_opts_t instead of omp_authenticate_info_opts_t,
+	gmp_authenticate_info_opts_defaults instead of omp_authenticate_info_opts_defaults,
+	gmp_authenticate_info_ext_c instead of omp_authenticate_info_ext_c and
+	gmp_start_task_report_c instead of omp_start_task_report_c.
+
 2017-01-24  Björn Ricks <bjoern.ricks@greenbone.net>
 
 	* src/manage.h, src/manage_sql.c (nvt_exists, modify_note, modify_override):

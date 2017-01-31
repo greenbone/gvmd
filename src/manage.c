@@ -72,8 +72,8 @@
 #include <gvm/util/fileutils.h>
 #include <gvm/util/serverutils.h>
 #include <gvm/util/uuidutils.h>
+#include <gvm/gmp/gmp.h>
 
-#include <openvas/omp/omp.h>
 #include <openvas/misc/nvt_categories.h>
 #include <openvas/misc/openvas_proctitle.h>
 
@@ -2025,12 +2025,12 @@ update_slave_progress (entity_t get_tasks)
 static int
 connection_authenticate (gvm_connection_t *connection)
 {
-  omp_authenticate_info_opts_t auth_opts;
+  gmp_authenticate_info_opts_t auth_opts;
 
-  auth_opts = omp_authenticate_info_opts_defaults;
+  auth_opts = gmp_authenticate_info_opts_defaults;
   auth_opts.username = connection->username;
   auth_opts.password = connection->password;
-  if (omp_authenticate_info_ext_c (connection, auth_opts))
+  if (gmp_authenticate_info_ext_c (connection, auth_opts))
     return -1;
   return 0;
 }
@@ -2060,7 +2060,7 @@ slave_authenticate (gnutls_session_t *session, scanner_t slave)
       return -1;
     }
 
-  ret = omp_authenticate (session, login, password);
+  ret = gmp_authenticate (session, login, password);
   g_free (login);
   g_free (password);
   if (ret)
@@ -2265,7 +2265,7 @@ cleanup_slave ()
   if (slave_connection)
     {
       if (slave_task_uuid)
-        omp_stop_task (&slave_connection->session, slave_task_uuid);
+        gmp_stop_task (&slave_connection->session, slave_task_uuid);
       gvm_connection_close (slave_connection);
     }
 }
@@ -2361,7 +2361,7 @@ setup_ids (gvm_connection_t *connection, task_t task,
           entity_t get_targets;
           int ret;
 
-          while ((ret = omp_get_targets (&connection->session,
+          while ((ret = gmp_get_targets (&connection->session,
                                          *slave_target_uuid, 0, 0,
                                          &get_targets)))
             {
@@ -2442,10 +2442,10 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
   const int ret_giveup = 3;
   int ret, ret_fail, next_result;
   iterator_t credentials, targets;
-  omp_delete_opts_t del_opts;
+  gmp_delete_opts_t del_opts;
 
   ret_fail = 1;
-  del_opts = omp_delete_opts_ultimate_defaults;
+  del_opts = gmp_delete_opts_ultimate_defaults;
   slave_connection = connection;
 
   /* Register a cleanup callback to stop the slave task if the process is
@@ -2478,7 +2478,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
 
           /* Check if the task is running or complete on the slave. */
 
-          while ((ret = omp_get_tasks (&connection->session, slave_task_uuid,
+          while ((ret = gmp_get_tasks (&connection->session, slave_task_uuid,
                                        0, 0, &get_tasks)))
             {
               if (ret == 404)
@@ -2501,7 +2501,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
 
           if (ret == 0)
             {
-              status = omp_task_status (get_tasks);
+              status = gmp_task_status (get_tasks);
               if (status == NULL)
                 {
                   /* An error somewhere.  Clear all the report results and
@@ -2534,7 +2534,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
               else
                 {
                   /* Task is there, try resume it. */
-                  switch (omp_resume_task_report (&connection->session,
+                  switch (gmp_resume_task_report (&connection->session,
                                                   slave_task_uuid,
                                                   &slave_report_uuid))
                     {
@@ -2583,7 +2583,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
             {
               const char *user, *password, *private_key;
               gchar *user_copy, *password_copy, *private_key_copy;
-              omp_create_lsc_credential_opts_t opts;
+              gmp_create_lsc_credential_opts_t opts;
 
               user = credential_iterator_login (&credentials);
               password = credential_iterator_password (&credentials);
@@ -2600,7 +2600,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
               password_copy = g_strdup (password);
               cleanup_iterator (&credentials);
 
-              opts = omp_create_lsc_credential_opts_defaults;
+              opts = gmp_create_lsc_credential_opts_defaults;
               opts.name = name;
               opts.login = user_copy;
               opts.passphrase = password_copy;
@@ -2613,7 +2613,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
                 private_key_copy = NULL;
               opts.comment = "Slave SSH credential created by Master";
 
-              ret = omp_create_lsc_credential_ext (&connection->session, opts,
+              ret = gmp_create_lsc_credential_ext (&connection->session, opts,
                                                    &slave_ssh_credential_uuid);
               g_free (user_copy);
               g_free (password_copy);
@@ -2632,7 +2632,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
             {
               const char *user, *password;
               gchar *user_copy, *password_copy, *smb_name;
-              omp_create_lsc_credential_opts_t opts;
+              gmp_create_lsc_credential_opts_t opts;
 
               user = credential_iterator_login (&credentials);
               password = credential_iterator_password (&credentials);
@@ -2647,14 +2647,14 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
               password_copy = g_strdup (password);
               cleanup_iterator (&credentials);
 
-              opts = omp_create_lsc_credential_opts_defaults;
+              opts = gmp_create_lsc_credential_opts_defaults;
               smb_name = g_strdup_printf ("%ssmb", name);
               opts.name = smb_name;
               opts.login = user_copy;
               opts.passphrase = password_copy;
               opts.comment = "Slave SMB credential created by Master";
 
-              ret = omp_create_lsc_credential_ext (&connection->session, opts,
+              ret = gmp_create_lsc_credential_ext (&connection->session, opts,
                                                    &slave_smb_credential_uuid);
               g_free (smb_name);
               g_free (user_copy);
@@ -2672,7 +2672,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
             {
               const char *user, *password;
               gchar *user_copy, *password_copy, *esxi_name;
-              omp_create_lsc_credential_opts_t opts;
+              gmp_create_lsc_credential_opts_t opts;
 
               user = credential_iterator_login (&credentials);
               password = credential_iterator_password (&credentials);
@@ -2687,14 +2687,14 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
               password_copy = g_strdup (password);
               cleanup_iterator (&credentials);
 
-              opts = omp_create_lsc_credential_opts_defaults;
+              opts = gmp_create_lsc_credential_opts_defaults;
               esxi_name = g_strdup_printf ("%sesxi", name);
               opts.name = esxi_name;
               opts.login = user_copy;
               opts.passphrase = password_copy;
               opts.comment = "Slave ESXi credential created by Master";
 
-              ret = omp_create_lsc_credential_ext (&connection->session, opts,
+              ret = gmp_create_lsc_credential_ext (&connection->session, opts,
                                                    &slave_esxi_credential_uuid);
               g_free (esxi_name);
               g_free (user_copy);
@@ -2715,7 +2715,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
               gchar *community_copy, *user_copy, *password_copy;
               gchar *auth_algorithm_copy, *privacy_password_copy;
               gchar *privacy_algorithm_copy, *snmp_name;
-              omp_create_lsc_credential_opts_t opts;
+              gmp_create_lsc_credential_opts_t opts;
 
               community = credential_iterator_community (&credentials);
               user = credential_iterator_login (&credentials);
@@ -2743,7 +2743,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
               privacy_algorithm_copy = g_strdup (privacy_algorithm);
               cleanup_iterator (&credentials);
 
-              opts = omp_create_lsc_credential_opts_defaults;
+              opts = gmp_create_lsc_credential_opts_defaults;
               snmp_name = g_strdup_printf ("%ssnmp", name);
               opts.name = snmp_name;
               opts.community = community_copy;
@@ -2754,7 +2754,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
               opts.privacy_algorithm = privacy_algorithm_copy;
               opts.comment = "Slave SNMP credential created by Master";
 
-              ret = omp_create_lsc_credential_ext (&connection->session, opts,
+              ret = gmp_create_lsc_credential_ext (&connection->session, opts,
                                                    &slave_snmp_credential_uuid);
               g_free (snmp_name);
               g_free (community_copy);
@@ -2790,7 +2790,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
           const char *port_list_uuid;
           gchar *hosts_copy, *exclude_hosts_copy;
           gchar *alive_tests_copy, *port_range;
-          omp_create_target_opts_t opts;
+          gmp_create_target_opts_t opts;
           int ssh_port;
           entity_t get_targets, child;
 
@@ -2819,7 +2819,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
           port_range = target_port_range (get_iterator_resource (&targets));
           cleanup_iterator (&targets);
 
-          opts = omp_create_target_opts_defaults;
+          opts = gmp_create_target_opts_defaults;
           opts.hosts = hosts_copy;
           opts.exclude_hosts = exclude_hosts_copy;
           opts.alive_tests = alive_tests_copy;
@@ -2836,7 +2836,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
           opts.reverse_lookup_unify
             = reverse_lookup_unify ? atoi (reverse_lookup_unify) : 0;
 
-          ret = omp_create_target_ext (&connection->session, opts,
+          ret = gmp_create_target_ext (&connection->session, opts,
                                        &slave_target_uuid);
           g_free (hosts_copy);
           g_free (exclude_hosts_copy);
@@ -2851,7 +2851,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
               goto fail_snmp_credential;
             }
 
-          if (omp_get_targets (&connection->session, slave_target_uuid, 0, 0,
+          if (gmp_get_targets (&connection->session, slave_target_uuid, 0, 0,
                                &get_targets))
             goto fail_target;
           child = entity_child (get_targets, "target");
@@ -2991,7 +2991,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
                               "</config>"
                               "</get_configs_response>"
                               "</create_config>")
-            || (omp_read_create_response (&connection->session,
+            || (gmp_read_create_response (&connection->session,
                                           &slave_config_uuid)
                 != 201))
           goto fail_target;
@@ -3004,10 +3004,10 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
       {
         gchar *max_checks, *max_hosts, *source_iface;
         gchar *hosts_ordering, *comment;
-        omp_create_task_opts_t opts;
+        gmp_create_task_opts_t opts;
         char *name_task, *uuid_report, *uuid_task;
 
-        opts = omp_create_task_opts_defaults;
+        opts = gmp_create_task_opts_defaults;
         opts.config_id = slave_config_uuid;
         opts.target_id = slave_target_uuid;
         opts.name = name;
@@ -3043,7 +3043,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
         opts.schedule_id = NULL;
         opts.slave_id = NULL;
 
-        ret = omp_create_task_ext (&connection->session, opts, &slave_task_uuid);
+        ret = gmp_create_task_ext (&connection->session, opts, &slave_task_uuid);
         g_free (comment);
         g_free (max_checks);
         g_free (max_hosts);
@@ -3055,7 +3055,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
 
       /* Start the task on the slave. */
 
-      if (omp_start_task_report (&connection->session, slave_task_uuid,
+      if (gmp_start_task_report (&connection->session, slave_task_uuid,
                                  &slave_report_uuid))
         goto fail_task;
       if (slave_report_uuid == NULL)
@@ -3086,7 +3086,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
           case TASK_STATUS_DELETE_REQUESTED:
           case TASK_STATUS_DELETE_ULTIMATE_REQUESTED:
           case TASK_STATUS_STOP_REQUESTED:
-            switch (omp_stop_task (&connection->session, slave_task_uuid))
+            switch (gmp_stop_task (&connection->session, slave_task_uuid))
               {
                 case 0:
                   break;
@@ -3132,7 +3132,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
             break;
         }
 
-      ret = omp_get_tasks (&connection->session, slave_task_uuid, 0, 0,
+      ret = gmp_get_tasks (&connection->session, slave_task_uuid, 0, 0,
                            &get_tasks);
       if (ret == 404)
         {
@@ -3150,7 +3150,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
           continue;
         }
 
-      status = omp_task_status (get_tasks);
+      status = gmp_task_status (get_tasks);
       if (status == NULL)
         {
           g_warning ("%s: Slave task status was NULL", __FUNCTION__);
@@ -3162,7 +3162,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
           || status_done)
         {
           int ret2 = 0;
-          omp_get_report_opts_t opts;
+          gmp_get_report_opts_t opts;
 
           if (run_status == TASK_STATUS_REQUESTED)
             set_task_run_status (task, TASK_STATUS_RUNNING);
@@ -3174,7 +3174,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
               goto fail_stop_task;
             }
 
-          opts = omp_get_report_opts_defaults;
+          opts = gmp_get_report_opts_defaults;
           opts.report_id = slave_report_uuid;
           opts.format_id = "a994b278-1f62-11e1-96ac-406186ea4fc5";
           opts.filter = g_strdup_printf
@@ -3187,11 +3187,11 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
                            ? 0
                            : 1);
 
-          ret = omp_get_report_ext (&connection->session, opts, &get_report);
+          ret = gmp_get_report_ext (&connection->session, opts, &get_report);
           if (ret)
             {
               opts.format_id = "d5da9f67-8551-4e51-807b-b6a873d70e34";
-              ret2 = omp_get_report_ext (&connection->session, opts,
+              ret2 = gmp_get_report_ext (&connection->session, opts,
                                          &get_report);
             }
           g_free (opts.filter);
@@ -3278,22 +3278,22 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
 
   current_scanner_task = (task_t) 0;
 
-  omp_delete_task_ext (&connection->session, slave_task_uuid, del_opts);
+  gmp_delete_task_ext (&connection->session, slave_task_uuid, del_opts);
   set_report_slave_task_uuid (current_report, "");
-  omp_delete_config_ext (&connection->session, slave_config_uuid, del_opts);
-  omp_delete_target_ext (&connection->session, slave_target_uuid, del_opts);
-  omp_delete_port_list_ext (&connection->session, slave_port_list_uuid, del_opts);
+  gmp_delete_config_ext (&connection->session, slave_config_uuid, del_opts);
+  gmp_delete_target_ext (&connection->session, slave_target_uuid, del_opts);
+  gmp_delete_port_list_ext (&connection->session, slave_port_list_uuid, del_opts);
   if (slave_ssh_credential_uuid)
-    omp_delete_lsc_credential_ext (&connection->session, slave_ssh_credential_uuid,
+    gmp_delete_lsc_credential_ext (&connection->session, slave_ssh_credential_uuid,
                                    del_opts);
   if (slave_smb_credential_uuid)
-    omp_delete_lsc_credential_ext (&connection->session, slave_smb_credential_uuid,
+    gmp_delete_lsc_credential_ext (&connection->session, slave_smb_credential_uuid,
                                    del_opts);
   if (slave_esxi_credential_uuid)
-    omp_delete_lsc_credential_ext (&connection->session, slave_esxi_credential_uuid,
+    gmp_delete_lsc_credential_ext (&connection->session, slave_esxi_credential_uuid,
                                    del_opts);
   if (slave_snmp_credential_uuid)
-    omp_delete_lsc_credential_ext (&connection->session, slave_snmp_credential_uuid,
+    gmp_delete_lsc_credential_ext (&connection->session, slave_snmp_credential_uuid,
                                    del_opts);
  succeed_stopped:
   free (slave_task_uuid);
@@ -3320,38 +3320,38 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
   return 0;
 
  fail_stop_task:
-  omp_stop_task (&connection->session, slave_task_uuid);
+  gmp_stop_task (&connection->session, slave_task_uuid);
   free (slave_report_uuid);
  fail_task:
-  omp_delete_task_ext (&connection->session, slave_task_uuid, del_opts);
+  gmp_delete_task_ext (&connection->session, slave_task_uuid, del_opts);
   set_report_slave_task_uuid (current_report, "");
   free (slave_task_uuid);
  fail_config:
-  omp_delete_config_ext (&connection->session, slave_config_uuid, del_opts);
+  gmp_delete_config_ext (&connection->session, slave_config_uuid, del_opts);
   free (slave_config_uuid);
  fail_target:
-  omp_delete_target_ext (&connection->session, slave_target_uuid, del_opts);
+  gmp_delete_target_ext (&connection->session, slave_target_uuid, del_opts);
   free (slave_target_uuid);
-  omp_delete_port_list_ext (&connection->session, slave_port_list_uuid, del_opts);
+  gmp_delete_port_list_ext (&connection->session, slave_port_list_uuid, del_opts);
   free (slave_port_list_uuid);
  fail_snmp_credential:
   if (slave_snmp_credential_uuid)
-    omp_delete_lsc_credential_ext (&connection->session, slave_snmp_credential_uuid,
+    gmp_delete_lsc_credential_ext (&connection->session, slave_snmp_credential_uuid,
                                    del_opts);
   free (slave_snmp_credential_uuid);
  fail_esxi_credential:
   if (slave_esxi_credential_uuid)
-    omp_delete_lsc_credential_ext (&connection->session, slave_esxi_credential_uuid,
+    gmp_delete_lsc_credential_ext (&connection->session, slave_esxi_credential_uuid,
                                    del_opts);
   free (slave_esxi_credential_uuid);
  fail_smb_credential:
   if (slave_smb_credential_uuid)
-    omp_delete_lsc_credential_ext (&connection->session, slave_smb_credential_uuid,
+    gmp_delete_lsc_credential_ext (&connection->session, slave_smb_credential_uuid,
                                    del_opts);
   free (slave_smb_credential_uuid);
  fail_ssh_credential:
   if (slave_ssh_credential_uuid)
-    omp_delete_lsc_credential_ext (&connection->session, slave_ssh_credential_uuid,
+    gmp_delete_lsc_credential_ext (&connection->session, slave_ssh_credential_uuid,
                                    del_opts);
   free (slave_ssh_credential_uuid);
  fail:
@@ -5780,7 +5780,7 @@ get_slave_system_report_types (const char *required_type, gchar ***start,
 
   g_debug ("   %s: authenticated\n", __FUNCTION__);
 
-  if (omp_get_system_reports (&session, required_type, 1, &get))
+  if (gmp_get_system_reports (&session, required_type, 1, &get))
     goto fail;
 
   gvm_server_close (socket, session);
@@ -6040,7 +6040,7 @@ slave_system_report (const char *name, const char *duration,
   gnutls_session_t session;
   entity_t get, entity;
   entities_t reports;
-  omp_get_system_reports_opts_t opts;
+  gmp_get_system_reports_opts_t opts;
 
   if (find_scanner_with_permission (slave_id, &slave, "get_slaves"))
     return -1;
@@ -6072,14 +6072,14 @@ slave_system_report (const char *name, const char *duration,
 
   g_debug ("   %s: authenticated\n", __FUNCTION__);
 
-  opts = omp_get_system_reports_opts_defaults;
+  opts = gmp_get_system_reports_opts_defaults;
   opts.name = name;
   opts.duration = duration;
   opts.start_time = start_time;
   opts.end_time = end_time;
   opts.brief = 0;
 
-  if (omp_get_system_reports_ext (&session, opts, &get))
+  if (gmp_get_system_reports_ext (&session, opts, &get))
     goto fail;
 
   gvm_server_close (socket, session);
@@ -6515,7 +6515,7 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
       gvm_connection_t connection;
       gchar *task_uuid, *owner, *owner_uuid;
       GSList *head;
-      omp_authenticate_info_opts_t auth_opts;
+      gmp_authenticate_info_opts_t auth_opts;
 
       owner = starts->data;
       assert (starts->next);
@@ -6702,11 +6702,11 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
                 task_uuid);
       proctitle_set (title);
 
-      auth_opts = omp_authenticate_info_opts_defaults;
+      auth_opts = gmp_authenticate_info_opts_defaults;
       auth_opts.username = owner;
-      if (omp_authenticate_info_ext_c (&connection, auth_opts))
+      if (gmp_authenticate_info_ext_c (&connection, auth_opts))
         {
-          g_warning ("%s: omp_authenticate failed", __FUNCTION__);
+          g_warning ("%s: gmp_authenticate failed", __FUNCTION__);
           g_free (task_uuid);
           g_free (owner);
           gvm_connection_free (&connection);
@@ -6715,9 +6715,9 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
 
       g_free (owner);
 
-      if (omp_resume_task_report_c (&connection, task_uuid, NULL))
+      if (gmp_resume_task_report_c (&connection, task_uuid, NULL))
         {
-          if (omp_start_task_report_c (&connection, task_uuid, NULL))
+          if (gmp_start_task_report_c (&connection, task_uuid, NULL))
             {
               g_warning ("%s: omp_start_task and omp_resume_task failed", __FUNCTION__);
               g_free (task_uuid);
@@ -6738,7 +6738,7 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
       gvm_connection_t connection;
       gchar *task_uuid, *owner, *owner_uuid;
       GSList *head;
-      omp_authenticate_info_opts_t auth_opts;
+      gmp_authenticate_info_opts_t auth_opts;
 
       owner = stops->data;
       assert (stops->next);
@@ -6797,9 +6797,9 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
                 task_uuid);
       proctitle_set (title);
 
-      auth_opts = omp_authenticate_info_opts_defaults;
+      auth_opts = gmp_authenticate_info_opts_defaults;
       auth_opts.username = owner;
-      if (omp_authenticate_info_ext_c (&connection, auth_opts))
+      if (gmp_authenticate_info_ext_c (&connection, auth_opts))
         {
           g_free (task_uuid);
           g_free (owner);
@@ -6808,7 +6808,7 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
           exit (EXIT_FAILURE);
         }
 
-      if (omp_stop_task_c (&connection, task_uuid))
+      if (gmp_stop_task_c (&connection, task_uuid))
         {
           g_free (task_uuid);
           g_free (owner);
@@ -7215,7 +7215,7 @@ delete_slave_task (const gchar *host, int port, const gchar *username,
   const char *slave_config_uuid, *slave_target_uuid, *slave_port_list_uuid;
   const char *slave_ssh_credential_uuid, *slave_smb_credential_uuid;
 
-  omp_delete_opts_t del_opts = omp_delete_opts_ultimate_defaults;
+  gmp_delete_opts_t del_opts = gmp_delete_opts_ultimate_defaults;
 
   /* Connect to the slave. */
 
@@ -7228,14 +7228,14 @@ delete_slave_task (const gchar *host, int port, const gchar *username,
 
   /* Authenticate using the slave login. */
 
-  if (omp_authenticate (&session, username, password))
+  if (gmp_authenticate (&session, username, password))
     return -1;
 
   g_debug ("   %s: authenticated\n", __FUNCTION__);
 
   /* Get the UUIDs of the slave resources. */
 
-  if (omp_get_tasks (&session, slave_task_uuid, 0, 0, &get_tasks))
+  if (gmp_get_tasks (&session, slave_task_uuid, 0, 0, &get_tasks))
     goto fail;
 
   task = entity_child (get_tasks, "task");
@@ -7252,7 +7252,7 @@ delete_slave_task (const gchar *host, int port, const gchar *username,
     goto fail_free_task;
   slave_target_uuid = entity_attribute (entity, "id");
 
-  if (omp_get_targets (&session, slave_target_uuid, 0, 0, &get_targets))
+  if (gmp_get_targets (&session, slave_target_uuid, 0, 0, &get_targets))
     goto fail_free_task;
 
   entity = entity_child (get_targets, "target");
@@ -7276,19 +7276,19 @@ delete_slave_task (const gchar *host, int port, const gchar *username,
 
   /* Remove the slave resources. */
 
-  omp_stop_task (&session, slave_task_uuid);
-  if (omp_delete_task_ext (&session, slave_task_uuid, del_opts))
+  gmp_stop_task (&session, slave_task_uuid);
+  if (gmp_delete_task_ext (&session, slave_task_uuid, del_opts))
     goto fail_config;
-  if (omp_delete_config_ext (&session, slave_config_uuid, del_opts))
+  if (gmp_delete_config_ext (&session, slave_config_uuid, del_opts))
     goto fail_target;
-  if (omp_delete_target_ext (&session, slave_target_uuid, del_opts))
+  if (gmp_delete_target_ext (&session, slave_target_uuid, del_opts))
     goto fail_credential;
-  if (omp_delete_port_list_ext (&session, slave_port_list_uuid, del_opts))
+  if (gmp_delete_port_list_ext (&session, slave_port_list_uuid, del_opts))
     goto fail_credential;
-  if (omp_delete_lsc_credential_ext (&session, slave_smb_credential_uuid,
+  if (gmp_delete_lsc_credential_ext (&session, slave_smb_credential_uuid,
                                      del_opts))
     goto fail;
-  if (omp_delete_lsc_credential_ext (&session, slave_ssh_credential_uuid,
+  if (gmp_delete_lsc_credential_ext (&session, slave_ssh_credential_uuid,
                                      del_opts))
     goto fail;
 
@@ -7300,13 +7300,13 @@ delete_slave_task (const gchar *host, int port, const gchar *username,
   return 0;
 
  fail_config:
-  omp_delete_config_ext (&session, slave_config_uuid, del_opts);
+  gmp_delete_config_ext (&session, slave_config_uuid, del_opts);
  fail_target:
-  omp_delete_target_ext (&session, slave_target_uuid, del_opts);
-  omp_delete_port_list_ext (&session, slave_port_list_uuid, del_opts);
+  gmp_delete_target_ext (&session, slave_target_uuid, del_opts);
+  gmp_delete_port_list_ext (&session, slave_port_list_uuid, del_opts);
  fail_credential:
-  omp_delete_lsc_credential_ext (&session, slave_smb_credential_uuid, del_opts);
-  omp_delete_lsc_credential_ext (&session, slave_ssh_credential_uuid, del_opts);
+  gmp_delete_lsc_credential_ext (&session, slave_smb_credential_uuid, del_opts);
+  gmp_delete_lsc_credential_ext (&session, slave_ssh_credential_uuid, del_opts);
  fail_free:
   free_entity (get_targets);
  fail_free_task:

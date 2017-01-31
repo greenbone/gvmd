@@ -63,13 +63,13 @@
 #include <gvm/util/fileutils.h>
 #include <gvm/util/serverutils.h>
 #include <gvm/util/uuidutils.h>
+#include <gvm/gmp/gmp.h>
 
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/misc/ldap_connect_auth.h>
 #include <openvas/misc/radius.h>
 #include <openvas/misc/openvas_proctitle.h>
 #include <openvas/misc/openvas_ssh.h>
-#include <openvas/omp/omp.h>
 
 /**
  * @brief Absolute maximum number of IPs per target.
@@ -11878,7 +11878,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
         {
           gvm_connection_t connection;
           char *task_id, *report_id;
-          omp_authenticate_info_opts_t auth_opts;
+          gmp_authenticate_info_opts_t auth_opts;
 
           if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
             {
@@ -11921,15 +11921,15 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
 
           /* Start the task. */
 
-          auth_opts = omp_authenticate_info_opts_defaults;
+          auth_opts = gmp_authenticate_info_opts_defaults;
           auth_opts.username = current_credentials.username;
-          if (omp_authenticate_info_ext_c (&connection, auth_opts))
+          if (gmp_authenticate_info_ext_c (&connection, auth_opts))
             {
               gvm_connection_free (&connection);
               exit (EXIT_FAILURE);
             }
 
-          if (omp_start_task_report_c (&connection, task_id, &report_id))
+          if (gmp_start_task_report_c (&connection, task_id, &report_id))
             {
               g_free (task_id);
               gvm_connection_free (&connection);
