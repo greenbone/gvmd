@@ -63,11 +63,11 @@
 #include <gvm/util/fileutils.h>
 #include <gvm/util/serverutils.h>
 #include <gvm/util/uuidutils.h>
+#include <gvm/util/radiusutils.h>
 #include <gvm/gmp/gmp.h>
 
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/misc/ldap_connect_auth.h>
-#include <openvas/misc/radius.h>
 #include <openvas/misc/openvas_proctitle.h>
 #include <openvas/misc/openvas_ssh.h>
 
