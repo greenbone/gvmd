@@ -11860,6 +11860,13 @@ handle_create_scanner (omp_parser_t *omp_parser, GError **error)
       goto create_scanner_leave;
     }
 
+  /* Specifying unix file socket over OMP is not allowed. */
+  if (*create_scanner_data->host == '/')
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("create_scanner", "Erroneous host value."));
+      goto create_scanner_leave;
+    }
   if (check_scanner_cert (create_scanner_data->ca_pub))
     {
       SEND_TO_CLIENT_OR_FAIL
@@ -11953,6 +11960,15 @@ handle_modify_scanner (omp_parser_t *omp_parser, GError **error)
     {
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("modify_scanner", "Erroneous Private Key."));
+      goto modify_scanner_leave;
+    }
+
+  /* Specifying unix file socket over OMP is not allowed. */
+  if (modify_scanner_data->host
+      && *modify_scanner_data->host == '/')
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("create_scanner", "Erroneous host value."));
       goto modify_scanner_leave;
     }
   switch (modify_scanner

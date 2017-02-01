@@ -1,3 +1,11 @@
+2017-02-01  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	Backport r27432.
+
+	* src/omp.c (handle_create_scanner, handle_modify_scanner): Do not allow
+	specifying arbitrary file paths as hosts when creating/modifying
+	scanners over OMP.
+
 2017-01-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r27203.
