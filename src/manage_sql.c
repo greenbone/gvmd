@@ -64,12 +64,12 @@
 #include <gvm/util/serverutils.h>
 #include <gvm/util/uuidutils.h>
 #include <gvm/util/radiusutils.h>
+#include <gvm/util/sshutils.h>
 #include <gvm/gmp/gmp.h>
 
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/misc/ldap_connect_auth.h>
 #include <openvas/misc/openvas_proctitle.h>
-#include <openvas/misc/openvas_ssh.h>
 
 /**
  * @brief Absolute maximum number of IPs per target.
@@ -39990,10 +39990,10 @@ create_credential (const char* name, const char* comment, const char* login,
       else
         return 3;
 
-      key_public = openvas_ssh_public_from_private (key_private_truncated
-                                                     ? key_private_truncated
-                                                     : key_private,
-                                                    given_password);
+      key_public = gvm_ssh_public_from_private (key_private_truncated
+                                                ? key_private_truncated
+                                                : key_private,
+                                                given_password);
       if (key_public == NULL)
         {
           g_free (key_private_truncated);
@@ -41272,7 +41272,7 @@ credential_iterator_rpm (iterator_t *iterator)
 
   private_key = credential_iterator_private_key (iterator);
   pass = credential_iterator_password (iterator);
-  public_key = openvas_ssh_public_from_private (private_key, pass);
+  public_key = gvm_ssh_public_from_private (private_key, pass);
   if (!public_key)
     return NULL;
   login = credential_iterator_login (iterator);
@@ -41309,7 +41309,7 @@ credential_iterator_deb (iterator_t *iterator)
 
   private_key = credential_iterator_private_key (iterator);
   pass = credential_iterator_password (iterator);
-  public_key = openvas_ssh_public_from_private (private_key, pass);
+  public_key = gvm_ssh_public_from_private (private_key, pass);
   if (!public_key)
     return NULL;
   login = credential_iterator_login (iterator);

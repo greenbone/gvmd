@@ -1,3 +1,15 @@
+2017-02-02  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/manage_sql.c: Include gvm/util/sshutils.h instead of
+	openvas/misc/openvas_ssh.h.
+	Use gvm_ssh_public_from_private instead of
+	openvas_ssh_public_from_private.
+
+	* src/omp.c: Include gvm/util/sshutils.h instead of
+	openvas/misc/openvas_ssh.h.
+	Use gvm_ssh_public_from_private instead of
+	openvas_ssh_public_from_private.
+
 2017-02-01  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (handle_create_scanner, handle_modify_scanner): Do not allow

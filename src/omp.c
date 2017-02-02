@@ -115,11 +115,11 @@
 
 #include <gvm/base/strings.h>
 #include <gvm/base/logging.h>
-#include <gvm/util/fileutils.h>
 #include <gvm/base/pwpolicy.h>
+#include <gvm/util/fileutils.h>
+#include <gvm/util/sshutils.h>
 
 #include <openvas/misc/openvas_auth.h>
-#include <openvas/misc/openvas_ssh.h>
 
 #undef G_LOG_DOMAIN
 /**
@@ -14661,7 +14661,7 @@ handle_get_credentials (omp_parser_t *omp_parser, GError **error)
               const char *pass;
 
               pass = credential_iterator_password (&credentials);
-              pub = openvas_ssh_public_from_private (private_key, pass);
+              pub = gvm_ssh_public_from_private (private_key, pass);
               SENDF_TO_CLIENT_OR_FAIL
                 ("<public_key>%s</public_key>", pub ?: "");
               g_free (pub);
