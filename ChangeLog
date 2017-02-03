@@ -1,3 +1,10 @@
+2017-02-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r27456.
+
+	* src/manage_migrators.c (migrate_163_to_164): Remove duplicate
+	settings before migrating the chart settings.
+
 2017-01-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r27330.
