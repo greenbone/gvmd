@@ -1,3 +1,8 @@
+2017-02-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_migrators.c (migrate_163_to_164): Remove duplicate
+	settings before migrating the chart settings.
+
 2017-02-02  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/manage_sql.c: Include gvm/util/sshutils.h instead of

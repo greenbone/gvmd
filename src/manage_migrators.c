@@ -11996,6 +11996,11 @@ migrate_163_to_164 ()
 
   /* Update the database. */
 
+  /* Remove duplicate settings */
+  sql ("DELETE FROM settings"
+       " WHERE id NOT IN (SELECT min(id) FROM settings"
+       "                   GROUP BY uuid, owner);");
+
   /* Change top chart settings to new format */
   UPDATE_CHART_SETTINGS ("Tasks", "by-cvss",
                          "3d5db3c7-5208-4b47-8c28-48efc621b1e0",
