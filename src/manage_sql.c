@@ -15810,6 +15810,15 @@ check_db_roles ()
 }
 
 /**
+ * @brief Cleanup the auth_cache table.
+ */
+static void
+clean_auth_cache ()
+{
+  sql ("DELETE FROM auth_cache;");
+}
+
+/**
  * @brief Ensure that the database is in order.
  *
  * @param[in]  check_encryption_key  Whether to check encryption key.
@@ -15828,6 +15837,7 @@ check_db (int check_encryption_key)
   check_db_nvts ();
   check_db_configs ();
   check_db_port_lists ();
+  clean_auth_cache ();
   if (check_db_scanners ())
     goto fail;
   if (check_db_report_formats ())

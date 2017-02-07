@@ -1,5 +1,10 @@
 2017-02-07  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (clean_auth_cache): New function.
+	(check_db): Call clean_auth_cache().
+
+2017-02-07  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
 	* src/omp.c (handle_get_settings, omp_xml_handle_end_element): Remove
 	leftover warnings.
 
