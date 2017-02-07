@@ -18294,7 +18294,6 @@ handle_get_settings (omp_parser_t *omp_parser, GError **error)
             expiration_time_str,
             fingerprint,
             issuer);
-          g_warning ("free");
           g_free (activation_time_str);
           g_free (expiration_time_str);
           g_free (fingerprint);
@@ -21036,11 +21035,8 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   get_certificate_info (ldap_cacert, &activation_time,
                                         &expiration_time, &fingerprint,
                                         &issuer);
-                  g_warning ("got");
                   activation_time_str = certificate_iso_time (activation_time);
-                  g_warning ("got");
                   expiration_time_str = certificate_iso_time (expiration_time);
-                  g_warning ("got");
                   SENDF_TO_CLIENT_OR_FAIL
                    ("<certificate_info>"
                     "<time_status>%s</time_status>"
@@ -21054,7 +21050,6 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     expiration_time_str,
                     fingerprint,
                     issuer);
-                  g_warning ("free");
                   g_free (activation_time_str);
                   g_free (expiration_time_str);
                   g_free (fingerprint);

@@ -1,5 +1,10 @@
 2017-02-07  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
+	* src/omp.c (handle_get_settings, omp_xml_handle_end_element): Remove
+	leftover warnings.
+
+2017-02-07  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
 	Add authentication cache for LDAP and Radius.
 
 	* src/manage_pg.c (create_tables), src/manage_sqlite3.c (create_tables):
