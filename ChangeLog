@@ -1,3 +1,14 @@
+2017-02-07  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	Add authentication cache for LDAP and Radius.
+
+	* src/manage_pg.c (create_tables), src/manage_sqlite3.c (create_tables):
+	Create auth_cache table.
+
+	* src/manage_sql.c (auth_cache_find, auth_cache_insert): New functions.
+	(authenticate_any_method): Check authentication cache for ldap and
+	radius methods and insert new authentications accordingly.
+
 2017-02-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_migrators.c (migrate_163_to_164): Remove duplicate
