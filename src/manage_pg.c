@@ -1726,7 +1726,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS auth_cache"
        " (id SERIAL PRIMARY KEY,"
        "  username text NOT NULL,"
-       "  password text,"
+       "  hash text,"
        "  method integer,"
        "  creation_time integer);");
 

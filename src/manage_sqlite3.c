@@ -2978,7 +2978,7 @@ create_tables ()
   sql ("CREATE INDEX IF NOT EXISTS host_details_by_host"
        " ON host_details (host);");
   sql ("CREATE TABLE IF NOT EXISTS auth_cache"
-       " (id INTEGER PRIMARY KEY, username, password, method, creation_time);");
+       " (id INTEGER PRIMARY KEY, username, hash, method, creation_time);");
   sql ("CREATE TABLE IF NOT EXISTS meta"
        " (id INTEGER PRIMARY KEY, name UNIQUE, value);");
   sql ("CREATE TABLE IF NOT EXISTS notes"

@@ -1,5 +1,11 @@
 2017-02-07  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
+	* src/manage_pg.c (create_tables), src/manage_sql.c (auth_cache_find)
+	(auth_cache_insert), src/manage_sqlite3.c (create_tables): Rename
+	auth_cache's password column to hash.
+
+2017-02-07  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (clean_auth_cache): New function.
 	(check_db): Call clean_auth_cache().
 

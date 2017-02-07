@@ -16627,7 +16627,7 @@ auth_cache_find (const char *username, const char *password, int method)
   int ret;
 
   quoted_username = sql_quote (username);
-  hash = sql_string ("SELECT password FROM auth_cache WHERE username = '%s'"
+  hash = sql_string ("SELECT hash FROM auth_cache WHERE username = '%s'"
                      " AND method = %i AND creation_time >= m_now () - 300;",
                      quoted_username, method);
   g_free (quoted_username);
@@ -16654,7 +16654,7 @@ auth_cache_insert (const char *username, const char *password, int method)
 
   quoted_username = sql_quote (username);
   hash = get_password_hashes (password);
-  sql ("INSERT INTO auth_cache (username, password, method, creation_time)"
+  sql ("INSERT INTO auth_cache (username, hash, method, creation_time)"
        " VALUES ('%s', '%s', %i, m_now ());", quoted_username, hash, method);
   /* Cleanup cache */
   sql ("DELETE FROM auth_cache WHERE creation_time < m_now () - 300");
