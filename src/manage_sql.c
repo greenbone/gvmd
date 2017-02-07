@@ -15550,6 +15550,15 @@ check_db_roles ()
 }
 
 /**
+ * @brief Cleanup the auth_cache table.
+ */
+static void
+clean_auth_cache ()
+{
+  sql ("DELETE FROM auth_cache;");
+}
+
+/**
  * @brief Ensure that the database is in order.
  *
  * @param[in]  check_encryption_key  Whether to check encryption key.
@@ -15568,6 +15577,7 @@ check_db (int check_encryption_key)
   check_db_nvts ();
   check_db_configs ();
   check_db_port_lists ();
+  clean_auth_cache ();
   if (check_db_scanners ())
     goto fail;
   if (check_db_report_formats ())
@@ -16338,6 +16348,56 @@ credentials_setup (credentials_t *credentials)
 }
 
 /**
+ * @brief Search for LDAP or RADIUS credentials in the recently-used
+ * authentication cache.
+ *
+ * @param[in]  username     Username.
+ * @param[in]  password     Password.
+ * @param[in]  method       0 for LDAP, 1 for RADIUS.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+static int
+auth_cache_find (const char *username, const char *password, int method)
+{
+  char *hash, *quoted_username;
+  int ret;
+
+  quoted_username = sql_quote (username);
+  hash = sql_string ("SELECT hash FROM auth_cache WHERE username = '%s'"
+                     " AND method = %i AND creation_time >= m_now () - 300;",
+                     quoted_username, method);
+  g_free (quoted_username);
+  if (!hash)
+    return -1;
+
+  ret = openvas_authenticate_classic (username, password, hash);
+  g_free (hash);
+  return ret;
+}
+
+/**
+ * @brief Add LDAP or RADIUS credentials to the recently-used authentication
+ * cache.
+ *
+ * @param[in]  username     Username.
+ * @param[in]  password     Password.
+ * @param[in]  method       0 for LDAP, 1 for RADIUS.
+ */
+static void
+auth_cache_insert (const char *username, const char *password, int method)
+{
+  char *hash, *quoted_username;
+
+  quoted_username = sql_quote (username);
+  hash = get_password_hashes (GCRY_MD_MD5, password);
+  sql ("INSERT INTO auth_cache (username, hash, method, creation_time)"
+       " VALUES ('%s', '%s', %i, m_now ());", quoted_username, hash, method);
+  /* Cleanup cache */
+  sql ("DELETE FROM auth_cache WHERE creation_time < m_now () - 300");
+}
+
+/**
  * @brief Authenticate, trying any method.
  *
  * @param[in]  username     Username.
@@ -16363,6 +16423,10 @@ authenticate_any_method (const gchar *username, const gchar *password,
       gchar *authdn, *host, *cacert;
 
       *auth_method = AUTHENTICATION_METHOD_LDAP_CONNECT;
+      /* Search the LDAP authentication cache first. */
+      if (auth_cache_find (username, password, 0) == 0)
+        return 0;
+
       manage_get_ldap_info (NULL, &host, &authdn, &allow_plaintext, &cacert);
       info = ldap_auth_info_new (host, authdn, allow_plaintext);
       g_free (host);
@@ -16370,6 +16434,9 @@ authenticate_any_method (const gchar *username, const gchar *password,
       ret = ldap_connect_authenticate (username, password, info, cacert);
       ldap_auth_info_free (info);
       free (cacert);
+
+      if (ret == 0)
+        auth_cache_insert (username, password, 0);
       return ret;
     }
   if (openvas_auth_radius_enabled ()
@@ -16379,10 +16446,15 @@ authenticate_any_method (const gchar *username, const gchar *password,
       char *key = NULL, *host = NULL;
 
       *auth_method = AUTHENTICATION_METHOD_RADIUS_CONNECT;
+      if (auth_cache_find (username, password, 1) == 0)
+        return 0;
+
       manage_get_radius_info (NULL, &host, &key);
       ret = radius_authenticate (host, key, username, password);
       g_free (host);
       g_free (key);
+      if (ret == 0)
+        auth_cache_insert (username, password, 1);
       return ret;
     }
   *auth_method = AUTHENTICATION_METHOD_FILE;
