@@ -1367,6 +1367,13 @@ create_tables ()
        "  creation_time integer,"
        "  modification_time integer);");
 
+  sql ("CREATE TABLE IF NOT EXISTS auth_cache"
+       " (id SERIAL PRIMARY KEY,"
+       "  username text NOT NULL,"
+       "  hash text,"
+       "  method integer,"
+       "  creation_time integer);");
+
   sql ("CREATE TABLE IF NOT EXISTS agents"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"

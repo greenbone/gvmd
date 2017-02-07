@@ -2212,6 +2212,8 @@ create_tables ()
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login,"
        "  password, comment, private_key TEXT,"
        "  creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS auth_cache"
+       " (id INTEGER PRIMARY KEY, username, hash, method, creation_time);");
   sql ("CREATE TABLE IF NOT EXISTS meta"
        " (id INTEGER PRIMARY KEY, name UNIQUE, value);");
   sql ("CREATE TABLE IF NOT EXISTS notes"
