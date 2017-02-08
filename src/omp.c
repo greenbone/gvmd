@@ -28116,7 +28116,8 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       }
                   }
 
-                if (fail == 0 && modify_task_data->alterable)
+                if (fail == 0 && modify_task_data->alterable &&
+                    task_alterable (task) != atoi (modify_task_data->alterable))
                   {
                     if (task_run_status (task) != TASK_STATUS_NEW)
                       {

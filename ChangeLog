@@ -1,3 +1,9 @@
+2017-02-08  Björn Ricks <bjoern.ricks@greenbone.net>
+
+	* src/omp.c: Don't change alterable of a task if the value has not changed.
+	This avoids sending an error message to the client if alterable has been
+	received for a non new task.
+
 2017-02-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (escalate_2): Correct method data name for SCP.
