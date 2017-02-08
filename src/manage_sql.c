@@ -11365,7 +11365,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
 
           format_uuid = alert_data (alert,
                                     "method",
-                                    "send_report_format");
+                                    "scp_report_format");
           if (format_uuid && strlen (format_uuid))
             {
               if (find_report_format_with_permission (format_uuid,
@@ -11373,7 +11373,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                                       "get_report_formats")
                   || (report_format == 0))
                 {
-                  g_warning ("%s: Could not find Send RFP '%s'", __FUNCTION__,
+                  g_warning ("%s: Could not find SCP RFP '%s'", __FUNCTION__,
                              format_uuid);
                   g_free (format_uuid);
                   return -2;
@@ -11389,7 +11389,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                     "get_report_formats")
                   || (report_format == 0))
                 {
-                  g_warning ("%s: Could not find XML RFP for Send",
+                  g_warning ("%s: Could not find XML RFP for SCP",
                              __FUNCTION__);
                   return -2;
                 }

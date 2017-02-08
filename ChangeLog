@@ -1,3 +1,7 @@
+2017-02-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (escalate_2): Correct method data name for SCP.
+
 2017-02-07  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_pg.c (create_tables), src/manage_sql.c (auth_cache_find)
