@@ -53908,7 +53908,9 @@ create_port_list_unique (const char *name, const char *comment,
 
   if (port_range == NULL || (strcmp (port_range, "default") == 0))
     {
-      if (find_port_list (PORT_LIST_UUID_DEFAULT, port_list)
+      if (find_port_list_with_permission (PORT_LIST_UUID_DEFAULT,
+                                          port_list,
+                                          "get_port_lists")
           || (*port_list == 0))
         return -1;
       return 0;
