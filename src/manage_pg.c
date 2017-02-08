@@ -1883,12 +1883,6 @@ create_tables ()
        "  creation_time integer,"
        "  modification_time integer);");
 
-  sql ("CREATE TABLE IF NOT EXISTS permissions_get_tasks"
-       " (\"user\" integer REFERENCES users ON DELETE CASCADE,"
-       "  task integer REFERENCES tasks ON DELETE CASCADE,"
-       "  has_permission boolean,"
-       "  UNIQUE (\"user\", task));");
-
   sql ("CREATE TABLE IF NOT EXISTS groups"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
@@ -2264,6 +2258,12 @@ create_tables ()
        "  task integer REFERENCES tasks (id) ON DELETE RESTRICT,"
        "  name text,"
        "  value text);");
+
+  sql ("CREATE TABLE IF NOT EXISTS permissions_get_tasks"
+       " (\"user\" integer REFERENCES users ON DELETE CASCADE,"
+       "  task integer REFERENCES tasks ON DELETE CASCADE,"
+       "  has_permission boolean,"
+       "  UNIQUE (\"user\", task));");
 
   sql ("CREATE TABLE IF NOT EXISTS reports"
        " (id SERIAL PRIMARY KEY,"
