@@ -758,7 +758,7 @@ cleanup ()
   if (log_config) log_config_free ();
 
   /* Tear down authentication system conf, if any. */
-  openvas_auth_tear_down ();
+  gvm_auth_tear_down ();
 
   /* Delete pidfile if this process is the parent. */
   if (is_parent == 1) pidfile_remove ("openvasmd");
@@ -1167,7 +1167,7 @@ fork_update_nvt_cache ()
         cleanup_manage_process (FALSE);
         if (manager_socket > -1) close (manager_socket);
         if (manager_socket_2 > -1) close (manager_socket_2);
-        openvas_auth_tear_down ();
+        gvm_auth_tear_down ();
 
         /* Update the cache. */
 
@@ -2409,7 +2409,7 @@ main (int argc, char** argv)
   /* Initialize the authentication system. */
 
   // TODO Should be part of manage init.
-  if (openvas_auth_init ())
+  if (gvm_auth_init ())
     exit (EXIT_FAILURE);
 
   /* Enter the main forever-loop. */

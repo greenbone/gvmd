@@ -118,8 +118,7 @@
 #include <gvm/base/pwpolicy.h>
 #include <gvm/util/fileutils.h>
 #include <gvm/util/sshutils.h>
-
-#include <openvas/misc/openvas_auth.h>
+#include <gvm/util/authutils.h>
 
 #undef G_LOG_DOMAIN
 /**
@@ -20984,7 +20983,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   "</auth_conf_setting>"
                                   "</group>");
 
-          if (openvas_auth_ldap_enabled ())
+          if (gvm_auth_ldap_enabled ())
             {
               gchar *ldap_host, *ldap_authdn, *ldap_cacert;
               int ldap_enabled, ldap_allow_plaintext;
@@ -21063,7 +21062,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               SEND_TO_CLIENT_OR_FAIL ("</group>");
             }
 
-          if (openvas_auth_radius_enabled ())
+          if (gvm_auth_radius_enabled ())
             {
               char *radius_host, *radius_key;
               int radius_enabled;

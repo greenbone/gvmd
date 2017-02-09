@@ -1,3 +1,24 @@
+2017-02-09  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/manage.h: Include gvm/util/authutils.h instead of
+	openvas/misc/openvas_auth.h.
+
+	* src/openvasmd.c: Use gvm_auth_tear_down instead of
+	openvas_auth_tear_down and gvm_auth_init insted of
+	openvas_auth_init.
+
+	* src/manage_sql.c: Include gvm/util/authutils.h instead of
+	openvas/misc/openvas_auth.h.
+	Use gvm_auth_init instead of openvas_auth_init,
+	gvm_auth_ldap_enabled instead of openvas_auth_ldap_enabled,
+	gvm_auth_radius_enabled instead of openvas_auth_radius_enabled and 
+	gvm_authenticate_classic instead of openvas_authenticate_classic.
+
+	* src/omp.c: Include gvm/util/authutils.h instead of
+	openvas/misc/openvas_auth.h.
+	Use gvm_auth_ldap_enabled instead of openvas_auth_ldap_enabled
+	and gvm_auth_radius_enabled instead of openvas_auth_radius_enabled.
+
 2017-02-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (create_tables): Move creation of permissions_get_tasks

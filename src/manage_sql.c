@@ -65,9 +65,9 @@
 #include <gvm/util/uuidutils.h>
 #include <gvm/util/radiusutils.h>
 #include <gvm/util/sshutils.h>
+#include <gvm/util/authutils.h>
 #include <gvm/gmp/gmp.h>
 
-#include <openvas/misc/openvas_auth.h>
 #include <openvas/misc/ldap_connect_auth.h>
 #include <openvas/misc/openvas_proctitle.h>
 
@@ -1631,7 +1631,7 @@ manage_option_setup (GSList *log_config, const gchar *database)
   const gchar *db;
   int ret;
 
-  if (openvas_auth_init ())
+  if (gvm_auth_init ())
     {
       fprintf (stderr, "Authentication init failed\n");
       return -1;
@@ -16331,7 +16331,7 @@ user_uuid_method (const gchar *username, auth_method_t method)
 static int
 ldap_auth_enabled ()
 {
-  if (openvas_auth_ldap_enabled ())
+  if (gvm_auth_ldap_enabled ())
     return sql_int ("SELECT coalesce ((SELECT CAST (value AS INTEGER) FROM meta"
                     "                  WHERE name = 'ldap_enable'),"
                     "                 0);");
@@ -16346,7 +16346,7 @@ ldap_auth_enabled ()
 static int
 radius_auth_enabled ()
 {
-  if (openvas_auth_radius_enabled ())
+  if (gvm_auth_radius_enabled ())
     return sql_int ("SELECT coalesce ((SELECT CAST (value AS INTEGER) FROM meta"
                     "                  WHERE name = 'radius_enable'),"
                     "                 0);");
@@ -16634,7 +16634,7 @@ auth_cache_find (const char *username, const char *password, int method)
   if (!hash)
     return -1;
 
-  ret = openvas_authenticate_classic (username, password, hash);
+  ret = gvm_authenticate_classic (username, password, hash);
   g_free (hash);
   return ret;
 }
@@ -16677,7 +16677,7 @@ authenticate_any_method (const gchar *username, const gchar *password,
   int ret;
   gchar *hash;
 
-  if (openvas_auth_ldap_enabled ()
+  if (gvm_auth_ldap_enabled ()
       && ldap_auth_enabled ()
       && user_exists_method (username, AUTHENTICATION_METHOD_LDAP_CONNECT))
     {
@@ -16702,7 +16702,7 @@ authenticate_any_method (const gchar *username, const gchar *password,
         auth_cache_insert (username, password, 0);
       return ret;
     }
-  if (openvas_auth_radius_enabled ()
+  if (gvm_auth_radius_enabled ()
       && radius_auth_enabled ()
       && user_exists_method (username, AUTHENTICATION_METHOD_RADIUS_CONNECT))
     {
@@ -16722,7 +16722,7 @@ authenticate_any_method (const gchar *username, const gchar *password,
     }
   *auth_method = AUTHENTICATION_METHOD_FILE;
   hash = manage_user_hash (username);
-  ret = openvas_authenticate_classic (username, password, hash);
+  ret = gvm_authenticate_classic (username, password, hash);
   g_free (hash);
   return ret;
 }
@@ -63359,7 +63359,7 @@ manage_update_cert_db (GSList *log_config, const gchar *database)
   int ret, last_cert_update, last_scap_update, updated_dfn_cert;
   int updated_cert_bund;
 
-  if (openvas_auth_init ())
+  if (gvm_auth_init ())
     return -1;
 
   db = database ? database : sql_default_database ();
