@@ -1,3 +1,14 @@
+2017-02-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r27524.
+
+	* src/manage_sql.c (clear_duration_schedules)
+	(update_duration_schedule_periods): Also check period_months to see
+	whether the schedule should be removed from the task.
+
+	* src/manage_utils.c (months_between): Allow time1 and time2 to be
+	equal.
+
 2017-02-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r27491.

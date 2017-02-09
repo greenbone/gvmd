@@ -73,7 +73,7 @@ months_between (time_t time1, time_t time2)
   int month1_less, day1_less, hour1_less, minute1_less;
   int second1_less;
 
-  assert (time1 < time2);
+  assert (time1 <= time2);
 
   localtime_r (&time1, &broken1);
   broken2 = localtime (&time2);
