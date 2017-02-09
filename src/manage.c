@@ -6446,7 +6446,7 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
             /* In the database keep the times in UTC... */
             set_task_schedule_next_time
              (task_schedule_iterator_task (&schedules),
-              add_months (first, months_between (first, now) + 1));
+              add_months (first, months_between (first, now) + period_months));
 
             /* ...but for the calculations offset for daylight saving. */
             first += task_schedule_iterator_initial_offset (&schedules)
