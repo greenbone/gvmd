@@ -1,5 +1,12 @@
 2017-02-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Backport r27540.
+
+	* src/manage.c (manage_schedule): Use period_months as number of months
+	to add when calculating new schedule_next_time of tasks.
+
+2017-02-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Backport r27524.
 
 	* src/manage_sql.c (clear_duration_schedules)
