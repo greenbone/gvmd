@@ -60,6 +60,7 @@
 #include <gvm/base/hosts.h>
 #include <gvm/base/pwpolicy.h>
 #include <gvm/base/logging.h>
+#include <gvm/base/proctitle.h>
 #include <gvm/util/fileutils.h>
 #include <gvm/util/serverutils.h>
 #include <gvm/util/uuidutils.h>
@@ -69,7 +70,6 @@
 #include <gvm/gmp/gmp.h>
 
 #include <openvas/misc/ldap_connect_auth.h>
-#include <openvas/misc/openvas_proctitle.h>
 
 /**
  * @brief Absolute maximum number of IPs per target.

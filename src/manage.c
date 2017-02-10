@@ -69,13 +69,13 @@
 
 #include <gvm/base/cvss.h>
 #include <gvm/base/hosts.h>
+#include <gvm/base/proctitle.h>
 #include <gvm/util/fileutils.h>
 #include <gvm/util/serverutils.h>
 #include <gvm/util/uuidutils.h>
 #include <gvm/gmp/gmp.h>
 
 #include <openvas/misc/nvt_categories.h>
-#include <openvas/misc/openvas_proctitle.h>
 
 #undef G_LOG_DOMAIN
 /**
