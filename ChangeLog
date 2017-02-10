@@ -1,3 +1,10 @@
+2017-02-10  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Backport r27550.
+
+	* src/manage_sql.c (host_summary_append): Clear the correct tm struct
+	before doing a strptime.
+
 2017-02-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r27540.
