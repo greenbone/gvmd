@@ -26916,7 +26916,7 @@ host_summary_append (GString *host_summary_buffer, const char *host,
           return;
         }
 
-      memset (&start_tm, 0, sizeof (struct tm));
+      memset (&end_tm, 0, sizeof (struct tm));
       if (strptime (end_iso, "%FT%H:%M:%S", &end_tm) == NULL)
         {
           g_warning ("%s: Failed to parse end", __FUNCTION__);
