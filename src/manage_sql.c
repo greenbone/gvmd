@@ -67,9 +67,8 @@
 #include <gvm/util/radiusutils.h>
 #include <gvm/util/sshutils.h>
 #include <gvm/util/authutils.h>
+#include <gvm/util/ldaputils.h>
 #include <gvm/gmp/gmp.h>
-
-#include <openvas/misc/ldap_connect_auth.h>
 
 /**
  * @brief Absolute maximum number of IPs per target.

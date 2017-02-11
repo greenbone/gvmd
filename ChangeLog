@@ -1,3 +1,8 @@
+2017-02-11  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/manage_sql.c: Include gvm/util/ldaputils.h instead of
+	openvas/misc/ldap_connect_auth.h.
+
 2017-02-10  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/manage.c, src/manage_sql.c, src/openvasmd.c:
