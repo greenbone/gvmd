@@ -1,3 +1,13 @@
+2017-02-13  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r27580.
+
+	* src/manage_sql.c (set_task_preferences): Change minimum value for
+	number of reports to keep with auto_delete to 2.
+
+	* src/omp.c (omp_xml_handle_end_element): Adjust error messages
+	accordingly in cases CLIENT_CREATE_TASK and CLIENT_MODIFY_TASK.
+
 2017-02-10  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Backport r27550.
