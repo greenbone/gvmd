@@ -39680,7 +39680,7 @@ set_task_preferences (task_t task, array_t *preferences)
                     {
                       int keep;
                       keep = atoi (pair->value);
-                      if (keep < 5 || keep > 1200)
+                      if (keep < 2 || keep > 1200)
                         return 2;
                     }
 
