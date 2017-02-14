@@ -25326,18 +25326,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <!-- Compatibility changes between versions. -->
 
   <change>
-    <command>GET_NVT</command>
-    <summary>Attribute category now an integer value instead of a string</summary>
-    <description>
-      <p>
-        The element category was using a string represantation of a integer eumeration.
-        Now the original integer represenation is used.
-      </p>
-    </description>
-    <version>8.0</version>
-  </change>
-
-  <change>
     <command>GET_NVT_FEED_VERSION</command>
     <summary>Command removed</summary>
     <description>
