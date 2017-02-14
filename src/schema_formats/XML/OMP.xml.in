@@ -13463,7 +13463,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>category</name>
           <summary>The category of the NVT</summary>
-          <pattern>text</pattern>
+	  <pattern><t>integer</t></pattern>
         </ele>
         <ele>
           <name>creation_time</name>
@@ -13709,7 +13709,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <user_tags>
               <count>0</count>
             </user_tags>
-            <category>Services</category>
+            <category>3</category>
             <copyright>GNU GPL v2</copyright>
             <summary>Find what is listening on which port</summary>
             <family>Service detection</family>
@@ -13741,7 +13741,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <name>FooBar 21</name>
             <creation_time>2011-01-14T10:12:23+01:00</creation_time>
             <modification_time>2012-09-19T20:56:15+02:00</modification_time>
-            <category>Services</category>
+            <category>3</category>
             <copyright>GNU GPL v2</copyright>
             <description>This script detects whether the FooBar 2.1 XSS vulnerability is present.</description>
             <truncated>...</truncated>
@@ -25324,6 +25324,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
 
   <!-- Compatibility changes between versions. -->
+
+  <change>
+    <command>GET_NVTS</command>
+    <summary>Response element CATEGORY is now an integer value instead of a string</summary>
+    <description>
+      <p>
+        The element CATEGORY was using a string represantation of a integer eumeration.
+        Now the original integer represenation is used.
+      </p>
+    </description>
+    <version>8.0</version>
+  </change>
 
   <change>
     <command>GET_NVT_FEED_VERSION</command>

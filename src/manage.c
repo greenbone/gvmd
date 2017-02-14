@@ -75,8 +75,6 @@
 #include <gvm/util/uuidutils.h>
 #include <gvm/gmp/gmp.h>
 
-#include <openvas/misc/nvt_categories.h>
-
 #undef G_LOG_DOMAIN
 /**
  * @brief GLib log domain.
@@ -7469,24 +7467,6 @@ xsl_transform (gchar *stylesheet, gchar *xmlfile, gchar **param_names,
 }
 
 /**
- * @brief Return the name of a category.
- *
- * @param  category  The number of the category.
- *
- * @return The name of the category.
- */
-static const char*
-category_name (int category)
-{
-  static const char *categories[] = { ACT_STRING_LIST_ALL };
-  if (category >= ACT_FIRST && category <= ACT_END)
-    {
-      return categories[category];
-    }
-  return categories[ACT_UNKNOWN];
-}
-
-/**
  * @brief Define a code snippet for get_nvti_xml.
  *
  * @param  x  Prefix for names in snippet.
@@ -7606,7 +7586,7 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                               "<creation_time>%s</creation_time>"
                               "<modification_time>%s</modification_time>"
                               "<user_tags>%s</user_tags>"
-                              "<category>%s</category>"
+                              "<category>%d</category>"
                               "<copyright>%s</copyright>"
                               "<family>%s</family>"
                               "<version>%s</version>"
@@ -7631,7 +7611,7 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                                ? get_iterator_modification_time (nvts)
                                : "",
                               tags_str->str,
-                              category_name (nvt_iterator_category (nvts)),
+                              nvt_iterator_category (nvts),
                               copyright_text,
                               family_text,
                               version_text,

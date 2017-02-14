@@ -1,5 +1,21 @@
 2017-02-14  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	OMP change for GET_NVTS: The "cateogry" of the response object
+	is now expressed as an integer rather than a string.
+
+	* src/manage.c (get_nvti_xml): Insert the original integer value
+	of the category into the XML output for <category> instead of
+	translating the integer value to a string.
+	(category_name): Removed. This translation from string to
+	integer is not needed anymore.
+	Removed include of openvas/misc/nvt_categories.h which is
+	not required anymore.
+
+	* schema_formats/XML/OMP.xml.in: Update the documentation
+	about this change accordingly.
+
+2017-02-14  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	* src/manage.c (nvt_selector_plugins): Remove the transitional
 	g_info message about NVTs that are no longer selected automatically
 	and are not in the scan config. OpenVAS-9 was the transitional status
