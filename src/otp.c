@@ -57,8 +57,6 @@
 
 #include <gvm/base/strings.h>
 
-#include <openvas/misc/nvt_categories.h>
-
 #undef G_LOG_DOMAIN
 /**
  * @brief GLib log domain.
@@ -71,24 +69,6 @@ extern buffer_size_t from_buffer_size;
 
 
 /* Helper functions. */
-
-/**
- * @brief Return the number associated with a category name.
- *
- * @param  category  The category name.
- *
- * @return The number of the category.
- */
-static int
-category_number (const char *category)
-{
-  static const char *categories[] = { ACT_STRING_LIST_ALL };
-  int index;
-  for (index = ACT_FIRST; index <= ACT_END; index++)
-    if (strcmp (category, categories[index]) == 0)
-      return index;
-  return ACT_UNKNOWN;
-}
 
 /** @brief Replace any control characters in string with spaces.
  *
@@ -1226,7 +1206,7 @@ process_otp_scanner_input (void (*progress) ())
                 }
               case SCANNER_PLUGIN_LIST_CATEGORY:
                 {
-                  nvti_set_category (current_plugin, category_number (field));
+                  nvti_set_category (current_plugin, atoi (field));
                   set_scanner_state (SCANNER_PLUGIN_LIST_COPYRIGHT);
                   break;
                 }
