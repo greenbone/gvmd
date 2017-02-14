@@ -238,7 +238,6 @@ pkg_check_modules (LIBGVM_BASE REQUIRED libgvm_base>=1.0.0)
 pkg_check_modules (LIBGVM_UTIL REQUIRED libgvm_util>=1.0.0)
 pkg_check_modules (LIBGVM_OSP REQUIRED libgvm_osp>=1.0.0)
 pkg_check_modules (LIBGVM_GMP REQUIRED libgvm_gmp>=1.0.0)
-pkg_check_modules (LIBOPENVAS_MISC REQUIRED libopenvas_misc>=9.0.0)
 pkg_check_modules (GNUTLS REQUIRED gnutls>=3.2.15)
 pkg_check_modules (GLIB REQUIRED glib-2.0>=2.32)
 

@@ -1,5 +1,13 @@
 2017-02-14  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	* INSTALL: Remove requirement of libopenvas_misc.
+
+	* CMakeLists.txt: Remove requirement of libopenvas_misc.
+
+	* src/CMakeLists.txt: Remove handling of LIBOPENVAS_MISC.
+
+2017-02-14  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	OMP change for GET_NVTS: The "cateogry" of the response object
 	is now expressed as an integer rather than a string.
 
