@@ -1,5 +1,13 @@
 2017-02-14  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	* src/manage.c (nvt_selector_plugins): Remove the transitional
+	g_info message about NVTs that are no longer selected automatically
+	and are not in the scan config. OpenVAS-9 was the transitional status
+	where the notes were printed to the log. For the next upcoming
+	version we drop this finally.
+
+2017-02-14  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	* src/otp.c (process_otp_scanner_input): The category is not send
 	as string anymore but rather as integer. Thus apply simple atoi()
 	instead of translation function.
