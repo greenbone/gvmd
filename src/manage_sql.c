@@ -46,6 +46,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fnmatch.h>
+#include <ftw.h>
 #include <glib/gstdio.h>
 #include <locale.h>
 #include <pwd.h>
@@ -62938,13 +62939,13 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
  *
  * @param[in]  xml_path          XML path.
  * @param[in]  last_cert_update  Time of last CERT update.
- * @param[in]  last_dfn_update   Time of last update to a DFN.
+ * @param[in]  last_bund_update   Time of last update to a DFN.
  *
  * @return 0 nothing to do, 1 updated, -1 error.
  */
 static int
 update_bund_xml (const gchar *xml_path, int last_cert_update,
-                 int last_dfn_update)
+                 int last_bund_update)
 {
   GError *error;
   entity_t entity, child;
@@ -63012,7 +63013,7 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
               goto fail;
             }
 
-          if (parse_iso_time (entity_text (date)) > last_dfn_update)
+          if (parse_iso_time (entity_text (date)) > last_bund_update)
             {
               entity_t refnum, description, title, cve, cve_list;
               gchar *quoted_refnum, *quoted_title, *quoted_summary;
@@ -63141,6 +63142,902 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
 }
 
 /**
+ * @brief Update CVE info from a single XML feed file.
+ *
+ * @param[in]  xml_path          XML path.
+ * @param[in]  last_scap_update  Time of last SCAP update.
+ * @param[in]  last_cve_update   Time of last update to a DFN.
+ *
+ * @return 0 nothing to do, 1 updated, -1 error.
+ */
+static int
+update_cve_xml (const gchar *xml_path, int last_scap_update,
+                int last_cve_update)
+{
+  GError *error;
+  entity_t entity, entry;
+  entities_t children;
+  gchar *xml, *full_path;
+  gsize xml_len;
+  GStatBuf state;
+  int updated_scap_bund;
+
+  updated_scap_bund = 0;
+  full_path = g_build_filename (OPENVAS_SCAP_DATA_DIR, xml_path, NULL);
+
+  if (g_stat (full_path, &state))
+    {
+      g_warning ("%s: Failed to stat SCAP file: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
+      return -1;
+    }
+
+  if ((state.st_mtime - (state.st_mtime % 60)) <= last_scap_update)
+    {
+      g_info ("Skipping %s, file is older than last revision"
+              " (this is not an error)",
+              full_path);
+      g_free (full_path);
+      return 0;
+    }
+
+  g_info ("Updating %s", full_path);
+
+  error = NULL;
+  g_file_get_contents (full_path, &xml, &xml_len, &error);
+  if (error)
+    {
+      g_warning ("%s: Failed to get contents: %s\n",
+                 __FUNCTION__,
+                 error->message);
+      g_error_free (error);
+      g_free (full_path);
+      return -1;
+    }
+
+  if (parse_entity (xml, &entity))
+    {
+      g_free (xml);
+      g_warning ("%s: Failed to parse entity\n", __FUNCTION__);
+      g_free (full_path);
+      return -1;
+    }
+  g_free (xml);
+
+  sql_begin_immediate ();
+  children = entity->entities;
+  while ((entry = first_entity (children)))
+    {
+      if (strcmp (entity_name (entry), "cve:entry") == 0)
+        {
+          entity_t last_modified;
+
+          last_modified = entity_child (entry, "vuln:last-modified-datetime");
+          if (last_modified == NULL)
+            {
+              g_warning ("%s: vuln:last-modified-datetime missing\n",
+                         __FUNCTION__);
+              free_entity (entity);
+              goto fail;
+            }
+
+          if (parse_iso_time (entity_text (last_modified)) > last_cve_update)
+            {
+              entity_t published, summary, cvss, score, base_metrics;
+              entity_t access_vector, access_complexity, authentication;
+              entity_t confidentiality_impact, integrity_impact;
+              entity_t availability_impact, list;
+              gchar *quoted_id, *quoted_summary;
+              gchar *quoted_access_vector, *quoted_access_complexity;
+              gchar *quoted_authentication, *quoted_confidentiality_impact;
+              gchar *quoted_integrity_impact, *quoted_availability_impact;
+              gchar *quoted_software;
+              const char *id;
+              GString *software;
+
+              id = entity_attribute (entry, "id");
+              if (id == NULL)
+                {
+                  g_warning ("%s: id missing\n",
+                             __FUNCTION__);
+                  free_entity (entity);
+                  goto fail;
+                }
+
+              published = entity_child (entry, "vuln:published-datetime");
+              if (published == NULL)
+                {
+                  g_warning ("%s: vuln:published-datetime missing\n",
+                             __FUNCTION__);
+                  free_entity (entity);
+                  goto fail;
+                }
+
+              cvss = entity_child (entry, "vuln:cvss");
+              if (cvss == NULL)
+                {
+                  g_warning ("%s: vuln:cvss missing\n", __FUNCTION__);
+                  free_entity (entity);
+                  goto fail;
+                }
+
+              base_metrics = entity_child (cvss, "cvss:base_metrics");
+              if (base_metrics == NULL)
+                {
+                  g_warning ("%s: cvss:base_metrics missing\n", __FUNCTION__);
+                  free_entity (entity);
+                  goto fail;
+                }
+
+              score = entity_child (cvss, "cvss:score");
+              if (score == NULL)
+                {
+                  g_warning ("%s: cvss:score missing\n", __FUNCTION__);
+                  free_entity (entity);
+                  goto fail;
+                }
+
+              summary = entity_child (entry, "vuln:summary");
+              if (summary == NULL)
+                {
+                  g_warning ("%s: vuln:summary missing\n", __FUNCTION__);
+                  free_entity (entity);
+                  goto fail;
+                }
+
+              access_vector = entity_child (cvss, "cvss:access-vector");
+              if (access_vector == NULL)
+                {
+                  g_warning ("%s: cvss:access-vector missing\n", __FUNCTION__);
+                  free_entity (entity);
+                  goto fail;
+                }
+
+              access_complexity = entity_child (cvss, "cvss:access-complexity");
+              if (access_complexity == NULL)
+                {
+                  g_warning ("%s: cvss:access-complexity missing\n",
+                             __FUNCTION__);
+                  free_entity (entity);
+                  goto fail;
+                }
+
+              authentication = entity_child (cvss, "cvss:authentication");
+              if (authentication == NULL)
+                {
+                  g_warning ("%s: cvss:authentication missing\n",
+                             __FUNCTION__);
+                  free_entity (entity);
+                  goto fail;
+                }
+
+              confidentiality_impact = entity_child
+                                        (cvss,
+                                         "cvss:confidentiality-impact");
+              if (confidentiality_impact == NULL)
+                {
+                  g_warning ("%s: cvss:confidentiality-impact missing\n",
+                             __FUNCTION__);
+                  free_entity (entity);
+                  goto fail;
+                }
+
+              integrity_impact = entity_child
+                                  (cvss,
+                                   "cvss:integrity-impact");
+              if (integrity_impact == NULL)
+                {
+                  g_warning ("%s: cvss:integrity-impact missing\n",
+                             __FUNCTION__);
+                  free_entity (entity);
+                  goto fail;
+                }
+
+              availability_impact = entity_child
+                                     (cvss,
+                                      "cvss:availability-impact");
+              if (availability_impact == NULL)
+                {
+                  g_warning ("%s: cvss:availability-impact missing\n",
+                             __FUNCTION__);
+                  free_entity (entity);
+                  goto fail;
+                }
+
+              software = g_string_new ("");
+              list = entity_child (entry, "vuln:vulnerable-software-list");
+              if (list)
+                {
+                  entity_t product;
+                  entities_t products;
+                  products = list->entities;
+                  while ((product = first_entity (products)))
+                    {
+                      if (strcmp (entity_name (product), "vuln:product") == 0)
+                        g_string_append_printf (software,
+                                                "%s ",
+                                                entity_text (product));
+                      products = next_entities (products);
+                    }
+                }
+
+              quoted_id = sql_quote (id);
+              quoted_summary = sql_quote (entity_text (summary));
+              quoted_access_vector = sql_quote (entity_text (access_vector));
+              quoted_access_complexity = sql_quote
+                                          (entity_text (access_complexity));
+              quoted_authentication = sql_quote
+                                       (entity_text (authentication));
+              quoted_confidentiality_impact = sql_quote
+                                              (entity_text
+                                                (confidentiality_impact));
+              quoted_integrity_impact = sql_quote
+                                         (entity_text (integrity_impact));
+              quoted_availability_impact = sql_quote
+                                            (entity_text (availability_impact));
+              // FIX also replace %7E
+              quoted_software = sql_quote (software->str);
+              g_string_free (software, TRUE);
+              sql ("SELECT merge_cve"
+                   "        ('%s', %i, %i, %s, '%s', '%s', '%s', '%s', '%s',"
+                   "         '%s', '%s', '%s');",
+                   quoted_id,
+                   parse_iso_time (entity_text (last_modified)),
+                   parse_iso_time (entity_text (published)),
+                   // FIX ensure float format?
+                   score ? entity_text (score) : "NULL",
+                   quoted_summary,
+                   quoted_access_vector,
+                   quoted_access_complexity,
+                   quoted_authentication,
+                   quoted_confidentiality_impact,
+                   quoted_integrity_impact,
+                   quoted_availability_impact,
+                   quoted_software);
+              g_free (quoted_summary);
+              g_free (quoted_access_vector);
+              g_free (quoted_access_complexity);
+              g_free (quoted_authentication);
+              g_free (quoted_confidentiality_impact);
+              g_free (quoted_integrity_impact);
+              g_free (quoted_availability_impact);
+
+              if (list)
+                {
+                  entity_t product;
+                  entities_t products;
+
+                  products = list->entities;
+                  while ((product = first_entity (products)))
+                    {
+                      if ((strcmp (entity_name (product), "vuln:product") == 0)
+                          && strlen (entity_text (product)))
+                        {
+                          gchar *quoted_product;
+
+                          // FIX also %7E
+                          quoted_product = sql_quote (entity_text (product));
+                          sql ("SELECT merge_cpe_name ('%s')",
+                               quoted_product);
+                          sql ("SELECT merge_affected_product ('%s', '%s')",
+                               quoted_id, quoted_product);
+                          g_free (quoted_product);
+                        }
+
+                      products = next_entities (products);
+                    }
+                }
+
+              updated_scap_bund = 1;
+              g_free (quoted_id);
+            }
+        }
+      children = next_entities (children);
+    }
+
+  free_entity (entity);
+  g_free (full_path);
+  sql_commit ();
+  return updated_scap_bund;
+
+ fail:
+  g_warning ("Update of SCAP-Bund Advisories failed at file '%s'",
+             full_path);
+  g_free (full_path);
+  sql_commit ();
+  return -1;
+}
+
+/**
+ * @brief Get last date from definition entity.
+ *
+ * @param[in]  definition              Definition.
+ * @param[out] definition_date_newest  Newest date.
+ * @param[out] definition_date_oldest  Oldest date.
+ */
+static void
+oval_definition_dates (entity_t definition, int *definition_date_newest,
+                       int *definition_date_oldest)
+{
+  entity_t metadata, oval_repository, date, dates;
+  entities_t children;
+  int first;
+  const char *oldest, *newest;
+
+  assert (definition_date_newest);
+  assert (definition_date_oldest);
+
+  *definition_date_newest = 0;
+  *definition_date_oldest = 0;
+
+  metadata = entity_child (definition, "oval_definitions:metadata");
+  if (metadata == NULL)
+    {
+      g_warning ("%s: oval_definitions:metadata missing\n",
+                 __FUNCTION__);
+      return;
+    }
+
+  oval_repository = entity_child (definition, "oval_definitions:oval_repository");
+  if (oval_repository == NULL)
+    {
+      g_warning ("%s: oval_definitions:oval_repository missing\n",
+                 __FUNCTION__);
+      return;
+    }
+
+  dates = entity_child (definition, "oval_definitions:dates");
+  if (dates == NULL)
+    {
+      g_warning ("%s: oval_definitions:dates missing\n",
+                 __FUNCTION__);
+      return;
+    }
+
+  newest = NULL;
+  oldest = NULL;
+  first = 0;
+  children = dates->entities;
+  while ((date = first_entity (children)))
+    {
+      if ((strcmp (entity_name (date), "oval_definitions:submitted") == 0)
+          || (strcmp (entity_name (date), "oval_definitions:status_change") == 0)
+          || (strcmp (entity_name (date), "oval_definitions:modified") == 0))
+        {
+          if (first)
+            {
+              newest = entity_attribute (date, "date");
+              first = 0;
+            }
+          oldest = entity_attribute (date, "date");
+        }
+      children = next_entities (children);
+    }
+
+  if (newest)
+    *definition_date_newest = parse_iso_time (newest);
+  if (oldest)
+    *definition_date_oldest = parse_iso_time (oldest);
+}
+
+/**
+ * @brief Get generator/timestamp from main oval_definitions entity.
+ *
+ * @param[in]  entity          Entity.
+ * @param[out] file_timestamp  Timestamp.
+ */
+static void
+oval_oval_definitions_date (entity_t entity, int *file_timestamp)
+{
+  entity_t generator, timestamp;
+
+  assert (file_timestamp);
+
+  *file_timestamp = 0;
+
+  generator = entity_child (entity, "oval_definitions:generator");
+  if (generator == NULL)
+    {
+      g_warning ("%s: oval_definitions:generator missing\n",
+                 __FUNCTION__);
+      return;
+    }
+
+  timestamp = entity_child (generator, "oval:timestamp");
+  if (timestamp == NULL)
+    {
+      g_warning ("%s: oval:timestamp missing\n",
+                 __FUNCTION__);
+      return;
+    }
+
+  *file_timestamp = parse_iso_time (entity_text (timestamp));
+}
+
+/**
+ * @brief Get last date from definition entity.
+ *
+ * @param[in]  definition              Definition.
+ * @param[out] definition_date_newest  Newest date.
+ * @param[out] definition_date_oldest  Oldest date.
+ *
+ * @return 0 if valid, else -1.
+ */
+static int
+verify_oval_file (gchar *full_path)
+{
+  GError *error;
+  gchar *xml;
+  gsize xml_len;
+  entity_t entity, definitions, variables, first_definitions, first_variables;
+  entity_t child;
+  entities_t children;
+  int count, definitions_count, variables_count;
+
+  error = NULL;
+  g_file_get_contents (full_path, &xml, &xml_len, &error);
+  if (error)
+    {
+      g_warning ("%s: Failed to get contents: %s\n",
+                 __FUNCTION__,
+                 error->message);
+      g_error_free (error);
+      return -1;
+    }
+
+  if (parse_entity (xml, &entity))
+    {
+      g_free (xml);
+      g_warning ("%s: Failed to parse entity\n", __FUNCTION__);
+      return -1;
+    }
+  g_free (xml);
+
+  definitions_count = 0;
+  children = entity->entities;
+  while ((definitions = first_entity (children)))
+    if (strcmp (entity_name (definitions), "oval_definitions:definitions") == 0)
+      {
+        definitions_count++;
+        first_definitions = definitions;
+      }
+  if (definitions_count == 1)
+    {
+      int definition_count;
+      entities_t grandchildren, greatchildren;
+
+      definition_count = 0;
+      grandchildren = first_definitions->entities;
+      while ((definitions = first_entity (grandchildren)))
+        if (strcmp (entity_name (definitions), "oval_definitions:definitions")
+            == 0)
+          {
+            entity_t definition;
+
+            greatchildren = definitions->entities;
+            while ((definition = first_entity (greatchildren)))
+              if (strcmp (entity_name (definition), "oval_definitions:definition")
+                  == 0)
+                definition_count++;
+          }
+
+      free_entity (entity);
+      if (definition_count == 0)
+        {
+          g_warning ("%s: No OVAL definitions found\n", __FUNCTION__);
+          return -1;
+        }
+      else
+        return 0;
+    }
+
+  // FIX combine with above
+  variables_count = 0;
+  children = entity->entities;
+  while ((variables = first_entity (children)))
+    if (strcmp (entity_name (variables), "oval_variables:variables") == 0)
+      {
+        variables_count++;
+        first_variables = variables;
+      }
+  if (variables_count == 1)
+    {
+      int variable_count;
+      entities_t grandchildren, greatchildren;
+
+      variable_count = 0;
+      grandchildren = first_variables->entities;
+      while ((variables = first_entity (grandchildren)))
+        if (strcmp (entity_name (variables), "oval_variables:variables")
+            == 0)
+          {
+            entity_t variable;
+
+            greatchildren = variables->entities;
+            while ((variable = first_entity (greatchildren)))
+              if (strcmp (entity_name (variable), "oval_variables:variable")
+                  == 0)
+                variable_count++;
+          }
+
+      free_entity (entity);
+      if (variable_count == 0)
+        {
+          g_warning ("%s: No OVAL variables found\n", __FUNCTION__);
+          return -1;
+        }
+      else
+        return 0;
+    }
+
+  count = 0;
+  children = entity->entities;
+  while ((child = first_entity (children)))
+    if (strcmp (entity_name (child),
+                "oval_system_char:oval_system_characteristics")
+        == 0)
+      count++;
+  if (count == 1)
+    {
+      g_warning ("%s: File is an OVAL System Characteristics file\n",
+                 __FUNCTION__);
+      return -1;
+    }
+
+  count = 0;
+  children = entity->entities;
+  while ((child = first_entity (children)))
+    if (strcmp (entity_name (child),
+                "oval_system_char:oval_system_characteristics")
+        == 0)
+      count++;
+  if (count == 1)
+    {
+      g_warning ("%s: File is an OVAL System Characteristics file\n",
+                 __FUNCTION__);
+      return -1;
+    }
+
+  g_warning ("%s: Root tag neither oval_definitions nor oval_variables\n",
+             __FUNCTION__);
+  free_entity (entity);
+  return -1;
+}
+
+/**
+ * @brief Update OVALDEF info from a single XML feed file.
+ *
+ * @param[in]  xml_path          XML path.
+ * @param[in]  last_scap_update  Time of last SCAP update.
+ * @param[in]  last_ovaldef_update   Time of last update to an ovaldef.
+ * @param[in]  private           Whether this is from the user's private dir.
+ *
+ * @return 0 nothing to do, 1 updated, -1 error.
+ */
+static int
+update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
+                    int last_ovaldef_update, int private)
+{
+  GError *error;
+  entity_t entity, definition;
+  entities_t children;
+  const gchar *xml_path, *oval_timestamp;
+  gchar *xml_basename, *xml, *full_path, *quoted_xml_basename;
+  gsize xml_len;
+  GStatBuf state;
+  int updated_scap_bund, last_oval_update, timestamp, file_timestamp;
+
+  /* Setup variables. */
+
+  xml_path = file_and_date[0];
+  assert (xml_path);
+
+  /* The timestamp from the OVAL XML. */
+  oval_timestamp = file_and_date[1];
+  assert (oval_timestamp);
+
+  updated_scap_bund = 0;
+  full_path = g_build_filename (OPENVAS_SCAP_DATA_DIR, xml_path, NULL);
+
+  // FIX need --rebuild-oval?
+#if 0
+          if [ 1 = "$REBUILD_OVAL" ]
+          then
+            // here it's last_oval_update
+            OVAL_REFDATE=0
+          else
+#endif
+
+  if (g_stat (full_path, &state))
+    {
+      g_warning ("%s: Failed to stat OVAL file: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
+      return -1;
+    }
+
+  if ((state.st_mtime - (state.st_mtime % 60)) <= last_scap_update)
+    {
+      g_info ("Skipping %s, file is older than last revision"
+              " (this is not an error)",
+              full_path);
+      g_free (full_path);
+      return 0;
+    }
+
+  xml_basename = g_path_get_basename (xml_path);
+  quoted_xml_basename = sql_quote (xml_basename);
+  g_free (xml_basename);
+
+  /* The last time this file was updated in the db. */
+  last_oval_update = sql_int ("SELECT max(modification_time)"
+                              " FROM scap.ovaldefs"
+                              " WHERE xml_file = '%s';",
+                              quoted_xml_basename);
+  g_free (quoted_xml_basename);
+
+  timestamp = parse_iso_time (oval_timestamp);
+  if (timestamp <= last_oval_update)
+    {
+      g_info ("Skipping %s, file has older timestamp than latest OVAL"
+              " definition in database (this is not an error)",
+              full_path);
+      g_free (full_path);
+      return 0;
+    }
+
+  if (private)
+    {
+      /* Validate OVAL file. */
+
+      if (verify_oval_file (full_path))
+        {
+          g_free (full_path);
+          g_info ("Validation failed for file '%s'",
+                  full_path);
+          return 0;
+        }
+    }
+
+  /* Parse XML from the file. */
+
+  g_info ("Updating %s", full_path);
+
+  error = NULL;
+  g_file_get_contents (full_path, &xml, &xml_len, &error);
+  if (error)
+    {
+      g_warning ("%s: Failed to get contents: %s\n",
+                 __FUNCTION__,
+                 error->message);
+      g_error_free (error);
+      g_free (full_path);
+      return -1;
+    }
+
+  if (parse_entity (xml, &entity))
+    {
+      g_free (xml);
+      g_warning ("%s: Failed to parse entity\n", __FUNCTION__);
+      g_free (full_path);
+      return -1;
+    }
+  g_free (xml);
+
+  /* Fill the db according to the XML. */
+
+  sql_begin_immediate ();
+
+  sql ("INSERT INTO ovalfiles (xml_file)"
+       " SELECT '%s' WHERE NOT EXISTS (SELECT * FROM ovalfiles"
+       "                               WHERE xml_file = '%s');",
+       xml_basename,
+       xml_basename);
+
+  oval_oval_definitions_date (entity, &file_timestamp);
+
+  children = entity->entities;
+  while ((definition = first_entity (children)))
+    {
+      if (strcmp (entity_name (definition), "oval_definitions:definition") == 0)
+        {
+          int definition_date_newest, definition_date_oldest;
+          gchar *quoted_id, *quoted_oval_id;
+
+          /* The newest and oldest of this definition's dates (created,
+           * modified, etc), from the OVAL XML. */
+          oval_definition_dates (definition,
+                                 &definition_date_newest,
+                                 &definition_date_oldest);
+
+          if (definition_date_oldest
+              && (definition_date_oldest <= last_oval_update))
+            {
+              const char *id;
+
+              id = entity_attribute (definition, "id");
+              quoted_oval_id = sql_quote (id ? id : "");
+              g_info ("%s: Filtered %s (%i)",
+                      __FUNCTION__,
+                      quoted_oval_id,
+                      definition_date_oldest);
+              g_free (quoted_oval_id);
+            }
+          else
+            {
+              entity_t metadata, title, description, repository, reference;
+              entity_t status;
+              entities_t references;
+              const char *deprecated;
+              gchar *id, *quoted_title, *dates, *quoted_dates, *quoted_version;
+              gchar *quoted_class, *quoted_description, *quoted_xml_basename;
+              gchar *quoted_status;
+              int cve_count;
+
+              if (entity_attribute (definition, "id") == NULL)
+                {
+                  g_warning ("%s: oval_definition missing id",
+                             __FUNCTION__);
+                  free_entity (entity);
+                  goto fail;
+                }
+
+              metadata = entity_child (definition, "oval_definitions:metadata");
+              if (metadata == NULL)
+                {
+                  g_warning ("%s: oval_definitions:metadata missing\n",
+                             __FUNCTION__);
+                  free_entity (entity);
+                  goto fail;
+                }
+
+              title = entity_child (definition, "oval_definitions:title");
+              if (title == NULL)
+                {
+                  g_warning ("%s: oval_definitions:title missing\n",
+                             __FUNCTION__);
+                  free_entity (entity);
+                  goto fail;
+                }
+
+              description = entity_child (definition, "oval_definitions:description");
+              if (description == NULL)
+                {
+                  g_warning ("%s: oval_definitions:description missing\n",
+                             __FUNCTION__);
+                  free_entity (entity);
+                  goto fail;
+                }
+
+              repository = entity_child (metadata, "oval_definitions:repository");
+              if (repository == NULL)
+                {
+                  g_warning ("%s: oval_definitions:repository missing\n",
+                             __FUNCTION__);
+                  free_entity (entity);
+                  goto fail;
+                }
+
+              cve_count = 0;
+              references = entity->entities;
+              while ((reference = first_entity (references)))
+                {
+                  if ((strcmp (entity_name (reference),
+                               "oval_definitions:reference")
+                       == 0)
+                      && entity_attribute (reference, "source")
+                      && (strcasecmp (entity_attribute (reference, "source"), "cve")
+                          == 0))
+                    cve_count++;
+                  references = next_entities (references);
+                }
+
+              if (definition_date_oldest == 0)
+                dates = g_strdup_printf ("%i, %i",
+                                         file_timestamp,
+                                         file_timestamp);
+              else
+                dates = g_strdup_printf ("%i, %i",
+                                         definition_date_newest,
+                                         definition_date_oldest);
+
+              deprecated = entity_attribute (definition, "deprecated");
+
+              id = g_strdup_printf ("%s_%s", entity_attribute (definition, "id"),
+                                    xml_basename);
+              quoted_id = sql_quote (id);
+              g_free (id);
+              quoted_oval_id = sql_quote (entity_attribute (definition, "id"));
+              quoted_dates = sql_quote (dates);
+              g_free (dates);
+              quoted_version = sql_quote (entity_attribute (definition,
+                                                            "version"));
+              quoted_class = sql_quote (entity_attribute (definition, "class"));
+              quoted_title = sql_quote (entity_text (title));
+              quoted_description = sql_quote (entity_text (description));
+              quoted_xml_basename = sql_quote (xml_basename);
+              status = entity_child (repository, "oval_definitions:status");
+              if (status && strlen (entity_text (status)))
+                quoted_status = sql_quote (entity_text (status));
+              else if (deprecated && strcasecmp (deprecated, "TRUE"))
+                quoted_status = sql_quote ("DEPRECATED");
+              else
+                quoted_status = sql_quote ("");
+
+              sql ("SELECT merge_ovaldef ('%s', '%s', '', '%s', %i, '%s'",
+                   quoted_id,
+                   quoted_oval_id,
+                   quoted_dates,
+                   quoted_version,
+                   (deprecated && strcasecmp (deprecated, "TRUE")) ? 1 : 0,
+                   quoted_class,
+                   quoted_title,
+                   quoted_description,
+                   quoted_xml_basename,
+                   quoted_status,
+                   cve_count);
+
+              g_free (quoted_id);
+              g_free (quoted_dates);
+              g_free (quoted_version);
+              g_free (quoted_class);
+              g_free (quoted_title);
+              g_free (quoted_description);
+              g_free (quoted_xml_basename);
+              g_free (quoted_status);
+
+              references = entity->entities;
+              while ((reference = first_entity (references)))
+                {
+                  if ((strcmp (entity_name (reference),
+                               "oval_definitions:reference")
+                       == 0)
+                      && entity_attribute (reference, "source")
+                      && (strcasecmp (entity_attribute (reference, "source"), "cve")
+                          == 0)
+                      && entity_attribute (reference, "ref_id"))
+                    {
+                      gchar *quoted_ref_id;
+
+                      quoted_ref_id = sql_quote (entity_attribute (reference,
+                                                                   "ref_id"));
+                      sql ("INSERT INTO affected_ovaldefs (cve, ovaldef)"
+                           " SELECT cves.id, ovaldefs.id"
+                           " FROM cves, ovaldefs"
+                           " WHERE cves.name='%s'"
+                           " AND ovaldefs.name = '%s'"
+                           " AND NOT EXISTS (SELECT * FROM affected_ovaldefs"
+                           "                 WHERE cve = cves.id"
+                           "                 AND ovaldef = ovaldefs.id);",
+                           quoted_ref_id,
+                           quoted_oval_id);
+                    }
+                  references = next_entities (references);
+                }
+
+              g_free (quoted_oval_id);
+            }
+        }
+      children = next_entities (children);
+    }
+
+  /* Cleanup. */
+
+  free_entity (entity);
+  g_free (full_path);
+  sql_commit ();
+  return updated_scap_bund;
+
+ fail:
+  g_warning ("Update of OVAL definitions failed at file '%s'",
+             full_path);
+  g_free (full_path);
+  sql_commit ();
+  return -1;
+}
+
+/**
  * @brief Update DFN-CERTs.
  *
  * Assume that the databases are attached.
@@ -63254,6 +64151,612 @@ update_cert_bund_advisories (int last_cert_update)
 }
 
 /**
+ * @brief Update SCAP CPEs.
+ *
+ * @param[in]  xml_path          XML path.
+ * @param[in]  last_scap_update  Time of last SCAP update.
+ *
+ * @return 0 nothing to do, 1 updated, -1 error.
+ */
+static int
+update_scap_cpes (int last_scap_update)
+{
+  GError *error;
+  entity_t entity, cpe_list, cpe_item;
+  entities_t children;
+  gchar *xml, *full_path;
+  gsize xml_len;
+  GStatBuf state;
+  int updated_scap_cpes, last_cve_update;
+
+  updated_scap_cpes = 0;
+  full_path = g_build_filename (OPENVAS_SCAP_DATA_DIR,
+                                "official-cpe-dictionary_v2.2.xml",
+                                NULL);
+
+  if (g_stat (full_path, &state))
+    {
+      g_warning ("%s: No CPE dictionary found at %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
+      return -1;
+    }
+
+  if ((state.st_mtime - (state.st_mtime % 60)) <= last_scap_update)
+    {
+      g_info ("Skipping CPEs, file is older than last revision"
+              " (this is not an error)");
+      g_free (full_path);
+      return 0;
+    }
+
+  g_info ("Updating CPEs");
+
+  /* This will be zero for an empty db, so everything will be added. */
+  last_cve_update = sql_int ("SELECT max (modification_time)"
+                             " FROM scap.cves;");
+
+  error = NULL;
+  g_file_get_contents (full_path, &xml, &xml_len, &error);
+  g_free (full_path);
+  if (error)
+    {
+      g_warning ("%s: Failed to get contents: %s\n",
+                 __FUNCTION__,
+                 error->message);
+      g_error_free (error);
+      return -1;
+    }
+
+  if (parse_entity (xml, &entity))
+    {
+      g_free (xml);
+      g_warning ("%s: Failed to parse entity\n", __FUNCTION__);
+      return -1;
+    }
+  g_free (xml);
+
+  cpe_list = entity_child (entity, "cpe:cpe-list");
+  if (cpe_list == NULL)
+    {
+      free_entity (entity);
+      g_warning ("%s: CPE dictionary missing CPE-LIST\n", __FUNCTION__);
+      return -1;
+    }
+
+  sql_begin_immediate ();
+
+  children = cpe_list->entities;
+  while ((cpe_item = first_entity (children)))
+    {
+      if (strcmp (entity_name (cpe_item), "cpe:cpe-item") == 0)
+        {
+          const char *modification_date;
+          entity_t item_metadata;
+
+          item_metadata = entity_child (cpe_item, "item-metadata");
+          if (item_metadata == NULL)
+            {
+              g_warning ("%s: item-metadata missing\n", __FUNCTION__);
+              free_entity (entity);
+              goto fail;
+            }
+
+          modification_date = entity_attribute (item_metadata,
+                                                "modification-date");
+          if (modification_date == NULL)
+            {
+              g_warning ("%s: modification-date missing\n", __FUNCTION__);
+              free_entity (entity);
+              goto fail;
+            }
+
+          if (parse_iso_time (modification_date) > last_cve_update)
+            {
+              const char *name, *status, *deprecated, *nvd_id;
+              gchar *quoted_name, *quoted_title, *quoted_status, *quoted_nvd_id;
+              entities_t titles;
+              entity_t title;
+
+              name = entity_attribute (cpe_item, "name");
+              if (name == NULL)
+                {
+                  g_warning ("%s: name missing\n", __FUNCTION__);
+                  free_entity (entity);
+                  goto fail;
+                }
+
+              status = entity_attribute (item_metadata, "status");
+              if (status == NULL)
+                {
+                  g_warning ("%s: status missing\n", __FUNCTION__);
+                  free_entity (entity);
+                  goto fail;
+                }
+
+              deprecated = entity_attribute (item_metadata,
+                                             "deprecated-by-nvd-id");
+              // FIX check that integer
+
+              nvd_id = entity_attribute (item_metadata, "nvd-id");
+              if (nvd_id == NULL)
+                {
+                  g_warning ("%s: nvd_id missing\n", __FUNCTION__);
+                  free_entity (entity);
+                  goto fail;
+                }
+
+              titles = cpe_list->entities;
+              quoted_title = g_strdup ("");
+              while ((title = first_entity (titles)))
+                if (strcmp (entity_name (title), "title") == 0
+                    && entity_attribute (title, "xml:lang")
+                    && strcmp (entity_attribute (title, "xml:lang"), "en-US") == 0)
+                  {
+                    g_free (quoted_title);
+                    quoted_title = sql_quote (entity_text (title));
+                    break;
+                  }
+
+              // FIX also replace %7E with ~
+              quoted_name = sql_quote (name);
+              quoted_status = sql_quote (status);
+              quoted_nvd_id = sql_quote (nvd_id);
+              sql ("SELECT merge_cpe"
+                   "        ('%s', '%s', %i, %i, '%s', %s, '%s');",
+                   quoted_name,
+                   quoted_title,
+                   parse_iso_time (modification_date),
+                   parse_iso_time (modification_date),
+                   quoted_status,
+                   deprecated ? deprecated : "NULL",
+                   quoted_nvd_id);
+              g_free (quoted_title);
+              g_free (quoted_name);
+              g_free (quoted_status);
+              g_free (quoted_nvd_id);
+
+              updated_scap_cpes = 1;
+            }
+        }
+      children = next_entities (children);
+    }
+
+  free_entity (entity);
+  sql_commit ();
+  return updated_scap_cpes;
+
+ fail:
+  g_warning ("Update of CPEs failed");
+  sql_commit ();
+  return -1;
+}
+
+/**
+ * @brief Update SCAP CVEs.
+ *
+ * Assume that the databases are attached.
+ *
+ * @param[in]  last_scap_update  Time of last SCAP update from meta.
+ *
+ * @return 0 nothing to do, 1 updated, -1 error.
+ */
+static int
+update_scap_cves (int last_scap_update)
+{
+  GError *error;
+  int count, last_cve_update, updated_scap_cves;
+  GDir *dir;
+  const gchar *xml_path;
+
+  error = NULL;
+  dir = g_dir_open (OPENVAS_SCAP_DATA_DIR, 0, &error);
+  if (dir == NULL)
+    {
+      g_warning ("%s: Failed to open directory '%s': %s",
+                 __FUNCTION__, OPENVAS_SCAP_DATA_DIR, error->message);
+      g_error_free (error);
+      return -1;
+    }
+
+  last_cve_update = sql_int ("SELECT max (modification_time)"
+                             " FROM scap.cves;");
+
+  count = 0;
+  updated_scap_cves = 0;
+  while ((xml_path = g_dir_read_name (dir)))
+    if (fnmatch ("nvdcve-2.0-*.xml", xml_path, 0) == 0)
+      {
+        switch (update_cve_xml (xml_path, last_scap_update, last_cve_update))
+          {
+            case 0:
+              break;
+            case 1:
+              updated_scap_cves = 1;
+              break;
+            default:
+              g_dir_close (dir);
+              return -1;
+          }
+        count++;
+      }
+
+  if (count == 0)
+    g_warning ("No CVEs found in %s", OPENVAS_SCAP_DATA_DIR);
+
+  g_dir_close (dir);
+  return updated_scap_cves;
+}
+
+/**
+ * @brief Extract generator timestamp from OVAL element.
+ *
+ * @param[in]  entity   OVAL element.
+ * @param[in]  section  Section.
+ *
+ * @return Freshly allocated timestamp if found, else NULL.
+ */
+static gchar *
+oval_generator_timestamp (entity_t entity, const gchar *section)
+{
+  gchar *generator_name;
+  entity_t generator;
+
+  generator_name = g_strdup_printf ("%s:generator", section);
+  generator = entity_child (entity, generator_name);
+  g_free (generator_name);
+  if (generator)
+    {
+      entity_t timestamp;
+      timestamp = entity_child (entity, "oval:timestamp");
+      if (timestamp)
+        {
+          gchar *ret;
+          ret = g_strdup (entity_text (timestamp));
+          return ret;
+        }
+    }
+
+  return NULL;
+}
+
+/**
+ * @brief Extract timestamp from OVAL XML.
+ *
+ * @param[in]  xml  OVAL XML.
+ *
+ * @return Freshly allocated timestamp, else NULL.
+ */
+static gchar *
+oval_timestamp (const gchar *xml)
+{
+  entity_t entity, oval_definitions, oval_variables, oval_system_chars;
+
+  if (parse_entity (xml, &entity))
+    {
+      g_warning ("%s: Failed to parse entity\n", __FUNCTION__);
+      return NULL;
+    }
+
+  oval_definitions = entity_child (entity, "oval_definitions:oval_definitions");
+  if (oval_definitions)
+    {
+      gchar *timestamp;
+
+      timestamp = oval_generator_timestamp (oval_definitions, "oval_definitions");
+      if (timestamp)
+        {
+          free_entity (entity);
+          return timestamp;
+        }
+    }
+
+  oval_variables = entity_child (entity, "oval_variables:oval_variables");
+  if (oval_variables)
+    {
+      gchar *timestamp;
+
+      timestamp = oval_generator_timestamp (oval_variables, "oval_variables");
+      if (timestamp)
+        {
+          free_entity (entity);
+          return timestamp;
+        }
+    }
+
+  oval_system_chars = entity_child
+                       (entity,
+                        "oval_system_char:oval_system_characteristics");
+  if (oval_system_chars)
+    {
+      gchar *timestamp;
+
+      timestamp = oval_generator_timestamp (oval_system_chars,
+                                            "oval_system_char");
+      if (timestamp)
+        {
+          free_entity (entity);
+          return timestamp;
+        }
+    }
+
+  g_warning ("%s: No timestamp\n", __FUNCTION__);
+  return NULL;
+}
+
+/**
+ * @brief Files for update_scap_ovaldefs.
+ */
+static array_t *oval_files = NULL;
+
+/**
+ * @brief Add an OVAL file to oval_files.
+ *
+ * @param[in]  path       Path of file.
+ * @param[in]  stat       Status of file.
+ * @param[in]  flag       Dummy arg for nftw.
+ * @param[in]  traversal  Dummy arg for nftw.
+ *
+ * @return 0 added, -1 error.
+ */
+static int
+oval_files_add (const char *path, const struct stat *stat, int flag,
+                struct FTW *traversal)
+{
+  GError *error;
+  gchar **pair, *oval_xml, *timestamp;
+  gsize len;
+
+  error = NULL;
+  g_file_get_contents (path, &oval_xml, &len, &error);
+  if (error)
+    {
+      g_warning ("%s: Failed get contents: %s\n", __FUNCTION__, error->message);
+      g_error_free (error);
+      return -1;
+    }
+
+  /* Parse timestamp. */
+
+  timestamp = oval_timestamp (oval_xml);
+  g_free (oval_xml);
+
+  /* Add file-timestamp pair to OVAL files. */
+
+  pair = g_malloc (sizeof (gchar*) * 2);
+  pair[0] = g_strdup (path);
+  pair[1] = timestamp;
+
+  array_add (oval_files, pair);
+
+  return 0;
+}
+
+/**
+ * @brief Compare OVAL files.
+ *
+ * @param[in]  one  First file.
+ * @param[in]  two  Second file.
+ *
+ * @return 0 same, 1 one is greater than two, -1 two is greater than one.
+ */
+static gint
+oval_files_compare (gconstpointer one, gconstpointer two)
+{
+  gchar **file_info_one, **file_info_two;
+
+  file_info_one = *((gchar***) one);
+  file_info_two = *((gchar***) two);
+
+  return strcmp (file_info_one[1], file_info_two[2]);
+}
+
+
+/**
+ * @brief Free oval_files.
+ */
+static void
+oval_files_free ()
+{
+  int index;
+
+  index = 0;
+  while (index < oval_files->len)
+    {
+      gchar **pair;
+
+      pair = g_ptr_array_index (oval_files, index);
+      g_free (pair[0]);
+      g_free (pair[1]);
+    }
+  array_free (oval_files);
+  oval_files = NULL;
+}
+
+/**
+ * @brief Update SCAP OVALDEFs.
+ *
+ * Assume that the databases are attached.
+ *
+ * @param[in]  last_scap_update  Time of last SCAP update from meta.
+ * @param[in]  private           Whether to update private SCAP data, instead
+ *                               of the feed data.
+ *
+ * @return 0 nothing to do, 1 updated, -1 error.
+ */
+static int
+update_scap_ovaldefs (int last_scap_update, int private)
+{
+  int count, last_oval_update, updated_scap_ovaldefs;
+  gchar *oval_dir;
+  guint index;
+
+  assert (oval_files == NULL);
+
+  if (private)
+    g_info ("Updating user OVAL definitions.");
+  else
+    g_info ("Updating OVAL data");
+
+
+  /* Get a list of the OVAL files. */
+
+  if (private)
+    oval_dir = g_build_filename (OPENVAS_SCAP_DATA_DIR, "oval/", NULL);
+  else
+    // FIX script allowed setting via PRIVATE_SUBDIR
+    oval_dir = g_build_filename (OPENVAS_SCAP_DATA_DIR, "private/", "oval/",
+                                 NULL);
+  /* Pairs of pointers, pair[0]: absolute pathname, pair[1]: oval timestamp. */
+  oval_files = make_array ();
+
+  if (nftw (oval_dir, oval_files_add, 20, 0) == -1)
+    {
+      g_free (oval_dir);
+      oval_files_free ();
+      g_warning ("%s: failed to traverse: %s",
+                  __FUNCTION__,
+                  strerror (errno));
+      return -1;
+    }
+
+  /* Sort the list by the OVAL timestamp. */
+
+  g_ptr_array_sort (oval_files, oval_files_compare);
+
+  if (private)
+    {
+      GError *error;
+      GDir *directory;
+      const gchar *entry;
+
+      /* Check for files that aren't .xml or .asc. */
+
+      error = NULL;
+      directory = g_dir_open (oval_dir, 0, &error);
+
+      if (directory == NULL)
+        {
+          assert (error);
+
+          if (g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
+            {
+              g_warning ("No user data directory '%s' found.", oval_dir);
+              g_free (oval_dir);
+              g_error_free (error);
+            }
+
+          if (!g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
+            {
+              g_warning ("g_dir_open (%s) failed - %s\n", oval_dir,
+                         error->message);
+              g_free (oval_dir);
+              g_error_free (error);
+              return -1;
+            }
+        }
+
+      entry = NULL;
+      while ((entry = g_dir_read_name (directory)) != NULL)
+        {
+          if (g_str_has_suffix (entry, ".xml") < 0)
+            continue;
+          if (g_str_has_suffix (entry, ".asc") < 0)
+            continue;
+          g_warning ("Found non-XML and non-signature file '%s'.", entry);
+        }
+      g_dir_close (directory);
+    }
+
+  /* Process each file in the list, in the sorted order. */
+
+  last_oval_update = sql_int ("SELECT max (modification_time)"
+                              " FROM scap.ovaldefs;");
+
+  count = 0;
+  updated_scap_ovaldefs = 0;
+  for (index = 0; index < oval_files->len; index++)
+    {
+      gchar **pair;
+
+      pair = g_ptr_array_index (oval_files, index);
+      switch (update_ovaldef_xml (pair, last_scap_update, last_oval_update,
+                                  private))
+        {
+          case 0:
+            break;
+          case 1:
+            updated_scap_ovaldefs = 1;
+            break;
+          default:
+            oval_files_free ();
+            g_free (oval_dir);
+            return -1;
+        }
+      count++;
+    }
+
+  if (count == 0)
+    g_warning ("%s: No XML files found in %s", __FUNCTION__, oval_dir);
+
+  if (private)
+    {
+      GString *oval_files_clause;
+      int first;
+      iterator_t files;
+
+      /* Clean up user data. */
+
+      g_info ("Cleaning up user OVAL data");
+
+      oval_files_clause = g_string_new (" AND (xml_file NOT IN ");
+      first = 1;
+      for (index = 0; index < oval_files->len; index++)
+        {
+          gchar **pair;
+          char *suffix;
+
+          pair = g_ptr_array_index (oval_files, index);
+          suffix = strstr (pair[0], OPENVAS_SCAP_DATA_DIR);
+          g_string_append_printf (oval_files_clause,
+                                  "%s'%s'",
+                                  first ? "" : ", ",
+                                  suffix);
+          first = 0;
+        }
+      g_string_append (oval_files_clause, ")");
+
+      init_iterator (&files,
+                     "SELECT DISTINCT xml_file FROM scap.ovaldefs"
+                     " WHERE (xml_file NOT LIKE 'oval/%')"
+                     "%s",
+                     oval_files_clause);
+      first = 1;
+      while (next (&files))
+        {
+          if (first)
+            g_info ("Removing definitions formerly inserted from:");
+          g_info ("%s", iterator_string (&files, 0));
+          first = 0;
+        }
+      cleanup_iterator (&files);
+
+      sql ("DELETE FROM scap.ovaldefs"
+           " WHERE (xml_file NOT LIKE 'oval/%')"
+           "%s;",
+           oval_files_clause);
+
+      g_string_free (oval_files_clause, TRUE);
+    }
+
+  /* Cleanup. */
+
+  g_free (oval_dir);
+  oval_files_free ();
+  return updated_scap_ovaldefs;
+}
+
+/**
  * @brief Update timestamp in CERT db from feed timestamp.
  *
  * @return 0 success, -1 error.
@@ -63308,6 +64811,60 @@ update_cert_timestamp ()
 }
 
 /**
+ * @brief Update timestamp in SCAP db from feed timestamp.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+update_scap_timestamp ()
+{
+  GError *error;
+  gchar *timestamp;
+  gsize len;
+  time_t stamp;
+
+  error = NULL;
+  g_file_get_contents (OPENVAS_SCAP_DATA_DIR "/timestamp", &timestamp, &len,
+                       &error);
+  if (error)
+    {
+      if (error->code == G_FILE_ERROR_NOENT)
+        stamp = 0;
+      else
+        {
+          g_warning ("%s: Failed to get timestamp: %s\n",
+                     __FUNCTION__,
+                     error->message);
+          return -1;
+        }
+    }
+  else
+    {
+      if (strlen (timestamp) < 8)
+        {
+          g_warning ("%s: Feed timestamp too short: %s\n",
+                     __FUNCTION__,
+                     timestamp);
+          g_free (timestamp);
+          return -1;
+        }
+
+      timestamp[8] = '\0';
+      g_debug ("%s: parsing: %s", __FUNCTION__, timestamp);
+      stamp = parse_feed_timestamp (timestamp);
+      g_free (timestamp);
+      if (stamp == 0)
+        return -1;
+    }
+
+  g_debug ("%s: setting last_update: %lld", __FUNCTION__, (long long) stamp);
+  sql ("UPDATE scap.meta SET value = '%lld' WHERE name = 'last_update';",
+       (long long) stamp);
+
+  return 0;
+}
+
+/**
  * @brief Reinit CERT db.
  *
  * @return 0 success, -1 error.
@@ -63320,6 +64877,24 @@ cert_db_reinit ()
   if (manage_db_init ("cert"))
     {
       g_warning ("Could not reinitialize CERT database");
+      return -1;
+    }
+  return 0;
+}
+
+/**
+ * @brief Reinit SCAP db.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+scap_db_reinit ()
+{
+  g_info ("Reinitialization of the database necessary");
+  manage_db_remove ("scap");
+  if (manage_db_init ("scap"))
+    {
+      g_warning ("Could not reinitialize SCAP database");
       return -1;
     }
   return 0;
@@ -63342,6 +64917,38 @@ check_cert_db_version ()
       case 4:
       case 5:
        return cert_db_reinit ();
+       break;
+    }
+  return 0;
+}
+
+/**
+ * @brief Ensure SCAP db is at the right version, and in the right mode.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+check_scap_db_version ()
+{
+  switch (manage_scap_db_version ())
+    {
+      /* TODO The sync script had a whole lot of migrators in here. */
+      case 0:
+      case 1:
+      case 2:
+      case 3:
+      case 4:
+      case 5:
+      case 6:
+      case 7:
+      case 8:
+      case 9:
+      case 10:
+      case 11:
+      case 12:
+      case 13:
+      case 14:
+       return scap_db_reinit ();
        break;
     }
   return 0;
@@ -63490,7 +65097,7 @@ manage_check_cert_db (GSList *log_config, const gchar *database)
 {
   int ret;
 
-  g_info ("   Checking alerts.\n");
+  g_info ("   Checking CERT db.\n");
 
   ret = manage_option_setup (log_config, database);
   if (ret)
@@ -63508,6 +65115,51 @@ manage_check_cert_db (GSList *log_config, const gchar *database)
       case 1:
         g_info ("Integrity check failed, removing CERT database.");
         manage_db_remove ("cert");
+        puts ("1");
+        ret = 0;
+        break;
+    }
+
+  current_credentials.uuid = NULL;
+
+  manage_option_cleanup ();
+
+  return ret;
+}
+
+/**
+ * @brief Check SCAP db for sync script.
+ *
+ * @param[in]  log_config  Log configuration.
+ * @param[in]  database    Location of manage database.
+ *
+ * @return 0 success, -1 error,
+ *         -2 database is wrong version, -3 database needs to be initialised
+ *         from server.
+ */
+int
+manage_check_scap_db (GSList *log_config, const gchar *database)
+{
+  int ret;
+
+  g_info ("   Checking SCAP db.\n");
+
+  ret = manage_option_setup (log_config, database);
+  if (ret)
+    return ret;
+
+  /* Setup a dummy user. */
+  current_credentials.uuid = "";
+
+  ret = manage_db_check ("scap");
+  switch (ret)
+    {
+      case 0:
+        puts ("0");
+        break;
+      case 1:
+        g_info ("Integrity check failed, removing SCAP database.");
+        manage_db_remove ("scap");
         puts ("1");
         ret = 0;
         break;
@@ -63582,6 +65234,240 @@ update_cvss_dfn_cert (int updated_dfn_cert, int last_cert_update,
     }
   else
     g_info ("Updating DFN-CERT CVSS max succeeded (nothing to do).\n");
+}
+
+/**
+ * @brief Update CERT-Bund Max CVSS.
+ *
+ * @param[in]  updated_cves      Whether CVEs were updated.
+ * @param[in]  updated_cpes      Whether CPEs were updated.
+ * @param[in]  updated_ovaldefs  Whether OVAL defs were updated.
+ */
+static void
+update_scap_cvss (int updated_cves, int updated_cpes, int updated_ovaldefs)
+{
+  /* TODO greenbone-scapdata-sync did retries. */
+
+  if (updated_cves && updated_cpes)
+    {
+      g_info ("Updating CVSS scores and CVE counts for CPEs");
+      sql_recursive_triggers_off ();
+      sql ("UPDATE scap.cpes"
+           " SET max_cvss = (SELECT max (cvss)"
+           "                 FROM scap.cves"
+           "                 WHERE id IN (SELECT cve"
+           "                              FROM scap.affected_products"
+           "                              WHERE cpe=cpes.id)),"
+           "     cve_refs = (SELECT count (cve)"
+           "                 FROM scap.affected_products"
+           "                 WHERE cpe=cpes.id);");
+    }
+  else
+    g_info ("No CPEs or CVEs updated, skipping CVSS and CVE recount for CPEs.");
+
+  if (updated_cves && updated_ovaldefs)
+    {
+      g_info ("Updating CVSS scores and for OVAL definitions");
+      sql_recursive_triggers_off ();
+      sql ("UPDATE scap.ovaldefs"
+           " SET max_cvss = (SELECT max (cvss)"
+           "                 FROM scap.cves"
+           "                 WHERE id IN (SELECT cve"
+           "                              FROM scap.affected_ovaldefs"
+           "                              WHERE ovaldef=ovaldefs.id)"
+           "                 AND cvss != 0.0);");
+    }
+  else
+    g_info ("No OVAL definitions or CVEs updated,"
+            " skipping CVSS recount for OVAL definitions.");
+}
+
+/**
+ * @brief Update SCAP placeholder CVES.
+ *
+ * @param[in]  updated_cves  Whether the CVEs were updated.
+ */
+static void
+update_scap_placeholders (int updated_cves)
+{
+  /* TODO greenbone-scapdata-sync did retries. */
+
+  if (updated_cves)
+    {
+      g_info ("Updating placeholder CPEs");
+      sql ("UPDATE scap.cpes"
+           " SET creation_time = (SELECT min (creation_time)"
+           "                      FROM scap.cves"
+           "                      WHERE id IN (SELECT cve"
+           "                                   FROM scap.affected_products"
+           "                                   WHERE cpe=cpes.id)),"
+           "     modification_time = (SELECT min(creation_time)"
+           "                          FROM scap.cves"
+           "                          WHERE id IN (SELECT cve"
+           "                                       FROM scap.affected_products"
+           "                                       WHERE cpe=cpes.id))"
+           " WHERE cpes.title IS NULL"
+           " AND (cpes.creation_time IS NULL"
+           "      OR cpes.modification_time IS NULL);");
+    }
+  else
+    g_info ("No CVEs updated, skipping placeholder CPE update.");
+}
+
+/**
+ * @brief Update SCAP DB.
+ *
+ * @param[in]  log_config        Log configuration.
+ * @param[in]  database          Location of manage database.
+ *
+ * @return 0 success, -1 error, -4 SCAP db not found.
+ */
+int
+manage_update_scap_db (GSList *log_config, const gchar *database)
+{
+  const gchar *db;
+  int ret, updated_scap_ovaldefs, last_scap_update, updated_scap_cpes;
+  int updated_scap_cves;
+
+  if (gvm_auth_init ())
+    return -1;
+
+  db = database ? database : sql_default_database ();
+
+  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
+  assert (ret != -4);
+  if (ret)
+    return ret;
+
+  // --refresh-private
+#if 0
+  if [ 0 = "$REFRESH_PRIVATE_ONLY" ]
+  then
+#endif
+
+  init_manage_process (0, db);
+
+  g_info ("Initialising database for update");
+
+  if (manage_scap_db_exists ())
+    {
+      g_info ("Database exists already");
+
+      if (check_scap_db_version ())
+        return -1;
+      manage_db_check_mode ("scap");
+    }
+  else
+    {
+      g_info ("Initializing SCAP database");
+      if (manage_db_init ("scap"))
+        {
+          g_warning ("Could not initialize SCAP database");
+          return -1;
+        }
+    }
+
+  g_info ("Updating data from feed");
+
+  last_scap_update = 0;
+  if (manage_scap_loaded ())
+    last_scap_update = sql_int ("SELECT coalesce ((SELECT value FROM scap.meta"
+                                "                  WHERE name = 'last_update'),"
+                                "                 '-1');");
+  g_debug ("%s: last_scap_update: %i", __FUNCTION__, last_scap_update);
+
+  if (last_scap_update == -1)
+    {
+      /* Happens when initial sync was aborted. */
+      g_warning ("Inconsistent data. Resetting SCAP database.");
+      manage_db_remove ("scap");
+      if (manage_db_init ("scap"))
+        {
+          g_warning ("Could not reinitialize SCAP database");
+          return -1;
+        }
+      last_scap_update = 0;
+    }
+
+  g_debug ("%s: scap db init", __FUNCTION__);
+
+  if (manage_update_scap_db_init ())
+    {
+      cleanup_manage_process (TRUE);
+      return -1;
+    }
+
+  g_debug ("%s: update cpes", __FUNCTION__);
+
+  updated_scap_cpes = update_scap_cpes (last_scap_update);
+  if (updated_scap_cpes == -1)
+    {
+      manage_update_scap_db_cleanup ();
+      cleanup_manage_process (TRUE);
+      return -1;
+    }
+
+  g_debug ("%s: update cves", __FUNCTION__);
+
+  updated_scap_cves = update_scap_cves (last_scap_update);
+  if (updated_scap_cves == -1)
+    {
+      manage_update_scap_db_cleanup ();
+      cleanup_manage_process (TRUE);
+      return -1;
+    }
+
+  g_debug ("%s: update ovaldefs", __FUNCTION__);
+
+  updated_scap_ovaldefs = update_scap_ovaldefs (last_scap_update,
+                                                0 /* Feed data. */);
+  if (updated_scap_ovaldefs == -1)
+    {
+      manage_update_scap_db_cleanup ();
+      cleanup_manage_process (TRUE);
+      return -1;
+    }
+
+  g_info ("Updating user defined data.\n");
+
+  switch (update_scap_ovaldefs (last_scap_update,
+                                1 /* Private data. */))
+    {
+      case 0:
+        break;
+      case -1:
+        manage_update_scap_db_cleanup ();
+        cleanup_manage_process (TRUE);
+        return -1;
+      default:
+        updated_scap_ovaldefs = 1;
+        break;
+    }
+
+  update_scap_cvss (updated_scap_cves, updated_scap_cpes,
+                    updated_scap_ovaldefs);
+  update_scap_placeholders (updated_scap_cves);
+
+  g_debug ("%s: update timestamp", __FUNCTION__);
+
+  if (update_scap_timestamp ())
+    {
+      manage_update_scap_db_cleanup ();
+      cleanup_manage_process (TRUE);
+      return -1;
+    }
+
+  g_info ("Updating SCAP info succeeded.\n");
+
+  manage_update_scap_db_cleanup ();
+
+  g_info ("Checking for alerts");
+
+  check_alerts ();
+
+  cleanup_manage_process (TRUE);
+
+  return 0;
 }
 
 

@@ -626,6 +626,454 @@ sql_merge_bund_adv (sqlite3_context *context, int argc,
 }
 
 /**
+ * @brief Insert or replace a CPE.
+ *
+ * This is a callback for a scalar SQL function of eight argument.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_merge_cpe (sqlite3_context *context, int argc,
+               sqlite3_value** argv)
+{
+  const unsigned char *name, *title, *status, *nvd_id;
+  gchar *quoted_name, *quoted_title, *quoted_status, *quoted_nvd_id;
+  int created, modified, deprecated_by_id;
+
+  assert (argc == 7);
+
+  name = sqlite3_value_text (argv[0]);
+  if (name == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get name argument", -1);
+      return;
+    }
+
+  title = sqlite3_value_text (argv[1]);
+  if (title == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get title argument", -1);
+      return;
+    }
+
+  created = sqlite3_value_int (argv[2]);
+  modified = sqlite3_value_int (argv[3]);
+
+  status = sqlite3_value_text (argv[4]);
+  if (status == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get status argument", -1);
+      return;
+    }
+
+  deprecated_by_id = sqlite3_value_int (argv[5]);
+
+  nvd_id = sqlite3_value_text (argv[6]);
+  if (nvd_id == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get nvd_id argument", -1);
+      return;
+    }
+
+  quoted_name = sql_quote ((const char*) name);
+  quoted_title = sql_quote ((const char*) title);
+  quoted_status = sql_quote ((const char*) status);
+  quoted_nvd_id = sql_quote ((const char*) nvd_id);
+
+  sql ("INSERT OR REPLACE INTO cpes"
+       " (uuid, name, title, creation_time, modification_time, status,"
+       "  deprecated_by_id, nvd_id)"
+       " VALUES"
+       " ('%s', '%s', '%s', %i, %i, '%s', %i, '%s');",
+       quoted_name,
+       quoted_name,
+       quoted_title,
+       created,
+       modified,
+       quoted_status,
+       deprecated_by_id,
+       quoted_nvd_id);
+
+  g_free (quoted_name);
+  g_free (quoted_title);
+  g_free (quoted_status);
+  g_free (quoted_nvd_id);
+}
+
+/**
+ * @brief Insert or replace a CVE.
+ *
+ * This is a callback for a scalar SQL function of 13 arguments.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_merge_cve (sqlite3_context *context, int argc,
+               sqlite3_value** argv)
+{
+  const unsigned char *uuid, *name, *cvss, *description, *vector, *complexity;
+  const unsigned char *authentication, *confidentiality, *integrity;
+  const unsigned char *availability, *products;
+  gchar *quoted_uuid, *quoted_name, *quoted_description;
+  gchar *quoted_vector, *quoted_complexity, *quoted_authentication;
+  gchar *quoted_confidentiality, *quoted_integrity, *quoted_availability;
+  gchar *quoted_products;
+  int created, modified;
+
+  assert (argc == 13);
+
+  uuid = sqlite3_value_text (argv[0]);
+  if (uuid == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get uuid argument", -1);
+      return;
+    }
+
+  name = sqlite3_value_text (argv[1]);
+  if (name == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get name argument", -1);
+      return;
+    }
+
+  created = sqlite3_value_int (argv[3]);
+  modified = sqlite3_value_int (argv[4]);
+
+  cvss = sqlite3_value_text (argv[5]);
+  // FIX assert in float format
+  if (cvss == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get cvss argument", -1);
+      return;
+    }
+
+  description = sqlite3_value_text (argv[5]);
+  if (description == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get description argument", -1);
+      return;
+    }
+
+  vector = sqlite3_value_text (argv[5]);
+  if (vector == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get vector argument", -1);
+      return;
+    }
+
+  complexity = sqlite3_value_text (argv[5]);
+  if (complexity == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get complexity argument", -1);
+      return;
+    }
+
+  authentication = sqlite3_value_text (argv[5]);
+  if (authentication == NULL)
+    {
+      sqlite3_result_error (context,
+                            "Failed to get authentication argument", -1);
+      return;
+    }
+
+  confidentiality = sqlite3_value_text (argv[5]);
+  if (confidentiality == NULL)
+    {
+      sqlite3_result_error (context,
+                            "Failed to get confidentiality_impact argument",
+                            -1);
+      return;
+    }
+
+  integrity = sqlite3_value_text (argv[5]);
+  if (integrity == NULL)
+    {
+      sqlite3_result_error (context,
+                            "Failed to get integrity argument",
+                            -1);
+      return;
+    }
+
+  availability = sqlite3_value_text (argv[5]);
+  if (availability == NULL)
+    {
+      sqlite3_result_error (context,
+                            "Failed to get availability argument",
+                            -1);
+      return;
+    }
+
+  products = sqlite3_value_text (argv[5]);
+  if (products == NULL)
+    {
+      sqlite3_result_error (context,
+                            "Failed to get products argument", -1);
+      return;
+    }
+
+  quoted_uuid = sql_quote ((const char*) uuid);
+  quoted_name = sql_quote ((const char*) name);
+  quoted_description = sql_quote ((const char*) description);
+  quoted_vector = sql_quote ((const char*) vector);
+  quoted_complexity = sql_quote ((const char*) complexity);
+  quoted_authentication = sql_quote ((const char*) authentication);
+  quoted_confidentiality = sql_quote ((const char*) confidentiality);
+  quoted_integrity = sql_quote ((const char*) integrity);
+  quoted_availability = sql_quote ((const char*) availability);
+  quoted_products = sql_quote ((const char*) products);
+
+  sql ("INSERT OR REPLACE INTO cves"
+       " (uuid, name, creation_time, modification_time, cvss, description,"
+       "  vector, complexity, authentication, confidentiality_impact,"
+       "  integrity_impact, availability_impact, products)"
+       " VALUES"
+       " ('%s', '%s', %i, %i, %s, '%s', '%s', '%s', '%s', '%s', '%s', '%s',"
+       "  '%s');",
+       quoted_uuid,
+       quoted_name,
+       created,
+       modified,
+       cvss,
+       quoted_description,
+       quoted_vector,
+       quoted_complexity,
+       quoted_authentication,
+       quoted_confidentiality,
+       quoted_integrity,
+       quoted_availability,
+       quoted_products);
+
+  g_free (quoted_uuid);
+  g_free (quoted_name);
+  g_free (quoted_description);
+  g_free (quoted_vector);
+  g_free (quoted_complexity);
+  g_free (quoted_authentication);
+  g_free (quoted_confidentiality);
+  g_free (quoted_integrity);
+  g_free (quoted_availability);
+  g_free (quoted_products);
+}
+
+/**
+ * @brief Insert or replace a CPE.
+ *
+ * This is a callback for a scalar SQL function of eight argument.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_merge_cpe_name (sqlite3_context *context, int argc,
+                    sqlite3_value** argv)
+{
+  const unsigned char *uuid, *name;
+  gchar *quoted_uuid, *quoted_name;
+
+  assert (argc == 2);
+
+  uuid = sqlite3_value_text (argv[0]);
+  if (uuid == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get uuid argument", -1);
+      return;
+    }
+
+  name = sqlite3_value_text (argv[1]);
+  if (name == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get name argument", -1);
+      return;
+    }
+
+  quoted_uuid = sql_quote ((const char*) uuid);
+  quoted_name = sql_quote ((const char*) name);
+
+  sql ("INSERT OR REPLACE INTO cpes"
+       " (uuid, name)"
+       " VALUES"
+       " ('%s', '%s');",
+       quoted_uuid,
+       quoted_name);
+
+  g_free (quoted_uuid);
+  g_free (quoted_name);
+}
+
+/**
+ * @brief Insert or replace an affected product.
+ *
+ * This is a callback for a scalar SQL function of two arguments.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_merge_affected_product (sqlite3_context *context, int argc,
+                            sqlite3_value** argv)
+{
+  int cve, cpe;
+
+  assert (argc == 2);
+
+  cve = sqlite3_value_int (argv[3]);
+  cpe = sqlite3_value_int (argv[4]);
+
+  sql ("INSERT OR REPLACE INTO affected_products"
+       " (cve, cpe)"
+       " VALUES"
+       " (%i, %i);",
+       cve,
+       cpe);
+}
+
+/**
+ * @brief Insert or replace an OVAL def.
+ *
+ * This is a callback for a scalar SQL function of 14 arguments.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_merge_ovaldef (sqlite3_context *context, int argc,
+                   sqlite3_value** argv)
+{
+  const unsigned char *uuid, *name, *comment, *def_class, *title, *description;
+  const unsigned char *xml_file, *max_cvss, *status;
+  int created, modified, version, deprecated;
+  gchar *quoted_uuid, *quoted_name, *quoted_comment, *quoted_def_class;
+  gchar *quoted_title, *quoted_description, *quoted_xml_file;
+  gchar *quoted_status;
+  int cve_refs;
+
+  assert (argc == 14);
+
+  uuid = sqlite3_value_text (argv[0]);
+  if (uuid == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get uuid argument", -1);
+      return;
+    }
+
+  name = sqlite3_value_text (argv[1]);
+  if (name == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get name argument", -1);
+      return;
+    }
+
+  comment = sqlite3_value_text (argv[2]);
+  if (name == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get name argument", -1);
+      return;
+    }
+
+  created = sqlite3_value_int (argv[3]);
+  modified = sqlite3_value_int (argv[4]);
+  version = sqlite3_value_int (argv[5]);
+  deprecated = sqlite3_value_int (argv[6]);
+
+  def_class = sqlite3_value_text (argv[7]);
+  if (def_class == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get def_class argument", -1);
+      return;
+    }
+
+  title = sqlite3_value_text (argv[8]);
+  if (title == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get title argument", -1);
+      return;
+    }
+
+  description = sqlite3_value_text (argv[9]);
+  if (description == NULL)
+    {
+      sqlite3_result_error (context,
+                            "Failed to get description argument", -1);
+      return;
+    }
+
+  xml_file = sqlite3_value_text (argv[10]);
+  if (xml_file == NULL)
+    {
+      sqlite3_result_error (context,
+                            "Failed to get xml_file argument",
+                            -1);
+      return;
+    }
+
+  status = sqlite3_value_text (argv[11]);
+  if (status == NULL)
+    {
+      sqlite3_result_error (context,
+                            "Failed to get status argument",
+                            -1);
+      return;
+    }
+
+  max_cvss = sqlite3_value_text (argv[12]);
+  // FIX assert in float format
+  if (max_cvss == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get max_cvss argument", -1);
+      return;
+    }
+
+  cve_refs = sqlite3_value_int (argv[13]);
+
+  quoted_uuid = sql_quote ((const char*) uuid);
+  quoted_name = sql_quote ((const char*) name);
+  quoted_comment = sql_quote ((const char*) comment);
+  quoted_def_class = sql_quote ((const char*) def_class);
+  quoted_title = sql_quote ((const char*) title);
+  quoted_description = sql_quote ((const char*) description);
+  quoted_xml_file = sql_quote ((const char*) xml_file);
+  quoted_status = sql_quote ((const char*) status);
+
+  sql ("INSERT OR REPLACE INTO ovaldefs"
+       " (uuid, name, comment, creation_time, modification_time, version,"
+       "  deprecated, def_class, title, description, xml_file, status,"
+       "  max_cvss, cve_refs)"
+       " VALUES"
+       " ('%s', '%s', '%s', %i, %i, %i, %i, '%s', '%s', '%s', '%s', '%s',"
+       "  %s, %i);",
+       quoted_uuid,
+       quoted_name,
+       quoted_comment,
+       created,
+       modified,
+       version,
+       deprecated,
+       quoted_def_class,
+       quoted_title,
+       quoted_description,
+       quoted_xml_file,
+       quoted_status,
+       max_cvss,
+       cve_refs);
+
+  g_free (quoted_uuid);
+  g_free (quoted_name);
+  g_free (quoted_comment);
+  g_free (quoted_def_class);
+  g_free (quoted_title);
+  g_free (quoted_description);
+  g_free (quoted_xml_file);
+  g_free (quoted_status);
+}
+
+/**
  * @brief Make a name unique.
  *
  * This is a callback for a scalar SQL function of four argument.
@@ -3543,7 +3991,166 @@ manage_db_init (const gchar *name)
            " VALUES ('last_update', '0');");
     }
   else if (strcasecmp (name, "scap") == 0)
-    assert (0); // FIX
+    {
+      if (access (OPENVAS_SCAP_DATA_DIR "/scap.db", R_OK)
+          && errno != ENOENT)
+        {
+          g_warning ("%s: failed to stat SCAP database: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          return -1;
+        }
+      else
+        sql ("ATTACH DATABASE '" OPENVAS_SCAP_DATA_DIR "/scap.db'"
+             " AS scap;");
+
+      sql ("PRAGMA scap.journal_mode=WAL;");
+
+      /* Drop existing tables. */
+
+      sql ("DROP TABLE IF EXISTS scap.meta;");
+      sql ("DROP TABLE IF EXISTS scap.cves;");
+      sql ("DROP TABLE IF EXISTS scap.cpes;");
+      sql ("DROP TABLE IF EXISTS scap.affected_products;");
+      sql ("DROP TABLE IF EXISTS scap.oval_def;");
+      sql ("DROP TABLE IF EXISTS scap.ovaldefs;");
+      sql ("DROP TABLE IF EXISTS scap.ovalfiles;");
+      sql ("DROP TABLE IF EXISTS scap.affected_ovaldefs;");
+
+      /* Create tables and indexes. */
+
+      sql ("CREATE TABLE scap.meta"
+           " (id INTEGER PRIMARY KEY AUTOINCREMENT,"
+           "  name UNIQUE,"
+           "  value);");
+
+      sql ("CREATE TABLE scap.cves"
+           " (id INTEGER PRIMARY KEY AUTOINCREMENT,"
+           "  uuid UNIQUE,"
+           "  name,"
+           "  comment,"
+           "  description,"
+           "  creation_time DATE,"
+           "  modification_time DATE,"
+           "  vector,"
+           "  complexity,"
+           "  authentication,"
+           "  confidentiality_impact,"
+           "  integrity_impact,"
+           "  availability_impact,"
+           "  products,"
+           "  cvss FLOAT DEFAULT 0);");
+      sql ("CREATE UNIQUE INDEX scap.cve_idx"
+           " ON cves (name);");
+      sql ("CREATE INDEX scap.cves_by_creation_time_idx"
+           " ON cves (creation_time);");
+      sql ("CREATE INDEX scap.cves_by_modification_time_idx"
+           " ON cves (modification_time);");
+      sql ("CREATE INDEX scap.cves_by_cvss"
+           " ON cves (cvss);");
+
+      sql ("CREATE TABLE scap.cpes"
+           " (id INTEGER PRIMARY KEY AUTOINCREMENT,"
+           "  uuid UNIQUE,"
+           "  name,"
+           "  comment,"
+           "  creation_time DATE,"
+           "  modification_time DATE,"
+           "  title,"
+           "  status,"
+           "  deprecated_by_id INTEGER,"
+           "  max_cvss FLOAT DEFAULT 0,"
+           "  cve_refs INTEGER DEFAULT 0,"
+           "  nvd_id);");
+      sql ("CREATE UNIQUE INDEX scap.cpe_idx"
+           " ON cpes (name);");
+      sql ("CREATE INDEX scap.cpes_by_creation_time_idx"
+           " ON cpes (creation_time);");
+      sql ("CREATE INDEX scap.cpes_by_modification_time_idx"
+           " ON cpes (modification_time);");
+      sql ("CREATE INDEX scap.cpes_by_cvss"
+           " ON cpes (cvss);");
+
+      sql ("CREATE TABLE scap.affected_products"
+           " (cve INTEGER NOT NULL,"
+           "  cpe INTEGER NOT NULL,"
+           "  FOREIGN KEY(cve) REFERENCES cves(id),"
+           "  FOREIGN KEY(cpe) REFERENCES cpes(id);");
+      sql ("CREATE UNIQUE INDEX scap.afp_cpe_idx"
+           " ON affected_products (cpe);");
+      sql ("CREATE UNIQUE INDEX scap.afp_cve_idx"
+           " ON affected_products (cve);");
+
+      sql ("CREATE TABLE scap.ovaldefs"
+           " (id INTEGER PRIMARY KEY AUTOINCREMENT,"
+           "  uuid UNIQUE,"
+           "  name,"                        /* OVAL identifier. */
+           "  comment,"
+           "  creation_time DATE,"
+           "  modification_time DATE,"
+           "  version INTEGER,"
+           "  deprecated BOOLEAN,"
+           "  def_class TEXT,"              /* enum */
+           "  title TEXT,"
+           "  description TEXT,"
+           "  xml_file TEXT,"
+           "  status TEXT,"
+           "  max_cvss FLOAT,"
+           "  cve_refs INTEGER);");
+      sql ("CREATE INDEX scap.ovaldefs_idx"
+           " ON ovaldefs (name);");
+
+      sql ("CREATE TABLE scap.ovalfiles"
+           " (id INTEGER PRIMARY KEY AUTOINCREMENT,"
+           "  xml_file TEXT UNIQUE);");
+      sql ("CREATE INDEX scap.ovalfiles_idx"
+           " ON ovalfiles (xml_file);");
+
+      sql ("CREATE TABLE scap.affected_ovaldefs"
+           " (cve INTEGER NOT NULL,"
+           "  ovaldef INTEGER NOT NULL,"
+           "  FOREIGN KEY(cve) REFERENCES cves(id),"
+           "  FOREIGN KEY(ovaldef) REFERENCES ovaldefs(id);");
+      sql ("CREATE UNIQUE INDEX scap.aff_ovaldefs_def_idx"
+           " ON affected_ovaldefs (ovaldef);");
+      sql ("CREATE UNIQUE INDEX scap.aff_ovaldefs_cve_idx"
+           " ON affected_ovaldefs (cve);");
+
+      /* Create deletion triggers. */
+
+      sql ("CREATE TRIGGER scap.cves_delete AFTER DELETE"
+           " ON cves"
+           " BEGIN"
+           "   DELETE FROM affected_products WHERE cve = old.id;"
+           "   DELETE FROM affected_ovaldefs WHERE cve = old.id;"
+           " END;");
+
+      sql ("CREATE TRIGGER scap.affected_delete AFTER DELETE"
+           " ON affected_products"
+           " BEGIN"
+           "   UPDATE cpes SET max_cvss = 0.0 WHERE id = old.cpe;"
+           "   UPDATE cpes SET cve_refs = cve_refs -1 WHERE id = old.cpe;"
+           " END;");
+
+      sql ("CREATE TRIGGER scap.ovalfiles_delete AFTER DELETE"
+           " ON ovalfiles"
+           " BEGIN"
+           "   DELETE FROM ovaldefs WHERE ovaldefs.xml_file = old.xml_file;"
+           " END;");
+
+      sql ("CREATE TRIGGER scap.affected_ovaldefs_delete AFTER DELETE"
+           " ON affected_ovaldefs"
+           " BEGIN"
+           "   UPDATE ovaldefs SET max_cvss = 0.0 WHERE id = old.ovaldef;"
+           " END;");
+
+      /* Init tables. */
+
+      sql ("INSERT INTO scap.meta (name, value)"
+           " VALUES ('database_version', '15');");
+      sql ("INSERT INTO scap.meta (name, value)"
+           " VALUES ('last_update', '0');");
+    }
   else
     {
       assert (0);
@@ -3563,6 +4170,8 @@ manage_db_check_mode (const gchar *name)
 {
   if (strcasecmp (name, "cert") == 0)
     sql ("PRAGMA cert.journal_mode=WAL;");
+  else if (strcasecmp (name, "scap") == 0)
+    sql ("PRAGMA scap.journal_mode=WAL;");
 }
 
 /**
@@ -3697,6 +4306,29 @@ manage_cert_db_exists ()
 }
 
 /**
+ * @brief Check if SCAP db exists.
+ *
+ * @return 1 if exists, else 0.
+ */
+int
+manage_scap_db_exists ()
+{
+  if (access (OPENVAS_SCAP_DATA_DIR "/scap.db", R_OK))
+    switch (errno)
+      {
+        case ENOENT:
+          return 0;
+          break;
+        default:
+          g_warning ("%s: failed to stat SCAP database: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          return 1;
+      }
+  return 1;
+}
+
+/**
  * @brief Database specific setup for CERT update.
  *
  * @return 0 success, -1 error.
@@ -3764,6 +4396,151 @@ manage_update_cert_db_cleanup ()
                                NULL)            /* xFinal. */
       != SQLITE_OK)
     g_warning ("%s: failed to remove merge_bund_adv", __FUNCTION__);
+}
+
+/**
+ * @brief Database specific setup for SCAP update.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+manage_update_scap_db_init ()
+{
+  if (sqlite3_create_function (task_db,
+                               "merge_cpe",
+                               8,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_merge_cpe,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create merge_cpe", __FUNCTION__);
+      return -1;
+    }
+
+  if (sqlite3_create_function (task_db,
+                               "merge_cve",
+                               13,              /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_merge_cve,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create merge_cpe", __FUNCTION__);
+      return -1;
+    }
+
+  if (sqlite3_create_function (task_db,
+                               "merge_cpe_name",
+                               2,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_merge_cpe_name,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create merge_cpe_name", __FUNCTION__);
+      return -1;
+    }
+
+  if (sqlite3_create_function (task_db,
+                               "merge_affected_product",
+                               2,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_merge_affected_product,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create merge_affected_product", __FUNCTION__);
+      return -1;
+    }
+
+  if (sqlite3_create_function (task_db,
+                               "merge_ovaldef",
+                               14,              /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_merge_ovaldef,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create merge_ovaldef", __FUNCTION__);
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Database specific cleanup after SCAP update.
+ *
+ * @return 1 if empty, else 0.
+ */
+void
+manage_update_scap_db_cleanup ()
+{
+  if (sqlite3_create_function (task_db,
+                               "merge_cpe",
+                               8,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               NULL,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    g_warning ("%s: failed to remove merge_cpe", __FUNCTION__);
+
+  if (sqlite3_create_function (task_db,
+                               "merge_cve",
+                               13,              /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               NULL,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    g_warning ("%s: failed to remove merge_cve", __FUNCTION__);
+
+  if (sqlite3_create_function (task_db,
+                               "merge_cpe_name",
+                               2,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               NULL,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    g_warning ("%s: failed to remove merge_cpe_name", __FUNCTION__);
+
+  if (sqlite3_create_function (task_db,
+                               "merge_affected_product",
+                               2,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               NULL,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    g_warning ("%s: failed to remove merge_affected_product", __FUNCTION__);
+
+  if (sqlite3_create_function (task_db,
+                               "merge_ovaldef",
+                               14,              /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               NULL,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    g_warning ("%s: failed to remove merge_ovaldef", __FUNCTION__);
 }
 
 

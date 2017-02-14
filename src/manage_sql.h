@@ -387,7 +387,13 @@ int manage_update_cert_db_init ();
 
 void manage_update_cert_db_cleanup ();
 
+int manage_update_scap_db_init ();
+
+void manage_update_scap_db_cleanup ();
+
 int manage_cert_db_exists ();
+
+int manage_scap_db_exists ();
 
 void manage_db_check_mode (const gchar *);
 

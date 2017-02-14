@@ -1563,6 +1563,7 @@ main (int argc, char** argv)
   static gboolean backup_database = FALSE;
   static gboolean check_alerts = FALSE;
   static gboolean check_cert_db = FALSE;
+  static gboolean check_scap_db = FALSE;
   static gboolean migrate_database = FALSE;
   static gboolean encrypt_all_credentials = FALSE;
   static gboolean decrypt_all_credentials = FALSE;
@@ -1571,6 +1572,7 @@ main (int argc, char** argv)
   static gboolean get_users = FALSE;
   static gboolean get_scanners = FALSE;
   static gboolean update_cert_db = FALSE;
+  static gboolean update_scap_db = FALSE;
   static gboolean update_nvt_cache = FALSE;
   static gboolean rebuild_nvt_cache = FALSE;
   static gboolean foreground = FALSE;
@@ -1620,6 +1622,7 @@ main (int argc, char** argv)
         { "backup", '\0', 0, G_OPTION_ARG_NONE, &backup_database, "Backup the database.", NULL },
         { "check-alerts", '\0', 0, G_OPTION_ARG_NONE, &check_alerts, "Check SecInfo alerts.", NULL },
         { "check-cert-db", '\0', 0, G_OPTION_ARG_NONE, &check_cert_db, "Check CERT DB for sync script.", NULL },
+        { "check-scap-db", '\0', 0, G_OPTION_ARG_NONE, &check_scap_db, "Check SCAP DB for sync script.", NULL },
         { "database", 'd', 0, G_OPTION_ARG_STRING, &database, "Use <file/name> as database for SQLite/Postgres.", "<file/name>" },
         { "disable-cmds", '\0', 0, G_OPTION_ARG_STRING, &disable, "Disable comma-separated <commands>.", "<commands>" },
         { "disable-encrypted-credentials", '\0', 0, G_OPTION_ARG_NONE,
@@ -1688,6 +1691,7 @@ main (int argc, char** argv)
         { "role", '\0', 0, G_OPTION_ARG_STRING, &role, "Role for --create-user and --get-users.", "<role>" },
         { "update", 'u', 0, G_OPTION_ARG_NONE, &update_nvt_cache, "Update the NVT cache and exit.", NULL },
         { "update-cert-db", '\0', 0, G_OPTION_ARG_NONE, &update_cert_db, "Update CERT info.", NULL },
+        { "update-scap-db", '\0', 0, G_OPTION_ARG_NONE, &update_scap_db, "Update SCAP info.", NULL },
         { "unix-socket", 'c', 0, G_OPTION_ARG_STRING, &manager_address_string_unix, "Listen on UNIX socket at <filename>.", "<filename>" },
         { "user", '\0', 0, G_OPTION_ARG_STRING, &user, "User for --new-password.", "<username>" },
         { "gnutls-priorities", '\0', 0, G_OPTION_ARG_STRING, &priorities, "Sets the GnuTLS priorities for the Manager socket.", "<priorities-string>" },
@@ -1978,6 +1982,19 @@ main (int argc, char** argv)
       return EXIT_SUCCESS;
     }
 
+  if (check_scap_db)
+    {
+      int ret;
+
+      proctitle_set ("openvasmd: Checking SCAP db");
+
+      ret = manage_check_scap_db (log_config, database);
+      log_config_free ();
+      if (ret)
+        return EXIT_FAILURE;
+      return EXIT_SUCCESS;
+    }
+
   if (create_user)
     {
       int ret;
@@ -2221,6 +2238,47 @@ main (int argc, char** argv)
           case -5:
             g_critical
              ("%s: CERT database not found. Cannot update CERT info.\n",
+              __FUNCTION__);
+            log_config_free ();
+            return EXIT_FAILURE;
+          case -6:
+            g_critical
+             ("%s: SCAP database not found. Cannot update max_cvss.\n",
+              __FUNCTION__);
+            log_config_free ();
+            return EXIT_FAILURE;
+          case -1:
+          default:
+            g_critical ("%s: internal error\n", __FUNCTION__);
+            log_config_free ();
+            return EXIT_FAILURE;
+        }
+    }
+
+  if (update_scap_db)
+    {
+      /* Update SCAP info and then exit. */
+
+      g_info ("   Updating SCAP info.\n");
+
+      switch (manage_update_scap_db (log_config, database))
+        {
+          case 0:
+            log_config_free ();
+            return EXIT_SUCCESS;
+          case -2:
+            g_critical ("%s: database is wrong version\n", __FUNCTION__);
+            log_config_free ();
+            return EXIT_FAILURE;
+          case -3:
+            g_critical ("%s: database must be initialised"
+                        " (with --update or --rebuild)\n",
+                        __FUNCTION__);
+            log_config_free ();
+            return EXIT_FAILURE;
+          case -5:
+            g_critical
+             ("%s: SCAP database not found. Cannot update SCAP info.\n",
               __FUNCTION__);
             log_config_free ();
             return EXIT_FAILURE;

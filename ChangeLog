@@ -1,3 +1,37 @@
+2017-02-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add options --check-scap-db and --update-scap-db.
+
+	* src/manage_pg.c (manage_scap_db_exists, manage_update_scap_db_init)
+	(manage_update_scap_db_cleanup): New functions.
+	(manage_db_init): Init SCAP db.
+
+	* src/manage_sqlite3.c (sql_merge_cpe, sql_merge_cve)
+	(sql_merge_cpe_name, sql_merge_affected_product, sql_merge_ovaldef): New
+	functions.
+	(manage_db_init): Init SCAP db.
+	(manage_db_check_mode): Add SCAP case.
+	(manage_scap_db_exists, manage_update_scap_db_init)
+	(manage_update_scap_db_cleanup): New functions.
+
+	* src/manage_sql.c (update_bund_xml): Correct arg name.
+	(update_cve_xml, oval_definition_dates, oval_oval_definitions_date)
+	(verify_oval_file, update_ovaldef_xml, update_scap_cpes, update_scap_cves)
+	(oval_generator_timestamp, oval_timestamp, oval_files): New functions.
+	(oval_files): New variables.
+	(oval_files_add, oval_files_compare, oval_files_free)
+	(update_scap_ovaldefs, update_scap_timestamp, scap_db_reinit)
+	(check_scap_db_version): New functions.
+	(manage_check_cert_db): Correct message.
+	(manage_check_scap_db, update_scap_cvss, update_scap_placeholders)
+	(manage_update_scap_db): New functions.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/manage_sql.h: Add headers accordingly.
+
+	* src/openvasmd.c (main): Add new options.
+
 2017-02-13  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (set_task_preferences): Change minimum value for
@@ -49,7 +83,7 @@
 	openvas/misc/openvas_auth.h.
 	Use gvm_auth_init instead of openvas_auth_init,
 	gvm_auth_ldap_enabled instead of openvas_auth_ldap_enabled,
-	gvm_auth_radius_enabled instead of openvas_auth_radius_enabled and 
+	gvm_auth_radius_enabled instead of openvas_auth_radius_enabled and
 	gvm_authenticate_classic instead of openvas_authenticate_classic.
 
 	* src/omp.c: Include gvm/util/authutils.h instead of

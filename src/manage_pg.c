@@ -107,6 +107,21 @@ manage_cert_db_exists ()
 }
 
 /**
+ * @brief Check if SCAP db exists.
+ *
+ * @return 1 if exists, else 0.
+ */
+int
+manage_scap_db_exists ()
+{
+  if (sql_int ("SELECT exists (SELECT schema_name"
+               "               FROM information_schema.schemata"
+               "               WHERE schema_name = 'scap');"))
+    return 1;
+  return 0;
+}
+
+/**
  * @brief Database specific setup for CERT update.
  *
  * @return 0 success, -1 error.
@@ -210,6 +225,255 @@ manage_update_cert_db_cleanup ()
        "                              title_arg TEXT,"
        "                              summary_arg TEXT,"
        "                              cve_refs_arg INTEGER);");
+}
+
+/**
+ * @brief Database specific setup for SCAP update.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+manage_update_scap_db_init ()
+{
+  sql ("CREATE OR REPLACE FUNCTION merge_cpe"
+       "                            (uuid_arg TEXT, name_arg TEXT,"
+       "                             title_arg TEXT, creation_time_arg INTEGER,"
+       "                             modification_time_arg INTEGER,"
+       "                             status_arg TEXT,"
+       "                             deprecated_by_id_arg INTEGER,"
+       "                             nvd_id_arg TEXT)"
+       " RETURNS VOID AS $$"
+       " BEGIN"
+       "   LOOP"
+       "     UPDATE scap.cpes"
+       "     SET name = name_arg, title = title_arg,"
+       "         creation_time = creation_time_arg,"
+       "         modification_time = modification_time_arg,"
+       "         status = status_arg,"
+       "         deprecated_by_id = deprecated_by_id_arg,"
+       "         nvd_id = nvd_id_arg"
+       "     WHERE uuid = uuid_arg;"
+       "     IF found THEN"
+       "       RETURN;"
+       "     END IF;"
+       "     BEGIN"
+       "       INSERT INTO scap.cpes"
+       "                    (uuid, name, title, creation_time,"
+       "                     modification_time, status, deprecated_by_id,"
+       "                     nvd_id)"
+       "       VALUES (uuid_arg, name_arg, title_arg, creation_time_arg,"
+       "               modification_time_arg, status_arg, deprecated_by_id_arg,"
+       "               nvd_id_arg);"
+       "       RETURN;"
+       "     EXCEPTION WHEN unique_violation THEN"
+       "       NULL;"  /* Try again. */
+       "     END;"
+       "   END LOOP;"
+       " END;"
+       "$$ LANGUAGE plpgsql;");
+
+  sql ("CREATE OR REPLACE FUNCTION merge_cve"
+       "                            (uuid_arg TEXT,"
+       "                             name_arg TEXT,"
+       "                             creation_time_arg INTEGER,"
+       "                             modification_time_arg INTEGER,"
+       "                             cvss_arg FLOAT,"
+       "                             description_arg TEXT,"
+       "                             vector_arg TEXT,"
+       "                             complexity_arg TEXT,"
+       "                             authentication_arg TEXT,"
+       "                             confidentiality_impact_arg TEXT,"
+       "                             integrity_impact_arg TEXT,"
+       "                             availability_impact_arg TEXT,"
+       "                             products_arg TEXT)"
+       " RETURNS VOID AS $$"
+       " BEGIN"
+       "   LOOP"
+       "     UPDATE scap.cves"
+       "     SET name = name_arg,"
+       "         creation_time = creation_time_arg,"
+       "         modification_time = modification_time_arg,"
+       "         cvss = cvss_arg,"
+       "         description = description_arg,"
+       "         vector = vector_arg,"
+       "         complexity = complexity_arg,"
+       "         authentication = authentication_arg,"
+       "         confidentiality_impact = confidentiality_impact_arg,"
+       "         integrity_impact = integrity_impact_arg,"
+       "         availability_impact = availability_impact_arg,"
+       "         products = products_arg"
+       "     WHERE uuid = uuid_arg;"
+       "     IF found THEN"
+       "       RETURN;"
+       "     END IF;"
+       "     BEGIN"
+       "       INSERT INTO scap.cves"
+       "                    (uuid, name, creation_time, modification_time,"
+       "                     cvss, description, vector, complexity,"
+       "                     authentication, confidentiality_impact,"
+       "                     integrity_impact, availability_impact, products)"
+       "       VALUES (uuid_arg, name_arg, creation_time_arg,"
+       "               modification_time_arg, cvss_arg, description_arg,"
+       "               vector_arg, complexity_arg, authentication_arg,"
+       "               confidentiality_impact_arg, integrity_impact_arg,"
+       "               availability_impact_arg, products_arg);"
+       "       RETURN;"
+       "     EXCEPTION WHEN unique_violation THEN"
+       "       NULL;"  /* Try again. */
+       "     END;"
+       "   END LOOP;"
+       " END;"
+       "$$ LANGUAGE plpgsql;");
+
+  sql ("CREATE OR REPLACE FUNCTION merge_cpe_name"
+       "                            (uuid_arg TEXT, name_arg TEXT)"
+       " RETURNS VOID AS $$"
+       " BEGIN"
+       "   LOOP"
+       "     UPDATE scap.cpes"
+       "     SET name = name_arg"
+       "     WHERE uuid = uuid_arg;"
+       "     IF found THEN"
+       "       RETURN;"
+       "     END IF;"
+       "     BEGIN"
+       "       INSERT INTO scap.cpes"
+       "                    (uuid, name)"
+       "       VALUES (uuid_arg, name_arg);"
+       "       RETURN;"
+       "     EXCEPTION WHEN unique_violation THEN"
+       "       NULL;"  /* Try again. */
+       "     END;"
+       "   END LOOP;"
+       " END;"
+       "$$ LANGUAGE plpgsql;");
+
+  sql ("CREATE OR REPLACE FUNCTION merge_affected_product"
+       "                            (cve_arg INTEGER, cpe_arg INTEGER)"
+       " RETURNS VOID AS $$"
+       " BEGIN"
+       "   LOOP"
+       "     UPDATE scap.cpes"
+       "     SET cve = cve_arg, cpe = cpe_arg"
+       "     WHERE cve = cve_arg AND cpe = cpe_arg;"
+       "     IF found THEN"
+       "       RETURN;"
+       "     END IF;"
+       "     BEGIN"
+       "       INSERT INTO scap.affected_products"
+       "                    (cve, cpe)"
+       "       VALUES (cve_arg, cpe_arg);"
+       "       RETURN;"
+       "     EXCEPTION WHEN unique_violation THEN"
+       "       NULL;"  /* Try again. */
+       "     END;"
+       "   END LOOP;"
+       " END;"
+       "$$ LANGUAGE plpgsql;");
+
+  sql ("CREATE OR REPLACE FUNCTION merge_ovaldef"
+       "                            (uuid_arg TEXT,"
+       "                             name_arg TEXT,"
+       "                             comment_arg TEXT,"
+       "                             creation_time_arg INTEGER,"
+       "                             modification_time_arg INTEGER,"
+       "                             version_arg INTEGER,"
+       "                             deprecated_arg INTEGER,"
+       "                             def_class_arg TEXT,"
+       "                             title_arg TEXT,"
+       "                             description_arg TEXT,"
+       "                             xml_file_arg TEXT,"
+       "                             status_arg TEXT,"
+       "                             max_cvss_arg FLOAT,"
+       "                             cve_refs_arg INTEGER)"
+       " RETURNS VOID AS $$"
+       " BEGIN"
+       "   LOOP"
+       "     UPDATE scap.ovaldefs"
+       "     SET name = name_arg,"
+       "         comment = comment_arg,"
+       "         creation_time = creation_time_arg,"
+       "         modification_time = modification_time_arg,"
+       "         version = version_arg,"
+       "         deprecated = deprecated_arg,"
+       "         def_class = def_class_arg,"
+       "         title = title_arg,"
+       "         description = description_arg,"
+       "         xml_file = xml_file_arg,"
+       "         status = status_arg,"
+       "         max_cvss = max_cvss_arg,"
+       "         cve_refs = cve_refs_arg"
+       "     WHERE uuid = uuid_arg;"
+       "     IF found THEN"
+       "       RETURN;"
+       "     END IF;"
+       "     BEGIN"
+       "       INSERT INTO scap.ovaldefs"
+       "                    (uuid, name, comment, creation_time,"
+       "                     modification_time, version, deprecated, def_class,"
+       "                     title, description, xml_file, status, max_cvss,"
+       "                     cve_refs)"
+       "       VALUES (uuid_arg, name_arg, comment_arg, creation_time_arg,"
+       "               modification_time_arg, version_arg, deprecated_arg,"
+       "               def_class_arg, title_arg, description_arg, xml_file_arg,"
+       "               status_arg, max_cvss_arg, cve_refs_arg);"
+       "       RETURN;"
+       "     EXCEPTION WHEN unique_violation THEN"
+       "       NULL;"  /* Try again. */
+       "     END;"
+       "   END LOOP;"
+       " END;"
+       "$$ LANGUAGE plpgsql;");
+
+  return 0;
+}
+
+/**
+ * @brief Database specific cleanup after SCAP update.
+ */
+void
+manage_update_scap_db_cleanup ()
+{
+  sql ("DROP FUNCTION merge_cpe (uuid_arg TEXT, name_arg TEXT, title_arg TEXT,"
+       "                         creation_time_arg INTEGER,"
+       "                         modification_time_arg INTEGER,"
+       "                         status_arg TEXT, deprecated_by_id_arg INTEGER,"
+       "                         nvd_id_arg TEXT);");
+
+  sql ("DROP FUNCTION merge_cve (uuid_arg TEXT,"
+       "                         name_arg TEXT,"
+       "                         creation_time_arg INTEGER,"
+       "                         modification_time_arg INTEGER,"
+       "                         cvss_arg FLOAT,"
+       "                         description_arg TEXT,"
+       "                         vector_arg TEXT,"
+       "                         complexity_arg TEXT,"
+       "                         authentication_arg TEXT,"
+       "                         confidentiality_impact_arg TEXT,"
+       "                         integrity_impact_arg TEXT,"
+       "                         availability_impact_arg TEXT,"
+       "                         products_arg TEXT);");
+
+  sql ("DROP FUNCTION merge_cpe_name (uuid_arg TEXT,"
+       "                              name_arg TEXT);");
+
+  sql ("DROP FUNCTION merge_affected_product (cve_arg INTEGER,"
+       "                                      cpe_arg INTEGER);");
+
+  sql ("DROP FUNCTION merge_ovaldef (uuid_arg TEXT,"
+       "                             name_arg TEXT,"
+       "                             comment_arg TEXT,"
+       "                             creation_time_arg INTEGER,"
+       "                             modification_time_arg INTEGER,"
+       "                             version_arg INTEGER,"
+       "                             deprecated_arg INTEGER,"
+       "                             def_class_arg TEXT,"
+       "                             title_arg TEXT,"
+       "                             description_arg TEXT,"
+       "                             xml_file_arg TEXT,"
+       "                             status_arg TEXT,"
+       "                             max_cvss_arg FLOAT,"
+       "                             cve_refs_arg INTEGER);");
 }
 
 
@@ -2959,7 +3223,189 @@ manage_db_init (const gchar *name)
            " VALUES ('last_update', '0');");
     }
   else if (strcasecmp (name, "scap") == 0)
-    assert (0); // FIX
+    {
+      sql ("CREATE OR REPLACE FUNCTION drop_scap () RETURNS void AS $$"
+           " BEGIN"
+           "   IF EXISTS (SELECT schema_name FROM information_schema.schemata"
+           "              WHERE schema_name = 'scap')"
+           "   THEN"
+           "     DROP SCHEMA IF EXISTS scap CASCADE;"
+           "   END IF;"
+           " END;"
+           " $$ LANGUAGE plpgsql;");
+
+      sql ("SELECT drop_scap ();");
+      sql ("DROP FUNCTION drop_scap ();");
+      sql ("CREATE SCHEMA scap;");
+
+      sql ("SELECT set_config ('search_path',"
+           "                   current_setting ('search_path') || ',scap',"
+           "                   false);");
+
+      /* Create tables and indexes. */
+
+      sql ("CREATE TABLE scap.meta"
+           " (id SERIAL PRIMARY KEY,"
+           "  name text UNIQUE,"
+           "  value text);");
+
+      /* Create tables and indexes. */
+
+      sql ("CREATE TABLE scap.meta"
+           " (id INTEGER PRIMARY KEY AUTOINCREMENT,"
+           "  name UNIQUE,"
+           "  value);");
+
+      sql ("CREATE TABLE scap.cves"
+           " (id SERIAL PRIMARY KEY,"
+           "  uuid text UNIQUE,"
+           "  name text,"
+           "  comment text,"
+           "  description text,"
+           "  creation_time integer,"
+           "  modification_time integer,"
+           "  vector text,"
+           "  complexity text,"
+           "  authentication text,"
+           "  confidentiality_impact text,"
+           "  integrity_impact text,"
+           "  availability_impact text,"
+           "  products text,"
+           "  cvss FLOAT DEFAULT 0);");
+      sql ("CREATE UNIQUE INDEX scap.cve_idx"
+           " ON cves (name);");
+      sql ("CREATE INDEX scap.cves_by_creation_time_idx"
+           " ON cves (creation_time);");
+      sql ("CREATE INDEX scap.cves_by_modification_time_idx"
+           " ON cves (modification_time);");
+      sql ("CREATE INDEX scap.cves_by_cvss"
+           " ON cves (cvss);");
+
+      sql ("CREATE TABLE scap.cpes"
+           " (id SERIAL PRIMARY KEY,"
+           "  uuid text UNIQUE,"
+           "  name text,"
+           "  comment text,"
+           "  creation_time integer,"
+           "  modification_time integer,"
+           "  title text,"
+           "  status text,"
+           "  deprecated_by_id INTEGER,"
+           "  max_cvss FLOAT DEFAULT 0,"
+           "  cve_refs INTEGER DEFAULT 0,"
+           "  nvd_id text);");
+      sql ("CREATE UNIQUE INDEX scap.cpe_idx"
+           " ON cpes (name);");
+      sql ("CREATE INDEX scap.cpes_by_creation_time_idx"
+           " ON cpes (creation_time);");
+      sql ("CREATE INDEX scap.cpes_by_modification_time_idx"
+           " ON cpes (modification_time);");
+      sql ("CREATE INDEX scap.cpes_by_cvss"
+           " ON cpes (cvss);");
+
+      sql ("CREATE TABLE scap.affected_products"
+           " (cve INTEGER NOT NULL,"
+           "  cpe INTEGER NOT NULL,"
+           "  FOREIGN KEY(cve) REFERENCES cves(id),"
+           "  FOREIGN KEY(cpe) REFERENCES cpes(id);");
+      sql ("CREATE UNIQUE INDEX scap.afp_cpe_idx"
+           " ON affected_products (cpe);");
+      sql ("CREATE UNIQUE INDEX scap.afp_cve_idx"
+           " ON affected_products (cve);");
+
+      sql ("CREATE TABLE scap.ovaldefs"
+           " (id INTEGER PRIMARY KEY AUTOINCREMENT,"
+           "  uuid UNIQUE,"
+           "  name,"                        /* OVAL identifier. */
+           "  comment,"
+           "  creation_time DATE,"
+           "  modification_time DATE,"
+           "  version INTEGER,"
+           "  deprecated INTEGER,"
+           "  def_class TEXT,"              /* enum */
+           "  title TEXT,"
+           "  description TEXT,"
+           "  xml_file TEXT,"
+           "  status TEXT,"
+           "  max_cvss FLOAT DEFAULT 0,"
+           "  cve_refs INTEGER DEFAULT 0);");
+      sql ("CREATE INDEX scap.ovaldefs_idx"
+           " ON ovaldefs (name);");
+      sql ("CREATE INDEX scap.ovaldefs_by_creation_time"
+           " ON ovaldefs (creation_time);");
+
+      sql ("CREATE TABLE scap.ovalfiles"
+           " (id SERIAL PRIMARY KEY,"
+           "  xml_file TEXT UNIQUE);");
+      sql ("CREATE UNIQUE INDEX scap.ovalfiles_idx"
+           " ON ovalfiles (xml_file);");
+
+      sql ("CREATE TABLE scap.affected_ovaldefs"
+           " (cve INTEGER NOT NULL,"
+           "  ovaldef INTEGER NOT NULL,"
+           "  FOREIGN KEY(cve) REFERENCES cves(id),"
+           "  FOREIGN KEY(ovaldef) REFERENCES ovaldefs(id);");
+      sql ("CREATE UNIQUE INDEX scap.aff_ovaldefs_def_idx"
+           " ON affected_ovaldefs (ovaldef);");
+      sql ("CREATE UNIQUE INDEX scap.aff_ovaldefs_cve_idx"
+           " ON affected_ovaldefs (cve);");
+
+      /* Create deletion triggers. */
+
+      sql ("CREATE OR REPLACE FUNCTION scap_delete_affected ()"
+           " RETURNS TRIGGER AS $$"
+           " BEGIN"
+           "   DELETE FROM affected_products where cve = old.id;"
+           "   DELETE FROM affected_ovaldefs where cve = old.id;"
+           "   RETURN old;"
+           " END;"
+           "$$ LANGUAGE plpgsql;");
+
+      sql ("CREATE TRIGGER cves_delete AFTER DELETE ON cves"
+	   " FOR EACH ROW EXECUTE PROCEDURE scap_delete_affected ();");
+
+      sql ("CREATE OR REPLACE FUNCTION scap_update_cpes ()"
+           " RETURNS TRIGGER AS $$"
+           " BEGIN"
+           "   UPDATE cpes SET max_cvss = 0.0 WHERE id = old.cpe;"
+           "   UPDATE cpes SET cve_refs = cve_refs -1 WHERE id = old.cpe;"
+           "   RETURN old;"
+           " END;"
+           "$$ LANGUAGE plpgsql;");
+
+      sql ("CREATE TRIGGER affected_delete AFTER DELETE ON affected_products"
+           " FOR EACH ROW EXECUTE PROCEDURE scap_update_cpes ();");
+
+      sql ("CREATE OR REPLACE FUNCTION scap_delete_oval ()"
+           " RETURNS TRIGGER AS $$"
+           " BEGIN"
+           "   DELETE FROM ovaldefs WHERE ovaldefs.xml_file = old.xml_file;"
+           "   RETURN old;"
+           " END;"
+           "$$ LANGUAGE plpgsql;");
+
+      sql ("CREATE TRIGGER ovalfiles_delete AFTER DELETE ON ovalfiles"
+           " FOR EACH ROW EXECUTE PROCEDURE scap_delete_oval ();");
+
+      sql ("CREATE OR REPLACE FUNCTION scap_update_oval ()"
+           " RETURNS TRIGGER AS $$"
+           " BEGIN"
+           "   UPDATE ovaldefs SET max_cvss = 0.0 WHERE id = old.ovaldef;"
+           "   RETURN old;"
+           " END;"
+           "$$ LANGUAGE plpgsql;");
+
+      sql ("CREATE TRIGGER affected_ovaldefs_delete"
+           " AFTER DELETE ON affected_ovaldefs"
+	   " FOR EACH ROW EXECUTE PROCEDURE scap_update_oval ();");
+
+      /* Init tables. */
+
+      sql ("INSERT INTO scap.meta (name, value)"
+           " VALUES ('database_version', '15');");
+      sql ("INSERT INTO scap.meta (name, value)"
+           " VALUES ('last_update', '0');");
+    }
   else
     {
       assert (0);
