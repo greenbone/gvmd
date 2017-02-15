@@ -1,3 +1,11 @@
+2017-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): Use MIN_QOD_DEFAULT as the
+	default for the "min_qod" term of the GET_TASKS filter.  If QOD_DEFAULT
+	is used then by default GET_TASKS is not able to get result counts from
+	the cache, because QOD_DEFAULT and MIN_QOD_DEFAULT are different.  This
+	was solved in trunk as part of r22201.
+
 2017-02-14  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (auth_cache_find, auth_cache_insert): Fix DB column

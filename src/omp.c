@@ -17615,7 +17615,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           clean_filter = manage_clean_filter (filter ? filter : get->filter);
           overrides = filter_term_value (clean_filter, "apply_overrides");
           min_qod_str = filter_term_value (clean_filter, "min_qod");
-          min_qod = min_qod_str ? atoi (min_qod_str) : QOD_DEFAULT;
+          min_qod = min_qod_str ? atoi (min_qod_str) : MIN_QOD_DEFAULT;
           g_free (clean_filter);
           apply_overrides = overrides
                              ? strcmp (overrides, "0")
