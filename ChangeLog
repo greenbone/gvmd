@@ -1,5 +1,12 @@
 2017-02-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Backport r27710.
+
+	* src/report_formats/HTML/HTML.xsl: Replace style attributes on all
+	elements with class attributes and a style element in the HTML head.
+
+2017-02-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Backport r27624.
 
 	* tools/openvas-migrate-to-postgres.in (clean_column, clean_columns):
