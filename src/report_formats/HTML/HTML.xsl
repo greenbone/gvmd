@@ -121,22 +121,22 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <!-- A single line missing a newline, output up to the edge. -->
       <xsl:choose>
         <xsl:when test="(substring($string, 1, 1) = '@')">
-<div style="white-space: pre; font-family: monospace; color: #9932CC;">
+<div class="diff at">
 <xsl:value-of select="substring($string, 1, 90)"/>
 </div>
         </xsl:when>
         <xsl:when test="(substring($string, 1, 1) = '+')">
-<div style="white-space: pre; font-family: monospace; color: #006400;">
+<div class="diff plus">
 <xsl:value-of select="substring($string, 1, 90)"/>
 </div>
         </xsl:when>
         <xsl:when test="(substring($string, 1, 1) = '-')">
-<div style="white-space: pre; font-family: monospace; color: #B22222;">
+<div class="diff minus">
 <xsl:value-of select="substring($string, 1, 90)"/>
 </div>
         </xsl:when>
         <xsl:otherwise>
-<div style="white-space: pre; font-family: monospace;">
+<div class="diff">
 <xsl:value-of select="substring($string, 1, 90)"/>
 </div>
         </xsl:otherwise>
@@ -151,22 +151,22 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <!-- There's a newline before the edge, so output the line. -->
       <xsl:choose>
         <xsl:when test="(substring($string, 1, 1) = '@')">
-<div style="white-space: pre; font-family: monospace; color: #9932CC;">
+<div class="diff at">
 <xsl:value-of select="substring($string, 1, string-length($to-next-newline) + 1)"/>
 </div>
         </xsl:when>
         <xsl:when test="(substring($string, 1, 1) = '+')">
-<div style="white-space: pre; font-family: monospace; color: #006400;">
+<div class="diff plus">
 <xsl:value-of select="substring($string, 1, 90)"/>
 </div>
         </xsl:when>
         <xsl:when test="(substring($string, 1, 1) = '-')">
-<div style="white-space: pre; font-family: monospace; color: #B22222;">
+<div class="diff minus">
 <xsl:value-of select="substring($string, 1, 90)"/>
 </div>
         </xsl:when>
         <xsl:otherwise>
-<div style="white-space: pre; font-family: monospace;">
+<div class="diff">
 <xsl:value-of select="substring($string, 1, string-length($to-next-newline) + 1)"/>
 </div>
         </xsl:otherwise>
@@ -179,22 +179,22 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <!-- Any newline comes after the edge, so output up to the edge. -->
       <xsl:choose>
         <xsl:when test="(substring($string, 1, 1) = '@')">
-<div style="white-space: pre; font-family: monospace;">
+<div class="diff at">
 <xsl:value-of select="substring($string, 1, 90)"/>
 </div>
         </xsl:when>
         <xsl:when test="(substring($string, 1, 1) = '+')">
-<div style="white-space: pre; font-family: monospace; color: #006400;">
+<div class="diff plus">
 <xsl:value-of select="substring($string, 1, 90)"/>
 </div>
         </xsl:when>
         <xsl:when test="(substring($string, 1, 1) = '-')">
-<div style="white-space: pre; font-family: monospace; color: #B22222;">
+<div class="diff minus">
 <xsl:value-of select="substring($string, 1, 90)"/>
 </div>
         </xsl:when>
         <xsl:otherwise>
-<div style="white-space: pre; font-family: monospace;">
+<div class="diff">
 <xsl:value-of select="substring($string, 1, 90)"/>
 </div>
         </xsl:otherwise>
@@ -243,7 +243,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:choose>
       <xsl:when test="active='0'"/>
       <xsl:otherwise>
-        <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px; background-color: #ffff90;">
+        <div class="note">
           <b>Note</b><xsl:if test="$delta and $delta &gt; 0"> (Result <xsl:value-of select="$delta"/>)</xsl:if><br/>
           <pre>
             <xsl:value-of select="text"/>
@@ -276,7 +276,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:choose>
       <xsl:when test="active='0'"/>
       <xsl:otherwise>
-        <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px; background-color: #ffff90;">
+        <div class="override">
           <b>
             Override from
             <xsl:choose>
@@ -410,19 +410,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:template match="result" mode="issue">
     <xsl:param name="report" select="/report"/>
 
-    <xsl:variable name="style">
+    <xsl:variable name="threat_class">
       <xsl:choose>
-         <xsl:when test="threat='Low'">background:#539dcb</xsl:when>
-         <xsl:when test="threat='Medium'">background:#f99f31</xsl:when>
-         <xsl:when test="threat='High'">background:#cb1d17</xsl:when>
-         <xsl:otherwise>background:#d5d5d5</xsl:otherwise>
+         <xsl:when test="threat='Low'">low</xsl:when>
+         <xsl:when test="threat='Medium'">medium</xsl:when>
+         <xsl:when test="threat='High'">high</xsl:when>
+         <xsl:otherwise></xsl:otherwise>
       </xsl:choose>
     </xsl:variable>
 
     <xsl:choose>
       <xsl:when test="$report/@type = 'prognostic'">
-        <div style="{$style}; padding:4px; margin:3px; margin-bottom:0px; color: #FFFFFF; border: 1px solid #CCCCCC; border-bottom: 0px;">
-          <div style="float: right; text-align:right">
+        <div class="result_head {$threat_class}">
+          <div class="location_float">
             <xsl:value-of select="cve/cpe/@id"/>
           </div>
           <b><xsl:value-of select="threat"/></b>
@@ -431,19 +431,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </xsl:if>
           <div><xsl:value-of select="cve/@id"/></div>
         </div>
-        <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+        <div class="result_section">
           <xsl:call-template name="prognostic-description">
             <xsl:with-param name="string" select="description"/>
           </xsl:call-template>
         </div>
       </xsl:when>
       <xsl:otherwise>
-        <div style="{$style}; padding:4px; margin:3px; margin-bottom:0px; color: #FFFFFF; border: 1px solid #CCCCCC; border-bottom: 0px;">
-          <div style="float:right; text-align:right">
+        <div class="result_head {$threat_class}">
+          <div class="location_float">
             <xsl:value-of select="port"/>
           </div>
           <xsl:if test="delta/text()">
-            <div style="float: left; font-size: 24px; border: 2px; padding-left: 2px; padding-right: 8px; margin:0px;">
+            <div class="delta_float">
               <xsl:choose>
                 <xsl:when test="delta/text() = 'changed'">~</xsl:when>
                 <xsl:when test="delta/text() = 'gone'">&#8722;</xsl:when>
@@ -472,7 +472,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               </xsl:if>
             </xsl:otherwise>
           </xsl:choose>
-          <div style="width: 100%">
+          <div class="full_width">
             NVT:
             <xsl:variable name="max" select="80"/>
               <xsl:choose>
@@ -487,7 +487,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </div>
         </div>
         <xsl:if test="count (detection)">
-          <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+          <div class="result_section">
             Product detection result:
             <xsl:value-of select="detection/result/details/detail[name = 'product']/value/text()"/>
             by
@@ -498,7 +498,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
         <!-- Summary -->
         <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'summary')) &gt; 0">
-          <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+          <div class="result_section">
             <b>Summary</b>
             <xsl:call-template name="structured-text">
               <xsl:with-param name="string"
@@ -510,7 +510,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <!-- Result -->
         <xsl:choose>
           <xsl:when test="$report/@type = 'prognostic'">
-            <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+            <div class="result_section">
               <xsl:choose>
                 <xsl:when test="delta/text() = 'changed'">
                   <b>Result 1</b>
@@ -525,7 +525,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </div>
           </xsl:when>
           <xsl:otherwise>
-            <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+            <div class="result_section">
               <xsl:choose>
                 <xsl:when test="delta/text() = 'changed'">
                   <b>Result 1</b>
@@ -550,7 +550,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </xsl:choose>
 
         <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'impact')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'impact') != 'N/A'">
-          <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+          <div class="result_section">
             <b>Impact</b>
             <xsl:call-template name="structured-text">
               <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'impact')"/>
@@ -559,7 +559,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </xsl:if>
 
         <xsl:if test="(string-length (openvas:get-nvt-tag (nvt/tags, 'solution')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'solution') != 'N/A') or (string-length (openvas:get-nvt-tag (nvt/tags, 'solution_type')) &gt; 0)">
-          <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+          <div class="result_section">
           <b>Solution</b>
             <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'solution_type')) &gt; 0">
               <p><b>Solution type: </b> <xsl:value-of select="openvas:get-nvt-tag (nvt/tags, 'solution_type')"/></p>
@@ -571,7 +571,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </xsl:if>
 
         <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'affected')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'affected') != 'N/A'">
-          <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+          <div class="result_section">
             <b>Affected Software/OS</b>
             <xsl:call-template name="structured-text">
               <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'affected')"/>
@@ -580,7 +580,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </xsl:if>
 
         <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'insight')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'insight') != 'N/A'">
-          <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+          <div class="result_section">
             <b>Vulnerability Insight</b>
             <xsl:call-template name="structured-text">
               <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'insight')"/>
@@ -588,7 +588,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </div>
         </xsl:if>
 
-        <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+        <div class="result_section">
           <xsl:choose>
             <xsl:when test="(nvt/cvss_base &gt; 0) or (cve/cvss_base &gt; 0)">
               <b>Vulnerability Detection Method</b>
@@ -637,7 +637,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </div>
 
         <xsl:if test="count (detection)">
-          <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+          <div class="result_section">
             <b>Product Detection Result</b>
             <p>
               <table>
@@ -677,7 +677,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </xsl:variable>
 
         <xsl:if test="$cve_ref != '' or $bid_ref != '' or $xref != '' or count($cert_ref/cert_ref) > 0">
-          <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+          <div class="result_section">
             <b>References</b><br/>
             <p>
               <table>
@@ -701,13 +701,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <xsl:if test="delta">
           <xsl:choose>
             <xsl:when test="delta/text() = 'changed'">
-              <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+              <div class="result_section">
                 <b>Result 2</b>
                 <pre>
                   <xsl:value-of select="delta/result/description"/>
                 </pre>
               </div>
-              <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+              <div class="result_section">
                 <b>Different Lines</b>
                 <p>
                   <xsl:call-template name="highlight-diff">
@@ -1117,7 +1117,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <h2>Host Summary</h2>
 
     <table width="100%">
-      <tr style="background-color: #d5d5d5;">
+      <tr class="table_head">
         <td>Host</td>
         <td>Start</td>
         <td>End</td>
@@ -1180,7 +1180,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
        string-length(/report/host/detail[name='Auth-ESXi-Failure']/value) &gt; 0">
        <h2>Host Authentications</h2>
        <table>
-         <tr style="background-color: #d5d5d5;">
+         <tr class="table_head">
            <td>Host</td>
            <td>Protocol</td>
            <td>Result</td>
@@ -1234,7 +1234,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             CVEs closed by vendor security updates for <xsl:value-of select="$current_host"/>
           </h2>
           <table class="gbntable" cellspacing="2" cellpadding="4">
-            <tr style="background-color: #d5d5d5;">
+            <tr class="table_head">
               <td>CVE</td>
               <td>NVT</td>
             </tr>
@@ -1264,7 +1264,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <h3>Port Summary for Host <xsl:value-of select="$current_host" /></h3>
 
           <table width="100%">
-            <tr style="background-color: #d5d5d5;">
+            <tr class="table_head">
               <td>Service (Port)</td>
               <td>Threat Level</td>
             </tr>
@@ -1295,19 +1295,118 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:template match="/">
     <html>
       <head>
-        <link rel="stylesheet" type="text/css" href="./style.css" />
-        <title>Scan Report</title>
         <style>
+body {
+  background-color: #FFFFFF;
+  margin: 0px;
+  font: small Verdana, sans-serif;
+  font-size: 12px;
+  color: #1A1A1A;"
+}
+
+div.content {
+  width: 98%;
+  align: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+tr.table_head {
+  background-color: #d5d5d5;
+}
+
+.diff {
+  white-space: pre;
+  font-family: monospace;
+}
+
+.diff.at {
+  color: #9932CC;
+}
+
+.diff.plus {
+  color: #006400;
+}
+
+.diff.minus {
+  color: #B22222;
+}
+
+div.footer {
+  text-align: center;
+}
+
+div.note, div.override {
+  padding:4px;
+  margin:3px;
+  margin-bottom:0px;
+  margin-top:0px;
+  border: 1px solid #CCCCCC;
+  border-top: 0px;
+  background-color: #ffff90;
+}
+
+.result_head {
+  padding:4px;
+  margin:3px;
+  margin-bottom:0px;
+  color: #FFFFFF;
+  border: 1px solid #CCCCCC;
+  border-bottom: 0px;
+  background:#d5d5d5;
+}
+
+.result_head.low {
+  background:#539dcb
+}
+
+.result_head.medium {
+  background:#f99f31
+}
+
+.result_head.high {
+  background:#cb1d17
+}
+
+.result_section {
+  padding:4px;
+  margin:3px;
+  margin-bottom:0px;
+  margin-top:0px;
+  border: 1px solid #CCCCCC;
+  border-top: 0px;
+}
+
+.location_float {
+  float: right;
+  text-align:right;
+}
+
+.delta_float {
+  float: left;
+  font-size: 24px;
+  border: 2px;
+  padding-left: 2px;
+  padding-right: 8px;
+  margin:0px;
+}
+
+.full_width {
+  width: 100%;
+}
+
 pre {
  white-space: pre-wrap;
  word-wrap: break-word;
 }
         </style>
+        <link rel="stylesheet" type="text/css" href="./style.css" />
+        <title>Scan Report</title>
       </head>
-      <body style="background-color: #FFFFFF; margin: 0px; font: small Verdana, sans-serif; font-size: 12px; color: #1A1A1A;">
-        <div style="width: 98%; align: center; margin-left: auto; margin-right: auto;">
+      <body>
+        <div class="content">
                 <xsl:apply-templates/>
-                <div style="text-align: center;">
+                <div class="footer">
                   This file was automatically generated.
                 </div>
         </div>
