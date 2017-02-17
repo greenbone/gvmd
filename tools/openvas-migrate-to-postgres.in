@@ -1045,6 +1045,69 @@ cleanup_sqlite_db () {
   test_sql_exit "Failed to remove escalator_condition_data_trash"
 }
 
+# Replace the value of a column if the cast does not work
+clean_column () {
+  table="$1"
+  column="$2"
+  type="$3"
+  replace="$4"
+  if [ -z "$type" ]
+  then
+    type="numeric"
+  fi
+  if [ -z "$replace" ]
+  then
+    replace="null"
+  fi
+
+  x=$(sqlite "SELECT \`$column\` FROM $table LIMIT 1")
+  if [ "$?" -eq 0 ]
+  then
+    sqlite "UPDATE $table SET \`$column\` = $replace WHERE (CAST (\`$column\` AS $type) IS NOT \`$column\`);"
+  fi
+}
+
+# Set all columns that do not fit the type expected by postgres to null
+clean_columns () {
+  col_data=$(psql tasks -Atc "SELECT DISTINCT table_name, column_name, data_type
+                              FROM information_schema.columns
+                              WHERE table_schema='public'
+                                AND data_type != 'text'
+                                AND data_type != 'bytea'")
+  for line in $col_data
+  do
+    table=`echo "$line" | cut -d '|' -f1`
+    column=`echo "$line" | cut -d '|' -f2`
+    type=`echo "$line" | cut -d '|' -f3`
+
+    if [ "$column" != "id" ]
+    then
+      clean_column "$table" "$column" "$type"
+    fi
+  done
+}
+
+clean_fkey_columns () {
+  col_data=$(psql tasks -Atc "SELECT tc.table_name, kcu.column_name,
+                                     ccu.table_name, ccu.column_name
+                              FROM information_schema.table_constraints AS tc
+                                JOIN information_schema.key_column_usage AS kcu
+                                  ON tc.constraint_name = kcu.constraint_name
+                                JOIN information_schema.constraint_column_usage AS ccu
+                                  ON ccu.constraint_name = tc.constraint_name
+                              WHERE constraint_type = 'FOREIGN KEY'
+                                AND tc.constraint_schema = 'public'")
+  for line in $col_data
+  do
+    table=`echo "$line" | cut -d '|' -f1`
+    column=`echo "$line" | cut -d '|' -f2`
+    ftable=`echo "$line" | cut -d '|' -f3`
+    fcolumn=`echo "$line" | cut -d '|' -f4`
+
+    sqlite "UPDATE $table SET \`$column\` = null WHERE \`$column\` NOT IN (SELECT \`$fcolumn\` FROM $ftable);"
+  done
+}
+
 copy_data () {
 
   if [ $# -ne 1 ]
@@ -2041,6 +2104,8 @@ create_migrate_clean () {
   create_tables_133
   cleanup_sqlite_db
   migrate 133 $1
+  clean_columns
+  clean_fkey_columns
 }
 
 ## Create a Postgres database based on the SQLite one.

@@ -1,3 +1,13 @@
+2017-02-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r27624.
+
+	* tools/openvas-migrate-to-postgres.in (clean_column, clean_columns):
+	New functions to clean up columns where implicit type casts would fail.
+	(clean_fkey_columns): New function to clean up columns which will
+	use foreign keys in Postgres.
+	(create_migrate_clean): Call clean_columns and clean_fkey_columns.
+
 2017-02-13  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r27580.
