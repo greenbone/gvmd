@@ -34019,7 +34019,7 @@ create_config_from_scanner (const char *scanner_id, const char *name,
       sql_rollback ();
       return 99;
     }
-  if (find_scanner_with_permission (scanner_id, &scanner, "create_config"))
+  if (find_scanner_with_permission (scanner_id, &scanner, "get_scanners"))
     {
       sql_rollback ();
       return -1;
