@@ -35383,7 +35383,7 @@ manage_set_config (config_t config, const char*name, const char *comment,
         }
       scanner_t scanner = 0;
 
-      if (find_scanner_with_permission (scanner_id, &scanner, "modify_config")
+      if (find_scanner_with_permission (scanner_id, &scanner, "get_scanners")
           || scanner == 0)
         {
           sql_rollback ();
