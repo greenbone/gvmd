@@ -1,5 +1,11 @@
 2017-02-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (host_summary_append): Check time strings before using
+	them.  End time in particular can be NULL while a task is running, or for
+	container tasks.
+
+2017-02-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_set_config): Correct permission.
 
 2017-02-20  Matthew Mundell <matthew.mundell@greenbone.net>

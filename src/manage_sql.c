@@ -26900,34 +26900,47 @@ host_summary_append (GString *host_summary_buffer, const char *host,
 {
   if (host_summary_buffer)
     {
-      struct tm start_tm, end_tm;
       char start[200], end[200];
 
-      memset (&start_tm, 0, sizeof (struct tm));
-      if (strptime (start_iso, "%FT%H:%M:%S", &start_tm) == NULL)
+      if (start_iso)
         {
-          g_warning ("%s: Failed to parse start", __FUNCTION__);
-          return;
-        }
+          struct tm start_tm;
 
-      if (strftime (start, 200, "%b %d, %H:%M:%S", &start_tm) == 0)
-        {
-          g_warning ("%s: Failed to format start", __FUNCTION__);
-          return;
-        }
+          memset (&start_tm, 0, sizeof (struct tm));
+          if (strptime (start_iso, "%FT%H:%M:%S", &start_tm) == NULL)
+            {
+              g_warning ("%s: Failed to parse start", __FUNCTION__);
+              return;
+            }
 
-      memset (&end_tm, 0, sizeof (struct tm));
-      if (strptime (end_iso, "%FT%H:%M:%S", &end_tm) == NULL)
-        {
-          g_warning ("%s: Failed to parse end", __FUNCTION__);
-          return;
+          if (strftime (start, 200, "%b %d, %H:%M:%S", &start_tm) == 0)
+            {
+              g_warning ("%s: Failed to format start", __FUNCTION__);
+              return;
+            }
         }
+      else
+        strcpy (start, "(not started)");
 
-      if (strftime (end, 200, "%b %d, %H:%M:%S", &end_tm) == 0)
+      if (end_iso)
         {
-          g_warning ("%s: Failed to format end", __FUNCTION__);
-          return;
+          struct tm end_tm;
+
+          memset (&end_tm, 0, sizeof (struct tm));
+          if (strptime (end_iso, "%FT%H:%M:%S", &end_tm) == NULL)
+            {
+              g_warning ("%s: Failed to parse end", __FUNCTION__);
+              return;
+            }
+
+          if (strftime (end, 200, "%b %d, %H:%M:%S", &end_tm) == 0)
+            {
+              g_warning ("%s: Failed to format end", __FUNCTION__);
+              return;
+            }
         }
+      else
+        strcpy (end, "(not finished)");
 
       g_string_append_printf (host_summary_buffer,
                               "   %-15s   %-16s   %s\n",
