@@ -65664,7 +65664,7 @@ manage_get_users (GSList *log_config, const gchar *database,
         }
       init_iterator (&users,
                      "SELECT name FROM users"
-                     " WHERE id IN (SELECT user FROM role_users"
+                     " WHERE id IN (SELECT \"user\" FROM role_users"
                      "              WHERE role = %llu);",
                      role);
     }

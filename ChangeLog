@@ -1,3 +1,7 @@
+2017-02-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (manage_get_users): Quote special name for Postgres.
+
 2017-02-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (host_summary_append): Check time strings before using
