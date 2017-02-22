@@ -922,7 +922,12 @@ parse_iso_time (const char *text_time)
           /* Store current TZ. */
           tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
 
-          if (setenv ("TZ", current_credentials.timezone, 1) == -1)
+          if (setenv ("TZ",
+                      current_credentials.timezone
+                       ? current_credentials.timezone
+                       : "UTC",
+                      1)
+              == -1)
             {
               g_warning ("%s: Failed to switch to timezone %s",
                          __FUNCTION__, current_credentials.timezone);

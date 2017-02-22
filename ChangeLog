@@ -1,3 +1,8 @@
+2017-02-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (parse_iso_time): Check timezone before passing it to
+	setenv.
+
 2017-02-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_get_users): Quote special name for Postgres.
