@@ -16693,7 +16693,7 @@ auto_delete_reports ()
       if (keep_string == NULL)
         continue;
       keep = atoi (keep_string);
-      if (keep < 5 || keep > 1200)
+      if (keep < AUTO_DELETE_KEEP_MIN || keep > AUTO_DELETE_KEEP_MAX)
         continue;
 
       tracef ("%s: %s (%i)", __FUNCTION__,
@@ -36657,7 +36657,8 @@ set_task_preferences (task_t task, array_t *preferences)
                     {
                       int keep;
                       keep = atoi (pair->value);
-                      if (keep < 2 || keep > 1200)
+                      if (keep < AUTO_DELETE_KEEP_MIN 
+                          || keep > AUTO_DELETE_KEEP_MAX)
                         return 2;
                     }
 
