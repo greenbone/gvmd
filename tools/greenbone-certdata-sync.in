@@ -189,7 +189,7 @@ do_describe () {
 
 do_feedversion () {
   if [ -r $TIMESTAMP ] ; then
-      echo `cat $TIMESTAMP`
+      cat $TIMESTAMP
   fi
 }
 
