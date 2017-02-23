@@ -25317,10 +25317,11 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                       "Invalid auto_delete value"));
                   goto create_task_fail;
                 case 2:
-                  SEND_TO_CLIENT_OR_FAIL
+                  SENDF_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_task",
                                       "Auto Delete count out of range"
-                                      " (must be from 2 to 1200)"));
+                                      " (must be from %d to %d)"),
+                    AUTO_DELETE_KEEP_MIN, AUTO_DELETE_KEEP_MAX);
                   goto create_task_fail;
                 default:
                   SEND_TO_CLIENT_OR_FAIL
@@ -28256,10 +28257,11 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                         fail = 1;
                         break;
                       case 2:
-                        SEND_TO_CLIENT_OR_FAIL
+                        SENDF_TO_CLIENT_OR_FAIL
                          (XML_ERROR_SYNTAX ("modify_task",
                                             "Auto Delete count out of range"
-                                            " (must be from 2 to 1200)"));
+                                            " (must be from %d to %d)"),
+                          AUTO_DELETE_KEEP_MIN, AUTO_DELETE_KEEP_MAX);
                         fail = 1;
                         break;
                       default:
