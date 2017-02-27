@@ -1,3 +1,8 @@
+2017-02-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (report_add_result): Ensure that the dummy count for
+	empty reports exists when the results are all below the minimum QOD.
+
 2017-02-23  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r27804.

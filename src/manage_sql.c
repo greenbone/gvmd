@@ -18275,9 +18275,6 @@ report_add_result (report_t report, result_t result)
   qod = sql_int ("SELECT qod FROM results WHERE id = %llu;",
                  result);
 
-  if (qod < MIN_QOD_DEFAULT)
-    return;
-
   severity = sql_double ("SELECT severity FROM results WHERE id = %llu;",
                          result);
 
@@ -18290,14 +18287,17 @@ report_add_result (report_t report, result_t result)
              " AND severity = %1.1f;",
              report, current_credentials.uuid, severity);
   if (rowid)
-    sql ("UPDATE report_counts SET count = count + 1"
-         " WHERE id = %llu;", rowid);
+    sql ("UPDATE report_counts SET count = count + %i"
+         " WHERE id = %llu;",
+         qod < MIN_QOD_DEFAULT ? 0 : 1,
+         rowid);
   else
     sql ("INSERT INTO report_counts"
          " (report, \"user\", override, severity, count, end_time)"
          " VALUES"
-         " (%llu, (SELECT id FROM users WHERE uuid='%s'), 0, %1.1f, 1, 0);",
-         report, current_credentials.uuid, severity);
+         " (%llu, (SELECT id FROM users WHERE uuid='%s'), 0, %1.1f, %i, 0);",
+         report, current_credentials.uuid, severity,
+         qod < MIN_QOD_DEFAULT ? 0 : 1);
 
   owned_clause = where_owned_for_get ("override", NULL);
 
@@ -18348,15 +18348,17 @@ report_add_result (report_t report, result_t result)
              report, current_credentials.uuid, ov_severity);
   if (rowid)
     sql ("UPDATE report_counts"
-         " SET count = count + 1"
+         " SET count = count + %i"
          " WHERE id = %llu;",
+         qod < MIN_QOD_DEFAULT ? 0 : 1,
          rowid);
   else
     sql ("INSERT INTO report_counts"
          " (report, \"user\", override, severity, count, end_time)"
          " VALUES"
-         " (%llu, (SELECT id FROM users WHERE uuid='%s'), 1, %1.1f, 1, 0);",
-         report, current_credentials.uuid, ov_severity);
+         " (%llu, (SELECT id FROM users WHERE uuid='%s'), 1, %1.1f, %i, 0);",
+         report, current_credentials.uuid, ov_severity,
+         qod < MIN_QOD_DEFAULT ? 0 : 1);
 
   sql ("UPDATE report_counts"
        " SET end_time = (SELECT coalesce(min(overrides.end_time), 0)"
@@ -22346,6 +22348,7 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
       && search_phrase == NULL)
     {
       /* Get unfiltered counts from cache. */
+      g_debug ("%s: cache hit", __FUNCTION__);
       report_counts_from_cache (report, override, &severity_data);
       if (filtered_requested)
         report_counts_from_cache (report, override, &filtered_severity_data);
@@ -22353,6 +22356,7 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
   else
     {
       /* Recalculate. */
+      g_debug ("%s: cache miss", __FUNCTION__);
       if (filtered_requested)
         report_severity_data (report, override, host, min_cvss_base, min_qod,
                               search_phrase, search_phrase_exact,
