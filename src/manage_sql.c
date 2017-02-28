@@ -29157,13 +29157,13 @@ manage_report (report_t report, const get_data_t *get,
     {
       g_warning ("%s: No file returned for report format", __FUNCTION__);
     }
-  g_free (report_format_id);
   g_free (xml_file);
   g_free (xml_start);
 
   /* Read the script output from file. */
   if (output_file == NULL)
     {
+      g_free (report_format_id);
       gvm_file_remove_recurse (xml_dir);
       return NULL;
     }
@@ -29176,6 +29176,7 @@ manage_report (report_t report, const get_data_t *get,
   g_free (output_file);
   if (get_error)
     {
+      g_free (report_format_id);
       g_warning ("%s: Failed to get output: %s\n",
                   __FUNCTION__,
                   get_error->message);
@@ -29189,6 +29190,36 @@ manage_report (report_t report, const get_data_t *get,
   /* Remove the directory. */
 
   gvm_file_remove_recurse (xml_dir);
+
+  /* Set convenience return parameters. */
+
+  if (extension || content_type)
+    {
+      iterator_t formats;
+      get_data_t report_format_get;
+
+      memset (&report_format_get, '\0', sizeof (report_format_get));
+      report_format_get.id = report_format_id;
+
+      init_report_format_iterator (&formats, &report_format_get);
+      if (next (&formats) == FALSE)
+        {
+          g_free (report_format_id);
+          cleanup_iterator (&formats);
+          return NULL;
+        }
+
+      assert (report_format_iterator_extension (&formats));
+      assert (report_format_iterator_content_type (&formats));
+      if (extension)
+        *extension = g_strdup (report_format_iterator_extension (&formats));
+      if (content_type)
+        *content_type = g_strdup (report_format_iterator_content_type (&formats));
+
+      cleanup_iterator (&formats);
+    }
+
+  g_free (report_format_id);
 
   /* Return the output. */
 
