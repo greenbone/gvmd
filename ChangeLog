@@ -1,3 +1,10 @@
+2017-02-28  Matthew Mundell <matthew.mundell at greenbone.net>
+
+	Backport r27833.
+
+	* src/manage_sql.c (manage_report): Set extension and content_type return
+	parameters.  This was accidentally removed in r25771 on 2016-07-13.
+
 2017-02-23  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r27804.
