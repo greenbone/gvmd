@@ -1,3 +1,9 @@
+2017-03-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r27849.
+
+	* src/report_formats/HTML/HTML.xsl: Remove link to external CSS file.
+
 2017-02-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (report_add_result): Ensure that the dummy count for

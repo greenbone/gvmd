@@ -1445,7 +1445,6 @@ pre {
  word-wrap: break-word;
 }
         </style>
-        <link rel="stylesheet" type="text/css" href="./style.css" />
         <title>Scan Report</title>
       </head>
       <body>
