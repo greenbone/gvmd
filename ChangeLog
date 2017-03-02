@@ -1,3 +1,29 @@
+2017-03-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Get --update-scap running.
+
+	* src/manage_sql.c (verify_oval_file): Make arg const.
+	(update_ovaldef_xml): Use xml_path directly because it's absolute.  Allow
+	oval_timestamp to be NULL because sometimes it is.  Use a single
+	quoted_xml_basename variable instead of two.
+	(update_scap_cpes): Remove find of cpe-list because the entity is the
+	cpe-list.  Remove namespaces, they're not required.  Look for title in
+	item, not in list, actually iterator through the titles.
+	(oval_timestamp): Add XML to error messages.
+	(oval_files_add): Only process .xml files, skip everything else.  Add path
+	to message.
+	(oval_files_compare): Handle NULL files too.
+	(oval_files_free): Actually iterate.
+	(update_scap_ovaldefs): Switch branches of "if".  Drop trailing slashes.
+	Allow the private directory to not exist.
+
+	* src/manage_pg.c (manage_db_init): Correct cvss field.  Add missing
+	parens.
+
+	* src/manage_sqlite3.c (manage_db_init): Correct cvss field.  Add missing
+	parens.
+	(manage_update_scap_db_init): Correct number of args.
+
 2017-03-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/report_formats/HTML/HTML.xsl: Remove link to external CSS file.

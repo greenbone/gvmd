@@ -4069,13 +4069,13 @@ manage_db_init (const gchar *name)
       sql ("CREATE INDEX scap.cpes_by_modification_time_idx"
            " ON cpes (modification_time);");
       sql ("CREATE INDEX scap.cpes_by_cvss"
-           " ON cpes (cvss);");
+           " ON cpes (max_cvss);");
 
       sql ("CREATE TABLE scap.affected_products"
            " (cve INTEGER NOT NULL,"
            "  cpe INTEGER NOT NULL,"
            "  FOREIGN KEY(cve) REFERENCES cves(id),"
-           "  FOREIGN KEY(cpe) REFERENCES cpes(id);");
+           "  FOREIGN KEY(cpe) REFERENCES cpes(id));");
       sql ("CREATE UNIQUE INDEX scap.afp_cpe_idx"
            " ON affected_products (cpe);");
       sql ("CREATE UNIQUE INDEX scap.afp_cve_idx"
@@ -4110,7 +4110,7 @@ manage_db_init (const gchar *name)
            " (cve INTEGER NOT NULL,"
            "  ovaldef INTEGER NOT NULL,"
            "  FOREIGN KEY(cve) REFERENCES cves(id),"
-           "  FOREIGN KEY(ovaldef) REFERENCES ovaldefs(id);");
+           "  FOREIGN KEY(ovaldef) REFERENCES ovaldefs(id));");
       sql ("CREATE UNIQUE INDEX scap.aff_ovaldefs_def_idx"
            " ON affected_ovaldefs (ovaldef);");
       sql ("CREATE UNIQUE INDEX scap.aff_ovaldefs_cve_idx"
@@ -4408,7 +4408,7 @@ manage_update_scap_db_init ()
 {
   if (sqlite3_create_function (task_db,
                                "merge_cpe",
-                               8,               /* Number of args. */
+                               7,               /* Number of args. */
                                SQLITE_UTF8,
                                NULL,            /* Callback data. */
                                sql_merge_cpe,

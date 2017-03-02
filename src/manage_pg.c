@@ -3279,7 +3279,7 @@ manage_db_init (const gchar *name)
       sql ("CREATE INDEX scap.cves_by_modification_time_idx"
            " ON cves (modification_time);");
       sql ("CREATE INDEX scap.cves_by_cvss"
-           " ON cves (cvss);");
+           " ON cves (max_cvss);");
 
       sql ("CREATE TABLE scap.cpes"
            " (id SERIAL PRIMARY KEY,"
@@ -3307,7 +3307,7 @@ manage_db_init (const gchar *name)
            " (cve INTEGER NOT NULL,"
            "  cpe INTEGER NOT NULL,"
            "  FOREIGN KEY(cve) REFERENCES cves(id),"
-           "  FOREIGN KEY(cpe) REFERENCES cpes(id);");
+           "  FOREIGN KEY(cpe) REFERENCES cpes(id));");
       sql ("CREATE UNIQUE INDEX scap.afp_cpe_idx"
            " ON affected_products (cpe);");
       sql ("CREATE UNIQUE INDEX scap.afp_cve_idx"
@@ -3344,7 +3344,7 @@ manage_db_init (const gchar *name)
            " (cve INTEGER NOT NULL,"
            "  ovaldef INTEGER NOT NULL,"
            "  FOREIGN KEY(cve) REFERENCES cves(id),"
-           "  FOREIGN KEY(ovaldef) REFERENCES ovaldefs(id);");
+           "  FOREIGN KEY(ovaldef) REFERENCES ovaldefs(id));");
       sql ("CREATE UNIQUE INDEX scap.aff_ovaldefs_def_idx"
            " ON affected_ovaldefs (ovaldef);");
       sql ("CREATE UNIQUE INDEX scap.aff_ovaldefs_cve_idx"

@@ -63615,7 +63615,7 @@ oval_oval_definitions_date (entity_t entity, int *file_timestamp)
  * @return 0 if valid, else -1.
  */
 static int
-verify_oval_file (gchar *full_path)
+verify_oval_file (const gchar *full_path)
 {
   GError *error;
   gchar *xml;
@@ -63773,22 +63773,22 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
   entity_t entity, definition;
   entities_t children;
   const gchar *xml_path, *oval_timestamp;
-  gchar *xml_basename, *xml, *full_path, *quoted_xml_basename;
+  gchar *xml_basename, *xml, *quoted_xml_basename;
   gsize xml_len;
   GStatBuf state;
-  int updated_scap_bund, last_oval_update, timestamp, file_timestamp;
+  int updated_scap_bund, last_oval_update, file_timestamp;
 
   /* Setup variables. */
 
   xml_path = file_and_date[0];
   assert (xml_path);
 
+  g_debug ("%s: xml_path: %s\n", __FUNCTION__, xml_path);
+
   /* The timestamp from the OVAL XML. */
   oval_timestamp = file_and_date[1];
-  assert (oval_timestamp);
 
   updated_scap_bund = 0;
-  full_path = g_build_filename (OPENVAS_SCAP_DATA_DIR, xml_path, NULL);
 
   // FIX need --rebuild-oval?
 #if 0
@@ -63799,10 +63799,11 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
           else
 #endif
 
-  if (g_stat (full_path, &state))
+  if (g_stat (xml_path, &state))
     {
-      g_warning ("%s: Failed to stat OVAL file: %s\n",
+      g_warning ("%s: Failed to stat OVAL file %s: %s\n",
                  __FUNCTION__,
+                 xml_path,
                  strerror (errno));
       return -1;
     }
@@ -63811,29 +63812,27 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
     {
       g_info ("Skipping %s, file is older than last revision"
               " (this is not an error)",
-              full_path);
-      g_free (full_path);
+              xml_path);
       return 0;
     }
 
   xml_basename = g_path_get_basename (xml_path);
   quoted_xml_basename = sql_quote (xml_basename);
-  g_free (xml_basename);
 
   /* The last time this file was updated in the db. */
   last_oval_update = sql_int ("SELECT max(modification_time)"
                               " FROM scap.ovaldefs"
                               " WHERE xml_file = '%s';",
                               quoted_xml_basename);
-  g_free (quoted_xml_basename);
 
-  timestamp = parse_iso_time (oval_timestamp);
-  if (timestamp <= last_oval_update)
+  if (oval_timestamp
+      && (parse_iso_time (oval_timestamp) <= last_oval_update))
     {
+      g_free (xml_basename);
+      g_free (quoted_xml_basename);
       g_info ("Skipping %s, file has older timestamp than latest OVAL"
               " definition in database (this is not an error)",
-              full_path);
-      g_free (full_path);
+              xml_path);
       return 0;
     }
 
@@ -63841,28 +63840,30 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
     {
       /* Validate OVAL file. */
 
-      if (verify_oval_file (full_path))
+      if (verify_oval_file (xml_path))
         {
-          g_free (full_path);
           g_info ("Validation failed for file '%s'",
-                  full_path);
+                  xml_path);
+          g_free (xml_basename);
+          g_free (quoted_xml_basename);
           return 0;
         }
     }
 
   /* Parse XML from the file. */
 
-  g_info ("Updating %s", full_path);
+  g_info ("Updating %s", xml_path);
 
   error = NULL;
-  g_file_get_contents (full_path, &xml, &xml_len, &error);
+  g_file_get_contents (xml_path, &xml, &xml_len, &error);
   if (error)
     {
       g_warning ("%s: Failed to get contents: %s\n",
                  __FUNCTION__,
                  error->message);
       g_error_free (error);
-      g_free (full_path);
+      g_free (xml_basename);
+      g_free (quoted_xml_basename);
       return -1;
     }
 
@@ -63870,7 +63871,8 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
     {
       g_free (xml);
       g_warning ("%s: Failed to parse entity\n", __FUNCTION__);
-      g_free (full_path);
+      g_free (xml_basename);
+      g_free (quoted_xml_basename);
       return -1;
     }
   g_free (xml);
@@ -63882,8 +63884,8 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
   sql ("INSERT INTO ovalfiles (xml_file)"
        " SELECT '%s' WHERE NOT EXISTS (SELECT * FROM ovalfiles"
        "                               WHERE xml_file = '%s');",
-       xml_basename,
-       xml_basename);
+       quoted_xml_basename,
+       quoted_xml_basename);
 
   oval_oval_definitions_date (entity, &file_timestamp);
 
@@ -63921,7 +63923,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
               entities_t references;
               const char *deprecated;
               gchar *id, *quoted_title, *dates, *quoted_dates, *quoted_version;
-              gchar *quoted_class, *quoted_description, *quoted_xml_basename;
+              gchar *quoted_class, *quoted_description;
               gchar *quoted_status;
               int cve_count;
 
@@ -64006,7 +64008,6 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
               quoted_class = sql_quote (entity_attribute (definition, "class"));
               quoted_title = sql_quote (entity_text (title));
               quoted_description = sql_quote (entity_text (description));
-              quoted_xml_basename = sql_quote (xml_basename);
               status = entity_child (repository, "oval_definitions:status");
               if (status && strlen (entity_text (status)))
                 quoted_status = sql_quote (entity_text (status));
@@ -64034,7 +64035,6 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
               g_free (quoted_class);
               g_free (quoted_title);
               g_free (quoted_description);
-              g_free (quoted_xml_basename);
               g_free (quoted_status);
 
               references = entity->entities;
@@ -64074,15 +64074,17 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
 
   /* Cleanup. */
 
+  g_free (xml_basename);
+  g_free (quoted_xml_basename);
   free_entity (entity);
-  g_free (full_path);
   sql_commit ();
   return updated_scap_bund;
 
  fail:
+  g_free (xml_basename);
+  g_free (quoted_xml_basename);
   g_warning ("Update of OVAL definitions failed at file '%s'",
-             full_path);
-  g_free (full_path);
+             xml_path);
   sql_commit ();
   return -1;
 }
@@ -64246,6 +64248,8 @@ update_scap_cpes (int last_scap_update)
   last_cve_update = sql_int ("SELECT max (modification_time)"
                              " FROM scap.cves;");
 
+  g_debug ("%s: parsing %s", __FUNCTION__, full_path);
+
   error = NULL;
   g_file_get_contents (full_path, &xml, &xml_len, &error);
   g_free (full_path);
@@ -64266,8 +64270,8 @@ update_scap_cpes (int last_scap_update)
     }
   g_free (xml);
 
-  cpe_list = entity_child (entity, "cpe:cpe-list");
-  if (cpe_list == NULL)
+  cpe_list = entity;
+  if (strcmp (entity_name (cpe_list), "cpe-list"))
     {
       free_entity (entity);
       g_warning ("%s: CPE dictionary missing CPE-LIST\n", __FUNCTION__);
@@ -64279,15 +64283,16 @@ update_scap_cpes (int last_scap_update)
   children = cpe_list->entities;
   while ((cpe_item = first_entity (children)))
     {
-      if (strcmp (entity_name (cpe_item), "cpe:cpe-item") == 0)
+      if (strcmp (entity_name (cpe_item), "cpe-item") == 0)
         {
           const char *modification_date;
           entity_t item_metadata;
 
-          item_metadata = entity_child (cpe_item, "item-metadata");
+          item_metadata = entity_child (cpe_item, "meta:item-metadata");
           if (item_metadata == NULL)
             {
               g_warning ("%s: item-metadata missing\n", __FUNCTION__);
+
               free_entity (entity);
               goto fail;
             }
@@ -64336,17 +64341,20 @@ update_scap_cpes (int last_scap_update)
                   goto fail;
                 }
 
-              titles = cpe_list->entities;
+              titles = cpe_item->entities;
               quoted_title = g_strdup ("");
               while ((title = first_entity (titles)))
-                if (strcmp (entity_name (title), "title") == 0
-                    && entity_attribute (title, "xml:lang")
-                    && strcmp (entity_attribute (title, "xml:lang"), "en-US") == 0)
-                  {
-                    g_free (quoted_title);
-                    quoted_title = sql_quote (entity_text (title));
-                    break;
-                  }
+                {
+                  if (strcmp (entity_name (title), "title") == 0
+                      && entity_attribute (title, "xml:lang")
+                      && strcmp (entity_attribute (title, "xml:lang"), "en-US") == 0)
+                    {
+                      g_free (quoted_title);
+                      quoted_title = sql_quote (entity_text (title));
+                      break;
+                    }
+                  titles = next_entities (titles);
+                }
 
               // FIX also replace %7E with ~
               quoted_name = sql_quote (name);
@@ -64484,7 +64492,7 @@ oval_timestamp (const gchar *xml)
 
   if (parse_entity (xml, &entity))
     {
-      g_warning ("%s: Failed to parse entity\n", __FUNCTION__);
+      g_warning ("%s: Failed to parse entity: %s\n", __FUNCTION__, xml);
       return NULL;
     }
 
@@ -64530,7 +64538,7 @@ oval_timestamp (const gchar *xml)
         }
     }
 
-  g_warning ("%s: No timestamp\n", __FUNCTION__);
+  g_warning ("%s: No timestamp: %s\n", __FUNCTION__, xml);
   return NULL;
 }
 
@@ -64547,7 +64555,7 @@ static array_t *oval_files = NULL;
  * @param[in]  flag       Dummy arg for nftw.
  * @param[in]  traversal  Dummy arg for nftw.
  *
- * @return 0 added, -1 error.
+ * @return 0 success, -1 error.
  */
 static int
 oval_files_add (const char *path, const struct stat *stat, int flag,
@@ -64556,12 +64564,25 @@ oval_files_add (const char *path, const struct stat *stat, int flag,
   GError *error;
   gchar **pair, *oval_xml, *timestamp;
   gsize len;
+  const char *dot;
+
+  if (gvm_file_check_is_dir (path))
+    return 0;
+
+  dot = rindex (path, '.');
+  if ((dot == NULL) || strcasecmp (dot, ".xml"))
+    return 0;
+
+  g_warning ("%s: path: %s\n", __FUNCTION__, path);
 
   error = NULL;
   g_file_get_contents (path, &oval_xml, &len, &error);
   if (error)
     {
-      g_warning ("%s: Failed get contents: %s\n", __FUNCTION__, error->message);
+      g_warning ("%s: Failed get contents of %s: %s\n",
+                 __FUNCTION__,
+                 path,
+                 error->message);
       g_error_free (error);
       return -1;
     }
@@ -64598,6 +64619,16 @@ oval_files_compare (gconstpointer one, gconstpointer two)
   file_info_one = *((gchar***) one);
   file_info_two = *((gchar***) two);
 
+  if (file_info_one[1] == NULL)
+    {
+      if (file_info_two[1] == NULL)
+        return 0;
+      return -1;
+    }
+
+  if (file_info_two[1] == NULL)
+    return 1;
+
   return strcmp (file_info_one[1], file_info_two[2]);
 }
 
@@ -64618,6 +64649,7 @@ oval_files_free ()
       pair = g_ptr_array_index (oval_files, index);
       g_free (pair[0]);
       g_free (pair[1]);
+      index++;
     }
   array_free (oval_files);
   oval_files = NULL;
@@ -64648,25 +64680,31 @@ update_scap_ovaldefs (int last_scap_update, int private)
   else
     g_info ("Updating OVAL data");
 
-
   /* Get a list of the OVAL files. */
 
   if (private)
-    oval_dir = g_build_filename (OPENVAS_SCAP_DATA_DIR, "oval/", NULL);
-  else
     // FIX script allowed setting via PRIVATE_SUBDIR
-    oval_dir = g_build_filename (OPENVAS_SCAP_DATA_DIR, "private/", "oval/",
+    oval_dir = g_build_filename (OPENVAS_SCAP_DATA_DIR, "private", "oval",
                                  NULL);
+  else
+    oval_dir = g_build_filename (OPENVAS_SCAP_DATA_DIR, "oval", NULL);
+
   /* Pairs of pointers, pair[0]: absolute pathname, pair[1]: oval timestamp. */
   oval_files = make_array ();
 
   if (nftw (oval_dir, oval_files_add, 20, 0) == -1)
     {
-      g_free (oval_dir);
       oval_files_free ();
-      g_warning ("%s: failed to traverse: %s",
+      if ((errno == ENOENT) && private)
+        {
+          g_free (oval_dir);
+          return 0;
+        }
+      g_warning ("%s: failed to traverse '%s': %s",
                   __FUNCTION__,
-                  strerror (errno));
+                 oval_dir,
+                 strerror (errno));
+      g_free (oval_dir);
       return -1;
     }
 
