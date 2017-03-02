@@ -1,5 +1,9 @@
 2017-03-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (task_preferences): Flush trailing whitespace.
+
+2017-03-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Get --update-scap running.
 
 	* src/manage_sql.c (verify_oval_file): Make arg const.

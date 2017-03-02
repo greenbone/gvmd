@@ -39730,7 +39730,7 @@ set_task_preferences (task_t task, array_t *preferences)
                     {
                       int keep;
                       keep = atoi (pair->value);
-                      if (keep < AUTO_DELETE_KEEP_MIN 
+                      if (keep < AUTO_DELETE_KEEP_MIN
                           || keep > AUTO_DELETE_KEEP_MAX)
                         return 2;
                     }
