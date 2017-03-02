@@ -1,3 +1,9 @@
+2017-03-02  Juan Jose Nicola  <juan.nicola@greenbone.net>
+
+	* src/manage_sql.c (setup_full_config_prefs): Add port 3389 and
+	Services/irc to non_simult_ports config option, suggested by
+	Christian Fischer.
+
 2017-03-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (task_preferences): Flush trailing whitespace.
