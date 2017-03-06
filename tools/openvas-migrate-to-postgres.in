@@ -1071,12 +1071,11 @@ clean_column () {
 clean_columns () {
   log_info "Cleaning columns."
 
-  col_data=$(psql tasks -Atc "SELECT DISTINCT table_name, column_name, data_type
-                              FROM information_schema.columns
-                              WHERE table_schema='public'
-                                AND data_type != 'text'
-                                AND data_type != 'bytea'")
-  for line in $col_data
+  psql tasks -Atc "SELECT DISTINCT table_name, column_name, data_type
+                   FROM information_schema.columns
+                   WHERE table_schema='public'
+                   AND data_type != 'text'
+                   AND data_type != 'bytea'" | while read -r line
   do
     table=`echo "$line" | cut -d '|' -f1`
     column=`echo "$line" | cut -d '|' -f2`
@@ -1092,16 +1091,15 @@ clean_columns () {
 clean_fkey_columns () {
   log_info "Cleaning foreign key columns."
 
-  col_data=$(psql tasks -Atc "SELECT tc.table_name, kcu.column_name,
-                                     ccu.table_name, ccu.column_name
-                              FROM information_schema.table_constraints AS tc
-                                JOIN information_schema.key_column_usage AS kcu
-                                  ON tc.constraint_name = kcu.constraint_name
-                                JOIN information_schema.constraint_column_usage AS ccu
-                                  ON ccu.constraint_name = tc.constraint_name
-                              WHERE constraint_type = 'FOREIGN KEY'
-                                AND tc.constraint_schema = 'public'")
-  for line in $col_data
+  psql tasks -Atc "SELECT tc.table_name, kcu.column_name,
+						  ccu.table_name, ccu.column_name
+				   FROM information_schema.table_constraints AS tc
+					 JOIN information_schema.key_column_usage AS kcu
+					   ON tc.constraint_name = kcu.constraint_name
+					 JOIN information_schema.constraint_column_usage AS ccu
+					   ON ccu.constraint_name = tc.constraint_name
+				   WHERE constraint_type = 'FOREIGN KEY'
+					 AND tc.constraint_schema = 'public'" | while read -r line
   do
     table=`echo "$line" | cut -d '|' -f1`
     column=`echo "$line" | cut -d '|' -f2`

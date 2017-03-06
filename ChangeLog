@@ -1,5 +1,13 @@
 2017-03-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r27873.
+
+	* tools/openvas-migrate-to-postgres.in (clean_columns)
+	(clean_fkey_columns): Use "read" and "while" instead of "for",
+	otherwise the SQL output is split on spaces as well as lines.
+
+2017-03-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r27872.
 
 	* tools/openvas-migrate-to-postgres.in (clean_columns)
