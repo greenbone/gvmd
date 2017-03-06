@@ -1069,6 +1069,8 @@ clean_column () {
 
 # Set all columns that do not fit the type expected by postgres to null
 clean_columns () {
+  log_info "Cleaning columns."
+
   col_data=$(psql tasks -Atc "SELECT DISTINCT table_name, column_name, data_type
                               FROM information_schema.columns
                               WHERE table_schema='public'
@@ -1088,6 +1090,8 @@ clean_columns () {
 }
 
 clean_fkey_columns () {
+  log_info "Cleaning foreign key columns."
+
   col_data=$(psql tasks -Atc "SELECT tc.table_name, kcu.column_name,
                                      ccu.table_name, ccu.column_name
                               FROM information_schema.table_constraints AS tc
@@ -1280,9 +1284,16 @@ TABLES_145=$TABLES_144
 migrate_145_to_146 () {
   pg "DROP VIEW IF EXISTS result_new_severities;"
   pg "DROP VIEW IF EXISTS result_overrides;"
+
+  pg "CREATE TABLE IF NOT EXISTS auth_cache                 \
+       (id SERIAL PRIMARY KEY,                              \
+        username text NOT NULL,                             \
+        hash text,                                          \
+        method integer,                                     \
+        creation_time integer);"
 }
 
-TABLES_146=$TABLES_145
+TABLES_146="$TABLES_145 auth_cache"
 
 migrate_146_to_147 () {
   pg "ALTER TABLE report_counts ADD COLUMN min_qod INTEGER;"
@@ -2113,9 +2124,9 @@ create_migrate_clean () {
 # Migrate the Postgres schema from the 133 base version; then clean the SQLite
 # data; then copy the SQLite data to Postgres.
 #
-# There's no need to migrate to the latest version.  Postgres Manager will do
-# that.  Just get from the SQLite database to the same version, but under
-# Postgres.
+# There's no need to get the Postgres database to the latest version.  Postgres
+# Manager will do that.  Just get from the SQLite database to the same version,
+# but under Postgres.
 #
 create () {
   DB_VERSION=`sqlite "select value from meta where name = 'database_version';" 2>/dev/null | tr -d '\n\r' || echo 0`
