@@ -740,15 +740,20 @@ sql_merge_cve (sqlite3_context *context, int argc,
       return;
     }
 
-  created = sqlite3_value_int (argv[3]);
-  modified = sqlite3_value_int (argv[4]);
+  created = sqlite3_value_int (argv[2]);
+  modified = sqlite3_value_int (argv[3]);
 
-  cvss = sqlite3_value_text (argv[5]);
-  // FIX assert in float format
-  if (cvss == NULL)
+  if (sqlite3_value_type (argv[4]) == SQLITE_NULL)
+    cvss = (unsigned char *) "NULL";
+  else
     {
-      sqlite3_result_error (context, "Failed to get cvss argument", -1);
-      return;
+      cvss = sqlite3_value_text (argv[4]);
+      // FIX assert in float format
+      if (cvss == NULL)
+        {
+          sqlite3_result_error (context, "Failed to get cvss argument", -1);
+          return;
+        }
     }
 
   description = sqlite3_value_text (argv[5]);
@@ -862,7 +867,7 @@ sql_merge_cve (sqlite3_context *context, int argc,
 /**
  * @brief Insert or replace a CPE.
  *
- * This is a callback for a scalar SQL function of eight argument.
+ * This is a callback for a scalar SQL function of 2 arguments.
  *
  * @param[in]  context  SQL context.
  * @param[in]  argc     Number of arguments.
@@ -922,8 +927,8 @@ sql_merge_affected_product (sqlite3_context *context, int argc,
 
   assert (argc == 2);
 
-  cve = sqlite3_value_int (argv[3]);
-  cpe = sqlite3_value_int (argv[4]);
+  cve = sqlite3_value_int (argv[0]);
+  cpe = sqlite3_value_int (argv[1]);
 
   sql ("INSERT OR REPLACE INTO affected_products"
        " (cve, cpe)"

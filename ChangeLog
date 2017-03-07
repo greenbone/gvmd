@@ -1,3 +1,21 @@
+2017-03-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Correct errors in SQLite --update-scap-db.
+
+	* src/manage_sql.c (update_cve_xml): Remove namespace.  Get metrics from
+	right entity.  Correct merge_cve and merge_cve_name args.  Correct
+	message.
+	(oval_oval_definitions_date): Remove namespace.
+	(oval_generator_timestamp): Remove namespace, and hence arg.
+	(oval_timestamp): Remove namespaces.
+	(oval_files_add): Downgrade message to debug.
+	(oval_files_compare): Correct index.
+
+	* src/manage_sqlite3.c (sql_merge_cve): Correct indexes.  Check cvss arg
+	for NULL.
+	(sql_merge_cpe_name): Correct doc.
+	(sql_merge_affected_product): Correct indexes.
+
 2017-03-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* tools/openvas-migrate-to-postgres.in (clean_columns)
@@ -24,7 +42,7 @@
 
 2017-03-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	Get --update-scap running.
+	Get --update-scap-db running.
 
 	* src/manage_sql.c (verify_oval_file): Make arg const.
 	(update_ovaldef_xml): Use xml_path directly because it's absolute.  Allow

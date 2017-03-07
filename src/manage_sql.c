@@ -63260,7 +63260,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
   children = entity->entities;
   while ((entry = first_entity (children)))
     {
-      if (strcmp (entity_name (entry), "cve:entry") == 0)
+      if (strcmp (entity_name (entry), "entry") == 0)
         {
           entity_t last_modified;
 
@@ -63307,93 +63307,98 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
 
               cvss = entity_child (entry, "vuln:cvss");
               if (cvss == NULL)
-                {
-                  g_warning ("%s: vuln:cvss missing\n", __FUNCTION__);
-                  free_entity (entity);
-                  goto fail;
-                }
-
-              base_metrics = entity_child (cvss, "cvss:base_metrics");
+                base_metrics = NULL;
+              else
+                base_metrics = entity_child (cvss, "cvss:base_metrics");
               if (base_metrics == NULL)
                 {
-                  g_warning ("%s: cvss:base_metrics missing\n", __FUNCTION__);
-                  free_entity (entity);
-                  goto fail;
+                  score = NULL;
+                  summary = NULL;
+                  access_vector = NULL;
+                  access_complexity = NULL;
+                  authentication = NULL;
+                  confidentiality_impact = NULL;
+                  integrity_impact = NULL;
+                  availability_impact = NULL;
                 }
-
-              score = entity_child (cvss, "cvss:score");
-              if (score == NULL)
+              else
                 {
-                  g_warning ("%s: cvss:score missing\n", __FUNCTION__);
-                  free_entity (entity);
-                  goto fail;
-                }
+                  score = entity_child (base_metrics, "cvss:score");
+                  if (score == NULL)
+                    {
+                      g_warning ("%s: cvss:score missing\n", __FUNCTION__);
+                      free_entity (entity);
+                      goto fail;
+                    }
 
-              summary = entity_child (entry, "vuln:summary");
-              if (summary == NULL)
-                {
-                  g_warning ("%s: vuln:summary missing\n", __FUNCTION__);
-                  free_entity (entity);
-                  goto fail;
-                }
+                  summary = entity_child (entry, "vuln:summary");
+                  if (summary == NULL)
+                    {
+                      g_warning ("%s: vuln:summary missing\n", __FUNCTION__);
+                      free_entity (entity);
+                      goto fail;
+                    }
 
-              access_vector = entity_child (cvss, "cvss:access-vector");
-              if (access_vector == NULL)
-                {
-                  g_warning ("%s: cvss:access-vector missing\n", __FUNCTION__);
-                  free_entity (entity);
-                  goto fail;
-                }
+                  access_vector = entity_child (base_metrics, "cvss:access-vector");
+                  if (access_vector == NULL)
+                    {
+                      g_warning ("%s: cvss:access-vector missing\n", __FUNCTION__);
+                      free_entity (entity);
+                      goto fail;
+                    }
 
-              access_complexity = entity_child (cvss, "cvss:access-complexity");
-              if (access_complexity == NULL)
-                {
-                  g_warning ("%s: cvss:access-complexity missing\n",
-                             __FUNCTION__);
-                  free_entity (entity);
-                  goto fail;
-                }
+                  access_complexity = entity_child (base_metrics,
+                                                    "cvss:access-complexity");
+                  if (access_complexity == NULL)
+                    {
+                      g_warning ("%s: cvss:access-complexity missing\n",
+                                 __FUNCTION__);
+                      free_entity (entity);
+                      goto fail;
+                    }
 
-              authentication = entity_child (cvss, "cvss:authentication");
-              if (authentication == NULL)
-                {
-                  g_warning ("%s: cvss:authentication missing\n",
-                             __FUNCTION__);
-                  free_entity (entity);
-                  goto fail;
-                }
+                  authentication = entity_child (base_metrics,
+                                                 "cvss:authentication");
+                  if (authentication == NULL)
+                    {
+                      g_warning ("%s: cvss:authentication missing\n",
+                                 __FUNCTION__);
+                      free_entity (entity);
+                      goto fail;
+                    }
 
-              confidentiality_impact = entity_child
-                                        (cvss,
-                                         "cvss:confidentiality-impact");
-              if (confidentiality_impact == NULL)
-                {
-                  g_warning ("%s: cvss:confidentiality-impact missing\n",
-                             __FUNCTION__);
-                  free_entity (entity);
-                  goto fail;
-                }
+                  confidentiality_impact = entity_child
+                                            (base_metrics,
+                                             "cvss:confidentiality-impact");
+                  if (confidentiality_impact == NULL)
+                    {
+                      g_warning ("%s: cvss:confidentiality-impact missing\n",
+                                 __FUNCTION__);
+                      free_entity (entity);
+                      goto fail;
+                    }
 
-              integrity_impact = entity_child
-                                  (cvss,
-                                   "cvss:integrity-impact");
-              if (integrity_impact == NULL)
-                {
-                  g_warning ("%s: cvss:integrity-impact missing\n",
-                             __FUNCTION__);
-                  free_entity (entity);
-                  goto fail;
-                }
+                  integrity_impact = entity_child
+                                      (base_metrics,
+                                       "cvss:integrity-impact");
+                  if (integrity_impact == NULL)
+                    {
+                      g_warning ("%s: cvss:integrity-impact missing\n",
+                                 __FUNCTION__);
+                      free_entity (entity);
+                      goto fail;
+                    }
 
-              availability_impact = entity_child
-                                     (cvss,
-                                      "cvss:availability-impact");
-              if (availability_impact == NULL)
-                {
-                  g_warning ("%s: cvss:availability-impact missing\n",
-                             __FUNCTION__);
-                  free_entity (entity);
-                  goto fail;
+                  availability_impact = entity_child
+                                         (base_metrics,
+                                          "cvss:availability-impact");
+                  if (availability_impact == NULL)
+                    {
+                      g_warning ("%s: cvss:availability-impact missing\n",
+                                 __FUNCTION__);
+                      free_entity (entity);
+                      goto fail;
+                    }
                 }
 
               software = g_string_new ("");
@@ -63414,25 +63419,39 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                 }
 
               quoted_id = sql_quote (id);
-              quoted_summary = sql_quote (entity_text (summary));
-              quoted_access_vector = sql_quote (entity_text (access_vector));
+              quoted_summary = sql_quote (summary ? entity_text (summary) : "");
+              quoted_access_vector = sql_quote (access_vector
+                                                 ? entity_text (access_vector)
+                                                 : "");
               quoted_access_complexity = sql_quote
-                                          (entity_text (access_complexity));
+                                          (access_complexity
+                                            ? entity_text (access_complexity)
+                                            : "");
               quoted_authentication = sql_quote
-                                       (entity_text (authentication));
+                                       (authentication
+                                         ? entity_text (authentication)
+                                         : "");
               quoted_confidentiality_impact = sql_quote
-                                              (entity_text
-                                                (confidentiality_impact));
+                                               (confidentiality_impact
+                                                 ? entity_text
+                                                    (confidentiality_impact)
+                                                 : "");
               quoted_integrity_impact = sql_quote
-                                         (entity_text (integrity_impact));
+                                         (integrity_impact
+                                           ? entity_text (integrity_impact)
+                                           : "");
               quoted_availability_impact = sql_quote
-                                            (entity_text (availability_impact));
+                                            (availability_impact
+                                              ? entity_text
+                                                 (availability_impact)
+                                              : "");
               // FIX also replace %7E
               quoted_software = sql_quote (software->str);
               g_string_free (software, TRUE);
               sql ("SELECT merge_cve"
-                   "        ('%s', %i, %i, %s, '%s', '%s', '%s', '%s', '%s',"
-                   "         '%s', '%s', '%s');",
+                   "        ('%s', '%s', %i, %i, %s, '%s', '%s', '%s', '%s',"
+                   "         '%s', '%s', '%s', '%s');",
+                   quoted_id,
                    quoted_id,
                    parse_iso_time (entity_text (last_modified)),
                    parse_iso_time (entity_text (published)),
@@ -63469,8 +63488,8 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
 
                           // FIX also %7E
                           quoted_product = sql_quote (entity_text (product));
-                          sql ("SELECT merge_cpe_name ('%s')",
-                               quoted_product);
+                          sql ("SELECT merge_cpe_name ('%s', '%s')",
+                               quoted_product, quoted_product);
                           sql ("SELECT merge_affected_product ('%s', '%s')",
                                quoted_id, quoted_product);
                           g_free (quoted_product);
@@ -63493,7 +63512,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
   return updated_scap_bund;
 
  fail:
-  g_warning ("Update of SCAP-Bund Advisories failed at file '%s'",
+  g_warning ("Update of CVEs failed at file '%s'",
              full_path);
   g_free (full_path);
   sql_commit ();
@@ -63587,10 +63606,10 @@ oval_oval_definitions_date (entity_t entity, int *file_timestamp)
 
   *file_timestamp = 0;
 
-  generator = entity_child (entity, "oval_definitions:generator");
+  generator = entity_child (entity, "generator");
   if (generator == NULL)
     {
-      g_warning ("%s: oval_definitions:generator missing\n",
+      g_warning ("%s: generator missing\n",
                  __FUNCTION__);
       return;
     }
@@ -64451,23 +64470,22 @@ update_scap_cves (int last_scap_update)
  * @brief Extract generator timestamp from OVAL element.
  *
  * @param[in]  entity   OVAL element.
- * @param[in]  section  Section.
  *
  * @return Freshly allocated timestamp if found, else NULL.
  */
 static gchar *
-oval_generator_timestamp (entity_t entity, const gchar *section)
+oval_generator_timestamp (entity_t entity)
 {
   gchar *generator_name;
   entity_t generator;
 
-  generator_name = g_strdup_printf ("%s:generator", section);
+  generator_name = g_strdup ("generator");
   generator = entity_child (entity, generator_name);
   g_free (generator_name);
   if (generator)
     {
       entity_t timestamp;
-      timestamp = entity_child (entity, "oval:timestamp");
+      timestamp = entity_child (generator, "oval:timestamp");
       if (timestamp)
         {
           gchar *ret;
@@ -64489,7 +64507,7 @@ oval_generator_timestamp (entity_t entity, const gchar *section)
 static gchar *
 oval_timestamp (const gchar *xml)
 {
-  entity_t entity, oval_definitions, oval_variables, oval_system_chars;
+  entity_t entity;
 
   if (parse_entity (xml, &entity))
     {
@@ -64497,12 +64515,11 @@ oval_timestamp (const gchar *xml)
       return NULL;
     }
 
-  oval_definitions = entity_child (entity, "oval_definitions:oval_definitions");
-  if (oval_definitions)
+  if (strcmp (entity_name (entity), "oval_definitions") == 0)
     {
       gchar *timestamp;
 
-      timestamp = oval_generator_timestamp (oval_definitions, "oval_definitions");
+      timestamp = oval_generator_timestamp (entity);
       if (timestamp)
         {
           free_entity (entity);
@@ -64510,12 +64527,11 @@ oval_timestamp (const gchar *xml)
         }
     }
 
-  oval_variables = entity_child (entity, "oval_variables:oval_variables");
-  if (oval_variables)
+  if (strcmp (entity_name (entity), "oval_variables") == 0)
     {
       gchar *timestamp;
 
-      timestamp = oval_generator_timestamp (oval_variables, "oval_variables");
+      timestamp = oval_generator_timestamp (entity);
       if (timestamp)
         {
           free_entity (entity);
@@ -64523,15 +64539,12 @@ oval_timestamp (const gchar *xml)
         }
     }
 
-  oval_system_chars = entity_child
-                       (entity,
-                        "oval_system_char:oval_system_characteristics");
-  if (oval_system_chars)
+  if (strcmp (entity_name (entity), "oval_system_characteristics")
+      == 0)
     {
       gchar *timestamp;
 
-      timestamp = oval_generator_timestamp (oval_system_chars,
-                                            "oval_system_char");
+      timestamp = oval_generator_timestamp (entity);
       if (timestamp)
         {
           free_entity (entity);
@@ -64574,7 +64587,7 @@ oval_files_add (const char *path, const struct stat *stat, int flag,
   if ((dot == NULL) || strcasecmp (dot, ".xml"))
     return 0;
 
-  g_warning ("%s: path: %s\n", __FUNCTION__, path);
+  g_debug ("%s: path: %s\n", __FUNCTION__, path);
 
   error = NULL;
   g_file_get_contents (path, &oval_xml, &len, &error);
@@ -64630,7 +64643,7 @@ oval_files_compare (gconstpointer one, gconstpointer two)
   if (file_info_two[1] == NULL)
     return 1;
 
-  return strcmp (file_info_one[1], file_info_two[2]);
+  return strcmp (file_info_one[1], file_info_two[1]);
 }
 
 
