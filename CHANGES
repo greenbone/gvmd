@@ -1,3 +1,29 @@
+openvas-manager 7.0.1 (2017-03-07)
+
+This is the first maintenance release of the openvas-manager 7.0 module for the
+Open Vulnerability Assessment System release 9 (OpenVAS-9). The OpenVAS Manager
+is the central management service between the actual security scanners and the
+user clients.
+
+This release fixes various issues and especially improves the migration
+routine from SQLite to PostgreSQL.
+
+Many thanks to everyone who has contributed to this release:
+Hani Benhabiles, Matthew Mundell, Timo Pollmeier, Björn Ricks, Michael Wiegand
+and Jan-Oliver Wagner.
+
+Main changes since 7.0.0:
+* Lowered minimum for automatic report removal from 5 to 2.
+* Bug fixes for long-duration schedules.
+* Add authentication cache for LDAP and Radius.
+* Improved cleanup of tmp directory upon errors.
+* Use global SSH known hosts for alert type "SCP".
+* Improved quoting for RFP "CSV Results".
+* Fix race condition for SecInfo-based alerts.
+* Updated migration routine from SQLite to PostgreSQL.
+* Internal code cleanups.
+
+
 openvas-manager 7.0.0 (2016-11-09)
 
 This is the first release of the openvas-manager 7.0 module for the Open
