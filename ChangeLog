@@ -1,3 +1,9 @@
+2017-03-07  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Post-release version bump.
+
+	* CMakeLists.txt: Updated version to 7.0.2.
+
 2017-03-07  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	Preparing the openvas-manager 7.0.1 release.
