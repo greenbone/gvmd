@@ -613,7 +613,7 @@ check_db_version () {
        else
          db_migrate_13
          db_migrate_14
-         db_migrate_14
+         db_migrate_15
        fi;;
    13) if [ $POSTGRES -eq 1 ]
        then
