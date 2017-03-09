@@ -10527,6 +10527,9 @@ migrate_153_to_154 ()
   sql ("UPDATE permissions SET name = 'modify_credential'"
        " WHERE name = 'modify_lsc_credential';");
 
+  /* This should have also done the renaming in column resource_type.  Done
+   * in migrate_185_to_186. */
+
   sql ("UPDATE permissions_trash SET name = 'create_credential'"
        " WHERE name = 'create_lsc_credential';");
   sql ("UPDATE permissions_trash SET name = 'delete_credential'"
@@ -14028,9 +14031,47 @@ migrate_184_to_185 ()
 
     }
 
-  /* Set the database version to 184. */
+  /* Set the database version to 185. */
 
   set_db_version (185);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 185 to version 186.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_185_to_186 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 185. */
+
+  if (manage_db_version () != 185)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Ensure resource type of permission is credentials and not lsc_credentials.
+   * Should have been done in migrate_153_to_154. */
+
+  sql ("UPDATE permissions SET resource_type = 'credential'"
+       " WHERE resource_type = 'lsc_credential';");
+
+  sql ("UPDATE permissions_trash SET resource_type = 'credential'"
+       " WHERE resource_type = 'lsc_credential';");
+
+  /* Set the database version to 186. */
+
+  set_db_version (186);
 
   sql_commit ();
 
@@ -14236,6 +14277,7 @@ static migrator_t database_migrators[]
     {183, migrate_182_to_183},
     {184, migrate_183_to_184},
     {185, migrate_184_to_185},
+    {186, migrate_185_to_186},
     /* End marker. */
     {-1, NULL}};
 

@@ -1,3 +1,15 @@
+2017-03-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Catch a missed rename of LSC_CREDENTIAL to CREDENTIAL.  Hence increase
+	database version to 186.  Add database migration from version 185 to 186.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 186.
+
+	* src/manage_migrators.c (migrate_185_to_186): New function.
+	(database_migrators): Add migrate_185_to_186.
+
+	* doc/db.png: Update for version change.
+
 2017-03-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Correct errors in SQLite --update-scap-db.
