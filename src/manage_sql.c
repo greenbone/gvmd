@@ -15476,6 +15476,15 @@ check_db_permissions ()
       add_role_permission (ROLE_UUID_OBSERVER, "HELP");
       add_role_permission (ROLE_UUID_OBSERVER, "MODIFY_SETTING");
     }
+
+  /* Migration from name LSC_CREDENTIAL to CREDENTIAL missed a case.  In
+   * trunk this is done in migrate_185_to_186. */
+
+  sql ("UPDATE permissions SET resource_type = 'credential'"
+       " WHERE resource_type = 'lsc_credential';");
+
+  sql ("UPDATE permissions_trash SET resource_type = 'credential'"
+       " WHERE resource_type = 'lsc_credential';");
 }
 
 /**

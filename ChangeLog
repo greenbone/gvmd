@@ -1,3 +1,8 @@
+2017-03-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (check_db_permissions): Ensure right credential type
+	name is used.  Equivalent to migrate_185_to_186 in trunk.
+
 2017-03-07  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post-release version bump.
