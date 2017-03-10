@@ -37,10 +37,10 @@
  * reached on the socket.
  */
 
-#include "ompd.h"
+#include "gmpd.h"
 #include "scanner.h"
 #include "logf.h"
-#include "omp.h"
+#include "gmp.h"
 /** @todo For scanner_init_state. */
 #include "otp.h"
 #include "ovas-mngr-comm.h"

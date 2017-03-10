@@ -90,7 +90,7 @@
  * underscore.
  */
 
-#include "omp.h"
+#include "gmp.h"
 #include "manage.h"
 #include "manage_acl.h"
 /** @todo For access to scanner_t scanner. */

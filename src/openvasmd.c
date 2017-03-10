@@ -111,7 +111,7 @@
 #include "logf.h"
 #include "manage.h"
 #include "scanner.h"
-#include "ompd.h"
+#include "gmpd.h"
 #include "ovas-mngr-comm.h"
 #include "utils.h"
 

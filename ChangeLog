@@ -1,3 +1,20 @@
+2017-03-11  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	First step of renaming OMP to GMP: Renaming the modules.
+
+	* src/ompd.c, src/gmpd.c: Renamed ompd.c to gmpd.c.
+
+	* src/ompd.h, src/gmpd.h: Renamed ompd.h to gmpd.h.
+
+	* src/omp.c, src/gmp.c: Renamed omp.c to gmp.c.
+
+	* src/omp.h, src/gmp.h: Renamed omp.h to gmp.h.
+
+	* src/openvasmd.c, src/scanner.c:  Include gmpd.h instead
+	of ompd.h.
+
+	* src/CMakeLists.txt: Respective module name changes.
+
 2017-03-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Catch a missed rename of LSC_CREDENTIAL to CREDENTIAL.  Hence increase

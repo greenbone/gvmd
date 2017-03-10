@@ -24,7 +24,7 @@
  */
 
 #include "scanner.h"
-#include "ompd.h"
+#include "gmpd.h"
 #include "otp.h"
 #include "ovas-mngr-comm.h"
 #include "utils.h"

@@ -63,7 +63,7 @@ else (BACKEND STREQUAL SQLITE3)
   target_link_libraries (manage-pg-server m ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS} ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS} ${LINKER_HARDENING_FLAGS})
 endif (BACKEND STREQUAL SQLITE3)
 
-add_library (omp STATIC omp.c)
+add_library (gmp STATIC gmp.c)
 
 add_library (otp STATIC otp.c)
 
@@ -75,8 +75,8 @@ else (BACKEND STREQUAL SQLITE3)
   set (BINARY_NAME "openvasmd-pg")
 endif (BACKEND STREQUAL SQLITE3)
 
-add_executable (${BINARY_NAME} openvasmd.c ompd.c)
-target_link_libraries (${BINARY_NAME} ovas-mngr-comm omp otp manage ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS})
+add_executable (${BINARY_NAME} openvasmd.c gmpd.c)
+target_link_libraries (${BINARY_NAME} ovas-mngr-comm gmp otp manage ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS})
 
 set_target_properties (${BINARY_NAME} PROPERTIES LINKER_LANGUAGE C)
 
@@ -218,7 +218,7 @@ add_dependencies (check cppcheck)
 ## Tag files
 
 set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/openvasmd.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/ompd.c" "${CMAKE_CURRENT_SOURCE_DIR}/omp.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/gmpd.c" "${CMAKE_CURRENT_SOURCE_DIR}/gmp.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/otp.c" "${CMAKE_CURRENT_SOURCE_DIR}/manage.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_utils.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_acl.c"
