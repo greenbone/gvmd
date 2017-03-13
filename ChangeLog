@@ -1,5 +1,11 @@
 2017-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_pg.c (sql_merge_ovaldef): Remove max_cvss arg, it's
+	always 0.
+	(manage_update_scap_db_init): Update arg count.
+
+2017-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Correct more errors in SQLite --update-scap-db.
 
 	* src/manage_sql.c (update_ovaldef_xml): Get title and description from

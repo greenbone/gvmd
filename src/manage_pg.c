@@ -384,7 +384,6 @@ manage_update_scap_db_init ()
        "                             description_arg TEXT,"
        "                             xml_file_arg TEXT,"
        "                             status_arg TEXT,"
-       "                             max_cvss_arg FLOAT,"
        "                             cve_refs_arg INTEGER)"
        " RETURNS VOID AS $$"
        " BEGIN"
@@ -401,7 +400,7 @@ manage_update_scap_db_init ()
        "         description = description_arg,"
        "         xml_file = xml_file_arg,"
        "         status = status_arg,"
-       "         max_cvss = max_cvss_arg,"
+       "         max_cvss = 0.0,"
        "         cve_refs = cve_refs_arg"
        "     WHERE uuid = uuid_arg;"
        "     IF found THEN"
@@ -411,12 +410,12 @@ manage_update_scap_db_init ()
        "       INSERT INTO scap.ovaldefs"
        "                    (uuid, name, comment, creation_time,"
        "                     modification_time, version, deprecated, def_class,"
-       "                     title, description, xml_file, status, max_cvss,"
+       "                     title, description, xml_file, status,"
        "                     cve_refs)"
        "       VALUES (uuid_arg, name_arg, comment_arg, creation_time_arg,"
        "               modification_time_arg, version_arg, deprecated_arg,"
        "               def_class_arg, title_arg, description_arg, xml_file_arg,"
-       "               status_arg, max_cvss_arg, cve_refs_arg);"
+       "               status_arg, 0.0, cve_refs_arg);"
        "       RETURN;"
        "     EXCEPTION WHEN unique_violation THEN"
        "       NULL;"  /* Try again. */
@@ -472,7 +471,6 @@ manage_update_scap_db_cleanup ()
        "                             description_arg TEXT,"
        "                             xml_file_arg TEXT,"
        "                             status_arg TEXT,"
-       "                             max_cvss_arg FLOAT,"
        "                             cve_refs_arg INTEGER);");
 }
 
