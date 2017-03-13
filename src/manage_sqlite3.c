@@ -941,7 +941,7 @@ sql_merge_affected_product (sqlite3_context *context, int argc,
 /**
  * @brief Insert or replace an OVAL def.
  *
- * This is a callback for a scalar SQL function of 14 arguments.
+ * This is a callback for a scalar SQL function of 13 arguments.
  *
  * @param[in]  context  SQL context.
  * @param[in]  argc     Number of arguments.
@@ -952,14 +952,14 @@ sql_merge_ovaldef (sqlite3_context *context, int argc,
                    sqlite3_value** argv)
 {
   const unsigned char *uuid, *name, *comment, *def_class, *title, *description;
-  const unsigned char *xml_file, *max_cvss, *status;
+  const unsigned char *xml_file, *status;
   int created, modified, version, deprecated;
   gchar *quoted_uuid, *quoted_name, *quoted_comment, *quoted_def_class;
   gchar *quoted_title, *quoted_description, *quoted_xml_file;
   gchar *quoted_status;
   int cve_refs;
 
-  assert (argc == 14);
+  assert (argc == 13);
 
   uuid = sqlite3_value_text (argv[0]);
   if (uuid == NULL)
@@ -978,7 +978,7 @@ sql_merge_ovaldef (sqlite3_context *context, int argc,
   comment = sqlite3_value_text (argv[2]);
   if (name == NULL)
     {
-      sqlite3_result_error (context, "Failed to get name argument", -1);
+      sqlite3_result_error (context, "Failed to get comment argument", -1);
       return;
     }
 
@@ -1027,15 +1027,7 @@ sql_merge_ovaldef (sqlite3_context *context, int argc,
       return;
     }
 
-  max_cvss = sqlite3_value_text (argv[12]);
-  // FIX assert in float format
-  if (max_cvss == NULL)
-    {
-      sqlite3_result_error (context, "Failed to get max_cvss argument", -1);
-      return;
-    }
-
-  cve_refs = sqlite3_value_int (argv[13]);
+  cve_refs = sqlite3_value_int (argv[12]);
 
   quoted_uuid = sql_quote ((const char*) uuid);
   quoted_name = sql_quote ((const char*) name);
@@ -1052,7 +1044,7 @@ sql_merge_ovaldef (sqlite3_context *context, int argc,
        "  max_cvss, cve_refs)"
        " VALUES"
        " ('%s', '%s', '%s', %i, %i, %i, %i, '%s', '%s', '%s', '%s', '%s',"
-       "  %s, %i);",
+       "  0.0, %i);",
        quoted_uuid,
        quoted_name,
        quoted_comment,
@@ -1065,7 +1057,6 @@ sql_merge_ovaldef (sqlite3_context *context, int argc,
        quoted_description,
        quoted_xml_file,
        quoted_status,
-       max_cvss,
        cve_refs);
 
   g_free (quoted_uuid);
@@ -4469,7 +4460,7 @@ manage_update_scap_db_init ()
 
   if (sqlite3_create_function (task_db,
                                "merge_ovaldef",
-                               14,              /* Number of args. */
+                               13,              /* Number of args. */
                                SQLITE_UTF8,
                                NULL,            /* Callback data. */
                                sql_merge_ovaldef,

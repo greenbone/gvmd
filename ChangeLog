@@ -1,3 +1,15 @@
+2017-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Correct more errors in SQLite --update-scap-db.
+
+	* src/manage_sql.c (update_ovaldef_xml): Get title and description from
+	correct element.  Correct element name.  Pass dates as two integers
+	instead of as string.  Correct merge_ovaldef args.
+
+	* src/manage_sqlite3.c (sql_merge_ovaldef): Remove max_cvss arg, it's
+	always 0.
+	(manage_update_scap_db_init): Update arg count.
+
 2017-03-13  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	Second step of renaming OMP to GMP: Renaming variables & functions.

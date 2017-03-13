@@ -63953,9 +63953,8 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                   entity_t metadata, title, description, repository, reference;
                   entity_t status;
                   entities_t references;
-                  const char *deprecated;
-                  gchar *id, *quoted_title, *dates, *quoted_dates, *quoted_version;
-                  gchar *quoted_class, *quoted_description;
+                  const char *deprecated, *version;
+                  gchar *id, *quoted_title, *quoted_class, *quoted_description;
                   gchar *quoted_status;
                   int cve_count;
 
@@ -63976,7 +63975,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                       goto fail;
                     }
 
-                  title = entity_child (definition, "title");
+                  title = entity_child (metadata, "title");
                   if (title == NULL)
                     {
                       g_warning ("%s: title missing\n",
@@ -63985,7 +63984,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                       goto fail;
                     }
 
-                  description = entity_child (definition, "description");
+                  description = entity_child (metadata, "description");
                   if (description == NULL)
                     {
                       g_warning ("%s: description missing\n",
@@ -63994,10 +63993,10 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                       goto fail;
                     }
 
-                  repository = entity_child (metadata, "repository");
+                  repository = entity_child (metadata, "oval_repository");
                   if (repository == NULL)
                     {
-                      g_warning ("%s: repository missing\n",
+                      g_warning ("%s: oval_repository missing\n",
                                  __FUNCTION__);
                       free_entity (entity);
                       goto fail;
@@ -64017,15 +64016,6 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                       references = next_entities (references);
                     }
 
-                  if (definition_date_oldest == 0)
-                    dates = g_strdup_printf ("%i, %i",
-                                             file_timestamp,
-                                             file_timestamp);
-                  else
-                    dates = g_strdup_printf ("%i, %i",
-                                             definition_date_newest,
-                                             definition_date_oldest);
-
                   deprecated = entity_attribute (definition, "deprecated");
 
                   id = g_strdup_printf ("%s_%s", entity_attribute (definition, "id"),
@@ -64033,10 +64023,8 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                   quoted_id = sql_quote (id);
                   g_free (id);
                   quoted_oval_id = sql_quote (entity_attribute (definition, "id"));
-                  quoted_dates = sql_quote (dates);
-                  g_free (dates);
-                  quoted_version = sql_quote (entity_attribute (definition,
-                                                                "version"));
+                  // FIX ensure integer
+                  version = entity_attribute (definition, "version");
                   quoted_class = sql_quote (entity_attribute (definition, "class"));
                   quoted_title = sql_quote (entity_text (title));
                   quoted_description = sql_quote (entity_text (description));
@@ -64048,11 +64036,18 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                   else
                     quoted_status = sql_quote ("");
 
-                  sql ("SELECT merge_ovaldef ('%s', '%s', '', '%s', %i, '%s'",
+                  sql ("SELECT merge_ovaldef ('%s', '%s', '', %i, %i, %i, %i,"
+                       "                      '%s', '%s', '%s', '%s', '%s',"
+                       "                      %i);",
                        quoted_id,
                        quoted_oval_id,
-                       quoted_dates,
-                       quoted_version,
+                       definition_date_oldest == 0
+                        ? file_timestamp
+                        : definition_date_newest,
+                       definition_date_oldest == 0
+                        ? file_timestamp
+                        : definition_date_oldest,
+                       version,
                        (deprecated && strcasecmp (deprecated, "TRUE")) ? 1 : 0,
                        quoted_class,
                        quoted_title,
@@ -64062,8 +64057,6 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                        cve_count);
 
                   g_free (quoted_id);
-                  g_free (quoted_dates);
-                  g_free (quoted_version);
                   g_free (quoted_class);
                   g_free (quoted_title);
                   g_free (quoted_description);
