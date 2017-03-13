@@ -1,3 +1,10 @@
+2017-03-13  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* CMakeLists.txt: Increase of protocol from 7.0 to 8.0.
+
+	* src/schema_formats/XML/OMP.xml.in: Update documentation to reflect
+	name change from OMP to GMP.
+
 2017-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (sql_merge_ovaldef): Remove max_cvss arg, it's

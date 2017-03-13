@@ -1,13 +1,13 @@
 <!--
 OpenVAS Manager
 $Id$
-Description: OMP schema with embedded documentation, in OMP.
+Description: GMP schema with embedded documentation, in GMP.
 
 Authors:
 Matthew Mundell <matthew.mundell@greenbone.net>
 
 Copyright:
-Copyright (C) 2010-2014 Greenbone Networks GmbH
+Copyright (C) 2010-2017 Greenbone Networks GmbH
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -25,10 +25,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
 
 <protocol>
-  <name>OpenVAS Management Protocol</name>
-  <abbreviation>OMP</abbreviation>
+  <name>Greenbone Management Protocol</name>
+  <abbreviation>GMP</abbreviation>
   <summary>The "management" protocol of the Open Vulnerability Assessment System</summary>
-  <version>@OMP_VERSION@</version>
+  <version>@GMP_VERSION@</version>
 
   <!-- Types. -->
 
@@ -318,7 +318,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </element>
   <element>
     <name>command_definition</name>
-    <summary>Definition of a command in OMP describing HELP command</summary>
+    <summary>Definition of a command in GMP describing HELP command</summary>
     <pattern>
       <e>name</e>
       <o><e>summary</e></o>
@@ -1824,13 +1824,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
       <ele>
         <name>omp</name>
-        <summary>Information of the OMP server</summary>
+        <summary>Information of the GMP server</summary>
         <pattern>
           <e>version</e>
         </pattern>
         <ele>
           <name>version</name>
-          <summary>The OMP version</summary>
+          <summary>The GMP version</summary>
           <pattern>
             text
           </pattern>
@@ -3108,7 +3108,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <summary>Run a list of commands</summary>
     <description>
       The client uses the commands command to run a list of commands.  The
-      elements are executed as OMP commands in the given sequence.  The reply
+      elements are executed as GMP commands in the given sequence.  The reply
       contains the result of each command, in the same order as the given
       commands.
     </description>
@@ -4558,7 +4558,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
       <ele>
         <name>type</name>
-        <summary>OMP type of the subject: user, group or role</summary>
+        <summary>GMP type of the subject: user, group or role</summary>
         <pattern>text</pattern>
       </ele>
     </ele>
@@ -4575,7 +4575,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
       <ele>
         <name>type</name>
-        <summary>OMP type, for Super permissions: user, group or role</summary>
+        <summary>GMP type, for Super permissions: user, group or role</summary>
         <pattern>text</pattern>
       </ele>
     </ele>
@@ -5370,7 +5370,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
       <ele>
         <name>type</name>
-        <summary>OMP type of the resource the tag is to be attached to</summary>
+        <summary>GMP type of the resource the tag is to be attached to</summary>
         <pattern>text</pattern>
       </ele>
     </ele>
@@ -8397,7 +8397,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </attrib>
       <attrib>
         <name>type</name>
-        <summary>The OMP resource type to gather data from</summary>
+        <summary>The GMP resource type to gather data from</summary>
         <type>text</type>
         <required>1</required>
       </attrib>
@@ -14369,7 +14369,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </ele>
           <ele>
             <name>type</name>
-            <summary>The OMP type of the resource</summary>
+            <summary>The GMP type of the resource</summary>
             <pattern>text</pattern>
           </ele>
           <ele>
@@ -14408,7 +14408,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </ele>
           <ele>
             <name>type</name>
-            <summary>The OMP type of the subject: group, role or user</summary>
+            <summary>The GMP type of the subject: group, role or user</summary>
             <pattern>text</pattern>
           </ele>
           <ele>
@@ -15991,7 +15991,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                   content_type="text/xml">
             <report id="f0fdf522-276d-4893-9274-fb8699dc2270">
               <omp>
-                <version>@OMP_VERSION@</version>
+                <version>@GMP_VERSION@</version>
               </omp>
               <sort>
                 <field>
@@ -18857,7 +18857,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </attrib>
       <attrib>
         <name>slave_id</name>
-        <summary>OMP scanner from which to get report</summary>
+        <summary>GMP scanner from which to get report</summary>
         <type>uuid</type>
       </attrib>
     </pattern>
@@ -19188,7 +19188,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </pattern>
           <ele>
             <name>type</name>
-            <summary>OMP type of the resource the tag is attached to</summary>
+            <summary>GMP type of the resource the tag is attached to</summary>
             <pattern>text</pattern>
           </ele>
           <ele>
@@ -22222,7 +22222,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </response>
     </example>
     <example>
-      <summary>Get the OMP schema</summary>
+      <summary>Get the GMP schema</summary>
       <request>
         <help format="XML"></help>
       </request>
@@ -22231,7 +22231,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <schema format="XML" extension="xml" content_type="text/xml">
             <protocol>
               <name>OpenVAS Management Protocol</name>
-              <abbreviation>OMP</abbreviation>
+              <abbreviation>GMP</abbreviation>
               <summary>The "management" protocol of the Open Vulnerability Assessment System</summary>
               <version>1.0</version>
               <type>
@@ -23525,7 +23525,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
       <ele>
         <name>type</name>
-        <summary>OMP type, for Super permissions: user, group or role</summary>
+        <summary>GMP type, for Super permissions: user, group or role</summary>
         <pattern>text</pattern>
       </ele>
     </ele>
@@ -23542,7 +23542,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
       <ele>
         <name>type</name>
-        <summary>OMP type of the subject: user, group or role</summary>
+        <summary>GMP type of the subject: user, group or role</summary>
         <pattern>text</pattern>
       </ele>
     </ele>
@@ -24063,7 +24063,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <description>
       <p>
         The client uses the modify_setting command to change an existing
-        setting.  These are user settings that can be controlled via OMP.
+        setting.  These are user settings that can be controlled via GMP.
         The settings "Password" and "Timezone" can be modified by name, the
         rest by UUID.
       </p>
@@ -24350,7 +24350,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
       <ele>
         <name>type</name>
-        <summary>OMP type of the resource the tag is to be attached to</summary>
+        <summary>GMP type of the resource the tag is to be attached to</summary>
         <pattern>text</pattern>
       </ele>
     </ele>
@@ -24671,12 +24671,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <command>
     <name>move_task</name>
     <summary>
-      Moves an existing task to another OMP slave scanner or the master
+      Moves an existing task to another GMP slave scanner or the master
     </summary>
     <description>
       <p>
         If a scan is running, this command will stop the task and resume it
-        after reassigning to the new OMP scanner or master.
+        after reassigning to the new GMP scanner or master.
         Note that in this case, the command will wait until the task has been
         requested to resume.
       </p>
@@ -25326,6 +25326,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <!-- Compatibility changes between versions. -->
 
   <change>
+    <command>All Commands</command>
+    <summary>OMP is renamed to Greenbone Management Protocol (GMP)</summary>
+    <description>
+      <p>
+        The OpenVAS Management Protocol (OMP) is renamed to Greenbone Management Protocol (GMP).
+        The protocol as such does not change except for the changes documented here
+        between OMP 7.0 and GMP 8.0.
+      </p>
+    </description>
+    <version>8.0</version>
+  </change>
+  <change>
     <command>GET_NVTS</command>
     <summary>Response element CATEGORY is now an integer value instead of a string</summary>
     <description>
@@ -25353,7 +25365,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <summary>Element SLAVE removed</summary>
     <description>
       <p>
-        Slaves have been replaced by OMP Scanners, therefore the SLAVE
+        Slaves have been replaced by GMP Scanners, therefore the SLAVE
         elements of commands GET_TASKS and MODIFY_TASK have been removed.
       </p>
     </description>
@@ -25364,7 +25376,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <summary>Attribute "slaves" and element SLAVES removed</summary>
     <description>
       <p>
-        Slaves have been replaced by OMP Scanners, therefore the "slaves"
+        Slaves have been replaced by GMP Scanners, therefore the "slaves"
         attribute and CREDENTIAL/SLAVES element of GET_CREDENTIALS have been
         removed.
       </p>
@@ -25376,7 +25388,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <summary>Element SLAVE removed</summary>
     <description>
       <p>
-        Slaves have been replaced by OMP Scanners, therefore the SLAVE element
+        Slaves have been replaced by GMP Scanners, therefore the SLAVE element
         of CREATE_TASK has been removed.
       </p>
     </description>
@@ -25387,7 +25399,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <summary>Commands removed</summary>
     <description>
       <p>
-        Slaves have been replaced by OMP Scanners, therefore the CREATE_SLAVE,
+        Slaves have been replaced by GMP Scanners, therefore the CREATE_SLAVE,
         DELETE_SLAVE, GET_SLAVES and MODIFY_SLAVE commands have been removed.
       </p>
     </description>
