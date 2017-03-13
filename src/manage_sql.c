@@ -63541,26 +63541,26 @@ oval_definition_dates (entity_t definition, int *definition_date_newest,
   *definition_date_newest = 0;
   *definition_date_oldest = 0;
 
-  metadata = entity_child (definition, "oval_definitions:metadata");
+  metadata = entity_child (definition, "metadata");
   if (metadata == NULL)
     {
-      g_warning ("%s: oval_definitions:metadata missing\n",
+      g_warning ("%s: metadata missing\n",
                  __FUNCTION__);
       return;
     }
 
-  oval_repository = entity_child (definition, "oval_definitions:oval_repository");
+  oval_repository = entity_child (metadata, "oval_repository");
   if (oval_repository == NULL)
     {
-      g_warning ("%s: oval_definitions:oval_repository missing\n",
+      g_warning ("%s: oval_repository missing\n",
                  __FUNCTION__);
       return;
     }
 
-  dates = entity_child (definition, "oval_definitions:dates");
+  dates = entity_child (oval_repository, "dates");
   if (dates == NULL)
     {
-      g_warning ("%s: oval_definitions:dates missing\n",
+      g_warning ("%s: dates missing\n",
                  __FUNCTION__);
       return;
     }
@@ -63571,9 +63571,9 @@ oval_definition_dates (entity_t definition, int *definition_date_newest,
   children = dates->entities;
   while ((date = first_entity (children)))
     {
-      if ((strcmp (entity_name (date), "oval_definitions:submitted") == 0)
-          || (strcmp (entity_name (date), "oval_definitions:status_change") == 0)
-          || (strcmp (entity_name (date), "oval_definitions:modified") == 0))
+      if ((strcmp (entity_name (date), "submitted") == 0)
+          || (strcmp (entity_name (date), "status_change") == 0)
+          || (strcmp (entity_name (date), "modified") == 0))
         {
           if (first)
             {
@@ -63790,7 +63790,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                     int last_ovaldef_update, int private)
 {
   GError *error;
-  entity_t entity, definition;
+  entity_t entity, child;
   entities_t children;
   const gchar *xml_path, *oval_timestamp;
   gchar *xml_basename, *xml, *quoted_xml_basename;
@@ -63910,184 +63910,197 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
   oval_oval_definitions_date (entity, &file_timestamp);
 
   children = entity->entities;
-  while ((definition = first_entity (children)))
+  while ((child = first_entity (children)))
     {
-      if (strcmp (entity_name (definition), "oval_definitions:definition") == 0)
+      entities_t definitions;
+      entity_t definition;
+
+      if (strcmp (entity_name (child), "definitions"))
         {
-          int definition_date_newest, definition_date_oldest;
-          gchar *quoted_id, *quoted_oval_id;
+          children = next_entities (children);
+          continue;
+        }
 
-          /* The newest and oldest of this definition's dates (created,
-           * modified, etc), from the OVAL XML. */
-          oval_definition_dates (definition,
-                                 &definition_date_newest,
-                                 &definition_date_oldest);
-
-          if (definition_date_oldest
-              && (definition_date_oldest <= last_oval_update))
+      definitions = child->entities;
+      while ((definition = first_entity (definitions)))
+        {
+          if (strcmp (entity_name (definition), "definition") == 0)
             {
-              const char *id;
+              int definition_date_newest, definition_date_oldest;
+              gchar *quoted_id, *quoted_oval_id;
 
-              id = entity_attribute (definition, "id");
-              quoted_oval_id = sql_quote (id ? id : "");
-              g_info ("%s: Filtered %s (%i)",
-                      __FUNCTION__,
-                      quoted_oval_id,
-                      definition_date_oldest);
-              g_free (quoted_oval_id);
-            }
-          else
-            {
-              entity_t metadata, title, description, repository, reference;
-              entity_t status;
-              entities_t references;
-              const char *deprecated;
-              gchar *id, *quoted_title, *dates, *quoted_dates, *quoted_version;
-              gchar *quoted_class, *quoted_description;
-              gchar *quoted_status;
-              int cve_count;
+              /* The newest and oldest of this definition's dates (created,
+               * modified, etc), from the OVAL XML. */
+              oval_definition_dates (definition,
+                                     &definition_date_newest,
+                                     &definition_date_oldest);
 
-              if (entity_attribute (definition, "id") == NULL)
+              if (definition_date_oldest
+                  && (definition_date_oldest <= last_oval_update))
                 {
-                  g_warning ("%s: oval_definition missing id",
-                             __FUNCTION__);
-                  free_entity (entity);
-                  goto fail;
-                }
+                  const char *id;
 
-              metadata = entity_child (definition, "oval_definitions:metadata");
-              if (metadata == NULL)
-                {
-                  g_warning ("%s: oval_definitions:metadata missing\n",
-                             __FUNCTION__);
-                  free_entity (entity);
-                  goto fail;
+                  id = entity_attribute (definition, "id");
+                  quoted_oval_id = sql_quote (id ? id : "");
+                  g_info ("%s: Filtered %s (%i)",
+                          __FUNCTION__,
+                          quoted_oval_id,
+                          definition_date_oldest);
+                  g_free (quoted_oval_id);
                 }
-
-              title = entity_child (definition, "oval_definitions:title");
-              if (title == NULL)
-                {
-                  g_warning ("%s: oval_definitions:title missing\n",
-                             __FUNCTION__);
-                  free_entity (entity);
-                  goto fail;
-                }
-
-              description = entity_child (definition, "oval_definitions:description");
-              if (description == NULL)
-                {
-                  g_warning ("%s: oval_definitions:description missing\n",
-                             __FUNCTION__);
-                  free_entity (entity);
-                  goto fail;
-                }
-
-              repository = entity_child (metadata, "oval_definitions:repository");
-              if (repository == NULL)
-                {
-                  g_warning ("%s: oval_definitions:repository missing\n",
-                             __FUNCTION__);
-                  free_entity (entity);
-                  goto fail;
-                }
-
-              cve_count = 0;
-              references = entity->entities;
-              while ((reference = first_entity (references)))
-                {
-                  if ((strcmp (entity_name (reference),
-                               "oval_definitions:reference")
-                       == 0)
-                      && entity_attribute (reference, "source")
-                      && (strcasecmp (entity_attribute (reference, "source"), "cve")
-                          == 0))
-                    cve_count++;
-                  references = next_entities (references);
-                }
-
-              if (definition_date_oldest == 0)
-                dates = g_strdup_printf ("%i, %i",
-                                         file_timestamp,
-                                         file_timestamp);
               else
-                dates = g_strdup_printf ("%i, %i",
-                                         definition_date_newest,
-                                         definition_date_oldest);
-
-              deprecated = entity_attribute (definition, "deprecated");
-
-              id = g_strdup_printf ("%s_%s", entity_attribute (definition, "id"),
-                                    xml_basename);
-              quoted_id = sql_quote (id);
-              g_free (id);
-              quoted_oval_id = sql_quote (entity_attribute (definition, "id"));
-              quoted_dates = sql_quote (dates);
-              g_free (dates);
-              quoted_version = sql_quote (entity_attribute (definition,
-                                                            "version"));
-              quoted_class = sql_quote (entity_attribute (definition, "class"));
-              quoted_title = sql_quote (entity_text (title));
-              quoted_description = sql_quote (entity_text (description));
-              status = entity_child (repository, "oval_definitions:status");
-              if (status && strlen (entity_text (status)))
-                quoted_status = sql_quote (entity_text (status));
-              else if (deprecated && strcasecmp (deprecated, "TRUE"))
-                quoted_status = sql_quote ("DEPRECATED");
-              else
-                quoted_status = sql_quote ("");
-
-              sql ("SELECT merge_ovaldef ('%s', '%s', '', '%s', %i, '%s'",
-                   quoted_id,
-                   quoted_oval_id,
-                   quoted_dates,
-                   quoted_version,
-                   (deprecated && strcasecmp (deprecated, "TRUE")) ? 1 : 0,
-                   quoted_class,
-                   quoted_title,
-                   quoted_description,
-                   quoted_xml_basename,
-                   quoted_status,
-                   cve_count);
-
-              g_free (quoted_id);
-              g_free (quoted_dates);
-              g_free (quoted_version);
-              g_free (quoted_class);
-              g_free (quoted_title);
-              g_free (quoted_description);
-              g_free (quoted_status);
-
-              references = entity->entities;
-              while ((reference = first_entity (references)))
                 {
-                  if ((strcmp (entity_name (reference),
-                               "oval_definitions:reference")
-                       == 0)
-                      && entity_attribute (reference, "source")
-                      && (strcasecmp (entity_attribute (reference, "source"), "cve")
-                          == 0)
-                      && entity_attribute (reference, "ref_id"))
+                  entity_t metadata, title, description, repository, reference;
+                  entity_t status;
+                  entities_t references;
+                  const char *deprecated;
+                  gchar *id, *quoted_title, *dates, *quoted_dates, *quoted_version;
+                  gchar *quoted_class, *quoted_description;
+                  gchar *quoted_status;
+                  int cve_count;
+
+                  if (entity_attribute (definition, "id") == NULL)
                     {
-                      gchar *quoted_ref_id;
-
-                      quoted_ref_id = sql_quote (entity_attribute (reference,
-                                                                   "ref_id"));
-                      sql ("INSERT INTO affected_ovaldefs (cve, ovaldef)"
-                           " SELECT cves.id, ovaldefs.id"
-                           " FROM cves, ovaldefs"
-                           " WHERE cves.name='%s'"
-                           " AND ovaldefs.name = '%s'"
-                           " AND NOT EXISTS (SELECT * FROM affected_ovaldefs"
-                           "                 WHERE cve = cves.id"
-                           "                 AND ovaldef = ovaldefs.id);",
-                           quoted_ref_id,
-                           quoted_oval_id);
+                      g_warning ("%s: oval_definition missing id",
+                                 __FUNCTION__);
+                      free_entity (entity);
+                      goto fail;
                     }
-                  references = next_entities (references);
-                }
 
-              g_free (quoted_oval_id);
+                  metadata = entity_child (definition, "metadata");
+                  if (metadata == NULL)
+                    {
+                      g_warning ("%s: metadata missing\n",
+                                 __FUNCTION__);
+                      free_entity (entity);
+                      goto fail;
+                    }
+
+                  title = entity_child (definition, "title");
+                  if (title == NULL)
+                    {
+                      g_warning ("%s: title missing\n",
+                                 __FUNCTION__);
+                      free_entity (entity);
+                      goto fail;
+                    }
+
+                  description = entity_child (definition, "description");
+                  if (description == NULL)
+                    {
+                      g_warning ("%s: description missing\n",
+                                 __FUNCTION__);
+                      free_entity (entity);
+                      goto fail;
+                    }
+
+                  repository = entity_child (metadata, "repository");
+                  if (repository == NULL)
+                    {
+                      g_warning ("%s: repository missing\n",
+                                 __FUNCTION__);
+                      free_entity (entity);
+                      goto fail;
+                    }
+
+                  cve_count = 0;
+                  references = entity->entities;
+                  while ((reference = first_entity (references)))
+                    {
+                      if ((strcmp (entity_name (reference),
+                                   "reference")
+                           == 0)
+                          && entity_attribute (reference, "source")
+                          && (strcasecmp (entity_attribute (reference, "source"), "cve")
+                              == 0))
+                        cve_count++;
+                      references = next_entities (references);
+                    }
+
+                  if (definition_date_oldest == 0)
+                    dates = g_strdup_printf ("%i, %i",
+                                             file_timestamp,
+                                             file_timestamp);
+                  else
+                    dates = g_strdup_printf ("%i, %i",
+                                             definition_date_newest,
+                                             definition_date_oldest);
+
+                  deprecated = entity_attribute (definition, "deprecated");
+
+                  id = g_strdup_printf ("%s_%s", entity_attribute (definition, "id"),
+                                        xml_basename);
+                  quoted_id = sql_quote (id);
+                  g_free (id);
+                  quoted_oval_id = sql_quote (entity_attribute (definition, "id"));
+                  quoted_dates = sql_quote (dates);
+                  g_free (dates);
+                  quoted_version = sql_quote (entity_attribute (definition,
+                                                                "version"));
+                  quoted_class = sql_quote (entity_attribute (definition, "class"));
+                  quoted_title = sql_quote (entity_text (title));
+                  quoted_description = sql_quote (entity_text (description));
+                  status = entity_child (repository, "status");
+                  if (status && strlen (entity_text (status)))
+                    quoted_status = sql_quote (entity_text (status));
+                  else if (deprecated && strcasecmp (deprecated, "TRUE"))
+                    quoted_status = sql_quote ("DEPRECATED");
+                  else
+                    quoted_status = sql_quote ("");
+
+                  sql ("SELECT merge_ovaldef ('%s', '%s', '', '%s', %i, '%s'",
+                       quoted_id,
+                       quoted_oval_id,
+                       quoted_dates,
+                       quoted_version,
+                       (deprecated && strcasecmp (deprecated, "TRUE")) ? 1 : 0,
+                       quoted_class,
+                       quoted_title,
+                       quoted_description,
+                       quoted_xml_basename,
+                       quoted_status,
+                       cve_count);
+
+                  g_free (quoted_id);
+                  g_free (quoted_dates);
+                  g_free (quoted_version);
+                  g_free (quoted_class);
+                  g_free (quoted_title);
+                  g_free (quoted_description);
+                  g_free (quoted_status);
+
+                  references = entity->entities;
+                  while ((reference = first_entity (references)))
+                    {
+                      if ((strcmp (entity_name (reference), "reference")
+                           == 0)
+                          && entity_attribute (reference, "source")
+                          && (strcasecmp (entity_attribute (reference, "source"), "cve")
+                              == 0)
+                          && entity_attribute (reference, "ref_id"))
+                        {
+                          gchar *quoted_ref_id;
+
+                          quoted_ref_id = sql_quote (entity_attribute (reference,
+                                                                       "ref_id"));
+                          sql ("INSERT INTO affected_ovaldefs (cve, ovaldef)"
+                               " SELECT cves.id, ovaldefs.id"
+                               " FROM cves, ovaldefs"
+                               " WHERE cves.name='%s'"
+                               " AND ovaldefs.name = '%s'"
+                               " AND NOT EXISTS (SELECT * FROM affected_ovaldefs"
+                               "                 WHERE cve = cves.id"
+                               "                 AND ovaldef = ovaldefs.id);",
+                               quoted_ref_id,
+                               quoted_oval_id);
+                        }
+                      references = next_entities (references);
+                    }
+
+                  g_free (quoted_oval_id);
+                }
             }
+          definitions = next_entities (definitions);
         }
       children = next_entities (children);
     }

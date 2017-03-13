@@ -1,3 +1,12 @@
+2017-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Correct more errors in SQLite --update-scap-db.
+
+	* src/manage_sql.c (oval_definitions_dates): Remove namespaces.  Correct
+	entity path.
+	(update_ovaldef_xml): Get DEFINITIONS/DEFINITION instead of just
+	DEFINITION.  Remove namespaces.
+
 2017-03-11  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	First step of renaming OMP to GMP: Renaming the modules.
