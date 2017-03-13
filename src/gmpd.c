@@ -1,6 +1,6 @@
 /* OpenVAS Manager
  * $Id$
- * Description: Module for OpenVAS Manager: the OMP daemon.
+ * Description: Module for OpenVAS Manager: the GMP daemon.
  *
  * Authors:
  * Matthew Mundell <matthew.mundell@greenbone.net>
@@ -24,16 +24,16 @@
  */
 
 /**
- * @file  ompd.c
- * @brief The OpenVAS Manager OMP daemon.
+ * @file  gmpd.c
+ * @brief The OpenVAS Manager GMP daemon.
  *
- * This file defines the OpenVAS Manager daemon.  The Manager serves the OpenVAS
- * Management Protocol (OMP) to clients such as OpenVAS-Client.  The Manager
- * and OMP give clients full access to an OpenVAS Scanner.
+ * This file defines the OpenVAS Manager daemon.  The Manager serves the Greenbone
+ * Management Protocol (GMP) to clients such as OpenVAS-Client.  The Manager
+ * and GMP give clients full access to an OpenVAS Scanner.
  *
- * The library provides two functions: \ref init_ompd and \ref serve_omp.
- * \ref init_ompd initialises the daemon.
- * \ref serve_omp serves OMP to a single client socket until end of file is
+ * The library provides two functions: \ref init_gmpd and \ref serve_gmp.
+ * \ref init_gmpd initialises the daemon.
+ * \ref serve_gmp serves GMP to a single client socket until end of file is
  * reached on the socket.
  */
 
@@ -91,10 +91,10 @@ buffer_size_t from_client_end = 0;
 /**
  * @brief Flag for running in NVT cache mode.
  */
-static int ompd_nvt_cache_mode = 0;
+static int gmpd_nvt_cache_mode = 0;
 
 /**
- * @brief Initialise the OMP library for the OMP daemon.
+ * @brief Initialise the GMP library for the GMP daemon.
  *
  * @param[in]  log_config      Log configuration
  * @param[in]  nvt_cache_mode  0 operate normally, -1 just update NVT cache,
@@ -104,7 +104,7 @@ static int ompd_nvt_cache_mode = 0;
  * @param[in]  max_email_attachment_size  Max size of email attachments.
  * @param[in]  max_email_include_size     Max size of email inclusions.
  * @param[in]  progress         Function to update progress, or NULL.
- * @param[in]  fork_connection  Function to fork a connection to the OMP
+ * @param[in]  fork_connection  Function to fork a connection to the GMP
  *                              daemon layer, or NULL.
  * @param[in]  skip_db_check    Skip DB check.
  *
@@ -113,30 +113,30 @@ static int ompd_nvt_cache_mode = 0;
  *         range.
  */
 int
-init_ompd (GSList *log_config, int nvt_cache_mode, const gchar *database,
+init_gmpd (GSList *log_config, int nvt_cache_mode, const gchar *database,
            int max_ips_per_target, int max_email_attachment_size,
            int max_email_include_size, void (*progress) (),
            int (*fork_connection) (gvm_connection_t *, gchar*),
            int skip_db_check)
 {
-  return init_omp (log_config, nvt_cache_mode, database, max_ips_per_target,
+  return init_gmp (log_config, nvt_cache_mode, database, max_ips_per_target,
                    max_email_attachment_size, max_email_include_size,
                    progress, fork_connection, skip_db_check);
 }
 
 /**
- * @brief Initialise a process forked within the OMP daemon.
+ * @brief Initialise a process forked within the GMP daemon.
  *
  * @param[in]  database  Location of manage database.
  * @param[in]  disable   Commands to disable.
  */
 void
-init_ompd_process (const gchar *database, gchar **disable)
+init_gmpd_process (const gchar *database, gchar **disable)
 {
   openvas_scanner_fork ();
   from_client_start = 0;
   from_client_end = 0;
-  init_omp_process (0, database, NULL, NULL, disable);
+  init_gmp_process (0, database, NULL, NULL, disable);
 }
 
 /**
@@ -362,7 +362,7 @@ write_to_client (gvm_connection_t *client_connection)
  * @return TRUE if write to client failed, else FALSE.
  */
 gboolean
-ompd_send_to_client (const char* msg, void* write_to_client_data)
+gmpd_send_to_client (const char* msg, void* write_to_client_data)
 {
   assert (to_client_end <= TO_CLIENT_BUFFER_SIZE);
   assert (msg);
@@ -434,14 +434,14 @@ session_clean (gvm_connection_t *client_connection)
 }
 
 /**
- * @brief Serve the OpenVAS Management Protocol (OMP).
+ * @brief Serve the Greenbone Management Protocol (GMP).
  *
  * Loop reading input from the sockets, processing
  * the input, and writing any results to the appropriate socket.
  * Exit the loop on reaching end of file on the client socket.
  *
  * Read input from the client and scanner.
- * Process the input with \ref process_omp_client_input and
+ * Process the input with \ref process_gmp_client_input and
  * \ref process_otp_scanner_input.  Write the results to the client.
  *
  * \if STATIC
@@ -465,7 +465,7 @@ session_clean (gvm_connection_t *client_connection)
  * @return 0 success, 1 scanner still loading, -1 error, -2 scanner has no cert.
  */
 int
-serve_omp (gvm_connection_t *client_connection, const gchar *database,
+serve_gmp (gvm_connection_t *client_connection, const gchar *database,
            gchar **disable, void (*progress) ())
 {
   int nfds, scan_handler = 0, rc = 0;
@@ -477,21 +477,21 @@ serve_omp (gvm_connection_t *client_connection, const gchar *database,
   short client_active = client_connection->socket > 0;
 
   if (client_connection->socket < 0)
-    ompd_nvt_cache_mode = client_connection->socket;
+    gmpd_nvt_cache_mode = client_connection->socket;
 
-  if (ompd_nvt_cache_mode)
+  if (gmpd_nvt_cache_mode)
     g_info ("   Updating NVT cache.\n");
   else
-    g_debug ("   Serving OMP.\n");
+    g_debug ("   Serving GMP.\n");
 
   /* Initialise the XML parser and the manage library. */
-  init_omp_process (ompd_nvt_cache_mode,
+  init_gmp_process (gmpd_nvt_cache_mode,
                     database,
-                    (int (*) (const char*, void*)) ompd_send_to_client,
+                    (int (*) (const char*, void*)) gmpd_send_to_client,
                     (void*) client_connection,
                     disable);
 #if 0
-  /** @todo Consider free_omp_data (); on return. */
+  /** @todo Consider free_gmp_data (); on return. */
   if (tasks) free_tasks ();
   if (current_scanner_preference) free (current_scanner_preference);
   free_credentials (&current_credentials);
@@ -499,12 +499,12 @@ serve_omp (gvm_connection_t *client_connection, const gchar *database,
 #endif
 
   /* Setup the scanner address and try to connect. */
-  if (ompd_nvt_cache_mode && !openvas_scanner_connected ())
+  if (gmpd_nvt_cache_mode && !openvas_scanner_connected ())
     {
       int ret;
 
       /* Is here because it queries the DB and needs it initialized.
-       * XXX: Move outside serve_omp ().
+       * XXX: Move outside serve_gmp ().
        */
 
       ret = manage_scanner_set_default ();
@@ -529,7 +529,7 @@ serve_omp (gvm_connection_t *client_connection, const gchar *database,
    *   - write to the client from buffer to_client.
    *
    * On reading from an fd, immediately try react to the input.  On reading
-   * from the client call process_omp_client_input, which parses OMP
+   * from the client call process_gmp_client_input, which parses GMP
    * commands and may write to to_scanner and to_client.  On reading from
    * the scanner call process_otp_scanner_input, which updates information
    * kept about the scanner.
@@ -545,7 +545,7 @@ serve_omp (gvm_connection_t *client_connection, const gchar *database,
    *     reading
    *   - a read from the client can be stalled by the to_scanner buffer
    *     filling up, or the to_client buffer filling up (in which case
-   *     process_omp_client_input will try to write the to_client buffer
+   *     process_gmp_client_input will try to write the to_client buffer
    *     itself),
    *   - a read from the scanner can, theoretically, be stalled by the
    *     to_scanner buffer filling up (during initialisation).
@@ -638,7 +638,7 @@ serve_omp (gvm_connection_t *client_connection, const gchar *database,
 
       if (!ret)
         {
-          /* Timeout periodically, so that process_omp_change runs
+          /* Timeout periodically, so that process_gmp_change runs
            * periodically. */
           struct timeval timeout;
 
@@ -648,12 +648,12 @@ serve_omp (gvm_connection_t *client_connection, const gchar *database,
         }
       if ((ret < 0 && errno == EINTR) || ret == 0)
         {
-          if (process_omp_change () == -1)
+          if (process_gmp_change () == -1)
             {
               rc = -1;
               goto client_free;
             }
-          if (!scan_handler && !ompd_nvt_cache_mode)
+          if (!scan_handler && !gmpd_nvt_cache_mode)
             continue;
         }
       else if (ret < 0)
@@ -705,7 +705,7 @@ serve_omp (gvm_connection_t *client_connection, const gchar *database,
                         from_client + initial_start);
             }
 
-          ret = process_omp_client_input ();
+          ret = process_gmp_client_input ();
           if (ret == 0)
             /* Processed all input. */
             client_input_stalled = 0;
@@ -816,7 +816,7 @@ serve_omp (gvm_connection_t *client_connection, const gchar *database,
         {
           /* Write as much as possible to the scanner. */
 
-          switch (openvas_scanner_write (ompd_nvt_cache_mode))
+          switch (openvas_scanner_write (gmpd_nvt_cache_mode))
             {
               case  0:      /* Wrote everything in to_scanner. */
                 break;
@@ -859,7 +859,7 @@ serve_omp (gvm_connection_t *client_connection, const gchar *database,
           /* Try process the client input, in case writing to the scanner
            * or client has freed some space in to_scanner or to_client. */
 
-          ret = process_omp_client_input ();
+          ret = process_gmp_client_input ();
           if (ret == 0)
             /* Processed all input. */
             client_input_stalled = 0;
@@ -940,7 +940,7 @@ serve_omp (gvm_connection_t *client_connection, const gchar *database,
               /* Received scanner BYE.  Write out the rest of to_scanner (the
                * BYE ACK).
                */
-              openvas_scanner_write (ompd_nvt_cache_mode);
+              openvas_scanner_write (gmpd_nvt_cache_mode);
               set_scanner_init_state (SCANNER_INIT_TOP);
               if (client_active == 0)
                 return 0;
@@ -958,7 +958,7 @@ serve_omp (gvm_connection_t *client_connection, const gchar *database,
           else if (ret == 3)
             {
               /* Calls via serve_client() should continue. */
-              if (ompd_nvt_cache_mode)
+              if (gmpd_nvt_cache_mode)
                 return 1;
               openvas_scanner_close ();
             }
@@ -976,7 +976,7 @@ serve_omp (gvm_connection_t *client_connection, const gchar *database,
             assert (ret == 0);
         }
 
-      if (process_omp_change () == -1)
+      if (process_gmp_change () == -1)
         {
           rc = -1;
           goto client_free;

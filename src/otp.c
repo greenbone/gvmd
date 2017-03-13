@@ -63,7 +63,7 @@
  */
 #define G_LOG_DOMAIN "md    otp"
 
-/** @todo As with the OMP version, this should most likely be passed to and from
+/** @todo As with the GMP version, this should most likely be passed to and from
  *        the client in a data structure like an otp_parser_t. */
 extern buffer_size_t from_buffer_size;
 
@@ -432,7 +432,7 @@ reset_scanner_states ()
 
 /* OTP input processor. */
 
-/** @todo As with the OMP version, these should most likely be passed to and
+/** @todo As with the GMP version, these should most likely be passed to and
  *        from the client in a data structure like an otp_parser_t. */
 extern char *from_scanner;
 extern buffer_size_t from_scanner_start;
@@ -465,7 +465,7 @@ sync_buffer ()
     {
       /* Move the remaining partial line to the front of the buffer.  This
        * ensures that there is space after the partial line into which
-       * serve_omp can read the rest of the line. */
+       * serve_gmp can read the rest of the line. */
       char* start = from_scanner + from_scanner_start;
       from_scanner_end -= from_scanner_start;
       memmove (from_scanner, start, from_scanner_end);
@@ -749,7 +749,7 @@ parse_scanner_loading (char *messages)
  * \endif
  *
  * This function simply records input from the scanner.  Output to the scanner
- * or client is almost always done via \ref process_omp_client_input in
+ * or client is almost always done via \ref process_gmp_client_input in
  * reaction to client requests, the only exception being stop requests
  * initiated in other processes.
  *
@@ -772,7 +772,7 @@ process_otp_scanner_input (void (*progress) ())
   /* Before processing the input, check if another manager process has stopped
    * the current task.  If so, send the stop request to the scanner.  This is
    * the only place in this file that writes to the to_scanner buffer, and hence
-   * the only place that requires that the writes to to_scanner in the OMP XML
+   * the only place that requires that the writes to to_scanner in the GMP XML
    * handlers must be whole OTP commands. */
 
   if (manage_check_current_task () == -1)
@@ -901,7 +901,7 @@ process_otp_scanner_input (void (*progress) ())
 
       /* Check whether we've had a transaction open too long, because
        * it may take some time until we get out of this loop and do a
-       * process_omp_change, and we don't want to hold up other writer
+       * process_gmp_change, and we don't want to hold up other writer
        * processes.  Note that in GSA even tabular pages like Tasks now
        * write (settings) to the db. */
       manage_transaction_stop (FALSE);

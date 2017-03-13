@@ -1,6 +1,6 @@
 /* OpenVAS Manager
  * $Id$
- * Description: Headers for OpenVAS Manager: the OMP daemon.
+ * Description: Headers for OpenVAS Manager: the GMP daemon.
  *
  * Authors:
  * Matthew Mundell <matthew.mundell@greenbone.net>
@@ -23,8 +23,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef OPENVAS_MANAGER_OMPD_H
-#define OPENVAS_MANAGER_OMPD_H
+#ifndef OPENVAS_MANAGER_GMPD_H
+#define OPENVAS_MANAGER_GMPD_H
 
 #include "types.h"
 #include <gvm/util/serverutils.h>
@@ -56,17 +56,17 @@ extern buffer_size_t from_scanner_end;
 extern struct sockaddr_in scanner_address;
 
 int
-init_ompd (GSList*, int, const gchar*, int, int, int, void (*) (),
+init_gmpd (GSList*, int, const gchar*, int, int, int, void (*) (),
            int (*) (gvm_connection_t *, gchar *),
            int);
 
 void
-init_ompd_process (const gchar *, gchar **);
+init_gmpd_process (const gchar *, gchar **);
 
 int
-serve_omp (gvm_connection_t*, const gchar*, gchar**, void (*progress) ());
+serve_gmp (gvm_connection_t*, const gchar*, gchar**, void (*progress) ());
 
-/** @todo Temporarily declared here, for omp.c SEND_TO_CLIENT. */
+/** @todo Temporarily declared here, for gmp.c SEND_TO_CLIENT. */
 extern char to_client[];
 extern buffer_size_t to_client_start;
 extern buffer_size_t to_client_end;

@@ -1,6 +1,6 @@
 /* OpenVAS Manager
  * $Id$
- * Description: Headers for OpenVAS Manager: the OMP library.
+ * Description: Headers for OpenVAS Manager: the GMP library.
  *
  * Authors:
  * Matthew Mundell <matthew.mundell@greenbone.net>
@@ -23,8 +23,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef OPENVAS_MANAGER_OMP_H
-#define OPENVAS_MANAGER_OMP_H
+#ifndef OPENVAS_MANAGER_GMP_H
+#define OPENVAS_MANAGER_GMP_H
 
 #include "types.h"
 #include <gvm/util/serverutils.h>
@@ -38,21 +38,21 @@
 #define TO_CLIENT_BUFFER_SIZE 26214400
 
 int
-init_omp (GSList*, int, const gchar*, int, int, int, void (*) (),
+init_gmp (GSList*, int, const gchar*, int, int, int, void (*) (),
           int (*) (gvm_connection_t *, gchar*),
           int);
 
 void
-init_omp_process (int, const gchar*, int (*) (const char*, void*), void*,
+init_gmp_process (int, const gchar*, int (*) (const char*, void*), void*,
                   gchar **);
 
 int
-process_omp_client_input ();
+process_gmp_client_input ();
 
 int
-process_omp_change ();
+process_gmp_change ();
 
-/** @todo As described in omp.c, probably should be replaced by omp_parser_t. */
+/** @todo As described in gmp.c, probably should be replaced by gmp_parser_t. */
 extern char to_client[];
 extern buffer_size_t to_client_start;
 extern buffer_size_t to_client_end;

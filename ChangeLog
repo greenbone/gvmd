@@ -1,3 +1,15 @@
+2017-03-13  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	Second step of renaming OMP to GMP: Renaming variables & functions.
+
+	* CMakeLists.txt, src/CMakeLists.txt, src/gmp.c, src/gmp.h, src/gmpd.c,
+	src/gmpd.h, src/manage.c, src/manage.h, src/manage_acl.c,
+	src/manage_migrators.c, src/manage_sql.c, src/manage_sql.h,
+	src/manage_sqlite3.c, src/openvasmd.c, src/otp.c, src/otp.h:
+	Rename all functions, variables etc. from "omp" to "gmp".
+	This includes also any comments. The xml structure and
+	RFP is not changed yet.
+
 2017-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Correct more errors in SQLite --update-scap-db.

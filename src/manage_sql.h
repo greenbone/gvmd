@@ -358,7 +358,7 @@ alive_test_t target_alive_tests (target_t);
 
 void manage_session_init (const char *);
 
-int valid_omp_command (const char *);
+int valid_gmp_command (const char *);
 
 void check_generate_scripts ();
 

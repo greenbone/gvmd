@@ -367,7 +367,7 @@ lookup_report_format (const char*, report_format_t*);
 /* Variables. */
 
 /**
- * @brief Function to fork a connection that will accept OMP requests.
+ * @brief Function to fork a connection that will accept GMP requests.
  */
 int (*manage_fork_connection) (gvm_connection_t *, gchar*) = NULL;
 
@@ -402,12 +402,12 @@ static gboolean in_transaction;
 static struct timeval last_msg;
 
 
-/* OMP commands. */
+/* GMP commands. */
 
 /**
- * @brief The OMP command list.
+ * @brief The GMP command list.
  */
-command_t omp_commands[]
+command_t gmp_commands[]
  = {{"AUTHENTICATE", "Authenticate with the manager." },
     {"COMMANDS",     "Run a list of commands."},
     {"CREATE_AGENT", "Create an agent."},
@@ -532,10 +532,10 @@ command_t omp_commands[]
  * @return 1 yes, 0 no.
  */
 int
-valid_omp_command (const char* name)
+valid_gmp_command (const char* name)
 {
   command_t *command;
-  command = omp_commands;
+  command = gmp_commands;
   while (command[0].name)
     if (strcasecmp (command[0].name, name) == 0)
       return 1;
@@ -545,14 +545,14 @@ valid_omp_command (const char* name)
 }
 
 /**
- * @brief Get the type associated with an OMP command.
+ * @brief Get the type associated with an GMP command.
  *
  * @param[in]  name  Command name.
  *
  * @return Freshly allocated type name if any, else NULL.
  */
 gchar *
-omp_command_type (const char* name)
+gmp_command_type (const char* name)
 {
   const char *under;
   under = strchr (name, '_');
@@ -571,7 +571,7 @@ omp_command_type (const char* name)
 }
 
 /**
- * @brief Check whether an OMP command takes a resource.
+ * @brief Check whether an GMP command takes a resource.
  *
  * MODIFY_TARGET, for example, takes a target.
  *
@@ -580,7 +580,7 @@ omp_command_type (const char* name)
  * @return 1 if takes resource, else 0.
  */
 static int
-omp_command_takes_resource (const char* name)
+gmp_command_takes_resource (const char* name)
 {
   assert (name);
   return strcasecmp (name, "AUTHENTICATE")
@@ -2300,7 +2300,7 @@ split_filter (const gchar* given_filter)
         keyword = g_malloc0 (sizeof (keyword_t));
         keyword->column = g_strdup ("rows");
         /* If there was a filter, make max_return default to Rows Per
-         * Page.  This keeps the pre-filters OMP behaviour when the filter
+         * Page.  This keeps the pre-filters GMP behaviour when the filter
          * is empty, but is more convenenient for clients that set the
          * filter. */
         if (strlen (given_filter))
@@ -12583,7 +12583,7 @@ event (task_t task, report_t report, event_t event, void* event_data)
   cleanup_iterator (&alerts);
 
   /* Run the alerts outside the iterator, because they may take some
-   * time and the iterator would prevent update processes (OMP MODIFY_XXX,
+   * time and the iterator would prevent update processes (GMP MODIFY_XXX,
    * CREATE_XXX, ...) from locking the database. */
   index = alerts_triggered->len;
   while (index--)
@@ -15691,7 +15691,7 @@ check_db_permissions ()
       <= 1)
     {
       command_t *command;
-      command = omp_commands;
+      command = gmp_commands;
 
       /* Clean-up any remaining permissions. */
       sql ("DELETE FROM permissions WHERE subject_type = 'role'"
@@ -15718,7 +15718,7 @@ check_db_permissions ()
       <= 1)
     {
       command_t *command;
-      command = omp_commands;
+      command = gmp_commands;
       /* Clean-up any remaining permissions. */
       sql ("DELETE FROM permissions WHERE subject_type = 'role'"
            " AND subject = (SELECT id FROM roles"
@@ -16021,8 +16021,8 @@ cleanup_tables ()
  * @param[in]  update_progress     Function to update progress, or NULL. *
  * @param[in]  stop_tasks          Stop any active tasks.
  * @param[in]  fork_connection     Function to fork a connection that will
- *                                 accept OMP requests.  Used to start tasks
- *                                 with OMP when an alert occurs.
+ *                                 accept GMP requests.  Used to start tasks
+ *                                 with GMP when an alert occurs.
  * @param[in]  skip_db_check       Skip DB check.
  * @param[in]  check_encryption_key  Check encryption key if doing DB check.
  *
@@ -16048,37 +16048,37 @@ init_manage_internal (GSList *log_config,
   /* Summary of init cases:
    *
    *     daemon [--foreground]
-   *         init_ompd  cache 0
+   *         init_gmpd  cache 0
    *             init_manage
    *         serve_and_schedule
-   *             forks child (serve_omp)
-   *                 init_ompd_process
+   *             forks child (serve_gmp)
+   *                 init_gmpd_process
    *                     init_manage_process
    *                 ...
    *                 event
    *                   fork_connection_for_event
    *                       fork one
-   *                           init_ompd_process
+   *                           init_gmpd_process
    *                               init_manage_process
    *                           serve_client
    *                       fork two
-   *                           omp_auth, omp_start_task_report.
+   *                           gmp_auth, gmp_start_task_report.
    *                 ...
    *             manage_schedule
    *                 fork_connection_for_scheduler
    *                     fork one
-   *                         init_ompd_process
+   *                         init_gmpd_process
    *                             init_manage_process
    *                         serve_client
    *                     fork two
-   *                         omp_auth, omp_start_task_report, omp_resume_task_report.
+   *                         gmp_auth, gmp_start_task_report, gmp_resume_task_report.
    *     --rebuild --update
    *         rebuild_nvt_cache_retry
    *             forks update_or_rebuild_nvt_cache
-   *                 init_ompd  cache -1 or -2
+   *                 init_gmpd  cache -1 or -2
    *                     init_manage
-   *                 serve_omp
-   *                     init_ompd_process
+   *                 serve_gmp
+   *                     init_gmpd_process
    *     --create-user --delete-user --get-users
    *         manage_create, ...
    *             init_manage_helper
@@ -16167,8 +16167,8 @@ init_manage_internal (GSList *log_config,
  * @param[in]  max_email_include_size     Max size of email inclusions.
  * @param[in]  update_progress     Function to update progress, or NULL. *
  * @param[in]  fork_connection     Function to fork a connection that will
- *                                 accept OMP requests.  Used to start tasks
- *                                 with OMP when an alert occurs.
+ *                                 accept GMP requests.  Used to start tasks
+ *                                 with GMP when an alert occurs.
  * @param[in]  skip_db_check       Skip DB check.
  *
  * @return 0 success, -1 error, -2 database is wrong version, -3 database needs
@@ -23634,7 +23634,7 @@ report_counts_id_full (report_t report, int* debugs, int* holes, int* infos,
   init_severity_data (&severity_data);
   init_severity_data (&filtered_severity_data);
 
-  /* This adds time and is out of scope of OMP threat levels, so skip it */
+  /* This adds time and is out of scope of GMP threat levels, so skip it */
   if (debugs)
     *debugs = 0;
 
@@ -24342,7 +24342,7 @@ compare_port_severity (gconstpointer arg_one, gconstpointer arg_two)
   return host;
 }
 
-/** @todo Defined in omp.c! */
+/** @todo Defined in gmp.c! */
 void buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int,
                          int, int, int, const char *, iterator_t *, int);
 
@@ -28017,7 +28017,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   else
     PRINT (out, "<report type=\"%s\">", type);
 
-  PRINT (out, "<omp><version>%s</version></omp>", OMP_VERSION);
+  PRINT (out, "<omp><version>%s</version></omp>", GMP_VERSION);
 
   if (delta)
     {
@@ -30656,7 +30656,7 @@ copy_task (const char* name, const char* comment, const char *task_id,
  *
  * Stop the task beforehand with \ref stop_task_internal, if it is running.
  *
- * Used only for CREATE_TASK in omp.c.  Always ultimate.
+ * Used only for CREATE_TASK in gmp.c.  Always ultimate.
  *
  * @param[in]  task_pointer  A pointer to the task.
  *
@@ -34222,7 +34222,7 @@ create_task_check_config_scanner (config_t config, scanner_t scanner)
 
   if (ctype == 0 && stype == SCANNER_TYPE_OPENVAS)
     return 1;
-  if (ctype == 0 && stype == SCANNER_TYPE_OMP)
+  if (ctype == 0 && stype == SCANNER_TYPE_GMP)
     return 1;
   if (ctype == 1 && stype == SCANNER_TYPE_OSP)
     return 1;
@@ -34296,8 +34296,8 @@ modify_task_check_config_scanner (task_t task, const char *config_id,
   if (stype == SCANNER_TYPE_OPENVAS && ctype == 0)
     return 0;
 
-  /* OMP Scanner with OpenVAS config. */
-  if (stype == SCANNER_TYPE_OMP && ctype == 0)
+  /* GMP Scanner with OpenVAS config. */
+  if (stype == SCANNER_TYPE_GMP && ctype == 0)
     return 0;
 
   /* Default Scanner with OpenVAS Config. */
@@ -37810,7 +37810,7 @@ manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list,
 
 /* These could handle strange cases, like when a family is
  * included then excluded, or all is included then later excluded.
- * However, OMP prevents those cases from occurring. */
+ * However, GMP prevents those cases from occurring. */
 
 /**
  * @brief Get the number of families selected by an NVT selector.
@@ -39783,7 +39783,7 @@ set_task_preferences (task_t task, array_t *preferences)
  * @brief Ensure that there is an encryption key.
  *
  * This prevents contention problems that can happen when the key is
- * created on the fly during an OMP operation.
+ * created on the fly during an GMP operation.
  *
  * Up to caller to create transaction.
  *
@@ -45620,7 +45620,7 @@ create_scanner (const char* name, const char *comment, const char *host,
           sql_rollback ();
           return 3;
         }
-      if (itype == SCANNER_TYPE_OMP)
+      if (itype == SCANNER_TYPE_GMP)
         {
           if (sql_int ("SELECT type != 'up' FROM credentials WHERE id = %llu;",
                        credential))
@@ -45792,7 +45792,7 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
       if (itype == 0)
         itype = sql_int ("SELECT type FROM scanners WHERE id = %llu;", scanner);
 
-      if (itype == SCANNER_TYPE_OMP)
+      if (itype == SCANNER_TYPE_GMP)
         {
           if (sql_int ("SELECT type != 'up' FROM credentials WHERE id = %llu;",
                        credential))
@@ -51319,7 +51319,7 @@ check_report_format (const gchar *uuid)
 }
 
 
-/* OMP slave scanners. */
+/* GMP slave scanners. */
 
 /**
  * @brief Update the local task from the slave task.
@@ -52317,7 +52317,7 @@ check_permission_args (const char *name_arg, const char *resource_type_arg,
                        const char **resource_id, resource_t *subject)
 {
   if ((name_arg == NULL)
-      || ((valid_omp_command (name_arg) == 0)
+      || ((valid_gmp_command (name_arg) == 0)
           && strcasecmp (name_arg, "super"))
       || (strcasecmp (name_arg, "get_version") == 0))
     return 7;
@@ -52325,7 +52325,7 @@ check_permission_args (const char *name_arg, const char *resource_type_arg,
   if (resource_id_arg
       && strcmp (resource_id_arg, "")
       && strcmp (resource_id_arg, "0")
-      && (((omp_command_takes_resource (name_arg) == 0)
+      && (((gmp_command_takes_resource (name_arg) == 0)
            && strcasecmp (name_arg, "super"))))
     return 9;
 
@@ -52359,7 +52359,7 @@ check_permission_args (const char *name_arg, const char *resource_type_arg,
       && strcmp (resource_id_arg, "0"))
     {
       *resource_type = strcasecmp (*name, "super")
-                        ? omp_command_type (*name)
+                        ? gmp_command_type (*name)
                         : g_strdup (resource_type_arg);
 
       if (*resource_type == NULL)
@@ -54002,7 +54002,7 @@ create_port_list_unique (const char *name, const char *comment,
  * @param[in]   id                ID of port list.  Only used with \p ranges.
  * @param[in]   name              Name of port list.
  * @param[in]   comment           Comment on port list.
- * @param[in]   port_ranges       OMP port range string.
+ * @param[in]   port_ranges       GMP port range string.
  * @param[in]   ranges            Array of port ranges of type range_t.
  *                                Overrides port_ranges.
  * @param[out]  port_list_return  Created port list.
@@ -56545,7 +56545,7 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
 /* Schema. */
 
 /**
- * @brief Generate the OMP schema.
+ * @brief Generate the GMP schema.
  *
  * @param[in]  format         Name of schema format, "XML" or NULL for XML.
  * @param[out] output_return  NULL or location for output.

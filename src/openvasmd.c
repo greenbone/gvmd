@@ -27,9 +27,9 @@
  * @file  openvasmd.c
  * @brief The OpenVAS Manager daemon.
  *
- * This file defines the OpenVAS Manager daemon.  The Manager serves the OpenVAS
- * Management Protocol (OMP) to clients such as OpenVAS-Client.  The Manager
- * and OMP give clients full access to an OpenVAS Scanner.
+ * This file defines the OpenVAS Manager daemon.  The Manager serves the Greenbone
+ * Management Protocol (GMP) to clients such as OpenVAS-Client.  The Manager
+ * and GMP give clients full access to an OpenVAS Scanner.
  *
  * The entry point to the daemon is the \ref main function.  From there
  * the references in the function documentation describe the flow of
@@ -51,12 +51,12 @@
  * \section Implementation
  *
  * The command line entry to the manager is defined in
- * src/\ref openvasmd.c.  The manager is an OMP server.
+ * src/\ref openvasmd.c.  The manager is an GMP server.
  *
- * The OMP server is defined in src/\ref ompd.c.  It uses the OTP library
- * to handle the OTP server and the OMP library to handle the OMP client.
- * The OTP library is defined in src/\ref otp.c.  The OMP library is defined
- * in src/\ref omp.c.  Both the OMP and OTP libraries use the Manage library
+ * The GMP server is defined in src/\ref gmpd.c.  It uses the OTP library
+ * to handle the OTP server and the GMP library to handle the GMP client.
+ * The OTP library is defined in src/\ref otp.c.  The GMP library is defined
+ * in src/\ref gmp.c.  Both the GMP and OTP libraries use the Manage library
  * to manage credentials and tasks.  The manage
  * library is defined in src/\ref manage.c and src/\ref manage_sql.c .
  *
@@ -189,7 +189,7 @@
 /**
  * @brief Manager port.
  *
- * Used if /etc/services "omp" and --sport are missing.
+ * Used if /etc/services "gmp" and --sport are missing.
  */
 #define OPENVASMD_PORT 9390
 
@@ -204,12 +204,12 @@
 #define SCHEDULE_PERIOD 10
 
 /**
- * @brief The socket accepting OMP connections from clients.
+ * @brief The socket accepting GMP connections from clients.
  */
 int manager_socket = -1;
 
 /**
- * @brief The optional, second socket accepting OMP connections from clients.
+ * @brief The optional, second socket accepting GMP connections from clients.
  */
 int manager_socket_2 = -1;
 
@@ -275,7 +275,7 @@ gboolean disable_encrypted_credentials;
 gboolean scheduling_enabled;
 
 /**
- * @brief The OMP client's address.
+ * @brief The GMP client's address.
  */
 char client_address[INET6_ADDRSTRLEN];
 
@@ -328,7 +328,7 @@ set_gnutls_priority (gnutls_session_t *session, const char *priority)
 /**
  * @brief Serve the client.
  *
- * Connect to the openvassd scanner, then call \ref serve_omp to serve OMP.
+ * Connect to the openvassd scanner, then call \ref serve_gmp to serve GMP.
  *
  * In all cases, close client_socket before returning.
  *
@@ -375,10 +375,10 @@ serve_client (int server_socket, gvm_connection_t *client_connection)
       goto fail;
     }
 
-  /* Serve OMP. */
+  /* Serve GMP. */
 
-  /* It's up to serve_omp to gvm_server_free client_*. */
-  if (serve_omp (client_connection, database, disabled_commands, NULL))
+  /* It's up to serve_gmp to gvm_server_free client_*. */
+  if (serve_gmp (client_connection, database, disabled_commands, NULL))
     goto server_fail;
 
   return EXIT_SUCCESS;
@@ -473,7 +473,7 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
           client_connection.session = client_session;
           client_connection.credentials = client_credentials;
           ret = serve_client (server_socket, &client_connection);
-          /** @todo This should be done through libomp. */
+          /** @todo This should be done through libgmp. */
           save_tasks ();
           exit (ret);
         }
@@ -535,7 +535,7 @@ fork_connection_internal (gvm_connection_t *client_connection, gchar* uuid,
     }
 
   /* This is now a child of the main Manager process.  It forks again.  The
-   * only case that returns is the process that the caller can use for OMP
+   * only case that returns is the process that the caller can use for GMP
    * commands.  The caller must exit this process.
    */
 
@@ -551,7 +551,7 @@ fork_connection_internal (gvm_connection_t *client_connection, gchar* uuid,
     }
 
   /* Split into a Manager client for the scheduler, and a Manager serving
-   * OMP to that client. */
+   * GMP to that client. */
 
   is_parent = 0;
 
@@ -559,9 +559,9 @@ fork_connection_internal (gvm_connection_t *client_connection, gchar* uuid,
   switch (pid)
     {
       case 0:
-        /* Child.  Serve the scheduler OMP, then exit. */
+        /* Child.  Serve the scheduler GMP, then exit. */
 
-        proctitle_set ("openvasmd: Serving OMP internally");
+        proctitle_set ("openvasmd: Serving GMP internally");
 
         parent_client_socket = sockets[0];
 
@@ -591,7 +591,7 @@ fork_connection_internal (gvm_connection_t *client_connection, gchar* uuid,
             exit (EXIT_FAILURE);
           }
 
-        init_ompd_process (database, disabled_commands);
+        init_gmpd_process (database, disabled_commands);
 
         /* Make any further authentications to this process succeed.  This
          * enables the scheduler to login as the owner of the scheduled
@@ -623,7 +623,7 @@ fork_connection_internal (gvm_connection_t *client_connection, gchar* uuid,
 
         /* Serve client. */
 
-        g_debug ("%s: serving OMP to client on socket %i",
+        g_debug ("%s: serving GMP to client on socket %i",
                  __FUNCTION__, parent_client_socket);
 
         memset (client_connection, 0, sizeof (*client_connection));
@@ -633,7 +633,7 @@ fork_connection_internal (gvm_connection_t *client_connection, gchar* uuid,
         client_connection->credentials = client_credentials;
         ret = serve_client (manager_socket, client_connection);
 
-        /** @todo This should be done through libomp. */
+        /** @todo This should be done through libgmp. */
         save_tasks ();
         exit (ret);
         break;
@@ -650,7 +650,7 @@ fork_connection_internal (gvm_connection_t *client_connection, gchar* uuid,
 
         g_debug ("%s: %i forked %i", __FUNCTION__, getpid (), pid);
 
-        proctitle_set ("openvasmd: Requesting OMP internally");
+        proctitle_set ("openvasmd: Requesting GMP internally");
 
         /* This process is returned as the child of
          * fork_connection_for_scheduler so that the returned parent can wait
@@ -678,7 +678,7 @@ fork_connection_internal (gvm_connection_t *client_connection, gchar* uuid,
               exit (EXIT_FAILURE);
           }
 
-        g_debug ("%s: all set to request OMP on socket %i",
+        g_debug ("%s: all set to request GMP on socket %i",
                  __FUNCTION__, client_connection->socket);
 
         return 0;
@@ -739,7 +739,7 @@ static void
 cleanup ()
 {
   g_debug ("   Cleaning up.\n");
-  /** @todo These should happen via omp, maybe with "cleanup_omp ();". */
+  /** @todo These should happen via gmp, maybe with "cleanup_gmp ();". */
   cleanup_manage_process (TRUE);
   g_strfreev (disabled_commands);
   if (manager_socket > -1) close (manager_socket);
@@ -984,7 +984,7 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
   int ret;
   gvm_connection_t connection;
 
-  /* Initialise OMP daemon. */
+  /* Initialise GMP daemon. */
 
   if (update_nvt_cache == 0)
     {
@@ -997,7 +997,7 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
       g_info ("%s: Updating NVT cache...\n", __FUNCTION__);
     }
 
-  switch (init_ompd (log_config,
+  switch (init_gmpd (log_config,
                      update_nvt_cache ? -1 : -2,
                      database,
                      manage_max_hosts (),
@@ -1018,7 +1018,7 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
         assert (0);
       case -1:
       default:
-        g_critical ("%s: failed to initialise OMP daemon\n", __FUNCTION__);
+        g_critical ("%s: failed to initialise GMP daemon\n", __FUNCTION__);
         log_config_free ();
         exit (EXIT_FAILURE);
     }
@@ -1043,12 +1043,12 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
   setup_signal_handler (SIGSEGV, handle_sigsegv, 1);
   setup_signal_handler (SIGCHLD, SIG_IGN, 0);
 
-  /* Call the OMP client serving function with a special client socket
+  /* Call the GMP client serving function with a special client socket
    * value.  This invokes a scanner-only manager loop which will
    * request and cache the plugins, then exit. */
 
   connection.socket = update_nvt_cache ? -1 : -2;
-  ret = serve_omp (&connection, database, NULL, progress);
+  ret = serve_gmp (&connection, database, NULL, progress);
   openvas_scanner_close ();
   switch (ret)
     {
@@ -1162,7 +1162,7 @@ fork_update_nvt_cache ()
         /* Clean up the process. */
 
         pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL);
-        /** @todo This should happen via omp, maybe with "cleanup_omp ();". */
+        /** @todo This should happen via gmp, maybe with "cleanup_gmp ();". */
         cleanup_manage_process (FALSE);
         if (manager_socket > -1) close (manager_socket);
         if (manager_socket_2 > -1) close (manager_socket_2);
@@ -2323,9 +2323,9 @@ main (int argc, char** argv)
         }
     }
 
-  /* Initialise OMP daemon. */
+  /* Initialise GMP daemon. */
 
-  switch (init_ompd (log_config, 0, database, max_ips_per_target,
+  switch (init_gmpd (log_config, 0, database, max_ips_per_target,
                      max_email_attachment_size, max_email_include_size, NULL,
                      fork_connection_for_event, 0))
     {
@@ -2350,7 +2350,7 @@ main (int argc, char** argv)
         break;
       case -1:
       default:
-        g_critical ("%s: failed to initialise OMP daemon\n", __FUNCTION__);
+        g_critical ("%s: failed to initialise GMP daemon\n", __FUNCTION__);
         log_config_free ();
         exit (EXIT_FAILURE);
     }

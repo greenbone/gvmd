@@ -53,13 +53,13 @@ typedef enum
   SCANNER_INIT_TOP
 } scanner_init_state_t;
 
-/** @todo Exported for ompd.c. */
+/** @todo Exported for gmpd.c. */
 extern scanner_init_state_t scanner_init_state;
 
 extern int scanner_current_loading;
 extern int scanner_total_loading;
 
-/** @todo Exported for ompd.c and scanner.c. */
+/** @todo Exported for gmpd.c and scanner.c. */
 void
 set_scanner_init_state (scanner_init_state_t state);
 
@@ -67,6 +67,6 @@ set_scanner_init_state (scanner_init_state_t state);
 void
 reset_scanner_states ();
 
-/** @todo Exported for ompd.c. */
+/** @todo Exported for gmpd.c. */
 extern int scanner_init_offset;
 #endif

@@ -1,6 +1,6 @@
 /* OpenVAS Manager
  * $Id$
- * Description: Module for OpenVAS Manager: the OMP library.
+ * Description: Module for OpenVAS Manager: the GMP library.
  *
  * Authors:
  * Matthew Mundell <matthew.mundell@greenbone.net>
@@ -25,27 +25,27 @@
  */
 
 /**
- * @file  omp.c
- * @brief The OpenVAS Manager OMP library.
+ * @file  gmp.c
+ * @brief The OpenVAS Manager GMP library.
  *
- * This file defines an OpenVAS Management Protocol (OMP) library, for
+ * This file defines an Greenbone Management Protocol (GMP) library, for
  * implementing OpenVAS managers such as the OpenVAS Manager daemon.
  *
- * The library provides \ref process_omp_client_input.
- * This function parses a given string of OMP XML and tracks and manipulates
- * tasks in reaction to the OMP commands in the string.
+ * The library provides \ref process_gmp_client_input.
+ * This function parses a given string of GMP XML and tracks and manipulates
+ * tasks in reaction to the GMP commands in the string.
  */
 
 /**
  * @internal
- * The OMP-"Processor" is always in a state (\ref client_state_t
- * \ref client_state ) and currently looking at the opening of an OMP element
- * (\ref omp_xml_handle_start_element ), at the text of an OMP element
- * (\ref omp_xml_handle_text ) or at the closing of an OMP element
- * (\ref omp_xml_handle_end_element ).
+ * The GMP-"Processor" is always in a state (\ref client_state_t
+ * \ref client_state ) and currently looking at the opening of an GMP element
+ * (\ref gmp_xml_handle_start_element ), at the text of an GMP element
+ * (\ref gmp_xml_handle_text ) or at the closing of an GMP element
+ * (\ref gmp_xml_handle_end_element ).
  *
  * The state usually represents the current location of the parser within the
- * XML (OMP) tree.  There has to be one state for every OMP element.
+ * XML (GMP) tree.  There has to be one state for every GMP element.
  *
  * State transitions occur in the start and end element handler callbacks.
  *
@@ -124,7 +124,7 @@
 /**
  * @brief GLib log domain.
  */
-#define G_LOG_DOMAIN "md    omp"
+#define G_LOG_DOMAIN "md    gmp"
 
 
 /* Static headers. */
@@ -382,7 +382,7 @@ typedef struct
 /**
  * @brief Init for a GET handler.
  *
- * @param[in]  command       OMP command name.
+ * @param[in]  command       GMP command name.
  * @param[in]  get           GET data.
  * @param[in]  setting_name  Type name for setting.
  * @param[out] first         First result, from filter.
@@ -694,10 +694,10 @@ check_private_key (const char *key_str)
 #define STATUS_SERVICE_DOWN_TEXT       "Service temporarily down"
 
 
-/* OMP parser. */
+/* GMP parser. */
 
 /**
- * @brief A handle on an OMP parser.
+ * @brief A handle on an GMP parser.
  */
 typedef struct
 {
@@ -707,60 +707,60 @@ typedef struct
   int read_over;                  ///< Read over any child elements.
   int parent_state;               ///< Parent state when reading over.
   gchar **disabled_commands;      ///< Disabled commands.
-} omp_parser_t;
+} gmp_parser_t;
 
 static int
-process_omp (omp_parser_t *, const gchar *, gchar **);
+process_gmp (gmp_parser_t *, const gchar *, gchar **);
 
 /**
- * @brief Create an OMP parser.
+ * @brief Create an GMP parser.
  *
  * @param[in]  write_to_client       Function to write to client.
  * @param[in]  write_to_client_data  Argument to \p write_to_client.
  * @param[in]  disable               Commands to disable.  Copied, and freed by
- *                                   omp_parser_free.
+ *                                   gmp_parser_free.
  *
- * @return An OMP parser.
+ * @return An GMP parser.
  */
-omp_parser_t *
-omp_parser_new (int (*write_to_client) (const char*, void*), void* write_to_client_data,
+gmp_parser_t *
+gmp_parser_new (int (*write_to_client) (const char*, void*), void* write_to_client_data,
                 gchar **disable)
 {
-  omp_parser_t *omp_parser = (omp_parser_t*) g_malloc0 (sizeof (omp_parser_t));
-  omp_parser->client_writer = write_to_client;
-  omp_parser->client_writer_data = write_to_client_data;
-  omp_parser->read_over = 0;
-  omp_parser->disabled_commands = g_strdupv (disable);
-  return omp_parser;
+  gmp_parser_t *gmp_parser = (gmp_parser_t*) g_malloc0 (sizeof (gmp_parser_t));
+  gmp_parser->client_writer = write_to_client;
+  gmp_parser->client_writer_data = write_to_client_data;
+  gmp_parser->read_over = 0;
+  gmp_parser->disabled_commands = g_strdupv (disable);
+  return gmp_parser;
 }
 
 /**
- * @brief Free an OMP parser.
+ * @brief Free an GMP parser.
  *
- * @param[in]  omp_parser  OMP parser.
+ * @param[in]  gmp_parser  GMP parser.
  *
- * @return An OMP parser.
+ * @return An GMP parser.
  */
 void
-omp_parser_free (omp_parser_t *omp_parser)
+gmp_parser_free (gmp_parser_t *gmp_parser)
 {
-  g_strfreev (omp_parser->disabled_commands);
-  g_free (omp_parser);
+  g_strfreev (gmp_parser->disabled_commands);
+  g_free (gmp_parser);
 }
 
 /**
  * @brief Check if command has been disabled.
  *
- * @param[in]  omp_parser  Parser.
+ * @param[in]  gmp_parser  Parser.
  * @param[in]  name        Command name.
  *
  * @return 1 disabled, 0 enabled.
  */
 static int
-command_disabled (omp_parser_t *omp_parser, const gchar *name)
+command_disabled (gmp_parser_t *gmp_parser, const gchar *name)
 {
   gchar **disabled;
-  disabled = omp_parser->disabled_commands;
+  disabled = gmp_parser->disabled_commands;
   if (disabled)
     while (*disabled)
       {
@@ -4217,7 +4217,7 @@ run_wizard_data_reset (run_wizard_data_t *data)
 }
 
 /**
- * @brief Command data, as passed between OMP parser callbacks.
+ * @brief Command data, as passed between GMP parser callbacks.
  */
 typedef union
 {
@@ -5720,13 +5720,13 @@ send_element_error_to_client (const char* command, const char* element,
  * @param[in]  command      Command name.
  * @param[in]  type         Resource type.
  * @param[in]  id           Resource ID.
- * @param[in]  omp_parser   OMP Parser.
+ * @param[in]  gmp_parser   GMP Parser.
  *
  * @return TRUE if out of space in to_client, else FALSE.
  */
 static gboolean
 send_find_error_to_client (const char* command, const char* type,
-                           const char* id, omp_parser_t *omp_parser)
+                           const char* id, gmp_parser_t *gmp_parser)
 {
   gchar *msg;
   gboolean ret;
@@ -5735,8 +5735,8 @@ send_find_error_to_client (const char* command, const char* type,
                          STATUS_ERROR_MISSING
                          "\" status_text=\"Failed to find %s '%s'\"/>",
                          command, type, id);
-  ret = send_to_client (msg, omp_parser->client_writer,
-                        omp_parser->client_writer_data);
+  ret = send_to_client (msg, gmp_parser->client_writer,
+                        gmp_parser->client_writer_data);
   g_free (msg);
   return ret;
 }
@@ -6362,8 +6362,8 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
 #define SEND_GET_START(type)                                                 \
   do                                                                         \
     {                                                                        \
-      if (send_get_start (type, omp_parser->client_writer,                   \
-                          omp_parser->client_writer_data))                   \
+      if (send_get_start (type, gmp_parser->client_writer,                   \
+                          gmp_parser->client_writer_data))                   \
         {                                                                    \
           error_send_to_client (error);                                      \
           return;                                                            \
@@ -6382,8 +6382,8 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
   do                                                                           \
     {                                                                          \
       if (send_get_common (G_STRINGIFY (type), get, iterator,                  \
-                           omp_parser->client_writer,                          \
-                           omp_parser->client_writer_data,                     \
+                           gmp_parser->client_writer,                          \
+                           gmp_parser->client_writer_data,                     \
                            (get)->trash                                        \
                             ? trash_ ## type ## _writable                      \
                                (get_iterator_resource                          \
@@ -6416,8 +6416,8 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
     {                                                                        \
       if (send_get_end (type, get, count, filtered,                          \
                         resource_count (type, get),                          \
-                        omp_parser->client_writer,                           \
-                        omp_parser->client_writer_data))                     \
+                        gmp_parser->client_writer,                           \
+                        gmp_parser->client_writer_data))                     \
         {                                                                    \
           error_send_to_client (error);                                      \
           return;                                                            \
@@ -6436,8 +6436,8 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
 #define SEND_TO_CLIENT_OR_FAIL(msg)                                          \
   do                                                                         \
     {                                                                        \
-      if (send_to_client (msg, omp_parser->client_writer,                    \
-                          omp_parser->client_writer_data))                   \
+      if (send_to_client (msg, gmp_parser->client_writer,                    \
+                          gmp_parser->client_writer_data))                   \
         {                                                                    \
           error_send_to_client (error);                                      \
           return;                                                            \
@@ -6458,8 +6458,8 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
   do                                                                         \
     {                                                                        \
       gchar* msg = g_markup_printf_escaped (format , ## args);               \
-      if (send_to_client (msg, omp_parser->client_writer,                    \
-                          omp_parser->client_writer_data))                   \
+      if (send_to_client (msg, gmp_parser->client_writer,                    \
+                          gmp_parser->client_writer_data))                   \
         {                                                                    \
           g_free (msg);                                                      \
           error_send_to_client (error);                                      \
@@ -6473,17 +6473,17 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
 
 
 /**
- * @brief Insert else clause for omp_xml_handle_start_element.
+ * @brief Insert else clause for gmp_xml_handle_start_element.
  *
  * @param[in]  op  Operation.
  */
 #define ELSE_ERROR(op)                                          \
-  else if (omp_parser->importing)                               \
+  else if (gmp_parser->importing)                               \
     {                                                           \
-      if (omp_parser->read_over == 0)                           \
+      if (gmp_parser->read_over == 0)                           \
         {                                                       \
-          omp_parser->read_over = 1;                            \
-          omp_parser->parent_state = client_state;              \
+          gmp_parser->read_over = 1;                            \
+          gmp_parser->parent_state = client_state;              \
         }                                                       \
     }                                                           \
   else                                                          \
@@ -6504,16 +6504,16 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
   break
 
 /**
- * @brief Insert else clause for omp_xml_handle_start_element in create_task.
+ * @brief Insert else clause for gmp_xml_handle_start_element in create_task.
  *
  */
 #define ELSE_ERROR_CREATE_TASK()                                     \
-  else if (omp_parser->importing)                                    \
+  else if (gmp_parser->importing)                                    \
     {                                                                \
-      if (omp_parser->read_over == 0)                                \
+      if (gmp_parser->read_over == 0)                                \
         {                                                            \
-          omp_parser->read_over = 1;                                 \
-          omp_parser->parent_state = client_state;                   \
+          gmp_parser->read_over = 1;                                 \
+          gmp_parser->parent_state = client_state;                   \
         }                                                            \
     }                                                                \
   else                                                               \
@@ -6621,7 +6621,7 @@ log_event_fail (const char *type, const char *type_name, const char *id,
 
 /** @todo Free globals when tags open, in case of duplicate tags. */
 /**
- * @brief Handle the start of an OMP XML element.
+ * @brief Handle the start of an GMP XML element.
  *
  * React to the start of an XML element according to the current value
  * of \ref client_state, usually adjusting \ref client_state to indicate
@@ -6634,26 +6634,26 @@ log_event_fail (const char *type, const char *type_name, const char *id,
  * @param[in]  element_name      XML element name.
  * @param[in]  attribute_names   XML attribute names.
  * @param[in]  attribute_values  XML attribute values.
- * @param[in]  user_data         OMP parser.
+ * @param[in]  user_data         GMP parser.
  * @param[in]  error             Error parameter.
  */
 static void
-omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
+gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               const gchar *element_name,
                               const gchar **attribute_names,
                               const gchar **attribute_values,
                               gpointer user_data,
                               GError **error)
 {
-  omp_parser_t *omp_parser = (omp_parser_t*) user_data;
+  gmp_parser_t *gmp_parser = (gmp_parser_t*) user_data;
   int (*write_to_client) (const char *, void*)
-    = (int (*) (const char *, void*)) omp_parser->client_writer;
-  void* write_to_client_data = (void*) omp_parser->client_writer_data;
+    = (int (*) (const char *, void*)) gmp_parser->client_writer;
+  void* write_to_client_data = (void*) gmp_parser->client_writer_data;
 
   g_debug ("   XML  start: %s (%i)\n", element_name, client_state);
 
-  if (omp_parser->read_over)
-    omp_parser->read_over++;
+  if (gmp_parser->read_over)
+    gmp_parser->read_over++;
   else switch (client_state)
     {
       case CLIENT_TOP:
@@ -6677,9 +6677,9 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else
           {
-            /** @todo If a real OMP command, return STATUS_ERROR_MUST_AUTH. */
+            /** @todo If a real GMP command, return STATUS_ERROR_MUST_AUTH. */
             if (send_to_client
-                 (XML_ERROR_SYNTAX ("omp",
+                 (XML_ERROR_SYNTAX ("gmp",
                                     "First command must be AUTHENTICATE,"
                                     " COMMANDS or GET_VERSION"),
                   write_to_client,
@@ -6699,10 +6699,10 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_AUTHENTIC:
       case CLIENT_AUTHENTIC_COMMANDS:
-        if (command_disabled (omp_parser, element_name))
+        if (command_disabled (gmp_parser, element_name))
           {
             SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_UNAVAILABLE ("omp",
+             (XML_ERROR_UNAVAILABLE ("gmp",
                                      "Service unavailable: Command disabled"));
             g_set_error (error,
                          G_MARKUP_ERROR,
@@ -7950,7 +7950,7 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else
           {
-            if (send_to_client (XML_ERROR_SYNTAX ("omp", "Bogus command name"),
+            if (send_to_client (XML_ERROR_SYNTAX ("gmp", "Bogus command name"),
                                 write_to_client,
                                 write_to_client_data))
               {
@@ -8969,7 +8969,7 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_CONFIG_COPY);
         else if (strcasecmp ("GET_CONFIGS_RESPONSE", element_name) == 0)
           {
-            omp_parser->importing = 1;
+            gmp_parser->importing = 1;
             import_config_data->import = 1;
             set_client_state (CLIENT_C_C_GCR);
           }
@@ -9306,7 +9306,7 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_PORT_LIST_COPY);
         else if (strcasecmp ("GET_PORT_LISTS_RESPONSE", element_name) == 0)
           {
-            omp_parser->importing = 1;
+            gmp_parser->importing = 1;
             create_port_list_data->import = 1;
             set_client_state (CLIENT_CPL_GPLR);
           }
@@ -9344,7 +9344,7 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("TARGETS", element_name) == 0)
           {
-            omp_parser->read_over = 1;
+            gmp_parser->read_over = 1;
             set_client_state (CLIENT_CPL_GPLR_PORT_LIST_TARGETS);
           }
         ELSE_ERROR ("create_port_list");
@@ -9424,7 +9424,7 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           {
             const gchar* attribute;
 
-            omp_parser->importing = 1;
+            gmp_parser->importing = 1;
 
             append_attribute (attribute_names, attribute_values,
                               "type", &create_report_data->type);
@@ -9469,7 +9469,7 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_CREATE_REPORT_RR:
         if (strcasecmp ("FILTERS", element_name) == 0)
           {
-            omp_parser->read_over = 1;
+            gmp_parser->read_over = 1;
             set_client_state (CLIENT_CREATE_REPORT_RR_FILTERS);
           }
         else if (strcasecmp ("HOST", element_name) == 0)
@@ -9478,7 +9478,7 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("HOST_COUNT", element_name) == 0)
           {
-            omp_parser->read_over = 1;
+            gmp_parser->read_over = 1;
             set_client_state (CLIENT_CREATE_REPORT_RR_HOST_COUNT);
           }
         else if (strcasecmp ("HOST_END", element_name) == 0)
@@ -9487,29 +9487,29 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_REPORT_RR_HOST_START);
         else if (strcasecmp ("HOSTS", element_name) == 0)
           {
-            omp_parser->read_over = 1;
+            gmp_parser->read_over = 1;
             set_client_state (CLIENT_CREATE_REPORT_RR_HOSTS);
           }
         else if (strcasecmp ("PORTS", element_name) == 0)
           {
-            omp_parser->read_over = 1;
+            gmp_parser->read_over = 1;
             set_client_state (CLIENT_CREATE_REPORT_RR_PORTS);
           }
         else if (strcasecmp ("REPORT_FORMAT", element_name) == 0)
           {
-            omp_parser->read_over = 1;
+            gmp_parser->read_over = 1;
             set_client_state (CLIENT_CREATE_REPORT_RR_REPORT_FORMAT);
           }
         else if (strcasecmp ("RESULTS", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS);
         else if (strcasecmp ("RESULT_COUNT", element_name) == 0)
           {
-            omp_parser->read_over = 1;
+            gmp_parser->read_over = 1;
             set_client_state (CLIENT_CREATE_REPORT_RR_RESULT_COUNT);
           }
         else if (strcasecmp ("SCAN_RUN_STATUS", element_name) == 0)
           {
-            omp_parser->read_over = 1;
+            gmp_parser->read_over = 1;
             set_client_state
              (CLIENT_CREATE_REPORT_RR_SCAN_RUN_STATUS);
           }
@@ -9523,12 +9523,12 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("SORT", element_name) == 0)
           {
-            omp_parser->read_over = 1;
+            gmp_parser->read_over = 1;
             set_client_state (CLIENT_CREATE_REPORT_RR_SORT);
           }
         else if (strcasecmp ("TASK", element_name) == 0)
           {
-            omp_parser->read_over = 1;
+            gmp_parser->read_over = 1;
             set_client_state (CLIENT_CREATE_REPORT_RR_TASK);
           }
         ELSE_ERROR ("create_report");
@@ -9603,42 +9603,42 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           {
             set_client_state
               (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_COMMENT);
-            omp_parser->read_over = 1;
+            gmp_parser->read_over = 1;
           }
         else if (strcasecmp ("CREATION_TIME", element_name) == 0)
           {
             set_client_state
               (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_CREATION_TIME);
-            omp_parser->read_over = 1;
+            gmp_parser->read_over = 1;
           }
         else if (strcasecmp ("DESCRIPTION", element_name) == 0)
           set_client_state
            (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DESCRIPTION);
         else if (strcasecmp ("DETECTION", element_name) == 0)
           {
-            omp_parser->read_over = 1;
+            gmp_parser->read_over = 1;
             set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION);
           }
         else if (strcasecmp ("HOST", element_name) == 0)
           {
-            omp_parser->read_over = 1;
+            gmp_parser->read_over = 1;
             set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST);
           }
         else if (strcasecmp ("MODIFICATION_TIME", element_name) == 0)
           {
             set_client_state
               (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_MODIFICATION_TIME);
-            omp_parser->read_over = 1;
+            gmp_parser->read_over = 1;
           }
         else if (strcasecmp ("NAME", element_name) == 0)
           {
             set_client_state
               (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NAME);
-            omp_parser->read_over = 1;
+            gmp_parser->read_over = 1;
           }
         else if (strcasecmp ("NOTES", element_name) == 0)
           {
-            omp_parser->read_over = 1;
+            gmp_parser->read_over = 1;
             set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NOTES);
           }
         else if (strcasecmp ("NVT", element_name) == 0)
@@ -9655,14 +9655,14 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
            (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_ORIGINAL_THREAT);
         else if (strcasecmp ("OVERRIDES", element_name) == 0)
           {
-            omp_parser->read_over = 1;
+            gmp_parser->read_over = 1;
             set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_OVERRIDES);
           }
         else if (strcasecmp ("OWNER", element_name) == 0)
           {
             set_client_state
               (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_OWNER);
-            omp_parser->read_over = 1;
+            gmp_parser->read_over = 1;
           }
         else if (strcasecmp ("PORT", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_PORT);
@@ -9718,7 +9718,7 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_CREATE_REPORT_FORMAT:
         if (strcasecmp ("GET_REPORT_FORMATS_RESPONSE", element_name) == 0)
           {
-            omp_parser->importing = 1;
+            gmp_parser->importing = 1;
             create_report_format_data->import = 1;
             set_client_state (CLIENT_CRF_GRFR);
           }
@@ -9776,7 +9776,7 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_SUMMARY);
         else if (strcasecmp ("TRUST", element_name) == 0)
           {
-            omp_parser->read_over = 1;
+            gmp_parser->read_over = 1;
             set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_TRUST);
           }
         ELSE_ERROR ("create_report_format");
@@ -9803,7 +9803,7 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_DEFAULT:
         if (strcasecmp ("REPORT_FORMAT", element_name) == 0)
           {
-            omp_parser->read_over = 1;
+            gmp_parser->read_over = 1;
             set_client_state
               (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_DEFAULT_REPORT_FORMAT);
           }
@@ -9812,7 +9812,7 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE:
         if (strcasecmp ("REPORT_FORMAT", element_name) == 0)
           {
-            omp_parser->read_over = 1;
+            gmp_parser->read_over = 1;
             set_client_state
               (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE_REPORT_FORMAT);
           }
@@ -10332,7 +10332,7 @@ omp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
       default:
         /* Send a generic response. */
-        if (send_element_error_to_client ("omp", element_name,
+        if (send_element_error_to_client ("gmp", element_name,
                                           write_to_client,
                                           write_to_client_data))
           {
@@ -12982,7 +12982,7 @@ convert_to_manage_ranges (array_t *ranges)
 }
 
 /**
- * @brief Insert else clause for omp_xml_handle_start_element.
+ * @brief Insert else clause for gmp_xml_handle_start_element.
  *
  * @param[in]  parent   Parent element.
  * @param[in]  element  Element.
@@ -12994,7 +12994,7 @@ convert_to_manage_ranges (array_t *ranges)
     break
 
 /**
- * @brief Insert else clause for omp_xml_handle_start_element.
+ * @brief Insert else clause for gmp_xml_handle_start_element.
  *
  * Stop the parser from reading over elements at the same time.
  *
@@ -13004,7 +13004,7 @@ convert_to_manage_ranges (array_t *ranges)
 #define CLOSE_READ_OVER(parent, element)                                 \
   case parent ## _ ## element:                                           \
     assert (strcasecmp (G_STRINGIFY (element), element_name) == 0);      \
-    omp_parser->read_over = 0;                                           \
+    gmp_parser->read_over = 0;                                           \
     set_client_state (parent);                                           \
     break
 
@@ -13060,7 +13060,7 @@ get_next (iterator_t *resources, get_data_t *get, int *first, int *count,
 
 
 /**
- * @brief Insert DELETE case for omp_xml_handle_end_element.
+ * @brief Insert DELETE case for gmp_xml_handle_end_element.
  *
  * @param[in]  upper    Resource type in uppercase.
  * @param[in]  type     Resource type.
@@ -13091,7 +13091,7 @@ get_next (iterator_t *resources, get_data_t *get, int *first, int *count,
                  ("delete_" G_STRINGIFY (type),                             \
                   G_STRINGIFY (type),                                       \
                   delete_ ## type ## _data-> type ## _id,                   \
-                  omp_parser))                                              \
+                  gmp_parser))                                              \
               {                                                             \
                 error_send_to_client (error);                               \
                 return;                                                     \
@@ -13191,11 +13191,11 @@ get_ovaldi_files ()
 /**
  * @brief Handle end of GET_AGENTS element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_get_agents (omp_parser_t *omp_parser, GError **error)
+handle_get_agents (gmp_parser_t *gmp_parser, GError **error)
 {
   int format;
 
@@ -13242,7 +13242,7 @@ handle_get_agents (omp_parser_t *omp_parser, GError **error)
                 if (send_find_error_to_client ("get_agents",
                                                "agents",
                                                get_agents_data->get.id,
-                                               omp_parser))
+                                               gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -13251,7 +13251,7 @@ handle_get_agents (omp_parser_t *omp_parser, GError **error)
               case 2:
                 if (send_find_error_to_client ("get_agents", "filter",
                                                get_agents_data->get.filt_id,
-                                               omp_parser))
+                                               gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -13347,11 +13347,11 @@ handle_get_agents (omp_parser_t *omp_parser, GError **error)
 /**
  * @brief Handle end of GET_AGGREGATES element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_get_aggregates (omp_parser_t *omp_parser, GError **error)
+handle_get_aggregates (gmp_parser_t *gmp_parser, GError **error)
 {
   iterator_t aggregate;
   const char *type;
@@ -13602,11 +13602,11 @@ handle_get_aggregates (omp_parser_t *omp_parser, GError **error)
 /**
  * @brief Handle end of GET_ALERTS element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_get_alerts (omp_parser_t *omp_parser, GError **error)
+handle_get_alerts (gmp_parser_t *gmp_parser, GError **error)
 {
   iterator_t alerts;
   int count, filtered, ret, first;
@@ -13621,7 +13621,7 @@ handle_get_alerts (omp_parser_t *omp_parser, GError **error)
           case 1:
             if (send_find_error_to_client ("get_alerts", "alert",
                                            get_alerts_data->get.id,
-                                           omp_parser))
+                                           gmp_parser))
               {
                 error_send_to_client (error);
                 return;
@@ -13630,7 +13630,7 @@ handle_get_alerts (omp_parser_t *omp_parser, GError **error)
           case 2:
             if (send_find_error_to_client
                   ("get_alerts", "alert", get_alerts_data->get.filt_id,
-                   omp_parser))
+                   gmp_parser))
               {
                 error_send_to_client (error);
                 return;
@@ -13864,11 +13864,11 @@ handle_get_alerts (omp_parser_t *omp_parser, GError **error)
 /**
  * @brief Handle end of GET_ASSETS element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_get_assets (omp_parser_t *omp_parser, GError **error)
+handle_get_assets (gmp_parser_t *gmp_parser, GError **error)
 {
   iterator_t assets;
   int count, first, filtered, ret;
@@ -13913,7 +13913,7 @@ handle_get_assets (omp_parser_t *omp_parser, GError **error)
   else
     {
       if (send_find_error_to_client ("get_assets", "type",
-                                     get_assets_data->type, omp_parser))
+                                     get_assets_data->type, gmp_parser))
         {
           error_send_to_client (error);
         }
@@ -13930,7 +13930,7 @@ handle_get_assets (omp_parser_t *omp_parser, GError **error)
         case 1:
           if (send_find_error_to_client ("get_assets", "type",
                                          get_assets_data->type,
-                                         omp_parser))
+                                         gmp_parser))
             {
               error_send_to_client (error);
               return;
@@ -13939,7 +13939,7 @@ handle_get_assets (omp_parser_t *omp_parser, GError **error)
         case 2:
           if (send_find_error_to_client
               ("get_assets", "filter", get_assets_data->get.filt_id,
-               omp_parser))
+               gmp_parser))
             {
               error_send_to_client (error);
               return;
@@ -13968,8 +13968,8 @@ handle_get_assets (omp_parser_t *omp_parser, GError **error)
       asset = get_iterator_resource (&assets);
       /* Assets are currently always writable. */
       if (send_get_common ("asset", &get_assets_data->get, &assets,
-                           omp_parser->client_writer,
-                           omp_parser->client_writer_data,
+                           gmp_parser->client_writer,
+                           gmp_parser->client_writer_data,
                            asset_iterator_writable (&assets),
                            asset_iterator_in_use (&assets)))
         {
@@ -14165,11 +14165,11 @@ handle_get_assets (omp_parser_t *omp_parser, GError **error)
 /**
  * @brief Handle end of GET_CONFIGS element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_get_configs (omp_parser_t *omp_parser, GError **error)
+handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
 {
   iterator_t configs;
   int ret, filtered, first, count;
@@ -14183,7 +14183,7 @@ handle_get_configs (omp_parser_t *omp_parser, GError **error)
           case 1:
             if (send_find_error_to_client
                  ("get_configs", "config", get_configs_data->get.id,
-                  omp_parser))
+                  gmp_parser))
               {
                 error_send_to_client (error);
                 return;
@@ -14192,7 +14192,7 @@ handle_get_configs (omp_parser_t *omp_parser, GError **error)
           case 2:
             if (send_find_error_to_client
                  ("get_configs", "config", get_configs_data->get.filt_id,
-                  omp_parser))
+                  gmp_parser))
               {
                 error_send_to_client (error);
                 return;
@@ -14495,11 +14495,11 @@ handle_get_configs (omp_parser_t *omp_parser, GError **error)
 /**
  * @brief Handle end of GET_CREDENTIALS element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_get_credentials (omp_parser_t *omp_parser, GError **error)
+handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
 {
   iterator_t credentials;
   int count, filtered, ret, first;
@@ -14548,7 +14548,7 @@ handle_get_credentials (omp_parser_t *omp_parser, GError **error)
             if (send_find_error_to_client ("get_credentials",
                                            "credential",
                                            get_credentials_data->get.id,
-                                           omp_parser))
+                                           gmp_parser))
               {
                 error_send_to_client (error);
                 return;
@@ -14558,7 +14558,7 @@ handle_get_credentials (omp_parser_t *omp_parser, GError **error)
             if (send_find_error_to_client ("get_credentials",
                                            "credential",
                                            get_credentials_data->get.filt_id,
-                                           omp_parser))
+                                           gmp_parser))
               {
                 error_send_to_client (error);
                 return;
@@ -14782,13 +14782,13 @@ feed_type_name (int feed_type)
 /**
  * @brief Get a single feed.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  * @param[in]  sync_script  Sync script.
  * @param[in]  feed_type    Type of feed.
  */
 static void
-get_feed (omp_parser_t *omp_parser, GError **error, const gchar *sync_script,
+get_feed (gmp_parser_t *gmp_parser, GError **error, const gchar *sync_script,
           int feed_type)
 {
   gchar *feed_description, *feed_identification, *feed_version;
@@ -14863,11 +14863,11 @@ get_feed (omp_parser_t *omp_parser, GError **error, const gchar *sync_script,
 /**
  * @brief Handle end of GET_FEEDS element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_get_feeds (omp_parser_t *omp_parser, GError **error)
+handle_get_feeds (gmp_parser_t *gmp_parser, GError **error)
 {
   assert (current_credentials.username);
 
@@ -14886,15 +14886,15 @@ handle_get_feeds (omp_parser_t *omp_parser, GError **error)
 
   if ((get_feeds_data->type == NULL)
       || strcmp (get_feeds_data->type, "nvt"))
-    get_feed (omp_parser, error, nvt_sync_script, NVT_FEED);
+    get_feed (gmp_parser, error, nvt_sync_script, NVT_FEED);
 
   if ((get_feeds_data->type == NULL)
       || strcmp (get_feeds_data->type, "scap"))
-    get_feed (omp_parser, error, scap_sync_script, SCAP_FEED);
+    get_feed (gmp_parser, error, scap_sync_script, SCAP_FEED);
 
   if ((get_feeds_data->type == NULL)
       || strcmp (get_feeds_data->type, "cert"))
-    get_feed (omp_parser, error, cert_sync_script, CERT_FEED);
+    get_feed (gmp_parser, error, cert_sync_script, CERT_FEED);
 
   SEND_TO_CLIENT_OR_FAIL ("</get_feeds_response>");
 
@@ -14905,11 +14905,11 @@ handle_get_feeds (omp_parser_t *omp_parser, GError **error)
 /**
  * @brief Handle end of GET_FILTERS element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_get_filters (omp_parser_t *omp_parser, GError **error)
+handle_get_filters (gmp_parser_t *gmp_parser, GError **error)
 {
   iterator_t filters;
   int count, filtered, ret, first;
@@ -14924,7 +14924,7 @@ handle_get_filters (omp_parser_t *omp_parser, GError **error)
           case 1:
             if (send_find_error_to_client ("get_filters", "filter",
                                            get_filters_data->get.id,
-                                           omp_parser))
+                                           gmp_parser))
               {
                 error_send_to_client (error);
                 return;
@@ -14933,7 +14933,7 @@ handle_get_filters (omp_parser_t *omp_parser, GError **error)
           case 2:
             if (send_find_error_to_client
                   ("get_filters", "filter",
-                   get_filters_data->get.filt_id, omp_parser))
+                   get_filters_data->get.filt_id, gmp_parser))
               {
                 error_send_to_client (error);
                 return;
@@ -15011,11 +15011,11 @@ handle_get_filters (omp_parser_t *omp_parser, GError **error)
 /**
  * @brief Handle end of GET_GROUPS element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_get_groups (omp_parser_t *omp_parser, GError **error)
+handle_get_groups (gmp_parser_t *gmp_parser, GError **error)
 {
   iterator_t groups;
   int count, filtered, ret, first;
@@ -15030,7 +15030,7 @@ handle_get_groups (omp_parser_t *omp_parser, GError **error)
           case 1:
             if (send_find_error_to_client ("get_groups", "group",
                                            get_groups_data->get.id,
-                                           omp_parser))
+                                           gmp_parser))
               {
                 error_send_to_client (error);
                 return;
@@ -15039,7 +15039,7 @@ handle_get_groups (omp_parser_t *omp_parser, GError **error)
           case 2:
             if (send_find_error_to_client
                   ("get_groups", "group", get_groups_data->get.filt_id,
-                   omp_parser))
+                   gmp_parser))
               {
                 error_send_to_client (error);
                 return;
@@ -15093,11 +15093,11 @@ handle_get_groups (omp_parser_t *omp_parser, GError **error)
 /**
  * @brief Handle end of GET_INFO element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_get_info (omp_parser_t *omp_parser, GError **error)
+handle_get_info (gmp_parser_t *gmp_parser, GError **error)
 {
   iterator_t info;
   int count, first, filtered, ret;
@@ -15179,7 +15179,7 @@ handle_get_info (omp_parser_t *omp_parser, GError **error)
         {
           if (send_find_error_to_client ("get_info", "type",
                                           get_info_data->type,
-                                          omp_parser))
+                                          gmp_parser))
             {
               error_send_to_client (error);
               return;
@@ -15252,7 +15252,7 @@ handle_get_info (omp_parser_t *omp_parser, GError **error)
                                          get_info_data->name
                                           ? get_info_data->name
                                           : get_info_data->get.id,
-                                         omp_parser))
+                                         gmp_parser))
             {
               error_send_to_client (error);
               return;
@@ -15289,7 +15289,7 @@ handle_get_info (omp_parser_t *omp_parser, GError **error)
   else
     {
       if (send_find_error_to_client ("get_info", "type",
-                                     get_info_data->type, omp_parser))
+                                     get_info_data->type, gmp_parser))
         {
           error_send_to_client (error);
         }
@@ -15304,7 +15304,7 @@ handle_get_info (omp_parser_t *omp_parser, GError **error)
         case 1:
           if (send_find_error_to_client ("get_info", "type",
                                          get_info_data->type,
-                                         omp_parser))
+                                         gmp_parser))
             {
               error_send_to_client (error);
               return;
@@ -15313,7 +15313,7 @@ handle_get_info (omp_parser_t *omp_parser, GError **error)
         case 2:
           if (send_find_error_to_client
                ("get_info", "filter", get_info_data->get.filt_id,
-                omp_parser))
+                gmp_parser))
             {
               error_send_to_client (error);
               return;
@@ -15339,8 +15339,8 @@ handle_get_info (omp_parser_t *omp_parser, GError **error)
 
       /* Info's are currently always read only */
       if (send_get_common ("info", &get_info_data->get, &info,
-                           omp_parser->client_writer,
-                           omp_parser->client_writer_data, 0, 0))
+                           gmp_parser->client_writer,
+                           gmp_parser->client_writer_data, 0, 0))
         {
           error_send_to_client (error);
           return;
@@ -15541,8 +15541,8 @@ handle_get_info (omp_parser_t *omp_parser, GError **error)
       else if (g_strcmp0 ("nvt", get_info_data->type) == 0)
         {
           if (send_nvt (&info, 1, 1, -1, NULL, 0,
-                        omp_parser->client_writer,
-                        omp_parser->client_writer_data))
+                        gmp_parser->client_writer,
+                        gmp_parser->client_writer_data))
             {
               cleanup_iterator (&info);
               error_send_to_client (error);
@@ -15599,7 +15599,7 @@ handle_get_info (omp_parser_t *omp_parser, GError **error)
   else
     send_get_end ("info", &get_info_data->get, count, filtered,
                   total_info_count (&get_info_data->get, 0),
-                  omp_parser->client_writer, omp_parser->client_writer_data);
+                  gmp_parser->client_writer, gmp_parser->client_writer_data);
 
   get_info_data_reset (get_info_data);
   set_client_state (CLIENT_AUTHENTIC);
@@ -15608,11 +15608,11 @@ handle_get_info (omp_parser_t *omp_parser, GError **error)
 /**
  * @brief Handle end of GET_NOTES element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_get_notes (omp_parser_t *omp_parser, GError **error)
+handle_get_notes (gmp_parser_t *gmp_parser, GError **error)
 {
   nvt_t nvt = 0;
   task_t task = 0;
@@ -15635,7 +15635,7 @@ handle_get_notes (omp_parser_t *omp_parser, GError **error)
     {
       if (send_find_error_to_client ("get_notes",
                                      "task", get_notes_data->task_id,
-                                     omp_parser))
+                                     gmp_parser))
         {
           error_send_to_client (error);
           return;
@@ -15648,7 +15648,7 @@ handle_get_notes (omp_parser_t *omp_parser, GError **error)
     {
       if (send_find_error_to_client ("get_notes", "NVT",
                                      get_notes_data->nvt_oid,
-                                     omp_parser))
+                                     gmp_parser))
         {
           error_send_to_client (error);
           return;
@@ -15671,7 +15671,7 @@ handle_get_notes (omp_parser_t *omp_parser, GError **error)
               case 1:
                 if (send_find_error_to_client ("get_notes", "note",
                                                get_notes_data->get.id,
-                                               omp_parser))
+                                               gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -15680,7 +15680,7 @@ handle_get_notes (omp_parser_t *omp_parser, GError **error)
               case 2:
                 if (send_find_error_to_client
                       ("get_notes", "filter",
-                       get_notes_data->get.filt_id, omp_parser))
+                       get_notes_data->get.filt_id, gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -15721,11 +15721,11 @@ handle_get_notes (omp_parser_t *omp_parser, GError **error)
 /**
  * @brief Handle end of GET_NVTS element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_get_nvts (omp_parser_t *omp_parser, GError **error)
+handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
 {
   char *feed_version;
 
@@ -15782,7 +15782,7 @@ handle_get_nvts (omp_parser_t *omp_parser, GError **error)
         {
           if (send_find_error_to_client ("get_nvts", "NVT",
                                           get_nvts_data->nvt_oid,
-                                          omp_parser))
+                                          gmp_parser))
             {
               error_send_to_client (error);
               return;
@@ -15804,7 +15804,7 @@ handle_get_nvts (omp_parser_t *omp_parser, GError **error)
         {
           if (send_find_error_to_client
                 ("get_nvts", "config", get_nvts_data->config_id,
-                omp_parser))
+                gmp_parser))
             {
               error_send_to_client (error);
               return;
@@ -15823,7 +15823,7 @@ handle_get_nvts (omp_parser_t *omp_parser, GError **error)
           if (send_find_error_to_client
                 ("get_nvts", "config",
                 get_nvts_data->preferences_config_id,
-                omp_parser))
+                gmp_parser))
             {
               error_send_to_client (error);
               return;
@@ -15873,8 +15873,8 @@ handle_get_nvts (omp_parser_t *omp_parser, GError **error)
                   }
                 if (send_nvt (&nvts, 1, get_nvts_data->preferences,
                               pref_count, timeout, config,
-                              omp_parser->client_writer,
-                              omp_parser->client_writer_data))
+                              gmp_parser->client_writer,
+                              gmp_parser->client_writer_data))
                   {
                     free (timeout);
                     cleanup_iterator (&nvts);
@@ -15889,8 +15889,8 @@ handle_get_nvts (omp_parser_t *omp_parser, GError **error)
             while (next (&nvts))
               {
                 if (send_nvt (&nvts, 0, 0, -1, NULL, 0,
-                              omp_parser->client_writer,
-                              omp_parser->client_writer_data))
+                              gmp_parser->client_writer,
+                              gmp_parser->client_writer_data))
                   {
                     cleanup_iterator (&nvts);
                     error_send_to_client (error);
@@ -15913,11 +15913,11 @@ handle_get_nvts (omp_parser_t *omp_parser, GError **error)
 /**
  * @brief Handle end of GET_NVT_FAMILIES element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_get_nvt_families (omp_parser_t *omp_parser, GError **error)
+handle_get_nvt_families (gmp_parser_t *gmp_parser, GError **error)
 {
   iterator_t families;
 
@@ -15972,11 +15972,11 @@ handle_get_nvt_families (omp_parser_t *omp_parser, GError **error)
 /**
  * @brief Handle end of GET_OVERRIDES element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_get_overrides (omp_parser_t *omp_parser, GError **error)
+handle_get_overrides (gmp_parser_t *gmp_parser, GError **error)
 {
   nvt_t nvt = 0;
   task_t task = 0;
@@ -16000,7 +16000,7 @@ handle_get_overrides (omp_parser_t *omp_parser, GError **error)
     {
       if (send_find_error_to_client ("get_overrides", "task",
                                      get_overrides_data->task_id,
-                                     omp_parser))
+                                     gmp_parser))
         {
           error_send_to_client (error);
           return;
@@ -16013,7 +16013,7 @@ handle_get_overrides (omp_parser_t *omp_parser, GError **error)
     {
       if (send_find_error_to_client ("get_overrides",
                                      "NVT", get_overrides_data->nvt_oid,
-                                     omp_parser))
+                                     gmp_parser))
         {
           error_send_to_client (error);
           return;
@@ -16037,7 +16037,7 @@ handle_get_overrides (omp_parser_t *omp_parser, GError **error)
               case 1:
                 if (send_find_error_to_client
                       ("get_overrides", "override",
-                       get_overrides_data->get.id, omp_parser))
+                       get_overrides_data->get.id, gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -16046,7 +16046,7 @@ handle_get_overrides (omp_parser_t *omp_parser, GError **error)
               case 2:
                 if (send_find_error_to_client
                       ("get_overrides", "filter",
-                       get_overrides_data->get.filt_id, omp_parser))
+                       get_overrides_data->get.filt_id, gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -16089,11 +16089,11 @@ handle_get_overrides (omp_parser_t *omp_parser, GError **error)
 /**
  * @brief Handle end of GET_PERMISSIONS element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_get_permissions (omp_parser_t *omp_parser, GError **error)
+handle_get_permissions (gmp_parser_t *gmp_parser, GError **error)
 {
   iterator_t permissions;
   int count, filtered, ret, first;
@@ -16110,7 +16110,7 @@ handle_get_permissions (omp_parser_t *omp_parser, GError **error)
             if (send_find_error_to_client ("get_permissions",
                                            "permission",
                                            get_permissions_data->get.id,
-                                           omp_parser))
+                                           gmp_parser))
               {
                 error_send_to_client (error);
                 return;
@@ -16119,7 +16119,7 @@ handle_get_permissions (omp_parser_t *omp_parser, GError **error)
           case 2:
             if (send_find_error_to_client
                   ("get_permissions", "filter",
-                   get_permissions_data->get.filt_id, omp_parser))
+                   get_permissions_data->get.filt_id, gmp_parser))
               {
                 error_send_to_client (error);
                 return;
@@ -16205,11 +16205,11 @@ handle_get_permissions (omp_parser_t *omp_parser, GError **error)
 /**
  * @brief Handle end of GET_PORT_LISTS element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_get_port_lists (omp_parser_t *omp_parser, GError **error)
+handle_get_port_lists (gmp_parser_t *gmp_parser, GError **error)
 {
   iterator_t port_lists;
   int count, filtered, ret, first;
@@ -16226,7 +16226,7 @@ handle_get_port_lists (omp_parser_t *omp_parser, GError **error)
             if (send_find_error_to_client ("get_port_lists",
                                            "port_list",
                                            get_port_lists_data->get.id,
-                                           omp_parser))
+                                           gmp_parser))
               {
                 error_send_to_client (error);
                 return;
@@ -16235,7 +16235,7 @@ handle_get_port_lists (omp_parser_t *omp_parser, GError **error)
           case 2:
             if (send_find_error_to_client
                   ("get_port_lists", "port_list",
-                   get_port_lists_data->get.filt_id, omp_parser))
+                   get_port_lists_data->get.filt_id, gmp_parser))
               {
                 error_send_to_client (error);
                 return;
@@ -16355,11 +16355,11 @@ handle_get_port_lists (omp_parser_t *omp_parser, GError **error)
 /**
  * @brief Handle end of GET_PREFERENCES element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_get_preferences (omp_parser_t *omp_parser, GError **error)
+handle_get_preferences (gmp_parser_t *gmp_parser, GError **error)
 {
   iterator_t prefs;
   nvt_t nvt = 0;
@@ -16382,7 +16382,7 @@ handle_get_preferences (omp_parser_t *omp_parser, GError **error)
     {
       if (send_find_error_to_client ("get_preferences", "NVT",
                                      get_preferences_data->nvt_oid,
-                                     omp_parser))
+                                     gmp_parser))
         {
           error_send_to_client (error);
           return;
@@ -16397,7 +16397,7 @@ handle_get_preferences (omp_parser_t *omp_parser, GError **error)
     {
       if (send_find_error_to_client ("get_preferences", "config",
                                      get_preferences_data->config_id,
-                                     omp_parser))
+                                     gmp_parser))
         {
           error_send_to_client (error);
           return;
@@ -16446,11 +16446,11 @@ handle_get_preferences (omp_parser_t *omp_parser, GError **error)
 /**
  * @brief Handle end of GET_REPORTS element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_get_reports (omp_parser_t *omp_parser, GError **error)
+handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
 {
   report_t request_report = 0, delta_report = 0, report;
   report_format_t report_format;
@@ -16552,7 +16552,7 @@ handle_get_reports (omp_parser_t *omp_parser, GError **error)
     {
       if (send_find_error_to_client ("get_reports", "report format",
                                      get_reports_data->format_id,
-                                     omp_parser))
+                                     gmp_parser))
         {
           error_send_to_client (error);
           return;
@@ -16568,7 +16568,7 @@ handle_get_reports (omp_parser_t *omp_parser, GError **error)
     {
       if (send_find_error_to_client ("get_reports", "report",
                                      get_reports_data->report_id,
-                                     omp_parser))
+                                     gmp_parser))
         {
           error_send_to_client (error);
           return;
@@ -16585,7 +16585,7 @@ handle_get_reports (omp_parser_t *omp_parser, GError **error)
     {
       if (send_find_error_to_client ("get_reports", "report",
                                      get_reports_data->delta_report_id,
-                                     omp_parser))
+                                     gmp_parser))
         {
           error_send_to_client (error);
           return;
@@ -16670,8 +16670,8 @@ handle_get_reports (omp_parser_t *omp_parser, GError **error)
                                     (get_reports_data->format_id,
                                      "5057e5cc-b825-11e4-9d0e-28d24461215b"),
                                 send_to_client,
-                                omp_parser->client_writer,
-                                omp_parser->client_writer_data,
+                                gmp_parser->client_writer,
+                                gmp_parser->client_writer_data,
                                 get_reports_data->alert_id,
                                 "assets",
                                 get_reports_data->host,
@@ -16747,8 +16747,8 @@ handle_get_reports (omp_parser_t *omp_parser, GError **error)
                                     (get_reports_data->format_id,
                                       "5057e5cc-b825-11e4-9d0e-28d24461215b"),
                                 send_to_client,
-                                omp_parser->client_writer,
-                                omp_parser->client_writer_data,
+                                gmp_parser->client_writer,
+                                gmp_parser->client_writer_data,
                                 get_reports_data->alert_id,
                                 "prognostic",
                                 get_reports_data->host,
@@ -16855,7 +16855,7 @@ handle_get_reports (omp_parser_t *omp_parser, GError **error)
           case 1:
             if (send_find_error_to_client ("get_reports", "report",
                                            get_reports_data->get.id,
-                                           omp_parser))
+                                           gmp_parser))
               {
                 error_send_to_client (error);
                 return;
@@ -16864,7 +16864,7 @@ handle_get_reports (omp_parser_t *omp_parser, GError **error)
           case 2:
             if (send_find_error_to_client
                   ("get_reports", "filter",
-                   get_reports_data->get.filt_id, omp_parser))
+                   get_reports_data->get.filt_id, gmp_parser))
               {
                 error_send_to_client (error);
                 return;
@@ -17006,8 +17006,8 @@ handle_get_reports (omp_parser_t *omp_parser, GError **error)
                                     (get_reports_data->format_id,
                                       "5057e5cc-b825-11e4-9d0e-28d24461215b"),
                                 send_to_client,
-                                omp_parser->client_writer,
-                                omp_parser->client_writer_data,
+                                gmp_parser->client_writer,
+                                gmp_parser->client_writer_data,
                                 get_reports_data->alert_id,
                                 get_reports_data->type,
                                 NULL, 0, NULL, NULL, 0, 0, prefix->str);
@@ -17022,7 +17022,7 @@ handle_get_reports (omp_parser_t *omp_parser, GError **error)
                 case 1:
                   if (send_find_error_to_client
                         ("get_reports", "alert",
-                        get_reports_data->alert_id, omp_parser))
+                        get_reports_data->alert_id, gmp_parser))
                     {
                       error_send_to_client (error);
                       return;
@@ -17040,7 +17040,7 @@ handle_get_reports (omp_parser_t *omp_parser, GError **error)
                 case 2:
                   if (send_find_error_to_client
                         ("get_reports", "filter",
-                        get_reports_data->get.filt_id, omp_parser))
+                        get_reports_data->get.filt_id, gmp_parser))
                     {
                       error_send_to_client (error);
                       return;
@@ -17103,7 +17103,7 @@ handle_get_reports (omp_parser_t *omp_parser, GError **error)
             {
               if (send_find_error_to_client
                     ("get_reports", "filter",
-                     get_reports_data->get.filt_id, omp_parser))
+                     get_reports_data->get.filt_id, gmp_parser))
                 {
                   error_send_to_client (error);
                   return;
@@ -17159,11 +17159,11 @@ handle_get_reports (omp_parser_t *omp_parser, GError **error)
 /**
  * @brief Handle end of GET_REPORT_FORMATS element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_get_report_formats (omp_parser_t *omp_parser, GError **error)
+handle_get_report_formats (gmp_parser_t *gmp_parser, GError **error)
 {
   if (get_report_formats_data->params &&
       get_report_formats_data->get.trash)
@@ -17187,7 +17187,7 @@ handle_get_report_formats (omp_parser_t *omp_parser, GError **error)
                 if (send_find_error_to_client ("get_report_formats",
                                                "report_format",
                                                get_report_formats_data->get.id,
-                                               omp_parser))
+                                               gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -17196,7 +17196,7 @@ handle_get_report_formats (omp_parser_t *omp_parser, GError **error)
               case 2:
                 if (send_find_error_to_client
                       ("get_report_formats", "filter",
-                       get_report_formats_data->get.filt_id, omp_parser))
+                       get_report_formats_data->get.filt_id, gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -17468,11 +17468,11 @@ handle_get_report_formats (omp_parser_t *omp_parser, GError **error)
 /**
  * @brief Handle end of GET_RESULTS element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_get_results (omp_parser_t *omp_parser, GError **error)
+handle_get_results (gmp_parser_t *gmp_parser, GError **error)
 {
   result_t result = 0;
   task_t task = 0;
@@ -17504,7 +17504,7 @@ handle_get_results (omp_parser_t *omp_parser, GError **error)
     {
       if (send_find_error_to_client ("get_results", "result",
                                       get_results_data->get.id,
-                                      omp_parser))
+                                      gmp_parser))
         {
           error_send_to_client (error);
           return;
@@ -17519,7 +17519,7 @@ handle_get_results (omp_parser_t *omp_parser, GError **error)
     {
       if (send_find_error_to_client ("get_results", "task",
                                       get_results_data->task_id,
-                                      omp_parser))
+                                      gmp_parser))
         {
           error_send_to_client (error);
           return;
@@ -17630,11 +17630,11 @@ handle_get_results (omp_parser_t *omp_parser, GError **error)
 /**
  * @brief Handle end of GET_ROLES element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_get_roles (omp_parser_t *omp_parser, GError **error)
+handle_get_roles (gmp_parser_t *gmp_parser, GError **error)
 {
   iterator_t roles;
   int count, filtered, ret, first;
@@ -17649,7 +17649,7 @@ handle_get_roles (omp_parser_t *omp_parser, GError **error)
           case 1:
             if (send_find_error_to_client ("get_roles", "role",
                                             get_roles_data->get.id,
-                                            omp_parser))
+                                            gmp_parser))
               {
                 error_send_to_client (error);
                 return;
@@ -17658,7 +17658,7 @@ handle_get_roles (omp_parser_t *omp_parser, GError **error)
           case 2:
             if (send_find_error_to_client
                   ("get_roles", "role", get_roles_data->get.filt_id,
-                  omp_parser))
+                  gmp_parser))
               {
                 error_send_to_client (error);
                 return;
@@ -17712,11 +17712,11 @@ handle_get_roles (omp_parser_t *omp_parser, GError **error)
 /**
  * @brief Handle end of GET_SCANNERS element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_get_scanners (omp_parser_t *omp_parser, GError **error)
+handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
 {
   iterator_t scanners;
   int ret, count, filtered, first;
@@ -17730,7 +17730,7 @@ handle_get_scanners (omp_parser_t *omp_parser, GError **error)
       case 1:
         if (send_find_error_to_client
              ("get_scanners", "scanners", get_scanners_data->get.id,
-              omp_parser))
+              gmp_parser))
           {
             error_send_to_client (error);
             break;
@@ -17739,7 +17739,7 @@ handle_get_scanners (omp_parser_t *omp_parser, GError **error)
       case 2:
         if (send_find_error_to_client
              ("get_scanners", "filter", get_scanners_data->get.filt_id,
-              omp_parser))
+              gmp_parser))
           {
             error_send_to_client (error);
             break;
@@ -17989,11 +17989,11 @@ handle_get_scanners (omp_parser_t *omp_parser, GError **error)
 /**
  * @brief Handle end of GET_SCHEDULES element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_get_schedules (omp_parser_t *omp_parser, GError **error)
+handle_get_schedules (gmp_parser_t *gmp_parser, GError **error)
 {
   if (get_schedules_data->tasks && get_schedules_data->get.trash)
     SEND_TO_CLIENT_OR_FAIL
@@ -18015,7 +18015,7 @@ handle_get_schedules (omp_parser_t *omp_parser, GError **error)
                 if (send_find_error_to_client ("get_schedules",
                                                "schedule",
                                                get_schedules_data->get.id,
-                                               omp_parser))
+                                               gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -18024,7 +18024,7 @@ handle_get_schedules (omp_parser_t *omp_parser, GError **error)
               case 2:
                 if (send_find_error_to_client
                       ("get_schedules", "filter",
-                       get_schedules_data->get.filt_id, omp_parser))
+                       get_schedules_data->get.filt_id, gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -18213,11 +18213,11 @@ handle_get_schedules (omp_parser_t *omp_parser, GError **error)
 /**
  * @brief Handle end of GET_SCHEDULES element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_get_settings (omp_parser_t *omp_parser, GError **error)
+handle_get_settings (gmp_parser_t *gmp_parser, GError **error)
 {
   setting_t setting = 0;
   iterator_t settings;
@@ -18322,11 +18322,11 @@ handle_get_settings (omp_parser_t *omp_parser, GError **error)
 /**
  * @brief Handle end of GET_SYSTEM_REPORTS element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_get_system_reports (omp_parser_t *omp_parser, GError **error)
+handle_get_system_reports (gmp_parser_t *gmp_parser, GError **error)
 {
   int ret;
   report_type_iterator_t types;
@@ -18341,7 +18341,7 @@ handle_get_system_reports (omp_parser_t *omp_parser, GError **error)
         if (send_find_error_to_client ("get_system_reports",
                                        "system report",
                                        get_system_reports_data->name,
-                                       omp_parser))
+                                       gmp_parser))
           {
             error_send_to_client (error);
             return;
@@ -18350,7 +18350,7 @@ handle_get_system_reports (omp_parser_t *omp_parser, GError **error)
       case 2:
         if (send_find_error_to_client
               ("get_system_reports", "slave",
-               get_system_reports_data->slave_id, omp_parser))
+               get_system_reports_data->slave_id, gmp_parser))
           {
             error_send_to_client (error);
             return;
@@ -18439,11 +18439,11 @@ handle_get_system_reports (omp_parser_t *omp_parser, GError **error)
 /**
  * @brief Handle end of GET_TAGS element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_get_tags (omp_parser_t *omp_parser, GError **error)
+handle_get_tags (gmp_parser_t *gmp_parser, GError **error)
 {
   iterator_t tags;
   int ret, count, first, filtered;
@@ -18462,7 +18462,7 @@ handle_get_tags (omp_parser_t *omp_parser, GError **error)
           case 1:
             if (send_find_error_to_client ("get_tags",
                                            "tag", get_tags_data->get.id,
-                                           omp_parser))
+                                           gmp_parser))
               {
                 error_send_to_client (error);
                 return;
@@ -18471,7 +18471,7 @@ handle_get_tags (omp_parser_t *omp_parser, GError **error)
           case 2:
             if (send_find_error_to_client
                   ("get_tags", "filter", get_tags_data->get.filt_id,
-                   omp_parser))
+                   gmp_parser))
               {
                 error_send_to_client (error);
                 return;
@@ -18552,11 +18552,11 @@ handle_get_tags (omp_parser_t *omp_parser, GError **error)
 /**
  * @brief Handle end of GET_TARGETS element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_get_targets (omp_parser_t *omp_parser, GError **error)
+handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
 {
   if (get_targets_data->tasks && get_targets_data->get.trash)
     SEND_TO_CLIENT_OR_FAIL
@@ -18578,7 +18578,7 @@ handle_get_targets (omp_parser_t *omp_parser, GError **error)
                 if (send_find_error_to_client ("get_targets",
                                                "target",
                                                get_targets_data->get.id,
-                                               omp_parser))
+                                               gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -18587,7 +18587,7 @@ handle_get_targets (omp_parser_t *omp_parser, GError **error)
               case 2:
                 if (send_find_error_to_client
                       ("get_targets", "filter",
-                       get_targets_data->get.filt_id, omp_parser))
+                       get_targets_data->get.filt_id, gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -18906,11 +18906,11 @@ handle_get_targets (omp_parser_t *omp_parser, GError **error)
 /**
  * @brief Handle end of GET_TASKS element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_get_tasks (omp_parser_t *omp_parser, GError **error)
+handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
 {
   iterator_t tasks;
   int count, filtered, ret, first;
@@ -18941,7 +18941,7 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
             if (send_find_error_to_client ("get_tasks",
                                            "task",
                                            get_tasks_data->get.id,
-                                           omp_parser))
+                                           gmp_parser))
               {
                 error_send_to_client (error);
                 return;
@@ -18950,7 +18950,7 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
           case 2:
             if (send_find_error_to_client
                   ("get_tasks", "task", get_tasks_data->get.filt_id,
-                  omp_parser))
+                  gmp_parser))
               {
                 error_send_to_client (error);
                 return;
@@ -19596,8 +19596,8 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
           g_free (task_scanner_uuid);
           g_free (task_scanner_name);
           if (send_to_client (response,
-                              omp_parser->client_writer,
-                              omp_parser->client_writer_data))
+                              gmp_parser->client_writer,
+                              gmp_parser->client_writer_data))
             {
               g_free (response);
               cleanup_iterator (&tasks);
@@ -19688,8 +19688,8 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
               send_reports (index,
                             apply_overrides,
                             min_qod,
-                            omp_parser->client_writer,
-                            omp_parser->client_writer_data);
+                            gmp_parser->client_writer,
+                            gmp_parser->client_writer_data);
             }
 
           SENDF_TO_CLIENT_OR_FAIL ("<result_count>%i</result_count>",
@@ -19798,11 +19798,11 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
 /**
  * @brief Handle end of GET_USER element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_get_users (omp_parser_t *omp_parser, GError **error)
+handle_get_users (gmp_parser_t *gmp_parser, GError **error)
 {
   iterator_t users;
   int count, filtered, ret, first;
@@ -19818,7 +19818,7 @@ handle_get_users (omp_parser_t *omp_parser, GError **error)
             if (send_find_error_to_client ("get_users",
                                            "user",
                                            get_users_data->get.id,
-                                           omp_parser))
+                                           gmp_parser))
               {
                 error_send_to_client (error);
                 return;
@@ -19827,7 +19827,7 @@ handle_get_users (omp_parser_t *omp_parser, GError **error)
           case 2:
             if (send_find_error_to_client
                   ("get_users", "user", get_users_data->get.filt_id,
-                   omp_parser))
+                   gmp_parser))
               {
                 error_send_to_client (error);
                 return;
@@ -19930,16 +19930,16 @@ handle_get_users (omp_parser_t *omp_parser, GError **error)
 /**
  * @brief Handle end of GET_VERSION element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_get_version (omp_parser_t *omp_parser, GError **error)
+handle_get_version (gmp_parser_t *gmp_parser, GError **error)
 {
   SEND_TO_CLIENT_OR_FAIL ("<get_version_response"
                           " status=\"" STATUS_OK "\""
                           " status_text=\"" STATUS_OK_TEXT "\">"
-                          "<version>" OMP_VERSION "</version>"
+                          "<version>" GMP_VERSION "</version>"
                           "</get_version_response>");
   if (client_state == CLIENT_GET_VERSION_AUTHENTIC)
     set_client_state (CLIENT_AUTHENTIC);
@@ -19950,11 +19950,11 @@ handle_get_version (omp_parser_t *omp_parser, GError **error)
 /**
  * @brief Handle end of GET_VULNS element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_get_vulns (omp_parser_t *omp_parser, GError **error)
+handle_get_vulns (gmp_parser_t *gmp_parser, GError **error)
 {
   get_data_t *get;
   int count, filtered, first;
@@ -20032,11 +20032,11 @@ handle_get_vulns (omp_parser_t *omp_parser, GError **error)
 /**
  * @brief Handle end of SYNC_CONFIG element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_sync_config (omp_parser_t *omp_parser, GError **error)
+handle_sync_config (gmp_parser_t *gmp_parser, GError **error)
 {
   assert (current_credentials.username);
   if (!sync_config_data->config_id)
@@ -20057,7 +20057,7 @@ handle_sync_config (omp_parser_t *omp_parser, GError **error)
         break;
       case 1:
         if (send_find_error_to_client
-             ("sync_config", "config", sync_config_data->config_id, omp_parser))
+             ("sync_config", "config", sync_config_data->config_id, gmp_parser))
           {
             error_send_to_client (error);
             return;
@@ -20107,11 +20107,11 @@ handle_sync_config (omp_parser_t *omp_parser, GError **error)
 /**
  * @brief Handle end of CREATE_SCANNER element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_create_scanner (omp_parser_t *omp_parser, GError **error)
+handle_create_scanner (gmp_parser_t *gmp_parser, GError **error)
 {
   scanner_t new_scanner;
 
@@ -20137,7 +20137,7 @@ handle_create_scanner (omp_parser_t *omp_parser, GError **error)
           goto create_scanner_leave;
         case 2:
           if (send_find_error_to_client ("create_scanner", "scanner",
-                                         create_scanner_data->copy, omp_parser))
+                                         create_scanner_data->copy, gmp_parser))
             {
               error_send_to_client (error);
               goto create_scanner_leave;
@@ -20172,7 +20172,7 @@ handle_create_scanner (omp_parser_t *omp_parser, GError **error)
       goto create_scanner_leave;
     }
 
-  /* Specifying unix file socket over OMP is not allowed. */
+  /* Specifying unix file socket over GMP is not allowed. */
   if (*create_scanner_data->host == '/')
     {
       SEND_TO_CLIENT_OR_FAIL
@@ -20214,7 +20214,7 @@ handle_create_scanner (omp_parser_t *omp_parser, GError **error)
       case 3:
         if (send_find_error_to_client ("create_scanner", "credential",
                                        create_scanner_data->credential_id,
-                                       omp_parser))
+                                       gmp_parser))
           {
             error_send_to_client (error);
             return;
@@ -20259,11 +20259,11 @@ create_scanner_leave:
 /**
  * @brief Handle end of MODIFY_SCANNER element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_modify_scanner (omp_parser_t *omp_parser, GError **error)
+handle_modify_scanner (gmp_parser_t *gmp_parser, GError **error)
 {
   if (modify_scanner_data->ca_pub && *modify_scanner_data->ca_pub
       && check_certificate (modify_scanner_data->ca_pub))
@@ -20273,7 +20273,7 @@ handle_modify_scanner (omp_parser_t *omp_parser, GError **error)
       goto modify_scanner_leave;
     }
 
-  /* Specifying unix file socket over OMP is not allowed. */
+  /* Specifying unix file socket over GMP is not allowed. */
   if (modify_scanner_data->host
       && *modify_scanner_data->host == '/')
     {
@@ -20295,7 +20295,7 @@ handle_modify_scanner (omp_parser_t *omp_parser, GError **error)
       case 1:
         if (send_find_error_to_client ("modify_scanner", "scanner",
                                        modify_scanner_data->scanner_id,
-                                       omp_parser))
+                                       gmp_parser))
           {
             error_send_to_client (error);
             return;
@@ -20325,7 +20325,7 @@ handle_modify_scanner (omp_parser_t *omp_parser, GError **error)
       case 5:
         if (send_find_error_to_client ("create_scanner", "credential",
                                        modify_scanner_data->credential_id,
-                                       omp_parser))
+                                       gmp_parser))
           {
             error_send_to_client (error);
             return;
@@ -20370,11 +20370,11 @@ modify_scanner_leave:
 /**
  * @brief Handle end of MODIFY_CONFIG element.
  *
- * @param[in]  omp_parser   OMP parser.
+ * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  */
 static void
-handle_modify_config (omp_parser_t *omp_parser, GError **error)
+handle_modify_config (gmp_parser_t *gmp_parser, GError **error)
 {
   config_t config;
 
@@ -20409,7 +20409,7 @@ handle_modify_config (omp_parser_t *omp_parser, GError **error)
   else if (config == 0)
     {
       if (send_find_error_to_client ("modify_config", "config",
-                                     modify_config_data->config_id, omp_parser))
+                                     modify_config_data->config_id, gmp_parser))
         {
           error_send_to_client (error);
           return;
@@ -20554,7 +20554,7 @@ modify_config_leave:
 extern char client_address[];
 
 /**
- * @brief Handle the end of an OMP XML element.
+ * @brief Handle the end of an GMP XML element.
  *
  * React to the end of an XML element according to the current value
  * of \ref client_state, usually adjusting \ref client_state to indicate
@@ -20567,33 +20567,33 @@ extern char client_address[];
  *
  * @param[in]  context           Parser context.
  * @param[in]  element_name      XML element name.
- * @param[in]  user_data         OMP parser.
+ * @param[in]  user_data         GMP parser.
  * @param[in]  error             Error parameter.
  */
 static void
-omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
+gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                             const gchar *element_name,
                             gpointer user_data,
                             GError **error)
 {
-  omp_parser_t *omp_parser = (omp_parser_t*) user_data;
+  gmp_parser_t *gmp_parser = (gmp_parser_t*) user_data;
   int (*write_to_client) (const char *, void*)
-    = (int (*) (const char *, void*)) omp_parser->client_writer;
-  void* write_to_client_data = (void*) omp_parser->client_writer_data;
+    = (int (*) (const char *, void*)) gmp_parser->client_writer;
+  void* write_to_client_data = (void*) gmp_parser->client_writer_data;
 
   int ret;
 
   g_debug ("   XML    end: %s\n", element_name);
 
-  if (omp_parser->read_over > 1)
+  if (gmp_parser->read_over > 1)
     {
-      omp_parser->read_over--;
+      gmp_parser->read_over--;
     }
-  else if ((omp_parser->read_over == 1) && omp_parser->parent_state)
+  else if ((gmp_parser->read_over == 1) && gmp_parser->parent_state)
     {
-      client_state = omp_parser->parent_state;
-      omp_parser->parent_state = 0;
-      omp_parser->read_over = 0;
+      client_state = gmp_parser->parent_state;
+      gmp_parser->parent_state = 0;
+      gmp_parser->read_over = 0;
     }
   else switch (client_state)
     {
@@ -20755,7 +20755,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                      ("delete_asset",
                       "asset",
                       delete_asset_data->asset_id,
-                      omp_parser))
+                      gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -20847,7 +20847,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 3:  /* Failed to find task. */
                   if (send_find_error_to_client
                        ("delete_task", "task", delete_task_data->task_id,
-                        omp_parser))
+                        gmp_parser))
                     {
                       error_send_to_client (error);
                       return;
@@ -20866,7 +20866,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   /* to_scanner is full. */
                   /** @todo Or some other error occurred. */
                   /** @todo Consider reverting parsing for retry. */
-                  /** @todo process_omp_client_input must return -2. */
+                  /** @todo process_gmp_client_input must return -2. */
                   g_debug ("delete_task failed\n");
                   abort ();
                   break;
@@ -20914,7 +20914,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                                delete_user_data->user_id
                                                 ? delete_user_data->user_id
                                                 : delete_user_data->name,
-                                               omp_parser))
+                                               gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -21096,11 +21096,11 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_GET_AGENTS:
         assert (strcasecmp ("GET_AGENTS", element_name) == 0);
-        return handle_get_agents (omp_parser, error);
+        return handle_get_agents (gmp_parser, error);
 
       case CLIENT_GET_AGGREGATES:
         assert (strcasecmp ("GET_AGGREGATES", element_name) == 0);
-        return handle_get_aggregates (omp_parser, error);
+        return handle_get_aggregates (gmp_parser, error);
 
       CLOSE (CLIENT_GET_AGGREGATES, DATA_COLUMN);
       CLOSE (CLIENT_GET_AGGREGATES, SORT);
@@ -21108,120 +21108,120 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_GET_ALERTS:
         assert (strcasecmp ("GET_ALERTS", element_name) == 0);
-        return handle_get_alerts (omp_parser, error);
+        return handle_get_alerts (gmp_parser, error);
 
       case CLIENT_GET_ASSETS:
         assert (strcasecmp ("GET_ASSETS", element_name) == 0);
-        return handle_get_assets (omp_parser, error);
+        return handle_get_assets (gmp_parser, error);
 
       case CLIENT_GET_CONFIGS:
         assert (strcasecmp ("GET_CONFIGS", element_name) == 0);
-        return handle_get_configs (omp_parser, error);
+        return handle_get_configs (gmp_parser, error);
 
       case CLIENT_GET_CREDENTIALS:
         assert (strcasecmp ("GET_CREDENTIALS", element_name) == 0);
-        return handle_get_credentials (omp_parser, error);
+        return handle_get_credentials (gmp_parser, error);
 
       case CLIENT_GET_FEEDS:
         assert (strcasecmp ("GET_FEEDS", element_name) == 0);
-        return handle_get_feeds (omp_parser, error);
+        return handle_get_feeds (gmp_parser, error);
 
       case CLIENT_GET_FILTERS:
         assert (strcasecmp ("GET_FILTERS", element_name) == 0);
-        return handle_get_filters (omp_parser, error);
+        return handle_get_filters (gmp_parser, error);
 
       case CLIENT_GET_GROUPS:
         assert (strcasecmp ("GET_GROUPS", element_name) == 0);
-        return handle_get_groups (omp_parser, error);
+        return handle_get_groups (gmp_parser, error);
 
       case CLIENT_GET_INFO:
         assert (strcasecmp ("GET_INFO", element_name) == 0);
-        return handle_get_info (omp_parser, error);
+        return handle_get_info (gmp_parser, error);
 
       case CLIENT_GET_NOTES:
         assert (strcasecmp ("GET_NOTES", element_name) == 0);
-        return handle_get_notes (omp_parser, error);
+        return handle_get_notes (gmp_parser, error);
 
       case CLIENT_GET_NVTS:
         assert (strcasecmp ("GET_NVTS", element_name) == 0);
-        return handle_get_nvts (omp_parser, error);
+        return handle_get_nvts (gmp_parser, error);
 
       case CLIENT_GET_NVT_FAMILIES:
         assert (strcasecmp ("GET_NVT_FAMILIES", element_name) == 0);
-        return handle_get_nvt_families (omp_parser, error);
+        return handle_get_nvt_families (gmp_parser, error);
 
       case CLIENT_GET_OVERRIDES:
         assert (strcasecmp ("GET_OVERRIDES", element_name) == 0);
-        return handle_get_overrides (omp_parser, error);
+        return handle_get_overrides (gmp_parser, error);
 
       case CLIENT_GET_PERMISSIONS:
         assert (strcasecmp ("GET_PERMISSIONS", element_name) == 0);
-        return handle_get_permissions (omp_parser, error);
+        return handle_get_permissions (gmp_parser, error);
 
       case CLIENT_GET_PORT_LISTS:
         assert (strcasecmp ("GET_PORT_LISTS", element_name) == 0);
-        return handle_get_port_lists (omp_parser, error);
+        return handle_get_port_lists (gmp_parser, error);
 
       case CLIENT_GET_PREFERENCES:
         assert (strcasecmp ("GET_PREFERENCES", element_name) == 0);
-        return handle_get_preferences (omp_parser, error);
+        return handle_get_preferences (gmp_parser, error);
 
       case CLIENT_GET_REPORTS:
         assert (strcasecmp ("GET_REPORTS", element_name) == 0);
-        return handle_get_reports (omp_parser, error);
+        return handle_get_reports (gmp_parser, error);
 
       case CLIENT_GET_REPORT_FORMATS:
         assert (strcasecmp ("GET_REPORT_FORMATS", element_name) == 0);
-        return handle_get_report_formats (omp_parser, error);
+        return handle_get_report_formats (gmp_parser, error);
 
       case CLIENT_GET_RESULTS:
         assert (strcasecmp ("GET_RESULTS", element_name) == 0);
-        return handle_get_results (omp_parser, error);
+        return handle_get_results (gmp_parser, error);
 
       case CLIENT_GET_ROLES:
         assert (strcasecmp ("GET_ROLES", element_name) == 0);
-        return handle_get_roles (omp_parser, error);
+        return handle_get_roles (gmp_parser, error);
 
       case CLIENT_GET_SCANNERS:
         assert (strcasecmp ("GET_SCANNERS", element_name) == 0);
-        return handle_get_scanners (omp_parser, error);
+        return handle_get_scanners (gmp_parser, error);
 
       case CLIENT_GET_SCHEDULES:
         assert (strcasecmp ("GET_SCHEDULES", element_name) == 0);
-        return handle_get_schedules (omp_parser, error);
+        return handle_get_schedules (gmp_parser, error);
 
       case CLIENT_GET_SETTINGS:
         assert (strcasecmp ("GET_SETTINGS", element_name) == 0);
-        return handle_get_settings (omp_parser, error);
+        return handle_get_settings (gmp_parser, error);
 
       case CLIENT_GET_SYSTEM_REPORTS:
         assert (strcasecmp ("GET_SYSTEM_REPORTS", element_name) == 0);
-        return handle_get_system_reports (omp_parser, error);
+        return handle_get_system_reports (gmp_parser, error);
 
       case CLIENT_GET_TAGS:
         assert (strcasecmp ("GET_TAGS", element_name) == 0);
-        return handle_get_tags (omp_parser, error);
+        return handle_get_tags (gmp_parser, error);
 
       case CLIENT_GET_TARGETS:
         assert (strcasecmp ("GET_TARGETS", element_name) == 0);
-        return handle_get_targets (omp_parser, error);
+        return handle_get_targets (gmp_parser, error);
 
       case CLIENT_GET_TASKS:
         assert (strcasecmp ("GET_TASKS", element_name) == 0);
-        return handle_get_tasks (omp_parser, error);
+        return handle_get_tasks (gmp_parser, error);
 
       case CLIENT_GET_USERS:
         assert (strcasecmp ("GET_USERS", element_name) == 0);
-        return handle_get_users (omp_parser, error);
+        return handle_get_users (gmp_parser, error);
 
       case CLIENT_GET_VERSION:
       case CLIENT_GET_VERSION_AUTHENTIC:
         assert (strcasecmp ("GET_VERSION", element_name) == 0);
-        return handle_get_version (omp_parser, error);
+        return handle_get_version (gmp_parser, error);
 
       case CLIENT_GET_VULNS:
         assert (strcasecmp ("GET_VULNS", element_name) == 0);
-        return handle_get_vulns (omp_parser, error);
+        return handle_get_vulns (gmp_parser, error);
 
       case CLIENT_HELP:
         if (acl_user_may ("help") == 0)
@@ -21240,10 +21240,10 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL ("<help_response"
                                     " status=\"" STATUS_OK "\""
                                     " status_text=\"" STATUS_OK_TEXT "\">\n");
-            commands = omp_commands;
+            commands = gmp_commands;
             while ((*commands).name)
               {
-                if (command_disabled (omp_parser, (*commands).name) == 0)
+                if (command_disabled (gmp_parser, (*commands).name) == 0)
                   {
                     int count;
                     SENDF_TO_CLIENT_OR_FAIL ("    %s",
@@ -21269,10 +21269,10 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                     " format=\"XML\""
                                     " extension=\"xml\""
                                     " content_type=\"text/xml\">");
-            commands = omp_commands;
+            commands = gmp_commands;
             while ((*commands).name)
               {
-                if ((command_disabled (omp_parser, (*commands).name) == 0)
+                if ((command_disabled (gmp_parser, (*commands).name) == 0)
                     && ((current_credentials.uuid == NULL)
                         || acl_user_may ((*commands).name)))
                   SENDF_TO_CLIENT_OR_FAIL ("<command>"
@@ -21302,7 +21302,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 1:
                   assert (help_data->format);
                   if (send_find_error_to_client ("help", "schema_format",
-                                                 help_data->format, omp_parser))
+                                                 help_data->format, gmp_parser))
                     {
                       error_send_to_client (error);
                       return;
@@ -21415,7 +21415,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 2:
                   if (send_find_error_to_client ("create_agent", "agent",
                                                  create_agent_data->copy,
-                                                 omp_parser))
+                                                 gmp_parser))
                     {
                       error_send_to_client (error);
                       return;
@@ -21780,7 +21780,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 2:
                 if (send_find_error_to_client ("create_config", "config",
                                                create_config_data->copy,
-                                               omp_parser))
+                                               gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -21951,7 +21951,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 2:
                   if (send_find_error_to_client ("create_alert", "alert",
                                                  create_alert_data->copy,
-                                                 omp_parser))
+                                                 gmp_parser))
                     {
                       error_send_to_client (error);
                       return;
@@ -22046,7 +22046,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   case 3:
                     if (send_find_error_to_client ("create_alert", "filter",
                                                    create_alert_data->filter_id,
-                                                   omp_parser))
+                                                   gmp_parser))
                       {
                         error_send_to_client (error);
                         return;
@@ -22285,7 +22285,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   if (send_find_error_to_client ("create_credential",
                                                  "credential",
                                                  create_credential_data->copy,
-                                                 omp_parser))
+                                                 gmp_parser))
                     {
                       error_send_to_client (error);
                       return;
@@ -22518,7 +22518,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 2:
                   if (send_find_error_to_client ("create_filter", "filter",
                                                  create_filter_data->copy,
-                                                 omp_parser))
+                                                 gmp_parser))
                     {
                       error_send_to_client (error);
                       return;
@@ -22574,7 +22574,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 2:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_filter",
-                                    "Type must be a valid OMP type"));
+                                    "Type must be a valid GMP type"));
                 log_event_fail ("filter", "Filter", NULL, "created");
                 break;
               case 99:
@@ -22634,7 +22634,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 2:
                   if (send_find_error_to_client ("create_group", "group",
                                                  create_group_data->copy,
-                                                 omp_parser))
+                                                 gmp_parser))
                     {
                       error_send_to_client (error);
                       return;
@@ -22758,7 +22758,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 2:
                   if (send_find_error_to_client ("create_note", "note",
                                                  create_note_data->copy,
-                                                 omp_parser))
+                                                 gmp_parser))
                     {
                       error_send_to_client (error);
                       return;
@@ -22806,7 +22806,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("create_note", "task",
                                              create_note_data->task_id,
-                                             omp_parser))
+                                             gmp_parser))
                 {
                   error_send_to_client (error);
                   return;
@@ -22821,7 +22821,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("create_note", "result",
                                              create_note_data->result_id,
-                                             omp_parser))
+                                             gmp_parser))
                 {
                   error_send_to_client (error);
                   return;
@@ -22851,7 +22851,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 1:
                 if (send_find_error_to_client ("create_note", "nvt",
                                                create_note_data->nvt_oid,
-                                               omp_parser))
+                                               gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -22924,7 +22924,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 2:
                   if (send_find_error_to_client ("create_override", "override",
                                                  create_override_data->copy,
-                                                 omp_parser))
+                                                 gmp_parser))
                     {
                       error_send_to_client (error);
                       return;
@@ -22979,7 +22979,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("create_override", "task",
                                              create_override_data->task_id,
-                                             omp_parser))
+                                             gmp_parser))
                 {
                   error_send_to_client (error);
                   return;
@@ -22994,7 +22994,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("create_override", "result",
                                              create_override_data->result_id,
-                                             omp_parser))
+                                             gmp_parser))
                 {
                   error_send_to_client (error);
                   return;
@@ -23026,7 +23026,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 1:
                 if (send_find_error_to_client ("create_override", "nvt",
                                                create_override_data->nvt_oid,
-                                               omp_parser))
+                                               gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -23107,7 +23107,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   if (send_find_error_to_client ("create_permission",
                                                  "permission",
                                                  create_permission_data->copy,
-                                                 omp_parser))
+                                                 gmp_parser))
                     {
                       error_send_to_client (error);
                       return;
@@ -23158,7 +23158,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 2:
                 if (send_find_error_to_client
                      ("create_permission", "subject",
-                      create_permission_data->subject_id, omp_parser))
+                      create_permission_data->subject_id, gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -23168,7 +23168,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 3:
                 if (send_find_error_to_client
                      ("create_permission", "resource",
-                      create_permission_data->resource_id, omp_parser))
+                      create_permission_data->resource_id, gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -23357,7 +23357,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   if (send_find_error_to_client ("create_port_list",
                                                  "port_list",
                                                  create_port_list_data->copy,
-                                                 omp_parser))
+                                                 gmp_parser))
                     {
                       error_send_to_client (error);
                       return;
@@ -23503,7 +23503,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 3:
                 if (send_find_error_to_client
                      ("create_port_range", "port_range",
-                      create_port_range_data->port_list_id, omp_parser))
+                      create_port_range_data->port_list_id, gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -23614,7 +23614,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 log_event_fail ("report", "Report", NULL, "created");
                 if (send_find_error_to_client
                      ("create_report", "task",
-                      create_report_data->task_id, omp_parser))
+                      create_report_data->task_id, gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -23643,7 +23643,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 }
             }
 
-          omp_parser->importing = 0;
+          gmp_parser->importing = 0;
           create_report_data_reset (create_report_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
@@ -23904,7 +23904,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   if (send_find_error_to_client ("create_report_format",
                                                  "report_format",
                                                  create_report_format_data->copy,
-                                                 omp_parser))
+                                                 gmp_parser))
                     {
                       error_send_to_client (error);
                       return;
@@ -24214,7 +24214,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 2:
                   if (send_find_error_to_client ("create_role", "role",
                                                  create_role_data->copy,
-                                                 omp_parser))
+                                                 gmp_parser))
                     {
                       error_send_to_client (error);
                       return;
@@ -24305,7 +24305,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_CREATE_SCANNER:
         assert (strcasecmp ("CREATE_SCANNER", element_name) == 0);
-        return handle_create_scanner (omp_parser, error);
+        return handle_create_scanner (gmp_parser, error);
       CLOSE (CLIENT_CREATE_SCANNER, COMMENT);
       CLOSE (CLIENT_CREATE_SCANNER, COPY);
       CLOSE (CLIENT_CREATE_SCANNER, NAME);
@@ -24349,7 +24349,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 2:
                   if (send_find_error_to_client ("create_schedule", "schedule",
                                                  create_schedule_data->copy,
-                                                 omp_parser))
+                                                 gmp_parser))
                     {
                       error_send_to_client (error);
                       return;
@@ -24518,7 +24518,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 2:
                   if (send_find_error_to_client ("create_tag", "tag",
                                                  create_tag_data->copy,
-                                                 omp_parser))
+                                                 gmp_parser))
                     {
                       error_send_to_client (error);
                       return;
@@ -24659,7 +24659,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 2:
                   if (send_find_error_to_client ("create_target", "target",
                                                  create_target_data->copy,
-                                                 omp_parser))
+                                                 gmp_parser))
                     {
                       error_send_to_client (error);
                       return;
@@ -24722,7 +24722,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     create_target_data->ssh_credential_id
                       ? create_target_data->ssh_credential_id
                       : create_target_data->ssh_lsc_credential_id,
-                    omp_parser))
+                    gmp_parser))
                 {
                   error_send_to_client (error);
                   return;
@@ -24750,7 +24750,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     create_target_data->smb_credential_id
                       ? create_target_data->smb_credential_id
                       : create_target_data->smb_lsc_credential_id,
-                    omp_parser))
+                    gmp_parser))
                 {
                   error_send_to_client (error);
                   return;
@@ -24778,7 +24778,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     create_target_data->esxi_credential_id
                       ? create_target_data->esxi_credential_id
                       : create_target_data->esxi_lsc_credential_id,
-                    omp_parser))
+                    gmp_parser))
                 {
                   error_send_to_client (error);
                   return;
@@ -24796,7 +24796,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               if (send_find_error_to_client
                    ("create_target", "Credential",
                     create_target_data->snmp_credential_id,
-                    omp_parser))
+                    gmp_parser))
                 {
                   error_send_to_client (error);
                   return;
@@ -24861,7 +24861,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 log_event_fail ("target", "Target", NULL, "created");
                 if (send_find_error_to_client
                      ("create_target", "port_list",
-                      create_target_data->port_list_id, omp_parser))
+                      create_target_data->port_list_id, gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -25015,7 +25015,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   case 2:
                     if (send_find_error_to_client ("create_task", "task",
                                                    create_task_data->copy,
-                                                   omp_parser))
+                                                   gmp_parser))
                       {
                         error_send_to_client (error);
                         return;
@@ -25216,7 +25216,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     break;
                   case 1:
                     if (send_find_error_to_client
-                         ("create_task", "group", fail_group_id, omp_parser))
+                         ("create_task", "group", fail_group_id, gmp_parser))
                       {
                         error_send_to_client (error);
                         return;
@@ -25254,7 +25254,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("create_task", "scanner",
                                              create_task_data->scanner_id,
-                                             omp_parser))
+                                             gmp_parser))
                 error_send_to_client (error);
               goto create_task_fail;
             }
@@ -25271,7 +25271,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 {
                   if (send_find_error_to_client ("create_task", "config",
                                                  create_task_data->config_id,
-                                                 omp_parser))
+                                                 gmp_parser))
                     error_send_to_client (error);
                   goto create_task_fail;
                 }
@@ -25295,7 +25295,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("create_task", "target",
                                              create_task_data->target_id,
-                                             omp_parser))
+                                             gmp_parser))
                 error_send_to_client (error);
               goto create_task_fail;
             }
@@ -25410,7 +25410,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 2:
                   if (send_find_error_to_client ("create_user", "user",
                                                  create_user_data->copy,
-                                                 omp_parser))
+                                                 gmp_parser))
                     {
                       error_send_to_client (error);
                       return;
@@ -25464,7 +25464,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   }
                 case 1:
                   if (send_find_error_to_client
-                       ("create_user", "group", fail_group_id, omp_parser))
+                       ("create_user", "group", fail_group_id, gmp_parser))
                     {
                       error_send_to_client (error);
                       return;
@@ -25473,7 +25473,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   break;
                 case 2:
                   if (send_find_error_to_client
-                       ("create_user", "role", fail_role_id, omp_parser))
+                       ("create_user", "role", fail_role_id, gmp_parser))
                     {
                       error_send_to_client (error);
                       return;
@@ -25582,7 +25582,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 1:
                 if (send_find_error_to_client ("modify_agent", "agent",
                                                modify_agent_data->agent_id,
-                                               omp_parser))
+                                               gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -25681,7 +25681,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 1:
                 if (send_find_error_to_client ("modify_alert", "alert",
                                                modify_alert_data->alert_id,
-                                               omp_parser))
+                                               gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -25706,7 +25706,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 4:
                 if (send_find_error_to_client ("modify_alert", "filter",
                                                modify_alert_data->filter_id,
-                                               omp_parser))
+                                               gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -25933,7 +25933,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 1:
                 if (send_find_error_to_client ("modify_asset", "asset",
                                                modify_asset_data->asset_id,
-                                               omp_parser))
+                                               gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -26123,7 +26123,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_CONFIG:
         assert (strcasecmp ("MODIFY_CONFIG", element_name) == 0);
-        return handle_modify_config (omp_parser, error);
+        return handle_modify_config (gmp_parser, error);
       CLOSE (CLIENT_MODIFY_CONFIG, COMMENT);
       CLOSE (CLIENT_MODIFY_CONFIG, SCANNER);
 
@@ -26265,7 +26265,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 if (send_find_error_to_client
                      ("modify_credential", "credential",
                       modify_credential_data->credential_id,
-                      omp_parser))
+                      gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -26359,7 +26359,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 1:
                 if (send_find_error_to_client ("modify_filter", "filter",
                                                modify_filter_data->filter_id,
-                                               omp_parser))
+                                               gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -26438,7 +26438,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 1:
                 if (send_find_error_to_client ("modify_group", "group",
                                                modify_group_data->group_id,
-                                               omp_parser))
+                                               gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -26532,7 +26532,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("modify_note", "note",
                                              modify_note_data->note_id,
-                                             omp_parser))
+                                             gmp_parser))
                 {
                   error_send_to_client (error);
                   return;
@@ -26554,7 +26554,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("modify_note", "task",
                                              modify_note_data->task_id,
-                                             omp_parser))
+                                             gmp_parser))
                 {
                   error_send_to_client (error);
                   return;
@@ -26569,7 +26569,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("modify_note", "result",
                                              modify_note_data->result_id,
-                                             omp_parser))
+                                             gmp_parser))
                 {
                   error_send_to_client (error);
                   return;
@@ -26668,7 +26668,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("modify_override", "override",
                                              modify_override_data->override_id,
-                                             omp_parser))
+                                             gmp_parser))
                 {
                   error_send_to_client (error);
                   return;
@@ -26690,7 +26690,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("modify_override", "task",
                                              modify_override_data->task_id,
-                                             omp_parser))
+                                             gmp_parser))
                 {
                   error_send_to_client (error);
                   return;
@@ -26705,7 +26705,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("modify_override", "result",
                                              modify_override_data->result_id,
-                                             omp_parser))
+                                             gmp_parser))
                 {
                   error_send_to_client (error);
                   return;
@@ -26810,7 +26810,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 2:
                 if (send_find_error_to_client
                      ("modify_permission", "subject",
-                      modify_permission_data->subject_id, omp_parser))
+                      modify_permission_data->subject_id, gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -26822,7 +26822,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 3:
                 if (send_find_error_to_client
                      ("modify_permission", "resource",
-                      modify_permission_data->resource_id, omp_parser))
+                      modify_permission_data->resource_id, gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -26930,7 +26930,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 1:
                 if (send_find_error_to_client ("modify_port_list", "port_list",
                                                modify_port_list_data->port_list_id,
-                                               omp_parser))
+                                               gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -26995,7 +26995,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 1:
                 if (send_find_error_to_client ("modify_report", "report",
                                                modify_report_data->report_id,
-                                               omp_parser))
+                                               gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -27064,7 +27064,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 if (send_find_error_to_client
                      ("modify_report_format", "report_format",
                       modify_report_format_data->report_format_id,
-                      omp_parser))
+                      gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -27085,7 +27085,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 3:
                 if (send_find_error_to_client
                      ("modify_report_format", "report format param",
-                      modify_report_format_data->param_name, omp_parser))
+                      modify_report_format_data->param_name, gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -27149,7 +27149,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 1:
                 if (send_find_error_to_client ("modify_role", "role",
                                                modify_role_data->role_id,
-                                               omp_parser))
+                                               gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -27211,7 +27211,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_SCANNER:
         assert (strcasecmp ("MODIFY_SCANNER", element_name) == 0);
-        return handle_modify_scanner (omp_parser, error);
+        return handle_modify_scanner (gmp_parser, error);
       CLOSE (CLIENT_MODIFY_SCANNER, TYPE);
       CLOSE (CLIENT_MODIFY_SCANNER, PORT);
       CLOSE (CLIENT_MODIFY_SCANNER, HOST);
@@ -27305,7 +27305,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 1:
                 if (send_find_error_to_client ("modify_schedule", "schedule",
                                                modify_schedule_data->schedule_id,
-                                               omp_parser))
+                                               gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -27485,7 +27485,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 1:
                 if (send_find_error_to_client ("modify_tag", "tag",
                                                modify_tag_data->tag_id,
-                                               omp_parser))
+                                               gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -27607,7 +27607,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                 "modified");
                 if (send_find_error_to_client
                      ("modify_target", "port_list",
-                      modify_target_data->port_list_id, omp_parser))
+                      modify_target_data->port_list_id, gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -27622,7 +27622,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       modify_target_data->ssh_credential_id
                         ? modify_target_data->ssh_credential_id
                         : modify_target_data->ssh_lsc_credential_id,
-                      omp_parser))
+                      gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -27637,7 +27637,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       modify_target_data->smb_credential_id
                         ? modify_target_data->smb_credential_id
                         : modify_target_data->smb_lsc_credential_id,
-                      omp_parser))
+                      gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -27649,7 +27649,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                 "modified");
                 if (send_find_error_to_client
                      ("modify_target", "target", modify_target_data->target_id,
-                      omp_parser))
+                      gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -27716,7 +27716,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       modify_target_data->esxi_credential_id
                         ? modify_target_data->esxi_credential_id
                         : modify_target_data->esxi_lsc_credential_id,
-                      omp_parser))
+                      gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -27729,7 +27729,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 if (send_find_error_to_client
                      ("modify_target", "Credential",
                       modify_target_data->snmp_credential_id,
-                      omp_parser))
+                      gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -27840,7 +27840,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               {
                 if (send_find_error_to_client ("modify_task", "task",
                                                modify_task_data->task_id,
-                                               omp_parser))
+                                               gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
@@ -27876,7 +27876,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       if (send_find_error_to_client
                            ("modify_task", "config",
                             modify_task_data->config_id,
-                            omp_parser))
+                            gmp_parser))
                         {
                           error_send_to_client (error);
                           return;
@@ -27886,7 +27886,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       if (send_find_error_to_client
                            ("modify_task", "scanner",
                             modify_task_data->scanner_id,
-                            omp_parser))
+                            gmp_parser))
                         {
                           error_send_to_client (error);
                           return;
@@ -28004,7 +28004,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       {
                         if (send_find_error_to_client
                              ("modify_task", "scanner",
-                              modify_task_data->scanner_id, omp_parser))
+                              modify_task_data->scanner_id, gmp_parser))
                           {
                             error_send_to_client (error);
                             return;
@@ -28046,7 +28046,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       {
                         if (send_find_error_to_client
                              ("modify_task", "config",
-                              modify_task_data->config_id, omp_parser))
+                              modify_task_data->config_id, gmp_parser))
                           {
                             error_send_to_client (error);
                             return;
@@ -28096,7 +28096,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                         case 1:
                           if (send_find_error_to_client
                                ("modify_task", "alert", fail_alert_id,
-                                omp_parser))
+                                gmp_parser))
                             {
                               error_send_to_client (error);
                               return;
@@ -28145,7 +28145,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                         case 1:
                           if (send_find_error_to_client
                                ("modify_task", "group", fail_group_id,
-                                omp_parser))
+                                gmp_parser))
                             {
                               error_send_to_client (error);
                               return;
@@ -28188,7 +28188,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       {
                         if (send_find_error_to_client
                              ("modify_task", "schedule",
-                              modify_task_data->schedule_id, omp_parser))
+                              modify_task_data->schedule_id, gmp_parser))
                           {
                             error_send_to_client (error);
                             return;
@@ -28233,7 +28233,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       {
                         if (send_find_error_to_client
                              ("modify_task", "target",
-                              modify_task_data->target_id, omp_parser))
+                              modify_task_data->target_id, gmp_parser))
                           {
                             error_send_to_client (error);
                             return;
@@ -28360,7 +28360,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     break;
                   case 1:
                     if (send_find_error_to_client
-                         ("modify_user", "group", fail_group_id, omp_parser))
+                         ("modify_user", "group", fail_group_id, gmp_parser))
                       {
                         error_send_to_client (error);
                         return;
@@ -28370,7 +28370,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     if (send_find_error_to_client
                          ("modify_user", "user",
                           modify_user_data->user_id ?: modify_user_data->name,
-                          omp_parser))
+                          gmp_parser))
                       {
                         error_send_to_client (error);
                         return;
@@ -28388,7 +28388,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     break;
                   case 5:
                     if (send_find_error_to_client
-                         ("modify_user", "role", fail_role_id, omp_parser))
+                         ("modify_user", "role", fail_role_id, gmp_parser))
                       {
                         error_send_to_client (error);
                         return;
@@ -28505,7 +28505,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               if (send_find_error_to_client ("move_task",
                                               "Task",
                                               move_task_data->task_id,
-                                              omp_parser))
+                                              gmp_parser))
                 {
                   error_send_to_client (error);
                   return;
@@ -28515,7 +28515,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               if (send_find_error_to_client ("move_task",
                                               "Slave",
                                               move_task_data->slave_id,
-                                              omp_parser))
+                                              gmp_parser))
                 {
                   error_send_to_client (error);
                   return;
@@ -28575,7 +28575,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 1:
                   if (send_find_error_to_client
                        ("test_alert", "alert", test_alert_data->alert_id,
-                        omp_parser))
+                        gmp_parser))
                     {
                       error_send_to_client (error);
                       return;
@@ -28640,7 +28640,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   break;
                 case 2:
                   if (send_find_error_to_client ("restore", "resource",
-                                                 restore_data->id, omp_parser))
+                                                 restore_data->id, gmp_parser))
                     {
                       error_send_to_client (error);
                       return;
@@ -28754,7 +28754,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     case 3:   /* Find failed. */
                       if (send_find_error_to_client
                            ("resume_task", "task", resume_task_data->task_id,
-                            omp_parser))
+                            gmp_parser))
                         {
                           error_send_to_client (error);
                           return;
@@ -28848,8 +28848,8 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
             switch (manage_run_wizard (run_wizard_data->name,
                                        (int (*) (void *, gchar *, gchar **))
-                                         process_omp,
-                                       omp_parser,
+                                         process_gmp,
+                                       gmp_parser,
                                        run_wizard_data->params,
                                        read_only,
                                        run_wizard_data->mode,
@@ -29087,7 +29087,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     case 3:   /* Find failed. */
                       if (send_find_error_to_client ("start_task", "task",
                                                      start_task_data->task_id,
-                                                     omp_parser))
+                                                     gmp_parser))
                         {
                           error_send_to_client (error);
                           return;
@@ -29193,7 +29193,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 3:   /* Find failed. */
                   if (send_find_error_to_client ("stop_task", "task",
                                                  stop_task_data->task_id,
-                                                 omp_parser))
+                                                 gmp_parser))
                     {
                       error_send_to_client (error);
                       return;
@@ -29225,7 +29225,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case -1:
                   /* to_scanner is full. */
                   /** @todo Consider reverting parsing for retry. */
-                  /** @todo process_omp_client_input must return -2. */
+                  /** @todo process_gmp_client_input must return -2. */
                   abort ();
               }
           }
@@ -29342,7 +29342,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_SYNC_CONFIG:
         assert (strcasecmp ("SYNC_CONFIG", element_name) == 0);
-        return handle_sync_config (omp_parser, error);
+        return handle_sync_config (gmp_parser, error);
 
       case CLIENT_SYNC_SCAP:
         assert (current_credentials.username);
@@ -29407,7 +29407,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 1:
                   if (send_find_error_to_client
                        ("verify_agent", "agent", verify_agent_data->agent_id,
-                        omp_parser))
+                        gmp_parser))
                     {
                       error_send_to_client (error);
                       return;
@@ -29447,7 +29447,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   if (send_find_error_to_client
                        ("verify_report_format", "report format",
                         verify_report_format_data->report_format_id,
-                        omp_parser))
+                        gmp_parser))
                     {
                       error_send_to_client (error);
                       return;
@@ -29490,7 +29490,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 1:
                   if (send_find_error_to_client
                        ("verify_scanner", "scanner",
-                        verify_scanner_data->scanner_id, omp_parser))
+                        verify_scanner_data->scanner_id, gmp_parser))
                     {
                       error_send_to_client (error);
                       return;
@@ -29530,7 +29530,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 }
 
 /**
- * @brief Append text to a var for a case in omp_xml_hand_text.
+ * @brief Append text to a var for a case in gmp_xml_hand_text.
  *
  * @param[in]  state  Parser state.
  * @param[in]  dest   Append destination.
@@ -29541,7 +29541,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
     break;
 
 /**
- * @brief Handle the addition of text to an OMP XML element.
+ * @brief Handle the addition of text to an GMP XML element.
  *
  * React to the addition of text to the value of an XML element.
  * React according to the current value of \ref client_state,
@@ -29555,7 +29555,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
  * @param[in]  error             Error parameter.
  */
 static void
-omp_xml_handle_text (/* unused */ GMarkupParseContext* context,
+gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
                      const gchar *text,
                      gsize text_len,
                      /* unused */ gpointer user_data,
@@ -30627,7 +30627,7 @@ omp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 }
 
 /**
- * @brief Handle an OMP XML parsing error.
+ * @brief Handle an GMP XML parsing error.
  *
  * Simply leave the error for the caller of the parser to handle.
  *
@@ -30636,7 +30636,7 @@ omp_xml_handle_text (/* unused */ GMarkupParseContext* context,
  * @param[in]  user_data         Dummy parameter.
  */
 static void
-omp_xml_handle_error (/* unused */ GMarkupParseContext* context,
+gmp_xml_handle_error (/* unused */ GMarkupParseContext* context,
                       GError *error,
                       /* unused */ gpointer user_data)
 {
@@ -30644,18 +30644,18 @@ omp_xml_handle_error (/* unused */ GMarkupParseContext* context,
 }
 
 
-/* OMP input processor. */
+/* GMP input processor. */
 
-/** @todo Most likely the client should get these from init_omp_process
- *        inside an omp_parser_t and should pass the omp_parser_t to
- *        process_omp_client_input.  process_omp_client_input can pass then
+/** @todo Most likely the client should get these from init_gmp_process
+ *        inside an gmp_parser_t and should pass the gmp_parser_t to
+ *        process_gmp_client_input.  process_gmp_client_input can pass then
  *        pass them on to the other Manager "libraries". */
 extern char from_client[];
 extern buffer_size_t from_client_start;
 extern buffer_size_t from_client_end;
 
 /**
- * @brief Initialise OMP library.
+ * @brief Initialise GMP library.
  *
  * @param[in]  log_config      Logging configuration list.
  * @param[in]  nvt_cache_mode  True when running in NVT caching mode.
@@ -30664,7 +30664,7 @@ extern buffer_size_t from_client_end;
  * @param[in]  max_email_attachment_size  Max size of email attachments.
  * @param[in]  max_email_include_size     Max size of email inclusions.
  * @param[in]  progress         Function to update progress, or NULL.
- * @param[in]  fork_connection  Function to fork a connection to the OMP
+ * @param[in]  fork_connection  Function to fork a connection to the GMP
  *                              daemon layer, or NULL.
  * @param[in]  skip_db_check    Skip DB check.
  *
@@ -30673,7 +30673,7 @@ extern buffer_size_t from_client_end;
  *         range.
  */
 int
-init_omp (GSList *log_config, int nvt_cache_mode, const gchar *database,
+init_gmp (GSList *log_config, int nvt_cache_mode, const gchar *database,
           int max_ips_per_target, int max_email_attachment_size,
           int max_email_include_size, void (*progress) (),
           int (*fork_connection) (gvm_connection_t *, gchar*),
@@ -30690,7 +30690,7 @@ init_omp (GSList *log_config, int nvt_cache_mode, const gchar *database,
 }
 
 /**
- * @brief Initialise OMP library data for a process.
+ * @brief Initialise GMP library data for a process.
  *
  * @param[in]  update_nvt_cache  0 operate normally, -1 just update NVT cache,
  *                               -2 just rebuild NVT cache.
@@ -30700,10 +30700,10 @@ init_omp (GSList *log_config, int nvt_cache_mode, const gchar *database,
  * @param[in]  disable               Commands to disable.
  *
  * This should run once per process, before the first call to \ref
- * process_omp_client_input.
+ * process_gmp_client_input.
  */
 void
-init_omp_process (int update_nvt_cache, const gchar *database,
+init_gmp_process (int update_nvt_cache, const gchar *database,
                   int (*write_to_client) (const char*, void*),
                   void* write_to_client_data, gchar **disable)
 {
@@ -30713,19 +30713,19 @@ init_omp_process (int update_nvt_cache, const gchar *database,
   init_manage_process (update_nvt_cache, database);
   manage_reset_currents ();
   /* Create the XML parser. */
-  xml_parser.start_element = omp_xml_handle_start_element;
-  xml_parser.end_element = omp_xml_handle_end_element;
-  xml_parser.text = omp_xml_handle_text;
+  xml_parser.start_element = gmp_xml_handle_start_element;
+  xml_parser.end_element = gmp_xml_handle_end_element;
+  xml_parser.text = gmp_xml_handle_text;
   xml_parser.passthrough = NULL;
-  xml_parser.error = omp_xml_handle_error;
+  xml_parser.error = gmp_xml_handle_error;
   if (xml_context)
     g_markup_parse_context_free (xml_context);
   xml_context = g_markup_parse_context_new
                  (&xml_parser,
                   0,
-                  omp_parser_new (write_to_client, write_to_client_data,
+                  gmp_parser_new (write_to_client, write_to_client_data,
                                   disable),
-                  (GDestroyNotify) omp_parser_free);
+                  (GDestroyNotify) gmp_parser_free);
 }
 
 /**
@@ -30734,8 +30734,8 @@ init_omp_process (int update_nvt_cache, const gchar *database,
  * \if STATIC
  *
  * Call the XML parser and let the callback functions do the work
- * (\ref omp_xml_handle_start_element, \ref omp_xml_handle_end_element,
- * \ref omp_xml_handle_text and \ref omp_xml_handle_error).
+ * (\ref gmp_xml_handle_start_element, \ref gmp_xml_handle_end_element,
+ * \ref gmp_xml_handle_text and \ref gmp_xml_handle_error).
  *
  * The callback functions will queue any resulting scanner commands in
  * \ref to_scanner (using \ref send_to_server) and any replies for
@@ -30746,13 +30746,13 @@ init_omp_process (int update_nvt_cache, const gchar *database,
  * @todo The -2 return has been replaced by send_to_client trying to write
  *       the to_client buffer to the client when it is full.  This is
  *       necessary, as the to_client buffer may fill up halfway through the
- *       processing of an OMP element.
+ *       processing of an GMP element.
  *
  * @return 0 success, -1 error, -2 or -3 too little space in \ref to_client
  *         or the scanner output buffer (respectively), -4 XML syntax error.
  */
 int
-process_omp_client_input ()
+process_gmp_client_input ()
 {
   gboolean success;
   GError* error = NULL;
@@ -30817,15 +30817,15 @@ process_omp_client_input ()
 }
 
 /**
- * @brief Buffer the response for process_omp.
+ * @brief Buffer the response for process_gmp.
  *
- * @param[in]  msg     OMP response.
+ * @param[in]  msg     GMP response.
  * @param[in]  buffer  Buffer.
  *
  * @return TRUE if failed, else FALSE.
  */
 int
-process_omp_write (const char* msg, void* buffer)
+process_gmp_write (const char* msg, void* buffer)
 {
   g_debug ("-> client internal: %s\n", msg);
   g_string_append ((GString*) buffer, msg);
@@ -30838,8 +30838,8 @@ process_omp_write (const char* msg, void* buffer)
  * \if STATIC
  *
  * Call the XML parser and let the callback functions do the work
- * (\ref omp_xml_handle_start_element, \ref omp_xml_handle_end_element,
- * \ref omp_xml_handle_text and \ref omp_xml_handle_error).
+ * (\ref gmp_xml_handle_start_element, \ref gmp_xml_handle_end_element,
+ * \ref gmp_xml_handle_text and \ref gmp_xml_handle_error).
  *
  * The callback functions will queue any resulting scanner commands in
  * \ref to_scanner (using \ref send_to_server) and any replies for
@@ -30850,13 +30850,13 @@ process_omp_write (const char* msg, void* buffer)
  * @todo The -2 return has been replaced by send_to_client trying to write
  *       the to_client buffer to the client when it is full.  This is
  *       necessary, as the to_client buffer may fill up halfway through the
- *       processing of an OMP element.
+ *       processing of an GMP element.
  *
  * @return 0 success, -1 error, -2 or -3 too little space in \ref to_client
  *         or the scanner output buffer (respectively), -4 XML syntax error.
  */
 static int
-process_omp (omp_parser_t *parser, const gchar *command, gchar **response)
+process_gmp (gmp_parser_t *parser, const gchar *command, gchar **response)
 {
   gboolean success;
   GError* error = NULL;
@@ -30887,7 +30887,7 @@ process_omp (omp_parser_t *parser, const gchar *command, gchar **response)
   buffer = g_string_new ("");
   client_writer = parser->client_writer;
   client_writer_data = parser->client_writer_data;
-  parser->client_writer = process_omp_write;
+  parser->client_writer = process_gmp_write;
   parser->client_writer_data = buffer;
   current_error = 0;
   success = g_markup_parse_context_parse (xml_context,
@@ -30946,7 +30946,7 @@ process_omp (omp_parser_t *parser, const gchar *command, gchar **response)
   return 0;
 }
 
-/* OMP change processor. */
+/* GMP change processor. */
 
 /**
  * @brief Deal with any changes caused by other processes.
@@ -30955,7 +30955,7 @@ process_omp (omp_parser_t *parser, const gchar *command, gchar **response)
  *         output buffer.
  */
 int
-process_omp_change ()
+process_gmp_change ()
 {
   return manage_check_current_task ();
 }

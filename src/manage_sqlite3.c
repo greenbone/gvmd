@@ -3498,7 +3498,7 @@ create_tables ()
        " (\"user\" integer, task integer, has_permission boolean,"
        "  UNIQUE (\"user\", task));");
   /* Overlapping port ranges will cause problems, at least for the port
-   * counting.  OMP CREATE_PORT_LIST and CREATE_PORT_RANGE check for this,
+   * counting.  GMP CREATE_PORT_LIST and CREATE_PORT_RANGE check for this,
    * but whoever creates a predefined port list must check this manually. */
   sql ("CREATE TABLE IF NOT EXISTS port_lists"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"

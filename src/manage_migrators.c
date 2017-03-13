@@ -9889,7 +9889,7 @@ migrate_141_to_142 ()
 
   /* Update the database. */
 
-  /* OMP command RESUME_OR_START_TASK was removed. */
+  /* GMP command RESUME_OR_START_TASK was removed. */
 
   sql ("DELETE FROM permissions WHERE name = 'resume_or_start_task';");
 
@@ -13588,7 +13588,7 @@ migrate_179_to_180 ()
 
   /* Update the database. */
 
-  /* Slaves were replaced by OMP scanners. */
+  /* Slaves were replaced by GMP scanners. */
 
   sql ("DELETE FROM settings"
        " WHERE uuid = 'aec201fa-8a82-4b61-bebe-a44ea93b2909'"
@@ -13606,7 +13606,7 @@ migrate_179_to_180 ()
        " SELECT uuid, owner, name, comment, host, CAST (port AS INTEGER),"
        "        creation_time, modification_time, credential, %i, NULL"
        " FROM slaves;",
-       SCANNER_TYPE_OMP);
+       SCANNER_TYPE_GMP);
 
   migrate_179_to_180_update_ref ("tags", 0);
   migrate_179_to_180_update_ref ("tags_trash", 0);
@@ -13627,7 +13627,7 @@ migrate_179_to_180 ()
        " SELECT uuid, owner, name, comment, host, CAST (port AS INTEGER),"
        "        creation_time, modification_time, credential, %i, NULL"
        " FROM slaves_trash;",
-       SCANNER_TYPE_OMP);
+       SCANNER_TYPE_GMP);
 
   migrate_179_to_180_update_ref ("tags", 1);
   migrate_179_to_180_update_ref ("tags_trash", 1);
@@ -13968,7 +13968,7 @@ migrate_183_to_184 ()
 
   /* Update the database. */
 
-  /* OMP command GET_NVT_FEED_VERSION was removed. */
+  /* GMP command GET_NVT_FEED_VERSION was removed. */
 
   sql ("DELETE FROM permissions WHERE name = 'get_nvt_feed_version';");
 

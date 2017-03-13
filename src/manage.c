@@ -689,7 +689,7 @@ severity_to_type (double severity)
 /* Credentials. */
 
 /**
- * @brief Current credentials during any OMP command.
+ * @brief Current credentials during any GMP command.
  */
 credentials_t current_credentials;
 
@@ -1885,7 +1885,7 @@ send_alive_test_preferences (target_t target)
 
 /* Slave tasks. */
 
-/* Defined in omp.c. */
+/* Defined in gmp.c. */
 void buffer_config_preference_xml (GString *, iterator_t *, config_t, int);
 
 /**
@@ -3355,7 +3355,7 @@ handle_slave_task (task_t task, target_t target,
   gchar *slave_task_name;
 
   /* Some of the cases in here must write to the session outside an open
-   * statement.  For example, the omp_create_lsc_credential must come after
+   * statement.  For example, the gmp_create_lsc_credential must come after
    * cleaning up the credential iterator.  This is because the slave may be
    * the master, and the open statement would prevent the slave from getting
    * a lock on the database and fulfilling the request. */
@@ -4370,7 +4370,7 @@ run_task_prepare_report (task_t task, char **report_id, int from,
 }
 
 /**
- * @brief Start a slave/OMP task.
+ * @brief Start a slave/GMP task.
  *
  * @param[in]  task        The task.
  * @param[in]  from        0 start from beginning, 1 continue from stopped, 2
@@ -4384,7 +4384,7 @@ run_task_prepare_report (task_t task, char **report_id, int from,
  *         -1 error.
  */
 static int
-run_slave_or_omp_task (task_t task, int from, char **report_id,
+run_slave_or_gmp_task (task_t task, int from, char **report_id,
                        gvm_connection_t *connection,
                        const gchar *slave_id,
                        const gchar *slave_name)
@@ -4470,7 +4470,7 @@ run_slave_or_omp_task (task_t task, int from, char **report_id,
         return -9;
         break;
       default:
-        g_debug ("%s: forked %i to run slave/omp task\n",
+        g_debug ("%s: forked %i to run slave/gmp task\n",
                  __FUNCTION__,
                  pid);
         /* Parent.  Return, in order to respond to client. */
@@ -4520,7 +4520,7 @@ run_slave_or_omp_task (task_t task, int from, char **report_id,
 }
 
 /**
- * @brief Start a task on an OMP scanner.
+ * @brief Start a task on an GMP scanner.
  *
  * @param[in]   task        The task.
  * @param[in]   scanner     Slave scanner to run task on.
@@ -4532,7 +4532,7 @@ run_slave_or_omp_task (task_t task, int from, char **report_id,
  *         -1 error.
  */
 static int
-run_omp_task (task_t task, scanner_t scanner, int from, char **report_id)
+run_gmp_task (task_t task, scanner_t scanner, int from, char **report_id)
 {
   int ret;
   gvm_connection_t connection;
@@ -4582,7 +4582,7 @@ run_omp_task (task_t task, scanner_t scanner, int from, char **report_id)
 
   connection.tls = 1;
 
-  ret = run_slave_or_omp_task (task, from, report_id, &connection, scanner_id,
+  ret = run_slave_or_gmp_task (task, from, report_id, &connection, scanner_id,
                                name);
 
   free (connection.host_string);
@@ -5239,8 +5239,8 @@ run_task (const char *task_id, char **report_id, int from)
   if (scanner_type (scanner) == SCANNER_TYPE_CVE)
     return run_cve_task (task);
 
-  if (scanner_type (scanner) == SCANNER_TYPE_OMP)
-    return run_omp_task (task, scanner, from, report_id);
+  if (scanner_type (scanner) == SCANNER_TYPE_GMP)
+    return run_gmp_task (task, scanner, from, report_id);
 
   if (scanner_type (scanner) != SCANNER_TYPE_OPENVAS)
     return run_osp_task (task);
@@ -5358,7 +5358,7 @@ stop_task_internal (task_t task)
 
       scanner = task_scanner (task);
       assert (scanner);
-      if (scanner_type (scanner) == SCANNER_TYPE_OMP)
+      if (scanner_type (scanner) == SCANNER_TYPE_GMP)
         {
           /* A special request from the user to get the task out of a requested
            * state when contact with the slave is lost. */
@@ -5480,7 +5480,7 @@ move_task (const char *task_id, const char *slave_id)
 
   slave_scanner_type = scanner_type (slave);
   if (slave_scanner_type != SCANNER_TYPE_OPENVAS
-      && slave_scanner_type != SCANNER_TYPE_OMP)
+      && slave_scanner_type != SCANNER_TYPE_GMP)
     return 7;
 
   /* Make sure current scanner supports slavery. */
@@ -5491,7 +5491,7 @@ move_task (const char *task_id, const char *slave_id)
 
   task_scanner_type = scanner_type (scanner);
   if (task_scanner_type != SCANNER_TYPE_OPENVAS
-      && task_scanner_type != SCANNER_TYPE_OMP)
+      && task_scanner_type != SCANNER_TYPE_GMP)
     return 4;
 
   /* Stop task if required. */
@@ -5691,7 +5691,7 @@ credential_full_type (const char* abbreviation)
  * @param[in]   required_type  Single type to limit types to.
  * @param[out]  types          Types on success.
  * @param[out]  start          Actual start of types, which caller must free.
- * @param[out]  slave_id       ID of OMP slave.
+ * @param[out]  slave_id       ID of GMP slave.
  *
  * @return 0 if successful, 2 failed to find slave, -1 otherwise.
  */
@@ -5978,7 +5978,7 @@ report_type_iterator_title (report_type_iterator_t* iterator)
  * @param[in]  duration   Time range of report, in seconds.
  * @param[in]  start_time Time of first data point in report.
  * @param[in]  end_time   Time of last data point in report.
- * @param[in]  slave_id   ID of OMP scanner slave to get report from.
+ * @param[in]  slave_id   ID of GMP scanner slave to get report from.
  *                        0 for local.
  * @param[out] report     On success, report in base64 if such a report exists
  *                        else NULL.  Arbitrary on error.
@@ -6675,7 +6675,7 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
         {
           if (gmp_start_task_report_c (&connection, task_uuid, NULL))
             {
-              g_warning ("%s: omp_start_task and omp_resume_task failed", __FUNCTION__);
+              g_warning ("%s: gmp_start_task and gmp_resume_task failed", __FUNCTION__);
               g_free (task_uuid);
               gvm_connection_free (&connection);
               exit (EXIT_FAILURE);
@@ -8770,7 +8770,7 @@ openvas_current_sync (const gchar * sync_script, gchar ** timestamp,
  * @brief Run a wizard.
  *
  * @param[in]  name              Wizard name.
- * @param[in]  run_command       Function to run OMP command.
+ * @param[in]  run_command       Function to run GMP command.
  * @param[in]  run_command_data  Argument for run_command.
  * @param[in]  params            Wizard params.  Array of name_value_t.
  * @param[in]  read_only         Whether to only allow wizards marked as
@@ -9032,7 +9032,7 @@ manage_run_wizard (const gchar *name,
       if (strcasecmp (entity_name (step), "step") == 0)
         {
           entity_t command, extra_xsl;
-          gchar *omp;
+          gchar *gmp;
           int xsl_fd, xml_fd;
           char xsl_file_name[] = "/tmp/openvasmd-xsl-XXXXXX";
           FILE *xsl_file, *xml_file;
@@ -9143,15 +9143,15 @@ manage_run_wizard (const gchar *name,
 
           fflush (xml_file);
 
-          /* Combine XSL and XML to get the OMP command. */
+          /* Combine XSL and XML to get the GMP command. */
 
-          omp = xsl_transform (xsl_file_name, xml_file_name, NULL,
+          gmp = xsl_transform (xsl_file_name, xml_file_name, NULL,
                                NULL);
           fclose (xsl_file);
           unlink (xsl_file_name);
           fclose (xml_file);
           unlink (xml_file_name);
-          if (omp == NULL)
+          if (gmp == NULL)
             {
               g_warning ("%s: Wizard XSL transform failed\n",
                          __FUNCTION__);
@@ -9162,11 +9162,11 @@ manage_run_wizard (const gchar *name,
               return -1;
             }
 
-          /* Run the OMP command. */
+          /* Run the GMP command. */
 
           g_free (response);
           response = NULL;
-          ret = run_command (run_command_data, omp, &response);
+          ret = run_command (run_command_data, gmp, &response);
           if (ret == 3)
             {
               /* Parent after a start_task fork. */

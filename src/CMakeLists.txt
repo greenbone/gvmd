@@ -108,9 +108,9 @@ endif (NOT CMAKE_BUILD_TYPE MATCHES "Release")
 add_custom_command (TARGET ${BINARY_NAME} POST_BUILD
                     COMMAND ln -sf ${BINARY_NAME} openvasmd)
 
-if (OMP_VERSION)
-  add_definitions (-DOMP_VERSION=\\\"${OMP_VERSION}\\\")
-endif (OMP_VERSION)
+if (GMP_VERSION)
+  add_definitions (-DGMP_VERSION=\\\"${GMP_VERSION}\\\")
+endif (GMP_VERSION)
 
 add_definitions (-DOPENVASMD_DATABASE_VERSION=${OPENVASMD_DATABASE_VERSION})
 add_definitions (-DOPENVASMD_SCAP_DATABASE_VERSION=${OPENVASMD_SCAP_DATABASE_VERSION})

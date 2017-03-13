@@ -100,9 +100,9 @@ typedef struct
 } command_t;
 
 /**
- * @brief The OMP command list.
+ * @brief The GMP command list.
  */
-extern command_t omp_commands[];
+extern command_t gmp_commands[];
 
 
 /* Certificate and key management. */
@@ -271,7 +271,7 @@ typedef enum scanner_type
   SCANNER_TYPE_OSP,
   SCANNER_TYPE_OPENVAS,
   SCANNER_TYPE_CVE,
-  SCANNER_TYPE_OMP,
+  SCANNER_TYPE_GMP,
   SCANNER_TYPE_MAX,
 } scanner_type_t;
 
@@ -303,7 +303,7 @@ typedef long long int setting_t;
 typedef long long int user_t;
 
 
-/* OMP GET. */
+/* GMP GET. */
 
 /**
  * @brief Command data for a get command.
