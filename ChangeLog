@@ -1,3 +1,9 @@
+2017-03-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (where_qod): Limit the hostname query, to prevent a
+	Postgres error in case there are report hosts with multiple hostname
+	details.
+
 2017-03-14  Björn Ricks <bjoern.ricks@greenbone.net>
 
 	* src/manage_sql.c (validate_send_data): Fix validating send_port parameter

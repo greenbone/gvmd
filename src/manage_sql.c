@@ -21413,7 +21413,8 @@ where_qod (const char* min_qod)
       " WHERE name = 'hostname'"                                              \
       "   AND report_host = (SELECT id FROM report_hosts"                     \
       "                       WHERE report_hosts.host=results.host"           \
-      "                         AND report_hosts.report = results.report))",  \
+      "                         AND report_hosts.report = results.report)"    \
+      " LIMIT 1)",                                                            \
       "hostname",                                                             \
       KEYWORD_TYPE_STRING                                                     \
     },                                                                        \
