@@ -7313,10 +7313,13 @@ validate_send_data (alert_method_t method, const gchar *name, gchar **data)
 
       stripped = g_strstrip (g_strdup (*data));
       port = strtol (stripped, &end, 10);
-      g_free (stripped);
       if (*end != '\0')
-        return 13;
+        {
+          g_free (stripped);
+          return 13;
+        }
 
+      g_free (stripped);
       g_free (*data);
       *data = g_strdup_printf ("%i", port);
     }
