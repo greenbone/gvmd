@@ -1,3 +1,9 @@
+2017-03-14  Björn Ricks <bjoern.ricks@greenbone.net>
+
+	* src/manage_sql.c (validate_send_data): Fix validating send_port parameter
+	for alert send method. Don't free chars before comparision. end pointer would
+	point to an already freed memory.
+
 2017-03-13  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* CMakeLists.txt: Increase of protocol from 7.0 to 8.0.
