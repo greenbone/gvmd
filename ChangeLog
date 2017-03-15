@@ -1,5 +1,12 @@
 2017-03-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r28005.
+
+	* src/manage_pg.c (create_tables): Add index results_by_task.  Analysis by
+	Michael Wiegand.
+
+2017-03-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r27994.
 
 	* src/manage_sql.c (where_qod): Limit the hostname query, to prevent a

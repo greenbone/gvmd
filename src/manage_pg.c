@@ -2533,6 +2533,7 @@ create_tables ()
        "         'report_hosts',"
        "         'report, host');");
   sql ("SELECT create_index ('results_by_report', 'results', 'report');");
+  sql ("SELECT create_index ('results_by_task', 'results', 'task');");
 }
 
 /**
