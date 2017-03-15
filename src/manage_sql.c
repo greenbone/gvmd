@@ -56673,7 +56673,7 @@ manage_schema (gchar *format, gchar **output_return, gsize *output_length,
 
       command = g_strdup_printf ("%s " OPENVAS_DATA_DIR
                                  "/openvasmd/global_schema_formats"
-                                 "/18e826fc-dab6-11df-b913-002264764cea/OMP.xml"
+                                 "/18e826fc-dab6-11df-b913-002264764cea/GMP.xml"
                                  " > %s"
                                  " 2> /dev/null",
                                  script,

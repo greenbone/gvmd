@@ -67,7 +67,7 @@ if (NOT DOXYGEN_EXECUTABLE)
 else (NOT DOXYGEN_EXECUTABLE)
   add_custom_target (doc COMMENT "Building documentation..."
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/openvasmd.8 ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile ${CMAKE_CURRENT_BINARY_DIR}/.built-html ${CMAKE_CURRENT_BINARY_DIR}/.built-html_db
-    ${CMAKE_CURRENT_BINARY_DIR}/db.png ${CMAKE_CURRENT_BINARY_DIR}/omp.rnc ${CMAKE_CURRENT_BINARY_DIR}/omp.html)
+    ${CMAKE_CURRENT_BINARY_DIR}/db.png ${CMAKE_CURRENT_BINARY_DIR}/gmp.rnc ${CMAKE_CURRENT_BINARY_DIR}/gmp.html)
 
   add_custom_command (OUTPUT .built-html
     COMMAND sh
@@ -76,15 +76,15 @@ else (NOT DOXYGEN_EXECUTABLE)
 
   add_custom_target (doc-full COMMENT "Building documentation..."
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/openvasmd.8 ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_full ${CMAKE_CURRENT_BINARY_DIR}/.built-html_full ${CMAKE_CURRENT_BINARY_DIR}/.built-html_db
-    ${CMAKE_CURRENT_BINARY_DIR}/db.png ${CMAKE_CURRENT_BINARY_DIR}/omp.rnc ${CMAKE_CURRENT_BINARY_DIR}/omp.html)
+    ${CMAKE_CURRENT_BINARY_DIR}/db.png ${CMAKE_CURRENT_BINARY_DIR}/gmp.rnc ${CMAKE_CURRENT_BINARY_DIR}/gmp.html)
 
   add_custom_command (OUTPUT .built-html_full
     COMMAND sh
     ARGS -c \"${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_full && touch ${CMAKE_CURRENT_BINARY_DIR}/.built-html_full\;\"
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/openvasmd.html ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_full)
 
-  add_custom_target (doc-omp COMMENT "Building OMP documentation..."
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/omp.rnc ${CMAKE_CURRENT_BINARY_DIR}/omp.html)
+  add_custom_target (doc-gmp COMMENT "Building GMP documentation..."
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gmp.rnc ${CMAKE_CURRENT_BINARY_DIR}/gmp.html)
 endif (NOT DOXYGEN_EXECUTABLE)
 
 if (XMLTOMAN_EXECUTABLE)
@@ -181,20 +181,20 @@ else (SQLT_EXECUTABLE)
 					  ARGS -c \"echo \\\"[Error: sqlt, from SQLFairy, required to see database here]\\\" > db.html && touch .built-html_db\;\")
 endif (SQLT_EXECUTABLE)
 
-add_custom_command (OUTPUT omp.rnc
+add_custom_command (OUTPUT gmp.rnc
                     COMMAND sh
-					ARGS -c \"cd ${CMAKE_SOURCE_DIR}/src/schema_formats/RNC && xsltproc ./RNC.xsl ${CMAKE_BINARY_DIR}/src/schema_formats/XML/OMP.xml > ${CMAKE_BINARY_DIR}/doc/omp.rnc\;\"
+					ARGS -c \"cd ${CMAKE_SOURCE_DIR}/src/schema_formats/RNC && xsltproc ./RNC.xsl ${CMAKE_BINARY_DIR}/src/schema_formats/XML/GMP.xml > ${CMAKE_BINARY_DIR}/doc/gmp.rnc\;\"
 					DEPENDS
-					${CMAKE_BINARY_DIR}/src/schema_formats/XML/OMP.xml
+					${CMAKE_BINARY_DIR}/src/schema_formats/XML/GMP.xml
 					${CMAKE_SOURCE_DIR}/src/schema_formats/RNC/generate
 					${CMAKE_SOURCE_DIR}/src/schema_formats/RNC/RNC.xsl
 					${CMAKE_SOURCE_DIR}/src/schema_formats/RNC/rnc.xsl)
 
-add_custom_command (OUTPUT omp.html
+add_custom_command (OUTPUT gmp.html
                     COMMAND sh
-					ARGS -c \"cd ${CMAKE_SOURCE_DIR}/src/schema_formats/HTML && xsltproc ./HTML.xsl ${CMAKE_BINARY_DIR}/src/schema_formats/XML/OMP.xml > ${CMAKE_BINARY_DIR}/doc/omp.html\;\"
+					ARGS -c \"cd ${CMAKE_SOURCE_DIR}/src/schema_formats/HTML && xsltproc ./HTML.xsl ${CMAKE_BINARY_DIR}/src/schema_formats/XML/GMP.xml > ${CMAKE_BINARY_DIR}/doc/gmp.html\;\"
 					DEPENDS
-					${CMAKE_BINARY_DIR}/src/schema_formats/XML/OMP.xml
+					${CMAKE_BINARY_DIR}/src/schema_formats/XML/GMP.xml
 					${CMAKE_SOURCE_DIR}/src/schema_formats/HTML/generate
 					${CMAKE_SOURCE_DIR}/src/schema_formats/HTML/HTML.xsl
 					${CMAKE_SOURCE_DIR}/src/schema_formats/HTML/rnc.xsl)
