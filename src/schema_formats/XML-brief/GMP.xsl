@@ -9,7 +9,7 @@
 <!--
 OpenVAS Manager
 $Id$
-Description: OpenVAS Manager Protocol (OMP) single page HTML doc generator.
+Description: Greenbone Management Protocol (GMP) single page HTML doc generator.
 
 Authors:
 Matthew Mundell <matthew.mundell@greenbone.net>
