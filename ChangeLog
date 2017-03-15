@@ -1,5 +1,10 @@
 2017-03-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_pg.c (create_tables): Add index results_by_task.  Analysis by
+	Michael Wiegand.
+
+2017-03-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (where_qod): Limit the hostname query, to prevent a
 	Postgres error in case there are report hosts with multiple hostname
 	details.
