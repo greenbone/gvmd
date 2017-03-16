@@ -1,3 +1,10 @@
+2017-03-16  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* doc/CMakeLists.txt: Install the freshly build gmp.html
+	instead of the static omp.html.
+
+	* INSTALL: Mention the prerequisite for xsltproc.
+
 2017-03-15  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/schema_formats/XML-brief/OMP.xsl,

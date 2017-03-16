@@ -201,7 +201,7 @@ add_custom_command (OUTPUT gmp.html
 
 ## Install
 
-install (FILES omp.html
+install (FILES ${CMAKE_CURRENT_BINARY_DIR}/gmp.html
          DESTINATION share/doc/openvas-manager/html/
          COMPONENT doc)
 
