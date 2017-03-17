@@ -1,7 +1,7 @@
 <!--
 OpenVAS Manager
 $Id$
-Description: OpenVAS Manager Protocol (OMP) reset task wizard.
+Description: Greenbone Manager Protocol (GMP) reset task wizard.
 
 Authors:
 Timo Pollmeier <timo.pollmeier@greenbone.net>
@@ -35,8 +35,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   next_action: The action to perform after the reports are deleted:
                 start : starts the task.
 
-  To run this wizard, use the OMP command RUN_WIZARD.
-  Please see the OMP documentation for details.
+  To run this wizard, use the GMP command RUN_WIZARD.
+  Please see the GMP documentation for details.
  -->
 
 <wizard>

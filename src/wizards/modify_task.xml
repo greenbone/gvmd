@@ -1,7 +1,7 @@
 <!--
 OpenVAS Manager
 $Id$
-Description: OpenVAS Manager Protocol (OMP) task modification wizard.
+Description: Greenbone Manager Protocol (GMP) task modification wizard.
 
 Authors:
 Timo Pollmeier <timo.pollmeier@greenbone.net>

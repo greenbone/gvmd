@@ -9,7 +9,7 @@
 <!--
 OpenVAS Manager
 $Id$
-Description: OpenVAS Manager Protocol (OMP) RNC support templates.
+Description: Greenbone Management Protocol (GMP) RNC support templates.
 
 Authors:
 Matthew Mundell <matthew.mundell@greenbone.net>

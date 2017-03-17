@@ -1,7 +1,7 @@
 <!--
 OpenVAS Manager
 $Id$
-Description: OpenVAS Manager Protocol (OMP) quick authenticated scan wizard.
+Description: Greenbone Manager Protocol (GMP) quick authenticated scan wizard.
 
 Authors:
 Timo Pollmeier <timo.pollmeier@greenbone.net>
@@ -34,7 +34,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   Optional parameters:
   hosts : The hosts to scan. Syntax is the same as for the hosts
-           parameter of the OMP command CREATE_TARGET.
+           parameter of the GMP command CREATE_TARGET.
            Will default to "localhost".
   config_id : UUID of the scan config to use. Leave blank for "full and fast".
   username : The username to use for creating credential. If missing, no
@@ -49,8 +49,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   scanner_id : The UUID of the scanner to use, defaults to the built-in
                 OpenVAS-Scanner.
 
-  To run this wizard, use the OMP command RUN_WIZARD.
-  Please see the OMP documentation for details.
+  To run this wizard, use the GMP command RUN_WIZARD.
+  Please see the GMP documentation for details.
  -->
 
 <wizard>

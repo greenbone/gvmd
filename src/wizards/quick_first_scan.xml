@@ -1,7 +1,7 @@
 <!--
 OpenVAS Manager
 $Id$
-Description: OpenVAS Manager Protocol (OMP) quick first scan wizard.
+Description: Greenbone Manager Protocol (GMP) quick first scan wizard.
 
 Authors:
 Matthew Mundell <matthew.mundell@greenbone.net>
@@ -32,10 +32,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   Required parameters:
   hosts : The hosts to scan. Syntax is the same as for the hosts parameter of
-          the OMP command CREATE_TARGET.
+          the GMP command CREATE_TARGET.
 
-  To run this wizard, use the OMP command RUN_WIZARD.
-  Please see the OMP documentation for details.
+  To run this wizard, use the GMP command RUN_WIZARD.
+  Please see the GMP documentation for details.
  -->
 
 <wizard>

@@ -1,5 +1,17 @@
 2017-03-17  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	* report_formats/simple_map_plot/generate,
+	report_formats/simple_topo_plot/generate,
+	src/report_formats/Topology/generate, src/schema_formats/HTML/HTML.xsl,
+	src/schema_formats/HTML/rnc.xsl, src/schema_formats/RNC/RNC.xsl,
+	src/schema_formats/RNC/rnc.xsl, src/schema_formats/XML/generate,
+	src/wizards/delete_task_deep.xml, src/wizards/get_tasks_deep.xml,
+	src/wizards/modify_task.xml, src/wizards/quick_auth_scan.xml,
+	src/wizards/quick_first_scan.xml, src/wizards/quick_task.xml,
+	src/wizards/reset_task.xml: Further renaming from OMP to GMP.
+
+2017-03-17  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	* README, doc/openvasmd.8.xml, doc/report-format-HOWTO: Update
 	documnetaion and replace OMP by GMP.
 

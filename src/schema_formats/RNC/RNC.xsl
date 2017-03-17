@@ -10,7 +10,7 @@
 <!--
 OpenVAS Manager
 $Id$
-Description: OpenVAS Manager Protocol (OMP) RNC generator.
+Description: Greenbone Management Protocol (GMP) RNC generator.
 
 Authors:
 Matthew Mundell <matthew.mundell@greenbone.net>

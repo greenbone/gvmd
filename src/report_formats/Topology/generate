@@ -5,7 +5,7 @@
 # Description: Report generator script: Topology plot.
 #
 # This report generates a SVG image showing the
-# network topology. In a first step, the OMP report is
+# network topology. In a first step, the GMP report is
 # transformed via XSL with the tool xsltproc.
 # Next duplicate lines are removed with awk and finally
 # twopi of GraphViz creates the SVG file.

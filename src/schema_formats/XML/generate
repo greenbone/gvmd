@@ -2,10 +2,10 @@
 #
 # OpenVAS
 # $Id$
-# Description: Schema generator script: OMP XML.
+# Description: Schema generator script: GMP XML.
 #
 # This schema generator is the most trivial one as it simply passes on the
-# OMP XML schema as is.
+# GMP XML schema as is.
 #
 # Authors:
 # Matthew Mundell <matthew.mundell@greenbone.net>

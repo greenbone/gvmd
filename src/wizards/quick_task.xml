@@ -1,7 +1,7 @@
 <!--
 OpenVAS Manager
 $Id$
-Description: OpenVAS Manager Protocol (OMP) quick scan wizard.
+Description: Greenbone Manager Protocol (GMP) quick scan wizard.
 
 Authors:
 Timo Pollmeier <timo.pollmeier@greenbone.net>
