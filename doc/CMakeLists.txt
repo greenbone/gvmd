@@ -43,6 +43,14 @@ if (XMLMANTOHTML_EXECUTABLE)
   set (XMLMANTOHTML_EXECUTABLE xmlmantohtml)
 endif (XMLMANTOHTML_EXECUTABLE)
 
+message (STATUS "Looking for xsltproc...")
+
+find_program (XSLTPROC_EXECUTABLE xsltproc
+              PATHS /bin /usr/bin /usr/local/bin/
+              DOC "xsltproc location")
+
+message (STATUS "Looking for xsltproc... ${XSLTPROC_EXECUTABLE}")
+
 message (STATUS "Looking for SQLFairy...")
 
 find_program (SQLT-DIAGRAM_EXECUTABLE sqlt-diagram
@@ -181,9 +189,10 @@ else (SQLT_EXECUTABLE)
 					  ARGS -c \"echo \\\"[Error: sqlt, from SQLFairy, required to see database here]\\\" > db.html && touch .built-html_db\;\")
 endif (SQLT_EXECUTABLE)
 
+if (XSLTPROC_EXECUTABLE)
 add_custom_command (OUTPUT gmp.rnc
                     COMMAND sh
-					ARGS -c \"cd ${CMAKE_SOURCE_DIR}/src/schema_formats/RNC && xsltproc ./RNC.xsl ${CMAKE_BINARY_DIR}/src/schema_formats/XML/GMP.xml > ${CMAKE_BINARY_DIR}/doc/gmp.rnc\;\"
+					ARGS -c \"cd ${CMAKE_SOURCE_DIR}/src/schema_formats/RNC && ${XSLTPROC_EXECUTABLE} ./RNC.xsl ${CMAKE_BINARY_DIR}/src/schema_formats/XML/GMP.xml > ${CMAKE_BINARY_DIR}/doc/gmp.rnc\;\"
 					DEPENDS
 					${CMAKE_BINARY_DIR}/src/schema_formats/XML/GMP.xml
 					${CMAKE_SOURCE_DIR}/src/schema_formats/RNC/generate
@@ -192,12 +201,13 @@ add_custom_command (OUTPUT gmp.rnc
 
 add_custom_command (OUTPUT gmp.html
                     COMMAND sh
-					ARGS -c \"cd ${CMAKE_SOURCE_DIR}/src/schema_formats/HTML && xsltproc ./HTML.xsl ${CMAKE_BINARY_DIR}/src/schema_formats/XML/GMP.xml > ${CMAKE_BINARY_DIR}/doc/gmp.html\;\"
+					ARGS -c \"cd ${CMAKE_SOURCE_DIR}/src/schema_formats/HTML && ${XSLTPROC_EXECUTABLE} ./HTML.xsl ${CMAKE_BINARY_DIR}/src/schema_formats/XML/GMP.xml > ${CMAKE_BINARY_DIR}/doc/gmp.html\;\"
 					DEPENDS
 					${CMAKE_BINARY_DIR}/src/schema_formats/XML/GMP.xml
 					${CMAKE_SOURCE_DIR}/src/schema_formats/HTML/generate
 					${CMAKE_SOURCE_DIR}/src/schema_formats/HTML/HTML.xsl
 					${CMAKE_SOURCE_DIR}/src/schema_formats/HTML/rnc.xsl)
+endif (XSLTPROC_EXECUTABLE)
 
 ## Install
 

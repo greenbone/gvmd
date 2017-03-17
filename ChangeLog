@@ -1,3 +1,8 @@
+2017-03-17  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* doc/CMakeLists.txt: Check if xsltproc is available before attempting
+	to use it.
+
 2017-03-16  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* doc/omp.html, doc/omp.rnc: Removed. We use the files created
