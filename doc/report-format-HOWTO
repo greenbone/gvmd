@@ -3,7 +3,7 @@ OPENVAS-MANAGER REPORT FORMAT HOWTO
 
 The OpenVAS Manager comes with a flexible report framework.  There are
 numerous predefined report formats.  Report formats can also be loaded at
-run time via the client protocol (OMP).
+run time via the client protocol (GMP).
 
 Global report formats are visible to all users.
 
@@ -11,7 +11,7 @@ Global report formats are visible to all users.
 Adding a report format to an existing OpenVAS Manager installation
 ------------------------------------------------------------------
 
-Use the CREATE_REPORT_FORMAT OMP command to install the report format.  The
+Use the CREATE_REPORT_FORMAT GMP command to install the report format.  The
 GSA provides an upload option for this on the "Report Formats" page.
 
 
@@ -29,7 +29,7 @@ To create a new report format
 
   - There is also a script called "generate".  This is what the Manager will run
     to generate a report in this format.  The Manager will pass the script a
-    single argument, the location of a file containing the OMP report (in XML,
+    single argument, the location of a file containing the GMP report (in XML,
     as returned by GET_REPORTS).  The output of the "generate" script will be
     the resulting report.
 
@@ -45,7 +45,7 @@ To create a new report format
 
   - Test the generate script
 
-      - Get an OMP report (download the report with the GSA or do a GET_REPORTS
+      - Get an GMP report (download the report with the GSA or do a GET_REPORTS
         request with some other client like the omp command, and extract the
         innermost REPORT element).
 
