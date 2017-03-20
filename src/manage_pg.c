@@ -2964,6 +2964,13 @@ create_tables ()
        "   UNION SELECT 1 AS autofp_selection"
        "   UNION SELECT 2 AS autofp_selection) AS autofp_opts;");
 
+#define VULNS_RESULTS_WHERE                                           \
+  " WHERE uuid IN"                                                    \
+  "   (SELECT nvt FROM results"                                       \
+  "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")" \
+  "       AND (SELECT hidden = 0 FROM tasks"                          \
+  "            WHERE tasks.id = results.task))"
+
   sql ("DROP VIEW IF EXISTS vulns;");
   if (manage_scap_loaded ())
     sql ("CREATE OR REPLACE VIEW vulns AS"
@@ -2971,20 +2978,26 @@ create_tables ()
          "        cast (cvss_base AS double precision) AS severity, qod,"
          "        'nvt' AS type"
          " FROM nvts"
+         VULNS_RESULTS_WHERE
          " UNION SELECT id, uuid, name, creation_time, modification_time,"
          "       cvss AS severity, " G_STRINGIFY (QOD_DEFAULT) " AS qod,"
          "       'cve' AS type"
          " FROM cves"
+         VULNS_RESULTS_WHERE
          " UNION SELECT id, uuid, name, creation_time, modification_time,"
          "       max_cvss AS severity, " G_STRINGIFY (QOD_DEFAULT) " AS qod,"
          "       'ovaldef' AS type"
-         " FROM ovaldefs");
+         " FROM ovaldefs"
+         VULNS_RESULTS_WHERE);
   else
     sql ("CREATE OR REPLACE VIEW vulns AS"
          " SELECT id, uuid, name, creation_time, modification_time,"
          "        cast (cvss_base AS double precision) AS severity, qod,"
          "        'nvt' AS type"
-         " FROM nvts");
+         " FROM nvts"
+         VULNS_RESULTS_WHERE);
+
+#undef VULNS_RESULTS_WHERE
 
   /* Create indexes. */
 

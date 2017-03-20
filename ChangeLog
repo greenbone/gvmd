@@ -1,3 +1,12 @@
+2017-03-20  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_pg.c (create_tables): In vulns view only select NVTs, CVEs
+	and OVAL definitions which have results.
+
+	* src/manage_sqlite3.c (manage_session_init): In vulns view only select
+	NVTs, CVEs and OVAL definitions which have results.
+	(create_tables): Add index results_by_nvt.
+
 2017-03-20  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* doc/CMakeLists.txt: Clean up targets 'doc' and 'doc-full' which

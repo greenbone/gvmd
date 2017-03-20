@@ -105,6 +105,13 @@ manage_session_init (const char *uuid)
 
   /* Vulnerabilities view must be created as temporary to allow using
    * tables from SCAP database */
+#define VULNS_RESULTS_WHERE                                           \
+  " WHERE uuid IN"                                                    \
+  "   (SELECT nvt FROM results"                                       \
+  "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")" \
+  "       AND (SELECT hidden = 0 FROM tasks"                          \
+  "            WHERE tasks.id = results.task))"
+
   sql ("DROP VIEW IF EXISTS vulns;");
   if (manage_scap_loaded ())
     sql ("CREATE TEMPORARY VIEW vulns AS"
@@ -112,20 +119,26 @@ manage_session_init (const char *uuid)
          "        cast (cvss_base AS double precision) AS severity, qod,"
          "        'nvt' AS type"
          " FROM nvts"
+         VULNS_RESULTS_WHERE
          " UNION ALL SELECT id, uuid, name, creation_time, modification_time,"
          "       cvss AS severity, " G_STRINGIFY (QOD_DEFAULT) " AS qod,"
          "       'cve' AS type"
          " FROM scap.cves"
+         VULNS_RESULTS_WHERE
          " UNION ALL SELECT id, uuid, name, creation_time, modification_time,"
          "       max_cvss AS severity, " G_STRINGIFY (QOD_DEFAULT) " AS qod,"
          "       'ovaldef' AS type"
-         " FROM scap.ovaldefs");
+         " FROM scap.ovaldefs"
+         VULNS_RESULTS_WHERE);
   else
     sql ("CREATE TEMPORARY VIEW vulns AS"
          " SELECT id, uuid, name, creation_time, modification_time,"
          "        cast (cvss_base AS double precision) AS severity, qod,"
          "        'nvt' AS type"
-         " FROM nvts");
+         " FROM nvts"
+         VULNS_RESULTS_WHERE);
+
+#undef VULNS_RESULTS_WHERE
 }
 
 /**
@@ -3559,6 +3572,8 @@ create_tables ()
        " ON results (uuid);");
   sql ("CREATE INDEX IF NOT EXISTS results_by_host"
        " ON results (host);");
+  sql ("CREATE INDEX IF NOT EXISTS results_by_nvt"
+       " ON results (nvt);");
   sql ("CREATE INDEX IF NOT EXISTS results_by_report_host"
        " ON results (report, host);");
   sql ("CREATE INDEX IF NOT EXISTS results_by_task"
