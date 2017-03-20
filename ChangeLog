@@ -1,3 +1,9 @@
+2017-03-20  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* doc/CMakeLists.txt: Add doc-gmp to the default build target to make
+	sure it will be run every time so that the documentation files can be
+	installed later on.
+
 2017-03-17  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* report_formats/simple_map_plot/generate,

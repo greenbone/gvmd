@@ -91,7 +91,7 @@ else (NOT DOXYGEN_EXECUTABLE)
     ARGS -c \"${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_full && touch ${CMAKE_CURRENT_BINARY_DIR}/.built-html_full\;\"
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/openvasmd.html ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_full)
 
-  add_custom_target (doc-gmp COMMENT "Building GMP documentation..."
+  add_custom_target (doc-gmp ALL COMMENT "Building GMP documentation..."
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gmp.rnc ${CMAKE_CURRENT_BINARY_DIR}/gmp.html)
 endif (NOT DOXYGEN_EXECUTABLE)
 
