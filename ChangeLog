@@ -1,5 +1,16 @@
 2017-03-20  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	* doc/CMakeLists.txt: Clean up targets 'doc' and 'doc-full' which
+	depended on protocol and database documentation but did not use
+	either. Move target 'doc-gmp' out of DOXYGEN_EXECUTABLE check since it
+	does not require Doxygen. Check for presence of 'xsltproc' binary
+	before defining custom commands and targets which need it, warn if the
+	binary cannot be found. Only attempt to install protocol documentation
+	if 'xsltproc' is present and the documentation has presumably been
+	created.
+
+2017-03-20  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	* doc/CMakeLists.txt: Add doc-gmp to the default build target to make
 	sure it will be run every time so that the documentation files can be
 	installed later on.

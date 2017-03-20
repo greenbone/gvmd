@@ -74,8 +74,7 @@ if (NOT DOXYGEN_EXECUTABLE)
   message (STATUS "WARNING: Doxygen is required to build the HTML docs.")
 else (NOT DOXYGEN_EXECUTABLE)
   add_custom_target (doc COMMENT "Building documentation..."
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/openvasmd.8 ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile ${CMAKE_CURRENT_BINARY_DIR}/.built-html ${CMAKE_CURRENT_BINARY_DIR}/.built-html_db
-    ${CMAKE_CURRENT_BINARY_DIR}/db.png ${CMAKE_CURRENT_BINARY_DIR}/gmp.rnc ${CMAKE_CURRENT_BINARY_DIR}/gmp.html)
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/openvasmd.8 ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile ${CMAKE_CURRENT_BINARY_DIR}/.built-html ${CMAKE_CURRENT_BINARY_DIR}/.built-html_db)
 
   add_custom_command (OUTPUT .built-html
     COMMAND sh
@@ -83,17 +82,39 @@ else (NOT DOXYGEN_EXECUTABLE)
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/openvasmd.html ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
 
   add_custom_target (doc-full COMMENT "Building documentation..."
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/openvasmd.8 ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_full ${CMAKE_CURRENT_BINARY_DIR}/.built-html_full ${CMAKE_CURRENT_BINARY_DIR}/.built-html_db
-    ${CMAKE_CURRENT_BINARY_DIR}/db.png ${CMAKE_CURRENT_BINARY_DIR}/gmp.rnc ${CMAKE_CURRENT_BINARY_DIR}/gmp.html)
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/openvasmd.8 ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_full ${CMAKE_CURRENT_BINARY_DIR}/.built-html_full ${CMAKE_CURRENT_BINARY_DIR}/.built-html_db)
 
   add_custom_command (OUTPUT .built-html_full
     COMMAND sh
     ARGS -c \"${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_full && touch ${CMAKE_CURRENT_BINARY_DIR}/.built-html_full\;\"
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/openvasmd.html ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_full)
 
+endif (NOT DOXYGEN_EXECUTABLE)
+
+if (NOT XSLTPROC_EXECUTABLE)
+  message (WARNING "xsltproc is required to build the protocol documentation")
+else (NOT XSLTPROC_EXECUTABLE)
   add_custom_target (doc-gmp ALL COMMENT "Building GMP documentation..."
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gmp.rnc ${CMAKE_CURRENT_BINARY_DIR}/gmp.html)
-endif (NOT DOXYGEN_EXECUTABLE)
+
+  add_custom_command (OUTPUT gmp.rnc
+    COMMAND sh
+    ARGS -c \"cd ${CMAKE_SOURCE_DIR}/src/schema_formats/RNC && ${XSLTPROC_EXECUTABLE} ./RNC.xsl ${CMAKE_BINARY_DIR}/src/schema_formats/XML/GMP.xml > ${CMAKE_BINARY_DIR}/doc/gmp.rnc\;\"
+    DEPENDS
+    ${CMAKE_BINARY_DIR}/src/schema_formats/XML/GMP.xml
+    ${CMAKE_SOURCE_DIR}/src/schema_formats/RNC/generate
+    ${CMAKE_SOURCE_DIR}/src/schema_formats/RNC/RNC.xsl
+    ${CMAKE_SOURCE_DIR}/src/schema_formats/RNC/rnc.xsl)
+
+  add_custom_command (OUTPUT gmp.html
+    COMMAND sh
+    ARGS -c \"cd ${CMAKE_SOURCE_DIR}/src/schema_formats/HTML && ${XSLTPROC_EXECUTABLE} ./HTML.xsl ${CMAKE_BINARY_DIR}/src/schema_formats/XML/GMP.xml > ${CMAKE_BINARY_DIR}/doc/gmp.html\;\"
+    DEPENDS
+    ${CMAKE_BINARY_DIR}/src/schema_formats/XML/GMP.xml
+    ${CMAKE_SOURCE_DIR}/src/schema_formats/HTML/generate
+    ${CMAKE_SOURCE_DIR}/src/schema_formats/HTML/HTML.xsl
+    ${CMAKE_SOURCE_DIR}/src/schema_formats/HTML/rnc.xsl)
+endif (NOT XSLTPROC_EXECUTABLE)
 
 if (XMLTOMAN_EXECUTABLE)
   add_custom_target (man COMMENT "Building manual page..."
@@ -189,31 +210,14 @@ else (SQLT_EXECUTABLE)
 					  ARGS -c \"echo \\\"[Error: sqlt, from SQLFairy, required to see database here]\\\" > db.html && touch .built-html_db\;\")
 endif (SQLT_EXECUTABLE)
 
-if (XSLTPROC_EXECUTABLE)
-add_custom_command (OUTPUT gmp.rnc
-                    COMMAND sh
-					ARGS -c \"cd ${CMAKE_SOURCE_DIR}/src/schema_formats/RNC && ${XSLTPROC_EXECUTABLE} ./RNC.xsl ${CMAKE_BINARY_DIR}/src/schema_formats/XML/GMP.xml > ${CMAKE_BINARY_DIR}/doc/gmp.rnc\;\"
-					DEPENDS
-					${CMAKE_BINARY_DIR}/src/schema_formats/XML/GMP.xml
-					${CMAKE_SOURCE_DIR}/src/schema_formats/RNC/generate
-					${CMAKE_SOURCE_DIR}/src/schema_formats/RNC/RNC.xsl
-					${CMAKE_SOURCE_DIR}/src/schema_formats/RNC/rnc.xsl)
-
-add_custom_command (OUTPUT gmp.html
-                    COMMAND sh
-					ARGS -c \"cd ${CMAKE_SOURCE_DIR}/src/schema_formats/HTML && ${XSLTPROC_EXECUTABLE} ./HTML.xsl ${CMAKE_BINARY_DIR}/src/schema_formats/XML/GMP.xml > ${CMAKE_BINARY_DIR}/doc/gmp.html\;\"
-					DEPENDS
-					${CMAKE_BINARY_DIR}/src/schema_formats/XML/GMP.xml
-					${CMAKE_SOURCE_DIR}/src/schema_formats/HTML/generate
-					${CMAKE_SOURCE_DIR}/src/schema_formats/HTML/HTML.xsl
-					${CMAKE_SOURCE_DIR}/src/schema_formats/HTML/rnc.xsl)
-endif (XSLTPROC_EXECUTABLE)
 
 ## Install
 
-install (FILES ${CMAKE_CURRENT_BINARY_DIR}/gmp.html
-         DESTINATION share/doc/openvas-manager/html/
-         COMPONENT doc)
+if (XSLTPROC_EXECUTABLE)
+  install (FILES ${CMAKE_CURRENT_BINARY_DIR}/gmp.html
+    DESTINATION share/doc/openvas-manager/html/
+    COMPONENT doc)
+endif (XSLTPROC_EXECUTABLE)
 
 install (FILES openvasmd.8 greenbone-certdata-sync.8 greenbone-scapdata-sync.8
                database-statistics-sqlite.8 openvas-migrate-to-postgres.8
