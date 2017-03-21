@@ -3049,6 +3049,8 @@ create_tables ()
        "        ('report_hosts_by_report_and_host',"
        "         'report_hosts',"
        "         'report, host');");
+  sql ("SELECT create_index ('results_by_host_and_qod', 'results',"
+       "                     'host, qod');");
   sql ("SELECT create_index ('results_by_report', 'results', 'report');");
   sql ("SELECT create_index ('results_by_nvt', 'results', 'nvt');");
   sql ("SELECT create_index ('results_by_task', 'results', 'task');");
