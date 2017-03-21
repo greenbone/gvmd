@@ -2802,6 +2802,8 @@ create_tables ()
        " ON results (uuid);");
   sql ("CREATE INDEX IF NOT EXISTS results_by_host"
        " ON results (host);");
+  sql ("CREATE INDEX IF NOT EXISTS results_by_nvt"
+       " ON results (nvt);");
   sql ("CREATE INDEX IF NOT EXISTS results_by_report_host"
        " ON results (report, host);");
   sql ("CREATE INDEX IF NOT EXISTS results_by_task"
