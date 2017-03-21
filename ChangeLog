@@ -1,5 +1,14 @@
 2017-03-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Backport r28056.
+
+	* src/manage_pg.c (create_tables): Add index results_by_host_and_qod.
+
+	* src/manage_sqlite3.c (create_tables): Add index
+	results_by_host_and_qod.
+
+2017-03-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sqlite3.c (create_tables): Add index results_by_nvt as
 	added in trunk r28047.
 
