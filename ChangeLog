@@ -1,3 +1,8 @@
+2017-03-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (print_report_xml_start): Use report_counts_id
+	instead of result_count because it uses the report_counts cache.
+
 2017-03-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_pg.c (create_tables): Add index results_by_host_and_qod.

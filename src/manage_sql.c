@@ -28075,13 +28075,25 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     {
       if (delta == 0)
         {
+          int total_debugs, total_holes, total_infos, total_logs;
+          int total_warnings, total_false_positives;
           get_data_t *all_results_get;
+
           all_results_get = report_results_get_data (1, -1, 0, 0, 0);
-          total_result_count = result_count (all_results_get, report, NULL);
+          report_counts_id (report, &total_debugs, &total_holes, &total_infos,
+                            &total_logs, &total_warnings,
+                            &total_false_positives, NULL, all_results_get,
+                            NULL);
+          total_result_count = total_debugs + total_holes + total_infos
+                               + total_logs + total_warnings
+                               + total_false_positives;
           get_data_reset (all_results_get);
           free (all_results_get);
         }
-      filtered_result_count = result_count (get, report, NULL);
+      report_counts_id (report, &debugs, &holes, &infos, &logs, &warnings,
+                        &false_positives, NULL, get, NULL);
+      filtered_result_count = debugs + holes + infos + logs + warnings
+                              + false_positives;
       report_scan_run_status (report, &run_status);
     }
 
