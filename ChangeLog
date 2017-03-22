@@ -1,5 +1,12 @@
 2017-03-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Backport r28070.
+
+	* src/manage_sql.c (filtered_host_count): Add alias for subquery
+	in cases where no levels are given.
+
+2017-03-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Backport r28068.
 
 	* src/manage_sql.c (print_report_xml_start): Use report_counts_id

@@ -25097,7 +25097,8 @@ filtered_host_count (const char *levels, const char *search_phrase,
                       "        OR name = 'ports')"
                       "   AND source_type = 'nvt'"
                       "   AND value %s '%%%s%%')"
-                      "  ORDER BY order_inet (host));",
+                      "  ORDER BY order_inet (host))"
+                      " AS distinct_host_subquery;",
                       sql_ilike_op (),
                       quoted_search_phrase,
                       sql_ilike_op (),
@@ -25115,7 +25116,8 @@ filtered_host_count (const char *levels, const char *search_phrase,
                   "       WHERE reports.task = tasks.id"
                   "       AND reports.id = report_hosts.report)"
                   "      = 0"
-                  "  AND report_hosts.end_time IS NOT NULL);");
+                  "  AND report_hosts.end_time IS NOT NULL)"
+                  " AS distinct_host_subquery;");
 }
 
 /**
