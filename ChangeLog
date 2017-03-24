@@ -1,5 +1,11 @@
 2017-03-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (delete_permissions_cache_for_resource)
+	(delete_permissions_cache_for_user): Add quotes around type-specific
+	column name in SQL query.
+
+2017-03-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	When getting CPE titles in assets iterators, use a function that
 	takes into account whether the SCAP database exists.
 

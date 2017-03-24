@@ -69589,7 +69589,7 @@ delete_permissions_cache_for_resource (const char* type, resource_t resource)
 
   if (strcmp (type, "task") == 0)
     {
-      sql ("DELETE FROM permissions_get_%ss WHERE %s = %llu",
+      sql ("DELETE FROM permissions_get_%ss WHERE \"%s\" = %llu",
            type, type, resource);
     }
 }
@@ -69597,7 +69597,7 @@ delete_permissions_cache_for_resource (const char* type, resource_t resource)
 void
 delete_permissions_cache_for_user (user_t user)
 {
-  sql ("DELETE FROM permissions_get_tasks WHERE user = %llu;", user);
+  sql ("DELETE FROM permissions_get_tasks WHERE \"user\" = %llu;", user);
 }
 
 
