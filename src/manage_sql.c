@@ -66470,6 +66470,12 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
            inheritor, user);
       sql ("UPDATE credentials_trash SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
+      sql ("UPDATE host_identifiers SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE host_oss SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE hosts SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
       sql ("UPDATE filters SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
       sql ("UPDATE filters_trash SET owner = %llu WHERE owner = %llu;",
@@ -66478,7 +66484,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
            inheritor, user);
       sql ("UPDATE notes_trash SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
-
+      sql ("UPDATE oss SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
       sql ("UPDATE permissions SET owner = %llu WHERE owner = %llu",
            inheritor, user);
 
@@ -66492,9 +66499,13 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       sql ("UPDATE report_formats_trash SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
 
+      sql ("UPDATE reports SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
       sql ("UPDATE report_counts SET \"user\" = %llu WHERE \"user\" = %llu",
            inheritor, user);
       sql ("UPDATE reports SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE results SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
 
       sql ("UPDATE overrides SET owner = %llu WHERE owner = %llu;",
@@ -66597,10 +66608,16 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   sql ("DELETE FROM credentials WHERE owner = %llu;", user);
   sql ("DELETE FROM credentials_trash WHERE owner = %llu;", user);
 
+  sql ("DELETE FROM host_identifiers WHERE owner = %llu;", user);
+  sql ("DELETE FROM host_oss WHERE owner = %llu;", user);
+  sql ("DELETE FROM hosts WHERE owner = %llu;", user);
+
   sql ("DELETE FROM filters WHERE owner = %llu;", user);
   sql ("DELETE FROM filters_trash WHERE owner = %llu;", user);
   sql ("DELETE FROM notes WHERE owner = %llu;", user);
   sql ("DELETE FROM notes_trash WHERE owner = %llu;", user);
+
+  sql ("DELETE FROM oss WHERE owner = %llu;", user);
 
   /* Make permissions global if they are owned by the user and are related
    * to users/groups/roles that are owned by the user. */
