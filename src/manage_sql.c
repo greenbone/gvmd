@@ -58353,8 +58353,7 @@ init_host_identifier_iterator (iterator_t* iterator, host_t host,
                    "         ELSE CAST (0 AS boolean)"
                    "         END),"
                    "        (SELECT uuid FROM oss WHERE id = os),"
-                   "        (SELECT title FROM scap.cpes"
-                   "         WHERE uuid = (SELECT name FROM oss WHERE id = os))"
+                   "        cpe_title ((SELECT name FROM oss WHERE id = os))"
                    " FROM host_oss"
                    " WHERE host = %llu"
                    " ORDER BY %s %s;",
@@ -58677,8 +58676,7 @@ asset_host_count (const get_data_t *get)
      KEYWORD_TYPE_INTEGER                                                     \
    },                                                                         \
    {                                                                          \
-     "(SELECT coalesce ((SELECT title FROM scap.cpes WHERE uuid = oss.name)," \
-     "                  ''))",                                                \
+     "(SELECT coalesce (cpe_title (oss.name), ''))",                          \
      "title",                                                                 \
      KEYWORD_TYPE_STRING                                                      \
    },                                                                         \
