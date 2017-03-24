@@ -1,5 +1,13 @@
 2017-03-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Backport r28086.
+
+	* src/manage_sql.c (delete_user): Update owner of host_identifiers,
+	host_oss, hosts, oss, reports and results when there is an inheritor
+	and delete owned host_identifiers, host_oss, hosts and oss if not.
+
+2017-03-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Backport r28082.
 
 	When getting CPE titles in assets iterators, use a function that
