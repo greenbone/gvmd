@@ -1491,6 +1491,51 @@ sql_common_cve (sqlite3_context *context, int argc, sqlite3_value** argv)
 }
 
 /**
+ * @brief Check if two CVE lists contain a common CVE.
+ *
+ * This is a callback for a scalar SQL function of one argument.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_cpe_title (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  const unsigned char *cpe_id;
+  gchar *quoted_cpe_id;
+  char *cpe_title;
+
+  assert (argc == 1);
+
+  cpe_id = sqlite3_value_text (argv[0]);
+
+  if (manage_scap_loaded ()
+      && sqlite3_value_type(argv[0]) != SQLITE_NULL)
+    {
+      quoted_cpe_id = sql_quote ((gchar*) cpe_id);
+      cpe_title = sql_string ("SELECT title FROM scap.cpes"
+                              " WHERE uuid = '%s';",
+                              quoted_cpe_id);
+      g_free (quoted_cpe_id);
+
+      if (cpe_title)
+        {
+          sqlite3_result_text (context, cpe_title, -1, SQLITE_TRANSIENT);
+          g_free (cpe_title);
+        }
+      else
+        {
+          sqlite3_result_null (context);
+        }
+    }
+  else
+    {
+      sqlite3_result_null (context);
+    }
+}
+
+/**
  * @brief Get a value from the data of a credential.
  *
  * This is a callback for a scalar SQL function of one argument.
@@ -2931,6 +2976,20 @@ manage_create_sql_functions ()
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create common_cve", __FUNCTION__);
+      return -1;
+    }
+
+  if (sqlite3_create_function (task_db,
+                               "cpe_title",
+                               1,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_cpe_title,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create cpe_title", __FUNCTION__);
       return -1;
     }
 

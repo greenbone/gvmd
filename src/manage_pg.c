@@ -1259,6 +1259,21 @@ manage_create_sql_functions ()
        "                 SELECT trim (unnest (string_to_array ($2, ','))));"
        "$$ LANGUAGE SQL;");
 
+  if (manage_scap_loaded ())
+    {
+      sql ("CREATE OR REPLACE FUNCTION cpe_title (text)"
+           " RETURNS text AS $$"
+           "  SELECT title FROM scap.cpes WHERE uuid = $1;"
+           "$$ LANGUAGE SQL;");
+    }
+  else
+    {
+      sql ("CREATE OR REPLACE FUNCTION cpe_title (text)"
+           " RETURNS text AS $$"
+           "  SELECT null::text;"
+           "$$ LANGUAGE SQL;");
+    }
+
   sql ("CREATE OR REPLACE FUNCTION hosts_contains (text, text)"
        " RETURNS boolean AS $$"
        /* Check if a host list contains a host. */

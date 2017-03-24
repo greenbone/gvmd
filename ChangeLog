@@ -1,3 +1,17 @@
+2017-03-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	When getting CPE titles in assets iterators, use a function that
+	takes into account whether the SCAP database exists.
+
+	* src/manage_pg.c (manage_create_sql_functions): Create function
+	cpe_title.
+
+	* src/manage_sql.c (init_host_identifier_iterator)
+	(OS_ITERATOR_COLUMNS): Use new function cpe_title to get the CPE title.
+
+	* src/manage_sqlite3.c (sql_cpe_title): New function.
+	(manage_create_sql_functions): Create function cpe_title.
+
 2017-03-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (filtered_host_count): Add alias for subquery
