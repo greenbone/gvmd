@@ -1,3 +1,9 @@
+2017-03-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r28103.
+
+	* src/report_formats/HTML/HTML.xsl: Remove quote in style element.
+
 2017-03-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r28086.
