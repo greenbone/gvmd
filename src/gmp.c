@@ -19982,6 +19982,7 @@ handle_get_vulns (gmp_parser_t *gmp_parser, GError **error)
 
   while (next (&vulns))
     {
+      count ++;
       SENDF_TO_CLIENT_OR_FAIL ("<vuln id=\"%s\">"
                                "<name>%s</name>"
                                "<type>%s</type>"
