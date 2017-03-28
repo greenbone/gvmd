@@ -1,3 +1,7 @@
+2017-03-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/report_formats/HTML/HTML.xsl: Remove quote in style element.
+
 2017-03-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (delete_user): Update owner of host_identifiers,
