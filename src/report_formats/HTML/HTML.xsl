@@ -1346,7 +1346,7 @@ body {
   margin: 0px;
   font: small Verdana, sans-serif;
   font-size: 12px;
-  color: #1A1A1A;"
+  color: #1A1A1A;
 }
 
 div.content {
