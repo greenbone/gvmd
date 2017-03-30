@@ -1715,6 +1715,27 @@ keyword_free (keyword_t* keyword)
 }
 
 /**
+ * @brief Parse a filter relation.
+ *
+ * @param[in]  relation  Filter relation.
+ *
+ * @return keyword relation
+ */
+static keyword_relation_t
+parse_relation (const char relation)
+{
+  switch (relation)
+    {
+      case '=': return KEYWORD_RELATION_COLUMN_EQUAL;
+      case '~': return KEYWORD_RELATION_COLUMN_APPROX;
+      case '>': return KEYWORD_RELATION_COLUMN_ABOVE;
+      case '<': return KEYWORD_RELATION_COLUMN_BELOW;
+      case ':': return KEYWORD_RELATION_COLUMN_REGEXP;
+      default:  return KEYWORD_RELATION_COLUMN_APPROX;
+    }
+}
+
+/**
  * @brief Parse a filter keyword.
  *
  * @param[in]  keyword  Filter keyword.
@@ -2115,24 +2136,18 @@ split_filter (const gchar* given_filter)
       switch (*filter)
         {
           case '=':
-            if (between)
-              {
-                /* Empty index.  Start a part. */
-                keyword = g_malloc0 (sizeof (keyword_t));
-                keyword->equal = 1;
-                current_part = filter + 1;
-                between = 0;
-                break;
-              }
           case ':':
           case '~':
           case '>':
           case '<':
             if (between)
               {
-                /* Empty index.  Just start a part for now. */
+                /* Empty index.  Start a part. */
                 keyword = g_malloc0 (sizeof (keyword_t));
-                current_part = filter;
+                if (*filter == '=')
+                  keyword->equal = 1;
+                keyword->relation = parse_relation(*filter);
+                current_part = filter + 1;
                 between = 0;
                 break;
               }
@@ -2155,24 +2170,7 @@ split_filter (const gchar* given_filter)
             keyword->column = g_strndup (current_part,
                                          filter - current_part);
             current_part = filter + 1;
-            switch (*filter)
-              {
-                case '=':
-                  keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
-                  break;
-                case '~':
-                  keyword->relation = KEYWORD_RELATION_COLUMN_APPROX;
-                  break;
-                case '>':
-                  keyword->relation = KEYWORD_RELATION_COLUMN_ABOVE;
-                  break;
-                case '<':
-                  keyword->relation = KEYWORD_RELATION_COLUMN_BELOW;
-                  break;
-                case ':':
-                  keyword->relation = KEYWORD_RELATION_COLUMN_REGEXP;
-                  break;
-              }
+            keyword->relation = parse_relation(*filter);
             break;
 
           case ' ':
