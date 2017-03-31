@@ -25338,6 +25338,21 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <version>8.0</version>
   </change>
   <change>
+    <command>GET_TASKS</command>
+    <summary>REPORTS no longer returned, and RESULT_COUNT only sent with details</summary>
+    <description>
+      <p>
+        The element REPORTS, which contained a summary of every report on the
+        task, is no longer included in the GET_TASKS response.
+      </p>
+      <p>
+        Similarly, the element RESULT_COUNT is now only included in
+        GET_TASKS_RESPONSE when the "details" attribute is true.
+      </p>
+    </description>
+    <version>8.0</version>
+  </change>
+  <change>
     <command>GET_NVTS</command>
     <summary>Response element CATEGORY is now an integer value instead of a string</summary>
     <description>

@@ -10386,108 +10386,6 @@ send_nvt (iterator_t *nvts, int details, int preferences, int pref_count,
 }
 
 /**
- * @brief Send XML for the reports of a task.
- *
- * @param[in]  task             The task.
- * @param[in]  apply_overrides  Whether to apply overrides.
- * @param[in]  min_qod          Min QOD.
- * @param[in]  write_to_client       Function to write to client.
- * @param[in]  write_to_client_data  Argument to \p write_to_client.
- *
- * @return 0 success, -4 out of space in to_client,
- *         -5 failed to get report counts, -6 failed to get timestamp.
- */
-static int
-send_reports (task_t task, int apply_overrides, int min_qod,
-              int (*write_to_client) (const char*, void*),
-              void* write_to_client_data)
-{
-  iterator_t iterator;
-  report_t index;
-
-  if (send_to_client ("<reports>", write_to_client, write_to_client_data))
-    return -4;
-
-  init_report_iterator_task (&iterator, task);
-  while (next_report (&iterator, &index))
-    {
-      gchar *uuid, *timestamp, *msg;
-      int debugs, false_positives, holes, infos, logs, warnings, run_status;
-      double severity;
-      char *scan_start, *scan_end;
-
-      uuid = report_uuid (index);
-
-      if (report_counts (uuid, &debugs, &holes, &infos, &logs, &warnings,
-                         &false_positives, &severity, apply_overrides,
-                         0, min_qod))
-        {
-          free (uuid);
-          return -5;
-        }
-
-      if (report_timestamp (uuid, &timestamp))
-        {
-          free (uuid);
-          return -6;
-        }
-
-      g_debug ("     %s\n", uuid);
-
-      report_scan_run_status (index, &run_status);
-      scan_start = scan_start_time (index);
-      scan_end = scan_end_time (index);
-      msg = g_strdup_printf ("<report"
-                             " id=\"%s\">"
-                             "<timestamp>%s</timestamp>"
-                             "<scan_start>%s</scan_start>"
-                             "<scan_end>%s</scan_end>"
-                             "<scan_run_status>%s</scan_run_status>"
-                             "<result_count>"
-                             "<debug>%i</debug>"
-                             "<hole>%i</hole>"
-                             "<info>%i</info>"
-                             "<log>%i</log>"
-                             "<warning>%i</warning>"
-                             "<false_positive>%i</false_positive>"
-                             "</result_count>"
-                             "<severity>%1.1f</severity>"
-                             "</report>",
-                             uuid,
-                             timestamp,
-                             scan_start,
-                             scan_end,
-                             run_status_name
-                              (run_status ? run_status
-                                          : TASK_STATUS_INTERNAL_ERROR),
-                             debugs,
-                             holes,
-                             infos,
-                             logs,
-                             warnings,
-                             false_positives,
-                             severity);
-      free (scan_start);
-      free (scan_end);
-      g_free (timestamp);
-      if (send_to_client (msg, write_to_client, write_to_client_data))
-        {
-          g_free (msg);
-          free (uuid);
-          return -4;
-        }
-      g_free (msg);
-      free (uuid);
-    }
-  cleanup_iterator (&iterator);
-
-  if (send_to_client ("</reports>", write_to_client, write_to_client_data))
-    return -4;
-
-  return 0;
-}
-
-/**
  * @brief Convert \n's to real newline's.
  *
  * @param[in]  text  The text in which to insert newlines.
@@ -19679,21 +19577,9 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             {
               /* The detailed version. */
 
-              /** @todo Handle error cases.
-                *
-                * The errors are either SQL errors or out of space in
-                * buffer errors.  Both should probably just lead to aborts
-                * at the SQL or buffer output level.
-                */
-              send_reports (index,
-                            apply_overrides,
-                            min_qod,
-                            gmp_parser->client_writer,
-                            gmp_parser->client_writer_data);
+              SENDF_TO_CLIENT_OR_FAIL ("<result_count>%i</result_count>",
+                                        task_result_count (index, min_qod));
             }
-
-          SENDF_TO_CLIENT_OR_FAIL ("<result_count>%i</result_count>",
-                                    task_result_count (index, min_qod));
 
           in_assets = task_preference_value (index, "in_assets");
           assets_apply_overrides = task_preference_value

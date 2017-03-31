@@ -1,3 +1,11 @@
+2017-03-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/gmp.c (send_reports): Remove.  No longer used.
+	(handle_get_tasks): Remove sending of reports.  Move sending of
+	RESULT_COUNT into details case.
+
+	* src/schema_formats/XML/GMP.xml.in: Add compatibility change.
+
 2017-03-30  Björn Ricks <bjoern.ricks@greenbone.net>
 
 	* src/manage_sql.c (split_filter): Improve parsing of relations in filters.
