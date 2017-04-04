@@ -1,3 +1,19 @@
+2017-04-04  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	Last set of changes for renaming omp to gmp.
+
+	* INSTALL: Renamed OMP to GMP.
+
+	* doc/openvasmd.8, doc/openvasmd.html: Update from openvasmd.xml
+
+	* src/manage_sql.c (print_report_xml_start): Use tag <gmp> instead of
+	<omp> to indicate the protocol version.
+
+	* src/openvasmd_log_conf.cmake_in: Renamed log domain "omp" to "gmp".
+
+	* src/schema_formats/XML/GMP.xml.in: Update documentation to reflect
+	the change in file manage_sql.c.
+
 2017-04-04  Björn Ricks <bjoern.ricks@greenbone.net>
 
 	* src/manage_sql.c (split_filter, parse_column_relation): Rename

@@ -1786,7 +1786,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </alts>
           </type>
         </attrib>
-        <e>omp</e>
+        <e>gmp</e>
         <e>report_format</e>
         <e>sort</e>
         <e>filters</e>
@@ -1823,7 +1823,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </o>
       </pattern>
       <ele>
-        <name>omp</name>
+        <name>gmp</name>
         <summary>Information of the GMP server</summary>
         <pattern>
           <e>version</e>
@@ -4902,9 +4902,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                   extension="xml"
                   content_type="text/xml">
             <report id="f0fdf522-276d-4893-9274-fb8699dc2270">
-              <omp>
-                <version>7.0</version>
-              </omp>
+              <gmp>
+                <version>8.0</version>
+              </gmp>
               <truncated>...</truncated>
               <results start="1" max="-1">
                 <result id="634f7a2e-8ca1-43b7-b6d7-0d4841449508">
@@ -15990,9 +15990,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                   extension="xml"
                   content_type="text/xml">
             <report id="f0fdf522-276d-4893-9274-fb8699dc2270">
-              <omp>
+              <gmp>
                 <version>@GMP_VERSION@</version>
-              </omp>
+              </gmp>
               <sort>
                 <field>
                   type
@@ -25359,6 +25359,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <p>
         The element CATEGORY was using a string represantation of a integer eumeration.
         Now the original integer represenation is used.
+      </p>
+    </description>
+    <version>8.0</version>
+  </change>
+  <change>
+    <command>GET_REPORTS</command>
+    <summary>The returned report element has now a element named gmp instead of omp</summary>
+    <description>
+      <p>
+        The element REPORT contained an element OMP to indicate the version. Now there
+        is the element GMP to indicate the version.
       </p>
     </description>
     <version>8.0</version>

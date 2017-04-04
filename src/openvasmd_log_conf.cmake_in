@@ -27,7 +27,7 @@ prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
 file=${OPENVAS_LOG_DIR}/openvasmd.log
 level=127
 
-[md    omp]
+[md    gmp]
 prepend=%t %p
 prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
 file=${OPENVAS_LOG_DIR}/openvasmd.log

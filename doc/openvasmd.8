@@ -5,11 +5,9 @@ openvasmd \- Manager daemon of the Open Vulnerability Assessment System (OpenVAS
 \fBopenvasmd OPTIONS
 \f1
 .SH DESCRIPTION
-OpenVAS Scanner, openvassd(8), acts as a service and offers a communication protocol for its clients called OTP. The core task of the OpenVAS Scanner is the actual scan process. 
+The OpenVAS Manager is the central management service between security scanners and the user clients. 
 
-The OpenVAS Manager is a OTP client and adds various management functionalities to handle and organise scan results. Thus OpenVAS Manager acts as a layer between the OpenVAS Scanner and its own clients (for example omp(8), gsad(8) or gsd(8)) which connect via the OMP protocol to the OpenVAS Manager. 
-
-A related service is OpenVAS Administrator, openvasad(8) which among other tasks also manages user accounts for OpenVAS. 
+It manages the storage of any vulnerability management configurations and of the scan results. Access to data, control commands and workflows is offered via the XML-based Greenbone Management Protocol (GMP). The primary scanner 'OpenVAS Scanner' is controlled directly via protocol OTP while any other remote scanner is coupled with the Open Scanner Protocol (OSP). 
 .SH OPTIONS
 .TP
 \fB-a, --listen=\fIADDRESS\fB\f1
@@ -95,9 +93,9 @@ SIGHUP causes openvasmd to rebuild the database with information from the Scanne
 .SH EXAMPLES
 openvasmd --port 1241
 
-Serve OMP clients on port 1241 and connect to a OTP server on 7772.
+Serve GMP clients on port 1241 and connect to a OTP server on 7772.
 .SH SEE ALSO
-\fBopenvassd(8)\f1, \fBopenvasad(8)\f1, \fBgsad(8)\f1, \fBomp(8)\f1, \fBgsd(8)\f1
+\fBopenvassd(8)\f1, \fBgsad(8)\f1, \fBomp(8)\f1, 
 .SH MORE INFORMATION ABOUT THE OPENVAS PROJECT
 The canonical places where you will find more information about the OpenVAS project are: \fBhttp://www.openvas.org/\f1 (Official site) \fBhttp://wald.intevation.org/projects/openvas/\f1 (Development Platform) 
 .SH COPYRIGHT

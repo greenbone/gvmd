@@ -448,14 +448,14 @@ CA certificate and thus does not need to be changed.
 Changing the Maximum Number of Rows per Page
 --------------------------------------------
 
-The maximum number of rows returned by the OMP "GET" commands, like GET_TARGETS,
-is controlled by the OMP setting "Max Rows Per Page".  This setting is an upper
+The maximum number of rows returned by the GMP "GET" commands, like GET_TARGETS,
+is controlled by the GMP setting "Max Rows Per Page".  This setting is an upper
 limit on the number of resources returned by any GET command, regardless of the
 value given for "rows" in the command's filter.
 
 The default value for "Max Rows Per Page" is 1000.  0 indicates no limit.
 
-This setting can not be changed via OMP.  However, the openvasmd option
+This setting can not be changed via GMP.  However, the openvasmd option
 --modify-setting can be used to change it.
 
     $ openvasmd --modify-setting 76374a7a-0569-11e6-b6da-28d24461215b \
