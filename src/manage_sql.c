@@ -1715,14 +1715,14 @@ keyword_free (keyword_t* keyword)
 }
 
 /**
- * @brief Parse a filter relation.
+ * @brief Parse a filter column relation.
  *
  * @param[in]  relation  Filter relation.
  *
  * @return keyword relation
  */
 static keyword_relation_t
-parse_relation (const char relation)
+parse_column_relation (const char relation)
 {
   switch (relation)
     {
@@ -2143,8 +2143,6 @@ split_filter (const gchar* given_filter)
                 keyword = g_malloc0 (sizeof (keyword_t));
                 if (*filter == '=')
                   keyword->equal = 1;
-                else
-                  keyword->relation = KEYWORD_RELATION_COLUMN_APPROX;
                 current_part = filter + 1;
                 between = 0;
                 break;
@@ -2156,7 +2154,6 @@ split_filter (const gchar* given_filter)
               {
                 /* Empty index.  Start a part. */
                 keyword = g_malloc0 (sizeof (keyword_t));
-                keyword->relation = parse_relation(*filter);
                 current_part = filter;
                 between = 0;
                 break;
@@ -2180,7 +2177,7 @@ split_filter (const gchar* given_filter)
             keyword->column = g_strndup (current_part,
                                          filter - current_part);
             current_part = filter + 1;
-            keyword->relation = parse_relation(*filter);
+            keyword->relation = parse_column_relation(*filter);
             break;
 
           case ' ':

@@ -1,5 +1,11 @@
 2017-04-04  Björn Ricks <bjoern.ricks@greenbone.net>
 
+	* src/manage_sql.c (split_filter, parse_column_relation): Rename
+	parse_relation into parse_column_relation. Don't set column relation if filter
+	starts with ~, :, < or >.
+
+2017-04-04  Björn Ricks <bjoern.ricks@greenbone.net>
+
 	* src/manage_sql.c (split_filter): Only allow = and ~ relations as start of
 	a filter term. Treat :,< and > relations as strings. In that case e.g. >1.0
 	will be treated as ~">1.0".
