@@ -1,3 +1,9 @@
+2017-04-04  Björn Ricks <bjoern.ricks@greenbone.net>
+
+	* src/manage_sql.c (split_filter): Only allow = and ~ relations as start of
+	a filter term. Treat :,< and > relations as strings. In that case e.g. >1.0
+	will be treated as ~">1.0".
+
 2017-03-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/gmp.c (send_reports): Remove.  No longer used.

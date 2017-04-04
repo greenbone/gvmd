@@ -2136,18 +2136,28 @@ split_filter (const gchar* given_filter)
       switch (*filter)
         {
           case '=':
-          case ':':
           case '~':
-          case '>':
-          case '<':
             if (between)
               {
                 /* Empty index.  Start a part. */
                 keyword = g_malloc0 (sizeof (keyword_t));
                 if (*filter == '=')
                   keyword->equal = 1;
-                keyword->relation = parse_relation(*filter);
+                else
+                  keyword->relation = KEYWORD_RELATION_COLUMN_APPROX;
                 current_part = filter + 1;
+                between = 0;
+                break;
+              }
+          case ':':
+          case '>':
+          case '<':
+            if (between)
+              {
+                /* Empty index.  Start a part. */
+                keyword = g_malloc0 (sizeof (keyword_t));
+                keyword->relation = parse_relation(*filter);
+                current_part = filter;
                 between = 0;
                 break;
               }
