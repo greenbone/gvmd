@@ -1,5 +1,17 @@
 2017-04-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sqlite3.c (manage_db_init): Remove UNIQUE from indexes, like
+	in the sync scripts.
+
+	* src/manage_pg.c (manage_db_init): Remove UNIQUE from indexes, like
+	in the sync scripts.
+
+	* src/manage_sql.c (update_ovaldef_xml): Return 1 if update occurred.
+	Get references from correct parent.
+	(update_scap_cvss): Correct message.
+
+2017-04-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (oval_definition_dates): Init first correctly, else
 	creation_time is always 0.
 

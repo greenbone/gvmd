@@ -63832,7 +63832,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
   gchar *xml_basename, *xml, *quoted_xml_basename;
   gsize xml_len;
   GStatBuf state;
-  int updated_scap_bund, last_oval_update, file_timestamp;
+  int last_oval_update, file_timestamp;
 
   /* Setup variables. */
 
@@ -63843,8 +63843,6 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
 
   /* The timestamp from the OVAL XML. */
   oval_timestamp = file_and_date[1];
-
-  updated_scap_bund = 0;
 
   // FIX need --rebuild-oval?
 #if 0
@@ -64039,7 +64037,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                     }
 
                   cve_count = 0;
-                  references = entity->entities;
+                  references = metadata->entities;
                   while ((reference = first_entity (references)))
                     {
                       if ((strcmp (entity_name (reference),
@@ -64098,7 +64096,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                   g_free (quoted_description);
                   g_free (quoted_status);
 
-                  references = entity->entities;
+                  references = metadata->entities;
                   while ((reference = first_entity (references)))
                     {
                       if ((strcmp (entity_name (reference), "reference")
@@ -64140,7 +64138,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
   g_free (quoted_xml_basename);
   free_entity (entity);
   sql_commit ();
-  return updated_scap_bund;
+  return 1;
 
  fail:
   g_free (xml_basename);
@@ -65411,7 +65409,7 @@ update_scap_cvss (int updated_cves, int updated_cpes, int updated_ovaldefs)
 
   if (updated_cves && updated_ovaldefs)
     {
-      g_info ("Updating CVSS scores and for OVAL definitions");
+      g_info ("Updating CVSS scores for OVAL definitions");
       sql_recursive_triggers_off ();
       sql ("UPDATE scap.ovaldefs"
            " SET max_cvss = (SELECT max (cvss)"

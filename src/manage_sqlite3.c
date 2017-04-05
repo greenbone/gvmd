@@ -4148,9 +4148,9 @@ manage_db_init (const gchar *name)
            "  cpe INTEGER NOT NULL,"
            "  FOREIGN KEY(cve) REFERENCES cves(id),"
            "  FOREIGN KEY(cpe) REFERENCES cpes(id));");
-      sql ("CREATE UNIQUE INDEX scap.afp_cpe_idx"
+      sql ("CREATE INDEX scap.afp_cpe_idx"
            " ON affected_products (cpe);");
-      sql ("CREATE UNIQUE INDEX scap.afp_cve_idx"
+      sql ("CREATE INDEX scap.afp_cve_idx"
            " ON affected_products (cve);");
 
       sql ("CREATE TABLE scap.ovaldefs"
@@ -4183,9 +4183,9 @@ manage_db_init (const gchar *name)
            "  ovaldef INTEGER NOT NULL,"
            "  FOREIGN KEY(cve) REFERENCES cves(id),"
            "  FOREIGN KEY(ovaldef) REFERENCES ovaldefs(id));");
-      sql ("CREATE UNIQUE INDEX scap.aff_ovaldefs_def_idx"
+      sql ("CREATE INDEX scap.aff_ovaldefs_def_idx"
            " ON affected_ovaldefs (ovaldef);");
-      sql ("CREATE UNIQUE INDEX scap.aff_ovaldefs_cve_idx"
+      sql ("CREATE INDEX scap.aff_ovaldefs_cve_idx"
            " ON affected_ovaldefs (cve);");
 
       /* Create deletion triggers. */
