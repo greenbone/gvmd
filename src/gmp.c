@@ -17718,9 +17718,11 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
       SENDF_TO_CLIENT_OR_FAIL
        ("<credential id=\"%s\">"
         "<name>%s</name>"
+        "<type>%s</type>"
         "<trash>%d</trash>",
         credential_id ? credential_id : "",
         scanner_iterator_credential_name (&scanners) ?: "",
+        scanner_iterator_credential_type (&scanners) ?: "",
         scanner_iterator_credential_trash (&scanners));
 
       if (get_scanners_data->get.details)

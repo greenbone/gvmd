@@ -46055,6 +46055,11 @@ delete_scanner (const char *scanner_id, int ultimate)
    { "credential_value (credential, 0, CAST ('secret' AS TEXT))",      \
      NULL,                                                             \
      KEYWORD_TYPE_STRING },                                            \
+   {                                                                   \
+     "(SELECT type FROM credentials WHERE id = credential)",           \
+     "type",                                                           \
+     KEYWORD_TYPE_STRING                                               \
+   },                                                                  \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                \
  }
 
@@ -46241,6 +46246,16 @@ scanner_iterator_key_priv (iterator_t* iterator)
 
   return private_key;
 }
+
+/**
+ * @brief Get the Credential type from a scanner iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Credential type, or NULL if iteration is complete. Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (scanner_iterator_credential_type, GET_ITERATOR_COLUMN_COUNT + 10);
 
 /**
  * @brief Initialise a scanner config iterator.
