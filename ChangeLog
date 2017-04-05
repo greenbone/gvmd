@@ -1,3 +1,10 @@
+2017-04-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (oval_definition_dates): Init first correctly, else
+	creation_time is always 0.
+
+	* src/manage_sqlite3.c (create_tables): Add space.
+
 2017-04-05  Björn Ricks <bjoern.ricks@greenbone.net>
 
 	* src/manage.h, src/manage_sql.c (scanner_iterator_credential_type): Add

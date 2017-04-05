@@ -3632,7 +3632,7 @@ create_tables ()
   sql ("CREATE INDEX IF NOT EXISTS results_by_host"
        " ON results (host);");
   sql ("CREATE INDEX IF NOT EXISTS results_by_host_and_qod"
-       " ON results(host, qod);");
+       " ON results (host, qod);");
   sql ("CREATE INDEX IF NOT EXISTS results_by_nvt"
        " ON results (nvt);");
   sql ("CREATE INDEX IF NOT EXISTS results_by_report_host"

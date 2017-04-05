@@ -63603,7 +63603,7 @@ oval_definition_dates (entity_t definition, int *definition_date_newest,
 
   newest = NULL;
   oldest = NULL;
-  first = 0;
+  first = 1;
   children = dates->entities;
   while ((date = first_entity (children)))
     {
