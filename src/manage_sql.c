@@ -63526,7 +63526,9 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                           quoted_product = sql_quote (entity_text (product));
                           sql ("SELECT merge_cpe_name ('%s', '%s')",
                                quoted_product, quoted_product);
-                          sql ("SELECT merge_affected_product ('%s', '%s')",
+                          sql ("SELECT merge_affected_product"
+                               "        ((SELECT id FROM cves WHERE uuid='%s'),"
+                               "         (SELECT id FROM cpes WHERE name='%s'))",
                                quoted_id, quoted_product);
                           g_free (quoted_product);
                         }
