@@ -912,7 +912,7 @@ sql_merge_cpe_name (sqlite3_context *context, int argc,
   quoted_uuid = sql_quote ((const char*) uuid);
   quoted_name = sql_quote ((const char*) name);
 
-  sql ("INSERT OR REPLACE INTO cpes"
+  sql ("INSERT OR IGNORE INTO cpes"
        " (uuid, name)"
        " VALUES"
        " ('%s', '%s');",
