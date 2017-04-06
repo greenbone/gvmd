@@ -1,3 +1,8 @@
+2017-04-06  Björn Ricks <bjoern.ricks@greenbone.net>
+
+	* src/manage_sql.c (modify_permission): Fix check for clearing permission
+	cache of resources. Only clear cache if we have a resource.
+
 2017-04-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (update_cvs_xml): Pass IDs to merge_affected_product.
