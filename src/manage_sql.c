@@ -63229,6 +63229,35 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
 }
 
 /**
+ * @brief Replace text in a string.
+ *
+ * @param[in]  string  String to replace in.
+ * @param[in]  to      Replacement text.
+ *
+ * @return Freshly allocated string with replacements.
+ */
+static gchar *
+string_replace (const gchar *string, const gchar *to, ...)
+{
+  va_list ap;
+  const gchar *from;
+  gchar *ret;
+
+  ret = g_strdup (string);
+  va_start (ap, to);
+  while ((from = va_arg (ap, const gchar *)))
+    {
+      gchar **split;
+      split = g_strsplit (ret, from, 0);
+      g_free (ret);
+      ret = g_strjoinv ("~", split);
+      g_strfreev (split);
+    }
+  va_end (ap);
+  return ret;
+}
+
+/**
  * @brief Update CVE info from a single XML feed file.
  *
  * @param[in]  xml_path          XML path.
@@ -63322,6 +63351,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
               gchar *quoted_software;
               const char *id;
               GString *software;
+              gchar *software_unescaped, *software_tilde;
 
               id = entity_attribute (entry, "id");
               if (id == NULL)
@@ -63481,9 +63511,13 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                                               ? entity_text
                                                  (availability_impact)
                                               : "");
-              // FIX also replace %7E
-              quoted_software = sql_quote (software->str);
+              software_unescaped = g_uri_unescape_string (software->str, NULL);
               g_string_free (software, TRUE);
+              software_tilde = string_replace (software_unescaped,
+                                               "~", "%7E", "%7e", NULL);
+              g_free (software_unescaped);
+              quoted_software = sql_quote (software_tilde);
+              g_free (software_tilde);
               sql ("SELECT merge_cve"
                    "        ('%s', '%s', %i, %i, %s, '%s', '%s', '%s', '%s',"
                    "         '%s', '%s', '%s', '%s');",
@@ -63520,10 +63554,17 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                       if ((strcmp (entity_name (product), "vuln:product") == 0)
                           && strlen (entity_text (product)))
                         {
-                          gchar *quoted_product;
+                          gchar *quoted_product, *product_decoded;
+                          gchar *product_tilde;
 
-                          // FIX also %7E
-                          quoted_product = sql_quote (entity_text (product));
+                          product_decoded = g_uri_unescape_string
+                                             (entity_text (product), NULL);
+                          product_tilde = string_replace (product_decoded,
+                                                          "~", "%7E", "%7e", NULL);
+                          g_free (product_decoded);
+                          quoted_product = sql_quote (product_tilde);
+                          g_free (product_tilde);
+
                           sql ("SELECT merge_cpe_name ('%s', '%s')",
                                quoted_product, quoted_product);
                           sql ("SELECT merge_affected_product"
@@ -64372,6 +64413,7 @@ update_scap_cpes (int last_scap_update)
             {
               const char *name, *status, *deprecated, *nvd_id;
               gchar *quoted_name, *quoted_title, *quoted_status, *quoted_nvd_id;
+              gchar *name_decoded, *name_tilde;
               entities_t titles;
               entity_t title;
 
@@ -64418,8 +64460,12 @@ update_scap_cpes (int last_scap_update)
                   titles = next_entities (titles);
                 }
 
-              // FIX also replace %7E with ~
-              quoted_name = sql_quote (name);
+              name_decoded = g_uri_unescape_string (name, NULL);
+              name_tilde = string_replace (name_decoded,
+                                           "~", "%7E", "%7e", NULL);
+              g_free (name_decoded);
+              quoted_name = sql_quote (name_tilde);
+              g_free (name_tilde);
               quoted_status = sql_quote (status);
               quoted_nvd_id = sql_quote (nvd_id);
               sql ("SELECT merge_cpe"

@@ -1,3 +1,8 @@
+2017-04-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (string_replace): New function.
+	(update_cve_xml, update_scap_cpes): Replace %7E with ~, like script did.
+
 2017-04-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (sql_merge_cpe_name): Use INSERT OR IGNORE, like in
