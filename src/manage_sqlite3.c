@@ -761,10 +761,17 @@ sql_merge_cve (sqlite3_context *context, int argc,
   else
     {
       cvss = sqlite3_value_text (argv[4]);
-      // FIX assert in float format
       if (cvss == NULL)
         {
           sqlite3_result_error (context, "Failed to get cvss argument", -1);
+          return;
+        }
+      if (g_regex_match_simple ("^1?[0-9][.][0-9]$", (gchar *) cvss, 0, 0) == 0)
+        {
+          gchar *msg;
+          msg = g_strdup_printf ("CVSS format not recognised: %s", cvss);
+          sqlite3_result_error (context, msg, -1);
+          g_free (msg);
           return;
         }
     }

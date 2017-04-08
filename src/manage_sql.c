@@ -63525,7 +63525,6 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                    quoted_id,
                    parse_iso_time (entity_text (last_modified)),
                    parse_iso_time (entity_text (published)),
-                   // FIX ensure float format?
                    score ? entity_text (score) : "NULL",
                    quoted_summary,
                    quoted_access_vector,
