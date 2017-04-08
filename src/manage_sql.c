@@ -64099,8 +64099,17 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                   quoted_id = sql_quote (id);
                   g_free (id);
                   quoted_oval_id = sql_quote (entity_attribute (definition, "id"));
-                  // FIX ensure integer
+
                   version = entity_attribute (definition, "version");
+                  if (g_regex_match_simple ("^[0-9]+$", (gchar *) version, 0, 0) == 0)
+                    {
+                      g_warning ("%s: invalid version: %s",
+                                 __FUNCTION__,
+                                 version);
+                      free_entity (entity);
+                      goto fail;
+                    }
+
                   quoted_class = sql_quote (entity_attribute (definition, "class"));
                   quoted_title = sql_quote (entity_text (title));
                   quoted_description = sql_quote (entity_text (description));
