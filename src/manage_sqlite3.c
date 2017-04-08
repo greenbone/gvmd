@@ -776,21 +776,21 @@ sql_merge_cve (sqlite3_context *context, int argc,
       return;
     }
 
-  vector = sqlite3_value_text (argv[5]);
+  vector = sqlite3_value_text (argv[6]);
   if (vector == NULL)
     {
       sqlite3_result_error (context, "Failed to get vector argument", -1);
       return;
     }
 
-  complexity = sqlite3_value_text (argv[5]);
+  complexity = sqlite3_value_text (argv[7]);
   if (complexity == NULL)
     {
       sqlite3_result_error (context, "Failed to get complexity argument", -1);
       return;
     }
 
-  authentication = sqlite3_value_text (argv[5]);
+  authentication = sqlite3_value_text (argv[8]);
   if (authentication == NULL)
     {
       sqlite3_result_error (context,
@@ -798,7 +798,7 @@ sql_merge_cve (sqlite3_context *context, int argc,
       return;
     }
 
-  confidentiality = sqlite3_value_text (argv[5]);
+  confidentiality = sqlite3_value_text (argv[9]);
   if (confidentiality == NULL)
     {
       sqlite3_result_error (context,
@@ -807,7 +807,7 @@ sql_merge_cve (sqlite3_context *context, int argc,
       return;
     }
 
-  integrity = sqlite3_value_text (argv[5]);
+  integrity = sqlite3_value_text (argv[10]);
   if (integrity == NULL)
     {
       sqlite3_result_error (context,
@@ -816,7 +816,7 @@ sql_merge_cve (sqlite3_context *context, int argc,
       return;
     }
 
-  availability = sqlite3_value_text (argv[5]);
+  availability = sqlite3_value_text (argv[11]);
   if (availability == NULL)
     {
       sqlite3_result_error (context,
@@ -825,7 +825,7 @@ sql_merge_cve (sqlite3_context *context, int argc,
       return;
     }
 
-  products = sqlite3_value_text (argv[5]);
+  products = sqlite3_value_text (argv[12]);
   if (products == NULL)
     {
       sqlite3_result_error (context,
