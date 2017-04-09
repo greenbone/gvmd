@@ -1,5 +1,9 @@
 2017-04-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (update_ovaldef_xml): Check deprecated-by-nvd-id format.
+
+2017-04-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (update_ovaldef_xml): Check version format.
 
 2017-04-08  Matthew Mundell <matthew.mundell@greenbone.net>

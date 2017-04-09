@@ -64443,7 +64443,16 @@ update_scap_cpes (int last_scap_update)
 
               deprecated = entity_attribute (item_metadata,
                                              "deprecated-by-nvd-id");
-              // FIX check that integer
+              if (deprecated
+                  && (g_regex_match_simple ("^[0-9]+$", (gchar *) deprecated, 0, 0)
+                      == 0))
+                {
+                  g_warning ("%s: invalid deprecated-by-nvd-id: %s",
+                             __FUNCTION__,
+                             deprecated);
+                  free_entity (entity);
+                  goto fail;
+                }
 
               nvd_id = entity_attribute (item_metadata, "nvd-id");
               if (nvd_id == NULL)
