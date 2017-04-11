@@ -63718,10 +63718,7 @@ verify_oval_file (const gchar *full_path)
   GError *error;
   gchar *xml;
   gsize xml_len;
-  entity_t entity, definitions, variables, first_definitions, first_variables;
-  entity_t child;
-  entities_t children;
-  int count, definitions_count, variables_count;
+  entity_t entity;
 
   error = NULL;
   g_file_get_contents (full_path, &xml, &xml_len, &error);
@@ -63742,33 +63739,33 @@ verify_oval_file (const gchar *full_path)
     }
   g_free (xml);
 
-  definitions_count = 0;
-  children = entity->entities;
-  while ((definitions = first_entity (children)))
-    if (strcmp (entity_name (definitions), "oval_definitions:definitions") == 0)
-      {
-        definitions_count++;
-        first_definitions = definitions;
-      }
-  if (definitions_count == 1)
+  if (strcmp (entity_name (entity), "oval_definitions") == 0)
     {
       int definition_count;
-      entities_t grandchildren, greatchildren;
+      entities_t children;
+      entity_t definitions;
 
       definition_count = 0;
-      grandchildren = first_definitions->entities;
-      while ((definitions = first_entity (grandchildren)))
-        if (strcmp (entity_name (definitions), "oval_definitions:definitions")
-            == 0)
-          {
-            entity_t definition;
+      children = entity->entities;
+      while ((definitions = first_entity (children)))
+        {
+          if (strcmp (entity_name (definitions), "definitions")
+              == 0)
+            {
+              entity_t definition;
+              entities_t grandchildren;
 
-            greatchildren = definitions->entities;
-            while ((definition = first_entity (greatchildren)))
-              if (strcmp (entity_name (definition), "oval_definitions:definition")
-                  == 0)
-                definition_count++;
-          }
+              grandchildren = definitions->entities;
+              while ((definition = first_entity (grandchildren)))
+                {
+                  if (strcmp (entity_name (definition), "definition")
+                      == 0)
+                    definition_count++;
+                  grandchildren = next_entities (grandchildren);
+                }
+            }
+          children = next_entities (children);
+        }
 
       free_entity (entity);
       if (definition_count == 0)
@@ -63780,34 +63777,33 @@ verify_oval_file (const gchar *full_path)
         return 0;
     }
 
-  // FIX combine with above
-  variables_count = 0;
-  children = entity->entities;
-  while ((variables = first_entity (children)))
-    if (strcmp (entity_name (variables), "oval_variables:variables") == 0)
-      {
-        variables_count++;
-        first_variables = variables;
-      }
-  if (variables_count == 1)
+  if (strcmp (entity_name (entity), "oval_variables") == 0)
     {
       int variable_count;
-      entities_t grandchildren, greatchildren;
+      entities_t children;
+      entity_t variables;
 
       variable_count = 0;
-      grandchildren = first_variables->entities;
-      while ((variables = first_entity (grandchildren)))
-        if (strcmp (entity_name (variables), "oval_variables:variables")
-            == 0)
-          {
-            entity_t variable;
+      children = entity->entities;
+      while ((variables = first_entity (children)))
+        {
+          if (strcmp (entity_name (variables), "variables")
+              == 0)
+            {
+              entity_t variable;
+              entities_t grandchildren;
 
-            greatchildren = variables->entities;
-            while ((variable = first_entity (greatchildren)))
-              if (strcmp (entity_name (variable), "oval_variables:variable")
-                  == 0)
-                variable_count++;
-          }
+              grandchildren = variables->entities;
+              while ((variable = first_entity (grandchildren)))
+                {
+                  if (strcmp (entity_name (variable), "variable")
+                      == 0)
+                    variable_count++;
+                  grandchildren = next_entities (grandchildren);
+                }
+            }
+          children = next_entities (children);
+        }
 
       free_entity (entity);
       if (variable_count == 0)
@@ -63819,30 +63815,16 @@ verify_oval_file (const gchar *full_path)
         return 0;
     }
 
-  count = 0;
-  children = entity->entities;
-  while ((child = first_entity (children)))
-    if (strcmp (entity_name (child),
-                "oval_system_char:oval_system_characteristics")
-        == 0)
-      count++;
-  if (count == 1)
+  if (strcmp (entity_name (entity), "oval_system_characteristics") == 0)
     {
       g_warning ("%s: File is an OVAL System Characteristics file\n",
                  __FUNCTION__);
       return -1;
     }
 
-  count = 0;
-  children = entity->entities;
-  while ((child = first_entity (children)))
-    if (strcmp (entity_name (child),
-                "oval_system_char:oval_system_characteristics")
-        == 0)
-      count++;
-  if (count == 1)
+  if (strcmp (entity_name (entity), "oval_results") == 0)
     {
-      g_warning ("%s: File is an OVAL System Characteristics file\n",
+      g_warning ("%s: File is an OVAL Results one\n",
                  __FUNCTION__);
       return -1;
     }
@@ -63912,7 +63894,16 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
       return 0;
     }
 
-  xml_basename = g_path_get_basename (xml_path);
+  xml_basename = strstr (xml_path, OPENVAS_SCAP_DATA_DIR);
+  if (xml_basename == NULL)
+    {
+      g_warning ("%s: xml_path missing OPENVAS_SCAP_DATA_DIR: %s\n",
+                 __FUNCTION__,
+                 xml_path);
+      return -1;
+    }
+  xml_basename += strlen (OPENVAS_SCAP_DATA_DIR);
+
   quoted_xml_basename = sql_quote (xml_basename);
 
   /* The last time this file was updated in the db. */
@@ -63924,7 +63915,6 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
   if (oval_timestamp
       && (parse_iso_time (oval_timestamp) <= last_oval_update))
     {
-      g_free (xml_basename);
       g_free (quoted_xml_basename);
       g_info ("Skipping %s, file has older timestamp than latest OVAL"
               " definition in database (this is not an error)",
@@ -63940,7 +63930,6 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
         {
           g_info ("Validation failed for file '%s'",
                   xml_path);
-          g_free (xml_basename);
           g_free (quoted_xml_basename);
           return 0;
         }
@@ -63958,7 +63947,6 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                  __FUNCTION__,
                  error->message);
       g_error_free (error);
-      g_free (xml_basename);
       g_free (quoted_xml_basename);
       return -1;
     }
@@ -63967,7 +63955,6 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
     {
       g_free (xml);
       g_warning ("%s: Failed to parse entity\n", __FUNCTION__);
-      g_free (xml_basename);
       g_free (quoted_xml_basename);
       return -1;
     }
@@ -64185,14 +64172,12 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
 
   /* Cleanup. */
 
-  g_free (xml_basename);
   g_free (quoted_xml_basename);
   free_entity (entity);
   sql_commit ();
   return 1;
 
  fail:
-  g_free (xml_basename);
   g_free (quoted_xml_basename);
   g_warning ("Update of OVAL definitions failed at file '%s'",
              xml_path);
@@ -64802,11 +64787,21 @@ update_scap_ovaldefs (int last_scap_update, int private)
   /* Get a list of the OVAL files. */
 
   if (private)
-    // FIX script allowed setting via PRIVATE_SUBDIR
-    oval_dir = g_build_filename (OPENVAS_SCAP_DATA_DIR, "private", "oval",
-                                 NULL);
+    {
+      const char *subdir;
+
+      subdir = getenv ("PRIVATE_SUBDIR");
+      if ((subdir == NULL) || (strlen (subdir) == 0))
+        subdir = "private";
+
+      oval_dir = g_build_filename (OPENVAS_SCAP_DATA_DIR, subdir, "oval",
+                                   NULL);
+    }
   else
     oval_dir = g_build_filename (OPENVAS_SCAP_DATA_DIR, "oval", NULL);
+
+  g_debug ("%s: private: %i", __FUNCTION__, private);
+  g_debug ("%s: oval_dir: %s", __FUNCTION__, oval_dir);
 
   /* Pairs of pointers, pair[0]: absolute pathname, pair[1]: oval timestamp. */
   oval_files = make_array ();
@@ -64916,7 +64911,9 @@ update_scap_ovaldefs (int last_scap_update, int private)
 
       g_info ("Cleaning up user OVAL data");
 
-      oval_files_clause = g_string_new (" AND (xml_file NOT IN ");
+      g_debug ("%s: OPENVAS_SCAP_DATA_DIR: %s", __FUNCTION__, OPENVAS_SCAP_DATA_DIR);
+
+      oval_files_clause = g_string_new (" AND (xml_file NOT IN (");
       first = 1;
       for (index = 0; index < oval_files->len; index++)
         {
@@ -64924,20 +64921,31 @@ update_scap_ovaldefs (int last_scap_update, int private)
           char *suffix;
 
           pair = g_ptr_array_index (oval_files, index);
+          g_debug ("%s: pair[0]: %s", __FUNCTION__, pair[0]);
           suffix = strstr (pair[0], OPENVAS_SCAP_DATA_DIR);
+          if (suffix == NULL)
+            {
+              g_warning ("%s: pair[0] missing OPENVAS_SCAP_DATA_DIR: %s\n",
+                         __FUNCTION__,
+                         pair[0]);
+              g_free (oval_dir);
+              oval_files_free ();
+              return -1;
+            }
+          suffix += strlen (OPENVAS_SCAP_DATA_DIR);
           g_string_append_printf (oval_files_clause,
                                   "%s'%s'",
                                   first ? "" : ", ",
                                   suffix);
           first = 0;
         }
-      g_string_append (oval_files_clause, ")");
+      g_string_append (oval_files_clause, "))");
 
       init_iterator (&files,
                      "SELECT DISTINCT xml_file FROM scap.ovaldefs"
-                     " WHERE (xml_file NOT LIKE 'oval/%')"
+                     " WHERE (xml_file NOT LIKE 'oval/%%')"
                      "%s",
-                     oval_files_clause);
+                     oval_files_clause->str);
       first = 1;
       while (next (&files))
         {
@@ -64949,9 +64957,9 @@ update_scap_ovaldefs (int last_scap_update, int private)
       cleanup_iterator (&files);
 
       sql ("DELETE FROM scap.ovaldefs"
-           " WHERE (xml_file NOT LIKE 'oval/%')"
+           " WHERE (xml_file NOT LIKE 'oval/%%')"
            "%s;",
-           oval_files_clause);
+           oval_files_clause->str);
 
       g_string_free (oval_files_clause, TRUE);
     }

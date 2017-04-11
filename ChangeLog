@@ -1,3 +1,17 @@
+2017-04-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Get the private directory part of the SCAP sync working.
+
+	* src/manage_sql.c (verify_oval_file): Expect the top level elements at
+	the root of the document, instead of as children.  Correct the
+	oval_results comparison.
+	(update_ovaldef_xml): Use the path of the file under the scap directory to
+	identify the file in the db, instead of using the basename, which may not
+	be unique.
+	(update_scap_ovaldefs): Consider PRIVATE_SUBDIR, like script did.  Add
+	missing parens in OVAL file clause SQL.  Exclude OPENVAS_SCAP_DATA_DIR
+	from the oval file identifier.  Escape % in SQL.  Use GString properly.
+
 2017-04-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (update_ovaldef_xml): Check deprecated-by-nvd-id format.
