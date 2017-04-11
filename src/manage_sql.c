@@ -65523,13 +65523,15 @@ update_scap_placeholders (int updated_cves)
 /**
  * @brief Update SCAP DB.
  *
- * @param[in]  log_config        Log configuration.
- * @param[in]  database          Location of manage database.
+ * @param[in]  log_config            Log configuration.
+ * @param[in]  database              Location of manage database.
+ * @param[in]  refresh_private_only  Location of manage database.
  *
  * @return 0 success, -1 error, -4 SCAP db not found.
  */
 int
-manage_update_scap_db (GSList *log_config, const gchar *database)
+manage_update_scap_db (GSList *log_config, const gchar *database,
+                       int refresh_private_only)
 {
   const gchar *db;
   int ret, updated_scap_ovaldefs, last_scap_update, updated_scap_cpes;
@@ -65544,12 +65546,6 @@ manage_update_scap_db (GSList *log_config, const gchar *database)
   assert (ret != -4);
   if (ret)
     return ret;
-
-  // --refresh-private
-#if 0
-  if [ 0 = "$REFRESH_PRIVATE_ONLY" ]
-  then
-#endif
 
   init_manage_process (0, db);
 
@@ -65573,8 +65569,6 @@ manage_update_scap_db (GSList *log_config, const gchar *database)
         }
     }
 
-  g_info ("Updating data from feed");
-
   last_scap_update = 0;
   if (manage_scap_loaded ())
     last_scap_update = sql_int ("SELECT coalesce ((SELECT value FROM scap.meta"
@@ -65584,6 +65578,13 @@ manage_update_scap_db (GSList *log_config, const gchar *database)
 
   if (last_scap_update == -1)
     {
+      if (refresh_private_only)
+        {
+          g_critical ("Inconsistent data.  Need to reset SCAP database."
+                      "  Please run full SCAP sync first.");
+          return -1;
+        }
+
       /* Happens when initial sync was aborted. */
       g_warning ("Inconsistent data. Resetting SCAP database.");
       manage_db_remove ("scap");
@@ -65603,35 +65604,40 @@ manage_update_scap_db (GSList *log_config, const gchar *database)
       return -1;
     }
 
-  g_debug ("%s: update cpes", __FUNCTION__);
-
-  updated_scap_cpes = update_scap_cpes (last_scap_update);
-  if (updated_scap_cpes == -1)
+  if (refresh_private_only == 0)
     {
-      manage_update_scap_db_cleanup ();
-      cleanup_manage_process (TRUE);
-      return -1;
-    }
+      g_info ("Updating data from feed");
 
-  g_debug ("%s: update cves", __FUNCTION__);
+      g_debug ("%s: update cpes", __FUNCTION__);
 
-  updated_scap_cves = update_scap_cves (last_scap_update);
-  if (updated_scap_cves == -1)
-    {
-      manage_update_scap_db_cleanup ();
-      cleanup_manage_process (TRUE);
-      return -1;
-    }
+      updated_scap_cpes = update_scap_cpes (last_scap_update);
+      if (updated_scap_cpes == -1)
+        {
+          manage_update_scap_db_cleanup ();
+          cleanup_manage_process (TRUE);
+          return -1;
+        }
 
-  g_debug ("%s: update ovaldefs", __FUNCTION__);
+      g_debug ("%s: update cves", __FUNCTION__);
 
-  updated_scap_ovaldefs = update_scap_ovaldefs (last_scap_update,
-                                                0 /* Feed data. */);
-  if (updated_scap_ovaldefs == -1)
-    {
-      manage_update_scap_db_cleanup ();
-      cleanup_manage_process (TRUE);
-      return -1;
+      updated_scap_cves = update_scap_cves (last_scap_update);
+      if (updated_scap_cves == -1)
+        {
+          manage_update_scap_db_cleanup ();
+          cleanup_manage_process (TRUE);
+          return -1;
+        }
+
+      g_debug ("%s: update ovaldefs", __FUNCTION__);
+
+      updated_scap_ovaldefs = update_scap_ovaldefs (last_scap_update,
+                                                    0 /* Feed data. */);
+      if (updated_scap_ovaldefs == -1)
+        {
+          manage_update_scap_db_cleanup ();
+          cleanup_manage_process (TRUE);
+          return -1;
+        }
     }
 
   g_info ("Updating user defined data.\n");

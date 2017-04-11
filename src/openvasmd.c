@@ -1575,6 +1575,7 @@ main (int argc, char** argv)
   static gboolean update_scap_db = FALSE;
   static gboolean update_nvt_cache = FALSE;
   static gboolean rebuild_nvt_cache = FALSE;
+  static gboolean refresh_private_only = FALSE;
   static gboolean foreground = FALSE;
   static gboolean print_version = FALSE;
   static gboolean progress = FALSE;
@@ -1688,6 +1689,7 @@ main (int argc, char** argv)
         { "port2", '\0', 0, G_OPTION_ARG_STRING, &manager_port_string_2, "Use port number <number> for address 2.", "<number>" },
         { "progress", '\0', 0, G_OPTION_ARG_NONE, &progress, "Display progress during --rebuild and --update.", NULL },
         { "rebuild", '\0', 0, G_OPTION_ARG_NONE, &rebuild_nvt_cache, "Rebuild the NVT cache and exit.", NULL },
+        { "refresh-private-only", '\0', 0, G_OPTION_ARG_NONE, &refresh_private_only, "Whether to only refresh private dir, for --update-scap-db.", NULL },
         { "role", '\0', 0, G_OPTION_ARG_STRING, &role, "Role for --create-user and --get-users.", "<role>" },
         { "update", 'u', 0, G_OPTION_ARG_NONE, &update_nvt_cache, "Update the NVT cache and exit.", NULL },
         { "update-cert-db", '\0', 0, G_OPTION_ARG_NONE, &update_cert_db, "Update CERT info.", NULL },
@@ -2261,7 +2263,7 @@ main (int argc, char** argv)
 
       g_info ("   Updating SCAP info.\n");
 
-      switch (manage_update_scap_db (log_config, database))
+      switch (manage_update_scap_db (log_config, database, refresh_private_only))
         {
           case 0:
             log_config_free ();

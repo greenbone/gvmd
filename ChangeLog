@@ -1,5 +1,16 @@
 2017-04-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add --refresh-private-only, for SCAP OVAL sync.
+
+	* src/openvasmd.c (main): Add option.
+
+	* src/manage_sql.c (manage_update_scap_db): Add private arg.  Skip feed
+	dir updates if given.
+
+	* src/manage.h: Update header accordingly.
+
+2017-04-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (update_ovaldef_xml): Remove REBUILD_OVAL note.  Only
 	needed if we add SCAP db migrators.
 
