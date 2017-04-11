@@ -63868,15 +63868,6 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
   /* The timestamp from the OVAL XML. */
   oval_timestamp = file_and_date[1];
 
-  // FIX need --rebuild-oval?
-#if 0
-          if [ 1 = "$REBUILD_OVAL" ]
-          then
-            // here it's last_oval_update
-            OVAL_REFDATE=0
-          else
-#endif
-
   if (g_stat (xml_path, &state))
     {
       g_warning ("%s: Failed to stat OVAL file %s: %s\n",

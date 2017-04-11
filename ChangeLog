@@ -1,4 +1,9 @@
-2017-04-09  Matthew Mundell <matthew.mundell@greenbone.net>
+2017-04-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (update_ovaldef_xml): Remove REBUILD_OVAL note.  Only
+	needed if we add SCAP db migrators.
+
+2017-04-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Get the private directory part of the SCAP sync working.
 
