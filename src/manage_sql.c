@@ -36130,17 +36130,22 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   else
     quoted_solution_type = g_strdup ("");
 
-  sql ("INSERT into nvts (oid, version, name, copyright,"
-       " cve, bid, xref, tag, category, family, cvss_base,"
-       " creation_time, modification_time, uuid, solution_type,"
-       " qod, qod_type)"
-       " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s',"
-       " '%s', %i, '%s', '%s', %i, %i, '%s', '%s', %d, '%s');",
-       nvti_oid (nvti), quoted_version, quoted_name,
-       quoted_copyright, quoted_cve, quoted_bid, quoted_xref, quoted_tag,
-       nvti_category (nvti), quoted_family, quoted_cvss_base, creation_time,
-       modification_time, nvti_oid (nvti), quoted_solution_type,
-       qod, quoted_qod_type);
+  if (sql_int ("SELECT EXISTS (SELECT * FROM nvts WHERE oid = '%s');",
+               nvti_oid (nvti)))
+    g_warning ("%s: NVT with OID %s exists already, ignoring", __FUNCTION__,
+               nvti_oid (nvti));
+  else
+    sql ("INSERT into nvts (oid, version, name, copyright,"
+         " cve, bid, xref, tag, category, family, cvss_base,"
+         " creation_time, modification_time, uuid, solution_type,"
+         " qod, qod_type)"
+         " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s',"
+         " '%s', %i, '%s', '%s', %i, %i, '%s', '%s', %d, '%s');",
+         nvti_oid (nvti), quoted_version, quoted_name,
+         quoted_copyright, quoted_cve, quoted_bid, quoted_xref, quoted_tag,
+         nvti_category (nvti), quoted_family, quoted_cvss_base, creation_time,
+         modification_time, nvti_oid (nvti), quoted_solution_type,
+         qod, quoted_qod_type);
 
   if (remove && (chunk_count == 0))
     sql_commit ();
@@ -65569,7 +65574,7 @@ manage_update_scap_db (GSList *log_config, const gchar *database,
         }
     }
 
-  last_scap_update = 0;
+  last_scap_update = -1;
   if (manage_scap_loaded ())
     last_scap_update = sql_int ("SELECT coalesce ((SELECT value FROM scap.meta"
                                 "                  WHERE name = 'last_update'),"

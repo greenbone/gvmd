@@ -1,3 +1,20 @@
+2017-04-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Get Postgres SCAP sync working.
+
+	* src/manage_pg.c (manage_update_scap_db_init): Remove extra arg.  Correct
+	table name.  Add missing column.
+	(manage_update_scap_db_cleanup): Remove extra arg.
+	(manage_create_sql_functions, create_tables): Make existence checks more
+	specific, because in some situations the tables are missing even if the
+	schema exists.
+	(manage_db_init): Remove duplicate creation.  Remove schema qualifiers
+	from index creation SQL.  Use the Postgres SQL to create scap.ovaldefs.
+
+	* src/manage_sql.c (make_nvt_from_nvti): If there's already an NVT with
+	the OID, then just ignore the NVT, instead of aborting due to lack of
+	column uniqueness.
+
 2017-04-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add --refresh-private-only, for SCAP OVAL sync.

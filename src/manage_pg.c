@@ -236,7 +236,7 @@ int
 manage_update_scap_db_init ()
 {
   sql ("CREATE OR REPLACE FUNCTION merge_cpe"
-       "                            (uuid_arg TEXT, name_arg TEXT,"
+       "                            (name_arg TEXT,"
        "                             title_arg TEXT, creation_time_arg INTEGER,"
        "                             modification_time_arg INTEGER,"
        "                             status_arg TEXT,"
@@ -252,7 +252,7 @@ manage_update_scap_db_init ()
        "         status = status_arg,"
        "         deprecated_by_id = deprecated_by_id_arg,"
        "         nvd_id = nvd_id_arg"
-       "     WHERE uuid = uuid_arg;"
+       "     WHERE uuid = name_arg;"
        "     IF found THEN"
        "       RETURN;"
        "     END IF;"
@@ -261,7 +261,7 @@ manage_update_scap_db_init ()
        "                    (uuid, name, title, creation_time,"
        "                     modification_time, status, deprecated_by_id,"
        "                     nvd_id)"
-       "       VALUES (uuid_arg, name_arg, title_arg, creation_time_arg,"
+       "       VALUES (name_arg, name_arg, title_arg, creation_time_arg,"
        "               modification_time_arg, status_arg, deprecated_by_id_arg,"
        "               nvd_id_arg);"
        "       RETURN;"
@@ -353,7 +353,7 @@ manage_update_scap_db_init ()
        " RETURNS VOID AS $$"
        " BEGIN"
        "   LOOP"
-       "     UPDATE scap.cpes"
+       "     UPDATE scap.affected_products"
        "     SET cve = cve_arg, cpe = cpe_arg"
        "     WHERE cve = cve_arg AND cpe = cpe_arg;"
        "     IF found THEN"
@@ -411,7 +411,7 @@ manage_update_scap_db_init ()
        "                    (uuid, name, comment, creation_time,"
        "                     modification_time, version, deprecated, def_class,"
        "                     title, description, xml_file, status,"
-       "                     cve_refs)"
+       "                     max_cvss, cve_refs)"
        "       VALUES (uuid_arg, name_arg, comment_arg, creation_time_arg,"
        "               modification_time_arg, version_arg, deprecated_arg,"
        "               def_class_arg, title_arg, description_arg, xml_file_arg,"
@@ -433,7 +433,7 @@ manage_update_scap_db_init ()
 void
 manage_update_scap_db_cleanup ()
 {
-  sql ("DROP FUNCTION merge_cpe (uuid_arg TEXT, name_arg TEXT, title_arg TEXT,"
+  sql ("DROP FUNCTION merge_cpe (name_arg TEXT, title_arg TEXT,"
        "                         creation_time_arg INTEGER,"
        "                         modification_time_arg INTEGER,"
        "                         status_arg TEXT, deprecated_by_id_arg INTEGER,"
@@ -1259,7 +1259,12 @@ manage_create_sql_functions ()
        "                 SELECT trim (unnest (string_to_array ($2, ','))));"
        "$$ LANGUAGE SQL;");
 
-  if (manage_scap_loaded ())
+  if (sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
+               "               WHERE table_catalog = '%s'"
+               "               AND table_schema = 'scap'"
+               "               AND table_name = 'cpes')"
+               " ::integer;",
+               sql_database ()))
     {
       sql ("CREATE OR REPLACE FUNCTION cpe_title (text)"
            " RETURNS text AS $$"
@@ -2987,7 +2992,12 @@ create_tables ()
   "            WHERE tasks.id = results.task))"
 
   sql ("DROP VIEW IF EXISTS vulns;");
-  if (manage_scap_loaded ())
+  if (sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
+               "               WHERE table_catalog = '%s'"
+               "               AND table_schema = 'scap'"
+               "               AND table_name = 'ovaldefs')"
+               " ::integer;",
+               sql_database ()))
     sql ("CREATE OR REPLACE VIEW vulns AS"
          " SELECT id, uuid, name, creation_time, modification_time,"
          "        cast (cvss_base AS double precision) AS severity, qod,"
@@ -3278,13 +3288,6 @@ manage_db_init (const gchar *name)
            "  name text UNIQUE,"
            "  value text);");
 
-      /* Create tables and indexes. */
-
-      sql ("CREATE TABLE scap.meta"
-           " (id INTEGER PRIMARY KEY AUTOINCREMENT,"
-           "  name UNIQUE,"
-           "  value);");
-
       sql ("CREATE TABLE scap.cves"
            " (id SERIAL PRIMARY KEY,"
            "  uuid text UNIQUE,"
@@ -3301,14 +3304,14 @@ manage_db_init (const gchar *name)
            "  availability_impact text,"
            "  products text,"
            "  cvss FLOAT DEFAULT 0);");
-      sql ("CREATE UNIQUE INDEX scap.cve_idx"
+      sql ("CREATE UNIQUE INDEX cve_idx"
            " ON cves (name);");
-      sql ("CREATE INDEX scap.cves_by_creation_time_idx"
+      sql ("CREATE INDEX cves_by_creation_time_idx"
            " ON cves (creation_time);");
-      sql ("CREATE INDEX scap.cves_by_modification_time_idx"
+      sql ("CREATE INDEX cves_by_modification_time_idx"
            " ON cves (modification_time);");
-      sql ("CREATE INDEX scap.cves_by_cvss"
-           " ON cves (max_cvss);");
+      sql ("CREATE INDEX cves_by_cvss"
+           " ON cves (cvss);");
 
       sql ("CREATE TABLE scap.cpes"
            " (id SERIAL PRIMARY KEY,"
@@ -3323,50 +3326,50 @@ manage_db_init (const gchar *name)
            "  max_cvss FLOAT DEFAULT 0,"
            "  cve_refs INTEGER DEFAULT 0,"
            "  nvd_id text);");
-      sql ("CREATE UNIQUE INDEX scap.cpe_idx"
+      sql ("CREATE UNIQUE INDEX cpe_idx"
            " ON cpes (name);");
-      sql ("CREATE INDEX scap.cpes_by_creation_time_idx"
+      sql ("CREATE INDEX cpes_by_creation_time_idx"
            " ON cpes (creation_time);");
-      sql ("CREATE INDEX scap.cpes_by_modification_time_idx"
+      sql ("CREATE INDEX cpes_by_modification_time_idx"
            " ON cpes (modification_time);");
-      sql ("CREATE INDEX scap.cpes_by_cvss"
-           " ON cpes (cvss);");
+      sql ("CREATE INDEX cpes_by_cvss"
+           " ON cpes (max_cvss);");
 
       sql ("CREATE TABLE scap.affected_products"
            " (cve INTEGER NOT NULL,"
            "  cpe INTEGER NOT NULL,"
            "  FOREIGN KEY(cve) REFERENCES cves(id),"
            "  FOREIGN KEY(cpe) REFERENCES cpes(id));");
-      sql ("CREATE INDEX scap.afp_cpe_idx"
+      sql ("CREATE INDEX afp_cpe_idx"
            " ON affected_products (cpe);");
-      sql ("CREATE INDEX scap.afp_cve_idx"
+      sql ("CREATE INDEX afp_cve_idx"
            " ON affected_products (cve);");
 
       sql ("CREATE TABLE scap.ovaldefs"
-           " (id INTEGER PRIMARY KEY AUTOINCREMENT,"
-           "  uuid UNIQUE,"
-           "  name,"                        /* OVAL identifier. */
-           "  comment,"
-           "  creation_time DATE,"
-           "  modification_time DATE,"
+           " (id SERIAL PRIMARY KEY,"
+           "  uuid text UNIQUE,"
+           "  name text,"                   /* OVAL identifier. */
+           "  comment text,"
+           "  creation_time integer,"
+           "  modification_time integer,"
            "  version INTEGER,"
            "  deprecated INTEGER,"
-           "  def_class TEXT,"              /* enum */
+           "  def_class TEXT,"              /* Enum. */
            "  title TEXT,"
            "  description TEXT,"
            "  xml_file TEXT,"
            "  status TEXT,"
            "  max_cvss FLOAT DEFAULT 0,"
            "  cve_refs INTEGER DEFAULT 0);");
-      sql ("CREATE INDEX scap.ovaldefs_idx"
+      sql ("CREATE INDEX ovaldefs_idx"
            " ON ovaldefs (name);");
-      sql ("CREATE INDEX scap.ovaldefs_by_creation_time"
+      sql ("CREATE INDEX ovaldefs_by_creation_time"
            " ON ovaldefs (creation_time);");
 
       sql ("CREATE TABLE scap.ovalfiles"
            " (id SERIAL PRIMARY KEY,"
            "  xml_file TEXT UNIQUE);");
-      sql ("CREATE UNIQUE INDEX scap.ovalfiles_idx"
+      sql ("CREATE UNIQUE INDEX ovalfiles_idx"
            " ON ovalfiles (xml_file);");
 
       sql ("CREATE TABLE scap.affected_ovaldefs"
@@ -3374,9 +3377,9 @@ manage_db_init (const gchar *name)
            "  ovaldef INTEGER NOT NULL,"
            "  FOREIGN KEY(cve) REFERENCES cves(id),"
            "  FOREIGN KEY(ovaldef) REFERENCES ovaldefs(id));");
-      sql ("CREATE INDEX scap.aff_ovaldefs_def_idx"
+      sql ("CREATE INDEX aff_ovaldefs_def_idx"
            " ON affected_ovaldefs (ovaldef);");
-      sql ("CREATE INDEX scap.aff_ovaldefs_cve_idx"
+      sql ("CREATE INDEX aff_ovaldefs_cve_idx"
            " ON affected_ovaldefs (cve);");
 
       /* Create deletion triggers. */
