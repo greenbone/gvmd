@@ -1,5 +1,9 @@
 2017-04-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* CMakeLists.txt: Adjust for removed files.
+
+2017-04-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Switch over to --update-scap-db based SCAP syncing.
 
 	* tools/greenbone-scapdata-sync.in: Remove --database.  Let openvasmd
