@@ -1,3 +1,29 @@
+2017-04-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Switch over to --update-scap-db based SCAP syncing.
+
+	* tools/greenbone-scapdata-sync.in: Remove --database.  Let openvasmd
+	check the alerts.
+	(SPLIT_PART_SIZE, SQLITE3, PSQL)
+	(reset_sql_retries, test_exit_codes, test_sql_exit): Remove.  No longer
+	used.
+	(is_db_broken): Call openvasmd to do the check.
+	(sql_pg, sql, scap_db_remove, reinit, db_migrate_9, db_migrate_10)
+	(db_migrate_11, db_migrate_12, db_migrate_13, db_migrate_14, db_migrate_15)
+	(check_db_version, scap_db_exists): Remove.  No longer used.
+	(update_scap_db): Call openvasmd to do the update.
+	(ensure_sqlite3_wal_mode, init_scap_db_update, update_cvss)
+	(update_placeholders, update_scap_db_private, update_scap_db): Remove.  No
+	longer used.
+	(do_self_test): Remove db check.
+	(check_alerts): Remove.  No longer used.
+	(is_db_broken): New function.
+
+	* tools/oval_timestamp.xsl, tools/oval_update.xsl,
+	tools/oval_update_pg.xsl, tools/oval_verify.xsl,
+	tools/ovaldef_list_ids.xsl, tools/scap_db_init.sql,
+	tools/scap_db_init_pg.sql: Remove.  No longer used.
+
 2017-04-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Get Postgres SCAP sync working.
@@ -14,6 +40,9 @@
 	* src/manage_sql.c (make_nvt_from_nvti): If there's already an NVT with
 	the OID, then just ignore the NVT, instead of aborting due to lack of
 	column uniqueness.
+	(manage_update_scap_db): Init last_scap_update to -1, because if the SCAP
+	db is not loaded, then probably something went wrong creating it, and it
+	must be recreated.
 
 2017-04-11  Matthew Mundell <matthew.mundell@greenbone.net>
 

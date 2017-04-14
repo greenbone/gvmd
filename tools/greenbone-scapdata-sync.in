@@ -35,12 +35,6 @@ VERSION=@OPENVASMD_VERSION@
 
 POSTGRES=0
 SCHEMA=""
-RECURSIVE_TRIGGERS_OFF="PRAGMA recursive_triggers = OFF;"
-if [ "@BACKEND@" = "POSTGRESQL" ]; then
-  POSTGRES=1
-  SCHEMA="scap."
-  RECURSIVE_TRIGGERS_OFF=""
-fi
 
 # PRIVATE_SUBDIR defines a subdirectory of the SCAP data directory
 # where files not part of the feed or database will not be deleted by rsync.
@@ -86,31 +80,6 @@ REBUILD_OVAL=0
 # Setting this to 1 enables verbose mode, which outputs additional data.
 # This is usually done with the option --verbose
 VERBOSE=0
-
-# Split CVE data files into parts of this size in kB. 0 = no splitting
-# The default is 1/30 of the system memory.
-SPLIT_PART_SIZE=$(awk '/MemTotal/ { print int( $2/60) }' /proc/meminfo)
-
-# SQLITE3 defines the name of the sqlite binary to call, along with additional
-# parameters.
-SQLITE3="sqlite3 -noheader -bail"
-
-# PSQL defines the name of the Postgres binary to call, along with additional
-# parameters.
-PSQL=""
-psql_setup () {
-  PSQL="psql -v ON_ERROR_STOP=1 -q --pset pager=off --no-align -d $1 -t"
-}
-
-# Maximum number of retries if database is locked
-if [ -z "$MAX_SQL_RETRIES" ]; then
-  MAX_SQL_RETRIES="1" # 0 : try only once
-fi
-
-# Delay between retries
-if [ -z "$SQL_RETRY_DELAY" ]; then
-  SQL_RETRY_DELAY="10m" # allowed unit suffixes: see sleep command
-fi
 
 # SCRIPT_NAME is the name the scripts will use to identify itself and to mark
 # log messages.
@@ -276,82 +245,6 @@ get_value ()
   echo "$value"
 }
 
-reset_sql_tries () {
-  try_sql=1
-  sql_retries=0
-}
-
-test_exit_codes () {
-  try_sql=0
-  if [ -n "$exit_codes" ]
-  then
-    for item in $exit_codes
-    do
-      command=`echo "$item" | cut -d':' -f1`
-      code=`echo "$item" | cut -d':' -f2`
-      if [ "X" = "$code" ]
-      then
-        log_err "$1: Sync script was interrupted"
-        exit 1
-      elif [ "sqlite3" = "$command" ] \
-           && ( [ "5" = "$code" ] || [ "1" = "$code" ] )
-      then
-        if [ "5" = "$code" ]
-        then
-          log_warning "SCAP database is locked"
-        else
-          log_warning "Could not access SCAP database, file may be locked."
-        fi
-
-        if [ "$MAX_SQL_RETRIES" -gt "$sql_retries" ]
-        then
-          sql_retries=$((sql_retries + 1))
-          log_notice "Will try to access database again later in $SQL_RETRY_DELAY. (Retry $sql_retries of $MAX_SQL_RETRIES)"
-          try_sql=1
-          sleep "$SQL_RETRY_DELAY"
-        else
-          log_err "$1: Gave up trying to access SCAP database."
-          exit 1
-        fi
-      else
-        log_err "$1: $command exited with code $code"
-        exit 1
-      fi
-    done
-    exit 1
-  fi
-}
-
-test_sql_exit () {
-  # TODO For Postgres the exit check is done before this, in sql_pg.
-  exit_code=$?
-  try_sql=0
-  if ( [ "5" = "$exit_code" ] || [ "1" = "$exit_code" ] )
-  then
-    if [ "5" = "$exit_code" ]
-    then
-      log_warning "SCAP database is locked."
-    else
-      log_warning "Could not access SCAP database, file may be locked."
-    fi
-
-    if [ "$MAX_SQL_RETRIES" -gt "$sql_retries" ]
-    then
-      sql_retries=$((sql_retries + 1))
-      log_notice "Will try to access database again later in $SQL_RETRY_DELAY. (Retry $sql_retries of $MAX_SQL_RETRIES)"
-      try_sql=1
-      sleep "$SQL_RETRY_DELAY"
-    else
-      log_err "$1: Gave up trying to access SCAP database."
-      exit 1
-    fi
-  elif [ 0 -ne "$exit_code" ]
-  then
-    log_err "$1: sqlite3 exited with code $exit_code."
-    exit 1
-  fi
-}
-
 is_feed_current () {
   if [ $REFRESH_ONLY -eq 0 ]
   then
@@ -445,347 +338,23 @@ is_feed_current () {
 
 is_db_broken () {
   DB_BROKEN=0
-  if [ $POSTGRES -eq 1 ] ; then
-    return
-  fi
-  if [ ! -e $SCAP_DB ]
-  then
-    return
-  fi
-  reset_sql_tries
-  until [ "$try_sql" -eq 0 ]
-  do
-    DB_INTEGRITY=`$SQLITE3 $SCAP_DB "PRAGMA integrity_check;"`
-    test_sql_exit "Could not check SCAP database integrity"
-  done
-  if [ "$DB_INTEGRITY" != "ok" ]
-  then
-    DB_BROKEN=1
-    log_warning "Database integrity check failed."
-  fi
-}
 
-sql_pg () {
-  if [ "$#" -gt 0 ]
+  log_info "Calling openvasmd to check SCAP db"
+  if [ -x "@SBINDIR@/openvasmd" ]
   then
-    $PSQL -c "$1"
-  else
-    $PSQL -f -
-  fi
-  exit_code=$?
-  if [ 0 -ne "$exit_code" ]
-  then
-    log_err "psql exited with code $exit_code for sql: $1."
-    exit 1
-  fi
-}
-
-sql () {
-  if [ $POSTGRES -eq 1 ]
-  then
-    if [ "$#" -gt 0 ]
-    then
-      sql_pg "$1"
-    else
-      sql_pg $*
+    OK=`@SBINDIR@/openvasmd --check-scap-db`
+    if [ $? -ne 0 ] ; then
+      log_err "Calling openvasmd to check SCAP db... failed."
+      exit 1
+    fi
+    if [ "$OK" = "1" ]; then
+      log_notice "Purged corrupted database."
+      DB_BROKEN=1
     fi
   else
-    if [ "$#" -gt 0 ]
-    then
-      $SQLITE $SCAP_DB "$1"
-    else
-      $SQLITE $SCAP_DB $*
-    fi
-  fi
-}
-
-scap_db_remove () {
-  if [ $POSTGRES -eq 1 ] ;
-  then
-    sql_pg "DROP SCHEMA IF EXISTS scap CASCADE;"
-  else
-    rm -f $SCAP_DB
-  fi
-}
-
-reinit () {
-  log_notice "Reinitialization of the database necessary."
-  scap_db_remove
-  reset_sql_tries
-  until [ "$try_sql" -eq 0 ]
-  do
-    sql < $SCAP_RES_DIR/scap_db_init.sql
-    test_sql_exit "Could not reinitialize SCAP database"
-  done
-}
-
-db_migrate_9 () {
-  log_notice "Migrating database to version 9."
-  reset_sql_tries
-  until [ "$try_sql" -eq 0 ]
-  do
-    $SQLITE3 "$SCAP_DB" "DROP INDEX IF EXISTS afp_idx;
-                        CREATE INDEX afp_cpe_idx ON affected_products (cpe);
-                        CREATE INDEX afp_cve_idx ON affected_products (cve);
-                        UPDATE meta SET value = '9' WHERE name = 'database_version';"
-    test_sql_exit "Could not migrate SCAP database"
-  done
-  log_notice "Migration done."
-}
-
-db_migrate_10 () {
-  log_notice "Migrating database to version 10."
-  reset_sql_tries
-  until [ "$try_sql" -eq 0 ]
-  do
-    $SQLITE3 "$SCAP_DB" "DROP TRIGGER affected_delete;
-                        CREATE TRIGGER affected_delete AFTER DELETE ON affected_products
-                        BEGIN
-                          UPDATE cpes set max_cvss = 0.0 WHERE id = old.cpe;
-                          UPDATE cpes set cve_refs = cve_refs -1 WHERE id = old.cpe;
-                        END;
-                        UPDATE meta
-                          SET value = '10'
-                          WHERE name = 'database_version';"
-    test_sql_exit "Could not migrate SCAP database"
-  done
-  log_notice "Migration done."
-}
-
-db_migrate_11 () {
-  log_notice "Migrating database to version 11."
-  if [ 1 != "$REFRESH_PRIVATE_ONLY" ]
-  then
-    reset_sql_tries
-    until [ "$try_sql" -eq 0 ]
-    do
-      $SQLITE3 "$SCAP_DB"  "ALTER TABLE ovaldefs
-                             ADD COLUMN status TEXT;
-                            UPDATE meta
-                             SET value = '11'
-                            WHERE name = 'database_version';
-                           "
-      test_sql_exit "Could not migrate SCAP database"
-    done
-    REBUILD_OVAL=1
-    log_notice "Migration done."
-  else
-    log_err "Migration to version 11 requires refresh of all SCAP data. Aborting."
+    log_err "Command @SBINDIR@/openvasmd not found"
     exit 1
   fi
-}
-
-db_migrate_12 () {
-  log_notice "Migrating database to version 12."
-  if [ 1 != "$REFRESH_PRIVATE_ONLY" ]
-  then
-    reset_sql_tries
-    until [ "$try_sql" -eq 0 ]
-    do
-      $SQLITE3 "$SCAP_DB" "DROP TABLE ovaldefs;
-                           DROP INDEX IF EXISTS ovaldefs_idx;
-                           CREATE TABLE ovaldefs (
-                            id INTEGER PRIMARY KEY AUTOINCREMENT,
-                            uuid UNIQUE,
-                            name,
-                            comment,
-                            creation_time DATE,
-                            modification_time DATE,
-                            version INTEGER,
-                            deprecated BOOLEAN,
-                            def_class TEXT,
-                            title TEXT,
-                            description TEXT,
-                            xml_file TEXT,
-                            status TEXT
-                           );
-                           CREATE INDEX ovaldefs_idx ON ovaldefs (name);
-                           CREATE TABLE ovalfiles (
-                            id INTEGER PRIMARY KEY AUTOINCREMENT,
-                            xml_file TEXT UNIQUE
-                           );
-                           CREATE UNIQUE INDEX ovalfiles_idx ON ovalfiles (xml_file);
-                           CREATE TRIGGER ovalfiles_delete AFTER DELETE ON ovalfiles
-                           BEGIN
-                            DELETE FROM ovaldefs WHERE ovaldefs.xml_file = old.xml_file;
-                           END;
-                           UPDATE meta
-                            SET value = '12'
-                            WHERE name = 'database_version';
-                           "
-      test_sql_exit "Could not migrate SCAP database"
-    done
-    REBUILD_OVAL=1
-    log_notice "Migration done."
-  else
-    log_err "Migration to version 12 requires refresh of all SCAP data. Aborting."
-    exit 1
-  fi
-}
-
-db_migrate_13 () {
-  log_notice "Migrating database to version 13."
-  reset_sql_tries
-  until [ "$try_sql" -eq 0 ]
-  do
-    $SQLITE3 "$SCAP_DB" "ALTER TABLE cpes ADD COLUMN nvd_id;
-                         UPDATE cpes SET nvd_id = uuid, uuid = name;
-                         UPDATE meta
-                          SET value = '13'
-                          WHERE name = 'database_version';
-                        "
-    test_sql_exit "Could not migrate SCAP database"
-  done
-  log_notice "Migration done."
-}
-
-db_migrate_14 () {
-  log_notice "Migrating database to version 14."
-  reset_sql_tries
-  until [ "$try_sql" -eq 0 ]
-  do
-    $SQLITE3 "$SCAP_DB" "ALTER TABLE ovaldefs ADD COLUMN max_cvss FLOAT;
-                         ALTER TABLE ovaldefs ADD COLUMN cve_refs INTEGER;
-
-                         CREATE TABLE affected_ovaldefs (
-                          cve INTEGER NOT NULL,
-                          ovaldef INTEGER NOT NULL,
-                          FOREIGN KEY(cve) REFERENCES cves(id),
-                          FOREIGN KEY(ovaldef) REFERENCES ovaldefs(id)
-                         );
-                         CREATE INDEX aff_ovaldefs_def_idx
-                          ON affected_ovaldefs (ovaldef);
-                         CREATE INDEX aff_ovaldefs_cve_idx
-                          ON affected_ovaldefs (cve);
-
-                         DROP TRIGGER IF EXISTS cves_delete;
-                         CREATE TRIGGER cves_delete AFTER DELETE ON cves
-                         BEGIN
-                          DELETE FROM affected_products where cve = old.id;
-                          DELETE FROM affected_ovaldefs where cve = old.id;
-                         END;
-
-                         CREATE TRIGGER affected_ovaldefs_delete AFTER DELETE
-                          ON affected_ovaldefs
-                         BEGIN
-                          UPDATE ovaldefs
-                            SET max_cvss = 0.0
-                            WHERE id = old.ovaldef;
-                         END;
-
-                         UPDATE meta
-                          SET value = '14'
-                          WHERE name = 'database_version';
-                        "
-    test_sql_exit "Could not migrate SCAP database"
-  done
-  log_notice "Migration done."
-  REBUILD_OVAL=1
-}
-
-db_migrate_15 () {
-  log_notice "Migrating database to version 15."
-  reset_sql_tries
-  until [ "$try_sql" -eq 0 ]
-  do
-    $SQLITE3 "$SCAP_DB" "CREATE INDEX IF NOT EXISTS cpes_by_creation_time_idx
-                           ON cpes (creation_time);
-                         CREATE INDEX IF NOT EXISTS cpes_by_modification_time_idx
-                           ON cpes (modification_time);
-                         CREATE INDEX IF NOT EXISTS cpes_by_cvss
-                           ON cpes (max_cvss);
-
-                         CREATE INDEX IF NOT EXISTS cves_by_creation_time_idx
-                           ON cves (creation_time);
-                         CREATE INDEX IF NOT EXISTS cves_by_modification_time_idx
-                           ON cves (modification_time);
-                         CREATE INDEX IF NOT EXISTS cves_by_cvss
-                           ON cves (cvss);
-
-                         UPDATE meta
-                           SET value = '15'
-                           WHERE name = 'database_version';
-                        "
-    test_sql_exit "Could not migrate SCAP database"
-  done
-  log_notice "Migration done."
-}
-
-check_db_version () {
-  DB_VERSION=`sql "select value from ${SCHEMA}meta where name = 'database_version';" 2>/dev/null | tr -d '\n\r' || echo 0`
-  case "$DB_VERSION" in
-    0) reinit;;
-    1) reinit;;
-    2) reinit;;
-    3) reinit;;
-    4) reinit;;
-    5) reinit;;
-    6) reinit;;
-    7) reinit;;
-    8) if [ $POSTGRES -eq 1 ]
-       then
-         reinit
-       else
-         db_migrate_9
-         db_migrate_10
-         db_migrate_11
-         db_migrate_12
-         db_migrate_13
-         db_migrate_14
-         db_migrate_15
-       fi;;
-    9) if [ $POSTGRES -eq 1 ]
-       then
-         reinit
-       else
-         db_migrate_10
-         db_migrate_11
-         db_migrate_12
-         db_migrate_13
-         db_migrate_14
-         db_migrate_15
-       fi;;
-   10) if [ $POSTGRES -eq 1 ]
-       then
-         reinit
-       else
-         db_migrate_11
-         db_migrate_12
-         db_migrate_13
-         db_migrate_14
-         db_migrate_15
-        fi;;
-   11) if [ $POSTGRES -eq 1 ]
-       then
-         reinit
-       else
-         db_migrate_12
-         db_migrate_13
-         db_migrate_14
-         db_migrate_15
-       fi;;
-   12) if [ $POSTGRES -eq 1 ]
-       then
-         reinit
-       else
-         db_migrate_13
-         db_migrate_14
-         db_migrate_15
-       fi;;
-   13) if [ $POSTGRES -eq 1 ]
-       then
-         reinit
-       else
-         db_migrate_14
-         db_migrate_15
-       fi;;
-   14) if [ $POSTGRES -eq 1 ]
-       then
-         reinit
-       else
-         db_migrate_15
-       fi;;
-  esac
 }
 
 list_oval_files_sorted () {
@@ -837,580 +406,24 @@ do_help () {
   exit 0
 }
 
-scap_db_exists () {
-  if [ $POSTGRES -eq 1 ] ;
+update_scap_db () {
+  log_info "Calling openvasmd to update SCAP db"
+  if [ -x "@SBINDIR@/openvasmd" ]
   then
-    EXISTS=`sql_pg "SELECT exists (SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'scap');" 2>/tmp/ERR | tr -d '\n\r' || echo 0`
-    if [ "$EXISTS" = "f" ] ;
-    then
-      return 1;
+	if [ 0 = "$REFRESH_PRIVATE_ONLY" ]
+	then
+      @SBINDIR@/openvasmd --update-scap-db
+    else
+      @SBINDIR@/openvasmd --update-scap-db --refresh-private-only
+	fi
+    if [ $? -ne 0 ] ; then
+      log_err "Calling openvasmd to update SCAP db... failed."
+      exit 1
     fi
-    return 0;
-  elif [ -f "$SCAP_DB" ]
-  then
-    return 0;
-  fi
-  return 1;
-}
-
-ensure_sqlite3_wal_mode () {
-  if [ $POSTGRES -eq 1 ] ; then
-    return
-  fi
-  if [ ! -e $SCAP_DB ]
-  then
-    log_err "database missing, aborting synchronization."
+  else
+    log_err "Command @SBINDIR@/openvasmd not found"
     exit 1
   fi
-  reset_sql_tries
-  until [ "$try_sql" -eq 0 ]
-  do
-    DUMMY=`$SQLITE3 $SCAP_DB "PRAGMA journal_mode=WAL;"`
-    test_sql_exit "Could not set journal mode to WAL"
-  done
-}
-
-init_scap_db_update () {
-  log_info "Initialise database for update"
-
-  if scap_db_exists
-  then
-    log_info "Database exists already"
-
-    check_db_version
-    reset_sql_tries
-    until [ "$try_sql" -eq 0 ]
-    do
-      CVE_REFDATE=`sql "select max(modification_time) from ${SCHEMA}cves;"`
-      test_sql_exit "Could not get reference date for CVEs and CPEs"
-    done
-    ensure_sqlite3_wal_mode
-  else
-    log_notice "Initializing SCAP database."
-    reset_sql_tries
-    until [ "$try_sql" -eq 0 ]
-    do
-      sql < $SCAP_RES_DIR/scap_db_init.sql
-      test_sql_exit "Could not initialize SCAP database"
-    done
-    CVE_REFDATE=0
-  fi
-
-  reset_sql_tries
-  until [ "$try_sql" -eq 0 ]
-  do
-    DB_LASTUPDATE=`sql "select value from ${SCHEMA}meta where name = 'last_update';"`
-    test_sql_exit "Could not get last_update timestamp from database"
-  done
-
-  if [ -z "$CVE_REFDATE" ]
-  then
-    CVE_REFDATE=0
-  fi
-
-  if [ -z "$DB_LASTUPDATE" ];
-  then
-    # Happens when initial sync was aborted
-    log_warning "Inconsistent data. Resetting SCAP database."
-    scap_db_remove
-    reset_sql_tries
-    until [ "$try_sql" -eq 0 ]
-    do
-      sql < $SCAP_RES_DIR/scap_db_init.sql
-      test_sql_exit "Could not reinitialize SCAP database"
-    done
-    CVE_REFDATE=0
-    DB_LASTUPDATE=0
-  fi
-
-  updated_cpes=0
-  updated_cves=0
-  updated_ovaldefs=0
-}
-
-update_cvss () {
-  if [ 0 -ne $updated_cves ] || [ 0 -ne $updated_cpes ]
-  then
-    log_info "Updating CVSS scores and CVE counts for CPEs"
-    reset_sql_tries
-    until [ "$try_sql" -eq 0 ]
-    do
-      sql "
-      ${RECURSIVE_TRIGGERS_OFF}
-      UPDATE ${SCHEMA}cpes
-        SET max_cvss =
-            (
-              SELECT max(cvss)
-              FROM ${SCHEMA}cves
-              WHERE id IN
-                (
-                  SELECT cve
-                  FROM ${SCHEMA}affected_products
-                  WHERE cpe=cpes.id
-                )
-            ),
-          cve_refs =
-            (
-              SELECT count(cve)
-              FROM ${SCHEMA}affected_products
-              WHERE cpe=cpes.id
-            );
-      "
-      test_sql_exit "Could not update CVSS scores for CPEs"
-    done
-  else
-    log_info "No CPEs or CVEs updated, skipping CVSS and CVE recount for CPEs."
-  fi
-
-  if [ 0 -ne $updated_cves ] || [ 0 -ne $updated_ovaldefs ]
-  then
-    log_info "Updating CVSS scores and for OVAL definitions"
-    reset_sql_tries
-    until [ "$try_sql" -eq 0 ]
-    do
-      sql "
-      ${RECURSIVE_TRIGGERS_OFF}
-      UPDATE ${SCHEMA}ovaldefs
-        SET max_cvss =
-            (
-              SELECT max(cvss)
-              FROM ${SCHEMA}cves
-              WHERE id IN
-                (
-                  SELECT cve
-                  FROM ${SCHEMA}affected_ovaldefs
-                  WHERE ovaldef=ovaldefs.id
-                )
-                AND cvss != 0.0
-            );
-      "
-      test_sql_exit "Could not update CVSS scores for OVAL definitions"
-    done
-  else
-    log_notice "No OVAL definitions or CVEs updated, skipping CVSS recount for OVAL definitions."
-  fi
-}
-
-update_placeholders () {
-  if [ 0 -ne $updated_cves ]
-  then
-    log_info "Updating placeholder CPEs"
-    reset_sql_tries
-    until [ "$try_sql" -eq 0 ]
-    do
-      sql "
-      UPDATE ${SCHEMA}cpes
-        SET creation_time =
-            (
-              SELECT min(creation_time)
-              FROM ${SCHEMA}cves
-              WHERE id IN
-                (
-                  SELECT cve
-                  FROM ${SCHEMA}affected_products
-                  WHERE cpe=cpes.id
-                )
-            ),
-            modification_time =
-            (
-              SELECT min(creation_time)
-              FROM ${SCHEMA}cves
-              WHERE id IN
-                (
-                  SELECT cve
-                  FROM ${SCHEMA}affected_products
-                  WHERE cpe=cpes.id
-                )
-            )
-        WHERE cpes.title IS NULL
-        AND (cpes.creation_time IS NULL OR cpes.modification_time IS NULL);
-      "
-      test_sql_exit "Could not update placeholder CPEs"
-    done
-  else
-    log_notice "No CVEs updated, skipping placeholder CPE update."
-  fi
-}
-
-update_scap_db_private () {
-  SCAP_PRIVATE_DIR="$SCAP_DIR/$PRIVATE_SUBDIR"
-  if [ -d "$SCAP_PRIVATE_DIR" ]
-  then
-    log_notice "Updating user defined data"
-
-    log_info "Updating user OVAL definitions"
-    xmlcount=0
-    xmlcount=$(find "$SCAP_PRIVATE_DIR/oval/" -name "*.xml" -type f 2> /dev/null | wc -l)
-    if [ -n "$xmlcount" ] && [ $xmlcount -ne 0 ]
-    then
-      if [ -z "$oval_files_sorted" ]
-      then
-        oval_files_sorted=`list_oval_files_sorted "$SCAP_DIR/oval/"`
-        ovaldir_xml_files=`find "$SCAP_DIR/oval/" -name "*.xml" -type f 2> /dev/null`
-
-        for xml_file in $ovaldir_xml_files
-        do
-          if [ -z `echo "$oval_files_sorted" | grep -x "$xml_file"` ]
-          then
-            log_warning "Cannot find valid OVAL timestamp in '$xml_file'."
-          fi
-        done
-      fi
-
-      oval_files_sorted_private=`list_oval_files_sorted "$SCAP_PRIVATE_DIR/oval/"`
-      ovaldir_xml_files=`find "$SCAP_PRIVATE_DIR/oval/" -name "*.xml" -type f 2> /dev/null`
-
-      for xml_file in $ovaldir_xml_files
-      do
-        if [ -z `echo "$oval_files_sorted_private" | grep -x "$xml_file"` ]
-        then
-          log_warning "Cannot find valid OVAL timestamp in '$xml_file'."
-        fi
-      done
-
-      for non_xml_file in `find "$SCAP_PRIVATE_DIR/oval/" -type f -and -not -name "*.xml" 2> /dev/null`
-      do
-        if [ "${non_xml_file%%.asc}" = "${non_xml_file}" ] || ! [ -f "${non_xml_file%%.asc}" ]
-        then
-          log_warning "Found non-XML and non-signature file '$non_xml_file'."
-        fi
-      done
-
-      if [ -n "$oval_files_sorted" ]
-      then
-        for ovalfile in $oval_files_sorted_private
-        do
-          filedate=`stat -c "%Y" "$ovalfile" | cut -d " " -f 1 | tr -d "-"`
-          filedate=$(( $filedate - ( $filedate % 60 ) ))
-          if [ $filedate -gt $DB_LASTUPDATE ] || [ 1 = "$REBUILD_OVAL" ]
-          then
-            oval_timestamp=`xsltproc "$SCAP_RES_DIR/oval_timestamp.xsl" "$ovalfile" | date "+%s" -f -`
-
-            if [ 1 = "$REBUILD_OVAL" ]
-            then
-              OVAL_REFDATE=0
-            else
-              reset_sql_tries
-              until [ "$try_sql" -eq 0 ]
-              do
-                OVAL_REFDATE=`sql "SELECT max(modification_time) FROM ${SCHEMA}ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';"`
-                test_sql_exit "Could not get OVAL reference date"
-              done
-              if [ -z "$OVAL_REFDATE" ]
-              then
-                OVAL_REFDATE=0
-              fi
-            fi
-
-            if [ $oval_timestamp -gt $OVAL_REFDATE ]
-            then
-              validation_message=`xsltproc "$SCAP_RES_DIR/oval_verify.xsl" "$ovalfile" 2>/dev/null`
-              validation_return="$?"
-              if [ 0 -ne $validation_return ] && [ -n "$validation_message" ]
-              then
-                if [ 10 -eq $validation_return ]
-                then
-                  log_warning "Validation of file '$ovalfile' failed: $validation_message"
-                else
-                  log_warning "Error parsing '$ovalfile'."
-                fi
-              else
-                if ! [ "$validation_message" = "file valid" ]
-                then
-                  log_warning "Validation of file '$ovalfile' failed: $validation_message"
-                else
-                  log_info "Updating $ovalfile"
-                  reset_sql_tries
-                  until [ "$try_sql" -eq 0 ]
-                  do
-                    exec 4>&1
-                    exit_codes=$(
-                      (
-                        set_interrupt_trap
-                        (xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" || echo "xsltproc:$?" >&3) | \
-                        (sql | sed '/^\s*$/d' || echo "sqlite3:$?" >&3)
-                      ) 3>&1 >&4
-                    )
-                    exec 4>&-
-                    test_exit_codes "Update of OVAL definitions failed at file '$ovalfile'"
-                  done
-                  updated_ovaldefs=1
-                fi
-              fi
-            else
-              log_info "Skipping $ovalfile, file has older timestamp than latest OVAL definition in database. (This is not an error)"
-            fi
-          else
-            log_info "Skipping $ovalfile, file is older than last revision. (This is not an error)"
-          fi
-        done
-      fi
-    else
-      log_info "No user defined OVAL files found"
-    fi
-
-    log_info "Cleaning up user OVAL data"
-    DIR_STR_LENGTH=$((`echo "$SCAP_DIR" | wc -c` + 1))
-
-    oval_files_shortened=""
-    if [ 0 != "$xmlcount" ]
-    then
-      for ovalfile in $oval_files_sorted_private
-      do
-        oval_files_shortened=$oval_files_shortened"', '"`echo $ovalfile | cut -c ${DIR_STR_LENGTH}- `
-      done
-      oval_files_shortened=${oval_files_shortened##"', "}"'"
-    fi
-
-    oval_files_clause=""
-    if [ ! -z "$oval_files_shortened" ]
-    then
-      oval_files_clause="AND (xml_file NOT IN ($oval_files_shortened))"
-    fi
-
-    reset_sql_tries
-    until [ "$try_sql" -eq 0 ]
-    do
-      deleted=`sql "SELECT DISTINCT xml_file FROM ${SCHEMA}ovaldefs WHERE (xml_file NOT LIKE 'oval/%') $oval_files_clause;"`
-      test_sql_exit "Could not get list of deleted OVAL XML files"
-    done
-    if [ -n "$deleted" ]
-    then
-      log_notice "Removing definitions formerly inserted from: $deleted"
-      reset_sql_tries
-      until [ "$try_sql" -eq 0 ]
-      do
-        sql "DELETE FROM ${SCHEMA}ovaldefs WHERE (xml_file NOT LIKE 'oval/%') $oval_files_clause;"
-        test_sql_exit "Could not remove deleted OVAL definitions from database"
-      done
-    fi
-
-    # TODO: This is not quite accurate as it uses the timestamp of the non-private data.
-    LAST_UPDATE_TIMESTAMP=`sed 's/^\(.\{8\}\)/\1 /' $TIMESTAMP | date +%s -f -`
-
-    reset_sql_tries
-    until [ "$try_sql" -eq 0 ]
-    do
-      sql "UPDATE ${SCHEMA}meta SET value ='$LAST_UPDATE_TIMESTAMP' WHERE name = 'last_update';"
-      test_sql_exit "Could not update last_update timestamp in database"
-    done
-  else
-    log_notice "No user data directory '$SCAP_PRIVATE_DIR' found."
-  fi
-}
-
-update_scap_db() {
-  init_scap_db_update
-
-  if [ 0 = "$REFRESH_PRIVATE_ONLY" ]
-  then
-    log_notice "Updating data from feed"
-    CPEBASE="$SCAP_DIR/official-cpe-dictionary_v2.2.xml"
-    if [ -e $CPEBASE ]
-    then
-      filedate=`stat -c "%Y" "$CPEBASE" | cut -d " " -f 1 | tr -d "-"`
-      filedate=$(( $filedate - ( $filedate % 60 ) ))
-      if [ $filedate -gt $DB_LASTUPDATE ]
-      then
-        log_info "Updating CPEs"
-        filesize=`stat -c "%s" "$CPEBASE"`
-        if [ "0" -ne "$SPLIT_PART_SIZE" ] && [ "$filesize" -gt $(($SPLIT_PART_SIZE * 1024))  ]
-        then
-          log_info "File is larger than ${SPLIT_PART_SIZE}k. Splitting into multiple parts"
-          "$SCAP_RES_DIR/xml_split" "$CPEBASE" -M "$SPLIT_PART_SIZE" -o "$SYNC_TMP_DIR"
-          cpefile_nodir=${CPEBASE##*/}
-          for cpepart in `find "$SYNC_TMP_DIR" -path "$SYNC_TMP_DIR/${cpefile_nodir%%.xml}.*.xml" 2> /dev/null | sort`
-          do
-            log_info "Updating part $cpepart"
-            reset_sql_tries
-            until [ "$try_sql" -eq 0 ]
-            do
-              exec 4>&1
-              exit_codes=$(
-                (
-                  set_interrupt_trap
-                  (sed 's/&/&amp;/g' $cpepart || echo "sed:$?" >&3 ) | \
-                  (xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cpe_youngerthan.xsl - || echo "xsltproc:$?" >&3) | \
-                  (xsltproc $SCAP_RES_DIR/cpe_update.xsl - || echo "xsltproc:$?" >&3) | \
-                  (sql | sed '/^\s*$/d' || echo "sqlite3:$?" >&3) \
-                ) 3>&1 >&4
-              )
-              exec 4>&-
-              test_exit_codes "Update of CPEs failed"
-            done
-          done
-        else
-          reset_sql_tries
-          until [ "$try_sql" -eq 0 ]
-          do
-            exec 4>&1
-            exit_codes=$(
-              (
-                set_interrupt_trap
-                (sed 's/&/&amp;/g' $CPEBASE || echo "sed:$?" >&3 ) | \
-                (xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cpe_youngerthan.xsl - || echo "xsltproc:$?" >&3) | \
-                (xsltproc $SCAP_RES_DIR/cpe_update.xsl - || echo "xsltproc:$?" >&3) | \
-                (sql | sed '/^\s*$/d' || echo "sqlite3:$?" >&3) \
-              ) 3>&1 >&4
-            )
-            exec 4>&-
-            test_exit_codes "Update of CPEs failed"
-          done
-        fi
-        updated_cpes=1
-      else
-        log_info "Skipping CPEs, file is older than last revision (this is not an error)."
-      fi
-    else
-      log_warning "No CPE dictionary found in $SCAP_DIR"
-    fi
-
-    xmlcount=$(ls $SCAP_DIR/nvdcve-2.0-*.xml 2> /dev/null | wc -l)
-    if [ $xmlcount -ne 0 ]
-    then
-      for cvefile in $SCAP_DIR/nvdcve-2.0-*.xml
-      do
-        [ -e "$cvefile" ] || break  # no file found
-        filedate=`stat -c "%Y" "$cvefile" | cut -d " " -f 1 | tr -d "-"`
-        filedate=$(( $filedate - ( $filedate % 60 ) ))
-        if [ $filedate -gt $DB_LASTUPDATE ]
-        then
-          log_info "Updating $cvefile"
-
-          filesize=`stat -c "%s" "$cvefile"`
-          if [ "0" -ne "$SPLIT_PART_SIZE" ] && [ "$filesize" -gt $(($SPLIT_PART_SIZE * 1024)) ]
-          then
-            log_info "File is larger than ${SPLIT_PART_SIZE}k. Splitting into multiple parts"
-            "$SCAP_RES_DIR/xml_split" "$cvefile" -M "$SPLIT_PART_SIZE" -o "$SYNC_TMP_DIR"
-            cvefile_nodir="${cvefile##*/}"
-            for cvepart in `find "$SYNC_TMP_DIR" -path "$SYNC_TMP_DIR/${cvefile_nodir%%.xml}.*.xml" 2> /dev/null | sort`
-            do
-              log_info "Updating part $cvepart"
-              reset_sql_tries
-              until [ "$try_sql" -eq 0 ]
-              do
-                exec 4>&1
-                exit_codes=$(
-                  (
-                    set_interrupt_trap
-                    (xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvepart || echo "xsltproc:$?" >&3) | \
-                    (xsltproc $SCAP_RES_DIR/cve_update.xsl - || echo "xsltproc:$?" >&3) | \
-                    (sql | sed '/^\s*$/d' || echo "sqlite3:$?" >&3) \
-                  ) 3>&1 >&4
-                )
-                exec 4>&-
-                rm "$cvepart"
-                test_exit_codes "Update of CVEs failed in part '$cvepart'"
-              done
-            done
-          else
-            reset_sql_tries
-            until [ "$try_sql" -eq 0 ]
-            do
-              exec 4>&1
-              exit_codes=$(
-                (
-                  set_interrupt_trap
-                  (xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvefile || echo "xsltproc:$?" >&3) | \
-                  (xsltproc $SCAP_RES_DIR/cve_update.xsl - || echo "xsltproc:$?" >&3) | \
-                  (sql | sed '/^\s*$/d' || echo "sqlite3:$?" >&3) \
-                ) 3>&1 >&4
-              )
-              exec 4>&-
-              test_exit_codes "Update of CVEs failed in file '$cvefile'"
-            done
-            updated_cves=1
-          fi
-
-        else
-          log_info "Skipping $cvefile, file is older than last revision (this is not an error)."
-        fi
-      done
-    else
-      log_warning "No CVEs found in $SCAP_DIR."
-    fi
-
-    log_info "Updating OVAL data"
-    xmlcount=$(find "$SCAP_DIR/oval/" -name "*.xml" -type f 2> /dev/null | wc -l)
-    if [ $xmlcount -ne 0 ]
-    then
-      oval_files_sorted=`list_oval_files_sorted "$SCAP_DIR/oval/"`
-      ovaldir_xml_files=`find "$SCAP_DIR/oval/" -name "*.xml" -type f 2> /dev/null`
-
-      for xml_file in $ovaldir_xml_files
-      do
-        if [ -z `echo "$oval_files_sorted" | grep -x "$xml_file"` ]
-        then
-          log_warning "Cannot find valid OVAL timestamp in '$xml_file'."
-        fi
-      done
-
-      for ovalfile in $oval_files_sorted
-      do
-        filedate=`stat -c "%Y" "$ovalfile" | cut -d " " -f 1 | tr -d "-"`
-        filedate=$(( $filedate - ( $filedate % 60 ) ))
-        if [ $filedate -gt $DB_LASTUPDATE ] || [ 1 = "$REBUILD_OVAL" ]
-        then
-          oval_timestamp=`xsltproc "$SCAP_RES_DIR/oval_timestamp.xsl" "$ovalfile" | date "+%s" -f -`
-
-          if [ 1 = "$REBUILD_OVAL" ]
-          then
-            OVAL_REFDATE=0
-          else
-            reset_sql_tries
-            until [ "$try_sql" -eq 0 ]
-            do
-              OVAL_REFDATE=`sql "SELECT max(modification_time) FROM ${SCHEMA}ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';"`
-              test_sql_exit "Could not get OVAL reference date from database"
-            done
-            if [ -z "$OVAL_REFDATE" ]
-            then
-              OVAL_REFDATE=0
-            fi
-          fi
-
-          if [ $oval_timestamp -gt $OVAL_REFDATE ]
-          then
-            log_info "Updating $ovalfile"
-            reset_sql_tries
-            until [ "$try_sql" -eq 0 ]
-            do
-              exec 4>&1
-              exit_codes=$(
-                (
-                  set_interrupt_trap
-                  (xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" || echo "xsltproc:$?" >&3) | \
-                  (sql | sed '/^\s*$/d' || echo "sqlite3:$?" >&3)
-                ) 3>&1 >&4
-              )
-              exec 4>&-
-              test_exit_codes "Update of OVAL definitions failed at file '$ovalfile'"
-            done
-            updated_ovaldefs=1
-          else
-            log_info "Skipping $ovalfile, file has older timestamp than latest OVAL definition in database. (This is not an error)"
-          fi
-        else
-          log_info "Skipping $ovalfile, file is older than last revision (this is not an error)."
-        fi
-      done
-    else
-      log_warning "No XML files found in $SCAP_DIR/oval/."
-    fi
-  fi
-
-  update_scap_db_private
-  update_cvss
-  update_placeholders
-
-  LAST_UPDATE_TIMESTAMP=`sed 's/^\(.\{8\}\)/\1 /' $TIMESTAMP | env TZ="UTC" date +%s -f -`
-
-  reset_sql_tries
-  until [ "$try_sql" -eq 0 ]
-  do
-    sql "UPDATE ${SCHEMA}meta SET value ='$LAST_UPDATE_TIMESTAMP' WHERE name = 'last_update';"
-    test_sql_exit "Could not update last_update timestamp in database"
-  done
 }
 
 do_rsync_community_feed () {
@@ -1509,29 +522,6 @@ do_self_test () {
     SELFTEST_STDERR=0
   fi
 
-  if [ $POSTGRES -eq 1 ] ;
-  then
-    POSTGRESQL=`command -v psql`
-    if [ -z "$POSTGRESQL" ]; then
-      if [ 0 -ne $SELFTEST_STDERR ]
-      then
-        echo "psql not found (required)." 1>&2
-      fi
-      log_err "psql not found (required)."
-      SELFTEST_FAIL=1
-    fi
-  else
-    SQLITE=`command -v sqlite3`
-    if [ -z "$SQLITE" ]; then
-      if [ 0 -ne $SELFTEST_STDERR ]
-      then
-        echo "sqlite3 not found (required)." 1>&2
-      fi
-      log_err "sqlite3 not found (required)."
-      SELFTEST_FAIL=1
-    fi
-  fi
-
   if [ -z "$RSYNC" ]
   then
     if [ 0 -ne $SELFTEST_STDERR ]
@@ -1543,19 +533,6 @@ do_self_test () {
   fi
 }
 
-check_alerts (){
-  log_info "Calling openvasmd to check for alerts"
-  if [ -x "@SBINDIR@/openvasmd" ]
-  then
-    @SBINDIR@/openvasmd --check-alerts
-  else
-    log_warning "Command openvasmd not found"
-  fi
-}
-
-log_info "Split size for very large files is $SPLIT_PART_SIZE kBytes (0 = no splitting)"
-
-psql_setup "tasks"
 while test $# -gt 0; do
  case "$1" in
         --version)
@@ -1577,21 +554,6 @@ while test $# -gt 0; do
         --help)
           do_help
           exit 0
-          ;;
-        --database)
-          if [ $POSTGRES -eq 1 ] ;
-          then
-            shift
-            if [ $# -gt 0 ]; then
-              psql_setup $1
-            else
-              echo "[e] --database argument missing"
-              exit 1
-            fi
-          else
-            echo "[e] --database option available only for Postgres"
-            exit 1
-          fi
           ;;
         --verbose)
           VERBOSE=1
@@ -1647,12 +609,30 @@ then
   REFRESH_ONLY=1
 fi
 
+is_db_broken () {
+  DB_BROKEN=0
+
+  log_info "Calling openvasmd to check SCAP db"
+  if [ -x "@SBINDIR@/openvasmd" ]
+  then
+    OK=`@SBINDIR@/openvasmd --check-scap-db`
+    if [ $? -ne 0 ] ; then
+      log_err "Calling openvasmd to check SCAP db... failed."
+      exit 1
+    fi
+    if [ "$OK" = "1" ]; then
+      log_notice "Purged corrupted database."
+      DB_BROKEN=1
+    fi
+  else
+    log_err "Command @SBINDIR@/openvasmd not found"
+    exit 1
+  fi
+}
+
 is_db_broken
-if [ $DB_BROKEN -eq 1 ]
+if [ $DB_BROKEN -ne 1 ]
 then
-  log_notice "Purging corrupted database."
-  scap_db_remove
-else
   is_feed_current
   if [ $FEED_CURRENT -eq 1 ]
   then
@@ -1661,6 +641,5 @@ else
   fi
 fi
 sync_scapdata
-check_alerts
 
 exit 0
