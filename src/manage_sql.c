@@ -51,8 +51,10 @@
 #include <locale.h>
 #include <pwd.h>
 #include <stdlib.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/un.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <sys/time.h>
@@ -46838,6 +46840,73 @@ osp_get_details_from_iterator (iterator_t *iterator, char **desc,
 }
 
 /**
+ * @brief Connect a UNIX socket.
+ *
+ * @param[in]  path  Path.
+ *
+ * @return Socket, or -1 on error.
+ */
+static int
+connect_unix (const gchar *path)
+{
+  struct sockaddr_un address;
+  int sock;
+
+  /* Make socket. */
+
+  sock = socket (AF_UNIX, SOCK_STREAM, 0);
+  if (sock == -1)
+    return -1;
+
+  /* Connect to server. */
+
+  address.sun_family = AF_UNIX;
+  strncpy (address.sun_path, path, sizeof (address.sun_path) - 1);
+  if (connect (sock, (struct sockaddr *) &address, sizeof (address)) == -1)
+    {
+      close (sock);
+      return -1;
+    }
+
+  return sock;
+}
+
+/**
+ * @brief Connect to an address.
+ *
+ * @param[out]  connection  Connection.
+ * @param[out]  address     Address.
+ * @param[out]  port        Port.
+ *
+ * @return 0 success, -1 failed to connect.
+ */
+static int
+connection_open (gvm_connection_t *connection,
+                 const gchar *address,
+                 int port)
+{
+  if (address == NULL)
+    return -1;
+
+  connection->tls = *address != '/';
+
+  if (connection->tls)
+    {
+      connection->socket = gvm_server_open (&connection->session,
+                                            address,
+                                            port);
+      connection->credentials = NULL;
+    }
+  else
+    connection->socket = connect_unix (address);
+
+  if (connection->socket == -1)
+    return -1;
+
+  return 0;
+}
+
+/**
  * @brief Verify a scanner.
  *
  * @param[in]   scanner_id  Scanner UUID.
@@ -46862,7 +46931,30 @@ verify_scanner (const char *scanner_id, char **version)
       return 1;
     }
   g_free (get.id);
-  if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OSP)
+  if (scanner_iterator_type (&scanner) == SCANNER_TYPE_GMP)
+    {
+      gvm_connection_t connection;
+      const char *host;
+      int port;
+
+      host = scanner_iterator_host (&scanner);
+      port = scanner_iterator_port (&scanner);
+      if (host == NULL)
+        return -1;
+
+      if (connection_open (&connection, host, port))
+        return 2;
+
+      if (gmp_ping_c (&connection, 0, version))
+        {
+          gvm_connection_close (&connection);
+          return 2;
+        }
+      g_debug ("%s: *version: %s", __FUNCTION__, *version);
+      gvm_connection_close (&connection);
+      return 0;
+    }
+  else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OSP)
     {
       int ret = osp_get_version_from_iterator (&scanner, NULL, version, NULL,
                                                NULL, NULL, NULL);
