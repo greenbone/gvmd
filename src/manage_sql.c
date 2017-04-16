@@ -53781,8 +53781,11 @@ modify_permission (const char *permission_id, const char *name_arg,
       if (resource_type && resource_id && strcmp (resource_id, ""))
         cache_permissions_for_resource (resource_type, resource, NULL);
 
-      if (old_resource && ((resource != old_resource)
-          || strcmp (old_resource_type, resource_type)))
+      if (old_resource
+          && old_resource_type
+          && ((resource != old_resource)
+              || (resource_type
+                  && strcmp (old_resource_type, resource_type))))
         cache_permissions_for_resource (old_resource_type, old_resource, NULL);
     }
 

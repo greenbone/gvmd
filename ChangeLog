@@ -1,5 +1,10 @@
 2017-04-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (modify_permission): In the last cache condition, check
+	every variable before using it.
+
+2017-04-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (modify_permission): Check resource_ variables instead
 	of new_resource_ variables.  I think this was the intention, because
 	resource_type and resource are being passed to the cache function.
