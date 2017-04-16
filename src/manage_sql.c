@@ -53641,6 +53641,8 @@ modify_permission (const char *permission_id, const char *name_arg,
       return 99;
     }
 
+  /* Find the permission. */
+
   permission = 0;
   /* There are no permissions on permissions, so no need for the
    * "_with_permission" version. */
@@ -53656,7 +53658,8 @@ modify_permission (const char *permission_id, const char *name_arg,
       return 1;
     }
 
-  /* Check if it's a command-level permission on a predefined role. */
+  /* Refuse to modify command-level permissions on predefined roles. */
+
   existing_subject_type = permission_subject_type (permission);
   resource = permission_resource (permission);
   subject = permission_subject (permission);
@@ -53671,6 +53674,8 @@ modify_permission (const char *permission_id, const char *name_arg,
       return 99;
     }
 
+  /* Set the comment first, to make things easier. */
+
   if (comment)
     {
       gchar *quoted_comment;
@@ -53684,6 +53689,8 @@ modify_permission (const char *permission_id, const char *name_arg,
            permission);
       g_free (quoted_comment);
     }
+
+  /* Check the arguments. */
 
   new_name = name_arg ? NULL : permission_name (permission);
   if (resource_type_arg && resource_id_arg && strcmp (resource_id_arg, "0"))
@@ -53733,6 +53740,8 @@ modify_permission (const char *permission_id, const char *name_arg,
       return ret;
     }
 
+  /* Modify the permission. */
+
   assert (subject);
   assert ((resource_id == new_resource_id)
           || (resource_id == resource_id_arg)
@@ -53763,6 +53772,8 @@ modify_permission (const char *permission_id, const char *name_arg,
        subject,
        permission);
 
+  /* Update permission caches according to the modifications. */
+
   if (strcasecmp (name, "super") == 0 || strcasecmp (old_name, "super") == 0)
     cache_all_permissions_for_users (NULL);
   else
@@ -53774,6 +53785,8 @@ modify_permission (const char *permission_id, const char *name_arg,
           || strcmp (old_resource_type, resource_type)))
         cache_permissions_for_resource (old_resource_type, old_resource, NULL);
     }
+
+  /* Cleanup. */
 
   g_free (quoted_name);
   free (new_resource_type);

@@ -1,5 +1,10 @@
 2017-04-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (modify_permission): Add comments to try make this
+	easier to understand.
+
+2017-04-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (connect_unix, connection_open): New functions.
 	(verify_scanner): Add GMP scanner case.
 
