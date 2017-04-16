@@ -65752,6 +65752,9 @@ manage_update_scap_db (GSList *log_config, const gchar *database,
           return -1;
         }
     }
+  else
+    updated_scap_cves = updated_scap_cpes = updated_scap_ovaldefs = 0;
+
 
   g_info ("Updating user defined data.\n");
 

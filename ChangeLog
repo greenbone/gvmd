@@ -1,5 +1,10 @@
 2017-04-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_update_scap_db): Ensure flags are initialised
+	when syncing private only.
+
+2017-04-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (modify_permission): In the last cache condition, check
 	every variable before using it.
 
