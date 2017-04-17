@@ -2056,6 +2056,7 @@ create_tables ()
        "  condition integer,"
        "  method integer,"
        "  filter integer,"
+       "  active integer,"
        "  creation_time integer,"
        "  modification_time integer);");
 
@@ -2070,6 +2071,7 @@ create_tables ()
        "  method integer,"
        "  filter integer,"
        "  filter_location integer,"
+       "  active integer,"
        "  creation_time integer,"
        "  modification_time integer);");
 

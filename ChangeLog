@@ -1,3 +1,36 @@
+2017-04-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Catch a missed rename of LSC_CREDENTIAL to CREDENTIAL.  Hence increase
+	database version to 186.  Add database migration from version 186 to 187.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 187.
+
+	* src/manage_migrators.c (migrate_186_to_187): New function.
+
+	* src/gmp.c (create_alert_data_t, create_alert_data_reset)
+	(modify_alert_data_t, modify_alert_data_reset, client_state_t): Add
+	entries for active.
+	(gmp_xml_handle_start_element, gmp_xml_handle_end_element)
+	(gmp_xml_handle_text): Add ACTIVE to CREATE_ALERT and MODIFY_ALERT.
+	(handle_get_alerts): Add ACTIVE to GET_ALERTS.
+
+	* src/manage_pg.c (create_tables): Add active to alerts tables.
+
+	* src/manage_sqlite3.c (create_tables): Add active to alerts tables.
+
+	* src/manage_sql.c (create_alert, copy_alert, modify_alert)
+	(delete_alert): Handle the new alert active field.
+	(ALERT_ITERATOR_COLUMNS, ALERT_ITERATOR_TRASH_COLUMNS): Add active.
+	(alert_iterator_active): New function.
+	(init_task_iterator): Add alerts.active.  Qualify event.
+	(task_alert_iterator_active): New function.
+	(event): Only run the alert if it is active.
+	(manage_restore): Handle new active field.
+
+	* src/manage.h: Update headers accordingly.
+
+	* doc/db_postgres.sql (alerts, alerts_trash): Add active.
+
 2017-04-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_update_scap_db): Ensure flags are initialised

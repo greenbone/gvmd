@@ -989,6 +989,7 @@ create_config_data_reset (create_config_data_t *data)
  */
 typedef struct
 {
+  char *active;              ///< Whether the alert is active.
   char *comment;             ///< Comment.
   char *copy;                ///< UUID of alert to copy.
   char *condition;           ///< Condition for alert, e.g. "Always".
@@ -1011,6 +1012,7 @@ typedef struct
 static void
 create_alert_data_reset (create_alert_data_t *data)
 {
+  free (data->active);
   free (data->comment);
   free (data->copy);
   free (data->condition);
@@ -3179,6 +3181,7 @@ typedef struct
   char *event;                   ///< Event that will cause alert.
   array_t *event_data;           ///< Array of pointers. Extra data for event.
   char *filter_id;               ///< UUID of filter.
+  char *active;                  ///< Boolean.  Whether alert is active.
   char *condition;               ///< Condition for alert, e.g. "Always".
   array_t *condition_data;       ///< Array of pointers.  Extra data for condition.
   char *method;                  ///< Method of alert, e.g. "Email".
@@ -3199,6 +3202,7 @@ modify_alert_data_reset (modify_alert_data_t *data)
   free (data->name);
   free (data->comment);
   free (data->filter_id);
+  free (data->active);
   free (data->event);
   array_free (data->event_data);
   free (data->condition);
@@ -5061,6 +5065,7 @@ typedef enum
   CLIENT_CREATE_AGENT_INSTALLER_SIGNATURE,
   CLIENT_CREATE_AGENT_NAME,
   CLIENT_CREATE_ALERT,
+  CLIENT_CREATE_ALERT_ACTIVE,
   CLIENT_CREATE_ALERT_COMMENT,
   CLIENT_CREATE_ALERT_CONDITION,
   CLIENT_CREATE_ALERT_CONDITION_DATA,
@@ -5442,6 +5447,7 @@ typedef enum
   CLIENT_MODIFY_AGENT_COMMENT,
   CLIENT_MODIFY_AGENT_NAME,
   CLIENT_MODIFY_ALERT,
+  CLIENT_MODIFY_ALERT_ACTIVE,
   CLIENT_MODIFY_ALERT_COMMENT,
   CLIENT_MODIFY_ALERT_CONDITION,
   CLIENT_MODIFY_ALERT_CONDITION_DATA,
@@ -8126,6 +8132,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &modify_alert_data->filter_id);
             set_client_state (CLIENT_MODIFY_ALERT_FILTER);
           }
+        else if (strcasecmp ("ACTIVE", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_ALERT_ACTIVE);
         else if (strcasecmp ("CONDITION", element_name) == 0)
           set_client_state (CLIENT_MODIFY_ALERT_CONDITION);
         else if (strcasecmp ("METHOD", element_name) == 0)
@@ -9073,7 +9081,9 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         ELSE_ERROR ("create_config");
 
       case CLIENT_CREATE_ALERT:
-        if (strcasecmp ("COMMENT", element_name) == 0)
+        if (strcasecmp ("ACTIVE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_ALERT_ACTIVE);
+        else if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_ALERT_COMMENT);
         else if (strcasecmp ("COPY", element_name) == 0)
           set_client_state (CLIENT_CREATE_ALERT_COPY);
@@ -13746,7 +13756,9 @@ handle_get_alerts (gmp_parser_t *gmp_parser, GError **error)
           SEND_TO_CLIENT_OR_FAIL ("</tasks>");
         }
 
-      SEND_TO_CLIENT_OR_FAIL ("</alert>");
+      SENDF_TO_CLIENT_OR_FAIL ("<active>%i</active>"
+                               "</alert>",
+                               alert_iterator_active (&alerts));
       count++;
     }
   cleanup_iterator (&alerts);
@@ -21902,6 +21914,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               switch (create_alert (create_alert_data->name,
                                     create_alert_data->comment,
                                     create_alert_data->filter_id,
+                                    create_alert_data->active,
                                     event,
                                     create_alert_data->event_data,
                                     condition,
@@ -22055,6 +22068,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
+      CLOSE (CLIENT_CREATE_ALERT, ACTIVE);
       CLOSE (CLIENT_CREATE_ALERT, COMMENT);
       CLOSE (CLIENT_CREATE_ALERT, COPY);
       CLOSE (CLIENT_CREATE_ALERT, CONDITION);
@@ -25555,6 +25569,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                          modify_alert_data->name,
                          modify_alert_data->comment,
                          modify_alert_data->filter_id,
+                         modify_alert_data->active,
                          event,
                          modify_alert_data->event_data,
                          condition,
@@ -25727,6 +25742,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_ALERT, COMMENT);
       CLOSE (CLIENT_MODIFY_ALERT, NAME);
       CLOSE (CLIENT_MODIFY_ALERT, FILTER);
+      CLOSE (CLIENT_MODIFY_ALERT, ACTIVE);
       CLOSE (CLIENT_MODIFY_ALERT, EVENT);
       CLOSE (CLIENT_MODIFY_ALERT, CONDITION);
       CLOSE (CLIENT_MODIFY_ALERT, METHOD);
@@ -29742,6 +29758,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
               &create_credential_data->type);
 
 
+      APPEND (CLIENT_CREATE_ALERT_ACTIVE,
+              &create_alert_data->active);
+
       APPEND (CLIENT_CREATE_ALERT_COMMENT,
               &create_alert_data->comment);
 
@@ -30255,6 +30274,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_ALERT_COMMENT,
               &modify_alert_data->comment);
+
+      APPEND (CLIENT_MODIFY_ALERT_ACTIVE,
+              &modify_alert_data->active);
 
       APPEND (CLIENT_MODIFY_ALERT_EVENT,
               &modify_alert_data->event);

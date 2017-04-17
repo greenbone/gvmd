@@ -3435,11 +3435,12 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS alerts"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
        "  event INTEGER, condition INTEGER, method INTEGER, filter INTEGER,"
-       "  creation_time, modification_time);");
+       "  active INTEGER, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS alerts_trash"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
        "  event INTEGER, condition INTEGER, method INTEGER, filter INTEGER,"
-       "  filter_location INTEGER, creation_time, modification_time);");
+       "  filter_location INTEGER, active INTEGER, creation_time,"
+       "  modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS credentials"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
        "  creation_time, modification_time, type TEXT,"

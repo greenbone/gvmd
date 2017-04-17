@@ -83,6 +83,7 @@ CREATE TABLE alerts
   condition integer,
   method integer,
   filter integer,
+  active integer,
   creation_time date,
   modification_time date);
 
@@ -97,6 +98,7 @@ CREATE TABLE alerts_trash
   method integer,
   filter integer,
   filter_location integer,
+  active integer,
   creation_time date,
   modification_time date);
 

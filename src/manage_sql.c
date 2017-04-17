@@ -7493,6 +7493,7 @@ check_alert_params (event_t event, alert_condition_t condition,
  * @param[in]  name            Name of alert.
  * @param[in]  comment         Comment on alert.
  * @param[in]  filter_id       Filter.
+ * @param[in]  active          Whether the alert is active.
  * @param[in]  event           Type of event.
  * @param[in]  event_data      Type-specific event data.
  * @param[in]  condition       Event condition.
@@ -7514,7 +7515,7 @@ check_alert_params (event_t event, alert_condition_t condition,
  */
 int
 create_alert (const char* name, const char* comment, const char* filter_id,
-              event_t event, GPtrArray* event_data,
+              const char* active, event_t event, GPtrArray* event_data,
               alert_condition_t condition, GPtrArray* condition_data,
               alert_method_t method, GPtrArray* method_data,
               alert_t *alert)
@@ -7581,17 +7582,18 @@ create_alert (const char* name, const char* comment, const char* filter_id,
   quoted_comment = sql_quote (comment ?: "");
 
   sql ("INSERT INTO alerts (uuid, owner, name, comment, event, condition,"
-       " method, filter, creation_time, modification_time)"
+       " method, filter, active, creation_time, modification_time)"
        " VALUES (make_uuid (),"
        " (SELECT id FROM users WHERE users.uuid = '%s'),"
-       " '%s', '%s', %i, %i, %i, %llu, m_now (), m_now ());",
+       " '%s', '%s', %i, %i, %i, %llu, %i, m_now (), m_now ());",
        current_credentials.uuid,
        quoted_name,
        quoted_comment,
        event,
        condition,
        method,
-       filter);
+       filter,
+       active ? strcmp (active, "0") : 1);
 
   g_free (quoted_comment);
   g_free (quoted_name);
@@ -7778,7 +7780,7 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
   sql_begin_immediate ();
 
   ret = copy_resource_lock ("alert", name, comment, alert_id,
-                            "event, condition, method, filter",
+                            "event, condition, method, filter, active",
                             1, &new, &old);
   if (ret)
     {
@@ -7819,6 +7821,8 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
  * @param[in]   name            Name of alert.
  * @param[in]   comment         Comment on alert.
  * @param[in]   filter_id       Filter.
+ * @param[in]   active          Whether the alert is active.  NULL to leave it
+ *                              at the current value.
  * @param[in]   event           Type of event.
  * @param[in]   event_data      Type-specific event data.
  * @param[in]   condition       Event condition.
@@ -7841,9 +7845,10 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
  */
 int
 modify_alert (const char *alert_id, const char *name, const char *comment,
-              const char *filter_id, event_t event, GPtrArray *event_data,
-              alert_condition_t condition, GPtrArray *condition_data,
-              alert_method_t method, GPtrArray *method_data)
+              const char *filter_id, const char *active, event_t event,
+              GPtrArray *event_data, alert_condition_t condition,
+              GPtrArray *condition_data, alert_method_t method,
+              GPtrArray *method_data)
 {
   int index, ret;
   gchar *quoted_name, *quoted_comment, *item;
@@ -7929,11 +7934,15 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
        " name = '%s',"
        " comment = '%s',"
        " filter = %llu,"
+       " active = %s,"
        " modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_name,
        quoted_comment,
        filter,
+       active
+        ? (strcmp (active, "0") ? "1" : "0")
+        : "active",
        alert);
 
   g_free (quoted_comment);
@@ -8201,10 +8210,10 @@ delete_alert (const char *alert_id, int ultimate)
 
       sql ("INSERT INTO alerts_trash"
            " (uuid, owner, name, comment, event, condition, method, filter,"
-           "  filter_location, creation_time, modification_time)"
+           "  filter_location, active, creation_time, modification_time)"
            " SELECT uuid, owner, name, comment, event, condition, method,"
-           "        filter, " G_STRINGIFY (LOCATION_TABLE) ", creation_time,"
-           "        m_now ()"
+           "        filter, " G_STRINGIFY (LOCATION_TABLE) ", active,"
+           "        creation_time, m_now ()"
            " FROM alerts WHERE id = %llu;",
            alert);
 
@@ -8392,6 +8401,7 @@ alert_event (alert_t alert)
    { "method", NULL, KEYWORD_TYPE_INTEGER },                                  \
    { "filter", NULL, KEYWORD_TYPE_INTEGER },                                  \
    { G_STRINGIFY (LOCATION_TABLE), NULL, KEYWORD_TYPE_INTEGER },              \
+   { "active", NULL, KEYWORD_TYPE_INTEGER },                                  \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
  }
 
@@ -8406,6 +8416,7 @@ alert_event (alert_t alert)
    { "method", NULL, KEYWORD_TYPE_INTEGER },                                  \
    { "filter", NULL, KEYWORD_TYPE_STRING },                                   \
    { "filter_location", NULL, KEYWORD_TYPE_INTEGER},                          \
+   { "active", NULL, KEYWORD_TYPE_INTEGER },                                  \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
  }
 
@@ -8674,6 +8685,22 @@ alert_iterator_filter_readable (iterator_t* iterator)
 }
 
 /**
+ * @brief Return the active state from an alert.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Method of the alert or NULL if iteration is complete.
+ */
+int
+alert_iterator_active (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
+  return ret;
+}
+
+/**
  * @brief Initialise an alert data iterator.
  *
  * @param[in]  iterator   Iterator.
@@ -8779,9 +8806,9 @@ init_task_alert_iterator (iterator_t* iterator, task_t task, event_t event)
 
   if (task && event)
     init_iterator (iterator,
-                   "SELECT alerts.id, alerts.uuid, alerts.name"
+                   "SELECT alerts.id, alerts.uuid, alerts.name, alerts.active"
                    " FROM alerts, task_alerts"
-                   " WHERE task_alerts.task = %llu AND event = %i"
+                   " WHERE task_alerts.task = %llu AND alerts.event = %i"
                    " AND task_alerts.alert = alerts.id"
                    " AND %s;",
                    task,
@@ -8789,7 +8816,7 @@ init_task_alert_iterator (iterator_t* iterator, task_t task, event_t event)
                    owned_clause);
   else if (task)
     init_iterator (iterator,
-                   "SELECT alerts.id, alerts.uuid, alerts.name"
+                   "SELECT alerts.id, alerts.uuid, alerts.name, alerts.active"
                    " FROM alerts, task_alerts"
                    " WHERE task_alerts.task = %llu"
                    " AND task_alerts.alert = alerts.id"
@@ -8798,7 +8825,7 @@ init_task_alert_iterator (iterator_t* iterator, task_t task, event_t event)
                    owned_clause);
   else if (event)
     init_iterator (iterator,
-                   "SELECT alerts.id, alerts.uuid, alerts.name"
+                   "SELECT alerts.id, alerts.uuid, alerts.name, alerts.active"
                    " FROM alerts"
                    " WHERE event = %i"
                    " AND %s;",
@@ -8806,7 +8833,7 @@ init_task_alert_iterator (iterator_t* iterator, task_t task, event_t event)
                    owned_clause);
   else
     init_iterator (iterator,
-                   "SELECT alerts.id, alerts.uuid, alerts.name"
+                   "SELECT alerts.id, alerts.uuid, alerts.name, alerts.active"
                    " FROM alerts"
                    " WHERE %s;",
                    owned_clause);
@@ -8847,6 +8874,22 @@ DEF_ACCESS (task_alert_iterator_uuid, 1);
  *         cleanup_iterator.
  */
 DEF_ACCESS (task_alert_iterator_name, 2);
+
+/**
+ * @brief Get the active state from a task alert iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Active state.
+ */
+int
+task_alert_iterator_active (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, 3);
+  return ret;
+}
 
 /**
  * @brief Send an email.
@@ -12581,7 +12624,8 @@ event (task_t task, report_t report, event_t event, void* event_data)
   while (next (&alerts))
     {
       alert_t alert = task_alert_iterator_alert (&alerts);
-      if (event_applies (event, event_data, task, alert))
+      if (task_alert_iterator_active (&alerts)
+          && event_applies (event, event_data, task, alert))
         {
           alert_condition_t condition;
 
@@ -57085,9 +57129,9 @@ manage_restore (const char *id)
 
       sql ("INSERT INTO alerts"
            " (uuid, owner, name, comment, event, condition, method, filter,"
-           "  creation_time, modification_time)"
+           "  active, creation_time, modification_time)"
            " SELECT uuid, owner, name, comment, event, condition, method,"
-           "        filter, creation_time, modification_time"
+           "        filter, active, creation_time, modification_time"
            " FROM alerts_trash WHERE id = %llu;",
            resource);
 
@@ -65754,7 +65798,6 @@ manage_update_scap_db (GSList *log_config, const gchar *database,
     }
   else
     updated_scap_cves = updated_scap_cpes = updated_scap_ovaldefs = 0;
-
 
   g_info ("Updating user defined data.\n");
 

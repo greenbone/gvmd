@@ -14078,6 +14078,43 @@ migrate_185_to_186 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 186 to version 187.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_186_to_187 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 186. */
+
+  if (manage_db_version () != 186)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Alerts tables got "active" columns. */
+
+  sql ("ALTER TABLE alerts ADD COLUMN active INTEGER;");
+  sql ("UPDATE alerts SET active = 1;");
+
+  sql ("ALTER TABLE alerts_trash ADD COLUMN active INTEGER;");
+  sql ("UPDATE alerts_trash SET active = 1;");
+
+  /* Set the database version to 187. */
+
+  set_db_version (187);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -14278,6 +14315,7 @@ static migrator_t database_migrators[]
     {184, migrate_183_to_184},
     {185, migrate_184_to_185},
     {186, migrate_185_to_186},
+    {187, migrate_186_to_187},
     /* End marker. */
     {-1, NULL}};
 

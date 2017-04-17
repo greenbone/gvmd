@@ -511,16 +511,16 @@ int
 manage_check_alerts (GSList *, const gchar *);
 
 int
-create_alert (const char*, const char*, const char*, event_t, GPtrArray*,
-              alert_condition_t, GPtrArray*, alert_method_t, GPtrArray*,
-              alert_t*);
+create_alert (const char*, const char*, const char*, const char*, event_t,
+              GPtrArray*, alert_condition_t, GPtrArray*, alert_method_t,
+              GPtrArray*, alert_t*);
 
 int
 copy_alert (const char*, const char*, const char*, alert_t*);
 
 int
 modify_alert (const char*, const char*, const char*, const char*,
-              event_t, GPtrArray*, alert_condition_t, GPtrArray*,
+              const char*, event_t, GPtrArray*, alert_condition_t, GPtrArray*,
               alert_method_t, GPtrArray*);
 
 int
@@ -576,6 +576,9 @@ alert_iterator_filter_trash (iterator_t*);
 
 int
 alert_iterator_filter_readable (iterator_t*);
+
+int
+alert_iterator_active (iterator_t*);
 
 const char*
 alert_condition_name (alert_condition_t);
