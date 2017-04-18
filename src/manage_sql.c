@@ -1717,6 +1717,25 @@ keyword_free (keyword_t* keyword)
 }
 
 /**
+ * @brief Get whether a keyword is special (like "and").
+ *
+ * @param[in]  keyword  Keyword.
+ *
+ * @return 1 if special, else 0.
+ */
+int
+keyword_special (keyword_t *keyword)
+{
+  if (keyword->string)
+    return (strcmp (keyword->string, "and") == 0)
+           || (strcmp (keyword->string, "or") == 0)
+           || (strcmp (keyword->string, "not") == 0)
+           || (strcmp (keyword->string, "re") == 0)
+           || (strcmp (keyword->string, "regexp") == 0);
+  return 0;
+}
+
+/**
  * @brief Parse a filter column relation.
  *
  * @param[in]  relation  Filter relation.

@@ -3430,6 +3430,9 @@ struct keyword
  */
 typedef struct keyword keyword_t;
 
+int
+keyword_special (keyword_t *);
+
 const char *
 keyword_relation_symbol (keyword_relation_t);
 

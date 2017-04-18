@@ -1,3 +1,12 @@
+2017-04-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/gmp.c (buffer_get_filter_xml): Send an empty RELATION if the keyword
+	is special, like "and" or "regexp".
+
+	* src/manage_sql.c (keyword_special): New function.
+
+	* src/manage.h: Add header accordingly.
+
 2017-04-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* ChangeLog: Correct last entry.
