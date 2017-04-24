@@ -43264,6 +43264,8 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
   gchar *first_time_string, *duration_string, *period_string;
   gchar *period_months_string, *offset_string;
   schedule_t schedule;
+  time_t now, real_first_time, real_period, real_period_months, new_next_time;
+  iterator_t schedule_iter;
 
   if (schedule_id == NULL)
     return 4;
@@ -43374,10 +43376,44 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
        offset_string ? offset_string : "initial_offset",
        schedule);
 
-  sql ("UPDATE tasks SET schedule_next_time = "
-       " (SELECT first_time FROM schedules WHERE id = %llu)"
+  // Update scheduled next times for tasks
+  now = time (NULL);
+
+  init_iterator (&schedule_iter,
+                 "SELECT first_time, period, period_months"
+                 " FROM schedules"
+                 " WHERE id = %llu",
+                 schedule);
+
+  next (&schedule_iter);
+  real_first_time = (time_t) iterator_int64 (&schedule_iter, 0);
+  real_period = (time_t) iterator_int64 (&schedule_iter, 1);
+  real_period_months = (time_t) iterator_int64 (&schedule_iter, 2);
+  cleanup_iterator (&schedule_iter);
+
+  if (real_first_time > now)
+    {
+      new_next_time = real_first_time;
+    }
+  else if (real_period)
+    {
+      new_next_time = real_first_time
+                        + ((((now - real_first_time) / real_period) + 1)
+                           * real_period);
+    }
+  else if (real_period_months)
+    {
+      new_next_time = add_months (real_first_time,
+                                  months_between (real_first_time, now) + 1);
+    }
+  else
+    {
+      new_next_time = 0;
+    }
+
+  sql ("UPDATE tasks SET schedule_next_time = %ld"
        " WHERE schedule = %llu;",
-       schedule,
+       new_next_time,
        schedule);
 
   g_free (duration_string);
