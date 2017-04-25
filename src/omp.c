@@ -17984,12 +17984,6 @@ handle_get_schedules (omp_parser_t *omp_parser, GError **error)
           first_time = schedule_iterator_first_time (&schedules);
           next_time = schedule_iterator_next_time (&schedules);
 
-          first_time += schedule_iterator_initial_offset (&schedules)
-                          - time_offset (timezone, first_time);
-          if (next_time)
-            next_time += schedule_iterator_initial_offset (&schedules)
-                            - time_offset (timezone, next_time);
-
           /* Duplicate static string because there's an iso_time_tz below. */
           abbrev = NULL;
           iso = g_strdup (iso_time_tz (&first_time, timezone, &abbrev));
@@ -19031,7 +19025,7 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
             }
           else
             {
-              next_time = task_schedule_next_time_tz (index);
+              next_time = task_schedule_next_time (index);
 
               SENDF_TO_CLIENT_OR_FAIL ("<schedule id=\"%s\">"
                                        "<name>%s</name>"
@@ -19429,7 +19423,7 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
               task_scanner_type = 0;
               scanner_in_trash = 0;
             }
-          next_time = task_schedule_next_time_tz (index);
+          next_time = task_schedule_next_time (index);
           response = g_strdup_printf
                       ("<alterable>%i</alterable>"
                        "<config id=\"%s\">"

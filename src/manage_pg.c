@@ -153,6 +153,12 @@ manage_create_sql_functions ()
        " LANGUAGE C;",
        OPENVAS_LIB_INSTALL_DIR);
 
+  sql ("CREATE OR REPLACE FUNCTION next_time (integer, integer, integer, text)"
+       " RETURNS integer"
+       " AS '%s/openvasmd/pg/libmanage-pg-server', 'sql_next_time'"
+       " LANGUAGE C;",
+       OPENVAS_LIB_INSTALL_DIR);
+
   sql ("CREATE OR REPLACE FUNCTION valid_db_resource_type (text)"
        " RETURNS boolean"
        " AS '%s/openvasmd/pg/libmanage-pg-server', 'sql_valid_db_resource_type'"

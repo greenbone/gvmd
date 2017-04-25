@@ -32,27 +32,6 @@
 PG_MODULE_MAGIC;
 #endif
 
-PG_FUNCTION_INFO_V1 (sql_next_time);
-
-/**
- * @brief Get the next time given schedule times.
- *
- * This is a callback for a SQL function of three arguments.
- */
-Datum
-sql_next_time (PG_FUNCTION_ARGS)
-{
-  int32 first, period, period_months;
-
-  first = PG_GETARG_INT32 (0);
-  period = PG_GETARG_INT32 (1);
-  period_months = PG_GETARG_INT32 (2);
-
-  PG_RETURN_INT32 (next_time (first, period, period_months));
-}
-
-PG_FUNCTION_INFO_V1 (sql_max_hosts);
-
 /**
  * @brief Create a string from a portion of text.
  *
@@ -68,6 +47,41 @@ textndup (text *text_arg, int length)
   ret[length] = 0;
   return ret;
 }
+
+PG_FUNCTION_INFO_V1 (sql_next_time);
+
+/**
+ * @brief Get the next time given schedule times.
+ *
+ * This is a callback for a SQL function of three to four arguments.
+ */
+Datum
+sql_next_time (PG_FUNCTION_ARGS)
+{
+  int32 first, period, period_months;
+  char *timezone;
+  int32 ret;
+
+  first = PG_GETARG_INT32 (0);
+  period = PG_GETARG_INT32 (1);
+  period_months = PG_GETARG_INT32 (2);
+
+  if (PG_NARGS() < 4 || PG_ARGISNULL (3))
+    timezone = NULL;
+  else
+    {
+      text* timezone_arg;
+      timezone_arg = PG_GETARG_TEXT_P (3);
+      timezone = textndup (timezone_arg, VARSIZE (timezone_arg) - VARHDRSZ);
+    }
+
+  ret = next_time (first, period, period_months, timezone, 0);
+  if (PG_NARGS() >= 4)
+    pfree (timezone);
+  PG_RETURN_INT32 (ret);
+}
+
+PG_FUNCTION_INFO_V1 (sql_max_hosts);
 
 /**
  * @brief Return number of hosts.

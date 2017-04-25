@@ -1159,138 +1159,6 @@ iso_time_tz (time_t *epoch_time, const char *timezone, const char **abbrev)
 }
 
 /**
- * @brief Get the current offset from UTC of a timezone.
- *
- * @param[in]  zone  Timezone, or NULL for UTC.
- *
- * @return Seconds east of UTC.
- */
-long
-current_offset (const char *zone)
-{
-  gchar *tz;
-  long offset;
-  time_t now;
-  struct tm *now_broken;
-
-  if (zone == NULL)
-    return 0;
-
-  /* Store current TZ. */
-  tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
-
-  if (setenv ("TZ", zone, 1) == -1)
-    {
-      g_warning ("%s: Failed to switch to timezone", __FUNCTION__);
-      if (tz != NULL)
-        setenv ("TZ", tz, 1);
-      g_free (tz);
-      return 0;
-    }
-
-  tzset ();
-
-  time (&now);
-  now_broken = localtime (&now);
-  if (setenv ("TZ", "UTC", 1) == -1)
-    {
-      g_warning ("%s: Failed to switch to UTC", __FUNCTION__);
-      if (tz != NULL)
-        setenv ("TZ", tz, 1);
-      g_free (tz);
-      return 0;
-    }
-  tzset ();
-  offset = - (now - mktime (now_broken));
-
-  /* Revert to stored TZ. */
-  if (tz)
-    {
-      if (setenv ("TZ", tz, 1) == -1)
-        {
-          g_warning ("%s: Failed to switch to original TZ", __FUNCTION__);
-          g_free (tz);
-          return 0;
-        }
-    }
-  else
-    unsetenv ("TZ");
-
-  g_free (tz);
-  return offset;
-}
-
-/**
- * @brief Get the offset from UTC of a timezone at a particular time.
- *
- * @param[in]  zone  Timezone, or NULL for UTC.
- * @param[in]  time  Time.
- *
- * @return Seconds east of UTC.
- */
-long
-time_offset (const char *zone, time_t time)
-{
-  gchar *tz;
-  struct tm *time_broken;
-  int mins;
-  char buf[100];
-
-  if (zone == NULL || strcmp (zone, "UTC") == 0)
-    return 0;
-
-  /* Store current TZ. */
-  tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
-
-  if (setenv ("TZ", zone, 1) == -1)
-    {
-      g_warning ("%s: Failed to switch to timezone", __FUNCTION__);
-      if (tz != NULL)
-        setenv ("TZ", tz, 1);
-      g_free (tz);
-      return 0;
-    }
-
-  tzset ();
-
-  time_broken = localtime (&time);
-  if (strftime (buf, 100, "%z", time_broken) == 0)
-    {
-      g_warning ("%s: Failed to format timezone", __FUNCTION__);
-      if (tz != NULL)
-        setenv ("TZ", tz, 1);
-      g_free (tz);
-      return 0;
-    }
-
-  if (strlen (buf) > 3)
-    {
-      mins = atoi (buf);
-      mins /= 100;
-      mins *= 60;
-      mins += atoi (buf + 3);
-    }
-  else
-    mins = 0;
-
-  /* Revert to stored TZ. */
-  if (tz)
-    {
-      if (setenv ("TZ", tz, 1) == -1)
-        {
-          g_warning ("%s: Failed to switch to original TZ", __FUNCTION__);
-          g_free (tz);
-          return mins * 60;
-        }
-    }
-  else
-    unsetenv ("TZ");
-
-  g_free (tz);
-  return mins * 60;
-}
-
-/**
  * @brief Find a string in an array.
  *
  * @param[in]  array   Array.
@@ -17645,7 +17513,8 @@ set_task_schedule (task_t task, schedule_t schedule, int periods)
        " schedule_periods = %i,"
        " schedule_next_time = (SELECT next_time (first_time,"
        "                                         period,"
-       "                                         period_months)"
+       "                                         period_months,"
+       "                                         timezone)"
        "                       FROM schedules"
        "                       WHERE id = %llu),"
        " modification_time = m_now ()"
@@ -17675,7 +17544,8 @@ set_task_schedule_uuid (const gchar *task_id, schedule_t schedule, int periods)
        " schedule_periods = %i,"
        " schedule_next_time = (SELECT next_time (first_time,"
        "                                         period,"
-       "                                         period_months)"
+       "                                         period_months,"
+       "                                         timezone)"
        "                       FROM schedules"
        "                       WHERE id = %llu),"
        " modification_time = m_now ()"
@@ -17849,34 +17719,14 @@ task_schedule_periods_uuid (const gchar *task_id)
  *         has already run), otherwise 0.
  */
 int
-task_schedule_next_time_tz (task_t task)
+task_schedule_next_time (task_t task)
 {
   int next_time;
-  int ret;
-  iterator_t schedules;
-  get_data_t get;
-  schedule_t schedule;
-
-  schedule = task_schedule (task);
-  memset (&get, '\0', sizeof (get));
 
   next_time = sql_int ("SELECT schedule_next_time FROM tasks"
                        " WHERE id = %llu;",
                        task);
-  if (next_time == 0)
-    return 0;
 
-  get.id = schedule_uuid (schedule);
-  ret = init_schedule_iterator (&schedules, &get);
-  free (get.id);
-  if (ret)
-    return next_time;
-
-  if (next (&schedules))
-    next_time += schedule_iterator_initial_offset (&schedules)
-                  - time_offset (schedule_iterator_timezone (&schedules),
-                                 next_time);
-  cleanup_iterator (&schedules);
   return next_time;
 }
 
@@ -17886,7 +17736,7 @@ task_schedule_next_time_tz (task_t task)
  * @param[in]  task_id  Task UUID.
  */
 time_t
-task_schedule_next_time (const gchar *task_id)
+task_schedule_next_time_uuid (const gchar *task_id)
 {
   gchar *quoted_task_id;
   time_t ret;
@@ -46972,8 +46822,8 @@ schedule_info (schedule_t schedule, time_t *first_time, time_t *next_time,
    { "duration", NULL, KEYWORD_TYPE_INTEGER },                             \
    { "timezone", NULL, KEYWORD_TYPE_STRING },                              \
    { "initial_offset", NULL, KEYWORD_TYPE_INTEGER },                       \
-   { "next_time (first_time, period, period_months)",                      \
-     "next_run",                                                           \
+   { "next_time (first_time, period, period_months, timezone)",            \
+     "next_run" },                                                         \
      KEYWORD_TYPE_INTEGER },                                               \
    { "first_time", "first_run", KEYWORD_TYPE_INTEGER },                    \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                    \
@@ -47376,9 +47226,7 @@ task_schedule_iterator_start_due (iterator_t* iterator)
     return FALSE;
 
   run_status = task_run_status (task_schedule_iterator_task (iterator));
-  start_time = task_schedule_iterator_next_time (iterator)
-                + task_schedule_iterator_initial_offset (iterator)
-                - current_offset (task_schedule_iterator_timezone (iterator));
+  start_time = task_schedule_iterator_next_time (iterator);
 
   if ((run_status == TASK_STATUS_DONE
        || run_status == TASK_STATUS_INTERNAL_ERROR
@@ -47401,67 +47249,25 @@ task_schedule_iterator_start_due (iterator_t* iterator)
 gboolean
 task_schedule_iterator_stop_due (iterator_t* iterator)
 {
-  time_t period, period_months, duration;
+  time_t first, period, period_months, duration;
+  const char *timezone;
 
   if (iterator->done) return FALSE;
 
+  first = task_schedule_iterator_first_time (iterator);
   period = task_schedule_iterator_period (iterator);
   period_months = task_schedule_iterator_period_months (iterator);
   duration = task_schedule_iterator_duration (iterator);
+  timezone = task_schedule_iterator_timezone (iterator);
 
   if (duration)
     {
       report_t report;
+      task_status_t run_status;
+
       report = task_running_report (task_schedule_iterator_task (iterator));
       if (report && (report_scheduled (report) == 0))
         return FALSE;
-    }
-
-  if (period && duration)
-    {
-      task_status_t run_status;
-
-      run_status = task_run_status (task_schedule_iterator_task (iterator));
-
-      if (run_status == TASK_STATUS_RUNNING
-          || run_status == TASK_STATUS_REQUESTED)
-        {
-          time_t now, first, start;
-
-          now = time (NULL);
-          first = task_schedule_iterator_first_time (iterator)
-                   + task_schedule_iterator_initial_offset (iterator)
-                   - current_offset (task_schedule_iterator_timezone
-                                      (iterator));
-          start = first + (((now - first) / period) * period);
-          if ((start + duration) < now)
-            return TRUE;
-        }
-    }
-  else if (period_months && duration)
-    {
-      task_status_t run_status;
-
-      run_status = task_run_status (task_schedule_iterator_task (iterator));
-
-      if (run_status == TASK_STATUS_RUNNING
-          || run_status == TASK_STATUS_REQUESTED)
-        {
-          time_t now, first, start;
-
-          now = time (NULL);
-          first = task_schedule_iterator_first_time (iterator)
-                   + task_schedule_iterator_initial_offset (iterator)
-                   - current_offset (task_schedule_iterator_timezone
-                                      (iterator));
-          start = add_months (first, months_between (first, now));
-          if ((start + duration) < now)
-            return TRUE;
-        }
-    }
-  else if (duration)
-    {
-      task_status_t run_status;
 
       run_status = task_run_status (task_schedule_iterator_task (iterator));
 
@@ -47471,10 +47277,8 @@ task_schedule_iterator_stop_due (iterator_t* iterator)
           time_t now, start;
 
           now = time (NULL);
-          start = task_schedule_iterator_first_time (iterator)
-                   + task_schedule_iterator_initial_offset (iterator)
-                   - current_offset (task_schedule_iterator_timezone
-                                      (iterator));
+
+          start = next_time (first, period, period_months, timezone, -1);
           if ((start + duration) < now)
             return TRUE;
         }
@@ -47574,7 +47378,8 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
   gchar *first_time_string, *duration_string, *period_string;
   gchar *period_months_string, *offset_string;
   schedule_t schedule;
-  time_t now, real_first_time, real_period, real_period_months, new_next_time;
+  time_t real_first_time, real_period, real_period_months, new_next_time;
+  const char *real_timezone;
   iterator_t schedule_iter;
 
   if (schedule_id == NULL)
@@ -47687,10 +47492,8 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
        schedule);
 
   // Update scheduled next times for tasks
-  now = time (NULL);
-
   init_iterator (&schedule_iter,
-                 "SELECT first_time, period, period_months"
+                 "SELECT first_time, period, period_months, timezone"
                  " FROM schedules"
                  " WHERE id = %llu",
                  schedule);
@@ -47699,27 +47502,15 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
   real_first_time = (time_t) iterator_int64 (&schedule_iter, 0);
   real_period = (time_t) iterator_int64 (&schedule_iter, 1);
   real_period_months = (time_t) iterator_int64 (&schedule_iter, 2);
-  cleanup_iterator (&schedule_iter);
+  real_timezone = iterator_string (&schedule_iter, 3);
 
-  if (real_first_time > now)
-    {
-      new_next_time = real_first_time;
-    }
-  else if (real_period)
-    {
-      new_next_time = real_first_time
-                        + ((((now - real_first_time) / real_period) + 1)
-                           * real_period);
-    }
-  else if (real_period_months)
-    {
-      new_next_time = add_months (real_first_time,
-                                  months_between (real_first_time, now) + 1);
-    }
-  else
-    {
-      new_next_time = 0;
-    }
+  new_next_time = next_time (real_first_time,
+                             real_period,
+                             real_period_months,
+                             real_timezone,
+                             0);
+
+  cleanup_iterator (&schedule_iter);
 
   sql ("UPDATE tasks SET schedule_next_time = %ld"
        " WHERE schedule = %llu;",
@@ -65712,6 +65503,43 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
                                       " Missing severity scores added: %d.",
                                       missing_severity_changes);
 
+    }
+  else if (strcasecmp (name, "cleanup-schedule-times") == 0)
+    {
+      int changes;
+
+      sql_begin_exclusive ();
+
+      sql ("UPDATE tasks"
+           " SET schedule_next_time"
+           "   = (SELECT next_time (first_time,"
+           "                        period,"
+           "                        period_months,"
+           "                        timezone)"
+           "      FROM schedules"
+           "      WHERE schedules.id = tasks.schedule)"
+           " WHERE schedule_next_time != 0"
+           "   AND schedule_next_time"
+           "         = (SELECT next_time (first_time,"
+           "                              period,"
+           "                              period_months)"
+           "              FROM schedules"
+           "             WHERE schedules.id = tasks.schedule)"
+           "   AND schedule_next_time"
+           "         != (SELECT next_time (first_time,"
+           "                               period,"
+           "                               period_months,"
+           "                               timezone)"
+           "              FROM schedules"
+           "             WHERE schedules.id = tasks.schedule);");
+
+      changes = sql_changes();
+
+      sql_commit ();
+
+      success_text = g_strdup_printf ("Optimized: rebuild-report-cache."
+                                      " Due date updated for %d tasks.",
+                                      changes);
     }
   else if (strcasecmp (name, "rebuild-report-cache") == 0)
     {
