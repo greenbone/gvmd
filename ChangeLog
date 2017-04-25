@@ -1,5 +1,10 @@
 2017-04-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_utils.c (next_time): Reduce scope of first_offset_val and
+	current_offset_val and remove unnecessary assignments.
+
+2017-04-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Simplify scheduling by reusing functions for due times more and adding
 	DST offset to schedule_next_time of tasks instead of having to
 	recalculate it every time.  Add --optimize option to update the

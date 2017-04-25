@@ -289,16 +289,17 @@ next_time (time_t first, int period, int period_months, const char* timezone,
 {
   int periods_diff;
   time_t now = time (NULL);
-  long first_offset_val, current_offset_val, offset_diff;
+  long offset_diff;
   if (timezone)
     {
+      long first_offset_val, current_offset_val;
       first_offset_val = time_offset (timezone, first);
       current_offset_val = current_offset (timezone);
       offset_diff = current_offset_val - first_offset_val;
     }
   else
     {
-      first_offset_val = current_offset_val = offset_diff = 0;
+      offset_diff = 0;
     }
 
   if (first >= now)
