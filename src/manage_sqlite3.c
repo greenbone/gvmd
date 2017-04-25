@@ -596,14 +596,20 @@ sql_next_time (sqlite3_context *context, int argc, sqlite3_value** argv)
   time_t first;
   time_t period;
   int period_months;
+  const char *timezone;
 
-  assert (argc == 3);
+  assert (argc == 3 || argc == 4);
 
   first = sqlite3_value_int (argv[0]);
   period = sqlite3_value_int (argv[1]);
   period_months = sqlite3_value_int (argv[2]);
+  if (argc < 4 || sqlite3_value_type (argv[3]) == SQLITE_NULL)
+    timezone = NULL;
+  else
+    timezone = (char*) sqlite3_value_text (argv[3]);
 
-  sqlite3_result_int (context, next_time (first, period, period_months));
+  sqlite3_result_int (context,
+                      next_time (first, period, period_months, timezone, 0));
 }
 
 /**
@@ -1821,6 +1827,20 @@ manage_create_sql_functions ()
   if (sqlite3_create_function (task_db,
                                "next_time",
                                3,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_next_time,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create next_time", __FUNCTION__);
+      return -1;
+    }
+
+  if (sqlite3_create_function (task_db,
+                               "next_time",
+                               4,               /* Number of args. */
                                SQLITE_UTF8,
                                NULL,            /* Callback data. */
                                sql_next_time,

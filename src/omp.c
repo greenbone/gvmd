@@ -16330,12 +16330,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   first_time = schedule_iterator_first_time (&schedules);
                   next_time = schedule_iterator_next_time (&schedules);
 
-                  first_time += schedule_iterator_initial_offset (&schedules)
-                                 - time_offset (timezone, first_time);
-                  if (next_time)
-                    next_time += schedule_iterator_initial_offset (&schedules)
-                                   - time_offset (timezone, next_time);
-
                   /* Duplicate static string because there's an iso_time_tz below. */
                   abbrev = NULL;
                   iso = g_strdup (iso_time_tz (&first_time, timezone, &abbrev));
@@ -18046,7 +18040,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   task_scanner_name = g_strdup ("");
                   task_scanner_type = 0;
                 }
-              next_time = task_schedule_next_time_tz (index);
+              next_time = task_schedule_next_time (index);
               scanner = task_iterator_scanner (&tasks);
               response = g_strdup_printf
                           ("<alterable>%i</alterable>"
