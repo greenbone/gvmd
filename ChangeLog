@@ -1,5 +1,10 @@
 2017-04-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (filter_in_use, trash_filter_in_use): Check for the
+	condition data of tasks using the filter.
+
+2017-04-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_utils.c (next_time): Reduce scope of first_offset_val and
 	current_offset_val and remove unnecessary assignments.
 

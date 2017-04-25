@@ -56224,8 +56224,18 @@ delete_filter (const char *filter_id, int ultimate)
 int
 filter_in_use (filter_t filter)
 {
-  return !!sql_int ("SELECT count (*) FROM alerts WHERE filter = %llu;",
-                    filter);
+  return !!sql_int ("SELECT count (*) FROM alerts"
+                    " WHERE filter = %llu"
+                    "   OR (EXISTS (SELECT * FROM alert_condition_data"
+                    "             WHERE name = 'filter_id'"
+                    "             AND data = (SELECT uuid FROM filters"
+                    "                          WHERE id = %llu)"
+                    "             AND alert = alerts.id)"
+                    "       AND (condition = %i OR condition = %i))",
+                    filter,
+                    filter,
+                    ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
+                    ALERT_CONDITION_FILTER_COUNT_CHANGED);
 }
 
 /**
@@ -56239,9 +56249,21 @@ int
 trash_filter_in_use (filter_t filter)
 {
   return !!sql_int ("SELECT count (*) FROM alerts_trash"
-                    " WHERE filter = %llu"
-                    " AND filter_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-                    filter);
+                    " WHERE (filter = %llu"
+                    "        AND filter_location = "
+                                    G_STRINGIFY (LOCATION_TRASH) ")"
+                    "   OR (EXISTS (SELECT *"
+                    "               FROM alert_condition_data_trash"
+                    "               WHERE name = 'filter_id'"
+                    "                 AND data = (SELECT uuid"
+                    "                             FROM filters_trash"
+                    "                             WHERE id = %llu)"
+                    "                 AND alert = alerts_trash.id)"
+                    "       AND (condition = %i OR condition = %i))",
+                    filter,
+                    filter,
+                    ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
+                    ALERT_CONDITION_FILTER_COUNT_CHANGED);
 }
 
 /**
