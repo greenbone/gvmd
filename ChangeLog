@@ -1,5 +1,12 @@
 2017-04-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Backport r28280.
+
+	* src/manage_utils.c (next_time): Reduce scope of first_offset_val and
+	current_offset_val and remove unnecessary assignments.
+
+2017-04-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Backport r28277.
 
 	Simplify scheduling by reusing functions for due times more and adding
