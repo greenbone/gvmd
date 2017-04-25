@@ -37,6 +37,139 @@
  */
 
 /**
+ * @brief Get the offset from UTC of a timezone at a particular time.
+ *
+ * @param[in]  zone  Timezone, or NULL for UTC.
+ * @param[in]  time  Time.
+ *
+ * @return Seconds east of UTC.
+ */
+long
+time_offset (const char *zone, time_t time)
+{
+  gchar *tz;
+  struct tm *time_broken;
+  int mins;
+  char buf[100];
+
+  if (zone == NULL || strcmp (zone, "UTC") == 0)
+    return 0;
+
+  /* Store current TZ. */
+  tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
+
+  if (setenv ("TZ", zone, 1) == -1)
+    {
+      g_warning ("%s: Failed to switch to timezone", __FUNCTION__);
+      if (tz != NULL)
+        setenv ("TZ", tz, 1);
+      g_free (tz);
+      return 0;
+    }
+
+  tzset ();
+
+  time_broken = localtime (&time);
+  if (strftime (buf, 100, "%z", time_broken) == 0)
+    {
+      g_warning ("%s: Failed to format timezone", __FUNCTION__);
+      if (tz != NULL)
+        setenv ("TZ", tz, 1);
+      g_free (tz);
+      return 0;
+    }
+
+  if (strlen (buf) >= 3)
+    {
+      mins = atoi (buf);
+      mins /= 100;
+      mins *= 60;
+      mins += atoi (buf + 3);
+    }
+  else
+    mins = 0;
+
+  /* Revert to stored TZ. */
+  if (tz)
+    {
+      if (setenv ("TZ", tz, 1) == -1)
+        {
+          g_warning ("%s: Failed to switch to original TZ", __FUNCTION__);
+          g_free (tz);
+          return mins * 60;
+        }
+    }
+  else
+    unsetenv ("TZ");
+
+  g_free (tz);
+  return mins * 60;
+}
+
+/**
+ * @brief Get the current offset from UTC of a timezone.
+ *
+ * @param[in]  zone  Timezone, or NULL for UTC.
+ *
+ * @return Seconds east of UTC.
+ */
+long
+current_offset (const char *zone)
+{
+  gchar *tz;
+  long offset;
+  time_t now;
+  struct tm *now_broken;
+
+  if (zone == NULL)
+    return 0;
+
+  /* Store current TZ. */
+  tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
+
+  if (setenv ("TZ", zone, 1) == -1)
+    {
+      g_warning ("%s: Failed to switch to timezone", __FUNCTION__);
+      if (tz != NULL)
+        setenv ("TZ", tz, 1);
+      g_free (tz);
+      return 0;
+    }
+
+  tzset ();
+
+  time (&now);
+  now_broken = localtime (&now);
+  if (setenv ("TZ", "UTC", 1) == -1)
+    {
+      g_warning ("%s: Failed to switch to UTC", __FUNCTION__);
+      if (tz != NULL)
+        setenv ("TZ", tz, 1);
+      g_free (tz);
+      return 0;
+    }
+  tzset ();
+  offset = - (now - mktime (now_broken));
+
+  /* Revert to stored TZ. */
+  if (tz)
+    {
+      if (setenv ("TZ", tz, 1) == -1)
+        {
+          g_warning ("%s: Failed to switch to original TZ", __FUNCTION__);
+          g_free (tz);
+          return 0;
+        }
+    }
+  else
+    unsetenv ("TZ");
+
+  g_free (tz);
+  return offset;
+}
+
+
+/**
  * @brief Code fragment for months_between.
  */
 #define MONTHS_WITHIN_YEAR()                                 \
@@ -144,14 +277,29 @@ add_months (time_t time, int months)
  * @param[in] first         The first time.
  * @param[in] period        The period in seconds.
  * @param[in] period_months The period in months.
+ * @param[in] timezone        The timezone to use.
+ * @param[in] periods_offset  Number of periods to offset.
+ *                            e.g. 0 = next time, -1 current/last time
  *
  * @return  the next time a schedule with the given times is due.
  */
 time_t
-next_time (time_t first, int period, int period_months)
+next_time (time_t first, int period, int period_months, const char* timezone,
+           int periods_offset)
 {
   int periods_diff;
   time_t now = time (NULL);
+  long first_offset_val, current_offset_val, offset_diff;
+  if (timezone)
+    {
+      first_offset_val = time_offset (timezone, first);
+      current_offset_val = current_offset (timezone);
+      offset_diff = current_offset_val - first_offset_val;
+    }
+  else
+    {
+      first_offset_val = current_offset_val = offset_diff = 0;
+    }
 
   if (first >= now)
     {
@@ -159,16 +307,23 @@ next_time (time_t first, int period, int period_months)
     }
   else if (period > 0)
     {
-      return first + ((((now - first) / period) + 1) * period);
+      return first
+              + ((((now - first + offset_diff) / period) + 1 + periods_offset)
+                 * period)
+              - offset_diff;
     }
   else if (period_months > 0)
     {
+      time_t ret;
       periods_diff = months_between (first, now) / period_months;
+      periods_diff += periods_offset;
       if (add_months (first, (periods_diff + 1) * period_months)
           >= now)
-        return add_months (first, (periods_diff + 1) * period_months);
+        ret = add_months (first, (periods_diff + 1) * period_months);
       else
-        return add_months (first, periods_diff * period_months);
+        ret = add_months (first, periods_diff * period_months);
+      ret -= offset_diff;
+      return ret;
     }
   return 0;
 }

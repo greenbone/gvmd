@@ -844,10 +844,10 @@ int
 task_schedule_in_trash (task_t);
 
 time_t
-task_schedule_next_time (const gchar *);
+task_schedule_next_time_uuid (const gchar *);
 
 int
-task_schedule_next_time_tz (task_t);
+task_schedule_next_time (task_t);
 
 char *
 task_severity (task_t, int, int, int);
@@ -2776,12 +2776,6 @@ int
 verify_scanner (const char *, char **);
 
 /* Scheduling. */
-
-long
-time_offset (const char *, time_t);
-
-long
-current_offset (const char *);
 
 gboolean
 find_schedule_with_permission (const char*, schedule_t*, const char*);

@@ -6362,62 +6362,19 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
   while (next (&schedules))
     if (task_schedule_iterator_start_due (&schedules))
       {
-        time_t period, period_months;
+        time_t first_time, period, period_months;
+        const char* timezone;
 
         /* Update the task schedule info to prevent multiple schedules. */
 
+        first_time = task_schedule_iterator_first_time (&schedules);
         period = task_schedule_iterator_period (&schedules);
         period_months = task_schedule_iterator_period_months (&schedules);
+        timezone = task_schedule_iterator_timezone (&schedules);
 
-        if (period)
-          {
-            time_t now = time (NULL);
-            time_t first = task_schedule_iterator_first_time (&schedules);
-            time_t duration = task_schedule_iterator_duration (&schedules);
-
-            assert (first <= now);
-
-            /* In the database keep the times in UTC... */
-            set_task_schedule_next_time
-             (task_schedule_iterator_task (&schedules),
-              first + ((((now - first) / period) + 1) * period));
-
-            /* ...but for the calculations offset for daylight saving. */
-            first += task_schedule_iterator_initial_offset (&schedules)
-                      - current_offset (task_schedule_iterator_timezone
-                                         (&schedules));
-
-            /* Ensure that the task starts within the duration if it has one. */
-            if (duration && (((now - first) % period) > duration))
-              continue;
-          }
-        else if (period_months)
-          {
-            time_t now = time (NULL);
-            time_t first = task_schedule_iterator_first_time (&schedules);
-            time_t duration = task_schedule_iterator_duration (&schedules);
-
-            assert (first <= now);
-
-            /* In the database keep the times in UTC... */
-            set_task_schedule_next_time
-             (task_schedule_iterator_task (&schedules),
-              add_months (first, months_between (first, now) + period_months));
-
-            /* ...but for the calculations offset for daylight saving. */
-            first += task_schedule_iterator_initial_offset (&schedules)
-                      - current_offset (task_schedule_iterator_timezone
-                                         (&schedules));
-
-            /* Ensure that the task starts within the duration if it has one. */
-            if (duration
-                && ((now - add_months (first, months_between (first, now)))
-                    > duration))
-              continue;
-          }
-        else
-          set_task_schedule_next_time
-           (task_schedule_iterator_task (&schedules), 0);
+        set_task_schedule_next_time
+           (task_schedule_iterator_task (&schedules),
+            next_time (first_time, period, period_months, timezone, 0));
 
         /* Skip this task if it was already added to the starts list
          *  to avoid conflicts between multiple users with permissions.
@@ -6605,7 +6562,7 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
                             /* Check next time too, in case the user changed
                              * the schedule after this task was added to the
                              * "starts" list. */
-                            && task_schedule_next_time (task_uuid) == 0)
+                            && task_schedule_next_time_uuid (task_uuid) == 0)
                           /* A once-off schedule without a duration, remove
                            * it from the task.  If it has a duration it
                            * will be removed below, after the duration. */

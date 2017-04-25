@@ -1,3 +1,59 @@
+2017-04-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Simplify scheduling by reusing functions for due times more and adding
+	DST offset to schedule_next_time of tasks instead of having to
+	recalculate it every time.  Add --optimize option to update the
+	schedule_next_time field to include the offset.
+
+	* src/gmp.c (handle_get_schedules): Remove DST offset calculations.
+	(handle_get_tasks): Change task_schedule_next_time_tz to
+	task_schedule_next_time.
+
+	* src/manage_pg_server.c (textndup): Move to the top of the file.
+	(sql_next_time): Add optional timezone argument.
+
+	* src/manage_pg.c (manage_create_sql_functions): Add next_time function
+	with fourth timezone argument.
+
+	* src/manage_sql.c (time_offset, current_offset): Remove from here.
+	Moved to manage_utils.c.
+	(set_task_schedule, set_task_schedule_uuid): Add timezone param to
+	next_time SQL function call.
+	(task_schedule_next_time_tz): Remove.  Replaced with
+	task_schedule_next_time.
+	(task_schedule_next_time): Changed to task_schedule_next_time_tz with
+	removed DST calculation.
+	(task_schedule_next_time_uuid): New function.  Renamed
+	task_schedule_next_time.
+	(task_schedule_iterator_start_due): Remove DST offset calculations.
+	(task_schedule_iterator_stop_due): Use next_time function to calculate
+	start time.
+	(modify_schedule): Use timezone and next_time function to calculate
+	the value for schedule_next_time.
+	(manage_optimize): Add option cleanup-schedule-times.
+
+	* src/manage_sqlite3.c (sql_next_time): Add optional timezone argument.
+	(manage_create_sql_functions): Add next_time function with fourth
+	timezone argument.
+
+	* src/manage_utils.c (time_offset, current_offset): New functions.
+	Moved from manage_sql.c.
+	(next_time): Add params timezone and periods_offset.
+
+	* src/manage_utils.h (time_offset, current_offset): New prototypes.
+	Moved from manage.h.
+	(next_time): Add new parameters.
+
+	* src/manage.c (manage_schedule): Replace DST offset calculations
+	by adding timezone parameter for next_time function and change
+	task_schedule_next_time to task_schedule_next_time_uuid.
+
+	* src/manage.h (task_schedule_next_time_tz, task_schedule_next_time)
+	(task_schedule_next_time_uuid): Apply changes as in manage_sql.c.
+
+	* src/openvasmd.c (main): Add cleanup-schedule-times option for
+	--optimize.
+
 2017-04-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/gmp.c (buffer_get_filter_xml): Send an empty RELATION if the keyword
