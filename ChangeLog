@@ -1,5 +1,10 @@
 2017-04-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (SCHEDULE_ITERATOR_COLUMNS): Remove superfluous
+	brace in next_run column definition.
+
+2017-04-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Backport r28280.
 
 	* src/manage_utils.c (next_time): Reduce scope of first_offset_val and

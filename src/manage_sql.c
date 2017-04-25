@@ -46823,7 +46823,7 @@ schedule_info (schedule_t schedule, time_t *first_time, time_t *next_time,
    { "timezone", NULL, KEYWORD_TYPE_STRING },                              \
    { "initial_offset", NULL, KEYWORD_TYPE_INTEGER },                       \
    { "next_time (first_time, period, period_months, timezone)",            \
-     "next_run" },                                                         \
+     "next_run",                                                           \
      KEYWORD_TYPE_INTEGER },                                               \
    { "first_time", "first_run", KEYWORD_TYPE_INTEGER },                    \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                    \
