@@ -917,6 +917,9 @@ request_delete_task (task_t*);
 int
 delete_task (task_t, int);
 
+int
+cleanup_schedule_times ();
+
 /* For otp.c. */
 int
 delete_task_lock (task_t, int);
