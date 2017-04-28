@@ -299,6 +299,8 @@ create_certificate ()
 
   umask 022
 
+  rm -f "$OPENVAS_CERT_TEMPLATE_FILENAME"
+
   # Create template using parameters
   if [ $CERTIFICATE_TYPE -eq $CA_CERTIFICATE ]
   then
