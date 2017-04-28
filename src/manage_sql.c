@@ -13914,6 +13914,7 @@ check_db ()
   check_db_roles ();
   check_db_permissions ();
   check_db_settings ();
+  cleanup_schedule_times ();
   check_generate_scripts ();
   if (progress)
     progress ();
@@ -29350,6 +29351,40 @@ delete_trash_tasks ()
   cleanup_iterator (&tasks);
 
   return 0;
+}
+
+/**
+ * @brief Fixes the DST offset in schedule_next_time of tasks.
+ *
+ * @return changes  The number of tasks updated.
+ */
+int
+cleanup_schedule_times ()
+{
+  sql ("UPDATE tasks"
+        " SET schedule_next_time"
+        "   = (SELECT next_time (first_time,"
+        "                        period,"
+        "                        period_months,"
+        "                        timezone)"
+        "      FROM schedules"
+        "      WHERE schedules.id = tasks.schedule)"
+        " WHERE schedule_next_time != 0"
+        "   AND schedule_next_time"
+        "         = (SELECT next_time (first_time,"
+        "                              period,"
+        "                              period_months)"
+        "              FROM schedules"
+        "             WHERE schedules.id = tasks.schedule)"
+        "   AND schedule_next_time"
+        "         != (SELECT next_time (first_time,"
+        "                               period,"
+        "                               period_months,"
+        "                               timezone)"
+        "              FROM schedules"
+        "             WHERE schedules.id = tasks.schedule);");
+
+  return sql_changes();
 }
 
 /**
@@ -58117,30 +58152,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
 
       sql_begin_exclusive ();
 
-      sql ("UPDATE tasks"
-           " SET schedule_next_time"
-           "   = (SELECT next_time (first_time,"
-           "                        period,"
-           "                        period_months,"
-           "                        timezone)"
-           "      FROM schedules"
-           "      WHERE schedules.id = tasks.schedule)"
-           " WHERE schedule_next_time != 0"
-           "   AND schedule_next_time"
-           "         = (SELECT next_time (first_time,"
-           "                              period,"
-           "                              period_months)"
-           "              FROM schedules"
-           "             WHERE schedules.id = tasks.schedule)"
-           "   AND schedule_next_time"
-           "         != (SELECT next_time (first_time,"
-           "                               period,"
-           "                               period_months,"
-           "                               timezone)"
-           "              FROM schedules"
-           "             WHERE schedules.id = tasks.schedule);");
-
-      changes = sql_changes();
+      changes = cleanup_schedule_times ();
 
       sql ("COMMIT;");
 
