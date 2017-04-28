@@ -1,3 +1,9 @@
+2017-04-28  Benoît Allard  <benoit.allard@greenbone.net>
+
+	Merge revision 28292 to trunk.
+
+	* tools/openvas-manage-certs.in: Cleanup the template before writing it.
+
 2017-04-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (filter_in_use, trash_filter_in_use): Check for the
