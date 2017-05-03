@@ -2220,6 +2220,8 @@ main (int argc, char** argv)
     {
       /* Update CERT info and then exit. */
 
+      proctitle_set ("openvasmd: Updating CERT info");
+
       g_info ("   Updating CERT info.\n");
 
       switch (manage_update_cert_db (log_config, database))
@@ -2260,6 +2262,8 @@ main (int argc, char** argv)
   if (update_scap_db)
     {
       /* Update SCAP info and then exit. */
+
+      proctitle_set ("openvasmd: Updating SCAP info");
 
       g_info ("   Updating SCAP info.\n");
 
