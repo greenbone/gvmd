@@ -1,3 +1,12 @@
+2017-05-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r28312.
+
+	* src/manage_sql.c (delete_role): Use new rowid from roles_trash when
+	creating entries in role_users_trash instead of the one from roles.
+	(manage_restore): In role case, use new rowid from roles when
+	creating entries in role_users instead of the one from roles_trash.
+
 2017-04-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r28294.

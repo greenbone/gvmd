@@ -54723,8 +54723,9 @@ delete_role (const char *role_id, int ultimate)
 
       sql ("INSERT INTO role_users_trash"
            " (\"role\", \"user\")"
-           " SELECT \"role\", \"user\""
+           " SELECT %llu, \"user\""
            " FROM role_users WHERE \"role\" = %llu;",
+           trash_role,
            role);
 
       permissions_set_locations ("role", role, trash_role, LOCATION_TRASH);
@@ -56770,9 +56771,10 @@ manage_restore (const char *id)
       role = sql_last_insert_id ();
 
       sql ("INSERT INTO role_users"
-           " (role, \"user\")"
-           " SELECT role, \"user\""
+           " (\"role\", \"user\")"
+           " SELECT %llu, \"user\""
            " FROM role_users_trash WHERE role = %llu;",
+           role,
            resource);
 
       permissions_set_locations ("role", resource, role, LOCATION_TABLE);
