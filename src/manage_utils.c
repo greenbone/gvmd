@@ -326,6 +326,10 @@ next_time (time_t first, int period, int period_months, const char* timezone,
       ret -= offset_diff;
       return ret;
     }
+  else if (periods_offset == -1)
+    {
+      return first;
+    }
   return 0;
 }
 

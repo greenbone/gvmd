@@ -1,3 +1,10 @@
+2017-05-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r28318.
+
+	* src/manage_utils.c (next_time): Return first time as the previous
+	time if there is no period.
+
 2017-05-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r28312.
