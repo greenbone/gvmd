@@ -1,3 +1,45 @@
+openvas-manager 6.0.10 (2017-05-05)
+
+This is the tenth maintenance release of the openvas-manager 6.0 module for
+the Open Vulnerability Assessment System release 8 (OpenVAS-8).
+
+This release no longer enables NVTs in the ACT_SETTINGS family automatically
+unless they are required by another NVT. It also incorporates several
+improvements from the development branch of OpenVAS.  Please see below for a
+comprehensive list of changes.
+
+Many thanks to everyone who contributed to this release:
+Hani Benhabiles, Matthew Mundell, Timo Pollmeier, Jan-Oliver Wagner and Michael
+Wiegand.
+
+Main changes compared to 6.0.9:
+* NVTs in the ACT_SETTINGS family are no longer automatically enabled.
+* The required minimum OpenVAS Libraries version has increased to 8.0.9.
+* An issue which cause an internal error when deleting scan configs using the
+  PostgreSQL backend has been addressed.
+* An issue which cause host details to be missing under certain circumstances
+  when using the pre-defined 'Discovery' scan config has been addressed.
+* An authentication cache for LDAP and Radius has been added.
+* An issue which caused the 'SCP' alert method to default to the XML report
+  format has been addressed.
+* An issue which caused schedules to be removed from tasks under certain
+  circumstances has been addressed.
+* An issue which caused schedules to be triggered too often under certain
+  circumstances has been addressed.
+* An issue which caused schedules to be triggered multiple times after a time
+  shift (e.g. DST switch) has been addressed.
+* An issue which caused deleting roles to fail under certain circumstances has
+  been addressed.
+* Updated migration routine from SQLite to PostgreSQL.
+* Lowered minimum for automatic report removal from 5 to 2.
+* Character handling in LaTeX and PDF report formats has been improved.
+* Improved quoting for RFP "CSV Results".
+* Use global SSH known hosts for alert type "SCP".
+* Improved cleanup of temporary files upon errors during report generation.
+* Internal code cleanups.
+* Performance improvements.
+
+
 openvas-manager 6.0.9 (2016-08-30)
 
 This is the ninth maintenance release of the openvas-manager 6.0 module for
