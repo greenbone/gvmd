@@ -1,3 +1,8 @@
+2017-05-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_pg.c (create_tables): Add permission indexes to speed up
+	result counting.
+
 2017-05-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_utils.c (next_time): Return first time as the previous
