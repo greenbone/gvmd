@@ -1,3 +1,7 @@
+2017-05-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (check_db_report_formats): Init error.
+
 2017-05-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (create_tables): Add permission indexes to speed up

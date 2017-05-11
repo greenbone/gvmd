@@ -15241,6 +15241,7 @@ check_db_report_formats ()
 
   path = predefined_report_format_dir (NULL);
 
+  error = NULL;
   dir = g_dir_open (path, 0, &error);
   if (dir == NULL)
     {
