@@ -887,7 +887,7 @@ sql_merge_cve (sqlite3_context *context, int argc,
 /**
  * @brief Insert or replace a CPE.
  *
- * This is a callback for a scalar SQL function of 2 arguments.
+ * This is a callback for a scalar SQL function of 4 arguments.
  *
  * @param[in]  context  SQL context.
  * @param[in]  argc     Number of arguments.
@@ -899,8 +899,9 @@ sql_merge_cpe_name (sqlite3_context *context, int argc,
 {
   const unsigned char *uuid, *name;
   gchar *quoted_uuid, *quoted_name;
+  int creation_time, modification_time;
 
-  assert (argc == 2);
+  assert (argc == 4);
 
   uuid = sqlite3_value_text (argv[0]);
   if (uuid == NULL)
@@ -916,15 +917,20 @@ sql_merge_cpe_name (sqlite3_context *context, int argc,
       return;
     }
 
+  creation_time = sqlite3_value_int (argv[2]);
+  modification_time = sqlite3_value_int (argv[3]);
+
   quoted_uuid = sql_quote ((const char*) uuid);
   quoted_name = sql_quote ((const char*) name);
 
   sql ("INSERT OR IGNORE INTO cpes"
-       " (uuid, name)"
+       " (uuid, name, creation_time, modification_time)"
        " VALUES"
-       " ('%s', '%s');",
+       " ('%s', '%s', %i, %i);",
        quoted_uuid,
-       quoted_name);
+       quoted_name,
+       creation_time,
+       modification_time);
 
   g_free (quoted_uuid);
   g_free (quoted_name);
@@ -4536,7 +4542,7 @@ manage_update_scap_db_init ()
 
   if (sqlite3_create_function (task_db,
                                "merge_cpe_name",
-                               2,               /* Number of args. */
+                               4,               /* Number of args. */
                                SQLITE_UTF8,
                                NULL,            /* Callback data. */
                                sql_merge_cpe_name,
@@ -4611,7 +4617,7 @@ manage_update_scap_db_cleanup ()
 
   if (sqlite3_create_function (task_db,
                                "merge_cpe_name",
-                               2,               /* Number of args. */
+                               4,               /* Number of args. */
                                SQLITE_UTF8,
                                NULL,            /* Callback data. */
                                NULL,

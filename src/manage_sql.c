@@ -63379,6 +63379,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
               const char *id;
               GString *software;
               gchar *software_unescaped, *software_tilde;
+              int time_modified, time_published;
 
               id = entity_attribute (entry, "id");
               if (id == NULL)
@@ -63545,13 +63546,15 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
               g_free (software_unescaped);
               quoted_software = sql_quote (software_tilde);
               g_free (software_tilde);
+              time_modified = parse_iso_time (entity_text (last_modified));
+              time_published = parse_iso_time (entity_text (published));
               sql ("SELECT merge_cve"
                    "        ('%s', '%s', %i, %i, %s, '%s', '%s', '%s', '%s',"
                    "         '%s', '%s', '%s', '%s');",
                    quoted_id,
                    quoted_id,
-                   parse_iso_time (entity_text (last_modified)),
-                   parse_iso_time (entity_text (published)),
+                   time_published,
+                   time_modified,
                    score ? entity_text (score) : "NULL",
                    quoted_summary,
                    quoted_access_vector,
@@ -63591,8 +63594,9 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                           quoted_product = sql_quote (product_tilde);
                           g_free (product_tilde);
 
-                          sql ("SELECT merge_cpe_name ('%s', '%s')",
-                               quoted_product, quoted_product);
+                          sql ("SELECT merge_cpe_name ('%s', '%s', %i, %i)",
+                               quoted_product, quoted_product, time_published,
+                               time_modified);
                           sql ("SELECT merge_affected_product"
                                "        ((SELECT id FROM cves WHERE uuid='%s'),"
                                "         (SELECT id FROM cpes WHERE name='%s'))",
@@ -65539,9 +65543,7 @@ update_scap_placeholders (int updated_cves)
            "                          WHERE id IN (SELECT cve"
            "                                       FROM scap.affected_products"
            "                                       WHERE cpe=cpes.id))"
-           " WHERE cpes.title IS NULL"
-           " AND (cpes.creation_time IS NULL"
-           "      OR cpes.modification_time IS NULL);");
+           " WHERE cpes.title IS NULL;");
     }
   else
     g_info ("No CVEs updated, skipping placeholder CPE update.");

@@ -326,7 +326,9 @@ manage_update_scap_db_init ()
        "$$ LANGUAGE plpgsql;");
 
   sql ("CREATE OR REPLACE FUNCTION merge_cpe_name"
-       "                            (uuid_arg TEXT, name_arg TEXT)"
+       "                            (uuid_arg TEXT, name_arg TEXT,"
+       "                             published_arg INTEGER,"
+       "                             modified_arg INTEGER)"
        " RETURNS VOID AS $$"
        " BEGIN"
        "   LOOP"
@@ -338,8 +340,8 @@ manage_update_scap_db_init ()
        "     END IF;"
        "     BEGIN"
        "       INSERT INTO scap.cpes"
-       "                    (uuid, name)"
-       "       VALUES (uuid_arg, name_arg);"
+       "                    (uuid, name, creation_time, modification_time)"
+       "       VALUES (uuid_arg, name_arg, published_arg, modified_arg);"
        "       RETURN;"
        "     EXCEPTION WHEN unique_violation THEN"
        "       NULL;"  /* Try again. */
@@ -454,7 +456,9 @@ manage_update_scap_db_cleanup ()
        "                         products_arg TEXT);");
 
   sql ("DROP FUNCTION merge_cpe_name (uuid_arg TEXT,"
-       "                              name_arg TEXT);");
+       "                              name_arg TEXT,"
+       "                              modified_arg INTEGER,"
+       "                              published_arg INTEGER);");
 
   sql ("DROP FUNCTION merge_affected_product (cve_arg INTEGER,"
        "                                      cpe_arg INTEGER);");

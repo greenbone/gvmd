@@ -1,3 +1,20 @@
+2017-05-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	During SCAP sync, init CPE times when creating CPEs from CVEs, otherwise
+	the times are invalid until update_scap_placeholders.
+
+	* src/manage_sql.c (update_cve_xml): Pass times to merge_cpe_name.
+	(update_scap_placeholders): Just check title, because times are now set.
+
+	* src/manage_pg.c (manage_update_scap_db_init)
+	manage_update_scap_db_cleanup): Add published_arg and modified_arg to
+	merge_cpe_name.
+
+	* src/manage_sqlite3.c (sql_merge_cpe_name): Add published_arg and
+	modified_arg to merge_cpe_name.
+	(manage_update_scap_db_init, manage_update_scap_db_cleanup): Adjust arg
+	count.
+
 2017-05-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (check_db_report_formats): Init error.
