@@ -74,9 +74,6 @@ REFRESH_ONLY=0
 # private data in the OpenVAS Manager database.
 # This can be controlled via the --refresh-private parameter.
 REFRESH_PRIVATE_ONLY=0
-# When set to 1, all OVAL definitions will be updated, not just new ones.
-# This is usually done by database migrations.
-REBUILD_OVAL=0
 # Setting this to 1 enables verbose mode, which outputs additional data.
 # This is usually done with the option --verbose
 VERBOSE=0
@@ -355,27 +352,6 @@ is_db_broken () {
     log_err "Command @SBINDIR@/openvasmd not found"
     exit 1
   fi
-}
-
-list_oval_files_sorted () {
-for line in `list_oval_files_sortable "$1" | sort`
-  do
-    echo ${line#????????}
-  done
-}
-
-list_oval_files_sortable () {
-for ovalfile in `find "$1" -name "*.xml" -type f`
-  do
-    timestamp_raw=""
-    timestamp_raw=`xsltproc "$SCAP_RES_DIR/oval_timestamp.xsl" "$ovalfile" 2>/dev/null`
-
-    if [ -n "$timestamp_raw" ]
-    then
-      timestamp="`echo "$timestamp_raw" | sed -e 's/T.*//' | tr -d "-"`"
-      echo "$timestamp$ovalfile"
-    fi
-  done
 }
 
 do_help () {

@@ -569,26 +569,10 @@ install (FILES tools/portnames_update.xsl
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
-install (FILES tools/cpe_youngerthan.xsl tools/cve_youngerthan.xsl
-         tools/cpe_getbyname.xsl tools/cve_getbyname.xsl
+install (FILES tools/cpe_getbyname.xsl tools/cve_getbyname.xsl
          tools/ovaldef_getbyname.xsl
          DESTINATION ${OPENVAS_SCAP_RES_DIR}
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
-
-if (BACKEND STREQUAL SQLITE3)
-  install (FILES tools/cpe_update.xsl tools/cve_update.xsl
-		   DESTINATION ${OPENVAS_SCAP_RES_DIR}
-		   PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
-else (BACKEND STREQUAL SQLITE3)
-  install (FILES tools/cpe_update_pg.xsl
-           RENAME cpe_update.xsl
-		   DESTINATION ${OPENVAS_SCAP_RES_DIR}
-		   PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
-  install (FILES tools/cve_update_pg.xsl
-           RENAME cve_update.xsl
-		   DESTINATION ${OPENVAS_SCAP_RES_DIR}
-		   PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
-endif (BACKEND STREQUAL SQLITE3)
 
 install (FILES tools/cert_bund_getbyname.xsl tools/dfn_cert_getbyname.xsl
          DESTINATION ${OPENVAS_CERT_RES_DIR}
@@ -617,11 +601,6 @@ install (FILES ${CMAKE_SOURCE_DIR}/tools/openvas-lsc-rpm-creator.sh
 
 install (FILES ${CMAKE_BINARY_DIR}/tools/openvas-migrate-to-postgres
          DESTINATION ${SBINDIR}
-         PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
-                     GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-
-install (FILES ${CMAKE_SOURCE_DIR}/tools/extra/xml_split
-         DESTINATION ${OPENVAS_SCAP_RES_DIR}
          PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
                      GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 

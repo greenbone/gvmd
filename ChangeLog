@@ -1,5 +1,12 @@
 2017-05-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* CMakeLists.txt: Remove files no longer used.
+
+	* tools/greenbone-scapdata-sync.in (REBUILD_OVAL, list_oval_files_sorted)
+	(list_oval_files_sortable): Remove.  No longer used.
+
+2017-05-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/cpe_update_pg.xsl, tools/cpe_update.xsl, tools/cpe_youngerthan.xsl,
 	tools/cve_update_pg.xsl, tools/cve_update.xsl, tools/cve_youngerthan.xsl,
 	tools/extra, tools/extra/README, tools/extra/xml_split: Remove.  No longer
