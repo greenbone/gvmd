@@ -1115,6 +1115,18 @@ void
 reports_build_count_cache (int, int*);
 
 void
+init_report_counts_build_iterator (iterator_t *, report_t, int, int);
+
+int
+report_counts_build_iterator_min_qod (iterator_t *);
+
+int
+report_counts_build_iterator_override (iterator_t *);
+
+user_t
+report_counts_build_iterator_user (iterator_t *);
+
+void
 report_cache_counts (report_t);
 
 double
