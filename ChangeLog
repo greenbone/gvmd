@@ -1,5 +1,12 @@
 2017-05-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/cpe_update_pg.xsl, tools/cpe_update.xsl, tools/cpe_youngerthan.xsl,
+	tools/cve_update_pg.xsl, tools/cve_update.xsl, tools/cve_youngerthan.xsl,
+	tools/extra, tools/extra/README, tools/extra/xml_split: Remove.  No longer
+	used.
+
+2017-05-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/greenbone-scapdata-sync.in (update_scap_db): Do update in
 	background.
 	(sync_scapdata): Move update_scap_db call into main, because it is separate
