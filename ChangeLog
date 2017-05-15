@@ -1,3 +1,15 @@
+2017-05-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* tools/greenbone-scapdata-sync.in (update_scap_db): Do update in
+	background.
+	(sync_scapdata): Move update_scap_db call into main, because it is separate
+	from the sync.
+
+	* tools/greenbone-certdata-sync.in (update_cert_db): Do update in
+	background.
+	(sync_certdata): Move update_cert_db call into main, because it is separate
+	from the sync.
+
 2017-05-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	During SCAP sync, init CPE times when creating CPEs from CVEs, otherwise

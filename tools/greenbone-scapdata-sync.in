@@ -412,9 +412,9 @@ update_scap_db () {
   then
 	if [ 0 = "$REFRESH_PRIVATE_ONLY" ]
 	then
-      @SBINDIR@/openvasmd --update-scap-db
+      @SBINDIR@/openvasmd --update-scap-db &
     else
-      @SBINDIR@/openvasmd --update-scap-db --refresh-private-only
+      @SBINDIR@/openvasmd --update-scap-db --refresh-private-only &
 	fi
     if [ $? -ne 0 ] ; then
       log_err "Calling openvasmd to update SCAP db... failed."
@@ -512,8 +512,6 @@ sync_scapdata(){
       do_sync_community_feed
     fi
   fi
-
-  update_scap_db
 }
 
 do_self_test () {
@@ -641,5 +639,6 @@ then
   fi
 fi
 sync_scapdata
+update_scap_db
 
 exit 0

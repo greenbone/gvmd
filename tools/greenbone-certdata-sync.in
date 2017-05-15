@@ -362,7 +362,7 @@ update_cert_db () {
   log_info "Calling openvasmd to update CERT db"
   if [ -x "@SBINDIR@/openvasmd" ]
   then
-    @SBINDIR@/openvasmd --update-cert-db
+    @SBINDIR@/openvasmd --update-cert-db &
     if [ $? -ne 0 ] ; then
       log_err "Calling openvasmd to update CERT db... failed."
       exit 1
@@ -453,8 +453,6 @@ sync_certdata(){
       do_sync_community_feed
     fi
   fi
-
-  update_cert_db
 }
 
 do_self_test () {
@@ -550,5 +548,6 @@ then
   fi
 fi
 sync_certdata
+update_cert_db
 
 exit 0
