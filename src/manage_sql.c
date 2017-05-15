@@ -15371,9 +15371,12 @@ set_task_run_status (task_t task, task_status_t status)
   char *name;
 
   if ((task == current_scanner_task) && current_report)
-    sql ("UPDATE reports SET scan_run_status = %u WHERE id = %llu;",
-         status,
-         current_report);
+    {
+      sql ("UPDATE reports SET scan_run_status = %u WHERE id = %llu;",
+          status,
+          current_report);
+      report_cache_counts (current_report);
+    }
   sql ("UPDATE tasks SET run_status = %u WHERE id = %llu;",
        status,
        task);
@@ -17536,6 +17539,109 @@ reports_build_count_cache (int clear, int* changes_out)
 }
 
 /**
+ * @brief Initializes an iterator for updating the report cache
+ *
+ * @param[in]  iterator       Iterator.
+ * @param[in]  report         Report to select.
+ * @param[in]  add_defaults   Whether to add default values.
+ */
+void
+init_report_counts_build_iterator (iterator_t *iterator, report_t report,
+                                   int add_defaults)
+{
+  iterator_t users;
+  GString *users_string;
+  int first_user = 1;
+  gchar *report_id, *old_user_id;
+
+  users_string = g_string_new ("(VALUES ");
+  report_id = sql_string ("SELECT uuid FROM reports WHERE id = %llu;", report);
+  old_user_id = current_credentials.uuid;
+  init_iterator (&users, "SELECT id, uuid FROM users;");
+  while (next (&users))
+    {
+      current_credentials.uuid = g_strdup (iterator_string (&users, 1));
+      if (user_has_access_uuid ("report", report_id, "get_reports", 0))
+        {
+          if (first_user)
+            first_user = 0;
+          else
+            g_string_append (users_string,
+                             ", ");
+
+          g_string_append_printf (users_string,
+                                  "(%llu)",
+                                  iterator_int64 (&users, 0));
+        }
+      g_free (current_credentials.uuid);
+    }
+  g_string_append(users_string, ")");
+  cleanup_iterator (&users);
+
+  current_credentials.uuid = old_user_id;
+
+  if (add_defaults)
+    {
+      init_iterator (iterator,
+                     "SELECT * FROM"
+                     " (WITH users_with_access (\"user\") AS %s"
+                     "  SELECT DISTINCT override, \"user\""
+                     "  FROM report_counts"
+                     "  WHERE report = %llu"
+                     "    AND \"user\" IN (SELECT \"user\""
+                     "                     FROM users_with_access)"
+                     "  UNION SELECT 0, \"user\""
+                     "          FROM users_with_access"
+                     "  UNION SELECT 1, \"user\""
+                     "          FROM users_with_access) AS inner_query"
+                     " ORDER BY \"user\"",
+                     users_string->str,
+                     report);
+    }
+  else
+    {
+      init_iterator (iterator,
+                     "WITH users_with_access (\"user\") AS %s"
+                     " SELECT DISTINCT min_qod, override, \"user\""
+                     " FROM report_counts"
+                     " WHERE report = %llu"
+                     "   AND \"user\" IN (SELECT \"user\""
+                     "                    FROM users_with_access)"
+                     " ORDER BY \"user\"",
+                     users_string->str,
+                     report);
+    }
+  g_string_free (users_string, TRUE);
+  g_free (report_id);
+}
+
+/**
+ * @brief Get the override flag from a report_counts build iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Whether the report counts are using overrides.
+ */
+int
+report_counts_build_iterator_override (iterator_t *iterator)
+{
+  return iterator_int (iterator, 0);
+}
+
+/**
+ * @brief Get the user from a report_counts build iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The min_qod.
+ */
+user_t
+report_counts_build_iterator_user (iterator_t *iterator)
+{
+  return iterator_int64 (iterator, 1);
+}
+
+/**
  * @brief Cached report counts.
  *
  * @param[in]  report  Report.
@@ -17543,15 +17649,31 @@ reports_build_count_cache (int clear, int* changes_out)
 void
 report_cache_counts (report_t report)
 {
+  iterator_t cache_iterator;
   int debugs, holes, infos, logs, warnings, false_positives;
   double severity;
-  // TODO: Cache for non-default QoD
-  report_counts_id (report, &debugs, &holes, &infos, &logs, &warnings,
-                    &false_positives, &severity, 0, NULL, 0,
-                    G_STRINGIFY (MIN_QOD_DEFAULT));
-  report_counts_id (report, &debugs, &holes, &infos, &logs, &warnings,
-                    &false_positives, &severity, 1, NULL, 0,
-                    G_STRINGIFY (MIN_QOD_DEFAULT));
+  gchar *old_user_id;
+
+  old_user_id = current_credentials.uuid;
+  init_report_counts_build_iterator (&cache_iterator, report, 1);
+
+  while (next (&cache_iterator))
+    {
+      int override = report_counts_build_iterator_override (&cache_iterator);
+      user_t user = report_counts_build_iterator_user (&cache_iterator);
+
+      current_credentials.uuid
+        = sql_string ("SELECT uuid FROM users WHERE id = %llu",
+                      user);
+
+      report_counts_id (report, &debugs, &holes, &infos, &logs, &warnings,
+                        &false_positives, &severity, override, NULL, 0,
+                        G_STRINGIFY (MIN_QOD_DEFAULT));
+
+      g_free (current_credentials.uuid);
+    }
+
+  current_credentials.uuid = old_user_id;
 }
 
 /**
@@ -18108,11 +18230,11 @@ report_set_source_iface (report_t report, const gchar *iface)
 void
 report_add_result (report_t report, result_t result)
 {
-  char *ov_severity_str;
   double severity, ov_severity;
   int qod;
   rowid_t rowid;
-  gchar *owned_clause;
+  iterator_t cache_iterator;
+  user_t previous_user = 0;
 
   if (report == 0 || result == 0)
     return;
@@ -18129,87 +18251,88 @@ report_add_result (report_t report, result_t result)
   severity = sql_double ("SELECT severity FROM results WHERE id = %llu;",
                          result);
 
-  rowid = 0;
-  sql_int64 (&rowid,
-             "SELECT id FROM report_counts"
-             " WHERE report = %llu"
-             " AND \"user\" = (SELECT id FROM users WHERE users.uuid = '%s')"
-             " AND override = 0"
-             " AND severity = %1.1f;",
-             report, current_credentials.uuid, severity);
-  if (rowid)
-    sql ("UPDATE report_counts SET count = count + %i"
-         " WHERE id = %llu;",
-         qod < MIN_QOD_DEFAULT ? 0 : 1,
-         rowid);
-  else
-    sql ("INSERT INTO report_counts"
-         " (report, \"user\", override, severity, count, end_time)"
-         " VALUES"
-         " (%llu, (SELECT id FROM users WHERE uuid='%s'), 0, %1.1f, %i, 0);",
-         report, current_credentials.uuid, severity,
-         qod < MIN_QOD_DEFAULT ? 0 : 1);
+  init_report_counts_build_iterator (&cache_iterator, report, 1);
+  while (next (&cache_iterator) && qod >= MIN_QOD_DEFAULT)
+    {
+      int override = report_counts_build_iterator_override (&cache_iterator);
+      user_t user = report_counts_build_iterator_user (&cache_iterator);
 
-  owned_clause = where_owned_for_get ("override", NULL);
+      if (override && user != previous_user)
+        {
+          char *ov_severity_str;
+          gchar *owned_clause;
 
-  ov_severity_str
-    = sql_string ("SELECT coalesce (overrides.new_severity, %1.1f)"
-                  " FROM overrides, results"
-                  " WHERE results.id = %llu"
-                  " AND overrides.nvt = results.nvt"
-                  " AND %s"
-                  " AND ((overrides.end_time = 0)"
-                  "      OR (overrides.end_time >= m_now ()))"
-                  " AND (overrides.task ="
-                  "      (SELECT reports.task FROM reports"
-                  "       WHERE reports.id = %llu)"
-                  "      OR overrides.task = 0)"
-                  " AND (overrides.result = results.id"
-                  "      OR overrides.result = 0)"
-                  " AND (overrides.hosts is NULL"
-                  "      OR overrides.hosts = ''"
-                  "      OR hosts_contains (overrides.hosts, results.host))"
-                  " AND (overrides.port is NULL"
-                  "      OR overrides.port = ''"
-                  "      OR overrides.port = results.port)"
-                  " AND severity_matches_ov (%1.1f, overrides.severity)"
-                  " ORDER BY overrides.result DESC, overrides.task DESC,"
-                  " overrides.port DESC, overrides.severity ASC,"
-                  " overrides.creation_time DESC"
-                  " LIMIT 1",
-                  severity,
-                  result,
-                  owned_clause,
-                  report,
-                  severity);
+          owned_clause = where_owned_for_get ("override", NULL);
 
-  g_free (owned_clause);
+          ov_severity_str
+            = sql_string ("SELECT coalesce (overrides.new_severity, %1.1f)"
+                          " FROM overrides, results"
+                          " WHERE results.id = %llu"
+                          " AND overrides.nvt = results.nvt"
+                          " AND %s"
+                          " AND ((overrides.end_time = 0)"
+                          "      OR (overrides.end_time >= m_now ()))"
+                          " AND (overrides.task ="
+                          "      (SELECT reports.task FROM reports"
+                          "       WHERE reports.id = %llu)"
+                          "      OR overrides.task = 0)"
+                          " AND (overrides.result = results.id"
+                          "      OR overrides.result = 0)"
+                          " AND (overrides.hosts is NULL"
+                          "      OR overrides.hosts = ''"
+                          "      OR hosts_contains (overrides.hosts,"
+                          "                         results.host))"
+                          " AND (overrides.port is NULL"
+                          "      OR overrides.port = ''"
+                          "      OR overrides.port = results.port)"
+                          " AND severity_matches_ov (%1.1f,"
+                          "                          overrides.severity)"
+                          " ORDER BY overrides.result DESC,"
+                          "   overrides.task DESC, overrides.port DESC,"
+                          "   overrides.severity ASC,"
+                          "   overrides.creation_time DESC"
+                          " LIMIT 1",
+                          severity,
+                          result,
+                          owned_clause,
+                          report,
+                          severity);
 
-  if (ov_severity_str == NULL
-      || (sscanf (ov_severity_str, "%lf", &ov_severity) != 1))
-    ov_severity = severity;
+          g_free (owned_clause);
 
-  rowid = 0;
-  sql_int64 (&rowid,
-             "SELECT id FROM report_counts"
-             " WHERE report = %llu"
-             " AND \"user\" = (SELECT id FROM users WHERE users.uuid = '%s')"
-             " AND override = 1"
-             " AND severity = %1.1f;",
-             report, current_credentials.uuid, ov_severity);
-  if (rowid)
-    sql ("UPDATE report_counts"
-         " SET count = count + %i"
-         " WHERE id = %llu;",
-         qod < MIN_QOD_DEFAULT ? 0 : 1,
-         rowid);
-  else
-    sql ("INSERT INTO report_counts"
-         " (report, \"user\", override, severity, count, end_time)"
-         " VALUES"
-         " (%llu, (SELECT id FROM users WHERE uuid='%s'), 1, %1.1f, %i, 0);",
-         report, current_credentials.uuid, ov_severity,
-         qod < MIN_QOD_DEFAULT ? 0 : 1);
+          if (ov_severity_str == NULL
+              || (sscanf (ov_severity_str, "%lf", &ov_severity) != 1))
+            ov_severity = severity;
+
+          free (ov_severity_str);
+
+          previous_user = user;
+        }
+
+      rowid = 0;
+      sql_int64 (&rowid,
+                 "SELECT id FROM report_counts"
+                 " WHERE report = %llu"
+                 " AND \"user\" = %llu"
+                 " AND override = %d"
+                 " AND severity = %1.1f",
+                 report, user, override,
+                 override ? ov_severity : severity);
+      if (rowid)
+        sql ("UPDATE report_counts"
+            " SET count = count + 1"
+            " WHERE id = %llu;",
+            rowid);
+      else
+        sql ("INSERT INTO report_counts"
+             " (report, \"user\", override, severity, count, end_time)"
+             " VALUES"
+             " (%llu, %llu, %d, %1.1f, 1, 0);",
+             report, user, override,
+             override ? ov_severity : severity);
+
+    }
+  cleanup_iterator (&cache_iterator);
 
   sql ("UPDATE report_counts"
        " SET end_time = (SELECT coalesce(min(overrides.end_time), 0)"
@@ -20858,8 +20981,6 @@ set_scan_end_time_otp (report_t report, const char* timestamp)
   else
     sql ("UPDATE reports SET end_time = NULL WHERE id = %llu;",
          report);
-
-  report_cache_counts (report);
 }
 
 /**
@@ -21033,6 +21154,7 @@ set_report_scan_run_status (report_t report, task_status_t status)
   sql ("UPDATE reports SET scan_run_status = %u WHERE id = %llu;",
        status,
        report);
+  report_cache_counts (report);
   return 0;
 }
 

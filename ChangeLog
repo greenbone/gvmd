@@ -1,3 +1,25 @@
+2017-05-15  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r28386.
+
+	Build report counts caches for any user with access to the report
+	on all scan status changes.
+
+	* src/manage_sql.c (set_task_run_status): Build the cache for the
+	current report.
+	(init_report_counts_build_iterator)
+	(report_counts_build_iterator_override)
+	(report_counts_build_iterator_user): New functions.
+	(report_cache_counts): Build cache for all users that have access.
+	(report_add_result): Use new iterator to add result to cache of all
+	users.
+	(set_scan_end_time_otp): Remove report_cache_counts call.
+	(set_report_scan_run_status): Build the cache for the report.
+
+	* src/manage.h (init_report_counts_build_iterator)
+	(report_counts_build_iterator_override)
+	(report_counts_build_iterator_user): New function prototypes.
+
 2017-05-05  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post release version bump.
