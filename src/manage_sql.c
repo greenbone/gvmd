@@ -31432,8 +31432,15 @@ manage_count_hosts (const char *given_hosts, const char *exclude_hosts)
     return -1;
 
   if (exclude_hosts)
-    /* Don't resolve hostnames in excluded hosts. */
-    gvm_hosts_exclude (hosts, exclude_hosts, 0);
+    {
+      if (gvm_hosts_exclude_with_max (hosts,
+                                      exclude_hosts,
+                                      /* Don't resolve excluded hostnames. */
+                                      0,
+                                      manage_max_hosts ())
+          < 0)
+        return -1;
+    }
 
   count = gvm_hosts_count (hosts);
   gvm_hosts_free (hosts);

@@ -1,3 +1,8 @@
+2017-05-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (manage_count_hosts): Use exclude function with does
+	max check for exclude_hosts, to keep them within the same max as hosts.
+
 2017-05-15  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Build report counts caches for any user with access to the report
