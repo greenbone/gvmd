@@ -1,3 +1,20 @@
+2017-05-17  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	First set of renaming OpenVAS Manager to GVM.
+
+	* INSTALL, README, doc/CMakeLists.txt, doc/Doxyfile.in,
+	doc/Doxyfile_full.in, doc/about-cert-feed.txt,
+	doc/database-statistics-sqlite.8.xml, doc/db_postgres.sql,
+	doc/example-openvas-manage-certs.conf.in,
+	doc/greenbone-certdata-sync.8.xml, doc/greenbone-scapdata-sync.8.xml,
+	doc/openvas-manage-certs.1, doc/openvas-migrate-to-postgres.8.xml,
+	doc/openvas-portnames-update.8.xml, doc/openvasmd.8.xml,
+	doc/postgres-HOWTO, doc/report-format-HOWTO, doc/user-scap-data-HOWTO:
+	Applied various renaming to GVM. Some are in advance for
+	forthcoming file renaming.
+
+	* doc/openvasmd.8, doc/openvasmd.html: Updated generated files.
+
 2017-05-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	In the max_hosts Postgres function, get the maximum from the meta table,

@@ -2,9 +2,9 @@
 <!DOCTYPE manpage SYSTEM "/usr/share/xmltoman/xmltoman.dtd">
 <?xml-stylesheet type="text/xsl" href="/usr/share/xmltoman/xmltoman.xsl" ?>
 
-<!-- OpenVAS
+<!-- GVM
  $Id$
- Description: openvas-portnames-update manpage
+ Description: gvm-portnames-update manpage
 
  Authors:
  Matthew Mundell <matthew.mundell@greenbone.net>
@@ -27,21 +27,21 @@
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
 
-<manpage name="openvas-portnames-update" section="8" desc="Update OpenVAS port names">
+<manpage name="gvm-portnames-update" section="8" desc="Update GVM port names">
 
   <synopsis>
-    <cmd>openvas-portnames-update FILE</cmd>
+    <cmd>gvm-portnames-update FILE</cmd>
   </synopsis>
 
   <description>
     <p>
-      Update OpenVAS Manager port names data from XML file FILE.
+      Update Greenbone Vulnerability Manager port names data from XML file FILE.
     </p>
   </description>
 
   <section name="SEE ALSO">
     <p>
-      <manref name="openvasmd" section="8"/>
+      <manref name="gvmd" section="8"/>
     </p>
   </section>
 
@@ -60,7 +60,7 @@
 
   <section name="COPYRIGHT">
     <p>
-      The OpenVAS Manager is released under the GNU GPL, version 2,
+      The Greenbone Vulnerability Manager is released under the GNU GPL, version 2,
       or, at your option, any later version.
     </p>
   </section>

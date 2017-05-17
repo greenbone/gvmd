@@ -73,7 +73,7 @@ Duplicate advisories with the same short ID must be either:
 A) avoided by ensuring that only the latest version is included.
    or less preferably
 B) sorted so that the newer elements will overwrite the older ones when
-   the OpenVAS database is synced by the user.
+   the GVM database is synced by the user.
 
 Contents of <entry> elements
 ----------------------------

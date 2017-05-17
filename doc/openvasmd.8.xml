@@ -2,9 +2,9 @@
 <!DOCTYPE manpage SYSTEM "/usr/share/xmltoman/xmltoman.dtd">
 <?xml-stylesheet type="text/xsl" href="/usr/share/xmltoman/xmltoman.xsl" ?>
 
-<!-- OpenVAS
+<!-- GVM
  $Id$
- Description: openvasmd manpage
+ Description: gvmd manpage
 
  Authors:
  Matthew Mundell <matthew.mundell@greenbone.net>
@@ -27,15 +27,15 @@
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
 
-<manpage name="openvasmd" section="8" desc="Manager daemon of the Open Vulnerability Assessment System (OpenVAS)">
+<manpage name="gvmd" section="8" desc="Greenbone Vulnerbility Manager daemon">
 
   <synopsis>
-    <cmd>openvasmd OPTIONS</cmd>
+    <cmd>gvmd OPTIONS</cmd>
   </synopsis>
 
   <description>
     <p>
-      The OpenVAS Manager is the central management service between security scanners
+      The Greenbone Vulnerability Manager is the central management service between security scanners
       and the user clients.
     </p>
 
@@ -211,12 +211,12 @@
   </options>
 
   <section name="SIGNALS">
-    <p>SIGHUP causes openvasmd to rebuild the database with information from
+    <p>SIGHUP causes gvmd to rebuild the database with information from
        the Scanner (openvassd).</p>
   </section>
 
   <section name="EXAMPLES">
-    <p>openvasmd --port 1241</p>
+    <p>gvmd --port 1241</p>
     <p>Serve GMP clients on port 1241 and connect to a OTP server on 7772.</p>
   </section>
 
@@ -243,7 +243,7 @@
 
   <section name="COPYRIGHT">
     <p>
-      The OpenVAS Manager is released under the GNU GPL, version 2,
+      The Greenbone Vulnerability Manager is released under the GNU GPL, version 2,
       or, at your option, any later version.
     </p>
   </section>

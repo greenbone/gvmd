@@ -1,5 +1,5 @@
-OPENVAS-MANAGER POSTGRESQL BACKEND HOWTO
-========================================
+GREENBONE-VULNERABILITY-MANAGER POSTGRESQL BACKEND HOWTO
+========================================================
 
 Please note: Everything should work using Postgres, but this backend has
 seen little testing so far.  The reference system used for development is
@@ -29,8 +29,8 @@ Debian GNU/Linux 'Jessie' 8.
 	grant dba to mattm;
 	create extension "uuid-ossp";
 
-6 Make Postgres aware of the openvas libraries if not installed
-  in a ld-aware directory. For example create file /etc/ld.so.conf.d/openvas.conf
+6 Make Postgres aware of the gvm libraries if not installed
+  in a ld-aware directory. For example create file /etc/ld.so.conf.d/gvm.conf
   with appropriate path and then run ldconfig.
 
 7 Run Manager as usual.
@@ -43,7 +43,7 @@ Debian GNU/Linux 'Jessie' 8.
 Migrating from SQLite to PostgreSQL
 -----------------------------------
 
-1 Run "openvas-migrate-to-postgres" into a clean newly created
+1 Run "gvm-migrate-to-postgres" into a clean newly created
   PostgreSQL database like described above. It is essentially important
   that you do not run "--rebuild" before the migration as it would
   create a fresh one and therefore prevent migration.
@@ -52,7 +52,7 @@ Migrating from SQLite to PostgreSQL
   want to start from scratch, apply the dropping of all data as
   described below.
 
-2 Run "openvasmd --rebuild".
+2 Run "gvmd --rebuild".
 
 3 Run "greenbone-scapdata-sync".
 

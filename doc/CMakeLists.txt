@@ -1,6 +1,6 @@
-# OpenVAS
+# GVM
 # $Id$
-# Description: CMakefile for the OpenVAS Manager documentation
+# Description: CMakefile for the Greenbone Vulnerability Manager documentation
 #
 # Authors:
 # Matthew Mundell <matthew.mundell@greenbone.net>

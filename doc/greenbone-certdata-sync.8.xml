@@ -2,7 +2,7 @@
 <!DOCTYPE manpage SYSTEM "/usr/share/xmltoman/xmltoman.dtd">
 <?xml-stylesheet type="text/xsl" href="/usr/share/xmltoman/xmltoman.xsl" ?>
 
-<!-- OpenVAS
+<!-- GVM
  $Id$
  Description: greenbone-certdata-sync manpage
 
@@ -27,7 +27,7 @@
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
 
-<manpage name="greenbone-certdata-sync" section="8" desc="OpenVAS Manager SCAP sync script">
+<manpage name="greenbone-certdata-sync" section="8" desc="Greenbone Vulnerability Manager SCAP sync script">
 
   <synopsis>
     <cmd>greenbone-certdata-sync OPTIONS</cmd>
@@ -97,7 +97,7 @@
 
   <section name="SEE ALSO">
     <p>
-      <manref name="openvasmd" section="8"/>,
+      <manref name="gvmd" section="8"/>,
       <manref name="greenbone-scapdata-sync" section="8"/>
     </p>
   </section>
@@ -117,7 +117,7 @@
 
   <section name="COPYRIGHT">
     <p>
-      The OpenVAS Manager is released under the GNU GPL, version 2,
+      The Greenbone Vulnerability Manager is released under the GNU GPL, version 2,
       or, at your option, any later version.
     </p>
   </section>

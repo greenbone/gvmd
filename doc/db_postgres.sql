@@ -113,7 +113,7 @@ CREATE TABLE credentials
  (id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
   owner integer REFERENCES users (id) ON DELETE RESTRICT,
-    -- The OpenVAS name for this credential.
+    -- The GVM name for this credential.
   name text NOT NULL,
   comment text,
   creation_time date,

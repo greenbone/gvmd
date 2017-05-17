@@ -1,16 +1,15 @@
-OPENVAS USER SCAP DATA HOWTO
-============================
+GVM USER SCAP DATA HOWTO
+========================
 
-The SCAP data sync scripts ("openvas-scapdata-sync" and
-"greenbone-scapdata-sync") do download SCAP data for the respective
-feed service. Additionalle they support the import of user-defined SCAP data.
-Currently only OVAL definitions are supported.
+The SCAP data sync script ("greenbone-scapdata-sync") do download SCAP data for
+the respective feed service. Additionalle they support the import of
+user-defined SCAP data.  Currently only OVAL definitions are supported.
 However, a few things must be kept in mind for this to work correctly:
 
 The "private" subdirectory
 --------------------------
 User defined data has to be placed into a special subdirectory of the SCAP
-data directory of your OpenVAS installation, which will be called the private
+data directory of your GVM installation, which will be called the private
 directory from now on.
 By default this subdirectory is named "private".
 

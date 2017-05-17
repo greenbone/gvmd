@@ -1,27 +1,27 @@
-OPENVAS-MANAGER REPORT FORMAT HOWTO
-===================================
+GREENBONE-VULNERABILITY-MANAGER REPORT FORMAT HOWTO
+===================================================
 
-The OpenVAS Manager comes with a flexible report framework.  There are
-numerous predefined report formats.  Report formats can also be loaded at
-run time via the client protocol (GMP).
+The Greenbone Vulnerability Manager comes with a flexible report framework.
+There are numerous predefined report formats.  Report formats can also be
+loaded at run time via the client protocol (GMP).
 
 Global report formats are visible to all users.
 
 
-Adding a report format to an existing OpenVAS Manager installation
-------------------------------------------------------------------
+Adding a report format to an existing Greenbone Vulnerability Manager installation
+----------------------------------------------------------------------------------
 
 Use the CREATE_REPORT_FORMAT GMP command to install the report format.  The
 GSA provides an upload option for this on the "Report Formats" page.
 
 
-Developing a new report format for upload into a running OpenVAS Manager
-------------------------------------------------------------------------
+Developing a new report format for upload into Greenbone Vulnerability Manager
+------------------------------------------------------------------------------
 
 To create a new report format
 
   - Copy the source directory for one of the example reports included with
-    the Manager source.  They are located in openvas-manager/report_formats.
+    the Manager source.  They are located in gvm/report_formats.
 
   - There is a "create_report_import" script in the directory.  It contains the
     data that describes the new format, like the name and file extension.
@@ -74,8 +74,8 @@ To create a new report format
 Creating a new predefined report format
 ---------------------------------------
 
-To add a new predefined global report format to OpenVAS Manager (typically in
-SVN):
+To add a new predefined global report format to Greenbone Vulnerability
+Manager (typically in SVN):
 
   - Add a new directory in src/report_formats for the format.  The directory
     must have the same name as the report.

@@ -2,9 +2,9 @@
 <!DOCTYPE manpage SYSTEM "/usr/share/xmltoman/xmltoman.dtd">
 <?xml-stylesheet type="text/xsl" href="/usr/share/xmltoman/xmltoman.xsl" ?>
 
-<!-- OpenVAS
+<!-- GVM
  $Id$
- Description: openvas-migrate-to-postgres manpage
+ Description: gvm-migrate-to-postgres manpage
 
  Authors:
  Matthew Mundell <matthew.mundell@greenbone.net>
@@ -27,15 +27,15 @@
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
 
-<manpage name="openvas-migrate-to-postgres" section="8" desc="Migrate OpenVAS database to Postgres">
+<manpage name="gvm-migrate-to-postgres" section="8" desc="Migrate GVM database to Postgres">
 
   <synopsis>
-    <cmd>openvas-migrate-to-postgres OPTIONS</cmd>
+    <cmd>gvm-migrate-to-postgres OPTIONS</cmd>
   </synopsis>
 
   <description>
     <p>
-      Migrate OpenVAS Manager database from SQLite3 to Postgres.
+      Migrate Greenbone Vulnerability Manager database from SQLite3 to Postgres.
     </p>
   </description>
 
@@ -60,7 +60,7 @@
 
   <section name="SEE ALSO">
     <p>
-      <manref name="openvasmd" section="8"/>
+      <manref name="gvmd" section="8"/>
     </p>
   </section>
 
@@ -79,7 +79,7 @@
 
   <section name="COPYRIGHT">
     <p>
-      The OpenVAS Manager is released under the GNU GPL, version 2,
+      The Greenbone Vulnerability Manager is released under the GNU GPL, version 2,
       or, at your option, any later version.
     </p>
   </section>
