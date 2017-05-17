@@ -74,20 +74,20 @@ if (NOT DOXYGEN_EXECUTABLE)
   message (STATUS "WARNING: Doxygen is required to build the HTML docs.")
 else (NOT DOXYGEN_EXECUTABLE)
   add_custom_target (doc COMMENT "Building documentation..."
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/openvasmd.8 ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile ${CMAKE_CURRENT_BINARY_DIR}/.built-html ${CMAKE_CURRENT_BINARY_DIR}/.built-html_db)
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gvmd.8 ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile ${CMAKE_CURRENT_BINARY_DIR}/.built-html ${CMAKE_CURRENT_BINARY_DIR}/.built-html_db)
 
   add_custom_command (OUTPUT .built-html
     COMMAND sh
     ARGS -c \"${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile && touch ${CMAKE_CURRENT_BINARY_DIR}/.built-html\;\"
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/openvasmd.html ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gvmd.html ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
 
   add_custom_target (doc-full COMMENT "Building documentation..."
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/openvasmd.8 ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_full ${CMAKE_CURRENT_BINARY_DIR}/.built-html_full ${CMAKE_CURRENT_BINARY_DIR}/.built-html_db)
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gvmd.8 ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_full ${CMAKE_CURRENT_BINARY_DIR}/.built-html_full ${CMAKE_CURRENT_BINARY_DIR}/.built-html_db)
 
   add_custom_command (OUTPUT .built-html_full
     COMMAND sh
     ARGS -c \"${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_full && touch ${CMAKE_CURRENT_BINARY_DIR}/.built-html_full\;\"
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/openvasmd.html ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_full)
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gvmd.html ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_full)
 
 endif (NOT DOXYGEN_EXECUTABLE)
 
@@ -118,14 +118,14 @@ endif (NOT XSLTPROC_EXECUTABLE)
 
 if (XMLTOMAN_EXECUTABLE)
   add_custom_target (man COMMENT "Building manual page..."
-    DEPENDS openvasmd.8 greenbone-certdata-sync.8 greenbone-scapdata-sync.8
-	        database-statistics-sqlite.8 openvas-migrate-to-postgres.8
-			openvas-portnames-update.8)
+    DEPENDS gvmd.8 greenbone-certdata-sync.8 greenbone-scapdata-sync.8
+	        database-statistics-sqlite.8 gvm-migrate-to-postgres.8
+			gvm-portnames-update.8)
 
-  add_custom_command (OUTPUT openvasmd.8
+  add_custom_command (OUTPUT gvmd.8
 					  COMMAND sh
-					  ARGS -c \"${XMLTOMAN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/openvasmd.8.xml > ${CMAKE_CURRENT_BINARY_DIR}/openvasmd.8\;\"
-					  DEPENDS openvasmd.8.xml)
+					  ARGS -c \"${XMLTOMAN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gvmd.8.xml > ${CMAKE_CURRENT_BINARY_DIR}/gvmd.8\;\"
+					  DEPENDS gvmd.8.xml)
 
   add_custom_command (OUTPUT greenbone-certdata-sync.8
 					  COMMAND sh
@@ -142,20 +142,20 @@ if (XMLTOMAN_EXECUTABLE)
 					  ARGS -c \"${XMLTOMAN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/database-statistics-sqlite.8.xml > ${CMAKE_CURRENT_BINARY_DIR}/database-statistics-sqlite.8\;\"
 					  DEPENDS database-statistics-sqlite.8.xml)
 
-  add_custom_command (OUTPUT openvas-migrate-to-postgres.8
+  add_custom_command (OUTPUT gvm-migrate-to-postgres.8
 					  COMMAND sh
-					  ARGS -c \"${XMLTOMAN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/openvas-migrate-to-postgres.8.xml > ${CMAKE_CURRENT_BINARY_DIR}/openvas-migrate-to-postgres.8\;\"
-					  DEPENDS openvas-migrate-to-postgres.8.xml)
+					  ARGS -c \"${XMLTOMAN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gvm-migrate-to-postgres.8.xml > ${CMAKE_CURRENT_BINARY_DIR}/gvm-migrate-to-postgres.8\;\"
+					  DEPENDS gvm-migrate-to-postgres.8.xml)
 
-  add_custom_command (OUTPUT openvas-portnames-update.8
+  add_custom_command (OUTPUT gvm-portnames-update.8
 					  COMMAND sh
-					  ARGS -c \"${XMLTOMAN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/openvas-portnames-update.8.xml > ${CMAKE_CURRENT_BINARY_DIR}/openvas-portnames-update.8\;\"
-					  DEPENDS openvas-portnames-update.8.xml)
+					  ARGS -c \"${XMLTOMAN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gvm-portnames-update.8.xml > ${CMAKE_CURRENT_BINARY_DIR}/gvm-portnames-update.8\;\"
+					  DEPENDS gvm-portnames-update.8.xml)
 else (XMLTOMAN_EXECUTABLE)
   message (STATUS "WARNING: xmltoman is required to generate manpage.")
-  add_custom_command (OUTPUT openvasmd.8
+  add_custom_command (OUTPUT gvmd.8
                       COMMAND echo "[Error: xmltoman required to see manpage here]"
-					          > openvasmd.8)
+					          > gvmd.8)
   add_custom_command (OUTPUT greenbone-certdata-sync.8
                       COMMAND echo "[Error: xmltoman required to see manpage here]"
 					          > greenbone-certdata-sync.8)
@@ -165,27 +165,27 @@ else (XMLTOMAN_EXECUTABLE)
   add_custom_command (OUTPUT database-statistics-sqlite.8
                       COMMAND echo "[Error: xmltoman required to see manpage here]"
 					          > database-statistics-sqlite.8)
-  add_custom_command (OUTPUT openvas-migrate-to-postgres.8
+  add_custom_command (OUTPUT gvm-migrate-to-postgres.8
                       COMMAND echo "[Error: xmltoman required to see manpage here]"
-					          > openvas-migrate-to-postgres.8)
-  add_custom_command (OUTPUT openvas-portnames-update.8
+					          > gvm-migrate-to-postgres.8)
+  add_custom_command (OUTPUT gvm-portnames-update.8
                       COMMAND echo "[Error: xmltoman required to see manpage here]"
-					          > openvas-portnames-update.8)
+					          > gvm-portnames-update.8)
 endif (XMLTOMAN_EXECUTABLE)
 
 if (XMLMANTOHTML_EXECUTABLE)
   add_custom_target (man-html COMMENT "Building manual page HTML..."
-    DEPENDS openvasmd.html)
+    DEPENDS gvmd.html)
 
-  add_custom_command (OUTPUT openvasmd.html
+  add_custom_command (OUTPUT gvmd.html
 					  COMMAND sh
-					  ARGS -c \"${XMLMANTOHTML_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/openvasmd.8.xml > ${CMAKE_CURRENT_BINARY_DIR}/openvasmd.html\;\"
-					  DEPENDS openvasmd.8.xml)
+					  ARGS -c \"${XMLMANTOHTML_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gvmd.8.xml > ${CMAKE_CURRENT_BINARY_DIR}/gvmd.html\;\"
+					  DEPENDS gvmd.8.xml)
 else (XMLMANTOHTML_EXECUTABLE)
   message (STATUS "WARNING: xmlmantohtml is required for manpage in HTML docs.")
-  add_custom_command (OUTPUT openvasmd.html
+  add_custom_command (OUTPUT gvmd.html
                       COMMAND echo "[Error: xmlmantohtml required to see manpage here]"
-					          > openvasmd.html)
+					          > gvmd.html)
 endif (XMLMANTOHTML_EXECUTABLE)
 
 if (SQLT-DIAGRAM_EXECUTABLE)
@@ -219,8 +219,8 @@ if (XSLTPROC_EXECUTABLE)
     COMPONENT doc)
 endif (XSLTPROC_EXECUTABLE)
 
-install (FILES openvasmd.8 greenbone-certdata-sync.8 greenbone-scapdata-sync.8
-               database-statistics-sqlite.8 openvas-migrate-to-postgres.8
-			   openvas-portnames-update.8
+install (FILES gvmd.8 greenbone-certdata-sync.8 greenbone-scapdata-sync.8
+               database-statistics-sqlite.8 gvm-migrate-to-postgres.8
+			   gvm-portnames-update.8
   DESTINATION share/man/man8/
   COMPONENT doc)

@@ -277,7 +277,7 @@ set (OPENVASMD_VERSION "${PROJECT_VERSION_STRING}")
 # Configure Doxyfile with version number
 configure_file (doc/Doxyfile.in doc/Doxyfile)
 configure_file (doc/Doxyfile_full.in doc/Doxyfile_full)
-configure_file (doc/example-openvas-manage-certs.conf.in doc/example-openvas-manage-certs.conf @ONLY)
+configure_file (doc/example-gvm-manage-certs.conf.in doc/example-gvm-manage-certs.conf @ONLY)
 configure_file (VERSION.in VERSION)
 configure_file (src/openvasmd_log_conf.cmake_in src/openvasmd_log.conf)
 configure_file (src/schema_formats/XML/GMP.xml.in src/schema_formats/XML/GMP.xml @ONLY)
@@ -616,10 +616,10 @@ install (FILES ${CMAKE_BINARY_DIR}/tools/openvas-manage-certs
          PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
                      GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
-install (FILES ${CMAKE_SOURCE_DIR}/doc/openvas-manage-certs.1
+install (FILES ${CMAKE_SOURCE_DIR}/doc/gvm-manage-certs.1
           DESTINATION ${DATADIR}/man/man1 )
 
-install (FILES ${CMAKE_BINARY_DIR}/doc/example-openvas-manage-certs.conf
+install (FILES ${CMAKE_BINARY_DIR}/doc/example-gvm-manage-certs.conf
          DESTINATION ${DATADIR}/doc/openvas-manager/ )
 
 ## End

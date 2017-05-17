@@ -12,7 +12,7 @@
 # Locality
 # GVM_CERTIFICATE_LOCALITY="Osnabrueck"
 # Organization
-# GVM_CERTIFICATE_ORG="OpenVAS Users"
+# GVM_CERTIFICATE_ORG="GVM Users"
 # (Organization unit)
 # GVM_CERTIFICATE_ORG_UNIT=""
 

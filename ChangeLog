@@ -1,5 +1,40 @@
 2017-05-17  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	Rename several files in doc directory accordingly.
+
+	* doc/example-openvas-manage-certs.conf.in,
+	doc/example-gvm-manage-certs.conf.in: Renamed.
+
+	* doc/greenbone-certdata-sync.8,
+	doc/greenbone-scapdata-sync.8: Re-generated.
+
+	* doc/openvas-manage-certs.1,
+	doc/gvm-manage-certs.1: Renamed.
+
+	* doc/openvas-migrate-to-postgres.8,
+	doc/gvm-migrate-to-postgres.8: Renamed.
+
+	* doc/openvas-migrate-to-postgres.8.xml,
+	doc/gvm-migrate-to-postgres.8.xml: Renamed.
+
+	* doc/gvm-portnames-update.8,
+	doc/openvas-portnames-update.8: Renamed.
+
+	* doc/openvas-portnames-update.8.xml,
+	doc/gvm-portnames-update.8.xml: Renamed.
+
+	* doc/openvasmd.8, doc/gvmd.8: Renamed.
+
+	* doc/openvasmd.8.xml, doc/gvmd.8.xml: Renamed.
+
+	* doc/openvasmd.html, doc/gvmd.html: Renamed.
+
+	* CMakeLists.txt, doc/CMakeLists.txt,
+	doc/database-statistics-sqlite.8:
+	Respective name changes.
+
+2017-05-17  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	First set of renaming OpenVAS Manager to GVM.
 
 	* INSTALL, README, doc/CMakeLists.txt, doc/Doxyfile.in,
