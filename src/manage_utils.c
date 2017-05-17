@@ -338,17 +338,18 @@ next_time (time_t first, int period, int period_months, const char* timezone,
  *
  * @param[in]  given_hosts      String describing hosts.
  * @param[in]  exclude_hosts    String describing hosts excluded from given set.
+ * @param[in]  max_hosts        Max hosts.
  *
  * @return Number of hosts, or -1 on error.
  */
 int
-manage_count_hosts_FIX (const char *given_hosts, const char *exclude_hosts)
+manage_count_hosts_max (const char *given_hosts, const char *exclude_hosts,
+                        int max_hosts)
 {
   int count;
   openvas_hosts_t *hosts;
 
-  // FIX 4095 s/b manage_max_host () but this is used on pg side
-  hosts = openvas_hosts_new_with_max (given_hosts, 4095);
+  hosts = openvas_hosts_new_with_max (given_hosts, max_hosts);
   if (hosts == NULL)
     return -1;
 

@@ -15733,6 +15733,11 @@ init_manage_internal (GSList *log_config,
   if (ret)
     return ret;
 
+  /* Set max_hosts in db, so database server side can access it. */
+
+  sql ("DELETE FROM meta WHERE name = 'max_hosts';");
+  sql ("INSERT INTO meta (name, value) VALUES ('max_hosts', %i);", max_hosts);
+
   /* Ensure the database is complete, removing superfluous rows.
    *
    * Assume that all other running processes are from the same Manager version,
@@ -31100,21 +31105,9 @@ find_target_with_permission (const char* uuid, target_t* target,
 int
 manage_count_hosts (const char *given_hosts, const char *exclude_hosts)
 {
-  int count;
-  openvas_hosts_t *hosts;
-
-  hosts = openvas_hosts_new_with_max (given_hosts, manage_max_hosts ());
-  if (hosts == NULL)
-    return -1;
-
-  if (exclude_hosts)
-    /* Don't resolve hostnames in excluded hosts. */
-    openvas_hosts_exclude (hosts, exclude_hosts, 0);
-
-  count = openvas_hosts_count (hosts);
-  openvas_hosts_free (hosts);
-
-  return count;
+  return manage_count_hosts_max (given_hosts,
+                                 exclude_hosts,
+                                 manage_max_hosts ());
 }
 
 /**

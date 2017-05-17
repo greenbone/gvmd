@@ -59,7 +59,7 @@ time_t
 next_time (time_t, int, int, const char*, int);
 
 int
-manage_count_hosts_FIX (const char *, const char *);
+manage_count_hosts_max (const char *, const char *, int);
 
 double
 level_min_severity (const char*, const char*);

@@ -1,3 +1,22 @@
+2017-05-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r28413.
+
+	In the max_hosts Postgres function, get the maximum from the meta table,
+	in case --max-ips-per-target was supplied, instead of always using 4095.
+
+	* src/manage_utils.c (manage_count_hosts_FIX): Remove.
+	(manage_count_hosts_max): New function.  Like manage_count_hosts_FIX, but
+	takes a max_hosts, and updated to be like manage_count_hosts.
+
+	* src/manage_utils.h: Update header accordingly.
+
+	* src/manage_pg_server.c (sql_max_hosts): Get max hosts for
+	manage_count_hosts_max from meta table.
+
+	* src/manage_sql.c (init_manage_internal): Set max_hosts in meta.
+	(manage_count_hosts): Use manage_count_hosts_max.
+
 2017-05-15  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r28386.
