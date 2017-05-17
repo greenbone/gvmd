@@ -27,6 +27,7 @@
 
 #include "postgres.h"
 #include "fmgr.h"
+#include "executor/spi.h"
 
 #ifdef PG_MODULE_MAGIC
 PG_MODULE_MAGIC;
@@ -97,7 +98,7 @@ sql_max_hosts (PG_FUNCTION_ARGS)
     {
       text *hosts_arg;
       char *hosts, *exclude;
-      int ret;
+      int ret, max_hosts;
 
       hosts_arg = PG_GETARG_TEXT_P (0);
       hosts = textndup (hosts_arg, VARSIZE (hosts_arg) - VARHDRSZ);
@@ -112,7 +113,26 @@ sql_max_hosts (PG_FUNCTION_ARGS)
           exclude_arg = PG_GETARG_TEXT_P (1);
           exclude = textndup (exclude_arg, VARSIZE (exclude_arg) - VARHDRSZ);
         }
-      ret = manage_count_hosts_FIX (hosts, exclude);
+
+      max_hosts = 4095;
+      SPI_connect ();
+      ret = SPI_exec ("SELECT coalesce ((SELECT value FROM meta"
+                      "                  WHERE name = 'max_hosts'),"
+                      "                 '4095');", /* Same as MANAGE_MAX_HOSTS. */
+                      1); /* Max 1 row returned. */
+      if (SPI_processed > 0 && ret > 0 && SPI_tuptable != NULL)
+        {
+          char *cell;
+
+          cell = SPI_getvalue (SPI_tuptable->vals[0], SPI_tuptable->tupdesc, 1);
+          elog (INFO, "cell: %s", cell);
+          if (cell)
+            max_hosts = atoi (cell);
+        }
+      elog (INFO, "done");
+      SPI_finish ();
+
+      ret = manage_count_hosts_max (hosts, exclude, max_hosts);
       pfree (hosts);
       pfree (exclude);
       PG_RETURN_INT32 (ret);
