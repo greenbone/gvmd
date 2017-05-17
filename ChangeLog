@@ -1,3 +1,14 @@
+2017-05-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Remove SYNC_SCAP and SYNC_CERT.
+
+	* src/gmp.c (client_state_t, gmp_xml_handle_start_element)
+	(gmp_xml_handle_end_element): Remove commands.
+
+	* src/manage_sql.c (gmp_commands): Remove commands.
+
+	* src/schema_formats/XML/GMP.xml.in: Remove commands.
+
 2017-05-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_count_hosts): Use exclude function with does

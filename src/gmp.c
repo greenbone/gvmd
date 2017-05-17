@@ -5644,10 +5644,8 @@ typedef enum
   CLIENT_RUN_WIZARD_PARAMS_PARAM_VALUE,
   CLIENT_START_TASK,
   CLIENT_STOP_TASK,
-  CLIENT_SYNC_CERT,
   CLIENT_SYNC_CONFIG,
   CLIENT_SYNC_FEED,
-  CLIENT_SYNC_SCAP,
   CLIENT_TEST_ALERT,
   CLIENT_VERIFY_AGENT,
   CLIENT_VERIFY_REPORT_FORMAT,
@@ -7919,8 +7917,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &stop_task_data->task_id);
             set_client_state (CLIENT_STOP_TASK);
           }
-        else if (strcasecmp ("SYNC_CERT", element_name) == 0)
-          set_client_state (CLIENT_SYNC_CERT);
         else if (strcasecmp ("SYNC_CONFIG", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "config_id",
@@ -7929,8 +7925,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("SYNC_FEED", element_name) == 0)
           set_client_state (CLIENT_SYNC_FEED);
-        else if (strcasecmp ("SYNC_SCAP", element_name) == 0)
-          set_client_state (CLIENT_SYNC_SCAP);
         else if (strcasecmp ("TEST_ALERT", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values,
@@ -29138,57 +29132,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
-      case CLIENT_SYNC_CERT:
-        assert (current_credentials.username);
-        if (forked == 2)
-          /* Prevent the forked child from forking again, as then both
-           * forked children would be using the same server session. */
-          abort ();               // FIX respond with error or something
-        else
-          switch (openvas_sync_feed (cert_sync_script, current_credentials.username, CERT_FEED))
-            {
-            case 0:
-              SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("sync_cert"));
-              forked = 1;
-              break;
-            case 1:
-              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_BUSY ("sync_cert"));
-              break;
-            case 2:
-              /* Forked sync process: success. */
-              current_error = 4;
-              g_debug ("   %s: sync_cert fork success\n", __FUNCTION__);
-              g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
-                           "Dummy error for current_error");
-              break;
-            case 11:
-              /* Forked sync process: success busy. */
-              current_error = 4;
-              g_debug ("   %s: sync_cert fork success busy\n", __FUNCTION__);
-              g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
-                           "Dummy error for current_error");
-              break;
-            case 99:
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("sync_cert",
-                                  "Permission denied"));
-              break;
-            case -10:
-              /* Forked sync process: error. */
-              current_error = -10;
-              g_debug ("   %s: sync_cert fork error\n", __FUNCTION__);
-              g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
-                           "Dummy error for current_error");
-              break;
-            default:
-              assert (0);
-            case -1:
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("sync_cert"));
-              break;
-            }
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-
       case CLIENT_SYNC_FEED:
         assert (current_credentials.username);
         if (forked == 2)
@@ -29244,57 +29187,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_SYNC_CONFIG:
         assert (strcasecmp ("SYNC_CONFIG", element_name) == 0);
         return handle_sync_config (gmp_parser, error);
-
-      case CLIENT_SYNC_SCAP:
-        assert (current_credentials.username);
-        if (forked == 2)
-          /* Prevent the forked child from forking again, as then both
-           * forked children would be using the same server session. */
-          abort ();               // FIX respond with error or something
-        else
-          switch (openvas_sync_feed (scap_sync_script, current_credentials.username, SCAP_FEED))
-            {
-            case 0:
-              SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("sync_scap"));
-              forked = 1;
-              break;
-            case 1:
-              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_BUSY ("sync_scap"));
-              break;
-            case 2:
-              /* Forked sync process: success. */
-              current_error = 4;
-              g_debug ("   %s: sync_scap fork success\n", __FUNCTION__);
-              g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
-                           "Dummy error for current_error");
-              break;
-            case 11:
-              /* Forked sync process: success busy. */
-              current_error = 4;
-              g_debug ("   %s: sync_scap fork success busy\n", __FUNCTION__);
-              g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
-                           "Dummy error for current_error");
-              break;
-            case 99:
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("sync_scap",
-                                  "Permission denied"));
-              break;
-            case -10:
-              /* Forked sync process: error. */
-              current_error = -10;
-              g_debug ("   %s: sync_scap fork error\n", __FUNCTION__);
-              g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
-                           "Dummy error for current_error");
-              break;
-            default:
-              assert (0);
-            case -1:
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("sync_scap"));
-              break;
-            }
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
 
       case CLIENT_VERIFY_AGENT:
         assert (strcasecmp ("VERIFY_AGENT", element_name) == 0);

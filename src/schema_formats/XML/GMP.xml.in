@@ -3219,8 +3219,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>stop_task</c>
           <c>sync_feed</c>
           <c>sync_config</c>
-          <c>sync_scap</c>
-          <c>sync_cert</c>
           <c>test_alert</c>
           <c>verify_agent</c>
           <c>verify_report_format</c>
@@ -3345,8 +3343,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>stop_task</r>
             <r>sync_feed</r>
             <r>sync_config</r>
-            <r>sync_scap</r>
-            <r>sync_cert</r>
             <r>test_alert</r>
             <r>verify_agent</r>
             <r>verify_report_format</r>
@@ -22210,10 +22206,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             RUN_WIZARD             Run a wizard.
             START_TASK             Manually start an existing task.
             STOP_TASK              Stop a running task.
-            SYNC_CERT              Synchronize with a CERT feed.
             SYNC_CONFIG            Synchronize a config with a scanner.
             SYNC_FEED              Synchronize with an NVT feed.
-            SYNC_SCAP              Synchronize with a SCAP feed.
             TEST_ALERT             Run an alert.
             VERIFY_AGENT           Verify an agent.
             VERIFY_REPORT_FORMAT   Verify a report format.
@@ -25000,42 +24994,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
-    <name>sync_cert</name>
-    <summary>Synchronize with a CERT feed</summary>
-    <description>
-      <p>
-        The client uses the "sync_cert" command to request a
-        synchronization with the CERT feed service the Manager uses.
-      </p>
-    </description>
-    <pattern>
-    </pattern>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-      </pattern>
-    </response>
-    <example>
-      <summary>Sync the feed</summary>
-      <request>
-        <sync_cert>
-        </sync_cert>
-      </request>
-      <response>
-        <sync_cert_response status="202" status_text="OK, request submitted"/>
-      </response>
-    </example>
-  </command>
-  <command>
     <name>sync_feed</name>
     <summary>Synchronize with an NVT feed</summary>
     <description>
@@ -25105,42 +25063,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </request>
       <response>
         <sync_config_response status="202" status_text="OK, request submitted"/>
-      </response>
-    </example>
-  </command>
-  <command>
-    <name>sync_scap</name>
-    <summary>Synchronize with a SCAP feed</summary>
-    <description>
-      <p>
-        The client uses the "sync_scap" command to request a
-        synchronization with the SCAP feed service the Manager uses.
-      </p>
-    </description>
-    <pattern>
-    </pattern>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-      </pattern>
-    </response>
-    <example>
-      <summary>Sync the feed</summary>
-      <request>
-        <sync_scap>
-        </sync_scap>
-      </request>
-      <response>
-        <sync_scap_response status="202" status_text="OK, request submitted"/>
       </response>
     </example>
   </command>
@@ -25333,6 +25255,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         The OpenVAS Management Protocol (OMP) is renamed to Greenbone Management Protocol (GMP).
         The protocol as such does not change except for the changes documented here
         between OMP 7.0 and GMP 8.0.
+      </p>
+    </description>
+    <version>8.0</version>
+  </change>
+  <change>
+    <command>SYNC_SCAP, SYNC_CERT</command>
+    <summary>Commands removed</summary>
+    <description>
+      <p>
+        The SYNC_SCAP and SYNC_CERT commands have been removed.  They have been
+        superseded by automatic feed updating.
       </p>
     </description>
     <version>8.0</version>
