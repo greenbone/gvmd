@@ -32,7 +32,15 @@
 #include "manage.h"
 #include "manage_utils.h"
 
+
 /* Internal types and preprocessor definitions. */
+
+/**
+ * @brief Absolute maximum number of IPs per target.
+ *
+ * The number of 70000 is chosen to cover "192.168.0.0-192.168.255.255".
+ */
+#define ABSOLUTE_MAX_IPS_PER_TARGET 70000
 
 /**
  * @brief UUID of 'Full and fast' config.
@@ -250,6 +258,98 @@
                                   ((a).tv_usec - (b).tv_usec) / 1000)
 
 
+/* Macros. */
+
+/**
+ * @brief Generate accessor for an SQL iterator.
+ *
+ * This convenience macro is used to generate an accessor returning a
+ * const string pointer.
+ *
+ * @param[in]  name  Name of accessor.
+ * @param[in]  col   Column number to access.
+ */
+#define DEF_ACCESS(name, col)                                     \
+const char*                                                       \
+name (iterator_t* iterator)                                       \
+{                                                                 \
+  const char *ret;                                                \
+  if (iterator->done) return NULL;                                \
+  ret = iterator_string (iterator, col);                          \
+  return ret;                                                     \
+}
+
+
+/* Iterator definitions. */
+
+/**
+ * @brief Iterator column.
+ */
+typedef struct
+{
+  gchar *select;       ///< Column for SELECT.
+  gchar *filter;       ///< Filter column name.  NULL to use select_column.
+  keyword_type_t type; ///< Type of column.
+} column_t;
+
+/**
+ * @brief Filter columns for GET iterator.
+ */
+#define ANON_GET_ITERATOR_FILTER_COLUMNS "uuid", \
+ "created", "modified", "_owner"
+
+/**
+ * @brief Filter columns for GET iterator.
+ */
+#define GET_ITERATOR_FILTER_COLUMNS "uuid", "name", "comment", \
+ "created", "modified", "_owner"
+
+/**
+ * @brief Columns for GET iterator, as a single string.
+ *
+ * @param[in]  prefix  Column prefix.
+ */
+#define GET_ITERATOR_COLUMNS_STRING                                \
+  "id, uuid, name, comment, iso_time (creation_time),"             \
+  " iso_time (modification_time), creation_time AS created,"       \
+  " modification_time AS modified"
+
+/**
+ * @brief Columns for GET iterator.
+ *
+ * @param[in]  prefix  Column prefix.
+ */
+#define GET_ITERATOR_COLUMNS_PREFIX(prefix)                                 \
+  { prefix "id", NULL, KEYWORD_TYPE_INTEGER },                              \
+  { prefix "uuid", NULL, KEYWORD_TYPE_STRING },                             \
+  { prefix "name", NULL, KEYWORD_TYPE_STRING },                             \
+  { prefix "comment", NULL, KEYWORD_TYPE_STRING },                          \
+  { " iso_time (" prefix "creation_time)", NULL, KEYWORD_TYPE_STRING },     \
+  { " iso_time (" prefix "modification_time)", NULL, KEYWORD_TYPE_STRING }, \
+  { prefix "creation_time", "created", KEYWORD_TYPE_INTEGER },              \
+  { prefix "modification_time", "modified", KEYWORD_TYPE_INTEGER }
+
+/**
+ * @brief Columns for GET iterator.
+ *
+ * @param[in]  table  Table.
+ */
+#define GET_ITERATOR_COLUMNS(table)                                             \
+  GET_ITERATOR_COLUMNS_PREFIX(""),                                              \
+  {                                                                             \
+    "(SELECT name FROM users AS inner_users"                                    \
+    " WHERE inner_users.id = " G_STRINGIFY (table) ".owner)",                   \
+    "_owner",                                                                   \
+    KEYWORD_TYPE_STRING                                                         \
+  },                                                                            \
+  { "owner", NULL, KEYWORD_TYPE_INTEGER }
+
+/**
+ * @brief Number of columns for GET iterator.
+ */
+#define GET_ITERATOR_COLUMN_COUNT 10
+
+
 /* Variables */
 
 extern gchar *task_db_name;
@@ -398,5 +498,30 @@ int manage_scap_db_exists ();
 void manage_db_check_mode (const gchar *);
 
 int manage_db_check (const gchar *);
+
+int
+count (const char *, const get_data_t *, column_t *, column_t *, const char **,
+       int, const char *, const char *, int);
+
+int
+init_get_iterator (iterator_t*, const char *, const get_data_t *, column_t *,
+                   column_t *, const char **, int, const char *, const char *,
+                   int);
+
+gchar *
+columns_build_select (column_t *);
+
+gchar *
+filter_clause (const char*, const char*, const char **, column_t *,
+               column_t *, int, gchar **, int *, int *, array_t **, gchar **);
+
+void
+check_alerts ();
+
+int
+manage_option_setup (GSList *, const gchar *);
+
+void
+manage_option_cleanup ();
 
 #endif /* not OPENVAS_MANAGER_MANAGE_SQL_H */

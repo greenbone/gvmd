@@ -1,3 +1,28 @@
+2017-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Move SQL oriented SecInfo code to new file manage_sql_secinfo.c.
+
+	* src/manage_sql_secinfo.c, src/manage_sql_secinfo.h: New files.
+
+	* src/CMakeLists.txt: Add new file.
+
+	* src/manage_sql.c: Move all the SecInfo code to manage_sql_secinfo.c.
+	(parse_utc_time, parse_otp_time, parse_feed_timestamp, parse_ctime)
+	(days_from_now, iso_time_internal, iso_time, iso_time_tz): Move to
+	utils.c.
+	(column_t, ANON_GET_ITERATOR_FILTER_COLUMNS, GET_ITERATOR_FILTER_COLUMNS)
+	(GET_ITERATOR_COLUMNS_STRING, GET_ITERATOR_COLUMNS_PREFIX)
+	(GET_ITERATOR_COLUMNS, GET_ITERATOR_COLUMN_COUNT, DEF_ACCESS): Move to
+	manage_sql.h.
+	(columns_build_select, filter_clause, init_get_iterator, count): Remove
+	static.
+
+	* src/manage_sql.h: Add headers accordingly.
+
+	* src/utils.c: Add functions from manage_sql.c.
+
+	* src/utils.h: Add headers accordingly.
+
 2017-05-18  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* tools/cert_bund_getbyname.xsl,

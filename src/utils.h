@@ -26,10 +26,33 @@
 #ifndef OPENVAS_MANAGER_UTILS_H
 #define OPENVAS_MANAGER_UTILS_H
 
+#include <time.h>
+
 int
 openvas_usleep (unsigned int);
 
 int
 openvas_sleep (unsigned int);
+
+int
+parse_utc_time (const char *, const char *);
+
+int
+parse_otp_time (const char *);
+
+int
+parse_feed_timestamp (const char *);
+
+int
+parse_ctime (const char *);
+
+int
+days_from_now (time_t *);
+
+char *
+iso_time (time_t *);
+
+char *
+iso_time_tz (time_t *, const char *, const char **);
 
 #endif /* not OPENVAS_MANAGER_MANAGE_UTILS_H */

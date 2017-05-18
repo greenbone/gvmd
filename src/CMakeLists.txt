@@ -52,7 +52,7 @@ add_library (manage STATIC
              manage_ranges_nmap_5_51_top_2000_top_100.c
              manage_acl.c manage_config_discovery.c
              manage_config_host_discovery.c manage_config_system_discovery.c
-             manage_sql.c manage_migrators.c scanner.c
+             manage_sql.c manage_sql_secinfo.c manage_migrators.c scanner.c
 			 ${BACKEND_FILES}
              lsc_user.c lsc_crypt.c utils.c)
 
@@ -232,6 +232,7 @@ set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/openvasmd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_ranges_iana_tcp_udp_2012.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_ranges_nmap_5_51_top_2000_top_100.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_secinfo.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sqlite3.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_migrators.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/ovas-mngr-comm.c"
