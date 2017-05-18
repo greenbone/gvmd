@@ -1,5 +1,9 @@
 2017-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c: Correct page comment.
+
+2017-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move SQL oriented SecInfo code to new file manage_sql_secinfo.c.
 
 	* src/manage_sql_secinfo.c, src/manage_sql_secinfo.h: New files.

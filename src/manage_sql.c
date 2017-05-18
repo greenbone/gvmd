@@ -6390,7 +6390,7 @@ collate_ip (void* data,
 }
 
 
-/* Access control. */
+/* Task subject iterators. */
 
 /**
  * @brief Initialise a task user iterator.
