@@ -1,3 +1,8 @@
+2017-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_manage_internal): Only set max_hosts if the
+	tables exist.
+
 2017-05-17  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	Rename several files in doc directory accordingly.
