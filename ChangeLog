@@ -1,3 +1,17 @@
+2017-05-18  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	More renaming to GVM.
+
+	* gvm-manage-certs.in, openvas-manage-certs.in: Renamed.
+
+	* gvm-migrate-to-postgres.in, openvas-migrate-to-postgres.in: Renamed.
+
+	* gvm-portnames-update.in, openvas-portnames-update.in: Renamed.
+
+	* openvas-lsc-rpm-creator.sh, gvm-lsc-rpm-creator.sh: Renamed.
+
+	* CMakeLists.txt: Corresponding filename changes.
+
 2017-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c: Correct page comment.

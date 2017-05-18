@@ -165,8 +165,8 @@ do
     \"--notemp\" \\
     \"--nocomp\" \\
     \"/tmp/blubber\" \\
-    \"openvas-lsc-rpm-creator.sh\" \\
-    \"OpenVAS LSC RPM creator\" \\
+    \"gvm-lsc-rpm-creator.sh\" \\
+    \"GVM LSC RPM creator\" \\
     \"./create-rpm.sh\""
 	if test x$script != x; then
 	    echo Script run after extraction:
