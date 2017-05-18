@@ -39,7 +39,7 @@ if (EXISTS "${SOURCE_DIR}/.svn/" OR EXISTS "${SOURCE_DIR}/../.svn/")
 endif (EXISTS "${SOURCE_DIR}/.svn/" OR EXISTS "${SOURCE_DIR}/../.svn/")
 
 if (SVN_REVISION)
-  file (WRITE svnrevision.h.tmp "#define OPENVASMD_SVN_REVISION ${SVN_REVISION}\n")
+  file (WRITE svnrevision.h.tmp "#define GVMD_SVN_REVISION ${SVN_REVISION}\n")
   execute_process (COMMAND ${CMAKE_COMMAND} -E copy_if_different
                    svnrevision.h.tmp svnrevision.h)
   file (REMOVE svnrevision.h.tmp)

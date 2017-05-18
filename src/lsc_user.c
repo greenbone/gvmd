@@ -226,7 +226,7 @@ get_rpm_generator_path ()
 
   if (rpm_generator_path == NULL)
     {
-      gchar *path_exec = g_build_filename (OPENVAS_DATA_DIR,
+      gchar *path_exec = g_build_filename (GVM_DATA_DIR,
                                            "openvas-lsc-rpm-creator.sh",
                                            NULL);
       if (check_is_file (path_exec) == 0)
@@ -235,7 +235,7 @@ get_rpm_generator_path ()
           return NULL;
         }
       g_free (path_exec);
-      rpm_generator_path = g_strdup (OPENVAS_DATA_DIR);
+      rpm_generator_path = g_strdup (GVM_DATA_DIR);
     }
 
   return rpm_generator_path;

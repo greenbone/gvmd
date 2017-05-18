@@ -1,6 +1,6 @@
-# OpenVAS
+# GVM
 # $Id$
-# Description: CMakefile for the OpenVAS Manager program
+# Description: CMakefile for the Greenbone Vulnerability Manager program
 #
 # Authors:
 # Matthew Mundell <matthew.mundell@greenbone.net>
@@ -53,7 +53,7 @@ add_library (manage STATIC
              manage_acl.c manage_config_discovery.c
              manage_config_host_discovery.c manage_config_system_discovery.c
              manage_sql.c manage_sql_secinfo.c manage_migrators.c scanner.c
-			 ${BACKEND_FILES}
+             ${BACKEND_FILES}
              lsc_user.c lsc_crypt.c utils.c)
 
 if (BACKEND STREQUAL SQLITE3)
@@ -80,9 +80,9 @@ target_link_libraries (${BINARY_NAME} ovas-mngr-comm gmp otp manage ${GNUTLS_LDF
 
 set_target_properties (${BINARY_NAME} PROPERTIES LINKER_LANGUAGE C)
 
-if (OPENVASMD_VERSION)
-  add_definitions (-DOPENVASMD_VERSION=\\\"${OPENVASMD_VERSION}\\\")
-endif (OPENVASMD_VERSION)
+if (GVMD_VERSION)
+  add_definitions (-DGVMD_VERSION=\\\"${GVMD_VERSION}\\\")
+endif (GVMD_VERSION)
 
 if (NOT CMAKE_BUILD_TYPE MATCHES "Release")
   # If we got SVN_REVISION at configure time,
@@ -112,85 +112,85 @@ if (GMP_VERSION)
   add_definitions (-DGMP_VERSION=\\\"${GMP_VERSION}\\\")
 endif (GMP_VERSION)
 
-add_definitions (-DOPENVASMD_DATABASE_VERSION=${OPENVASMD_DATABASE_VERSION})
-add_definitions (-DOPENVASMD_SCAP_DATABASE_VERSION=${OPENVASMD_SCAP_DATABASE_VERSION})
-add_definitions (-DOPENVASMD_CERT_DATABASE_VERSION=${OPENVASMD_CERT_DATABASE_VERSION})
-add_definitions (-DOPENVAS_OS_NAME=\\\"${CMAKE_SYSTEM}\\\")
+add_definitions (-DGVMD_DATABASE_VERSION=${GVMD_DATABASE_VERSION})
+add_definitions (-DGVMD_SCAP_DATABASE_VERSION=${GVMD_SCAP_DATABASE_VERSION})
+add_definitions (-DGVMD_CERT_DATABASE_VERSION=${GVMD_CERT_DATABASE_VERSION})
+add_definitions (-DGVM_OS_NAME=\\\"${CMAKE_SYSTEM}\\\")
 add_definitions (-DPREFIX=\\\"${CMAKE_INSTALL_PREFIX}\\\")
 
-add_definitions (-DOPENVAS_SCAP_RES_DIR=\\\"${OPENVAS_SCAP_RES_DIR}\\\")
-add_definitions (-DOPENVAS_SCAP_DATA_DIR=\\\"${OPENVAS_SCAP_DATA_DIR}\\\")
+add_definitions (-DGVM_SCAP_RES_DIR=\\\"${GVM_SCAP_RES_DIR}\\\")
+add_definitions (-DGVM_SCAP_DATA_DIR=\\\"${GVM_SCAP_DATA_DIR}\\\")
 
-add_definitions (-DOPENVAS_CERT_RES_DIR=\\\"${OPENVAS_CERT_RES_DIR}\\\")
-add_definitions (-DOPENVAS_CERT_DATA_DIR=\\\"${OPENVAS_CERT_DATA_DIR}\\\")
+add_definitions (-DGVM_CERT_RES_DIR=\\\"${GVM_CERT_RES_DIR}\\\")
+add_definitions (-DGVM_CERT_DATA_DIR=\\\"${GVM_CERT_DATA_DIR}\\\")
 
-if (OPENVAS_SCANNER_CERTIFICATE)
-  add_definitions (-DSCANNERCERT=\\\"${OPENVAS_SCANNER_CERTIFICATE}\\\")
-endif (OPENVAS_SCANNER_CERTIFICATE)
+if (GVM_SCANNER_CERTIFICATE)
+        add_definitions (-DSCANNERCERT=\\\"${GVM_SCANNER_CERTIFICATE}\\\")
+endif (GVM_SCANNER_CERTIFICATE)
 
-if (OPENVAS_SCANNER_KEY)
-  add_definitions (-DSCANNERKEY=\\\"${OPENVAS_SCANNER_KEY}\\\")
-endif (OPENVAS_SCANNER_KEY)
+if (GVM_SCANNER_KEY)
+        add_definitions (-DSCANNERKEY=\\\"${GVM_SCANNER_KEY}\\\")
+endif (GVM_SCANNER_KEY)
 
-if (OPENVAS_CLIENT_CERTIFICATE)
-  add_definitions (-DCLIENTCERT=\\\"${OPENVAS_CLIENT_CERTIFICATE}\\\")
-endif (OPENVAS_CLIENT_CERTIFICATE)
+if (GVM_CLIENT_CERTIFICATE)
+        add_definitions (-DCLIENTCERT=\\\"${GVM_CLIENT_CERTIFICATE}\\\")
+endif (GVM_CLIENT_CERTIFICATE)
 
-if (OPENVAS_CLIENT_KEY)
-  add_definitions (-DCLIENTKEY=\\\"${OPENVAS_CLIENT_KEY}\\\")
-endif (OPENVAS_CLIENT_KEY)
+if (GVM_CLIENT_KEY)
+        add_definitions (-DCLIENTKEY=\\\"${GVM_CLIENT_KEY}\\\")
+endif (GVM_CLIENT_KEY)
 
-if (OPENVAS_CA_CERTIFICATE)
-  add_definitions (-DCACERT=\\\"${OPENVAS_CA_CERTIFICATE}\\\")
-endif (OPENVAS_CA_CERTIFICATE)
+if (GVM_CA_CERTIFICATE)
+        add_definitions (-DCACERT=\\\"${GVM_CA_CERTIFICATE}\\\")
+endif (GVM_CA_CERTIFICATE)
 
-if (OPENVAS_CA_DIR)
-  add_definitions (-DCA_DIR=\\\"${OPENVAS_CA_DIR}\\\")
-endif (OPENVAS_CA_DIR)
+if (GVM_CA_DIR)
+        add_definitions (-DCA_DIR=\\\"${GVM_CA_DIR}\\\")
+endif (GVM_CA_DIR)
 
-if (OPENVAS_LOG_DIR)
-  add_definitions (-DOPENVAS_LOG_DIR=\\\"${OPENVAS_LOG_DIR}\\\")
-endif (OPENVAS_LOG_DIR)
+if (GVM_LOG_DIR)
+        add_definitions (-DGVM_LOG_DIR=\\\"${GVM_LOG_DIR}\\\")
+endif (GVM_LOG_DIR)
 
-if (OPENVAS_STATE_DIR)
-  add_definitions (-DOPENVAS_STATE_DIR=\\\"${OPENVAS_STATE_DIR}\\\")
-endif (OPENVAS_STATE_DIR)
+if (GVM_STATE_DIR)
+        add_definitions (-DGVM_STATE_DIR=\\\"${GVM_STATE_DIR}\\\")
+endif (GVM_STATE_DIR)
 
-if (OPENVASMD_STATE_DIR)
-  add_definitions (-DOPENVASMD_STATE_DIR=\\\"${OPENVASMD_STATE_DIR}\\\")
-endif (OPENVASMD_STATE_DIR)
+if (GVMD_STATE_DIR)
+  add_definitions (-DGVMD_STATE_DIR=\\\"${GVMD_STATE_DIR}\\\")
+endif (GVMD_STATE_DIR)
 
-if (OPENVAS_RUN_DIR)
-  add_definitions (-DOPENVAS_RUN_DIR=\\\"${OPENVAS_RUN_DIR}\\\")
-endif (OPENVAS_RUN_DIR)
+if (GVM_RUN_DIR)
+        add_definitions (-DGVM_RUN_DIR=\\\"${GVM_RUN_DIR}\\\")
+endif (GVM_RUN_DIR)
 
-if (OPENVAS_SYSCONF_DIR)
-  add_definitions (-DOPENVAS_SYSCONF_DIR=\\\"${OPENVAS_SYSCONF_DIR}\\\")
-endif (OPENVAS_SYSCONF_DIR)
+if (GVM_SYSCONF_DIR)
+        add_definitions (-DGVM_SYSCONF_DIR=\\\"${GVM_SYSCONF_DIR}\\\")
+endif (GVM_SYSCONF_DIR)
 
 if (GVM_SYSCONF_DIR)
   add_definitions (-DGVM_SYSCONF_DIR=\\\"${GVM_SYSCONF_DIR}\\\")
 endif (GVM_SYSCONF_DIR)
 
-if (OPENVAS_DATA_DIR)
-  add_definitions (-DOPENVAS_DATA_DIR=\\\"${OPENVAS_DATA_DIR}\\\")
-endif (OPENVAS_DATA_DIR)
+if (GVM_DATA_DIR)
+        add_definitions (-DGVM_DATA_DIR=\\\"${GVM_DATA_DIR}\\\")
+endif (GVM_DATA_DIR)
 
-if (OPENVAS_LIB_INSTALL_DIR)
-  add_definitions (-DOPENVAS_LIB_INSTALL_DIR=\\\"${OPENVAS_LIB_INSTALL_DIR}\\\")
-endif (OPENVAS_LIB_INSTALL_DIR)
+if (GVM_LIB_INSTALL_DIR)
+        add_definitions (-DGVM_LIB_INSTALL_DIR=\\\"${GVM_LIB_INSTALL_DIR}\\\")
+endif (GVM_LIB_INSTALL_DIR)
 
-if (OPENVAS_NVT_DIR)
-  add_definitions (-DOPENVAS_NVT_DIR=\\\"${OPENVAS_NVT_DIR}\\\")
-endif (OPENVAS_NVT_DIR)
+if (GVM_NVT_DIR)
+        add_definitions (-DGVM_NVT_DIR=\\\"${GVM_NVT_DIR}\\\")
+endif (GVM_NVT_DIR)
 
 if (SBINDIR)
   add_definitions (-DSBINDIR=\\\"${SBINDIR}\\\")
 endif (SBINDIR)
 
-if (DEFINED OPENVAS_SQLITE_SLEEP_MAX)
-  add_definitions (-DOPENVAS_SQLITE_SLEEP_MAX=${OPENVAS_SQLITE_SLEEP_MAX})
-endif (DEFINED OPENVAS_SQLITE_SLEEP_MAX)
+if (DEFINED GVM_SQLITE_SLEEP_MAX)
+        add_definitions (-DGVM_SQLITE_SLEEP_MAX=${GVM_SQLITE_SLEEP_MAX})
+endif (DEFINED GVM_SQLITE_SLEEP_MAX)
 
 ## Install
 
@@ -204,7 +204,7 @@ install (FILES ${CMAKE_CURRENT_BINARY_DIR}/openvasmd
 
 if (BACKEND STREQUAL POSTGRESQL)
   install (TARGETS manage-pg-server
-           LIBRARY DESTINATION "${OPENVAS_LIB_INSTALL_DIR}/openvasmd/pg")
+           LIBRARY DESTINATION "${GVM_LIB_INSTALL_DIR}/openvasmd/pg")
 endif (BACKEND STREQUAL POSTGRESQL)
 
 ## Static analysis

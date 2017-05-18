@@ -191,7 +191,7 @@ endif (XMLMANTOHTML_EXECUTABLE)
 if (SQLT-DIAGRAM_EXECUTABLE)
   add_custom_command (OUTPUT db.png
 					  COMMAND sh
-					  ARGS -c \"${SQLT-DIAGRAM_EXECUTABLE} --color --title=\\\"Manager database \(version ${OPENVASMD_DATABASE_VERSION}\)\\\" -d PostgreSQL ${CMAKE_CURRENT_SOURCE_DIR}/db_postgres.sql -o db.png\;\"
+					  ARGS -c \"${SQLT-DIAGRAM_EXECUTABLE} --color --title=\\\"Manager database \(version ${GVMD_DATABASE_VERSION}\)\\\" -d PostgreSQL ${CMAKE_CURRENT_SOURCE_DIR}/db_postgres.sql -o db.png\;\"
 					  DEPENDS db_postgres.sql)
 else (SQLT_EXECUTABLE)
   add_custom_command (OUTPUT db.png
@@ -202,7 +202,7 @@ endif (SQLT-DIAGRAM_EXECUTABLE)
 if (SQLT_EXECUTABLE)
   add_custom_command (OUTPUT .built-html_db
 					  COMMAND sh
-					  ARGS -c \"${SQLT_EXECUTABLE} --from PostgreSQL --to HTML --pretty --title=\\\"Manager database \(version ${OPENVASMD_DATABASE_VERSION}\)\\\" ${CMAKE_CURRENT_SOURCE_DIR}/db_postgres.sql > db.html && touch .built-html_db\;\"
+					  ARGS -c \"${SQLT_EXECUTABLE} --from PostgreSQL --to HTML --pretty --title=\\\"Manager database \(version ${GVMD_DATABASE_VERSION}\)\\\" ${CMAKE_CURRENT_SOURCE_DIR}/db_postgres.sql > db.html && touch .built-html_db\;\"
 					  DEPENDS db_postgres.sql)
 else (SQLT_EXECUTABLE)
   add_custom_command (OUTPUT .built-html_db

@@ -1374,7 +1374,7 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
   updated_dfn_cert = 0;
   g_info ("%s: %s", __FUNCTION__, xml_path);
 
-  full_path = g_build_filename (OPENVAS_CERT_DATA_DIR, xml_path, NULL);
+  full_path = g_build_filename (GVM_CERT_DATA_DIR, xml_path, NULL);
 
   if (g_stat (full_path, &state))
     {
@@ -1586,7 +1586,7 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
   int updated_cert_bund;
 
   updated_cert_bund = 0;
-  full_path = g_build_filename (OPENVAS_CERT_DATA_DIR, xml_path, NULL);
+  full_path = g_build_filename (GVM_CERT_DATA_DIR, xml_path, NULL);
 
   if (g_stat (full_path, &state))
     {
@@ -1793,7 +1793,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
   int updated_scap_bund;
 
   updated_scap_bund = 0;
-  full_path = g_build_filename (OPENVAS_SCAP_DATA_DIR, xml_path, NULL);
+  full_path = g_build_filename (GVM_SCAP_DATA_DIR, xml_path, NULL);
 
   if (g_stat (full_path, &state))
     {
@@ -2403,15 +2403,15 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
       return 0;
     }
 
-  xml_basename = strstr (xml_path, OPENVAS_SCAP_DATA_DIR);
+  xml_basename = strstr (xml_path, GVM_SCAP_DATA_DIR);
   if (xml_basename == NULL)
     {
-      g_warning ("%s: xml_path missing OPENVAS_SCAP_DATA_DIR: %s\n",
+      g_warning ("%s: xml_path missing GVM_SCAP_DATA_DIR: %s\n",
                  __FUNCTION__,
                  xml_path);
       return -1;
     }
-  xml_basename += strlen (OPENVAS_SCAP_DATA_DIR);
+  xml_basename += strlen (GVM_SCAP_DATA_DIR);
 
   quoted_xml_basename = sql_quote (xml_basename);
 
@@ -2712,11 +2712,11 @@ update_dfn_cert_advisories (int last_cert_update)
   const gchar *xml_path;
 
   error = NULL;
-  dir = g_dir_open (OPENVAS_CERT_DATA_DIR, 0, &error);
+  dir = g_dir_open (GVM_CERT_DATA_DIR, 0, &error);
   if (dir == NULL)
     {
       g_warning ("%s: Failed to open directory '%s': %s",
-                 __FUNCTION__, OPENVAS_CERT_DATA_DIR, error->message);
+                 __FUNCTION__, GVM_CERT_DATA_DIR, error->message);
       g_error_free (error);
       return -1;
     }
@@ -2724,7 +2724,7 @@ update_dfn_cert_advisories (int last_cert_update)
   last_dfn_update = sql_int ("SELECT max (modification_time)"
                              " FROM cert.dfn_cert_advs;");
 
-  g_debug ("%s: VS: " OPENVAS_CERT_DATA_DIR "/dfn-cert-*.xml", __FUNCTION__);
+  g_debug ("%s: VS: " GVM_CERT_DATA_DIR "/dfn-cert-*.xml", __FUNCTION__);
   count = 0;
   updated_dfn_cert = 0;
   while ((xml_path = g_dir_read_name (dir)))
@@ -2745,7 +2745,7 @@ update_dfn_cert_advisories (int last_cert_update)
       }
 
   if (count == 0)
-    g_warning ("No DFN-CERT advisories found in %s", OPENVAS_CERT_DATA_DIR);
+    g_warning ("No DFN-CERT advisories found in %s", GVM_CERT_DATA_DIR);
 
   g_dir_close (dir);
   return updated_dfn_cert;
@@ -2769,11 +2769,11 @@ update_cert_bund_advisories (int last_cert_update)
   const gchar *xml_path;
 
   error = NULL;
-  dir = g_dir_open (OPENVAS_CERT_DATA_DIR, 0, &error);
+  dir = g_dir_open (GVM_CERT_DATA_DIR, 0, &error);
   if (dir == NULL)
     {
       g_warning ("%s: Failed to open directory '%s': %s",
-                 __FUNCTION__, OPENVAS_CERT_DATA_DIR, error->message);
+                 __FUNCTION__, GVM_CERT_DATA_DIR, error->message);
       g_error_free (error);
       return -1;
     }
@@ -2801,7 +2801,7 @@ update_cert_bund_advisories (int last_cert_update)
       }
 
   if (count == 0)
-    g_warning ("No CERT-Bund advisories found in %s", OPENVAS_CERT_DATA_DIR);
+    g_warning ("No CERT-Bund advisories found in %s", GVM_CERT_DATA_DIR);
 
   g_dir_close (dir);
   return updated_cert_bund;
@@ -2827,7 +2827,7 @@ update_scap_cpes (int last_scap_update)
   int updated_scap_cpes, last_cve_update;
 
   updated_scap_cpes = 0;
-  full_path = g_build_filename (OPENVAS_SCAP_DATA_DIR,
+  full_path = g_build_filename (GVM_SCAP_DATA_DIR,
                                 "official-cpe-dictionary_v2.2.xml",
                                 NULL);
 
@@ -3027,11 +3027,11 @@ update_scap_cves (int last_scap_update)
   const gchar *xml_path;
 
   error = NULL;
-  dir = g_dir_open (OPENVAS_SCAP_DATA_DIR, 0, &error);
+  dir = g_dir_open (GVM_SCAP_DATA_DIR, 0, &error);
   if (dir == NULL)
     {
       g_warning ("%s: Failed to open directory '%s': %s",
-                 __FUNCTION__, OPENVAS_SCAP_DATA_DIR, error->message);
+                 __FUNCTION__, GVM_SCAP_DATA_DIR, error->message);
       g_error_free (error);
       return -1;
     }
@@ -3059,7 +3059,7 @@ update_scap_cves (int last_scap_update)
       }
 
   if (count == 0)
-    g_warning ("No CVEs found in %s", OPENVAS_SCAP_DATA_DIR);
+    g_warning ("No CVEs found in %s", GVM_SCAP_DATA_DIR);
 
   g_dir_close (dir);
   return updated_scap_cves;
@@ -3303,11 +3303,11 @@ update_scap_ovaldefs (int last_scap_update, int private)
       if ((subdir == NULL) || (strlen (subdir) == 0))
         subdir = "private";
 
-      oval_dir = g_build_filename (OPENVAS_SCAP_DATA_DIR, subdir, "oval",
+      oval_dir = g_build_filename (GVM_SCAP_DATA_DIR, subdir, "oval",
                                    NULL);
     }
   else
-    oval_dir = g_build_filename (OPENVAS_SCAP_DATA_DIR, "oval", NULL);
+    oval_dir = g_build_filename (GVM_SCAP_DATA_DIR, "oval", NULL);
 
   g_debug ("%s: private: %i", __FUNCTION__, private);
   g_debug ("%s: oval_dir: %s", __FUNCTION__, oval_dir);
@@ -3420,7 +3420,7 @@ update_scap_ovaldefs (int last_scap_update, int private)
 
       g_info ("Cleaning up user OVAL data");
 
-      g_debug ("%s: OPENVAS_SCAP_DATA_DIR: %s", __FUNCTION__, OPENVAS_SCAP_DATA_DIR);
+      g_debug ("%s: GVM_SCAP_DATA_DIR: %s", __FUNCTION__, GVM_SCAP_DATA_DIR);
 
       oval_files_clause = g_string_new (" AND (xml_file NOT IN (");
       first = 1;
@@ -3431,17 +3431,17 @@ update_scap_ovaldefs (int last_scap_update, int private)
 
           pair = g_ptr_array_index (oval_files, index);
           g_debug ("%s: pair[0]: %s", __FUNCTION__, pair[0]);
-          suffix = strstr (pair[0], OPENVAS_SCAP_DATA_DIR);
+          suffix = strstr (pair[0], GVM_SCAP_DATA_DIR);
           if (suffix == NULL)
             {
-              g_warning ("%s: pair[0] missing OPENVAS_SCAP_DATA_DIR: %s\n",
+              g_warning ("%s: pair[0] missing GVM_SCAP_DATA_DIR: %s\n",
                          __FUNCTION__,
                          pair[0]);
               g_free (oval_dir);
               oval_files_free ();
               return -1;
             }
-          suffix += strlen (OPENVAS_SCAP_DATA_DIR);
+          suffix += strlen (GVM_SCAP_DATA_DIR);
           g_string_append_printf (oval_files_clause,
                                   "%s'%s'",
                                   first ? "" : ", ",
@@ -3494,7 +3494,7 @@ update_cert_timestamp ()
   time_t stamp;
 
   error = NULL;
-  g_file_get_contents (OPENVAS_CERT_DATA_DIR "/timestamp", &timestamp, &len,
+  g_file_get_contents (GVM_CERT_DATA_DIR "/timestamp", &timestamp, &len,
                        &error);
   if (error)
     {
@@ -3548,7 +3548,7 @@ update_scap_timestamp ()
   time_t stamp;
 
   error = NULL;
-  g_file_get_contents (OPENVAS_SCAP_DATA_DIR "/timestamp", &timestamp, &len,
+  g_file_get_contents (GVM_SCAP_DATA_DIR "/timestamp", &timestamp, &len,
                        &error);
   if (error)
     {

@@ -50,10 +50,10 @@ if [ -z "$SQL_RETRY_DELAY" ]; then
   SQL_RETRY_DELAY="10m" # allowed unit suffixes: see sleep command
 fi
 
-[ -r @OPENVAS_SYSCONF_DIR@/migrate-to-postgres.conf ] && . @OPENVAS_SYSCONF_DIR@/migrate-to-postgres.conf
+[ -r @GVM_SYSCONF_DIR@/migrate-to-postgres.conf ] && . @GVM_SYSCONF_DIR@/migrate-to-postgres.conf
 
 if [ -z "$SQLITE_DB_DIR" ]; then
-  SQLITE_DB_DIR="@OPENVAS_STATE_DIR@/mgr"
+  SQLITE_DB_DIR="@GVM_STATE_DIR@/mgr"
 fi
 
 if [ -z "$SQLITE_DB_FILE" ]; then

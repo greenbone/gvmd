@@ -128,21 +128,21 @@
 /**
  * @brief The version number of this program.
  */
-#ifndef OPENVASMD_VERSION
-#define OPENVASMD_VERSION "-1"
+#ifndef GVMD_VERSION
+#define GVMD_VERSION "-1"
 #endif
 
 /**
  * @brief The name of the underlying Operating System.
  */
-#ifndef OPENVAS_OS_NAME
-#define OPENVAS_OS_NAME "-1"
+#ifndef GVM_OS_NAME
+#define GVM_OS_NAME "-1"
 #endif
 
 /**
  * @brief Scanner (openvassd) address.
  */
-#define OPENVASSD_ADDRESS OPENVAS_RUN_DIR "/openvassd.sock"
+#define OPENVASSD_ADDRESS GVM_RUN_DIR "/openvassd.sock"
 
 /**
  * @brief Location of scanner certificate.
@@ -191,7 +191,7 @@
  *
  * Used if /etc/services "gmp" and --sport are missing.
  */
-#define OPENVASMD_PORT 9390
+#define GVMD_PORT 9390
 
 /**
  * @brief Second argument to `listen'.
@@ -1418,7 +1418,7 @@ manager_listen (const char *address_str_unix, const char *address_str_tls,
           if (servent)
             port = servent->s_port;
           else
-            port = htons (OPENVASMD_PORT);
+            port = htons (GVMD_PORT);
         }
 
       addr4 = (struct sockaddr_in *) &address_tls;
@@ -1723,9 +1723,9 @@ main (int argc, char** argv)
 
   if (print_version)
     {
-      printf ("OpenVAS Manager %s\n", OPENVASMD_VERSION);
-#ifdef OPENVASMD_SVN_REVISION
-      printf ("SVN revision %i\n", OPENVASMD_SVN_REVISION);
+      printf ("OpenVAS Manager %s\n", GVMD_VERSION);
+#ifdef GVMD_SVN_REVISION
+      printf ("SVN revision %i\n", GVMD_SVN_REVISION);
 #endif
       printf ("Manager DB revision %i\n", manage_db_supported_version ());
       printf ("Copyright (C) 2010-2016 Greenbone Networks GmbH\n");
@@ -1745,7 +1745,7 @@ main (int argc, char** argv)
       else
         {
           use_tls = 0;
-          manager_address_string_unix = g_build_filename (OPENVAS_RUN_DIR,
+          manager_address_string_unix = g_build_filename (GVM_RUN_DIR,
                                                           "openvasmd.sock",
                                                           NULL);
         }
@@ -1796,7 +1796,7 @@ main (int argc, char** argv)
 
   /* Setup logging. */
 
-  rc_name = g_build_filename (OPENVAS_SYSCONF_DIR,
+  rc_name = g_build_filename (GVM_SYSCONF_DIR,
                               "openvasmd_log.conf",
                               NULL);
   if (g_file_test (rc_name, G_FILE_TEST_EXISTS))
@@ -1806,21 +1806,21 @@ main (int argc, char** argv)
   /* Enable GNUTLS debugging if requested via env variable.  */
   {
     const char *s;
-    if ((s=getenv ("OPENVAS_GNUTLS_DEBUG")))
+    if ((s=getenv ("GVM_GNUTLS_DEBUG")))
       {
         gnutls_global_set_log_function (log_func_for_gnutls);
         gnutls_global_set_log_level (atoi (s));
       }
   }
 
-#ifdef OPENVASMD_SVN_REVISION
+#ifdef GVMD_SVN_REVISION
   g_message ("   OpenVAS Manager version %s (SVN revision %i) (DB revision %i)\n",
-             OPENVASMD_VERSION,
-             OPENVASMD_SVN_REVISION,
+             GVMD_VERSION,
+             GVMD_SVN_REVISION,
              manage_db_supported_version ());
 #else
   g_message ("   OpenVAS Manager version %s (DB revision %i)\n",
-             OPENVASMD_VERSION,
+             GVMD_VERSION,
              manage_db_supported_version ());
 #endif
 
@@ -2387,7 +2387,7 @@ main (int argc, char** argv)
 #if LOG
   /* Open the log file. */
 
-  if (g_mkdir_with_parents (OPENVAS_LOG_DIR,
+  if (g_mkdir_with_parents (GVM_LOG_DIR,
                             0755) /* "rwxr-xr-x" */
       == -1)
     {

@@ -3941,7 +3941,7 @@ manage_attach_databases ()
 {
   /* Attach the SCAP database. */
 
-  if (access (OPENVAS_SCAP_DATA_DIR "/scap.db", R_OK))
+  if (access (GVM_SCAP_DATA_DIR "/scap.db", R_OK))
     switch (errno)
       {
         case ENOENT:
@@ -3953,12 +3953,12 @@ manage_attach_databases ()
           break;
       }
   else
-    sql_error ("ATTACH DATABASE '" OPENVAS_SCAP_DATA_DIR "/scap.db'"
+    sql_error ("ATTACH DATABASE '" GVM_SCAP_DATA_DIR "/scap.db'"
                " AS scap;");
 
   /* Attach the CERT database. */
 
-  if (access (OPENVAS_CERT_DATA_DIR "/cert.db", R_OK))
+  if (access (GVM_CERT_DATA_DIR "/cert.db", R_OK))
     switch (errno)
       {
         case ENOENT:
@@ -3970,7 +3970,7 @@ manage_attach_databases ()
           break;
       }
   else
-    sql_error ("ATTACH DATABASE '" OPENVAS_CERT_DATA_DIR "/cert.db'"
+    sql_error ("ATTACH DATABASE '" GVM_CERT_DATA_DIR "/cert.db'"
                " AS cert;");
 }
 
@@ -3983,12 +3983,12 @@ manage_db_remove (const gchar *name)
   if (strcasecmp (name, "cert") == 0)
     {
       sql ("DETACH DATABASE cert;");
-      unlink (OPENVAS_CERT_DATA_DIR "/cert.db'");
+      unlink (GVM_CERT_DATA_DIR "/cert.db'");
     }
   else if (strcasecmp (name, "scap") == 0)
     {
       sql ("DETACH DATABASE scap;");
-      unlink (OPENVAS_SCAP_DATA_DIR "/scap.db'");
+      unlink (GVM_SCAP_DATA_DIR "/scap.db'");
     }
   else
     assert (0);
@@ -4002,7 +4002,7 @@ manage_db_init (const gchar *name)
 {
   if (strcasecmp (name, "cert") == 0)
     {
-      if (access (OPENVAS_CERT_DATA_DIR "/cert.db", R_OK)
+      if (access (GVM_CERT_DATA_DIR "/cert.db", R_OK)
           && errno != ENOENT)
         {
           g_warning ("%s: failed to stat CERT database: %s\n",
@@ -4011,7 +4011,7 @@ manage_db_init (const gchar *name)
           return -1;
         }
       else
-        sql ("ATTACH DATABASE '" OPENVAS_CERT_DATA_DIR "/cert.db'"
+        sql ("ATTACH DATABASE '" GVM_CERT_DATA_DIR "/cert.db'"
              " AS cert;");
 
       sql ("PRAGMA cert.journal_mode=WAL;");
@@ -4098,7 +4098,7 @@ manage_db_init (const gchar *name)
     }
   else if (strcasecmp (name, "scap") == 0)
     {
-      if (access (OPENVAS_SCAP_DATA_DIR "/scap.db", R_OK)
+      if (access (GVM_SCAP_DATA_DIR "/scap.db", R_OK)
           && errno != ENOENT)
         {
           g_warning ("%s: failed to stat SCAP database: %s\n",
@@ -4107,7 +4107,7 @@ manage_db_init (const gchar *name)
           return -1;
         }
       else
-        sql ("ATTACH DATABASE '" OPENVAS_SCAP_DATA_DIR "/scap.db'"
+        sql ("ATTACH DATABASE '" GVM_SCAP_DATA_DIR "/scap.db'"
              " AS scap;");
 
       sql ("PRAGMA scap.journal_mode=WAL;");
@@ -4295,7 +4295,7 @@ manage_db_check (const gchar *name)
       char *ok;
       int ret;
 
-      if (access (OPENVAS_CERT_DATA_DIR "/cert.db", R_OK))
+      if (access (GVM_CERT_DATA_DIR "/cert.db", R_OK))
         {
           if (errno == ENOENT)
             return 0;
@@ -4329,7 +4329,7 @@ manage_cert_loaded ()
   if (loaded)
     return 1;
 
-  if (access (OPENVAS_CERT_DATA_DIR "/cert.db", R_OK))
+  if (access (GVM_CERT_DATA_DIR "/cert.db", R_OK))
     switch (errno)
       {
         case ENOENT:
@@ -4365,7 +4365,7 @@ manage_scap_loaded ()
   if (loaded)
     return 1;
 
-  if (access (OPENVAS_SCAP_DATA_DIR "/scap.db", R_OK))
+  if (access (GVM_SCAP_DATA_DIR "/scap.db", R_OK))
     switch (errno)
       {
         case ENOENT:
@@ -4396,7 +4396,7 @@ manage_scap_loaded ()
 int
 manage_cert_db_exists ()
 {
-  if (access (OPENVAS_CERT_DATA_DIR "/cert.db", R_OK))
+  if (access (GVM_CERT_DATA_DIR "/cert.db", R_OK))
     switch (errno)
       {
         case ENOENT:
@@ -4419,7 +4419,7 @@ manage_cert_db_exists ()
 int
 manage_scap_db_exists ()
 {
-  if (access (OPENVAS_SCAP_DATA_DIR "/scap.db", R_OK))
+  if (access (GVM_SCAP_DATA_DIR "/scap.db", R_OK))
     switch (errno)
       {
         case ENOENT:

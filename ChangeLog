@@ -1,5 +1,19 @@
 2017-05-18  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	* CMakeLists.txt, doc/CMakeLists.txt, getsvn.cmake,
+	src/CMakeLists.txt, src/logf.h, src/lsc_crypt.c,
+	src/lsc_user.c, src/manage.c, src/manage_migrators.c,
+	src/manage_pg.c, src/manage_sql.c, src/manage_sql_secinfo.c,
+	src/manage_sqlite3.c, src/openvasmd.c,
+	src/openvasmd_log_conf.cmake_in, src/sql_sqlite3.c,
+	tools/greenbone-certdata-sync.in, tools/greenbone-scapdata-sync.in,
+	tools/gvm-manage-certs.in, tools/gvm-migrate-to-postgres.in,
+	tools/gvm-portnames-update.in: Renamed build settings names
+	from *OPENVAS* to *GVM*.
+
+
+2017-05-18  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	* report_formats/IVIL/IVIL.xsl,
 	report_formats/IVIL/generate,
 	report_formats/ZIP/generate,

@@ -48,7 +48,7 @@
 /**
  * @brief Name of log file.
  */
-#define LOG_FILE OPENVAS_LOG_DIR "/openvasmd.comm"
+#define LOG_FILE GVM_LOG_DIR "/openvasmd.comm"
 
 #if LOG
 extern FILE* log_stream;

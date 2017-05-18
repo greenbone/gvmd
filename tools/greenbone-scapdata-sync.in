@@ -28,7 +28,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-VERSION=@OPENVASMD_VERSION@
+VERSION=@GVMD_VERSION@
 
 # SETTINGS
 # ========
@@ -86,16 +86,16 @@ SCRIPT_NAME="greenbone-scapdata-sync"
 # as well as syslog, add "-s" here.
 LOG_CMD="logger -t $SCRIPT_NAME"
 
-[ -r @OPENVAS_SYSCONF_DIR@/greenbone-scapdata-sync.conf ] && . @OPENVAS_SYSCONF_DIR@/greenbone-scapdata-sync.conf
+[ -r @GVM_SYSCONF_DIR@/greenbone-scapdata-sync.conf ] && . @GVM_SYSCONF_DIR@/greenbone-scapdata-sync.conf
 
-SCAP_DIR="@OPENVAS_SCAP_DATA_DIR@"
+SCAP_DIR="@GVM_SCAP_DATA_DIR@"
 
-SCAP_RES_DIR="@OPENVAS_SCAP_RES_DIR@"
+SCAP_RES_DIR="@GVM_SCAP_RES_DIR@"
 
 SCAP_DB="$SCAP_DIR/scap.db"
 
 if [ -z "$DROP_USER" ]; then
-  DROP_USER="@OPENVAS_DEFAULT_DROP_USER@"
+  DROP_USER="@GVM_DEFAULT_DROP_USER@"
 fi
 
 TIMESTAMP="$SCAP_DIR/timestamp"
@@ -120,7 +120,7 @@ log_err () {
   $LOG_CMD -p daemon.err "$1"
 }
 
-ACCESSKEY="@OPENVAS_ACCESS_KEY_DIR@/gsf-access-key"
+ACCESSKEY="@GVM_ACCESS_KEY_DIR@/gsf-access-key"
 
 # Note when running as root or restart as $DROP_USER if defined
 if [ $(id -u) -eq 0 ]
@@ -281,8 +281,8 @@ is_feed_current () {
       then
         RSYNC_SSH_PROXY_CMD=""
       else
-        if [ -e $OPENVAS_SYSCONF_DIR/proxyauth ] && [ -r $OPENVAS_SYSCONF_DIR/proxyauth ]; then
-          RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p $OPENVAS_SYSCONF_DIR/proxyauth\""
+        if [ -e $GVM_SYSCONF_DIR/proxyauth ] && [ -r $GVM_SYSCONF_DIR/proxyauth ]; then
+          RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p $GVM_SYSCONF_DIR/proxyauth\""
         else
           RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p\""
         fi
@@ -466,8 +466,8 @@ sync_scapdata(){
         then
           RSYNC_SSH_PROXY_CMD=""
         else
-          if [ -e $OPENVAS_SYSCONF_DIR/proxyauth ] && [ -r $OPENVAS_SYSCONF_DIR/proxyauth ]; then
-            RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p $OPENVAS_SYSCONF_DIR/proxyauth\""
+          if [ -e $GVM_SYSCONF_DIR/proxyauth ] && [ -r $GVM_SYSCONF_DIR/proxyauth ]; then
+            RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p $GVM_SYSCONF_DIR/proxyauth\""
           else
             RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p\""
           fi
