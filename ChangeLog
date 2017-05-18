@@ -1,3 +1,18 @@
+2017-05-18  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* tools/cert_bund_getbyname.xsl,
+	tools/cpe_getbyname.xsl,
+	tools/cve_getbyname.xsl,
+	tools/database-statistics-sqlite,
+	tools/dfn_cert_getbyname.xsl,
+	tools/greenbone-scapdata-sync.in,
+	tools/openvas-manage-certs.in,
+	tools/openvas-migrate-to-postgres.in,
+	tools/openvas-portnames-update.in,
+	tools/ovaldef_getbyname.xsl,
+	tools/portnames_update.xsl: Various renaming from
+	OpenVAS Manager to GVM.
+
 2017-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_manage_internal): Only set max_hosts if the

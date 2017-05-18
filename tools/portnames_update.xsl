@@ -1,5 +1,5 @@
 <!--
-OpenVAS
+GVM
 $Id$
 Description: Generate SQL queries to update port names.
 

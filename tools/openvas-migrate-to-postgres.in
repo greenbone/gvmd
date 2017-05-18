@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # migrate-to-postgres
-# This script migrates an OpenVAS installation from SQLite to Postgres.
+# This script migrates an GVM installation from SQLite to Postgres.
 #
 # Authors:
 # Timo Pollmeier <timo.pollmeier@greenbone.net>

@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # greenbone-scap-sync
-# This script synchronizes an OpenVAS installation with the
+# This script synchronizes an GVM installation with the
 # SCAP data from either the Greenbone Security Feed (in
 # case a GSF access key is present) or else from the Greenbone
 # Community Feed.
@@ -67,11 +67,11 @@ PORT=24
 # If ENABLED is set to 0, the sync script will not perform a synchronization.
 ENABLED=1
 
-# If REFRESH_ONLY is set to 1, the sync script will only update the OpenVAS
-# Manager database. This can be controlled via the --refresh parameter.
+# If REFRESH_ONLY is set to 1, the sync script will only update the Greenbone
+# Vulnerability Manager database. This can be controlled via the --refresh parameter.
 REFRESH_ONLY=0
 # If REFRESH_PRIVATE_ONLY is set to 1, the sync script will only update
-# private data in the OpenVAS Manager database.
+# private data in the Greenbone Vulnerability Manager database.
 # This can be controlled via the --refresh-private parameter.
 REFRESH_PRIVATE_ONLY=0
 # Setting this to 1 enables verbose mode, which outputs additional data.
@@ -336,12 +336,12 @@ is_feed_current () {
 is_db_broken () {
   DB_BROKEN=0
 
-  log_info "Calling openvasmd to check SCAP db"
+  log_info "Calling gvmd to check SCAP db"
   if [ -x "@SBINDIR@/openvasmd" ]
   then
     OK=`@SBINDIR@/openvasmd --check-scap-db`
     if [ $? -ne 0 ] ; then
-      log_err "Calling openvasmd to check SCAP db... failed."
+      log_err "Calling gvmd to check SCAP db... failed."
       exit 1
     fi
     if [ "$OK" = "1" ]; then
@@ -349,7 +349,7 @@ is_db_broken () {
       DB_BROKEN=1
     fi
   else
-    log_err "Command @SBINDIR@/openvasmd not found"
+    log_err "Command @SBINDIR@/gvmd not found"
     exit 1
   fi
 }
@@ -383,7 +383,7 @@ do_help () {
 }
 
 update_scap_db () {
-  log_info "Calling openvasmd to update SCAP db"
+  log_info "Calling gvmd to update SCAP db"
   if [ -x "@SBINDIR@/openvasmd" ]
   then
 	if [ 0 = "$REFRESH_PRIVATE_ONLY" ]
@@ -393,11 +393,11 @@ update_scap_db () {
       @SBINDIR@/openvasmd --update-scap-db --refresh-private-only &
 	fi
     if [ $? -ne 0 ] ; then
-      log_err "Calling openvasmd to update SCAP db... failed."
+      log_err "Calling gvmd to update SCAP db... failed."
       exit 1
     fi
   else
-    log_err "Command @SBINDIR@/openvasmd not found"
+    log_err "Command @SBINDIR@/gvmd not found"
     exit 1
   fi
 }
@@ -586,12 +586,12 @@ fi
 is_db_broken () {
   DB_BROKEN=0
 
-  log_info "Calling openvasmd to check SCAP db"
+  log_info "Calling gvmd to check SCAP db"
   if [ -x "@SBINDIR@/openvasmd" ]
   then
     OK=`@SBINDIR@/openvasmd --check-scap-db`
     if [ $? -ne 0 ] ; then
-      log_err "Calling openvasmd to check SCAP db... failed."
+      log_err "Calling gvmd to check SCAP db... failed."
       exit 1
     fi
     if [ "$OK" = "1" ]; then
@@ -599,7 +599,7 @@ is_db_broken () {
       DB_BROKEN=1
     fi
   else
-    log_err "Command @SBINDIR@/openvasmd not found"
+    log_err "Command @SBINDIR@/gvmd not found"
     exit 1
   fi
 }

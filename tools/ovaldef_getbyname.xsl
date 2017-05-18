@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-OpenVAS
+GVM
 $Id: cve_getbyname.xsl 11660 2011-09-22 14:22:40Z hdoreau $
 Description: Select a CVE item by name.
 

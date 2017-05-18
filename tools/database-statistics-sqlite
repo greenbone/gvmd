@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # database-statistics-sqlite
-# Collects statistics for an OpenVAS Manager SQLite database
+# Collects statistics for an Greenbone Vulnerability Manager SQLite database
 #
 # Copyright (C) 2014  Greenbone Networks GmbH
 #
