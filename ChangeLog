@@ -1,3 +1,10 @@
+2017-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r28420.
+
+	* src/manage_sql.c (init_manage_internal): Only set max_hosts if the
+	tables exist.
+
 2017-05-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r28413.

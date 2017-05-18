@@ -15733,11 +15733,6 @@ init_manage_internal (GSList *log_config,
   if (ret)
     return ret;
 
-  /* Set max_hosts in db, so database server side can access it. */
-
-  sql ("DELETE FROM meta WHERE name = 'max_hosts';");
-  sql ("INSERT INTO meta (name, value) VALUES ('max_hosts', %i);", max_hosts);
-
   /* Ensure the database is complete, removing superfluous rows.
    *
    * Assume that all other running processes are from the same Manager version,
@@ -15752,6 +15747,11 @@ init_manage_internal (GSList *log_config,
         return ret;
 
       cleanup_tables ();
+
+      /* Set max_hosts in db, so database server side can access it. */
+
+      sql ("DELETE FROM meta WHERE name = 'max_hosts';");
+      sql ("INSERT INTO meta (name, value) VALUES ('max_hosts', %i);", max_hosts);
     }
 
   if (stop_tasks && (nvt_cache_mode == 0))
