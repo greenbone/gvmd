@@ -7,7 +7,7 @@
   <xsl:strip-space elements="*"/>
 
 <!--
-OpenVAS Manager
+GVM
 $Id$
 Description: Stylesheet for generating python code that creates a pie plot.
 

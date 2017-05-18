@@ -9,7 +9,7 @@
   <xsl:strip-space elements="*"/>
 
 <!--
-OpenVAS Manager
+GVM
 $Id$
 Description: Stylesheet for generating results per threat code for Gnuplot.
 

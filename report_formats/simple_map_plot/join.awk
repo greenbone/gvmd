@@ -1,4 +1,4 @@
-# OpenVAS
+# GVM
 # $Id$
 # Description: joins threat data to coordinatesbased on IP as key.
 #

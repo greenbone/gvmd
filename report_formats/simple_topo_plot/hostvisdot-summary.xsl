@@ -7,7 +7,7 @@
     indent = "no" />
 
 <!--
-OpenVAS Manager
+GVM
 $Id$
 Description: Stylesheet for generating results as dot file.
 
@@ -54,8 +54,8 @@ digraph scan {
   overlap = "true";
   fontsize = 8.0;
   concentrate = "true";
-  root = "OpenVAS";
-  "OpenVAS" [label="OpenVAS", style=filled, color=chartreuse3];
+  root = "GVM";
+  "GVM" [label="GVM", style=filled, color=chartreuse3];
     <xsl:for-each select="host" >
       <xsl:variable name="current_host" select="ip"/>
       <xsl:choose>
@@ -96,7 +96,7 @@ digraph scan {
     <xsl:variable name="nexthop" select="substring-before($route, ',')" />
     <xsl:choose>
       <xsl:when test="contains($route, ',')">
-        "OpenVAS" -> "<xsl:value-of select="$nexthop"/>";
+        "GVM" -> "<xsl:value-of select="$nexthop"/>";
         <xsl:call-template name="trace_recurse">
           <xsl:with-param name="trace_list" select="$route"/>
         </xsl:call-template>
@@ -104,10 +104,10 @@ digraph scan {
       <xsl:otherwise>
         <xsl:choose>
           <xsl:when test="$route">
-            "OpenVAS" -> "<xsl:value-of select="$route"/>";
+            "GVM" -> "<xsl:value-of select="$route"/>";
           </xsl:when>
           <xsl:otherwise>
-            "OpenVAS" -> "127.0.0.1" [style=dashed];
+            "GVM" -> "127.0.0.1" [style=dashed];
           </xsl:otherwise>
         </xsl:choose>
       </xsl:otherwise>

@@ -6,7 +6,7 @@
   <xsl:strip-space elements="*"/>
 
 <!--
-OpenVAS Manager
+GVM
 $Id$
 Description: Stylesheet for generating a list of IPs with threat summary
 

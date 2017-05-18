@@ -1,5 +1,27 @@
 2017-05-18  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	* report_formats/IVIL/IVIL.xsl,
+	report_formats/IVIL/generate,
+	report_formats/ZIP/generate,
+	report_formats/simple_bar_chart/generate,
+	report_formats/simple_bar_chart/plot-plt.xsl,
+	report_formats/simple_bar_chart/plot.xsl,
+	report_formats/simple_map_plot/README.txt,
+	report_formats/simple_map_plot/generate,
+	report_formats/simple_map_plot/join.awk,
+	report_formats/simple_map_plot/report_to_csv_host.xsl,
+	report_formats/simple_map_plot/world_map.map,
+	report_formats/simple_pie_chart/generate,
+	report_formats/simple_pie_chart/pieplot.xsl,
+	report_formats/simple_topo_plot/generate,
+	report_formats/simple_topo_plot/hostvisdot-summary.xsl,
+	report_formats/sourcefire/generate,
+	report_formats/sourcefire/sourcefire.xsl,
+	report_formats/tls-map/generate,
+	report_formats/tls-map/tls-map.xsl: Renamed OpenVAS to GVM.
+
+2017-05-18  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	More renaming to GVM.
 
 	* gvm-manage-certs.in, openvas-manage-certs.in: Renamed.

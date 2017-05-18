@@ -35,7 +35,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   nfs (2049/udp)
   general/tcp
   Note however that these formats are conventions only and
-  not enforced by OpenVAS.
+  not enforced by GVM.
 -->
 <xsl:template name="portport">
   <xsl:variable name="before_slash" select="substring-before(port, '/')" />
@@ -56,7 +56,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   nfs (2049/udp)
   general/tcp
   Note however that these formats are conventions only and
-  not enforced by OpenVAS.
+  not enforced by GVM.
 -->
 <xsl:template name="portproto">
   <xsl:variable name="after_slash" select="substring-after(port, '/')" />
@@ -86,7 +86,7 @@ where
   proto: tcp|udp
 !-->
 <xsl:template match="result">
-AddScanResult,<xsl:value-of select="host"/>,"OpenVAS",<xsl:value-of select="nvt/@oid"/>,<xsl:call-template name="portport" select="port"/>,<xsl:call-template name="portproto" select="port"/>,"<xsl:value-of select="nvt/name"/>","<xsl:value-of select="translate(description, '&quot;&#10;', &quot;' &quot;)"/>","cve_ids: <xsl:value-of select="translate(nvt/cve, ',', '')"/>","bugtraq_ids: <xsl:value-of select="translate(nvt/bid, ',', '')"/>"</xsl:template>
+AddScanResult,<xsl:value-of select="host"/>,"GVM",<xsl:value-of select="nvt/@oid"/>,<xsl:call-template name="portport" select="port"/>,<xsl:call-template name="portproto" select="port"/>,"<xsl:value-of select="nvt/name"/>","<xsl:value-of select="translate(description, '&quot;&#10;', &quot;' &quot;)"/>","cve_ids: <xsl:value-of select="translate(nvt/cve, ',', '')"/>","bugtraq_ids: <xsl:value-of select="translate(nvt/bid, ',', '')"/>"</xsl:template>
 
 <!-- MATCH HOST_START -->
 <xsl:template match="host_start">
@@ -139,7 +139,7 @@ AddHost,<xsl:value-of select="host"/>
      empty lines with spaces will trouble the Sourcefire
      host input importer. -->
 <xsl:template match="report"># Sourcefire Host Input File
-SetSource,OpenVAS
+SetSource,GVM
 <xsl:apply-templates select="host_start"/>
 <xsl:apply-templates select="results"/>
 </xsl:template>

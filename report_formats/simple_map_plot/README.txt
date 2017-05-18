@@ -3,7 +3,7 @@ Required tools:
 To execute the Report Format plugin properly,
 the special tools "shp2img" of the UMN MapServer project
 and "ogr2ogr" of the GDAL project are required to be available
-for the environment where openvasmd is running.
+for the environment where gvmd is running.
 
 Mapping IPs:
 

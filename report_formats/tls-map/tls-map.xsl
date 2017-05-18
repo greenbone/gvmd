@@ -6,7 +6,7 @@
   <xsl:output method="text" encoding="UTF-8" />
 
 <!--
-OpenVAS Manager
+GVM
 $Id$
 Description: Report stylesheet for TLS Map CSV format.
 

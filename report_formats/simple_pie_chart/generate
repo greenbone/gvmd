@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# OpenVAS
+# GVM
 # $Id$
 # Description: Report generator script: results per threat pie plot.
 #

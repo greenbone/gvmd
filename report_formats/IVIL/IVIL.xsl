@@ -3,7 +3,7 @@
 <xsl:output method="xml" doctype-system="" doctype-public="" encoding="UTF-8" />
 
 <!--
-OpenVAS Manager
+GVM
 $Id$
 Description: Report stylesheet for IVIL format.
 
@@ -68,7 +68,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 <xsl:template match="report/results" mode="version">
 	<xsl:for-each select="result">
 		<xsl:if test="nvt/name='Information about the scan'">
-			<xsl:value-of select="substring-before(substring-after(description, 'OpenVAS version : '), '.&#10;')" />
+			<xsl:value-of select="substring-before(substring-after(description, 'GVM version : '), '.&#10;')" />
 		</xsl:if>
 	</xsl:for-each>
 </xsl:template>
@@ -107,7 +107,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 		</programSpecificData>
 	</addressee>
 	<sender>
-		<scanner_type>OpenVAS</scanner_type>
+		<scanner_type>GVM</scanner_type>
 		<version><xsl:apply-templates select="results" mode="version" /></version>
 		<timestamp><xsl:apply-templates select="scan_end" /></timestamp>
 	</sender>
