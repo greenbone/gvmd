@@ -73,8 +73,8 @@
  */
 
 /**
- * \page manpage openvasmd
- * \htmlinclude doc/openvasmd.html
+ * \page manpage gvmd
+ * \htmlinclude doc/gvmd.html
  */
 
 #include <locale.h>
