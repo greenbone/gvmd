@@ -1,5 +1,13 @@
 2017-05-19  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	Fix typo in man page.
+
+	* doc/gvmd.8.xml: Fix typo in man page description.
+
+	* doc/gvmd.8, doc/gvmd.html: Updated from source.
+
+2017-05-19  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	* src/openvasmd.c: Adjust file names in Doxygen commands to match
 	renaming beneath 'doc/'.
 
