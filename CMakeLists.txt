@@ -1,4 +1,4 @@
-# OpenVAS
+# GVM
 # $Id$
 # Description: Top-level cmake control for the Manager.
 #
@@ -23,9 +23,9 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-message ("-- Configuring the Manager...")
+message ("-- Configuring Greenbone Vulnerability Manager...")
 
-project (openvas-manager C)
+project (gvm C)
 
 cmake_minimum_required (VERSION 2.8)
 
@@ -97,7 +97,7 @@ set (PROJECT_VERSION_STRING "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}${
 
 set (CPACK_CMAKE_GENERATOR "Unix Makefiles")
 set (CPACK_GENERATOR "TGZ")
-set (CPACK_INSTALL_CMAKE_PROJECTS ".;openvas-manager;ALL;/")
+set (CPACK_INSTALL_CMAKE_PROJECTS ".;gvm;ALL;/")
 set (CPACK_MODULE_PATH "")
 set (CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/COPYING")
 set (CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README")
@@ -111,7 +111,7 @@ set (CPACK_PACKAGE_VERSION "${PROJECT_VERSION_STRING}${PROJECT_VERSION_SVN}")
 
 set (CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CPACK_PACKAGE_VERSION}")
 set (CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CPACK_PACKAGE_VERSION}")
-set (CPACK_PACKAGE_VENDOR "The OpenVAS Project")
+set (CPACK_PACKAGE_VENDOR "Greenbone Networks GmbH")
 set (CPACK_SOURCE_IGNORE_FILES
 "${CMAKE_BINARY_DIR}"
 "/.svn/"
@@ -279,7 +279,7 @@ configure_file (doc/Doxyfile.in doc/Doxyfile)
 configure_file (doc/Doxyfile_full.in doc/Doxyfile_full)
 configure_file (doc/example-gvm-manage-certs.conf.in doc/example-gvm-manage-certs.conf @ONLY)
 configure_file (VERSION.in VERSION)
-configure_file (src/openvasmd_log_conf.cmake_in src/openvasmd_log.conf)
+configure_file (src/gvmd_log_conf.cmake_in src/gvmd_log.conf)
 configure_file (src/schema_formats/XML/GMP.xml.in src/schema_formats/XML/GMP.xml @ONLY)
 configure_file (tools/greenbone-scapdata-sync.in tools/greenbone-scapdata-sync @ONLY)
 configure_file (tools/greenbone-certdata-sync.in tools/greenbone-certdata-sync @ONLY)
@@ -309,7 +309,7 @@ install (CODE "file (MAKE_DIRECTORY \$ENV{DESTDIR}${GVM_DATA_DIR}/openvasmd/repo
 
 install (DIRECTORY DESTINATION ${GVMD_STATE_DIR})
 
-install (FILES ${CMAKE_BINARY_DIR}/src/openvasmd_log.conf
+install (FILES ${CMAKE_BINARY_DIR}/src/gvmd_log.conf
          DESTINATION ${GVM_SYSCONF_DIR})
 
 install (FILES ${CMAKE_SOURCE_DIR}/src/pwpolicy.conf
