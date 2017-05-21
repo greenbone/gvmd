@@ -46,7 +46,7 @@
 #include "scanner.h"
 #include "manage_acl.h"
 #include "manage_sql.h"
-#include "ovas-mngr-comm.h"
+#include "gvm-comm.h"
 #include "utils.h"
 
 #include <assert.h>

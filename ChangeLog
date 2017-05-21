@@ -1,5 +1,24 @@
 2017-05-21  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	* src/ovas-mngr-comm.c, src/gvm-comm.c: Renamed.
+
+	* src/ovas-mngr-comm.h, src/gvm-comm.h: Renamed.
+
+	* src/CMakeLists.txt, src/gmpd.c, src/manage.c,
+	src/scanner.c, tools/greenbone-certdata-sync.in,
+	tools/greenbone-scapdata-sync.in: Renamed accordingly.
+
+2017-05-21  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	Renaming the main binary.
+
+	* src/openvasmd.c, src/gvmd.c: Renamed.
+
+	* src/CMakeLists.txt, tools/greenbone-certdata-sync.in,
+	tools/greenbone-scapdata-sync.in: Renamed accordingly.
+
+2017-05-21  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	* openvasmd_log_conf.cmake_in gvmd_log_conf.cmake_in: Renamed.
 
 	* CMakeLists.txt: Some renaming, accordingly.

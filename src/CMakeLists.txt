@@ -25,7 +25,7 @@
 
 ## Libraries
 
-add_library (ovas-mngr-comm STATIC ovas-mngr-comm.c)
+add_library (gvm-comm STATIC gvm-comm.c)
 include_directories (${LIBGVM_GMP_INCLUDE_DIRS}
                      ${LIBGVM_BASE_INCLUDE_DIRS} ${LIBGVM_UTIL_INCLUDE_DIRS}
                      ${LIBGVM_OSP_INCLUDE_DIRS}  ${GLIB_INCLUDE_DIRS})
@@ -70,13 +70,13 @@ add_library (otp STATIC otp.c)
 ## Program
 
 if (BACKEND STREQUAL SQLITE3)
-  set (BINARY_NAME "openvasmd-sqlite")
+  set (BINARY_NAME "gvmd-sqlite")
 else (BACKEND STREQUAL SQLITE3)
-  set (BINARY_NAME "openvasmd-pg")
+  set (BINARY_NAME "gvmd-pg")
 endif (BACKEND STREQUAL SQLITE3)
 
-add_executable (${BINARY_NAME} openvasmd.c gmpd.c)
-target_link_libraries (${BINARY_NAME} ovas-mngr-comm gmp otp manage ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS})
+add_executable (${BINARY_NAME} gvmd.c gmpd.c)
+target_link_libraries (${BINARY_NAME} gvm-comm gmp otp manage ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS})
 
 set_target_properties (${BINARY_NAME} PROPERTIES LINKER_LANGUAGE C)
 
@@ -106,7 +106,7 @@ if (NOT CMAKE_BUILD_TYPE MATCHES "Release")
 endif (NOT CMAKE_BUILD_TYPE MATCHES "Release")
 
 add_custom_command (TARGET ${BINARY_NAME} POST_BUILD
-                    COMMAND ln -sf ${BINARY_NAME} openvasmd)
+                    COMMAND ln -sf ${BINARY_NAME} gvmd)
 
 if (GMP_VERSION)
   add_definitions (-DGMP_VERSION=\\\"${GMP_VERSION}\\\")
@@ -199,7 +199,7 @@ install (TARGETS ${BINARY_NAME}
          LIBRARY DESTINATION ${LIBDIR}
          ARCHIVE DESTINATION ${LIBDIR}/static)
 
-install (FILES ${CMAKE_CURRENT_BINARY_DIR}/openvasmd
+install (FILES ${CMAKE_CURRENT_BINARY_DIR}/gvmd
          DESTINATION ${SBINDIR})
 
 if (BACKEND STREQUAL POSTGRESQL)
@@ -217,7 +217,7 @@ add_dependencies (check cppcheck)
 
 ## Tag files
 
-set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/openvasmd.c"
+set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gvmd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmpd.c" "${CMAKE_CURRENT_SOURCE_DIR}/gmp.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/otp.c" "${CMAKE_CURRENT_SOURCE_DIR}/manage.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_utils.c"
@@ -235,7 +235,7 @@ set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/openvasmd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_secinfo.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sqlite3.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_migrators.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/ovas-mngr-comm.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/gvm-comm.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/lsc_user.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/lsc_crypt.c" "${CMAKE_CURRENT_SOURCE_DIR}/sql.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/sql_sqlite3.c" "${CMAKE_CURRENT_SOURCE_DIR}/utils.c")

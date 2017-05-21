@@ -337,9 +337,9 @@ is_db_broken () {
   DB_BROKEN=0
 
   log_info "Calling gvmd to check SCAP db"
-  if [ -x "@SBINDIR@/openvasmd" ]
+  if [ -x "@SBINDIR@/gvmd" ]
   then
-    OK=`@SBINDIR@/openvasmd --check-scap-db`
+    OK=`@SBINDIR@/gvmd --check-scap-db`
     if [ $? -ne 0 ] ; then
       log_err "Calling gvmd to check SCAP db... failed."
       exit 1
@@ -384,13 +384,13 @@ do_help () {
 
 update_scap_db () {
   log_info "Calling gvmd to update SCAP db"
-  if [ -x "@SBINDIR@/openvasmd" ]
+  if [ -x "@SBINDIR@/gvmd" ]
   then
 	if [ 0 = "$REFRESH_PRIVATE_ONLY" ]
 	then
-      @SBINDIR@/openvasmd --update-scap-db &
+      @SBINDIR@/gvmd --update-scap-db &
     else
-      @SBINDIR@/openvasmd --update-scap-db --refresh-private-only &
+      @SBINDIR@/gvmd --update-scap-db --refresh-private-only &
 	fi
     if [ $? -ne 0 ] ; then
       log_err "Calling gvmd to update SCAP db... failed."
@@ -587,9 +587,9 @@ is_db_broken () {
   DB_BROKEN=0
 
   log_info "Calling gvmd to check SCAP db"
-  if [ -x "@SBINDIR@/openvasmd" ]
+  if [ -x "@SBINDIR@/gvmd" ]
   then
-    OK=`@SBINDIR@/openvasmd --check-scap-db`
+    OK=`@SBINDIR@/gvmd --check-scap-db`
     if [ $? -ne 0 ] ; then
       log_err "Calling gvmd to check SCAP db... failed."
       exit 1

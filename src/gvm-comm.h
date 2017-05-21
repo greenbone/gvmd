@@ -32,10 +32,10 @@
 #include <netinet/in.h>
 
 /**
- * @file ovas-mngr-comm.h
+ * @file gvm-comm.h
  * @brief Protos for communication between openvas-manager and openvas-server.
  *
- * This file contains the protos for \ref ovas-mngr-comm.c
+ * This file contains the protos for \ref gvm-comm.c
  */
 
 int

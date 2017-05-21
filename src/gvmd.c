@@ -61,7 +61,7 @@
  * library is defined in src/\ref manage.c and src/\ref manage_sql.c .
  *
  * The OTP and Manage libraries both use the Comm library to communication
- * with the OTP server (src/\ref ovas-mngr-comm.c).
+ * with the OTP server (src/\ref gvm-comm.c).
  *
  * \subsection Forking
  *
@@ -112,7 +112,7 @@
 #include "manage.h"
 #include "scanner.h"
 #include "gmpd.h"
-#include "ovas-mngr-comm.h"
+#include "gvm-comm.h"
 #include "utils.h"
 
 #ifdef SVN_REV_AVAILABLE

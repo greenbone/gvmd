@@ -25,7 +25,7 @@
  */
 
 /**
- * @file ovas-mngr-comm.c
+ * @file gvm-comm.c
  * @brief API for communication between openvas-manager and openvas-server
  *
  * This file contains an API for communicating with an openvas-server

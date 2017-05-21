@@ -26,7 +26,7 @@
 #include "scanner.h"
 #include "gmpd.h"
 #include "otp.h"
-#include "ovas-mngr-comm.h"
+#include "gvm-comm.h"
 #include "utils.h"
 
 #include <dirent.h>
@@ -82,7 +82,7 @@ buffer_size_t from_scanner_size = 1048576;
  */
 buffer_size_t from_scanner_max_size = 1073741824;
 
-/* XXX: ovas-mngr-comm.c content should be moved to scanner.c to better abstract
+/* XXX: gvm-comm.c content should be moved to scanner.c to better abstract
  * scanner reading/writing. */
 extern char to_server[];
 extern int to_server_end;

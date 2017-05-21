@@ -318,12 +318,12 @@ is_feed_current () {
 is_db_broken () {
   DB_BROKEN=0
 
-  log_info "Calling openvasmd to check CERT db"
-  if [ -x "@SBINDIR@/openvasmd" ]
+  log_info "Calling gvmd to check CERT db"
+  if [ -x "@SBINDIR@/gvmd" ]
   then
-    OK=`@SBINDIR@/openvasmd --check-cert-db`
+    OK=`@SBINDIR@/gvmd --check-cert-db`
     if [ $? -ne 0 ] ; then
-      log_err "Calling openvasmd to check CERT db... failed."
+      log_err "Calling gvmd to check CERT db... failed."
       exit 1
     fi
     if [ "$OK" = "1" ]; then
@@ -331,7 +331,7 @@ is_db_broken () {
       DB_BROKEN=1
     fi
   else
-    log_err "Command @SBINDIR@/openvasmd not found"
+    log_err "Command @SBINDIR@/gvmd not found"
     exit 1
   fi
 }
@@ -359,16 +359,16 @@ do_help () {
 }
 
 update_cert_db () {
-  log_info "Calling openvasmd to update CERT db"
-  if [ -x "@SBINDIR@/openvasmd" ]
+  log_info "Calling gvmd to update CERT db"
+  if [ -x "@SBINDIR@/gvmd" ]
   then
-    @SBINDIR@/openvasmd --update-cert-db &
+    @SBINDIR@/gvmd --update-cert-db &
     if [ $? -ne 0 ] ; then
-      log_err "Calling openvasmd to update CERT db... failed."
+      log_err "Calling gvmd to update CERT db... failed."
       exit 1
     fi
   else
-    log_err "Command @SBINDIR@/openvasmd not found"
+    log_err "Command @SBINDIR@/gvmd not found"
     exit 1
   fi
 }
