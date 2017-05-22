@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # greenbone-scap-sync
-# This script synchronizes an GVM installation with the
+# This script synchronizes a GVM installation with the
 # SCAP data from either the Greenbone Security Feed (in
 # case a GSF access key is present) or else from the Greenbone
 # Community Feed.

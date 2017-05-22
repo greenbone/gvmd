@@ -4520,7 +4520,7 @@ run_slave_or_gmp_task (task_t task, int from, char **report_id,
 }
 
 /**
- * @brief Start a task on an GMP scanner.
+ * @brief Start a task on a GMP scanner.
  *
  * @param[in]   task        The task.
  * @param[in]   scanner     Slave scanner to run task on.

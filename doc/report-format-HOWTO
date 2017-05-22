@@ -45,7 +45,7 @@ To create a new report format
 
   - Test the generate script
 
-      - Get an GMP report (download the report with the GSA or do a GET_REPORTS
+      - Get a GMP report (download the report with the GSA or do a GET_REPORTS
         request with some other client like the omp command, and extract the
         innermost REPORT element).
 

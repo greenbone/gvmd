@@ -523,7 +523,7 @@ valid_gmp_command (const char* name)
 }
 
 /**
- * @brief Get the type associated with an GMP command.
+ * @brief Get the type associated with a GMP command.
  *
  * @param[in]  name  Command name.
  *
@@ -549,7 +549,7 @@ gmp_command_type (const char* name)
 }
 
 /**
- * @brief Check whether an GMP command takes a resource.
+ * @brief Check whether a GMP command takes a resource.
  *
  * MODIFY_TARGET, for example, takes a target.
  *
@@ -39521,7 +39521,7 @@ set_task_preferences (task_t task, array_t *preferences)
  * @brief Ensure that there is an encryption key.
  *
  * This prevents contention problems that can happen when the key is
- * created on the fly during an GMP operation.
+ * created on the fly during a GMP operation.
  *
  * Up to caller to create transaction.
  *

@@ -28,7 +28,7 @@
  * @file  gmp.c
  * @brief The OpenVAS Manager GMP library.
  *
- * This file defines an Greenbone Management Protocol (GMP) library, for
+ * This file defines a Greenbone Management Protocol (GMP) library, for
  * implementing OpenVAS managers such as the OpenVAS Manager daemon.
  *
  * The library provides \ref process_gmp_client_input.
@@ -39,9 +39,9 @@
 /**
  * @internal
  * The GMP-"Processor" is always in a state (\ref client_state_t
- * \ref client_state ) and currently looking at the opening of an GMP element
- * (\ref gmp_xml_handle_start_element ), at the text of an GMP element
- * (\ref gmp_xml_handle_text ) or at the closing of an GMP element
+ * \ref client_state ) and currently looking at the opening of a GMP element
+ * (\ref gmp_xml_handle_start_element ), at the text of a GMP element
+ * (\ref gmp_xml_handle_text ) or at the closing of a GMP element
  * (\ref gmp_xml_handle_end_element ).
  *
  * The state usually represents the current location of the parser within the
@@ -697,7 +697,7 @@ check_private_key (const char *key_str)
 /* GMP parser. */
 
 /**
- * @brief A handle on an GMP parser.
+ * @brief A handle on a GMP parser.
  */
 typedef struct
 {
@@ -713,14 +713,14 @@ static int
 process_gmp (gmp_parser_t *, const gchar *, gchar **);
 
 /**
- * @brief Create an GMP parser.
+ * @brief Create a GMP parser.
  *
  * @param[in]  write_to_client       Function to write to client.
  * @param[in]  write_to_client_data  Argument to \p write_to_client.
  * @param[in]  disable               Commands to disable.  Copied, and freed by
  *                                   gmp_parser_free.
  *
- * @return An GMP parser.
+ * @return A GMP parser.
  */
 gmp_parser_t *
 gmp_parser_new (int (*write_to_client) (const char*, void*), void* write_to_client_data,
@@ -735,11 +735,11 @@ gmp_parser_new (int (*write_to_client) (const char*, void*), void* write_to_clie
 }
 
 /**
- * @brief Free an GMP parser.
+ * @brief Free a GMP parser.
  *
  * @param[in]  gmp_parser  GMP parser.
  *
- * @return An GMP parser.
+ * @return A GMP parser.
  */
 void
 gmp_parser_free (gmp_parser_t *gmp_parser)
@@ -6627,7 +6627,7 @@ log_event_fail (const char *type, const char *type_name, const char *id,
 
 /** @todo Free globals when tags open, in case of duplicate tags. */
 /**
- * @brief Handle the start of an GMP XML element.
+ * @brief Handle the start of a GMP XML element.
  *
  * React to the start of an XML element according to the current value
  * of \ref client_state, usually adjusting \ref client_state to indicate
@@ -20445,7 +20445,7 @@ modify_config_leave:
 extern char client_address[];
 
 /**
- * @brief Handle the end of an GMP XML element.
+ * @brief Handle the end of a GMP XML element.
  *
  * React to the end of an XML element according to the current value
  * of \ref client_state, usually adjusting \ref client_state to indicate
@@ -29334,7 +29334,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
     break;
 
 /**
- * @brief Handle the addition of text to an GMP XML element.
+ * @brief Handle the addition of text to a GMP XML element.
  *
  * React to the addition of text to the value of an XML element.
  * React according to the current value of \ref client_state,
@@ -30426,7 +30426,7 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 }
 
 /**
- * @brief Handle an GMP XML parsing error.
+ * @brief Handle a GMP XML parsing error.
  *
  * Simply leave the error for the caller of the parser to handle.
  *
@@ -30545,7 +30545,7 @@ init_gmp_process (int update_nvt_cache, const gchar *database,
  * @todo The -2 return has been replaced by send_to_client trying to write
  *       the to_client buffer to the client when it is full.  This is
  *       necessary, as the to_client buffer may fill up halfway through the
- *       processing of an GMP element.
+ *       processing of a GMP element.
  *
  * @return 0 success, -1 error, -2 or -3 too little space in \ref to_client
  *         or the scanner output buffer (respectively), -4 XML syntax error.
@@ -30649,7 +30649,7 @@ process_gmp_write (const char* msg, void* buffer)
  * @todo The -2 return has been replaced by send_to_client trying to write
  *       the to_client buffer to the client when it is full.  This is
  *       necessary, as the to_client buffer may fill up halfway through the
- *       processing of an GMP element.
+ *       processing of a GMP element.
  *
  * @return 0 success, -1 error, -2 or -3 too little space in \ref to_client
  *         or the scanner output buffer (respectively), -4 XML syntax error.

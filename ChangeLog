@@ -1,5 +1,15 @@
 2017-05-22  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	* doc/database-statistics-sqlite.8,
+	doc/database-statistics-sqlite.8.xml, doc/gvm-manage-certs.1,
+	doc/report-format-HOWTO, src/gmp.c, src/gvmd.c, src/manage.c,
+	src/manage_sql.c, tools/database-statistics-sqlite,
+	tools/greenbone-scapdata-sync.in, tools/gvm-manage-certs.in,
+	tools/gvm-migrate-to-postgres.in: Use correct article ('a' instead of
+	'an') for post-renaming identifiers.
+
+2017-05-22  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	* src/gvmd.c: Adjust file names in Doxygen commands to match renaming.
 
 2017-05-21  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>

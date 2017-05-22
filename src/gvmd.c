@@ -51,7 +51,7 @@
  * \section Implementation
  *
  * The command line entry to the manager is defined in
- * src/\ref gvmd.c.  The manager is an GMP server.
+ * src/\ref gvmd.c.  The manager is a GMP server.
  *
  * The GMP server is defined in src/\ref gmpd.c.  It uses the OTP library
  * to handle the OTP server and the GMP library to handle the GMP client.

@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# gvm-manage-certs - Manage certificate infrastructure for an GVM installation
+# gvm-manage-certs - Manage certificate infrastructure for a GVM installation
 # Copyright (C) 2015-2016 Greenbone Networks GmbH
 #
 # Authors:
@@ -129,7 +129,7 @@ set_defaults () {
 print_help ()
 {
   echo "Usage:"
-  echo "  $0 [OPTION] - Manage certificate infrastructure for an GVM installation"
+  echo "  $0 [OPTION] - Manage certificate infrastructure for a GVM installation"
   echo
   echo "Options:"
   echo "  -h             Print help"
