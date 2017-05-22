@@ -1,3 +1,7 @@
+2017-05-22  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/gvmd.c: Adjust file names in Doxygen commands to match renaming.
+
 2017-05-21  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/ovas-mngr-comm.c, src/gvm-comm.c: Renamed.
