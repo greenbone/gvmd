@@ -46,6 +46,7 @@
 #include "scanner.h"
 #include "manage_acl.h"
 #include "manage_sql.h"
+#include "manage_sql_secinfo.h"
 #include "gvm-comm.h"
 #include "utils.h"
 
@@ -6336,6 +6337,8 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
   int ret;
   task_t previous_start_task = 0;
   task_t previous_stop_task = 0;
+
+  manage_sync_scap ();
 
   ret = manage_update_nvti_cache ();
   if (ret)

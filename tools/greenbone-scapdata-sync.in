@@ -88,6 +88,8 @@ LOG_CMD="logger -t $SCRIPT_NAME"
 
 [ -r @GVM_SYSCONF_DIR@/greenbone-scapdata-sync.conf ] && . @GVM_SYSCONF_DIR@/greenbone-scapdata-sync.conf
 
+LOCK_FILE=/tmp/gvm-sync-scap
+
 SCAP_DIR="@GVM_SCAP_DATA_DIR@"
 
 SCAP_RES_DIR="@GVM_SCAP_RES_DIR@"
@@ -333,27 +335,6 @@ is_feed_current () {
   return $FEED_CURRENT
 }
 
-is_db_broken () {
-  DB_BROKEN=0
-
-  log_info "Calling gvmd to check SCAP db"
-  if [ -x "@SBINDIR@/gvmd" ]
-  then
-    OK=`@SBINDIR@/gvmd --check-scap-db`
-    if [ $? -ne 0 ] ; then
-      log_err "Calling gvmd to check SCAP db... failed."
-      exit 1
-    fi
-    if [ "$OK" = "1" ]; then
-      log_notice "Purged corrupted database."
-      DB_BROKEN=1
-    fi
-  else
-    log_err "Command @SBINDIR@/gvmd not found"
-    exit 1
-  fi
-}
-
 do_help () {
   echo "$0: Sync SCAP data"
 
@@ -380,26 +361,6 @@ do_help () {
   echo " --verbose         enable verbose log messages"
   echo ""
   exit 0
-}
-
-update_scap_db () {
-  log_info "Calling gvmd to update SCAP db"
-  if [ -x "@SBINDIR@/gvmd" ]
-  then
-	if [ 0 = "$REFRESH_PRIVATE_ONLY" ]
-	then
-      @SBINDIR@/gvmd --update-scap-db &
-    else
-      @SBINDIR@/gvmd --update-scap-db --refresh-private-only &
-	fi
-    if [ $? -ne 0 ] ; then
-      log_err "Calling gvmd to update SCAP db... failed."
-      exit 1
-    fi
-  else
-    log_err "Command @SBINDIR@/gvmd not found"
-    exit 1
-  fi
 }
 
 do_rsync_community_feed () {
@@ -583,38 +544,19 @@ then
   REFRESH_ONLY=1
 fi
 
-is_db_broken () {
-  DB_BROKEN=0
-
-  log_info "Calling gvmd to check SCAP db"
-  if [ -x "@SBINDIR@/gvmd" ]
-  then
-    OK=`@SBINDIR@/gvmd --check-scap-db`
-    if [ $? -ne 0 ] ; then
-      log_err "Calling gvmd to check SCAP db... failed."
-      exit 1
-    fi
-    if [ "$OK" = "1" ]; then
-      log_notice "Purged corrupted database."
-      DB_BROKEN=1
-    fi
-  else
-    log_err "Command @SBINDIR@/gvmd not found"
-    exit 1
-  fi
-}
-
-is_db_broken
-if [ $DB_BROKEN -ne 1 ]
+is_feed_current
+if [ $FEED_CURRENT -eq 1 ]
 then
-  is_feed_current
-  if [ $FEED_CURRENT -eq 1 ]
-  then
-    log_notice "Feed is already current, skipping synchronization."
-    exit 0
-  fi
+  log_notice "Feed is already current, skipping synchronization."
+  exit 0
 fi
-sync_scapdata
-update_scap_db
+(
+  flock -n 9
+  if [ $? -eq 1 ] ; then
+    log_notice "Sync in progress, exiting."
+	exit 1
+  fi
+  sync_scapdata
+) 9>$LOCK_FILE
 
 exit 0

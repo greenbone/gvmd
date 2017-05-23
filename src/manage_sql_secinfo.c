@@ -33,12 +33,18 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <fnmatch.h>
 #include <ftw.h>
 #include <glib/gstdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/file.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
+#include <gvm/base/proctitle.h>
 #include <gvm/util/fileutils.h>
 
 #undef G_LOG_DOMAIN
@@ -4198,4 +4204,278 @@ manage_update_scap_db (GSList *log_config, const gchar *database,
   cleanup_manage_process (TRUE);
 
   return 0;
+}
+
+/**
+ * @brief Get the feed timestamp.
+ *
+ * @return Timestamp from feed.  0 if missing.  -1 on error.
+ */
+int
+feed_timestamp ()
+{
+  GError *error;
+  gchar *timestamp;
+  gsize len;
+  time_t stamp;
+
+  error = NULL;
+  g_file_get_contents (GVM_SCAP_DATA_DIR "/timestamp", &timestamp, &len,
+                       &error);
+  if (error)
+    {
+      if (error->code == G_FILE_ERROR_NOENT)
+        stamp = 0;
+      else
+        {
+          g_warning ("%s: Failed to get timestamp: %s\n",
+                     __FUNCTION__,
+                     error->message);
+          return -1;
+        }
+    }
+  else
+    {
+      if (strlen (timestamp) < 8)
+        {
+          g_warning ("%s: Feed timestamp too short: %s\n",
+                     __FUNCTION__,
+                     timestamp);
+          g_free (timestamp);
+          return -1;
+        }
+
+      timestamp[8] = '\0';
+      g_debug ("%s: parsing: %s", __FUNCTION__, timestamp);
+      stamp = parse_feed_timestamp (timestamp);
+      g_free (timestamp);
+      if (stamp == 0)
+        return -1;
+    }
+
+ return stamp;
+}
+
+/**
+ * @brief Sync the SCAP DB.
+ */
+void
+manage_sync_scap ()
+{
+  int pid, lockfile, last_feed_update, last_scap_update;
+  int updated_scap_ovaldefs, updated_scap_cpes, updated_scap_cves;
+  gchar *lockfile_name;
+
+  g_debug ("%s", __FUNCTION__);
+
+  /* Fork a child to sync the db, so that the parent can return to the main
+   * loop. */
+
+  pid = fork ();
+  switch (pid)
+    {
+      case 0:
+        /* Child.  Carry on to sync the db, reopen the database (required
+         * after fork). */
+
+#if 0
+        /* Restore the sigmask that was blanked for pselect. */
+        pthread_sigmask (SIG_SETMASK, sigmask_current, NULL);
+#endif
+
+        /* Cleanup so that exit works. */
+
+        cleanup_manage_process (FALSE);
+
+        /* Open the lock file. */
+
+        lockfile_name = g_build_filename (g_get_tmp_dir (), "gvm-sync-scap",
+                                          NULL);
+
+        lockfile = open (lockfile_name,
+                         O_RDWR | O_CREAT | O_APPEND,
+                         /* "-rw-r--r--" */
+                         S_IWUSR | S_IRUSR | S_IROTH | S_IRGRP);
+        if (lockfile == -1)
+          {
+            g_warning ("%s: failed to open lock file '%s': %s", __FUNCTION__,
+                       lockfile_name, strerror (errno));
+            g_free (lockfile_name);
+            exit (EXIT_FAILURE);
+          }
+
+        if (flock (lockfile, LOCK_EX | LOCK_NB))  /* Exclusive, Non blocking. */
+          {
+            if (errno == EWOULDBLOCK)
+              g_debug ("%s: skipping, sync in progress", __FUNCTION__);
+            else
+              g_debug ("%s: flock: %s", __FUNCTION__, strerror (errno));
+            g_free (lockfile_name);
+            exit (EXIT_SUCCESS);
+          }
+
+        /* Init. */
+
+        reinit_manage_process ();
+        manage_session_init (current_credentials.uuid);
+
+        break;
+
+      case -1:
+        /* Parent on error.  Reschedule and continue to next task. */
+        g_warning ("%s: fork failed\n", __FUNCTION__);
+        return;
+
+      default:
+        /* Parent.  Continue to next task. */
+        g_debug ("%s: %i forked %i", __FUNCTION__, getpid (), pid);
+        return;
+
+    }
+
+  proctitle_set ("openvasmd: Syncing SCAP");
+
+  if (manage_scap_db_exists ())
+    {
+      g_debug ("%s: database exists", __FUNCTION__);
+
+#if 0
+      if (check_scap_db_version ())
+        goto exit -1;
+      manage_db_check_mode ("scap");
+#endif
+    }
+  else
+    {
+      g_info ("%s: Initializing SCAP database", __FUNCTION__);
+
+      if (manage_db_init ("scap"))
+        {
+          g_warning ("%s: Could not initialize SCAP database", __FUNCTION__);
+          goto exit;
+        }
+    }
+
+  g_debug ("%s: get last_scap_update", __FUNCTION__);
+
+  last_scap_update = -1;
+  if (manage_scap_loaded ())
+    last_scap_update = sql_int ("SELECT coalesce ((SELECT value FROM scap.meta"
+                                "                  WHERE name = 'last_update'),"
+                                "                 '-1');");
+
+  if (last_scap_update == -1)
+    {
+      g_warning ("%s: Inconsistent data, resetting SCAP database",
+                 __FUNCTION__);
+      manage_db_remove ("scap");
+      if (manage_db_init ("scap"))
+        {
+          g_warning ("%s: could not reinitialize SCAP database", __FUNCTION__);
+          goto exit;
+        }
+      last_scap_update = 0;
+    }
+
+  g_debug ("%s: last_scap_update: %i", __FUNCTION__, last_scap_update);
+
+  last_feed_update = feed_timestamp ();
+  if (last_feed_update == -1)
+    goto exit;
+
+  g_debug ("%s: last_feed_update: %i", __FUNCTION__, last_feed_update);
+
+  if (last_scap_update >= last_feed_update)
+    {
+      g_debug ("%s: skipping, SCAP db newer than feed", __FUNCTION__);
+      goto exit;
+    }
+
+  g_debug ("%s: sync", __FUNCTION__);
+
+  if (manage_update_scap_db_init ())
+     goto exit;
+
+  g_info ("%s: Updating data from feed", __FUNCTION__);
+
+  g_debug ("%s: update cpes", __FUNCTION__);
+
+  updated_scap_cpes = update_scap_cpes (last_scap_update);
+  if (updated_scap_cpes == -1)
+    {
+      manage_update_scap_db_cleanup ();
+      goto exit;
+    }
+
+  g_debug ("%s: update cves", __FUNCTION__);
+
+  updated_scap_cves = update_scap_cves (last_scap_update);
+  if (updated_scap_cves == -1)
+    {
+      manage_update_scap_db_cleanup ();
+      goto exit;
+    }
+
+  g_debug ("%s: update ovaldefs", __FUNCTION__);
+
+  updated_scap_ovaldefs = update_scap_ovaldefs (last_scap_update,
+                                                0 /* Feed data. */);
+  if (updated_scap_ovaldefs == -1)
+    {
+      manage_update_scap_db_cleanup ();
+      goto exit;
+    }
+
+  g_debug ("%s: updating user defined data", __FUNCTION__);
+
+  switch (update_scap_ovaldefs (last_scap_update,
+                                1 /* Private data. */))
+    {
+      case 0:
+        break;
+      case -1:
+        manage_update_scap_db_cleanup ();
+        goto exit;
+      default:
+        updated_scap_ovaldefs = 1;
+        break;
+    }
+
+  update_scap_cvss (updated_scap_cves, updated_scap_cpes,
+                    updated_scap_ovaldefs);
+  update_scap_placeholders (updated_scap_cves);
+
+  g_debug ("%s: update timestamp", __FUNCTION__);
+
+  if (update_scap_timestamp ())
+    {
+      manage_update_scap_db_cleanup ();
+      goto exit;
+    }
+
+  g_info ("%s: Updating SCAP info succeeded", __FUNCTION__);
+
+  manage_update_scap_db_cleanup ();
+
+  g_info ("%s: Checking for alerts", __FUNCTION__);
+
+  check_alerts ();
+
+ exit:
+
+  g_debug ("%s: cleaning up", __FUNCTION__);
+
+  /* Close the lock file. */
+
+  if (close (lockfile))
+    {
+      g_free (lockfile_name);
+      g_warning ("%s: failed to close lock file: %s", __FUNCTION__,
+                 strerror (errno));
+      exit (EXIT_FAILURE);
+    }
+
+  g_free (lockfile_name);
+
+  exit (EXIT_SUCCESS);
 }

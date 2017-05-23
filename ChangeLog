@@ -1,5 +1,24 @@
 2017-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Make openvasmd automatically sync SCAP database with SCAP files on disk.
+	Make the SCAP sync script only fetch SCAP files, and not call openvasmd at
+	all.
+
+	* src/manage.c (manage_schedule): Sync SCAP before scheduling.
+
+	* src/manage_sql_secinfo.c (feed_timestamp): New function.
+	(manage_sync_scap): New function.  Mostly a copy of manage_update_scap_db,
+	which also forks and checks the lock file.
+
+	* src/manage_sql_secinfo.h: Add header accordingly.
+
+	* tools/greenbone-scapdata-sync.in: Remove is_db_broken check.  Only sync
+	data when able to flock the lock file.
+	(LOCK_FILE): New variable.
+	(is_db_broken, update_scap_db): Remove.  No longer used.
+
+2017-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/utils.c: Add log domain.
 
 2017-05-22  Michael Wiegand <michael.wiegand@greenbone.net>

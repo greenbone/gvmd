@@ -302,4 +302,7 @@
   "               AS union_sub_6)"                                             \
   " AS allinfo"
 
+void
+manage_sync_scap ();
+
 #endif /* not OPENVAS_MANAGER_MANAGE_SQL_SECINFO_H */
