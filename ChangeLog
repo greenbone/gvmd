@@ -1,5 +1,10 @@
 2017-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/greenbone-scapdata-sync.in (POSTGRES, SCHEMA, --migrate): Remove.
+	There's no database stuff here anymore.
+
+2017-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Make openvasmd automatically sync SCAP database with SCAP files on disk.
 	Make the SCAP sync script only fetch SCAP files, and not call openvasmd at
 	all.
