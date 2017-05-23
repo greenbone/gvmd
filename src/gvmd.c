@@ -1,12 +1,12 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
- * Description: Main module for OpenVAS Manager: the system daemon.
+ * Description: Main module for Greenbone Vulnerability Manager: the system daemon.
  *
  * Authors:
  * Matthew Mundell <matthew.mundell@greenbone.net>
  *
  * Copyright:
- * Copyright (C) 2009, 2010, 2014-2016 Greenbone Networks GmbH
+ * Copyright (C) 2009, 2010, 2014-2017 Greenbone Networks GmbH
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,11 +25,12 @@
 
 /**
  * @file  gvmd.c
- * @brief The OpenVAS Manager daemon.
+ * @brief The Greenbone Vulnerability Manager daemon.
  *
- * This file defines the OpenVAS Manager daemon.  The Manager serves the Greenbone
- * Management Protocol (GMP) to clients such as OpenVAS-Client.  The Manager
- * and GMP give clients full access to an OpenVAS Scanner.
+ * This file defines the Greenbone Vulnerability Manager daemon.  The Manager
+ * serves the Greenbone Management Protocol (GMP) to clients such as Greenbone
+ * Security Assistant (the web interface).  The Manager and GMP give clients
+ * full access to an OpenVAS Scanner.
  *
  * The entry point to the daemon is the \ref main function.  From there
  * the references in the function documentation describe the flow of
@@ -435,7 +436,7 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
 
           is_parent = 0;
 
-          proctitle_set ("openvasmd: Serving client");
+          proctitle_set ("gvmd: Serving client");
 
           /* Restore the sigmask that was blanked for pselect. */
           pthread_sigmask (SIG_SETMASK, sigmask_current, NULL);
@@ -561,7 +562,7 @@ fork_connection_internal (gvm_connection_t *client_connection, gchar* uuid,
       case 0:
         /* Child.  Serve the scheduler GMP, then exit. */
 
-        proctitle_set ("openvasmd: Serving GMP internally");
+        proctitle_set ("gvmd: Serving GMP internally");
 
         parent_client_socket = sockets[0];
 
@@ -650,7 +651,7 @@ fork_connection_internal (gvm_connection_t *client_connection, gchar* uuid,
 
         g_debug ("%s: %i forked %i", __FUNCTION__, getpid (), pid);
 
-        proctitle_set ("openvasmd: Requesting GMP internally");
+        proctitle_set ("gvmd: Requesting GMP internally");
 
         /* This process is returned as the child of
          * fork_connection_for_scheduler so that the returned parent can wait
@@ -760,7 +761,7 @@ cleanup ()
   gvm_auth_tear_down ();
 
   /* Delete pidfile if this process is the parent. */
-  if (is_parent == 1) pidfile_remove ("openvasmd");
+  if (is_parent == 1) pidfile_remove ("gvmd");
 }
 
 /**
@@ -988,12 +989,12 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
 
   if (update_nvt_cache == 0)
     {
-      proctitle_set ("openvasmd: Rebuilding");
+      proctitle_set ("gvmd: Rebuilding");
       g_info ("%s: Rebuilding NVT cache...\n", __FUNCTION__);
     }
   else
     {
-      proctitle_set ("openvasmd: Updating");
+      proctitle_set ("gvmd: Updating");
       g_info ("%s: Updating NVT cache...\n", __FUNCTION__);
     }
 
@@ -1083,7 +1084,7 @@ static int
 rebuild_nvt_cache_retry (int update_or_rebuild, int register_cleanup,
                          void (*progress) (), int skip_create_tables)
 {
-  proctitle_set ("openvasmd: Reloading");
+  proctitle_set ("gvmd: Reloading");
   g_info ("%s: Reloading NVT cache\n", __FUNCTION__);
 
   /* Don't ignore SIGCHLD, in order to wait for child process. */
@@ -1157,7 +1158,7 @@ fork_update_nvt_cache ()
       case 0:
         /* Child.   */
 
-        proctitle_set ("openvasmd: Updating the NVT cache");
+        proctitle_set ("gvmd: Updating the NVT cache");
 
         /* Clean up the process. */
 
@@ -1723,12 +1724,12 @@ main (int argc, char** argv)
 
   if (print_version)
     {
-      printf ("OpenVAS Manager %s\n", GVMD_VERSION);
+      printf ("Greenbone Vulnerability Manager %s\n", GVMD_VERSION);
 #ifdef GVMD_SVN_REVISION
       printf ("SVN revision %i\n", GVMD_SVN_REVISION);
 #endif
       printf ("Manager DB revision %i\n", manage_db_supported_version ());
-      printf ("Copyright (C) 2010-2016 Greenbone Networks GmbH\n");
+      printf ("Copyright (C) 2010-2017 Greenbone Networks GmbH\n");
       printf ("License GPLv2+: GNU GPL version 2 or later\n");
       printf
         ("This is free software: you are free to change and redistribute it.\n"
@@ -1746,7 +1747,7 @@ main (int argc, char** argv)
         {
           use_tls = 0;
           manager_address_string_unix = g_build_filename (GVM_RUN_DIR,
-                                                          "openvasmd.sock",
+                                                          "gvmd.sock",
                                                           NULL);
         }
     }
@@ -1772,7 +1773,7 @@ main (int argc, char** argv)
   /* Set process title. */
 
   proctitle_init (argc, argv);
-  proctitle_set ("openvasmd: Initializing");
+  proctitle_set ("gvmd: Initializing");
 
   /* Setup initial signal handlers. */
 
@@ -1797,7 +1798,7 @@ main (int argc, char** argv)
   /* Setup logging. */
 
   rc_name = g_build_filename (GVM_SYSCONF_DIR,
-                              "openvasmd_log.conf",
+                              "gvmd_log.conf",
                               NULL);
   if (g_file_test (rc_name, G_FILE_TEST_EXISTS))
     log_config = load_log_configuration (rc_name);
@@ -1814,12 +1815,12 @@ main (int argc, char** argv)
   }
 
 #ifdef GVMD_SVN_REVISION
-  g_message ("   OpenVAS Manager version %s (SVN revision %i) (DB revision %i)\n",
+  g_message ("   Greenbone Vulnerability Manager version %s (SVN revision %i) (DB revision %i)\n",
              GVMD_VERSION,
              GVMD_SVN_REVISION,
              manage_db_supported_version ());
 #else
-  g_message ("   OpenVAS Manager version %s (DB revision %i)\n",
+  g_message ("   Greenbone Vulnerability Manager version %s (DB revision %i)\n",
              GVMD_VERSION,
              manage_db_supported_version ());
 #endif
@@ -1828,7 +1829,7 @@ main (int argc, char** argv)
     {
       /* Backup the database and then exit. */
 
-      proctitle_set ("openvasmd: Backing up database");
+      proctitle_set ("gvmd: Backing up database");
 
       g_info ("   Backing up database.\n");
 
@@ -1868,7 +1869,7 @@ main (int argc, char** argv)
     {
       int ret;
 
-      proctitle_set ("openvasmd: Optimizing");
+      proctitle_set ("gvmd: Optimizing");
 
       ret = manage_optimize (log_config, database, optimize);
       log_config_free ();
@@ -1885,7 +1886,7 @@ main (int argc, char** argv)
 
       /* Create the scanner and then exit. */
 
-      proctitle_set ("openvasmd: Creating scanner");
+      proctitle_set ("gvmd: Creating scanner");
 
       if (!scanner_host)
         scanner_host = OPENVASSD_ADDRESS;
@@ -1926,7 +1927,7 @@ main (int argc, char** argv)
 
       /* Modify the scanner and then exit. */
 
-      proctitle_set ("openvasmd: Modifying scanner");
+      proctitle_set ("gvmd: Modifying scanner");
 
       if (scanner_type)
         {
@@ -1962,7 +1963,7 @@ main (int argc, char** argv)
     {
       int ret;
 
-      proctitle_set ("openvasmd: Checking alerts");
+      proctitle_set ("gvmd: Checking alerts");
 
       ret = manage_check_alerts (log_config, database);
       log_config_free ();
@@ -1975,7 +1976,7 @@ main (int argc, char** argv)
     {
       int ret;
 
-      proctitle_set ("openvasmd: Checking CERT db");
+      proctitle_set ("gvmd: Checking CERT db");
 
       ret = manage_check_cert_db (log_config, database);
       log_config_free ();
@@ -1988,7 +1989,7 @@ main (int argc, char** argv)
     {
       int ret;
 
-      proctitle_set ("openvasmd: Checking SCAP db");
+      proctitle_set ("gvmd: Checking SCAP db");
 
       ret = manage_check_scap_db (log_config, database);
       log_config_free ();
@@ -2001,7 +2002,7 @@ main (int argc, char** argv)
     {
       int ret;
 
-      proctitle_set ("openvasmd: Creating user");
+      proctitle_set ("gvmd: Creating user");
 
       ret = manage_create_user (log_config, database, create_user, role);
       log_config_free ();
@@ -2014,7 +2015,7 @@ main (int argc, char** argv)
     {
       int ret;
 
-      proctitle_set ("openvasmd: Deleting user");
+      proctitle_set ("gvmd: Deleting user");
 
       ret = manage_delete_user (log_config, database, delete_user, inheritor);
       log_config_free ();
@@ -2027,7 +2028,7 @@ main (int argc, char** argv)
     {
       int ret;
 
-      proctitle_set ("openvasmd: Getting users");
+      proctitle_set ("gvmd: Getting users");
 
       ret = manage_get_users (log_config, database, role);
       log_config_free ();
@@ -2040,7 +2041,7 @@ main (int argc, char** argv)
     {
       int ret;
 
-      proctitle_set ("openvasmd: Getting scanners");
+      proctitle_set ("gvmd: Getting scanners");
 
       ret = manage_get_scanners (log_config, database);
       log_config_free ();
@@ -2053,7 +2054,7 @@ main (int argc, char** argv)
     {
       int ret;
 
-      proctitle_set ("openvasmd: Deleting scanner");
+      proctitle_set ("gvmd: Deleting scanner");
 
       ret = manage_delete_scanner (log_config, database, delete_scanner);
       log_config_free ();
@@ -2066,7 +2067,7 @@ main (int argc, char** argv)
     {
       int ret;
 
-      proctitle_set ("openvasmd: Verifying scanner");
+      proctitle_set ("gvmd: Verifying scanner");
 
       ret = manage_verify_scanner (log_config, database, verify_scanner);
       log_config_free ();
@@ -2079,7 +2080,7 @@ main (int argc, char** argv)
     {
       int ret;
 
-      proctitle_set ("openvasmd: Modifying user password");
+      proctitle_set ("gvmd: Modifying user password");
 
       ret = manage_set_password (log_config, database, user, new_password);
       log_config_free ();
@@ -2092,7 +2093,7 @@ main (int argc, char** argv)
     {
       int ret;
 
-      proctitle_set ("openvasmd: Modifying setting");
+      proctitle_set ("gvmd: Modifying setting");
 
       ret = manage_modify_setting (log_config, database, user,
                                    modify_setting, value);
@@ -2106,7 +2107,7 @@ main (int argc, char** argv)
     {
       /* Migrate the database to the version supported by this manager. */
 
-      proctitle_set ("openvasmd: Migrating database");
+      proctitle_set ("gvmd: Migrating database");
 
       g_info ("   Migrating database.\n");
 
@@ -2155,7 +2156,7 @@ main (int argc, char** argv)
     {
       int ret;
 
-      proctitle_set ("openvasmd: Encrypting all credentials");
+      proctitle_set ("gvmd: Encrypting all credentials");
 
       ret = manage_encrypt_all_credentials (log_config, database);
       log_config_free ();
@@ -2168,7 +2169,7 @@ main (int argc, char** argv)
     {
       int ret;
 
-      proctitle_set ("openvasmd: Decrypting all credentials");
+      proctitle_set ("gvmd: Decrypting all credentials");
 
       ret = manage_decrypt_all_credentials (log_config, database);
       log_config_free ();
@@ -2220,7 +2221,7 @@ main (int argc, char** argv)
     {
       /* Update CERT info and then exit. */
 
-      proctitle_set ("openvasmd: Updating CERT info");
+      proctitle_set ("gvmd: Updating CERT info");
 
       g_info ("   Updating CERT info.\n");
 
@@ -2263,7 +2264,7 @@ main (int argc, char** argv)
     {
       /* Update SCAP info and then exit. */
 
-      proctitle_set ("openvasmd: Updating SCAP info");
+      proctitle_set ("gvmd: Updating SCAP info");
 
       g_info ("   Updating SCAP info.\n");
 
@@ -2373,7 +2374,7 @@ main (int argc, char** argv)
 
   /* Set our pidfile. */
 
-  if (pidfile_create ("openvasmd")) exit (EXIT_FAILURE);
+  if (pidfile_create ("gvmd")) exit (EXIT_FAILURE);
 
   /* Setup global variables. */
 
@@ -2477,7 +2478,7 @@ main (int argc, char** argv)
 
   /* Enter the main forever-loop. */
 
-  proctitle_set ("openvasmd: Waiting for incoming connections");
+  proctitle_set ("gvmd: Waiting for incoming connections");
   serve_and_schedule ();
 
   return EXIT_SUCCESS;

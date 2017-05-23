@@ -1,6 +1,6 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
- * Description: Module for OpenVAS Manager: the Manage library.
+ * Description: Module for Greenbone Vulnerability Manager: the Manage library.
  *
  * Authors:
  * Matthew Mundell <matthew.mundell@greenbone.net>
@@ -26,10 +26,10 @@
 
 /**
  * @file  manage.c
- * @brief The OpenVAS Manager management library.
+ * @brief The Greenbone Vulnerability Manager management library.
  *
- * This file defines a management library, for implementing OpenVAS
- * Managers such as the OpenVAS Manager daemon.
+ * This file defines a management library, for implementing
+ * Managers such as the Greenbone Vulnerability Manager daemon.
  *
  * This library provides facilities for storing and manipulating credential
  * and task information, and manipulating reports.  Task manipulation
@@ -3835,7 +3835,7 @@ fork_osp_scan_handler (task_t task, target_t target)
   set_task_run_status (task, TASK_STATUS_RUNNING);
   set_report_scan_run_status (current_report, TASK_STATUS_RUNNING);
 
-  snprintf (title, sizeof (title), "openvasmd: OSP: Handling scan %s", report_id);
+  snprintf (title, sizeof (title), "gvmd: OSP: Handling scan %s", report_id);
   proctitle_set (title);
 
   rc = handle_osp_scan (task, current_report, report_id);
@@ -4089,7 +4089,7 @@ fork_cve_scan_handler (task_t task, target_t target)
 
   set_task_run_status (task, TASK_STATUS_RUNNING);
 
-  snprintf (title, sizeof (title), "openvasmd: CVE: Handling scan %s", report_id);
+  snprintf (title, sizeof (title), "gvmd: CVE: Handling scan %s", report_id);
   g_free (report_id);
   proctitle_set (title);
 
@@ -4494,7 +4494,7 @@ run_slave_or_gmp_task (task_t task, int from, char **report_id,
 
   uuid = report_uuid (current_report);
   snprintf (title, sizeof (title),
-            "openvasmd: OTP: Handling slave scan %s",
+            "gvmd: OTP: Handling slave scan %s",
             uuid);
   free (uuid);
   proctitle_set (title);
@@ -4737,7 +4737,7 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
   }
 
   uuid = report_uuid (current_report);
-  snprintf (title, sizeof (title), "openvasmd: OTP: Handling scan %s", uuid);
+  snprintf (title, sizeof (title), "gvmd: OTP: Handling scan %s", uuid);
   free (uuid);
   proctitle_set (title);
 
@@ -6316,7 +6316,7 @@ set_scheduled_user_uuid (gchar* user_uuid)
 /**
  * @brief Schedule any actions that are due.
  *
- * In openvasmd, periodically called from the main daemon loop.
+ * In gvmd, periodically called from the main daemon loop.
  *
  * @param[in]  fork_connection  Function that forks a child which is connected
  *                              to the Manager.  Must return PID in parent, 0
@@ -6513,7 +6513,7 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
               /* Parent.  Wait for child, to check return. */
 
               snprintf (title, sizeof (title),
-                        "openvasmd: scheduler: waiting for %i",
+                        "gvmd: scheduler: waiting for %i",
                         pid);
               proctitle_set (title);
 
@@ -6614,7 +6614,7 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
       /* Start the task. */
 
       snprintf (title, sizeof (title),
-                "openvasmd: scheduler: starting %s",
+                "gvmd: scheduler: starting %s",
                 task_uuid);
       proctitle_set (title);
 
@@ -6709,7 +6709,7 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
       /* Stop the task. */
 
       snprintf (title, sizeof (title),
-                "openvasmd: scheduler: stopping %s",
+                "gvmd: scheduler: stopping %s",
                 task_uuid);
       proctitle_set (title);
 
@@ -8242,11 +8242,11 @@ openvas_sync_feed (const gchar * sync_script, const gchar * current_user,
     }
 
   if (feed_type == NVT_FEED)
-    proctitle_set ("openvasmd: Syncing NVT feed");
+    proctitle_set ("gvmd: Syncing NVT feed");
   else if (feed_type == SCAP_FEED)
-    proctitle_set ("openvasmd: Syncing SCAP feed");
+    proctitle_set ("gvmd: Syncing SCAP feed");
   else if (feed_type == CERT_FEED)
-    proctitle_set ("openvasmd: Syncing CERT feed");
+    proctitle_set ("gvmd: Syncing CERT feed");
 
   /* Open the lock file. */
 
@@ -8333,14 +8333,14 @@ openvas_sync_feed (const gchar * sync_script, const gchar * current_user,
 
         /* Child.  Become the sync process. */
 
-        sync_out = freopen ("/tmp/openvasmd_sync_out", "w", stdout);
+        sync_out = freopen ("/tmp/gvmd_sync_out", "w", stdout);
         if (sync_out == NULL)
           {
             g_warning ("Failed to reopen stdout: %s", strerror (errno));
             exit (EXIT_FAILURE);
           }
 
-        sync_err = freopen ("/tmp/openvasmd_sync_err", "w", stderr);
+        sync_err = freopen ("/tmp/gvmd_sync_err", "w", stderr);
         if (sync_err == NULL)
           {
             g_warning ("Failed to reopen stderr: %s", strerror (errno));
@@ -8569,14 +8569,14 @@ openvas_migrate_secinfo (const gchar * sync_script, int feed_type)
 
         /* Child.  Become the sync process. */
 
-        sync_out = freopen ("/tmp/openvasmd_sync_out", "w", stdout);
+        sync_out = freopen ("/tmp/gvmd_sync_out", "w", stdout);
         if (sync_out == NULL)
           {
             g_warning ("Failed to reopen stdout: %s", strerror (errno));
             exit (EXIT_FAILURE);
           }
 
-        sync_err = freopen ("/tmp/openvasmd_sync_err", "w", stderr);
+        sync_err = freopen ("/tmp/gvmd_sync_err", "w", stderr);
         if (sync_err == NULL)
           {
             g_warning ("Failed to reopen stderr: %s", strerror (errno));
@@ -8994,11 +8994,11 @@ manage_run_wizard (const gchar *name,
           entity_t command, extra_xsl;
           gchar *gmp;
           int xsl_fd, xml_fd;
-          char xsl_file_name[] = "/tmp/openvasmd-xsl-XXXXXX";
+          char xsl_file_name[] = "/tmp/gvmd-xsl-XXXXXX";
           FILE *xsl_file, *xml_file;
-          char xml_file_name[] = "/tmp/openvasmd-xml-XXXXXX";
-          char extra_xsl_file_name[] = "/tmp/openvasmd-extra-xsl-XXXXXX";
-          char extra_xml_file_name[] = "/tmp/openvasmd-extra-xml-XXXXXX";
+          char xml_file_name[] = "/tmp/gvmd-xml-XXXXXX";
+          char extra_xsl_file_name[] = "/tmp/gvmd-extra-xsl-XXXXXX";
+          char extra_xml_file_name[] = "/tmp/gvmd-extra-xml-XXXXXX";
 
           /* Get the command element. */
 

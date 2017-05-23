@@ -1,4 +1,4 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
  * Description: Manager Manage library: SQL backend: SecInfo.
  *
@@ -4333,7 +4333,7 @@ manage_sync_scap ()
 
     }
 
-  proctitle_set ("openvasmd: Syncing SCAP");
+  proctitle_set ("gvmd: Syncing SCAP");
 
   if (manage_scap_db_exists ())
     {

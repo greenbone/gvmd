@@ -1,4 +1,4 @@
-/* OpenVAS Manager log printing facility.
+/* GVM log printing facility.
  * $Id$
  * Description: A printf like macro for logging communication.
  *
@@ -28,8 +28,8 @@
  * @brief A printf like macro for logging communication.
  */
 
-#ifndef OPENVAS_MANAGER_LOG_H
-#define OPENVAS_MANAGER_LOG_H
+#ifndef GVMD_LOG_H
+#define GVMD_LOG_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -48,7 +48,7 @@
 /**
  * @brief Name of log file.
  */
-#define LOG_FILE GVM_LOG_DIR "/openvasmd.comm"
+#define LOG_FILE GVM_LOG_DIR "/gvmd.comm"
 
 #if LOG
 extern FILE* log_stream;

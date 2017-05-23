@@ -71,8 +71,8 @@ Thereafter, the following commands are useful.
 Choosing the Connection Type
 -----------------------------
 
-Greenbone Vulnerability can serve client connections on either a TCP socket
-or a UNIX domain socket.
+Greenbone Vulnerability Manager can serve client connections on either a TCP
+socket or a UNIX domain socket.
 
 The default is a UNIX domain socket, at
 

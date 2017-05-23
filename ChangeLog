@@ -1,3 +1,10 @@
+2017-05-23  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* INSTALL, src/gmp.c src/gvmd.c src/logf.h src/lsc_crypt.h src/manage.c
+	src/manage_sql.c src/manage_sql_secinfo.c src/manage_sqlite3.c:
+	Further renaming to GVM/gvmd. This primarily addresses temporarry
+	filenames, the .sock and .pid file as well as the proctitle.
+
 2017-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* tools/greenbone-scapdata-sync.in (ENABLED, REFRESH_ONLY)

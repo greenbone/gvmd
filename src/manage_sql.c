@@ -1,4 +1,4 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
  * Description: Manager Manage library: SQL backend.
  *
@@ -26,9 +26,9 @@
 
 /**
  * @file  manage_sql.c
- * @brief The OpenVAS Manager management library (SQLite implementation).
+ * @brief The Greenbone Vulnerability Manager management library (SQLite implementation).
  *
- * This file defines the SQLite specific portions of the OpenVAS manager
+ * This file defines the SQLite specific portions of the Greenbone Vulnerability Manager
  * management library.
  */
 
@@ -463,7 +463,7 @@ command_t gmp_commands[]
     {"GET_TARGETS", "Get all targets."},
     {"GET_TASKS", "Get all tasks."},
     {"GET_USERS", "Get all users."},
-    {"GET_VERSION", "Get the OpenVAS Manager Protocol version."},
+    {"GET_VERSION", "Get the Greenbone Management Protocol version."},
     {"GET_VULNS", "Get all vulnerabilities."},
     {"HELP", "Get this help text."},
     {"MODIFY_AGENT", "Modify an existing agent."},
@@ -8428,8 +8428,8 @@ email (const char *to_address, const char *from_address, const char *subject,
   int ret, content_fd, to_fd;
   gchar *command;
   GError *error = NULL;
-  char content_file_name[] = "/tmp/openvasmd-content-XXXXXX";
-  char to_file_name[] = "/tmp/openvasmd-to-XXXXXX";
+  char content_file_name[] = "/tmp/gvmd-content-XXXXXX";
+  char to_file_name[] = "/tmp/gvmd-to-XXXXXX";
   FILE *content_file;
 
   content_fd = mkstemp (content_file_name);
@@ -8690,7 +8690,7 @@ run_alert_script (const char *alert_id, const char *command_args,
 {
   gchar *script, *script_dir;
   gchar *report_file;
-  char report_dir[] = "/tmp/openvasmd_alert_XXXXXX";
+  char report_dir[] = "/tmp/gvmd_alert_XXXXXX";
   GError *error;
 
   if (report == NULL)
@@ -8814,7 +8814,7 @@ run_alert_script (const char *alert_id, const char *command_args,
 
                 cleanup_manage_process (FALSE);
 
-                proctitle_set ("openvasmd: Running alert script");
+                proctitle_set ("gvmd: Running alert script");
 
                 if (setgroups (0,NULL))
                   {
@@ -9118,7 +9118,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
   gchar *script, *script_dir;
   gchar *report_file, *pkcs12_file, *pkcs12;
   gchar *clean_ip, *clean_port;
-  char report_dir[] = "/tmp/openvasmd_escalate_XXXXXX";
+  char report_dir[] = "/tmp/gvmd_escalate_XXXXXX";
   GError *error;
   gsize pkcs12_len;
 
@@ -9274,7 +9274,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                 /* Child.  Drop privileges, run command, exit. */
                 cleanup_manage_process (FALSE);
 
-                proctitle_set ("openvasmd: Sending to Sourcefire");
+                proctitle_set ("gvmd: Sending to Sourcefire");
 
                 if (setgroups (0,NULL))
                   {
@@ -9458,7 +9458,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
   gchar *script, *script_dir;
   gchar *archive_file;
   gchar *clean_url, *clean_username, *clean_password;
-  char archive_dir[] = "/tmp/openvasmd_alert_XXXXXX";
+  char archive_dir[] = "/tmp/gvmd_alert_XXXXXX";
   GError *error;
 
   if ((archive == NULL) || (url == NULL))
@@ -9598,7 +9598,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
               {
                 /* Child.  Drop privileges, run command, exit. */
 
-                proctitle_set ("openvasmd: Sending to Verinice");
+                proctitle_set ("gvmd: Sending to Verinice");
 
                 cleanup_manage_process (FALSE);
 
@@ -10292,7 +10292,7 @@ email_secinfo (alert_t alert, task_t task, event_t event,
   /* Setup subject. */
 
   subject = g_strdup_printf
-             ("[OpenVAS-Manager] %s %s arrived",
+             ("[GVM] %s %s arrived",
               event == EVENT_NEW_SECINFO ? "New" : "Updated",
               type_name_plural (type ? type : "nvt"));
   alert_subject = alert_data (alert, "method", "subject");
@@ -10548,7 +10548,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   format_name = report_format_name (report_format);
                   condition_desc = alert_condition_description (condition,
                                                                 alert);
-                  subject = g_strdup_printf ("[OpenVAS-Manager] Task '%s': %s",
+                  subject = g_strdup_printf ("[GVM] Task '%s': %s",
                                              name ? name : "Internal Error",
                                              event_desc);
                   alert_subject = alert_data (alert, "method", "subject");
@@ -10669,7 +10669,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   format_name = report_format_name (report_format);
                   condition_desc = alert_condition_description (condition,
                                                                     alert);
-                  subject = g_strdup_printf ("[OpenVAS-Manager] Task '%s': %s",
+                  subject = g_strdup_printf ("[GVM] Task '%s': %s",
                                              name ? name : "Internal Error",
                                              event_desc);
                   alert_subject = alert_data (alert, "method", "subject");
@@ -10719,7 +10719,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   condition_desc = alert_condition_description (condition,
                                                                     alert);
 
-                  subject = g_strdup_printf ("[OpenVAS-Manager] Task '%s':"
+                  subject = g_strdup_printf ("[GVM] Task '%s':"
                                              " An event occurred",
                                              name);
 
@@ -19873,7 +19873,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
         break;
     }
 
-  proctitle_set ("openvasmd: Importing results");
+  proctitle_set ("gvmd: Importing results");
 
   /* Add the results. */
 
@@ -28816,7 +28816,7 @@ manage_report (report_t report, const get_data_t *get,
 {
   task_t task;
   gchar *report_format_id, *xml_start, *xml_file, *output_file;
-  char xml_dir[] = "/tmp/openvasmd_XXXXXX";
+  char xml_dir[] = "/tmp/gvmd_XXXXXX";
   int ret;
   GList *used_rfps;
   GError *get_error;
@@ -29089,7 +29089,7 @@ run_report_format_script (gchar *report_format_id,
             {
               /* Child.  Drop privileges, run command, exit. */
 
-              proctitle_set ("openvasmd: Generating report");
+              proctitle_set ("gvmd: Generating report");
 
               cleanup_manage_process (FALSE);
 
@@ -29332,7 +29332,7 @@ apply_report_format (gchar *report_format_id,
           gchar *subreport_dir, *subreport_xml, *subreport_file;
           subreport_file = NULL;
 
-          subreport_dir = g_strdup ("/tmp/openvasmd_XXXXXX");
+          subreport_dir = g_strdup ("/tmp/gvmd_XXXXXX");
 
           if (mkdtemp (subreport_dir) == NULL)
             {
@@ -29531,7 +29531,7 @@ manage_send_report (report_t report, report_t delta_report,
 {
   task_t task;
   gchar *xml_start, *xml_file;
-  char xml_dir[] = "/tmp/openvasmd_XXXXXX";
+  char xml_dir[] = "/tmp/gvmd_XXXXXX";
   int ret;
   GList *used_rfps;
   gchar *output_file, *report_format_id;
@@ -41659,8 +41659,8 @@ verify_signature (const gchar *installer, gsize installer_size,
   int ret = 0, installer_fd, signature_fd;
   gchar *standard_out = NULL;
   gchar *standard_err = NULL;
-  char installer_file[] = "/tmp/openvasmd-installer-XXXXXX";
-  char signature_file[] = "/tmp/openvasmd-signature-XXXXXX";
+  char installer_file[] = "/tmp/gvmd-installer-XXXXXX";
+  char signature_file[] = "/tmp/gvmd-signature-XXXXXX";
   GError *error = NULL;
 
   installer_fd = mkstemp (installer_file);
@@ -56388,7 +56388,7 @@ manage_schema (gchar *format, gchar **output_return, gsize *output_length,
   {
     gchar *script, *script_dir;
     gchar *uuid_format;
-    char output_dir[] = "/tmp/openvasmd_schema_XXXXXX";
+    char output_dir[] = "/tmp/gvmd_schema_XXXXXX";
 
     if (mkdtemp (output_dir) == NULL)
       {
@@ -61414,7 +61414,7 @@ find_user_by_name (const char* name, user_t *user)
 }
 
 /**
- * @brief Adds a new user to the OpenVAS installation.
+ * @brief Adds a new user to the GVM installation.
  *
  * @todo Adding users authenticating with certificates is not yet implemented.
  *

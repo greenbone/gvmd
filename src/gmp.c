@@ -1,4 +1,4 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
  * Description: Module for OpenVAS Manager: the GMP library.
  *
@@ -11097,7 +11097,7 @@ strdiff (const gchar *one, const gchar *two)
   gint exit_status;
   gchar *standard_out = NULL;
   gchar *standard_err = NULL;
-  char dir[] = "/tmp/openvasmd-strdiff-XXXXXX";
+  char dir[] = "/tmp/gvmd-strdiff-XXXXXX";
   GError *error = NULL;
 
   if (mkdtemp (dir) == NULL)

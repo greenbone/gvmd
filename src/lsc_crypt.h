@@ -1,4 +1,4 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
  * Description: LSC credentials encryption support
  *
@@ -23,12 +23,12 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef _OPENVASMD_LSC_CRYPT_H
-#define _OPENVASMD_LSC_CRYPT_H
+#ifndef _GVMD_LSC_CRYPT_H
+#define _GVMD_LSC_CRYPT_H
 
 #include <glib.h>
 
-/* (Defined in openvasmd.c) */
+/* (Defined in gvmd.c) */
 extern int disable_encrypted_credentials;
 
 
@@ -50,4 +50,4 @@ const char *lsc_crypt_get_password (lsc_crypt_ctx_t, const char *);
 const char *lsc_crypt_get_private_key (lsc_crypt_ctx_t, const char *);
 
 
-#endif /* _OPENVASMD_LSC_CRYPT_H */
+#endif /* _GVMD_LSC_CRYPT_H */

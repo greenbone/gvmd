@@ -1,4 +1,4 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
  * Description: Manager Manage library: SQLite specific Manage facilities.
  *
@@ -4779,7 +4779,7 @@ migrate_51_to_52_sql_convert (sqlite3_context *context, int argc,
        *
        * The dates being converted are in the timezone that the Scanner was using.
        *
-       * As a special case for this migrator, openvasmd.c uses the timezone
+       * As a special case for this migrator, gvmd.c uses the timezone
        * from the environment, instead of forcing UTC.  This allows the user
        * to set the timezone to be the same as the Scanner timezone, so
        * that these dates are converted from the Scanner timezone.  Even if
