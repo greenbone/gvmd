@@ -1,3 +1,7 @@
+2017-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/utils.c: Add log domain.
+
 2017-05-22  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* doc/database-statistics-sqlite.8,
@@ -62,7 +66,6 @@
 	tools/gvm-manage-certs.in, tools/gvm-migrate-to-postgres.in,
 	tools/gvm-portnames-update.in: Renamed build settings names
 	from *OPENVAS* to *GVM*.
-
 
 2017-05-18  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
