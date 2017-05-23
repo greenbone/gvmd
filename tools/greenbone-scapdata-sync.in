@@ -61,16 +61,6 @@ RSYNC_COMPRESS="--compress-level=9"
 # doing.
 PORT=24
 
-# If ENABLED is set to 0, the sync script will not perform a synchronization.
-ENABLED=1
-
-# If REFRESH_ONLY is set to 1, the sync script will only update the Greenbone
-# Vulnerability Manager database. This can be controlled via the --refresh parameter.
-REFRESH_ONLY=0
-# If REFRESH_PRIVATE_ONLY is set to 1, the sync script will only update
-# private data in the Greenbone Vulnerability Manager database.
-# This can be controlled via the --refresh-private parameter.
-REFRESH_PRIVATE_ONLY=0
 # Setting this to 1 enables verbose mode, which outputs additional data.
 # This is usually done with the option --verbose
 VERBOSE=0
@@ -90,8 +80,6 @@ LOCK_FILE=/tmp/gvm-sync-scap
 SCAP_DIR="@GVM_SCAP_DATA_DIR@"
 
 SCAP_RES_DIR="@GVM_SCAP_RES_DIR@"
-
-SCAP_DB="$SCAP_DIR/scap.db"
 
 if [ -z "$DROP_USER" ]; then
   DROP_USER="@GVM_DEFAULT_DROP_USER@"
@@ -242,92 +230,87 @@ get_value ()
 }
 
 is_feed_current () {
-  if [ $REFRESH_ONLY -eq 0 ]
+  if [ -r $TIMESTAMP ]
   then
-    if [ -r $TIMESTAMP ]
-    then
-      FEED_VERSION=`cat $TIMESTAMP`
-    fi
-
-    if [ -z "$FEED_VERSION" ]
-    then
-      log_warning "Could not determine feed version."
-      FEED_CURRENT=0
-      return $FEED_CURRENT
-    fi
-
-    FEED_INFO_TEMP_DIR=`mktemp -d`
-
-    if [ -e $ACCESSKEY ]
-    then
-      read feeduser < $ACCESSKEY
-      custid_at_host=`head -1 $ACCESSKEY | cut -d : -f 1`
-      if [ -z $feeduser ] || [ -z $custid_at_host ]
-      then
-        log_err "Could not determine credentials, aborting synchronization."
-        rm -rf $FEED_INFO_TEMP_DIR
-        exit 1
-      fi
-
-      gsmproxy=$(get_value proxy_feed | sed -r -e 's/^.*\/\///' -e 's/:([0-9]+)$/ \1/')
-      syncport=$(get_value syncport)
-      if [ "$syncport" ]
-      then
-        PORT="$syncport"
-      fi
-
-      if [ -z "$gsmproxy" ] || [ "$gsmproxy" = "proxy_feed" ]
-      then
-        RSYNC_SSH_PROXY_CMD=""
-      else
-        if [ -e $GVM_SYSCONF_DIR/proxyauth ] && [ -r $GVM_SYSCONF_DIR/proxyauth ]; then
-          RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p $GVM_SYSCONF_DIR/proxyauth\""
-        else
-          RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p\""
-        fi
-      fi
-      create_tmp_key
-      rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $TMPACCESSKEY" -ltvrP --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid_at_host:/scap-data/timestamp $FEED_INFO_TEMP_DIR
-      if [ $? -ne 0 ]
-      then
-        log_err "rsync failed, aborting synchronization."
-        rm -rf $FEED_INFO_TEMP_DIR
-        remove_tmp_key
-        exit 1
-      fi
-      remove_tmp_key
-    else
-      log_notice "No Greenbone Security Feed accees key found, falling back to Greenbone Community Feed"
-      eval "$RSYNC -ltvrP \"$COMMUNITY_SCAP_RSYNC_FEED/timestamp\" \"$FEED_INFO_TEMP_DIR\""
-      if [ $? -ne 0 ]
-      then
-        log_err "rsync failed, aborting synchronization."
-        rm -rf $FEED_INFO_TEMP_DIR
-        exit 1
-      fi
-    fi
-
-    FEED_VERSION_SERVER=`cat $FEED_INFO_TEMP_DIR/timestamp`
-
-    if [ -z "$FEED_VERSION_SERVER" ]
-    then
-      log_err "Could not determine server feed version."
-      rm -rf $FEED_INFO_TEMP_DIR
-      exit 1
-    fi
-
-    # Check against FEED_VERSION
-    if [ $FEED_VERSION -lt $FEED_VERSION_SERVER ] ; then
-      FEED_CURRENT=0
-    else
-      FEED_CURRENT=1
-    fi
-
-    # Cleanup
-    rm -rf $FEED_INFO_TEMP_DIR
-  else
-    FEED_CURRENT=0
+	FEED_VERSION=`cat $TIMESTAMP`
   fi
+
+  if [ -z "$FEED_VERSION" ]
+  then
+	log_warning "Could not determine feed version."
+	FEED_CURRENT=0
+	return $FEED_CURRENT
+  fi
+
+  FEED_INFO_TEMP_DIR=`mktemp -d`
+
+  if [ -e $ACCESSKEY ]
+  then
+	read feeduser < $ACCESSKEY
+	custid_at_host=`head -1 $ACCESSKEY | cut -d : -f 1`
+	if [ -z $feeduser ] || [ -z $custid_at_host ]
+	then
+	  log_err "Could not determine credentials, aborting synchronization."
+	  rm -rf $FEED_INFO_TEMP_DIR
+	  exit 1
+	fi
+
+	gsmproxy=$(get_value proxy_feed | sed -r -e 's/^.*\/\///' -e 's/:([0-9]+)$/ \1/')
+	syncport=$(get_value syncport)
+	if [ "$syncport" ]
+	then
+	  PORT="$syncport"
+	fi
+
+	if [ -z "$gsmproxy" ] || [ "$gsmproxy" = "proxy_feed" ]
+	then
+	  RSYNC_SSH_PROXY_CMD=""
+	else
+	  if [ -e $GVM_SYSCONF_DIR/proxyauth ] && [ -r $GVM_SYSCONF_DIR/proxyauth ]; then
+		RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p $GVM_SYSCONF_DIR/proxyauth\""
+	  else
+		RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p\""
+	  fi
+	fi
+	create_tmp_key
+	rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $TMPACCESSKEY" -ltvrP --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid_at_host:/scap-data/timestamp $FEED_INFO_TEMP_DIR
+	if [ $? -ne 0 ]
+	then
+	  log_err "rsync failed, aborting synchronization."
+	  rm -rf $FEED_INFO_TEMP_DIR
+	  remove_tmp_key
+	  exit 1
+	fi
+	remove_tmp_key
+  else
+	log_notice "No Greenbone Security Feed accees key found, falling back to Greenbone Community Feed"
+	eval "$RSYNC -ltvrP \"$COMMUNITY_SCAP_RSYNC_FEED/timestamp\" \"$FEED_INFO_TEMP_DIR\""
+	if [ $? -ne 0 ]
+	then
+	  log_err "rsync failed, aborting synchronization."
+	  rm -rf $FEED_INFO_TEMP_DIR
+	  exit 1
+	fi
+  fi
+
+  FEED_VERSION_SERVER=`cat $FEED_INFO_TEMP_DIR/timestamp`
+
+  if [ -z "$FEED_VERSION_SERVER" ]
+  then
+	log_err "Could not determine server feed version."
+	rm -rf $FEED_INFO_TEMP_DIR
+	exit 1
+  fi
+
+  # Check against FEED_VERSION
+  if [ $FEED_VERSION -lt $FEED_VERSION_SERVER ] ; then
+	FEED_CURRENT=0
+  else
+	FEED_CURRENT=1
+  fi
+
+  # Cleanup
+  rm -rf $FEED_INFO_TEMP_DIR
 
   return $FEED_CURRENT
 }
@@ -388,58 +371,55 @@ do_sync_community_feed () {
 }
 
 sync_scapdata(){
-  if [ $REFRESH_ONLY -eq 0 ]
+  if [ -e $ACCESSKEY ]
   then
-    if [ -e $ACCESSKEY ]
-    then
-      log_notice "Found Greenbone Security Feed subscription file, trying to synchronize with Greenbone SCAP data Repository ..."
-      notsynced=1
-      retried=0
+	log_notice "Found Greenbone Security Feed subscription file, trying to synchronize with Greenbone SCAP data Repository ..."
+	notsynced=1
+	retried=0
 
-      mkdir -p "$SCAP_DIR"
-      read feeduser < $ACCESSKEY
-      custid_at_host=`head -1 $ACCESSKEY | cut -d : -f 1`
-      if [ -z "$feeduser" ] || [ -z "$custid_at_host" ]
-      then
-        log_err "Could not determine credentials, aborting synchronization."
-        exit 1
-      fi
+	mkdir -p "$SCAP_DIR"
+	read feeduser < $ACCESSKEY
+	custid_at_host=`head -1 $ACCESSKEY | cut -d : -f 1`
+	if [ -z "$feeduser" ] || [ -z "$custid_at_host" ]
+	then
+	  log_err "Could not determine credentials, aborting synchronization."
+	  exit 1
+	fi
 
-      while [ 0 -ne "$notsynced" ]
-      do
+	while [ 0 -ne "$notsynced" ]
+	do
 
-        gsmproxy=$(get_value proxy_feed | sed -r -e 's/^.*\/\///' -e 's/:([0-9]+)$/ \1/')
-        syncport=$(get_value syncport)
-        if [ "$syncport" ]
-        then
-          PORT="$syncport"
-        fi
+	  gsmproxy=$(get_value proxy_feed | sed -r -e 's/^.*\/\///' -e 's/:([0-9]+)$/ \1/')
+	  syncport=$(get_value syncport)
+	  if [ "$syncport" ]
+	  then
+		PORT="$syncport"
+	  fi
 
-        if [ -z "$gsmproxy" ] || [ "$gsmproxy" = "proxy_feed" ]
-        then
-          RSYNC_SSH_PROXY_CMD=""
-        else
-          if [ -e $GVM_SYSCONF_DIR/proxyauth ] && [ -r $GVM_SYSCONF_DIR/proxyauth ]; then
-            RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p $GVM_SYSCONF_DIR/proxyauth\""
-          else
-            RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p\""
-          fi
-        fi
-        create_tmp_key
-        rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid_at_host:/scap-data/ $SCAP_DIR
-        if [ 0 != "$?" ] ; then
-          log_err "rsync failed, aborting synchronization."
-          remove_tmp_key
-          exit 1
-        fi
-        remove_tmp_key
-        notsynced=0
-      done
-      log_notice "Synchronization with the Greenbone SCAP data Repository successful."
-    else
-      log_notice "No Greenbone Security Feed accees key found, falling back to Greenbone Community Feed"
-      do_sync_community_feed
-    fi
+	  if [ -z "$gsmproxy" ] || [ "$gsmproxy" = "proxy_feed" ]
+	  then
+		RSYNC_SSH_PROXY_CMD=""
+	  else
+		if [ -e $GVM_SYSCONF_DIR/proxyauth ] && [ -r $GVM_SYSCONF_DIR/proxyauth ]; then
+		  RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p $GVM_SYSCONF_DIR/proxyauth\""
+		else
+		  RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p\""
+		fi
+	  fi
+	  create_tmp_key
+	  rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid_at_host:/scap-data/ $SCAP_DIR
+	  if [ 0 != "$?" ] ; then
+		log_err "rsync failed, aborting synchronization."
+		remove_tmp_key
+		exit 1
+	  fi
+	  remove_tmp_key
+	  notsynced=0
+	done
+	log_notice "Synchronization with the Greenbone SCAP data Repository successful."
+  else
+	log_notice "No Greenbone Security Feed accees key found, falling back to Greenbone Community Feed"
+	do_sync_community_feed
   fi
 }
 
@@ -485,13 +465,6 @@ while test $# -gt 0; do
         --verbose)
           VERBOSE=1
           ;;
-        --refresh)
-          REFRESH_ONLY=1
-          ;;
-        --refresh-private)
-          REFRESH_ONLY=1
-          REFRESH_PRIVATE_ONLY=1
-          ;;
         --selftest)
           SELFTEST_FAIL=0
           SELFTEST_STDERR=1
@@ -513,12 +486,6 @@ then
   exit 1
 fi
 
-
-if [ $ENABLED -ne 1 ]
-then
-  log_notice "Synchronization of SCAP data with network is disabled, will only perform local operations."
-  REFRESH_ONLY=1
-fi
 
 is_feed_current
 if [ $FEED_CURRENT -eq 1 ]

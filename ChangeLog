@@ -1,5 +1,12 @@
 2017-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/greenbone-scapdata-sync.in (ENABLED, REFRESH_ONLY)
+	(REFRESH_PRIVATE_ONLY, SCAP_DB, --refresh)
+	(--refresh-private-only): Remove.  The script no longer does refresh, it
+	can only sync.
+
+2017-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/greenbone-scapdata-sync.in (POSTGRES, SCHEMA, --migrate): Remove.
 	There's no database stuff here anymore.
 
