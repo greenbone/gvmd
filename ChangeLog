@@ -1,5 +1,12 @@
 2017-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r28496.
+
+	* src/sql_pg.c (sql_open): Use PQconnectStart and PQconnectPoll, which
+	will hopefully wait while the database is starting up.
+
+2017-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r28487.
 
 	* src/manage_pg.c (manage_create_sql_functions): Use UTC when timezone is
