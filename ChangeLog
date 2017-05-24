@@ -1,3 +1,10 @@
+2017-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r28487.
+
+	* src/manage_pg.c (manage_create_sql_functions): Use UTC when timezone is
+	invalid in iso_time.
+
 2017-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r28420.
