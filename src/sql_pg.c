@@ -27,6 +27,7 @@
 
 #include <assert.h>
 #include <endian.h>
+#include <errno.h>
 #include <arpa/inet.h>
 #include <glib.h>
 #include <inttypes.h>
@@ -252,20 +253,92 @@ int
 sql_open (const char *database)
 {
   gchar *conn_info;
+  PostgresPollingStatusType poll_status;
+  int socket;
 
   conn_info = g_strdup_printf ("dbname = %s",
                                database
                                 ? database
                                 : sql_default_database ());
-  conn = PQconnectdb (conn_info);
+  conn = PQconnectStart (conn_info);
   g_free (conn_info);
-  if (PQstatus (conn) != CONNECTION_OK)
+  if (conn == NULL)
     {
-      g_warning ("%s: PQconnectdb to '%s' failed: %s\n",
+      g_warning ("%s: PQconnectStart failed to allocate conn\n",
+                 __FUNCTION__);
+      return -1;
+    }
+  if (PQstatus (conn) == CONNECTION_BAD)
+    {
+      g_warning ("%s: PQconnectStart to '%s' failed: %s\n",
                  __FUNCTION__,
                  database ? database : sql_default_database (),
                  PQerrorMessage (conn));
-      return -1;
+      goto fail;
+    }
+
+  socket = PQsocket (conn);
+  if (socket == 0)
+    {
+      g_warning ("%s: PQsocket 0\n", __FUNCTION__);
+      goto fail;
+    }
+
+  poll_status = PGRES_POLLING_WRITING;
+
+  g_debug ("%s: polling\n", __FUNCTION__);
+
+  while (1)
+    {
+      if (poll_status == PGRES_POLLING_READING)
+        {
+          fd_set readfds, writefds;
+          int ret;
+
+          FD_ZERO (&readfds);
+          FD_ZERO (&writefds);
+          FD_SET (socket, &readfds);
+          ret = select (socket + 1, &readfds, &writefds, NULL, NULL);
+          if (ret == 0)
+            continue;
+          if (ret < 0)
+            {
+              g_warning ("%s: write select failed: %s\n",
+                         __FUNCTION__, strerror (errno));
+              goto fail;
+            }
+          /* Poll again. */
+        }
+      else if (poll_status == PGRES_POLLING_WRITING)
+        {
+          fd_set readfds, writefds;
+          int ret;
+
+          FD_ZERO (&readfds);
+          FD_ZERO (&writefds);
+          FD_SET (socket, &writefds);
+          ret = select (socket + 1, &readfds, &writefds, NULL, NULL);
+          if (ret == 0)
+            continue;
+          if (ret < 0)
+            {
+              g_warning ("%s: read select failed: %s\n",
+                         __FUNCTION__, strerror (errno));
+              goto fail;
+            }
+          /* Poll again. */
+        }
+      else if (poll_status == PGRES_POLLING_FAILED)
+        {
+          g_warning ("%s: PQconnectPoll failed\n",
+                     __FUNCTION__);
+          goto fail;
+        }
+      else if (poll_status == PGRES_POLLING_OK)
+        /* Connection is ready, exit loop. */
+        break;
+
+      poll_status = PQconnectPoll (conn);
     }
 
   PQsetNoticeProcessor (conn, log_notice, NULL);
@@ -278,6 +351,11 @@ sql_open (const char *database)
   g_debug ("%s: postgres version: %i\n", __FUNCTION__, PQserverVersion (conn));
 
   return 0;
+
+ fail:
+  PQfinish (conn);
+  conn = NULL;
+  return -1;
 }
 
 /**
