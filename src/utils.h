@@ -1,6 +1,6 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
- * Description: Headers for OpenVAS Manager: General utilities.
+ * Description: Headers for Greenbone Vulnerability Manager: General utilities.
  *
  * Authors:
  * Matthew Mundell <matthew.mundell@greenbone.net>
@@ -23,8 +23,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef OPENVAS_MANAGER_UTILS_H
-#define OPENVAS_MANAGER_UTILS_H
+#ifndef _GVMD_UTILS_H
+#define _GVMD_UTILS_H
 
 #include <time.h>
 
@@ -55,4 +55,4 @@ iso_time (time_t *);
 char *
 iso_time_tz (time_t *, const char *, const char **);
 
-#endif /* not OPENVAS_MANAGER_MANAGE_UTILS_H */
+#endif /* not _GVMD_UTILS_H */

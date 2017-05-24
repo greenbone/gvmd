@@ -1,6 +1,6 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
- * Description: Module for OpenVAS Manager: the Comm Library.
+ * Description: Module for Greenbone Vulnerability Manager: the Comm Library.
  *
  * Authors:
  * Matthew Mundell <matthew.mundell@greenbone.net>
@@ -26,9 +26,9 @@
 
 /**
  * @file gvm-comm.c
- * @brief API for communication between openvas-manager and openvas-server
+ * @brief API for communication between gvmd and openvassd
  *
- * This file contains an API for communicating with an openvas-server
+ * This file contains an API for communicating with an openvassd
  * which uses OTP as protocol.
  */
 

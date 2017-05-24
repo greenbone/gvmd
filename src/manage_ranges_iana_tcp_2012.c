@@ -1,4 +1,4 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
  * Description: Manage library: Ranges for IANA TCP 2012.
  *

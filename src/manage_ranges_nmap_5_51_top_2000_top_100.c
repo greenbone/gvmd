@@ -1,4 +1,4 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
  * Description: Manage library: Ranges for Nmap 5.51 top 2000 top 100.
  *

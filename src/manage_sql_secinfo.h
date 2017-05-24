@@ -1,4 +1,4 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
  * Description: Manager Manage library: SQL backend headers.
  *
@@ -24,8 +24,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef OPENVAS_MANAGER_MANAGE_SQL_SECINFO_H
-#define OPENVAS_MANAGER_MANAGE_SQL_SECINFO_H
+#ifndef _GVMD_MANAGE_SQL_SECINFO_H
+#define _GVMD_MANAGE_SQL_SECINFO_H
 
 /**
  * @brief Filter columns for CVE iterator.
@@ -305,4 +305,4 @@
 void
 manage_sync_scap ();
 
-#endif /* not OPENVAS_MANAGER_MANAGE_SQL_SECINFO_H */
+#endif /* not _GVMD_MANAGE_SQL_SECINFO_H */

@@ -1,6 +1,6 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
- * Description: Module for OpenVAS Manager: the DB migrators.
+ * Description: Module for Greenbone Vulnerability Manager: the DB migrators.
  *
  * Authors:
  * Hani Benhabiles <hani.benhabiles@greenbone.net>
@@ -25,7 +25,7 @@
 
 /**
  * @file  manage_migrators.c
- * @brief The OpenVAS Manager DB Migrators file.
+ * @brief The Greenbone Vulnerability Manager DB Migrators file.
  *
  * This file defines the functions used by the manager to migrate the DB to the
  * newest version.
@@ -1241,7 +1241,7 @@ migrate_8_to_9 ()
 }
 
 /**
- * @brief Return the UUID of a user from the OpenVAS user UUID file.
+ * @brief Return the UUID of a user from the GVM user UUID file.
  *
  * @todo Untested
  *
@@ -2218,7 +2218,7 @@ migrate_21_to_22 ()
          " extension, content_type)"
          " VALUES (make_uuid (), NULL, 'XML',"
          " 'Raw XML report.',"
-         " 'Complete scan report in OpenVAS Manager XML format.',"
+         " 'Complete scan report in Greenbone Vulnerability Manager XML format.',"
          " 'xml', 'text/xml');");
 
   /* Update the UUIDs of the predefined formats to the new predefined UUIDs. */

@@ -1,4 +1,4 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
  * Description: LSC user credentials package generation.
  *
@@ -24,8 +24,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef _OPENVASMD_LSC_USER_H
-#define _OPENVASMD_LSC_USER_H
+#ifndef _GVMD_LSC_USER_H
+#define _GVMD_LSC_USER_H
 
 #include <glib.h>
 
@@ -42,4 +42,4 @@ lsc_user_deb_recreate (const gchar *, const char *, gsize, void **, gsize *);
 int
 lsc_user_exe_recreate (const gchar *, const gchar *, void **, gsize *);
 
-#endif /* _OPENVASMD_LSC_USER_H */
+#endif /* _GVMD_LSC_USER_H */

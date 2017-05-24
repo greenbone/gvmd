@@ -1,6 +1,6 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
- * Description: OpenVAS Manager: General utilities.
+ * Description: Greenbone Vulnerability Manager: General utilities.
  *
  * Authors:
  * Matthew Mundell <matthew.mundell@greenbone.net>

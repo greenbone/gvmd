@@ -1,4 +1,4 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
  * Description: Manager Manage library: PostgreSQL specific Manage facilities.
  *

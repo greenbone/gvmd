@@ -1,6 +1,6 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
- * Description: Headers for OpenVAS Manager: the Manage library.
+ * Description: Headers for Greenbone Vulnerability Manager: the Manage library.
  *
  * Authors:
  * Matthew Mundell <matthew.mundell@greenbone.net>
@@ -24,8 +24,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef OPENVAS_MANAGER_MANAGE_H
-#define OPENVAS_MANAGER_MANAGE_H
+#ifndef _GVMD_MANAGE_H
+#define _GVMD_MANAGE_H
 
 #include "iterator.h"
 
@@ -4248,4 +4248,4 @@ manage_migrate_needs_timezone (GSList *, const gchar *);
 int
 manage_optimize (GSList *, const gchar *, const gchar *);
 
-#endif /* not OPENVAS_MANAGER_MANAGE_H */
+#endif /* not _GVMD_MANAGE_H */

@@ -1,6 +1,6 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
- * Description: Module for OpenVAS Manager: Manage library utilities.
+ * Description: Module for Greenbone Vulnerability Manager: Manage library utilities.
  *
  * Authors:
  * Matthew Mundell <matthew.mundell@greenbone.net>
@@ -31,7 +31,7 @@
 
 /**
  * @file  manage_utils.c
- * @brief The OpenVAS Manager management library.
+ * @brief The Greenbone Vulnerability Manager management library.
  *
  * Utilities used by the manage library that do not depend on anything.
  */

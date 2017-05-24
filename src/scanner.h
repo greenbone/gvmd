@@ -1,6 +1,6 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
- * Description: Module for OpenVAS Manager: Scanner Connection API.
+ * Description: Module for Greenbone Vulnerability Manager: Scanner Connection API.
  *
  * Authors:
  * Hani Benhabiles <hani.benhabiles@greenbone.net>
@@ -23,8 +23,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef OPENVAS_MANAGER_SCANNER_H
-#define OPENVAS_MANAGER_SCANNER_H
+#ifndef _GVMD_SCANNER_H
+#define _GVMD_SCANNER_H
 
 #include <gnutls/gnutls.h>
 
@@ -88,4 +88,4 @@ openvas_scanner_set_unix (const char *);
 void
 openvas_scanner_set_certs (const char *, const char *, const char *);
 
-#endif /* not OPENVAS_MANAGER_SCANNER_H */
+#endif /* not _GVMD_SCANNER_H */

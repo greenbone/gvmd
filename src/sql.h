@@ -1,6 +1,6 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
- * Description: Headers for OpenVAS Manager: the SQL library.
+ * Description: Headers for Greenbone Vulnerability Manager: the SQL library.
  *
  * Authors:
  * Matthew Mundell <matthew.mundell@greenbone.net>
@@ -23,8 +23,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef OPENVAS_MANAGER_SQL_H
-#define OPENVAS_MANAGER_SQL_H
+#ifndef _GVMD_SQL_H
+#define _GVMD_SQL_H
 
 #include "iterator.h"
 
@@ -210,4 +210,4 @@ sql_column_int (sql_stmt_t *, int);
 long long int
 sql_column_int64 (sql_stmt_t *, int);
 
-#endif /* not OPENVAS_MANAGER_SQL_H */
+#endif /* not _GVMD_SQL_H */

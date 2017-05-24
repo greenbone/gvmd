@@ -1,4 +1,4 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
  * Description: Manager Manage library: SQL backend headers.
  *
@@ -24,8 +24,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef OPENVAS_MANAGER_MANAGE_SQL_H
-#define OPENVAS_MANAGER_MANAGE_SQL_H
+#ifndef _GVMD_MANAGE_SQL_H
+#define _GVMD_MANAGE_SQL_H
 
 #include <gvm/util/xmlutils.h> /* for entity_t */
 
@@ -524,4 +524,4 @@ manage_option_setup (GSList *, const gchar *);
 void
 manage_option_cleanup ();
 
-#endif /* not OPENVAS_MANAGER_MANAGE_SQL_H */
+#endif /* not _GVMD_MANAGE_SQL_H */

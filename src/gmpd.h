@@ -1,6 +1,6 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
- * Description: Headers for OpenVAS Manager: the GMP daemon.
+ * Description: Headers for Greenbone Vulnerability Manager: the GMP daemon.
  *
  * Authors:
  * Matthew Mundell <matthew.mundell@greenbone.net>
@@ -23,8 +23,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef OPENVAS_MANAGER_GMPD_H
-#define OPENVAS_MANAGER_GMPD_H
+#ifndef GVMD_GMPD_H
+#define GVMD_GMPD_H
 
 #include "types.h"
 #include <gvm/util/serverutils.h>

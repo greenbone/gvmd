@@ -1,6 +1,6 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
- * Description: Headers for OpenVAS Manager: the Manage library.
+ * Description: Headers for Greenbone Vulnerability Manager: the Manage library.
  *
  * Authors:
  * Matthew Mundell <matthew.mundell@greenbone.net>
@@ -23,8 +23,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef OPENVAS_MANAGER_MANAGE_ACL_H
-#define OPENVAS_MANAGER_MANAGE_ACL_H
+#ifndef _GVMD_MANAGE_ACL_H
+#define _GVMD_MANAGE_ACL_H
 
 #include "manage_sql.h"
 #include <glib.h>
@@ -155,4 +155,4 @@ acl_where_owned (const char *, const get_data_t *, int, const gchar *, resource_
 gchar *
 acl_where_owned_for_get (const char *, const char *);
 
-#endif /* not OPENVAS_MANAGER_MANAGE_ACL_H */
+#endif /* not _GVMD_MANAGE_ACL_H */

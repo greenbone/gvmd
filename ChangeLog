@@ -1,3 +1,22 @@
+2017-05-25  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/gmp.c, src/gmp.h, src/gmpd.c, src/gmpd.h, src/gvm-comm.c,
+	src/gvm-comm.h, src/iterator.h, src/logf.h, src/lsc_crypt.c,
+	src/lsc_user.c, src/lsc_user.h, src/manage.h, src/manage_acl.c,
+	src/manage_acl.h, src/manage_config_discovery.c,
+	src/manage_config_host_discovery.c, src/manage_config_system_discovery.c,
+	src/manage_migrators.c, src/manage_pg.c, src/manage_pg_server.c,
+	src/manage_ranges_all_tcp_nmap_5_51_top_100.c,
+	src/manage_ranges_all_tcp_nmap_5_51_top_1000.c,
+	src/manage_ranges_iana_tcp_2012.c,
+	src/manage_ranges_iana_tcp_udp_2012.c,
+	src/manage_ranges_nmap_5_51_top_2000_top_100.c,
+	src/manage_sql.h, src/manage_sql_secinfo.h, src/manage_utils.c,
+	src/manage_utils.h, src/otp.c, src/otp.h, src/scanner.c, src/scanner.h,
+	src/sql.c, src/sql.h, src/sql_pg.c, src/sql_sqlite3.c, src/types.h,
+	src/utils.c, src/utils.h: More renaming from OpenVAS Manager to GVM.
+	This is mostly in comments, variables and strings.
+
 2017-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/sql_pg.c (sql_open): Use PQconnectStart and PQconnectPoll, which

@@ -1,4 +1,4 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
  * Description: Manage library: NVTs for "System Discovery" scan configuration.
  *

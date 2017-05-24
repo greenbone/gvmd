@@ -1,6 +1,6 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
- * Description: Module for OpenVAS Manager: Manage library utilities.
+ * Description: Module for Greenbone Vulnerability Manager: Manage library utilities.
  *
  * Authors:
  * Matthew Mundell <matthew.mundell@greenbone.net>
@@ -23,8 +23,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef OPENVAS_MANAGER_MANAGE_UTILS_H
-#define OPENVAS_MANAGER_MANAGE_UTILS_H
+#ifndef _GVMD_MANAGE_UTILS_H
+#define _GVMD_MANAGE_UTILS_H
 
 #include <time.h>
 
@@ -70,4 +70,4 @@ level_max_severity (const char*, const char*);
 int
 valid_db_resource_type (const char*);
 
-#endif /* not OPENVAS_MANAGER_MANAGE_UTILS_H */
+#endif /* not _GVMD_MANAGE_UTILS_H */

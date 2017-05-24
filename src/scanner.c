@@ -1,6 +1,6 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
- * Description: Module for OpenVAS Manager: Scanner Connection.
+ * Description: Module for Greenbone Vulnerability Manager: Scanner Connection.
  *
  * Authors:
  * Hani Benhabiles <hani.benhabiles@greenbone.net>

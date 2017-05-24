@@ -1,6 +1,6 @@
 /* GVM
  * $Id$
- * Description: Module for OpenVAS Manager: the GMP library.
+ * Description: Module for Greenbone Vulnerability Manager: the GMP library.
  *
  * Authors:
  * Matthew Mundell <matthew.mundell@greenbone.net>
@@ -26,10 +26,11 @@
 
 /**
  * @file  gmp.c
- * @brief The OpenVAS Manager GMP library.
+ * @brief The Greenbone Vulnerability Manager GMP library.
  *
  * This file defines a Greenbone Management Protocol (GMP) library, for
- * implementing OpenVAS managers such as the OpenVAS Manager daemon.
+ * implementing managers such as the Greenbone Vulnerability Manager
+ * daemon.
  *
  * The library provides \ref process_gmp_client_input.
  * This function parses a given string of GMP XML and tracks and manipulates

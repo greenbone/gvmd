@@ -1,6 +1,6 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
- * Description: Module for OpenVAS Manager: the OTP library.
+ * Description: Module for Greenbone Vulnerability Manager: the OTP library.
  *
  * Authors:
  * Matthew Mundell <matthew.mundell@greenbone.net>
@@ -25,10 +25,10 @@
 
 /**
  * @file  otp.c
- * @brief The OpenVAS Manager OTP library.
+ * @brief The Greenbone Vulnerability Manager OTP library.
  *
  * This file defines an OpenVAS Transfer Protocol (OTP) library, for
- * implementing OpenVAS managers such as the OpenVAS Manager daemon.
+ * implementing managers such as the Greenbone Vulnerability Manager daemon.
  *
  * The library provides a single function, \ref process_otp_scanner_input.
  * This function parses a given string of OTP text and adjusts local

@@ -1,6 +1,6 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
- * Description: Headers for OpenVAS Manager: the OTP library.
+ * Description: Headers for Greenbone Vulnerability Manager: the OTP library.
  *
  * Authors:
  * Matthew Mundell <matthew.mundell@greenbone.net>
@@ -23,8 +23,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef OPENVAS_MANAGER_OTP_H
-#define OPENVAS_MANAGER_OTP_H
+#ifndef _GVMD_OTP_H
+#define _GVMD_OTP_H
 
 #include "manage.h"
 #include <glib.h>

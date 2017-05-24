@@ -1,4 +1,4 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
  * Description: Manager Manage library: Access Control "Layer".
  *
@@ -25,9 +25,10 @@
 
 /**
  * @file  manage_acl.c
- * @brief The OpenVAS Manager management library (Access Control Layer).
+ * @brief The Greenbone Vulnerability Manager management library (Access
+ * Control Layer).
  *
- * This file isolates the access control portions of the OpenVAS manager
+ * This file isolates the access control portions of the GSVM
  * management library.
  */
 

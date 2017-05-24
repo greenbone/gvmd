@@ -1,6 +1,6 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
- * Description: Module for OpenVAS Manager: the GMP daemon.
+ * Description: Module for Greenbone Vulnerability Manager: the GMP daemon.
  *
  * Authors:
  * Matthew Mundell <matthew.mundell@greenbone.net>
@@ -25,11 +25,12 @@
 
 /**
  * @file  gmpd.c
- * @brief The OpenVAS Manager GMP daemon.
+ * @brief The Greenbone Vulnerability Manager GMP daemon.
  *
- * This file defines the OpenVAS Manager daemon.  The Manager serves the Greenbone
- * Management Protocol (GMP) to clients such as OpenVAS-Client.  The Manager
- * and GMP give clients full access to an OpenVAS Scanner.
+ * This file defines the Greenbone Vulnerability Manager daemon.  The Manager
+ * serves the Greenbone Management Protocol (GMP) to clients such as the
+ * Greenbone Security Assistant (GSA). The Manager and GMP give clients full
+ * access to an OpenVAS Scanner.
  *
  * The library provides two functions: \ref init_gmpd and \ref serve_gmp.
  * \ref init_gmpd initialises the daemon.
@@ -603,7 +604,7 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
        * we test for pending records first and emulate a select call
        * in that case.  Note, that GNUTLS guarantees that writes are
        * not buffered.  Note also that GNUTLS versions < 3 did not
-       * exhibit a problem in OpenVAS due to a different buffering
+       * exhibit a problem in Scanner due to a different buffering
        * strategy.  */
       ret = 0;
       if (client_connection->socket > 0

@@ -1,6 +1,6 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
- * Description: Headers for OpenVAS Manager: Iterators.
+ * Description: Headers for Greenbone Vulnerability Manager: Iterators.
  *
  * The interface here is for "external" use.  The SQL parts of the interface
  * are in sql.h.  Both are defined in sql.c.
@@ -26,8 +26,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef OPENVAS_MANAGER_ITERATOR_H
-#define OPENVAS_MANAGER_ITERATOR_H
+#ifndef _GVMD_ITERATOR_H
+#define _GVMD_ITERATOR_H
 
 #include "lsc_crypt.h"
 
@@ -68,4 +68,4 @@ cleanup_iterator (iterator_t*);
 gboolean
 next (iterator_t*);
 
-#endif /* not OPENVAS_MANAGER_ITERATOR_H */
+#endif /* not _GVMD_ITERATOR_H */

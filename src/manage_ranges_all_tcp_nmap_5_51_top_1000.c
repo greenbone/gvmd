@@ -1,4 +1,4 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
  * Description: Manage library: Ranges for All TCP and Nmap 5.51 Top 1000 UDP.
  *

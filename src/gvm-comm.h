@@ -1,4 +1,4 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
  * Description: See below.
  *
@@ -23,8 +23,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef OPENVAS_MANGER_OVAS_MNGR_COMM_H
-#define OPENVAS_MANGER_OVAS_MNGR_COMM_H
+#ifndef _GVMD_COMM_H
+#define _GVMD_COMM_H
 
 #include <glib.h>
 #include <sys/socket.h>
@@ -33,7 +33,7 @@
 
 /**
  * @file gvm-comm.h
- * @brief Protos for communication between openvas-manager and openvas-server.
+ * @brief Protos for communication between gvmd and openvassd.
  *
  * This file contains the protos for \ref gvm-comm.c
  */

@@ -1,4 +1,4 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
  * Description: LSC credentials encryption support
  *
@@ -47,7 +47,7 @@
  * exact search.  Thus when creating the key it should not have a
  * comment or email address part.
  */
-#define ENCRYPTION_KEY_UID "OpenVAS Credential Encryption"
+#define ENCRYPTION_KEY_UID "GVM Credential Encryption"
 
 /**
  * @brief The maximum size of an encrypted value

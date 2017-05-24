@@ -28,8 +28,8 @@
  * @brief A printf like macro for logging communication.
  */
 
-#ifndef GVMD_LOG_H
-#define GVMD_LOG_H
+#ifndef _GVMD_LOG_H
+#define _GVMD_LOG_H
 
 #include <stdio.h>
 #include <stdlib.h>

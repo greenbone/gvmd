@@ -1,6 +1,6 @@
-/* OpenVAS Manager
+/* GVM
  * $Id$
- * Description: Headers for OpenVAS Manager: types.
+ * Description: Headers for Greenbone Vulnerability Manager: types.
  *
  * Authors:
  * Matthew Mundell <matthew.mundell@greenbone.net>
@@ -23,11 +23,11 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef OPENVAS_MANAGER_TYPES_H
-#define OPENVAS_MANAGER_TYPES_H
+#ifndef _GVMD_TYPES_H
+#define _GVMD_TYPES_H
 
 #define BUFFER_SIZE_T_FORMAT "u"
 
 typedef unsigned int buffer_size_t;
 
-#endif /* !OPENVAS_MANAGER_TYPES_H */
+#endif /* !_GVMD_TYPES_H */
