@@ -1,3 +1,8 @@
+2017-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_pg.c (manage_create_sql_functions): Use UTC when timezone is
+	invalid in iso_time.
+
 2017-05-23  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* INSTALL, src/gmp.c src/gvmd.c src/logf.h src/lsc_crypt.h src/manage.c
