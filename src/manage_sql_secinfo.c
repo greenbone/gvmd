@@ -1363,7 +1363,7 @@ init_ovaldi_file_iterator (iterator_t* iterator)
 DEF_ACCESS (ovaldi_file_iterator_name, 0);
 
 
-/* Updating database from feed. */
+/* CERT update: DFN-CERT. */
 
 /**
  * @brief Update DFN-CERT info from a single XML feed file.
@@ -1580,6 +1580,66 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
 }
 
 /**
+ * @brief Update DFN-CERTs.
+ *
+ * Assume that the databases are attached.
+ *
+ * @param[in]  last_cert_update  Time of last CERT update from meta.
+ *
+ * @return 0 nothing to do, 1 updated, -1 error.
+ */
+static int
+update_dfn_cert_advisories (int last_cert_update)
+{
+  GError *error;
+  int count, last_dfn_update, updated_dfn_cert;
+  GDir *dir;
+  const gchar *xml_path;
+
+  error = NULL;
+  dir = g_dir_open (GVM_CERT_DATA_DIR, 0, &error);
+  if (dir == NULL)
+    {
+      g_warning ("%s: Failed to open directory '%s': %s",
+                 __FUNCTION__, GVM_CERT_DATA_DIR, error->message);
+      g_error_free (error);
+      return -1;
+    }
+
+  last_dfn_update = sql_int ("SELECT max (modification_time)"
+                             " FROM cert.dfn_cert_advs;");
+
+  g_debug ("%s: VS: " GVM_CERT_DATA_DIR "/dfn-cert-*.xml", __FUNCTION__);
+  count = 0;
+  updated_dfn_cert = 0;
+  while ((xml_path = g_dir_read_name (dir)))
+    if (fnmatch ("dfn-cert-*.xml", xml_path, 0) == 0)
+      {
+        switch (update_dfn_xml (xml_path, last_cert_update, last_dfn_update))
+          {
+            case 0:
+              break;
+            case 1:
+              updated_dfn_cert = 1;
+              break;
+            default:
+              g_dir_close (dir);
+              return -1;
+          }
+        count++;
+      }
+
+  if (count == 0)
+    g_warning ("No DFN-CERT advisories found in %s", GVM_CERT_DATA_DIR);
+
+  g_dir_close (dir);
+  return updated_dfn_cert;
+}
+
+
+/* CERT update: CERT-BUND. */
+
+/**
  * @brief Update CERT-Bund info from a single XML feed file.
  *
  * @param[in]  xml_path          XML path.
@@ -1785,6 +1845,270 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
   sql_commit ();
   return -1;
 }
+
+/**
+ * @brief Update CERT-Bunds.
+ *
+ * Assume that the databases are attached.
+ *
+ * @param[in]  last_cert_update  Time of last CERT update from meta.
+ *
+ * @return 0 nothing to do, 1 updated, -1 error.
+ */
+static int
+update_cert_bund_advisories (int last_cert_update)
+{
+  GError *error;
+  int count, last_bund_update, updated_cert_bund;
+  GDir *dir;
+  const gchar *xml_path;
+
+  error = NULL;
+  dir = g_dir_open (GVM_CERT_DATA_DIR, 0, &error);
+  if (dir == NULL)
+    {
+      g_warning ("%s: Failed to open directory '%s': %s",
+                 __FUNCTION__, GVM_CERT_DATA_DIR, error->message);
+      g_error_free (error);
+      return -1;
+    }
+
+  last_bund_update = sql_int ("SELECT max (modification_time)"
+                              " FROM cert.cert_bund_advs;");
+
+  count = 0;
+  updated_cert_bund = 0;
+  while ((xml_path = g_dir_read_name (dir)))
+    if (fnmatch ("CB-K*.xml", xml_path, 0) == 0)
+      {
+        switch (update_bund_xml (xml_path, last_cert_update, last_bund_update))
+          {
+            case 0:
+              break;
+            case 1:
+              updated_cert_bund = 1;
+              break;
+            default:
+              g_dir_close (dir);
+              return -1;
+          }
+        count++;
+      }
+
+  if (count == 0)
+    g_warning ("No CERT-Bund advisories found in %s", GVM_CERT_DATA_DIR);
+
+  g_dir_close (dir);
+  return updated_cert_bund;
+}
+
+
+/* SCAP update: CPEs. */
+
+/**
+ * @brief Update SCAP CPEs.
+ *
+ * @param[in]  xml_path          XML path.
+ * @param[in]  last_scap_update  Time of last SCAP update.
+ *
+ * @return 0 nothing to do, 1 updated, -1 error.
+ */
+static int
+update_scap_cpes (int last_scap_update)
+{
+  GError *error;
+  entity_t entity, cpe_list, cpe_item;
+  entities_t children;
+  gchar *xml, *full_path;
+  gsize xml_len;
+  GStatBuf state;
+  int updated_scap_cpes, last_cve_update;
+
+  updated_scap_cpes = 0;
+  full_path = g_build_filename (GVM_SCAP_DATA_DIR,
+                                "official-cpe-dictionary_v2.2.xml",
+                                NULL);
+
+  if (g_stat (full_path, &state))
+    {
+      g_warning ("%s: No CPE dictionary found at %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
+      return -1;
+    }
+
+  if ((state.st_mtime - (state.st_mtime % 60)) <= last_scap_update)
+    {
+      g_info ("Skipping CPEs, file is older than last revision"
+              " (this is not an error)");
+      g_free (full_path);
+      return 0;
+    }
+
+  g_info ("Updating CPEs");
+
+  /* This will be zero for an empty db, so everything will be added. */
+  last_cve_update = sql_int ("SELECT max (modification_time)"
+                             " FROM scap.cves;");
+
+  g_debug ("%s: parsing %s", __FUNCTION__, full_path);
+
+  error = NULL;
+  g_file_get_contents (full_path, &xml, &xml_len, &error);
+  g_free (full_path);
+  if (error)
+    {
+      g_warning ("%s: Failed to get contents: %s\n",
+                 __FUNCTION__,
+                 error->message);
+      g_error_free (error);
+      return -1;
+    }
+
+  if (parse_entity (xml, &entity))
+    {
+      g_free (xml);
+      g_warning ("%s: Failed to parse entity\n", __FUNCTION__);
+      return -1;
+    }
+  g_free (xml);
+
+  cpe_list = entity;
+  if (strcmp (entity_name (cpe_list), "cpe-list"))
+    {
+      free_entity (entity);
+      g_warning ("%s: CPE dictionary missing CPE-LIST\n", __FUNCTION__);
+      return -1;
+    }
+
+  sql_begin_immediate ();
+
+  children = cpe_list->entities;
+  while ((cpe_item = first_entity (children)))
+    {
+      if (strcmp (entity_name (cpe_item), "cpe-item") == 0)
+        {
+          const char *modification_date;
+          entity_t item_metadata;
+
+          item_metadata = entity_child (cpe_item, "meta:item-metadata");
+          if (item_metadata == NULL)
+            {
+              g_warning ("%s: item-metadata missing\n", __FUNCTION__);
+
+              free_entity (entity);
+              goto fail;
+            }
+
+          modification_date = entity_attribute (item_metadata,
+                                                "modification-date");
+          if (modification_date == NULL)
+            {
+              g_warning ("%s: modification-date missing\n", __FUNCTION__);
+              free_entity (entity);
+              goto fail;
+            }
+
+          if (parse_iso_time (modification_date) > last_cve_update)
+            {
+              const char *name, *status, *deprecated, *nvd_id;
+              gchar *quoted_name, *quoted_title, *quoted_status, *quoted_nvd_id;
+              gchar *name_decoded, *name_tilde;
+              entities_t titles;
+              entity_t title;
+
+              name = entity_attribute (cpe_item, "name");
+              if (name == NULL)
+                {
+                  g_warning ("%s: name missing\n", __FUNCTION__);
+                  free_entity (entity);
+                  goto fail;
+                }
+
+              status = entity_attribute (item_metadata, "status");
+              if (status == NULL)
+                {
+                  g_warning ("%s: status missing\n", __FUNCTION__);
+                  free_entity (entity);
+                  goto fail;
+                }
+
+              deprecated = entity_attribute (item_metadata,
+                                             "deprecated-by-nvd-id");
+              if (deprecated
+                  && (g_regex_match_simple ("^[0-9]+$", (gchar *) deprecated, 0, 0)
+                      == 0))
+                {
+                  g_warning ("%s: invalid deprecated-by-nvd-id: %s",
+                             __FUNCTION__,
+                             deprecated);
+                  free_entity (entity);
+                  goto fail;
+                }
+
+              nvd_id = entity_attribute (item_metadata, "nvd-id");
+              if (nvd_id == NULL)
+                {
+                  g_warning ("%s: nvd_id missing\n", __FUNCTION__);
+                  free_entity (entity);
+                  goto fail;
+                }
+
+              titles = cpe_item->entities;
+              quoted_title = g_strdup ("");
+              while ((title = first_entity (titles)))
+                {
+                  if (strcmp (entity_name (title), "title") == 0
+                      && entity_attribute (title, "xml:lang")
+                      && strcmp (entity_attribute (title, "xml:lang"), "en-US") == 0)
+                    {
+                      g_free (quoted_title);
+                      quoted_title = sql_quote (entity_text (title));
+                      break;
+                    }
+                  titles = next_entities (titles);
+                }
+
+              name_decoded = g_uri_unescape_string (name, NULL);
+              name_tilde = string_replace (name_decoded,
+                                           "~", "%7E", "%7e", NULL);
+              g_free (name_decoded);
+              quoted_name = sql_quote (name_tilde);
+              g_free (name_tilde);
+              quoted_status = sql_quote (status);
+              quoted_nvd_id = sql_quote (nvd_id);
+              sql ("SELECT merge_cpe"
+                   "        ('%s', '%s', %i, %i, '%s', %s, '%s');",
+                   quoted_name,
+                   quoted_title,
+                   parse_iso_time (modification_date),
+                   parse_iso_time (modification_date),
+                   quoted_status,
+                   deprecated ? deprecated : "NULL",
+                   quoted_nvd_id);
+              g_free (quoted_title);
+              g_free (quoted_name);
+              g_free (quoted_status);
+              g_free (quoted_nvd_id);
+
+              updated_scap_cpes = 1;
+            }
+        }
+      children = next_entities (children);
+    }
+
+  free_entity (entity);
+  sql_commit ();
+  return updated_scap_cpes;
+
+ fail:
+  g_warning ("Update of CPEs failed");
+  sql_commit ();
+  return -1;
+}
+
+
+/* SCAP update: CVEs. */
 
 /**
  * @brief Update CVE info from a single XML feed file.
@@ -2129,6 +2453,65 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
   sql_commit ();
   return -1;
 }
+
+/**
+ * @brief Update SCAP CVEs.
+ *
+ * Assume that the databases are attached.
+ *
+ * @param[in]  last_scap_update  Time of last SCAP update from meta.
+ *
+ * @return 0 nothing to do, 1 updated, -1 error.
+ */
+static int
+update_scap_cves (int last_scap_update)
+{
+  GError *error;
+  int count, last_cve_update, updated_scap_cves;
+  GDir *dir;
+  const gchar *xml_path;
+
+  error = NULL;
+  dir = g_dir_open (GVM_SCAP_DATA_DIR, 0, &error);
+  if (dir == NULL)
+    {
+      g_warning ("%s: Failed to open directory '%s': %s",
+                 __FUNCTION__, GVM_SCAP_DATA_DIR, error->message);
+      g_error_free (error);
+      return -1;
+    }
+
+  last_cve_update = sql_int ("SELECT max (modification_time)"
+                             " FROM scap.cves;");
+
+  count = 0;
+  updated_scap_cves = 0;
+  while ((xml_path = g_dir_read_name (dir)))
+    if (fnmatch ("nvdcve-2.0-*.xml", xml_path, 0) == 0)
+      {
+        switch (update_cve_xml (xml_path, last_scap_update, last_cve_update))
+          {
+            case 0:
+              break;
+            case 1:
+              updated_scap_cves = 1;
+              break;
+            default:
+              g_dir_close (dir);
+              return -1;
+          }
+        count++;
+      }
+
+  if (count == 0)
+    g_warning ("No CVEs found in %s", GVM_SCAP_DATA_DIR);
+
+  g_dir_close (dir);
+  return updated_scap_cves;
+}
+
+
+/* SCAP update: OVAL. */
 
 /**
  * @brief Get last date from definition entity.
@@ -2710,377 +3093,6 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
 }
 
 /**
- * @brief Update DFN-CERTs.
- *
- * Assume that the databases are attached.
- *
- * @param[in]  last_cert_update  Time of last CERT update from meta.
- *
- * @return 0 nothing to do, 1 updated, -1 error.
- */
-static int
-update_dfn_cert_advisories (int last_cert_update)
-{
-  GError *error;
-  int count, last_dfn_update, updated_dfn_cert;
-  GDir *dir;
-  const gchar *xml_path;
-
-  error = NULL;
-  dir = g_dir_open (GVM_CERT_DATA_DIR, 0, &error);
-  if (dir == NULL)
-    {
-      g_warning ("%s: Failed to open directory '%s': %s",
-                 __FUNCTION__, GVM_CERT_DATA_DIR, error->message);
-      g_error_free (error);
-      return -1;
-    }
-
-  last_dfn_update = sql_int ("SELECT max (modification_time)"
-                             " FROM cert.dfn_cert_advs;");
-
-  g_debug ("%s: VS: " GVM_CERT_DATA_DIR "/dfn-cert-*.xml", __FUNCTION__);
-  count = 0;
-  updated_dfn_cert = 0;
-  while ((xml_path = g_dir_read_name (dir)))
-    if (fnmatch ("dfn-cert-*.xml", xml_path, 0) == 0)
-      {
-        switch (update_dfn_xml (xml_path, last_cert_update, last_dfn_update))
-          {
-            case 0:
-              break;
-            case 1:
-              updated_dfn_cert = 1;
-              break;
-            default:
-              g_dir_close (dir);
-              return -1;
-          }
-        count++;
-      }
-
-  if (count == 0)
-    g_warning ("No DFN-CERT advisories found in %s", GVM_CERT_DATA_DIR);
-
-  g_dir_close (dir);
-  return updated_dfn_cert;
-}
-
-/**
- * @brief Update CERT-Bunds.
- *
- * Assume that the databases are attached.
- *
- * @param[in]  last_cert_update  Time of last CERT update from meta.
- *
- * @return 0 nothing to do, 1 updated, -1 error.
- */
-static int
-update_cert_bund_advisories (int last_cert_update)
-{
-  GError *error;
-  int count, last_bund_update, updated_cert_bund;
-  GDir *dir;
-  const gchar *xml_path;
-
-  error = NULL;
-  dir = g_dir_open (GVM_CERT_DATA_DIR, 0, &error);
-  if (dir == NULL)
-    {
-      g_warning ("%s: Failed to open directory '%s': %s",
-                 __FUNCTION__, GVM_CERT_DATA_DIR, error->message);
-      g_error_free (error);
-      return -1;
-    }
-
-  last_bund_update = sql_int ("SELECT max (modification_time)"
-                              " FROM cert.cert_bund_advs;");
-
-  count = 0;
-  updated_cert_bund = 0;
-  while ((xml_path = g_dir_read_name (dir)))
-    if (fnmatch ("CB-K*.xml", xml_path, 0) == 0)
-      {
-        switch (update_bund_xml (xml_path, last_cert_update, last_bund_update))
-          {
-            case 0:
-              break;
-            case 1:
-              updated_cert_bund = 1;
-              break;
-            default:
-              g_dir_close (dir);
-              return -1;
-          }
-        count++;
-      }
-
-  if (count == 0)
-    g_warning ("No CERT-Bund advisories found in %s", GVM_CERT_DATA_DIR);
-
-  g_dir_close (dir);
-  return updated_cert_bund;
-}
-
-/**
- * @brief Update SCAP CPEs.
- *
- * @param[in]  xml_path          XML path.
- * @param[in]  last_scap_update  Time of last SCAP update.
- *
- * @return 0 nothing to do, 1 updated, -1 error.
- */
-static int
-update_scap_cpes (int last_scap_update)
-{
-  GError *error;
-  entity_t entity, cpe_list, cpe_item;
-  entities_t children;
-  gchar *xml, *full_path;
-  gsize xml_len;
-  GStatBuf state;
-  int updated_scap_cpes, last_cve_update;
-
-  updated_scap_cpes = 0;
-  full_path = g_build_filename (GVM_SCAP_DATA_DIR,
-                                "official-cpe-dictionary_v2.2.xml",
-                                NULL);
-
-  if (g_stat (full_path, &state))
-    {
-      g_warning ("%s: No CPE dictionary found at %s\n",
-                 __FUNCTION__,
-                 strerror (errno));
-      return -1;
-    }
-
-  if ((state.st_mtime - (state.st_mtime % 60)) <= last_scap_update)
-    {
-      g_info ("Skipping CPEs, file is older than last revision"
-              " (this is not an error)");
-      g_free (full_path);
-      return 0;
-    }
-
-  g_info ("Updating CPEs");
-
-  /* This will be zero for an empty db, so everything will be added. */
-  last_cve_update = sql_int ("SELECT max (modification_time)"
-                             " FROM scap.cves;");
-
-  g_debug ("%s: parsing %s", __FUNCTION__, full_path);
-
-  error = NULL;
-  g_file_get_contents (full_path, &xml, &xml_len, &error);
-  g_free (full_path);
-  if (error)
-    {
-      g_warning ("%s: Failed to get contents: %s\n",
-                 __FUNCTION__,
-                 error->message);
-      g_error_free (error);
-      return -1;
-    }
-
-  if (parse_entity (xml, &entity))
-    {
-      g_free (xml);
-      g_warning ("%s: Failed to parse entity\n", __FUNCTION__);
-      return -1;
-    }
-  g_free (xml);
-
-  cpe_list = entity;
-  if (strcmp (entity_name (cpe_list), "cpe-list"))
-    {
-      free_entity (entity);
-      g_warning ("%s: CPE dictionary missing CPE-LIST\n", __FUNCTION__);
-      return -1;
-    }
-
-  sql_begin_immediate ();
-
-  children = cpe_list->entities;
-  while ((cpe_item = first_entity (children)))
-    {
-      if (strcmp (entity_name (cpe_item), "cpe-item") == 0)
-        {
-          const char *modification_date;
-          entity_t item_metadata;
-
-          item_metadata = entity_child (cpe_item, "meta:item-metadata");
-          if (item_metadata == NULL)
-            {
-              g_warning ("%s: item-metadata missing\n", __FUNCTION__);
-
-              free_entity (entity);
-              goto fail;
-            }
-
-          modification_date = entity_attribute (item_metadata,
-                                                "modification-date");
-          if (modification_date == NULL)
-            {
-              g_warning ("%s: modification-date missing\n", __FUNCTION__);
-              free_entity (entity);
-              goto fail;
-            }
-
-          if (parse_iso_time (modification_date) > last_cve_update)
-            {
-              const char *name, *status, *deprecated, *nvd_id;
-              gchar *quoted_name, *quoted_title, *quoted_status, *quoted_nvd_id;
-              gchar *name_decoded, *name_tilde;
-              entities_t titles;
-              entity_t title;
-
-              name = entity_attribute (cpe_item, "name");
-              if (name == NULL)
-                {
-                  g_warning ("%s: name missing\n", __FUNCTION__);
-                  free_entity (entity);
-                  goto fail;
-                }
-
-              status = entity_attribute (item_metadata, "status");
-              if (status == NULL)
-                {
-                  g_warning ("%s: status missing\n", __FUNCTION__);
-                  free_entity (entity);
-                  goto fail;
-                }
-
-              deprecated = entity_attribute (item_metadata,
-                                             "deprecated-by-nvd-id");
-              if (deprecated
-                  && (g_regex_match_simple ("^[0-9]+$", (gchar *) deprecated, 0, 0)
-                      == 0))
-                {
-                  g_warning ("%s: invalid deprecated-by-nvd-id: %s",
-                             __FUNCTION__,
-                             deprecated);
-                  free_entity (entity);
-                  goto fail;
-                }
-
-              nvd_id = entity_attribute (item_metadata, "nvd-id");
-              if (nvd_id == NULL)
-                {
-                  g_warning ("%s: nvd_id missing\n", __FUNCTION__);
-                  free_entity (entity);
-                  goto fail;
-                }
-
-              titles = cpe_item->entities;
-              quoted_title = g_strdup ("");
-              while ((title = first_entity (titles)))
-                {
-                  if (strcmp (entity_name (title), "title") == 0
-                      && entity_attribute (title, "xml:lang")
-                      && strcmp (entity_attribute (title, "xml:lang"), "en-US") == 0)
-                    {
-                      g_free (quoted_title);
-                      quoted_title = sql_quote (entity_text (title));
-                      break;
-                    }
-                  titles = next_entities (titles);
-                }
-
-              name_decoded = g_uri_unescape_string (name, NULL);
-              name_tilde = string_replace (name_decoded,
-                                           "~", "%7E", "%7e", NULL);
-              g_free (name_decoded);
-              quoted_name = sql_quote (name_tilde);
-              g_free (name_tilde);
-              quoted_status = sql_quote (status);
-              quoted_nvd_id = sql_quote (nvd_id);
-              sql ("SELECT merge_cpe"
-                   "        ('%s', '%s', %i, %i, '%s', %s, '%s');",
-                   quoted_name,
-                   quoted_title,
-                   parse_iso_time (modification_date),
-                   parse_iso_time (modification_date),
-                   quoted_status,
-                   deprecated ? deprecated : "NULL",
-                   quoted_nvd_id);
-              g_free (quoted_title);
-              g_free (quoted_name);
-              g_free (quoted_status);
-              g_free (quoted_nvd_id);
-
-              updated_scap_cpes = 1;
-            }
-        }
-      children = next_entities (children);
-    }
-
-  free_entity (entity);
-  sql_commit ();
-  return updated_scap_cpes;
-
- fail:
-  g_warning ("Update of CPEs failed");
-  sql_commit ();
-  return -1;
-}
-
-/**
- * @brief Update SCAP CVEs.
- *
- * Assume that the databases are attached.
- *
- * @param[in]  last_scap_update  Time of last SCAP update from meta.
- *
- * @return 0 nothing to do, 1 updated, -1 error.
- */
-static int
-update_scap_cves (int last_scap_update)
-{
-  GError *error;
-  int count, last_cve_update, updated_scap_cves;
-  GDir *dir;
-  const gchar *xml_path;
-
-  error = NULL;
-  dir = g_dir_open (GVM_SCAP_DATA_DIR, 0, &error);
-  if (dir == NULL)
-    {
-      g_warning ("%s: Failed to open directory '%s': %s",
-                 __FUNCTION__, GVM_SCAP_DATA_DIR, error->message);
-      g_error_free (error);
-      return -1;
-    }
-
-  last_cve_update = sql_int ("SELECT max (modification_time)"
-                             " FROM scap.cves;");
-
-  count = 0;
-  updated_scap_cves = 0;
-  while ((xml_path = g_dir_read_name (dir)))
-    if (fnmatch ("nvdcve-2.0-*.xml", xml_path, 0) == 0)
-      {
-        switch (update_cve_xml (xml_path, last_scap_update, last_cve_update))
-          {
-            case 0:
-              break;
-            case 1:
-              updated_scap_cves = 1;
-              break;
-            default:
-              g_dir_close (dir);
-              return -1;
-          }
-        count++;
-      }
-
-  if (count == 0)
-    g_warning ("No CVEs found in %s", GVM_SCAP_DATA_DIR);
-
-  g_dir_close (dir);
-  return updated_scap_cves;
-}
-
-/**
  * @brief Extract generator timestamp from OVAL element.
  *
  * @param[in]  entity   OVAL element.
@@ -3495,6 +3507,9 @@ update_scap_ovaldefs (int last_scap_update, int private)
   return updated_scap_ovaldefs;
 }
 
+
+/* CERT and SCAP update. */
+
 /**
  * @brief Update timestamp in CERT db from feed timestamp.
  *
@@ -3692,6 +3707,9 @@ check_scap_db_version ()
     }
   return 0;
 }
+
+
+/* CERT update. */
 
 /**
  * @brief Update CERT DB.
@@ -3929,6 +3947,9 @@ update_cvss_dfn_cert (int updated_dfn_cert, int last_cert_update,
   else
     g_info ("Updating DFN-CERT CVSS max succeeded (nothing to do).\n");
 }
+
+
+/* SCAP update. */
 
 /**
  * @brief Update CERT-Bund Max CVSS.

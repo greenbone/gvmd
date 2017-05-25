@@ -1,5 +1,10 @@
 2017-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql_secinfo.c: Organise the SCAP and CERT update into
+	pages.
+
+2017-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql_secinfo.c: Separate CPE and CVE pages.  Move OVAL
 	functions up to OVAL page.
 
