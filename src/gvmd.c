@@ -1572,10 +1572,8 @@ main (int argc, char** argv)
   static gboolean get_users = FALSE;
   static gboolean get_scanners = FALSE;
   static gboolean update_cert_db = FALSE;
-  static gboolean update_scap_db = FALSE;
   static gboolean update_nvt_cache = FALSE;
   static gboolean rebuild_nvt_cache = FALSE;
-  static gboolean refresh_private_only = FALSE;
   static gboolean foreground = FALSE;
   static gboolean print_version = FALSE;
   static gboolean progress = FALSE;
@@ -1688,11 +1686,9 @@ main (int argc, char** argv)
         { "port2", '\0', 0, G_OPTION_ARG_STRING, &manager_port_string_2, "Use port number <number> for address 2.", "<number>" },
         { "progress", '\0', 0, G_OPTION_ARG_NONE, &progress, "Display progress during --rebuild and --update.", NULL },
         { "rebuild", '\0', 0, G_OPTION_ARG_NONE, &rebuild_nvt_cache, "Rebuild the NVT cache and exit.", NULL },
-        { "refresh-private-only", '\0', 0, G_OPTION_ARG_NONE, &refresh_private_only, "Whether to only refresh private dir, for --update-scap-db.", NULL },
         { "role", '\0', 0, G_OPTION_ARG_STRING, &role, "Role for --create-user and --get-users.", "<role>" },
         { "update", 'u', 0, G_OPTION_ARG_NONE, &update_nvt_cache, "Update the NVT cache and exit.", NULL },
         { "update-cert-db", '\0', 0, G_OPTION_ARG_NONE, &update_cert_db, "Update CERT info.", NULL },
-        { "update-scap-db", '\0', 0, G_OPTION_ARG_NONE, &update_scap_db, "Update SCAP info.", NULL },
         { "unix-socket", 'c', 0, G_OPTION_ARG_STRING, &manager_address_string_unix, "Listen on UNIX socket at <filename>.", "<filename>" },
         { "user", '\0', 0, G_OPTION_ARG_STRING, &user, "User for --new-password.", "<username>" },
         { "gnutls-priorities", '\0', 0, G_OPTION_ARG_STRING, &priorities, "Sets the GnuTLS priorities for the Manager socket.", "<priorities-string>" },
@@ -2228,49 +2224,6 @@ main (int argc, char** argv)
           case -5:
             g_critical
              ("%s: CERT database not found. Cannot update CERT info.\n",
-              __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -6:
-            g_critical
-             ("%s: SCAP database not found. Cannot update max_cvss.\n",
-              __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -1:
-          default:
-            g_critical ("%s: internal error\n", __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-        }
-    }
-
-  if (update_scap_db)
-    {
-      /* Update SCAP info and then exit. */
-
-      proctitle_set ("gvmd: Updating SCAP info");
-
-      g_info ("   Updating SCAP info.\n");
-
-      switch (manage_update_scap_db (log_config, database, refresh_private_only))
-        {
-          case 0:
-            log_config_free ();
-            return EXIT_SUCCESS;
-          case -2:
-            g_critical ("%s: database is wrong version\n", __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -3:
-            g_critical ("%s: database must be initialised"
-                        " (with --update or --rebuild)\n",
-                        __FUNCTION__);
-            log_config_free ();
-            return EXIT_FAILURE;
-          case -5:
-            g_critical
-             ("%s: SCAP database not found. Cannot update SCAP info.\n",
               __FUNCTION__);
             log_config_free ();
             return EXIT_FAILURE;

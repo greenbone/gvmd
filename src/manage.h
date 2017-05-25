@@ -3573,9 +3573,6 @@ manage_update_cvss_cert_bund (GSList *, const gchar *, int);
 int
 manage_update_cvss_dfn_cert (GSList *, const gchar *, int);
 
-int
-manage_update_scap_db (GSList *, const gchar *, int);
-
 /* SCAP. */
 
 int
