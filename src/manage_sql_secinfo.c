@@ -3522,6 +3522,112 @@ manage_db_reinit (const gchar *name)
   return 0;
 }
 
+/**
+ * @brief Sync the SCAP DB.
+ *
+ * @param[in]  sigmask_current    Sigmask to restore in child.
+ * @param[in]  update             Function to do the sync.
+ * @param[in]  process_title      Process title.
+ * @param[in]  lockfile_basename  Basename for lockfile.
+ */
+static void
+sync_secinfo (sigset_t *sigmask_current, int (*update) (),
+              const gchar *process_title, const gchar *lockfile_basename)
+{
+  int pid, lockfile;
+  gchar *lockfile_name;
+
+  g_debug ("%s", __FUNCTION__);
+
+  /* Fork a child to sync the db, so that the parent can return to the main
+   * loop. */
+
+  pid = fork ();
+  switch (pid)
+    {
+      case 0:
+        /* Child.  Carry on to sync the db, reopen the database (required
+         * after fork). */
+
+        /* Restore the sigmask that was blanked for pselect in the parent. */
+        pthread_sigmask (SIG_SETMASK, sigmask_current, NULL);
+
+        /* Cleanup so that exit works. */
+
+        cleanup_manage_process (FALSE);
+
+        /* Open the lock file. */
+
+        lockfile_name = g_build_filename (g_get_tmp_dir (), lockfile_basename,
+                                          NULL);
+
+        lockfile = open (lockfile_name,
+                         O_RDWR | O_CREAT | O_APPEND,
+                         /* "-rw-r--r--" */
+                         S_IWUSR | S_IRUSR | S_IROTH | S_IRGRP);
+        if (lockfile == -1)
+          {
+            g_warning ("%s: failed to open lock file '%s': %s", __FUNCTION__,
+                       lockfile_name, strerror (errno));
+            g_free (lockfile_name);
+            exit (EXIT_FAILURE);
+          }
+
+        if (flock (lockfile, LOCK_EX | LOCK_NB))  /* Exclusive, Non blocking. */
+          {
+            if (errno == EWOULDBLOCK)
+              g_debug ("%s: skipping, sync in progress", __FUNCTION__);
+            else
+              g_debug ("%s: flock: %s", __FUNCTION__, strerror (errno));
+            g_free (lockfile_name);
+            exit (EXIT_SUCCESS);
+          }
+
+        /* Init. */
+
+        reinit_manage_process ();
+        manage_session_init (current_credentials.uuid);
+
+        break;
+
+      case -1:
+        /* Parent on error.  Reschedule and continue to next task. */
+        g_warning ("%s: fork failed\n", __FUNCTION__);
+        return;
+
+      default:
+        /* Parent.  Continue to next task. */
+        g_debug ("%s: %i forked %i", __FUNCTION__, getpid (), pid);
+        return;
+
+    }
+
+  proctitle_set (process_title);
+
+  if (update () == 0)
+    {
+      g_info ("%s: Checking for alerts", __FUNCTION__);
+
+      check_alerts ();
+    }
+
+  g_debug ("%s: cleaning up", __FUNCTION__);
+
+  /* Close the lock file. */
+
+  if (close (lockfile))
+    {
+      g_free (lockfile_name);
+      g_warning ("%s: failed to close lock file: %s", __FUNCTION__,
+                 strerror (errno));
+      exit (EXIT_FAILURE);
+    }
+
+  g_free (lockfile_name);
+
+  exit (EXIT_SUCCESS);
+}
+
 
 /* CERT update. */
 
@@ -4208,96 +4314,8 @@ sync_scap ()
 void
 manage_sync_scap (sigset_t *sigmask_current)
 {
-  int pid, lockfile;
-  gchar *lockfile_name;
-
-  g_debug ("%s", __FUNCTION__);
-
-  /* Fork a child to sync the db, so that the parent can return to the main
-   * loop. */
-
-  pid = fork ();
-  switch (pid)
-    {
-      case 0:
-        /* Child.  Carry on to sync the db, reopen the database (required
-         * after fork). */
-
-        /* Restore the sigmask that was blanked for pselect in the parent. */
-        pthread_sigmask (SIG_SETMASK, sigmask_current, NULL);
-
-        /* Cleanup so that exit works. */
-
-        cleanup_manage_process (FALSE);
-
-        /* Open the lock file. */
-
-        lockfile_name = g_build_filename (g_get_tmp_dir (), "gvm-sync-scap",
-                                          NULL);
-
-        lockfile = open (lockfile_name,
-                         O_RDWR | O_CREAT | O_APPEND,
-                         /* "-rw-r--r--" */
-                         S_IWUSR | S_IRUSR | S_IROTH | S_IRGRP);
-        if (lockfile == -1)
-          {
-            g_warning ("%s: failed to open lock file '%s': %s", __FUNCTION__,
-                       lockfile_name, strerror (errno));
-            g_free (lockfile_name);
-            exit (EXIT_FAILURE);
-          }
-
-        if (flock (lockfile, LOCK_EX | LOCK_NB))  /* Exclusive, Non blocking. */
-          {
-            if (errno == EWOULDBLOCK)
-              g_debug ("%s: skipping, sync in progress", __FUNCTION__);
-            else
-              g_debug ("%s: flock: %s", __FUNCTION__, strerror (errno));
-            g_free (lockfile_name);
-            exit (EXIT_SUCCESS);
-          }
-
-        /* Init. */
-
-        reinit_manage_process ();
-        manage_session_init (current_credentials.uuid);
-
-        break;
-
-      case -1:
-        /* Parent on error.  Reschedule and continue to next task. */
-        g_warning ("%s: fork failed\n", __FUNCTION__);
-        return;
-
-      default:
-        /* Parent.  Continue to next task. */
-        g_debug ("%s: %i forked %i", __FUNCTION__, getpid (), pid);
-        return;
-
-    }
-
-  proctitle_set ("gvmd: Syncing SCAP");
-
-  if (sync_scap () == 0)
-    {
-      g_info ("%s: Checking for alerts", __FUNCTION__);
-
-      check_alerts ();
-    }
-
-  g_debug ("%s: cleaning up", __FUNCTION__);
-
-  /* Close the lock file. */
-
-  if (close (lockfile))
-    {
-      g_free (lockfile_name);
-      g_warning ("%s: failed to close lock file: %s", __FUNCTION__,
-                 strerror (errno));
-      exit (EXIT_FAILURE);
-    }
-
-  g_free (lockfile_name);
-
-  exit (EXIT_SUCCESS);
+  sync_secinfo (sigmask_current,
+                sync_scap,
+                "gvmd: Syncing SCAP",
+                "gvm-sync-scap");
 }

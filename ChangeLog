@@ -1,5 +1,11 @@
 2017-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql_secinfo.c (sync_secinfo): New function.  Generic
+	version of manage_sync_scap.
+	(manage_sync_scap): Use sync_secinfo.
+
+2017-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql_secinfo.c (sync_scap): New function.  Body from
 	manage_sync_scap.
 	(manage_sync_scap): Call sync_scap to do the actual sync work.
