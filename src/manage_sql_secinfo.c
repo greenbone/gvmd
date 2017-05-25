@@ -3613,36 +3613,18 @@ update_scap_timestamp ()
 }
 
 /**
- * @brief Reinit CERT db.
+ * @brief Reinit a db.
  *
  * @return 0 success, -1 error.
  */
 static int
-cert_db_reinit ()
+manage_db_reinit (const gchar *name)
 {
   g_info ("Reinitialization of the database necessary");
-  manage_db_remove ("cert");
-  if (manage_db_init ("cert"))
+  manage_db_remove (name);
+  if (manage_db_init (name))
     {
-      g_warning ("Could not reinitialize CERT database");
-      return -1;
-    }
-  return 0;
-}
-
-/**
- * @brief Reinit SCAP db.
- *
- * @return 0 success, -1 error.
- */
-static int
-scap_db_reinit ()
-{
-  g_info ("Reinitialization of the database necessary");
-  manage_db_remove ("scap");
-  if (manage_db_init ("scap"))
-    {
-      g_warning ("Could not reinitialize SCAP database");
+      g_warning ("Could not reinitialize %s database", name);
       return -1;
     }
   return 0;
@@ -3664,7 +3646,7 @@ check_cert_db_version ()
       case 3:
       case 4:
       case 5:
-       return cert_db_reinit ();
+       return manage_db_reinit ("cert");
        break;
     }
   return 0;
@@ -3696,7 +3678,7 @@ check_scap_db_version ()
       case 12:
       case 13:
       case 14:
-       return scap_db_reinit ();
+       return manage_db_reinit ("scap");
        break;
     }
   return 0;
