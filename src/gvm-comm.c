@@ -150,4 +150,3 @@ sendf_to_server (const char* format, ...)
   va_end (args);
   return ret;
 }
-
