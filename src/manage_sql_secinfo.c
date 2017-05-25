@@ -54,16 +54,13 @@
 #define G_LOG_DOMAIN "md manage"
 
 
-/* Static headers. */
+/* Headers. */
 
 static void
 update_cvss_dfn_cert (int, int, int);
 
 static void
 update_cvss_cert_bund (int, int, int);
-
-int
-manage_db_exists (const gchar *);
 
 void
 manage_db_remove (const gchar *);
@@ -104,7 +101,7 @@ string_replace (const gchar *string, const gchar *to, ...)
 }
 
 
-/* SecInfo. */
+/* CPE and CVE data. */
 
 /**
  * @brief Initialise an CVE iterator, for CVEs reported for a certain CPE.
@@ -301,6 +298,7 @@ init_cve_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
   g_free (clause);
   return ret;
 }
+
 /**
  * @brief Get the title from a CPE iterator.
  *
@@ -451,7 +449,9 @@ DEF_ACCESS (cve_info_iterator_cvss, GET_ITERATOR_COLUMN_COUNT + 7);
  */
 DEF_ACCESS (cve_info_iterator_description, GET_ITERATOR_COLUMN_COUNT + 8);
 
-/* OVAL data */
+
+/* OVAL data. */
+
 /**
  * @brief Initialise an OVAL definition (ovaldef) info iterator.
  *
@@ -617,9 +617,9 @@ DEF_ACCESS (ovaldef_info_iterator_max_cvss, GET_ITERATOR_COLUMN_COUNT + 7);
  */
 DEF_ACCESS (ovaldef_info_iterator_cve_refs, GET_ITERATOR_COLUMN_COUNT + 8);
 
-/* CERT data */
+
+/* CERT-Bund data. */
 
-/* CERT-Bund data */
 /**
  * @brief Initialise an CERT-Bund advisory (cert_bund_adv) info iterator.
  *
@@ -801,7 +801,9 @@ init_nvt_cert_bund_adv_iterator (iterator_t *iterator, const char *oid,
   g_free (columns);
 }
 
-/* DFN-CERT data */
+
+/* DFN-CERT data. */
+
 /**
  * @brief Initialise an DFN-CERT advisory (dfn_cert_adv) info iterator.
  *
@@ -1093,7 +1095,8 @@ ovaldef_cves (const char *id)
   return ret;
 }
 
-/* All SecInfo Data */
+
+/* All SecInfo data. */
 
 /**
  * @brief Count number of SecInfo entries.
@@ -1355,6 +1358,9 @@ init_ovaldi_file_iterator (iterator_t* iterator)
  *         cleanup_iterator.
  */
 DEF_ACCESS (ovaldi_file_iterator_name, 0);
+
+
+/* Updating database from feed. */
 
 /**
  * @brief Update DFN-CERT info from a single XML feed file.
@@ -3599,7 +3605,7 @@ update_scap_timestamp ()
  *
  * @return 0 success, -1 error.
  */
-int
+static int
 cert_db_reinit ()
 {
   g_info ("Reinitialization of the database necessary");
@@ -3617,7 +3623,7 @@ cert_db_reinit ()
  *
  * @return 0 success, -1 error.
  */
-int
+static int
 scap_db_reinit ()
 {
   g_info ("Reinitialization of the database necessary");
@@ -3635,7 +3641,7 @@ scap_db_reinit ()
  *
  * @return 0 success, -1 error.
  */
-int
+static int
 check_cert_db_version ()
 {
   switch (manage_cert_db_version ())
@@ -3657,7 +3663,7 @@ check_cert_db_version ()
  *
  * @return 0 success, -1 error.
  */
-int
+static int
 check_scap_db_version ()
 {
   switch (manage_scap_db_version ())
@@ -4002,7 +4008,7 @@ update_scap_placeholders (int updated_cves)
  *
  * @return Timestamp from feed.  0 if missing.  -1 on error.
  */
-int
+static int
 feed_timestamp ()
 {
   GError *error;

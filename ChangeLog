@@ -1,5 +1,10 @@
 2017-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql_secinfo.c: Neaten page comments.  Remove unused header.
+	Add static keywords.
+
+2017-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Remove --update-scap-db and --refresh-private-only.
 
 	* src/gvmd.c (main): Remove options.  Sync script no longer
