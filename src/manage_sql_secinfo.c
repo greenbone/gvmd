@@ -4056,13 +4056,159 @@ feed_timestamp ()
 /**
  * @brief Sync the SCAP DB.
  *
+ * @return 0 success, -1 error.
+ */
+static int
+sync_scap ()
+{
+  int last_feed_update, last_scap_update;
+  int updated_scap_ovaldefs, updated_scap_cpes, updated_scap_cves;
+
+  if (manage_scap_db_exists ())
+    {
+      g_debug ("%s: database exists", __FUNCTION__);
+
+      if (check_scap_db_version ())
+        return -1;
+      manage_db_check_mode ("scap");
+
+      if (manage_db_check ("scap"))
+        {
+          g_warning ("%s: Database broken, resetting SCAP database",
+                     __FUNCTION__);
+          manage_db_remove ("scap");
+          if (manage_db_init ("scap"))
+            {
+              g_warning ("%s: could not reinitialize SCAP database",
+                         __FUNCTION__);
+              return -1;
+            }
+        }
+    }
+  else
+    {
+      g_info ("%s: Initializing SCAP database", __FUNCTION__);
+
+      if (manage_db_init ("scap"))
+        {
+          g_warning ("%s: Could not initialize SCAP database", __FUNCTION__);
+          return -1;
+        }
+    }
+
+  g_debug ("%s: get last_scap_update", __FUNCTION__);
+
+  last_scap_update = -1;
+  if (manage_scap_loaded ())
+    last_scap_update = sql_int ("SELECT coalesce ((SELECT value FROM scap.meta"
+                                "                  WHERE name = 'last_update'),"
+                                "                 '-1');");
+
+  if (last_scap_update == -1)
+    {
+      g_warning ("%s: Inconsistent data, resetting SCAP database",
+                 __FUNCTION__);
+      manage_db_remove ("scap");
+      if (manage_db_init ("scap"))
+        {
+          g_warning ("%s: could not reinitialize SCAP database", __FUNCTION__);
+          return -1;
+        }
+      last_scap_update = 0;
+    }
+
+  g_debug ("%s: last_scap_update: %i", __FUNCTION__, last_scap_update);
+
+  last_feed_update = feed_timestamp ();
+  if (last_feed_update == -1)
+    return -1;
+
+  g_debug ("%s: last_feed_update: %i", __FUNCTION__, last_feed_update);
+
+  if (last_scap_update >= last_feed_update)
+    {
+      g_debug ("%s: skipping, SCAP db newer than feed", __FUNCTION__);
+      return -1;
+    }
+
+  g_debug ("%s: sync", __FUNCTION__);
+
+  if (manage_update_scap_db_init ())
+     return -1;
+
+  g_info ("%s: Updating data from feed", __FUNCTION__);
+
+  g_debug ("%s: update cpes", __FUNCTION__);
+
+  updated_scap_cpes = update_scap_cpes (last_scap_update);
+  if (updated_scap_cpes == -1)
+    {
+      manage_update_scap_db_cleanup ();
+      return -1;
+    }
+
+  g_debug ("%s: update cves", __FUNCTION__);
+
+  updated_scap_cves = update_scap_cves (last_scap_update);
+  if (updated_scap_cves == -1)
+    {
+      manage_update_scap_db_cleanup ();
+      return -1;
+    }
+
+  g_debug ("%s: update ovaldefs", __FUNCTION__);
+
+  updated_scap_ovaldefs = update_scap_ovaldefs (last_scap_update,
+                                                0 /* Feed data. */);
+  if (updated_scap_ovaldefs == -1)
+    {
+      manage_update_scap_db_cleanup ();
+      return -1;
+    }
+
+  g_debug ("%s: updating user defined data", __FUNCTION__);
+
+  switch (update_scap_ovaldefs (last_scap_update,
+                                1 /* Private data. */))
+    {
+      case 0:
+        break;
+      case -1:
+        manage_update_scap_db_cleanup ();
+        return -1;
+      default:
+        updated_scap_ovaldefs = 1;
+        break;
+    }
+
+  update_scap_cvss (updated_scap_cves, updated_scap_cpes,
+                    updated_scap_ovaldefs);
+  update_scap_placeholders (updated_scap_cves);
+
+  g_debug ("%s: update timestamp", __FUNCTION__);
+
+  if (update_scap_timestamp ())
+    {
+      manage_update_scap_db_cleanup ();
+      return -1;
+    }
+
+  g_info ("%s: Updating SCAP info succeeded", __FUNCTION__);
+
+  manage_update_scap_db_cleanup ();
+
+  return 0;
+}
+
+/**
+ * @brief Sync the SCAP DB.
+ *
  * @param[in]  sigmask_current  Sigmask to restore in child.
  */
 void
 manage_sync_scap (sigset_t *sigmask_current)
 {
-  int pid, lockfile, last_feed_update, last_scap_update;
-  int updated_scap_ovaldefs, updated_scap_cpes, updated_scap_cves;
+  int pid, lockfile;
   gchar *lockfile_name;
 
   g_debug ("%s", __FUNCTION__);
@@ -4132,144 +4278,12 @@ manage_sync_scap (sigset_t *sigmask_current)
 
   proctitle_set ("gvmd: Syncing SCAP");
 
-  if (manage_scap_db_exists ())
+  if (sync_scap () == 0)
     {
-      g_debug ("%s: database exists", __FUNCTION__);
+      g_info ("%s: Checking for alerts", __FUNCTION__);
 
-      if (check_scap_db_version ())
-        goto exit;
-      manage_db_check_mode ("scap");
-
-      if (manage_db_check ("scap"))
-        {
-          g_warning ("%s: Database broken, resetting SCAP database",
-                     __FUNCTION__);
-          manage_db_remove ("scap");
-          if (manage_db_init ("scap"))
-            {
-              g_warning ("%s: could not reinitialize SCAP database",
-                         __FUNCTION__);
-              goto exit;
-            }
-        }
+      check_alerts ();
     }
-  else
-    {
-      g_info ("%s: Initializing SCAP database", __FUNCTION__);
-
-      if (manage_db_init ("scap"))
-        {
-          g_warning ("%s: Could not initialize SCAP database", __FUNCTION__);
-          goto exit;
-        }
-    }
-
-  g_debug ("%s: get last_scap_update", __FUNCTION__);
-
-  last_scap_update = -1;
-  if (manage_scap_loaded ())
-    last_scap_update = sql_int ("SELECT coalesce ((SELECT value FROM scap.meta"
-                                "                  WHERE name = 'last_update'),"
-                                "                 '-1');");
-
-  if (last_scap_update == -1)
-    {
-      g_warning ("%s: Inconsistent data, resetting SCAP database",
-                 __FUNCTION__);
-      manage_db_remove ("scap");
-      if (manage_db_init ("scap"))
-        {
-          g_warning ("%s: could not reinitialize SCAP database", __FUNCTION__);
-          goto exit;
-        }
-      last_scap_update = 0;
-    }
-
-  g_debug ("%s: last_scap_update: %i", __FUNCTION__, last_scap_update);
-
-  last_feed_update = feed_timestamp ();
-  if (last_feed_update == -1)
-    goto exit;
-
-  g_debug ("%s: last_feed_update: %i", __FUNCTION__, last_feed_update);
-
-  if (last_scap_update >= last_feed_update)
-    {
-      g_debug ("%s: skipping, SCAP db newer than feed", __FUNCTION__);
-      goto exit;
-    }
-
-  g_debug ("%s: sync", __FUNCTION__);
-
-  if (manage_update_scap_db_init ())
-     goto exit;
-
-  g_info ("%s: Updating data from feed", __FUNCTION__);
-
-  g_debug ("%s: update cpes", __FUNCTION__);
-
-  updated_scap_cpes = update_scap_cpes (last_scap_update);
-  if (updated_scap_cpes == -1)
-    {
-      manage_update_scap_db_cleanup ();
-      goto exit;
-    }
-
-  g_debug ("%s: update cves", __FUNCTION__);
-
-  updated_scap_cves = update_scap_cves (last_scap_update);
-  if (updated_scap_cves == -1)
-    {
-      manage_update_scap_db_cleanup ();
-      goto exit;
-    }
-
-  g_debug ("%s: update ovaldefs", __FUNCTION__);
-
-  updated_scap_ovaldefs = update_scap_ovaldefs (last_scap_update,
-                                                0 /* Feed data. */);
-  if (updated_scap_ovaldefs == -1)
-    {
-      manage_update_scap_db_cleanup ();
-      goto exit;
-    }
-
-  g_debug ("%s: updating user defined data", __FUNCTION__);
-
-  switch (update_scap_ovaldefs (last_scap_update,
-                                1 /* Private data. */))
-    {
-      case 0:
-        break;
-      case -1:
-        manage_update_scap_db_cleanup ();
-        goto exit;
-      default:
-        updated_scap_ovaldefs = 1;
-        break;
-    }
-
-  update_scap_cvss (updated_scap_cves, updated_scap_cpes,
-                    updated_scap_ovaldefs);
-  update_scap_placeholders (updated_scap_cves);
-
-  g_debug ("%s: update timestamp", __FUNCTION__);
-
-  if (update_scap_timestamp ())
-    {
-      manage_update_scap_db_cleanup ();
-      goto exit;
-    }
-
-  g_info ("%s: Updating SCAP info succeeded", __FUNCTION__);
-
-  manage_update_scap_db_cleanup ();
-
-  g_info ("%s: Checking for alerts", __FUNCTION__);
-
-  check_alerts ();
-
- exit:
 
   g_debug ("%s: cleaning up", __FUNCTION__);
 
