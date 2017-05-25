@@ -4258,9 +4258,11 @@ feed_timestamp ()
 
 /**
  * @brief Sync the SCAP DB.
+ *
+ * @param[in]  sigmask_current  Sigmask to restore in child.
  */
 void
-manage_sync_scap ()
+manage_sync_scap (sigset_t *sigmask_current)
 {
   int pid, lockfile, last_feed_update, last_scap_update;
   int updated_scap_ovaldefs, updated_scap_cpes, updated_scap_cves;
@@ -4278,10 +4280,8 @@ manage_sync_scap ()
         /* Child.  Carry on to sync the db, reopen the database (required
          * after fork). */
 
-#if 0
-        /* Restore the sigmask that was blanked for pselect. */
+        /* Restore the sigmask that was blanked for pselect in the parent. */
         pthread_sigmask (SIG_SETMASK, sigmask_current, NULL);
-#endif
 
         /* Cleanup so that exit works. */
 

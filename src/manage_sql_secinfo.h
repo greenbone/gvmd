@@ -303,6 +303,6 @@
   " AS allinfo"
 
 void
-manage_sync_scap ();
+manage_sync_scap (sigset_t *);
 
 #endif /* not _GVMD_MANAGE_SQL_SECINFO_H */
