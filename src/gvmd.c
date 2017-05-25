@@ -1564,7 +1564,6 @@ main (int argc, char** argv)
   static gboolean backup_database = FALSE;
   static gboolean check_alerts = FALSE;
   static gboolean check_cert_db = FALSE;
-  static gboolean check_scap_db = FALSE;
   static gboolean migrate_database = FALSE;
   static gboolean encrypt_all_credentials = FALSE;
   static gboolean decrypt_all_credentials = FALSE;
@@ -1624,7 +1623,6 @@ main (int argc, char** argv)
         { "backup", '\0', 0, G_OPTION_ARG_NONE, &backup_database, "Backup the database.", NULL },
         { "check-alerts", '\0', 0, G_OPTION_ARG_NONE, &check_alerts, "Check SecInfo alerts.", NULL },
         { "check-cert-db", '\0', 0, G_OPTION_ARG_NONE, &check_cert_db, "Check CERT DB for sync script.", NULL },
-        { "check-scap-db", '\0', 0, G_OPTION_ARG_NONE, &check_scap_db, "Check SCAP DB for sync script.", NULL },
         { "database", 'd', 0, G_OPTION_ARG_STRING, &database, "Use <file/name> as database for SQLite/Postgres.", "<file/name>" },
         { "disable-cmds", '\0', 0, G_OPTION_ARG_STRING, &disable, "Disable comma-separated <commands>.", "<commands>" },
         { "disable-encrypted-credentials", '\0', 0, G_OPTION_ARG_NONE,
@@ -1979,19 +1977,6 @@ main (int argc, char** argv)
       proctitle_set ("gvmd: Checking CERT db");
 
       ret = manage_check_cert_db (log_config, database);
-      log_config_free ();
-      if (ret)
-        return EXIT_FAILURE;
-      return EXIT_SUCCESS;
-    }
-
-  if (check_scap_db)
-    {
-      int ret;
-
-      proctitle_set ("gvmd: Checking SCAP db");
-
-      ret = manage_check_scap_db (log_config, database);
       log_config_free ();
       if (ret)
         return EXIT_FAILURE;

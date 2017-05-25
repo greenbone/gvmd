@@ -3858,51 +3858,6 @@ manage_check_cert_db (GSList *log_config, const gchar *database)
 }
 
 /**
- * @brief Check SCAP db for sync script.
- *
- * @param[in]  log_config  Log configuration.
- * @param[in]  database    Location of manage database.
- *
- * @return 0 success, -1 error,
- *         -2 database is wrong version, -3 database needs to be initialised
- *         from server.
- */
-int
-manage_check_scap_db (GSList *log_config, const gchar *database)
-{
-  int ret;
-
-  g_info ("   Checking SCAP db.\n");
-
-  ret = manage_option_setup (log_config, database);
-  if (ret)
-    return ret;
-
-  /* Setup a dummy user. */
-  current_credentials.uuid = "";
-
-  ret = manage_db_check ("scap");
-  switch (ret)
-    {
-      case 0:
-        puts ("0");
-        break;
-      case 1:
-        g_info ("Integrity check failed, removing SCAP database.");
-        manage_db_remove ("scap");
-        puts ("1");
-        ret = 0;
-        break;
-    }
-
-  current_credentials.uuid = NULL;
-
-  manage_option_cleanup ();
-
-  return ret;
-}
-
-/**
  * @brief Update CERT-Bund Max CVSS.
  *
  * @param[in]  update_cert_bund  Whether CERT-Bund updated.

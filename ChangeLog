@@ -1,5 +1,16 @@
 2017-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Remove --check-scap-db.
+
+	* src/gvmd.c (main): Remove --check-scap-db.  Sync script no longer
+	uses this.
+
+	* src/manage_sql_secinfo.c (manage_check_scap_db): Remove.
+
+	* src/manage_sql_secinfo.h: Remove header accordingly.
+
+2017-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql_secinfo.c (manage_sync_scap): Add sigmask_current
 	arg.  Restore in child.
 
