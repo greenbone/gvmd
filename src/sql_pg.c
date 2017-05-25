@@ -332,6 +332,8 @@ sql_open (const char *database)
         {
           g_warning ("%s: PQconnectPoll failed\n",
                      __FUNCTION__);
+          g_warning ("%s: PQerrorMessage (conn): %s", __FUNCTION__,
+                     PQerrorMessage (conn));
           goto fail;
         }
       else if (poll_status == PGRES_POLLING_OK)
