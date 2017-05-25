@@ -3505,6 +3505,49 @@ update_scap_ovaldefs (int last_scap_update, int private)
 /* CERT and SCAP update. */
 
 /**
+ * @brief Reinit a db.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+manage_db_reinit (const gchar *name)
+{
+  g_info ("Reinitialization of the database necessary");
+  manage_db_remove (name);
+  if (manage_db_init (name))
+    {
+      g_warning ("Could not reinitialize %s database", name);
+      return -1;
+    }
+  return 0;
+}
+
+
+/* CERT update. */
+
+/**
+ * @brief Ensure CERT db is at the right version, and in the right mode.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+check_cert_db_version ()
+{
+  switch (manage_cert_db_version ())
+    {
+      case 0:
+      case 1:
+      case 2:
+      case 3:
+      case 4:
+      case 5:
+       return manage_db_reinit ("cert");
+       break;
+    }
+  return 0;
+}
+
+/**
  * @brief Update timestamp in CERT db from feed timestamp.
  *
  * @return 0 success, -1 error.
@@ -3557,135 +3600,6 @@ update_cert_timestamp ()
 
   return 0;
 }
-
-/**
- * @brief Update timestamp in SCAP db from feed timestamp.
- *
- * @return 0 success, -1 error.
- */
-static int
-update_scap_timestamp ()
-{
-  GError *error;
-  gchar *timestamp;
-  gsize len;
-  time_t stamp;
-
-  error = NULL;
-  g_file_get_contents (GVM_SCAP_DATA_DIR "/timestamp", &timestamp, &len,
-                       &error);
-  if (error)
-    {
-      if (error->code == G_FILE_ERROR_NOENT)
-        stamp = 0;
-      else
-        {
-          g_warning ("%s: Failed to get timestamp: %s\n",
-                     __FUNCTION__,
-                     error->message);
-          return -1;
-        }
-    }
-  else
-    {
-      if (strlen (timestamp) < 8)
-        {
-          g_warning ("%s: Feed timestamp too short: %s\n",
-                     __FUNCTION__,
-                     timestamp);
-          g_free (timestamp);
-          return -1;
-        }
-
-      timestamp[8] = '\0';
-      g_debug ("%s: parsing: %s", __FUNCTION__, timestamp);
-      stamp = parse_feed_timestamp (timestamp);
-      g_free (timestamp);
-      if (stamp == 0)
-        return -1;
-    }
-
-  g_debug ("%s: setting last_update: %lld", __FUNCTION__, (long long) stamp);
-  sql ("UPDATE scap.meta SET value = '%lld' WHERE name = 'last_update';",
-       (long long) stamp);
-
-  return 0;
-}
-
-/**
- * @brief Reinit a db.
- *
- * @return 0 success, -1 error.
- */
-static int
-manage_db_reinit (const gchar *name)
-{
-  g_info ("Reinitialization of the database necessary");
-  manage_db_remove (name);
-  if (manage_db_init (name))
-    {
-      g_warning ("Could not reinitialize %s database", name);
-      return -1;
-    }
-  return 0;
-}
-
-/**
- * @brief Ensure CERT db is at the right version, and in the right mode.
- *
- * @return 0 success, -1 error.
- */
-static int
-check_cert_db_version ()
-{
-  switch (manage_cert_db_version ())
-    {
-      case 0:
-      case 1:
-      case 2:
-      case 3:
-      case 4:
-      case 5:
-       return manage_db_reinit ("cert");
-       break;
-    }
-  return 0;
-}
-
-/**
- * @brief Ensure SCAP db is at the right version, and in the right mode.
- *
- * @return 0 success, -1 error.
- */
-static int
-check_scap_db_version ()
-{
-  switch (manage_scap_db_version ())
-    {
-      /* TODO The sync script had a whole lot of migrators in here. */
-      case 0:
-      case 1:
-      case 2:
-      case 3:
-      case 4:
-      case 5:
-      case 6:
-      case 7:
-      case 8:
-      case 9:
-      case 10:
-      case 11:
-      case 12:
-      case 13:
-      case 14:
-       return manage_db_reinit ("scap");
-       break;
-    }
-  return 0;
-}
-
-
-/* CERT update. */
 
 /**
  * @brief Update DFN-CERT Max CVSS.
@@ -3926,6 +3840,92 @@ manage_check_cert_db (GSList *log_config, const gchar *database)
 
 
 /* SCAP update. */
+
+/**
+ * @brief Ensure SCAP db is at the right version, and in the right mode.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+check_scap_db_version ()
+{
+  switch (manage_scap_db_version ())
+    {
+      /* TODO The sync script had a whole lot of migrators in here. */
+      case 0:
+      case 1:
+      case 2:
+      case 3:
+      case 4:
+      case 5:
+      case 6:
+      case 7:
+      case 8:
+      case 9:
+      case 10:
+      case 11:
+      case 12:
+      case 13:
+      case 14:
+       return manage_db_reinit ("scap");
+       break;
+    }
+  return 0;
+}
+
+/**
+ * @brief Update timestamp in SCAP db from feed timestamp.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+update_scap_timestamp ()
+{
+  GError *error;
+  gchar *timestamp;
+  gsize len;
+  time_t stamp;
+
+  error = NULL;
+  g_file_get_contents (GVM_SCAP_DATA_DIR "/timestamp", &timestamp, &len,
+                       &error);
+  if (error)
+    {
+      if (error->code == G_FILE_ERROR_NOENT)
+        stamp = 0;
+      else
+        {
+          g_warning ("%s: Failed to get timestamp: %s\n",
+                     __FUNCTION__,
+                     error->message);
+          return -1;
+        }
+    }
+  else
+    {
+      if (strlen (timestamp) < 8)
+        {
+          g_warning ("%s: Feed timestamp too short: %s\n",
+                     __FUNCTION__,
+                     timestamp);
+          g_free (timestamp);
+          return -1;
+        }
+
+      timestamp[8] = '\0';
+      g_debug ("%s: parsing: %s", __FUNCTION__, timestamp);
+      stamp = parse_feed_timestamp (timestamp);
+      g_free (timestamp);
+      if (stamp == 0)
+        return -1;
+    }
+
+  g_debug ("%s: setting last_update: %lld", __FUNCTION__, (long long) stamp);
+  sql ("UPDATE scap.meta SET value = '%lld' WHERE name = 'last_update';",
+       (long long) stamp);
+
+  return 0;
+}
 
 /**
  * @brief Update CERT-Bund Max CVSS.

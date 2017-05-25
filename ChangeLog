@@ -1,5 +1,10 @@
 2017-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql_secinfo.c: Move more SCAP and CERT functions to
+	right pages.
+
+2017-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql_secinfo.c (cert_db_reinit, scap_db_reinit): Remove.
 	(manage_db_reinit): New function.
 	(check_cert_db_version, check_scap_db_version): Use new combined reinit
