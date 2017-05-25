@@ -101,54 +101,7 @@ string_replace (const gchar *string, const gchar *to, ...)
 }
 
 
-/* CPE and CVE data. */
-
-/**
- * @brief Initialise an CVE iterator, for CVEs reported for a certain CPE.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  cve         CVE.
- * @param[in]  ascending   Whether to sort ascending or descending.
- * @param[in]  sort_field  Field to sort on, or NULL for "id".
- */
-void
-init_cpe_cve_iterator (iterator_t *iterator, const char *cve, int ascending,
-                       const char *sort_field)
-{
-  gchar *quoted_cpe;
-  assert (cve);
-  quoted_cpe = sql_quote (cve);
-  init_iterator (iterator,
-                 "SELECT id, name, cvss FROM cves WHERE id IN"
-                 " (SELECT cve FROM affected_products"
-                 "  WHERE cpe ="
-                 "  (SELECT id FROM cpes WHERE name = '%s'))"
-                 " ORDER BY %s %s;",
-                 quoted_cpe,
-                 sort_field ? sort_field : "cvss DESC, name",
-                 ascending ? "ASC" : "DESC");
-  g_free (quoted_cpe);
-}
-
-/**
- * @brief Get the name from a CVE iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The name of the CVE, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (cve_iterator_name, 1);
-
-/**
- * @brief Get the CVSS from a CVE iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The CVSS of the CVE, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (cve_iterator_cvss, 2);
+/* CPE data. */
 
 /**
  * @brief Count number of cpe.
@@ -214,6 +167,116 @@ init_cpe_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
   g_free (clause);
   return ret;
 }
+
+/**
+ * @brief Get the title from a CPE iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The Title of the CPE, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (cpe_info_iterator_title, GET_ITERATOR_COLUMN_COUNT);
+
+/**
+ * @brief Get the status from a CPE iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The Status of the CPE, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (cpe_info_iterator_status, GET_ITERATOR_COLUMN_COUNT + 1);
+
+/**
+ * @brief Get the id of the deprecating CPE from a CPE iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The deprecated_by CVD ID, or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (cpe_info_iterator_deprecated_by, GET_ITERATOR_COLUMN_COUNT + 2);
+
+/**
+ * @brief Get the Highest CVSS Score of all CVE's referencing this cpe.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The Highest CVSS of the CPE, or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (cpe_info_iterator_max_cvss, GET_ITERATOR_COLUMN_COUNT + 3);
+
+/**
+ * @brief Get the Number of CVE's referencing this cpe from a CPE iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The Number of references to the CPE, or NULL if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (cpe_info_iterator_cve_refs, GET_ITERATOR_COLUMN_COUNT + 4);
+
+/**
+ * @brief Get the NVD ID for this CPE.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The NVD ID of this CPE, or NULL if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (cpe_info_iterator_nvd_id, GET_ITERATOR_COLUMN_COUNT + 5);
+
+
+/* CVE data. */
+
+/**
+ * @brief Initialise an CVE iterator, for CVEs reported for a certain CPE.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  cve         CVE.
+ * @param[in]  ascending   Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for "id".
+ */
+void
+init_cpe_cve_iterator (iterator_t *iterator, const char *cve, int ascending,
+                       const char *sort_field)
+{
+  gchar *quoted_cpe;
+  assert (cve);
+  quoted_cpe = sql_quote (cve);
+  init_iterator (iterator,
+                 "SELECT id, name, cvss FROM cves WHERE id IN"
+                 " (SELECT cve FROM affected_products"
+                 "  WHERE cpe ="
+                 "  (SELECT id FROM cpes WHERE name = '%s'))"
+                 " ORDER BY %s %s;",
+                 quoted_cpe,
+                 sort_field ? sort_field : "cvss DESC, name",
+                 ascending ? "ASC" : "DESC");
+  g_free (quoted_cpe);
+}
+
+/**
+ * @brief Get the name from a CVE iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The name of the CVE, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (cve_iterator_name, 1);
+
+/**
+ * @brief Get the CVSS from a CVE iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The CVSS of the CVE, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (cve_iterator_cvss, 2);
 
 /**
  * @brief Get the short file name for an OVALDEF.
@@ -298,66 +361,6 @@ init_cve_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
   g_free (clause);
   return ret;
 }
-
-/**
- * @brief Get the title from a CPE iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The Title of the CPE, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (cpe_info_iterator_title, GET_ITERATOR_COLUMN_COUNT);
-
-/**
- * @brief Get the status from a CPE iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The Status of the CPE, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (cpe_info_iterator_status, GET_ITERATOR_COLUMN_COUNT + 1);
-
-/**
- * @brief Get the id of the deprecating CPE from a CPE iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The deprecated_by CVD ID, or NULL if iteration is complete.
- *         Freed by cleanup_iterator.
- */
-DEF_ACCESS (cpe_info_iterator_deprecated_by, GET_ITERATOR_COLUMN_COUNT + 2);
-
-/**
- * @brief Get the Highest CVSS Score of all CVE's referencing this cpe.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The Highest CVSS of the CPE, or NULL if iteration is complete.
- *         Freed by cleanup_iterator.
- */
-DEF_ACCESS (cpe_info_iterator_max_cvss, GET_ITERATOR_COLUMN_COUNT + 3);
-
-/**
- * @brief Get the Number of CVE's referencing this cpe from a CPE iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The Number of references to the CPE, or NULL if iteration is
- *         complete. Freed by cleanup_iterator.
- */
-DEF_ACCESS (cpe_info_iterator_cve_refs, GET_ITERATOR_COLUMN_COUNT + 4);
-
-/**
- * @brief Get the NVD ID for this CPE.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The NVD ID of this CPE, or NULL if iteration is
- *         complete. Freed by cleanup_iterator.
- */
-DEF_ACCESS (cpe_info_iterator_nvd_id, GET_ITERATOR_COLUMN_COUNT + 5);
 
 /**
  * @brief Get the CVSS attack vector for this CVE.
@@ -616,6 +619,120 @@ DEF_ACCESS (ovaldef_info_iterator_max_cvss, GET_ITERATOR_COLUMN_COUNT + 7);
  *         Freed by cleanup_iterator.
  */
 DEF_ACCESS (ovaldef_info_iterator_cve_refs, GET_ITERATOR_COLUMN_COUNT + 8);
+
+/**
+ * @brief Get the short file name for an OVALDEF.
+ *
+ * @param[in]  item_id  Full OVAL identifier with file suffix.
+ *
+ * @return The file name of the OVAL definition relative to the SCAP directory,
+ *         Freed by g_free.
+ */
+gchar*
+get_ovaldef_short_filename (char* item_id)
+{
+  return sql_string ("SELECT xml_file FROM ovaldefs WHERE uuid = '%s';",
+                     item_id);
+}
+
+/**
+ * @brief Get the uuid for an OVALDEF from a name and file name.
+ *
+ * @param[in]  name     Oval definition name.
+ * @param[in]  fname    Oval definition file name.
+ *
+ * @return The OVAL definition uuid from the SCAP directory. Freed by g_free.
+ */
+char*
+ovaldef_uuid (const char *name, const char *fname)
+{
+  char *quoted_name, *quoted_fname, *ret;
+
+  assert (name);
+  assert (fname);
+  quoted_name = sql_quote (name);
+  quoted_fname = sql_quote (fname);
+  ret = sql_string ("SELECT uuid FROM ovaldefs WHERE name = '%s'"
+                    " AND xml_file = '%s';", name, fname);
+  g_free (quoted_name);
+  g_free (quoted_fname);
+  return ret;
+}
+
+/**
+ * @brief Get the severity of an OVALDEF using an ID.
+ *
+ * @param[in]  id  Oval definition ID.
+ *
+ * @return The severity of the OVAL definition from the SCAP directory.
+ *         Freed by g_free.
+ */
+char *
+ovaldef_severity (const char *id)
+{
+  char *quoted_id, *ret;
+
+  assert (id);
+  quoted_id = sql_quote (id);
+  ret = sql_string ("SELECT max_cvss FROM ovaldefs WHERE uuid = '%s';",
+                    quoted_id);
+  g_free (quoted_id);
+  return ret;
+}
+
+/**
+ * @brief Get the version of an OVALDEF using an ID.
+ *
+ * @param[in]  id  Oval definition ID.
+ *
+ * @return The version of the OVAL definition from the SCAP directory.
+ *         Freed by g_free.
+ */
+char *
+ovaldef_version (const char *id)
+{
+  char *quoted_id, *ret;
+
+  assert (id);
+  quoted_id = sql_quote (id);
+  ret = sql_string ("SELECT version FROM ovaldefs WHERE uuid = '%s';",
+                    quoted_id);
+  g_free (quoted_id);
+  return ret;
+}
+
+/**
+ * @brief Get the CVE names of an OVALDEF as ", " separated str.
+ *
+ * @param[in]  id  Oval definition ID.
+ *
+ * @return String of CVEs affecting of the OVAL definition, NULL otherwise.
+ *         Freed by g_free.
+ */
+char *
+ovaldef_cves (const char *id)
+{
+  char *quoted_id, *ret = NULL;
+  iterator_t iterator;
+
+  assert (id);
+  quoted_id = sql_quote (id);
+  init_iterator (&iterator,
+                 "SELECT DISTINCT cves.name FROM cves, ovaldefs,"
+                 " affected_ovaldefs WHERE ovaldefs.uuid = '%s'"
+                 " AND cves.id = affected_ovaldefs.cve"
+                 " AND ovaldefs.id = affected_ovaldefs.ovaldef;", quoted_id);
+  g_free (quoted_id);
+  while (next (&iterator))
+    {
+      char *tmp = ret;
+      ret = g_strdup_printf ("%s%s%s", ret ?: "", ret ? ", " : "",
+                             iterator_string (&iterator, 0));
+      g_free (tmp);
+    }
+  cleanup_iterator (&iterator);
+  return ret;
+}
 
 
 /* CERT-Bund data. */
@@ -979,120 +1096,6 @@ init_nvt_dfn_cert_adv_iterator (iterator_t *iterator, const char *oid,
                  sort_field ? sort_field : "name",
                  ascending ? "ASC" : "DESC");
   g_free (columns);
-}
-
-/**
- * @brief Get the short file name for an OVALDEF.
- *
- * @param[in]  item_id  Full OVAL identifier with file suffix.
- *
- * @return The file name of the OVAL definition relative to the SCAP directory,
- *         Freed by g_free.
- */
-gchar*
-get_ovaldef_short_filename (char* item_id)
-{
-  return sql_string ("SELECT xml_file FROM ovaldefs WHERE uuid = '%s';",
-                     item_id);
-}
-
-/**
- * @brief Get the uuid for an OVALDEF from a name and file name.
- *
- * @param[in]  name     Oval definition name.
- * @param[in]  fname    Oval definition file name.
- *
- * @return The OVAL definition uuid from the SCAP directory. Freed by g_free.
- */
-char*
-ovaldef_uuid (const char *name, const char *fname)
-{
-  char *quoted_name, *quoted_fname, *ret;
-
-  assert (name);
-  assert (fname);
-  quoted_name = sql_quote (name);
-  quoted_fname = sql_quote (fname);
-  ret = sql_string ("SELECT uuid FROM ovaldefs WHERE name = '%s'"
-                    " AND xml_file = '%s';", name, fname);
-  g_free (quoted_name);
-  g_free (quoted_fname);
-  return ret;
-}
-
-/**
- * @brief Get the severity of an OVALDEF using an ID.
- *
- * @param[in]  id  Oval definition ID.
- *
- * @return The severity of the OVAL definition from the SCAP directory.
- *         Freed by g_free.
- */
-char *
-ovaldef_severity (const char *id)
-{
-  char *quoted_id, *ret;
-
-  assert (id);
-  quoted_id = sql_quote (id);
-  ret = sql_string ("SELECT max_cvss FROM ovaldefs WHERE uuid = '%s';",
-                    quoted_id);
-  g_free (quoted_id);
-  return ret;
-}
-
-/**
- * @brief Get the version of an OVALDEF using an ID.
- *
- * @param[in]  id  Oval definition ID.
- *
- * @return The version of the OVAL definition from the SCAP directory.
- *         Freed by g_free.
- */
-char *
-ovaldef_version (const char *id)
-{
-  char *quoted_id, *ret;
-
-  assert (id);
-  quoted_id = sql_quote (id);
-  ret = sql_string ("SELECT version FROM ovaldefs WHERE uuid = '%s';",
-                    quoted_id);
-  g_free (quoted_id);
-  return ret;
-}
-
-/**
- * @brief Get the CVE names of an OVALDEF as ", " separated str.
- *
- * @param[in]  id  Oval definition ID.
- *
- * @return String of CVEs affecting of the OVAL definition, NULL otherwise.
- *         Freed by g_free.
- */
-char *
-ovaldef_cves (const char *id)
-{
-  char *quoted_id, *ret = NULL;
-  iterator_t iterator;
-
-  assert (id);
-  quoted_id = sql_quote (id);
-  init_iterator (&iterator,
-                 "SELECT DISTINCT cves.name FROM cves, ovaldefs,"
-                 " affected_ovaldefs WHERE ovaldefs.uuid = '%s'"
-                 " AND cves.id = affected_ovaldefs.cve"
-                 " AND ovaldefs.id = affected_ovaldefs.ovaldef;", quoted_id);
-  g_free (quoted_id);
-  while (next (&iterator))
-    {
-      char *tmp = ret;
-      ret = g_strdup_printf ("%s%s%s", ret ?: "", ret ? ", " : "",
-                             iterator_string (&iterator, 0));
-      g_free (tmp);
-    }
-  cleanup_iterator (&iterator);
-  return ret;
 }
 
 
