@@ -4339,11 +4339,9 @@ manage_sync_scap ()
     {
       g_debug ("%s: database exists", __FUNCTION__);
 
-#if 0
       if (check_scap_db_version ())
-        goto exit -1;
+        goto exit;
       manage_db_check_mode ("scap");
-#endif
 
       if (manage_db_check ("scap"))
         {
@@ -4352,7 +4350,8 @@ manage_sync_scap ()
           manage_db_remove ("scap");
           if (manage_db_init ("scap"))
             {
-              g_warning ("%s: could not reinitialize SCAP database", __FUNCTION__);
+              g_warning ("%s: could not reinitialize SCAP database",
+                         __FUNCTION__);
               goto exit;
             }
         }

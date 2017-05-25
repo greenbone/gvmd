@@ -1,5 +1,10 @@
 2017-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql_secinfo.c (manage_sync_scap): Enable checks.  Indent
+	long line.
+
+2017-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/sql_pg.c (sql_open): Print error message on fail.
 
 2017-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
