@@ -4018,6 +4018,19 @@ sync_cert ()
       if (check_cert_db_version ())
         return -1;
       manage_db_check_mode ("cert");
+
+      if (manage_db_check ("cert"))
+        {
+          g_warning ("%s: Database broken, resetting CERT database",
+                     __FUNCTION__);
+          manage_db_remove ("cert");
+          if (manage_db_init ("cert"))
+            {
+              g_warning ("%s: could not reinitialize CERT database",
+                         __FUNCTION__);
+              return -1;
+            }
+        }
     }
   else
     {

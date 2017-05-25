@@ -1,7 +1,12 @@
 2017-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	Make openvasmd automatically sync SCAP database with SCAP files on disk.
-	Make the SCAP sync script only fetch SCAP files, and not call openvasmd at
+	* src/manage_sql_secinfo.c (sync_cert): Add check like the db_broken check
+	that the script had.
+
+2017-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Make openvasmd automatically sync CERT database with CERT files on disk.
+	Make the CERT sync script only fetch CERT files, and not call openvasmd at
 	all.
 
 	* src/manage.c (manage_schedule): Sync CERT.
