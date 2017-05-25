@@ -1,5 +1,10 @@
 2017-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql_secinfo.c (update_cvss_dfn_cert)
+	(update_cvss_cert_bund): Move up so headers aren't required.
+
+2017-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/gvm-comm.c: Remove trailing newline.
 
 2017-05-25  Matthew Mundell <matthew.mundell@greenbone.net>

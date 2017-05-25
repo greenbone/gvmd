@@ -56,12 +56,6 @@
 
 /* Headers. */
 
-static void
-update_cvss_dfn_cert (int, int, int);
-
-static void
-update_cvss_cert_bund (int, int, int);
-
 void
 manage_db_remove (const gchar *);
 
@@ -3712,6 +3706,70 @@ check_scap_db_version ()
 /* CERT update. */
 
 /**
+ * @brief Update DFN-CERT Max CVSS.
+ *
+ * @param[in]  update_dfn_cert  Whether CERT-Bund updated.
+ * @param[in]  last_cert_update  Time of last CERT update.
+ * @param[in]  last_scap_update  Time of last SCAP update.
+ */
+static void
+update_cvss_dfn_cert (int updated_dfn_cert, int last_cert_update,
+                      int last_scap_update)
+{
+  /* TODO greenbone-certdata-sync did retries. */
+
+  if (updated_dfn_cert || (last_scap_update > last_cert_update))
+    {
+      g_info ("Updating Max CVSS for DFN-CERT");
+      sql_recursive_triggers_off ();
+      sql ("UPDATE cert.dfn_cert_advs"
+           " SET max_cvss = (SELECT max (cvss)"
+           "                 FROM scap.cves"
+           "                 WHERE name"
+           "                 IN (SELECT cve_name"
+           "                     FROM cert.dfn_cert_cves"
+           "                     WHERE adv_id = dfn_cert_advs.id)"
+           "                 AND cvss != 0.0);");
+
+      g_info ("Updating DFN-CERT CVSS max succeeded.\n");
+    }
+  else
+    g_info ("Updating DFN-CERT CVSS max succeeded (nothing to do).\n");
+}
+
+/**
+ * @brief Update CERT-Bund Max CVSS.
+ *
+ * @param[in]  update_cert_bund  Whether CERT-Bund updated.
+ * @param[in]  last_cert_update  Time of last CERT update.
+ * @param[in]  last_scap_update  Time of last SCAP update.
+ */
+static void
+update_cvss_cert_bund (int updated_cert_bund, int last_cert_update,
+                       int last_scap_update)
+{
+  /* TODO greenbone-certdata-sync did retries. */
+
+  if (updated_cert_bund || (last_scap_update > last_cert_update))
+    {
+      g_info ("Updating Max CVSS for CERT-Bund");
+      sql_recursive_triggers_off ();
+      sql ("UPDATE cert.cert_bund_advs"
+           " SET max_cvss = (SELECT max (cvss)"
+           "                 FROM scap.cves"
+           "                 WHERE name"
+           "                       IN (SELECT cve_name"
+           "                           FROM cert.cert_bund_cves"
+           "                           WHERE adv_id = cert_bund_advs.id)"
+           "                 AND cvss != 0.0);");
+
+      g_info ("Updating CERT-Bund CVSS max succeeded.\n");
+    }
+  else
+    g_info ("Updating CERT-Bund CVSS max succeeded (nothing to do).\n");
+}
+
+/**
  * @brief Update CERT DB.
  *
  * @param[in]  log_config        Log configuration.
@@ -3882,70 +3940,6 @@ manage_check_cert_db (GSList *log_config, const gchar *database)
   manage_option_cleanup ();
 
   return ret;
-}
-
-/**
- * @brief Update CERT-Bund Max CVSS.
- *
- * @param[in]  update_cert_bund  Whether CERT-Bund updated.
- * @param[in]  last_cert_update  Time of last CERT update.
- * @param[in]  last_scap_update  Time of last SCAP update.
- */
-static void
-update_cvss_cert_bund (int updated_cert_bund, int last_cert_update,
-                       int last_scap_update)
-{
-  /* TODO greenbone-certdata-sync did retries. */
-
-  if (updated_cert_bund || (last_scap_update > last_cert_update))
-    {
-      g_info ("Updating Max CVSS for CERT-Bund");
-      sql_recursive_triggers_off ();
-      sql ("UPDATE cert.cert_bund_advs"
-           " SET max_cvss = (SELECT max (cvss)"
-           "                 FROM scap.cves"
-           "                 WHERE name"
-           "                       IN (SELECT cve_name"
-           "                           FROM cert.cert_bund_cves"
-           "                           WHERE adv_id = cert_bund_advs.id)"
-           "                 AND cvss != 0.0);");
-
-      g_info ("Updating CERT-Bund CVSS max succeeded.\n");
-    }
-  else
-    g_info ("Updating CERT-Bund CVSS max succeeded (nothing to do).\n");
-}
-
-/**
- * @brief Update DFN-CERT Max CVSS.
- *
- * @param[in]  update_dfn_cert  Whether CERT-Bund updated.
- * @param[in]  last_cert_update  Time of last CERT update.
- * @param[in]  last_scap_update  Time of last SCAP update.
- */
-static void
-update_cvss_dfn_cert (int updated_dfn_cert, int last_cert_update,
-                      int last_scap_update)
-{
-  /* TODO greenbone-certdata-sync did retries. */
-
-  if (updated_dfn_cert || (last_scap_update > last_cert_update))
-    {
-      g_info ("Updating Max CVSS for DFN-CERT");
-      sql_recursive_triggers_off ();
-      sql ("UPDATE cert.dfn_cert_advs"
-           " SET max_cvss = (SELECT max (cvss)"
-           "                 FROM scap.cves"
-           "                 WHERE name"
-           "                 IN (SELECT cve_name"
-           "                     FROM cert.dfn_cert_cves"
-           "                     WHERE adv_id = dfn_cert_advs.id)"
-           "                 AND cvss != 0.0);");
-
-      g_info ("Updating DFN-CERT CVSS max succeeded.\n");
-    }
-  else
-    g_info ("Updating DFN-CERT CVSS max succeeded (nothing to do).\n");
 }
 
 
