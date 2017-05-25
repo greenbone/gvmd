@@ -4344,6 +4344,18 @@ manage_sync_scap ()
         goto exit -1;
       manage_db_check_mode ("scap");
 #endif
+
+      if (manage_db_check ("scap"))
+        {
+          g_warning ("%s: Database broken, resetting SCAP database",
+                     __FUNCTION__);
+          manage_db_remove ("scap");
+          if (manage_db_init ("scap"))
+            {
+              g_warning ("%s: could not reinitialize SCAP database", __FUNCTION__);
+              goto exit;
+            }
+        }
     }
   else
     {

@@ -4313,6 +4313,29 @@ manage_db_check (const gchar *name)
       g_free (ok);
       return ret;
     }
+  else if (strcasecmp (name, "scap") == 0)
+    {
+      char *ok;
+      int ret;
+
+      if (access (GVM_SCAP_DATA_DIR "/scap.db", R_OK))
+        {
+          if (errno == ENOENT)
+            return 0;
+
+          g_warning ("%s: failed to stat SCAP database: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          return -1;
+        }
+
+      ok = sql_string ("PRAGMA scap.integrity_check;");
+      if (ok == NULL)
+        return -1;
+      ret = (strcmp (ok, "ok") ? 1 : 0);
+      g_free (ok);
+      return ret;
+    }
   return 0;
 }
 
