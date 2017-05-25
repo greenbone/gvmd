@@ -6339,6 +6339,7 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
   task_t previous_stop_task = 0;
 
   manage_sync_scap (sigmask_current);
+  manage_sync_cert (sigmask_current);
 
   ret = manage_update_nvti_cache ();
   if (ret)

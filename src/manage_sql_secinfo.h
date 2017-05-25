@@ -305,4 +305,7 @@
 void
 manage_sync_scap (sigset_t *);
 
+void
+manage_sync_cert (sigset_t *);
+
 #endif /* not _GVMD_MANAGE_SQL_SECINFO_H */

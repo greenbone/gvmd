@@ -315,27 +315,6 @@ is_feed_current () {
   return $FEED_CURRENT
 }
 
-is_db_broken () {
-  DB_BROKEN=0
-
-  log_info "Calling gvmd to check CERT db"
-  if [ -x "@SBINDIR@/gvmd" ]
-  then
-    OK=`@SBINDIR@/gvmd --check-cert-db`
-    if [ $? -ne 0 ] ; then
-      log_err "Calling gvmd to check CERT db... failed."
-      exit 1
-    fi
-    if [ "$OK" = "1" ]; then
-      log_notice "Purged corrupted database."
-      DB_BROKEN=1
-    fi
-  else
-    log_err "Command @SBINDIR@/gvmd not found"
-    exit 1
-  fi
-}
-
 do_help () {
   echo "$0: Sync CERT data"
 
@@ -356,21 +335,6 @@ do_help () {
   echo " --version      display version"
   echo ""
   exit 0
-}
-
-update_cert_db () {
-  log_info "Calling gvmd to update CERT db"
-  if [ -x "@SBINDIR@/gvmd" ]
-  then
-    @SBINDIR@/gvmd --update-cert-db &
-    if [ $? -ne 0 ] ; then
-      log_err "Calling gvmd to update CERT db... failed."
-      exit 1
-    fi
-  else
-    log_err "Command @SBINDIR@/gvmd not found"
-    exit 1
-  fi
 }
 
 do_rsync_community_feed () {
@@ -537,17 +501,12 @@ then
   REFRESH_ONLY=1
 fi
 
-is_db_broken
-if [ $DB_BROKEN -ne 1 ]
+is_feed_current
+if [ $FEED_CURRENT -eq 1 ]
 then
-  is_feed_current
-  if [ $FEED_CURRENT -eq 1 ]
-  then
-    log_notice "Feed is already current, skipping synchronization."
-    exit 0
-  fi
+  log_notice "Feed is already current, skipping synchronization."
+  exit 0
 fi
 sync_certdata
-update_cert_db
 
 exit 0

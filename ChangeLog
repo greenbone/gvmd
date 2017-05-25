@@ -1,5 +1,25 @@
 2017-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Make openvasmd automatically sync SCAP database with SCAP files on disk.
+	Make the SCAP sync script only fetch SCAP files, and not call openvasmd at
+	all.
+
+	* src/manage.c (manage_schedule): Sync CERT.
+
+	* src/manage_sql_secinfo.c (feed_timestamp): Move up in file.  Add feed
+	arg.
+	(sync_cert): New function.  Mostly from manage_update_cert_db.
+	(manage_sync_cert): New functions.
+	(sync_scap): Update call.
+
+	* src/manage_sql_secinfo.h: Add header accordingly.
+
+	* tools/greenbone-scapdata-sync.in: Remove all openvasmd communication.
+	Done automatically in openasmd now.
+	(is_db_broken, update_cert_db): Remove.  No longer used.
+
+2017-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql_secinfo.c (sync_secinfo): New function.  Generic
 	version of manage_sync_scap.
 	(manage_sync_scap): Use sync_secinfo.

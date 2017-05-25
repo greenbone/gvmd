@@ -3628,6 +3628,62 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (),
   exit (EXIT_SUCCESS);
 }
 
+/**
+ * @brief Get the feed timestamp.
+ *
+ * @param[in]  name  Feed type: SCAP or CERT.
+ *
+ * @return Timestamp from feed.  0 if missing.  -1 on error.
+ */
+static int
+feed_timestamp (const gchar *name)
+{
+  GError *error;
+  gchar *timestamp;
+  gsize len;
+  time_t stamp;
+
+  error = NULL;
+  if (strcasecmp (name, "scap") == 0)
+    g_file_get_contents (GVM_SCAP_DATA_DIR "/timestamp", &timestamp, &len,
+                         &error);
+  else
+    g_file_get_contents (GVM_CERT_DATA_DIR "/timestamp", &timestamp, &len,
+                         &error);
+  if (error)
+    {
+      if (error->code == G_FILE_ERROR_NOENT)
+        stamp = 0;
+      else
+        {
+          g_warning ("%s: Failed to get timestamp: %s\n",
+                     __FUNCTION__,
+                     error->message);
+          return -1;
+        }
+    }
+  else
+    {
+      if (strlen (timestamp) < 8)
+        {
+          g_warning ("%s: Feed timestamp too short: %s\n",
+                     __FUNCTION__,
+                     timestamp);
+          g_free (timestamp);
+          return -1;
+        }
+
+      timestamp[8] = '\0';
+      g_debug ("%s: parsing: %s", __FUNCTION__, timestamp);
+      stamp = parse_feed_timestamp (timestamp);
+      g_free (timestamp);
+      if (stamp == 0)
+        return -1;
+    }
+
+ return stamp;
+}
+
 
 /* CERT update. */
 
@@ -3944,6 +4000,136 @@ manage_check_cert_db (GSList *log_config, const gchar *database)
   return ret;
 }
 
+/**
+ * @brief Sync the CERT DB.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+sync_cert ()
+{
+  int last_feed_update, last_cert_update, last_scap_update, updated_dfn_cert;
+  int updated_cert_bund;
+
+  if (manage_cert_db_exists ())
+    {
+      g_debug ("%s: database exists", __FUNCTION__);
+
+      if (check_cert_db_version ())
+        return -1;
+      manage_db_check_mode ("cert");
+    }
+  else
+    {
+      g_info ("Initializing CERT database");
+      if (manage_db_init ("cert"))
+        {
+          g_warning ("%s: Could not initialize CERT database", __FUNCTION__);
+          return -1;
+        }
+    }
+
+  g_debug ("%s: get last_cert_update", __FUNCTION__);
+
+  last_cert_update = 0;
+  if (manage_cert_loaded ())
+    last_cert_update = sql_int ("SELECT coalesce ((SELECT value FROM cert.meta"
+                                "                  WHERE name = 'last_update'),"
+                                "                 '-1');");
+
+  if (last_cert_update == -1)
+    {
+      g_warning ("%s: Inconsistent data. Resetting CERT database.",
+                 __FUNCTION__);
+      manage_db_remove ("cert");
+      if (manage_db_init ("cert"))
+        {
+          g_warning ("%s: could not reinitialize CERT database", __FUNCTION__);
+          return -1;
+        }
+      last_cert_update = 0;
+    }
+
+  g_debug ("%s: last_cert_update: %i", __FUNCTION__, last_cert_update);
+
+  last_feed_update = feed_timestamp ("cert");
+  if (last_feed_update == -1)
+    return -1;
+
+  g_debug ("%s: last_feed_update: %i", __FUNCTION__, last_feed_update);
+
+  if (last_cert_update >= last_feed_update)
+    {
+      g_debug ("%s: skipping, CERT db newer than feed", __FUNCTION__);
+      return -1;
+    }
+
+  g_debug ("%s: sync", __FUNCTION__);
+
+  if (manage_update_cert_db_init ())
+    return -1;
+
+  g_info ("%s: Updating data from feed", __FUNCTION__);
+
+  g_debug ("%s: update dfn", __FUNCTION__);
+
+  updated_dfn_cert = update_dfn_cert_advisories (last_cert_update);
+  if (updated_dfn_cert == -1)
+    {
+      manage_update_cert_db_cleanup ();
+      return -1;
+    }
+
+  g_debug ("%s: update bund", __FUNCTION__);
+
+  updated_cert_bund = update_cert_bund_advisories (last_cert_update);
+  if (updated_cert_bund == -1)
+    {
+      manage_update_cert_db_cleanup ();
+      return -1;
+    }
+
+  g_debug ("%s: update cvss", __FUNCTION__);
+
+  last_scap_update = 0;
+  if (manage_scap_loaded ())
+    last_scap_update = sql_int ("SELECT coalesce ((SELECT value FROM scap.meta"
+                                "                  WHERE name = 'last_update'),"
+                                "                 '0');");
+  g_debug ("%s: last_scap_update: %i", __FUNCTION__, last_scap_update);
+
+  update_cvss_dfn_cert (updated_dfn_cert, last_cert_update, last_scap_update);
+  update_cvss_cert_bund (updated_cert_bund, last_cert_update, last_scap_update);
+
+  g_debug ("%s: update timestamp", __FUNCTION__);
+
+  if (update_cert_timestamp ())
+    {
+      manage_update_cert_db_cleanup ();
+      return -1;
+    }
+
+  g_info ("%s: Updating CERT info succeeded.", __FUNCTION__);
+
+  manage_update_cert_db_cleanup ();
+
+  return 0;
+}
+
+/**
+ * @brief Sync the SCAP DB.
+ *
+ * @param[in]  sigmask_current  Sigmask to restore in child.
+ */
+void
+manage_sync_cert (sigset_t *sigmask_current)
+{
+  sync_secinfo (sigmask_current,
+                sync_cert,
+                "gvmd: Syncing CERT",
+                "gvm-sync-cert");
+}
+
 
 /* SCAP update. */
 
@@ -4110,56 +4296,6 @@ update_scap_placeholders (int updated_cves)
 }
 
 /**
- * @brief Get the feed timestamp.
- *
- * @return Timestamp from feed.  0 if missing.  -1 on error.
- */
-static int
-feed_timestamp ()
-{
-  GError *error;
-  gchar *timestamp;
-  gsize len;
-  time_t stamp;
-
-  error = NULL;
-  g_file_get_contents (GVM_SCAP_DATA_DIR "/timestamp", &timestamp, &len,
-                       &error);
-  if (error)
-    {
-      if (error->code == G_FILE_ERROR_NOENT)
-        stamp = 0;
-      else
-        {
-          g_warning ("%s: Failed to get timestamp: %s\n",
-                     __FUNCTION__,
-                     error->message);
-          return -1;
-        }
-    }
-  else
-    {
-      if (strlen (timestamp) < 8)
-        {
-          g_warning ("%s: Feed timestamp too short: %s\n",
-                     __FUNCTION__,
-                     timestamp);
-          g_free (timestamp);
-          return -1;
-        }
-
-      timestamp[8] = '\0';
-      g_debug ("%s: parsing: %s", __FUNCTION__, timestamp);
-      stamp = parse_feed_timestamp (timestamp);
-      g_free (timestamp);
-      if (stamp == 0)
-        return -1;
-    }
-
- return stamp;
-}
-
-/**
  * @brief Sync the SCAP DB.
  *
  * @return 0 success, -1 error.
@@ -4225,7 +4361,7 @@ sync_scap ()
 
   g_debug ("%s: last_scap_update: %i", __FUNCTION__, last_scap_update);
 
-  last_feed_update = feed_timestamp ();
+  last_feed_update = feed_timestamp ("scap");
   if (last_feed_update == -1)
     return -1;
 
