@@ -1,5 +1,16 @@
 2017-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Remove --check-cert-db.
+
+	* src/gvmd.c (main): Remove --check-cert-db.  Sync script no longer
+	uses this.
+
+	* src/manage_sql_secinfo.c (manage_check_cert_db): Remove.
+
+	* src/manage.h: Remove header accordingly.
+
+2017-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/greenbone-certdata-sync.in: Lock around the sync.
 	(LOCK_FILE): New variable.
 
