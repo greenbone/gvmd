@@ -1,5 +1,12 @@
 2017-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/gvm-comm.c: Remove.  Now src/comm.c, which fits better with other
+	file names, like src/utils.c and src/sql.c.
+
+	* src/comm.c: New file.  Was src/gvm-comm.c.
+
+2017-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/gvm-comm.c: Improve descriptions.
 
 2017-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
