@@ -1,5 +1,17 @@
 2017-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/CMakeLists.txt: Remove gvm-comm library, because there's so little
+	in it and it's not actually real communication code.  Add comm.c to manage
+	library instead.
+
+	* src/comm.c: Include comm.h and remove unused logf include.
+
+	* src/comm.h: Format #endif like other .h files.
+
+	* src/gpmd.c, src/gvmd.c, src/manage.c, src/scanner.c: Update include.
+
+2017-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/gvm-comm.h: Remove.  Now src/comm.h.
 
 	* src/comm.h: New file.  Was src/gvm-comm.h.

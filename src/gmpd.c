@@ -44,7 +44,7 @@
 #include "gmp.h"
 /** @todo For scanner_init_state. */
 #include "otp.h"
-#include "gvm-comm.h"
+#include "comm.h"
 
 #include <assert.h>
 #include <dirent.h>

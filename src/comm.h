@@ -50,4 +50,4 @@ sendn_to_server (const void *, size_t);
 unsigned int
 to_server_buffer_space ();
 
-#endif
+#endif /* not _GVMD_COMM_H */

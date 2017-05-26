@@ -113,7 +113,7 @@
 #include "manage.h"
 #include "scanner.h"
 #include "gmpd.h"
-#include "gvm-comm.h"
+#include "comm.h"
 #include "utils.h"
 
 #ifdef SVN_REV_AVAILABLE

@@ -32,16 +32,17 @@
  * is used to communicate with a server.
  */
 
+#include "utils.h"
+
 #include <errno.h>
 #include <fcntl.h>
 #include <glib.h>
 #include <netinet/in.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-
-#include "logf.h"
 
 /** @todo Consider moving to libs (so please leave "server" in the names). */
 

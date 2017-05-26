@@ -25,7 +25,6 @@
 
 ## Libraries
 
-add_library (gvm-comm STATIC gvm-comm.c)
 include_directories (${LIBGVM_GMP_INCLUDE_DIRS}
                      ${LIBGVM_BASE_INCLUDE_DIRS} ${LIBGVM_UTIL_INCLUDE_DIRS}
                      ${LIBGVM_OSP_INCLUDE_DIRS}  ${GLIB_INCLUDE_DIRS})
@@ -54,7 +53,7 @@ add_library (manage STATIC
              manage_config_host_discovery.c manage_config_system_discovery.c
              manage_sql.c manage_sql_secinfo.c manage_migrators.c scanner.c
              ${BACKEND_FILES}
-             lsc_user.c lsc_crypt.c utils.c)
+             lsc_user.c lsc_crypt.c utils.c comm.c)
 
 if (BACKEND STREQUAL SQLITE3)
   target_link_libraries (manage m ${SQLITE3_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS} ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS} ${LINKER_HARDENING_FLAGS})
@@ -76,7 +75,7 @@ else (BACKEND STREQUAL SQLITE3)
 endif (BACKEND STREQUAL SQLITE3)
 
 add_executable (${BINARY_NAME} gvmd.c gmpd.c)
-target_link_libraries (${BINARY_NAME} gvm-comm gmp otp manage ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS})
+target_link_libraries (${BINARY_NAME} gmp otp manage ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS})
 
 set_target_properties (${BINARY_NAME} PROPERTIES LINKER_LANGUAGE C)
 
@@ -235,7 +234,7 @@ set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gvmd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_secinfo.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sqlite3.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_migrators.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/gvm-comm.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/comm.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/lsc_user.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/lsc_crypt.c" "${CMAKE_CURRENT_SOURCE_DIR}/sql.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/sql_sqlite3.c" "${CMAKE_CURRENT_SOURCE_DIR}/utils.c")

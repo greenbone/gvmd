@@ -26,7 +26,7 @@
 #include "scanner.h"
 #include "gmpd.h"
 #include "otp.h"
-#include "gvm-comm.h"
+#include "comm.h"
 #include "utils.h"
 
 #include <dirent.h>

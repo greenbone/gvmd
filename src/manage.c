@@ -47,7 +47,7 @@
 #include "manage_acl.h"
 #include "manage_sql.h"
 #include "manage_sql_secinfo.h"
-#include "gvm-comm.h"
+#include "comm.h"
 #include "utils.h"
 
 #include <assert.h>
