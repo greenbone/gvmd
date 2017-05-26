@@ -15375,7 +15375,7 @@ set_task_run_status (task_t task, task_status_t status)
       sql ("UPDATE reports SET scan_run_status = %u WHERE id = %llu;",
           status,
           current_report);
-      report_cache_counts (current_report);
+      report_cache_counts (current_report, 0, 0);
     }
   sql ("UPDATE tasks SET run_status = %u WHERE id = %llu;",
        status,
@@ -17434,6 +17434,79 @@ reports_clear_count_cache (int override)
 }
 
 /**
+ * @brief Clear cached report result counts affected by an override.
+ *
+ * @param[in]  override  The override that selected reports must be affected.
+ * @param[in]  rebuild   Whether to rebuild the cache.
+ */
+GHashTable *
+reports_for_override (override_t override)
+{
+  result_t result;
+  task_t task;
+  gchar *nvt_id;
+  iterator_t reports;
+
+  GHashTable *reports_table;
+  reports_table = g_hash_table_new_full (g_int64_hash, g_int64_equal,
+                                         g_free, NULL);
+
+  sql_int64 (&result,
+             "SELECT result FROM overrides WHERE id = %llu",
+             override);
+  sql_int64 (&task,
+             "SELECT task FROM overrides WHERE id = %llu",
+             override);
+  nvt_id = sql_string ("SELECT nvt FROM overrides WHERE id = %llu",
+                       override);
+
+  if (result)
+    {
+      report_t *report = g_malloc0 (sizeof (report_t));
+      sql_int64 (report,
+                 "SELECT report FROM results"
+                 " WHERE id = %llu AND nvt = '%s'",
+                 result, nvt_id);
+
+      if (*report)
+        g_hash_table_add (reports_table, report);
+      else
+        g_free (report);
+
+      return reports_table;
+    }
+  else if (task)
+    {
+      init_iterator (&reports,
+                     "SELECT DISTINCT report FROM results"
+                     " WHERE task = %llu AND nvt = '%s'",
+                     task, nvt_id);
+    }
+  else
+    {
+      init_iterator (&reports,
+                     "SELECT DISTINCT report FROM results"
+                     " WHERE nvt = '%s'",
+                     nvt_id);
+    }
+
+  while (next (&reports))
+    {
+      report_t *report = g_malloc0 (sizeof (report_t));
+
+      *report = iterator_int64 (&reports, 0);
+
+      if (g_hash_table_contains (reports_table, report) == 0)
+        g_hash_table_add (reports_table, report);
+      else
+        g_free (report);
+    }
+  cleanup_iterator (&reports);
+
+  return reports_table;
+}
+
+/**
  * @brief Rebuild the report count cache for all reports and users.
  *
  * @param[in]  clear        Whether to clear the cache before rebuilding.
@@ -17645,9 +17718,13 @@ report_counts_build_iterator_user (iterator_t *iterator)
  * @brief Cached report counts.
  *
  * @param[in]  report  Report.
+ * @param[in]  clear_original     Whether to clear existing cache for
+ *                                 original severity.
+ * @param[in]  clear_overridden   Whether to clear existing cache for
+ *                                 overridden severity.
  */
 void
-report_cache_counts (report_t report)
+report_cache_counts (report_t report, int clear_original, int clear_overridden)
 {
   iterator_t cache_iterator;
   int debugs, holes, infos, logs, warnings, false_positives;
@@ -17666,13 +17743,22 @@ report_cache_counts (report_t report)
         = sql_string ("SELECT uuid FROM users WHERE id = %llu",
                       user);
 
+      if ((clear_original && override == 0) || (clear_overridden && override))
+        {
+          sql ("DELETE FROM report_counts"
+               " WHERE report = %llu"
+               "   AND \"user\" = %llu"
+               "   AND override = %d",
+               report, user, override);
+        }
+
       report_counts_id (report, &debugs, &holes, &infos, &logs, &warnings,
                         &false_positives, &severity, override, NULL, 0,
                         G_STRINGIFY (MIN_QOD_DEFAULT));
 
       g_free (current_credentials.uuid);
     }
-
+  cleanup_iterator (&cache_iterator);
   current_credentials.uuid = old_user_id;
 }
 
@@ -21154,7 +21240,7 @@ set_report_scan_run_status (report_t report, task_status_t status)
   sql ("UPDATE reports SET scan_run_status = %u WHERE id = %llu;",
        status,
        report);
-  report_cache_counts (report);
+  report_cache_counts (report, 0, 0);
   return 0;
 }
 
@@ -22749,9 +22835,7 @@ trim_report (report_t report)
        report);
 
   /* Clear and rebuild counts cache */
-  sql ("DELETE FROM report_counts WHERE report = %llu;",
-       current_report);
-  report_cache_counts (current_report);
+  report_cache_counts (report, 1, 1);
 }
 
 /**
@@ -22787,9 +22871,7 @@ trim_partial_report (report_t report)
        report);
 
   /* Clear and rebuild counts cache */
-  sql ("DELETE FROM report_counts WHERE report = %llu;",
-       report);
-  report_cache_counts (report);
+  report_cache_counts (report, 1, 1);
 }
 
 /**
@@ -40034,6 +40116,9 @@ create_override (const char* active, const char* nvt, const char* text,
   gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_severity;
   gchar *quoted_nvt;
   double severity_dbl, new_severity_dbl;
+  GHashTable *reports;
+  GHashTableIter reports_iter;
+  report_t *reports_ptr;
 
   if (user_may ("create_override") == 0)
     return 99;
@@ -40172,7 +40257,15 @@ create_override (const char* active, const char* nvt, const char* text,
   if (override)
     *override = sql_last_insert_id ();
 
-  reports_clear_count_cache (1);
+  reports = reports_for_override (sql_last_insert_id ());
+  reports_ptr = NULL;
+  g_hash_table_iter_init (&reports_iter, reports);
+  while (g_hash_table_iter_next (&reports_iter,
+                                 ((gpointer*)&reports_ptr), NULL))
+    {
+      report_cache_counts (*reports_ptr, 0, 1);
+    }
+  g_hash_table_destroy (reports);
 
   return 0;
 }
@@ -40223,6 +40316,9 @@ int
 delete_override (const char *override_id, int ultimate)
 {
   override_t override;
+  GHashTable *reports;
+  GHashTableIter reports_iter;
+  report_t *reports_ptr;
 
   sql_begin_immediate ();
 
@@ -40267,6 +40363,8 @@ delete_override (const char *override_id, int ultimate)
       return 0;
     }
 
+  reports = reports_for_override (override);
+
   if (ultimate == 0)
     {
       sql ("INSERT INTO overrides_trash"
@@ -40293,7 +40391,14 @@ delete_override (const char *override_id, int ultimate)
 
   sql ("DELETE FROM overrides WHERE id = %llu;", override);
 
-  reports_clear_count_cache (1);
+  g_hash_table_iter_init (&reports_iter, reports);
+  reports_ptr = NULL;
+  while (g_hash_table_iter_next (&reports_iter,
+                                 ((gpointer*)&reports_ptr), NULL))
+    {
+      report_cache_counts (*reports_ptr, 0, 1);
+    }
+  g_hash_table_destroy (reports);
 
   sql ("COMMIT;");
   return 0;
@@ -40326,6 +40431,9 @@ modify_override (override_t override, const char *active, const char* text,
 {
   gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_severity;
   double severity_dbl, new_severity_dbl;
+  GHashTable *old_reports, *reports;
+  GHashTableIter reports_iter;
+  report_t *reports_ptr;
 
   if (override == 0)
     return -1;
@@ -40419,6 +40527,8 @@ modify_override (override_t override, const char *active, const char* text,
       return -1;
     }
 
+  old_reports = reports_for_override (override);
+
   quoted_text = sql_insert (text);
   quoted_hosts = sql_insert (hosts);
   quoted_port = sql_insert (port);
@@ -40451,7 +40561,10 @@ modify_override (override_t override, const char *active, const char* text,
         {
           while (*point && isdigit (*point)) point++;
           if (*point)
-            return 1;
+            {
+              g_hash_table_destroy (old_reports);
+              return 1;
+            }
         }
       sql ("UPDATE overrides SET"
            " end_time = %i,"
@@ -40485,7 +40598,26 @@ modify_override (override_t override, const char *active, const char* text,
   g_free (quoted_port);
   g_free (quoted_severity);
 
-  reports_clear_count_cache (1);
+  reports = reports_for_override (override);
+
+  g_hash_table_iter_init (&reports_iter, old_reports);
+  reports_ptr = NULL;
+  while (g_hash_table_iter_next (&reports_iter,
+                                 ((gpointer*)&reports_ptr), NULL))
+    {
+      g_hash_table_add (reports, reports_ptr);
+    }
+  g_hash_table_steal_all (old_reports);
+  g_hash_table_destroy (old_reports);
+
+  g_hash_table_iter_init (&reports_iter, reports);
+  reports_ptr = NULL;
+  while (g_hash_table_iter_next (&reports_iter,
+                                 ((gpointer*)&reports_ptr), NULL))
+    {
+      report_cache_counts (*reports_ptr, 0, 1);
+    }
+  g_hash_table_destroy (reports);
 
   return 0;
 }
@@ -52248,6 +52380,11 @@ manage_restore (const char *id)
 
   if (resource)
     {
+      override_t override;
+      GHashTable *reports;
+      GHashTableIter reports_iter;
+      report_t *reports_ptr;
+
       sql ("INSERT INTO overrides"
            " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
            "  port, severity, new_severity, task, result, end_time)"
@@ -52257,15 +52394,27 @@ manage_restore (const char *id)
            " FROM overrides_trash WHERE id = %llu;",
            resource);
 
+      override = sql_last_insert_id ();
+
       permissions_set_locations ("override", resource,
-                                 sql_last_insert_id (),
+                                 override,
                                  LOCATION_TABLE);
       tags_set_locations ("override", resource,
-                          sql_last_insert_id (),
+                          override,
                           LOCATION_TABLE);
 
+      reports = reports_for_override (override);
+      g_hash_table_iter_init (&reports_iter, reports);
+      reports_ptr = NULL;
+      while (g_hash_table_iter_next (&reports_iter,
+                                    ((gpointer*)&reports_ptr), NULL))
+        {
+          report_cache_counts (*reports_ptr, 0, 1);
+        }
+      g_hash_table_destroy (reports);
+
       sql ("DELETE FROM overrides_trash WHERE id = %llu;", resource);
-      reports_clear_count_cache (1);
+
       sql ("COMMIT;");
       return 0;
     }
