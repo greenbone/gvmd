@@ -63,13 +63,6 @@ PORT=24
 # log messages.
 SCRIPT_NAME="greenbone-certdata-sync"
 
-# If ENABLED is set to 0, the sync script will not perform a synchronization.
-ENABLED=1
-
-# If REFRESH_ONLY is set to 1, the sync script will only update the OpenVAS
-# Manager database. This can be controlled via the --refresh parameter.
-REFRESH_ONLY=0
-
 # LOG_CMD defines the command to use for logging. To have logger log to stderr
 # as well as syslog, add "-s" here.
 LOG_CMD="logger -t $SCRIPT_NAME"
@@ -223,8 +216,6 @@ get_value ()
 }
 
 is_feed_current () {
-  if [ $REFRESH_ONLY -eq 0 ]
-  then
     if [ -r $TIMESTAMP ]
     then
       FEED_VERSION=`cat $TIMESTAMP`
@@ -308,9 +299,6 @@ is_feed_current () {
 
     # Cleanup
     rm -rf "$FEED_INFO_TEMP_DIR"
-  else
-    FEED_CURRENT=0
-  fi
 
   return $FEED_CURRENT
 }
@@ -329,8 +317,6 @@ do_help () {
   echo " --feedversion  display version of this feed"
   echo " --help         display this help"
   echo " --identify     display information"
-  echo " --migrate      migrate database without downloading new state"
-  echo " --refresh      update database without downloading new state"
   echo " --selftest     perform self-test"
   echo " --version      display version"
   echo ""
@@ -364,8 +350,6 @@ do_sync_community_feed () {
 }
 
 sync_certdata(){
-  if [ $REFRESH_ONLY -eq 0 ]
-  then
     if [ -e $ACCESSKEY ]
     then
       log_notice "Found Greenbone Security Feed subscription file, trying to synchronize with Greenbone CERT data Repository ..."
@@ -416,7 +400,6 @@ sync_certdata(){
       log_notice "No Greenbone Security Feed accees key found, falling back to Greenbone Community Feed"
       do_sync_community_feed
     fi
-  fi
 }
 
 do_self_test () {
@@ -458,12 +441,6 @@ while test $# -gt 0; do
           do_help
           exit 0
           ;;
-        --refresh)
-          REFRESH_ONLY=1
-          ;;
-        --migrate)
-          REFRESH_ONLY=1
-          ;;
         --selftest)
           SELFTEST_FAIL=0
           SELFTEST_STDERR=1
@@ -493,12 +470,6 @@ then
     echo "Not synchronizing or updating the database since the current user is not the owner of the database."
     exit 1
   fi
-fi
-
-if [ $ENABLED -ne 1 ]
-then
-  log_notice "Synchronization of CERT data with network is disabled, will only perform local operations."
-  REFRESH_ONLY=1
 fi
 
 is_feed_current

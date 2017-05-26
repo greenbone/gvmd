@@ -1,5 +1,10 @@
 2017-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/greenbone-certdata-sync.in (ENABLED, REFRESH_ONLY, --migrate)
+	(--refresh): Remove.  No longer needed.
+
+2017-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql_secinfo.c (sync_cert): Add check like the db_broken check
 	that the script had.
 
