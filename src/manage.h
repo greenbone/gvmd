@@ -1111,6 +1111,9 @@ void
 reports_clear_count_cache (int);
 
 void
+reports_clear_count_cache_for_override (override_t, int);
+
+void
 reports_build_count_cache (int, int*);
 
 void
@@ -1126,7 +1129,7 @@ user_t
 report_counts_build_iterator_user (iterator_t *);
 
 void
-report_cache_counts (report_t);
+report_cache_counts (report_t, int, int);
 
 double
 report_severity (report_t, int, int);
