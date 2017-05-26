@@ -79,8 +79,6 @@ LOCK_FILE=/tmp/gvm-sync-scap
 
 SCAP_DIR="@GVM_SCAP_DATA_DIR@"
 
-SCAP_RES_DIR="@GVM_SCAP_RES_DIR@"
-
 if [ -z "$DROP_USER" ]; then
   DROP_USER="@GVM_DEFAULT_DROP_USER@"
 fi

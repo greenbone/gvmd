@@ -1,5 +1,10 @@
 2017-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/greenbone-scapdata-sync.in (SCAP_RES_DIR): Remove.  No longer
+	used.
+
+2017-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/greenbone-certdata-sync.in: Remove check on CERT db.  That's
 	openvasmd's business.
 	(SCAP_DIR, CERT_RES_DIR, CERT_DB, SCAP_DB): Remove.  No longer used.
