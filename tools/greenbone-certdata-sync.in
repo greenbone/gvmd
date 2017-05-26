@@ -67,6 +67,8 @@ SCRIPT_NAME="greenbone-certdata-sync"
 # as well as syslog, add "-s" here.
 LOG_CMD="logger -t $SCRIPT_NAME"
 
+LOCK_FILE=/tmp/gvm-sync-cert
+
 [ -r \"@GVM_SYSCONF_DIR@/greenbone-certdata-sync.conf\" ] && . \"@GVM_SYSCONF_DIR@/greenbone-certdata-sync.conf\"
 
 CERT_DIR="@GVM_CERT_DATA_DIR@"
@@ -462,6 +464,13 @@ then
   log_notice "Feed is already current, skipping synchronization."
   exit 0
 fi
-sync_certdata
+(
+  flock -n 9
+  if [ $? -eq 1 ] ; then
+    log_notice "Sync in progress, exiting."
+	exit 1
+  fi
+  sync_certdata
+) 9>$LOCK_FILE
 
 exit 0

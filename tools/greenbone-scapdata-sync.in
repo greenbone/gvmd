@@ -73,9 +73,9 @@ SCRIPT_NAME="greenbone-scapdata-sync"
 # as well as syslog, add "-s" here.
 LOG_CMD="logger -t $SCRIPT_NAME"
 
-[ -r @GVM_SYSCONF_DIR@/greenbone-scapdata-sync.conf ] && . @GVM_SYSCONF_DIR@/greenbone-scapdata-sync.conf
-
 LOCK_FILE=/tmp/gvm-sync-scap
+
+[ -r @GVM_SYSCONF_DIR@/greenbone-scapdata-sync.conf ] && . @GVM_SYSCONF_DIR@/greenbone-scapdata-sync.conf
 
 SCAP_DIR="@GVM_SCAP_DATA_DIR@"
 

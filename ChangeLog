@@ -1,5 +1,13 @@
 2017-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/greenbone-certdata-sync.in: Lock around the sync.
+	(LOCK_FILE): New variable.
+
+	* tools/greenbone-scapdata-sync.in (LOCK_FILE): Move above the config
+	file include.
+
+2017-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/greenbone-scapdata-sync.in (SCAP_RES_DIR): Remove.  No longer
 	used.
 
