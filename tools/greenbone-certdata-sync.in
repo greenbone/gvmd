@@ -70,12 +70,6 @@ LOG_CMD="logger -t $SCRIPT_NAME"
 [ -r \"@GVM_SYSCONF_DIR@/greenbone-certdata-sync.conf\" ] && . \"@GVM_SYSCONF_DIR@/greenbone-certdata-sync.conf\"
 
 CERT_DIR="@GVM_CERT_DATA_DIR@"
-SCAP_DIR="@GVM_SCAP_DATA_DIR@"
-
-CERT_RES_DIR="@GVM_CERT_RES_DIR@"
-
-CERT_DB="$CERT_DIR/cert.db"
-SCAP_DB="$SCAP_DIR/scap.db"
 
 if [ -z "$DROP_USER" ]; then
   DROP_USER="@GVM_DEFAULT_DROP_USER@"
@@ -460,16 +454,6 @@ do_self_test
 if [ $SELFTEST_FAIL -ne 0 ]
 then
   exit 1
-fi
-
-if [ -f "$CERT_DB" ]
-then
-  if [ "$(id -u)" -ne "$(stat -c %u $CERT_DB)" ]
-  then
-    log_err "Not synchronizing or updating the database since the current user is not the owner of the database."
-    echo "Not synchronizing or updating the database since the current user is not the owner of the database."
-    exit 1
-  fi
 fi
 
 is_feed_current
