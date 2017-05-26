@@ -1,5 +1,9 @@
 2017-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/gvmd.c (main): Remove --update-cert-db.  Sync script no longer
+
+2017-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Remove --update-cert-db.
 
 	* src/gvmd.c (main): Remove --update-cert-db.  Sync script no longer
