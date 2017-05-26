@@ -1,6 +1,6 @@
 /* GVM
  * $Id$
- * Description: Module for Greenbone Vulnerability Manager: the Comm Library.
+ * Description: Greenbone Vulnerability Manager: Comm utilities.
  *
  * Authors:
  * Matthew Mundell <matthew.mundell@greenbone.net>
@@ -25,11 +25,11 @@
  */
 
 /**
- * @file gvm-comm.c
- * @brief API for communication between gvmd and openvassd
+ * @file comm.c
+ * @brief Generic communication utilities
  *
- * This file contains an API for communicating with an openvassd
- * which uses OTP as protocol.
+ * This file contains generic convenience utilities for handling a buffer that
+ * is used to communicate with a server.
  */
 
 #include <errno.h>

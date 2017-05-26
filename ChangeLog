@@ -1,6 +1,11 @@
 2017-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/gvmd.c (main): Remove --update-cert-db.  Sync script no longer
+	* src/gvm-comm.c: Improve descriptions.
+
+2017-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.h (manage_update_cvss_cert_bund)
+	(manage_update_cvss_dfn_cert): Remove.  Functions were removed 2016-12-05.
 
 2017-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
