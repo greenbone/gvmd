@@ -1,3 +1,23 @@
+2017-05-26  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	When overrides are created, deleted, modified or restored, rebuild
+	cache only for reports that may be affected.
+
+	* src/manage_sql.c (set_task_run_status_internal): Add new params for
+	report_cache_counts.
+	(reports_for_override): New function.
+	(report_cache_counts): Add params clear_original and clear_overridden.
+	Free get inside while loop.
+	(set_report_scan_run_status): Add new params for report_cache_counts.
+	(trim_report, trim_partial_report): Use report_cache_counts to rebuild
+	cache.
+	(create_override, delete_override, modify_override, manage_restore):
+	Rebuild cache only for reports that may be affected by an override
+	that's created, deleted, modified or restored.
+
+	* src/manage.h (reports_clear_count_cache_for_override): New prototype.
+	(report_cache_counts): Add parameters.
+
 2017-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/CMakeLists.txt: Remove gvm-comm library, because there's so little
