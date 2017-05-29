@@ -4072,7 +4072,7 @@ update_scap_cvss (int updated_cves, int updated_cpes, int updated_ovaldefs)
 {
   /* TODO greenbone-scapdata-sync did retries. */
 
-  if (updated_cves && updated_cpes)
+  if (updated_cves || updated_cpes)
     {
       g_info ("Updating CVSS scores and CVE counts for CPEs");
       sql_recursive_triggers_off ();
@@ -4089,7 +4089,7 @@ update_scap_cvss (int updated_cves, int updated_cpes, int updated_ovaldefs)
   else
     g_info ("No CPEs or CVEs updated, skipping CVSS and CVE recount for CPEs.");
 
-  if (updated_cves && updated_ovaldefs)
+  if (updated_cves || updated_ovaldefs)
     {
       g_info ("Updating CVSS scores for OVAL definitions");
       sql_recursive_triggers_off ();
