@@ -18336,6 +18336,7 @@ report_add_result (report_t report, result_t result)
 
   severity = sql_double ("SELECT severity FROM results WHERE id = %llu;",
                          result);
+  ov_severity = severity;
 
   init_report_counts_build_iterator (&cache_iterator, report, 1);
   while (next (&cache_iterator) && qod >= MIN_QOD_DEFAULT)
