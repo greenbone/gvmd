@@ -1,3 +1,8 @@
+2017-05-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage.c (truncate_private_key): Make newlines optional and
+	improve handling of cases with missing block end substring.
+
 2017-05-26  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (report_add_result): Initialize ov_severity.
