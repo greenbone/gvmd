@@ -199,19 +199,33 @@ gchar *
 truncate_private_key (const gchar* private_key)
 {
   gchar *key_start, *key_end;
-  key_start = strstr (private_key, "-----BEGIN RSA PRIVATE KEY-----\n");
+  key_end = NULL;
+  key_start = strstr (private_key, "-----BEGIN RSA PRIVATE KEY-----");
   if (key_start)
     {
-      key_end = strstr (key_start, "-----END RSA PRIVATE KEY-----\n")
-                  + strlen ("-----END RSA PRIVATE KEY-----\n");
+      key_end = strstr (key_start, "-----END RSA PRIVATE KEY-----");
+
+      if (key_end)
+        key_end += strlen ("-----END RSA PRIVATE KEY-----");
+      else
+        return NULL;
     }
   else
     {
-      key_start = strstr (private_key, "-----BEGIN DSA PRIVATE KEY-----\n");
+      key_start = strstr (private_key, "-----BEGIN DSA PRIVATE KEY-----");
       if (key_start)
-        key_end = strstr (key_start, "-----END DSA PRIVATE KEY-----\n")
-                    + strlen ("-----END DSA PRIVATE KEY-----\n");
+        {
+          key_end = strstr (key_start, "-----END DSA PRIVATE KEY-----");
+
+          if (key_end)
+            key_end += strlen ("-----END DSA PRIVATE KEY-----");
+          else
+            return NULL;
+        }
     }
+
+  if (key_end && key_end[0] == '\n')
+    key_end++;
 
   if (key_start == NULL || key_end == NULL)
     return NULL;

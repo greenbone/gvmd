@@ -1,3 +1,10 @@
+2017-05-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r28548.
+
+	* src/manage.c (truncate_private_key): Make newlines optional and
+	improve handling of cases with missing block end substring.
+
 2017-05-29  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Backport r28543 by Timo Pollmeier.
