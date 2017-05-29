@@ -1,3 +1,9 @@
+2017-05-29  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Backport r28543.
+
+	* src/manage_sql.c (report_add_result): Initialize ov_severity.
+
 2017-05-26  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r28540.
