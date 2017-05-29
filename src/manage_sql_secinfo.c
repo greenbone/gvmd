@@ -3844,20 +3844,6 @@ sync_cert ()
 
       if (check_cert_db_version ())
         return -1;
-      manage_db_check_mode ("cert");
-
-      if (manage_db_check ("cert"))
-        {
-          g_warning ("%s: Database broken, resetting CERT database",
-                     __FUNCTION__);
-          manage_db_remove ("cert");
-          if (manage_db_init ("cert"))
-            {
-              g_warning ("%s: could not reinitialize CERT database",
-                         __FUNCTION__);
-              return -1;
-            }
-        }
     }
   else
     {
@@ -3905,6 +3891,21 @@ sync_cert ()
     }
 
   g_debug ("%s: sync", __FUNCTION__);
+
+  manage_db_check_mode ("cert");
+
+  if (manage_db_check ("cert"))
+    {
+      g_warning ("%s: Database broken, resetting CERT database",
+                 __FUNCTION__);
+      manage_db_remove ("cert");
+      if (manage_db_init ("cert"))
+        {
+          g_warning ("%s: could not reinitialize CERT database",
+                     __FUNCTION__);
+          return -1;
+        }
+    }
 
   if (manage_update_cert_db_init ())
     return -1;
@@ -4152,20 +4153,6 @@ sync_scap ()
 
       if (check_scap_db_version ())
         return -1;
-      manage_db_check_mode ("scap");
-
-      if (manage_db_check ("scap"))
-        {
-          g_warning ("%s: Database broken, resetting SCAP database",
-                     __FUNCTION__);
-          manage_db_remove ("scap");
-          if (manage_db_init ("scap"))
-            {
-              g_warning ("%s: could not reinitialize SCAP database",
-                         __FUNCTION__);
-              return -1;
-            }
-        }
     }
   else
     {
@@ -4214,6 +4201,21 @@ sync_scap ()
     }
 
   g_debug ("%s: sync", __FUNCTION__);
+
+  manage_db_check_mode ("scap");
+
+  if (manage_db_check ("scap"))
+    {
+      g_warning ("%s: Database broken, resetting SCAP database",
+                 __FUNCTION__);
+      manage_db_remove ("scap");
+      if (manage_db_init ("scap"))
+        {
+          g_warning ("%s: could not reinitialize SCAP database",
+                     __FUNCTION__);
+          return -1;
+        }
+    }
 
   if (manage_update_scap_db_init ())
      return -1;

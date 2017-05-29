@@ -1,3 +1,8 @@
+2017-05-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql_secinfo.c (sync_cert, sync_scap): Only do the DB checks
+	when updating the DB, because they're a bit slow and CPU intensive.
+
 2017-05-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage.c (truncate_private_key): Make newlines optional and
