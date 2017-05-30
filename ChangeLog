@@ -1,5 +1,9 @@
 2017-05-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (openvas_sync_feed): Remove SCAP and CERT checks.
+
+2017-05-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Do SecInfo DB migration internally, instead of calling the sync
 	scripts with --migrate.
 

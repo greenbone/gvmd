@@ -8162,12 +8162,9 @@ openvas_sync_feed (const gchar * sync_script, const gchar * current_user,
 
   g_assert (sync_script);
   g_assert (current_user);
+  g_assert (feed_type == NVT_FEED);
 
-  if (acl_user_may (feed_type == NVT_FEED
-                 ? "sync_feed"
-                 : (feed_type == SCAP_FEED)
-                     ? "sync_scap"
-                     : "sync_cert") == 0)
+  if (acl_user_may ("sync_feed"))
     return 99;
 
   if (!openvas_get_sync_script_identification
@@ -8259,10 +8256,6 @@ openvas_sync_feed (const gchar * sync_script, const gchar * current_user,
 
   if (feed_type == NVT_FEED)
     proctitle_set ("gvmd: Syncing NVT feed");
-  else if (feed_type == SCAP_FEED)
-    proctitle_set ("gvmd: Syncing SCAP feed");
-  else if (feed_type == CERT_FEED)
-    proctitle_set ("gvmd: Syncing CERT feed");
 
   /* Open the lock file. */
 
