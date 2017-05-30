@@ -1,5 +1,11 @@
 2017-05-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql_secinfo.c (manage_db_reinit): Let caller log info.
+	(check_cert_db_version, check_scap_db_version): Log info.
+	(sync_cert, sync_scap): Call reinit instead of remove and init.
+
+2017-05-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (openvas_sync_feed): Remove SCAP and CERT checks.
 
 2017-05-29  Matthew Mundell <matthew.mundell@greenbone.net>

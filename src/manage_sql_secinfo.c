@@ -3512,7 +3512,6 @@ update_scap_ovaldefs (int last_scap_update, int private)
 static int
 manage_db_reinit (const gchar *name)
 {
-  g_info ("Reinitialization of the database necessary");
   manage_db_remove (name);
   if (manage_db_init (name))
     {
@@ -3703,6 +3702,7 @@ check_cert_db_version ()
       case 3:
       case 4:
       case 5:
+       g_info ("Reinitialization of the database necessary");
        return manage_db_reinit ("cert");
        break;
     }
@@ -3867,8 +3867,7 @@ sync_cert ()
     {
       g_warning ("%s: Inconsistent data. Resetting CERT database.",
                  __FUNCTION__);
-      manage_db_remove ("cert");
-      if (manage_db_init ("cert"))
+      if (manage_db_reinit ("cert"))
         {
           g_warning ("%s: could not reinitialize CERT database", __FUNCTION__);
           return -1;
@@ -3898,8 +3897,7 @@ sync_cert ()
     {
       g_warning ("%s: Database broken, resetting CERT database",
                  __FUNCTION__);
-      manage_db_remove ("cert");
-      if (manage_db_init ("cert"))
+      if (manage_db_reinit ("cert"))
         {
           g_warning ("%s: could not reinitialize CERT database",
                      __FUNCTION__);
@@ -4000,6 +3998,7 @@ check_scap_db_version ()
       case 12:
       case 13:
       case 14:
+       g_info ("Reinitialization of the database necessary");
        return manage_db_reinit ("scap");
        break;
     }
@@ -4177,8 +4176,7 @@ sync_scap ()
     {
       g_warning ("%s: Inconsistent data, resetting SCAP database",
                  __FUNCTION__);
-      manage_db_remove ("scap");
-      if (manage_db_init ("scap"))
+      if (manage_db_reinit ("scap"))
         {
           g_warning ("%s: could not reinitialize SCAP database", __FUNCTION__);
           return -1;
@@ -4208,8 +4206,7 @@ sync_scap ()
     {
       g_warning ("%s: Database broken, resetting SCAP database",
                  __FUNCTION__);
-      manage_db_remove ("scap");
-      if (manage_db_init ("scap"))
+      if (manage_db_reinit ("scap"))
         {
           g_warning ("%s: could not reinitialize SCAP database",
                      __FUNCTION__);
