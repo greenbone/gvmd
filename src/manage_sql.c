@@ -19321,7 +19321,6 @@ reports_clear_count_cache (int override)
  * @brief Clear cached report result counts affected by an override.
  *
  * @param[in]  override  The override that selected reports must be affected.
- * @param[in]  rebuild   Whether to rebuild the cache.
  */
 GHashTable *
 reports_for_override (override_t override)

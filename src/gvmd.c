@@ -62,7 +62,7 @@
  * library is defined in src/\ref manage.c and src/\ref manage_sql.c .
  *
  * The OTP and Manage libraries both use the Comm library to communication
- * with the OTP server (src/\ref gvm-comm.c).
+ * with the OTP server (src/\ref comm.c).
  *
  * \subsection Forking
  *

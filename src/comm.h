@@ -32,10 +32,10 @@
 #include <netinet/in.h>
 
 /**
- * @file gvm-comm.h
+ * @file comm.h
  * @brief Protos for communication between gvmd and openvassd.
  *
- * This file contains the protos for \ref gvm-comm.c
+ * This file contains the protos for \ref comm.c
  */
 
 int

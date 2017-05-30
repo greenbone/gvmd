@@ -1,3 +1,14 @@
+2017-05-30  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Adjust documentation to match recent changes.
+
+	* src/comm.h: Fix file name in Doxygen commands.
+
+	* src/gvmd.c: Fix file name in Doygen commands.
+
+	* src/manage_sql.c (reports_clear_count_cache): Removed no longer
+	existing parameter from function documentation.
+
 2017-05-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql_secinfo.c (update_scap_cvss): Correct tests.  These
