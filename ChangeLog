@@ -1,3 +1,21 @@
+2017-05-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Do SecInfo DB migration internally, instead of calling the sync
+	scripts with --migrate.
+
+	* src/manage.c (openvas_migrate_secinfo): Call the DB check
+	functions instead of calling the sync scripts.  Also, use the new
+	lock file and flock.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/manage_migrators.c (manage_migrate): Update call.
+
+	* src/manage_sql_secinfo.c (check_cert_db_version)
+	(check_scap_db_version): Export.
+
+	* src/manage_sql_secinfo.h: Add headers accordingly.
+
 2017-05-30  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Adjust documentation to match recent changes.

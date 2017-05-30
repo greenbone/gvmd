@@ -14471,8 +14471,7 @@ manage_migrate (GSList *log_config, const gchar *database)
   else
     {
       g_message ("Migrating SCAP database");
-      switch (openvas_migrate_secinfo (SBINDIR "/openvas-scapdata-sync",
-                                       SCAP_FEED))
+      switch (openvas_migrate_secinfo (SCAP_FEED))
         {
           case 0:
             g_message ("SCAP database migrated successfully");
@@ -14509,8 +14508,7 @@ manage_migrate (GSList *log_config, const gchar *database)
   else
     {
       g_message ("Migrating CERT database");
-      switch (openvas_migrate_secinfo (SBINDIR "/openvas-certdata-sync",
-                                       CERT_FEED))
+      switch (openvas_migrate_secinfo (CERT_FEED))
         {
           case 0:
             g_message ("CERT database migrated successfully");

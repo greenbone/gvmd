@@ -62,6 +62,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <sys/file.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -8454,217 +8455,62 @@ exit:
  *
  * Calls a sync script to migrate the SCAP or CERT database.
  *
- * @param[in]  sync_script   The file name of the synchronization script.
  * @param[in]  feed_type     Could be SCAP_FEED or CERT_FEED.
  *
  * @return 0 sync complete, 1 sync already in progress, -1 error
  */
 int
-openvas_migrate_secinfo (const gchar * sync_script, int feed_type)
+openvas_migrate_secinfo (int feed_type)
 {
-  int fd, ret = 0;
-  gchar *lockfile_name, *lockfile_dirname;
-  pid_t pid;
-  mode_t old_mask;
+  int lockfile, ret;
+  gchar *lockfile_name;
+  const gchar *lockfile_basename;
 
-  g_assert (sync_script);
-
-  if (feed_type != SCAP_FEED && feed_type != CERT_FEED)
+  if (feed_type == SCAP_FEED)
+    lockfile_basename = "gvm-sync-scap";
+  else if (feed_type == CERT_FEED)
+    lockfile_basename = "gvm-sync-cert";
+  else
     {
-      g_warning ("Unsupported feed_type!");
-      return -1;
-    }
-
-  if (!openvas_get_sync_script_identification
-        (sync_script, NULL, feed_type))
-    {
-      g_warning ("No valid synchronization script supplied!");
+      g_warning ("%s: unsupported feed_type", __FUNCTION__);
       return -1;
     }
 
   /* Open the lock file. */
 
-  lockfile_name =
-    g_build_filename (g_get_tmp_dir (), "openvas-feed-sync", sync_script, NULL);
-  lockfile_dirname = g_path_get_dirname (lockfile_name);
-  old_mask = umask (0);
-  if (g_mkdir_with_parents (lockfile_dirname,
-                            /* "-rwxrwxrwx" */
-                            S_IRWXU | S_IRWXG | S_IRWXO))
-    {
-      umask (old_mask);
-      g_warning ("Failed to create lock dir '%s': %s", lockfile_dirname,
-                 strerror (errno));
-      g_free (lockfile_name);
-      g_free (lockfile_dirname);
-      return -1;
-    }
-  umask (old_mask);
-  g_free (lockfile_dirname);
+  lockfile_name = g_build_filename (g_get_tmp_dir (), lockfile_basename, NULL);
 
-  fd =
-    open (lockfile_name, O_RDWR | O_CREAT | O_EXCL,
-          S_IWUSR | S_IRUSR | S_IROTH | S_IRGRP /* "-rw-r--r--" */ );
-  if (fd == -1)
+  lockfile = open (lockfile_name, O_RDWR | O_CREAT | O_APPEND,
+                   /* "-rw-r--r--" */
+                   S_IWUSR | S_IRUSR | S_IROTH | S_IRGRP);
+  if (lockfile == -1)
     {
-      if (errno == EEXIST)
-        return 1;
       g_warning ("Failed to open lock file '%s': %s", lockfile_name,
                  strerror (errno));
       g_free (lockfile_name);
       return -1;
     }
 
-  /* Write the current time and user to the lock file. */
-  {
-    const char *output;
-    int count, left;
-    time_t now;
-
-    time (&now);
-    output = ctime (&now);
-    left = strlen (output);
-    while (1)
-      {
-        count = write (fd, output, left);
-        if (count < 0)
-          {
-            if (errno == EINTR || errno == EAGAIN)
-              continue;
-            g_warning ("%s: write: %s", __FUNCTION__, strerror (errno));
-            goto exit;
-          }
-        if (count == left)
-          break;
-        left -= count;
-        output += count;
-      }
-
-    output = ""; // user name
-    left = strlen (output);
-    while (1)
-      {
-        count = write (fd, output, left);
-        if (count < 0)
-          {
-            if (errno == EINTR || errno == EAGAIN)
-              continue;
-            g_warning ("%s: write: %s", __FUNCTION__, strerror (errno));
-            goto exit;
-          }
-        if (count == left)
-          break;
-        left -= count;
-        output += count;
-      }
-
-    while (1)
-      {
-        count = write (fd, "\n", 1);
-        if (count < 0)
-          {
-            if (errno == EINTR || errno == EAGAIN)
-              continue;
-            g_warning ("%s: write: %s", __FUNCTION__, strerror (errno));
-            goto exit;
-          }
-        if (count == 1)
-          break;
-      }
-  }
-
-  /* Fork a child to be the sync process. */
-
-  pid = fork ();
-  switch (pid)
+  if (flock (lockfile, LOCK_EX | LOCK_NB))  /* Exclusive, Non blocking. */
     {
-    case 0:
-      {
-        FILE *sync_err, *sync_out;
-
-        /* Child.  Become the sync process. */
-
-        sync_out = freopen ("/tmp/gvmd_sync_out", "w", stdout);
-        if (sync_out == NULL)
-          {
-            g_warning ("Failed to reopen stdout: %s", strerror (errno));
-            exit (EXIT_FAILURE);
-          }
-
-        sync_err = freopen ("/tmp/gvmd_sync_err", "w", stderr);
-        if (sync_err == NULL)
-          {
-            g_warning ("Failed to reopen stderr: %s", strerror (errno));
-            fclose (sync_out);
-            exit (EXIT_FAILURE);
-          }
-
-        if (execl (sync_script, sync_script, "--migrate", (char *) NULL))
-          {
-            g_warning ("Failed to execl %s: %s", sync_script, strerror (errno));
-            fclose (sync_out);
-            fclose (sync_err);
-            exit (EXIT_FAILURE);
-          }
-
-        fclose (sync_out);
-        fclose (sync_err);
-        exit (EXIT_FAILURE);
-      }
-    case -1:
-      /* Parent when error. */
-
-      g_warning ("%s: failed to fork syncer: %s\n", __FUNCTION__,
-                 strerror (errno));
-      ret = -1;
-      goto exit;
-      break;
-    default:
-      {
-        int status;
-
-        /* Parent on success.  Wait for child, and handle result. */
-
-        while (wait (&status) < 0)
-          {
-            if (errno == ECHILD)
-              {
-                g_warning ("Failed to get child exit status");
-                ret = -1;
-                goto exit;
-              }
-            if (errno == EINTR)
-              continue;
-            g_warning ("wait: %s", strerror (errno));
-            ret = -1;
-            goto exit;
-          }
-        if (WIFEXITED (status))
-          switch (WEXITSTATUS (status))
-            {
-              case EXIT_SUCCESS:
-                break;
-              case EXIT_FAILURE:
-              default:
-                g_warning ("Error during SecInfo migration.");
-                ret = -1;
-                break;
-            }
-        else
-          {
-            g_message ("Error during SecInfo migration.");
-            ret = -1;
-          }
-
-        break;
-      }
+      if (errno == EWOULDBLOCK)
+        {
+          g_free (lockfile_name);
+          return 1;
+        }
+      g_debug ("%s: flock: %s", __FUNCTION__, strerror (errno));
+      g_free (lockfile_name);
+      return -1;
     }
 
-exit:
+  if (feed_type == SCAP_FEED)
+    ret = check_scap_db_version ();
+  else
+    ret = check_cert_db_version ();
 
   /* Close the lock file. */
 
-  if (close (fd))
+  if (close (lockfile))
     {
       g_free (lockfile_name);
       g_warning ("Failed to close lock file: %s", strerror (errno));

@@ -308,4 +308,10 @@ manage_sync_scap (sigset_t *);
 void
 manage_sync_cert (sigset_t *);
 
+int
+check_scap_db_version ();
+
+int
+check_cert_db_version ();
+
 #endif /* not _GVMD_MANAGE_SQL_SECINFO_H */

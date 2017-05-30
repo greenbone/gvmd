@@ -3692,7 +3692,7 @@ feed_timestamp (const gchar *name)
  *
  * @return 0 success, -1 error.
  */
-static int
+int
 check_cert_db_version ()
 {
   switch (manage_cert_db_version ())
@@ -3979,7 +3979,7 @@ manage_sync_cert (sigset_t *sigmask_current)
  *
  * @return 0 success, -1 error.
  */
-static int
+int
 check_scap_db_version ()
 {
   switch (manage_scap_db_version ())

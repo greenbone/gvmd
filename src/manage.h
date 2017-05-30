@@ -4165,7 +4165,7 @@ openvas_sync_feed
 (const gchar *, const gchar *, int);
 
 int
-openvas_migrate_secinfo (const gchar*, int);
+openvas_migrate_secinfo (int);
 
 int
 openvas_current_sync (const gchar *, gchar **, gchar **);
