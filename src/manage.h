@@ -2770,6 +2770,9 @@ slave_task_iterator_uuid (iterator_t*);
 int
 slave_task_iterator_readable (iterator_t*);
 
+int
+manage_get_slaves (GSList *, const gchar *);
+
 
 /* Groups. */
 

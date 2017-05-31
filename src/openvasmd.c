@@ -1260,6 +1260,7 @@ main (int argc, char** argv)
   static gboolean disable_scheduling = FALSE;
   static gboolean get_users = FALSE;
   static gboolean get_scanners = FALSE;
+  static gboolean get_slaves = FALSE;
   static gboolean update_nvt_cache = FALSE;
   static gboolean rebuild_nvt_cache = FALSE;
   static gboolean foreground = FALSE;
@@ -1334,6 +1335,7 @@ main (int argc, char** argv)
           "Verify scanner <scanner-uuid> and exit.", "<scanner-uuid>" },
         { "delete-scanner", '\0', 0, G_OPTION_ARG_STRING, &delete_scanner, "Delete scanner <scanner-uuid> and exit.", "<scanner-uuid>" },
         { "get-scanners", '\0', 0, G_OPTION_ARG_NONE, &get_scanners, "List scanners and exit.", NULL },
+        { "get-slaves", '\0', 0, G_OPTION_ARG_NONE, &get_slaves, "List slaves and exit.", NULL },
         { "foreground", 'f', 0, G_OPTION_ARG_NONE, &foreground, "Run in foreground.", NULL },
         { "listen", 'a', 0, G_OPTION_ARG_STRING, &manager_address_string, "Listen on <address>.", "<address>" },
         { "listen2", '\0', 0, G_OPTION_ARG_STRING, &manager_address_string_2, "Listen also on <address>.", "<address>" },
@@ -1700,6 +1702,29 @@ main (int argc, char** argv)
     {
       /* List the users and then exit. */
       int ret = manage_get_scanners (log_config, database);
+      log_config_free (log_config);
+      switch (ret)
+        {
+          case 0:
+            return EXIT_SUCCESS;
+          case -2:
+            g_warning ("%s: database is wrong version\n", __FUNCTION__);
+            return EXIT_FAILURE;
+          case -3:
+            g_warning ("%s: database must be initialised"
+                       " (with --update or --rebuild)\n", __FUNCTION__);
+            return EXIT_FAILURE;
+          case -1:
+          default:
+            g_warning ("%s: internal error\n", __FUNCTION__);
+            return EXIT_FAILURE;
+        }
+    }
+
+  if (get_slaves)
+    {
+      /* List the slaves and then exit. */
+      int ret = manage_get_slaves (log_config, database);
       log_config_free (log_config);
       switch (ret)
         {

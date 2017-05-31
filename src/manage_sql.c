@@ -55660,6 +55660,46 @@ manage_get_scanners (GSList *log_config, const gchar *database)
 }
 
 /**
+ * @brief List slaves.
+ *
+ * @param[in]  log_config  Log configuration.
+ * @param[in]  database    Location of manage database.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+manage_get_slaves (GSList *log_config, const gchar *database)
+{
+  iterator_t slaves;
+  const gchar *db;
+  int ret;
+
+  if (openvas_auth_init_funcs (manage_user_hash, manage_user_set_role,
+                               manage_user_exists, manage_user_uuid))
+    return -1;
+
+  db = database ? database : sql_default_database ();
+
+  ret = init_manage_helper (log_config, db, 70000, NULL);
+  assert (ret != -4);
+  if (ret)
+    return ret;
+
+  init_manage_process (0, db);
+
+  init_iterator (&slaves, "SELECT uuid, name FROM slaves;");
+  while (next (&slaves))
+    printf ("%s  %s\n", iterator_string (&slaves, 0),
+            iterator_string (&slaves, 1));
+
+  cleanup_iterator (&slaves);
+
+  cleanup_manage_process (TRUE);
+
+  return 0;
+}
+
+/**
  * @brief Set the password of a user.
  *
  * @param[in]  name      Name of user.

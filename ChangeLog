@@ -1,3 +1,13 @@
+2017-02-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add --get-slaves.
+
+	* src/openvasmd.c (main): Add option.
+
+	* src/manage_sql.c (manage_get_slaves): New function.
+
+	* src/manage.h: Add header accordingly.
+
 2017-05-29  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Backport r28543 by Timo Pollmeier.
