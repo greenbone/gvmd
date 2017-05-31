@@ -22442,7 +22442,7 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
 
   if (autofp == 0 && host == NULL
       && cache_exists == 0 && min_cvss_base == NULL && search_phrase == NULL)
-    cache_report_counts (report, override, &severity_data, 1);
+    cache_report_counts (report, override, &severity_data, 0);
 
   cleanup_severity_data (&severity_data);
   cleanup_severity_data (&filtered_severity_data);
