@@ -1,3 +1,12 @@
+2017-05-31  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r28565.
+
+	* src/manage_sql.c (report_cache_counts): Pass INT_MAX as min_qod_limit
+	to init_report_counts_build_iterator to update all counts.
+	(report_counts_id_full): Do not use transaction for
+	cache_report_counts.
+
 2017-05-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r28548.
