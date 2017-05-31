@@ -19671,7 +19671,7 @@ report_cache_counts (report_t report, int clear_original, int clear_overridden)
   gchar *old_user_id;
 
   old_user_id = current_credentials.uuid;
-  init_report_counts_build_iterator (&cache_iterator, report, 0, 1);
+  init_report_counts_build_iterator (&cache_iterator, report, INT_MAX, 1);
 
   while (next (&cache_iterator))
     {
@@ -23461,10 +23461,10 @@ report_counts_id_full (report_t report, int* debugs, int* holes, int* infos,
   if (filter_cacheable && !cache_exists)
     {
       if (unfiltered_requested)
-        cache_report_counts (report, override, 0, &severity_data, 1);
+        cache_report_counts (report, override, 0, &severity_data, 0);
       if (filtered_requested)
         cache_report_counts (report, override, min_qod_int,
-                             &filtered_severity_data, 1);
+                             &filtered_severity_data, 0);
     }
 
   cleanup_severity_data (&severity_data);
