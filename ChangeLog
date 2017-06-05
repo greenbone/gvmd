@@ -1,3 +1,10 @@
+2017-06-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_report_counts_build_iterator): In the SQL repeat
+	the users string instead of using WITH, because WITH is only available
+	from SQLite from 3.8.3.  Also remove min_qod from the unused else case,
+	because there's no such column.
+
 2017-05-31  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport transaction part of r28565.

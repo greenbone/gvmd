@@ -17656,33 +17656,28 @@ init_report_counts_build_iterator (iterator_t *iterator, report_t report,
   if (add_defaults)
     {
       init_iterator (iterator,
-                     "SELECT * FROM"
-                     " (WITH users_with_access (\"user\") AS %s"
-                     "  SELECT DISTINCT override, \"user\""
-                     "  FROM report_counts"
-                     "  WHERE report = %llu"
-                     "    AND \"user\" IN (SELECT \"user\""
-                     "                     FROM users_with_access)"
-                     "  UNION SELECT 0, \"user\""
-                     "          FROM users_with_access"
-                     "  UNION SELECT 1, \"user\""
-                     "          FROM users_with_access) AS inner_query"
-                     " ORDER BY \"user\"",
+                     "SELECT *"
+                     " FROM (SELECT DISTINCT override, \"user\""
+                     "       FROM report_counts"
+                     "       WHERE report = %llu AND \"user\" IN %s"
+                     "       UNION SELECT 0, * FROM %s AS values_0"
+                     "       UNION SELECT 1, * FROM %s AS values_1)"
+                     "      AS inner_query"
+                     " ORDER BY \"user\";",
+                     report,
                      users_string->str,
-                     report);
+                     users_string->str,
+                     users_string->str);
     }
   else
     {
       init_iterator (iterator,
-                     "WITH users_with_access (\"user\") AS %s"
-                     " SELECT DISTINCT min_qod, override, \"user\""
+                     "SELECT DISTINCT override, \"user\""
                      " FROM report_counts"
-                     " WHERE report = %llu"
-                     "   AND \"user\" IN (SELECT \"user\""
-                     "                    FROM users_with_access)"
-                     " ORDER BY \"user\"",
-                     users_string->str,
-                     report);
+                     " WHERE report = %llu AND \"user\" IN %s"
+                     " ORDER BY \"user\";",
+                     report,
+                     users_string->str);
     }
   g_string_free (users_string, TRUE);
   g_free (report_id);
