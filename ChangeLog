@@ -1,3 +1,26 @@
+2017-06-05  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	Changed location of the sysconf directory to etc/gvm.
+
+	This makes several migrations necessary to keep existing
+	configuration of an OpenVAS Manager:
+
+	- move $prefix/etc/openvas/pwpolicy.conf to
+	  $prefix/etc/gvm/
+
+	- move $prefix/etc/openvas/openvasmd_log.conf to
+	  $prefix/etc/gvm/gvmd_log.conf
+
+	- copy $prefix/etc/openvas/gsf-access-key to
+	  $prefix/etc/gvm/
+	  If the gsf-access-key was already migrated for
+	  openvas-scanner modules as well, then there
+	  needs not to remain the file gsf-acces-key under
+	  $prefix/etc/openvas.
+
+	* CMakeLists.txt: Remove the OpenVAS SysConfdir. This automatically
+	activate the gvm sysconfdir.
+	
 2017-06-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/XML/GMP.xml.in: Add SYNC_FEED to changes.

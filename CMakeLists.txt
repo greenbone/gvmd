@@ -175,16 +175,11 @@ if (NOT DEFINED GVM_SQLITE_SLEEP_MAX)
   set (GVM_SQLITE_SLEEP_MAX 0)
 endif (NOT DEFINED GVM_SQLITE_SLEEP_MAX)
 
-#if (NOT SYSCONFDIR)
-#  set (SYSCONFDIR "${CMAKE_INSTALL_PREFIX}/etc")
-#endif (NOT SYSCONFDIR)
-
 set (GVM_SYSCONF_DIR  "${SYSCONFDIR}/gvm")
 
 set (GVM_DATA_DIR     "${DATADIR}/openvas")
 set (GVM_STATE_DIR    "${LOCALSTATEDIR}/lib/openvas")
 set (GVM_LOG_DIR      "${LOCALSTATEDIR}/log/openvas")
-set (GVM_SYSCONF_DIR  "${SYSCONFDIR}/openvas")
 set (GVM_SCAP_RES_DIR "${GVM_DATA_DIR}/scap")
 set (GVM_CERT_RES_DIR "${GVM_DATA_DIR}/cert")
 set (GVM_CA_DIR       "${GVMD_STATE_DIR}/trusted_certs")
