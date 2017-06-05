@@ -1,5 +1,9 @@
 2017-06-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/GMP.xml.in: Add SYNC_FEED to changes.
+
+2017-06-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Remove GMP SYNC_FEED.
 
 	* src/gmp.c (gmp_xml_handle_start_element)

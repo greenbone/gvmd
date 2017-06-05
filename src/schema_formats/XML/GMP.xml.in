@@ -25221,12 +25221,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <version>8.0</version>
   </change>
   <change>
-    <command>SYNC_SCAP, SYNC_CERT</command>
+    <command>SYNC_FEED, SYNC_SCAP, SYNC_CERT</command>
     <summary>Commands removed</summary>
     <description>
       <p>
-        The SYNC_SCAP and SYNC_CERT commands have been removed.  They have been
-        superseded by automatic feed updating.
+        The SYNC_FEED, SYNC_SCAP and SYNC_CERT commands have been removed, as
+        they are no longer used by GSA, and they have been (or will be)
+        superceded by automatic feed updating.
       </p>
     </description>
     <version>8.0</version>
