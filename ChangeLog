@@ -1,4 +1,19 @@
-2017-06-01  Matthew Mundell <matthew.mundell@greenbone.net>
+2017-06-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Remove GMP SYNC_FEED.
+
+	* src/gmp.c (gmp_xml_handle_start_element)
+	(gmp_xml_handle_end_element): Remove SYNC_FEED.
+
+	* src/manage_sql.c (gmp_commands): Remove SYNC_FEED.
+
+	* src/manage.c (openvas_sync_feed): Remove.  No longer used.
+
+	* src/manage.h: Remove header accordingly.
+
+	* src/schema_formats/XML/GMP.xml.in (sync_feed): Remove.
+
+2017-06-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	For GET_FEEDS handle SCAP and CERT info internally, instead of calling the
 	sync script.

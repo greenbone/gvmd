@@ -495,7 +495,6 @@ command_t gmp_commands[]
     {"START_TASK", "Manually start an existing task."},
     {"STOP_TASK", "Stop a running task."},
     {"SYNC_CONFIG", "Synchronize a config with a scanner."},
-    {"SYNC_FEED", "Synchronize with an NVT feed."},
     {"TEST_ALERT", "Run an alert."},
     {"VERIFY_AGENT", "Verify an agent."},
     {"VERIFY_REPORT_FORMAT", "Verify a report format."},

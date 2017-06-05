@@ -5636,7 +5636,6 @@ typedef enum
   CLIENT_START_TASK,
   CLIENT_STOP_TASK,
   CLIENT_SYNC_CONFIG,
-  CLIENT_SYNC_FEED,
   CLIENT_TEST_ALERT,
   CLIENT_VERIFY_AGENT,
   CLIENT_VERIFY_REPORT_FORMAT,
@@ -7914,8 +7913,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &sync_config_data->config_id);
             set_client_state (CLIENT_SYNC_CONFIG);
           }
-        else if (strcasecmp ("SYNC_FEED", element_name) == 0)
-          set_client_state (CLIENT_SYNC_FEED);
         else if (strcasecmp ("TEST_ALERT", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values,
@@ -29190,58 +29187,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
            (XML_ERROR_SYNTAX ("stop_task",
                               "STOP_TASK requires a task_id attribute"));
         stop_task_data_reset (stop_task_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-
-      case CLIENT_SYNC_FEED:
-        assert (current_credentials.username);
-        if (forked == 2)
-          /* Prevent the forked child from forking again, as then both
-           * forked children would be using the same server session. */
-          abort ();               // FIX respond with error or something
-        else
-          switch (openvas_sync_feed (nvt_sync_script, current_credentials.username,
-                                     NVT_FEED))
-            {
-            case 0:
-              SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("sync_feed"));
-              forked = 1;
-              break;
-            case 1:
-              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_BUSY ("sync_feed"));
-              break;
-            case 2:
-              /* Forked sync process: success. */
-              current_error = 4;
-              g_debug ("   %s: sync_feed fork success\n", __FUNCTION__);
-              g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
-                           "Dummy error for current_error");
-              break;
-            case 11:
-              /* Forked sync process: success busy. */
-              current_error = 4;
-              g_debug ("   %s: sync_feed fork success busy\n", __FUNCTION__);
-              g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
-                           "Dummy error for current_error");
-              break;
-            case -10:
-              /* Forked sync process: error. */
-              current_error = -10;
-              g_debug ("   %s: sync_feed fork error\n", __FUNCTION__);
-              g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
-                           "Dummy error for current_error");
-              break;
-            case 99:
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("sync_feed",
-                                  "Permission denied"));
-              break;
-            default:
-              assert (0);
-            case -1:
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("sync_feed"));
-              break;
-            }
         set_client_state (CLIENT_AUTHENTIC);
         break;
 

@@ -3217,7 +3217,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>run_wizard</c>
           <c>start_task</c>
           <c>stop_task</c>
-          <c>sync_feed</c>
           <c>sync_config</c>
           <c>test_alert</c>
           <c>verify_agent</c>
@@ -3341,7 +3340,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>run_wizard</r>
             <r>start_task</r>
             <r>stop_task</r>
-            <r>sync_feed</r>
             <r>sync_config</r>
             <r>test_alert</r>
             <r>verify_agent</r>
@@ -22207,7 +22205,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             START_TASK             Manually start an existing task.
             STOP_TASK              Stop a running task.
             SYNC_CONFIG            Synchronize a config with a scanner.
-            SYNC_FEED              Synchronize with an NVT feed.
             TEST_ALERT             Run an alert.
             VERIFY_AGENT           Verify an agent.
             VERIFY_REPORT_FORMAT   Verify a report format.
@@ -24990,42 +24987,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </request>
       <response>
         <stop_task_response status="200" status_text="OK"/>
-      </response>
-    </example>
-  </command>
-  <command>
-    <name>sync_feed</name>
-    <summary>Synchronize with an NVT feed</summary>
-    <description>
-      <p>
-        The client uses the "sync_feed" command to request a
-        synchronization with the NVT feed service the Manager uses.
-      </p>
-    </description>
-    <pattern>
-    </pattern>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-      </pattern>
-    </response>
-    <example>
-      <summary>Sync the feed</summary>
-      <request>
-        <sync_feed>
-        </sync_feed>
-      </request>
-      <response>
-        <sync_feed_response status="202" status_text="OK, request submitted"/>
       </response>
     </example>
   </command>

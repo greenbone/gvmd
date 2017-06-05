@@ -4155,17 +4155,12 @@ aggregate_iterator_subgroup_value (iterator_t*);
 
 /* Feeds. */
 
-/* For feed syncing */
 #define NVT_FEED 1
 #define SCAP_FEED 2
 #define CERT_FEED 3
 
 int
 manage_feed_timestamp (const gchar *);
-
-int
-openvas_sync_feed
-(const gchar *, const gchar *, int);
 
 int
 openvas_migrate_secinfo (int);
