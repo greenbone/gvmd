@@ -5029,16 +5029,6 @@ static GMarkupParser xml_parser;
  */
 static const gchar *nvt_sync_script = SBINDIR "/greenbone-nvt-sync";
 
-/**
- * @brief The scap synchronization script for this daemon.
- */
-static const gchar *scap_sync_script = SBINDIR "/greenbone-scapdata-sync";
-
-/**
- * @brief The CERT synchronization script for this daemon.
- */
-static const gchar *cert_sync_script = SBINDIR "/greenbone-certdata-sync";
-
 
 /* Client state. */
 
@@ -14687,16 +14677,13 @@ feed_type_name (int feed_type)
 }
 
 /**
- * @brief Get a single feed.
+ * @brief Get NVT feed.
  *
  * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
- * @param[in]  sync_script  Sync script.
- * @param[in]  feed_type    Type of feed.
  */
 static void
-get_feed (gmp_parser_t *gmp_parser, GError **error, const gchar *sync_script,
-          int feed_type)
+get_nvt_feed (gmp_parser_t *gmp_parser, GError **error)
 {
   gchar *feed_description, *feed_identification, *feed_version;
 
@@ -14704,11 +14691,11 @@ get_feed (gmp_parser_t *gmp_parser, GError **error, const gchar *sync_script,
   feed_identification = NULL;
   feed_version = NULL;
 
-  if (openvas_get_sync_script_description (sync_script, &feed_description)
-      && openvas_get_sync_script_identification (sync_script,
+  if (openvas_get_sync_script_description (nvt_sync_script, &feed_description)
+      && openvas_get_sync_script_identification (nvt_sync_script,
                                                  &feed_identification,
-                                                 feed_type)
-      && openvas_get_sync_script_feed_version (sync_script,
+                                                 NVT_FEED)
+      && openvas_get_sync_script_feed_version (nvt_sync_script,
                                                &feed_version))
     {
       gchar *user, *timestamp;
@@ -14716,7 +14703,7 @@ get_feed (gmp_parser_t *gmp_parser, GError **error, const gchar *sync_script,
       gchar **ident = g_strsplit (feed_identification, "|", 6);
       gchar *selftest_result = NULL;
 
-      syncing = openvas_current_sync (sync_script, &timestamp, &user);
+      syncing = openvas_current_sync (nvt_sync_script, &timestamp, &user);
       if (syncing < 0 || ident[0] == NULL || ident[1] == NULL
           || ident[2] == NULL || ident[3] == NULL)
         {
@@ -14727,16 +14714,15 @@ get_feed (gmp_parser_t *gmp_parser, GError **error, const gchar *sync_script,
         {
           SENDF_TO_CLIENT_OR_FAIL
            ("<feed>"
-            "<type>%s</type>"
+            "<type>NVT</type>"
             "<name>%s</name>"
             "<version>%s</version>"
             "<description>%s</description>",
-            feed_type_name (feed_type),
             ident[3],
             feed_version,
             feed_description);
           g_strfreev (ident);
-          if (openvas_sync_script_perform_selftest (sync_script,
+          if (openvas_sync_script_perform_selftest (nvt_sync_script,
                                                     &selftest_result)
               == FALSE)
             {
@@ -14768,6 +14754,80 @@ get_feed (gmp_parser_t *gmp_parser, GError **error, const gchar *sync_script,
 }
 
 /**
+ * @brief Get a single feed.
+ *
+ * @param[in]  gmp_parser   GMP parser.
+ * @param[in]  error        Error parameter.
+ * @param[in]  sync_script  Sync script.
+ * @param[in]  feed_type    Type of feed.
+ */
+static void
+get_feed (gmp_parser_t *gmp_parser, GError **error, int feed_type)
+{
+  const gchar *feed_name, *feed_vendor, *feed_home;
+
+  if (feed_type == NVT_FEED)
+    {
+      get_nvt_feed (gmp_parser, error);
+      return;
+    }
+
+  if (g_file_test (GVM_ACCESS_KEY_DIR "/gsf-access-key", G_FILE_TEST_EXISTS))
+    {
+      if (feed_type == SCAP_FEED)
+        feed_name = "Greenbone SCAP Feed";
+      else
+        feed_name = "Greenbone CERT Feed";
+      feed_vendor = "Greenbone Networks GmbH";
+      feed_home = "http://www.greenbone.net/technology/gsf.html";
+    }
+  else
+    {
+      if (feed_type == SCAP_FEED)
+        feed_name = "OpenVAS SCAP Feed";
+      else
+        feed_name = "OpenVAS CERT Feed";
+      feed_vendor = "The OpenVAS Project";
+      feed_home = "http://www.openvas.org/";
+    }
+
+  SENDF_TO_CLIENT_OR_FAIL
+   ("<feed>"
+    "<type>%s</type>"
+    "<name>%s</name>"
+    "<version>%i</version>"
+    "<description>"
+    "This script synchronizes a SCAP collection with the '%s'."
+    " The '%s' is provided by '%s'."
+    " Online information about this feed: '%s'."
+    "</description>",
+    feed_type_name (feed_type),
+    feed_name,
+    manage_feed_timestamp (feed_type == SCAP_FEED ? "scap" : "cert"),
+    feed_name,
+    feed_name,
+    feed_vendor,
+    feed_home);
+
+// FIX
+#if 0
+  if (syncing > 0)
+    {
+      SENDF_TO_CLIENT_OR_FAIL ("<currently_syncing>"
+                               "<timestamp>%s</timestamp>"
+                               "<user>%s</user>"
+                               "</currently_syncing>",
+                               timestamp ? timestamp : "",
+                               user ? user : "");
+      g_free (timestamp);
+      g_free (user);
+    }
+#endif
+
+  SEND_TO_CLIENT_OR_FAIL ("</feed>");
+}
+
+/**
  * @brief Handle end of GET_FEEDS element.
  *
  * @param[in]  gmp_parser   GMP parser.
@@ -14793,15 +14853,15 @@ handle_get_feeds (gmp_parser_t *gmp_parser, GError **error)
 
   if ((get_feeds_data->type == NULL)
       || strcmp (get_feeds_data->type, "nvt"))
-    get_feed (gmp_parser, error, nvt_sync_script, NVT_FEED);
+    get_feed (gmp_parser, error, NVT_FEED);
 
   if ((get_feeds_data->type == NULL)
       || strcmp (get_feeds_data->type, "scap"))
-    get_feed (gmp_parser, error, scap_sync_script, SCAP_FEED);
+    get_feed (gmp_parser, error, SCAP_FEED);
 
   if ((get_feeds_data->type == NULL)
       || strcmp (get_feeds_data->type, "cert"))
-    get_feed (gmp_parser, error, cert_sync_script, CERT_FEED);
+    get_feed (gmp_parser, error, CERT_FEED);
 
   SEND_TO_CLIENT_OR_FAIL ("</get_feeds_response>");
 

@@ -1,3 +1,20 @@
+2017-06-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	For GET_FEEDS handle SCAP and CERT info internally, instead of calling the
+	sync script.
+
+	* src/gmp.c (scap_sync_script, cert_sync_script): Remove.  No longer used.
+	(get_nvt_feed): New function.  Body from get_feed.
+	(get_feed): Return information directly, instead of calling sync script.
+	(handle_get_feeds): Update get_feed calls.
+
+	* src/CMakeLists.txt: Make GVM_ACCESS_KEY available for src/gmp.c.
+
+	* src/manage_sql_secinfo.c (feed_timestamp): Remove.  Now
+	manage_feed_timestamp.  Update callers.
+
+	* src/manage.h: Add header accordingly.
+
 2017-05-31  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (report_cache_counts): Pass INT_MAX as min_qod_limit

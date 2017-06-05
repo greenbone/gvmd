@@ -4161,6 +4161,9 @@ aggregate_iterator_subgroup_value (iterator_t*);
 #define CERT_FEED 3
 
 int
+manage_feed_timestamp (const gchar *);
+
+int
 openvas_sync_feed
 (const gchar *, const gchar *, int);
 

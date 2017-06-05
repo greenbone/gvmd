@@ -3634,8 +3634,8 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (),
  *
  * @return Timestamp from feed.  0 if missing.  -1 on error.
  */
-static int
-feed_timestamp (const gchar *name)
+int
+manage_feed_timestamp (const gchar *name)
 {
   GError *error;
   gchar *timestamp;
@@ -3877,7 +3877,7 @@ sync_cert ()
 
   g_debug ("%s: last_cert_update: %i", __FUNCTION__, last_cert_update);
 
-  last_feed_update = feed_timestamp ("cert");
+  last_feed_update = manage_feed_timestamp ("cert");
   if (last_feed_update == -1)
     return -1;
 
@@ -4186,7 +4186,7 @@ sync_scap ()
 
   g_debug ("%s: last_scap_update: %i", __FUNCTION__, last_scap_update);
 
-  last_feed_update = feed_timestamp ("scap");
+  last_feed_update = manage_feed_timestamp ("scap");
   if (last_feed_update == -1)
     return -1;
 
