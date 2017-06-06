@@ -17623,11 +17623,12 @@ init_report_counts_build_iterator (iterator_t *iterator, report_t report,
                                    int add_defaults)
 {
   iterator_t users;
-  GString *users_string;
+  GString *users_string, *selects_string;
   int first_user = 1;
   gchar *report_id, *old_user_id;
 
-  users_string = g_string_new ("(VALUES ");
+  users_string = g_string_new ("(");
+  selects_string = g_string_new ("");
   report_id = sql_string ("SELECT uuid FROM reports WHERE id = %llu;", report);
   old_user_id = current_credentials.uuid;
   init_iterator (&users, "SELECT id, uuid FROM users;");
@@ -17645,6 +17646,11 @@ init_report_counts_build_iterator (iterator_t *iterator, report_t report,
           g_string_append_printf (users_string,
                                   "(%llu)",
                                   iterator_int64 (&users, 0));
+          g_string_append_printf (selects_string,
+                                  " UNION SELECT 0, %llu"
+                                  " UNION SELECT 1, %llu",
+                                  iterator_int64 (&users, 0),
+                                  iterator_int64 (&users, 0));
         }
       g_free (current_credentials.uuid);
     }
@@ -17660,14 +17666,12 @@ init_report_counts_build_iterator (iterator_t *iterator, report_t report,
                      " FROM (SELECT DISTINCT override, \"user\""
                      "       FROM report_counts"
                      "       WHERE report = %llu AND \"user\" IN %s"
-                     "       UNION SELECT 0, * FROM %s AS values_0"
-                     "       UNION SELECT 1, * FROM %s AS values_1)"
+                     "       %s)"
                      "      AS inner_query"
                      " ORDER BY \"user\";",
                      report,
                      users_string->str,
-                     users_string->str,
-                     users_string->str);
+                     selects_string->str);
     }
   else
     {
@@ -17680,6 +17684,7 @@ init_report_counts_build_iterator (iterator_t *iterator, report_t report,
                      users_string->str);
     }
   g_string_free (users_string, TRUE);
+  g_string_free (selects_string, TRUE);
   g_free (report_id);
 }
 

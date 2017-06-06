@@ -1,5 +1,11 @@
 2017-06-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_report_counts_build_iterator): Change the SQL to
+	not use VALUES, as using VALUES in IN and FROM was only introduced in
+	SQLite 3.8.3.
+
+2017-06-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_report_counts_build_iterator): In the SQL repeat
 	the users string instead of using WITH, because WITH is only available
 	from SQLite from 3.8.3.  Also remove min_qod from the unused else case,
