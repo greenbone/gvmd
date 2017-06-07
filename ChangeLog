@@ -1,5 +1,12 @@
 2017-06-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/greenbone-scapdata-sync.in (write_feed_xml): Ensure dir exists.
+	(SYNC_TMP_DIR): Remove.  No longer used.
+
+	* tools/greenbone-certdata-sync.in (write_feed_xml): Ensure dir exists.
+
+2017-06-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Get SecInfo feed meta info from the feed.
 
 	* src/gmp.c (get_feed_info_parse, get_feed_info): New functions.

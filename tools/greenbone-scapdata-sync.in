@@ -170,6 +170,7 @@ write_feed_xml () {
 	FEED_VERSION=0
   fi
 
+  mkdir -p $SCAP_DIR
   echo '<feed id="6315d194-4b6a-11e7-a570-28d24461215b">' > $SCAP_DIR/feed.xml
   echo "<type>SCAP</type>" >> $SCAP_DIR/feed.xml
   echo "<name>$FEED_NAME</name>" >> $SCAP_DIR/feed.xml
@@ -206,17 +207,6 @@ set_interrupt_trap () {
 handle_interrupt () {
   echo "$1:X" >&3
 }
-
-if [ -z "$TMPDIR" ]; then
-  SYNC_TMP_DIR=/tmp
-  # If we have mktemp, create a temporary dir (safer)
-  if [ -n "`which mktemp`" ]; then
-    SYNC_TMP_DIR=`mktemp -t -d greenbone-scap-data-sync.XXXXXXXXXX` || { log_err "Cannot create temporary directory for file download" ; exit 1 ; }
-    trap "rm -rf $SYNC_TMP_DIR" EXIT HUP INT TRAP TERM
-  fi
-else
-  SYNC_TMP_DIR="$TMPDIR"
-fi
 
 do_describe () {
   echo "This script synchronizes a SCAP collection with the '$FEED_NAME'."

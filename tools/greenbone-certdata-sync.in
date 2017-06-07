@@ -164,6 +164,7 @@ write_feed_xml () {
 	FEED_VERSION=0
   fi
 
+  mkdir -p $CERT_DIR
   echo '<feed id="6315d194-4b6a-11e7-a570-28d24461215b">' > $CERT_DIR/feed.xml
   echo "<type>CERT</type>" >> $CERT_DIR/feed.xml
   echo "<name>$FEED_NAME</name>" >> $CERT_DIR/feed.xml
