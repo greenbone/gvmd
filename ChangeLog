@@ -1,5 +1,10 @@
 2017-06-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/greenbone-scapdata-sync.in,
+	tools/greenbone-certdata-sync.in: Convert tabs to spaces.
+
+2017-06-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/greenbone-scapdata-sync.in (write_feed_xml): Ensure dir exists.
 	(SYNC_TMP_DIR): Remove.  No longer used.
 

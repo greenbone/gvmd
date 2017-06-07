@@ -159,9 +159,9 @@ fi
 write_feed_xml () {
   if [ -r $TIMESTAMP ]
   then
-	FEED_VERSION=`cat $TIMESTAMP`
+    FEED_VERSION=`cat $TIMESTAMP`
   else
-	FEED_VERSION=0
+    FEED_VERSION=0
   fi
 
   mkdir -p $CERT_DIR
@@ -238,83 +238,83 @@ get_value ()
 is_feed_current () {
   if [ -r $TIMESTAMP ]
   then
-	FEED_VERSION=`cat $TIMESTAMP`
+    FEED_VERSION=`cat $TIMESTAMP`
   fi
 
   if [ -z "$FEED_VERSION" ]
   then
-	log_warning "Could not determine feed version."
-	FEED_CURRENT=0
-	return $FEED_CURRENT
+    log_warning "Could not determine feed version."
+    FEED_CURRENT=0
+    return $FEED_CURRENT
   fi
 
   FEED_INFO_TEMP_DIR=`mktemp -d`
 
   if [ -e $ACCESSKEY ]
   then
-	read feeduser < $ACCESSKEY
-	custid_at_host=`head -1 $ACCESSKEY | cut -d : -f 1`
+    read feeduser < $ACCESSKEY
+    custid_at_host=`head -1 $ACCESSKEY | cut -d : -f 1`
 
-	if [ -z "$feeduser" ] || [ -z "$custid_at_host" ]
-	then
-	  log_err "CERT synchronization: Could not determine credentials, aborting synchronization."
-	  rm -rf "$FEED_INFO_TEMP_DIR"
-	  exit 1
-	fi
-	echo "custid_at_host = '$custid_at_host'"
+    if [ -z "$feeduser" ] || [ -z "$custid_at_host" ]
+    then
+      log_err "CERT synchronization: Could not determine credentials, aborting synchronization."
+      rm -rf "$FEED_INFO_TEMP_DIR"
+      exit 1
+    fi
+    echo "custid_at_host = '$custid_at_host'"
 
-	gsmproxy=$(get_value proxy_feed | sed -r -e 's/^.*\/\///' -e 's/:([0-9]+)$/ \1/')
-	syncport=$(get_value syncport)
-	if [ "$syncport" ]
-	then
-	  PORT="$syncport"
-	fi
+    gsmproxy=$(get_value proxy_feed | sed -r -e 's/^.*\/\///' -e 's/:([0-9]+)$/ \1/')
+    syncport=$(get_value syncport)
+    if [ "$syncport" ]
+    then
+      PORT="$syncport"
+    fi
 
-	if [ -z "$gsmproxy" ] || [ "$gsmproxy" = "proxy_feed" ]
-	then
-	  RSYNC_SSH_PROXY_CMD=""
-	else
-	  if [ -e $GVM_SYSCONF_DIR/proxyauth ] && [ -r $GVM_SYSCONF_DIR/proxyauth ]; then
-		RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p $GVM_SYSCONF_DIR/proxyauth\""
-	  else
-		RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p\""
-	  fi
-	fi
-	create_tmp_key
-	rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $TMPACCESSKEY" -ltvrP --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid_at_host:/cert-data/timestamp "$FEED_INFO_TEMP_DIR"
-	if [ $? -ne 0 ]
-	then
-	  log_err "rsync failed, aborting synchronization."
-	  rm -rf "$FEED_INFO_TEMP_DIR"
-	  remove_tmp_key
-	  exit 1
-	fi
-	remove_tmp_key
+    if [ -z "$gsmproxy" ] || [ "$gsmproxy" = "proxy_feed" ]
+    then
+      RSYNC_SSH_PROXY_CMD=""
+    else
+      if [ -e $GVM_SYSCONF_DIR/proxyauth ] && [ -r $GVM_SYSCONF_DIR/proxyauth ]; then
+        RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p $GVM_SYSCONF_DIR/proxyauth\""
+      else
+        RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p\""
+      fi
+    fi
+    create_tmp_key
+    rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $TMPACCESSKEY" -ltvrP --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid_at_host:/cert-data/timestamp "$FEED_INFO_TEMP_DIR"
+    if [ $? -ne 0 ]
+    then
+      log_err "rsync failed, aborting synchronization."
+      rm -rf "$FEED_INFO_TEMP_DIR"
+      remove_tmp_key
+      exit 1
+    fi
+    remove_tmp_key
   else
-	log_notice "No Greenbone Security Feed access key found, falling back to Greenbone Community Feed"
-	eval "$RSYNC -ltvrP \"$COMMUNITY_CERT_RSYNC_FEED/timestamp\" \"$FEED_INFO_TEMP_DIR\""
-	if [ $? -ne 0 ]
-	then
-	  log_err "rsync failed, aborting synchronization."
-	  rm -rf "$FEED_INFO_TEMP_DIR"
-	  exit 1
-	fi
+    log_notice "No Greenbone Security Feed access key found, falling back to Greenbone Community Feed"
+    eval "$RSYNC -ltvrP \"$COMMUNITY_CERT_RSYNC_FEED/timestamp\" \"$FEED_INFO_TEMP_DIR\""
+    if [ $? -ne 0 ]
+    then
+      log_err "rsync failed, aborting synchronization."
+      rm -rf "$FEED_INFO_TEMP_DIR"
+      exit 1
+    fi
   fi
 
   FEED_VERSION_SERVER=`cat $FEED_INFO_TEMP_DIR/timestamp`
 
   if [ -z "$FEED_VERSION_SERVER" ]
   then
-	log_err "Could not determine server feed version."
-	rm -rf "$FEED_INFO_TEMP_DIR"
-	exit 1
+    log_err "Could not determine server feed version."
+    rm -rf "$FEED_INFO_TEMP_DIR"
+    exit 1
   fi
 
   # Check against FEED_VERSION
   if [ $FEED_VERSION -lt $FEED_VERSION_SERVER ] ; then
-	FEED_CURRENT=0
+    FEED_CURRENT=0
   else
-	FEED_CURRENT=1
+    FEED_CURRENT=1
   fi
 
   # Cleanup
@@ -372,53 +372,53 @@ do_sync_community_feed () {
 sync_certdata(){
   if [ -e $ACCESSKEY ]
   then
-	log_notice "Found Greenbone Security Feed subscription file, trying to synchronize with Greenbone CERT data Repository ..."
-	notsynced=1
+    log_notice "Found Greenbone Security Feed subscription file, trying to synchronize with Greenbone CERT data Repository ..."
+    notsynced=1
 
-	mkdir -p "$CERT_DIR"
-	read feeduser < $ACCESSKEY
-	custid_at_host=`head -1 $ACCESSKEY | cut -d : -f 1`
-	if [ -z "$feeduser" ] || [ -z "$custid_at_host" ]
-	then
-	  log_err "Could not determine credentials, aborting synchronization."
-	  exit 1
-	fi
+    mkdir -p "$CERT_DIR"
+    read feeduser < $ACCESSKEY
+    custid_at_host=`head -1 $ACCESSKEY | cut -d : -f 1`
+    if [ -z "$feeduser" ] || [ -z "$custid_at_host" ]
+    then
+      log_err "Could not determine credentials, aborting synchronization."
+      exit 1
+    fi
 
-	while [ 1 -eq $notsynced ]
-	do
+    while [ 1 -eq $notsynced ]
+    do
 
-	  gsmproxy=$(get_value proxy_feed | sed -r -e 's/^.*\/\///' -e 's/:([0-9]+)$/ \1/')
-	  syncport=$(get_value syncport)
-	  if [ "$syncport" ]
-	  then
-		PORT="$syncport"
-	  fi
+      gsmproxy=$(get_value proxy_feed | sed -r -e 's/^.*\/\///' -e 's/:([0-9]+)$/ \1/')
+      syncport=$(get_value syncport)
+      if [ "$syncport" ]
+      then
+        PORT="$syncport"
+      fi
 
-	  if [ -z "$gsmproxy" ] || [ "$gsmproxy" = "proxy_feed" ]
-	  then
-		RSYNC_SSH_PROXY_CMD=""
-	  else
-		if [ -e $GVM_SYSCONF_DIR/proxyauth ] && [ -r $GVM_SYSCONF_DIR/proxyauth ]; then
-		  RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p $GVM_SYSCONF_DIR/proxyauth\""
-		else
-		  RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p\""
-		fi
-	  fi
-	  create_tmp_key
-	  rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid_at_host:/cert-data/ $CERT_DIR
-	  if [ 0 -ne "$?" ] ; then
-		log_err "rsync failed, aborting synchronization."
-		remove_tmp_key
-		exit 1
-	  fi
-	  remove_tmp_key
-	  notsynced=0
-	done
-	log_notice "Synchronization with the Greenbone CERT data Repository successful."
-	echo
+      if [ -z "$gsmproxy" ] || [ "$gsmproxy" = "proxy_feed" ]
+      then
+        RSYNC_SSH_PROXY_CMD=""
+      else
+        if [ -e $GVM_SYSCONF_DIR/proxyauth ] && [ -r $GVM_SYSCONF_DIR/proxyauth ]; then
+          RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p $GVM_SYSCONF_DIR/proxyauth\""
+        else
+          RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p\""
+        fi
+      fi
+      create_tmp_key
+      rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid_at_host:/cert-data/ $CERT_DIR
+      if [ 0 -ne "$?" ] ; then
+        log_err "rsync failed, aborting synchronization."
+        remove_tmp_key
+        exit 1
+      fi
+      remove_tmp_key
+      notsynced=0
+    done
+    log_notice "Synchronization with the Greenbone CERT data Repository successful."
+    echo
   else
-	log_notice "No Greenbone Security Feed accees key found, falling back to Greenbone Community Feed"
-	do_sync_community_feed
+    log_notice "No Greenbone Security Feed accees key found, falling back to Greenbone Community Feed"
+    do_sync_community_feed
   fi
 
   write_feed_xml
@@ -494,7 +494,7 @@ fi
   flock -n 9
   if [ $? -eq 1 ] ; then
     log_notice "Sync in progress, exiting."
-	exit 1
+    exit 1
   fi
   sync_certdata
 ) 9>$LOCK_FILE
