@@ -1,6 +1,12 @@
 2017-06-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* tools/greenbone-scapdata-sync.in,
+	tools/greenbone-certdata-sync.in: Make section heading clearer.  Add more
+	sections.  Move some items to better sections.
+
+2017-06-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* tools/greenbone-scapdata-sync.in,
 	tools/greenbone-certdata-sync.in: Convert tabs to spaces.
 
 2017-06-07  Matthew Mundell <matthew.mundell@greenbone.net>
