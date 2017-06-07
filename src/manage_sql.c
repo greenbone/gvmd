@@ -17434,22 +17434,34 @@ reports_clear_count_cache (int override)
 }
 
 /**
- * @brief Clear cached report result counts affected by an override.
+ * @brief Create a new GHashTable for containing resource rowids.
  *
- * @param[in]  override  The override that selected reports must be affected.
- * @param[in]  rebuild   Whether to rebuild the cache.
+ * @return The newly allocated GHashTable
  */
 GHashTable *
-reports_for_override (override_t override)
+new_resources_hashtable ()
+{
+  return g_hash_table_new_full (g_int64_hash, g_int64_equal, g_free, NULL);
+}
+
+/**
+ * @brief Add reports affected by an override to an existing GHashtable.
+ * This is used to add more reports to the hashtable from reports_for_override.
+ *
+ * @param[in]  reports_table The GHashtable to contain the report rowids.
+ * @param[in]  override The override that selected reports must be affected by.
+ */
+void
+reports_add_for_override (GHashTable *reports_table,
+                          override_t override)
 {
   result_t result;
   task_t task;
   gchar *nvt_id;
   iterator_t reports;
 
-  GHashTable *reports_table;
-  reports_table = g_hash_table_new_full (g_int64_hash, g_int64_equal,
-                                         g_free, NULL);
+  if (override == 0)
+    return;
 
   sql_int64 (&result,
              "SELECT result FROM overrides WHERE id = %llu",
@@ -17473,7 +17485,7 @@ reports_for_override (override_t override)
       else
         g_free (report);
 
-      return reports_table;
+      return;
     }
   else if (task)
     {
@@ -17502,6 +17514,66 @@ reports_for_override (override_t override)
         g_free (report);
     }
   cleanup_iterator (&reports);
+}
+
+/**
+ * @brief Get reports affected by an override in a GHashTable.
+ *
+ * @param[in]  override The override that selected reports must be affected by.
+ *
+ * @return A GHashtable containing the affected report rowids.
+ */
+GHashTable *
+reports_for_override (override_t override)
+{
+  GHashTable *reports_table;
+  reports_table = new_resources_hashtable ();
+
+  reports_add_for_override (reports_table, override);
+
+  return reports_table;
+}
+
+/**
+ * @brief Add all reports to an existing GHashtable.
+ *
+ * @param[in]  reports_table The GHashtable to contain the report rowids.
+ */
+void
+reports_add_all (GHashTable *reports_table)
+{
+  iterator_t reports;
+
+  init_iterator (&reports,
+                 "SELECT id FROM reports");
+
+  while (next (&reports))
+    {
+      report_t *report = g_malloc0 (sizeof (report_t));
+
+      *report = iterator_int64 (&reports, 0);
+
+      if (g_hash_table_contains (reports_table, report) == 0)
+        g_hash_table_add (reports_table, report);
+      else
+        g_free (report);
+    }
+
+  cleanup_iterator (&reports);
+}
+
+/**
+ * @brief Get all reports in a GHashTable.
+ *
+ * @return A GHashtable containing the report rowids.
+ */
+GHashTable *
+reports_hashtable ()
+{
+  GHashTable *reports_table;
+  reports_table = new_resources_hashtable ();
+
+  reports_add_all (reports_table);
 
   return reports_table;
 }
@@ -17742,6 +17814,7 @@ report_cache_counts (report_t report, int clear_original, int clear_overridden)
       current_credentials.uuid
         = sql_string ("SELECT uuid FROM users WHERE id = %llu",
                       user);
+      manage_session_init (current_credentials.uuid);
 
       if ((clear_original && override == 0) || (clear_overridden && override))
         {
@@ -17760,6 +17833,37 @@ report_cache_counts (report_t report, int clear_original, int clear_overridden)
     }
   cleanup_iterator (&cache_iterator);
   current_credentials.uuid = old_user_id;
+  manage_session_init (current_credentials.uuid);
+}
+
+/**
+ * @brief Clear report counts .
+ *
+ * @param[in]  report  Report.
+ * @param[in]  clear_original     Whether to clear existing cache for
+ *                                 original severity.
+ * @param[in]  clear_overridden   Whether to clear existing cache for
+ *                                 overridden severity.
+ */
+void
+report_clear_count_cache (report_t report,
+                          int clear_original, int clear_overridden)
+{
+  if (clear_original && clear_overridden)
+    {
+      sql ("DELETE FROM report_counts"
+           " WHERE report = %llu",
+           report);
+    }
+  else if (clear_original || clear_overridden)
+    {
+      int override = clear_overridden ? 1 : 0;
+      sql ("DELETE FROM report_counts"
+           " WHERE report = %llu"
+           "   AND override = %d",
+           report,
+           override);
+    }
 }
 
 /**
@@ -40264,7 +40368,7 @@ create_override (const char* active, const char* nvt, const char* text,
   while (g_hash_table_iter_next (&reports_iter,
                                  ((gpointer*)&reports_ptr), NULL))
     {
-      report_cache_counts (*reports_ptr, 0, 1);
+      report_clear_count_cache (*reports_ptr, 0, 1);
     }
   g_hash_table_destroy (reports);
 
@@ -40397,7 +40501,7 @@ delete_override (const char *override_id, int ultimate)
   while (g_hash_table_iter_next (&reports_iter,
                                  ((gpointer*)&reports_ptr), NULL))
     {
-      report_cache_counts (*reports_ptr, 0, 1);
+      report_clear_count_cache (*reports_ptr, 0, 1);
     }
   g_hash_table_destroy (reports);
 
@@ -40432,7 +40536,7 @@ modify_override (override_t override, const char *active, const char* text,
 {
   gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_severity;
   double severity_dbl, new_severity_dbl;
-  GHashTable *old_reports, *reports;
+  GHashTable *reports;
   GHashTableIter reports_iter;
   report_t *reports_ptr;
 
@@ -40528,7 +40632,7 @@ modify_override (override_t override, const char *active, const char* text,
       return -1;
     }
 
-  old_reports = reports_for_override (override);
+  reports = reports_for_override (override);
 
   quoted_text = sql_insert (text);
   quoted_hosts = sql_insert (hosts);
@@ -40563,7 +40667,7 @@ modify_override (override_t override, const char *active, const char* text,
           while (*point && isdigit (*point)) point++;
           if (*point)
             {
-              g_hash_table_destroy (old_reports);
+              g_hash_table_destroy (reports);
               return 1;
             }
         }
@@ -40599,24 +40703,14 @@ modify_override (override_t override, const char *active, const char* text,
   g_free (quoted_port);
   g_free (quoted_severity);
 
-  reports = reports_for_override (override);
-
-  g_hash_table_iter_init (&reports_iter, old_reports);
-  reports_ptr = NULL;
-  while (g_hash_table_iter_next (&reports_iter,
-                                 ((gpointer*)&reports_ptr), NULL))
-    {
-      g_hash_table_add (reports, reports_ptr);
-    }
-  g_hash_table_steal_all (old_reports);
-  g_hash_table_destroy (old_reports);
+  reports_add_for_override (reports, override);
 
   g_hash_table_iter_init (&reports_iter, reports);
   reports_ptr = NULL;
   while (g_hash_table_iter_next (&reports_iter,
                                  ((gpointer*)&reports_ptr), NULL))
     {
-      report_cache_counts (*reports_ptr, 0, 1);
+      report_clear_count_cache (*reports_ptr, 0, 1);
     }
   g_hash_table_destroy (reports);
 
@@ -47958,6 +48052,8 @@ create_permission (const char *name_arg, const char *comment,
   gchar *name, *quoted_name, *quoted_comment, *resource_type;
   resource_t resource, subject;
   const char *resource_id;
+  GHashTable *reports = NULL;
+  int clear_original = 0;
 
   assert (current_credentials.uuid);
 
@@ -48005,12 +48101,40 @@ create_permission (const char *name_arg, const char *comment,
        subject_id ? "'" : "",
        subject);
 
+  if (permission)
+    *permission = sql_last_insert_id ();
+
+  /* Update Reports cache */
+  if (resource_type && resource_id && strcmp (resource_type, "override") == 0)
+    {
+      reports = reports_for_override (resource);
+    }
+  else if (strcasecmp (quoted_name, "super") == 0)
+    {
+      reports = reports_hashtable ();
+      clear_original = 1;
+    }
+
+  if (reports && g_hash_table_size (reports))
+    {
+      GHashTableIter reports_iter;
+      report_t *reports_ptr;
+
+      reports_ptr = NULL;
+      g_hash_table_iter_init (&reports_iter, reports);
+      while (g_hash_table_iter_next (&reports_iter,
+                                    ((gpointer*)&reports_ptr), NULL))
+        {
+          report_clear_count_cache (*reports_ptr, clear_original, 1);
+        }
+    }
+
+  if (reports)
+    g_hash_table_destroy (reports);
+
   g_free (quoted_comment);
   g_free (quoted_name);
   g_free (resource_type);
-
-  if (permission)
-    *permission = sql_last_insert_id ();
 
   sql ("COMMIT;");
 
@@ -48611,8 +48735,10 @@ int
 delete_permission (const char *permission_id, int ultimate)
 {
   permission_t permission = 0;
-  char *subject_type;
-  resource_t subject;
+  char *name, *subject_type, *resource_type;
+  resource_t subject, resource;
+  GHashTable *reports = NULL;
+  int clear_original = 0;
 
   if (strcasecmp (permission_id, PERMISSION_UUID_ADMIN_EVERYTHING) == 0)
     return 3;
@@ -48690,7 +48816,41 @@ delete_permission (const char *permission_id, int ultimate)
   else
     tags_set_orphans ("permission", permission, LOCATION_TABLE);
 
+  name = permission_name (permission);
+  resource_type = permission_resource_type (permission);
+  resource = permission_resource (permission);
+
   sql ("DELETE FROM permissions WHERE id = %llu;", permission);
+
+  /* Update Reports cache */
+  if (resource_type && resource && strcmp (resource_type, "override") == 0)
+    {
+      reports = reports_for_override (resource);
+    }
+  else if (strcasecmp (name, "super") == 0)
+    {
+      reports = reports_hashtable ();
+      clear_original = 1;
+    }
+  free (name);
+  free (resource_type);
+
+  if (reports && g_hash_table_size (reports))
+    {
+      GHashTableIter reports_iter;
+      report_t *reports_ptr;
+
+      reports_ptr = NULL;
+      g_hash_table_iter_init (&reports_iter, reports);
+      while (g_hash_table_iter_next (&reports_iter,
+                                    ((gpointer*)&reports_ptr), NULL))
+        {
+          report_clear_count_cache (*reports_ptr, clear_original, 1);
+        }
+    }
+
+  if (reports)
+    g_hash_table_destroy (reports);
 
   sql ("COMMIT;");
   return 0;
@@ -48742,6 +48902,12 @@ modify_permission (const char *permission_id, const char *name_arg,
   char *new_resource_id, *new_subject_type, *new_subject_id;
   gchar *name, *quoted_name, *resource_type;
   const char *resource_id;
+  char *old_name, *old_resource_type;
+  resource_t old_resource;
+  GHashTable *reports = NULL;
+  GHashTableIter reports_iter;
+  report_t *reports_ptr;
+  int clear_original = 0;
 
   if (permission_id == NULL)
     return 4;
@@ -48753,6 +48919,8 @@ modify_permission (const char *permission_id, const char *name_arg,
       sql ("ROLLBACK;");
       return 99;
     }
+
+  /* Find the permission. */
 
   permission = 0;
   if (find_permission (permission_id, &permission))
@@ -48767,7 +48935,8 @@ modify_permission (const char *permission_id, const char *name_arg,
       return 1;
     }
 
-  /* Check if it's a command-level permission on a predefined role. */
+  /* Refuse to modify command-level permissions on predefined roles. */
+
   existing_subject_type = permission_subject_type (permission);
   resource = permission_resource (permission);
   subject = permission_subject (permission);
@@ -48782,6 +48951,8 @@ modify_permission (const char *permission_id, const char *name_arg,
       return 99;
     }
 
+  /* Set the comment first, to make things easier. */
+
   if (comment)
     {
       gchar *quoted_comment;
@@ -48795,6 +48966,8 @@ modify_permission (const char *permission_id, const char *name_arg,
            permission);
       g_free (quoted_comment);
     }
+
+  /* Check the arguments. */
 
   new_name = name_arg ? NULL : permission_name (permission);
   if (resource_type_arg && resource_id_arg && strcmp (resource_id_arg, "0"))
@@ -48844,6 +49017,29 @@ modify_permission (const char *permission_id, const char *name_arg,
       return ret;
     }
 
+  /* Get old values and check if caches are affected by previous resource. */
+
+  old_name = permission_name (permission);
+  old_resource_type = permission_resource_type (permission);
+  old_resource = resource;
+
+  if (old_resource
+      && strcmp (old_resource_type, "override") == 0)
+    {
+      reports = reports_for_override (resource);
+    }
+  else if (strcasecmp (old_name, "super"))
+    {
+      reports = reports_hashtable ();
+      clear_original = 1;
+    }
+  else
+    {
+      reports = new_resources_hashtable ();
+    }
+
+  /* Modify the permission. */
+
   assert (subject);
   assert ((resource_id == new_resource_id)
           || (resource_id == resource_id_arg)
@@ -48870,11 +49066,45 @@ modify_permission (const char *permission_id, const char *name_arg,
        subject,
        permission);
 
+  /* Check if caches are affected by the permission and update reports cache */
+
+  if (resource_type
+      && resource
+      && (resource != old_resource
+          || strcmp (old_resource_type, "override"))
+      && strcmp (resource_type, "override") == 0)
+    {
+      reports_add_for_override (reports, resource);
+    }
+  else if (strcasecmp (quoted_name, "super") == 0
+           && strcasecmp (old_name, quoted_name))
+    {
+      reports_add_all (reports);
+      clear_original = 1;
+    }
+
+  if (reports)
+    {
+      g_hash_table_iter_init (&reports_iter, reports);
+      reports_ptr = NULL;
+      while (g_hash_table_iter_next (&reports_iter,
+                                    ((gpointer*)&reports_ptr), NULL))
+        {
+          report_clear_count_cache (*reports_ptr, clear_original, 1);
+        }
+      g_hash_table_destroy (reports);
+      reports = NULL;
+    }
+
+  /* Cleanup. */
+
   g_free (quoted_name);
   free (new_resource_type);
   free (new_resource_id);
   free (existing_subject_type);
   free (new_subject_id);
+  free (old_name);
+  free (old_resource_type);
 
   sql ("COMMIT;");
 
@@ -52410,7 +52640,7 @@ manage_restore (const char *id)
       while (g_hash_table_iter_next (&reports_iter,
                                     ((gpointer*)&reports_ptr), NULL))
         {
-          report_cache_counts (*reports_ptr, 0, 1);
+          report_clear_count_cache (*reports_ptr, 0, 1);
         }
       g_hash_table_destroy (reports);
 
@@ -52430,6 +52660,12 @@ manage_restore (const char *id)
 
   if (resource)
     {
+      permission_t permission;
+      char *name, *resource_type;
+      resource_t perm_resource;
+      GHashTable *reports = NULL;
+      int clear_original = 0;
+
       sql ("INSERT INTO permissions"
            " (uuid, owner, name, comment, resource_type, resource,"
            "  resource_uuid, resource_location, subject_type, subject,"
@@ -52441,9 +52677,46 @@ manage_restore (const char *id)
            " WHERE id = %llu;",
            resource);
 
+      permission = sql_last_insert_id ();
+      name = permission_name (permission);
+      resource_type = permission_resource_type (permission);
+      perm_resource = permission_resource (permission);
+
       tags_set_locations ("permission", resource,
                           sql_last_insert_id (),
                           LOCATION_TABLE);
+
+      /* Update Reports cache */
+      if (resource_type && perm_resource
+          && strcmp (resource_type, "override") == 0)
+        {
+          reports = reports_for_override (perm_resource);
+        }
+      else if (strcasecmp (name, "super") == 0)
+        {
+          reports = reports_hashtable ();
+          clear_original = 1;
+        }
+
+      if (reports && g_hash_table_size (reports))
+        {
+          GHashTableIter reports_iter;
+          report_t *reports_ptr;
+
+          reports_ptr = NULL;
+          g_hash_table_iter_init (&reports_iter, reports);
+          while (g_hash_table_iter_next (&reports_iter,
+                                        ((gpointer*)&reports_ptr), NULL))
+            {
+              report_clear_count_cache (*reports_ptr, clear_original, 1);
+            }
+        }
+
+      if (reports)
+        g_hash_table_destroy (reports);
+
+      free (name);
+      free (resource_type);
 
       sql ("DELETE FROM permissions_trash WHERE id = %llu;", resource);
       sql ("COMMIT;");

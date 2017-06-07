@@ -1004,6 +1004,9 @@ report_counts_build_iterator_user (iterator_t *);
 void
 report_cache_counts (report_t, int, int);
 
+void
+report_clear_count_cache (report_t, int, int);
+
 double
 report_severity (report_t, int, int);
 
