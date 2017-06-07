@@ -1,5 +1,10 @@
 2017-06-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/greenbone-certdata-sync.in (set_interrupt_trap)
+	(handle_interrupt): Remove.  No longer used.
+
+2017-06-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/greenbone-scapdata-sync.in,
 	tools/greenbone-certdata-sync.in: Make section heading clearer.  Add more
 	sections.  Move some items to better sections.

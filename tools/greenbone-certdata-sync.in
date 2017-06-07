@@ -214,14 +214,6 @@ do_feedversion () {
   fi
 }
 
-set_interrupt_trap () {
-  trap "handle_interrupt $1" 2
-}
-
-handle_interrupt () {
-  echo "$1:X" >&3
-}
-
 # This function uses gos-state-manager to get information about the settings.
 # gos-state-manager is only available on a Greenbone OS.
 # If gos-state-manager is missing the settings values can not be retrieved.
