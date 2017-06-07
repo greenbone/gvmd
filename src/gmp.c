@@ -14751,6 +14751,127 @@ get_nvt_feed (gmp_parser_t *gmp_parser, GError **error)
 }
 
 /**
+ * @brief Parse feed info entity.
+ *
+ * @param[in]  entity       Config XML.
+ * @param[in]  config_path  Path to config XML file.
+ * @param[out] name         Name of feed.
+ * @param[out] version      Version of feed.
+ * @param[out] description  Description of feed.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+get_feed_info_parse (entity_t entity, const gchar *config_path,
+                     gchar **name, gchar **version, gchar **description)
+{
+  entity_t child;
+
+  assert (name && version && description);
+
+  child = entity_child (entity, "name");
+  if (child == NULL)
+    {
+      g_warning ("%s: Missing name in '%s'\n", __FUNCTION__, config_path);
+      return -1;
+    }
+  *name = entity_text (child);
+
+  child = entity_child (entity, "description");
+  if (child == NULL)
+    {
+      g_warning ("%s: Missing description in '%s'\n",
+                 __FUNCTION__, config_path);
+      return -1;
+    }
+  *description = entity_text (child);
+
+  child = entity_child (entity, "version");
+  if (child == NULL)
+    {
+      g_warning ("%s: Missing version in '%s'\n", __FUNCTION__, config_path);
+      return -1;
+    }
+  *version = entity_text (child);
+
+  return 0;
+}
+
+/**
+ * @brief Get feed info.
+ *
+ * @param[in]  feed_type         Type of feed.
+ * @param[out] feed_name         Name of feed.
+ * @param[out] feed_version      Version of feed.
+ * @param[out] feed_description  Description of feed.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+get_feed_info (int feed_type, gchar **feed_name, gchar **feed_version,
+               gchar **feed_description)
+{
+  GError *error;
+  gchar *config_path, *xml, *name, *version, *description;
+  gsize xml_len;
+  entity_t entity;
+
+  assert (feed_type == SCAP_FEED || feed_type == CERT_FEED);
+
+  config_path = g_build_filename (feed_type == SCAP_FEED
+                                   ? GVM_SCAP_DATA_DIR
+                                   : GVM_CERT_DATA_DIR,
+                                  "feed.xml",
+                                  NULL);
+  g_debug ("%s: config_path: %s", __FUNCTION__, config_path);
+
+  /* Read the file in. */
+
+  error = NULL;
+  g_file_get_contents (config_path, &xml, &xml_len, &error);
+  if (error)
+    {
+      g_warning ("%s: Failed to read '%s': %s\n",
+                  __FUNCTION__,
+                 config_path,
+                 error->message);
+      g_error_free (error);
+      g_free (config_path);
+      return -1;
+    }
+
+  /* Parse it as XML. */
+
+  if (parse_entity (xml, &entity))
+    {
+      g_warning ("%s: Failed to parse '%s'\n", __FUNCTION__, config_path);
+      g_free (config_path);
+      return -1;
+    }
+
+  /* Get the report format properties from the XML. */
+
+  if (get_feed_info_parse (entity, config_path, &name, &version, &description))
+    {
+      g_free (config_path);
+      free_entity (entity);
+      return -1;
+    }
+  g_free (config_path);
+
+  if (feed_name)
+    *feed_name = g_strdup (name);
+  if (feed_description)
+    *feed_description = g_strdup (description);
+  if (feed_version)
+    *feed_version = g_strdup (version);
+
+  free_entity (entity);
+
+  return 0;
+}
+
+/**
  * @brief Get a single feed.
  *
  * @param[in]  gmp_parser   GMP parser.
@@ -14761,7 +14882,7 @@ get_nvt_feed (gmp_parser_t *gmp_parser, GError **error)
 static void
 get_feed (gmp_parser_t *gmp_parser, GError **error, int feed_type)
 {
-  const gchar *feed_name, *feed_vendor, *feed_home;
+  gchar *feed_name, *feed_description, *feed_version;
 
   if (feed_type == NVT_FEED)
     {
@@ -14769,42 +14890,19 @@ get_feed (gmp_parser_t *gmp_parser, GError **error, int feed_type)
       return;
     }
 
-  if (g_file_test (GVM_ACCESS_KEY_DIR "/gsf-access-key", G_FILE_TEST_EXISTS))
-    {
-      if (feed_type == SCAP_FEED)
-        feed_name = "Greenbone SCAP Feed";
-      else
-        feed_name = "Greenbone CERT Feed";
-      feed_vendor = "Greenbone Networks GmbH";
-      feed_home = "http://www.greenbone.net/technology/gsf.html";
-    }
-  else
-    {
-      if (feed_type == SCAP_FEED)
-        feed_name = "OpenVAS SCAP Feed";
-      else
-        feed_name = "OpenVAS CERT Feed";
-      feed_vendor = "The OpenVAS Project";
-      feed_home = "http://www.openvas.org/";
-    }
+  if (get_feed_info (feed_type, &feed_name, &feed_version, &feed_description))
+    return;
 
   SENDF_TO_CLIENT_OR_FAIL
    ("<feed>"
     "<type>%s</type>"
     "<name>%s</name>"
-    "<version>%i</version>"
-    "<description>"
-    "This script synchronizes a SCAP collection with the '%s'."
-    " The '%s' is provided by '%s'."
-    " Online information about this feed: '%s'."
-    "</description>",
+    "<version>%s</version>"
+    "<description>%s</description>",
     feed_type_name (feed_type),
     feed_name,
-    manage_feed_timestamp (feed_type == SCAP_FEED ? "scap" : "cert"),
-    feed_name,
-    feed_name,
-    feed_vendor,
-    feed_home);
+    feed_version,
+    feed_description);
 
 // FIX
 #if 0
@@ -14820,6 +14918,10 @@ get_feed (gmp_parser_t *gmp_parser, GError **error, int feed_type)
       g_free (user);
     }
 #endif
+
+  g_free (feed_name);
+  g_free (feed_version);
+  g_free (feed_description);
 
   SEND_TO_CLIENT_OR_FAIL ("</feed>");
 }

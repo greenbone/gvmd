@@ -156,6 +156,29 @@ else
 
 fi
 
+write_feed_xml () {
+  if [ -r $TIMESTAMP ]
+  then
+	FEED_VERSION=`cat $TIMESTAMP`
+  else
+	FEED_VERSION=0
+  fi
+
+  echo '<feed id="6315d194-4b6a-11e7-a570-28d24461215b">' > $CERT_DIR/feed.xml
+  echo "<type>CERT</type>" >> $CERT_DIR/feed.xml
+  echo "<name>$FEED_NAME</name>" >> $CERT_DIR/feed.xml
+  echo "<version>$FEED_VERSION</version>" >> $CERT_DIR/feed.xml
+  echo "<vendor>$FEED_VENDOR</vendor>" >> $CERT_DIR/feed.xml
+  echo "<home>$FEED_HOME</home>" >> $CERT_DIR/feed.xml
+  echo "<description>" >> $CERT_DIR/feed.xml
+  echo "This script synchronizes a CERT collection with the '$FEED_NAME'." >> $CERT_DIR/feed.xml
+  echo "The '$FEED_NAME' is provided by '$FEED_VENDOR'." >> $CERT_DIR/feed.xml
+  echo "Online information about this feed: '$FEED_HOME'." >> $CERT_DIR/feed.xml
+  echo "</description>" >> $CERT_DIR/feed.xml
+  echo "</feed>" >> $CERT_DIR/feed.xml
+}
+
+write_feed_xml
 
 RSYNC=`command -v rsync`
 
@@ -396,6 +419,8 @@ sync_certdata(){
 	log_notice "No Greenbone Security Feed accees key found, falling back to Greenbone Community Feed"
 	do_sync_community_feed
   fi
+
+  write_feed_xml
 }
 
 do_self_test () {

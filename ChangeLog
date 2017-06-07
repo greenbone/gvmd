@@ -1,3 +1,19 @@
+2017-06-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Get SecInfo feed meta info from the feed.
+
+	* src/gmp.c (get_feed_info_parse, get_feed_info): New functions.
+	(get_feed): Get feed info from XML file in feed.
+
+	* tools/greenbone-scapdata-sync.in (write_feed_xml): New function.
+	(sync_scapdata): Write feed xml.
+
+	* tools/greenbone-certdata-sync.in (write_feed_xml): New function.
+	(sync_certdata): Write feed xml.
+
+	* src/CMakeLists.txt: Remove GVM_ACCESS_KEY_DIR directive.  No longer
+	used.
+
 2017-06-07  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Clear report counts caches for overrides instead of rebuilding and also
@@ -20,7 +36,7 @@
 	reports affected or clear the whole cache for super permissions.
 	(manage_restore): Clear reports cache for overrides and also clear it
 	on override or super permission changes.
-	
+
 	* src/manage.h (report_clear_count_cache): New function prototype.
 
 2017-06-05  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
@@ -45,7 +61,7 @@
 
 	* CMakeLists.txt: Remove the OpenVAS SysConfdir. This automatically
 	activate the gvm sysconfdir.
-	
+
 2017-06-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/XML/GMP.xml.in: Add SYNC_FEED to changes.
