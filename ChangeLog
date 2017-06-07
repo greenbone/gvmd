@@ -1,3 +1,28 @@
+2017-06-07  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Clear report counts caches for overrides instead of rebuilding and also
+	clear them on changing permissions for overrides.
+
+	* src/manage_sql.c (new_resources_hashtable)
+	(reports_add_for_override): New functions.
+	(reports_for_override): Move creation of hash map and adding of values
+	to new functions new_resources_hashtable and reports_add_for_override.
+	(reports_add_all, reports_hashtable): New functions.
+	(report_cache_counts): Call manage_session_init to update the table
+	current_credentials when switching users.
+	(report_clear_count_cache): New function.
+	(create_override, delete_override): Clear cache instead of rebuilding.
+	(modify_override): Simplify by using only one hash table and adding
+	reports with reports_add_for_override.  Also clear cache instead of
+	rebuilding it.
+	(create_permission_internal, delete_permission, modify_permission):
+	If the permission is for an override, rebuild the reports cache for
+	reports affected or clear the whole cache for super permissions.
+	(manage_restore): Clear reports cache for overrides and also clear it
+	on override or super permission changes.
+	
+	* src/manage.h (report_clear_count_cache): New function prototype.
+
 2017-06-05  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	Changed location of the sysconf directory to etc/gvm.
