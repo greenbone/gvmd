@@ -56,6 +56,16 @@
  */
 #define SCAP_DB_FILE SCAP_DB_DIR "scap.db"
 
+/**
+ * @brief Location of CERT db.
+ */
+#define CERT_DB_DIR GVMD_STATE_DIR "/cert/"
+
+/**
+ * @brief Location of CERT db.
+ */
+#define CERT_DB_FILE CERT_DB_DIR "cert.db"
+
 
 /* Variables */
 
@@ -3968,7 +3978,7 @@ manage_attach_databases ()
 
   /* Attach the CERT database. */
 
-  if (access (GVM_CERT_DATA_DIR "/cert.db", R_OK))
+  if (access (CERT_DB_FILE, R_OK))
     switch (errno)
       {
         case ENOENT:
@@ -3980,7 +3990,7 @@ manage_attach_databases ()
           break;
       }
   else
-    sql_error ("ATTACH DATABASE '" GVM_CERT_DATA_DIR "/cert.db'"
+    sql_error ("ATTACH DATABASE '" CERT_DB_FILE "'"
                " AS cert;");
 }
 
@@ -3993,7 +4003,7 @@ manage_db_remove (const gchar *name)
   if (strcasecmp (name, "cert") == 0)
     {
       sql ("DETACH DATABASE cert;");
-      unlink (GVM_CERT_DATA_DIR "/cert.db'");
+      unlink (CERT_DB_FILE);
     }
   else if (strcasecmp (name, "scap") == 0)
     {
@@ -4012,7 +4022,7 @@ manage_db_init (const gchar *name)
 {
   if (strcasecmp (name, "cert") == 0)
     {
-      if (access (GVM_CERT_DATA_DIR "/cert.db", R_OK)
+      if (access (CERT_DB_FILE, R_OK)
           && errno != ENOENT)
         {
           g_warning ("%s: failed to stat CERT database: %s\n",
@@ -4021,8 +4031,21 @@ manage_db_init (const gchar *name)
           return -1;
         }
       else
-        sql ("ATTACH DATABASE '" GVM_CERT_DATA_DIR "/cert.db'"
-             " AS cert;");
+        {
+          /* Ensure the parent directory exists. */
+
+          if (g_mkdir_with_parents (CERT_DB_DIR, 0755 /* "rwxr-xr-x" */)
+              == -1)
+            {
+              g_warning ("%s: failed to create CERT directory: %s\n",
+                         __FUNCTION__,
+                         strerror (errno));
+              abort ();
+            }
+
+          sql ("ATTACH DATABASE '" CERT_DB_FILE "'"
+               " AS cert;");
+        }
 
       sql ("PRAGMA cert.journal_mode=WAL;");
 
@@ -4317,7 +4340,7 @@ manage_db_check (const gchar *name)
       char *ok;
       int ret;
 
-      if (access (GVM_CERT_DATA_DIR "/cert.db", R_OK))
+      if (access (CERT_DB_FILE, R_OK))
         {
           if (errno == ENOENT)
             return 0;
@@ -4374,7 +4397,7 @@ manage_cert_loaded ()
   if (loaded)
     return 1;
 
-  if (access (GVM_CERT_DATA_DIR "/cert.db", R_OK))
+  if (access (CERT_DB_FILE, R_OK))
     switch (errno)
       {
         case ENOENT:
@@ -4441,7 +4464,7 @@ manage_scap_loaded ()
 int
 manage_cert_db_exists ()
 {
-  if (access (GVM_CERT_DATA_DIR "/cert.db", R_OK))
+  if (access (CERT_DB_FILE, R_OK))
     switch (errno)
       {
         case ENOENT:

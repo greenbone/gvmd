@@ -43,7 +43,7 @@ fi
 # "--delete --exclude cert.db --exclude $PRIVATE_SUBDIR/",
 # which means that files which are not part of the feed, database or private
 # directory will be deleted.
-RSYNC_DELETE="--delete --exclude cert.db --exclude \"$PRIVATE_SUBDIR/\""
+RSYNC_DELETE="--delete --exclude \"$PRIVATE_SUBDIR/\""
 
 # RSYNC_SSH_OPTS contains options which should be passed to ssh for the rsync
 # connection to the repository.

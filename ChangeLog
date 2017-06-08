@@ -1,5 +1,19 @@
 2017-06-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Store the SQLite CERT DB under the GVMD state dir, instead of in the
+	feed dir.
+
+	* src/manage_sqlite3.c (CERT_DB_DIR, CERT_DB_FILE): New defines.
+	(manage_attach_databases, manage_db_remove, manage_db_check)
+	(manage_cert_loaded, manage_cert_db_exists): Use CERT_DB_FILE
+	instead of explicit file name.
+	(manage_db_init): Use CERT_DB_FILE.  Ensure parent exists.
+
+	* tools/greenbone-certdata-sync.in (RSYNC_DELETE): Remove cert.db from
+	excludes.
+
+2017-06-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Store the SQLite SCAP DB under the GVMD state dir, instead of in the
 	feed dir.
 
