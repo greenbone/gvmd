@@ -1,3 +1,7 @@
+2017-06-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/gmp.c (get_ovaldi_files): Remove reference to scap.db.
+
 2017-06-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* tools/greenbone-certdata-sync.in (set_interrupt_trap)

@@ -13053,8 +13053,7 @@ get_next (iterator_t *resources, get_data_t *get, int *first, int *count,
     }
 
 /**
- * @brief Get list of ovaldi definitions files using the values in ovaldefs
- *        table in scap.db
+ * @brief Get list of ovaldi definitions files from the SCAP ovaldefs table.
  *
  * @return String of |-concatenated file names. Free with g_free().
  */
