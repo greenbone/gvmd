@@ -46,6 +46,16 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
+/**
+ * @brief Location of SCAP db.
+ */
+#define SCAP_DB_DIR GVMD_STATE_DIR "/scap/"
+
+/**
+ * @brief Location of SCAP db.
+ */
+#define SCAP_DB_FILE SCAP_DB_DIR "scap.db"
+
 
 /* Variables */
 
@@ -3941,7 +3951,7 @@ manage_attach_databases ()
 {
   /* Attach the SCAP database. */
 
-  if (access (GVM_SCAP_DATA_DIR "/scap.db", R_OK))
+  if (access (SCAP_DB_FILE, R_OK))
     switch (errno)
       {
         case ENOENT:
@@ -3953,7 +3963,7 @@ manage_attach_databases ()
           break;
       }
   else
-    sql_error ("ATTACH DATABASE '" GVM_SCAP_DATA_DIR "/scap.db'"
+    sql_error ("ATTACH DATABASE '" SCAP_DB_FILE "'"
                " AS scap;");
 
   /* Attach the CERT database. */
@@ -3988,7 +3998,7 @@ manage_db_remove (const gchar *name)
   else if (strcasecmp (name, "scap") == 0)
     {
       sql ("DETACH DATABASE scap;");
-      unlink (GVM_SCAP_DATA_DIR "/scap.db'");
+      unlink (SCAP_DB_FILE);
     }
   else
     assert (0);
@@ -4098,7 +4108,7 @@ manage_db_init (const gchar *name)
     }
   else if (strcasecmp (name, "scap") == 0)
     {
-      if (access (GVM_SCAP_DATA_DIR "/scap.db", R_OK)
+      if (access (SCAP_DB_FILE, R_OK)
           && errno != ENOENT)
         {
           g_warning ("%s: failed to stat SCAP database: %s\n",
@@ -4107,8 +4117,20 @@ manage_db_init (const gchar *name)
           return -1;
         }
       else
-        sql ("ATTACH DATABASE '" GVM_SCAP_DATA_DIR "/scap.db'"
-             " AS scap;");
+        {
+          /* Ensure the parent directory exists. */
+
+          if (g_mkdir_with_parents (SCAP_DB_DIR, 0755 /* "rwxr-xr-x" */)
+              == -1)
+            {
+              g_warning ("%s: failed to create SCAP directory: %s\n",
+                         __FUNCTION__,
+                         strerror (errno));
+              abort ();
+            }
+
+          sql ("ATTACH DATABASE '" SCAP_DB_FILE "' AS scap;");
+        }
 
       sql ("PRAGMA scap.journal_mode=WAL;");
 
@@ -4318,7 +4340,7 @@ manage_db_check (const gchar *name)
       char *ok;
       int ret;
 
-      if (access (GVM_SCAP_DATA_DIR "/scap.db", R_OK))
+      if (access (SCAP_DB_FILE, R_OK))
         {
           if (errno == ENOENT)
             return 0;
@@ -4388,7 +4410,7 @@ manage_scap_loaded ()
   if (loaded)
     return 1;
 
-  if (access (GVM_SCAP_DATA_DIR "/scap.db", R_OK))
+  if (access (SCAP_DB_FILE, R_OK))
     switch (errno)
       {
         case ENOENT:
@@ -4442,7 +4464,7 @@ manage_cert_db_exists ()
 int
 manage_scap_db_exists ()
 {
-  if (access (GVM_SCAP_DATA_DIR "/scap.db", R_OK))
+  if (access (SCAP_DB_FILE, R_OK))
     switch (errno)
       {
         case ENOENT:

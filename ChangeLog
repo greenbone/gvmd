@@ -1,5 +1,19 @@
 2017-06-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Store the SQLite SCAP DB under the GVMD state dir, instead of in the
+	feed dir.
+
+	* src/manage_sqlite3.c (SCAP_DB_DIR, SCAP_DB_FILE): New defines.
+	(manage_attach_databases, manage_db_remove, manage_db_check)
+	(manage_scap_loaded, manage_scap_db_exists): Use SCAP_DB_FILE
+	instead of explicit file name.
+	(manage_db_init): Use SCAP_DB_FILE.  Ensure parent exists.
+
+	* tools/greenbone-scapdata-sync.in (RSYNC_DELETE): Remove scap.db from
+	excludes.
+
+2017-06-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/gmp.c (get_ovaldi_files): Remove reference to scap.db.
 
 2017-06-07  Matthew Mundell <matthew.mundell@greenbone.net>
