@@ -1,3 +1,17 @@
+2017-06-11  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/gmp.c, src/manage.c, src/manage.h, src/manage_migrators.c:
+	Renamed openvas_migrate_secinfo to gvm_migrate_secinfo, 
+	openvas_current_sync to gvm_current_sync,
+	openvas_sync_script_perform_selftest to
+	gvm_sync_script_perform_selftest,
+	openvas_get_sync_script_identification to
+	gvm_get_sync_script_identification,
+	openvas_get_sync_script_description to
+	gvm_get_sync_script_description,
+	openvas_get_sync_script_feed_version to
+	gvm_get_sync_script_feed_version.
+
 2017-06-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Store the SQLite CERT DB under the GVMD state dir, instead of in the

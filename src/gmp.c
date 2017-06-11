@@ -14687,19 +14687,19 @@ get_nvt_feed (gmp_parser_t *gmp_parser, GError **error)
   feed_identification = NULL;
   feed_version = NULL;
 
-  if (openvas_get_sync_script_description (nvt_sync_script, &feed_description)
-      && openvas_get_sync_script_identification (nvt_sync_script,
-                                                 &feed_identification,
-                                                 NVT_FEED)
-      && openvas_get_sync_script_feed_version (nvt_sync_script,
-                                               &feed_version))
+  if (gvm_get_sync_script_description (nvt_sync_script, &feed_description)
+      && gvm_get_sync_script_identification (nvt_sync_script,
+                                             &feed_identification,
+                                             NVT_FEED)
+      && gvm_get_sync_script_feed_version (nvt_sync_script,
+                                           &feed_version))
     {
       gchar *user, *timestamp;
       int syncing;
       gchar **ident = g_strsplit (feed_identification, "|", 6);
       gchar *selftest_result = NULL;
 
-      syncing = openvas_current_sync (nvt_sync_script, &timestamp, &user);
+      syncing = gvm_current_sync (nvt_sync_script, &timestamp, &user);
       if (syncing < 0 || ident[0] == NULL || ident[1] == NULL
           || ident[2] == NULL || ident[3] == NULL)
         {
@@ -14718,8 +14718,8 @@ get_nvt_feed (gmp_parser_t *gmp_parser, GError **error)
             feed_version,
             feed_description);
           g_strfreev (ident);
-          if (openvas_sync_script_perform_selftest (nvt_sync_script,
-                                                    &selftest_result)
+          if (gvm_sync_script_perform_selftest (nvt_sync_script,
+                                                &selftest_result)
               == FALSE)
             {
               SENDF_TO_CLIENT_OR_FAIL ("<sync_not_available>"

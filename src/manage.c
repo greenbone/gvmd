@@ -7849,8 +7849,8 @@ sort_data_free (sort_data_t *sort_data)
  * @return TRUE if the selftest was successful, or FALSE if an error occurred.
  */
 gboolean
-openvas_sync_script_perform_selftest (const gchar * sync_script,
-                                      gchar ** result)
+gvm_sync_script_perform_selftest (const gchar * sync_script,
+                                  gchar ** result)
 {
   g_assert (sync_script);
   g_assert_cmpstr (*result, ==, NULL);
@@ -7921,9 +7921,9 @@ openvas_sync_script_perform_selftest (const gchar * sync_script,
  *         error occurred.
  */
 gboolean
-openvas_get_sync_script_identification (const gchar * sync_script,
-                                        gchar ** identification,
-                                        int feed_type)
+gvm_get_sync_script_identification (const gchar * sync_script,
+                                    gchar ** identification,
+                                    int feed_type)
 {
   g_assert (sync_script);
   if (identification)
@@ -8016,8 +8016,8 @@ openvas_get_sync_script_identification (const gchar * sync_script,
  *         occurred.
  */
 gboolean
-openvas_get_sync_script_description (const gchar * sync_script,
-                                     gchar ** description)
+gvm_get_sync_script_description (const gchar * sync_script,
+                                 gchar ** description)
 {
   g_assert (sync_script);
   g_assert_cmpstr (*description, ==, NULL);
@@ -8082,8 +8082,8 @@ openvas_get_sync_script_description (const gchar * sync_script,
  *         occurred.
  */
 gboolean
-openvas_get_sync_script_feed_version (const gchar * sync_script,
-                                      gchar ** feed_version)
+gvm_get_sync_script_feed_version (const gchar * sync_script,
+                                  gchar ** feed_version)
 {
   g_assert (sync_script);
   g_assert_cmpstr (*feed_version, ==, NULL);
@@ -8147,7 +8147,7 @@ openvas_get_sync_script_feed_version (const gchar * sync_script,
  * @return 0 sync complete, 1 sync already in progress, -1 error
  */
 int
-openvas_migrate_secinfo (int feed_type)
+gvm_migrate_secinfo (int feed_type)
 {
   int lockfile, ret;
   gchar *lockfile_name;
@@ -8228,8 +8228,8 @@ openvas_migrate_secinfo (int feed_type)
  * @return 0 success, 1 success when sync in progress, -1 error.
  */
 int
-openvas_current_sync (const gchar * sync_script, gchar ** timestamp,
-                      gchar ** user)
+gvm_current_sync (const gchar * sync_script, gchar ** timestamp,
+                  gchar ** user)
 {
   gchar *lockfile_name, *content, **lines;
   GError *error = NULL;

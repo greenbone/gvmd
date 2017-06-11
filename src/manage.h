@@ -4166,22 +4166,22 @@ int
 manage_feed_timestamp (const gchar *);
 
 int
-openvas_migrate_secinfo (int);
+gvm_migrate_secinfo (int);
 
 int
-openvas_current_sync (const gchar *, gchar **, gchar **);
+gvm_current_sync (const gchar *, gchar **, gchar **);
 
 gboolean
-openvas_sync_script_perform_selftest (const gchar *, gchar **);
+gvm_sync_script_perform_selftest (const gchar *, gchar **);
 
 gboolean
-openvas_get_sync_script_identification (const gchar *, gchar **, int);
+gvm_get_sync_script_identification (const gchar *, gchar **, int);
 
 gboolean
-openvas_get_sync_script_description (const gchar *, gchar **);
+gvm_get_sync_script_description (const gchar *, gchar **);
 
 gboolean
-openvas_get_sync_script_feed_version (const gchar *, gchar **);
+gvm_get_sync_script_feed_version (const gchar *, gchar **);
 
 
 /* Wizards. */
