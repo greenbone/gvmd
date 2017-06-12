@@ -1,5 +1,14 @@
 2017-06-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/gmp.c (get_nvt_feed): Removing CURRENTLY_SYNCING.  Only GMP
+	SYNC_FEED was conveying this info.
+
+	* src/manage.c (gvm_current_sync): Remove.  No longer used.
+
+	* src/manage.h: Remove header accordingly.
+
+2017-06-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Record the date when syncing, and include it in OMP GET_FEEDS.
 
 	* src/gmp.c (get_feed): If the lockfile is locked, write the contents out

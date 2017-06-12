@@ -14695,13 +14695,10 @@ get_nvt_feed (gmp_parser_t *gmp_parser, GError **error)
       && gvm_get_sync_script_feed_version (nvt_sync_script,
                                            &feed_version))
     {
-      gchar *user, *timestamp;
-      int syncing;
       gchar **ident = g_strsplit (feed_identification, "|", 6);
       gchar *selftest_result = NULL;
 
-      syncing = gvm_current_sync (nvt_sync_script, &timestamp, &user);
-      if (syncing < 0 || ident[0] == NULL || ident[1] == NULL
+      if (ident[0] == NULL || ident[1] == NULL
           || ident[2] == NULL || ident[3] == NULL)
         {
           g_strfreev (ident);
@@ -14730,17 +14727,6 @@ get_nvt_feed (gmp_parser_t *gmp_parser, GError **error)
               g_free (selftest_result);
             }
 
-          if (syncing > 0)
-            {
-              SENDF_TO_CLIENT_OR_FAIL ("<currently_syncing>"
-                                       "<timestamp>%s</timestamp>"
-                                       "<user>%s</user>"
-                                       "</currently_syncing>",
-                                       timestamp ? timestamp : "",
-                                       user ? user : "");
-              g_free (timestamp);
-              g_free (user);
-            }
           SEND_TO_CLIENT_OR_FAIL ("</feed>");
         }
 

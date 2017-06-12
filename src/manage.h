@@ -4168,9 +4168,6 @@ manage_feed_timestamp (const gchar *);
 int
 gvm_migrate_secinfo (int);
 
-int
-gvm_current_sync (const gchar *, gchar **, gchar **);
-
 gboolean
 gvm_sync_script_perform_selftest (const gchar *, gchar **);
 

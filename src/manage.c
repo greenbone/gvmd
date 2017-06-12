@@ -8218,59 +8218,6 @@ gvm_migrate_secinfo (int feed_type)
   return ret;
 }
 
-/**
- * @brief Determine if the administrator is synchronizing with a feed.
- *
- * @param[in]   sync_script  The file name of the synchronization script.
- * @param[out]  timestamp    Newly allocated time that sync started, if syncing.
- * @param[out]  user         Newly allocated user who started sync, if syncing.
- *
- * @return 0 success, 1 success when sync in progress, -1 error.
- */
-int
-gvm_current_sync (const gchar * sync_script, gchar ** timestamp,
-                  gchar ** user)
-{
-  gchar *lockfile_name, *content, **lines;
-  GError *error = NULL;
-
-  g_assert (sync_script);
-
-  lockfile_name =
-    g_build_filename (g_get_tmp_dir (), "openvas-feed-sync", sync_script, NULL);
-  if (!g_file_get_contents (lockfile_name, &content, NULL, &error))
-    {
-      if (g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT)
-          || g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_ACCES))
-        {
-          g_error_free (error);
-          g_free (lockfile_name);
-          return 0;
-        }
-
-      g_warning ("%s: %s", __FUNCTION__, error->message);
-      g_error_free (error);
-      g_free (lockfile_name);
-      return -1;
-    }
-
-  lines = g_strsplit (content, "\n", 2);
-  g_free (content);
-  if (lines[0] && lines[1])
-    {
-      *timestamp = g_strdup (lines[0]);
-      *user = g_strdup (lines[1]);
-
-      g_free (lockfile_name);
-      g_strfreev (lines);
-      return 1;
-    }
-
-  g_free (lockfile_name);
-  g_strfreev (lines);
-  return -1;
-}
-
 
 /* Wizards. */
 
