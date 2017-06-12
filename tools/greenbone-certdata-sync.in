@@ -43,7 +43,7 @@ fi
 # "--delete --exclude cert.db --exclude $PRIVATE_SUBDIR/",
 # which means that files which are not part of the feed, database or private
 # directory will be deleted.
-RSYNC_DELETE="--delete --exclude \"$PRIVATE_SUBDIR/\""
+RSYNC_DELETE="--delete --exclude feed.xml --exclude \"$PRIVATE_SUBDIR/\""
 
 # RSYNC_SSH_OPTS contains options which should be passed to ssh for the rsync
 # connection to the repository.
@@ -498,11 +498,13 @@ then
 fi
 (
   flock -n 9
+  date > $LOCK_FILE
   if [ $? -eq 1 ] ; then
     log_notice "Sync in progress, exiting."
     exit 1
   fi
   sync_certdata
+  echo -n > $LOCK_FILE
 ) 9>$LOCK_FILE
 
 exit 0

@@ -3505,6 +3505,37 @@ update_scap_ovaldefs (int last_scap_update, int private)
 /* CERT and SCAP update. */
 
 /**
+ * @brief Write start time to sync lock file.
+ */
+void
+write_sync_start (int lockfile)
+{
+  time_t now;
+  char *now_string;
+
+  now = time (NULL);
+  now_string = ctime (&now);
+  while (*now_string)
+    {
+      ssize_t count;
+      count = write (lockfile,
+                     now_string,
+                     strlen (now_string));
+      if (count < 0)
+        {
+          if (errno == EAGAIN || errno == EINTR)
+            /* Interrupted, try write again. */
+            continue;
+          g_warning ("%s: failed to write to lockfile: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          break;
+        }
+      now_string += count;
+    }
+}
+
+/**
  * @brief Reinit a db.
  *
  * @return 0 success, -1 error.
@@ -3522,7 +3553,7 @@ manage_db_reinit (const gchar *name)
 }
 
 /**
- * @brief Sync the SCAP DB.
+ * @brief Sync a SecInfo DB.
  *
  * @param[in]  sigmask_current    Sigmask to restore in child.
  * @param[in]  update             Function to do the sync.
@@ -3530,7 +3561,7 @@ manage_db_reinit (const gchar *name)
  * @param[in]  lockfile_basename  Basename for lockfile.
  */
 static void
-sync_secinfo (sigset_t *sigmask_current, int (*update) (),
+sync_secinfo (sigset_t *sigmask_current, int (*update) (int),
               const gchar *process_title, const gchar *lockfile_basename)
 {
   int pid, lockfile;
@@ -3582,6 +3613,8 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (),
             exit (EXIT_SUCCESS);
           }
 
+        g_debug ("%s: locked", __FUNCTION__);
+
         /* Init. */
 
         reinit_manage_process ();
@@ -3603,7 +3636,7 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (),
 
   proctitle_set (process_title);
 
-  if (update () == 0)
+  if (update (lockfile) == 0)
     {
       g_info ("%s: Checking for alerts", __FUNCTION__);
 
@@ -3830,10 +3863,12 @@ update_cvss_cert_bund (int updated_cert_bund, int last_cert_update,
 /**
  * @brief Sync the CERT DB.
  *
+ * @param[in]  lockfile  Lock file.
+ *
  * @return 0 success, -1 error.
  */
 static int
-sync_cert ()
+sync_cert (int lockfile)
 {
   int last_feed_update, last_cert_update, last_scap_update, updated_dfn_cert;
   int updated_cert_bund;
@@ -3891,6 +3926,8 @@ sync_cert ()
 
   g_debug ("%s: sync", __FUNCTION__);
 
+  write_sync_start (lockfile);
+
   manage_db_check_mode ("cert");
 
   if (manage_db_check ("cert"))
@@ -3901,12 +3938,12 @@ sync_cert ()
         {
           g_warning ("%s: could not reinitialize CERT database",
                      __FUNCTION__);
-          return -1;
+          goto fail;
         }
     }
 
   if (manage_update_cert_db_init ())
-    return -1;
+    goto fail;
 
   g_info ("%s: Updating data from feed", __FUNCTION__);
 
@@ -3916,7 +3953,7 @@ sync_cert ()
   if (updated_dfn_cert == -1)
     {
       manage_update_cert_db_cleanup ();
-      return -1;
+      goto fail;
     }
 
   g_debug ("%s: update bund", __FUNCTION__);
@@ -3925,7 +3962,7 @@ sync_cert ()
   if (updated_cert_bund == -1)
     {
       manage_update_cert_db_cleanup ();
-      return -1;
+      goto fail;
     }
 
   g_debug ("%s: update cvss", __FUNCTION__);
@@ -3945,18 +3982,35 @@ sync_cert ()
   if (update_cert_timestamp ())
     {
       manage_update_cert_db_cleanup ();
-      return -1;
+      goto fail;
     }
 
   g_info ("%s: Updating CERT info succeeded.", __FUNCTION__);
 
   manage_update_cert_db_cleanup ();
 
+  /* Clear date from lock file. */
+
+  if (ftruncate (lockfile, 0))
+    g_warning ("%s: failed to ftruncate lockfile: %s\n",
+               __FUNCTION__,
+               strerror (errno));
+
   return 0;
+
+ fail:
+  /* Clear date from lock file. */
+
+  if (ftruncate (lockfile, 0))
+    g_warning ("%s: failed to ftruncate lockfile: %s\n",
+               __FUNCTION__,
+               strerror (errno));
+
+  return -1;
 }
 
 /**
- * @brief Sync the SCAP DB.
+ * @brief Sync the CERT DB.
  *
  * @param[in]  sigmask_current  Sigmask to restore in child.
  */
@@ -4138,10 +4192,12 @@ update_scap_placeholders (int updated_cves)
 /**
  * @brief Sync the SCAP DB.
  *
+ * @param[in]  lockfile  Lock file.
+ *
  * @return 0 success, -1 error.
  */
 static int
-sync_scap ()
+sync_scap (int lockfile)
 {
   int last_feed_update, last_scap_update;
   int updated_scap_ovaldefs, updated_scap_cpes, updated_scap_cves;
@@ -4200,6 +4256,8 @@ sync_scap ()
 
   g_debug ("%s: sync", __FUNCTION__);
 
+  write_sync_start (lockfile);
+
   manage_db_check_mode ("scap");
 
   if (manage_db_check ("scap"))
@@ -4210,12 +4268,12 @@ sync_scap ()
         {
           g_warning ("%s: could not reinitialize SCAP database",
                      __FUNCTION__);
-          return -1;
+          goto fail;
         }
     }
 
   if (manage_update_scap_db_init ())
-     return -1;
+     goto fail;
 
   g_info ("%s: Updating data from feed", __FUNCTION__);
 
@@ -4225,7 +4283,7 @@ sync_scap ()
   if (updated_scap_cpes == -1)
     {
       manage_update_scap_db_cleanup ();
-      return -1;
+      goto fail;
     }
 
   g_debug ("%s: update cves", __FUNCTION__);
@@ -4234,7 +4292,7 @@ sync_scap ()
   if (updated_scap_cves == -1)
     {
       manage_update_scap_db_cleanup ();
-      return -1;
+      goto fail;
     }
 
   g_debug ("%s: update ovaldefs", __FUNCTION__);
@@ -4244,7 +4302,7 @@ sync_scap ()
   if (updated_scap_ovaldefs == -1)
     {
       manage_update_scap_db_cleanup ();
-      return -1;
+      goto fail;
     }
 
   g_debug ("%s: updating user defined data", __FUNCTION__);
@@ -4256,7 +4314,7 @@ sync_scap ()
         break;
       case -1:
         manage_update_scap_db_cleanup ();
-        return -1;
+        goto fail;
       default:
         updated_scap_ovaldefs = 1;
         break;
@@ -4271,14 +4329,31 @@ sync_scap ()
   if (update_scap_timestamp ())
     {
       manage_update_scap_db_cleanup ();
-      return -1;
+      goto fail;
     }
 
   g_info ("%s: Updating SCAP info succeeded", __FUNCTION__);
 
   manage_update_scap_db_cleanup ();
 
+  /* Clear date from lock file. */
+
+  if (ftruncate (lockfile, 0))
+    g_warning ("%s: failed to ftruncate lockfile: %s\n",
+               __FUNCTION__,
+               strerror (errno));
+
   return 0;
+
+ fail:
+  /* Clear date from lock file. */
+
+  if (ftruncate (lockfile, 0))
+    g_warning ("%s: failed to ftruncate lockfile: %s\n",
+               __FUNCTION__,
+               strerror (errno));
+
+  return -1;
 }
 
 /**

@@ -1,7 +1,23 @@
+2017-06-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Record the date when syncing, and include it in OMP GET_FEEDS.
+
+	* src/gmp.c (get_feed): If the lockfile is locked, write the contents out
+	in CURRENTLY_SYNCING.
+
+	* src/manage_sql_secinfo.c (write_sync_start): New function.
+	(sync_secinfo): Add lockfile arg to update callback.
+	(sync_cert, sync_scap): Add lockfile arg.  Write date to lockfile when
+	sync is required.
+
+	* tools/greenbone-certdata-sync.in,
+	tools/greenbone-scapdata-sync.in: Exclude feed.xml from deletion.  Write
+	date to lock file around sync.
+
 2017-06-11  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/gmp.c, src/manage.c, src/manage.h, src/manage_migrators.c:
-	Renamed openvas_migrate_secinfo to gvm_migrate_secinfo, 
+	Renamed openvas_migrate_secinfo to gvm_migrate_secinfo,
 	openvas_current_sync to gvm_current_sync,
 	openvas_sync_script_perform_selftest to
 	gvm_sync_script_perform_selftest,

@@ -107,6 +107,7 @@
 #include <netinet/in.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/file.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -14881,7 +14882,8 @@ get_feed_info (int feed_type, gchar **feed_name, gchar **feed_version,
 static void
 get_feed (gmp_parser_t *gmp_parser, GError **error, int feed_type)
 {
-  gchar *feed_name, *feed_description, *feed_version;
+  gchar *feed_name, *feed_description, *feed_version, *lockfile_name;
+  int lockfile;
 
   if (feed_type == NVT_FEED)
     {
@@ -14903,21 +14905,69 @@ get_feed (gmp_parser_t *gmp_parser, GError **error, int feed_type)
     feed_version,
     feed_description);
 
-// FIX
-#if 0
-  if (syncing > 0)
-    {
-      SENDF_TO_CLIENT_OR_FAIL ("<currently_syncing>"
-                               "<timestamp>%s</timestamp>"
-                               "<user>%s</user>"
-                               "</currently_syncing>",
-                               timestamp ? timestamp : "",
-                               user ? user : "");
-      g_free (timestamp);
-      g_free (user);
-    }
-#endif
+  lockfile_name = g_build_filename (g_get_tmp_dir (),
+                                    feed_type == SCAP_FEED
+                                     ? "gvm-sync-scap"
+                                     : "gvm-sync-cert",
+                                    NULL);
 
+  lockfile = open (lockfile_name,
+                   O_RDWR | O_CREAT | O_APPEND,
+                   /* "-rw-r--r--" */
+                   S_IWUSR | S_IRUSR | S_IROTH | S_IRGRP);
+  if (lockfile == -1)
+    g_warning ("%s: failed to open lock file '%s': %s", __FUNCTION__,
+               lockfile_name, strerror (errno));
+  else
+    {
+      if (flock (lockfile, LOCK_EX | LOCK_NB))  /* Exclusive, Non blocking. */
+        {
+          if (errno == EWOULDBLOCK)
+            {
+              gchar *content;
+              GError *file_error;
+
+              /* File is locked, must be a sync in process. */
+
+              error = NULL;
+              if (!g_file_get_contents (lockfile_name, &content, NULL,
+                                        &file_error))
+                {
+                  if (g_error_matches (file_error, G_FILE_ERROR, G_FILE_ERROR_NOENT)
+                      || g_error_matches (file_error, G_FILE_ERROR,
+                                          G_FILE_ERROR_ACCES))
+                    {
+                      g_error_free (file_error);
+                    }
+                  else
+                    {
+                      g_warning ("%s: %s", __FUNCTION__, file_error->message);
+                      g_error_free (file_error);
+                    }
+                }
+              else
+                {
+                  gchar **lines;
+
+                  lines = g_strsplit (content, "\n", 2);
+                  g_free (content);
+                  if (lines[0])
+                    SENDF_TO_CLIENT_OR_FAIL ("<currently_syncing>"
+                                             "<timestamp>%s</timestamp>"
+                                             "</currently_syncing>",
+                                             lines[0]);
+                  g_strfreev (lines);
+                }
+            }
+          else
+            g_warning ("%s: flock: %s", __FUNCTION__, strerror (errno));
+        }
+      else
+        /* Got the lock, so no sync is in progress. */
+        flock (lockfile, LOCK_UN);
+    }
+
+  g_free (lockfile_name);
   g_free (feed_name);
   g_free (feed_version);
   g_free (feed_description);
