@@ -993,7 +993,7 @@ void
 reports_build_count_cache (int, int*);
 
 void
-init_report_counts_build_iterator (iterator_t *, report_t, int);
+init_report_counts_build_iterator (iterator_t *, report_t, int, const char *);
 
 int
 report_counts_build_iterator_override (iterator_t *);
@@ -1001,8 +1001,17 @@ report_counts_build_iterator_override (iterator_t *);
 user_t
 report_counts_build_iterator_user (iterator_t *);
 
+typedef struct {
+  report_t report;
+  int override;
+  user_t user;
+} report_counts_build_data_t;
+
 void
-report_cache_counts (report_t, int, int);
+report_cache_counts (report_t, int, int, const char*, GQueue*);
+
+void
+report_cache_queued (GQueue* rebuild_queue, int do_fork);
 
 void
 report_clear_count_cache (report_t, int, int);

@@ -1,3 +1,34 @@
+2017-06-13  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r28644.
+
+	Rebuild report counts cache on override and permission changes in
+	a forked process and limit cache update to subject for permissions.
+
+	* src/manage_sql.c (set_task_run_status): Add parameters for
+	report_cache_counts.
+	(init_report_counts_build_iterator): Add parameter users_where to
+	restrict selected users and handle cases where there is no user.
+	(report_cache_counts): Add parameters users_where to restrict selected
+	users and rebuild_queue to add rebuild data to a queue instead of
+	rebuilding immediately.  Also handle cases where there is no user.
+	(reports_cache_queued): New function.
+	(report_add_result): Add param for init_report_counts_build_iterator.
+	(set_report_scan_run_status, trim_report, trim_partial_report): Add
+	params for report_cache_counts.
+	(create_override, delete_override, modify_override, create_group):
+	Rebuild reports cache in a forked process instead of just clearing it.
+	(subject_where_clause): New function.
+	(create_permission, delete_permission, modify_permission)
+	(manage_restore): Rebuild reports cache in a forked process instead
+	of just clearing it and limit affected users to the subject for
+	permission actions.
+
+	* src/manage.h (init_report_counts_build_iterator): Add parameter.
+	(report_counts_build_data_t): New typedef.
+	(report_cache_counts): Add parameters.
+	(report_cache_queued): New function prototype.
+
 2017-06-07  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r28589.
