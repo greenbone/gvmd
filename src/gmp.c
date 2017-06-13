@@ -26590,10 +26590,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_NOTE:
         {
-          task_t task = 0;
-          result_t result = 0;
-          note_t note = 0;
-
           assert (strcasecmp ("MODIFY_NOTE", element_name) == 0);
 
           if (acl_user_may ("modify_note") == 0)
@@ -26614,58 +26610,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_note",
                                 "MODIFY_NOTE requires a TEXT entity"));
-          // FIX move find_* down into manage_sql.c modify_note
-          else if (find_note_with_permission (modify_note_data->note_id, &note,
-                                              "modify_note"))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_note"));
-          else if (note == 0)
-            {
-              if (send_find_error_to_client ("modify_note", "note",
-                                             modify_note_data->note_id,
-                                             gmp_parser))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else if (modify_note_data->task_id
-                   && find_task_with_permission (modify_note_data->task_id,
-                                                 &task,
-                                                 NULL))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_note"));
-          else if (modify_note_data->task_id
-                   && task == 0
-                   && find_trash_task_with_permission (modify_note_data
-                                                         ->task_id,
-                                                       &task,
-                                                       NULL))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_note"));
-          else if (modify_note_data->task_id && task == 0)
-            {
-              if (send_find_error_to_client ("modify_note", "task",
-                                             modify_note_data->task_id,
-                                             gmp_parser))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else if (modify_note_data->result_id
-                   && find_result_with_permission (modify_note_data->result_id,
-                                                   &result,
-                                                   NULL))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_note"));
-          else if (modify_note_data->result_id && result == 0)
-            {
-              if (send_find_error_to_client ("modify_note", "result",
-                                             modify_note_data->result_id,
-                                             gmp_parser))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else switch (modify_note (note,
+          else switch (modify_note (modify_note_data->note_id,
                                     modify_note_data->active,
                                     modify_note_data->nvt_oid,
                                     modify_note_data->text,
@@ -26673,8 +26618,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                     modify_note_data->port,
                                     modify_note_data->severity,
                                     modify_note_data->threat,
-                                    task,
-                                    result))
+                                    modify_note_data->task_id,
+                                    modify_note_data->result_id))
             {
               case 0:
                 SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_note"));
@@ -26702,6 +26647,39 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                  (XML_ERROR_SYNTAX ("modify_note",
                                     "Invalid nvt oid"));
                 log_event_fail ("note", "Note", modify_note_data->note_id,
+                                "modified");
+                break;
+              case 5:
+                if (send_find_error_to_client ("modify_note", "note",
+                                               modify_note_data->note_id,
+                                               gmp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                log_event_fail ("note", "Note", modify_note_data->note_id,
+                                "modified");
+                break;
+              case 6:
+                if (send_find_error_to_client ("modify_note", "task",
+                                               modify_note_data->task_id,
+                                               gmp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                log_event_fail ("note", "Task", modify_note_data->task_id,
+                                "modified");
+                break;
+              case 7:
+                if (send_find_error_to_client ("modify_note", "result",
+                                               modify_note_data->result_id,
+                                               gmp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                log_event_fail ("note", "Result", modify_note_data->result_id,
                                 "modified");
                 break;
               default:

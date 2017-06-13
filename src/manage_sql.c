@@ -43256,7 +43256,7 @@ note_uuid (note_t note, char ** id)
 /**
  * @brief Modify a note.
  *
- * @param[in]  note        Note.
+ * @param[in]  note_id     Note.
  * @param[in]  active      NULL or -2 leave as is, -1 on, 0 off, n on for n
  *                         days.
  * @param[in]  nvt         OID of noted NVT.
@@ -43266,23 +43266,54 @@ note_uuid (note_t note, char ** id)
  * @param[in]  severity    Severity to apply note to, "" or NULL for any.
  * @param[in]  threat      Threat to apply note to, "" or NULL for any threat.
  *                         Only used if severity is "" or NULL.
- * @param[in]  task        Task to apply note to, 0 for any task.
+ * @param[in]  task_id     Task to apply note to, NULL for any task.
  * @param[in]  result      Result to apply note to, 0 for any result.
  *
  * @return 0 success, -1 error, 1 syntax error in active, 2 invalid port,
- *         3 invalid severity, 4 failed to find NVT.
+ *         3 invalid severity, 4 failed to find NVT, 5 failed to find note,
+ *         6 failed to find task, 7 failed to find result.
  */
 int
-modify_note (note_t note, const char *active, const char *nvt, const char* text,
-             const char* hosts, const char* port, const char* severity,
-             const char* threat, task_t task, result_t result)
+modify_note (const gchar *note_id, const char *active, const char *nvt,
+             const char *text, const char *hosts, const char *port,
+             const char *severity, const char *threat, const gchar *task_id,
+             const gchar *result_id)
 {
   gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_severity;
   double severity_dbl;
   gchar *quoted_nvt;
+  note_t note;
+  task_t task;
+  result_t result;
 
-  if (note == 0)
+  note = 0;
+  if (find_note_with_permission (note_id, &note, "modify_note"))
     return -1;
+  else if (note == 0)
+    return 5;
+
+  task = 0;
+  if (task_id)
+    {
+      if (find_task_with_permission (task_id, &task, NULL))
+        return -1;
+      if (task == 0)
+        {
+          if (find_trash_task_with_permission (task_id, &task, NULL))
+            return -1;
+          if (task == 0)
+            return 6;
+        }
+    }
+
+  result = 0;
+  if (result_id)
+    {
+      if (find_result_with_permission (result_id, &result, NULL))
+        return -1;
+      if (result == 0)
+        return 7;
+    }
 
   if (text == NULL)
     return -1;
@@ -53880,7 +53911,7 @@ modify_permission (const char *permission_id, const char *name_arg,
       return ret;
     }
 
-  subject_where_new = subject_where_clause (new_subject_type 
+  subject_where_new = subject_where_clause (new_subject_type
                                               ? new_subject_type
                                               : subject_type,
                                             subject);

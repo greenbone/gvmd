@@ -2466,8 +2466,9 @@ int
 note_uuid (note_t, char **);
 
 int
-modify_note (note_t, const char*, const char*, const char*, const char*,
-             const char*, const char*, const char*, task_t, result_t);
+modify_note (const gchar *, const char *, const char *, const char *,
+             const char *, const char *, const char *, const char *,
+             const gchar *, const gchar *);
 
 int
 note_count (const get_data_t *, nvt_t, result_t, task_t);

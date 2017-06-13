@@ -1,3 +1,13 @@
+2017-06-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/gmp.c (gmp_xml_handle_end_element): Move resource finding down into
+	"manage" layer.
+
+	* src/manage_sql.c (modify_note): Take note, task and result as IDs
+	instead as resources.
+
+	* src/manage.h: Adjust header accordingly.
+
 2017-06-13  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Rebuild report counts cache on override and permission changes in
@@ -29,7 +39,7 @@
 
 2017-06-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/gmp.c (get_nvt_feed): Removing CURRENTLY_SYNCING.  Only GMP
+	* src/gmp.c (get_nvt_feed): Remove CURRENTLY_SYNCING.  Only GMP
 	SYNC_FEED was conveying this info.
 
 	* src/manage.c (gvm_current_sync): Remove.  No longer used.
