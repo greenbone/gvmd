@@ -1,3 +1,15 @@
+2017-06-13  Matthew Mundell <matthew.mundell at greenbone.net>
+
+	Backport r23691.
+
+	Prevent concurrent NVT cache updates from being initiated via SIGHUP.
+
+	* src/openvasmd.c (update_in_progress): New variables.
+	(setup_signal_handler_info, handle_sigchld): New function.
+	(fork_update_nvt_cache): Store the child PID in update_in_progress,
+	so that the SIGCHLD handler knows it can enable updates again.
+	(main): Set sigchild handler.
+
 2017-06-13  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r28644.
@@ -53,7 +65,7 @@
 	affected or clear the whole cache for super permissions.
 	(manage_restore): Clear reports cache for overrides and also clear it
 	on override or super permission changes.
-	
+
 	* src/manage.h (report_clear_count_cache): New function prototype.
 
 2017-06-05  Matthew Mundell <matthew.mundell@greenbone.net>
