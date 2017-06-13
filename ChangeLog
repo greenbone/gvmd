@@ -1,5 +1,12 @@
 2017-06-13  Matthew Mundell <matthew.mundell at greenbone.net>
 
+	Backport r23698.
+
+	* src/openvasmd.c (handle_sigchld): Wait for all waitable children,
+	because there may not be a signal for each one.
+
+2017-06-13  Matthew Mundell <matthew.mundell at greenbone.net>
+
 	Backport r23691.
 
 	Prevent concurrent NVT cache updates from being initiated via SIGHUP.
