@@ -26668,7 +26668,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     error_send_to_client (error);
                     return;
                   }
-                log_event_fail ("note", "Task", modify_note_data->task_id,
+                log_event_fail ("note", "Note", modify_note_data->note_id,
                                 "modified");
                 break;
               case 7:
@@ -26679,7 +26679,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     error_send_to_client (error);
                     return;
                   }
-                log_event_fail ("note", "Result", modify_note_data->result_id,
+                log_event_fail ("note", "Note", modify_note_data->note_id,
                                 "modified");
                 break;
               default:
@@ -26704,10 +26704,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_OVERRIDE:
         {
-          task_t task = 0;
-          result_t result = 0;
-          override_t override = 0;
-
           assert (strcasecmp ("MODIFY_OVERRIDE", element_name) == 0);
 
           if (acl_user_may ("modify_override") == 0)
@@ -26728,58 +26724,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_override",
                                 "MODIFY_OVERRIDE requires a TEXT entity"));
-          else if (find_override_with_permission
-                    (modify_override_data->override_id, &override,
-                     "modify_override"))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_override"));
-          else if (override == 0)
-            {
-              if (send_find_error_to_client ("modify_override", "override",
-                                             modify_override_data->override_id,
-                                             gmp_parser))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else if (modify_override_data->task_id
-                   && find_task_with_permission (modify_override_data->task_id,
-                                                 &task,
-                                                 NULL))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_override"));
-          else if (modify_override_data->task_id
-                   && task == 0
-                   && find_trash_task_with_permission (modify_override_data
-                                                         ->task_id,
-                                                       &task,
-                                                       NULL))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_override"));
-          else if (modify_override_data->task_id && task == 0)
-            {
-              if (send_find_error_to_client ("modify_override", "task",
-                                             modify_override_data->task_id,
-                                             gmp_parser))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else if (modify_override_data->result_id
-                   && find_result_with_permission (modify_override_data->result_id,
-                                                   &result,
-                                                   NULL))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_override"));
-          else if (modify_override_data->result_id && result == 0)
-            {
-              if (send_find_error_to_client ("modify_override", "result",
-                                             modify_override_data->result_id,
-                                             gmp_parser))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else switch (modify_override (override,
+          else switch (modify_override (modify_override_data->override_id,
                                         modify_override_data->active,
                                         modify_override_data->nvt_oid,
                                         modify_override_data->text,
@@ -26789,8 +26734,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                         modify_override_data->new_threat,
                                         modify_override_data->severity,
                                         modify_override_data->new_severity,
-                                        task,
-                                        result))
+                                        modify_override_data->task_id,
+                                        modify_override_data->result_id))
             {
               case 0:
                 SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_override"));
@@ -26820,6 +26765,42 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_override",
                                     "Invalid nvt oid"));
+                log_event_fail ("override", "Override",
+                                modify_override_data->override_id,
+                                "modified");
+                break;
+              case 5:
+                if (send_find_error_to_client ("modify_override", "override",
+                                               modify_override_data->override_id,
+                                               gmp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                log_event_fail ("override", "Override",
+                                modify_override_data->override_id,
+                                "modified");
+                break;
+              case 6:
+                if (send_find_error_to_client ("modify_override", "task",
+                                               modify_override_data->task_id,
+                                               gmp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                log_event_fail ("override", "Override",
+                                modify_override_data->override_id,
+                                "modified");
+                break;
+              case 7:
+                if (send_find_error_to_client ("modify_override", "result",
+                                               modify_override_data->result_id,
+                                               gmp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
                 log_event_fail ("override", "Override",
                                 modify_override_data->override_id,
                                 "modified");

@@ -1,10 +1,20 @@
 2017-06-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/gmp.c (gmp_xml_handle_end_element): Correct modify_note message.
+	Move resource finding down into "manage" layer.
+
+	* src/manage_sql.c (modify_override): Take override, task and result as
+	IDs instead of as resources.
+
+	* src/manage.h: Adjust header accordingly.
+
+2017-06-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/gmp.c (gmp_xml_handle_end_element): Move resource finding down into
 	"manage" layer.
 
 	* src/manage_sql.c (modify_note): Take note, task and result as IDs
-	instead as resources.
+	instead of as resources.
 
 	* src/manage.h: Adjust header accordingly.
 

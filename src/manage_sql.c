@@ -44334,9 +44334,9 @@ delete_override (const char *override_id, int ultimate)
 /**
  * @brief Modify an override.
  *
- * @param[in]  override    Override.
- * @param[in]  active      NULL or -2 leave as is, -1 on, 0 off, n on for n
- *                         days.
+ * @param[in]  override_id  Override.
+ * @param[in]  active       NULL or -2 leave as is, -1 on, 0 off, n on for n
+ *                          days.
  * @param[in]  nvt         OID of noted NVT.
  * @param[in]  text        Override text.
  * @param[in]  hosts       Hosts to apply override to, NULL for any host.
@@ -44345,18 +44345,19 @@ delete_override (const char *override_id, int ultimate)
  * @param[in]  new_threat  Threat to override result to.
  * @param[in]  severity    Severity to apply override to, "" or NULL for any threat.
  * @param[in]  new_severity Severity score to override "Alarm" type results to.
- * @param[in]  task        Task to apply override to, 0 for any task.
- * @param[in]  result      Result to apply override to, 0 for any result.
+ * @param[in]  task_id     Task to apply override to, 0 for any task.
+ * @param[in]  result_id   Result to apply override to, 0 for any result.
  *
  * @return 0 success, -1 error, 1 syntax error in active, 2 invalid port,
- *         3 invalid severity score, 4 failed to find NVT.
+ *         3 invalid severity score, 4 failed to find NVT, 5 failed to find
+ *         override, 6 failed to find task, 7 failed to find result.
  */
 int
-modify_override (override_t override, const char *active, const char *nvt,
-                 const char* text, const char* hosts, const char* port,
-                 const char* threat, const char* new_threat,
-                 const char* severity, const char* new_severity, task_t task,
-                 result_t result)
+modify_override (const gchar *override_id, const char *active, const char *nvt,
+                 const char *text, const char *hosts, const char *port,
+                 const char *threat, const char *new_threat,
+                 const char *severity, const char *new_severity,
+                 const gchar *task_id, const gchar *result_id)
 {
   gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_severity;
   double severity_dbl, new_severity_dbl;
@@ -44365,9 +44366,38 @@ modify_override (override_t override, const char *active, const char *nvt,
   GHashTableIter reports_iter;
   report_t *reports_ptr;
   GQueue rebuild_queue = G_QUEUE_INIT;
+  override_t override;
+  task_t task;
+  result_t result;
 
-  if (override == 0)
+  override = 0;
+  if (find_override_with_permission (override_id, &override, "modify_override"))
     return -1;
+  if (override == 0)
+    return 5;
+
+  task = 0;
+  if (task_id)
+    {
+      if (find_task_with_permission (task_id, &task, NULL))
+        return -1;
+      if (task == 0)
+        {
+          if (find_trash_task_with_permission (task_id, &task, NULL))
+            return -1;
+          if (task == 0)
+            return 6;
+        }
+    }
+
+  result = 0;
+  if (result_id)
+    {
+      if (find_result_with_permission (result_id, &result, NULL))
+        return -1;
+      if (result == 0)
+        return 7;
+    }
 
   if (text == NULL)
     return -1;

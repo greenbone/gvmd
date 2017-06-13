@@ -2539,9 +2539,9 @@ int
 delete_override (const char *, int);
 
 int
-modify_override (override_t, const char*, const char*, const char*, const char*,
-                 const char*, const char*, const char*, const char*,
-                 const char*, task_t, result_t);
+modify_override (const gchar *, const char *, const char *, const char *,
+                 const char *, const char *, const char *, const char *,
+                 const char *, const char *, const gchar *, const gchar *);
 
 int
 override_count (const get_data_t *, nvt_t, result_t, task_t);
