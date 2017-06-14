@@ -658,7 +658,7 @@ fork_connection_internal (gvm_connection_t *client_connection, gchar* uuid,
          * on this process. */
 
         /** @todo Give the parent time to prepare. */
-        openvas_sleep (5);
+        gvm_sleep (5);
 
         memset (client_connection, 0, sizeof (*client_connection));
         client_connection->tls = use_tls;
@@ -1103,7 +1103,7 @@ rebuild_nvt_cache_retry (int update_or_rebuild, int register_cleanup,
             {
               if (progress)
                 progress ();
-              openvas_sleep (1);
+              gvm_sleep (1);
             }
         }
       else if (child_pid == 0)

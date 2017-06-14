@@ -29,10 +29,10 @@
 #include <time.h>
 
 int
-openvas_usleep (unsigned int);
+gvm_usleep (unsigned int);
 
 int
-openvas_sleep (unsigned int);
+gvm_sleep (unsigned int);
 
 int
 parse_utc_time (const char *, const char *);

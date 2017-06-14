@@ -1,3 +1,10 @@
+2017-06-14  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/gvmd.c, src/manage.c, src/utils.c, src/utils.h,
+	src/sql_sqlite3.c, src/scanner.c:
+	Renamed openvas_sleep to gvm_sleep
+	and openvas_usleep to gvm_usleep.
+
 2017-06-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/gmp.c (gmp_xml_handle_end_element): Correct modify_note message.

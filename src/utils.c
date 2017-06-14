@@ -50,7 +50,7 @@
  * @return 0 success, -1 error (with errno set).
  */
 int
-openvas_usleep (unsigned int microseconds)
+gvm_usleep (unsigned int microseconds)
 {
   struct timespec a, b, *requested, *remaining;
   int ret;
@@ -81,9 +81,9 @@ openvas_usleep (unsigned int microseconds)
  * @return 0 success, -1 error (with errno set).
  */
 int
-openvas_sleep (unsigned int seconds)
+gvm_sleep (unsigned int seconds)
 {
-  return openvas_usleep (seconds * 1000000);
+  return gvm_usleep (seconds * 1000000);
 }
 
 
