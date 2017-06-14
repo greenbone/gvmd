@@ -3916,18 +3916,18 @@ run_osp_task (task_t task)
 /**
  * @brief Perform a CVE "scan" on a host.
  *
- * @param[in]  task          Task.
- * @param[in]  openvas_host  Host.
+ * @param[in]  task      Task.
+ * @param[in]  gvm_host  Host.
  *
  * @return 0 success, 1 failed to get nthlast report for a host.
  */
 static int
-cve_scan_host (task_t task, gvm_host_t *openvas_host)
+cve_scan_host (task_t task, gvm_host_t *gvm_host)
 {
   report_host_t report_host;
   gchar *ip, *host;
 
-  host = gvm_host_value_str (openvas_host);
+  host = gvm_host_value_str (gvm_host);
 
   ip = report_host_ip (host);
   if (ip == NULL)
@@ -4058,8 +4058,8 @@ fork_cve_scan_handler (task_t task, target_t target)
 {
   int pid;
   char *report_id, title[128], *hosts;
-  gvm_hosts_t *openvas_hosts;
-  gvm_host_t *openvas_host;
+  gvm_hosts_t *gvm_hosts;
+  gvm_host_t *gvm_host;
 
   assert (task);
   assert (target);
@@ -4123,18 +4123,18 @@ fork_cve_scan_handler (task_t task, target_t target)
 
   /* Add the results. */
 
-  openvas_hosts = gvm_hosts_new (hosts);
+  gvm_hosts = gvm_hosts_new (hosts);
   free (hosts);
-  while ((openvas_host = gvm_hosts_next (openvas_hosts)))
-    if (cve_scan_host (task, openvas_host))
+  while ((gvm_host = gvm_hosts_next (gvm_hosts)))
+    if (cve_scan_host (task, gvm_host))
       {
         g_warning ("%s: cve_scan_host failed", __FUNCTION__);
         set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
         set_report_scan_run_status (current_report, TASK_STATUS_INTERNAL_ERROR);
-        gvm_hosts_free (openvas_hosts);
+        gvm_hosts_free (gvm_hosts);
         exit (1);
       }
-  gvm_hosts_free (openvas_hosts);
+  gvm_hosts_free (gvm_hosts);
 
   /* Set the end states. */
 
