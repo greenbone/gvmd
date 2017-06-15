@@ -30521,54 +30521,39 @@ save_tasks ()
 }
 
 /**
- * @brief Set a task parameter.
+ * @brief Set the name of a task.
  *
- * The "value" parameter is used directly and freed either immediately or
- * when the task is freed.
- *
- * @param[in]  task       A pointer to a task.
- * @param[in]  parameter  The name of the parameter (in any case): NAME
- *                        or COMMENT.
- * @param[in]  value      The value of the parameter.
- *
- * @return 0 on success, -2 if parameter name error, -3 value error (NULL).
+ * @param[in]  task  A task.
+ * @param[in]  name  New name.
  */
-int
-set_task_parameter (task_t task, const char* parameter, char* value)
+static void
+set_task_name (task_t task, const char *name)
 {
-  /** @todo Free value consistently. */
+  gchar *quoted_name;
 
-  g_debug ("   set_task_parameter %u %s\n",
-          task_id (task),
-          parameter ? parameter : "(null)");
-  if (value == NULL) return -3;
-  if (parameter == NULL)
-    {
-      free (value);
-      return -2;
-    }
-  else if (strcasecmp ("NAME", parameter) == 0)
-    {
-      gchar* quoted_value = sql_quote (value ?: "");
-      sql ("UPDATE tasks SET name = '%s', modification_time = m_now ()"
-           " WHERE id = %llu;", quoted_value, task);
-      g_free (quoted_value);
-    }
-  else if (strcasecmp ("COMMENT", parameter) == 0)
-    {
-      gchar* quote = sql_nquote (value, strlen (value));
-      sql ("UPDATE tasks SET comment = '%s', modification_time = m_now ()"
-           " WHERE id = %llu;",
-           quote,
-           task);
-      g_free (quote);
-    }
-  else
-    {
-      free (value);
-      return -2;
-    }
-  return 0;
+  quoted_name = sql_quote (name ? name : "");
+  sql ("UPDATE tasks SET name = '%s', modification_time = m_now ()"
+       " WHERE id = %llu;", quoted_name, task);
+  g_free (quoted_name);
+}
+
+/**
+ * @brief Set the comment of a task.
+ *
+ * @param[in]  task  A task.
+ * @param[in]  comment  New comment.
+ */
+static void
+set_task_comment (task_t task, const char *comment)
+{
+  gchar *quoted_comment;
+
+  assert (comment);
+
+  quoted_comment = sql_quote (comment ? comment : "");
+  sql ("UPDATE tasks SET comment = '%s', modification_time = m_now ()"
+       " WHERE id = %llu;", quoted_comment, task);
+  g_free (quoted_comment);
 }
 
 /**
@@ -31186,18 +31171,27 @@ reset_task (task_t task)
 /**
  * @brief Add a file to a task, or update the file on the task.
  *
- * @param[in]  task     Task.
+ * @param[in]  task_id  Task.
  * @param[in]  name     Name of file.
  * @param[in]  content  Content for file in base64 encoding.
+ *
+ * @return 0 success, 1 failed to find task, -1 error.
  */
-void
-manage_task_update_file (task_t task, const char *name,
+int
+manage_task_update_file (const gchar *task_id, const char *name,
                          const void *content)
 {
   gchar* quoted_name = sql_quote (name);
   gchar* quoted_content = sql_quote (content);
+  task_t task;
 
   /** @todo Probably better to save ASCII instead of base64. */
+
+  task = 0;
+  if (find_task_with_permission (task_id, &task, "modify_task"))
+    return -1;
+  else if (task == 0)
+    return 1;
 
   if (sql_int ("SELECT count(*) FROM task_files"
                " WHERE task = %llu AND name = '%s';",
@@ -31228,19 +31222,29 @@ manage_task_update_file (task_t task, const char *name,
 
   g_free (quoted_name);
   g_free (quoted_content);
+
+  return 0;
 }
 
 /**
  * @brief Remove a file on a task.
  *
- * @param[in]  task     Task.
+ * @param[in]  task_id  Task.
  * @param[in]  name     Name of file.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, 1 failed to find task, -1 error.
  */
 int
-manage_task_remove_file (task_t task, const char *name)
+manage_task_remove_file (const gchar *task_id, const char *name)
 {
+  task_t task;
+
+  task = 0;
+  if (find_task_with_permission (task_id, &task, "modify_task"))
+    return -1;
+  else if (task == 0)
+    return 1;
+
   if (sql_int ("SELECT count(*) FROM task_files"
                " WHERE task = %llu AND name = '%s';",
                task))
@@ -31306,6 +31310,249 @@ DEF_ACCESS (task_file_iterator_name, 0);
  */
 DEF_ACCESS (task_file_iterator_content, 1);
 
+/**
+ * @brief Modify a task.
+ *
+ * @param[in]  task_id     Task.
+ * @param[in]  name        Name of file.
+ * @param[in]  comment     Comment.
+ * @param[in]  scanner_id  Scanner.
+ * @param[in]  target_id   Target.
+ * @param[in]  config_id   Config.
+ * @param[in]  observers   Observers.
+ * @param[in]  alerts      Alerts.
+ * @param[in]  alterable   Alterable.
+ * @param[in]  groups      Groups.
+ * @param[in]  schedule_id  Schedule.
+ * @param[in]  schedule_periods  Period of schedule.
+ * @param[in]  preferences       Preferences.
+ * @param[in]  hosts_ordering    Host scan order.
+ * @param[out] fail_alert_id     Alert when failed to find alert.
+ * @param[out] fail_group_id     Group when failed to find group.
+ *
+ * @return 0 success, 1 failed to find task, 2 status must be new to edit
+ *         scanner, 3 failed to find scanner, 4 failed to find config, 5 status
+ *         must be new to edit config, 6 user name validation failed, 7 failed
+ *         to find user, 8 failed to find alert, 9 task must be new to modify
+ *         alterable state, 10 failed to find group, 11 failed to find schedule,
+ *         12 failed to find target, 13 invalid auto_delete value, 14 auto
+ *         delete count out of range, 15 config and scanner types mismatch,
+ *         16 status must be new to edit target, 17 for container tasks only
+ *         certain fields may be edited, -1 error.
+ */
+int
+modify_task (const gchar *task_id, const gchar *name,
+             const gchar *comment, const gchar *scanner_id,
+             const gchar *target_id, const gchar *config_id,
+             const gchar *observers, array_t *alerts,
+             const gchar *alterable, array_t *groups,
+             const gchar *schedule_id,
+             const gchar *schedule_periods,
+             array_t *preferences,
+             const gchar *hosts_ordering,
+             gchar **fail_alert_id,
+             gchar **fail_group_id)
+{
+  task_t task;
+  int type_of_scanner;
+  scanner_t scanner;
+
+  /* @todo Probably better to rollback on error. */
+
+  task = 0;
+  if (find_task_with_permission (task_id, &task, "modify_task"))
+    return -1;
+  if (task == 0)
+    return 1;
+
+  if ((task_target (task) == 0)
+      && (alerts->len || schedule_id))
+    return 17;
+
+  switch (modify_task_check_config_scanner (task, config_id, scanner_id))
+    {
+      case 0:
+        break;
+      case 1:
+        return 15;
+      case 2:
+        return 4;
+      case 3:
+        return 3;
+      default:
+        assert (0);
+        /* fallthrough */
+      case -1:
+        return -1;
+    }
+
+  if (name)
+    set_task_name (task, name);
+
+  if (comment)
+    set_task_comment (task, comment);
+
+  scanner = 0;
+  if (scanner_id)
+    {
+      if (strcmp (scanner_id, "0") == 0)
+        {
+          /* Leave it as is. */
+        }
+      else if ((task_run_status (task) != TASK_STATUS_NEW)
+               && (task_alterable (task) == 0))
+        return 2;
+      else if (find_scanner_with_permission (scanner_id,
+                                             &scanner,
+                                             "get_scanners"))
+        return -1;
+      else if (scanner == 0)
+        return 3;
+      else
+        set_task_scanner (task, scanner);
+    }
+
+  if (scanner == 0)
+    type_of_scanner = scanner_type (task_scanner (task));
+  else
+    type_of_scanner = scanner_type (scanner);
+
+  if (config_id && (type_of_scanner != SCANNER_TYPE_CVE))
+    {
+      config_t config;
+
+      config = 0;
+      if (strcmp (config_id, "0") == 0)
+        {
+          /* Leave it as it is. */
+        }
+      else if ((task_run_status (task) != TASK_STATUS_NEW)
+               && (task_alterable (task) == 0))
+        return 5;
+      else if (find_config_with_permission (config_id, &config, "get_configs"))
+        return -1;
+      else if (config == 0)
+        return 4;
+      else
+       set_task_config (task, config);
+    }
+
+  if (observers)
+    {
+      switch (set_task_observers (task, observers))
+        {
+          case 0:
+            break;
+          case 1:
+            return 6;
+          case 2:
+            return 7;
+            break;
+          case -1:
+          default:
+            return -1;
+        }
+    }
+
+  if (alerts->len)
+    {
+      switch (set_task_alerts (task, alerts, fail_alert_id))
+        {
+          case 0:
+            break;
+          case 1:
+            return 8;
+          case -1:
+          default:
+            return -1;
+        }
+    }
+
+  if (alterable && (task_alterable (task) != atoi (alterable)))
+    {
+      if (task_run_status (task) != TASK_STATUS_NEW)
+        return 9;
+      set_task_alterable (task, strcmp (alterable, "0"));
+    }
+
+  if (groups->len)
+    {
+      switch (set_task_groups (task, groups, fail_group_id))
+        {
+          case 0:
+            break;
+          case 1:
+            return 10;
+          case -1:
+          default:
+            return -1;
+        }
+    }
+
+  if (schedule_id)
+    {
+      schedule_t schedule = 0;
+      int periods;
+
+      periods = schedule_periods ? atoi (schedule_periods) : 0;
+
+      if (strcmp (schedule_id, "0") == 0)
+        set_task_schedule (task, 0, periods);
+      else if (find_schedule_with_permission (schedule_id,
+                                              &schedule,
+                                              "get_schedules"))
+        return -1;
+      else if (schedule == 0)
+        return 11;
+      else if (set_task_schedule (task, schedule, periods))
+        return -1;
+    }
+  else if (schedule_periods && strlen (schedule_periods))
+    set_task_schedule_periods (task_id,
+                               atoi (schedule_periods));
+
+  if (target_id)
+    {
+      target_t target;
+
+      target = 0;
+      if (strcmp (target_id, "0") == 0)
+        {
+          /* Leave it as it is. */
+        }
+      else if ((task_run_status (task) != TASK_STATUS_NEW)
+               && (task_alterable (task) == 0))
+        return 16;
+      else if (find_target_with_permission (target_id,
+                                            &target,
+                                            "get_targets"))
+        return -1;
+      else if (target == 0)
+        return 12;
+      else
+        set_task_target (task, target);
+    }
+
+  if (preferences)
+    switch (set_task_preferences (task, preferences))
+      {
+        case 0:
+          break;
+        case 1:
+          return 13;
+        case 2:
+          return 14;
+        default:
+          return -1;
+      }
+
+  if (hosts_ordering)
+    set_task_hosts_ordering (task, hosts_ordering);
+
+  return 0;
+}
+
+
 /* Targets. */
 
 /**
@@ -35227,27 +35474,40 @@ config_nvt_selector (config_t config)
 /**
  * @brief Set a preference of a config.
  *
- * @param[in]  config    Config.
- * @param[in]  nvt       UUID of NVT.  NULL for scanner preference.
- * @param[in]  name      Preference name, including NVT name and preference
- *                       type.
- * @param[in]  value_64  Preference value in base64.  NULL for an NVT
- *                       preference removes the preference from the config.
+ * @param[in]  config_id  Config.
+ * @param[in]  nvt         UUID of NVT.  NULL for scanner preference.
+ * @param[in]  name        Preference name, including NVT name and preference
+ *                         type.
+ * @param[in]  value_64    Preference value in base64.  NULL for an NVT
+ *                         preference removes the preference from the config.
  *
- * @return 0 success, 1 config in use, 2 empty radio value, -1 error.
+ * @return 0 success, 1 config in use, 2 empty radio value, 3 failed to find
+ *         config, -1 error.
  */
 int
-manage_set_config_preference (config_t config, const char* nvt, const char* name,
-                              const char* value_64)
+manage_set_config_preference (const gchar *config_id, const char* nvt,
+                              const char* name, const char* value_64)
 {
   gchar *quoted_name, *quoted_value, *value;
   int type_start = -1, type_end = -1, count;
+  config_t config;
 
   if (value_64 == NULL)
     {
       int end = -1;
 
       sql_begin_immediate ();
+
+      if (find_config_with_permission (config_id, &config, "modify_config"))
+        {
+          sql_rollback ();
+          return -1;
+        }
+      if (config == 0)
+        {
+          sql_rollback ();
+          return 3;
+        }
 
       if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",
@@ -35281,6 +35541,17 @@ manage_set_config_preference (config_t config, const char* nvt, const char* name
     }
 
   sql_begin_immediate ();
+
+  if (find_config_with_permission (config_id, &config, "modify_config"))
+    {
+      sql_rollback ();
+      return -1;
+    }
+  if (config == 0)
+    {
+      sql_rollback ();
+      return 3;
+    }
 
   if (sql_int ("SELECT count(*) FROM tasks"
                " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",
@@ -35422,20 +35693,36 @@ manage_set_config_comment (config_t config, const char* comment)
 /**
  * @brief Set the name, comment and scanner of a config.
  *
- * @param[in]  config       Config.
+ * @param[in]  config_id    Config.
  * @param[in]  name         New name, not updated if NULL.
  * @param[in]  comment      New comment, not updated if NULL.
  * @param[in]  scanner_id   UUID of new scanner, not updated if NULL.
  *
  * @return 0 success, 1 config with new name exists already, 2 scanner doesn't
- *         exist, 3 modification not allowed while config is in use, -1 error.
+ *         exist, 3 modification not allowed while config is in use, 4 failed to
+ *         find config, -1 error.
  */
 int
-manage_set_config (config_t config, const char*name, const char *comment,
+manage_set_config (const gchar *config_id, const char*name, const char *comment,
                    const char *scanner_id)
 {
+  config_t config;
+
   assert (current_credentials.uuid);
+
   sql_begin_immediate ();
+
+  if (find_config_with_permission (config_id, &config, "modify_config"))
+    {
+      sql_rollback ();
+      return -1;
+    }
+  if (config == 0)
+    {
+      sql_rollback ();
+      return 4;
+    }
+
   if (name)
     {
       gchar *quoted_name;
@@ -35482,21 +35769,33 @@ manage_set_config (config_t config, const char*name, const char *comment,
 /**
  * @brief Set the NVT's selected for a single family of a config.
  *
- * @param[in]  config         Config.
+ * @param[in]  config_id      Config.
  * @param[in]  family         Family name.
  * @param[in]  selected_nvts  NVT's.
  *
- * @return 0 success, 1 config in use, -1 error.
+ * @return 0 success, 1 config in use, 2 failed to find config, -1 error.
  */
 int
-manage_set_config_nvts (config_t config, const char* family,
+manage_set_config_nvts (const gchar *config_id, const char* family,
                         GPtrArray* selected_nvts)
 {
+  config_t config;
   char *selector;
   gchar *quoted_family, *quoted_selector;
   int new_nvt_count = 0, old_nvt_count;
 
   sql_begin_exclusive ();
+
+  if (find_config_with_permission (config_id, &config, "modify_config"))
+    {
+      sql_rollback ();
+      return -1;
+    }
+  if (config == 0)
+    {
+      sql_rollback ();
+      return 2;
+    }
 
   if (sql_int ("SELECT count(*) FROM tasks"
                " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",
@@ -38680,27 +38979,39 @@ nvt_selector_has (const char* quoted_selector, const char* family_or_nvt,
 /**
  * @brief Refresh NVT selection of a config from given families.
  *
- * @param[in]  config                Config.
+ * @param[in]  config_id             Config.
  * @param[in]  growing_all_families  Growing families with all selection.
  * @param[in]  static_all_families   Static families with all selection.
  * @param[in]  growing_families      The rest of the growing families.
  * @param[in]  grow_families         1 if families should grow, else 0.
  *
- * @return 0 success, config in use, -1 error.
+ * @return 0 success, 1 config in use, 2 failed to find config, -1 error.
  */
 int
-manage_set_config_families (config_t config,
+manage_set_config_families (const gchar *config_id,
                             GPtrArray* growing_all_families,
                             GPtrArray* static_all_families,
                             GPtrArray* growing_families,
                             int grow_families)
 {
+  config_t config;
   iterator_t families;
   gchar *quoted_selector;
   int constraining;
   char *selector;
 
   sql_begin_exclusive ();
+
+  if (find_config_with_permission (config_id, &config, "modify_config"))
+    {
+      sql_rollback ();
+      return -1;
+    }
+  if (config == 0)
+    {
+      sql_rollback ();
+      return 2;
+    }
 
   if (sql_int ("SELECT count(*) FROM tasks"
                " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",

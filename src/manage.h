@@ -940,11 +940,17 @@ set_scan_ports (report_t, const char*, unsigned int, unsigned int);
 void
 append_task_open_port (task_t task, const char *, const char*);
 
-void
-manage_task_update_file (task_t, const char *, const void *);
+int
+manage_task_update_file (const gchar *, const char *, const void *);
 
 int
-manage_task_remove_file (task_t, const char *);
+manage_task_remove_file (const gchar *, const char *);
+
+int
+modify_task (const gchar *, const gchar *, const gchar *, const gchar *,
+             const gchar *, const gchar *, const gchar *, array_t *,
+             const gchar *, array_t *, const gchar *, const gchar *,
+             array_t *, const gchar *, gchar **, gchar **);
 
 void
 init_config_file_iterator (iterator_t*, const char*, const char*);
@@ -1858,7 +1864,7 @@ int
 modify_task_check_config_scanner (task_t, const char *, const char *);
 
 int
-manage_set_config_preference (config_t, const char*, const char*,
+manage_set_config_preference (const gchar *, const char*, const char*,
                               const char*);
 
 void
@@ -1880,13 +1886,13 @@ const char*
 preference_iterator_hr_name (iterator_t *);
 
 int
-manage_set_config (config_t, const char*, const char *, const char *);
+manage_set_config (const gchar *, const char*, const char *, const char *);
 
 int
-manage_set_config_nvts (config_t, const char*, GPtrArray*);
+manage_set_config_nvts (const gchar *, const char*, GPtrArray*);
 
 int
-manage_set_config_families (config_t, GPtrArray*, GPtrArray*, GPtrArray*,
+manage_set_config_families (const gchar *, GPtrArray*, GPtrArray*, GPtrArray*,
                             int);
 
 void

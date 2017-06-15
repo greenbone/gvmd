@@ -1,3 +1,23 @@
+2017-06-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Move usage of database IDs down into the "manage" layer.
+
+	* src/gmp.c (handle_modify_config): Pass config ID into manage
+	functions, instead of passing config.
+	(gmp_xml_handle_end_element): Consolidate most calls in CLIENT_MODIFY_TASK
+	into a single call to modify_task, what takes IDs instead of resources.
+
+	* src/manage_sql.c (set_task_name, set_task_comment): New functions.
+	(set_task_parameter): Remove.  No longer used.
+	(manage_task_update_file, manage_task_remove_file): Take ID instead of
+	resource.
+	(modify_task): New function.
+	(manage_set_config_preference, manage_set_config)
+	(manage_set_config_nvts, manage_set_config_families): Take ID instead of
+	resource.
+
+	* src/manage.h: Update headers accordingly.
+
 2017-06-15  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/manage_sql.c (modify_note): Adjust documentation to recent
