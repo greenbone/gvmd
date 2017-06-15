@@ -1,3 +1,8 @@
+2017-06-15  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/manage_sql.c (modify_note): Adjust documentation to recent
+	changes.
+
 2017-06-14  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/manage.c (fork_cve_scan_handler): Rename openvas_hosts

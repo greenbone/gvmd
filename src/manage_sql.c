@@ -43267,7 +43267,7 @@ note_uuid (note_t note, char ** id)
  * @param[in]  threat      Threat to apply note to, "" or NULL for any threat.
  *                         Only used if severity is "" or NULL.
  * @param[in]  task_id     Task to apply note to, NULL for any task.
- * @param[in]  result      Result to apply note to, 0 for any result.
+ * @param[in]  result_id   Result to apply note to, 0 for any result.
  *
  * @return 0 success, -1 error, 1 syntax error in active, 2 invalid port,
  *         3 invalid severity, 4 failed to find NVT, 5 failed to find note,
