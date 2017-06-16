@@ -1,5 +1,14 @@
 2017-06-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Backport r28708.
+
+	* src/manage_sql.c (create_override, delete_override, modify_override)
+	(create_permission_internal, create_permission, delete_permission)
+	(manage_restore): Replace report_clear_count_cache calls with
+	report_cache_counts ones.
+
+2017-06-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Revert cache rebuild in forked process (r28645).
 
 	* src/manage_sql.c: Revert changes.
