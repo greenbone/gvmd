@@ -44379,7 +44379,7 @@ create_override (const char* active, const char* nvt, const char* text,
   while (g_hash_table_iter_next (&reports_iter,
                                  ((gpointer*)&reports_ptr), NULL))
     {
-      report_clear_count_cache (*reports_ptr, 0, 1);
+      report_cache_counts (*reports_ptr, 0, 1);
     }
   g_hash_table_destroy (reports);
 
@@ -44512,7 +44512,7 @@ delete_override (const char *override_id, int ultimate)
   while (g_hash_table_iter_next (&reports_iter,
                                  ((gpointer*)&reports_ptr), NULL))
     {
-      report_clear_count_cache (*reports_ptr, 0, 1);
+      report_cache_counts (*reports_ptr, 0, 1);
     }
   g_hash_table_destroy (reports);
 
@@ -44767,7 +44767,7 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
   while (g_hash_table_iter_next (&reports_iter,
                                  ((gpointer*)&reports_ptr), NULL))
     {
-      report_clear_count_cache (*reports_ptr, 0, 1);
+      report_cache_counts (*reports_ptr, 0, 1);
     }
   g_hash_table_destroy (reports);
 
@@ -52995,7 +52995,7 @@ create_permission_internal (const char *name_arg, const char *comment,
       while (g_hash_table_iter_next (&reports_iter,
                                     ((gpointer*)&reports_ptr), NULL))
         {
-          report_clear_count_cache (*reports_ptr, clear_original, 1);
+          report_cache_counts (*reports_ptr, clear_original, 1);
         }
     }
 
@@ -53880,7 +53880,7 @@ delete_permission (const char *permission_id, int ultimate)
       while (g_hash_table_iter_next (&reports_iter,
                                     ((gpointer*)&reports_ptr), NULL))
         {
-          report_clear_count_cache (*reports_ptr, clear_original, 1);
+          report_cache_counts (*reports_ptr, clear_original, 1);
         }
     }
 
@@ -54145,7 +54145,7 @@ modify_permission (const char *permission_id, const char *name_arg,
       while (g_hash_table_iter_next (&reports_iter,
                                     ((gpointer*)&reports_ptr), NULL))
         {
-          report_clear_count_cache (*reports_ptr, clear_original, 1);
+          report_cache_counts (*reports_ptr, clear_original, 1);
         }
       g_hash_table_destroy (reports);
       reports = NULL;
@@ -57781,7 +57781,7 @@ manage_restore (const char *id)
       while (g_hash_table_iter_next (&reports_iter,
                                     ((gpointer*)&reports_ptr), NULL))
         {
-          report_clear_count_cache (*reports_ptr, 0, 1);
+          report_cache_counts (*reports_ptr, 0, 1);
         }
       g_hash_table_destroy (reports);
 
@@ -57853,7 +57853,7 @@ manage_restore (const char *id)
           while (g_hash_table_iter_next (&reports_iter,
                                         ((gpointer*)&reports_ptr), NULL))
             {
-              report_clear_count_cache (*reports_ptr, clear_original, 1);
+              report_cache_counts (*reports_ptr, clear_original, 1);
             }
         }
 
