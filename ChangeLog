@@ -1,3 +1,10 @@
+2017-06-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r28713.
+
+	* src/manage_sql.c (set_task_preferences): Delete preferences only for
+	the selected task if the value is NULL.
+
 2017-06-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r28708.
