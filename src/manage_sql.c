@@ -39729,8 +39729,9 @@ set_task_preferences (task_t task, array_t *preferences)
                   g_free (quoted_value);
                 }
               else
-                sql ("DELETE FROM task_preferences WHERE name = '%s';",
-                     quoted_name);
+                sql ("DELETE FROM task_preferences"
+                     " WHERE task = %llu AND name = '%s';",
+                     task, quoted_name);
               g_free (quoted_name);
               sql ("UPDATE tasks SET modification_time = m_now ()"
                    " WHERE id = %llu;",
