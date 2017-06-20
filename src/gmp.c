@@ -10499,11 +10499,15 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
                                 "<permissions>",
                                 get_iterator_uuid (notes));
 
-      if (current_credentials.username
-          && get_iterator_owner_name (notes)
-          && (strcmp (get_iterator_owner_name (notes),
-                      current_credentials.username)
+      if (/* The user is the owner. */
+          (current_credentials.username
+           && get_iterator_owner_name (notes)
+           && (strcmp (get_iterator_owner_name (notes),
+                       current_credentials.username)
               == 0))
+          /* Or the user is effectively the owner. */
+          || acl_user_has_super (current_credentials.uuid,
+                                 get_iterator_owner (notes)))
         buffer_xml_append_printf (buffer,
                                   "<permission><name>Everything</name></permission>"
                                   "</permissions>");
@@ -10751,11 +10755,15 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                 "<permissions>",
                                 get_iterator_uuid (overrides));
 
-      if (current_credentials.username
-          && get_iterator_owner_name (overrides)
-          && (strcmp (get_iterator_owner_name (overrides),
-                      current_credentials.username)
+      if (/* The user is the owner. */
+          (current_credentials.username
+           && get_iterator_owner_name (overrides)
+           && (strcmp (get_iterator_owner_name (overrides),
+                       current_credentials.username)
               == 0))
+          /* Or the user is effectively the owner. */
+          || acl_user_has_super (current_credentials.uuid,
+                                 get_iterator_owner (overrides)))
         buffer_xml_append_printf (buffer,
                                   "<permission><name>Everything</name></permission>"
                                   "</permissions>");
