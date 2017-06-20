@@ -1,3 +1,10 @@
+2017-06-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r28739.
+
+	* src/gmp.c (buffer_notes_xml, buffer_overrides_xml): For the Everything
+	permission, also check if the user is effectively owner.
+
 2017-06-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r28713.
