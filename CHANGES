@@ -1,3 +1,26 @@
+openvas-manager 6.0.11 (2017-06-21)
+
+This is the eleventh maintenance release of the openvas-manager 6.0 module for
+the Open Vulnerability Assessment System release 8 (OpenVAS-8).
+
+This release addresses a serious issue which could cause preferences of
+unrelated tasks to be reset when deleting preferences associated with a task.
+It also avoids concurrent NVT cache updates and contains performance
+improvements for the report cache.
+
+Many thanks to everyone who contributed to this release:
+Matthew Mundell, Timo Pollmeier and Michael Wiegand.
+
+Main changes compared to 6.0.10:
+* An issue which caused preferences of unrelated tasks to be reset when deleting
+  preferences associated with a task.
+* Performance improvements for report cache.
+* Support for retrieving the list of slaves from the command line has been
+  added.
+* An issue which caused concurrent NVT cache updates under certain circumstances
+  has been addressed.
+
+
 openvas-manager 6.0.10 (2017-05-05)
 
 This is the tenth maintenance release of the openvas-manager 6.0 module for
