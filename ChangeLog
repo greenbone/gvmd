@@ -1,3 +1,32 @@
+2017-06-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r28754.
+
+	* src/manage_acl.c (acl_users_with_access_sql)
+	(acl_users_with_access_where): New functions.
+
+	* src/manage_acl.h (acl_users_with_access_sql)
+	(acl_users_with_access_where): New function prototypes.
+
+	* src/manage_sql.c (set_task_run_status): Add parameter for
+	report_cache_counts.
+	(init_report_counts_build_iterator): Add optional parameter users_where
+	to limit the users and handle case where no users are selected.
+	(report_cache_counts): Add users_where parameter.
+	(report_add_result): Add init_report_counts_build_iterator parameter.
+	(set_report_scan_run_status, trim_report, trim_partial_report): Add
+	report_cache_counts parameter.
+	(create_override, delete_override, modify_override): Only update report
+	counts cache for users with access to the override.
+	(subject_where_clause): New function.
+	(create_permission, delete_permission, modify_permission): Limit report
+	cache updates to the subject of the permission.
+	(manage_restore): Limit users of cache update as above for overrides
+	and permissions.
+
+	* src/manage.h (init_report_counts_build_iterator)
+	(report_cache_counts): Add parameters.
+
 2017-06-21  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post release version bump.
