@@ -1409,3 +1409,91 @@ acl_where_owned_for_get (const char *type, const char *user_sql)
 
   return owned_clause;
 }
+
+/**
+ * @brief Get an SQL values expression of users that can get a resource
+ *
+ * @param[in]  type         The resource type.
+ * @param[in]  resource_id  The UUID of the resource.
+ * @param[in]  users_where  Optional clause to limit users.
+ *
+ * @return  Newly allocated SQL string or NULL if no users have access.
+ */
+
+gchar *
+acl_users_with_access_sql (const char *type, const char *resource_id,
+                           const char *users_where)
+{
+  GString *users_string;
+  int users_count = 0;
+  gchar *old_user_id, *command;
+  iterator_t users;
+
+  old_user_id = current_credentials.uuid;
+  init_iterator (&users, "SELECT id, uuid FROM users WHERE %s;",
+                 users_where ? users_where : "t()");
+
+  users_string = g_string_new ("(VALUES ");
+
+  command = g_strdup_printf ("get_%ss", type);
+
+  while (next (&users))
+    {
+      current_credentials.uuid = g_strdup (iterator_string (&users, 1));
+      manage_session_init (current_credentials.uuid);
+      if (acl_user_has_access_uuid (type, resource_id, command, 0))
+        {
+          if (users_count)
+            g_string_append (users_string,
+                             ", ");
+
+          g_string_append_printf (users_string,
+                                  "(%llu)",
+                                  iterator_int64 (&users, 0));
+          users_count ++;
+        }
+      g_free (current_credentials.uuid);
+    }
+  g_string_append(users_string, ")");
+  cleanup_iterator (&users);
+
+  current_credentials.uuid = old_user_id;
+  manage_session_init (old_user_id);
+
+  g_free (command);
+
+  if (users_count == 0)
+    {
+      g_string_free (users_string, TRUE);
+      return NULL;
+    }
+
+  return g_string_free (users_string, FALSE);
+
+}
+
+/**
+ * @brief Get a static SQL condition selecting users that can get a resource
+ *
+ * @param[in]  type         The resource type.
+ * @param[in]  resource_id  The UUID of the resource.
+ * @param[in]  users_where  Optional clause to limit users.
+ * @param[in]  user_expr    Expression for the user, e.g. the column name.
+ *
+ * @return  Newly allocated SQL string or NULL if no users have access.
+ */
+
+gchar *
+acl_users_with_access_where (const char *type, const char *resource_id,
+                             const char *users_where, const char* user_expr)
+{
+  gchar *values, *ret;
+  assert (user_expr);
+  values = acl_users_with_access_sql (type, resource_id, users_where);
+  if (values)
+    ret = g_strdup_printf ("%s IN %s", user_expr, values);
+  else
+    ret = g_strdup ("NOT t()");
+  g_free (values);
+  return ret;
+}

@@ -17001,7 +17001,7 @@ set_task_run_status_internal (task_t task, task_status_t status)
       sql ("UPDATE reports SET scan_run_status = %u WHERE id = %llu;",
            status,
            current_report);
-      report_cache_counts (current_report, 0, 0);
+      report_cache_counts (current_report, 0, 0, NULL);
     }
 
   sql ("UPDATE tasks SET run_status = %u WHERE id = %llu;",
@@ -19608,41 +19608,24 @@ reports_build_count_cache (int clear, int* changes_out)
  * @param[in]  report         Report to select.
  * @param[in]  min_qod_limit  Limit for min_qod.
  * @param[in]  add_defaults   Whether to add default values.
+ * @param[in]  users_where    Optional SQL clause to limit users.
  */
 void
 init_report_counts_build_iterator (iterator_t *iterator, report_t report,
-                                   int min_qod_limit, int add_defaults)
+                                   int min_qod_limit, int add_defaults,
+                                   const char *users_where)
 {
-  iterator_t users;
-  GString *users_string;
-  int first_user = 1;
-  gchar *report_id, *old_user_id;
+  gchar *report_id, *users_string;
 
-  users_string = g_string_new ("(VALUES ");
   report_id = sql_string ("SELECT uuid FROM reports WHERE id = %llu;", report);
-  old_user_id = current_credentials.uuid;
-  init_iterator (&users, "SELECT id, uuid FROM users;");
-  while (next (&users))
+
+  users_string = acl_users_with_access_sql ("report", report_id, users_where);
+  if (users_string == NULL)
     {
-      current_credentials.uuid = g_strdup (iterator_string (&users, 1));
-      if (acl_user_has_access_uuid ("report", report_id, "get_reports", 0))
-        {
-          if (first_user)
-            first_user = 0;
-          else
-            g_string_append (users_string,
-                             ", ");
-
-          g_string_append_printf (users_string,
-                                  "(%llu)",
-                                  iterator_int64 (&users, 0));
-        }
-      g_free (current_credentials.uuid);
+      init_iterator (iterator, "SELECT NULL WHERE NOT t();");
+      g_free (report_id);
+      return;
     }
-  g_string_append(users_string, ")");
-  cleanup_iterator (&users);
-
-  current_credentials.uuid = old_user_id;
 
   if (add_defaults && MIN_QOD_DEFAULT <= min_qod_limit)
     {
@@ -19664,7 +19647,7 @@ init_report_counts_build_iterator (iterator_t *iterator, report_t report,
                      "  UNION SELECT %d as min_qod, 1, \"user\""
                      "          FROM users_with_access) AS inner_query"
                      " ORDER BY \"user\"",
-                     users_string->str,
+                     users_string,
                      report,
                      min_qod_limit,
                      MIN_QOD_DEFAULT,
@@ -19686,7 +19669,7 @@ init_report_counts_build_iterator (iterator_t *iterator, report_t report,
                      "  UNION SELECT 0 as min_qod, 1, \"user\""
                      "          FROM users_with_access) AS inner_query"
                      " ORDER BY \"user\"",
-                     users_string->str,
+                     users_string,
                      report,
                      min_qod_limit);
     }
@@ -19701,11 +19684,11 @@ init_report_counts_build_iterator (iterator_t *iterator, report_t report,
                      "   AND \"user\" IN (SELECT \"user\""
                      "                    FROM users_with_access)"
                      " ORDER BY \"user\"",
-                     users_string->str,
+                     users_string,
                      report,
                      min_qod_limit);
     }
-  g_string_free (users_string, TRUE);
+  g_free (users_string);
   g_free (report_id);
 }
 
@@ -19749,16 +19732,21 @@ report_counts_build_iterator_user (iterator_t *iterator)
 }
 
 /**
- * @brief Cache report counts.
+ * @brief Cache report counts and clear existing caches if requested.
  *
- * @param[in]  report  Report.
+ * If queue_rebuild is true, the cache will not be rebuilt immediately, but
+ *  the rebuild will be added to a queue to be handled in a separate process.
+ *
+ * @param[in]  report             Report to cache counts of.
  * @param[in]  clear_original     Whether to clear existing cache for
  *                                 original severity.
  * @param[in]  clear_overridden   Whether to clear existing cache for
  *                                 overridden severity.
+ * @param[in]  users_where        Optional SQL clause to limit users.
  */
 void
-report_cache_counts (report_t report, int clear_original, int clear_overridden)
+report_cache_counts (report_t report, int clear_original, int clear_overridden,
+                     const char* users_where)
 {
   iterator_t cache_iterator;
   int debugs, holes, infos, logs, warnings, false_positives;
@@ -19767,7 +19755,8 @@ report_cache_counts (report_t report, int clear_original, int clear_overridden)
   gchar *old_user_id;
 
   old_user_id = current_credentials.uuid;
-  init_report_counts_build_iterator (&cache_iterator, report, INT_MAX, 1);
+  init_report_counts_build_iterator (&cache_iterator, report, INT_MAX, 1,
+                                     users_where);
 
   while (next (&cache_iterator))
     {
@@ -20447,7 +20436,7 @@ report_add_result (report_t report, result_t result)
                          result);
   ov_severity = severity;
 
-  init_report_counts_build_iterator (&cache_iterator, report, qod, 1);
+  init_report_counts_build_iterator (&cache_iterator, report, qod, 1, NULL);
   while (next (&cache_iterator))
     {
       int min_qod = report_counts_build_iterator_min_qod (&cache_iterator);
@@ -23045,7 +23034,7 @@ set_report_scan_run_status (report_t report, task_status_t status)
   sql ("UPDATE reports SET scan_run_status = %u WHERE id = %llu;",
        status,
        report);
-  report_cache_counts (report, 0, 0);
+  report_cache_counts (report, 0, 0, NULL);
   return 0;
 }
 
@@ -24025,7 +24014,7 @@ trim_report (report_t report)
        report);
 
   /* Clear and rebuild counts cache */
-  report_cache_counts (report, 1, 1);
+  report_cache_counts (report, 1, 1, NULL);
 }
 
 /**
@@ -24061,7 +24050,7 @@ trim_partial_report (report_t report)
        report);
 
   /* Clear and rebuild counts cache */
-  report_cache_counts (report, 1, 1);
+  report_cache_counts (report, 1, 1, NULL);
 }
 
 /**
@@ -43919,6 +43908,7 @@ create_override (const char* active, const char* nvt, const char* text,
   GHashTable *reports;
   GHashTableIter reports_iter;
   report_t *reports_ptr;
+  gchar *override_id, *users_where;
 
   if (acl_user_may ("create_override") == 0)
     return 99;
@@ -44066,15 +44056,21 @@ create_override (const char* active, const char* nvt, const char* text,
   if (override)
     *override = sql_last_insert_id ();
 
+  override_uuid (sql_last_insert_id (), &override_id);
+  users_where = acl_users_with_access_where ("override", override_id, NULL,
+                                             "id");
+
   reports = reports_for_override (sql_last_insert_id ());
   reports_ptr = NULL;
   g_hash_table_iter_init (&reports_iter, reports);
   while (g_hash_table_iter_next (&reports_iter,
                                  ((gpointer*)&reports_ptr), NULL))
     {
-      report_cache_counts (*reports_ptr, 0, 1);
+      report_cache_counts (*reports_ptr, 0, 1, users_where);
     }
   g_hash_table_destroy (reports);
+  g_free (override_id);
+  g_free (users_where);
 
   return 0;
 }
@@ -44128,6 +44124,7 @@ delete_override (const char *override_id, int ultimate)
   GHashTable *reports;
   GHashTableIter reports_iter;
   report_t *reports_ptr;
+  gchar *users_where;
 
   sql_begin_immediate ();
 
@@ -44174,6 +44171,9 @@ delete_override (const char *override_id, int ultimate)
 
   reports = reports_for_override (override);
 
+  users_where = acl_users_with_access_where ("override", override_id, NULL,
+                                             "id");
+
   if (ultimate == 0)
     {
       sql ("INSERT INTO overrides_trash"
@@ -44205,9 +44205,10 @@ delete_override (const char *override_id, int ultimate)
   while (g_hash_table_iter_next (&reports_iter,
                                  ((gpointer*)&reports_ptr), NULL))
     {
-      report_cache_counts (*reports_ptr, 0, 1);
+      report_cache_counts (*reports_ptr, 0, 1, users_where);
     }
   g_hash_table_destroy (reports);
+  g_free (users_where);
 
   sql_commit ();
   return 0;
@@ -44243,6 +44244,7 @@ modify_override (override_t override, const char *active, const char* text,
   GHashTable *reports;
   GHashTableIter reports_iter;
   report_t *reports_ptr;
+  gchar *override_id, *users_where;
 
   if (override == 0)
     return -1;
@@ -44407,6 +44409,10 @@ modify_override (override_t override, const char *active, const char* text,
   g_free (quoted_port);
   g_free (quoted_severity);
 
+  override_uuid (override, &override_id);
+  users_where = acl_users_with_access_where ("override", override_id, NULL,
+                                             "id");
+
   reports_add_for_override (reports, override);
 
   g_hash_table_iter_init (&reports_iter, reports);
@@ -44414,9 +44420,11 @@ modify_override (override_t override, const char *active, const char* text,
   while (g_hash_table_iter_next (&reports_iter,
                                  ((gpointer*)&reports_ptr), NULL))
     {
-      report_cache_counts (*reports_ptr, 0, 1);
+      report_cache_counts (*reports_ptr, 0, 1, users_where);
     }
   g_hash_table_destroy (reports);
+  g_free (override_id);
+  g_free (users_where);
 
   return 0;
 }
@@ -52231,6 +52239,49 @@ check_permission_args (const char *name_arg, const char *resource_type_arg,
 }
 
 /**
+ * @brief Create a SQL clause to select the subject users.
+ *
+ * @param[in]  subject_type  Subject type.
+ * @param[in]  subject       The subject.
+ *
+ * @return Newly allocated string containing the SQL clause.
+ */
+static gchar*
+subject_where_clause (const char* subject_type, resource_t subject)
+{
+  gchar *subject_where = NULL;
+  if (subject && subject_type)
+    {
+      if (strcmp (subject_type, "user") == 0)
+        {
+          subject_where
+            = g_strdup_printf ("id = %llu", subject);
+        }
+      else if (strcmp (subject_type, "group") == 0)
+        {
+          subject_where
+            = g_strdup_printf ("id IN (SELECT \"user\" FROM group_users"
+                               "        WHERE \"group\" = %llu)",
+                               subject);
+        }
+      else if (strcmp (subject_type, "role") == 0)
+        {
+          subject_where
+            = g_strdup_printf ("id IN (SELECT \"user\" FROM role_users"
+                               "        WHERE \"role\" = %llu)",
+                               subject);
+        }
+      else
+        {
+          subject_where = strdup ("t()");
+          g_warning ("%s: unknown subject_type %s",
+                     __FUNCTION__, subject_type);
+        }
+    }
+  return subject_where;
+}
+
+/**
  * @brief Create a permission.
  *
  * Caller must organise the transaction.
@@ -52261,6 +52312,7 @@ create_permission_internal (const char *name_arg, const char *comment,
   const char *resource_id;
   GHashTable *reports = NULL;
   int clear_original = 0;
+  gchar *subject_where;
 
   assert (current_credentials.uuid);
 
@@ -52300,6 +52352,8 @@ create_permission_internal (const char *name_arg, const char *comment,
        subject_id ? "'" : "",
        subject);
 
+  subject_where = subject_where_clause (subject_type, subject);
+
   if (permission)
     *permission = sql_last_insert_id ();
 
@@ -52324,7 +52378,8 @@ create_permission_internal (const char *name_arg, const char *comment,
       while (g_hash_table_iter_next (&reports_iter,
                                     ((gpointer*)&reports_ptr), NULL))
         {
-          report_cache_counts (*reports_ptr, clear_original, 1);
+          report_cache_counts (*reports_ptr, clear_original, 1,
+                               subject_where);
         }
     }
 
@@ -52334,6 +52389,7 @@ create_permission_internal (const char *name_arg, const char *comment,
   g_free (quoted_comment);
   g_free (quoted_name);
   g_free (resource_type);
+  g_free (subject_where);
 
   return 0;
 }
@@ -53095,6 +53151,7 @@ delete_permission (const char *permission_id, int ultimate)
   resource_t subject, resource;
   GHashTable *reports = NULL;
   int clear_original = 0;
+  gchar *subject_where;
 
   if (strcasecmp (permission_id, PERMISSION_UUID_ADMIN_EVERYTHING) == 0)
     return 3;
@@ -53151,6 +53208,7 @@ delete_permission (const char *permission_id, int ultimate)
       sql_rollback ();
       return 99;
     }
+  subject_where = subject_where_clause (subject_type, subject);
   free (subject_type);
 
   if (ultimate == 0)
@@ -53201,9 +53259,11 @@ delete_permission (const char *permission_id, int ultimate)
       while (g_hash_table_iter_next (&reports_iter,
                                     ((gpointer*)&reports_ptr), NULL))
         {
-          report_cache_counts (*reports_ptr, clear_original, 1);
+          report_cache_counts (*reports_ptr, clear_original, 1, subject_where);
         }
     }
+
+  g_free (subject_where);
 
   if (reports)
     g_hash_table_destroy (reports);
@@ -53264,6 +53324,7 @@ modify_permission (const char *permission_id, const char *name_arg,
   GHashTableIter reports_iter;
   report_t *reports_ptr;
   int clear_original = 0;
+  gchar *subject_where_old, *subject_where_new, *subject_where;
 
   if (permission_id == NULL)
     return 4;
@@ -53306,6 +53367,9 @@ modify_permission (const char *permission_id, const char *name_arg,
       sql_rollback ();
       return 99;
     }
+
+  /* Get old subject clause */
+  subject_where_old = subject_where_clause (existing_subject_type, subject);
 
   /* Set the comment first, to make things easier. */
 
@@ -53371,6 +53435,24 @@ modify_permission (const char *permission_id, const char *name_arg,
       free (new_subject_id);
       sql_rollback ();
       return ret;
+    }
+
+  subject_where_new = subject_where_clause (new_subject_type
+                                              ? new_subject_type
+                                              : subject_type,
+                                            subject);
+
+  if (strcmp (subject_where_new, subject_where_old))
+    {
+      subject_where = g_strdup_printf ("(%s) OR (%s)",
+                                       subject_where_new, subject_where_old);
+      g_free (subject_where_new);
+      g_free (subject_where_old);
+    }
+  else
+    {
+      subject_where = subject_where_old;
+      g_free (subject_where_new);
     }
 
   /* Get old values and check if caches are affected by previous resource. */
@@ -53446,7 +53528,8 @@ modify_permission (const char *permission_id, const char *name_arg,
       while (g_hash_table_iter_next (&reports_iter,
                                     ((gpointer*)&reports_ptr), NULL))
         {
-          report_cache_counts (*reports_ptr, clear_original, 1);
+          report_cache_counts (*reports_ptr, clear_original, 1,
+                               subject_where);
         }
       g_hash_table_destroy (reports);
       reports = NULL;
@@ -53461,6 +53544,7 @@ modify_permission (const char *permission_id, const char *name_arg,
   free (new_subject_id);
   free (old_name);
   free (old_resource_type);
+  g_free (subject_where);
 
   sql_commit ();
 
@@ -56994,6 +57078,7 @@ manage_restore (const char *id)
       GHashTable *reports;
       GHashTableIter reports_iter;
       report_t *reports_ptr;
+      gchar *users_where;
 
       sql ("INSERT INTO overrides"
            " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
@@ -57012,6 +57097,8 @@ manage_restore (const char *id)
       tags_set_locations ("override", resource,
                           override,
                           LOCATION_TABLE);
+      users_where = acl_users_with_access_where ("override", id, NULL,
+                                                 "id");
 
       reports = reports_for_override (override);
       g_hash_table_iter_init (&reports_iter, reports);
@@ -57019,9 +57106,10 @@ manage_restore (const char *id)
       while (g_hash_table_iter_next (&reports_iter,
                                     ((gpointer*)&reports_ptr), NULL))
         {
-          report_cache_counts (*reports_ptr, 0, 1);
+          report_cache_counts (*reports_ptr, 0, 1, users_where);
         }
       g_hash_table_destroy (reports);
+      g_free (users_where);
 
       sql ("DELETE FROM overrides_trash WHERE id = %llu;", resource);
 
@@ -57044,6 +57132,9 @@ manage_restore (const char *id)
       resource_t perm_resource;
       GHashTable *reports = NULL;
       int clear_original = 0;
+      char *subject_type;
+      resource_t subject;
+      gchar *subject_where;
 
       sql ("INSERT INTO permissions"
            " (uuid, owner, name, comment, resource_type, resource,"
@@ -57060,6 +57151,11 @@ manage_restore (const char *id)
       name = permission_name (permission);
       resource_type = permission_resource_type (permission);
       perm_resource = permission_resource (permission);
+
+      subject_type = permission_subject_type (permission);
+      subject = permission_subject (permission);
+      subject_where = subject_where_clause (subject_type, subject);
+      free (subject_type);
 
       tags_set_locations ("permission", resource,
                           sql_last_insert_id (),
@@ -57087,9 +57183,11 @@ manage_restore (const char *id)
           while (g_hash_table_iter_next (&reports_iter,
                                         ((gpointer*)&reports_ptr), NULL))
             {
-              report_cache_counts (*reports_ptr, clear_original, 1);
+              report_cache_counts (*reports_ptr, clear_original, 1,
+                                   subject_where);
             }
         }
+      g_free (subject_where);
 
       if (reports)
         g_hash_table_destroy (reports);
