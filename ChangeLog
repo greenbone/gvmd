@@ -1,5 +1,11 @@
 2017-06-21  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	Post release version bump.
+
+	* CMakeLists.txt: Updated version to 6.0.12.
+
+2017-06-21  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	Preparing the openvas-manager 6.0.11 release.
 
 	* CHANGES: Updated.
