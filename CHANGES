@@ -1,3 +1,39 @@
+openvas-manager 7.0.2 (2017-06-21)
+
+This is the second maintenance release of the openvas-manager 7.0 module for the
+Open Vulnerability Assessment System release 9 (OpenVAS-9). The OpenVAS Manager
+is the central management service between the actual security scanners and the
+user clients.
+
+This release addresses a serious issue which could cause preferences of
+unrelated tasks to be reset when deleting preferences associated with a task.
+
+Many thanks to everyone who has contributed to this release:
+Benoît Allard, Matthew Mundell, Timo Pollmeier, Björn Ricks and Michael Wiegand.
+
+Main changes since 7.0.1:
+* An issue which caused preferences of unrelated tasks to be reset when deleting
+  preferences associated with a task.
+* An issue which caused deleting roles to fail under certain circumstances has
+  been addressed.
+* An issue which caused credential type names to be migrated incorrectly has
+  been addressed.
+* An issue which caused the 'Send to host' alert method to fail has been
+  addressed.
+* An issue which caused hostname queries to fail for hosts with multiple
+  hostnames has been addressed.
+* An issue which caused schedules to be triggered multiple times after a time
+  shift (e.g. DST switch) has been addressed.
+* An issue which caused deleting roles to fail under certain circumstances has
+  been addressed.
+* Handling of invalid time zones has been improved.
+* An issue which caused a crash when importing private keys without a trailing
+  newline character has been addressed.
+* Support for increasing the IP limit per target via command line parameters has
+  been reintroduced.
+* Performance improvements.
+
+
 openvas-manager 7.0.1 (2017-03-07)
 
 This is the first maintenance release of the openvas-manager 7.0 module for the

@@ -1,3 +1,9 @@
+2017-06-21  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Preparing the openvas-manager 7.0.2 release.
+
+	* CHANGES: Updated.
+
 2017-06-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/gmp.c: File missed in last commit.
