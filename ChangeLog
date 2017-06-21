@@ -1,5 +1,9 @@
 2017-06-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/gmp.c: File missed in last commit.
+
+2017-06-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r28739.
 
 	* src/gmp.c (buffer_notes_xml, buffer_overrides_xml): For the Everything
