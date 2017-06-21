@@ -71,7 +71,7 @@ endif (NOT CMAKE_BUILD_TYPE MATCHES "Release")
 # we require CMake >= 3.0
 set (PROJECT_VERSION_MAJOR 7)
 set (PROJECT_VERSION_MINOR 0)
-set (PROJECT_VERSION_PATCH 2)
+set (PROJECT_VERSION_PATCH 3)
 
 # Set beta version if this is a beta release series,
 # unset if this is a stable release series.
