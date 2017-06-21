@@ -172,7 +172,7 @@ Logging Configuration
 
 By default Manager writes logs to the file
 
-    <install-prefix>/var/log/openvas/gvmd.log
+    <install-prefix>/var/log/gvm/gvmd.log
 
 Logging is configured entirely by the file
 
@@ -183,7 +183,7 @@ The configuration is divided into domains like this one
     [md   main]
     prepend=%t %p
     prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
-    file=/var/log/openvas/gvmd.log
+    file=/var/log/gvm/gvmd.log
     level=128
 
 The "level" field controls the amount of logging that is written.

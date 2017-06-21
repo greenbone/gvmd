@@ -1,3 +1,13 @@
+2017-06-21  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	Switch the log location from /var/log/openvas/ to /var/log/gvm/.
+
+	* CMakeLists.txt: Change location for GVM_LOG_DIR accordingly.
+
+	* INSTALL: Adjust the documentation accordingly.
+
+	* src/gvmd_log_conf.cmake_in: Change name: OpenVAS->GVM.
+
 2017-06-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/gmp.c (buffer_notes_xml, buffer_overrides_xml): For the Everything

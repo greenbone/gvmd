@@ -179,7 +179,7 @@ set (GVM_SYSCONF_DIR  "${SYSCONFDIR}/gvm")
 
 set (GVM_DATA_DIR     "${DATADIR}/openvas")
 set (GVM_STATE_DIR    "${LOCALSTATEDIR}/lib/openvas")
-set (GVM_LOG_DIR      "${LOCALSTATEDIR}/log/openvas")
+set (GVM_LOG_DIR      "${LOCALSTATEDIR}/log/gvm")
 set (GVM_SCAP_RES_DIR "${GVM_DATA_DIR}/scap")
 set (GVM_CERT_RES_DIR "${GVM_DATA_DIR}/cert")
 set (GVM_CA_DIR       "${GVMD_STATE_DIR}/trusted_certs")
