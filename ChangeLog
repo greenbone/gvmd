@@ -1,3 +1,8 @@
+2017-06-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (modify_override): Only rebuild the report counts
+	cache if there are changes that can affect results.
+
 2017-06-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql_secinfo.c (update_scap_ovaldefs): Keep going if the
