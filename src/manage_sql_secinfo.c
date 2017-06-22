@@ -3306,6 +3306,7 @@ update_scap_ovaldefs (int last_scap_update, int private)
   int count, last_oval_update, updated_scap_ovaldefs;
   gchar *oval_dir;
   guint index;
+  struct stat state;
 
   assert (oval_files == NULL);
 
@@ -3336,12 +3337,48 @@ update_scap_ovaldefs (int last_scap_update, int private)
   /* Pairs of pointers, pair[0]: absolute pathname, pair[1]: oval timestamp. */
   oval_files = make_array ();
 
+  if (g_lstat (oval_dir, &state))
+    {
+      if (errno == ENOENT)
+        {
+          if (private)
+            g_debug ("%s: no private OVAL dir (%s)",
+                     __FUNCTION__,
+                     oval_dir);
+          else
+            g_warning ("%s: no OVAL dir (%s)",
+                       __FUNCTION__,
+                       oval_dir);
+          g_free (oval_dir);
+          oval_files_free ();
+          return 0;
+        }
+      g_warning ("%s: failed to lstat '%s': %s",
+                  __FUNCTION__,
+                 oval_dir,
+                 strerror (errno));
+      g_free (oval_dir);
+      oval_files_free ();
+      return -1;
+    }
+
   if (nftw (oval_dir, oval_files_add, 20, 0) == -1)
     {
       oval_files_free ();
-      if ((errno == ENOENT) && private)
+      if (errno == ENOENT)
         {
+          if (private)
+            g_debug ("%s: nftw of private '%s': %s",
+                     __FUNCTION__,
+                     oval_dir,
+                     strerror (errno));
+          else
+            g_warning ("%s: nftw of '%s': %s",
+                      __FUNCTION__,
+                      oval_dir,
+                      strerror (errno));
           g_free (oval_dir);
+          oval_files_free ();
           return 0;
         }
       g_warning ("%s: failed to traverse '%s': %s",
@@ -3349,6 +3386,7 @@ update_scap_ovaldefs (int last_scap_update, int private)
                  oval_dir,
                  strerror (errno));
       g_free (oval_dir);
+      oval_files_free ();
       return -1;
     }
 
@@ -3384,6 +3422,7 @@ update_scap_ovaldefs (int last_scap_update, int private)
                          error->message);
               g_free (oval_dir);
               g_error_free (error);
+              oval_files_free ();
               return -1;
             }
         }
