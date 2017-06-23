@@ -1,3 +1,9 @@
+2017-06-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r28783.
+
+	* src/manage_sql.c (update_nvti_cache): Simplify SQL to improve speed.
+
 2017-06-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r28773.
@@ -140,7 +146,7 @@
 	reports affected or clear the whole cache for super permissions.
 	(manage_restore): Clear reports cache for overrides and also clear it
 	on override or super permission changes.
-	
+
 	* src/manage.h (report_clear_count_cache): New function prototype.
 
 2017-05-31  Timo Pollmeier <timo.pollmeier@greenbone.net>

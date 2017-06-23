@@ -13233,18 +13233,20 @@ update_nvti_cache ()
 
   nvti_cache = nvtis_new ();
 
-  init_nvt_iterator (&nvts, (nvt_t) 0, (config_t) 0, NULL, NULL, 1, NULL);
+  init_iterator (&nvts,
+                 "SELECT oid, name, family, cvss_base, cve, bid, xref, tag"
+                 " FROM nvts;");
   while (next (&nvts))
     {
       nvti_t *nvti = nvti_new ();
-      nvti_set_oid (nvti, nvt_iterator_oid (&nvts));
-      nvti_set_name (nvti, nvt_iterator_name (&nvts));
-      nvti_set_family (nvti, nvt_iterator_family (&nvts));
-      nvti_set_cvss_base (nvti, nvt_iterator_cvss_base (&nvts));
-      nvti_set_cve (nvti, nvt_iterator_cve (&nvts));
-      nvti_set_bid (nvti, nvt_iterator_bid (&nvts));
-      nvti_set_xref (nvti, nvt_iterator_xref (&nvts));
-      nvti_set_tag (nvti, nvt_iterator_tag (&nvts));
+      nvti_set_oid (nvti, iterator_string (&nvts, 0));
+      nvti_set_name (nvti, iterator_string (&nvts, 1));
+      nvti_set_family (nvti, iterator_string (&nvts, 2));
+      nvti_set_cvss_base (nvti, iterator_string (&nvts, 3));
+      nvti_set_cve (nvti, iterator_string (&nvts, 4));
+      nvti_set_bid (nvti, iterator_string (&nvts, 5));
+      nvti_set_xref (nvti, iterator_string (&nvts, 6));
+      nvti_set_tag (nvti, iterator_string (&nvts, 7));
       nvtis_add (nvti_cache, nvti);
     }
   cleanup_iterator (&nvts);
