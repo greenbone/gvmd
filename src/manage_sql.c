@@ -17717,10 +17717,10 @@ init_report_counts_build_iterator (iterator_t *iterator, report_t report,
         {
           if (users_count)
             g_string_append (users_string,
-                             ", ");
+                             " UNION ");
 
           g_string_append_printf (users_string,
-                                  "(%llu)",
+                                  "SELECT %llu",
                                   iterator_int64 (&users, 0));
           g_string_append_printf (selects_string,
                                   " UNION SELECT 0, %llu"

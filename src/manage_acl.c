@@ -1421,7 +1421,7 @@ acl_users_with_access_sql (const char *type, const char *resource_id,
   init_iterator (&users, "SELECT id, uuid FROM users WHERE %s;",
                  users_where ? users_where : "t()");
 
-  users_string = g_string_new ("(VALUES ");
+  users_string = g_string_new ("(");
 
   command = g_strdup_printf ("get_%ss", type);
 
@@ -1433,10 +1433,10 @@ acl_users_with_access_sql (const char *type, const char *resource_id,
         {
           if (users_count)
             g_string_append (users_string,
-                             ", ");
+                             " UNION ");
 
           g_string_append_printf (users_string,
-                                  "(%llu)",
+                                  "SELECT %llu",
                                   iterator_int64 (&users, 0));
           users_count ++;
         }

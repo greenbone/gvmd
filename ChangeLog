@@ -1,3 +1,11 @@
+2017-06-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_acl.c (acl_users_with_access_sql): Change the SQL to
+	not use VALUES for compatibility with SQLite versions before 3.8.3.
+
+	* src/manage_sql.c (init_report_counts_build_iterator): Change the SQL
+	to not use VALUES for compatibility with SQLite versions before 3.8.3.
+
 2017-06-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r28773.
