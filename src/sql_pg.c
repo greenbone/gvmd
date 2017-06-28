@@ -181,7 +181,7 @@ sql_ilike_op ()
 const char *
 sql_regexp_op ()
 {
-  return "~";
+  return "?~#";
 }
 
 /**
