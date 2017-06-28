@@ -1,3 +1,9 @@
+2017-06-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/sql_sqlite3.c (BUSY_TIMEOUT): New define.
+	(sql_open, sql_prepare_internal, sql_exec_internal): Set busy timeout, to
+	prevent process from waiting busily.
+
 2017-06-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (update_nvti_cache): Simplify SQL to improve speed.
