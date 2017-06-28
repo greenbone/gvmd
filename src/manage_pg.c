@@ -165,6 +165,15 @@ manage_create_sql_functions ()
        " LANGUAGE C;",
        OPENVAS_LIB_INSTALL_DIR);
 
+  sql ("CREATE OR REPLACE FUNCTION regexp (text, text)"
+       " RETURNS boolean"
+       " AS '%s/openvasmd/pg/libmanage-pg-server', 'sql_regexp'"
+       " LANGUAGE C;",
+       OPENVAS_LIB_INSTALL_DIR);
+
+  sql ("CREATE OPERATOR ?~#"
+       " (PROCEDURE = regexp, LEFTARG = text, RIGHTARG = text);");
+
   sql ("RESET role;");
 
   /* Functions in pl/pgsql. */

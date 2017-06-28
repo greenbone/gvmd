@@ -28,6 +28,7 @@
 #include "postgres.h"
 #include "fmgr.h"
 #include "executor/spi.h"
+#include "glib.h"
 
 #ifdef PG_MODULE_MAGIC
 PG_MODULE_MAGIC;
@@ -227,6 +228,43 @@ sql_valid_db_resource_type (PG_FUNCTION_ARGS)
       ret = valid_db_resource_type (type);
 
       pfree (type);
+      PG_RETURN_BOOL (ret);
+    }
+}
+
+PG_FUNCTION_INFO_V1 (sql_regexp);
+
+/**
+ * @brief Return if argument 1 matches regular expression in argument 2.
+ *
+ * This is a callback for a SQL function of two arguments.
+ */
+Datum
+sql_regexp (PG_FUNCTION_ARGS)
+{
+  if (PG_ARGISNULL (0) || PG_ARGISNULL (1))
+    PG_RETURN_BOOL (0);
+  else
+    {
+      text *string_arg, *regexp_arg;
+      char *string, *regexp;
+      int ret;
+
+      ret = 0;
+
+      regexp_arg = PG_GETARG_TEXT_P(1);
+      regexp = textndup (regexp_arg, VARSIZE (regexp_arg) - VARHDRSZ);
+
+      string_arg = PG_GETARG_TEXT_P(0);
+      string = textndup (string_arg, VARSIZE (string_arg) - VARHDRSZ);
+
+      if (g_regex_match_simple ((gchar *) regexp, (gchar *) string, 0, 0))
+        ret = 1;
+      else
+        ret = 0;
+
+      pfree (string);
+      pfree (regexp);
       PG_RETURN_BOOL (ret);
     }
 }
