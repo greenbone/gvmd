@@ -45,6 +45,11 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
+/**
+ * @brief Busy timeout, in milliseconds.
+ */
+#define BUSY_TIMEOUT 1000
+
 
 /* Headers of sql.c symbols used only here. */
 
@@ -251,6 +256,8 @@ sql_open (const char *database)
       return -1;
     }
 
+  sqlite3_busy_timeout (task_db, BUSY_TIMEOUT);
+
   g_debug ("   %s: db open, max retry sleep time is %i\n",
            __FUNCTION__,
            OPENVAS_SQLITE_SLEEP_MAX);
@@ -357,6 +364,9 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
   if (log)
     g_debug ("   sql: %s\n", formatted);
 
+  if (retry == 0)
+    sqlite3_busy_timeout (task_db, 0);
+
   retries = 0;
   *stmt = (sql_stmt_t*) g_malloc0 (sizeof (sql_stmt_t));
   sqlite_stmt = NULL;
@@ -377,6 +387,8 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
           if (retries++ < 10)
             continue;
           g_free (formatted);
+          if (retry == 0)
+            sqlite3_busy_timeout (task_db, BUSY_TIMEOUT);
           return 1;
         }
       g_free (formatted);
@@ -388,6 +400,8 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
               g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
                          __FUNCTION__,
                          sqlite3_errmsg (task_db));
+              if (retry == 0)
+                sqlite3_busy_timeout (task_db, BUSY_TIMEOUT);
               return -1;
             }
           break;
@@ -395,9 +409,13 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
       g_warning ("%s: sqlite3_prepare failed: %s\n",
                  __FUNCTION__,
                  sqlite3_errmsg (task_db));
+      if (retry == 0)
+        sqlite3_busy_timeout (task_db, BUSY_TIMEOUT);
       return -1;
     }
 
+  if (retry == 0)
+    sqlite3_busy_timeout (task_db, BUSY_TIMEOUT);
   return 0;
 }
 
@@ -415,6 +433,9 @@ int
 sql_exec_internal (int retry, sql_stmt_t *stmt)
 {
   unsigned int retries;
+
+  if (retry == 0)
+    sqlite3_busy_timeout (task_db, 0);
 
   retries = 0;
   while (1)
@@ -435,6 +456,8 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
             continue;
           return -2;
         }
+      if (retry == 0)
+        sqlite3_busy_timeout (task_db, BUSY_TIMEOUT);
       if (ret == SQLITE_DONE)
         return 0;
       if (ret == SQLITE_ROW)
