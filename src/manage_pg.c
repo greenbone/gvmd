@@ -564,8 +564,13 @@ manage_create_sql_functions ()
        " LANGUAGE C;",
        GVM_LIB_INSTALL_DIR);
 
-  sql ("CREATE OPERATOR ?~#"
-       " (PROCEDURE = regexp, LEFTARG = text, RIGHTARG = text);");
+  if (sql_int ("SELECT count(*) FROM pg_operator"
+               " WHERE oprname = '?~#';")
+      == 0)
+    {
+      sql ("CREATE OPERATOR ?~#"
+          " (PROCEDURE = regexp, LEFTARG = text, RIGHTARG = text);");
+    }
 
   sql ("RESET role;");
 
