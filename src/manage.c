@@ -6329,6 +6329,51 @@ set_scheduled_user_uuid (gchar* user_uuid)
 }
 
 /**
+ * @brief Task info, for scheduler.
+ */
+typedef struct
+{
+  gchar *owner_uuid;   ///< UUID of owner.
+  gchar *owner_name;   ///< Name of owner.
+  gchar *task_uuid;    ///< UUID of task.
+} scheduled_task_t;
+
+/**
+ * @brief Set UUID of user that scheduled the current task.
+ *
+ * @param[in] task_uuid   UUID of task.
+ * @param[in] owner_uuid  UUID of owner.
+ * @param[in] owner_name  Name of owner.
+ */
+static scheduled_task_t *
+scheduled_task_new (const gchar* task_uuid, const gchar* owner_uuid,
+                    const gchar* owner_name)
+{
+  scheduled_task_t *scheduled_task;
+
+  scheduled_task = g_malloc (sizeof (*scheduled_task));
+  scheduled_task->task_uuid = g_strdup (task_uuid);
+  scheduled_task->owner_uuid = g_strdup (owner_uuid);
+  scheduled_task->owner_name = g_strdup (owner_name);
+
+  return scheduled_task;
+}
+
+/**
+ * @brief Set UUID of user that scheduled the current task.
+ *
+ * @param[in] scheduled_task  Scheduled task.
+ */
+static void
+scheduled_task_free (scheduled_task_t *scheduled_task)
+{
+  g_free (scheduled_task->task_uuid);
+  g_free (scheduled_task->owner_uuid);
+  g_free (scheduled_task->owner_name);
+  g_free (scheduled_task);
+}
+
+/**
  * @brief Schedule any actions that are due.
  *
  * In gvmd, periodically called from the main daemon loop.
@@ -6348,10 +6393,14 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
 {
   char title[128];
   iterator_t schedules;
-  GSList *starts = NULL, *stops = NULL;
+  GSList *starts, *stops;
   int ret;
-  task_t previous_start_task = 0;
-  task_t previous_stop_task = 0;
+  task_t previous_start_task, previous_stop_task;
+
+  starts = NULL;
+  stops = NULL;
+  previous_start_task = 0;
+  previous_stop_task = 0;
 
   manage_sync_scap (sigmask_current);
   manage_sync_cert (sigmask_current);
@@ -6367,8 +6416,8 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
   if (run_tasks == 0)
     return 0;
 
-  /* Assemble "starts" and "stops" list containing task uuid and owner name
-   * for each (scheduled) task to start or stop. */
+  /* Assemble "starts" and "stops" list containing task uuid, owner name and
+   * owner UUID for each (scheduled) task to start or stop. */
 
   ret = init_task_schedule_iterator (&schedules);
   if (ret)
@@ -6392,12 +6441,11 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
         timezone = task_schedule_iterator_timezone (&schedules);
 
         set_task_schedule_next_time
-           (task_schedule_iterator_task (&schedules),
-            next_time (first_time, period, period_months, timezone, 0));
+         (task_schedule_iterator_task (&schedules),
+          next_time (first_time, period, period_months, timezone, 0));
 
         /* Skip this task if it was already added to the starts list
-         *  to avoid conflicts between multiple users with permissions.
-         */
+         * to avoid conflicts between multiple users with permissions. */
 
         if (previous_start_task == task_schedule_iterator_task (&schedules))
           continue;
@@ -6407,19 +6455,15 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
 
         starts = g_slist_prepend
                   (starts,
-                   g_strdup (task_schedule_iterator_task_uuid (&schedules)));
-        starts = g_slist_prepend
-                  (starts,
-                   g_strdup (task_schedule_iterator_owner_uuid (&schedules)));
-        starts = g_slist_prepend
-                  (starts,
-                   g_strdup (task_schedule_iterator_owner_name (&schedules)));
+                   scheduled_task_new
+                    (task_schedule_iterator_task_uuid (&schedules),
+                     task_schedule_iterator_owner_uuid (&schedules),
+                     task_schedule_iterator_owner_name (&schedules)));
       }
     else if (task_schedule_iterator_stop_due (&schedules))
       {
         /* Skip this task if it was already added to the stops list
-         *  to avoid conflicts between multiple users with permissions.
-         */
+         * to avoid conflicts between multiple users with permissions. */
 
         if (previous_stop_task == task_schedule_iterator_task (&schedules))
           continue;
@@ -6429,13 +6473,10 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
 
         stops = g_slist_prepend
                  (stops,
-                  g_strdup (task_schedule_iterator_task_uuid (&schedules)));
-        stops = g_slist_prepend
-                 (stops,
-                  g_strdup (task_schedule_iterator_owner_uuid (&schedules)));
-        stops = g_slist_prepend
-                 (stops,
-                  g_strdup (task_schedule_iterator_owner_name (&schedules)));
+                  scheduled_task_new
+                   (task_schedule_iterator_task_uuid (&schedules),
+                    task_schedule_iterator_owner_uuid (&schedules),
+                    task_schedule_iterator_owner_name (&schedules)));
       }
   cleanup_task_schedule_iterator (&schedules);
 
@@ -6445,20 +6486,14 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
     {
       int pid;
       gvm_connection_t connection;
-      gchar *task_uuid, *owner, *owner_uuid;
+      scheduled_task_t *scheduled_task;
       GSList *head;
       gmp_authenticate_info_opts_t auth_opts;
 
-      owner = starts->data;
-      assert (starts->next);
-      owner_uuid = starts->next->data;
-      assert (starts->next->next);
-      task_uuid = starts->next->next->data;
+      scheduled_task = starts->data;
 
       head = starts;
-      starts = starts->next->next->next;
-      g_slist_free_1 (head->next->next);
-      g_slist_free_1 (head->next);
+      starts = starts->next;
       g_slist_free_1 (head);
 
       /* Fork a child to start the task and wait for the response, so that the
@@ -6478,7 +6513,7 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
             manage_session_init (current_credentials.uuid);
             while (starts)
               {
-                g_free (starts->data);
+                scheduled_task_free (starts->data);
                 starts = g_slist_delete_link (starts, starts);
               }
             break;
@@ -6486,39 +6521,32 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
           case -1:
             /* Parent on error.  Reschedule and continue to next task. */
             g_warning ("%s: fork failed\n", __FUNCTION__);
-            reschedule_task (task_uuid);
-            g_free (task_uuid);
-            g_free (owner);
-            g_free (owner_uuid);
+            reschedule_task (scheduled_task->task_uuid);
+            scheduled_task_free (scheduled_task);
             continue;
 
           default:
             /* Parent.  Continue to next task. */
             g_debug ("%s: %i forked %i", __FUNCTION__, getpid (), pid);
-            g_free (task_uuid);
-            g_free (owner);
-            g_free (owner_uuid);
+            scheduled_task_free (scheduled_task);
             continue;
 
         }
 
       /* Run the callback to fork a child connected to the Manager. */
 
-      pid = fork_connection (&connection, owner_uuid);
+      pid = fork_connection (&connection, scheduled_task->owner_uuid);
       switch (pid)
         {
           case 0:
             /* Child.  Break, start task, exit. */
-            g_free (owner_uuid);
             break;
 
           case -1:
             /* Parent on error. */
             g_warning ("%s: fork_connection failed\n", __FUNCTION__);
-            reschedule_task (task_uuid);
-            g_free (task_uuid);
-            g_free (owner);
-            g_free (owner_uuid);
+            reschedule_task (scheduled_task->task_uuid);
+            scheduled_task_free (scheduled_task);
             exit (EXIT_FAILURE);
             break;
 
@@ -6536,9 +6564,6 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
               g_debug ("%s: %i fork_connectioned %i",
                        __FUNCTION__, getpid (), pid);
 
-              g_free (owner);
-              g_free (owner_uuid);
-
               if (signal (SIGCHLD, SIG_DFL) == SIG_ERR)
                 g_warning ("%s: failed to set SIGCHLD", __FUNCTION__);
               while (waitpid (pid, &status, 0) < 0)
@@ -6548,8 +6573,8 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
                       g_warning ("%s: Failed to get child exit,"
                                  " so task '%s' may not have been scheduled",
                                  __FUNCTION__,
-                                 task_uuid);
-                      g_free (task_uuid);
+                                 scheduled_task->task_uuid);
+                      scheduled_task_free (scheduled_task);
                       exit (EXIT_FAILURE);
                     }
                   if (errno == EINTR)
@@ -6560,8 +6585,8 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
                   g_warning ("%s: As a result, task '%s' may not have been"
                              " scheduled",
                              __FUNCTION__,
-                             task_uuid);
-                  g_free (task_uuid);
+                             scheduled_task->task_uuid);
+                  scheduled_task_free (scheduled_task);
                   exit (EXIT_FAILURE);
                 }
               if (WIFEXITED (status))
@@ -6571,9 +6596,11 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
                       {
                         schedule_t schedule;
                         int periods;
+                        const gchar *task_uuid;
 
                         /* Child succeeded. */
 
+                        task_uuid = scheduled_task->task_uuid;
                         schedule = task_schedule_uuid (task_uuid);
                         if (schedule
                             && schedule_period (schedule) == 0
@@ -6609,7 +6636,7 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
                               set_task_schedule_next_time_uuid (task_uuid, 0);
                           }
                       }
-                      g_free (task_uuid);
+                      scheduled_task_free (scheduled_task);
                       exit (EXIT_SUCCESS);
 
                     case EXIT_FAILURE:
@@ -6620,9 +6647,8 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
               /* Child failed, reset task schedule time and exit. */
 
               g_warning ("%s: child failed\n", __FUNCTION__);
-              reschedule_task (task_uuid);
-              g_free (task_uuid);
-
+              reschedule_task (scheduled_task->task_uuid);
+              scheduled_task_free (scheduled_task);
               exit (EXIT_FAILURE);
             }
         }
@@ -6631,34 +6657,35 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
 
       snprintf (title, sizeof (title),
                 "gvmd: scheduler: starting %s",
-                task_uuid);
+                scheduled_task->task_uuid);
       proctitle_set (title);
 
       auth_opts = gmp_authenticate_info_opts_defaults;
-      auth_opts.username = owner;
+      auth_opts.username = scheduled_task->owner_name;
       if (gmp_authenticate_info_ext_c (&connection, auth_opts))
         {
           g_warning ("%s: gmp_authenticate failed", __FUNCTION__);
-          g_free (task_uuid);
-          g_free (owner);
+          scheduled_task_free (scheduled_task);
           gvm_connection_free (&connection);
           exit (EXIT_FAILURE);
         }
 
-      g_free (owner);
-
-      if (gmp_resume_task_report_c (&connection, task_uuid, NULL))
+      if (gmp_resume_task_report_c (&connection,
+                                    scheduled_task->task_uuid,
+                                    NULL))
         {
-          if (gmp_start_task_report_c (&connection, task_uuid, NULL))
+          if (gmp_start_task_report_c (&connection,
+                                       scheduled_task->task_uuid,
+                                       NULL))
             {
               g_warning ("%s: gmp_start_task and gmp_resume_task failed", __FUNCTION__);
-              g_free (task_uuid);
+              scheduled_task_free (scheduled_task);
               gvm_connection_free (&connection);
               exit (EXIT_FAILURE);
             }
         }
 
-      g_free (task_uuid);
+      scheduled_task_free (scheduled_task);
       gvm_connection_free (&connection);
       exit (EXIT_SUCCESS);
    }
@@ -6668,45 +6695,36 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
   while (stops)
     {
       gvm_connection_t connection;
-      gchar *task_uuid, *owner, *owner_uuid;
+      scheduled_task_t *scheduled_task;
       GSList *head;
       gmp_authenticate_info_opts_t auth_opts;
 
-      owner = stops->data;
-      assert (stops->next);
-      owner_uuid = stops->next->data;
-      assert (stops->next->next);
-      task_uuid = stops->next->next->data;
-
+      scheduled_task = stops->data;
       head = stops;
-      stops = stops->next->next->next;
-      g_slist_free_1 (head->next->next);
-      g_slist_free_1 (head->next);
+      stops = stops->next;
       g_slist_free_1 (head);
 
       /* TODO As with starts above, this should retry if the stop failed. */
 
       /* Run the callback to fork a child connected to the Manager. */
 
-      switch (fork_connection (&connection, owner_uuid))
+      switch (fork_connection (&connection, scheduled_task->owner_uuid))
         {
           case 0:
             /* Child.  Break, stop task, exit. */
             while (stops)
               {
-                g_free (stops->data);
+                scheduled_task_free (stops->data);
                 stops = g_slist_delete_link (stops, stops);
               }
             break;
 
           case -1:
             /* Parent on error. */
-            g_free (task_uuid);
-            g_free (owner);
-            g_free (owner_uuid);
+            scheduled_task_free (scheduled_task);
             while (stops)
               {
-                g_free (stops->data);
+                scheduled_task_free (stops->data);
                 stops = g_slist_delete_link (stops, stops);
               }
             g_warning ("%s: stop fork failed\n", __FUNCTION__);
@@ -6715,9 +6733,7 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
 
           default:
             /* Parent.  Continue to next task. */
-            g_free (task_uuid);
-            g_free (owner);
-            g_free (owner_uuid);
+            scheduled_task_free (scheduled_task);
             continue;
             break;
         }
@@ -6726,32 +6742,26 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
 
       snprintf (title, sizeof (title),
                 "gvmd: scheduler: stopping %s",
-                task_uuid);
+                scheduled_task->task_uuid);
       proctitle_set (title);
 
       auth_opts = gmp_authenticate_info_opts_defaults;
-      auth_opts.username = owner;
+      auth_opts.username = scheduled_task->owner_name;
       if (gmp_authenticate_info_ext_c (&connection, auth_opts))
         {
-          g_free (task_uuid);
-          g_free (owner);
-          g_free (owner_uuid);
+          scheduled_task_free (scheduled_task);
           gvm_connection_free (&connection);
           exit (EXIT_FAILURE);
         }
 
-      if (gmp_stop_task_c (&connection, task_uuid))
+      if (gmp_stop_task_c (&connection, scheduled_task->task_uuid))
         {
-          g_free (task_uuid);
-          g_free (owner);
-          g_free (owner_uuid);
+          scheduled_task_free (scheduled_task);
           gvm_connection_free (&connection);
           exit (EXIT_FAILURE);
         }
 
-      g_free (task_uuid);
-      g_free (owner);
-      g_free (owner_uuid);
+      scheduled_task_free (scheduled_task);
       gvm_connection_free (&connection);
       exit (EXIT_SUCCESS);
    }

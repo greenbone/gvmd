@@ -1,3 +1,10 @@
+2017-06-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (scheduled_task_t): New type.
+	(scheduled_task_new, scheduled_task_free): New functions.
+	(manage_schedule): Use a struct for the task info in the stops and starts
+	lists, instead of spreading the info across the list.
+
 2017-06-29  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/lsc_crypt.c: Use correct comment style for struct member
