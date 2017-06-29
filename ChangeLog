@@ -1,3 +1,7 @@
+2017-06-29  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/manage_pg_server.c (sql_regexp): Remove superfluous assignment.
+
 2017-06-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_pg.c (manage_create_sql_functions): Test if the operator

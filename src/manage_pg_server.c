@@ -250,8 +250,6 @@ sql_regexp (PG_FUNCTION_ARGS)
       char *string, *regexp;
       int ret;
 
-      ret = 0;
-
       regexp_arg = PG_GETARG_TEXT_P(1);
       regexp = textndup (regexp_arg, VARSIZE (regexp_arg) - VARHDRSZ);
 
