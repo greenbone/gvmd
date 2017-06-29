@@ -69,13 +69,13 @@
 struct namelist_s
 {
   struct namelist_s *next;
-  size_t valoff;      /* Offset to the value in the plaintext buffer
+  size_t valoff;      /**< Offset to the value in the plaintext buffer
                          or 0 if VALUE below is used instead.  Note
                          that a value will never be at the begin of
                          the plaintext buffer.  VALOFF and VALUE
                          0/NULL indicates a NULL value. */
   char *value;
-  char name[1];       /* The name.  */
+  char name[1];       /**< The name.  */
 };
 
 /**
@@ -87,10 +87,10 @@ struct namelist_s
 struct lsc_crypt_ctx_s
 {
   gpgme_ctx_t encctx;
-  gpgme_key_t enckey;    /* The key to be used for encryption.  */
+  gpgme_key_t enckey;    /**< The key to be used for encryption.  */
   char *plaintext;
   size_t plaintextlen;
-  struct namelist_s *namelist; /* Info describing PLAINTEXT.  */
+  struct namelist_s *namelist; /**< Info describing PLAINTEXT.  */
 };
 
 

@@ -1,5 +1,10 @@
 2017-06-29  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	* src/lsc_crypt.c: Use correct comment style for struct member
+	documentation so it gets picked up by Doxygen.
+
+2017-06-29  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	* src/manage_pg_server.c (sql_regexp): Remove superfluous assignment.
 
 2017-06-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
