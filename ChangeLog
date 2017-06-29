@@ -1,5 +1,12 @@
 2017-06-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (scheduled_task_start, scheduled_task_stop): New functions.
+	Bodies from manage_schedule.
+	(manage_schedule): Move starting and stopping out to new functions, to
+	make the scheduling easier to follow.
+
+2017-06-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (scheduled_task_t): New type.
 	(scheduled_task_new, scheduled_task_free): New functions.
 	(manage_schedule): Use a struct for the task info in the stops and starts
