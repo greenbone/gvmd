@@ -1,3 +1,27 @@
+2017-07-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Handle termination signals outside the main serve_and_schedule loop by
+	canceling SQL statements and closing scanner connections.
+
+	* src/gmpd.c (serve_gmp): Close scanner connection and exit loop if a
+	termination signal was received.
+
+	* src/gvmd.c (handle_termination_signal): Call sql_cancel.
+
+	* src/manage_sql.c (sql_cancel): New function.
+
+	* src/manage.c (handle_slave_task): Stop current task if a termination
+	signal was received.
+	(get_termination_signal): New function.
+
+	* src/manage.h (get_termination_signal, sql_cancel): New prototypes.
+
+	* src/sql_pg.c (sql_cancel_internal): New function.
+
+	* src/sql_sqlite3.c (sql_cancel_internal): New function.
+
+	* src/sql.h (sql_cancel_internal): New function prototype.
+
 2017-07-04  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Adapt to include-streamling in gvm-libs. Include necessary headers

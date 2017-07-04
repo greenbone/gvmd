@@ -895,3 +895,22 @@ sql_column_int64 (sql_stmt_t *stmt, int position)
 {
   return sqlite3_column_int64 (stmt->stmt, position);
 }
+
+/**
+ * @brief Cancels the current SQL statement.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+sql_cancel_internal ()
+{
+  if (task_db)
+    {
+      sqlite3_interrupt (task_db);
+      return 0;
+    }
+  else
+    {
+      return -1;
+    }
+}

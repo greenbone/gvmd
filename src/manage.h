@@ -4239,4 +4239,13 @@ manage_migrate_needs_timezone (GSList *, const gchar *);
 int
 manage_optimize (GSList *, const gchar *, const gchar *);
 
+
+/* Signal management */
+
+int
+get_termination_signal ();
+
+int
+sql_cancel ();
+
 #endif /* not _GVMD_MANAGE_H */

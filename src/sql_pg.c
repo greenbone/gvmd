@@ -256,10 +256,11 @@ sql_open (const char *database)
   PostgresPollingStatusType poll_status;
   int socket;
 
-  conn_info = g_strdup_printf ("dbname = %s",
+  conn_info = g_strdup_printf ("dbname='%s' application_name='%s'",
                                database
                                 ? database
-                                : sql_default_database ());
+                                : sql_default_database (),
+                               "gvmd");
   conn = PQconnectStart (conn_info);
   g_free (conn_info);
   if (conn == NULL)
@@ -940,4 +941,36 @@ sql_column_int64 (sql_stmt_t *stmt, int position)
       default:
         return atol (cell);
     }
+}
+
+/**
+ * @brief Cancels the current SQL statement.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+sql_cancel_internal ()
+{
+  PGcancel *cancel;
+  char errbuf[256] = "";
+
+  cancel = PQgetCancel (conn);
+  if (cancel)
+    {
+      if (PQcancel (cancel, errbuf, 256))
+        {
+          PQfreeCancel (cancel);
+        }
+      else
+        {
+          PQfreeCancel (cancel);
+          return -1;
+        }
+    }
+  else
+    {
+      return -1;
+    }
+
+  return 0;
 }
