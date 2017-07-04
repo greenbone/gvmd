@@ -3437,9 +3437,9 @@ handle_slave_task (task_t task, target_t target,
           {
             if (termination_signal)
               {
-                g_info ("%s: Received %s signal.",
-                        __FUNCTION__,
-                        sys_siglist[get_termination_signal()]);
+                g_debug ("%s: Received %s signal.",
+                         __FUNCTION__,
+                         sys_siglist[get_termination_signal()]);
               }
             if (current_report)
               {
@@ -3458,9 +3458,9 @@ handle_slave_task (task_t task, target_t target,
       int termination_signal = get_termination_signal ();
       if (termination_signal)
         {
-          g_info ("%s: Received %s signal.",
-                  __FUNCTION__,
-                  sys_siglist[get_termination_signal()]);
+          g_debug ("%s: Received %s signal.",
+                   __FUNCTION__,
+                   sys_siglist[get_termination_signal()]);
           if (current_report)
             {
               set_report_scan_run_status (current_report,

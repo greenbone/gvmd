@@ -561,9 +561,9 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
 
       if (termination_signal)
         {
-          g_message ("%s: Received %s signal.",
-                     __FUNCTION__,
-                     sys_siglist[get_termination_signal()]);
+          g_debug ("%s: Received %s signal.",
+                   __FUNCTION__,
+                   sys_siglist[get_termination_signal()]);
 
           if (openvas_scanner_connected ())
             {

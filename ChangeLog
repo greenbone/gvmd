@@ -1,5 +1,11 @@
 2017-07-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/gmpd.c (serve_gmp): Change signal message to g_debug.
+
+	* src/manage.c (handle_slave_task): Change signal message to g_debug.
+
+2017-07-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Handle termination signals outside the main serve_and_schedule loop by
 	canceling SQL statements and closing scanner connections.
 
