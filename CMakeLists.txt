@@ -178,7 +178,12 @@ endif (NOT DEFINED GVM_SQLITE_SLEEP_MAX)
 set (GVM_SYSCONF_DIR  "${SYSCONFDIR}/gvm")
 
 set (GVM_DATA_DIR     "${DATADIR}/openvas")
+
 set (GVM_STATE_DIR    "${LOCALSTATEDIR}/lib/openvas")
+if (NOT GVMD_STATE_DIR)
+  set (GVMD_STATE_DIR  "${GVM_STATE_DIR}/openvasmd")
+endif (NOT GVMD_STATE_DIR)
+
 set (GVM_LOG_DIR      "${LOCALSTATEDIR}/log/gvm")
 set (GVM_SCAP_RES_DIR "${GVM_DATA_DIR}/scap")
 set (GVM_CERT_RES_DIR "${GVM_DATA_DIR}/cert")
@@ -198,10 +203,6 @@ endif (NOT GVM_RUN_DIR)
 if (NOT GVM_NVT_DIR)
   set (GVM_NVT_DIR "${GVM_STATE_DIR}/plugins/")
 endif (NOT GVM_NVT_DIR)
-
-if (NOT GVMD_STATE_DIR)
-  set (GVMD_STATE_DIR  "${GVM_STATE_DIR}/openvasmd")
-endif (NOT GVMD_STATE_DIR)
 
 if (NOT GVM_ACCESS_KEY_DIR)
   set (GVM_ACCESS_KEY_DIR "${GVM_SYSCONF_DIR}")

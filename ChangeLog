@@ -1,3 +1,7 @@
+2017-07-04  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* CMakeLists.txt: Set GVMD_STATE_DIR before first use.
+
 2017-06-30  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/CMakeLists.txt: Reduce linking of manage-pg-server to avoid
