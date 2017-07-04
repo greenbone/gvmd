@@ -25,7 +25,9 @@
 
 #include "manage_utils.h"
 
-#include <assert.h>
+#include <assert.h> /* for assert */
+#include <stdlib.h> /* for getenv */
+#include <string.h> /* for strcmp */
 
 #include <gvm/base/hosts.h>
 

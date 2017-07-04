@@ -1,3 +1,12 @@
+2017-07-04  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Adapt to include-streamling in gvm-libs. Include necessary headers
+	directly instead of relying on other headers to include them.
+
+	* src/manage_utils.c: Add includes of stdlib.h (for 'getenv ()') and
+	string.h (for 'strcmp.h') since they are no longer included via
+	gvm/base/hosts.h.
+
 2017-07-04  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* CMakeLists.txt: Set GVMD_STATE_DIR before first use.
