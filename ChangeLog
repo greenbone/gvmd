@@ -42,7 +42,7 @@
 	directly instead of relying on other headers to include them.
 
 	* src/manage_utils.c: Add includes of stdlib.h (for 'getenv ()') and
-	string.h (for 'strcmp.h') since they are no longer included via
+	string.h (for 'strcmp ()') since they are no longer included via
 	gvm/base/hosts.h.
 
 2017-07-04  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
