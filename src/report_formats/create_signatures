@@ -1,10 +1,10 @@
 #!/bin/bash
 #
-# OpenVAS
+# Greenbone Vulnerability Manager
 # $Id$
 # Description: Create signatures for predefined reports.
 #
-# Call in openvas-manager/src/report_formats.  Pass one argument, the name
+# Call in gvm/src/report_formats.  Pass one argument, the name
 # of the Manager database.  Signatures are written into report format subdirs.
 #
 # Authors:

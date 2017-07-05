@@ -1,5 +1,10 @@
 2017-07-05  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	* report_formats/README, src/report_formats/create_signatures:
+	Reflect name change to GVM.
+
+2017-07-05  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	Switch the location of static data from /usr/share/openvas
 	to /usr/share/gvm and from /usr/share/openvas/openvasmd
 	to /usr/share/gvm/gvmd.
