@@ -215,7 +215,7 @@ endif (SQLT_EXECUTABLE)
 
 if (XSLTPROC_EXECUTABLE)
   install (FILES ${CMAKE_CURRENT_BINARY_DIR}/gmp.html
-    DESTINATION share/doc/openvas-manager/html/
+    DESTINATION share/doc/gvm/html/
     COMPONENT doc)
 endif (XSLTPROC_EXECUTABLE)
 

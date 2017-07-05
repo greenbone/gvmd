@@ -1,5 +1,13 @@
 2017-07-05  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	* CMakeLists.txt: Replace /usr/share/doc/openvas-manager
+	by /usr/share/doc/gvm.
+
+	* doc/CMakeLists.txt: Replace /usr/share/doc/openvas-manager/html
+	by /usr/share/doc/gvm/html.
+
+2017-07-05  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	* report_formats/README, src/report_formats/create_signatures:
 	Reflect name change to GVM.
 

@@ -619,6 +619,6 @@ install (FILES ${CMAKE_SOURCE_DIR}/doc/gvm-manage-certs.1
           DESTINATION ${DATADIR}/man/man1 )
 
 install (FILES ${CMAKE_BINARY_DIR}/doc/example-gvm-manage-certs.conf
-         DESTINATION ${DATADIR}/doc/openvas-manager/ )
+         DESTINATION ${DATADIR}/doc/gvm/ )
 
 ## End
