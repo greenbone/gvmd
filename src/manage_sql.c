@@ -8718,8 +8718,7 @@ run_alert_script (const char *alert_id, const char *command_args,
     }
 
   /* Setup file names. */
-  script_dir = g_build_filename (GVM_DATA_DIR,
-                                 "openvasmd",
+  script_dir = g_build_filename (GVMD_DATA_DIR,
                                  "global_alert_methods",
                                  alert_id,
                                  NULL);
@@ -9170,8 +9169,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
 
   /* Setup file names. */
 
-  script_dir = g_build_filename (GVM_DATA_DIR,
-                                 "openvasmd",
+  script_dir = g_build_filename (GVMD_DATA_DIR,
                                  "global_alert_methods",
                                  "cd1f5a34-6bdc-11e0-9827-002264764cea",
                                  NULL);
@@ -9487,8 +9485,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
     }
 
   /* Setup file names. */
-  script_dir = g_build_filename (GVM_DATA_DIR,
-                                 "openvasmd",
+  script_dir = g_build_filename (GVMD_DATA_DIR,
                                  "global_alert_methods",
                                  "f9d97653-f89b-41af-9ba1-0f6ee00e9c1a",
                                  NULL);
@@ -57303,8 +57300,7 @@ manage_schema (gchar *format, gchar **output_return, gsize *output_length,
     else
       return 1;
 
-    script_dir = g_build_filename (GVM_DATA_DIR,
-                                   "openvasmd",
+    script_dir = g_build_filename (GVMD_DATA_DIR,
                                    "global_schema_formats",
                                    uuid_format,
                                    NULL);
@@ -57360,8 +57356,8 @@ manage_schema (gchar *format, gchar **output_return, gsize *output_length,
 
       /* Call the script. */
 
-      command = g_strdup_printf ("%s " GVM_DATA_DIR
-                                 "/openvasmd/global_schema_formats"
+      command = g_strdup_printf ("%s " GVMD_DATA_DIR
+                                 "/global_schema_formats"
                                  "/18e826fc-dab6-11df-b913-002264764cea/GMP.xml"
                                  " > %s"
                                  " 2> /dev/null",

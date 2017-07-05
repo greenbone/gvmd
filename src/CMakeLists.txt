@@ -175,6 +175,10 @@ if (GVM_DATA_DIR)
         add_definitions (-DGVM_DATA_DIR=\\\"${GVM_DATA_DIR}\\\")
 endif (GVM_DATA_DIR)
 
+if (GVMD_DATA_DIR)
+  add_definitions (-DGVMD_DATA_DIR=\\\"${GVMD_DATA_DIR}\\\")
+endif (GVM_DATA_DIR)
+
 if (GVM_LIB_INSTALL_DIR)
         add_definitions (-DGVM_LIB_INSTALL_DIR=\\\"${GVM_LIB_INSTALL_DIR}\\\")
 endif (GVM_LIB_INSTALL_DIR)

@@ -1,3 +1,37 @@
+2017-07-05  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	Switch the location of static data from /usr/share/openvas
+	to /usr/share/gvm and from /usr/share/openvas/openvasmd
+	to /usr/share/gvm/gvmd.
+
+	The migration routines use also the new paths. This means,
+	that if there is anything that should be migrated, it needs to
+	be copied prior to a --migrate.
+
+	This should basically only affect global report format plugins
+	that are not part of this module but rather be installed separately
+	as global objects.
+
+	* CMakeLists.txt: Switch GVM_DATA_DIR from /usr/share/openvas to
+	/usr/share/gvm and introduce GVMD_DATA_DIR for /usr/share/gvm/gvmd.
+	Adjust all paths GVM_DATA_DIR/openvasmd to GVMD_DATA_DIR.
+
+	* src/CMakeLists.txt: Add GVMD_DATA_DIR.
+
+	* src/manage.c (predefined_report_format_dir, manage_run_wizard):
+	Adjust paths GVM_DATA_DIR/openvasmd to GVMD_DATA_DIR.
+
+	* src/manage_migrators.c (migrate_54_to_55_format, migrate_170_to_171,
+	migrate_171_to_172, migrate_174_to_175):
+	Adjust paths GVM_DATA_DIR/openvasmd to GVMD_DATA_DIR.
+
+	* src/manage_sql.c (run_alert_script, send_to_sourcefire,
+	send_to_verinice, manage_schema):
+	Adjust paths GVM_DATA_DIR/openvasmd to GVMD_DATA_DIR.
+
+	* tools/gvm-portnames-update.in:
+	Adjust path GVM_DATA_DIR/openvasmd to GVMD_DATA_DIR.
+
 2017-07-05  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Adapt to include-streamling in gvm-libs. Include necessary headers

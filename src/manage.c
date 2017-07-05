@@ -6985,8 +6985,7 @@ get_report_format_files (const char *dir_name, GPtrArray **start)
 gchar *
 predefined_report_format_dir (const gchar *uuid)
 {
-  return g_build_filename (GVM_DATA_DIR,
-                           "openvasmd",
+  return g_build_filename (GVMD_DATA_DIR,
                            "report_formats",
                            uuid,
                            NULL);
@@ -8364,8 +8363,7 @@ manage_run_wizard (const gchar *name,
   /* Read wizard from file. */
 
   file_name = g_strdup_printf ("%s.xml", name);
-  file = g_build_filename (GVM_DATA_DIR,
-                           "openvasmd",
+  file = g_build_filename (GVMD_DATA_DIR,
                            "wizards",
                            file_name,
                            NULL);

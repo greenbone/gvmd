@@ -3943,8 +3943,7 @@ migrate_54_to_55_format (const char *old_uuid, const char *new_uuid)
 {
   gchar *dir;
 
-  dir = g_build_filename (GVM_DATA_DIR,
-                          "openvasmd",
+  dir = g_build_filename (GVMD_DATA_DIR,
                           "global_report_formats",
                           old_uuid,
                           NULL);
@@ -12814,8 +12813,7 @@ migrate_170_to_171 ()
       return -1;
     }
 
-  old_dir = g_build_filename (GVM_DATA_DIR,
-                              "openvasmd",
+  old_dir = g_build_filename (GVMD_DATA_DIR,
                               "report_formats_trash",
                               NULL);
 
@@ -12935,8 +12933,7 @@ migrate_171_to_172 ()
       return -1;
     }
 
-  old_dir_path = g_build_filename (GVM_DATA_DIR,
-                                   "openvasmd",
+  old_dir_path = g_build_filename (GVMD_DATA_DIR,
                                    "global_report_formats",
                                    NULL);
 
@@ -13201,13 +13198,12 @@ migrate_174_to_175 ()
   /* The global report formats moved back to the DATA directory, because
    * they are being merged into the predefined report formats. */
 
-  new_dir_path = g_build_filename (GVM_DATA_DIR,
-                                   "openvasmd",
+  new_dir_path = g_build_filename (GVMD_DATA_DIR,
                                    "report_formats",
                                    NULL);
 
   /* The new dir should exist already, so this will work even if we don't
-   * have write permission in GVM_DATA_DIR. */
+   * have write permission in GVMD_DATA_DIR. */
   if (g_mkdir_with_parents (new_dir_path, 0755 /* "rwxr-xr-x" */))
     {
       g_warning ("%s: failed to create dir %s", __FUNCTION__, new_dir_path);

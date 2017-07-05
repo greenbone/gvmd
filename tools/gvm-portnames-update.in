@@ -76,8 +76,8 @@ else
   SQL="sqlite3 $TASKS_DB"
 fi
 
-DATA_DIR=@GVM_DATA_DIR@
-XSL="$DATA_DIR/openvasmd/portnames_update.xsl"
+DATA_DIR=@GVMD_DATA_DIR@
+XSL="$DATA_DIR/portnames_update.xsl"
 if [ ! -f $XSL ]; then
   echo "$XSL file not found.";
   exit 1;
