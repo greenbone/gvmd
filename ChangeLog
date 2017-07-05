@@ -1,3 +1,11 @@
+2017-07-05  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Adapt to include-streamling in gvm-libs. Include necessary headers
+	directly instead of relying on other headers to include them.
+
+	* src/manage.c: Add include for gnutls/x509.h (for gnutls_x509_crt_* ()
+	since it is no longer included via gvm/util/serverutils.h.
+
 2017-07-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/gmpd.c (serve_gmp): Change signal message to g_debug.

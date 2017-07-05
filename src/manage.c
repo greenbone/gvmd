@@ -56,6 +56,7 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <glib.h>
+#include <gnutls/x509.h> /* for gnutls_x509_crt_... */
 #include <math.h>
 #include <locale.h>
 #include <stdio.h>
