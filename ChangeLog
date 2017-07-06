@@ -1,3 +1,9 @@
+2017-07-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_pg.c (manage_create_sql_functions): Fix iso_time function
+	for timezones with zero offset and negative offsets with non-zero
+	minutes.
+
 2017-07-05  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* CMakeLists.txt: Replace /usr/share/doc/openvas-manager
