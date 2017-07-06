@@ -1,3 +1,11 @@
+2017-07-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r28975.
+
+	* src/manage_pg.c (manage_create_sql_functions): Fix iso_time function
+	for timezones with zero offset and negative offsets with non-zero
+	minutes.
+
 2017-04-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r28249.
