@@ -1,3 +1,53 @@
+2017-07-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add BYDAY to GMP CREATE_SCHEDULE and MODIFY_SCHEDULE.  Hence increase
+	database version to 188.  Add database migration from version 187 to 188.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 188.
+
+	* src/manage_migrators.c (migrate_187_to_188): New function.
+	(database_migrators): Add migrate_187_to_188.
+
+	* src/gmp.c (create_schedule_data_t, create_schedule_data_reset)
+	(modify_schedule_data_t, modify_schedule_data_reset, client_state_t): Add
+	entries for BYDAY.
+	(gmp_xml_handle_start_element, gmp_xml_handle_end_element)
+	(gmp_xml_handle_text): Add BYDAY to CREATE_SCHEDULE and MODIFY_SCHEDULE.
+
+	* src/manage_pg.c (manage_create_sql_functions): Add byday arg to
+	next_time.
+	(create_tables): Add byday to schedule tables.
+
+	* src/manage_pg_server.c (sql_next_time): Add byday arg.
+
+	* src/manage_sqlite3.c (sql_next_time): Add byday arg.
+	(manage_create_sql_functions): Adjust arg counts.
+	(create_tables): Add byday to schedule tables.
+
+	* src/manage.c (scheduled_task_start): Improve comments slightly.
+	(manage_schedule): Send schedule's byday to next_time.
+
+	* src/manage_sql.c (set_task_schedule, set_task_schedule_uuid)
+	(cleanup_schedule_times, schedule_info): Add byday to next_time call.
+	(byday_from_string): New function.
+	(create_schedule): Add byday arg.
+	(copy_schedule, delete_schedule): Add byday handling.
+	(SCHEDULE_ITERATOR_COLUMNS, SCHEDULE_ITERATOR_TRASH_COLUMNS)
+	(init_task_schedule_iterator): Add byday.
+	(schedule_iterator_byday, task_schedule_iterator_byday): New functions.
+	Adjust other accessor function offsets accordingly.
+	(task_schedule_iterator_stop_due): Pass byday to next_time.
+	(modify_schedule): Add byday arg.
+	(manage_restore): Add byday handling.
+
+	* src/manage_utils.c (day_of_week, next_day): New functions.
+	(SECONDS_PER_DAY): New define.
+	(next_time): Add byday arg.
+
+	* src/manage.h, src/manage_utils.h: Update headers accordingly.
+
+	* doc/db_postgres.sql (schedules, schedules_trash): Add byday.
+
 2017-07-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_pg.c (manage_create_sql_functions): Fix iso_time function

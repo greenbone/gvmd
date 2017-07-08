@@ -1295,7 +1295,7 @@ sql_parse_time (sqlite3_context *context, int argc, sqlite3_value** argv)
 /**
  * @brief Calculate the next time from now given a start time and a period.
  *
- * This is a callback for a scalar SQL function of three arguments.
+ * This is a callback for a scalar SQL function of 4 or 5 arguments.
  *
  * @param[in]  context  SQL context.
  * @param[in]  argc     Number of arguments.
@@ -1306,21 +1306,23 @@ sql_next_time (sqlite3_context *context, int argc, sqlite3_value** argv)
 {
   time_t first;
   time_t period;
-  int period_months;
+  int period_months, byday;
   const char *timezone;
 
-  assert (argc == 3 || argc == 4);
+  assert (argc == 4 || argc == 5);
 
   first = sqlite3_value_int (argv[0]);
   period = sqlite3_value_int (argv[1]);
   period_months = sqlite3_value_int (argv[2]);
-  if (argc < 4 || sqlite3_value_type (argv[3]) == SQLITE_NULL)
+  byday = sqlite3_value_int (argv[3]);
+  if (argc < 5 || sqlite3_value_type (argv[4]) == SQLITE_NULL)
     timezone = NULL;
   else
-    timezone = (char*) sqlite3_value_text (argv[3]);
+    timezone = (char*) sqlite3_value_text (argv[4]);
 
   sqlite3_result_int (context,
-                      next_time (first, period, period_months, timezone, 0));
+                      next_time (first, period, period_months, byday, timezone,
+                                 0));
 }
 
 /**
@@ -2964,7 +2966,7 @@ manage_create_sql_functions ()
 
   if (sqlite3_create_function (task_db,
                                "next_time",
-                               3,               /* Number of args. */
+                               4,               /* Number of args. */
                                SQLITE_UTF8,
                                NULL,            /* Callback data. */
                                sql_next_time,
@@ -2978,7 +2980,7 @@ manage_create_sql_functions ()
 
   if (sqlite3_create_function (task_db,
                                "next_time",
-                               4,               /* Number of args. */
+                               5,               /* Number of args. */
                                SQLITE_UTF8,
                                NULL,            /* Callback data. */
                                sql_next_time,
@@ -3717,11 +3719,11 @@ create_tables ()
        "  credential_location INTEGER, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS schedules"
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment,"
-       "  first_time, period, period_months, duration, timezone,"
+       "  first_time, period, period_months, byday, duration, timezone,"
        "  initial_offset, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS schedules_trash"
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment,"
-       "  first_time, period, period_months, duration, timezone,"
+       "  first_time, period, period_months, byday, duration, timezone,"
        "  initial_offset, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS settings"
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, value);");

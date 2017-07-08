@@ -540,13 +540,13 @@ manage_create_sql_functions ()
        " LANGUAGE C;",
        GVM_LIB_INSTALL_DIR);
 
-  sql ("CREATE OR REPLACE FUNCTION next_time (integer, integer, integer)"
+  sql ("CREATE OR REPLACE FUNCTION next_time (integer, integer, integer, integer)"
        " RETURNS integer"
        " AS '%s/openvasmd/pg/libmanage-pg-server', 'sql_next_time'"
        " LANGUAGE C;",
        GVM_LIB_INSTALL_DIR);
 
-  sql ("CREATE OR REPLACE FUNCTION next_time (integer, integer, integer, text)"
+  sql ("CREATE OR REPLACE FUNCTION next_time (integer, integer, integer, integer, text)"
        " RETURNS integer"
        " AS '%s/openvasmd/pg/libmanage-pg-server', 'sql_next_time'"
        " LANGUAGE C;",
@@ -2494,6 +2494,7 @@ create_tables ()
        "  first_time integer,"
        "  period integer,"
        "  period_months integer,"
+       "  byday integer,"
        "  duration integer,"
        "  timezone text,"
        "  initial_offset integer,"
@@ -2509,6 +2510,7 @@ create_tables ()
        "  first_time integer,"
        "  period integer,"
        "  period_months integer,"
+       "  byday integer,"
        "  duration integer,"
        "  timezone text,"
        "  initial_offset integer,"

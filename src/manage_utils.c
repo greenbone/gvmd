@@ -31,6 +31,17 @@
 
 #include <gvm/base/hosts.h>
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md  utils"
+
+/**
+ * @brief Number of seconds in a day.
+ */
+#define SECS_PER_DAY 86400
+
 /**
  * @file  manage_utils.c
  * @brief The Greenbone Vulnerability Manager management library.
@@ -274,11 +285,62 @@ add_months (time_t time, int months)
 }
 
 /**
+ * @brief Calculate day of week corresponding to a time.
+ *
+ * @return Day of week mask: 1 Monday, 2 Tuesday, 4 Wednesday...
+ */
+static int
+day_of_week (time_t time)
+{
+  struct tm *tm;
+  int sunday_first;
+
+  tm = gmtime (&time);
+
+  sunday_first = tm->tm_wday;     /* Sunday 0, Monday 1, ... */
+  return 1 << ((sunday_first + 6) % 7);
+}
+
+/**
+ * @brief Get days till next occurrence.
+ *
+ * @param[in] day_of_week  Day of week flag: 1 Monday, 2 Tuesday, 4 Wednesday...
+ * @param[in] byday        Byday mask.
+ *
+ * @return Number of days to next day flagged in byday.  -1 if no next day.
+ */
+static int
+next_day (int day_of_week, int byday)
+{
+  int days;
+
+  days = 0;
+  while (days < 7)
+    {
+      if (byday & day_of_week)
+        return days;
+      if (day_of_week == (1 << 6))
+        /* Roll around to Monday. */
+        day_of_week = 1;
+      else
+        day_of_week = day_of_week << 1;
+      days++;
+    }
+  return -1;
+}
+
+/**
+ * @brief Number of seconds in a day.
+ */
+#define SECONDS_PER_DAY 86400
+
+/**
  * @brief Calculate the next time from now given a start time and a period.
  *
- * @param[in] first         The first time.
- * @param[in] period        The period in seconds.
- * @param[in] period_months The period in months.
+ * @param[in] first           The first time.
+ * @param[in] period          The period in seconds.
+ * @param[in] period_months   The period in months.
+ * @param[in] byday           Days of week to run schedule.
  * @param[in] timezone        The timezone to use.
  * @param[in] periods_offset  Number of periods to offset.
  *                            e.g. 0 = next time, -1 current/last time
@@ -286,15 +348,17 @@ add_months (time_t time, int months)
  * @return  the next time a schedule with the given times is due.
  */
 time_t
-next_time (time_t first, int period, int period_months, const char* timezone,
-           int periods_offset)
+next_time (time_t first, int period, int period_months, int byday,
+           const char* timezone, int periods_offset)
 {
   int periods_diff;
-  time_t now = time (NULL);
+  time_t now;
   long offset_diff;
+
   if (timezone)
     {
       long first_offset_val, current_offset_val;
+
       first_offset_val = time_offset (timezone, first);
       current_offset_val = current_offset (timezone);
       offset_diff = current_offset_val - first_offset_val;
@@ -304,11 +368,48 @@ next_time (time_t first, int period, int period_months, const char* timezone,
       offset_diff = 0;
     }
 
+  now = time (NULL);
+
   if (first >= now)
+    return first;
+
+  if (byday)
     {
-      return first;
+      time_t next_day_multiple;
+
+      assert (now > first);
+
+      g_debug ("%s: byday: %i", __FUNCTION__, byday);
+
+      /* TODO does this need timezone offsetting? */
+
+      /* The next multiple of a day after the first time, but "now" at the
+       * earliest.  So if now is at the same time as the first time, this will
+       * be now.  If now is an hour after the first time, this will be one
+       * day after the first time.  If now is 7 days and 3 seconds after the
+       * first time, this will be 8 days after the first time.
+       *
+       * Simply: the next possible time on a daily schedule. */
+      next_day_multiple = now + (SECS_PER_DAY - ((now - first) % SECS_PER_DAY));
+
+      g_debug ("%s: next_day_multiple: %lli",
+               __FUNCTION__,
+               (long long) next_day_multiple);
+      g_debug ("%s: day_of_week (next_day_multiple): %i",
+               __FUNCTION__,
+               day_of_week (next_day_multiple));
+      g_debug ("%s: next_day (^, byday): %i",
+               __FUNCTION__,
+               next_day (day_of_week (next_day_multiple), byday));
+
+      /* Return the next possible daily time, offset according the next day of
+       * the week that the schedule must run on. */
+      return next_day_multiple
+             + next_day (day_of_week (next_day_multiple), byday)
+               * SECONDS_PER_DAY;
     }
-  else if (period > 0)
+
+  if (period > 0)
     {
       return first
               + ((((now - first + offset_diff) / period) + 1 + periods_offset)
@@ -318,6 +419,7 @@ next_time (time_t first, int period, int period_months, const char* timezone,
   else if (period_months > 0)
     {
       time_t ret;
+
       periods_diff = months_between (first, now) / period_months;
       periods_diff += periods_offset;
       if (add_months (first, (periods_diff + 1) * period_months)

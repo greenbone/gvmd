@@ -17499,6 +17499,7 @@ set_task_schedule (task_t task, schedule_t schedule, int periods)
        " schedule_next_time = (SELECT next_time (first_time,"
        "                                         period,"
        "                                         period_months,"
+       "                                         byday,"
        "                                         timezone)"
        "                       FROM schedules"
        "                       WHERE id = %llu),"
@@ -17530,6 +17531,7 @@ set_task_schedule_uuid (const gchar *task_id, schedule_t schedule, int periods)
        " schedule_next_time = (SELECT next_time (first_time,"
        "                                         period,"
        "                                         period_months,"
+       "                                         byday,"
        "                                         timezone)"
        "                       FROM schedules"
        "                       WHERE id = %llu),"
@@ -30879,6 +30881,7 @@ cleanup_schedule_times ()
         "   = (SELECT next_time (first_time,"
         "                        period,"
         "                        period_months,"
+        "                        byday,"
         "                        timezone)"
         "      FROM schedules"
         "      WHERE schedules.id = tasks.schedule)"
@@ -30886,13 +30889,15 @@ cleanup_schedule_times ()
         "   AND schedule_next_time"
         "         = (SELECT next_time (first_time,"
         "                              period,"
-        "                              period_months)"
+        "                              period_months,"
+        "                              byday)"
         "              FROM schedules"
         "             WHERE schedules.id = tasks.schedule)"
         "   AND schedule_next_time"
         "         != (SELECT next_time (first_time,"
         "                               period,"
         "                               period_months,"
+        "                               byday,"
         "                               timezone)"
         "              FROM schedules"
         "             WHERE schedules.id = tasks.schedule);");
@@ -47444,6 +47449,55 @@ find_schedule_with_permission (const char* uuid, schedule_t* schedule,
 }
 
 /**
+ * @brief Get Byday mask from ical style string.
+ *
+ * @param[in]  byday  Byday string.
+ *
+ * @return Byday mask, or -1 on syntax error.
+ */
+int
+byday_from_string (const char* byday)
+{
+  gchar **split, **point;
+  int mask;
+
+  /* "MO,WE,FR" */
+
+  if (byday == NULL)
+    return 0;
+
+  split = g_strsplit (byday, ",", 0);
+  point = split;
+  mask = 0;
+
+  while (*point)
+    {
+      if (strcasecmp (*point, "MO") == 0)
+        mask |= 1 << 0;
+      else if (strcasecmp (*point, "TU") == 0)
+        mask |= 1 << 1;
+      else if (strcasecmp (*point, "WE") == 0)
+        mask |= 1 << 2;
+      else if (strcasecmp (*point, "TH") == 0)
+        mask |= 1 << 3;
+      else if (strcasecmp (*point, "FR") == 0)
+        mask |= 1 << 4;
+      else if (strcasecmp (*point, "SA") == 0)
+        mask |= 1 << 5;
+      else if (strcasecmp (*point, "SU") == 0)
+        mask |= 1 << 6;
+      else
+        {
+          mask = -1;
+          break;
+        }
+      point++;
+    }
+  g_strfreev (split);
+  return mask;
+}
+
+/**
  * @brief Create a schedule.
  *
  * @param[in]   name        Name of schedule.
@@ -47452,21 +47506,24 @@ find_schedule_with_permission (const char* uuid, schedule_t* schedule,
  * @param[in]   period      How often the action will run in seconds.  0 means
  *                          once.
  * @param[in]   period_months  The months part of the period.
+ * @param[in]   byday       Which days of week schedule will run.
  * @param[in]   duration    The length of the time window the action will run
  *                          in.  0 means entire duration of action.
  * @param[out]  timezone    Timezone.
  * @param[out]  schedule    Created schedule.
  *
- * @return 0 success, 1 schedule exists already, 99 permission denied.
+ * @return 0 success, 1 schedule exists already, 2 syntax error in byday,
+ *         99 permission denied.
  */
 int
 create_schedule (const char* name, const char *comment, time_t first_time,
-                 time_t period, time_t period_months, time_t duration,
-                 const char* timezone, schedule_t *schedule)
+                 time_t period, time_t period_months, const char *byday,
+                 time_t duration, const char* timezone, schedule_t *schedule)
 {
   gchar *quoted_name, *quoted_timezone;
   gchar *insert_timezone;
   long offset;
+  int byday_mask;
 
   assert (current_credentials.uuid);
 
@@ -47478,12 +47535,19 @@ create_schedule (const char* name, const char *comment, time_t first_time,
       return 99;
     }
 
-
   if (resource_with_name_exists (name, "schedule", 0))
     {
       sql_rollback ();
       return 1;
     }
+
+  byday_mask = byday_from_string (byday);
+  if (byday_mask == -1)
+    {
+      sql_rollback ();
+      return 1;
+    }
+
   quoted_name = sql_quote (name);
 
   if (timezone && strcmp (timezone, ""))
@@ -47513,31 +47577,32 @@ create_schedule (const char* name, const char *comment, time_t first_time,
       gchar *quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO schedules"
            " (uuid, name, owner, comment, first_time, period, period_months,"
-           "  duration, timezone, initial_offset, creation_time,"
+           "  byday, duration, timezone, initial_offset, creation_time,"
            "  modification_time)"
            " VALUES"
            " (make_uuid (), '%s',"
            "  (SELECT id FROM users WHERE users.uuid = '%s'),"
-           "  '%s', %i, %i, %i, %i,"
+           "  '%s', %i, %i, %i, %i, %i,"
            "  '%s',"
            "  %li, m_now (), m_now ());",
            quoted_name, current_credentials.uuid, quoted_comment, first_time,
-           period, period_months, duration, quoted_timezone, offset);
+           period, period_months, byday_mask, duration, quoted_timezone,
+           offset);
       g_free (quoted_comment);
     }
   else
     sql ("INSERT INTO schedules"
          " (uuid, name, owner, comment, first_time, period, period_months,"
-         "  duration, timezone, initial_offset, creation_time,"
+         "  byday, duration, timezone, initial_offset, creation_time,"
          "  modification_time)"
          " VALUES"
          " (make_uuid (), '%s',"
          "  (SELECT id FROM users WHERE users.uuid = '%s'),"
-         "  '', %i, %i, %i, %i,"
+         "  '', %i, %i, %i, %i, %i,"
          "  '%s',"
          "  %li, m_now (), m_now ());",
          quoted_name, current_credentials.uuid, first_time, period,
-         period_months, duration, quoted_timezone, offset);
+         period_months, byday_mask, duration, quoted_timezone, offset);
 
   if (schedule)
     *schedule = sql_last_insert_id ();
@@ -47568,7 +47633,7 @@ copy_schedule (const char* name, const char* comment, const char *schedule_id,
                schedule_t* new_schedule)
 {
   return copy_resource ("schedule", name, comment, schedule_id,
-                        "first_time, period, period_months, duration,"
+                        "first_time, period, period_months, byday, duration,"
                         " timezone, initial_offset",
                         1, new_schedule, NULL);
 }
@@ -47652,10 +47717,10 @@ delete_schedule (const char *schedule_id, int ultimate)
 
       sql ("INSERT INTO schedules_trash"
            " (uuid, owner, name, comment, first_time, period, period_months,"
-           "  duration, timezone, initial_offset, creation_time,"
+           "  byday, duration, timezone, initial_offset, creation_time,"
            "  modification_time)"
            " SELECT uuid, owner, name, comment, first_time, period, period_months,"
-           "        duration, timezone, initial_offset, creation_time,"
+           "        byday, duration, timezone, initial_offset, creation_time,"
            "        modification_time"
            " FROM schedules WHERE id = %llu;",
            schedule);
@@ -47855,7 +47920,7 @@ schedule_info (schedule_t schedule, time_t *first_time, time_t *next_time,
                  "SELECT"
                  " first_time,"
                  " next_time (first_time, period,"
-                 "            period_months),"
+                 "            period_months, byday),"
                  " period, period_months, duration"
                  " FROM schedules"
                  " WHERE id = %llu",
@@ -47890,10 +47955,11 @@ schedule_info (schedule_t schedule, time_t *first_time, time_t *next_time,
    { "first_time", NULL, KEYWORD_TYPE_INTEGER },                           \
    { "period", NULL, KEYWORD_TYPE_INTEGER },                               \
    { "period_months", NULL, KEYWORD_TYPE_INTEGER },                        \
+   { "byday", NULL, KEYWORD_TYPE_INTEGER },                                \
    { "duration", NULL, KEYWORD_TYPE_INTEGER },                             \
    { "timezone", NULL, KEYWORD_TYPE_STRING },                              \
    { "initial_offset", NULL, KEYWORD_TYPE_INTEGER },                       \
-   { "next_time (first_time, period, period_months)",                      \
+   { "next_time (first_time, period, period_months, byday)",               \
      "next_run",                                                           \
      KEYWORD_TYPE_INTEGER },                                               \
    { "first_time", "first_run", KEYWORD_TYPE_INTEGER },                    \
@@ -47909,6 +47975,7 @@ schedule_info (schedule_t schedule, time_t *first_time, time_t *next_time,
    { "first_time", NULL, KEYWORD_TYPE_INTEGER },                           \
    { "period", NULL, KEYWORD_TYPE_INTEGER },                               \
    { "period_months", NULL, KEYWORD_TYPE_INTEGER },                        \
+   { "byday", NULL, KEYWORD_TYPE_INTEGER },                                \
    { "duration", NULL, KEYWORD_TYPE_INTEGER },                             \
    { "timezone", NULL, KEYWORD_TYPE_STRING },                              \
    { "initial_offset", NULL, KEYWORD_TYPE_INTEGER },                       \
@@ -48025,6 +48092,22 @@ schedule_iterator_period_months (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the byday flags from a schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Byday mask.
+ */
+int
+schedule_iterator_byday (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (time_t) iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
+  return ret;
+}
+
+/**
  * @brief Get the duration from a schedule iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -48036,7 +48119,7 @@ schedule_iterator_duration (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (time_t) iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
+  ret = (time_t) iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
   return ret;
 }
 
@@ -48048,7 +48131,7 @@ schedule_iterator_duration (iterator_t* iterator)
  * @return Timezone, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (schedule_iterator_timezone, GET_ITERATOR_COLUMN_COUNT + 4);
+DEF_ACCESS (schedule_iterator_timezone, GET_ITERATOR_COLUMN_COUNT + 5);
 
 /**
  * @brief Get the initial offset from a schedule iterator.
@@ -48063,7 +48146,7 @@ schedule_iterator_initial_offset (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (time_t) iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
+  ret = (time_t) iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
   return ret;
 }
 
@@ -48105,6 +48188,7 @@ init_task_schedule_iterator (iterator_t* iterator)
                  "SELECT tasks.id, tasks.uuid,"
                  " schedules.id, tasks.schedule_next_time,"
                  " schedules.period, schedules.period_months,"
+                 " schedules.byday,"
                  " schedules.first_time,"
                  " schedules.duration,"
                  " users.uuid, users.name,"
@@ -48207,6 +48291,20 @@ task_schedule_iterator_period_months (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the byday flags from a task schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Byday mask.
+ */
+time_t
+task_schedule_iterator_byday (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (time_t) iterator_int64 (iterator, 6);
+}
+
+/**
  * @brief Get the first time from a task schedule iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -48217,7 +48315,7 @@ time_t
 task_schedule_iterator_first_time (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (time_t) iterator_int64 (iterator, 6);
+  return (time_t) iterator_int64 (iterator, 7);
 }
 
 /**
@@ -48231,7 +48329,7 @@ time_t
 task_schedule_iterator_duration (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (time_t) iterator_int64 (iterator, 7);
+  return (time_t) iterator_int64 (iterator, 8);
 }
 
 /**
@@ -48242,7 +48340,7 @@ task_schedule_iterator_duration (iterator_t* iterator)
  * @return Owner UUID, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (task_schedule_iterator_owner_uuid, 8);
+DEF_ACCESS (task_schedule_iterator_owner_uuid, 9);
 
 /**
  * @brief Get the task owner name from a task schedule iterator.
@@ -48252,7 +48350,7 @@ DEF_ACCESS (task_schedule_iterator_owner_uuid, 8);
  * @return Owner name, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (task_schedule_iterator_owner_name, 9);
+DEF_ACCESS (task_schedule_iterator_owner_name, 10);
 
 /**
  * @brief Get the timezone from a task schedule iterator.
@@ -48262,7 +48360,7 @@ DEF_ACCESS (task_schedule_iterator_owner_name, 9);
  * @return Timezone, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (task_schedule_iterator_timezone, 10);
+DEF_ACCESS (task_schedule_iterator_timezone, 11);
 
 /**
  * @brief Get the initial offset from a task schedule iterator.
@@ -48275,7 +48373,7 @@ time_t
 task_schedule_iterator_initial_offset (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (time_t) iterator_int64 (iterator, 11);
+  return (time_t) iterator_int64 (iterator, 12);
 }
 
 /**
@@ -48321,6 +48419,7 @@ gboolean
 task_schedule_iterator_stop_due (iterator_t* iterator)
 {
   time_t first, period, period_months, duration;
+  int byday;
   const char *timezone;
 
   if (iterator->done) return FALSE;
@@ -48328,6 +48427,7 @@ task_schedule_iterator_stop_due (iterator_t* iterator)
   first = task_schedule_iterator_first_time (iterator);
   period = task_schedule_iterator_period (iterator);
   period_months = task_schedule_iterator_period_months (iterator);
+  byday = task_schedule_iterator_duration (iterator);
   duration = task_schedule_iterator_duration (iterator);
   timezone = task_schedule_iterator_timezone (iterator);
 
@@ -48349,7 +48449,7 @@ task_schedule_iterator_stop_due (iterator_t* iterator)
 
           now = time (NULL);
 
-          start = next_time (first, period, period_months, timezone, -1);
+          start = next_time (first, period, period_months, byday, timezone, -1);
           if ((start + duration) < now)
             return TRUE;
         }
@@ -48432,24 +48532,26 @@ schedule_task_iterator_readable (iterator_t* iterator)
  * @param[in]   period       How often the action will run in seconds.  0 means
  *                           once.
  * @param[in]   period_months  The months part of the period.
+ * @param[in]   byday        Which days of week schedule will run.
  * @param[in]   duration     The length of the time window the action will run
  *                           in.  0 means entire duration of action.
  * @param[in]   timezone     Timezone.
  *
  * @return 0 success, 1 failed to find schedule, 2 schedule with new name exists,
- *         3 error in type name, 4 schedule_id required, 99 permission denied,
- *         -1 internal error.
+ *         3 error in type name, 4 schedule_id required, 5 syntax error in byday,
+ *         99 permission denied, -1 internal error.
  */
 int
 modify_schedule (const char *schedule_id, const char *name, const char *comment,
                  time_t first_time, time_t period, time_t period_months,
-                 time_t duration, const char *timezone)
+                 const char *byday, time_t duration, const char *timezone)
 {
   gchar *quoted_name, *quoted_comment, *quoted_timezone;
   gchar *first_time_string, *duration_string, *period_string;
-  gchar *period_months_string, *offset_string;
+  gchar *period_months_string, *offset_string, *byday_mask_string;
   schedule_t schedule;
   time_t real_first_time, real_period, real_period_months, new_next_time;
+  int real_byday, byday_mask;
   const char *real_timezone;
   iterator_t schedule_iter;
 
@@ -48477,6 +48579,16 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
     {
       sql_rollback ();
       return 1;
+    }
+
+  if (byday)
+    {
+      byday_mask = byday_from_string (byday);
+      if (byday_mask == -1)
+        {
+          sql_rollback ();
+          return 5;
+        }
     }
 
   /* Check whether a schedule with the same name exists already. */
@@ -48535,6 +48647,11 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
 
   quoted_timezone = timezone ? sql_quote (timezone) : NULL;
 
+  if (byday)
+    byday_mask_string = g_strdup_printf ("%i", byday_mask);
+  else
+    byday_mask_string = NULL;
+
   sql ("UPDATE schedules SET"
        " name = %s%s%s,"
        " comment = %s%s%s,"
@@ -48542,6 +48659,7 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
        " first_time = %s,"
        " period = %s,"
        " period_months = %s,"
+       " byday = %s,"
        " duration = %s,"
        " initial_offset = %s,"
        " modification_time = m_now ()"
@@ -48558,13 +48676,14 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
        first_time ? first_time_string : "first_time",
        period_string ? period_string : "period",
        period_months_string ? period_months_string : "period_months",
+       byday_mask_string ? byday_mask_string : "byday",
        (duration >= 0) ? duration_string : "duration",
        offset_string ? offset_string : "initial_offset",
        schedule);
 
   // Update scheduled next times for tasks
   init_iterator (&schedule_iter,
-                 "SELECT first_time, period, period_months, timezone"
+                 "SELECT first_time, period, period_months, byday, timezone"
                  " FROM schedules"
                  " WHERE id = %llu",
                  schedule);
@@ -48573,11 +48692,13 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
   real_first_time = (time_t) iterator_int64 (&schedule_iter, 0);
   real_period = (time_t) iterator_int64 (&schedule_iter, 1);
   real_period_months = (time_t) iterator_int64 (&schedule_iter, 2);
-  real_timezone = iterator_string (&schedule_iter, 3);
+  real_byday = iterator_int (&schedule_iter, 3);
+  real_timezone = iterator_string (&schedule_iter, 4);
 
   new_next_time = next_time (real_first_time,
                              real_period,
                              real_period_months,
+                             real_byday,
                              real_timezone,
                              0);
 
@@ -48588,6 +48709,7 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
        new_next_time,
        schedule);
 
+  g_free (byday_mask_string);
   g_free (duration_string);
   g_free (first_time_string);
   g_free (offset_string);
@@ -58380,10 +58502,10 @@ manage_restore (const char *id)
 
       sql ("INSERT INTO schedules"
            " (uuid, owner, name, comment, first_time, period, period_months,"
-           "  duration, timezone, initial_offset, creation_time,"
+           "  byday, duration, timezone, initial_offset, creation_time,"
            "  modification_time)"
            " SELECT uuid, owner, name, comment, first_time, period,"
-           "        period_months, duration, timezone, initial_offset,"
+           "        period_months, byday, duration, timezone, initial_offset,"
            "        creation_time, modification_time"
            " FROM schedules_trash WHERE id = %llu;",
            resource);

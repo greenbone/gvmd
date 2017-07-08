@@ -60,25 +60,26 @@ PG_FUNCTION_INFO_V1 (sql_next_time);
 Datum
 sql_next_time (PG_FUNCTION_ARGS)
 {
-  int32 first, period, period_months;
+  int32 first, period, period_months, byday;
   char *timezone;
   int32 ret;
 
   first = PG_GETARG_INT32 (0);
   period = PG_GETARG_INT32 (1);
   period_months = PG_GETARG_INT32 (2);
+  byday = PG_GETARG_INT32 (3);
 
-  if (PG_NARGS() < 4 || PG_ARGISNULL (3))
+  if (PG_NARGS() < 5 || PG_ARGISNULL (4))
     timezone = NULL;
   else
     {
       text* timezone_arg;
-      timezone_arg = PG_GETARG_TEXT_P (3);
+      timezone_arg = PG_GETARG_TEXT_P (4);
       timezone = textndup (timezone_arg, VARSIZE (timezone_arg) - VARHDRSZ);
     }
 
-  ret = next_time (first, period, period_months, timezone, 0);
-  if (PG_NARGS() >= 4)
+  ret = next_time (first, period, period_months, byday, timezone, 0);
+  if (PG_NARGS() >= 5)
     pfree (timezone);
   PG_RETURN_INT32 (ret);
 }

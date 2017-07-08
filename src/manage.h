@@ -2810,8 +2810,8 @@ gboolean
 find_schedule_with_permission (const char*, schedule_t*, const char*);
 
 int
-create_schedule (const char*, const char *, time_t, time_t, time_t,
-                 time_t, const char*, schedule_t *);
+create_schedule (const char *, const char *, time_t, time_t, time_t,
+                 const char *, time_t, const char*, schedule_t *);
 
 int
 copy_schedule (const char*, const char*, const char *, schedule_t *);
@@ -2866,6 +2866,9 @@ schedule_iterator_period_months (iterator_t *);
 time_t
 schedule_iterator_duration (iterator_t *);
 
+int
+schedule_iterator_byday (iterator_t *);
+
 const char*
 schedule_iterator_timezone (iterator_t *);
 
@@ -2902,9 +2905,12 @@ schedule_task_iterator_name (iterator_t *);
 int
 schedule_task_iterator_readable (iterator_t*);
 
+time_t
+task_schedule_iterator_byday (iterator_t *);
+
 int
-modify_schedule (const char*, const char*, const char *, time_t, time_t, time_t,
-                 time_t, const char *);
+modify_schedule (const char *, const char*, const char *, time_t, time_t, time_t,
+                 const char *, time_t, const char *);
 
 
 /* Report Formats. */

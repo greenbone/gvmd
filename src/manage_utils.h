@@ -56,7 +56,7 @@ time_t add_months (time_t, int);
 time_t months_between (time_t, time_t);
 
 time_t
-next_time (time_t, int, int, const char*, int);
+next_time (time_t, int, int, int, const char*, int);
 
 int
 manage_count_hosts_max (const char *, const char *, int);

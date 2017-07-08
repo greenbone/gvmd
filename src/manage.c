@@ -6519,7 +6519,7 @@ scheduled_task_start (scheduled_task_t *scheduled_task,
                     int periods;
                     const gchar *task_uuid;
 
-                    /* Child succeeded. */
+                    /* Child succeeded, so task successfully started. */
 
                     task_uuid = scheduled_task->task_uuid;
                     schedule = task_schedule_uuid (task_uuid);
@@ -6532,13 +6532,14 @@ scheduled_task_start (scheduled_task_t *scheduled_task,
                         && task_schedule_next_time_uuid (task_uuid) == 0)
                       /* A once-off schedule without a duration, remove
                        * it from the task.  If it has a duration it
-                       * will be removed below, after the duration. */
+                       * will be removed by manage_schedule via
+                       * clear_duration_schedules, after the duration. */
                       set_task_schedule_uuid (task_uuid, 0, 0);
                     else if ((periods = task_schedule_periods_uuid
                                          (task_uuid)))
                       {
                         /* A task restricted to a certain number of
-                        * scheduled runs. */
+                         * scheduled runs. */
                         if (periods > 1)
                           {
                             set_task_schedule_periods (task_uuid,
@@ -6736,6 +6737,7 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
     if (task_schedule_iterator_start_due (&schedules))
       {
         time_t first_time, period, period_months;
+        int byday;
         const char* timezone;
 
         /* Update the task schedule info to prevent multiple schedules. */
@@ -6744,10 +6746,14 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
         period = task_schedule_iterator_period (&schedules);
         period_months = task_schedule_iterator_period_months (&schedules);
         timezone = task_schedule_iterator_timezone (&schedules);
+        byday = task_schedule_iterator_byday (&schedules);
 
+        g_debug ("%s: start due for %llu, setting next_time",
+                 __FUNCTION__,
+                 task_schedule_iterator_task (&schedules));
         set_task_schedule_next_time
          (task_schedule_iterator_task (&schedules),
-          next_time (first_time, period, period_months, timezone, 0));
+          next_time (first_time, period, period_months, byday, timezone, 0));
 
         /* Skip this task if it was already added to the starts list
          * to avoid conflicts between multiple users with permissions. */

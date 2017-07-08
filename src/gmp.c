@@ -1600,6 +1600,7 @@ typedef struct
   char *first_time_year;         ///< Year schedule must first run.
   char *period;                  ///< Period of schedule (how often it runs).
   char *period_unit;             ///< Unit of period: "hour", "day", "week", ....
+  char *byday;                   ///< Which weekdays to run on.
   char *duration;                ///< Duration of schedule (how long it runs for).
   char *duration_unit;           ///< Unit of duration: "hour", "day", "week", ....
   char *timezone;                ///< Time zone of the schedule
@@ -1623,6 +1624,7 @@ create_schedule_data_reset (create_schedule_data_t *data)
   free (data->first_time_year);
   free (data->period);
   free (data->period_unit);
+  free (data->byday);
   free (data->duration);
   free (data->duration_unit);
   free (data->timezone);
@@ -3628,6 +3630,7 @@ typedef struct
   char *first_time_year;         ///< Year schedule must first run.
   char *period;                  ///< Period of schedule (how often it runs).
   char *period_unit;             ///< Unit of period: "hour", "day", "week", ....
+  char *byday;                   ///< Which weekdays to run on.
   char *duration;                ///< Duration of schedule (how long it runs for).
   char *duration_unit;           ///< Unit of duration: "hour", "day", "week", ....
   char *timezone;                ///< Timezone.
@@ -3651,6 +3654,7 @@ modify_schedule_data_reset (modify_schedule_data_t *data)
   free (data->first_time_year);
   free (data->period);
   free (data->period_unit);
+  free (data->byday);
   free (data->duration);
   free (data->duration_unit);
   free (data->timezone);
@@ -5303,6 +5307,7 @@ typedef enum
   CLIENT_CREATE_SCANNER_CA_PUB,
   CLIENT_CREATE_SCANNER_CREDENTIAL,
   CLIENT_CREATE_SCHEDULE,
+  CLIENT_CREATE_SCHEDULE_BYDAY,
   CLIENT_CREATE_SCHEDULE_COMMENT,
   CLIENT_CREATE_SCHEDULE_COPY,
   CLIENT_CREATE_SCHEDULE_DURATION,
@@ -5554,6 +5559,7 @@ typedef enum
   CLIENT_MODIFY_SCANNER_CA_PUB,
   CLIENT_MODIFY_SCANNER_CREDENTIAL,
   CLIENT_MODIFY_SCHEDULE,
+  CLIENT_MODIFY_SCHEDULE_BYDAY,
   CLIENT_MODIFY_SCHEDULE_COMMENT,
   CLIENT_MODIFY_SCHEDULE_DURATION,
   CLIENT_MODIFY_SCHEDULE_DURATION_UNIT,
@@ -7995,7 +8001,9 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         ELSE_ERROR ("create_scanner");
 
       case CLIENT_CREATE_SCHEDULE:
-        if (strcasecmp ("COMMENT", element_name) == 0)
+        if (strcasecmp ("BYDAY", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SCHEDULE_BYDAY);
+        else if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE_COMMENT);
         else if (strcasecmp ("COPY", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE_COPY);
@@ -8510,7 +8518,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         ELSE_ERROR ("modify_scanner");
 
       case CLIENT_MODIFY_SCHEDULE:
-        if (strcasecmp ("COMMENT", element_name) == 0)
+        if (strcasecmp ("BYDAY", element_name) == 0)
+          {
+            gvm_append_string (&modify_schedule_data->byday, "");
+            set_client_state (CLIENT_MODIFY_SCHEDULE_BYDAY);
+          }
+        else if (strcasecmp ("COMMENT", element_name) == 0)
           {
             gvm_append_string (&modify_schedule_data->comment, "");
             set_client_state (CLIENT_MODIFY_SCHEDULE_COMMENT);
@@ -24558,6 +24571,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                         first_time,
                                         period == -1 ? 0 : period,
                                         period_months,
+                                        create_schedule_data->byday,
                                         duration == -1 ? 0 : duration,
                                         create_schedule_data->timezone,
                                         &new_schedule))
@@ -24575,6 +24589,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_schedule",
                                     "Schedule exists already"));
+                log_event_fail ("schedule", "Schedule", NULL, "created");
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_schedule",
+                                    "Syntax error in BYDAY"));
                 log_event_fail ("schedule", "Schedule", NULL, "created");
                 break;
               case 99:
@@ -24599,6 +24619,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
+      CLOSE (CLIENT_CREATE_SCHEDULE, BYDAY);
       CLOSE (CLIENT_CREATE_SCHEDULE, COMMENT);
       CLOSE (CLIENT_CREATE_SCHEDULE, COPY);
       CLOSE (CLIENT_CREATE_SCHEDULE, DURATION);
@@ -27385,6 +27406,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                          first_time,
                          period == -1 ? 0 : period,
                          period_months,
+                         modify_schedule_data->byday,
                          duration == -1 ? 0 : duration,
                          modify_schedule_data->timezone))
             {
@@ -27429,6 +27451,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                 modify_schedule_data->schedule_id,
                                 "modified");
                 break;
+              case 5:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_schedule",
+                                    "Syntax error in BYDAY"));
+                log_event_fail ("schedule", "Schedule", NULL, "modified");
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_schedule",
@@ -27455,6 +27483,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_SCHEDULE, FIRST_TIME);
       CLOSE (CLIENT_MODIFY_SCHEDULE, NAME);
       CLOSE (CLIENT_MODIFY_SCHEDULE, PERIOD);
+      CLOSE (CLIENT_MODIFY_SCHEDULE, BYDAY);
       CLOSE (CLIENT_MODIFY_SCHEDULE, TIMEZONE);
 
       CLOSE (CLIENT_MODIFY_SCHEDULE_FIRST_TIME, DAY_OF_MONTH);
@@ -29943,6 +29972,10 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_SCANNER_CA_PUB,
               &create_scanner_data->ca_pub);
 
+
+      APPEND (CLIENT_CREATE_SCHEDULE_BYDAY,
+              &create_schedule_data->byday);
+
       APPEND (CLIENT_CREATE_SCHEDULE_COMMENT,
               &create_schedule_data->comment);
 
@@ -30280,6 +30313,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_SCANNER_CA_PUB,
               &modify_scanner_data->ca_pub);
 
+
+      APPEND (CLIENT_MODIFY_SCHEDULE_BYDAY,
+              &modify_schedule_data->byday);
 
       APPEND (CLIENT_MODIFY_SCHEDULE_COMMENT,
               &modify_schedule_data->comment);

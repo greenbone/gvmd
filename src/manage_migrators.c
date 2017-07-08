@@ -14111,6 +14111,43 @@ migrate_186_to_187 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 187 to version 188.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_187_to_188 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 187. */
+
+  if (manage_db_version () != 187)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Schedules tables got "byday" column. */
+
+  sql ("ALTER TABLE schedules ADD COLUMN byday INTEGER;");
+  sql ("UPDATE schedules SET byday = 0;");
+
+  sql ("ALTER TABLE schedules_trash ADD COLUMN byday INTEGER;");
+  sql ("UPDATE schedules_trash SET byday = 0;");
+
+  /* Set the database version to 188. */
+
+  set_db_version (188);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -14312,6 +14349,7 @@ static migrator_t database_migrators[]
     {185, migrate_184_to_185},
     {186, migrate_185_to_186},
     {187, migrate_186_to_187},
+    {188, migrate_187_to_188},
     /* End marker. */
     {-1, NULL}};
 
