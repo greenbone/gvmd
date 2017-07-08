@@ -36,10 +36,10 @@ if (BACKEND STREQUAL SQLITE3)
 else (BACKEND STREQUAL SQLITE3)
   set (BACKEND_FILES sql_pg.c manage_pg.c)
 
-  add_library (manage-pg-server SHARED
+  add_library (gvm-pg-server SHARED
                manage_pg_server.c manage_utils.c)
-  set_target_properties (manage-pg-server PROPERTIES SOVERSION "${CPACK_PACKAGE_VERSION_MAJOR}")
-  set_target_properties (manage-pg-server PROPERTIES VERSION "${CPACK_PACKAGE_VERSION}")
+  set_target_properties (gvm-pg-server PROPERTIES SOVERSION "${CPACK_PACKAGE_VERSION_MAJOR}")
+  set_target_properties (gvm-pg-server PROPERTIES VERSION "${CPACK_PACKAGE_VERSION}")
   include_directories (${PostgreSQL_INCLUDE_DIRS} ${PostgreSQL_SERVER_INCLUDE_DIRS})
 endif (BACKEND STREQUAL SQLITE3)
 
@@ -59,7 +59,7 @@ if (BACKEND STREQUAL SQLITE3)
   target_link_libraries (manage m ${SQLITE3_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS} ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS} ${LINKER_HARDENING_FLAGS})
 else (BACKEND STREQUAL SQLITE3)
   target_link_libraries (manage m ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS} ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS} ${LINKER_HARDENING_FLAGS})
-  target_link_libraries (manage-pg-server ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS} ${LIBGVM_BASE_LDFLAGS} ${LINKER_HARDENING_FLAGS})
+  target_link_libraries (gvm-pg-server ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS} ${LIBGVM_BASE_LDFLAGS} ${LINKER_HARDENING_FLAGS})
 endif (BACKEND STREQUAL SQLITE3)
 
 add_library (gmp STATIC gmp.c)
@@ -177,7 +177,7 @@ endif (GVM_DATA_DIR)
 
 if (GVMD_DATA_DIR)
   add_definitions (-DGVMD_DATA_DIR=\\\"${GVMD_DATA_DIR}\\\")
-endif (GVM_DATA_DIR)
+endif (GVMD_DATA_DIR)
 
 if (GVM_LIB_INSTALL_DIR)
         add_definitions (-DGVM_LIB_INSTALL_DIR=\\\"${GVM_LIB_INSTALL_DIR}\\\")
@@ -206,8 +206,8 @@ install (FILES ${CMAKE_CURRENT_BINARY_DIR}/gvmd
          DESTINATION ${SBINDIR})
 
 if (BACKEND STREQUAL POSTGRESQL)
-  install (TARGETS manage-pg-server
-           LIBRARY DESTINATION "${GVM_LIB_INSTALL_DIR}/openvasmd/pg")
+  install (TARGETS gvm-pg-server
+           LIBRARY DESTINATION ${GVM_LIB_INSTALL_DIR})
 endif (BACKEND STREQUAL POSTGRESQL)
 
 ## Static analysis

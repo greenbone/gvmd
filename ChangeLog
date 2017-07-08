@@ -1,4 +1,12 @@
-2017-07-07  Matthew Mundell <matthew.mundell@greenbone.net>
+2017-07-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/CMakeLists.txt: Rename library manage-pg-server to gvm-pg-server.
+	Correct GVMD_DATA_DIR closing endif.  Install manage-pg-server to the
+	top level of the LIB dir.
+
+	* src/manage_pg.c (manage_create_sql_functions): Adjust paths accordingly.
+
+2017-07-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add BYDAY to GMP CREATE_SCHEDULE and MODIFY_SCHEDULE.  Hence increase
 	database version to 188.  Add database migration from version 187 to 188.

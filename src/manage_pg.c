@@ -524,43 +524,43 @@ manage_create_sql_functions ()
 
   sql ("CREATE OR REPLACE FUNCTION max_hosts (text, text)"
        " RETURNS integer"
-       " AS '%s/openvasmd/pg/libmanage-pg-server', 'sql_max_hosts'"
+       " AS '%s/libgvm-pg-server', 'sql_max_hosts'"
        " LANGUAGE C;",
        GVM_LIB_INSTALL_DIR);
 
   sql ("CREATE OR REPLACE FUNCTION level_max_severity (text, text)"
        " RETURNS double precision"
-       " AS '%s/openvasmd/pg/libmanage-pg-server', 'sql_level_max_severity'"
+       " AS '%s/libgvm-pg-server', 'sql_level_max_severity'"
        " LANGUAGE C;",
        GVM_LIB_INSTALL_DIR);
 
   sql ("CREATE OR REPLACE FUNCTION level_min_severity (text, text)"
        " RETURNS double precision"
-       " AS '%s/openvasmd/pg/libmanage-pg-server', 'sql_level_min_severity'"
+       " AS '%s/libgvm-pg-server', 'sql_level_min_severity'"
        " LANGUAGE C;",
        GVM_LIB_INSTALL_DIR);
 
   sql ("CREATE OR REPLACE FUNCTION next_time (integer, integer, integer, integer)"
        " RETURNS integer"
-       " AS '%s/openvasmd/pg/libmanage-pg-server', 'sql_next_time'"
+       " AS '%s/libgvm-pg-server', 'sql_next_time'"
        " LANGUAGE C;",
        GVM_LIB_INSTALL_DIR);
 
   sql ("CREATE OR REPLACE FUNCTION next_time (integer, integer, integer, integer, text)"
        " RETURNS integer"
-       " AS '%s/openvasmd/pg/libmanage-pg-server', 'sql_next_time'"
+       " AS '%s/libgvm-pg-server', 'sql_next_time'"
        " LANGUAGE C;",
        GVM_LIB_INSTALL_DIR);
 
   sql ("CREATE OR REPLACE FUNCTION valid_db_resource_type (text)"
        " RETURNS boolean"
-       " AS '%s/openvasmd/pg/libmanage-pg-server', 'sql_valid_db_resource_type'"
+       " AS '%s/libgvm-pg-server', 'sql_valid_db_resource_type'"
        " LANGUAGE C;",
        GVM_LIB_INSTALL_DIR);
 
   sql ("CREATE OR REPLACE FUNCTION regexp (text, text)"
        " RETURNS boolean"
-       " AS '%s/openvasmd/pg/libmanage-pg-server', 'sql_regexp'"
+       " AS '%s/libgvm-pg-server', 'sql_regexp'"
        " LANGUAGE C;",
        GVM_LIB_INSTALL_DIR);
 
