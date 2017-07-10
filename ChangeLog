@@ -1,5 +1,9 @@
 2017-07-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (schedule_iterator_byday): Remove cast, should be int.
+
+2017-07-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/gmp.c (handle_get_schedules): Add BYDAY to GET_SCHEDULES/SCHEDULE.
 
 	* src/manage_sql.c (schedule_iterator_byday_string): New function.

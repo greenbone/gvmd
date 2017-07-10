@@ -48103,7 +48103,7 @@ schedule_iterator_byday (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (time_t) iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
   return ret;
 }
 
