@@ -49236,6 +49236,7 @@ int
 delete_report_format (const char *report_format_id, int ultimate)
 {
   gchar *dir;
+  char *owner_uuid;
   report_format_t report_format, trash_report_format;
 
   /* This is complicated in two ways
@@ -49348,12 +49349,14 @@ delete_report_format (const char *report_format_id, int ultimate)
       return 3;
     }
 
+  owner_uuid = report_format_owner_uuid (report_format);
   dir = g_build_filename (OPENVAS_STATE_DIR,
                           "openvasmd",
                           "report_formats",
-                          current_credentials.uuid,
+                          owner_uuid,
                           report_format_id,
                           NULL);
+  free (owner_uuid);
 
   if (ultimate)
     {
@@ -57431,7 +57434,7 @@ manage_restore (const char *id)
       iterator_t params;
       report_format_t report_format;
       gchar *dir, *trash_dir, *resource_string;
-      char *trash_uuid;
+      char *trash_uuid, *owner_uuid;
 
       if (sql_int ("SELECT count(*) FROM report_formats"
                    " WHERE name ="
@@ -57525,13 +57528,15 @@ manage_restore (const char *id)
 
       /* Move the dir last, in case any SQL rolls back. */
 
+      owner_uuid = report_format_owner_uuid (report_format);
       dir = g_build_filename (OPENVAS_STATE_DIR,
                               "openvasmd",
                               "report_formats",
-                              current_credentials.uuid,
+                              owner_uuid,
                               trash_uuid,
                               NULL);
       free (trash_uuid);
+      free (owner_uuid);
 
       resource_string = g_strdup_printf ("%llu", resource);
       trash_dir = report_format_trash_dir (resource_string);
