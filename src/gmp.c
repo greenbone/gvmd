@@ -18272,6 +18272,7 @@ handle_get_schedules (gmp_parser_t *gmp_parser, GError **error)
             "<period>%ld</period>"
             "<period_months>%ld</period_months>"
             "<simple_period>%i<unit>%s</unit></simple_period>"
+            "<byday>%s</byday>"
             "<duration>%ld</duration>"
             "<simple_duration>%i<unit>%s</unit></simple_duration>"
             "<timezone>%s</timezone>"
@@ -18282,6 +18283,7 @@ handle_get_schedules (gmp_parser_t *gmp_parser, GError **error)
             schedule_iterator_period_months (&schedules),
             simple_period,
             simple_period_unit,
+            schedule_iterator_byday_string (&schedules),
             schedule_iterator_duration (&schedules),
             simple_duration,
             simple_duration_unit,

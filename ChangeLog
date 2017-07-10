@@ -1,3 +1,11 @@
+2017-07-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/gmp.c (handle_get_schedules): Add BYDAY to GET_SCHEDULES/SCHEDULE.
+
+	* src/manage_sql.c (schedule_iterator_byday_string): New function.
+
+	* src/manage.h: Add header accordingly.
+
 2017-07-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/CMakeLists.txt: Rename library manage-pg-server to gvm-pg-server.

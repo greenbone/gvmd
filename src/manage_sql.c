@@ -48108,6 +48108,35 @@ schedule_iterator_byday (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the byday string from a schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Byday string.
+ */
+gchar *
+schedule_iterator_byday_string (iterator_t *iterator)
+{
+  int byday;
+  if (iterator->done) return NULL;
+  byday = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
+  return g_strdup_printf ("%s%s%s%s%s%s%s%s%s%s%s%s%s",
+                          byday & (1 << 0) ? "MO" : "",
+                          byday & (1 << 1) ? "," : "",
+                          byday & (1 << 1) ? "TU" : "",
+                          byday & (1 << 2) ? "," : "",
+                          byday & (1 << 2) ? "WE" : "",
+                          byday & (1 << 3) ? "," : "",
+                          byday & (1 << 3) ? "TH" : "",
+                          byday & (1 << 4) ? "," : "",
+                          byday & (1 << 4) ? "FR" : "",
+                          byday & (1 << 5) ? "," : "",
+                          byday & (1 << 5) ? "SA" : "",
+                          byday & (1 << 6) ? "," : "",
+                          byday & (1 << 6) ? "SU" : "");
+}
+
+/**
  * @brief Get the duration from a schedule iterator.
  *
  * @param[in]  iterator  Iterator.

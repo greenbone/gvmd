@@ -2869,6 +2869,9 @@ schedule_iterator_duration (iterator_t *);
 int
 schedule_iterator_byday (iterator_t *);
 
+gchar *
+schedule_iterator_byday_string (iterator_t *);
+
 const char*
 schedule_iterator_timezone (iterator_t *);
 
