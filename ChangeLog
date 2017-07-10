@@ -1,3 +1,11 @@
+2017-07-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r29024.
+
+	* src/manage_sql.c (delete_report_format, manage_restore): Use owner's
+	UUID instead of the current user's when building the directory name
+	for report formats.
+
 2017-06-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r28847.
