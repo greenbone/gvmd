@@ -2227,7 +2227,6 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
               if (base_metrics == NULL)
                 {
                   score = NULL;
-                  summary = NULL;
                   access_vector = NULL;
                   access_complexity = NULL;
                   authentication = NULL;
@@ -2241,14 +2240,6 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                   if (score == NULL)
                     {
                       g_warning ("%s: cvss:score missing\n", __FUNCTION__);
-                      free_entity (entity);
-                      goto fail;
-                    }
-
-                  summary = entity_child (entry, "vuln:summary");
-                  if (summary == NULL)
-                    {
-                      g_warning ("%s: vuln:summary missing\n", __FUNCTION__);
                       free_entity (entity);
                       goto fail;
                     }
@@ -2313,6 +2304,14 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                       free_entity (entity);
                       goto fail;
                     }
+                }
+
+              summary = entity_child (entry, "vuln:summary");
+              if (summary == NULL)
+                {
+                  g_warning ("%s: vuln:summary missing\n", __FUNCTION__);
+                  free_entity (entity);
+                  goto fail;
                 }
 
               software = g_string_new ("");
