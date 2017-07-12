@@ -40542,13 +40542,8 @@ delete_credential (const char *credential_id, int ultimate)
           return 0;
         }
 
-      /* Check if it's in use by a target or scanner in the trashcan. */
-      if (sql_int ("SELECT count(*) FROM targets_trash_login_data"
-                   " WHERE credential = %llu AND credential_location = %s;",
-                   credential, G_STRINGIFY (LOCATION_TRASH))
-          || sql_int ("SELECT count(*) FROM scanners_trash"
-                      " WHERE credential = %llu AND credential_location = %s;",
-                      credential, G_STRINGIFY (LOCATION_TRASH)))
+      /* Check if it's in use by another resource in the trashcan. */
+      if (trash_credential_in_use (credential))
         {
           sql_rollback ();
           return 1;
@@ -40566,13 +40561,8 @@ delete_credential (const char *credential_id, int ultimate)
       return 0;
     }
 
-  /* Check if it's in use by a target or scanner. */
-  if (sql_int ("SELECT count(*) FROM targets_login_data"
-               " WHERE credential = %llu;",
-               credential)
-      || sql_int ("SELECT count(*) FROM scanners"
-                  " WHERE credential = %llu;",
-                  credential))
+  /* Check if it's in use by another resource. */
+  if (credential_in_use (credential))
     {
       sql_rollback ();
       return 1;
@@ -40773,12 +40763,26 @@ credential_count (const get_data_t *get)
 int
 credential_in_use (credential_t credential)
 {
-  return !!(sql_int ("SELECT count (*) FROM targets_login_data"
-                     " WHERE credential = %llu;",
-                     credential)
-            || sql_int ("SELECT count (*) FROM scanners"
-                        " WHERE credential = %llu;",
-                        credential));
+  int ret;
+  char *uuid = credential_uuid (credential);
+
+  ret = !!(sql_int ("SELECT count (*) FROM targets_login_data"
+                    " WHERE credential = %llu;",
+                    credential)
+           || sql_int ("SELECT count (*) FROM scanners"
+                       " WHERE credential = %llu;",
+                       credential)
+           || sql_int ("SELECT count (*) FROM alert_method_data"
+                       " WHERE name = 'scp_credential'"
+                       " AND data = '%s'",
+                       uuid)
+           || sql_int ("SELECT count (*) FROM alert_method_data"
+                       " WHERE name = 'verinice_server_credential'"
+                       " AND data = '%s'",
+                       uuid));
+
+  free (uuid);
+  return ret;
 }
 
 /**
@@ -40791,16 +40795,30 @@ credential_in_use (credential_t credential)
 int
 trash_credential_in_use (credential_t credential)
 {
-  return !!(sql_int ("SELECT count (*) FROM targets_trash_login_data"
+  int ret;
+  char *uuid = trash_credential_uuid (credential);
+
+  ret = !!(sql_int ("SELECT count (*) FROM targets_trash_login_data"
                      " WHERE credential = %llu"
                      " AND credential_location"
                      "      = " G_STRINGIFY (LOCATION_TRASH) ";",
                      credential)
-            || sql_int ("SELECT count (*) FROM scanners_trash"
-                        " WHERE credential = %llu"
-                        " AND credential_location"
-                        "      = " G_STRINGIFY (LOCATION_TRASH) ";",
-                        credential));
+           || sql_int ("SELECT count (*) FROM scanners_trash"
+                       " WHERE credential = %llu"
+                       " AND credential_location"
+                       "      = " G_STRINGIFY (LOCATION_TRASH) ";",
+                       credential)
+           || sql_int ("SELECT count (*) FROM alert_method_data_trash"
+                       " WHERE name = 'scp_credential'"
+                       " AND data = '%s'",
+                       uuid)
+           || sql_int ("SELECT count (*) FROM alert_method_data_trash"
+                       " WHERE name = 'verinice_server_credential'"
+                       " AND data = '%s'",
+                       uuid));
+
+  free (uuid);
+  return ret;
 }
 
 /**
