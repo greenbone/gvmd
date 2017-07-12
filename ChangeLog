@@ -1,3 +1,10 @@
+2017-07-12  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (delete_credential): Use trash_credential_in_use and
+	credential_in_use to check if credential is in use.
+	(credential_in_use, trash_credential_in_use): Also check if alerts
+	are using the credential.
+
 2017-07-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql_secinfo.c (update_cve_xml): Move summary out of
