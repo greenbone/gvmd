@@ -1,3 +1,16 @@
+2017-07-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r29072.
+
+	* src/manage_pg.c (create_tables): Add results_by_date index.  This speeds
+	up the default Results page in GSA, which is sorted by date.
+
+	* src/manage_sql.c (count2): Remove the extra columns from the SELECT
+	columns.  I think these were included because we used to reference the
+	SELECT column aliases in the WHERE clauses, but we no longer do that
+	because Postgres doesn't support it.  This greatly speeds up the counting,
+	in particular counting of the results.
+
 2017-07-12  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r29049.

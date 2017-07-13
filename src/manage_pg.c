@@ -2583,6 +2583,7 @@ create_tables ()
        "                     'host, qod');");
   sql ("SELECT create_index ('results_by_report', 'results', 'report');");
   sql ("SELECT create_index ('results_by_task', 'results', 'task');");
+  sql ("SELECT create_index ('results_by_date', 'results', 'date');");
 }
 
 /**

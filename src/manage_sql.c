@@ -5976,14 +5976,13 @@ count2 (const char *type, const get_data_t *get, column_t *select_columns,
                    get->trash && strcmp (type, "task") ? "_trash" : "");
   else
     ret = sql_int ("SELECT count (%scount_id)"
-                   " FROM (SELECT %ss%s.id AS count_id, %s"
+                   " FROM (SELECT %ss%s.id AS count_id"
                    "       FROM %ss%s%s"
                    "       WHERE %s"
                    "       %s%s%s%s) AS subquery;",
                    distinct ? "DISTINCT " : "",
                    type,
                    get->trash && strcmp (type, "task") ? "_trash" : "",
-                   columns,
                    type,
                    get->trash && strcmp (type, "task") ? "_trash" : "",
                    extra_tables ? extra_tables : "",
