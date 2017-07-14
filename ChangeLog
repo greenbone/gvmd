@@ -1,3 +1,10 @@
+2017-07-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r24807.
+
+	* src/manage_sql.c (config_insert_preferences): Remove "osp_" prefix
+	from type written to the database.
+
 2017-07-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r29024.

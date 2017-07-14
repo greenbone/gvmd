@@ -32120,7 +32120,10 @@ config_insert_preferences (config_t config,
             quoted_nvt_name = preference->nvt_name
                                 ? sql_quote (preference->nvt_name) : NULL;
             quoted_preference_name = sql_quote (preference->name);
-            quoted_type = sql_quote (preference->type);
+            quoted_type
+              = g_str_has_prefix (preference->type, "osp_")
+                  ? sql_quote (preference->type + strlen ("osp_"))
+                  : sql_quote (preference->type);
             quoted_value = sql_quote (value->str);
             g_string_free (value, TRUE);
             quoted_default = preference->default_value
