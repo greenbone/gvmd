@@ -1,3 +1,8 @@
+2017-07-16  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* CMakeLists.txt: Define GVM_NVT_DIR explicitely without GVM_STATE_DIR
+	to prepare switching the default location of GVM_STATE_DIR.
+
 2017-07-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (create_tables): Add results_by_date index.  This speeds

@@ -203,8 +203,11 @@ if (NOT GVM_RUN_DIR)
   set (GVM_RUN_DIR      "${LOCALSTATEDIR}/run")
 endif (NOT GVM_RUN_DIR)
 
+# TODO: Once we separate the RFP signatures out of "plugins" and
+# into var/lib/gvm/rfpsigs/ (via a sync script) then we do not need
+# to know about the NVT_DIR anymore.
 if (NOT GVM_NVT_DIR)
-  set (GVM_NVT_DIR "${GVM_STATE_DIR}/plugins/")
+	set (GVM_NVT_DIR "${LOCALSTATEDIR}/lib/openvas/plugins/")
 endif (NOT GVM_NVT_DIR)
 
 if (NOT GVM_ACCESS_KEY_DIR)
