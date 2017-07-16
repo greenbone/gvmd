@@ -1,5 +1,10 @@
 2017-07-16  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	* src/manage_migrators.c (database_migrators): Added comments to mark
+	the module releases with the respective db revisions.
+
+2017-07-16  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	* CMakeLists.txt: Define GVM_NVT_DIR explicitely without GVM_STATE_DIR
 	to prepare switching the default location of GVM_STATE_DIR.
 

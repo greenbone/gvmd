@@ -14182,7 +14182,7 @@ static migrator_t database_migrators[]
     {18, SQLITE_OR_NULL (migrate_17_to_18)},
     {19, SQLITE_OR_NULL (migrate_18_to_19)},
     {20, SQLITE_OR_NULL (migrate_19_to_20)},
-    {21, SQLITE_OR_NULL (migrate_20_to_21)},
+    {21, SQLITE_OR_NULL (migrate_20_to_21)}, // v1.0: rev 21
     {22, SQLITE_OR_NULL (migrate_21_to_22)},
     {23, SQLITE_OR_NULL (migrate_22_to_23)},
     {24, SQLITE_OR_NULL (migrate_23_to_24)},
@@ -14200,7 +14200,7 @@ static migrator_t database_migrators[]
     {36, SQLITE_OR_NULL (migrate_35_to_36)},
     {37, SQLITE_OR_NULL (migrate_36_to_37)},
     {38, SQLITE_OR_NULL (migrate_37_to_38)},
-    {39, SQLITE_OR_NULL (migrate_38_to_39)},
+    {39, SQLITE_OR_NULL (migrate_38_to_39)}, // v2.0: rev 39
     {40, SQLITE_OR_NULL (migrate_39_to_40)},
     {41, SQLITE_OR_NULL (migrate_40_to_41)},
     {42, SQLITE_OR_NULL (migrate_41_to_42)},
@@ -14217,7 +14217,7 @@ static migrator_t database_migrators[]
     {53, SQLITE_OR_NULL (migrate_52_to_53)},
     {54, SQLITE_OR_NULL (migrate_53_to_54)},
     {55, SQLITE_OR_NULL (migrate_54_to_55)},
-    {56, SQLITE_OR_NULL (migrate_55_to_56)},
+    {56, SQLITE_OR_NULL (migrate_55_to_56)}, // v3.0: rev 56
     {57, SQLITE_OR_NULL (migrate_56_to_57)},
     {58, SQLITE_OR_NULL (migrate_57_to_58)},
     {59, SQLITE_OR_NULL (migrate_58_to_59)},
@@ -14225,7 +14225,7 @@ static migrator_t database_migrators[]
     {61, SQLITE_OR_NULL (migrate_60_to_61)},
     {62, SQLITE_OR_NULL (migrate_61_to_62)},
     {63, SQLITE_OR_NULL (migrate_62_to_63)},
-    {64, migrate_63_to_64},
+    {64, migrate_63_to_64}, // v4.0: rev 64
     {65, migrate_64_to_65},
     {66, migrate_65_to_66},
     {67, migrate_66_to_67},
@@ -14284,7 +14284,7 @@ static migrator_t database_migrators[]
     {120, migrate_119_to_120},
     {121, migrate_120_to_121},
     {122, migrate_121_to_122},
-    {123, migrate_122_to_123},
+    {123, migrate_122_to_123}, // v5.0: rev 123
     {124, migrate_123_to_124},
     {125, migrate_124_to_125},
     {126, migrate_125_to_126},
@@ -14307,7 +14307,7 @@ static migrator_t database_migrators[]
     {143, migrate_142_to_143},
     {144, migrate_143_to_144},
     {145, migrate_144_to_145},
-    {146, migrate_145_to_146},
+    {146, migrate_145_to_146}, // v6.0: rev 146
     {147, migrate_146_to_147},
     {148, migrate_147_to_148},
     {149, migrate_148_to_149},
@@ -14346,7 +14346,7 @@ static migrator_t database_migrators[]
     {182, migrate_181_to_182},
     {183, migrate_182_to_183},
     {184, migrate_183_to_184},
-    {185, migrate_184_to_185},
+    {185, migrate_184_to_185}, // v7.0: rev 184
     {186, migrate_185_to_186},
     {187, migrate_186_to_187},
     {188, migrate_187_to_188},
