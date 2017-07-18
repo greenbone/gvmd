@@ -1,3 +1,10 @@
+2017-07-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* tools/gvm-migrate-to-postgres.in (migrate_184_to_185, migrate_185_to_186)
+	(migrate_186_to_187, migrate_187_to_188): New functions.
+	(TABLES_185, TABLES_185, TABLES_185, TABLES_185): New variables.
+	(migrate, create): Add newest versions.
+
 2017-07-16  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/manage_migrators.c (database_migrators): Added comments to mark
@@ -2457,13 +2464,13 @@
 2017-01-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Allow configs in trashcan to refer to scanners also in trash, hence
-	increase database version to 145.  Also add a list of configs using
+	increase database version to 185.  Also add a list of configs using
 	a scanner to get_scanners details.
 
-	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 145.
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 185.
 
-	* src/manage_migrators.c (migrate_144_to_145): New.
-	(database_migrators): Add migrate_144_to_145.
+	* src/manage_migrators.c (migrate_184_to_185): New.
+	(database_migrators): Add migrate_184_to_185.
 
 	* src/manage_pg.c (create_tables): Remove REFERENCES constraint on
 	"scanner" column in table "configs_trash" and add column

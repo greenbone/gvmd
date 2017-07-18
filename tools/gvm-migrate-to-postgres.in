@@ -1679,6 +1679,38 @@ migrate_183_to_184 () {
 
 TABLES_184=$TABLES_183
 
+migrate_184_to_185 () {
+  pg "ALTER TABLE configs_trash ADD COLUMN scanner_location INTEGER;"
+
+  pg "CREATE TABLE IF NOT EXISTS permissions_get_tasks
+       (\"user\" integer REFERENCES users ON DELETE CASCADE,
+        task integer REFERENCES tasks ON DELETE CASCADE,
+        has_permission boolean,
+        UNIQUE (\"user\", task));"
+}
+
+TABLES_185="$TABLES_184 permissions_get_tasks"
+
+migrate_185_to_186 () {
+  : # Schema stayed the same.
+}
+
+TABLES_186=$TABLES_185
+
+migrate_186_to_187 () {
+  pg "ALTER TABLE alerts ADD COLUMN active INTEGER;"
+   pg "ALTER TABLE alerts_trash ADD COLUMN active INTEGER;"
+}
+
+TABLES_187=$TABLES_186
+
+migrate_187_to_188 () {
+  pg "ALTER TABLE schedules ADD COLUMN byday INTEGER;"
+  pg "ALTER TABLE schedules_trash ADD COLUMN byday INTEGER;"
+}
+
+TABLES_188=$TABLES_187
+
 
 ## Migrate the schema of the Postgres database from version $1 to $2.
 ##
@@ -2100,6 +2132,38 @@ migrate () {
       fi
       migrate 184 $TO;;
 
+    184)
+      migrate_184_to_185
+      if [ $TO -eq 185 ]
+      then
+          return
+      fi
+      migrate 185 $TO;;
+
+    185)
+      migrate_185_to_186
+      if [ $TO -eq 186 ]
+      then
+          return
+      fi
+      migrate 186 $TO;;
+
+    186)
+      migrate_186_to_187
+      if [ $TO -eq 187 ]
+      then
+          return
+      fi
+      migrate 187 $TO;;
+
+    187)
+      migrate_187_to_188
+      if [ $TO -eq 188 ]
+      then
+          return
+      fi
+      migrate 188 $TO;;
+
     *)
       log_notice "Version in Postgres database out of sync."
       exit 1
@@ -2387,6 +2451,26 @@ create () {
     184)
       create_migrate_clean $DB_VERSION
       copy_data "$TABLES_184"
+      ;;
+
+    185)
+      create_migrate_clean $DB_VERSION
+      copy_data "$TABLES_185"
+      ;;
+
+    186)
+      create_migrate_clean $DB_VERSION
+      copy_data "$TABLES_186"
+      ;;
+
+    187)
+      create_migrate_clean $DB_VERSION
+      copy_data "$TABLES_187"
+      ;;
+
+    188)
+      create_migrate_clean $DB_VERSION
+      copy_data "$TABLES_188"
       ;;
 
     *)
