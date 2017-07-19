@@ -1,3 +1,21 @@
+2017-07-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Allow setting comments in the commands create_user and modify_user.
+
+	* src/gmp.c (create_user_data_t, create_user_data_reset)
+	(modify_user_data_t, modify_user_data_reset): Add comment member.
+	(client_state_t, gmp_xml_handle_start_element)
+	(gmp_xml_handle_end_element, gmp_xml_handle_text): Add comment element
+	to the create_user and modify_user commands.
+
+	* src/manage_sql.c (manage_create_user): Add parameter for create_user.
+	(create_user, modify_user): Add comment parameter.
+
+	* src/manage.h (create_user, modify_user): Add parameter.
+
+	* src/schema_formats/XML/GMP.xml.in (create_user, modify_user): Add
+	comment element to the command.
+
 2017-07-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* tools/gvm-migrate-to-postgres.in (migrate_184_to_185, migrate_185_to_186)

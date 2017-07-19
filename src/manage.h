@@ -3948,17 +3948,18 @@ int
 user_role_iterator_readable (iterator_t*);
 
 int
-create_user (const gchar *, const gchar *, const gchar *, int, const gchar *,
-             int, const array_t *, array_t *, gchar **, array_t *, gchar **,
-             gchar **, user_t *, int);
+create_user (const gchar *, const gchar *, const gchar *, const gchar *,
+             int, const gchar *, int, const array_t *, array_t *, gchar **,
+             array_t *, gchar **, gchar **, user_t *, int);
 
 int
 delete_user (const char *, const char *, int, int, const char*, const char*);
 
 int
 modify_user (const gchar *, gchar **, const gchar *, const gchar *,
-             const gchar *, int, const gchar *, int, const array_t *, array_t *,
-             gchar **, array_t *, gchar **, gchar **);
+             const gchar*, const gchar *, int, const gchar *, int,
+             const array_t *, array_t *, gchar **, array_t *, gchar **,
+             gchar **);
 
 int
 user_is_admin (const char *);

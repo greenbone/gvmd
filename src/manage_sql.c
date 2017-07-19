@@ -62223,7 +62223,7 @@ manage_create_user (GSList *log_config, const gchar *database,
   /* Setup a dummy user, so that create_user will work. */
   current_credentials.uuid = "";
 
-  ret = create_user (name, uuid, NULL, 0, NULL, 0, NULL, NULL, NULL, roles,
+  ret = create_user (name, uuid, "", NULL, 0, NULL, 0, NULL, NULL, NULL, roles,
                      NULL, NULL, NULL, 0);
 
   switch (ret)
@@ -62521,6 +62521,7 @@ find_user_by_name (const char* name, user_t *user)
  *
  * @param[in]  name         The name of the new user.
  * @param[in]  password     The password of the new user.
+ * @param[in]  comment      Comment for the new user or NULL.
  * @param[in]  hosts        The host the user is allowed/forbidden to scan.
  * @param[in]  hosts_allow  Whether hosts is allow or forbid.
  * @param[in]  ifaces       Interfaces the user is allowed/forbidden to scan.
@@ -62541,15 +62542,16 @@ find_user_by_name (const char* name, user_t *user)
  *         -1 on error, -2 if user exists already.
  */
 int
-create_user (const gchar * name, const gchar * password, const gchar * hosts,
-             int hosts_allow, const gchar *ifaces, int ifaces_allow,
+create_user (const gchar * name, const gchar * password, const gchar *comment,
+             const gchar * hosts, int hosts_allow,
+             const gchar *ifaces, int ifaces_allow,
              const array_t * allowed_methods, array_t *groups,
              gchar **group_id_return, array_t *roles, gchar **role_id_return,
              gchar **r_errdesc, user_t *new_user, int forbid_super_admin)
 {
   char *errstr;
   gchar *quoted_hosts, *quoted_ifaces, *quoted_method, *quoted_name, *hash;
-  gchar *clean, *generated;
+  gchar *quoted_comment, *clean, *generated;
   int index, max;
   user_t user;
   GArray *cache_users;
@@ -62631,6 +62633,13 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
 
   hash = get_password_hashes (password);
 
+  /* Get the quoted comment */
+
+  if (comment)
+    quoted_comment = sql_quote (comment);
+  else
+    quoted_comment = g_strdup ("");
+
   /* Add the user to the database. */
 
   clean = clean_hosts (hosts ? hosts : "", &max);
@@ -62641,16 +62650,17 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
                               ? g_ptr_array_index (allowed_methods, 0)
                               : "file");
   sql ("INSERT INTO users"
-       " (uuid, owner, name, password, hosts, hosts_allow,"
+       " (uuid, owner, name, password, comment, hosts, hosts_allow,"
        "  ifaces, ifaces_allow, method, creation_time, modification_time)"
        " VALUES"
        " (make_uuid (),"
        "  (SELECT id FROM users WHERE uuid = '%s'),"
-       "  '%s', '%s', '%s', %i,"
+       "  '%s', '%s', '%s', '%s', %i,"
        "  '%s', %i, '%s', m_now (), m_now ());",
        current_credentials.uuid,
        quoted_name,
        hash,
+       quoted_comment,
        quoted_hosts,
        hosts_allow,
        quoted_ifaces,
@@ -62659,6 +62669,7 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
   user = sql_last_insert_id ();
   g_free (generated);
   g_free (hash);
+  g_free (quoted_comment);
   g_free (quoted_hosts);
   g_free (quoted_ifaces);
   g_free (quoted_method);
@@ -63320,6 +63331,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
  *                          when return is 3 or 4.
  * @param[in]  new_name     New name for the user.  NULL to leave as is.
  * @param[in]  password     The password of the user.  NULL to leave as is.
+ * @param[in]  comment      The comment for the user.  NULL to leave as is.
  * @param[in]  hosts        The host the user is allowed/forbidden to scan.
  *                          NULL to leave as is.
  * @param[in]  hosts_allow  Whether hosts is allow or forbid.
@@ -63342,7 +63354,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
  */
 int
 modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
-             const gchar * password, const gchar * hosts, int hosts_allow,
+             const gchar * password, const gchar * comment,
+             const gchar * hosts, int hosts_allow,
              const gchar *ifaces, int ifaces_allow,
              const array_t * allowed_methods, array_t *groups,
              gchar **group_id_return, array_t *roles, gchar **role_id_return,
@@ -63350,7 +63363,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
 {
   char *errstr;
   gchar *hash, *quoted_hosts, *quoted_ifaces, *quoted_method, *clean, *uuid;
-  gchar *quoted_new_name;
+  gchar *quoted_new_name, *quoted_comment;
   user_t user;
   int max, was_admin, is_admin;
   GArray *cache_users;
@@ -63478,6 +63491,16 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
   else
     hash = NULL;
 
+  if (comment)
+    {
+      quoted_comment = sql_quote (comment);
+    }
+  else
+    {
+      quoted_comment = NULL;
+    }
+
+
   /* Update the user in the database. */
 
   clean = clean_hosts (hosts ? hosts : "", &max);
@@ -63492,6 +63515,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
                               : "");
   sql ("UPDATE users"
        " SET name = %s%s%s,"
+       "     comment = %s%s%s,"
        "     hosts = '%s',"
        "     hosts_allow = '%i',"
        "     ifaces = '%s',"
@@ -63502,6 +63526,9 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
        quoted_new_name ? "'" : "",
        quoted_new_name ? quoted_new_name : "name",
        quoted_new_name ? "'" : "",
+       quoted_comment ? "'" : "",
+       quoted_comment ? quoted_comment : "comment",
+       quoted_comment ? "'" : "",
        quoted_hosts,
        hosts_allow,
        quoted_ifaces,

@@ -1797,6 +1797,7 @@ typedef struct
   int ifaces_allow;
   char *name;
   char *password;
+  char *comment;
   array_t *roles;
   gchar *current_source;
   array_t *sources;
@@ -1814,6 +1815,7 @@ create_user_data_reset (create_user_data_t * data)
   array_free (data->groups);
   g_free (data->name);
   g_free (data->password);
+  g_free (data->comment);
   g_free (data->hosts);
   g_free (data->ifaces);
   array_free (data->roles);
@@ -3941,6 +3943,7 @@ typedef struct
   gchar *name;
   gchar *new_name;
   gchar *password;
+  gchar *comment;
   array_t *roles;         ///< IDs of roles.
   array_t *sources;
   gchar *current_source;
@@ -3958,6 +3961,7 @@ modify_user_data_reset (modify_user_data_t * data)
   g_free (data->new_name);
   g_free (data->user_id);
   g_free (data->password);
+  g_free (data->comment);
   g_free (data->hosts);
   g_free (data->ifaces);
   array_free (data->roles);
@@ -5371,6 +5375,7 @@ typedef enum
   CLIENT_CREATE_TASK_SCHEDULE_PERIODS,
   CLIENT_CREATE_TASK_TARGET,
   CLIENT_CREATE_USER,
+  CLIENT_CREATE_USER_COMMENT,
   CLIENT_CREATE_USER_COPY,
   CLIENT_CREATE_USER_GROUPS,
   CLIENT_CREATE_USER_GROUPS_GROUP,
@@ -5620,6 +5625,7 @@ typedef enum
   CLIENT_MODIFY_TASK_HOSTS_ORDERING,
   CLIENT_MODIFY_TASK_SCANNER,
   CLIENT_MODIFY_USER,
+  CLIENT_MODIFY_USER_COMMENT,
   CLIENT_MODIFY_USER_GROUPS,
   CLIENT_MODIFY_USER_GROUPS_GROUP,
   CLIENT_MODIFY_USER_HOSTS,
@@ -8802,7 +8808,9 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         ELSE_ERROR ("modify_task");
 
       case CLIENT_MODIFY_USER:
-        if (strcasecmp ("GROUPS", element_name) == 0)
+        if (strcasecmp ("COMMENT", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_USER_COMMENT);
+        else if (strcasecmp ("GROUPS", element_name) == 0)
           {
             if (modify_user_data->groups)
               array_free (modify_user_data->groups);
@@ -10121,7 +10129,9 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         ELSE_ERROR_CREATE_TASK ();
 
       case CLIENT_CREATE_USER:
-        if (strcasecmp ("COPY", element_name) == 0)
+        if (strcasecmp ("COMMENT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_USER_COMMENT);
+        else if (strcasecmp ("COPY", element_name) == 0)
           set_client_state (CLIENT_CREATE_USER_COPY);
         else if (strcasecmp ("GROUPS", element_name) == 0)
           set_client_state (CLIENT_CREATE_USER_GROUPS);
@@ -25591,7 +25601,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           else
             switch (create_user
                      (create_user_data->name,
-                      create_user_data->password ? create_user_data->password : "",
+                      create_user_data->password
+                        ? create_user_data->password : "",
+                      create_user_data->comment
+                        ? create_user_data->comment : "",
                       create_user_data->hosts,
                       create_user_data->hosts_allow,
                       create_user_data->ifaces,
@@ -25674,6 +25687,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           g_free (errdesc);
           break;
         }
+      CLOSE (CLIENT_CREATE_USER, COMMENT);
       CLOSE (CLIENT_CREATE_USER, COPY);
       CLOSE (CLIENT_CREATE_USER, GROUPS);
       CLOSE (CLIENT_CREATE_USER_GROUPS, GROUP);
@@ -28280,6 +28294,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                          ? modify_user_data->password
                          /* Leave the password as it is. */
                          : NULL),
+                       modify_user_data->comment,
                        modify_user_data->hosts,
                        modify_user_data->hosts_allow,
                        modify_user_data->ifaces,
@@ -28378,6 +28393,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
+      CLOSE (CLIENT_MODIFY_USER, COMMENT);
       CLOSE (CLIENT_MODIFY_USER, GROUPS);
       CLOSE (CLIENT_MODIFY_USER_GROUPS, GROUP);
       CLOSE (CLIENT_MODIFY_USER, HOSTS);
@@ -29477,6 +29493,8 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_VALUE,
               &modify_task_data->preference->value);
 
+      APPEND (CLIENT_MODIFY_USER_COMMENT,
+              &modify_user_data->comment);
 
       APPEND (CLIENT_MODIFY_USER_HOSTS,
               &modify_user_data->hosts);
@@ -30103,6 +30121,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_TASK_SCHEDULE_PERIODS,
               &create_task_data->schedule_periods);
 
+
+      APPEND (CLIENT_CREATE_USER_COMMENT,
+              &create_user_data->comment);
 
       APPEND (CLIENT_CREATE_USER_COPY,
               &create_user_data->copy);

@@ -5867,6 +5867,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>
       <e>name</e>
       <o><e>copy</e></o>
+      <o><e>comment</e></o>
       <o><e>hosts</e></o>
       <o><e>ifaces</e></o>
       <o><e>password</e></o>
@@ -5883,6 +5884,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <pattern>
         <t>uuid</t>
       </pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>Comment for the user</summary>
+      <pattern>text</pattern>
     </ele>
     <ele>
       <name>hosts</name>
@@ -24565,6 +24571,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </attrib>
       <e>name</e>
       <o><e>new_name</e></o>
+      <o><e>comment</e></o>
       <o><e>password</e></o>
       <any><e>role</e></any>
       <o><e>hosts</e></o>
@@ -24579,6 +24586,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <ele>
       <name>new_name</name>
       <summary>The new name for the user</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>Comment for the user</summary>
       <pattern>text</pattern>
     </ele>
     <ele>
