@@ -289,7 +289,7 @@ find_the_key (lsc_crypt_ctx_t ctx, gboolean no_create)
 
   if (err)
     {
-      char * path = g_build_filename (GVM_STATE_DIR, "openvasmd", "gnupg", NULL);
+      char * path = g_build_filename (GVMD_STATE_DIR, "gnupg", NULL);
 
       /* We better reset the gpgme context after an error.  */
       gpgme_release (ctx->encctx);
@@ -509,7 +509,7 @@ do_decrypt (lsc_crypt_ctx_t ctx, const char *cipherstring,
 lsc_crypt_ctx_t
 lsc_crypt_new ()
 {
-  char * path = g_build_filename (GVM_STATE_DIR, "openvasmd", "gnupg", NULL);
+  char * path = g_build_filename (GVMD_STATE_DIR, "gnupg", NULL);
   lsc_crypt_ctx_t ctx;
 
   ctx = g_malloc0 (sizeof *ctx);

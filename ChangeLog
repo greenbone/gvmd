@@ -1,3 +1,7 @@
+2017-07-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/lsc_crypt.c (find_the_key, lsc_crypt_new): Use GVMD_STATE_DIR.
+
 2017-07-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Allow setting comments in the commands create_user and modify_user.
