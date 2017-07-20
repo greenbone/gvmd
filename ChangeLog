@@ -1,3 +1,12 @@
+2017-07-20  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* doc/8.xml: Refrence gvm-cli rather than omp.
+
+	* doc/gvmd.8, doc/gvmd.html: Updated from the above.
+
+	* doc/report-format-HOWTO: Replace omp-based example by one based
+	on gvm-cli.
+
 2017-07-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/lsc_crypt.c (find_the_key, lsc_crypt_new): Use GVMD_STATE_DIR.

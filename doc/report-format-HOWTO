@@ -46,13 +46,14 @@ To create a new report format
   - Test the generate script
 
       - Get a GMP report (download the report with the GSA or do a GET_REPORTS
-        request with some other client like the omp command, and extract the
+        request with some other client like the gvm-cli command, and extract the
         innermost REPORT element).
 
         A command like
 
-            omp -R REPORT_ID | xmlstarlet sel -t -m /report -c report
-
+            gvm-cli socket --xml '<get_reports id="8cc0fbab-2227-456b-8fad-665daa22c7da"/>' | \
+              xmlstarlet sel -t -m /get_reports_response/report -c report
+            
         will do the trick.
 
       - Run the command
