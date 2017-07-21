@@ -11666,7 +11666,7 @@
 
 	* src/manage.h: Add headers accordingly.
 
-2014-01-22  Hani Benhabiles <hani.benhabiles@greenbone.net>
+2015-01-22  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (osp_get_details_from_iterator): Also get the scanner
 	details.
@@ -11676,13 +11676,13 @@
 	* src/omp.c (omp_xml_handle_end_element): In GET_SCANNERS, send the osp
 	scanner's parameters too.
 
-2014-01-22  Hani Benhabiles <hani.benhabiles@greenbone.net>
+2015-01-22  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (create_report): Adjust function call parameter.
 	(get_scanner_params, osp_get_details_from_iterator): Call
 	osp_get_scanner_details().
 
-2014-01-21  Hani Benhabiles <hani.benhabiles@greenbone.net>
+2015-01-21  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (parse_osp_report): Adjust to add single hosts values
 	from the report.
@@ -11729,7 +11729,7 @@
 	* src/manage_pg.c (manage_create_sql_functions): Use uuid instead of id
 	of current_credentials, because id is the ID of the row, not the user.
 
-2014-01-20  Hani Benhabiles <hani.benhabiles@greenbone.net>
+2015-01-20  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.h: Add new function prototype.
 
@@ -11746,7 +11746,7 @@
 
 	* src/manage_pg.c (manage_create_sql_functions): Flesh out "user_owns".
 
-2014-01-19  Hani Benhabiles <hani.benhabiles@greenbone.net>
+2015-01-19  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.h: Add new function prototype.
 
@@ -11756,7 +11756,7 @@
 	* src/omp.c (omp_xml_handle_end_element): Refactor code to use new
 	function.
 
-2014-01-19  Hani Benhabiles <hani.benhabiles@greenbone.net>
+2015-01-19  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (find_report_format, ovaldef_description, find_user):
 	Remove unused functions.
@@ -11791,18 +11791,18 @@
 
 	* src/manage.c (get_nvti_xml): Correct typo.
 
-2014-01-15  Hani Benhabiles <hani.benhabiles@greenbone.net>
+2015-01-15  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.h: Add function prototype.
 
 	* src/omp.c (omp_xml_handle_end_element): In GET_SCANNERS case, send
 	scanner version info when scanner type is OSP.
 
-2014-01-15  Hani Benhabiles <hani.benhabiles@greenbone.net>
+2015-01-15  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (verify_scanner): Adjust function call.
 
-2014-01-14  Hani Benhabiles <hani.benhabiles@greenbone.net>
+2015-01-14  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (parse_osp_report): Parse the result's test_id and handle
 	values accordingly.
@@ -11856,7 +11856,7 @@
 
 	* doc/omp.html, doc/omp.rnc: Update from source.
 
-2014-01-12  Hani Benhabiles <hani.benhabiles@greenbone.net>
+2015-01-12  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (parse_osp_report): Adjust to handle host detail results.
 
@@ -11867,7 +11867,7 @@
 	* src/manage_sql.c (escalate_2): Find report format with permissions, as
 	it may be owned by someone else.
 
-2014-01-12  Hani Benhabiles <hani.benhabiles@greenbone.net>
+2015-01-12  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (insert_report_host_detail): New function.
 	(create_report, manage_report_host_details): Refactor code to use
@@ -11931,7 +11931,7 @@
 
 	* src/openvasmd.c (option_entries): Update list of optimize choices.
 
-2014-01-09  Hani Benhabiles <hani.benhabiles@greenbone.net>
+2015-01-09  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (manage_restore): Fix sql statements.
 
@@ -11981,7 +11981,7 @@
 
 	* src/openvasmd.c (option_entries): Update list of optimize choices.
 
-2014-01-08  Hani Benhabiles <hani.benhabiles@greenbone.net>
+2015-01-08  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (make_osp_result): Quote the result's name before
 	insertion.
@@ -12038,12 +12038,12 @@
 
 	* doc/db.png: Update for version change.
 
-2014-01-05  Hani Benhabiles <hani.benhabiles@greenbone.net>
+2015-01-05  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (init_asset_iterator): Fix sql statements by using
 	WHERE instead correctly.
 
-2014-01-05  Hani Benhabiles <hani.benhabiles@greenbone.net>
+2015-01-05  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (fork_osp_scan_handler): Handle and set received progress
 	value accordingly.
