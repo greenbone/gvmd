@@ -1,5 +1,11 @@
 2017-07-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/gvm-migrate-to-postgres.in (copy_data): Exclude auth_cache.
+	(migrate_145_to_146, TABLES_146): Remove auth_cache, as it may not be
+	present in all dbs, because it was part of a backport.
+
+2017-07-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_migrators.c (migrate_154_to_155): Adjust alert methods for
 	ALERT_METHOD_START_TASK, which was added in the middle of the
 	alert_method_t enumeration.
