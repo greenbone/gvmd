@@ -1,3 +1,11 @@
+2017-07-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r29178.
+
+	* tools/gvm-migrate-to-postgres.in (copy_data): Exclude auth_cache.
+	(migrate_145_to_146, TABLES_146): Remove auth_cache, as it may not be
+	present in all dbs, because it was part of a backport.
+
 2017-07-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r29072.

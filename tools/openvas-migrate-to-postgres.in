@@ -1135,7 +1135,7 @@ copy_data () {
   test_sql_exit "Failed get table list"
   log_debug "SQLITE_TABLES: $SQLITE_TABLES"
 
-  echo $SQLITE_TABLES | tr -s ' ' '\n' | sort - | grep --invert-match "^\(nvt_cves\|nvts\|report_counts\)" > $TEMP_DIR/sqlite_tables_sorted
+  echo $SQLITE_TABLES | tr -s ' ' '\n' | sort - | grep --invert-match "^\(nvt_cves\|nvts\|report_counts\|auth_cache\)" > $TEMP_DIR/sqlite_tables_sorted
   echo $TABLES | tr -s ' ' '\n' | sort - | diff - $TEMP_DIR/sqlite_tables_sorted
   if [ $? -ne 0 ]
   then
@@ -1282,16 +1282,9 @@ TABLES_145=$TABLES_144
 migrate_145_to_146 () {
   pg "DROP VIEW IF EXISTS result_new_severities;"
   pg "DROP VIEW IF EXISTS result_overrides;"
-
-  pg "CREATE TABLE IF NOT EXISTS auth_cache                 \
-       (id SERIAL PRIMARY KEY,                              \
-        username text NOT NULL,                             \
-        hash text,                                          \
-        method integer,                                     \
-        creation_time integer);"
 }
 
-TABLES_146="$TABLES_145 auth_cache"
+TABLES_146=$TABLES_145
 
 migrate_146_to_147 () {
   pg "ALTER TABLE report_counts ADD COLUMN min_qod INTEGER;"
