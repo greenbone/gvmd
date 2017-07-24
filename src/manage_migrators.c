@@ -10561,6 +10561,12 @@ migrate_154_to_155 ()
 
   /* Update the database. */
 
+  /* r23581 added ALERT_METHOD_START_TASK in the middle of alert_method_t,
+   * instead of at the end.  Adjust alerts accordingly.  r23581 was released
+   * first with 6.1+beta2 which had db version 155, so it's safe to do this
+   * adjustment to any database that is older than 155. */
+  sql ("UPDATE alerts SET method = method + 1 WHERE method >= 4;");
+
   /* Reports got a new column "flags". */
   sql ("ALTER TABLE reports ADD COLUMN flags INTEGER;");
   sql ("UPDATE reports SET flags = 0;");
