@@ -1,3 +1,9 @@
+2017-07-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_migrators.c (migrate_154_to_155): Adjust alert methods for
+	ALERT_METHOD_START_TASK, which was added in the middle of the
+	alert_method_t enumeration.
+
 2017-07-20  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* doc/8.xml: Refrence gvm-cli rather than omp.
