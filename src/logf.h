@@ -40,7 +40,7 @@
 /**
  * @brief Logging flag.
  *
- * All data transfered to and from the client is logged to a file.  If 0 then
+ * All data transferred to and from the client is logged to a file.  If 0 then
  * logging is turned off.
  */
 #define LOG 0
