@@ -1,5 +1,10 @@
 2017-07-25  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	* src/wizards/modify_task.xml, src/wizards/quick_task.xml: Fix typo in
+	comments.
+
+2017-07-25  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	* src/logf.h: Fix typo in comment.
 
 2017-07-24  Matthew Mundell <matthew.mundell@greenbone.net>

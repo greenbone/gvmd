@@ -37,7 +37,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <regex>^[-_[:alnum:], \\./]{1,80}$</regex>
     </param>
 
-    <!-- Email adress for alert -->
+    <!-- Email address for alert -->
     <param>
       <optional>1</optional>
       <name>alert_email</name>
