@@ -1,5 +1,9 @@
 2017-07-25  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	* src/report_formats/NBE/generate: Fix typo in description.
+
+2017-07-25  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	* src/wizards/modify_task.xml, src/wizards/quick_task.xml: Fix typo in
 	comments.
 

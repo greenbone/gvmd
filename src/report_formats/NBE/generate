@@ -5,7 +5,7 @@
 # Description: Report generator script: NBE.
 #
 # This report generator creates the old Nessus NBE
-# format for reports. The XML report is tranformed
+# format for reports. The XML report is transformed
 # via a XSL script into the line-oriented CSV
 # format called NBE.
 #
