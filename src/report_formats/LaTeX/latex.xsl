@@ -294,14 +294,14 @@ TODOS: Solve Whitespace/Indentation problem of this file.
             </xsl:choose>
           </xsl:when>
           <xsl:when test="string-length($before_backslash) &gt; 0">
-            <!-- Only \ is occuring -->
+            <!-- Only \ is occurring -->
             <xsl:value-of select="concat(substring-before($string, '\'),'$\backslash$')"/>
             <xsl:call-template name="latex-replace-backslash-dollar">
               <xsl:with-param name="string" select="substring-after($string, '\')"/>
             </xsl:call-template>
           </xsl:when>
           <xsl:otherwise>
-            <!-- Only $ is occuring -->
+            <!-- Only $ is occurring -->
             <xsl:value-of select="concat(substring-before($string, '$'),'\$')"/>
             <xsl:call-template name="latex-replace-backslash-dollar">
               <xsl:with-param name="string" select="substring-after($string, '$')"/>
@@ -310,7 +310,7 @@ TODOS: Solve Whitespace/Indentation problem of this file.
         </xsl:choose>
       </xsl:when>
       <xsl:otherwise>
-        <!-- Neither $ nor \ occuring. -->
+        <!-- Neither $ nor \ occurring. -->
         <xsl:value-of select="$string"/>
       </xsl:otherwise>
     </xsl:choose>

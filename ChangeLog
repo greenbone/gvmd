@@ -1,5 +1,9 @@
 2017-07-25  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	* src/report_formats/LaTeX/latex.xsl: Fix typo in comments.
+
+2017-07-25  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	* src/report_formats/NBE/generate: Fix typo in description.
 
 2017-07-25  Michael Wiegand <michael.wiegand@greenbone.net>
