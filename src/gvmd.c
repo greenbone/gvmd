@@ -1603,6 +1603,7 @@ main (int argc, char** argv)
   static gchar *listen_mode = NULL;
   static gchar *new_password = NULL;
   static gchar *optimize = NULL;
+  static gchar *password = NULL;
   static gchar *manager_address_string = NULL;
   static gchar *manager_address_string_2 = NULL;
   static gchar *manager_address_string_unix = NULL;
@@ -1681,6 +1682,7 @@ main (int argc, char** argv)
           &decrypt_all_credentials, NULL, NULL },
         { "new-password", '\0', 0, G_OPTION_ARG_STRING, &new_password, "Modify user's password and exit.", "<password>" },
         { "optimize", '\0', 0, G_OPTION_ARG_STRING, &optimize, "Run an optimization: vacuum, analyze, cleanup-config-prefs, remove-open-port-results, cleanup-port-names, cleanup-result-severities, cleanup-schedule-times, rebuild-report-cache or update-report-cache.", "<name>" },
+        { "password", '\0', 0, G_OPTION_ARG_STRING, &password, "Password, for --create-user.", "<password>" },
         { "port", 'p', 0, G_OPTION_ARG_STRING, &manager_port_string, "Use port number <number>.", "<number>" },
         { "port2", '\0', 0, G_OPTION_ARG_STRING, &manager_port_string_2, "Use port number <number> for address 2.", "<number>" },
         { "progress", '\0', 0, G_OPTION_ARG_NONE, &progress, "Display progress during --rebuild and --update.", NULL },
@@ -1970,7 +1972,7 @@ main (int argc, char** argv)
 
       proctitle_set ("gvmd: Creating user");
 
-      ret = manage_create_user (log_config, database, create_user, role);
+      ret = manage_create_user (log_config, database, create_user, password, role);
       log_config_free ();
       if (ret)
         return EXIT_FAILURE;

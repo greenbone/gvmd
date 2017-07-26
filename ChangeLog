@@ -1,3 +1,13 @@
+2017-07-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add --password, for --create-user.
+
+	* src/gvmd.c (main): Add --password, pass to manage_create_user.
+
+	* src/manage_sql.c (manage_create_user): Add password.
+
+	* src/manage.h: Update header accordingly.
+
 2017-07-25  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/report_formats/LaTeX/latex.xsl: Fix typo in comments.
