@@ -3801,7 +3801,8 @@ gboolean
 find_user_by_name_with_permission (const char *, user_t *, const char *);
 
 int
-manage_create_user (GSList *, const gchar *, const gchar *, const gchar *);
+manage_create_user (GSList *, const gchar *, const gchar *, const gchar *,
+                    const gchar *);
 
 int
 manage_delete_user (GSList *, const gchar *, const gchar *, const gchar *);

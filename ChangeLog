@@ -1,3 +1,15 @@
+2017-07-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r29211.
+
+	Add --password, for --create-user.
+
+	* src/openvasmd.c (main): Add --password, pass to manage_create_user.
+
+	* src/manage_sql.c (manage_create_user): Add password.
+
+	* src/manage.h: Update header accordingly.
+
 2017-07-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r29177.
