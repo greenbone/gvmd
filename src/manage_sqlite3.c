@@ -99,9 +99,6 @@ resource_name (const char *, const char *, int, gchar **);
 int
 resource_exists (const char *, resource_t, int);
 
-int
-parse_time (const gchar *, int *);
-
 gchar *
 tag_value (const gchar *tags, const gchar *tag);
 

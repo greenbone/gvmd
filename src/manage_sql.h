@@ -354,6 +354,8 @@ typedef struct
 
 extern gchar *task_db_name;
 
+void (*progress) ();
+
 
 /* Function prototypes */
 
@@ -523,5 +525,17 @@ manage_option_setup (GSList *, const gchar *);
 
 void
 manage_option_cleanup ();
+
+int
+nvt_selector_families_growing (const char *);
+
+int
+nvt_selector_nvts_growing_2 (const char*, int);
+
+void
+update_all_config_caches ();
+
+void
+event (task_t, report_t, event_t, void *);
 
 #endif /* not _GVMD_MANAGE_SQL_H */

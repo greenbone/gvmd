@@ -36,6 +36,7 @@
 
 #include "manage_sql.h"
 #include "manage_sql_secinfo.h"
+#include "manage_sql_nvts.h"
 #include "manage_acl.h"
 #include "lsc_user.h"
 #include "sql.h"
@@ -184,23 +185,11 @@ check_config_system_discovery (const char *);
 static void
 nvt_selector_add (const char*, const char*, const char*, int);
 
-static int
-nvt_selector_families_growing (const char*);
-
-static int
-nvt_selector_nvts_growing_2 (const char*, int);
-
 static void
 nvt_selector_remove_selector (const char*, const char*, int);
 
 static void
 update_config_caches (config_t);
-
-static void
-update_all_config_caches ();
-
-static gchar*
-select_config_nvts (config_t, const char*, int, const char*);
 
 int
 family_count ();
@@ -297,9 +286,6 @@ static int
 create_permission_internal (const char *, const char *, const char *,
                             const char *, const char *, const char *,
                             permission_t *);
-
-static int
-check_config_families ();
 
 static int
 task_second_last_report (task_t, report_t *);
@@ -1047,111 +1033,6 @@ tag_value (const gchar *tags, const gchar *tag)
     }
   g_strfreev (split);
   return g_strdup ("");
-}
-
-/**
- * @brief Try convert an OTP NVT tag time string into epoch time.
- *
- * @param[in]   string   String.
- * @param[out]  seconds  Time as seconds since the epoch.
- *
- * @return -1 failed to parse time, -2 failed to make time, -3 failed to parse
- *         timezone offset, 0 success.
- */
-int
-parse_time (const gchar *string, int *seconds)
-{
-  int epoch_time, offset;
-  struct tm tm;
-
-  if ((strcmp ((char*) string, "") == 0)
-      || (strcmp ((char*) string, "$Date: $") == 0)
-      || (strcmp ((char*) string, "$Date$") == 0)
-      || (strcmp ((char*) string, "$Date:$") == 0)
-      || (strcmp ((char*) string, "$Date") == 0)
-      || (strcmp ((char*) string, "$$") == 0))
-    {
-      if (seconds)
-        *seconds = 0;
-      return 0;
-    }
-
-  /* Parse the time. */
-
-  /* 2011-08-09 08:20:34 +0200 (Tue, 09 Aug 2011) */
-  /* $Date: 2012-02-17 16:05:26 +0100 (Fr, 17. Feb 2012) $ */
-  /* $Date: Fri, 11 Nov 2011 14:42:28 +0100 $ */
-  memset (&tm, 0, sizeof (struct tm));
-  if (strptime ((char*) string, "%F %T %z", &tm) == NULL)
-    {
-      memset (&tm, 0, sizeof (struct tm));
-      if (strptime ((char*) string, "$Date: %F %T %z", &tm) == NULL)
-        {
-          memset (&tm, 0, sizeof (struct tm));
-          if (strptime ((char*) string, "%a %b %d %T %Y %z", &tm) == NULL)
-            {
-              memset (&tm, 0, sizeof (struct tm));
-              if (strptime ((char*) string, "$Date: %a, %d %b %Y %T %z", &tm)
-                  == NULL)
-                {
-                  memset (&tm, 0, sizeof (struct tm));
-                  if (strptime ((char*) string, "$Date: %a %b %d %T %Y %z", &tm)
-                      == NULL)
-                    {
-                      g_warning ("%s: Failed to parse time: %s",
-                                 __FUNCTION__, string);
-                      return -1;
-                    }
-                }
-            }
-        }
-    }
-  epoch_time = mktime (&tm);
-  if (epoch_time == -1)
-    {
-      g_warning ("%s: Failed to make time: %s", __FUNCTION__, string);
-      return -2;
-    }
-
-  /* Get the timezone offset from the string. */
-
-  if ((sscanf ((char*) string, "%*u-%*u-%*u %*u:%*u:%*u %d%*[^]]", &offset)
-               != 1)
-      && (sscanf ((char*) string, "$Date: %*u-%*u-%*u %*u:%*u:%*u %d%*[^]]",
-                  &offset)
-          != 1)
-      && (sscanf ((char*) string, "%*s %*s %*s %*u:%*u:%*u %*u %d%*[^]]",
-                  &offset)
-          != 1)
-      && (sscanf ((char*) string,
-                  "$Date: %*s %*s %*s %*u %*u:%*u:%*u %d%*[^]]",
-                  &offset)
-          != 1)
-      && (sscanf ((char*) string, "$Date: %*s %*s %*s %*u:%*u:%*u %*u %d%*[^]]",
-                  &offset)
-          != 1))
-    {
-      g_warning ("%s: Failed to parse timezone offset: %s", __FUNCTION__,
-                 string);
-      return -3;
-    }
-
-  /* Use the offset to convert to UTC. */
-
-  if (offset < 0)
-    {
-      epoch_time += ((-offset) / 100) * 60 * 60;
-      epoch_time += ((-offset) % 100) * 60;
-    }
-  else if (offset > 0)
-    {
-      epoch_time -= (offset / 100) * 60 * 60;
-      epoch_time -= (offset % 100) * 60;
-    }
-
-  if (seconds)
-    *seconds = epoch_time;
-  return 0;
 }
 
 /**
@@ -12119,7 +12000,7 @@ condition_met (task_t task, report_t report, alert_t alert,
  * @param[in]  event       Event.
  * @param[in]  event_data  Event type specific details.
  */
-static void
+void
 event (task_t task, report_t report, event_t event, void* event_data)
 {
   iterator_t alerts;
@@ -14179,53 +14060,6 @@ add_role_permission_resource (const gchar *role_id, const gchar *permission,
 }
 
 /**
- * @brief Refresh nvt_cves table.
- *
- * Caller must organise transaction.
- */
-void
-refresh_nvt_cves ()
-{
-  iterator_t nvts;
-
-  sql ("DELETE FROM nvt_cves;");
-
-  init_iterator (&nvts, "SELECT id, oid, cve FROM nvts;");
-  while (next (&nvts))
-    {
-      gchar **split, **point;
-
-      split = g_strsplit_set (iterator_string (&nvts, 2), " ,", 0);
-
-      point = split;
-      while (*point)
-        {
-          g_strstrip (*point);
-          if (strlen (*point))
-            {
-              gchar *quoted_cve, *quoted_oid;
-
-              quoted_cve = sql_insert (*point);
-              quoted_oid = sql_insert (iterator_string (&nvts, 1));
-              sql ("INSERT INTO nvt_cves (nvt, oid, cve_name)"
-                   " VALUES (%llu, %s, %s);",
-                   iterator_int64 (&nvts, 0),
-                   quoted_oid,
-                   quoted_cve);
-              g_free (quoted_cve);
-              g_free (quoted_oid);
-            }
-          point++;
-        }
-      g_strfreev (split);
-    }
-  cleanup_iterator (&nvts);
-
-  if (sql_is_sqlite3 ())
-    sql ("REINDEX nvt_cves_by_oid;");
-}
-
-/**
  * @brief Ensure that the databases are the right versions.
  *
  * @param[in]  nvt_cache_mode  True when running in NVT caching mode.
@@ -14341,23 +14175,10 @@ check_db_versions (int nvt_cache_mode)
  * @brief Ensures the sanity of nvts cache in DB.
  */
 static void
-check_db_nvts ()
+check_db_nvt_selectors ()
 {
-  /* Ensure the nvti cache update flag exists and is clear. */
-  if (sql_int ("SELECT count(*) FROM %s.meta"
-               " WHERE name = 'update_nvti_cache';",
-               sql_schema ()))
-    sql ("UPDATE %s.meta SET value = 0 WHERE name = 'update_nvti_cache';",
-         sql_schema ());
-  else
-    sql ("INSERT INTO %s.meta (name, value)"
-         " VALUES ('update_nvti_cache', 0);",
-         sql_schema ());
-
-  /*
-   * Ensure every part of the predefined selector exists.
-   * This restores entries lost due to the error solved 2010-08-13 by r8805.
-   */
+  /* Ensure every part of the predefined selector exists.
+   * This restores entries lost due to the error solved 2010-08-13 by r8805. */
   if (sql_int ("SELECT count(*) FROM nvt_selectors WHERE name ="
                " '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
                " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL) ";")
@@ -14450,9 +14271,6 @@ check_db_nvts ()
            /* OID of the "w3af (NASL wrapper)" NVT. */
            " '1.3.6.1.4.1.25623.1.0.80109', 'Web application abuses');");
     }
-  /* Ensure the NVT CVE table is filled. */
-  if (sql_int ("SELECT count (*) FROM nvt_cves;") == 0)
-    refresh_nvt_cves ();
 }
 
 /**
@@ -15417,6 +15235,7 @@ check_db (int check_encryption_key)
   if (progress)
     progress ();
   set_db_version (GVMD_DATABASE_VERSION);
+  check_db_nvt_selectors ();
   check_db_nvts ();
   check_db_configs ();
   check_db_port_lists ();
@@ -19798,7 +19617,7 @@ report_clear_count_cache (report_t report,
   gchar *extra_where = NULL;
   if (users_where)
     {
-      extra_where 
+      extra_where
         = g_strdup_printf (" AND \"user\" IN (SELECT id FROM users WHERE %s)",
                            users_where);
     }
@@ -36075,773 +35894,6 @@ DEF_ACCESS (config_timeout_iterator_nvt_name, 2);
  */
 DEF_ACCESS (config_timeout_iterator_value, 3);
 
-
-/* NVT's. */
-
-/**
- * @brief Get the name of an NVT.
- *
- * @param[in]  nvt  NVT.
- *
- * @return Freshly allocated name of NVT if possible, else NULL.
- */
-char *
-manage_nvt_name (nvt_t nvt)
-{
-  return sql_string ("SELECT name FROM nvts WHERE id = %llu;", nvt);
-}
-
-/**
- * @brief Guess the OID of an NVT given a name.
- *
- * @param[in]  name  Name of NVT.
- *
- * @return OID of NVT if possible, else NULL.
- */
-char *
-nvt_oid (const char *name)
-{
-  gchar *quoted_name = sql_quote (name);
-  char *ret = sql_string ("SELECT oid FROM nvts WHERE name = '%s' LIMIT 1;",
-                          quoted_name);
-  g_free (quoted_name);
-  return ret;
-}
-
-/**
- * @brief Return feed version of the plugins in the plugin cache.
- *
- * @return Feed version of plugins if the plugins are cached, else NULL.
- */
-char*
-nvts_feed_version ()
-{
-  return sql_string ("SELECT value FROM %s.meta"
-                     " WHERE name = 'nvts_feed_version';",
-                     sql_schema ());
-}
-
-/**
- * @brief Set the feed version of the plugins in the plugin cache.
- *
- * @param[in]  feed_version  New feed version.
- *
- * Also queue an update to the nvti cache.
- */
-void
-set_nvts_feed_version (const char *feed_version)
-{
-  gchar* quoted = sql_quote (feed_version);
-  sql ("DELETE FROM %s.meta WHERE name = 'nvts_feed_version';",
-       sql_schema ());
-  sql ("INSERT INTO %s.meta (name, value)"
-       " VALUES ('nvts_feed_version', '%s');",
-       sql_schema (),
-       quoted);
-  g_free (quoted);
-
-  sql ("UPDATE %s.meta SET value = 1 WHERE name = 'update_nvti_cache';",
-       sql_schema ());
-}
-
-/**
- * @brief Find an NVT given an identifier.
- *
- * @param[in]   oid  An NVT identifier.
- * @param[out]  nvt  NVT return, 0 if successfully failed to find task.
- *
- * @return FALSE on success (including if failed to find NVT), TRUE on error.
- */
-gboolean
-find_nvt (const char* oid, nvt_t* nvt)
-{
-  switch (sql_int64 (nvt,
-                     "SELECT id FROM nvts WHERE oid = '%s';",
-                     oid))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *nvt = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        return TRUE;
-        break;
-    }
-
-  return FALSE;
-}
-
-/**
- * @brief Counter for chunking in insert_nvts_list (--update).
- */
-int chunk_count = 0;
-
-/**
- * @brief Size of chunk for insert_nvts_list (--update).
- */
-#define CHUNK_SIZE 100
-
-/**
- * @brief Make an nvt from an nvti.
- *
- * @param[in]  nvti    NVTI.
- * @param[in]  remove  Whether to remove the NVT from the cache first.
- *
- * @return An NVT.
- */
-nvt_t
-make_nvt_from_nvti (const nvti_t *nvti, int remove)
-{
-  gchar *qod_str, *qod_type;
-  /** @todo Freeing string literals. */
-  gchar *quoted_version, *quoted_name;
-  gchar *quoted_copyright, *quoted_cve, *quoted_bid, *quoted_xref, *quoted_tag;
-  gchar *quoted_cvss_base, *quoted_qod_type, *quoted_family, *value;
-  gchar *quoted_solution_type;
-
-  int creation_time, modification_time, qod;
-
-  if (remove)
-    {
-      if (chunk_count == 0)
-        {
-          sql_begin_exclusive ();
-          chunk_count++;
-        }
-      else if (chunk_count == CHUNK_SIZE)
-        chunk_count = 0;
-      else
-        chunk_count++;
-      sql ("DELETE FROM nvt_cves where oid = '%s';", nvti_oid (nvti));
-      sql ("DELETE FROM nvts WHERE oid = '%s';", nvti_oid (nvti));
-    }
-
-  quoted_version = sql_quote (nvti_version (nvti));
-  quoted_name = sql_quote (nvti_name (nvti) ? nvti_name (nvti) : "");
-  quoted_copyright = sql_quote (nvti_copyright (nvti)
-                                ? nvti_copyright (nvti)
-                                : "");
-  quoted_cve = sql_quote (nvti_cve (nvti) ? nvti_cve (nvti) : "");
-  quoted_bid = sql_quote (nvti_bid (nvti) ? nvti_bid (nvti) : "");
-  quoted_xref = sql_quote (nvti_xref (nvti) ? nvti_xref (nvti) : "");
-  if (nvti_tag (nvti))
-    {
-      const char *tags;
-      gchar **split, **point;
-      GString *tag;
-
-      tags = nvti_tag (nvti);
-
-      /* creation_date=2009-04-09 14:18:58 +0200 (Thu, 09 Apr 2009)|... */
-
-      split = g_strsplit (tags, "|", 0);
-      point = split;
-
-      while (*point)
-        {
-          if (((strlen (*point) > strlen ("creation_date"))
-               && (strncmp (*point, "creation_date", strlen ("creation_date"))
-                   == 0)
-               && ((*point)[strlen ("creation_date")] == '='))
-              || ((strlen (*point) > strlen ("last_modification"))
-                  && (strncmp (*point, "last_modification",
-                               strlen ("last_modification"))
-                      == 0)
-                  && ((*point)[strlen ("last_modification")] == '=')))
-            {
-              gchar **move;
-              move = point;
-              g_free (*point);
-              while (*move)
-                {
-                  move[0] = move[1];
-                  move++;
-                }
-            }
-          else
-            point++;
-        }
-
-      point = split;
-      tag = g_string_new ("");
-      while (*point)
-        {
-          if (point[1])
-            g_string_append_printf (tag, "%s|", *point);
-          else
-            g_string_append_printf (tag, "%s", *point);
-          point++;
-        }
-      g_strfreev (split);
-
-      quoted_tag = sql_quote (tag->str);
-      g_string_free (tag, TRUE);
-    }
-  else
-    quoted_tag = g_strdup ("");
-  quoted_cvss_base = sql_quote (nvti_cvss_base (nvti)
-                                 ? nvti_cvss_base (nvti)
-                                 : "");
-
-  qod_str = tag_value (nvti_tag (nvti), "qod");
-  qod_type = tag_value (nvti_tag (nvti), "qod_type");
-
-  if (qod_str == NULL || sscanf (qod_str, "%d", &qod) != 1)
-    qod = qod_from_type (qod_type);
-
-  quoted_qod_type = sql_quote (qod_type ? qod_type : "");
-
-  g_free (qod_str);
-  g_free (qod_type);
-
-  quoted_family = sql_quote (nvti_family (nvti) ? nvti_family (nvti) : "");
-
-  value = tag_value (nvti_tag (nvti), "creation_date");
-  switch (parse_time (value, &creation_time))
-    {
-      case -1:
-        g_warning ("%s: Failed to parse creation time of %s: %s",
-                   __FUNCTION__, nvti_oid (nvti), value);
-        creation_time = 0;
-        break;
-      case -2:
-        g_warning ("%s: Failed to make time: %s", __FUNCTION__, value);
-        creation_time = 0;
-        break;
-      case -3:
-        g_warning ("%s: Failed to parse timezone offset: %s",
-                   __FUNCTION__,
-                   value);
-        creation_time = 0;
-        break;
-    }
-  g_free (value);
-
-  value = tag_value (nvti_tag (nvti), "last_modification");
-  switch (parse_time (value, &modification_time))
-    {
-      case -1:
-        g_warning ("%s: Failed to parse last_modification time of %s: %s",
-                   __FUNCTION__, nvti_oid (nvti), value);
-        modification_time = 0;
-        break;
-      case -2:
-        g_warning ("%s: Failed to make time: %s", __FUNCTION__, value);
-        modification_time = 0;
-        break;
-      case -3:
-        g_warning ("%s: Failed to parse timezone offset: %s",
-                   __FUNCTION__,
-                   value);
-        modification_time = 0;
-        break;
-    }
-  g_free (value);
-
-  value = tag_value (nvti_tag (nvti), "solution_type");
-  if (value)
-    {
-      quoted_solution_type = sql_quote (value);
-      g_free (value);
-    }
-  else
-    quoted_solution_type = g_strdup ("");
-
-  if (sql_int ("SELECT EXISTS (SELECT * FROM nvts WHERE oid = '%s');",
-               nvti_oid (nvti)))
-    g_warning ("%s: NVT with OID %s exists already, ignoring", __FUNCTION__,
-               nvti_oid (nvti));
-  else
-    sql ("INSERT into nvts (oid, version, name, copyright,"
-         " cve, bid, xref, tag, category, family, cvss_base,"
-         " creation_time, modification_time, uuid, solution_type,"
-         " qod, qod_type)"
-         " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s',"
-         " '%s', %i, '%s', '%s', %i, %i, '%s', '%s', %d, '%s');",
-         nvti_oid (nvti), quoted_version, quoted_name,
-         quoted_copyright, quoted_cve, quoted_bid, quoted_xref, quoted_tag,
-         nvti_category (nvti), quoted_family, quoted_cvss_base, creation_time,
-         modification_time, nvti_oid (nvti), quoted_solution_type,
-         qod, quoted_qod_type);
-
-  if (remove && (chunk_count == 0))
-    sql_commit ();
-
-  g_free (quoted_version);
-  g_free (quoted_name);
-  g_free (quoted_copyright);
-  g_free (quoted_cve);
-  g_free (quoted_bid);
-  g_free (quoted_xref);
-  g_free (quoted_tag);
-  g_free (quoted_cvss_base);
-  g_free (quoted_family);
-  g_free (quoted_solution_type);
-  g_free (quoted_qod_type);
-
-  return sql_last_insert_id ();
-}
-
-/**
- * @brief Filter columns for NVT info iterator.
- */
-#define NVT_INFO_ITERATOR_FILTER_COLUMNS                                    \
- { GET_ITERATOR_FILTER_COLUMNS, "version", "cve", "bid", "xref",            \
-   "family", "cvss_base", "severity", "cvss", "script_tags", "qod",         \
-   "qod_type", "solution_type", NULL }
-
-/**
- * @brief NVT iterator columns.
- */
-#define NVT_ITERATOR_COLUMNS                                                \
- {                                                                          \
-   GET_ITERATOR_COLUMNS_PREFIX (""),                                        \
-   { "''", "_owner", KEYWORD_TYPE_STRING },                                 \
-   { "0", NULL, KEYWORD_TYPE_INTEGER },                                     \
-   { "oid", NULL, KEYWORD_TYPE_STRING },                                    \
-   { "version", NULL, KEYWORD_TYPE_STRING },                                \
-   { "name", NULL, KEYWORD_TYPE_STRING },                                   \
-   { "copyright", NULL, KEYWORD_TYPE_STRING },                              \
-   { "cve", NULL, KEYWORD_TYPE_STRING },                                    \
-   { "bid", NULL, KEYWORD_TYPE_STRING },                                    \
-   { "xref", NULL, KEYWORD_TYPE_STRING },                                   \
-   { "tag", NULL, KEYWORD_TYPE_STRING },                                    \
-   { "category", NULL, KEYWORD_TYPE_STRING },                               \
-   { "family", NULL, KEYWORD_TYPE_STRING },                                 \
-   { "cvss_base", NULL, KEYWORD_TYPE_DOUBLE },                              \
-   { "cvss_base", "severity", KEYWORD_TYPE_DOUBLE },                        \
-   { "cvss_base", "cvss", KEYWORD_TYPE_DOUBLE },                            \
-   { "qod", NULL, KEYWORD_TYPE_INTEGER },                                   \
-   { "qod_type", NULL, KEYWORD_TYPE_STRING },                               \
-   { "solution_type", NULL, KEYWORD_TYPE_STRING },                          \
-   { "tag", "script_tags", KEYWORD_TYPE_STRING},                            \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                     \
- }
-
-/**
- * @brief NVT iterator columns.
- */
-#define NVT_ITERATOR_COLUMNS_NVTS                                           \
- {                                                                          \
-   GET_ITERATOR_COLUMNS_PREFIX ("nvts."),                                   \
-   { "''", "_owner", KEYWORD_TYPE_STRING },                                 \
-   { "0", NULL, KEYWORD_TYPE_STRING },                                      \
-   { "oid", NULL, KEYWORD_TYPE_STRING },                                    \
-   { "version", NULL, KEYWORD_TYPE_STRING },                                \
-   { "nvts.name", NULL, KEYWORD_TYPE_STRING },                              \
-   { "copyright", NULL, KEYWORD_TYPE_STRING },                              \
-   { "cve", NULL, KEYWORD_TYPE_STRING },                                    \
-   { "bid", NULL, KEYWORD_TYPE_STRING },                                    \
-   { "xref", NULL, KEYWORD_TYPE_STRING },                                   \
-   { "tag", NULL, KEYWORD_TYPE_STRING },                                    \
-   { "category", NULL, KEYWORD_TYPE_STRING },                               \
-   { "nvts.family", NULL, KEYWORD_TYPE_STRING },                            \
-   { "cvss_base", NULL, KEYWORD_TYPE_DOUBLE },                              \
-   { "cvss_base", "severity", KEYWORD_TYPE_DOUBLE },                        \
-   { "cvss_base", "cvss", KEYWORD_TYPE_DOUBLE },                            \
-   { "qod", NULL, KEYWORD_TYPE_INTEGER },                                   \
-   { "qod_type", NULL, KEYWORD_TYPE_STRING },                               \
-   { "solution_type", NULL, KEYWORD_TYPE_STRING },                          \
-   { "tag", "script_tags", KEYWORD_TYPE_STRING },                           \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                     \
- }
-
-/**
- * @brief Initialise an NVT iterator.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  get         GET data.
- * @param[in]  name        Name of the info
- *
- * @return 0 success, 1 failed to find NVT, 2 failed to find filter,
- *         -1 error.
- */
-int
-init_nvt_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
-{
-  static const char *filter_columns[] = NVT_INFO_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = NVT_ITERATOR_COLUMNS;
-  gchar *clause = NULL;
-  int ret;
-
-  if (get->id)
-    {
-      // FIX what for anyway?
-      gchar *quoted = sql_quote (get->id);
-      clause = g_strdup_printf (" AND uuid = '%s'", quoted);
-      g_free (quoted);
-    }
-  else if (name)
-    {
-      gchar *quoted = sql_quote (name);
-      clause = g_strdup_printf (" AND name = '%s'", quoted);
-      g_free (quoted);
-      /* The entry is specified by name, so filtering just gets in the way. */
-      g_free (get->filter);
-      get->filter = NULL;
-    }
-
-  ret = init_get_iterator (iterator,
-                           "nvt",
-                           get,
-                           /* Columns. */
-                           columns,
-                           /* Columns for trashcan. */
-                           NULL,
-                           filter_columns,
-                           0,
-                           NULL,
-                           clause,
-                           0);
-
-  g_free (clause);
-  return ret;
-}
-
-/**
- * @brief Get NVT iterator SELECT columns.
- *
- * @return SELECT columns
- */
-static gchar *
-nvt_iterator_columns ()
-{
-  static column_t select_columns[] = NVT_ITERATOR_COLUMNS;
-  static gchar *columns = NULL;
-  if (columns == NULL)
-    columns = columns_build_select (select_columns);
-  return columns;
-}
-
-/**
- * @brief Get NVT iterator SELECT columns.
- *
- * @return SELECT columns
- */
-static gchar *
-nvt_iterator_columns_nvts ()
-{
-  static column_t select_columns[] = NVT_ITERATOR_COLUMNS_NVTS;
-  static gchar *columns = NULL;
-  if (columns == NULL)
-    columns = columns_build_select (select_columns);
-  return columns;
-}
-
-/**
- * @brief Count number of nvt.
- *
- * @param[in]  get  GET params.
- *
- * @return Total number of cpes in filtered set.
- */
-int
-nvt_info_count (const get_data_t *get)
-{
-  static const char *extra_columns[] = NVT_INFO_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = NVT_ITERATOR_COLUMNS;
-  return count ("nvt", get, columns, NULL, extra_columns, 0, 0, 0,
-                FALSE);
-}
-
-/**
- * @brief Initialise an NVT iterator.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  nvt         NVT to iterate over, all if 0.
- * @param[in]  config      Config to limit selection to.  NULL for all NVTs.
- *                         Overridden by \arg nvt.
- * @param[in]  family      Family to limit selection to.  NULL for all NVTs.
- *                         Overridden by \arg config.
- * @param[in]  category    Category to limit selection to.  NULL for all.
- * @param[in]  ascending   Whether to sort ascending or descending.
- * @param[in]  sort_field  Field to sort on, or NULL for "id".
- */
-void
-init_nvt_iterator (iterator_t* iterator, nvt_t nvt, config_t config,
-                   const char* family, const char *category, int ascending,
-                   const char* sort_field)
-{
-  assert ((nvt && family) == 0);
-
-  if (nvt)
-    {
-      gchar* sql;
-      sql = g_strdup_printf ("SELECT %s"
-                             " FROM nvts WHERE id = %llu;",
-                             nvt_iterator_columns (),
-                             nvt);
-      init_iterator (iterator, sql);
-      g_free (sql);
-    }
-  else if (config)
-    {
-      gchar* sql;
-      if (family == NULL) abort ();
-      sql = select_config_nvts (config, family, ascending, sort_field);
-      if (sql)
-        {
-          init_iterator (iterator, sql);
-          g_free (sql);
-        }
-      else
-        init_iterator (iterator,
-                       "SELECT %s"
-                       " FROM nvts LIMIT 0;",
-                       nvt_iterator_columns ());
-    }
-  else if (family)
-    {
-      gchar *quoted_family = sql_quote (family);
-      init_iterator (iterator,
-                     "SELECT %s"
-                     " FROM nvts"
-                     " WHERE family = '%s'"
-                     " ORDER BY %s %s;",
-                     nvt_iterator_columns (),
-                     quoted_family,
-                     sort_field ? sort_field : "name",
-                     ascending ? "ASC" : "DESC");
-      g_free (quoted_family);
-    }
-  else if (category)
-    {
-      gchar *quoted_category;
-      quoted_category = sql_quote (category);
-      init_iterator (iterator,
-                     "SELECT %s"
-                     " FROM nvts"
-                     " WHERE category = '%s'"
-                     " ORDER BY %s %s;",
-                     nvt_iterator_columns (),
-                     quoted_category,
-                     sort_field ? sort_field : "name",
-                     ascending ? "ASC" : "DESC");
-      g_free (quoted_category);
-    }
-  else
-    init_iterator (iterator,
-                   "SELECT %s"
-                   " FROM nvts"
-                   " ORDER BY %s %s;",
-                   nvt_iterator_columns (),
-                   sort_field ? sort_field : "name",
-                   ascending ? "ASC" : "DESC");
-}
-
-/**
- * @brief Initialise an NVT iterator, for NVTs of a certain CVE.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  cve         CVE name.
- * @param[in]  ascending   Whether to sort ascending or descending.
- * @param[in]  sort_field  Field to sort on, or NULL for "id".
- */
-void
-init_cve_nvt_iterator (iterator_t* iterator, const char *cve, int ascending,
-                       const char* sort_field)
-{
-  init_iterator (iterator,
-                 "SELECT %s"
-                 " FROM nvts"
-                 " WHERE cve %s '%%%s%%'"
-                 " ORDER BY %s %s;",
-                 nvt_iterator_columns (),
-                 sql_ilike_op (),
-                 cve ? cve : "",
-                 sort_field ? sort_field : "name",
-                 ascending ? "ASC" : "DESC");
-}
-
-/**
- * @brief Get the OID from an NVT iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return OID, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (nvt_iterator_oid, GET_ITERATOR_COLUMN_COUNT);
-
-/**
- * @brief Get the version from an NVT iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Version, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (nvt_iterator_version, GET_ITERATOR_COLUMN_COUNT + 1);
-
-/**
- * @brief Get the name from an NVT iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Name, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (nvt_iterator_name, GET_ITERATOR_COLUMN_COUNT + 2);
-
-/**
- * @brief Get the copyright from an NVT iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Copyright, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (nvt_iterator_copyright, GET_ITERATOR_COLUMN_COUNT + 3);
-
-/**
- * @brief Get the cve from an NVT iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Cve, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (nvt_iterator_cve, GET_ITERATOR_COLUMN_COUNT + 4);
-
-/**
- * @brief Get the bid from an NVT iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Bid, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (nvt_iterator_bid, GET_ITERATOR_COLUMN_COUNT + 5);
-
-/**
- * @brief Get the xref from an NVT iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Xref, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (nvt_iterator_xref, GET_ITERATOR_COLUMN_COUNT + 6);
-
-/**
- * @brief Get the tag from an NVT iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Tag, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (nvt_iterator_tag, GET_ITERATOR_COLUMN_COUNT + 7);
-
-/**
- * @brief Get the category from an NVT iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Category.
- */
-int
-nvt_iterator_category (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
-  return ret;
-}
-
-/**
- * @brief Get the family from an NVT iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Family, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (nvt_iterator_family, GET_ITERATOR_COLUMN_COUNT + 9);
-
-/**
- * @brief Get the cvss_base from an NVT iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Cvss_base, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (nvt_iterator_cvss_base, GET_ITERATOR_COLUMN_COUNT + 10);
-
-/**
- * @brief Get the qod from an NVT iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return QoD, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (nvt_iterator_qod, GET_ITERATOR_COLUMN_COUNT + 13);
-
-/**
- * @brief Get the qod_type from an NVT iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return QoD type, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (nvt_iterator_qod_type, GET_ITERATOR_COLUMN_COUNT + 14);
-
-/**
- * @brief Get the solution_type from an NVT iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Solution type, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (nvt_iterator_solution_type, GET_ITERATOR_COLUMN_COUNT + 15);
-
-/**
- * @brief Get the number of NVTs in one or all families.
- *
- * @param[in]  family  Family name.  NULL for all families.
- *
- * @return Number of NVTs in family, or total number of nvts.
- */
-int
-family_nvt_count (const char *family)
-{
-  gchar *quoted_family;
-
-  if (family == NULL)
-    {
-      static int nvt_count = -1;
-      if (nvt_count == -1)
-        nvt_count = sql_int ("SELECT COUNT(*) FROM nvts"
-                             " WHERE family != 'Credentials';");
-      return nvt_count;
-    }
-
-  quoted_family = sql_quote (family);
-  int ret = sql_int ("SELECT COUNT(*) FROM nvts WHERE family = '%s';",
-                     quoted_family);
-  g_free (quoted_family);
-  return ret;
-}
-
-/**
- * @brief Get the number of families.
- *
- * @return Total number of families.
- */
-int
-family_count ()
-{
-  return sql_int ("SELECT COUNT(distinct family) FROM nvts"
-                  " WHERE family != 'Credentials';");
-}
-
 /**
  * @brief Update the cached count and growing information in a config.
  *
@@ -36903,7 +35955,7 @@ update_config_caches (config_t config)
  *
  * It's up to the caller to organise a transaction.
  */
-static void
+void
 update_all_config_caches ()
 {
   static column_t select_columns[] = CONFIG_ITERATOR_COLUMNS;
@@ -36945,92 +35997,8 @@ update_config_cache_init (const char *uuid)
   cleanup_iterator (&configs);
 }
 
-/**
- * @brief Insert an NVT from an nvti structure.
- *
- * @param[in] nvti          nvti_t to insert in nvts table.
- * @param[in] mode_pointer  Mode.  -1 updating, -2 rebuilding.
- *
- */
-static void
-insert_nvt_from_nvti (gpointer nvti, gpointer mode_pointer)
-{
-  int mode;
-
-  if (nvti == NULL)
-    return;
-
-  if (progress)
-    progress ();
-
-  mode = GPOINTER_TO_INT (mode_pointer);
-
-  make_nvt_from_nvti (nvti, mode == -1);
-}
-
-/**
- * @brief Insert a NVT preferences.
- *
- * @param[in] nvt_preference  Preference.
- * @param[in] mode_pointer    Mode.  -1 updating, -2 rebuilding.
- *
- */
-static void
-insert_nvt_preference (gpointer nvt_preference, gpointer mode_pointer)
-{
-  int mode;
-  preference_t *preference;
-
-  if (nvt_preference == NULL)
-    return;
-
-  if (progress)
-    progress ();
-
-  mode = GPOINTER_TO_INT (mode_pointer);
-  preference = (preference_t*) nvt_preference;
-  manage_nvt_preference_add (preference->name, preference->value, mode == -1);
-}
-
-/**
- * @brief Inserts NVTs in DB from a list of nvti_t structures.
- *
- * @param[in]  nvts_list     List of nvts to be inserted.
- * @param[in]  mode          -1 updating, -2 rebuilding.
- */
-static void
-insert_nvts_list (GList *nvts_list, int mode)
-{
-  chunk_count = 0;
-  g_list_foreach (nvts_list, insert_nvt_from_nvti, GINT_TO_POINTER (mode));
-  if ((mode == -1) && (chunk_count > 0))
-    sql_commit ();
-}
-
-/**
- * @brief Inserts NVT preferences in DB from a list of nvt_preference_t structures.
- *
- * @param[in]  nvt_preferences_list     List of nvts to be inserted.
- * @param[in]  mode                     -1 updating, -2 rebuilding.
- */
-static void
-insert_nvt_preferences_list (GList *nvt_preferences_list, int mode)
-{
-  g_list_foreach (nvt_preferences_list, insert_nvt_preference,
-                  GINT_TO_POINTER (mode));
-}
-
-/**
- * @brief Check for new NVTs after an update.
- */
-static void
-check_for_new_nvts ()
-{
-  if (sql_int ("SELECT EXISTS"
-               " (SELECT * FROM nvts"
-               "  WHERE oid NOT IN (SELECT oid FROM old_nvts));"))
-    event (0, 0, EVENT_NEW_SECINFO, "nvt");
-}
+
+/* FIX From old NVTs section. */
 
 /**
  * @brief Check for new SCAP SecInfo after an update.
@@ -37186,6 +36154,7 @@ new_nvts_list (event_t event, const void* event_data, alert_t alert,
     buffer = g_string_new (NEW_NVTS_HEADER_OID);
 
   count = 0;
+  // FIX this should use an iterator provided by manage_sql_nvts.c
   if (example)
     init_iterator (&rows,
                    "SELECT oid, name, solution_type, cvss_base, qod FROM nvts"
@@ -37787,20 +36756,6 @@ new_secinfo_message (event_t event, const void* event_data, alert_t alert)
 }
 
 /**
- * @brief Check for updated NVTS after an update.
- */
-static void
-check_for_updated_nvts ()
-{
-  if (sql_int ("SELECT EXISTS"
-               " (SELECT * FROM nvts"
-               "  WHERE modification_time > (SELECT modification_time"
-               "                             FROM old_nvts"
-               "                             WHERE old_nvts.oid = nvts.oid));"))
-    event (0, 0, EVENT_UPDATED_SECINFO, "nvt");
-}
-
-/**
  * @brief Check for updated SCAP SecInfo after an update.
  */
 static void
@@ -37898,102 +36853,6 @@ check_for_updated_cert ()
                    "                   0));"))
         event (0, 0, EVENT_UPDATED_SECINFO, "dfn_cert_adv");
     }
-}
-
-/**
- * @brief Complete an update of the NVT cache.
- *
- * @param[in]  nvts_list             List of nvti_t to insert.
- * @param[in]  nvt_preferences_list  List of preference_t to insert.
- * @param[in]  mode                  -1 updating, -2 rebuilding.
- */
-void
-manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list,
-                                  int mode)
-{
-  iterator_t configs;
-  int count;
-
-  if (mode == -2)
-    {
-      sql_begin_exclusive ();
-      if (sql_is_sqlite3 ())
-        {
-          sql ("DELETE FROM nvt_cves;");
-          sql ("DELETE FROM nvts;");
-          sql ("DELETE FROM nvt_preferences;");
-        }
-      else
-        {
-          sql ("TRUNCATE nvts CASCADE;");
-          sql ("TRUNCATE nvt_preferences;");
-        }
-      if (progress)
-        progress ();
-    }
-
-  /* NVTs and preferences are buffered, insert them into DB. */
-  insert_nvts_list (nvts_list, mode);
-  insert_nvt_preferences_list (nvt_preferences_list, mode);
-
-  /* Remove preferences from configs where the preference has vanished from
-   * the associated NVT. */
-  if (progress)
-    progress ();
-  init_iterator (&configs, "SELECT id FROM configs;");
-  while (next (&configs))
-    sql ("DELETE FROM config_preferences"
-         " WHERE config = %llu"
-         " AND type = 'PLUGINS_PREFS'"
-         " AND name NOT IN (SELECT nvt_preferences.name FROM nvt_preferences);",
-         get_iterator_resource (&configs));
-  cleanup_iterator (&configs);
-
-  if (progress)
-    progress ();
-  if (check_config_families ())
-    g_warning ("%s: Error updating config families."
-               "  One or more configs refer to an outdated family of an NVT.",
-               __FUNCTION__);
-  if (progress)
-    progress ();
-  update_all_config_caches ();
-  if (progress)
-    progress ();
-
-  if (mode == -1)
-    sql_begin_exclusive ();
-  refresh_nvt_cves ();
-  if (mode == -1)
-    sql_commit ();
-
-  if (sql_int ("SELECT NOT EXISTS (SELECT * FROM meta"
-               "                   WHERE name = 'nvts_check_time')"))
-    sql ("INSERT INTO meta (name, value)"
-         " VALUES ('nvts_check_time', m_now ());");
-  else if (sql_int ("SELECT value = '0' FROM meta"
-                    " WHERE name = 'nvts_check_time';"))
-    sql ("UPDATE meta SET value = m_now ()"
-         " WHERE name = 'nvts_check_time';");
-  else
-    {
-      check_for_new_nvts ();
-      check_for_updated_nvts ();
-      sql ("UPDATE meta SET value = m_now ()"
-           " WHERE name = 'nvts_check_time';");
-    }
-
-  if (mode == -2)
-    sql_commit ();
-
-  count = sql_int ("SELECT count (*) FROM nvts;");
-  if (mode == -2)
-    g_info ("Rebuilding NVT cache... done (%i NVTs).", count);
-  else
-    g_info ("Updating NVT cache... done (%i NVTs).", count);
-
-  if (progress)
-    progress ();
 }
 
 
@@ -38107,7 +36966,7 @@ nvt_selector_family_count (const char* quoted_selector, int families_growing)
  *
  * @return 1 growing, 0 static.
  */
-static int
+int
 nvt_selector_families_growing (const char* selector)
 {
   /** @todo Quote selector. */
@@ -38142,7 +37001,7 @@ nvt_selector_families_growing (const char* selector)
  *
  * @return 1 growing, 0 static.
  */
-static int
+int
 nvt_selector_nvts_growing_2 (const char* quoted_selector, int families_growing)
 {
   if (families_growing)
@@ -38490,206 +37349,6 @@ nvt_selector_nvt_count (const char *selector,
 
      return count;
    }
-}
-
-/**
- * @brief Return SQL for selecting NVT's of a config from one family.
- *
- * @param[in]  config      Config.
- * @param[in]  family      Family to limit selection to.
- * @param[in]  ascending   Whether to sort ascending or descending.
- * @param[in]  sort_field  Field to sort on, or NULL for "nvts.id".
- *
- * @return Freshly allocated SELECT statement on success, or NULL on error.
- */
-static gchar*
-select_config_nvts (const config_t config, const char* family, int ascending,
-                    const char* sort_field)
-{
-  gchar *quoted_selector;
-  char *selector = config_nvt_selector (config);
-  if (selector == NULL)
-    /* The config should always have a selector. */
-    return NULL;
-
-  /** @todo Free. */
-  quoted_selector = sql_quote (selector);
-  free (selector);
-
-  /** @todo Quote family. */
-
-  if (config_nvts_growing (config))
-    {
-      int constraining;
-
-      /* The number of NVT's can increase. */
-
-      constraining = config_families_growing (config);
-
-      if (constraining)
-        {
-          /* Constraining the universe. */
-
-          if (sql_int ("SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s';",
-                       quoted_selector)
-              == 1)
-            /* There is one selector, it should be the all selector. */
-            return g_strdup_printf
-                    ("SELECT %s"
-                     " FROM nvts WHERE family = '%s'"
-                     " ORDER BY %s %s;",
-                     nvt_iterator_columns (),
-                     family,
-                     sort_field ? sort_field : "name",
-                     ascending ? "ASC" : "DESC");
-
-          /* There are multiple selectors. */
-
-          if (sql_int ("SELECT COUNT(*) FROM nvt_selectors"
-                       " WHERE name = '%s' AND exclude = 1"
-                       " AND type = "
-                       G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
-                       " AND family_or_nvt = '%s'"
-                       ";",
-                       quoted_selector,
-                       family))
-            /* The family is excluded, just iterate the NVT includes. */
-            return g_strdup_printf
-                    ("SELECT %s"
-                     " FROM nvts, nvt_selectors"
-                     " WHERE"
-                     " nvts.family = '%s'"
-                     " AND nvt_selectors.name = '%s'"
-                     " AND nvt_selectors.family = '%s'"
-                     " AND nvt_selectors.type = "
-                     G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
-                     " AND nvt_selectors.exclude = 0"
-                     " AND nvts.oid = nvt_selectors.family_or_nvt"
-                     " ORDER BY %s %s;",
-                     nvt_iterator_columns_nvts (),
-                     family,
-                     quoted_selector,
-                     family,
-                     sort_field ? sort_field : "nvts.name",
-                     ascending ? "ASC" : "DESC");
-
-          /* The family is included.  Iterate all NVT's minus excluded NVT's. */
-          return g_strdup_printf
-                  ("SELECT %s"
-                   " FROM nvts"
-                   " WHERE family = '%s'"
-                   " EXCEPT"
-                   " SELECT %s"
-                   " FROM nvt_selectors, nvts"
-                   " WHERE"
-                   " nvts.family = '%s'"
-                   " AND nvt_selectors.name = '%s'"
-                   " AND nvt_selectors.family = '%s'"
-                   " AND nvt_selectors.type = "
-                   G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
-                   " AND nvt_selectors.exclude = 1"
-                   " AND nvts.oid = nvt_selectors.family_or_nvt"
-                   " ORDER BY %s %s;",
-                   nvt_iterator_columns (),
-                   family,
-                   nvt_iterator_columns_nvts (),
-                   family,
-                   quoted_selector,
-                   family,
-                   // FIX PG "ERROR: missing FROM-clause" using nvts.name.
-                   sort_field && strcmp (sort_field, "nvts.name")
-                    ? sort_field : "3", /* 3 is nvts.name. */
-                   ascending ? "ASC" : "DESC");
-        }
-      else
-        {
-          int all;
-
-          /* Generating from empty. */
-
-          all = sql_int ("SELECT COUNT(*) FROM nvt_selectors"
-                         " WHERE name = '%s' AND exclude = 0"
-                         " AND type = "
-                         G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
-                         " AND family_or_nvt = '%s';",
-                         quoted_selector,
-                         family);
-
-          if (all)
-            /* There is a family include for this family. */
-            return g_strdup_printf
-                    ("SELECT %s"
-                     " FROM nvts"
-                     " WHERE family = '%s'"
-                     " EXCEPT"
-                     " SELECT %s"
-                     " FROM nvt_selectors, nvts"
-                     " WHERE"
-                     " nvts.family = '%s'"
-                     " AND nvt_selectors.name = '%s'"
-                     " AND nvt_selectors.family = '%s'"
-                     " AND nvt_selectors.type = "
-                     G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
-                     " AND nvt_selectors.exclude = 1"
-                     " AND nvts.oid = nvt_selectors.family_or_nvt"
-                     " ORDER BY %s %s;",
-                     nvt_iterator_columns (),
-                     family,
-                     nvt_iterator_columns_nvts (),
-                     family,
-                     quoted_selector,
-                     family,
-                     // FIX PG "ERROR: missing FROM-clause" using nvts.name.
-                     sort_field && strcmp (sort_field, "nvts.name")
-                      ? sort_field : "3", /* 3 is nvts.name. */
-                     ascending ? "ASC" : "DESC");
-
-          return g_strdup_printf
-                  (" SELECT %s"
-                   " FROM nvt_selectors, nvts"
-                   " WHERE"
-                   " nvts.family = '%s'"
-                   " AND nvt_selectors.name = '%s'"
-                   " AND nvt_selectors.family = '%s'"
-                   " AND nvt_selectors.type = "
-                   G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
-                   " AND nvt_selectors.exclude = 0"
-                   " AND nvts.oid = nvt_selectors.family_or_nvt"
-                   " ORDER BY %s %s;",
-                   nvt_iterator_columns_nvts (),
-                   family,
-                   quoted_selector,
-                   family,
-                   sort_field ? sort_field : "nvts.name",
-                   ascending ? "ASC" : "DESC");
-        }
-    }
-  else
-    {
-      gchar *sql, *quoted_family;
-
-      /* The number of NVT's is static.  Assume a simple list of NVT
-       * includes. */
-
-      quoted_family = sql_quote (family);
-      sql = g_strdup_printf
-             ("SELECT %s"
-              " FROM nvt_selectors, nvts"
-              " WHERE nvts.family = '%s'"
-              " AND nvt_selectors.exclude = 0"
-              " AND nvt_selectors.type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
-              " AND nvt_selectors.name = '%s'"
-              " AND nvts.oid = nvt_selectors.family_or_nvt"
-              " ORDER BY %s %s;",
-              nvt_iterator_columns_nvts (),
-              quoted_family,
-              quoted_selector,
-              sort_field ? sort_field : "nvts.id",
-              ascending ? "ASC" : "DESC");
-      g_free (quoted_family);
-
-      return sql;
-    }
 }
 
 /**
@@ -39647,7 +38306,7 @@ update_nvt_family (const char *oid, const char *old_family,
  *
  * @return 0 success, -1 error.
  */
-static int
+int
 check_config_families ()
 {
   int ret;

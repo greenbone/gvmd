@@ -1,3 +1,38 @@
+2017-07-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Move all NVT SQL facilities from manage_sql.c to manage_sql_nvts.c.
+
+	* src/manage_sql.c (parse_time): Remove.  Now in manage_utils.c.
+	(event, update_all_config_caches, nvt_selector_families_growing)
+	(nvt_selector_nvts_growing_2, check_config_families): Remove static.
+	Used by manage_sql_nvts.c.
+	(refresh_nvt_cves, check_db_nvts): Remove.  Now in manage_sql_nvts.c.
+	(check_db_nvt_selectors): New function.  Split from check_db_nvts.
+	(check_db): Call check_db_nvt_selectors.
+	(manage_nvt_name, nvt_oid, nvts_feed_version, set_nvts_feed_version)
+	(find_nvt, chunk_count, CHUNK_SIZE, make_nvt_from_nvti)
+	(NVT_INFO_ITERATOR_FILTER_COLUMNS, NVT_ITERATOR_COLUMNS)
+	(NVT_ITERATOR_COLUMNS_NVTS, init_nvt_info_iterator, nvt_iterator_columns)
+	(nvt_iterator_columns_nvts, nvt_info_count, init_nvt_iterator)
+	(init_cve_nvt_iterator, nvt_iterator_oid, nvt_iterator_version)
+	(nvt_iterator_name, nvt_iterator_copyright, nvt_iterator_cve)
+	(nvt_iterator_bid, nvt_iterator_xref, nvt_iterator_tag)
+	(nvt_iterator_family, nvt_iterator_cvss_base, nvt_iterator_qod)
+	(nvt_iterator_qod_type, nvt_iterator_solution_type, family_nvt_count)
+	(family_count, insert_nvt_from_nvti, insert_nvt_preference)
+	(insert_nvts_list, insert_nvt_preferences_list, check_for_new_nvts)
+	(check_for_updated_nvts, manage_complete_nvt_cache_update)
+	(select_config_nvts): New functions.
+
+	* src/manage_sql.h: Add headers accordingly.
+
+	* src/manage_utils.c (parse_time): New function.  From manage_sql.c.
+
+	* src/manage_utils.h: Add header accordingly.
+
+	* src/manage_sqlite3.c (parse_time): Remove header.  Now in
+	manage_utils.h.
+
 2017-07-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Add new setting "Auto Cache Rebuild" to disable automatic cache

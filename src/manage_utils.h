@@ -26,7 +26,11 @@
 #ifndef _GVMD_MANAGE_UTILS_H
 #define _GVMD_MANAGE_UTILS_H
 
+/* For strptime in time.h. */
+#undef _XOPEN_SOURCE
+#define _XOPEN_SOURCE
 #include <time.h>
+#include <glib.h>
 
 // Log message severity constant
 #define SEVERITY_LOG 0.0
@@ -57,6 +61,9 @@ time_t months_between (time_t, time_t);
 
 time_t
 next_time (time_t, int, int, int, const char*, int);
+
+int
+parse_time (const gchar *, int *);
 
 int
 manage_count_hosts_max (const char *, const char *, int);
