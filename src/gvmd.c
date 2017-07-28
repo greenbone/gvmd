@@ -991,12 +991,12 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
 
   if (update_nvt_cache == 0)
     {
-      proctitle_set ("gvmd: Rebuilding");
+      proctitle_set ("gvmd: Rebuilding NVT cache");
       g_info ("%s: Rebuilding NVT cache...\n", __FUNCTION__);
     }
   else
     {
-      proctitle_set ("gvmd: Updating");
+      proctitle_set ("gvmd: Updating NVT cache");
       g_info ("%s: Updating NVT cache...\n", __FUNCTION__);
     }
 
@@ -1160,7 +1160,7 @@ fork_update_nvt_cache ()
       case 0:
         /* Child.   */
 
-        proctitle_set ("gvmd: Updating the NVT cache");
+        proctitle_set ("gvmd: Updating NVT cache");
 
         /* Clean up the process. */
 
@@ -1194,6 +1194,7 @@ fork_update_nvt_cache ()
 
       default:
         /* Parent.  Unblock signals and continue. */
+        g_debug ("%s: %i forked %i", __FUNCTION__, getpid (), pid);
         update_in_progress = pid;
         if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
           g_warning ("%s: Error resetting signal mask\n", __FUNCTION__);
