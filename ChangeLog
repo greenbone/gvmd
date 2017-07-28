@@ -1,5 +1,11 @@
 2017-07-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* CMakeLists.txt: Add new file from last commit.
+
+	* src/manage_sql_nvts.h, src/manage_sql_nvts.c: New files.
+
+2017-07-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move all NVT SQL facilities from manage_sql.c to manage_sql_nvts.c.
 
 	* src/manage_sql.c (parse_time): Remove.  Now in manage_utils.c.
