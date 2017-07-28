@@ -1,5 +1,10 @@
 2017-07-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/gmpd.c (serve_gmp): Adjust comment slightly, because socket is
+	in connection these days.
+
+2017-07-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* CMakeLists.txt: Add new file from last commit.
 
 	* src/manage_sql_nvts.h, src/manage_sql_nvts.c: New files.

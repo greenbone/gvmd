@@ -456,7 +456,7 @@ session_clean (gvm_connection_t *client_connection)
  * If compiled with logging (\ref LOG) then log all input and output
  * with \ref logf.
  *
- * If client_socket is 0 or less, then update the NVT cache and exit.
+ * If client socket is 0 or less, then update the NVT cache and exit.
  *
  * @param[in]  client_connection    Connection.
  * @param[in]  database             Location of manage database.
