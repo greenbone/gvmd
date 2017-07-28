@@ -771,13 +771,13 @@ process_otp_scanner_input (void (*progress) ())
 
   /* Before processing the input, check if another manager process has stopped
    * the current task.  If so, send the stop request to the scanner.  This is
-   * the only place in this file that writes to the to_scanner buffer, and hence
-   * the only place that requires that the writes to to_scanner in the GMP XML
+   * the only place in this file that writes to the to_server buffer, and hence
+   * the only place that requires that the writes to to_sever in the GMP XML
    * handlers must be whole OTP commands. */
 
   if (manage_check_current_task () == -1)
     {
-      /* Out of space in to_scanner.  Just treat it as an error for now. */
+      /* Out of space in to_server.  Just treat it as an error for now. */
       return -1;
     }
 

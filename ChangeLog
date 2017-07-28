@@ -1,5 +1,9 @@
 2017-07-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/otp.c (process_otp_scanner_input): Update name of buffer in docs.
+
+2017-07-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c: Add missing header.
 
 2017-07-28  Matthew Mundell <matthew.mundell@greenbone.net>
