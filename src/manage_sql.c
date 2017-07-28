@@ -36079,7 +36079,7 @@ nvt_oid (const char *name)
 /**
  * @brief Return feed version of the plugins in the plugin cache.
  *
- * @return Number of plugins if the plugins are cached, else NULL.
+ * @return Feed version of plugins if the plugins are cached, else NULL.
  */
 char*
 nvts_feed_version ()
@@ -37965,7 +37965,7 @@ manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list,
 }
 
 
-/* NVT selectors.
+/* NVT selectors.  This is part of Configs.
  *
  * An NVT selector is a named selection of NVT's from the cache of all
  * NVT's.
@@ -39641,7 +39641,7 @@ check_config_families ()
 }
 
 
-/* NVT preferences. */
+/* NVT preferences.  This is part of Configs. */
 
 /**
  * @brief Add an NVT preference.

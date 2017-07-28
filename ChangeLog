@@ -1,5 +1,10 @@
 2017-07-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c: Clarify NVT sections.
+	(nvts_feed_version): Correct doc.
+
+2017-07-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add --password, for --create-user.
 
 	* src/gvmd.c (main): Add --password, pass to manage_create_user.
