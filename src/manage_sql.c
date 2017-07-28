@@ -14287,6 +14287,16 @@ check_db_settings ()
          "  'Severity to use if none is specified or available from SecInfo.',"
          "  '10.0');");
 
+  if (sql_int ("SELECT count(*) FROM settings"
+               " WHERE uuid = 'a09285b0-2d47-49b6-a4ef-946ee71f1d5c'"
+               " AND " ACL_IS_GLOBAL () ";")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+         " VALUES"
+         " ('a09285b0-2d47-49b6-a4ef-946ee71f1d5c', NULL,"
+         "  'Auto Cache Rebuild',"
+         "  'Whether to rebuild report caches on changes affecting severity.',"
+         "  '1');");
 }
 
 /**
@@ -17004,7 +17014,8 @@ set_task_run_status_internal (task_t task, task_status_t status)
       sql ("UPDATE reports SET scan_run_status = %u WHERE id = %llu;",
            status,
            current_report);
-      report_cache_counts (current_report, 0, 0, NULL);
+      if (setting_auto_cache_rebuild_int ())
+        report_cache_counts (current_report, 0, 0, NULL);
     }
 
   sql ("UPDATE tasks SET run_status = %u WHERE id = %llu;",
@@ -19804,25 +19815,39 @@ report_cache_counts (report_t report, int clear_original, int clear_overridden,
  *                                 original severity.
  * @param[in]  clear_overridden   Whether to clear existing cache for
  *                                 overridden severity.
+ * @param[in]  users_where        Optional SQL clause to limit users.
  */
 void
 report_clear_count_cache (report_t report,
-                          int clear_original, int clear_overridden)
+                          int clear_original, int clear_overridden,
+                          const char* users_where)
 {
+  gchar *extra_where = NULL;
+  if (users_where)
+    {
+      extra_where 
+        = g_strdup_printf (" AND \"user\" IN (SELECT id FROM users WHERE %s)",
+                           users_where);
+    }
+
   if (clear_original && clear_overridden)
     {
       sql ("DELETE FROM report_counts"
-           " WHERE report = %llu",
-           report);
+           " WHERE report = %llu"
+           "%s",
+           report,
+           extra_where ? extra_where : "");
     }
   else if (clear_original || clear_overridden)
     {
       int override = clear_overridden ? 1 : 0;
       sql ("DELETE FROM report_counts"
            " WHERE report = %llu"
-           "   AND override = %d",
+           "   AND override = %d"
+           "%s",
            report,
-           override);
+           override,
+           extra_where ? extra_where : "");
     }
 }
 
@@ -23037,7 +23062,8 @@ set_report_scan_run_status (report_t report, task_status_t status)
   sql ("UPDATE reports SET scan_run_status = %u WHERE id = %llu;",
        status,
        report);
-  report_cache_counts (report, 0, 0, NULL);
+  if (setting_auto_cache_rebuild_int ())
+    report_cache_counts (report, 0, 0, NULL);
   return 0;
 }
 
@@ -24017,7 +24043,10 @@ trim_report (report_t report)
        report);
 
   /* Clear and rebuild counts cache */
-  report_cache_counts (report, 1, 1, NULL);
+  if (setting_auto_cache_rebuild_int ())
+    report_cache_counts (report, 1, 1, NULL);
+  else
+    report_clear_count_cache (report, 1, 1, NULL);
 }
 
 /**
@@ -24053,7 +24082,10 @@ trim_partial_report (report_t report)
        report);
 
   /* Clear and rebuild counts cache */
-  report_cache_counts (report, 1, 1, NULL);
+  if (setting_auto_cache_rebuild_int ())
+    report_cache_counts (report, 1, 1, NULL);
+  else
+    report_clear_count_cache (report, 1, 1, NULL);
 }
 
 /**
@@ -43930,6 +43962,8 @@ create_override (const char* active, const char* nvt, const char* text,
   GHashTableIter reports_iter;
   report_t *reports_ptr;
   gchar *override_id, *users_where;
+  int auto_cache_rebuild;
+  override_t new_override;
 
   if (acl_user_may ("create_override") == 0)
     return 99;
@@ -44076,18 +44110,23 @@ create_override (const char* active, const char* nvt, const char* text,
 
   if (override)
     *override = sql_last_insert_id ();
+  new_override = sql_last_insert_id ();
 
-  override_uuid (sql_last_insert_id (), &override_id);
+  override_uuid (new_override, &override_id);
   users_where = acl_users_with_access_where ("override", override_id, NULL,
                                              "id");
 
-  reports = reports_for_override (sql_last_insert_id ());
+  reports = reports_for_override (new_override);
   reports_ptr = NULL;
   g_hash_table_iter_init (&reports_iter, reports);
+  auto_cache_rebuild = setting_auto_cache_rebuild_int ();
   while (g_hash_table_iter_next (&reports_iter,
                                  ((gpointer*)&reports_ptr), NULL))
     {
-      report_cache_counts (*reports_ptr, 0, 1, users_where);
+      if (auto_cache_rebuild)
+        report_cache_counts (*reports_ptr, 0, 1, users_where);
+      else
+        report_clear_count_cache (*reports_ptr, 0, 1, users_where);
     }
   g_hash_table_destroy (reports);
   g_free (override_id);
@@ -44146,6 +44185,7 @@ delete_override (const char *override_id, int ultimate)
   GHashTableIter reports_iter;
   report_t *reports_ptr;
   gchar *users_where;
+  int auto_cache_rebuild;
 
   sql_begin_immediate ();
 
@@ -44223,10 +44263,14 @@ delete_override (const char *override_id, int ultimate)
 
   g_hash_table_iter_init (&reports_iter, reports);
   reports_ptr = NULL;
+  auto_cache_rebuild = setting_auto_cache_rebuild_int ();
   while (g_hash_table_iter_next (&reports_iter,
                                  ((gpointer*)&reports_ptr), NULL))
     {
-      report_cache_counts (*reports_ptr, 0, 1, users_where);
+      if (auto_cache_rebuild)
+        report_cache_counts (*reports_ptr, 0, 1, users_where);
+      else
+        report_clear_count_cache (*reports_ptr, 0, 1, users_where);
     }
   g_hash_table_destroy (reports);
   g_free (users_where);
@@ -44263,10 +44307,11 @@ modify_override (override_t override, const char *active, const char* text,
   gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_severity;
   double severity_dbl, new_severity_dbl;
   GHashTable *reports;
-  int rebuild_cache;
+  GString *cache_invalidated_sql;
+  int cache_invalidated;
 
   reports = NULL;
-  rebuild_cache = 0;
+  cache_invalidated = 0;
 
   if (override == 0)
     return -1;
@@ -44366,46 +44411,60 @@ modify_override (override_t override, const char *active, const char* text,
 
   // Tests if a cache rebuild is necessary.
   //  The "active" status is checked separately
-  if (sql_int ("SELECT cast (new_severity AS numeric) != %1.1f FROM overrides"
-               " WHERE id = %llu",
-               new_severity_dbl, override)
-      || sql_int ("SELECT task != %llu FROM overrides"
-                  " WHERE id = %llu",
-                  task, override)
-      || sql_int ("SELECT result != %llu FROM overrides"
-                    " WHERE id = %llu",
-                    result, override)
-      || (strcmp (quoted_severity, "NULL") == 0)
-            ? sql_int ("SELECT severity IS NOT NULL FROM overrides"
-                       " WHERE id = %llu",
-                       override)
-            : sql_int ("SELECT cast (severity AS numeric) != %1.1f"
-                       " FROM overrides"
-                       " WHERE id = %llu",
-                       severity_dbl, override)
-      || (strcmp (quoted_hosts, "NULL") == 0)
-            ? sql_int ("SELECT hosts IS NOT NULL FROM overrides"
-                       " WHERE id = %llu",
-                       override)
-            : sql_int ("SELECT hosts != %s FROM overrides"
-                       " WHERE id = %llu",
-                       quoted_hosts, override)
-      || (strcmp (quoted_port, "NULL") == 0)
-            ? sql_int ("SELECT port IS NOT NULL FROM overrides"
-                       " WHERE id = %llu",
-                       override)
-            : sql_int ("SELECT port != %s FROM overrides"
-                       " WHERE id = %llu",
-                       quoted_port, override))
+  cache_invalidated_sql = g_string_new ("");
+
+  g_string_append_printf (cache_invalidated_sql,
+                          "SELECT (cast (new_severity AS numeric) != %1.1f)",
+                          new_severity_dbl);
+
+  g_string_append_printf (cache_invalidated_sql,
+                          " OR (task != %llu)",
+                          task);
+
+  g_string_append_printf (cache_invalidated_sql,
+                          " OR (result != %llu)",
+                          result);
+
+  if (strcmp (quoted_severity, "NULL") == 0)
+    g_string_append_printf (cache_invalidated_sql,
+                            " OR (severity IS NOT NULL)");
+  else
+    g_string_append_printf (cache_invalidated_sql,
+                            " OR (cast (severity AS numeric) != %1.1f)",
+                            severity_dbl);
+
+  if (strcmp (quoted_hosts, "NULL") == 0)
+    g_string_append_printf (cache_invalidated_sql,
+                            " OR (hosts IS NOT NULL)");
+  else
+    g_string_append_printf (cache_invalidated_sql,
+                            " OR (hosts != %s)",
+                            quoted_hosts);
+
+  if (strcmp (quoted_port, "NULL") == 0)
+    g_string_append_printf (cache_invalidated_sql,
+                            " OR (hosts IS NOT NULL)");
+  else
+    g_string_append_printf (cache_invalidated_sql,
+                            " OR (port != %s)",
+                            quoted_port);
+
+  g_string_append_printf (cache_invalidated_sql,
+                          " FROM overrides WHERE id = %llu",
+                          override);
+
+  if (sql_int ("%s", cache_invalidated_sql->str))
     {
-      rebuild_cache = 1;
+      cache_invalidated = 1;
     }
+
+  g_string_free (cache_invalidated_sql, TRUE);
 
   // Check active status for changes, get old reports for rebuild if necessary
   //  and update override.
   if ((active == NULL) || (strcmp (active, "-2") == 0))
     {
-      if (rebuild_cache)
+      if (cache_invalidated)
         reports = reports_for_override (override);
 
       sql ("UPDATE overrides SET"
@@ -44449,13 +44508,13 @@ modify_override (override_t override, const char *active, const char* text,
                             : 1)
                         : 0);
 
-      if (rebuild_cache == 0
+      if (cache_invalidated == 0
           && sql_int ("SELECT end_time != %d FROM overrides"
                       " WHERE id = %llu",
                       new_end_time, override))
-        rebuild_cache = 1;
+        cache_invalidated = 1;
 
-      if (rebuild_cache)
+      if (cache_invalidated)
         reports = reports_for_override (override);
 
       sql ("UPDATE overrides SET"
@@ -44486,11 +44545,12 @@ modify_override (override_t override, const char *active, const char* text,
   g_free (quoted_port);
   g_free (quoted_severity);
 
-  if (rebuild_cache)
+  if (cache_invalidated)
     {
       GHashTableIter reports_iter;
       report_t *reports_ptr;
       gchar *override_id, *users_where;
+      int auto_cache_rebuild;
 
       override_uuid (override, &override_id);
       users_where = acl_users_with_access_where ("override", override_id, NULL,
@@ -44500,10 +44560,14 @@ modify_override (override_t override, const char *active, const char* text,
 
       g_hash_table_iter_init (&reports_iter, reports);
       reports_ptr = NULL;
+      auto_cache_rebuild = setting_auto_cache_rebuild_int ();
       while (g_hash_table_iter_next (&reports_iter,
                                     ((gpointer*)&reports_ptr), NULL))
         {
-          report_cache_counts (*reports_ptr, 0, 1, users_where);
+          if (auto_cache_rebuild)
+            report_cache_counts (*reports_ptr, 0, 1, users_where);
+          else
+            report_clear_count_cache (*reports_ptr, 0, 1, users_where);
         }
       g_free (override_id);
       g_free (users_where);
@@ -52551,14 +52615,20 @@ create_permission_internal (const char *name_arg, const char *comment,
     {
       GHashTableIter reports_iter;
       report_t *reports_ptr;
+      int auto_cache_rebuild;
 
       reports_ptr = NULL;
       g_hash_table_iter_init (&reports_iter, reports);
+      auto_cache_rebuild = setting_auto_cache_rebuild_int ();
       while (g_hash_table_iter_next (&reports_iter,
                                     ((gpointer*)&reports_ptr), NULL))
         {
-          report_cache_counts (*reports_ptr, clear_original, 1,
-                               subject_where);
+          if (auto_cache_rebuild)
+            report_cache_counts (*reports_ptr, clear_original, 1,
+                                 subject_where);
+          else
+            report_clear_count_cache (*reports_ptr, clear_original, 1,
+                                      subject_where);
         }
     }
 
@@ -53432,13 +53502,20 @@ delete_permission (const char *permission_id, int ultimate)
     {
       GHashTableIter reports_iter;
       report_t *reports_ptr;
+      int auto_cache_rebuild;
 
       reports_ptr = NULL;
       g_hash_table_iter_init (&reports_iter, reports);
+      auto_cache_rebuild = setting_auto_cache_rebuild_int ();
       while (g_hash_table_iter_next (&reports_iter,
                                     ((gpointer*)&reports_ptr), NULL))
         {
-          report_cache_counts (*reports_ptr, clear_original, 1, subject_where);
+          if (auto_cache_rebuild)
+            report_cache_counts (*reports_ptr, clear_original, 1,
+                                 subject_where);
+          else
+            report_clear_count_cache (*reports_ptr, clear_original, 1,
+                                      subject_where);
         }
     }
 
@@ -53500,8 +53577,6 @@ modify_permission (const char *permission_id, const char *name_arg,
   char *old_name, *old_resource_type;
   resource_t old_resource;
   GHashTable *reports = NULL;
-  GHashTableIter reports_iter;
-  report_t *reports_ptr;
   int clear_original = 0;
   gchar *subject_where_old, *subject_where_new, *subject_where;
 
@@ -53702,13 +53777,22 @@ modify_permission (const char *permission_id, const char *name_arg,
 
   if (reports)
     {
+      GHashTableIter reports_iter;
+      report_t *reports_ptr;
+      int auto_cache_rebuild;
+
       g_hash_table_iter_init (&reports_iter, reports);
       reports_ptr = NULL;
+      auto_cache_rebuild = setting_auto_cache_rebuild_int ();
       while (g_hash_table_iter_next (&reports_iter,
                                     ((gpointer*)&reports_ptr), NULL))
         {
-          report_cache_counts (*reports_ptr, clear_original, 1,
-                               subject_where);
+          if (auto_cache_rebuild)
+            report_cache_counts (*reports_ptr, clear_original, 1,
+                                 subject_where);
+          else
+            report_clear_count_cache (*reports_ptr, clear_original, 1,
+                                      subject_where);
         }
       g_hash_table_destroy (reports);
       reports = NULL;
@@ -57258,6 +57342,7 @@ manage_restore (const char *id)
       GHashTableIter reports_iter;
       report_t *reports_ptr;
       gchar *users_where;
+      int auto_cache_rebuild;
 
       sql ("INSERT INTO overrides"
            " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
@@ -57282,10 +57367,14 @@ manage_restore (const char *id)
       reports = reports_for_override (override);
       g_hash_table_iter_init (&reports_iter, reports);
       reports_ptr = NULL;
+      auto_cache_rebuild = setting_auto_cache_rebuild_int ();
       while (g_hash_table_iter_next (&reports_iter,
                                     ((gpointer*)&reports_ptr), NULL))
         {
-          report_cache_counts (*reports_ptr, 0, 1, users_where);
+          if (auto_cache_rebuild)
+            report_cache_counts (*reports_ptr, 0, 1, users_where);
+          else
+            report_clear_count_cache (*reports_ptr, 0, 1, users_where);
         }
       g_hash_table_destroy (reports);
       g_free (users_where);
@@ -57356,14 +57445,20 @@ manage_restore (const char *id)
         {
           GHashTableIter reports_iter;
           report_t *reports_ptr;
+          int auto_cache_rebuild;
 
           reports_ptr = NULL;
           g_hash_table_iter_init (&reports_iter, reports);
+          auto_cache_rebuild = setting_auto_cache_rebuild_int ();
           while (g_hash_table_iter_next (&reports_iter,
                                         ((gpointer*)&reports_ptr), NULL))
             {
-              report_cache_counts (*reports_ptr, clear_original, 1,
-                                   subject_where);
+              if (auto_cache_rebuild)
+                report_cache_counts (*reports_ptr, clear_original, 1,
+                                     subject_where);
+              else
+                report_clear_count_cache (*reports_ptr, clear_original, 1,
+                                          subject_where);
             }
         }
       g_free (subject_where);
@@ -60357,6 +60452,21 @@ setting_timezone ()
 }
 
 /**
+ * @brief Return the Auto Cache Rebuild user setting as an int.
+ *
+ * @return 1 if cache is rebuilt automatically, 0 if not.
+ */
+int
+setting_auto_cache_rebuild_int ()
+{
+  return sql_int ("SELECT value FROM settings"
+                  " WHERE uuid = 'a09285b0-2d47-49b6-a4ef-946ee71f1d5c'"
+                  " AND " ACL_USER_OWNS () ""
+                  " ORDER BY coalesce (owner, 0) DESC;",
+                  current_credentials.uuid);
+}
+
+/**
  * @brief Initialise a setting iterator, including observed settings.
  *
  * @param[in]  iterator    Iterator.
@@ -60593,7 +60703,8 @@ modify_setting (const gchar *uuid, const gchar *name,
                || strcmp (uuid, "7eda49c5-096c-4bef-b1ab-d080d87300df") == 0
                || strcmp (uuid, "578a1c14-e2dc-45ef-a591-89d31391d007") == 0
                || strcmp (uuid, "02e294fa-061b-11e6-ae64-28d24461215b") == 0
-               || strcmp (uuid, "5a9046cc-0628-11e6-ba53-28d24461215b") == 0))
+               || strcmp (uuid, "5a9046cc-0628-11e6-ba53-28d24461215b") == 0
+               || strcmp (uuid, "a09285b0-2d47-49b6-a4ef-946ee71f1d5c") == 0))
     {
       gsize value_size;
       gchar *value, *quoted_uuid, *quoted_value;
@@ -60707,6 +60818,18 @@ modify_setting (const gchar *uuid, const gchar *name,
             }
           else
             current_credentials.default_severity = severity_dbl;
+        }
+
+      if (strcmp (uuid, "a09285b0-2d47-49b6-a4ef-946ee71f1d5c") == 0)
+        {
+          int value_int;
+          /* Auto Cache Rebuild */
+          if (sscanf (value, "%d", &value_int) != 1
+              || (strcmp (value, "0") && strcmp (value, "1")))
+            {
+              g_free (value);
+              return 2;
+            }
         }
 
       quoted_value = sql_quote (value);
