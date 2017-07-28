@@ -1140,7 +1140,7 @@ void
 report_cache_counts (report_t, int, int, const char*);
 
 void
-report_clear_count_cache (report_t, int, int);
+report_clear_count_cache (report_t, int, int, const char*);
 
 double
 report_severity (report_t, int, int);
@@ -3819,6 +3819,9 @@ setting_dynamic_severity_int ();
 
 char *
 setting_timezone ();
+
+int
+setting_auto_cache_rebuild_int ();
 
 void
 init_setting_iterator (iterator_t *, const char *, const char *, int, int, int,

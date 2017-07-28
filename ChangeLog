@@ -1,3 +1,32 @@
+2017-07-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add new setting "Auto Cache Rebuild" to disable automatic cache
+	rebuild and fix some minor issues with the cache rebuilding.
+
+	* src/manage_sql.c (check_db_settings): Add new "Auto Cache Rebuild"
+	setting.
+	(set_task_run_status_internal): Only rebuild cache if the setting
+	"Auto Cache Rebuild" is enabled.
+	(report_clear_count_cache): Add users_where parameter.
+	(set_report_scan_run_status, trim_report, trim_partial_report)
+	(create_override): Only rebuild cache if the "Auto Cache Rebuild"
+	settingis enabled, otherwise only clear if needed.  Also give correct
+	override row id to reports_form_override as sql_last_insert_id result
+	changes after acl_users_with_access_where call.
+	(delete_override): Consider setting "Auto Cache Rebuild" as above.
+	(modify_override): Consider "Auto Cache Rebuild" and consolidate checks
+	if change affects the cache into one SQL query.
+	(create_permission_internal, delete_permission): Consider setting
+	"Auto Cache Rebuild" as above.
+	(modify_permission): Consider setting "Auto Cache Rebuild" as above
+	and reduce scope of reports iterator variables.
+	(manage_restore): Consider setting "Auto Cache Rebuild" as above.
+	(setting_auto_cache_rebuild_int): New function.
+	(modify_setting): Add new setting "Auto Cache Rebuild".
+
+	* src/manage.h (report_clear_count_cache): Add parameter.
+	(setting_auto_cache_rebuild_int): New function prototype.
+
 2017-07-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c: Clarify NVT sections.
