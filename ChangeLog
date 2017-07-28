@@ -1,5 +1,14 @@
 2017-07-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Backport r29253.
+
+	* src/manage_sql.c (reports_build_count_cache): Simplify and build
+	cache for all users with access to the reports.
+	(manage_optimize): Update success messages for rebuild-report-cache
+	and update-report-cache which now only count the reports.
+
+2017-07-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Backport r29236.
 
 	Add new setting "Auto Cache Rebuild" to disable automatic cache
