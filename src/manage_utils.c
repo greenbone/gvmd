@@ -27,7 +27,7 @@
 
 #include <assert.h> /* for assert */
 #include <stdlib.h> /* for getenv */
-#include <stdio.h>
+#include <stdio.h>  /* for sscanf */
 #include <string.h> /* for strcmp */
 
 #include <gvm/base/hosts.h>

@@ -1,3 +1,7 @@
+2017-07-31  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/manage_utils.c: Add reason for including stdio.h.
+
 2017-07-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (reports_build_count_cache): Simplify and build
