@@ -568,6 +568,8 @@ make_config_discovery_service_detection (char *const selector_name)
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900371", "Service detection");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900374", "Service detection");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900376", "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.108198", "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.108199", "Service detection");
 }
 
 /**

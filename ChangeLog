@@ -1,3 +1,9 @@
+2017-07-31  Christian Fischer <christian.fischer@greenbone.net>
+
+	* src/manage_config_discovery.c (make_config_discovery_service_detection):
+	Add new find_service3.nasl and find_service4.nasl to predefined
+	"Discovery" scan config.
+
 2017-07-31  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/manage_utils.c: Add reason for including stdio.h.
