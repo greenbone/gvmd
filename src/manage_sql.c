@@ -53927,7 +53927,8 @@ setting_auto_cache_rebuild_int ()
 {
   return sql_int ("SELECT value FROM settings"
                   " WHERE uuid = 'a09285b0-2d47-49b6-a4ef-946ee71f1d5c'"
-                  " AND owner IS NULL"
+                  " AND (owner IS NULL"
+                  "      OR owner = (SELECT id FROM users WHERE uuid = '%s'))"
                   " ORDER BY coalesce (owner, 0) DESC;",
                   current_credentials.uuid);
 }

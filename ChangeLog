@@ -1,3 +1,8 @@
+2017-07-31  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (setting_auto_cache_rebuild_int): Add missing clause
+	checking for the current user.
+
 2017-07-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r29253.
