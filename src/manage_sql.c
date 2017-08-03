@@ -47226,7 +47226,8 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
   gchar *period_months_string, *offset_string, *byday_mask_string;
   schedule_t schedule;
   time_t real_first_time, real_period, real_period_months, new_next_time;
-  int real_byday, byday_mask;
+  int real_byday;
+  int byday_mask = 0;
   const char *real_timezone;
   iterator_t schedule_iter;
 
