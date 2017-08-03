@@ -115,9 +115,9 @@ set_defaults () {
   GVM_CERTIFICATE_SIGNALG=${GVM_CERTIFICATE_SIGNALG:-"SHA256"}
 
   # Location in file system where private keys are stored
-  GVM_KEY_LOCATION=${GVM_KEY_LOCATION:-"@GVM_STATE_DIR@/private/CA"}
+  GVM_KEY_LOCATION=${GVM_KEY_LOCATION:-"@GVMD_STATE_DIR@/private/CA"}
   # Location in file system where certificates are stored
-  GVM_CERT_LOCATION=${GVM_CERT_LOCATION:-"@GVM_STATE_DIR@/CA"}
+  GVM_CERT_LOCATION=${GVM_CERT_LOCATION:-"@GVMD_STATE_DIR@/CA"}
 
   # Prefix for generated files
   # If not set, files will be named "key.pem" and "cert.pem"

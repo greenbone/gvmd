@@ -38,7 +38,7 @@ SCRIPT_NAME="gvm-migrate-to-postgres"
 LOG_CMD="logger -s -t $SCRIPT_NAME"
 
 SQLITE3="sqlite3 -noheader -bail"
-PSQL="psql -v ON_ERROR_STOP=1 -q --pset pager=off -d tasks -t"
+PSQL="psql -v ON_ERROR_STOP=1 -q --pset pager=off -d gvmd -t"
 
 # Maximum number of retries if database is locked
 if [ -z "$MAX_SQL_RETRIES" ]; then
@@ -53,11 +53,11 @@ fi
 [ -r @GVM_SYSCONF_DIR@/migrate-to-postgres.conf ] && . @GVM_SYSCONF_DIR@/migrate-to-postgres.conf
 
 if [ -z "$SQLITE_DB_DIR" ]; then
-  SQLITE_DB_DIR="@GVM_STATE_DIR@/mgr"
+  SQLITE_DB_DIR="@GVMD_STATE_DIR@"
 fi
 
 if [ -z "$SQLITE_DB_FILE" ]; then
-  SQLITE_DB_FILE="tasks.db"
+  SQLITE_DB_FILE="gvmd.db"
 fi
 
 if [ -z "$SQLITE_DB" ]; then
@@ -120,7 +120,7 @@ pg () {
 does_pg_db_exist () {
   PG_DB_EXISTS=`pg "SELECT EXISTS (SELECT table_name
                     FROM information_schema.tables
-                    WHERE table_catalog = 'tasks'
+                    WHERE table_catalog = 'gvmd'
                     AND table_schema = 'public'
                     AND table_name = 'meta')
                     ::integer;"`
@@ -1071,11 +1071,11 @@ clean_column () {
 clean_columns () {
   log_info "Cleaning columns."
 
-  psql tasks -Atc "SELECT DISTINCT table_name, column_name, data_type
-                   FROM information_schema.columns
-                   WHERE table_schema='public'
-                   AND data_type != 'text'
-                   AND data_type != 'bytea'" | while read -r line
+  psql gvmd -Atc "SELECT DISTINCT table_name, column_name, data_type
+                  FROM information_schema.columns
+                  WHERE table_schema='public'
+                  AND data_type != 'text'
+                  AND data_type != 'bytea'" | while read -r line
   do
     table=`echo "$line" | cut -d '|' -f1`
     column=`echo "$line" | cut -d '|' -f2`
@@ -1091,15 +1091,15 @@ clean_columns () {
 clean_fkey_columns () {
   log_info "Cleaning foreign key columns."
 
-  psql tasks -Atc "SELECT tc.table_name, kcu.column_name,
-						  ccu.table_name, ccu.column_name
-				   FROM information_schema.table_constraints AS tc
-					 JOIN information_schema.key_column_usage AS kcu
-					   ON tc.constraint_name = kcu.constraint_name
-					 JOIN information_schema.constraint_column_usage AS ccu
-					   ON ccu.constraint_name = tc.constraint_name
-				   WHERE constraint_type = 'FOREIGN KEY'
-					 AND tc.constraint_schema = 'public'" | while read -r line
+  psql gvmd -Atc "SELECT tc.table_name, kcu.column_name,
+                         ccu.table_name, ccu.column_name
+                  FROM information_schema.table_constraints AS tc
+                       JOIN information_schema.key_column_usage AS kcu
+                       ON tc.constraint_name = kcu.constraint_name
+                       JOIN information_schema.constraint_column_usage AS ccu
+                       ON ccu.constraint_name = tc.constraint_name
+                  WHERE constraint_type = 'FOREIGN KEY'
+                  AND tc.constraint_schema = 'public'" | while read -r line
   do
     table=`echo "$line" | cut -d '|' -f1`
     column=`echo "$line" | cut -d '|' -f2`
@@ -2467,7 +2467,7 @@ create () {
       ;;
 
     *)
-      log_notice "Database version not supported."
+      log_notice "Database version not supported: " $DB_VERSION
       exit 1
   esac
 }

@@ -183,7 +183,7 @@ sql_database ()
 const char *
 sql_default_database ()
 {
-  return GVM_STATE_DIR "/mgr/tasks.db";
+  return GVMD_STATE_DIR "/gvmd.db";
 }
 
 /**
@@ -208,17 +208,15 @@ sql_open (const char *database)
   int chunk_size = DB_CHUNK_SIZE;
   struct stat state;
   int err, ret;
-  gchar *mgr_dir;
 
-  /* Ensure the mgr directory exists. */
+  /* Ensure the database directory exists. */
 
-  mgr_dir = g_build_filename (GVM_STATE_DIR, "mgr", NULL);
-  ret = g_mkdir_with_parents (mgr_dir, 0755 /* "rwxr-xr-x" */);
-  g_free (mgr_dir);
+  ret = g_mkdir_with_parents (GVMD_STATE_DIR, 0755 /* "rwxr-xr-x" */);
   if (ret == -1)
     {
-      g_warning ("%s: failed to create mgr directory: %s\n",
+      g_warning ("%s: failed to create database directory %s: %s\n",
                  __FUNCTION__,
+                 GVMD_STATE_DIR,
                  strerror (errno));
       abort ();
     }

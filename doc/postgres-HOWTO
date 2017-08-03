@@ -19,12 +19,12 @@ Debian GNU/Linux 'Jessie' 8.
 
 	sudo -u postgres sh
 	createuser -DRS mattm       # mattm is your OS login name
-	createdb -O mattm tasks
+	createdb -O mattm gvmd
 
 5 Setup DB extensions and permission.
 
 	sudo -u postgres sh  # if you logged out after step 4
-	psql tasks
+	psql gvmd
 	create role dba with superuser noinherit;
 	grant dba to mattm;
 	create extension "uuid-ossp";
@@ -37,7 +37,7 @@ Debian GNU/Linux 'Jessie' 8.
 
 8 To run SQL on the database.
 
-	psql tasks
+	psql gvmd
 
 
 Migrating from SQLite to PostgreSQL
@@ -66,9 +66,9 @@ Handy script to drop all data
 
 export PGOPTIONS='--client-min-messages=warning'
 
-PSQL="psql -q tasks --pset pager=off -t -c"
+PSQL="psql -q gvmd --pset pager=off -t -c"
 
-$PSQL "`psql tasks --pset pager=off -t -c \"select 'drop table '||schemaname||'.'||tablename||' CASCADE;' from pg_tables where schemaname = 'public' order by schemaname, tablename;\"`"
+$PSQL "`psql gvmd --pset pager=off -t -c \"select 'drop table '||schemaname||'.'||tablename||' CASCADE;' from pg_tables where schemaname = 'public' order by schemaname, tablename;\"`"
 
 $PSQL "DROP FUNCTION IF EXISTS public.common_cve(text, text);";
 $PSQL "DROP FUNCTION IF EXISTS public.create_index(text, text, text);";

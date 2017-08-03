@@ -1,3 +1,23 @@
+2017-08-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Use "GVM" instead of "openvas" for directories.  Rename task db to "gvmd".
+
+	* INSTALL: Explain 8.0 migration.
+
+	* CMakeLists.txt: Use "gvm" for STATE dirs instead of "openvas".  Move
+	certs to GVMD_STATE_DIR.
+
+	* src/sql_pg.c (sql_default_database): Rename database.
+
+	* src/sql_sqlite3.c (sql_default_database): Rename database.
+	(sql_open): Expect db in STATE dir.
+
+	* doc/postgres-HOWTO: Rename database.
+
+	* tools/gvm-manage-certs.in (set_defaults): Switch to GVMD STATE dir.
+
+	* tools/gvm-migrate-to-postgres.in: Rename database.
+
 2017-07-31  Christian Fischer <christian.fischer@greenbone.net>
 
 	* src/manage_config_discovery.c (make_config_discovery_service_detection):

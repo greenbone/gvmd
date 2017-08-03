@@ -228,7 +228,7 @@ sql_database ()
 const char *
 sql_default_database ()
 {
-  return "tasks";
+  return "gvmd";
 }
 
 /**

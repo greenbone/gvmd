@@ -5,6 +5,11 @@ Please note: The reference system used by most of the developers is Debian
 GNU/Linux 'Jessie' 8. The build might fail on any other systems.
 Also it is necessary to install dependent development packages.
 
+IMPORTANT NOTICE: This version changes quite a number of locations
+and names compared to the previous version. It is highly recommended to
+consider the section "Migrating to Version 8.0", unless you do not have
+an old setup on your system.
+
 
 Prerequisites for Greenbone Vulnerability Manager
 -------------------------------------------------
@@ -139,6 +144,47 @@ Run this command if you are using the default ports:
 This command can be repeated anytime to update the database
 with updated NVT data, regardless of whether gvmd already
 runs as a service in the background or not.
+
+
+Migrating to Version 8.0
+------------------------
+
+Before starting gvmd 8.0 for the first time you need to move
+some files to the new locations where they are expected now.
+If you do not do this, the files are freshly initialized
+and it gets more complicated to transfer the old data properly.
+
+ - move $prefix/etc/openvas/pwpolicy.conf to
+   $prefix/etc/gvm/
+
+ - move $prefix/etc/openvas/openvasmd_log.conf to
+   $prefix/etc/gvm/gvmd_log.conf
+
+ - copy $prefix/etc/openvas/gsf-access-key to
+   $prefix/etc/gvm/
+   If the gsf-access-key was already migrated for openvas-scanner module
+   as well, then there needs not to remain the file gsf-acces-key under
+   $prefix/etc/openvas.
+
+ - move $prefix/var/lib/openvas/scap-data to
+   $prefix/var/lib/gvm/scap-data
+
+ - move $prefix/var/lib/openvas/cert-data to
+   $prefix/var/lib/gvm/cert-data
+
+ - move $prefix/var/lib/openvas/openvasmd to
+   $prefix/var/lib/gvm/gvmd
+
+ - move $prefix/var/lib/openvas/CA to
+   $prefix/var/lib/gvm/gvmd/CA
+
+ - move $prefix/var/lib/openvas/private to
+   $prefix/var/lib/gvm/gvmd/private
+
+ - (SQLite backend only) move $prefix/var/lib/gvm/gvmd/mgr/tasks.db to
+   $prefix/var/lib/gvm/gvmd/gvmd.db
+
+ - (Postgres backend only) psql --command='ALTER DATABASE tasks RENAME TO gvmd;'
 
 
 Migrating the Database
