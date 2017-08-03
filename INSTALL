@@ -176,15 +176,17 @@ and it gets more complicated to transfer the old data properly.
    $prefix/var/lib/gvm/gvmd
 
  - move $prefix/var/lib/openvas/CA to
-   $prefix/var/lib/gvm/gvmd/CA
+   $prefix/var/lib/gvm/CA
 
  - move $prefix/var/lib/openvas/private to
-   $prefix/var/lib/gvm/gvmd/private
+   $prefix/var/lib/gvm/private
 
  - (SQLite backend only) move $prefix/var/lib/gvm/gvmd/mgr/tasks.db to
    $prefix/var/lib/gvm/gvmd/gvmd.db
 
- - (Postgres backend only) psql --command='ALTER DATABASE tasks RENAME TO gvmd;'
+ - (Postgres backend only) rename database to "gvmd":
+	   sudo -u postgres sh
+       psql --command='ALTER DATABASE tasks RENAME TO gvmd;'
 
 
 Migrating the Database

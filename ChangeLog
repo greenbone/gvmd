@@ -1,5 +1,12 @@
 2017-08-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* INSTALL: Change certificate paths to match GSA.  Add login command for
+	Postgres rename.
+
+	* CMakeLists.txt: Change certificate paths to match GSA.
+
+2017-08-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Use "GVM" instead of "openvas" for directories.  Rename task db to "gvmd".
 
 	* INSTALL: Explain 8.0 migration.
