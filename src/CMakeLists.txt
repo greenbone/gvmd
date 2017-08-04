@@ -81,7 +81,7 @@ target_link_libraries (${BINARY_NAME} gmp otp manage ${GNUTLS_LDFLAGS} ${GPGME_L
 set_target_properties (${BINARY_NAME} PROPERTIES LINKER_LANGUAGE C)
 
 if (GVMD_VERSION)
-  add_definitions (-DGVMD_VERSION=\\\"${GVMD_VERSION}\\\")
+  add_definitions (-DGVMD_VERSION="${GVMD_VERSION}")
 endif (GVMD_VERSION)
 
 if (NOT CMAKE_BUILD_TYPE MATCHES "Release")
@@ -109,87 +109,87 @@ add_custom_command (TARGET ${BINARY_NAME} POST_BUILD
                     COMMAND ln -sf ${BINARY_NAME} gvmd)
 
 if (GMP_VERSION)
-  add_definitions (-DGMP_VERSION=\\\"${GMP_VERSION}\\\")
+  add_definitions (-DGMP_VERSION="${GMP_VERSION}")
 endif (GMP_VERSION)
 
 add_definitions (-DGVMD_DATABASE_VERSION=${GVMD_DATABASE_VERSION})
 add_definitions (-DGVMD_SCAP_DATABASE_VERSION=${GVMD_SCAP_DATABASE_VERSION})
 add_definitions (-DGVMD_CERT_DATABASE_VERSION=${GVMD_CERT_DATABASE_VERSION})
-add_definitions (-DGVM_OS_NAME=\\\"${CMAKE_SYSTEM}\\\")
-add_definitions (-DPREFIX=\\\"${CMAKE_INSTALL_PREFIX}\\\")
+add_definitions (-DGVM_OS_NAME="${CMAKE_SYSTEM}")
+add_definitions (-DPREFIX="${CMAKE_INSTALL_PREFIX}")
 
-add_definitions (-DGVM_SCAP_RES_DIR=\\\"${GVM_SCAP_RES_DIR}\\\")
-add_definitions (-DGVM_SCAP_DATA_DIR=\\\"${GVM_SCAP_DATA_DIR}\\\")
+add_definitions (-DGVM_SCAP_RES_DIR="${GVM_SCAP_RES_DIR}")
+add_definitions (-DGVM_SCAP_DATA_DIR="${GVM_SCAP_DATA_DIR}")
 
-add_definitions (-DGVM_CERT_RES_DIR=\\\"${GVM_CERT_RES_DIR}\\\")
-add_definitions (-DGVM_CERT_DATA_DIR=\\\"${GVM_CERT_DATA_DIR}\\\")
+add_definitions (-DGVM_CERT_RES_DIR="${GVM_CERT_RES_DIR}")
+add_definitions (-DGVM_CERT_DATA_DIR="${GVM_CERT_DATA_DIR}")
 
 if (GVM_SCANNER_CERTIFICATE)
-        add_definitions (-DSCANNERCERT=\\\"${GVM_SCANNER_CERTIFICATE}\\\")
+        add_definitions (-DSCANNERCERT="${GVM_SCANNER_CERTIFICATE}")
 endif (GVM_SCANNER_CERTIFICATE)
 
 if (GVM_SCANNER_KEY)
-        add_definitions (-DSCANNERKEY=\\\"${GVM_SCANNER_KEY}\\\")
+        add_definitions (-DSCANNERKEY="${GVM_SCANNER_KEY}")
 endif (GVM_SCANNER_KEY)
 
 if (GVM_CLIENT_CERTIFICATE)
-        add_definitions (-DCLIENTCERT=\\\"${GVM_CLIENT_CERTIFICATE}\\\")
+        add_definitions (-DCLIENTCERT="${GVM_CLIENT_CERTIFICATE}")
 endif (GVM_CLIENT_CERTIFICATE)
 
 if (GVM_CLIENT_KEY)
-        add_definitions (-DCLIENTKEY=\\\"${GVM_CLIENT_KEY}\\\")
+        add_definitions (-DCLIENTKEY="${GVM_CLIENT_KEY}")
 endif (GVM_CLIENT_KEY)
 
 if (GVM_CA_CERTIFICATE)
-        add_definitions (-DCACERT=\\\"${GVM_CA_CERTIFICATE}\\\")
+        add_definitions (-DCACERT="${GVM_CA_CERTIFICATE}")
 endif (GVM_CA_CERTIFICATE)
 
 if (GVM_CA_DIR)
-        add_definitions (-DCA_DIR=\\\"${GVM_CA_DIR}\\\")
+        add_definitions (-DCA_DIR="${GVM_CA_DIR}")
 endif (GVM_CA_DIR)
 
 if (GVM_LOG_DIR)
-        add_definitions (-DGVM_LOG_DIR=\\\"${GVM_LOG_DIR}\\\")
+        add_definitions (-DGVM_LOG_DIR="${GVM_LOG_DIR}")
 endif (GVM_LOG_DIR)
 
 if (GVM_STATE_DIR)
-        add_definitions (-DGVM_STATE_DIR=\\\"${GVM_STATE_DIR}\\\")
+        add_definitions (-DGVM_STATE_DIR="${GVM_STATE_DIR}")
 endif (GVM_STATE_DIR)
 
 if (GVMD_STATE_DIR)
-  add_definitions (-DGVMD_STATE_DIR=\\\"${GVMD_STATE_DIR}\\\")
+  add_definitions (-DGVMD_STATE_DIR="${GVMD_STATE_DIR}")
 endif (GVMD_STATE_DIR)
 
 if (GVM_RUN_DIR)
-        add_definitions (-DGVM_RUN_DIR=\\\"${GVM_RUN_DIR}\\\")
+        add_definitions (-DGVM_RUN_DIR="${GVM_RUN_DIR}")
 endif (GVM_RUN_DIR)
 
 if (GVM_SYSCONF_DIR)
-        add_definitions (-DGVM_SYSCONF_DIR=\\\"${GVM_SYSCONF_DIR}\\\")
+        add_definitions (-DGVM_SYSCONF_DIR="${GVM_SYSCONF_DIR}")
 endif (GVM_SYSCONF_DIR)
 
 if (GVM_SYSCONF_DIR)
-  add_definitions (-DGVM_SYSCONF_DIR=\\\"${GVM_SYSCONF_DIR}\\\")
+  add_definitions (-DGVM_SYSCONF_DIR="${GVM_SYSCONF_DIR}")
 endif (GVM_SYSCONF_DIR)
 
 if (GVM_DATA_DIR)
-        add_definitions (-DGVM_DATA_DIR=\\\"${GVM_DATA_DIR}\\\")
+        add_definitions (-DGVM_DATA_DIR="${GVM_DATA_DIR}")
 endif (GVM_DATA_DIR)
 
 if (GVMD_DATA_DIR)
-  add_definitions (-DGVMD_DATA_DIR=\\\"${GVMD_DATA_DIR}\\\")
+  add_definitions (-DGVMD_DATA_DIR="${GVMD_DATA_DIR}")
 endif (GVMD_DATA_DIR)
 
 if (GVM_LIB_INSTALL_DIR)
-        add_definitions (-DGVM_LIB_INSTALL_DIR=\\\"${GVM_LIB_INSTALL_DIR}\\\")
+        add_definitions (-DGVM_LIB_INSTALL_DIR="${GVM_LIB_INSTALL_DIR}")
 endif (GVM_LIB_INSTALL_DIR)
 
 if (GVM_NVT_DIR)
-        add_definitions (-DGVM_NVT_DIR=\\\"${GVM_NVT_DIR}\\\")
+        add_definitions (-DGVM_NVT_DIR="${GVM_NVT_DIR}")
 endif (GVM_NVT_DIR)
 
 if (SBINDIR)
-  add_definitions (-DSBINDIR=\\\"${SBINDIR}\\\")
+  add_definitions (-DSBINDIR="${SBINDIR}")
 endif (SBINDIR)
 
 if (DEFINED GVM_SQLITE_SLEEP_MAX)
