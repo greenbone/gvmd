@@ -1,3 +1,10 @@
+2017-08-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r29318.
+
+	* src/manage_sqlite3.c (create_tables): Add index results_by_report, to
+	speed up the result selection for counting report results.
+
 2017-07-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r29253.
