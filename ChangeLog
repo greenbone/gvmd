@@ -1,3 +1,8 @@
+2017-08-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sqlite3.c (create_tables): Add index results_by_report, to
+	speed up the result selection for counting report results.
+
 2017-08-04  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Switch to NEW behavior for CMake policy CMP0005. The policy was
