@@ -1,3 +1,9 @@
+2017-08-04  Christian Fischer <christian.fischer@greenbone.net>
+
+	* src/manage_config_discovery.c (make_config_discovery_service_detection):
+	Add new find_service5.nasl and find_service6.nasl to predefined
+	"Discovery" scan config.
+
 2017-08-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sqlite3.c (create_tables): Add index results_by_report, to
