@@ -1,3 +1,10 @@
+2017-08-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r28057, by Timo Pollmeier.
+
+	* src/manage_sqlite3.c (create_tables): Add index results_by_nvt as
+	added in trunk r28047.
+
 2017-07-31  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (setting_auto_cache_rebuild_int): Add missing clause
