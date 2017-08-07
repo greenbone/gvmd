@@ -59881,10 +59881,12 @@ setting_timezone ()
 int
 setting_auto_cache_rebuild_int ()
 {
-  return sql_int ("SELECT value FROM settings"
-                  " WHERE uuid = 'a09285b0-2d47-49b6-a4ef-946ee71f1d5c'"
-                  " AND " ACL_USER_OWNS () ""
-                  " ORDER BY coalesce (owner, 0) DESC;",
+  return sql_int ("SELECT coalesce"
+                  "        ((SELECT value FROM settings"
+                  "          WHERE uuid = 'a09285b0-2d47-49b6-a4ef-946ee71f1d5c'"
+                  "          AND " ACL_USER_OWNS () ""
+                  "          ORDER BY coalesce (owner, 0) DESC),"
+                  "         '1');",
                   current_credentials.uuid);
 }
 
