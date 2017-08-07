@@ -23092,7 +23092,9 @@ report_severity_data (report_t report, const char *host,
     {
       get_data_t *get_all;
       get_all = report_results_get_data (1, -1, apply_overrides, autofp, 0);
+      ignore_max_rows_per_page = 1;
       init_result_get_iterator (&results, get_all, report, host, NULL);
+      ignore_max_rows_per_page = 0;
       while (next (&results))
         {
           double severity = result_iterator_severity_double (&results);
@@ -23112,7 +23114,9 @@ report_severity_data (report_t report, const char *host,
       get_filtered.type = get->type;
       get_filtered.ignore_pagination = 1;
 
+      ignore_max_rows_per_page = 1;
       init_result_get_iterator (&results, &get_filtered, report, host, NULL);
+      ignore_max_rows_per_page = 0;
       while (next (&results))
         {
           double severity = result_iterator_severity_double (&results);
