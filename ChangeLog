@@ -1,3 +1,8 @@
+2017-08-04  Christian Fischer <christian.fischer@greenbone.net>
+
+	* INSTALL: Corrected path to old tasks.db in Migration
+	guide to 8.0.
+
 2017-08-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (setting_auto_cache_rebuild_int): Provide a default in

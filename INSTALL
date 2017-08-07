@@ -181,7 +181,7 @@ and it gets more complicated to transfer the old data properly.
  - move $prefix/var/lib/openvas/private to
    $prefix/var/lib/gvm/private
 
- - (SQLite backend only) move $prefix/var/lib/gvm/gvmd/mgr/tasks.db to
+ - (SQLite backend only) move $prefix/var/lib/openvas/mgr/tasks.db to
    $prefix/var/lib/gvm/gvmd/gvmd.db
 
  - (Postgres backend only) rename database to "gvmd":
