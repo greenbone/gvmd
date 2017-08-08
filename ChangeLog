@@ -1,3 +1,8 @@
+2017-08-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* tools/gvm-manage-certs.in: Change certificate paths to match GSA, as in
+	r29296.
+
 2017-08-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (report_severity_data): Ignore "Max Rows Per Page"
