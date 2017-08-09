@@ -3605,8 +3605,6 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (int),
   int pid, lockfile;
   gchar *lockfile_name;
 
-  g_debug ("%s", __FUNCTION__);
-
   /* Fork a child to sync the db, so that the parent can return to the main
    * loop. */
 
@@ -3651,8 +3649,6 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (int),
             exit (EXIT_SUCCESS);
           }
 
-        g_debug ("%s: locked", __FUNCTION__);
-
         /* Init. */
 
         reinit_manage_process ();
@@ -3667,7 +3663,6 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (int),
 
       default:
         /* Parent.  Continue to next task. */
-        g_debug ("%s: %i forked %i", __FUNCTION__, getpid (), pid);
         return;
 
     }
@@ -3676,12 +3671,8 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (int),
 
   if (update (lockfile) == 0)
     {
-      g_info ("%s: Checking for alerts", __FUNCTION__);
-
       check_alerts ();
     }
-
-  g_debug ("%s: cleaning up", __FUNCTION__);
 
   /* Close the lock file. */
 
@@ -3913,8 +3904,6 @@ sync_cert (int lockfile)
 
   if (manage_cert_db_exists ())
     {
-      g_debug ("%s: database exists", __FUNCTION__);
-
       if (check_cert_db_version ())
         return -1;
     }
@@ -3927,8 +3916,6 @@ sync_cert (int lockfile)
           return -1;
         }
     }
-
-  g_debug ("%s: get last_cert_update", __FUNCTION__);
 
   last_cert_update = 0;
   if (manage_cert_loaded ())
@@ -3948,19 +3935,12 @@ sync_cert (int lockfile)
       last_cert_update = 0;
     }
 
-  g_debug ("%s: last_cert_update: %i", __FUNCTION__, last_cert_update);
-
   last_feed_update = manage_feed_timestamp ("cert");
   if (last_feed_update == -1)
     return -1;
 
-  g_debug ("%s: last_feed_update: %i", __FUNCTION__, last_feed_update);
-
   if (last_cert_update >= last_feed_update)
-    {
-      g_debug ("%s: skipping, CERT db newer than feed", __FUNCTION__);
-      return -1;
-    }
+    return -1;
 
   g_debug ("%s: sync", __FUNCTION__);
 
@@ -4242,8 +4222,6 @@ sync_scap (int lockfile)
 
   if (manage_scap_db_exists ())
     {
-      g_debug ("%s: database exists", __FUNCTION__);
-
       if (check_scap_db_version ())
         return -1;
     }
@@ -4257,8 +4235,6 @@ sync_scap (int lockfile)
           return -1;
         }
     }
-
-  g_debug ("%s: get last_scap_update", __FUNCTION__);
 
   last_scap_update = -1;
   if (manage_scap_loaded ())
@@ -4278,19 +4254,12 @@ sync_scap (int lockfile)
       last_scap_update = 0;
     }
 
-  g_debug ("%s: last_scap_update: %i", __FUNCTION__, last_scap_update);
-
   last_feed_update = manage_feed_timestamp ("scap");
   if (last_feed_update == -1)
     return -1;
 
-  g_debug ("%s: last_feed_update: %i", __FUNCTION__, last_feed_update);
-
   if (last_scap_update >= last_feed_update)
-    {
-      g_debug ("%s: skipping, SCAP db newer than feed", __FUNCTION__);
-      return -1;
-    }
+    return -1;
 
   g_debug ("%s: sync", __FUNCTION__);
 

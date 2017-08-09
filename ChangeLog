@@ -1,5 +1,11 @@
 2017-08-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql_secinfo.c (sync_secinfo, sync_cert, sync_scap): Remove
+	excess logging that is output during the periodic sync check even when no
+	sync is required.
+
+2017-08-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/gvmd.c (serve_and_schedule): Check last_schedule_time before the
 	second manage_schedule call, to prevent manage_schedule from running
 	every time pselect exits.  Also compare with >=, because the pselect
