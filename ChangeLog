@@ -1,3 +1,10 @@
+2017-08-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/gvmd.c (serve_and_schedule): Check last_schedule_time before the
+	second manage_schedule call, to prevent manage_schedule from running
+	every time pselect exits.  Also compare with >=, because the pselect
+	will exit with exactly SCHEDULE_PERIOD seconds if not interrupted.
+
 2017-08-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* tools/gvm-manage-certs.in: Change certificate paths to match GSA, as in

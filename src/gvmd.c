@@ -1265,16 +1265,22 @@ serve_and_schedule ()
           fork_update_nvt_cache ();
         }
 
-      if ((time (NULL) - last_schedule_time) > SCHEDULE_PERIOD)
-        {
-          if (manage_schedule (fork_connection_for_scheduler,
-                               scheduling_enabled,
-                               sigmask_normal)
-              < 0)
-            exit (EXIT_FAILURE);
-
-          last_schedule_time = time (NULL);
-        }
+      if ((time (NULL) - last_schedule_time) >= SCHEDULE_PERIOD)
+        switch (manage_schedule (fork_connection_for_scheduler,
+                                 scheduling_enabled,
+                                 sigmask_normal,
+                                 fork_update_nvt_cache))
+          {
+            case 0:
+              last_schedule_time = time (NULL);
+              g_debug ("%s: last_schedule_time: %li",
+                       __FUNCTION__, last_schedule_time);
+              break;
+            case 1:
+              break;
+            default:
+              exit (EXIT_FAILURE);
+          }
 
       timeout.tv_sec = SCHEDULE_PERIOD;
       timeout.tv_nsec = 0;
@@ -1311,10 +1317,21 @@ serve_and_schedule ()
             accept_and_maybe_fork (manager_socket_2, sigmask_normal);
         }
 
-      if (manage_schedule (fork_connection_for_scheduler, scheduling_enabled,
-                           sigmask_normal)
-          < 0)
-        exit (EXIT_FAILURE);
+      if ((time (NULL) - last_schedule_time) >= SCHEDULE_PERIOD)
+        switch (manage_schedule (fork_connection_for_scheduler,
+                                 scheduling_enabled, sigmask_normal,
+                                 fork_update_nvt_cache))
+          {
+            case 0:
+              last_schedule_time = time (NULL);
+              g_debug ("%s: last_schedule_time 2: %li",
+                       __FUNCTION__, last_schedule_time);
+              break;
+            case 1:
+              break;
+            default:
+              exit (EXIT_FAILURE);
+          }
 
       if (termination_signal)
         {
@@ -1333,8 +1350,6 @@ serve_and_schedule ()
           sighup_update_nvt_cache = 0;
           fork_update_nvt_cache ();
         }
-
-      last_schedule_time = time (NULL);
     }
 }
 
