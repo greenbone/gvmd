@@ -3735,7 +3735,6 @@ manage_feed_timestamp (const gchar *name)
         }
 
       timestamp[8] = '\0';
-      g_debug ("%s: parsing: %s", __FUNCTION__, timestamp);
       stamp = parse_feed_timestamp (timestamp);
       g_free (timestamp);
       if (stamp == 0)

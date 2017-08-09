@@ -118,8 +118,6 @@ parse_utc_time (const char *format, const char *text_time)
       return 0;
     }
 
-  g_debug ("%s: text_time: %s", __FUNCTION__, text_time);
-  g_debug ("%s: format: %s", __FUNCTION__, format);
   memset (&tm, 0, sizeof (struct tm));
   if (strptime ((char*) text_time, format, &tm) == NULL)
     {

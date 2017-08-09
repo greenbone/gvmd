@@ -1,5 +1,13 @@
 2017-08-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql_secinfo.c (manage_feed_timestamp): Remove debug log.
+	Not often useful and appears often due to scheduler.
+
+	* src/util.c (parse_utc_time): Remove debug logs.  Not often useful
+	and appear often due to scheduler.
+
+2017-08-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql_secinfo.c (sync_secinfo, sync_cert, sync_scap): Remove
 	excess logging that is output during the periodic sync check even when no
 	sync is required.
