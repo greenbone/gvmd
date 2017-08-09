@@ -207,4 +207,7 @@ sql_column_int (sql_stmt_t *, int);
 long long int
 sql_column_int64 (sql_stmt_t *, int);
 
+int
+sql_cancel_internal ();
+
 #endif /* not OPENVAS_MANAGER_SQL_H */

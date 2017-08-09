@@ -66510,3 +66510,15 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
 
   return ret;
 }
+
+/**
+ * @brief Cancels the current SQL statement.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+sql_cancel ()
+{
+  g_debug ("%s: cancelling current SQL statement", __FUNCTION__);
+  return sql_cancel_internal ();
+}

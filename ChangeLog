@@ -1,3 +1,29 @@
+2017-08-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r28922 and r28923.
+
+	Handle termination signals outside the main serve_and_schedule loop by
+	canceling SQL statements and closing scanner connections.
+
+	* src/manage_sql.c (sql_cancel): New function.
+
+	* src/manage.c (handle_slave_task): Stop current task if a termination
+	signal was received.
+	(get_termination_signal): New function.
+
+	* src/manage.h (get_termination_signal, sql_cancel): New prototypes.
+
+	* src/ompd.c (serve_omp): Close scanner connection and exit loop if a
+	termination signal was received.
+
+	* src/openvasmd.c (handle_termination_signal): Call sql_cancel.
+
+	* src/sql_pg.c (sql_cancel_internal): New function.
+
+	* src/sql_sqlite3.c (sql_cancel_internal): New function.
+
+	* src/sql.h (sql_cancel_internal): New function prototype.
+
 2017-08-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r29325.

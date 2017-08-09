@@ -556,6 +556,21 @@ serve_omp (openvas_connection_t *client_connection, const gchar *database,
     {
       int ret;
       fd_set readfds, writefds;
+      int termination_signal = get_termination_signal ();
+
+      if (termination_signal)
+        {
+          g_debug ("%s: Received %s signal.",
+                   __FUNCTION__,
+                   sys_siglist[get_termination_signal()]);
+
+          if (openvas_scanner_connected ())
+            {
+              openvas_scanner_close ();
+            }
+
+          goto client_free;
+        }
 
       /* Setup for select. */
 

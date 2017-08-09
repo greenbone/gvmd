@@ -868,6 +868,8 @@ void
 handle_termination_signal (int signal)
 {
   termination_signal = signal;
+
+  sql_cancel ();
 }
 
 /**

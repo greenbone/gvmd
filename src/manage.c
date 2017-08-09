@@ -156,6 +156,9 @@
  */
 #define MAX_HOSTS_DEFAULT "20"
 
+extern volatile int termination_signal;
+
+
 
 /* Certificate and key management. */
 
@@ -3473,9 +3476,22 @@ handle_slave_task (task_t task, target_t target,
       }
     else
       {
+        int termination_signal = get_termination_signal ();
         if ((task_run_status (task) == TASK_STATUS_STOP_REQUESTED_GIVEUP)
-            || (task_run_status (task) == TASK_STATUS_STOP_REQUESTED))
+            || (task_run_status (task) == TASK_STATUS_STOP_REQUESTED)
+            || termination_signal)
           {
+            if (termination_signal)
+              {
+                g_debug ("%s: Received %s signal.",
+                         __FUNCTION__,
+                         sys_siglist[get_termination_signal()]);
+              }
+            if (current_report)
+              {
+                set_report_scan_run_status (current_report,
+                                            TASK_STATUS_STOPPED);
+              }
             set_task_run_status (task, TASK_STATUS_STOPPED);
             g_free (slave_task_name);
             return 0;
@@ -3485,6 +3501,22 @@ handle_slave_task (task_t task, target_t target,
 
   while (1)
     {
+      int termination_signal = get_termination_signal ();
+      if (termination_signal)
+        {
+          g_debug ("%s: Received %s signal.",
+                   __FUNCTION__,
+                   sys_siglist[get_termination_signal()]);
+          if (current_report)
+            {
+              set_report_scan_run_status (current_report,
+                                          TASK_STATUS_STOPPED);
+            }
+          set_task_run_status (task, TASK_STATUS_STOPPED);
+          g_free (slave_task_name);
+          return 0;
+        }
+
       ret = slave_setup (connection, slave_task_name,
                          task, target, target_ssh_credential,
                          target_smb_credential, target_esxi_credential,
@@ -9428,4 +9460,15 @@ manage_run_wizard (const gchar *name,
   if (forked)
     return 3;
   return 0;
+}
+
+/**
+ * @brief Gets the last termination signal or 0.
+ *
+ * @return The last termination signal or 0 if there was none.
+ */
+int
+get_termination_signal ()
+{
+  return termination_signal;
 }
