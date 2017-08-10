@@ -480,9 +480,7 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
   if (client_connection->socket < 0)
     gmpd_nvt_cache_mode = client_connection->socket;
 
-  if (gmpd_nvt_cache_mode)
-    g_info ("   Updating NVT cache.\n");
-  else
+  if (gmpd_nvt_cache_mode == 0)
     g_debug ("   Serving GMP.\n");
 
   /* Initialise the XML parser and the manage library. */

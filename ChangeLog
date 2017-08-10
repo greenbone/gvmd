@@ -1,5 +1,13 @@
 2017-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/gmpd.c (serve_gmp): Remove update log, now done in otp.c but only if
+	an update is going to happen.
+
+	* src/gvmd.c (update_or_rebuild_nvt_cache): Remove excess info logging
+	that happens during the scheduler checks.
+
+2017-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Automatically update the NVTs in the db when the feed on disk updates.
 
 	* src/gmpd.c (serve_gmp): Handle process_otp_scanner_input return when

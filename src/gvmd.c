@@ -990,15 +990,9 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
   /* Initialise GMP daemon. */
 
   if (update_nvt_cache == 0)
-    {
-      proctitle_set ("gvmd: Rebuilding NVT cache");
-      g_info ("%s: Rebuilding NVT cache...\n", __FUNCTION__);
-    }
+    proctitle_set ("gvmd: Rebuilding NVT cache");
   else
-    {
-      proctitle_set ("gvmd: Updating NVT cache");
-      g_info ("%s: Updating NVT cache...\n", __FUNCTION__);
-    }
+    proctitle_set ("gvmd: Updating NVT cache");
 
   switch (init_gmpd (log_config,
                      update_nvt_cache ? -1 : -2,
@@ -1087,7 +1081,6 @@ rebuild_nvt_cache_retry (int update_or_rebuild, int register_cleanup,
                          void (*progress) (), int skip_create_tables)
 {
   proctitle_set ("gvmd: Reloading");
-  g_info ("%s: Reloading NVT cache\n", __FUNCTION__);
 
   /* Don't ignore SIGCHLD, in order to wait for child process. */
   setup_signal_handler (SIGCHLD, SIG_DFL, 0);
@@ -1172,8 +1165,6 @@ fork_update_nvt_cache ()
         gvm_auth_tear_down ();
 
         /* Update the cache. */
-
-        g_info ("   internal NVT cache update\n");
 
         rebuild_nvt_cache_retry (1, 0, NULL, 1);
 
