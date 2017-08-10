@@ -1,5 +1,17 @@
 2017-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/gvmd.c (serve_and_schedule): Separate the sync calls out from
+	manage_schedule, with a separate "last time" counter.  This prevents
+	the sync checks from happening repeatedly when other parts of
+	manage_schedule fail to get a lock on the db.
+
+	* src/manage.c (manage_sync): New function.
+	(manage_schedule): Remove sync calls.
+
+	* src/manage.h: Add header accordingly.
+
+2017-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/gmpd.c (serve_gmp): Remove update log, now done in otp.c but only if
 	an update is going to happen.
 

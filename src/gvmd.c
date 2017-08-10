@@ -1204,9 +1204,12 @@ fork_update_nvt_cache ()
 static void
 serve_and_schedule ()
 {
-  time_t last_schedule_time = 0;
+  time_t last_schedule_time, last_sync_time;
   sigset_t sigmask_all;
   static sigset_t sigmask_current;
+
+  last_schedule_time = 0;
+  last_sync_time = 0;
 
   if (sigfillset (&sigmask_all))
     {
@@ -1273,6 +1276,12 @@ serve_and_schedule ()
               exit (EXIT_FAILURE);
           }
 
+      if ((time (NULL) - last_sync_time) >= SCHEDULE_PERIOD)
+        {
+          manage_sync (sigmask_normal, fork_update_nvt_cache);
+          last_sync_time = time (NULL);
+        }
+
       timeout.tv_sec = SCHEDULE_PERIOD;
       timeout.tv_nsec = 0;
       ret = pselect (nfds, &readfds, NULL, &exceptfds, &timeout,
@@ -1323,6 +1332,12 @@ serve_and_schedule ()
             default:
               exit (EXIT_FAILURE);
           }
+
+      if ((time (NULL) - last_sync_time) >= SCHEDULE_PERIOD)
+        {
+          manage_sync (sigmask_normal, fork_update_nvt_cache);
+          last_sync_time = time (NULL);
+        }
 
       if (termination_signal)
         {

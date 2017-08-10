@@ -2828,6 +2828,9 @@ get_scheduled_user_uuid ();
 void
 set_scheduled_user_uuid (gchar* uuid);
 
+void
+manage_sync (sigset_t *, int (*fork_update_nvt_cache) ());
+
 int
 manage_schedule (int (*) (gvm_connection_t *, gchar *),
                  gboolean,
