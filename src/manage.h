@@ -2831,7 +2831,8 @@ set_scheduled_user_uuid (gchar* uuid);
 int
 manage_schedule (int (*) (gvm_connection_t *, gchar *),
                  gboolean,
-                 sigset_t *);
+                 sigset_t *,
+                 int (*) ());
 
 char *
 schedule_uuid (schedule_t);

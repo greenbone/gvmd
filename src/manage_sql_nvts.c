@@ -1215,3 +1215,15 @@ manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list,
   if (progress)
     progress ();
 }
+
+/**
+ * @brief Sync NVTs if newer NVTs are available.
+ *
+ * @param[in]  fork_update_nvt_cache  Function to do the update.
+ */
+void
+manage_sync_nvts (int (*fork_update_nvt_cache) ())
+{
+  fork_update_nvt_cache ();
+  return;
+}

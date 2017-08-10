@@ -6697,7 +6697,8 @@ scheduled_task_stop (scheduled_task_t *scheduled_task,
 int
 manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
                  gboolean run_tasks,
-                 sigset_t *sigmask_current)
+                 sigset_t *sigmask_current,
+                 int (*fork_update_nvt_cache) ())
 {
   iterator_t schedules;
   GSList *starts, *stops;
@@ -6709,6 +6710,7 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
   previous_start_task = 0;
   previous_stop_task = 0;
 
+  manage_sync_nvts (fork_update_nvt_cache);
   manage_sync_scap (sigmask_current);
   manage_sync_cert (sigmask_current);
 

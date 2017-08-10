@@ -978,6 +978,12 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
                 return 1;
               openvas_scanner_close ();
             }
+          else if (ret == 4)
+            {
+              /* NVT update requested and NVTS are already at that version. */
+              assert (gmpd_nvt_cache_mode);
+              return 0;
+            }
           else if (ret == -1)
             {
               /* Error. */

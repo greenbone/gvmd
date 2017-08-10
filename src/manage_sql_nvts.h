@@ -103,4 +103,7 @@ nvt_iterator_columns_nvts ();
 int
 check_config_families ();
 
+void
+manage_sync_nvts (int (*) ());
+
 #endif /* not _GVMD_MANAGE_SQL_NVTS_H */

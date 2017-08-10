@@ -1255,11 +1255,19 @@ process_otp_scanner_input (void (*progress) ())
                 }
               case SCANNER_NVT_INFO:
                 {
-                  char* feed_version = g_strdup (field);
+                  char *feed_version, *db_feed_version;
+
+                  feed_version = g_strdup (field);
                   g_debug ("   scanner got nvti_info: %s\n", feed_version);
                   if (plugins_feed_version)
                     g_free (plugins_feed_version);
                   plugins_feed_version = feed_version;
+                  db_feed_version = nvts_feed_version ();
+                  if (db_feed_version
+                      && (strcmp (plugins_feed_version, db_feed_version) == 0))
+                    /* NVTs are at this version already. */
+                    return 4;
+                  g_info ("   Updating NVT cache.\n");
                   set_scanner_state (SCANNER_DONE);
                   switch (parse_scanner_done (&messages))
                     {

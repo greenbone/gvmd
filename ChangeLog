@@ -1,3 +1,22 @@
+2017-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Automatically update the NVTs in the db when the feed on disk updates.
+
+	* src/gmpd.c (serve_gmp): Handle process_otp_scanner_input return when
+	NVTs are up to date already.
+
+	* src/manage.c (manage_schedule): Add forker arg.  Call NVT syncer.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/manage_sql_nvts.c (manage_sync_nvts): New function.
+
+	* src/manage_sql_nvts.h: Add header accordingly.
+
+	* src/otp.c (process_otp_scanner_input): In SCANNER_NVT_INFO, if the feed
+	is the same as the feed in the db, then exit, so that serve_gmp can skip
+	the update.
+
 2017-08-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql_secinfo.c (manage_feed_timestamp): Remove debug log.
