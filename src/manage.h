@@ -1914,7 +1914,7 @@ void
 set_nvts_feed_version (const char*);
 
 nvt_t
-make_nvt_from_nvti (const nvti_t*, int);
+make_nvt_from_nvti (const nvti_t*);
 
 gboolean
 find_nvt (const char*, nvt_t*);
@@ -1981,7 +1981,7 @@ int
 family_nvt_count (const char *);
 
 void
-manage_complete_nvt_cache_update (GList *, GList *, int);
+manage_complete_nvt_cache_update (GList *, GList *);
 
 
 /* NVT selectors. */
@@ -2040,7 +2040,7 @@ nvt_selector_iterator_type (iterator_t*);
 /* NVT preferences. */
 
 void
-manage_nvt_preference_add (const char*, const char*, int);
+manage_nvt_preference_add (const char*, const char*);
 
 void
 manage_nvt_preferences_enable ();

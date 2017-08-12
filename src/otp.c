@@ -1298,9 +1298,7 @@ process_otp_scanner_input ()
                         {
                           manage_complete_nvt_cache_update
                            (scanner_plugins_list,
-                            scanner_preferences_list,
-                            scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE
-                            ? -2 : -1);
+                            scanner_preferences_list);
                           set_scanner_init_state (SCANNER_INIT_DONE);
                           manage_nvt_preferences_enable ();
                           /* Return 1, as though the scanner sent BYE. */

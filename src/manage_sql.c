@@ -38243,24 +38243,15 @@ check_config_families ()
  * @param[in]  remove  Whether to remove the preference from the database first.
  */
 void
-manage_nvt_preference_add (const char* name, const char* value, int remove)
+manage_nvt_preference_add (const char* name, const char* value)
 {
   gchar* quoted_name = sql_quote (name);
   gchar* quoted_value = sql_quote (value);
-
-  if (remove)
-    {
-      sql_begin_exclusive ();
-      sql ("DELETE FROM nvt_preferences WHERE name = '%s';", quoted_name);
-    }
 
   if (strcmp (name, "port_range"))
     sql ("INSERT into nvt_preferences (name, value)"
          " VALUES ('%s', '%s');",
          quoted_name, quoted_value);
-
-  if (remove)
-    sql_commit ();
 
   g_free (quoted_name);
   g_free (quoted_value);

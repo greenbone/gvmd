@@ -182,12 +182,11 @@ int chunk_count = 0;
  * @brief Make an nvt from an nvti.
  *
  * @param[in]  nvti    NVTI.
- * @param[in]  remove  Whether to remove the NVT from the cache first.
  *
  * @return An NVT.
  */
 nvt_t
-make_nvt_from_nvti (const nvti_t *nvti, int remove)
+make_nvt_from_nvti (const nvti_t *nvti)
 {
   gchar *qod_str, *qod_type;
   /** @todo Freeing string literals. */
@@ -198,20 +197,15 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
 
   int creation_time, modification_time, qod;
 
-  if (remove)
+  if (chunk_count == 0)
     {
-      if (chunk_count == 0)
-        {
-          sql_begin_exclusive ();
-          chunk_count++;
-        }
-      else if (chunk_count == CHUNK_SIZE)
-        chunk_count = 0;
-      else
-        chunk_count++;
-      sql ("DELETE FROM nvt_cves where oid = '%s';", nvti_oid (nvti));
-      sql ("DELETE FROM nvts WHERE oid = '%s';", nvti_oid (nvti));
+      sql_begin_exclusive ();
+      chunk_count++;
     }
+  else if (chunk_count == CHUNK_SIZE)
+    chunk_count = 0;
+  else
+    chunk_count++;
 
   quoted_version = sql_quote (nvti_version (nvti));
   quoted_name = sql_quote (nvti_name (nvti) ? nvti_name (nvti) : "");
@@ -361,7 +355,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
          modification_time, nvti_oid (nvti), quoted_solution_type,
          qod, quoted_qod_type);
 
-  if (remove && (chunk_count == 0))
+  if (chunk_count == 0)
     sql_commit ();
 
   g_free (quoted_version);
@@ -975,56 +969,48 @@ family_count ()
 /**
  * @brief Insert an NVT from an nvti structure.
  *
- * @param[in] nvti          nvti_t to insert in nvts table.
- * @param[in] mode_pointer  Mode.  -1 updating, -2 rebuilding.
- *
+ * @param[in] nvti   nvti_t to insert in nvts table.
+ * @param[in] dummy  Dummy arg for g_list_foreach.
  */
 static void
-insert_nvt_from_nvti (gpointer nvti, gpointer mode_pointer)
+insert_nvt_from_nvti (gpointer nvti, gpointer dummy)
 {
-  int mode;
-
   if (nvti == NULL)
     return;
 
-  mode = GPOINTER_TO_INT (mode_pointer);
-
-  make_nvt_from_nvti (nvti, mode == -1);
+  make_nvt_from_nvti (nvti);
 }
 
 /**
  * @brief Insert a NVT preferences.
  *
  * @param[in] nvt_preference  Preference.
- * @param[in] mode_pointer    Mode.  -1 updating, -2 rebuilding.
+ * @param[in] dummy           Dummy arg for g_list_foreach.
  *
  */
 static void
-insert_nvt_preference (gpointer nvt_preference, gpointer mode_pointer)
+insert_nvt_preference (gpointer nvt_preference, gpointer dummy)
 {
-  int mode;
   preference_t *preference;
 
   if (nvt_preference == NULL)
     return;
 
-  mode = GPOINTER_TO_INT (mode_pointer);
   preference = (preference_t*) nvt_preference;
-  manage_nvt_preference_add (preference->name, preference->value, mode == -1);
+  manage_nvt_preference_add (preference->name, preference->value);
 }
 
 /**
  * @brief Inserts NVTs in DB from a list of nvti_t structures.
  *
  * @param[in]  nvts_list     List of nvts to be inserted.
- * @param[in]  mode          -1 updating, -2 rebuilding.
  */
 static void
-insert_nvts_list (GList *nvts_list, int mode)
+insert_nvts_list (GList *nvts_list)
 {
   chunk_count = 0;
-  g_list_foreach (nvts_list, insert_nvt_from_nvti, GINT_TO_POINTER (mode));
-  if ((mode == -1) && (chunk_count > 0))
+  g_list_foreach (nvts_list, insert_nvt_from_nvti, NULL);
+  if (chunk_count > 0)
     sql_commit ();
 }
 
@@ -1032,13 +1018,11 @@ insert_nvts_list (GList *nvts_list, int mode)
  * @brief Inserts NVT preferences in DB from a list of nvt_preference_t structures.
  *
  * @param[in]  nvt_preferences_list     List of nvts to be inserted.
- * @param[in]  mode                     -1 updating, -2 rebuilding.
  */
 static void
-insert_nvt_preferences_list (GList *nvt_preferences_list, int mode)
+insert_nvt_preferences_list (GList *nvt_preferences_list)
 {
-  g_list_foreach (nvt_preferences_list, insert_nvt_preference,
-                  GINT_TO_POINTER (mode));
+  g_list_foreach (nvt_preferences_list, insert_nvt_preference, NULL);
 }
 
 /**
@@ -1119,34 +1103,34 @@ refresh_nvt_cves ()
  *
  * @param[in]  nvts_list             List of nvti_t to insert.
  * @param[in]  nvt_preferences_list  List of preference_t to insert.
- * @param[in]  mode                  -1 updating, -2 rebuilding.
  */
 void
-manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list,
-                                  int mode)
+manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list)
 {
   iterator_t configs;
   int count;
 
-  if (mode == -2)
+  sql_begin_exclusive ();
+  if (sql_is_sqlite3 ())
     {
-      sql_begin_exclusive ();
-      if (sql_is_sqlite3 ())
-        {
-          sql ("DELETE FROM nvt_cves;");
-          sql ("DELETE FROM nvts;");
-          sql ("DELETE FROM nvt_preferences;");
-        }
-      else
-        {
-          sql ("TRUNCATE nvts CASCADE;");
-          sql ("TRUNCATE nvt_preferences;");
-        }
+      sql ("DELETE FROM nvt_cves;");
+      sql ("DELETE FROM nvts;");
+      sql ("DELETE FROM nvt_preferences;");
     }
+  else
+    {
+      sql ("TRUNCATE nvts CASCADE;");
+      sql ("TRUNCATE nvt_preferences;");
+    }
+  sql_commit ();
 
   /* NVTs and preferences are buffered, insert them into DB. */
-  insert_nvts_list (nvts_list, mode);
-  insert_nvt_preferences_list (nvt_preferences_list, mode);
+  insert_nvts_list (nvts_list);
+  sql_begin_exclusive ();
+  insert_nvt_preferences_list (nvt_preferences_list);
+  sql_commit ();
+
+  sql_begin_exclusive ();
 
   /* Remove preferences from configs where the preference has vanished from
    * the associated NVT. */
@@ -1165,11 +1149,7 @@ manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list,
                __FUNCTION__);
   update_all_config_caches ();
 
-  if (mode == -1)
-    sql_begin_exclusive ();
   refresh_nvt_cves ();
-  if (mode == -1)
-    sql_commit ();
 
   if (sql_int ("SELECT NOT EXISTS (SELECT * FROM meta"
                "                   WHERE name = 'nvts_check_time')"))
@@ -1187,14 +1167,10 @@ manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list,
            " WHERE name = 'nvts_check_time';");
     }
 
-  if (mode == -2)
-    sql_commit ();
+  sql_commit ();
 
   count = sql_int ("SELECT count (*) FROM nvts;");
-  if (mode == -2)
-    g_info ("Rebuilding NVT cache... done (%i NVTs).", count);
-  else
-    g_info ("Updating NVT cache... done (%i NVTs).", count);
+  g_info ("Updating NVT cache... done (%i NVTs).", count);
 }
 
 /**

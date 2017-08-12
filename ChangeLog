@@ -1,5 +1,29 @@
 2017-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	For the NVT sync, always delete the existing info in a single transaction,
+	and always insert the new info in chunks.  This combines parts of the old
+	--update and --rebuild behaviours.
+
+	* src/otp.c (process_otp_scanner_input): Remove the mode arg from the
+	cache call.  There's only one option now.
+
+	* src/manage_sql.c (manage_nvt_preference_add): Remove "remove".  All
+	preferences are added in one transaction now.
+
+	* src/manage_sql_nvts.c (make_nvt_from_nvti): Remove "remove".  Always do
+	inserts in chunks.
+	(insert_nvt_from_nvti, insert_nvt_preference): Replace mode with dummy
+	arg.
+	(insert_nvts_list): Remove mode.  Always chunked now.
+	(insert_nvt_preferences_list): Remove mode arg.
+	(manage_complete_nvt_cache_update): Remove mode arg.  Always delete all
+	NVT info here and in a single transaction.  Wrap the remaining work in
+	transactions too.
+
+	* src/manage.h: Update headers accordingly.
+
+2017-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.h (progress): Remove.
 
 	* src/manage_sql_nvts.c (insert_nvt_from_nvti, insert_nvt_preference)
