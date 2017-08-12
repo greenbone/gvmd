@@ -1,5 +1,11 @@
 2017-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/gvmd.c (main): Remove --update and --rebuild now that NVTs are
+	auto synced.  Also remove --otp-scanner, which was only used by those
+	two.
+
+2017-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Simply ignore SIGHUP, now that NVTs are automatically updated.
 
 	* src/gvmd.c (sighup_update_nvt_cache): Remove.

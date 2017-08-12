@@ -1563,8 +1563,6 @@ main (int argc, char** argv)
   static gboolean disable_scheduling = FALSE;
   static gboolean get_users = FALSE;
   static gboolean get_scanners = FALSE;
-  static gboolean update_nvt_cache = FALSE;
-  static gboolean rebuild_nvt_cache = FALSE;
   static gboolean foreground = FALSE;
   static gboolean print_version = FALSE;
   static gboolean progress = FALSE;
@@ -1579,7 +1577,6 @@ main (int argc, char** argv)
   static gchar *create_scanner = NULL;
   static gchar *modify_scanner = NULL;
   static gchar *scanner_host = NULL;
-  static gchar *otp_scanner = NULL;
   static gchar *scanner_port = NULL;
   static gchar *scanner_type = NULL;
   static gchar *scanner_ca_pub = NULL;
@@ -1632,8 +1629,6 @@ main (int argc, char** argv)
         { "scanner-host", '\0', 0, G_OPTION_ARG_STRING, &scanner_host,
           "Scanner host for --create-scanner and --modify-scanner. Default is " OPENVASSD_ADDRESS ".",
           "<scanner-host>" },
-        { "otp-scanner", '\0', 0, G_OPTION_ARG_STRING, &otp_scanner,
-          "Path to scanner unix socket file. Used by --rebuild and --update", "<unixsocket>" },
         { "scanner-port", '\0', 0, G_OPTION_ARG_STRING, &scanner_port,
           "Scanner port for --create-scanner and --modify-scanner. Default is " G_STRINGIFY (OPENVASSD_PORT) ".",
           "<scanner-port>" },
@@ -1677,9 +1672,7 @@ main (int argc, char** argv)
         { "port", 'p', 0, G_OPTION_ARG_STRING, &manager_port_string, "Use port number <number>.", "<number>" },
         { "port2", '\0', 0, G_OPTION_ARG_STRING, &manager_port_string_2, "Use port number <number> for address 2.", "<number>" },
         { "progress", '\0', 0, G_OPTION_ARG_NONE, &progress, "Display progress during --rebuild and --update.", NULL },
-        { "rebuild", '\0', 0, G_OPTION_ARG_NONE, &rebuild_nvt_cache, "Rebuild the NVT cache and exit.", NULL },
         { "role", '\0', 0, G_OPTION_ARG_STRING, &role, "Role for --create-user and --get-users.", "<role>" },
-        { "update", 'u', 0, G_OPTION_ARG_NONE, &update_nvt_cache, "Update the NVT cache and exit.", NULL },
         { "unix-socket", 'c', 0, G_OPTION_ARG_STRING, &manager_address_string_unix, "Listen on UNIX socket at <filename>.", "<filename>" },
         { "user", '\0', 0, G_OPTION_ARG_STRING, &user, "User for --new-password.", "<username>" },
         { "gnutls-priorities", '\0', 0, G_OPTION_ARG_STRING, &priorities, "Sets the GnuTLS priorities for the Manager socket.", "<priorities-string>" },
@@ -2135,45 +2128,6 @@ main (int argc, char** argv)
       if (ret)
         return EXIT_FAILURE;
       return EXIT_SUCCESS;
-    }
-
-  if (update_nvt_cache || rebuild_nvt_cache)
-    {
-      int ret;
-
-      /* Run the NVT caching manager: update NVT cache and then exit. */
-
-      /* Use --otp-scanner if provided instead of default scanner. */
-      if (otp_scanner)
-        {
-          openvas_scanner_set_unix (otp_scanner);
-          if (openvas_scanner_connect () || openvas_scanner_init (1))
-            {
-              openvas_scanner_close ();
-              return EXIT_FAILURE;
-            }
-        }
-      if (progress)
-        {
-          if (update_nvt_cache)
-            printf ("Updating NVT cache... \\");
-          else
-            printf ("Rebuilding NVT cache... \\");
-          fflush (stdout);
-        }
-      ret = rebuild_nvt_cache_retry (update_nvt_cache, 1,
-                                     progress ? spin_progress : NULL,
-                                     0);
-      if (progress)
-        {
-          putchar ('\b');
-          if (ret == EXIT_SUCCESS)
-            printf ("done.\n");
-          else
-            printf ("failed.\n");
-          fflush (stdout);
-        }
-      return ret;
     }
 
   /* Run the standard manager. */
