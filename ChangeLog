@@ -1,5 +1,15 @@
 2017-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Simply ignore SIGHUP, now that NVTs are automatically updated.
+
+	* src/gvmd.c (sighup_update_nvt_cache): Remove.
+	(update_in_progress): Adjust doc.
+	(handle_sighup_update): Remove.
+	(serve_and_schedule): Remove SIGHUP checks.
+	(main): Set SIGHUP to SIG_IGN.
+
+2017-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/gvmd.c (serve_and_schedule): Separate the sync calls out from
 	manage_schedule, with a separate "last time" counter.  This prevents
 	the sync checks from happening repeatedly when other parts of

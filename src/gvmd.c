@@ -252,11 +252,6 @@ int is_parent = 1;
 volatile int termination_signal = 0;
 
 /**
- * @brief Flag for SIGHUP handler.
- */
-volatile int sighup_update_nvt_cache = 0;
-
-/**
  * @brief The address of the Scanner.
  */
 static gchar **disabled_commands = NULL;
@@ -296,7 +291,7 @@ gchar *priorities_option = "NORMAL";
 gchar *dh_params_option = NULL;
 
 /**
- * @brief Whether a SIGHUP initiated NVT update is in progress.
+ * @brief Whether an NVT update is in progress.
  */
 int update_in_progress = 0;
 
@@ -880,18 +875,6 @@ handle_termination_signal (int signal)
 }
 
 /**
- * @brief Handle a SIGHUP signal by updating the NVT cache.
- *
- * @param[in]  signal  The signal that caused this function to run.
- */
-void
-handle_sighup_update (int signal)
-{
-  /* Queue the update of the NVT cache. */
-  sighup_update_nvt_cache = 1;
-}
-
-/**
  * @brief Handle a SIGSEGV signal.
  *
  * @param[in]  given_signal  The signal that caused this function to run.
@@ -1035,7 +1018,7 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
   setup_signal_handler (SIGTERM, handle_termination_signal, 0);
   setup_signal_handler (SIGABRT, handle_sigabrt, 1);
   setup_signal_handler (SIGINT, handle_termination_signal, 0);
-  setup_signal_handler (SIGHUP, handle_termination_signal, 0);
+  setup_signal_handler (SIGHUP, SIG_IGN, 0);
   setup_signal_handler (SIGQUIT, handle_termination_signal, 0);
   setup_signal_handler (SIGSEGV, handle_sigsegv, 1);
   setup_signal_handler (SIGCHLD, SIG_IGN, 0);
@@ -1252,13 +1235,6 @@ serve_and_schedule ()
           raise (termination_signal);
         }
 
-      if (sighup_update_nvt_cache)
-        {
-          g_debug ("Received %s signal.\n", sys_siglist[SIGHUP]);
-          sighup_update_nvt_cache = 0;
-          fork_update_nvt_cache ();
-        }
-
       if ((time (NULL) - last_schedule_time) >= SCHEDULE_PERIOD)
         switch (manage_schedule (fork_connection_for_scheduler,
                                  scheduling_enabled,
@@ -1348,13 +1324,6 @@ serve_and_schedule ()
           setup_signal_handler (termination_signal, SIG_DFL, 0);
           pthread_sigmask (SIG_SETMASK, sigmask_normal, NULL);
           raise (termination_signal);
-        }
-
-      if (sighup_update_nvt_cache)
-        {
-          g_debug ("Received %s signal.\n", sys_siglist[SIGHUP]);
-          sighup_update_nvt_cache = 0;
-          fork_update_nvt_cache ();
         }
     }
 }
@@ -2317,7 +2286,7 @@ main (int argc, char** argv)
   setup_signal_handler (SIGTERM, handle_termination_signal, 0);
   setup_signal_handler (SIGABRT, handle_sigabrt, 1);
   setup_signal_handler (SIGINT, handle_termination_signal, 0);
-  setup_signal_handler (SIGHUP, handle_sighup_update, 0);
+  setup_signal_handler (SIGHUP, SIG_IGN, 0);
   setup_signal_handler (SIGQUIT, handle_termination_signal, 0);
   setup_signal_handler (SIGSEGV, handle_sigsegv, 1);
   setup_signal_handler_info (SIGCHLD, handle_sigchld, 0);
