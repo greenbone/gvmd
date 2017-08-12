@@ -1,5 +1,16 @@
 2017-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/gmp.c (init_gmp): Remove old return from doc.
+
+	* src/gmpd.c (init_gmpd): Remove old return from doc.
+
+	* src/gvmd.c (update_nvt_cache, main): Remove old return case.
+
+	* src/manage_sql.c (check_db_versions, init_manage_internal): Remove
+	-3 return from doc, this never happens any more.
+
+2017-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/gvmd.c (update_nvt_cache_retry): Remove args.  Always the same.
 	(fork_update_nvt_cache): Update call accordingly.
 

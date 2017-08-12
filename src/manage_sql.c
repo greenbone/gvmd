@@ -14058,8 +14058,7 @@ add_role_permission_resource (const gchar *role_id, const gchar *permission,
  *
  * @param[in]  nvt_cache_mode  True when running in NVT caching mode.
  *
- * @return 0 success, -1 error, -2 database is wrong version, -3 database
- *         needs to be initialised from server.
+ * @return 0 success, -1 error, -2 database is wrong version.
  */
 int
 check_db_versions (int nvt_cache_mode)
@@ -15412,8 +15411,8 @@ cleanup_tables ()
  * @param[in]  skip_db_check       Skip DB check.
  * @param[in]  check_encryption_key  Check encryption key if doing DB check.
  *
- * @return 0 success, -1 error, -2 database is wrong version, -3 database needs
- *         to be initialised from server, -4 max_ips_per_target out of range.
+ * @return 0 success, -1 error, -2 database is wrong version,
+ *         -4 max_ips_per_target out of range.
  */
 static int
 init_manage_internal (GSList *log_config,

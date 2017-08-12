@@ -958,8 +958,6 @@ update_nvt_cache (int register_cleanup, int skip_create_tables)
         log_config_free ();
         exit (EXIT_FAILURE);
         break;
-      case -3:
-        assert (0);
       case -1:
       default:
         g_critical ("%s: failed to initialise GMP daemon\n", __FUNCTION__);
@@ -2116,13 +2114,6 @@ main (int argc, char** argv)
         break;
       case -2:
         g_critical ("%s: database is wrong version\n", __FUNCTION__);
-        log_config_free ();
-        exit (EXIT_FAILURE);
-        break;
-      case -3:
-        g_critical ("%s: database must be initialised"
-                    " (with --update or --rebuild)\n",
-                    __FUNCTION__);
         log_config_free ();
         exit (EXIT_FAILURE);
         break;
