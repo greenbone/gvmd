@@ -1015,13 +1015,10 @@ update_nvt_cache (int register_cleanup, int skip_create_tables)
  * Forks a child process to rebuild the nvt cache, retrying again if the
  * child process reports that the scanner is still loading.
  *
- * @param[in]  register_cleanup        Whether to register cleanup with atexit.
- * @param[in]  skip_create_tables      Whether to skip table creation.
- *
  * @return Exit status of child spawned to do rebuild.
  */
 static int
-update_nvt_cache_retry (int register_cleanup, int skip_create_tables)
+update_nvt_cache_retry ()
 {
   proctitle_set ("gvmd: Reloading");
 
@@ -1043,7 +1040,7 @@ update_nvt_cache_retry (int register_cleanup, int skip_create_tables)
       else if (child_pid == 0)
         {
           /* Child: Try reload. */
-          int ret = update_nvt_cache (register_cleanup, skip_create_tables);
+          int ret = update_nvt_cache (0, 1);
 
           exit (ret);
         }
@@ -1103,7 +1100,7 @@ fork_update_nvt_cache ()
 
         /* Update the cache. */
 
-        update_nvt_cache_retry (0, 1);
+        update_nvt_cache_retry ();
 
         /* Exit. */
 

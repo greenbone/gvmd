@@ -1,5 +1,10 @@
 2017-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/gvmd.c (update_nvt_cache_retry): Remove args.  Always the same.
+	(fork_update_nvt_cache): Update call accordingly.
+
+2017-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Remove remnants of --rebuild.
 
 	* src/gmp.c (init_gmp): Correct arg doc.
