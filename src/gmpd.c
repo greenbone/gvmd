@@ -104,7 +104,6 @@ static int gmpd_nvt_cache_mode = 0;
  * @param[in]  max_ips_per_target  Max number of IPs per target.
  * @param[in]  max_email_attachment_size  Max size of email attachments.
  * @param[in]  max_email_include_size     Max size of email inclusions.
- * @param[in]  progress         Function to update progress, or NULL.
  * @param[in]  fork_connection  Function to fork a connection to the GMP
  *                              daemon layer, or NULL.
  * @param[in]  skip_db_check    Skip DB check.
@@ -116,13 +115,13 @@ static int gmpd_nvt_cache_mode = 0;
 int
 init_gmpd (GSList *log_config, int nvt_cache_mode, const gchar *database,
            int max_ips_per_target, int max_email_attachment_size,
-           int max_email_include_size, void (*progress) (),
+           int max_email_include_size,
            int (*fork_connection) (gvm_connection_t *, gchar*),
            int skip_db_check)
 {
   return init_gmp (log_config, nvt_cache_mode, database, max_ips_per_target,
                    max_email_attachment_size, max_email_include_size,
-                   progress, fork_connection, skip_db_check);
+                   fork_connection, skip_db_check);
 }
 
 /**
@@ -461,13 +460,12 @@ session_clean (gvm_connection_t *client_connection)
  * @param[in]  client_connection    Connection.
  * @param[in]  database             Location of manage database.
  * @param[in]  disable              Commands to disable.
- * @param[in]  progress             Function to mark progress, or NULL.
  *
  * @return 0 success, 1 scanner still loading, -1 error, -2 scanner has no cert.
  */
 int
 serve_gmp (gvm_connection_t *client_connection, const gchar *database,
-           gchar **disable, void (*progress) ())
+           gchar **disable)
 {
   int nfds, scan_handler = 0, rc = 0;
   /* True if processing of the client input is waiting for space in the
@@ -948,7 +946,7 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
           /* Try process the scanner input, in case writing to the scanner
            * has freed some space in to_scanner. */
 
-          ret = process_otp_scanner_input (progress);
+          ret = process_otp_scanner_input ();
           if (ret == 1)
             {
               /* Received scanner BYE.  Write out the rest of to_scanner (the

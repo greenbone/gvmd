@@ -68,12 +68,12 @@ typedef struct
 } name_value_t;
 
 int
-init_manage (GSList*, int, const gchar *, int, int, int, void (*) (),
+init_manage (GSList*, int, const gchar *, int, int, int,
              int (*) (gvm_connection_t *, gchar *),
              int);
 
 int
-init_manage_helper (GSList *, const gchar *, int, void (*) ());
+init_manage_helper (GSList *, const gchar *, int);
 
 void
 init_manage_process (int, const gchar*);

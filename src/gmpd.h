@@ -56,7 +56,7 @@ extern buffer_size_t from_scanner_end;
 extern struct sockaddr_in scanner_address;
 
 int
-init_gmpd (GSList*, int, const gchar*, int, int, int, void (*) (),
+init_gmpd (GSList*, int, const gchar*, int, int, int,
            int (*) (gvm_connection_t *, gchar *),
            int);
 
@@ -64,7 +64,7 @@ void
 init_gmpd_process (const gchar *, gchar **);
 
 int
-serve_gmp (gvm_connection_t*, const gchar*, gchar**, void (*progress) ());
+serve_gmp (gvm_connection_t*, const gchar*, gchar**);
 
 /** @todo Temporarily declared here, for gmp.c SEND_TO_CLIENT. */
 extern char to_client[];

@@ -30489,7 +30489,7 @@ extern buffer_size_t from_client_end;
 int
 init_gmp (GSList *log_config, int nvt_cache_mode, const gchar *database,
           int max_ips_per_target, int max_email_attachment_size,
-          int max_email_include_size, void (*progress) (),
+          int max_email_include_size,
           int (*fork_connection) (gvm_connection_t *, gchar*),
           int skip_db_check)
 {
@@ -30500,7 +30500,7 @@ init_gmp (GSList *log_config, int nvt_cache_mode, const gchar *database,
   command_data_init (&command_data);
   return init_manage (log_config, nvt_cache_mode, database, max_ips_per_target,
                       max_email_attachment_size, max_email_include_size,
-                      progress, fork_connection, skip_db_check);
+                      fork_connection, skip_db_check);
 }
 
 /**

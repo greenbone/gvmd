@@ -338,11 +338,6 @@ lookup_report_format (const char*, report_format_t*);
 int (*manage_fork_connection) (gvm_connection_t *, gchar*) = NULL;
 
 /**
- * @brief Function to mark progress.
- */
-void (*progress) () = NULL;
-
-/**
  * @brief Max number of hosts per target.
  */
 static int max_hosts = MANAGE_MAX_HOSTS;
@@ -1108,7 +1103,7 @@ manage_option_setup (GSList *log_config, const gchar *database)
 
   db = database ? database : sql_default_database ();
 
-  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
+  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET);
   assert (ret != -4);
   switch (ret)
     {
@@ -15232,8 +15227,6 @@ check_db (int check_encryption_key)
   sql_begin_exclusive ();
   create_tables ();
   check_db_sequences ();
-  if (progress)
-    progress ();
   set_db_version (GVMD_DATABASE_VERSION);
   check_db_nvt_selectors ();
   check_db_nvts ();
@@ -15252,8 +15245,6 @@ check_db (int check_encryption_key)
   cleanup_schedule_times ();
   if (check_encryption_key && check_db_encryption_key ())
     goto fail;
-  if (progress)
-    progress ();
 
   sql_commit ();
   return 0;
@@ -15415,7 +15406,6 @@ cleanup_tables ()
  * @param[in]  max_ips_per_target  Max number of IPs per target.
  * @param[in]  max_email_attachment_size  Max size of email attachments.
  * @param[in]  max_email_include_size     Max size of email inclusions.
- * @param[in]  update_progress     Function to update progress, or NULL. *
  * @param[in]  stop_tasks          Stop any active tasks.
  * @param[in]  fork_connection     Function to fork a connection that will
  *                                 accept GMP requests.  Used to start tasks
@@ -15433,7 +15423,6 @@ init_manage_internal (GSList *log_config,
                       int max_ips_per_target,
                       int max_email_attachment_size,
                       int max_email_include_size,
-                      void (*update_progress) (),
                       int stop_tasks,
                       int (*fork_connection)
                              (gvm_connection_t *, gchar *),
@@ -15497,7 +15486,6 @@ init_manage_internal (GSList *log_config,
     max_attach_length = max_email_attachment_size;
   if (max_email_include_size)
     max_content_length = max_email_include_size;
-  progress = update_progress;
 
   g_log_set_handler (G_LOG_DOMAIN,
                      ALL_LOG_LEVELS,
@@ -15567,7 +15555,6 @@ init_manage_internal (GSList *log_config,
  * @param[in]  max_ips_per_target  Max number of IPs per target.
  * @param[in]  max_email_attachment_size  Max size of email attachments.
  * @param[in]  max_email_include_size     Max size of email inclusions.
- * @param[in]  update_progress     Function to update progress, or NULL. *
  * @param[in]  fork_connection     Function to fork a connection that will
  *                                 accept GMP requests.  Used to start tasks
  *                                 with GMP when an alert occurs.
@@ -15579,7 +15566,7 @@ init_manage_internal (GSList *log_config,
 int
 init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
              int max_ips_per_target, int max_email_attachment_size,
-             int max_email_include_size, void (*update_progress) (),
+             int max_email_include_size,
              int (*fork_connection) (gvm_connection_t*, gchar*),
              int skip_db_check)
 {
@@ -15589,7 +15576,6 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
                                max_ips_per_target,
                                max_email_attachment_size,
                                max_email_include_size,
-                               update_progress,
                                1,  /* Stop active tasks. */
                                fork_connection,
                                skip_db_check,
@@ -15606,14 +15592,13 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
  * @param[in]  log_config      Log configuration.
  * @param[in]  database        Location of database.
  * @param[in]  max_ips_per_target  Max number of IPs per target.
- * @param[in]  update_progress     Function to update progress, or NULL. *
  *
  * @return 0 success, -1 error, -2 database is wrong version, -3 database needs
  *         to be initialised from server, -4 max_ips_per_target out of range.
  */
 int
 init_manage_helper (GSList *log_config, const gchar *database,
-                    int max_ips_per_target, void (*update_progress) ())
+                    int max_ips_per_target)
 {
   return init_manage_internal (log_config,
                                0,   /* Run daemon in NVT cache mode. */
@@ -15621,7 +15606,6 @@ init_manage_helper (GSList *log_config, const gchar *database,
                                max_ips_per_target,
                                0,   /* Default max_email_attachment_size. */
                                0,   /* Default max_email_include_size. */
-                               update_progress,
                                0,   /* Stop active tasks. */
                                NULL,
                                0,   /* Skip DB check. */

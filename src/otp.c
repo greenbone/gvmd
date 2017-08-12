@@ -542,12 +542,11 @@ parse_scanner_bad_login (char** messages)
  * @brief Parse preference value.
  *
  * @param  messages  A pointer into the OTP input buffer.
- * @param  progress  Callback to update progress.
  *
  * @return 0 success, -2 too few characters (need more input).
  */
 static int
-parse_scanner_preference_value (char** messages, void (*progress) ())
+parse_scanner_preference_value (char** messages)
 {
   char *value, *end, *match;
   end = *messages + from_scanner_end - from_scanner_start;
@@ -564,8 +563,6 @@ parse_scanner_preference_value (char** messages, void (*progress) ())
 
           value = g_strdup (*messages);
           blank_control_chars (value);
-          if (progress)
-            progress ();
           preference = g_malloc0 (sizeof (preference_t));
           preference->name = g_strdup (current_scanner_preference);
           preference->value = value;
@@ -753,13 +750,11 @@ parse_scanner_loading (char *messages)
  * reaction to client requests, the only exception being stop requests
  * initiated in other processes.
  *
- * @param[in]  progress  Function to mark progress, or NULL.
- *
  * @return 0 success, 1 received scanner BYE, 2 bad login, 3 scanner loading, -1
  * error.
  */
 int
-process_otp_scanner_input (void (*progress) ())
+process_otp_scanner_input ()
 {
   char* match = NULL;
   char* messages = from_scanner + from_scanner_start;
@@ -860,7 +855,7 @@ process_otp_scanner_input (void (*progress) ())
             }
         else if (scanner_state == SCANNER_PREFERENCE_VALUE)
           {
-            switch (parse_scanner_preference_value (&messages, progress))
+            switch (parse_scanner_preference_value (&messages))
               {
                 case -2:
                   /* Need more input. */
@@ -1191,8 +1186,6 @@ process_otp_scanner_input (void (*progress) ())
                     }
                   assert (current_plugin == NULL);
                   current_plugin = nvti_new ();
-                  if (progress)
-                    progress ();
                   if (current_plugin == NULL) abort ();
                   nvti_set_oid (current_plugin, field);
                   set_scanner_state (SCANNER_PLUGIN_LIST_NAME);
@@ -1330,8 +1323,7 @@ process_otp_scanner_input (void (*progress) ())
                     else
                       current_scanner_preference = g_strdup (field);
                     set_scanner_state (SCANNER_PREFERENCE_VALUE);
-                    switch (parse_scanner_preference_value (&messages,
-                                                            progress))
+                    switch (parse_scanner_preference_value (&messages))
                       {
                         case -2:
                           /* Need more input. */

@@ -1,5 +1,30 @@
 2017-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Remove --progress.  Was only used by --rebuild and --update.
+
+	* src/gmp.c (init_gmp): Remove progress.
+
+	* src/gmpd.c (init_gmpd, serve_gmp): Remove progress.
+
+	* src/manage_sql.c (progress): Remove.
+	(manage_option_setup): Update call.
+	(check_db, init_manage_internal, init_manage)
+	(init_manage_helper): Remove progress.
+
+	* src/otp.c (parse_scanner_preference_value)
+	(process_otp_scanner_input): Remove progress.
+
+	* src/gmp.h, src/gmpd.h, src/manage.h, src/otp.h: Update headers
+	accordingly.
+
+	* src/gvmd.c (serve_client): Update call.
+	(spin_progress): Remove.  No longer used.
+	(update_or_rebuild_nvt_cache, rebuild_nvt_cache_retry): Remove progress.
+	(fork_update_nvt_cache): Update call.
+	(main): Remove --progress.  Update call.
+
+2017-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/gvmd.c (main): Remove --update and --rebuild now that NVTs are
 	auto synced.  Also remove --otp-scanner, which was only used by those
 	two.

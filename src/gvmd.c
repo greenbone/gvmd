@@ -374,7 +374,7 @@ serve_client (int server_socket, gvm_connection_t *client_connection)
   /* Serve GMP. */
 
   /* It's up to serve_gmp to gvm_server_free client_*. */
-  if (serve_gmp (client_connection, database, disabled_commands, NULL))
+  if (serve_gmp (client_connection, database, disabled_commands))
     goto server_fail;
 
   return EXIT_SUCCESS;
@@ -914,34 +914,6 @@ handle_sigchld (/* unused */ int given_signal, siginfo_t *info, void *ucontext)
 
 
 /**
- * @brief Nudge the progress indicator.
- */
-void
-spin_progress ()
-{
-  static char current = '/';
-  switch (current)
-    {
-      case '\\':
-        current = '|';
-        break;
-      case '|':
-        current = '/';
-        break;
-      case '/':
-        current = '-';
-        break;
-      case '-':
-        current = '\\';
-        break;
-    }
-  putchar ('\b');
-  putchar (current);
-  fflush (stdout);
-  g_debug ("   %c\n", current);
-}
-
-/**
  * @brief Handle a SIGABRT signal.
  *
  * @param[in]  signal  The signal that caused this function to run.
@@ -958,14 +930,13 @@ handle_sigabrt_simple (int signal)
  * @param[in]  update_nvt_cache        Whether the nvt cache should be updated
  *                                     (1) or rebuilt (0).
  * @param[in]  register_cleanup        Whether to register cleanup with atexit.
- * @param[in]  progress                Function to update progress, or NULL.
  * @param[in]  skip_create_tables      Whether to skip table creation.
  *
  * @return If this function did not exit itself, returns exit code.
  */
 static int
 update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
-                             void (*progress) (), int skip_create_tables)
+                             int skip_create_tables)
 {
   int ret;
   gvm_connection_t connection;
@@ -983,7 +954,6 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
                      manage_max_hosts (),
                      0, /* Max email attachment size. */
                      0, /* Max email include size. */
-                     progress,
                      NULL,
                      skip_create_tables))
     {
@@ -1028,7 +998,7 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
    * request and cache the plugins, then exit. */
 
   connection.socket = update_nvt_cache ? -1 : -2;
-  ret = serve_gmp (&connection, database, NULL, progress);
+  ret = serve_gmp (&connection, database, NULL);
   openvas_scanner_close ();
   switch (ret)
     {
@@ -1054,14 +1024,13 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
  * @param[in]  update_or_rebuild       Whether the nvt cache should be updated
  *                                     (1) or rebuilt (0).
  * @param[in]  register_cleanup        Whether to register cleanup with atexit.
- * @param[in]  progress                Function to update progress, or NULL.
  * @param[in]  skip_create_tables      Whether to skip table creation.
  *
  * @return Exit status of child spawned to do rebuild.
  */
 static int
 rebuild_nvt_cache_retry (int update_or_rebuild, int register_cleanup,
-                         void (*progress) (), int skip_create_tables)
+                         int skip_create_tables)
 {
   proctitle_set ("gvmd: Reloading");
 
@@ -1078,17 +1047,13 @@ rebuild_nvt_cache_retry (int update_or_rebuild, int register_cleanup,
             return WEXITSTATUS (status);
           /* Child exit status == 2 means that the scanner is still loading. */
           for (i = 0; i < 10; i++)
-            {
-              if (progress)
-                progress ();
-              gvm_sleep (1);
-            }
+            gvm_sleep (1);
         }
       else if (child_pid == 0)
         {
           /* Child: Try reload. */
           int ret = update_or_rebuild_nvt_cache (update_or_rebuild,
-                                                 register_cleanup, progress,
+                                                 register_cleanup,
                                                  skip_create_tables);
 
           exit (ret);
@@ -1149,7 +1114,7 @@ fork_update_nvt_cache ()
 
         /* Update the cache. */
 
-        rebuild_nvt_cache_retry (1, 0, NULL, 1);
+        rebuild_nvt_cache_retry (1, 0, 1);
 
         /* Exit. */
 
@@ -1565,7 +1530,6 @@ main (int argc, char** argv)
   static gboolean get_scanners = FALSE;
   static gboolean foreground = FALSE;
   static gboolean print_version = FALSE;
-  static gboolean progress = FALSE;
   static int max_ips_per_target = MANAGE_MAX_HOSTS;
   static int max_email_attachment_size = 0;
   static int max_email_include_size = 0;
@@ -1671,7 +1635,6 @@ main (int argc, char** argv)
         { "password", '\0', 0, G_OPTION_ARG_STRING, &password, "Password, for --create-user.", "<password>" },
         { "port", 'p', 0, G_OPTION_ARG_STRING, &manager_port_string, "Use port number <number>.", "<number>" },
         { "port2", '\0', 0, G_OPTION_ARG_STRING, &manager_port_string_2, "Use port number <number> for address 2.", "<number>" },
-        { "progress", '\0', 0, G_OPTION_ARG_NONE, &progress, "Display progress during --rebuild and --update.", NULL },
         { "role", '\0', 0, G_OPTION_ARG_STRING, &role, "Role for --create-user and --get-users.", "<role>" },
         { "unix-socket", 'c', 0, G_OPTION_ARG_STRING, &manager_address_string_unix, "Listen on UNIX socket at <filename>.", "<filename>" },
         { "user", '\0', 0, G_OPTION_ARG_STRING, &user, "User for --new-password.", "<username>" },
@@ -2160,7 +2123,7 @@ main (int argc, char** argv)
   /* Initialise GMP daemon. */
 
   switch (init_gmpd (log_config, 0, database, max_ips_per_target,
-                     max_email_attachment_size, max_email_include_size, NULL,
+                     max_email_attachment_size, max_email_include_size,
                      fork_connection_for_event, 0))
     {
       case 0:
