@@ -12762,8 +12762,7 @@ task_average_scan_duration (task_t task)
  *
  * Open the SQL database, attach secondary databases, and define functions.
  *
- * @param[in]  update_nvt_cache  0 operate normally, -1 just update NVT cache,
- *                               -2 just rebuild NVT cache.
+ * @param[in]  update_nvt_cache  0 operate normally, -1 just update NVT cache.
  * @param[in]  database          Location of manage database.
  */
 void

@@ -98,8 +98,7 @@ static int gmpd_nvt_cache_mode = 0;
  * @brief Initialise the GMP library for the GMP daemon.
  *
  * @param[in]  log_config      Log configuration
- * @param[in]  nvt_cache_mode  0 operate normally, -1 just update NVT cache,
- *                             -2 just rebuild NVT cache.
+ * @param[in]  nvt_cache_mode  0 operate normally, -1 just update NVT cache.
  * @param[in]  database        Location of manage database.
  * @param[in]  max_ips_per_target  Max number of IPs per target.
  * @param[in]  max_email_attachment_size  Max size of email attachments.

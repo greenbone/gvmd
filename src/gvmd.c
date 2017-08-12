@@ -925,31 +925,25 @@ handle_sigabrt_simple (int signal)
 }
 
 /**
- * @brief Updates or rebuilds the NVT Cache and exits or returns exit code.
+ * @brief Updates the NVT Cache and exits or returns exit code.
  *
- * @param[in]  update_nvt_cache        Whether the nvt cache should be updated
- *                                     (1) or rebuilt (0).
  * @param[in]  register_cleanup        Whether to register cleanup with atexit.
  * @param[in]  skip_create_tables      Whether to skip table creation.
  *
  * @return If this function did not exit itself, returns exit code.
  */
 static int
-update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
-                             int skip_create_tables)
+update_nvt_cache (int register_cleanup, int skip_create_tables)
 {
   int ret;
   gvm_connection_t connection;
 
   /* Initialise GMP daemon. */
 
-  if (update_nvt_cache == 0)
-    proctitle_set ("gvmd: Rebuilding NVT cache");
-  else
-    proctitle_set ("gvmd: Updating NVT cache");
+  proctitle_set ("gvmd: Updating NVT cache");
 
   switch (init_gmpd (log_config,
-                     update_nvt_cache ? -1 : -2,
+                     -1,
                      database,
                      manage_max_hosts (),
                      0, /* Max email attachment size. */
@@ -997,7 +991,7 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
    * value.  This invokes a scanner-only manager loop which will
    * request and cache the plugins, then exit. */
 
-  connection.socket = update_nvt_cache ? -1 : -2;
+  connection.socket = -1;
   ret = serve_gmp (&connection, database, NULL);
   openvas_scanner_close ();
   switch (ret)
@@ -1016,21 +1010,18 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
 }
 
 /**
- * @brief Rebuild NVT cache in forked child, retrying if scanner loading.
+ * @brief Update NVT cache in forked child, retrying if scanner loading.
  *
  * Forks a child process to rebuild the nvt cache, retrying again if the
  * child process reports that the scanner is still loading.
  *
- * @param[in]  update_or_rebuild       Whether the nvt cache should be updated
- *                                     (1) or rebuilt (0).
  * @param[in]  register_cleanup        Whether to register cleanup with atexit.
  * @param[in]  skip_create_tables      Whether to skip table creation.
  *
  * @return Exit status of child spawned to do rebuild.
  */
 static int
-rebuild_nvt_cache_retry (int update_or_rebuild, int register_cleanup,
-                         int skip_create_tables)
+update_nvt_cache_retry (int register_cleanup, int skip_create_tables)
 {
   proctitle_set ("gvmd: Reloading");
 
@@ -1052,9 +1043,7 @@ rebuild_nvt_cache_retry (int update_or_rebuild, int register_cleanup,
       else if (child_pid == 0)
         {
           /* Child: Try reload. */
-          int ret = update_or_rebuild_nvt_cache (update_or_rebuild,
-                                                 register_cleanup,
-                                                 skip_create_tables);
+          int ret = update_nvt_cache (register_cleanup, skip_create_tables);
 
           exit (ret);
         }
@@ -1114,7 +1103,7 @@ fork_update_nvt_cache ()
 
         /* Update the cache. */
 
-        rebuild_nvt_cache_retry (1, 0, 1);
+        update_nvt_cache_retry (0, 1);
 
         /* Exit. */
 

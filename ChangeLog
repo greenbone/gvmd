@@ -1,5 +1,21 @@
 2017-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Remove remnants of --rebuild.
+
+	* src/gmp.c (init_gmp): Correct arg doc.
+
+	* src/gmpd.c (init_gmpd): Correct arg doc.
+
+	* src/gvmd.c (update_or_rebuild_nvt_cache): Remove.  Now update_nvt_cache.
+	Reduce to update only.
+	(update_nvt_cache): New function.  Was update_or_rebuild_nvt_cache.
+	(rebuild_nvt_cache_retry): Remove.  Now update_nvt_cache_retry.
+	(fork_update_nvt_cache): Update calls accordingly.
+
+	* src/manage_sql.c (init_manage_process): Correct arg doc.
+
+2017-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	For the NVT sync, always delete the existing info in a single transaction,
 	and always insert the new info in chunks.  This combines parts of the old
 	--update and --rebuild behaviours.
