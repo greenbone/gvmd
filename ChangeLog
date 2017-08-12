@@ -1,4 +1,12 @@
-2017-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
+2017-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.h (progress): Remove.
+
+	* src/manage_sql_nvts.c (insert_nvt_from_nvti, insert_nvt_preference)
+	(manage_complete_nvt_cache_update)
+	(manage_complete_nvt_cache_update): Remove progress calls.
+
+2017-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Remove --progress.  Was only used by --rebuild and --update.
 
@@ -23,13 +31,13 @@
 	(fork_update_nvt_cache): Update call.
 	(main): Remove --progress.  Update call.
 
-2017-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
+2017-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/gvmd.c (main): Remove --update and --rebuild now that NVTs are
 	auto synced.  Also remove --otp-scanner, which was only used by those
 	two.
 
-2017-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
+2017-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Simply ignore SIGHUP, now that NVTs are automatically updated.
 

@@ -987,9 +987,6 @@ insert_nvt_from_nvti (gpointer nvti, gpointer mode_pointer)
   if (nvti == NULL)
     return;
 
-  if (progress)
-    progress ();
-
   mode = GPOINTER_TO_INT (mode_pointer);
 
   make_nvt_from_nvti (nvti, mode == -1);
@@ -1010,9 +1007,6 @@ insert_nvt_preference (gpointer nvt_preference, gpointer mode_pointer)
 
   if (nvt_preference == NULL)
     return;
-
-  if (progress)
-    progress ();
 
   mode = GPOINTER_TO_INT (mode_pointer);
   preference = (preference_t*) nvt_preference;
@@ -1148,8 +1142,6 @@ manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list,
           sql ("TRUNCATE nvts CASCADE;");
           sql ("TRUNCATE nvt_preferences;");
         }
-      if (progress)
-        progress ();
     }
 
   /* NVTs and preferences are buffered, insert them into DB. */
@@ -1158,8 +1150,6 @@ manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list,
 
   /* Remove preferences from configs where the preference has vanished from
    * the associated NVT. */
-  if (progress)
-    progress ();
   init_iterator (&configs, "SELECT id FROM configs;");
   while (next (&configs))
     sql ("DELETE FROM config_preferences"
@@ -1169,17 +1159,11 @@ manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list,
          get_iterator_resource (&configs));
   cleanup_iterator (&configs);
 
-  if (progress)
-    progress ();
   if (check_config_families ())
     g_warning ("%s: Error updating config families."
                "  One or more configs refer to an outdated family of an NVT.",
                __FUNCTION__);
-  if (progress)
-    progress ();
   update_all_config_caches ();
-  if (progress)
-    progress ();
 
   if (mode == -1)
     sql_begin_exclusive ();
@@ -1211,9 +1195,6 @@ manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list,
     g_info ("Rebuilding NVT cache... done (%i NVTs).", count);
   else
     g_info ("Updating NVT cache... done (%i NVTs).", count);
-
-  if (progress)
-    progress ();
 }
 
 /**

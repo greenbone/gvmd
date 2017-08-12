@@ -354,8 +354,6 @@ typedef struct
 
 extern gchar *task_db_name;
 
-void (*progress) ();
-
 
 /* Function prototypes */
 
