@@ -1187,8 +1187,7 @@ serve_and_schedule ()
       if ((time (NULL) - last_schedule_time) >= SCHEDULE_PERIOD)
         switch (manage_schedule (fork_connection_for_scheduler,
                                  scheduling_enabled,
-                                 sigmask_normal,
-                                 fork_update_nvt_cache))
+                                 sigmask_normal))
           {
             case 0:
               last_schedule_time = time (NULL);
@@ -1244,8 +1243,7 @@ serve_and_schedule ()
 
       if ((time (NULL) - last_schedule_time) >= SCHEDULE_PERIOD)
         switch (manage_schedule (fork_connection_for_scheduler,
-                                 scheduling_enabled, sigmask_normal,
-                                 fork_update_nvt_cache))
+                                 scheduling_enabled, sigmask_normal))
           {
             case 0:
               last_schedule_time = time (NULL);

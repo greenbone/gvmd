@@ -6686,10 +6686,9 @@ scheduled_task_stop (scheduled_task_t *scheduled_task,
  *
  * In gvmd, periodically called from the main daemon loop.
  *
- * @param[in]  fork_connection  Function that forks a child which is connected
- *                              to the Manager.  Must return PID in parent, 0
- *                              in child, or -1 on error.
  * @param[in]  sigmask_current  Sigmask to restore in child.
+ * @param[in]  fork_update_nvt_cache  Function that forks a child that syncs
+ *                                    the NVTS.  Child does not return.
  */
 void
 manage_sync (sigset_t *sigmask_current,
@@ -6716,8 +6715,7 @@ manage_sync (sigset_t *sigmask_current,
 int
 manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
                  gboolean run_tasks,
-                 sigset_t *sigmask_current,
-                 int (*fork_update_nvt_cache) ())
+                 sigset_t *sigmask_current)
 {
   iterator_t schedules;
   GSList *starts, *stops;

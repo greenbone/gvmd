@@ -1182,5 +1182,4 @@ void
 manage_sync_nvts (int (*fork_update_nvt_cache) ())
 {
   fork_update_nvt_cache ();
-  return;
 }

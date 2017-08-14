@@ -2834,8 +2834,7 @@ manage_sync (sigset_t *, int (*fork_update_nvt_cache) ());
 int
 manage_schedule (int (*) (gvm_connection_t *, gchar *),
                  gboolean,
-                 sigset_t *,
-                 int (*) ());
+                 sigset_t *);
 
 char *
 schedule_uuid (schedule_t);

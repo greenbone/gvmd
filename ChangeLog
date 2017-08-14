@@ -1,3 +1,20 @@
+2017-08-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Clean up for Doxygen warnings.
+
+	* src/gmp.c (init_gmp): Remove progress from doc.
+
+	* src/gvmd.c (serve_and_schedule): Remove update arg of manage_schedule.
+
+	* src/manage.c (manage_sync): Update arg docs.
+	(manage_schedule): Remove fork_update_nvt_cache arg.  No longer used.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/manage_sql.c (manage_nvt_preference_add): Remove arg doc.
+
+	* src/manage_sql_nvts.c (manage_sync_nvts): Remove redundant return.
+
 2017-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/gmp.c (init_gmp): Remove old return from doc.

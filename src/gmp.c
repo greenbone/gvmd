@@ -30477,7 +30477,6 @@ extern buffer_size_t from_client_end;
  * @param[in]  max_ips_per_target  Max number of IPs per target.
  * @param[in]  max_email_attachment_size  Max size of email attachments.
  * @param[in]  max_email_include_size     Max size of email inclusions.
- * @param[in]  progress         Function to update progress, or NULL.
  * @param[in]  fork_connection  Function to fork a connection to the GMP
  *                              daemon layer, or NULL.
  * @param[in]  skip_db_check    Skip DB check.

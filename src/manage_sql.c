@@ -38238,7 +38238,6 @@ check_config_families ()
  *
  * @param[in]  name    The name of the preference.
  * @param[in]  value   The value of the preference.
- * @param[in]  remove  Whether to remove the preference from the database first.
  */
 void
 manage_nvt_preference_add (const char* name, const char* value)
