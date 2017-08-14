@@ -1,5 +1,11 @@
 2017-08-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (copy_permission, delete_permission): Only check command
+	level permissions for predefined roles.  This is consistent with the checks
+	when creating and modifying permissions.
+
+2017-08-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Clean up for Doxygen warnings.
 
 	* src/gmp.c (init_gmp): Remove progress from doc.
