@@ -48329,10 +48329,11 @@ copy_permission (const char* comment, const char *permission_id,
       return 2;
     }
 
-  /* Check if the subject is a predefined role. */
+  /* Prevent copying of command level permissions for predefined roles. */
   subject_type = permission_subject_type (permission);
   subject = permission_subject (permission);
-  if (subject_type
+  if (permission_resource (permission) == 0
+      && subject_type
       && strcmp (subject_type, "role") == 0
       && subject
       && role_is_predefined (subject))
@@ -48938,10 +48939,12 @@ delete_permission (const char *permission_id, int ultimate)
       return 0;
     }
 
-  /* Check if the subject is a predefined role. */
+  /* Prevent deletion of command level permissions for predefined roles. */
   subject_type = permission_subject_type (permission);
   subject = permission_subject (permission);
-  if (subject_type
+  resource = permission_resource (permission);
+  if (resource == 0
+      && subject_type
       && strcmp (subject_type, "role") == 0
       && subject
       && role_is_predefined (subject))
@@ -48974,7 +48977,6 @@ delete_permission (const char *permission_id, int ultimate)
 
   name = permission_name (permission);
   resource_type = permission_resource_type (permission);
-  resource = permission_resource (permission);
 
   sql ("DELETE FROM permissions WHERE id = %llu;", permission);
 
