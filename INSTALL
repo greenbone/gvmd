@@ -14,7 +14,7 @@ Prerequisites:
 * glib-2.0 >= 2.32
 * gnutls >= 3.2.15
 * libopenvas_base, libopenvas_omp, libopenvas_misc, libopenvas_osp >= 9.0.0
-* sqlite3 library or PostgreSQL database
+* sqlite3 library >= 3.8.3 or PostgreSQL database
 * pkg-config
 
 Prerequisites for certificate generation:
@@ -75,7 +75,7 @@ domain socket.
 
 The default is a UNIX domain socket, at
 
-	<install-prefix>/var/run/openvas/openvasmd.sock
+    <install-prefix>/var/run/openvas/openvasmd.sock
 
 This location can be overridden with the --unix-socket option, and the
 permissions of the socket can be specified with the --list-owner,
