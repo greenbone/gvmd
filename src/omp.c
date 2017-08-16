@@ -17639,9 +17639,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               const char *first_report_id, *last_report_id;
               char *config_name, *config_uuid;
               char *task_target_uuid, *task_target_name;
+              gchar *task_target_name_escaped;
               char *task_slave_uuid, *task_slave_name;
+              gchar *task_slave_name_escaped;
               char *task_schedule_uuid, *task_schedule_name;
+              gchar *task_schedule_name_escaped;
               char *task_scanner_uuid, *task_scanner_name;
+              gchar *task_scanner_name_escaped;
               gchar *first_report, *last_report;
               gchar *second_last_report_id, *second_last_report;
               gchar *current_report;
@@ -18050,6 +18054,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
               next_time = task_schedule_next_time (index);
               scanner = task_iterator_scanner (&tasks);
+              task_target_name_escaped
+                = task_target_name
+                    ? g_markup_escape_text (task_target_name, -1)
+                    : NULL;
+              task_scanner_name_escaped
+                = task_scanner_name
+                    ? g_markup_escape_text (task_scanner_name, -1)
+                    : NULL;
+              task_schedule_name_escaped
+                = task_schedule_name
+                    ? g_markup_escape_text (task_schedule_name, -1)
+                    : NULL;
+              task_slave_name_escaped
+                = task_slave_name
+                    ? g_markup_escape_text (task_slave_name, -1)
+                    : NULL;
               response = g_strdup_printf
                           ("<alterable>%i</alterable>"
                            "<config id=\"%s\">"
@@ -18097,16 +18117,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            task_config_in_trash (index),
                            config_available ? "" : "<permissions/>",
                            task_target_uuid ?: "",
-                           task_target_name ?: "",
+                           task_target_name_escaped ?: "",
                            target_in_trash,
                            target_available ? "" : "<permissions/>",
                            task_iterator_hosts_ordering (&tasks),
                            task_scanner_uuid,
-                           task_scanner_name,
+                           task_scanner_name_escaped,
                            task_scanner_type,
                            scanner_available ? "" : "<permissions/>",
                            task_slave_uuid ?: "",
-                           task_slave_name ?: "",
+                           task_slave_name_escaped ?: "",
                            task_slave_in_trash (index),
                            slave_available ? "" : "<permissions/>",
                            task_iterator_run_status_name (&tasks),
@@ -18117,7 +18137,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             (&tasks, holes, warnings, infos, severity,
                              holes_2, warnings_2, infos_2, severity_2),
                            task_schedule_uuid,
-                           task_schedule_name,
+                           task_schedule_name_escaped,
                            (next_time == 0
                              ? "over"
                              : iso_time (&next_time)),
@@ -18131,6 +18151,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               g_free (config_name);
               g_free (config_uuid);
               free (task_target_name);
+              g_free (task_target_name_escaped);
               free (task_target_uuid);
               g_free (progress_xml);
               g_free (current_report);
@@ -18139,10 +18160,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               g_free (second_last_report);
               g_free (task_schedule_uuid);
               g_free (task_schedule_name);
+              g_free (task_schedule_name_escaped);
               g_free (task_scanner_uuid);
               g_free (task_scanner_name);
+              g_free (task_scanner_name_escaped);
               free (task_slave_uuid);
               free (task_slave_name);
+              g_free (task_slave_name_escaped);
               if (send_to_client (response,
                                   write_to_client,
                                   write_to_client_data))
