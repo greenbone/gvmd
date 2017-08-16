@@ -226,7 +226,8 @@ pkg_check_modules (GNUTLS REQUIRED gnutls>=3.2.15)
 pkg_check_modules (GLIB REQUIRED glib-2.0>=2.32)
 
 if (BACKEND STREQUAL SQLITE3)
-  pkg_check_modules (SQLITE3 REQUIRED sqlite3)
+  # sqlite3 3.8.3 is required for WITH syntax
+  pkg_check_modules (SQLITE3 REQUIRED sqlite3>=3.8.3)
 else (BACKEND STREQUAL SQLITE3)
   message (STATUS "Looking for PostgreSQL...")
   find_program (PG_CONFIG_EXECUTABLE pg_config DOC "pg_config")
