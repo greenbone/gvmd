@@ -1,3 +1,10 @@
+2017-08-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r29356.
+
+	* src/omp.c (handle_get_tasks): Escape the names of the target, scanner
+	and schedule.
+
 2017-08-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r29348.
