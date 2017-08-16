@@ -19,7 +19,7 @@ Prerequisites:
 * glib-2.0 >= 2.32
 * gnutls >= 3.2.15
 * libgvm_base, libgvm_util, libgvm_osp, libgvm_gmp >= 1.0.0
-* sqlite3 library or PostgreSQL database
+* sqlite3 library >= 3.8.3 or PostgreSQL database
 * pkg-config
 
 Prerequisites for certificate generation:
@@ -81,7 +81,7 @@ socket or a UNIX domain socket.
 
 The default is a UNIX domain socket, at
 
-	<install-prefix>/var/run/openvas/gvmd.sock
+    <install-prefix>/var/run/openvas/gvmd.sock
 
 This location can be overridden with the --unix-socket option, and the
 permissions of the socket can be specified with the --list-owner,
@@ -185,7 +185,7 @@ and it gets more complicated to transfer the old data properly.
    $prefix/var/lib/gvm/gvmd/gvmd.db
 
  - (Postgres backend only) rename database to "gvmd":
-	   sudo -u postgres sh
+       sudo -u postgres sh
        psql --command='ALTER DATABASE tasks RENAME TO gvmd;'
 
 

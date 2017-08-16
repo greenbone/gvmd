@@ -1,5 +1,10 @@
 2017-08-16  Björn Ricks <bjoern.ricks@greenbone.net>
 
+	* INSTALL: Add required sqlite3 version to INSTALL file and change tabs to
+	spaces.
+
+2017-08-16  Björn Ricks <bjoern.ricks@greenbone.net>
+
 	* CMakeLists.txt: Require sqlite3 >= 3.8.3 for WITH syntax support.
 
 2017-08-14  Matthew Mundell <matthew.mundell@greenbone.net>
