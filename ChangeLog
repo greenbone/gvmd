@@ -1,3 +1,8 @@
+2017-08-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/gmp.c (handle_get_tasks): Escape the names of the target, scanner
+	and schedule.
+
 2017-08-16  Björn Ricks <bjoern.ricks@greenbone.net>
 
 	* INSTALL: Add required sqlite3 version to INSTALL file and change tabs to
