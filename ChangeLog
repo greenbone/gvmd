@@ -1,3 +1,10 @@
+2017-08-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r29359.
+
+	* src/manage_sql.c (manage_create_user, manage_set_password): When a
+	password is rejected, output the reason in the error message.
+
 2017-08-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r29356.
