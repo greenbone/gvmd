@@ -1,5 +1,9 @@
 2017-08-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/gmp.c (handle_get_tasks): Escape the name of the config as well.
+
+2017-08-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (manage_create_user, manage_set_password): When a
 	password is rejected, output the reason in the error message.
 

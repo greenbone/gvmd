@@ -19132,6 +19132,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       scanner_t scanner;
       const char *first_report_id, *last_report_id;
       char *config_name, *config_uuid;
+      gchar *config_name_escaped;
       char *task_target_uuid, *task_target_name;
       gchar *task_target_name_escaped;
       char *task_schedule_uuid, *task_schedule_name;
@@ -19646,6 +19647,10 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
               scanner_in_trash = 0;
             }
           next_time = task_schedule_next_time (index);
+          config_name_escaped
+            = config_name
+                ? g_markup_escape_text (config_name, -1)
+                : NULL;
           task_target_name_escaped
             = task_target_name
                 ? g_markup_escape_text (task_target_name, -1)
@@ -19696,7 +19701,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                         ? 0
                         : task_alterable (index),
                        config_uuid ?: "",
-                       config_name ?: "",
+                       config_name_escaped ?: "",
                        config_type (task_config (index)),
                        task_config_in_trash (index),
                        config_available ? "" : "<permissions/>",
@@ -19729,6 +19734,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                        second_last_report);
           g_free (config_name);
           g_free (config_uuid);
+          g_free (config_name_escaped);
           free (task_target_name);
           free (task_target_uuid);
           g_free (task_target_name_escaped);
