@@ -1,5 +1,11 @@
 2017-08-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Backport r29367.
+
+	* src/omp.c (handle_get_tasks): Escape the name of the config as well.
+
+2017-08-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Backport r29359.
 
 	* src/manage_sql.c (manage_create_user, manage_set_password): When a
