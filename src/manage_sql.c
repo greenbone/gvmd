@@ -60859,6 +60859,7 @@ manage_create_user (GSList *log_config, const gchar *database,
   char *uuid;
   array_t *roles;
   int ret;
+  gchar *rejection_msg;
 
   g_info ("   Creating user.\n");
 
@@ -60898,7 +60899,7 @@ manage_create_user (GSList *log_config, const gchar *database,
   current_credentials.uuid = "";
 
   ret = create_user (name, password ? password : uuid, "", NULL, 0, NULL, 0,
-                     NULL, NULL, NULL, roles, NULL, NULL, NULL, 0);
+                     NULL, NULL, NULL, roles, NULL, &rejection_msg, NULL, 0);
 
   switch (ret)
     {
@@ -60912,11 +60913,17 @@ manage_create_user (GSList *log_config, const gchar *database,
         fprintf (stderr, "User exists already.\n");
         break;
       default:
-        fprintf (stderr, "Failed to create user.\n");
+        if (rejection_msg)
+          {
+            fprintf (stderr, "Failed to create user: %s\n", rejection_msg);
+          }
+        else
+          fprintf (stderr, "Failed to create user.\n");
         break;
     }
 
   current_credentials.uuid = NULL;
+  g_free (rejection_msg);
 
   array_free (roles);
   free (uuid);
@@ -61093,6 +61100,7 @@ manage_set_password (GSList *log_config, const gchar *database,
   user_t user;
   char *uuid;
   int ret;
+  gchar *rejection_msg;
 
   g_info ("   Modifying user password.\n");
 
@@ -61127,9 +61135,16 @@ manage_set_password (GSList *log_config, const gchar *database,
       goto fail;
     }
 
-  if (set_password (name, uuid, password, NULL))
+  rejection_msg = NULL;
+  if (set_password (name, uuid, password, &rejection_msg))
     {
-      fprintf (stderr, "New password rejected.\n");
+      if (rejection_msg)
+        {
+          fprintf (stderr, "New password rejected: %s\n", rejection_msg);
+          g_free (rejection_msg);
+        }
+      else
+        fprintf (stderr, "New password rejected.\n");
       free (uuid);
       goto fail;
     }
