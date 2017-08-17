@@ -17638,6 +17638,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               scanner_t scanner;
               const char *first_report_id, *last_report_id;
               char *config_name, *config_uuid;
+              gchar *config_name_escaped;
               char *task_target_uuid, *task_target_name;
               gchar *task_target_name_escaped;
               char *task_slave_uuid, *task_slave_name;
@@ -18054,6 +18055,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
               next_time = task_schedule_next_time (index);
               scanner = task_iterator_scanner (&tasks);
+              config_name_escaped
+                = config_name
+                    ? g_markup_escape_text (config_name, -1)
+                    : NULL;
               task_target_name_escaped
                 = task_target_name
                     ? g_markup_escape_text (task_target_name, -1)
@@ -18112,7 +18117,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             ? 0
                             : task_alterable (index),
                            config_uuid ?: "",
-                           config_name ?: "",
+                           config_name_escaped ?: "",
                            config_type (task_config (index)),
                            task_config_in_trash (index),
                            config_available ? "" : "<permissions/>",
@@ -18150,6 +18155,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            second_last_report);
               g_free (config_name);
               g_free (config_uuid);
+              g_free (config_name_escaped);
               free (task_target_name);
               g_free (task_target_name_escaped);
               free (task_target_uuid);
