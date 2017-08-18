@@ -1,5 +1,20 @@
 2017-08-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Use a severity-only iterator when counting results, to help with
+	performance.  This reduces the number of columns selected, and also
+	lets the database decide what order the rows will be in.
+
+	* src/manage_sql.c (table_order_if_sort_not_specified): New variable.
+	(split_filter): Skip adding "sort" if table_order_if_sort_not_specified
+	is true.
+	(filter_clause): Note that split_filter can add terms.
+	(RESULT_ITERATOR_COLUMNS_SEVERITY)
+	(RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE): New defines.
+	(init_result_get_iterator_severity): New function.
+	(report_severity_data): Use the severity-only iterator.
+
+2017-08-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (manage_create_sql_functions): Switch
 	severity_matches_ov to a C function, to try help with performance.
 	This is called often to calculate the severity of a result according
