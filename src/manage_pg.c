@@ -865,7 +865,8 @@ manage_create_sql_functions ()
        "     RETURN $1;"
        "   END IF;"
        " END;"
-       "$$ LANGUAGE plpgsql;");
+       "$$ LANGUAGE plpgsql"
+       " IMMUTABLE;");
 
   sql ("CREATE OR REPLACE FUNCTION order_message_type (text)"
        " RETURNS integer AS $$"
@@ -886,7 +887,8 @@ manage_create_sql_functions ()
        "     RETURN 7;"
        "   END IF;"
        " END;"
-       "$$ LANGUAGE plpgsql;");
+       "$$ LANGUAGE plpgsql"
+       " IMMUTABLE;");
 
   sql ("CREATE OR REPLACE FUNCTION order_port (text)"
        " RETURNS integer AS $$"
@@ -899,7 +901,8 @@ manage_create_sql_functions ()
        "     RETURN 0;"
        "   END IF;"
        " END;"
-       "$$ LANGUAGE plpgsql;");
+       "$$ LANGUAGE plpgsql"
+       " IMMUTABLE;");
 
   sql ("CREATE OR REPLACE FUNCTION order_role (text)"
        " RETURNS text AS $$"
@@ -910,7 +913,8 @@ manage_create_sql_functions ()
        "     RETURN $1;"
        "   END IF;"
        " END;"
-       "$$ LANGUAGE plpgsql;");
+       "$$ LANGUAGE plpgsql"
+       " IMMUTABLE;");
 
   sql ("CREATE OR REPLACE FUNCTION order_threat (text)"
        " RETURNS integer AS $$"
@@ -933,7 +937,8 @@ manage_create_sql_functions ()
        "     RETURN 8;"
        "   END IF;"
        " END;"
-       "$$ LANGUAGE plpgsql;");
+       "$$ LANGUAGE plpgsql"
+       " IMMUTABLE;");
 
   sql ("CREATE OR REPLACE FUNCTION severity_to_type (double precision)"
        " RETURNS text AS $$"
@@ -954,7 +959,8 @@ manage_create_sql_functions ()
        "     RAISE EXCEPTION 'Invalid severity score given: %', $1;"
        "   END IF;"
        " END;"
-       "$$ LANGUAGE plpgsql;");
+       "$$ LANGUAGE plpgsql"
+       " IMMUTABLE;");
 
   sql ("CREATE OR REPLACE FUNCTION severity_matches_ov (double precision,"
        "                                                double precision)"
@@ -971,7 +977,8 @@ manage_create_sql_functions ()
        "          ELSE $1 >= $2"
        "          END;"
        " END;"
-       "$$ LANGUAGE plpgsql;");
+       "$$ LANGUAGE plpgsql"
+       " IMMUTABLE;");
 
   sql ("CREATE OR REPLACE FUNCTION iso_time (seconds integer)"
        " RETURNS text AS $$"
@@ -1028,7 +1035,8 @@ manage_create_sql_functions ()
        "          ELSE date_part( 'day', diff )"
        "          END;"
        " END;"
-       "$$ LANGUAGE plpgsql;");
+       "$$ LANGUAGE plpgsql"
+       " IMMUTABLE;");
 
   sql ("CREATE OR REPLACE FUNCTION uniquify (type text, proposed_name text,"
        "                                     owner integer, suffix text)"
@@ -1276,11 +1284,13 @@ manage_create_sql_functions ()
 
   sql ("CREATE OR REPLACE FUNCTION t () RETURNS boolean AS $$"
        "  SELECT true;"
-       "$$ LANGUAGE SQL;");
+       "$$ LANGUAGE SQL"
+       " IMMUTABLE;");
 
   sql ("CREATE OR REPLACE FUNCTION m_now () RETURNS integer AS $$"
        "  SELECT extract (epoch FROM now ())::integer;"
-       "$$ LANGUAGE SQL;");
+       "$$ LANGUAGE SQL"
+       " STABLE;");
 
   sql ("CREATE OR REPLACE FUNCTION common_cve (text, text)"
        " RETURNS boolean AS $$"
@@ -1315,7 +1325,8 @@ manage_create_sql_functions ()
        /* Check if a host list contains a host. */
        "  SELECT trim ($2)"
        "         IN (SELECT trim (unnest (string_to_array ($1, ','))));"
-       "$$ LANGUAGE SQL;");
+       "$$ LANGUAGE SQL"
+       " IMMUTABLE;");
 
   sql ("CREATE OR REPLACE FUNCTION make_uuid () RETURNS text AS $$"
        "  SELECT uuid_generate_v4 ()::text AS result;"
@@ -1697,7 +1708,8 @@ manage_create_sql_functions ()
        "         THEN 'Stopped'"
        "         ELSE 'Internal Error'"
        "         END;"
-       "$$ LANGUAGE SQL;",
+       "$$ LANGUAGE SQL"
+       " IMMUTABLE;",
        TASK_STATUS_DELETE_REQUESTED,
        TASK_STATUS_DELETE_WAITING,
        TASK_STATUS_DELETE_ULTIMATE_REQUESTED,
@@ -1754,7 +1766,8 @@ manage_create_sql_functions ()
        "         THEN $2"
        "         ELSE $1 || $3 || $2"
        "         END;"
-       "$$ LANGUAGE SQL;");
+       "$$ LANGUAGE SQL"
+       " IMMUTABLE;");
 
   sql ("DROP AGGREGATE IF EXISTS group_concat (text, text);");
 
@@ -1857,7 +1870,8 @@ manage_create_sql_functions ()
            "                      END)"
            "         ELSE 'Internal Error'"
            "         END;"
-           "$$ LANGUAGE SQL;");
+           "$$ LANGUAGE SQL"
+           " IMMUTABLE;");
 
       sql ("CREATE OR REPLACE FUNCTION severity_to_level (double precision,"
            "                                              integer)"
@@ -1885,14 +1899,16 @@ manage_create_sql_functions ()
            "                      END)"
            "         ELSE 'Internal Error'"
            "         END;"
-           "$$ LANGUAGE SQL;");
+           "$$ LANGUAGE SQL"
+           " IMMUTABLE;");
 
       sql ("CREATE OR REPLACE FUNCTION task_threat_level (integer, integer,"
            "                                              integer)"
            " RETURNS text AS $$"
            /* Calculate the threat level of a task. */
            "  SELECT severity_to_level (task_severity ($1, $2, $3), 0);"
-           "$$ LANGUAGE SQL;");
+           "$$ LANGUAGE SQL"
+           " IMMUTABLE;");
     }
 
   if (sql_int ("SELECT (EXISTS (SELECT * FROM information_schema.tables"
@@ -1967,7 +1983,8 @@ manage_create_sql_functions ()
   sql ("CREATE OR REPLACE FUNCTION lower (integer)"
        " RETURNS integer AS $$"
        "  SELECT $1;"
-       "$$ LANGUAGE SQL;");
+       "$$ LANGUAGE SQL"
+       " IMMUTABLE;");
 
   if (sql_int ("SELECT (EXISTS (SELECT * FROM information_schema.tables"
                "               WHERE table_catalog = '%s'"
