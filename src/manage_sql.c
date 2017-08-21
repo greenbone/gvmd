@@ -20967,18 +20967,43 @@ where_qod (const char* min_qod)
       " WHERE (result = results.id) AND (autofp_selection = opts.autofp))",   \
       "auto_type",                                                            \
       KEYWORD_TYPE_INTEGER },                                                 \
-    { "(SELECT new_severity FROM result_new_severities"                       \
-      " WHERE result_new_severities.result = results.id"                      \
-      " AND result_new_severities.user"                                       \
-      "     = (SELECT users.id"                                               \
-      "        FROM current_credentials, users"                               \
-      "        WHERE current_credentials.uuid = users.uuid)"                  \
-      " AND result_new_severities.override = opts.override"                   \
-      " AND result_new_severities.dynamic = opts.dynamic"                     \
-      " LIMIT 1)",                                                            \
-      "severity",                                                             \
-      KEYWORD_TYPE_DOUBLE },                                                  \
-    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
+    { "(SELECT CASE"                                                          \
+      "        WHEN dynamic != 0"                                             \
+      "        THEN CASE"                                                     \
+      "             WHEN override != 0"                                                    \
+      "             THEN coalesce ((SELECT ov_new_severity FROM result_overrides"          \
+      "                             WHERE result = results.id"                             \
+      "                             AND result_overrides.user"                             \
+      "                                  = (SELECT users.id"                               \
+      "                                     FROM current_credentials, users"               \
+      "                                     WHERE current_credentials.uuid = users.uuid)"  \
+      "                             AND severity_matches_ov"                               \
+      "                                  (current_severity (results.severity,"             \
+      "                                                     results.nvt),"                 \
+      "                                   ov_old_severity)"                                \
+      "                             LIMIT 1),"                                             \
+      "                            current_severity (results.severity, results.nvt))"      \
+      "             ELSE current_severity (results.severity, results.nvt)"                 \
+      "             END"                                                                   \
+      "        ELSE CASE"                                                                  \
+      "             WHEN override != 0"                                                    \
+      "             THEN coalesce ((SELECT ov_new_severity FROM result_overrides"          \
+      "                             WHERE result = results.id"                             \
+      "                             AND result_overrides.user"                             \
+      "                                  = (SELECT users.id"                               \
+      "                                     FROM current_credentials, users"               \
+      "                                     WHERE current_credentials.uuid = users.uuid)"  \
+      "                             AND severity_matches_ov"                               \
+      "                                  (results.severity,"                               \
+      "                                   ov_old_severity)"                                \
+      "                             LIMIT 1),"                                             \
+      "                            results.severity)"                                      \
+      "             ELSE results.severity"                                       \
+      "             END"                                                         \
+      "        END)",                                                            \
+      "severity",                                                                \
+      KEYWORD_TYPE_DOUBLE },                                                     \
+    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                         \
   }
 
 // TODO Combine with RESULT_ITERATOR_COLUMNS.

@@ -1,3 +1,10 @@
+2017-08-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (RESULT_ITERATOR_COLUMNS_SEVERITY): Access
+	result_overrides directly for the "severity" column.  This bypasses
+	result_new_severities, which improves performance, presumably because
+	Postgres can do a better job optimizing this way.
+
 2017-08-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Use a severity-only iterator when counting results, to help with
