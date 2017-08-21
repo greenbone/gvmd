@@ -21270,6 +21270,7 @@ results_extra_where (const get_data_t *get, report_t report, const gchar* host,
   levels_clause = where_levels_auto (levels ? levels : "hmlgdf",
                                      new_severity_sql, auto_type_sql);
   g_free (levels);
+  g_free (new_severity_sql);
 
   extra_where = g_strdup_printf("%s%s%s%s%s",
                                 report_clause ? report_clause : "",
@@ -21282,7 +21283,6 @@ results_extra_where (const get_data_t *get, report_t report, const gchar* host,
                                   : " AND ((SELECT (hidden = 0) FROM tasks"
                                     "       WHERE tasks.id = task))");
 
-  g_free (new_severity_sql);
   g_free (auto_type_sql);
   g_free (min_qod_clause);
   g_string_free (levels_clause, TRUE);

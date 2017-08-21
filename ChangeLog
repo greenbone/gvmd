@@ -1,5 +1,10 @@
 2017-08-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (results_extra_where): Free new_severity_sql directly
+	after last use.
+
+2017-08-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (RESULT_ITERATOR_COLUMNS_SEVERITY): Access
 	result_overrides directly for the "severity" column.  This bypasses
 	result_new_severities, which improves performance, presumably because
