@@ -4525,6 +4525,8 @@ resource_uuid (const gchar *type, resource_t resource)
 /**
  * @brief Initialise a GET iterator, including observed resources.
  *
+ * This version includes the pre_sql arg.
+ *
  * @param[in]  iterator        Iterator.
  * @param[in]  type            Type of resource.
  * @param[in]  get             GET data.
@@ -4544,21 +4546,23 @@ resource_uuid (const gchar *type, resource_t resource)
  * @param[in]  owned           Only get items owned by the current user.
  * @param[in]  ignore_id       Whether to ignore id (e.g. for report results).
  * @param[in]  extra_order     Extra ORDER clauses.
+ * @param[in]  pre_sql         SQL to add before the SELECT.  Useful for WITH.
  *
  * @return 0 success, 1 failed to find resource, 2 failed to find filter, -1
  *         error.
  */
 static int
-init_get_iterator2 (iterator_t* iterator, const char *type,
-                    const get_data_t *get, column_t *select_columns,
-                    column_t *trash_select_columns,
-                    column_t *where_columns,
-                    column_t *trash_where_columns,
-                    const char **filter_columns, int distinct,
-                    const char *extra_tables,
-                    const char *extra_where, int owned,
-                    int ignore_id,
-                    const char *extra_order)
+init_get_iterator2_pre (iterator_t* iterator, const char *type,
+                        const get_data_t *get, column_t *select_columns,
+                        column_t *trash_select_columns,
+                        column_t *where_columns,
+                        column_t *trash_where_columns,
+                        const char **filter_columns, int distinct,
+                        const char *extra_tables,
+                        const char *extra_where, int owned,
+                        int ignore_id,
+                        const char *extra_order,
+                        const char *pre_sql)
 {
   int first, max;
   gchar *clause, *order, *filter, *owned_clause;
@@ -4676,11 +4680,12 @@ init_get_iterator2 (iterator_t* iterator, const char *type,
 
   if (resource && get->trash)
     init_iterator (iterator,
-                   "SELECT %s"
+                   "%sSELECT %s"
                    " FROM %ss%s %s"
                    " WHERE id = %llu"
                    " AND %s"
                    "%s%s;",
+                   pre_sql ? pre_sql : "",
                    columns,
                    type,
                    type_trash_in_table (type) ? "" : "_trash",
@@ -4691,12 +4696,13 @@ init_get_iterator2 (iterator_t* iterator, const char *type,
                    extra_order ? extra_order : "");
   else if (get->trash)
     init_iterator (iterator,
-                   "SELECT %s"
+                   "%sSELECT %s"
                    " FROM %ss%s %s"
                    " WHERE"
                    "%s"
                    "%s"
                    "%s%s;",
+                   pre_sql ? pre_sql : "",
                    columns,
                    type,
                    type_trash_in_table (type) ? "" : "_trash",
@@ -4707,11 +4713,12 @@ init_get_iterator2 (iterator_t* iterator, const char *type,
                    extra_order ? extra_order : "");
   else if (resource)
     init_iterator (iterator,
-                   "SELECT %s"
+                   "%sSELECT %s"
                    " FROM %ss %s"
                    " WHERE id = %llu"
                    " AND %s"
                    "%s%s;",
+                   pre_sql ? pre_sql : "",
                    columns,
                    type,
                    extra_tables ? extra_tables : "",
@@ -4725,7 +4732,7 @@ init_get_iterator2 (iterator_t* iterator, const char *type,
      * selection to the rows that will appear on the page, then the outer SELECT
      * includes all the requested columns. */
     init_iterator (iterator,
-                   "SELECT %s"
+                   "%sSELECT %s"
                    " FROM %ss %s"
                    " WHERE uuid IN (SELECT uuid"
                    "                FROM %ss %s"
@@ -4733,6 +4740,7 @@ init_get_iterator2 (iterator_t* iterator, const char *type,
                    "                %s%s%s%s%s"
                    "                LIMIT %s OFFSET %i)"
                    "%s%s;",
+                   pre_sql ? pre_sql : "",
                    columns,
                    type,
                    extra_tables ? extra_tables : "",
@@ -4751,12 +4759,13 @@ init_get_iterator2 (iterator_t* iterator, const char *type,
   else
     {
       init_iterator (iterator,
-                   "%sSELECT %s"
+                   "%s%sSELECT %s"
                    " FROM %ss %s"
                    " WHERE"
                    " %s"
                    "%s%s%s%s%s%s"
                    " LIMIT %s OFFSET %i%s;",
+                   pre_sql ? pre_sql : "",
                    distinct ? "SELECT DISTINCT * FROM (" : "",
                    columns,
                    type,
@@ -4778,6 +4787,51 @@ init_get_iterator2 (iterator_t* iterator, const char *type,
   g_free (order);
   g_free (clause);
   return 0;
+}
+
+/**
+ * @brief Initialise a GET iterator, including observed resources.
+ *
+ * @param[in]  iterator        Iterator.
+ * @param[in]  type            Type of resource.
+ * @param[in]  get             GET data.
+ * @param[in]  select_columns         Columns for SQL.
+ * @param[in]  trash_select_columns   Columns for SQL trash case.
+ * @param[in]  where_columns          WHERE columns.  These are columns that
+ *                                    can be used for filtering and searching,
+ *                                    but are not accessed (so column has no
+ *                                    iterator access function).
+ * @param[in]  trash_where_columns    WHERE columns for trashcan.
+ * @param[in]  filter_columns  Columns for filter.
+ * @param[in]  distinct        Whether the query should be distinct.  Skipped
+ *                             for trash and single resource.
+ * @param[in]  extra_tables    Extra tables to join in FROM clause.
+ * @param[in]  extra_where     Extra WHERE clauses.  Skipped for single
+ *                             resource.
+ * @param[in]  owned           Only get items owned by the current user.
+ * @param[in]  ignore_id       Whether to ignore id (e.g. for report results).
+ * @param[in]  extra_order     Extra ORDER clauses.
+ *
+ * @return 0 success, 1 failed to find resource, 2 failed to find filter, -1
+ *         error.
+ */
+static int
+init_get_iterator2 (iterator_t* iterator, const char *type,
+                    const get_data_t *get, column_t *select_columns,
+                    column_t *trash_select_columns,
+                    column_t *where_columns,
+                    column_t *trash_where_columns,
+                    const char **filter_columns, int distinct,
+                    const char *extra_tables,
+                    const char *extra_where, int owned,
+                    int ignore_id,
+                    const char *extra_order)
+{
+  return init_get_iterator2_pre (iterator, type, get, select_columns,
+                                 trash_select_columns, where_columns,
+                                 trash_where_columns, filter_columns, distinct,
+                                 extra_tables, extra_where, owned, ignore_id,
+                                 extra_order, NULL);
 }
 
 /**
@@ -20958,54 +21012,6 @@ where_qod (const char* min_qod)
     "severity", "original_severity", "vulnerability", "date", "report_id",    \
     "solution_type", "qod", "qod_type", "task_id", "cve", "hostname", NULL }
 
-/**
- * @brief Result iterator columns.  Severity only.
- */
-#define RESULT_ITERATOR_COLUMNS_SEVERITY                                      \
-  {                                                                           \
-    { "(SELECT autofp FROM results_autofp"                                    \
-      " WHERE (result = results.id) AND (autofp_selection = opts.autofp))",   \
-      "auto_type",                                                            \
-      KEYWORD_TYPE_INTEGER },                                                 \
-    { "(SELECT CASE"                                                          \
-      "        WHEN dynamic != 0"                                             \
-      "        THEN CASE"                                                     \
-      "             WHEN override != 0"                                                    \
-      "             THEN coalesce ((SELECT ov_new_severity FROM result_overrides"          \
-      "                             WHERE result = results.id"                             \
-      "                             AND result_overrides.user"                             \
-      "                                  = (SELECT users.id"                               \
-      "                                     FROM current_credentials, users"               \
-      "                                     WHERE current_credentials.uuid = users.uuid)"  \
-      "                             AND severity_matches_ov"                               \
-      "                                  (current_severity (results.severity,"             \
-      "                                                     results.nvt),"                 \
-      "                                   ov_old_severity)"                                \
-      "                             LIMIT 1),"                                             \
-      "                            current_severity (results.severity, results.nvt))"      \
-      "             ELSE current_severity (results.severity, results.nvt)"                 \
-      "             END"                                                                   \
-      "        ELSE CASE"                                                                  \
-      "             WHEN override != 0"                                                    \
-      "             THEN coalesce ((SELECT ov_new_severity FROM result_overrides"          \
-      "                             WHERE result = results.id"                             \
-      "                             AND result_overrides.user"                             \
-      "                                  = (SELECT users.id"                               \
-      "                                     FROM current_credentials, users"               \
-      "                                     WHERE current_credentials.uuid = users.uuid)"  \
-      "                             AND severity_matches_ov"                               \
-      "                                  (results.severity,"                               \
-      "                                   ov_old_severity)"                                \
-      "                             LIMIT 1),"                                             \
-      "                            results.severity)"                                      \
-      "             ELSE results.severity"                                       \
-      "             END"                                                         \
-      "        END)",                                                            \
-      "severity",                                                                \
-      KEYWORD_TYPE_DOUBLE },                                                     \
-    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                         \
-  }
-
 // TODO Combine with RESULT_ITERATOR_COLUMNS.
 /**
  * @brief Result iterator filterable columns, for severity only version .
@@ -21309,15 +21315,99 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                    report_t report, const char* host,
                                    const gchar *extra_order)
 {
-  static column_t columns[] = RESULT_ITERATOR_COLUMNS_SEVERITY;
+  column_t columns[2];
   static column_t filterable_columns[]
     = RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE;
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
   int ret;
   gchar *filter, *value;
   int autofp, apply_overrides, dynamic_severity;
+  gchar *extra_tables, *extra_where, *owned_clause;
+  gchar *pre_sql;
+  char *user_id;
 
-  gchar *extra_tables, *extra_where;
+  columns[0].select
+    = "(SELECT autofp FROM results_autofp"
+      " WHERE (result = results.id) AND (autofp_selection = opts.autofp))";
+  columns[0].filter = "auto_type";
+  columns[0].type = KEYWORD_TYPE_INTEGER;
+
+  user_id = sql_string ("SELECT id FROM users WHERE uuid = '%s';",
+                        current_credentials.uuid);
+  owned_clause = acl_where_owned_for_get ("override", user_id);
+  free (user_id);
+
+  columns[1].select
+   = g_strdup_printf
+      ("(SELECT CASE"
+       "        WHEN dynamic != 0"
+       "        THEN CASE"
+       "             WHEN override != 0"
+       //                           FIX match to below
+       "             THEN coalesce ((SELECT new_severity FROM overrides"
+       "                             WHERE overrides.nvt = results.nvt"
+       "                             AND (overrides.result = 0"
+       "                                  OR overrides.result = results.id)"
+       "                             AND %s"
+       "                             AND ((overrides.end_time = 0)"
+       "                                  OR (overrides.end_time >= m_now ()))"
+       "                             AND (overrides.task = 0"
+       "                                  OR overrides.task"
+       "                                     = (SELECT reports.task FROM reports"
+       "                                        WHERE results.report = reports.id))"
+       "                             AND (overrides.hosts is NULL"
+       "                                  OR overrides.hosts = ''"
+       "                                  OR hosts_contains (overrides.hosts, results.host))"
+       "                             AND (overrides.port is NULL"
+       "                                  OR overrides.port = ''"
+       "                                  OR overrides.port = results.port)"
+       "                             AND severity_matches_ov"
+       "                                  (current_severity (results.severity,"
+       "                                                     results.nvt),"
+       "                                   overrides.severity)"
+       "                             ORDER BY overrides.result DESC, overrides.task DESC,"
+       "                                   overrides.port DESC, overrides.severity ASC,"
+       "                                   overrides.creation_time DESC"
+       "                             LIMIT 1),"
+       "                            current_severity (results.severity, results.nvt))"
+       "             ELSE current_severity (results.severity, results.nvt)"
+       "             END"
+       "        ELSE CASE"
+       "             WHEN override != 0"
+       "             THEN coalesce ((SELECT new_severity FROM valid_overrides"
+       "                             WHERE valid_overrides.nvt = results.nvt"
+       "                             AND (valid_overrides.result = 0"
+       "                                  OR valid_overrides.result = results.id)"
+       "                             AND (valid_overrides.task = 0"
+       "                                  OR valid_overrides.task"
+       "                                     = (SELECT reports.task FROM reports"
+       "                                        WHERE results.report = reports.id))"
+       "                             AND (valid_overrides.hosts is NULL"
+       "                                  OR valid_overrides.hosts = ''"
+       "                                  OR hosts_contains (valid_overrides.hosts, results.host))"
+       "                             AND (valid_overrides.port is NULL"
+       "                                  OR valid_overrides.port = ''"
+       "                                  OR valid_overrides.port = results.port)"
+       "                             AND severity_matches_ov"
+       "                                  (results.severity,"
+       "                                   valid_overrides.severity)"
+       "                             ORDER BY valid_overrides.result DESC, valid_overrides.task DESC,"
+       "                                   valid_overrides.port DESC, valid_overrides.severity ASC,"
+       "                                   valid_overrides.creation_time DESC"
+       "                             LIMIT 1),"
+       "                            results.severity)"
+       "             ELSE results.severity"
+       "             END"
+       "        END)",
+      owned_clause);
+  columns[1].filter = "severity";
+  columns[1].type = KEYWORD_TYPE_DOUBLE;
+
+  g_free (owned_clause);
+
+  columns[2].select = NULL;
+  columns[2].filter = NULL;
+  columns[2].type = KEYWORD_TYPE_UNKNOWN;
 
   if (get->filt_id && strcmp (get->filt_id, "0"))
     {
@@ -21347,24 +21437,40 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
 
   free (filter);
 
+  user_id = sql_string ("SELECT id FROM users WHERE uuid = '%s';",
+                        current_credentials.uuid);
+  owned_clause = acl_where_owned_for_get ("override", user_id);
+  free (user_id);
+  pre_sql = g_strdup_printf ("WITH valid_overrides"
+                             " AS (SELECT nvt, hosts, new_severity, port,"
+                             "            severity, task, result, creation_time"
+                             "     FROM overrides"
+                             "     WHERE %s"
+                             "     AND ((end_time = 0) OR (end_time >= m_now ())))"
+                             " ",
+                             owned_clause);
+  g_free (owned_clause);
+
   table_order_if_sort_not_specified = 1;
-  ret = init_get_iterator2 (iterator,
-                            "result",
-                            get,
-                            /* SELECT columns. */
-                            columns,
-                            NULL,
-                            /* Filterable columns not in SELECT columns. */
-                            filterable_columns,
-                            NULL,
-                            filter_columns,
-                            0,
-                            extra_tables,
-                            extra_where,
-                            TRUE,
-                            report ? TRUE : FALSE,
-                            extra_order);
+  ret = init_get_iterator2_pre (iterator,
+                                "result",
+                                get,
+                                /* SELECT columns. */
+                                columns,
+                                NULL,
+                                /* Filterable columns not in SELECT columns. */
+                                filterable_columns,
+                                NULL,
+                                filter_columns,
+                                0,
+                                extra_tables,
+                                extra_where,
+                                TRUE,
+                                report ? TRUE : FALSE,
+                                extra_order,
+                                pre_sql);
   table_order_if_sort_not_specified = 0;
+  g_free (pre_sql);
   g_free (extra_tables);
   g_free (extra_where);
   return ret;

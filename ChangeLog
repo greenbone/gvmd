@@ -1,5 +1,21 @@
 2017-08-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Preselect overrides around result counting, to try help performance.
+
+	* src/manage_sql.c (init_get_iterator2_pre): New function.  Like
+	init_get_iterator2, but takes a pre_sql arg, which allows addition of
+	a WITH clause.
+	(init_get_iterator2): Use init_get_iterator2_pre.
+	(RESULT_ITERATOR_COLUMNS_SEVERITY): Remove.  Now allocated in
+	init_result_get_iterator_severity.
+	(init_result_get_iterator_severity): Allocate the SELECT columns
+	at run time, adding a overrides WITH clause to the severity subselect,
+	to reduce the number of overrides that the severity subselect needs to
+	work with.  These overrides are iterated for each result in the report,
+	so this helps permformance.
+
+2017-08-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (results_extra_where): Free new_severity_sql directly
 	after last use.
 
