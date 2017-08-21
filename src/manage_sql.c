@@ -21428,8 +21428,8 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
 
   dynamic_severity = setting_dynamic_severity_int ();
 
-  extra_tables
-    = result_iterator_opts_table (autofp, apply_overrides, dynamic_severity);
+  extra_tables = result_iterator_opts_table (autofp, apply_overrides,
+                                             dynamic_severity);
 
   extra_where = results_extra_where (get, report, host,
                                      autofp, apply_overrides, dynamic_severity,
