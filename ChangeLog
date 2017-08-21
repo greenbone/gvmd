@@ -1,9 +1,14 @@
 2017-08-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_result_get_iterator_severity): Match the dynamic
+	severity case to the static one.
+
+2017-08-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (where_levels_auto): Use the severity instead of
 	overridden severity in the "all levels" case.  This improves performance
 	of result counting, because the overridden severity is complex and it
-	requires the views, which Postgres does need seem to optimize well.
+	requires the views, which Postgres does not seem to optimize well.
 	Hopefully my assumption that overrides never apply to the ERROR severity
 	is correct.
 
