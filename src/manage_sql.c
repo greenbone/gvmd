@@ -21292,11 +21292,13 @@ results_extra_where (const get_data_t *get, report_t report, const gchar* host,
                                 host_clause ? host_clause : "",
                                 levels_clause->str,
                                 min_qod_clause ? min_qod_clause : "",
-                                get->trash
-                                  ? " AND ((SELECT (hidden = 2) FROM tasks"
-                                    "       WHERE tasks.id = task))"
-                                  : " AND ((SELECT (hidden = 0) FROM tasks"
-                                    "       WHERE tasks.id = task))");
+                                report_clause
+                                 ? ""
+                                 : get->trash
+                                    ? " AND ((SELECT (hidden = 2) FROM tasks"
+                                      "       WHERE tasks.id = task))"
+                                    : " AND ((SELECT (hidden = 0) FROM tasks"
+                                      "       WHERE tasks.id = task))");
 
   g_free (auto_type_sql);
   g_free (min_qod_clause);
