@@ -20985,9 +20985,15 @@ static gchar*
 where_qod (const char* min_qod)
 {
   gchar *qod_sql;
+
   if (min_qod && strlen (min_qod))
     {
-      gchar *quoted_qod = sql_quote (min_qod);
+      gchar *quoted_qod;
+
+      if (atoi (min_qod) == 0)
+        return g_strdup ("");
+
+      quoted_qod = sql_quote (min_qod);
       qod_sql = g_strdup_printf (" AND (qod >= CAST ('%s' AS INTEGER))",
                                  quoted_qod);
       g_free (quoted_qod);
