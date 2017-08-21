@@ -1,5 +1,12 @@
 2017-08-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_result_get_iterator_severity): When autofp is 0,
+	then simply select 0, instead of relying on Postgres to realize that the
+	complex results_autofp query is always 0.  This help result count
+	performance.
+
+2017-08-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (results_extra_where): If the report is given, don't
 	check the hidden status of the task, because we simply want that report's
 	results, even if the task is in the trashcan or hidden.  This helps result
