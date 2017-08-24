@@ -316,7 +316,7 @@ next_time (time_t first, int period, int period_months, const char* timezone,
   else if (period_months > 0)
     {
       time_t ret;
-      periods_diff = months_between (first, now) / period_months;
+      periods_diff = months_between (first, now + offset_diff) / period_months;
       periods_diff += periods_offset;
       if (add_months (first, (periods_diff + 1) * period_months)
           >= now)
