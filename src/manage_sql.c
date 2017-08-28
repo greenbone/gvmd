@@ -4936,7 +4936,8 @@ init_get_iterator2_pre (iterator_t* iterator, const char *type,
                         const char *extra_where, int owned,
                         int ignore_id,
                         const char *extra_order,
-                        const char *pre_sql)
+                        const char *pre_sql,
+                        int assume_permitted)
 {
   int first, max;
   gchar *clause, *order, *filter, *owned_clause;
@@ -5028,6 +5029,8 @@ init_get_iterator2_pre (iterator_t* iterator, const char *type,
 
   if (resource)
     /* Ownership test is done above by find function. */
+    owned_clause = g_strdup (" t ()");
+  else if (assume_permitted)
     owned_clause = g_strdup (" t ()");
   else
     owned_clause = acl_where_owned (type, get, owned, owner_filter, resource,
@@ -5205,7 +5208,7 @@ init_get_iterator2 (iterator_t* iterator, const char *type,
                                  trash_select_columns, where_columns,
                                  trash_where_columns, filter_columns, distinct,
                                  extra_tables, extra_where, owned, ignore_id,
-                                 extra_order, NULL);
+                                 extra_order, NULL, 0);
 }
 
 /**
@@ -21684,7 +21687,8 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                 TRUE,
                                 report ? TRUE : FALSE,
                                 extra_order,
-                                pre_sql);
+                                pre_sql,
+                                1);
   table_order_if_sort_not_specified = 0;
   g_free (pre_sql);
   g_free (extra_tables);

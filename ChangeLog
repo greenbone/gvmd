@@ -1,5 +1,15 @@
 2017-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r29382.
+
+	* src/manage_sql.c (init_get_iterator2_pre): Add assume_permitted arg.
+	(init_get_iterator2): Add new arg.
+	(init_result_get_iterator_severity): Assume that the result is accessible
+	by the user, because we're accessing a specific report that the user is
+	allowed to access.
+
+2017-08-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r29381.
 
 	* src/manage_sql.c (init_result_get_iterator_severity): Format call
