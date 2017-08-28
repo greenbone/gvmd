@@ -21182,9 +21182,12 @@ where_levels_auto (const char *levels, const char *new_severity_sql,
       /* All levels. */
       g_string_free (levels_sql, TRUE);
       levels_sql = g_string_new ("");
+      /* It's not possible to override from or to the error severity, so no
+       * need to use the overriden severity here (new_severity_sql).  This
+       * helps with the default result counting performance because the
+       * overridden severity is complex. */
       g_string_append_printf (levels_sql,
-                              " AND %s != " G_STRINGIFY (SEVERITY_ERROR),
-                              new_severity_sql);
+                              " AND severity != " G_STRINGIFY (SEVERITY_ERROR));
     }
 
   return levels_sql;
