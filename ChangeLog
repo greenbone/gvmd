@@ -1,4 +1,13 @@
-2017-08-14  Matthew Mundell <matthew.mundell@greenbone.net>
+2017-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r28712.
+
+	* src/manage_sql.c (RESULT_ITERATOR_COLUMNS_SEVERITY): Access
+	result_overrides directly for the "severity" column.  This bypasses
+	result_new_severities, which improves performance, presumably because
+	Postgres can do a better job optimizing this way.
+
+2017-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r29377.
 
@@ -15,7 +24,7 @@
 	(init_result_get_iterator_severity): New function.
 	(report_severity_data): Use the severity-only iterator.
 
-2017-08-14  Matthew Mundell <matthew.mundell@greenbone.net>
+2017-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r29376.
 
@@ -26,7 +35,7 @@
 
 	* src/manage_pg.c (sql_severity_matches_ov): New function.
 
-2017-08-14  Matthew Mundell <matthew.mundell@greenbone.net>
+2017-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r29375.
 
