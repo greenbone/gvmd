@@ -1,4 +1,9 @@
-2017-08-21  Matthew Mundell <matthew.mundell@greenbone.net>
+2017-08-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_result_get_iterator_severity): Correct size of
+	columns.
+
+2017-08-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_utils.c (next_time): In the period_months case, account for
 	the difference in timezones when calculating the months between the
