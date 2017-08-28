@@ -21562,42 +21562,29 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   columns[0].filter = "auto_type";
   columns[0].type = KEYWORD_TYPE_INTEGER;
 
-  user_id = sql_string ("SELECT id FROM users WHERE uuid = '%s';",
-                        current_credentials.uuid);
-  owned_clause = acl_where_owned_for_get ("override", user_id);
-  free (user_id);
-
   columns[1].select
-   = g_strdup_printf
-      ("(SELECT CASE"
+     = "(SELECT CASE"
        "        WHEN dynamic != 0"
        "        THEN CASE"
        "             WHEN override != 0"
-       //                           FIX match to below
-       "             THEN coalesce ((SELECT new_severity FROM overrides"
-       "                             WHERE overrides.nvt = results.nvt"
-       "                             AND (overrides.result = 0"
-       "                                  OR overrides.result = results.id)"
-       "                             AND %s"
-       "                             AND ((overrides.end_time = 0)"
-       "                                  OR (overrides.end_time >= m_now ()))"
-       "                             AND (overrides.task = 0"
-       "                                  OR overrides.task"
+       "             THEN coalesce ((SELECT new_severity FROM valid_overrides"
+       "                             WHERE valid_overrides.nvt = results.nvt"
+       "                             AND (valid_overrides.result = 0"
+       "                                  OR valid_overrides.result = results.id)"
+       "                             AND (valid_overrides.task = 0"
+       "                                  OR valid_overrides.task"
        "                                     = (SELECT reports.task FROM reports"
        "                                        WHERE results.report = reports.id))"
-       "                             AND (overrides.hosts is NULL"
-       "                                  OR overrides.hosts = ''"
-       "                                  OR hosts_contains (overrides.hosts, results.host))"
-       "                             AND (overrides.port is NULL"
-       "                                  OR overrides.port = ''"
-       "                                  OR overrides.port = results.port)"
+       "                             AND (valid_overrides.hosts is NULL"
+       "                                  OR valid_overrides.hosts = ''"
+       "                                  OR hosts_contains (valid_overrides.hosts, results.host))"
+       "                             AND (valid_overrides.port is NULL"
+       "                                  OR valid_overrides.port = ''"
+       "                                  OR valid_overrides.port = results.port)"
        "                             AND severity_matches_ov"
        "                                  (current_severity (results.severity,"
        "                                                     results.nvt),"
-       "                                   overrides.severity)"
-       "                             ORDER BY overrides.result DESC, overrides.task DESC,"
-       "                                   overrides.port DESC, overrides.severity ASC,"
-       "                                   overrides.creation_time DESC"
+       "                                   valid_overrides.severity)"
        "                             LIMIT 1),"
        "                            current_severity (results.severity, results.nvt))"
        "             ELSE current_severity (results.severity, results.nvt)"
@@ -21625,12 +21612,9 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
        "                            results.severity)"
        "             ELSE results.severity"
        "             END"
-       "        END)",
-      owned_clause);
+       "        END)";
   columns[1].filter = "severity";
   columns[1].type = KEYWORD_TYPE_DOUBLE;
-
-  g_free (owned_clause);
 
   columns[2].select = NULL;
   columns[2].filter = NULL;
