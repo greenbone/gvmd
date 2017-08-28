@@ -1887,6 +1887,15 @@ filter_free (array_t *split)
 }
 
 /**
+ * @brief Flag to control the default sorting produced by split filter.
+ *
+ * If this is true, and the filter does not specify a sort field, then
+ * split_filter will not insert a default sort term, so that the random
+ * (and fast) table order in the database will be used.
+ */
+int table_order_if_sort_not_specified = 0;
+
+/**
  * @brief Split the filter term into parts.
  *
  * @param[in]  given_filter  Filter term.
@@ -2111,7 +2120,7 @@ split_filter (const gchar* given_filter)
         array_add (parts, keyword);
       }
 
-    if (sort == 0)
+    if (table_order_if_sort_not_specified == 0 && sort == 0)
       {
         keyword = g_malloc0 (sizeof (keyword_t));
         keyword->column = g_strdup ("sort");
@@ -2981,6 +2990,7 @@ filter_clause (const char* type, const char* filter,
 
   clause = g_string_new ("");
   order = g_string_new ("");
+  /* NB This may add terms that are missing, like "sort". */
   split = split_filter (filter);
   point = (keyword_t**) split->pdata;
   first_keyword = 1;
@@ -21165,6 +21175,101 @@ where_qod (const char* min_qod)
     "solution_type", "qod", "qod_type", "task_id", "cve", "hostname", NULL }
 
 /**
+ * @brief Result iterator columns.  Severity only.
+ */
+#define RESULT_ITERATOR_COLUMNS_SEVERITY                                      \
+  {                                                                           \
+    { "(SELECT autofp FROM results_autofp"                                    \
+      " WHERE (result = results.id) AND (autofp_selection = opts.autofp))",   \
+      "auto_type",                                                            \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { "(SELECT new_severity FROM result_new_severities"                       \
+      " WHERE result_new_severities.result = results.id"                      \
+      " AND result_new_severities.user"                                       \
+      "     = (SELECT users.id"                                               \
+      "        FROM current_credentials, users"                               \
+      "        WHERE current_credentials.uuid = users.uuid)"                  \
+      " AND result_new_severities.override = opts.override"                   \
+      " AND result_new_severities.dynamic = opts.dynamic"                     \
+      " LIMIT 1)",                                                            \
+      "severity",                                                             \
+      KEYWORD_TYPE_DOUBLE },                                                  \
+    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
+  }
+
+// TODO Combine with RESULT_ITERATOR_COLUMNS.
+/**
+ * @brief Result iterator filterable columns, for severity only version .
+ */
+#define RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE                           \
+  {                                                                           \
+    { "id", NULL, KEYWORD_TYPE_INTEGER },                                     \
+    { "uuid", NULL, KEYWORD_TYPE_STRING },                                    \
+    { "(SELECT name FROM nvts WHERE nvts.oid =  nvt)",                        \
+      "name",                                                                 \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "''", "comment", KEYWORD_TYPE_STRING },                                 \
+    { " iso_time ( date )", "creation_time", KEYWORD_TYPE_STRING },           \
+    { " iso_time ( date )", "modification_time", KEYWORD_TYPE_STRING },       \
+    { "date", "created", KEYWORD_TYPE_INTEGER },                              \
+    { "date", "modified", KEYWORD_TYPE_INTEGER },                             \
+    { "(SELECT name FROM users WHERE users.id = results.owner)",              \
+      "_owner",                                                               \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "owner", NULL, KEYWORD_TYPE_INTEGER },                                  \
+    { "host", NULL, KEYWORD_TYPE_STRING },                                    \
+    { "port", "location", KEYWORD_TYPE_STRING },                              \
+    { "nvt", NULL, KEYWORD_TYPE_STRING },                                     \
+    { "severity_to_type (severity)", "original_type", KEYWORD_TYPE_STRING },  \
+    { "severity_to_type ((SELECT new_severity FROM result_new_severities"     \
+      "                  WHERE result_new_severities.result = results.id"     \
+      "                  AND result_new_severities.user"                      \
+      "                      = (SELECT users.id"                              \
+      "                         FROM current_credentials, users"              \
+      "                         WHERE current_credentials.uuid = users.uuid)" \
+      "                  AND result_new_severities.override = opts.override"  \
+      "                  AND result_new_severities.dynamic = opts.dynamic"    \
+      "                  LIMIT 1))",                                          \
+      "type",                                                                 \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "description", NULL, KEYWORD_TYPE_STRING },                             \
+    { "task", NULL, KEYWORD_TYPE_INTEGER },                                   \
+    { "report", "report_rowid", KEYWORD_TYPE_INTEGER },                       \
+    { "(SELECT cvss_base FROM nvts WHERE nvts.oid =  nvt)",                   \
+      "cvss_base",                                                            \
+      KEYWORD_TYPE_DOUBLE },                                                  \
+    { "nvt_version", NULL, KEYWORD_TYPE_STRING },                             \
+    { "severity", "original_severity", KEYWORD_TYPE_DOUBLE },                 \
+    { "(SELECT name FROM nvts WHERE nvts.oid =  nvt)",                        \
+      "vulnerability",                                                        \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "date" , NULL, KEYWORD_TYPE_INTEGER },                                  \
+    { "(SELECT uuid FROM reports WHERE id = report)",                         \
+      "report_id",                                                            \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "(SELECT solution_type FROM nvts WHERE nvts.oid = nvt)",                \
+      "solution_type",                                                        \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "qod", NULL, KEYWORD_TYPE_INTEGER },                                    \
+    { "qod_type", NULL, KEYWORD_TYPE_STRING },                                \
+    { "qod_type", NULL, KEYWORD_TYPE_STRING },                                \
+    { "(SELECT uuid FROM tasks WHERE id = task)",                             \
+      "task_id",                                                              \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "(SELECT cve FROM nvts WHERE oid = nvt)", "cve", KEYWORD_TYPE_STRING }, \
+    { "(SELECT value FROM report_host_details"                                \
+      " WHERE name = 'hostname'"                                              \
+      "   AND report_host = (SELECT id FROM report_hosts"                     \
+      "                       WHERE report_hosts.host=results.host"           \
+      "                         AND report_hosts.report = results.report)"    \
+      " LIMIT 1)",                                                            \
+      "hostname",                                                             \
+      KEYWORD_TYPE_STRING                                                     \
+    },                                                                        \
+    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
+  }
+
+/**
  * @brief Result iterator columns.
  */
 #define RESULT_ITERATOR_COLUMNS                                               \
@@ -21376,6 +21481,84 @@ results_extra_where (const get_data_t *get, report_t report, const gchar* host,
   g_free (host_clause);
 
   return extra_where;
+}
+
+/**
+ * @brief Initialise the severity-only result iterator.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ * @param[in]  report      Report to restrict returned results to.
+ * @param[in]  host        Host to limit results to.
+ * @param[in]  extra_order Extra text for ORDER term in SQL.
+ *
+ * @return 0 success, 1 failed to find result, failed to find filter (filt_id),
+ *         -1 error.
+ */
+int
+init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
+                                   report_t report, const char* host,
+                                   const gchar *extra_order)
+{
+  static column_t columns[] = RESULT_ITERATOR_COLUMNS_SEVERITY;
+  static column_t filterable_columns[]
+    = RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE;
+  static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
+  int ret;
+  gchar *filter, *value;
+  int autofp, apply_overrides, dynamic_severity;
+
+  gchar *extra_tables, *extra_where;
+
+  if (get->filt_id && strcmp (get->filt_id, "0"))
+    {
+      filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        return 2;
+    }
+  else
+    filter = NULL;
+
+  value = filter_term_value (filter ? filter : get->filter, "apply_overrides");
+  apply_overrides = value ? strcmp (value, "0") : 0;
+  g_free (value);
+
+  value = filter_term_value (filter ? filter : get->filter, "autofp");
+  autofp = value ? atoi (value) : 0;
+  g_free (value);
+
+  dynamic_severity = setting_dynamic_severity_int ();
+
+  extra_tables
+    = result_iterator_opts_table (autofp, apply_overrides, dynamic_severity);
+
+  extra_where = results_extra_where (get, report, host,
+                                     autofp, apply_overrides, dynamic_severity,
+                                     filter ? filter : get->filter);
+
+  free (filter);
+
+  table_order_if_sort_not_specified = 1;
+  ret = init_get_iterator2 (iterator,
+                            "result",
+                            get,
+                            /* SELECT columns. */
+                            columns,
+                            NULL,
+                            /* Filterable columns not in SELECT columns. */
+                            filterable_columns,
+                            NULL,
+                            filter_columns,
+                            0,
+                            extra_tables,
+                            extra_where,
+                            TRUE,
+                            report ? TRUE : FALSE,
+                            extra_order);
+  table_order_if_sort_not_specified = 0;
+  g_free (extra_tables);
+  g_free (extra_where);
+  return ret;
 }
 
 /**
@@ -23091,13 +23274,22 @@ report_severity_data (report_t report, const char *host,
   if (severity_data)
     {
       get_data_t *get_all;
+
       get_all = report_results_get_data (1, -1, apply_overrides, autofp, 0);
       ignore_max_rows_per_page = 1;
-      init_result_get_iterator (&results, get_all, report, host, NULL);
+      init_result_get_iterator_severity (&results, get_all, report, host, NULL);
       ignore_max_rows_per_page = 0;
       while (next (&results))
         {
-          double severity = result_iterator_severity_double (&results);
+          double severity;
+
+          if (results.done)
+            severity = 0.0;
+          else if (iterator_int (&results, 0))
+            severity = SEVERITY_FP;
+          else
+            severity = iterator_double (&results, 1);
+
           severity_data_add (severity_data, severity);
         }
       cleanup_iterator (&results);
@@ -23108,6 +23300,7 @@ report_severity_data (report_t report, const char *host,
   if (filtered_severity_data)
     {
       get_data_t get_filtered;
+
       memset (&get_filtered, 0, sizeof (get_data_t));
       get_filtered.filt_id = get->filt_id;
       get_filtered.filter = get->filter;
@@ -23115,11 +23308,20 @@ report_severity_data (report_t report, const char *host,
       get_filtered.ignore_pagination = 1;
 
       ignore_max_rows_per_page = 1;
-      init_result_get_iterator (&results, &get_filtered, report, host, NULL);
+      init_result_get_iterator_severity (&results, &get_filtered, report, host,
+                                         NULL);
       ignore_max_rows_per_page = 0;
       while (next (&results))
         {
-          double severity = result_iterator_severity_double (&results);
+          double severity;
+
+          if (results.done)
+            severity = 0.0;
+          else if (iterator_int (&results, 0))
+            severity = SEVERITY_FP;
+          else
+            severity = iterator_double (&results, 1);
+
           severity_data_add (filtered_severity_data, severity);
         }
       cleanup_iterator (&results);
