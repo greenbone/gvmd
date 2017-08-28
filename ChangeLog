@@ -1,5 +1,9 @@
 2017-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_pg.c (manage_create_sql_functions): Correct .so location.
+
+2017-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (manage_create_sql_functions): Correct name.
 
 2017-08-28  Matthew Mundell <matthew.mundell@greenbone.net>

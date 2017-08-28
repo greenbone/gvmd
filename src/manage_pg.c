@@ -162,7 +162,7 @@ manage_create_sql_functions ()
   sql ("CREATE OR REPLACE FUNCTION severity_matches_ov (double precision,"
        "                                                double precision)"
        " RETURNS boolean"
-       " AS '%s/libgvm-pg-server', 'sql_severity_matches_ov'"
+       " AS '%s/openvasmd/pg/libmanage-pg-server', 'sql_severity_matches_ov'"
        " LANGUAGE C"
        " IMMUTABLE;",
        OPENVAS_LIB_INSTALL_DIR);
