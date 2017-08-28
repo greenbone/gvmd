@@ -21650,6 +21650,9 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   autofp = value ? atoi (value) : 0;
   g_free (value);
 
+  if (autofp == 0)
+    columns[0].select = "0";
+
   dynamic_severity = setting_dynamic_severity_int ();
 
   extra_tables = result_iterator_opts_table (autofp, apply_overrides,

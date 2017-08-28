@@ -1,5 +1,14 @@
 2017-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r29386.
+
+	* src/manage_sql.c (init_result_get_iterator_severity): When autofp is 0,
+	then simply select 0, instead of relying on Postgres to realize that the
+	complex results_autofp query is always 0.  This help result count
+	performance.
+
+2017-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r29385.
 
 	* src/manage_sql.c (results_extra_where): If the report is given, don't
@@ -7,20 +16,22 @@
 	results, even if the task is in the trashcan or hidden.  This helps result
 	count performance.
 
-2017-08-21  Matthew Mundell <matthew.mundell@greenbone.net>
+2017-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	Backport r29383.
+	Backport r29384.
 
 	* src/manage_sql.c (where_qod): When the QOD is 0, simply return an empty
 	clause, instead of comparing qod >= 0, because QOD is always >= 0.  This
 	helps result count performance.
 
-2017-08-21  Matthew Mundell <matthew.mundell@greenbone.net>
+2017-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r29393.
 
 	* src/manage_sql.c (init_result_get_iterator_severity): Sort the overrides
 	once in the WITH instead of every time in the SELECT.
 
-2017-08-21  Matthew Mundell <matthew.mundell@greenbone.net>
+2017-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r29382.
 
@@ -30,7 +41,7 @@
 	by the user, because we're accessing a specific report that the user is
 	allowed to access.
 
-2017-08-21  Matthew Mundell <matthew.mundell@greenbone.net>
+2017-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r29381.
 
