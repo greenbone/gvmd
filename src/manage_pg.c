@@ -165,7 +165,7 @@ manage_create_sql_functions ()
        " AS '%s/libgvm-pg-server', 'sql_severity_matches_ov'"
        " LANGUAGE C"
        " IMMUTABLE;",
-       GVM_LIB_INSTALL_DIR);
+       OPENVAS_LIB_INSTALL_DIR);
 
   sql ("CREATE OR REPLACE FUNCTION valid_db_resource_type (text)"
        " RETURNS boolean"
