@@ -1,5 +1,12 @@
 2017-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r29438.
+
+	* src/manage_sql.c (init_result_get_iterator_severity): Correct size of
+	columns.
+
+2017-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r28712.
 
 	Preselect overrides around result counting, to try help performance.

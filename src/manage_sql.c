@@ -21531,7 +21531,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                    report_t report, const char* host,
                                    const gchar *extra_order)
 {
-  column_t columns[2];
+  column_t columns[3];
   static column_t filterable_columns[]
     = RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE;
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
