@@ -1,5 +1,12 @@
 2017-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r29404.
+
+	* src/manage_sql.c (init_result_get_iterator_severity): Move task
+	filtering up into WITH, because it's the same task for every result.
+
+2017-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r29390.
 
 	* src/manage_sql.c (init_result_get_iterator_severity): Neaten formatting

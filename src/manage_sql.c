@@ -21556,6 +21556,8 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   gchar *pre_sql;
   char *user_id;
 
+  assert (report);
+
   columns[0].select
     = "(SELECT autofp FROM results_autofp"
       " WHERE (result = results.id) AND (autofp_selection = opts.autofp))";
@@ -21572,11 +21574,6 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
       "                             AND (valid_overrides.result = 0"
       "                                  OR valid_overrides.result"
       "                                     = results.id)"
-      "                             AND (valid_overrides.task = 0"
-      "                                  OR valid_overrides.task"
-      "                                     = (SELECT reports.task FROM reports"
-      "                                        WHERE results.report"
-      "                                              = reports.id))"
       "                             AND (valid_overrides.hosts is NULL"
       "                                  OR valid_overrides.hosts = ''"
       "                                  OR hosts_contains"
@@ -21602,11 +21599,6 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
       "                             AND (valid_overrides.result = 0"
       "                                  OR valid_overrides.result"
       "                                     = results.id)"
-      "                             AND (valid_overrides.task = 0"
-      "                                  OR valid_overrides.task"
-      "                                     = (SELECT reports.task FROM reports"
-      "                                        WHERE results.report"
-      "                                              = reports.id))"
       "                             AND (valid_overrides.hosts is NULL"
       "                                  OR valid_overrides.hosts = ''"
       "                                  OR hosts_contains"
@@ -21671,11 +21663,16 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                              "            severity, task, result, creation_time"
                              "     FROM overrides"
                              "     WHERE %s"
+                             "     AND (task = 0"
+                             "          OR task = (SELECT reports.task"
+                             "                     FROM reports"
+                             "                     WHERE reports.id = %llu))"
                              "     AND ((end_time = 0) OR (end_time >= m_now ()))"
                              "     ORDER BY result DESC, task DESC, port DESC, severity ASC,"
                              "           creation_time DESC)"
                              " ",
-                             owned_clause);
+                             owned_clause,
+                             report);
   g_free (owned_clause);
 
   table_order_if_sort_not_specified = 1;
