@@ -21610,9 +21610,6 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
        "                             AND severity_matches_ov"
        "                                  (results.severity,"
        "                                   valid_overrides.severity)"
-       "                             ORDER BY valid_overrides.result DESC, valid_overrides.task DESC,"
-       "                                   valid_overrides.port DESC, valid_overrides.severity ASC,"
-       "                                   valid_overrides.creation_time DESC"
        "                             LIMIT 1),"
        "                            results.severity)"
        "             ELSE results.severity"
@@ -21665,7 +21662,9 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                              "            severity, task, result, creation_time"
                              "     FROM overrides"
                              "     WHERE %s"
-                             "     AND ((end_time = 0) OR (end_time >= m_now ())))"
+                             "     AND ((end_time = 0) OR (end_time >= m_now ()))"
+                             "     ORDER BY result DESC, task DESC, port DESC, severity ASC,"
+                             "           creation_time DESC)"
                              " ",
                              owned_clause);
   g_free (owned_clause);

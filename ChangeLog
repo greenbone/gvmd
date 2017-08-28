@@ -1,5 +1,12 @@
 2017-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r29383.
+
+	* src/manage_sql.c (init_result_get_iterator_severity): Sort the overrides
+	once in the WITH instead of every time in the SELECT.
+
+2017-08-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r29382.
 
 	* src/manage_sql.c (init_get_iterator2_pre): Add assume_permitted arg.
