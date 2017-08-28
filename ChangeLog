@@ -1,5 +1,18 @@
 2017-08-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r29376.
+
+	* src/manage_pg.c (manage_create_sql_functions): Switch
+	severity_matches_ov to a C function, to try help with performance.
+	This is called often to calculate the severity of a result according
+	to the overrides, when counting the results.
+
+	* src/manage_pg.c (sql_severity_matches_ov): New function.
+
+2017-08-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r29375.
+
 	* src/manage_pg.c (manage_create_sql_functions): Add IMMUTABLE to
 	functions that obviously don't access or affect the db.
 

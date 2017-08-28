@@ -204,6 +204,35 @@ sql_level_max_severity (PG_FUNCTION_ARGS)
     }
 }
 
+PG_FUNCTION_INFO_V1 (sql_severity_matches_ov);
+
+/**
+ * @brief Return max severity of level.
+ *
+ * This is a callback for a SQL function of one argument.
+ */
+Datum
+sql_severity_matches_ov (PG_FUNCTION_ARGS)
+{
+  if (PG_ARGISNULL (0))
+    ereport (ERROR,
+             (errmsg_internal
+               ("First parameter of severity_matches_ov is NULL")));
+  else if (PG_ARGISNULL (1))
+    PG_RETURN_BOOL (1);
+  else
+    {
+      float8 arg_one, arg_two;
+
+      arg_one = PG_GETARG_FLOAT8 (0);
+      arg_two = PG_GETARG_FLOAT8 (1);
+      if (arg_one <= 0)
+        PG_RETURN_BOOL (arg_one == arg_two);
+      else
+        PG_RETURN_BOOL (arg_one >= arg_two);
+    }
+}
+
 PG_FUNCTION_INFO_V1 (sql_valid_db_resource_type);
 
 /**

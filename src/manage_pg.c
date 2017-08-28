@@ -159,6 +159,14 @@ manage_create_sql_functions ()
        " LANGUAGE C;",
        OPENVAS_LIB_INSTALL_DIR);
 
+  sql ("CREATE OR REPLACE FUNCTION severity_matches_ov (double precision,"
+       "                                                double precision)"
+       " RETURNS boolean"
+       " AS '%s/libgvm-pg-server', 'sql_severity_matches_ov'"
+       " LANGUAGE C"
+       " IMMUTABLE;",
+       GVM_LIB_INSTALL_DIR);
+
   sql ("CREATE OR REPLACE FUNCTION valid_db_resource_type (text)"
        " RETURNS boolean"
        " AS '%s/openvasmd/pg/libmanage-pg-server', 'sql_valid_db_resource_type'"
@@ -565,24 +573,6 @@ manage_create_sql_functions ()
        "   ELSE"
        "     RAISE EXCEPTION 'Invalid severity score given: %', $1;"
        "   END IF;"
-       " END;"
-       "$$ LANGUAGE plpgsql"
-       " IMMUTABLE;");
-
-  sql ("CREATE OR REPLACE FUNCTION severity_matches_ov (double precision,"
-       "                                                double precision)"
-       " RETURNS boolean AS $$"
-       " BEGIN"
-       "   IF $1 IS NULL THEN"
-       "     RAISE EXCEPTION 'First parameter of severity_matches_ov is NULL';"
-       "   END IF;"
-       "   RETURN CASE"
-       "          WHEN $2 IS NULL"   // FIX SQLite also has "OR $2 = ''".
-       "          THEN true"
-       "          WHEN $1 <= 0.0"
-       "          THEN $1 = $2"
-       "          ELSE $1 >= $2"
-       "          END;"
        " END;"
        "$$ LANGUAGE plpgsql"
        " IMMUTABLE;");
