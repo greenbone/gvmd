@@ -1,5 +1,12 @@
 2017-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r29381.
+
+	* src/manage_sql.c (init_result_get_iterator_severity): Format call
+	more consistently.
+
+2017-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r29438.
 
 	* src/manage_sql.c (init_result_get_iterator_severity): Correct size of
