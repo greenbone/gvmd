@@ -1,3 +1,8 @@
+2017-08-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_result_get_iterator_severity): Inline
+	current_severity, which is only available for Postgres.
+
 2017-08-29  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/CMakeLists.txt: Move 'include_directories' down in file since
