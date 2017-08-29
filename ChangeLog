@@ -1,3 +1,16 @@
+2017-08-29  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Make it possible skip dependency checks during configuration. This
+	makes it possible to generate documentation and source tarballs in
+	environments where said dependencies are not present.
+
+	* CMakeLists.txt: Move dependency checks to 'src/' directory. Do not
+	consider this subdirectory containing code and dependency checks when
+	SKIP_SRC is defined.
+
+	* src/CMakeLists.txt: Explicitly check for all dependencies since this
+	is no longer done by the top-level CMakeLists.txt.
+
 2017-08-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_result_get_iterator_severity): Correct size of

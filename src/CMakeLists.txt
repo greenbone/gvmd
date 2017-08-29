@@ -31,6 +31,50 @@ include_directories (${LIBGVM_GMP_INCLUDE_DIRS}
 
 find_package (Threads)
 
+## Dependency checks
+##
+## TODO Also check for headers where needed.
+## Improve for workflow: First collect list of missing libs, then print the
+## list and throw an error, otherwise long install-cmake-install-cmake cycles
+## might occur.
+
+pkg_check_modules (LIBGVM_BASE REQUIRED libgvm_base>=1.0.0)
+pkg_check_modules (LIBGVM_UTIL REQUIRED libgvm_util>=1.0.0)
+pkg_check_modules (LIBGVM_OSP REQUIRED libgvm_osp>=1.0.0)
+pkg_check_modules (LIBGVM_GMP REQUIRED libgvm_gmp>=1.0.0)
+pkg_check_modules (GNUTLS REQUIRED gnutls>=3.2.15)
+pkg_check_modules (GLIB REQUIRED glib-2.0>=2.32)
+
+if (BACKEND STREQUAL SQLITE3)
+  # sqlite3 3.8.3 is required for WITH syntax
+  pkg_check_modules (SQLITE3 REQUIRED sqlite3>=3.8.3)
+else (BACKEND STREQUAL SQLITE3)
+  message (STATUS "Looking for PostgreSQL...")
+  find_program (PG_CONFIG_EXECUTABLE pg_config DOC "pg_config")
+  execute_process (COMMAND ${PG_CONFIG_EXECUTABLE} --includedir-server
+                   OUTPUT_VARIABLE PostgreSQL_SERVER_INCLUDE_DIRS
+                   OUTPUT_STRIP_TRAILING_WHITESPACE)
+  set(PostgreSQL_ADDITIONAL_SEARCH_PATHS ${PostgreSQL_SERVER_INCLUDE_DIRS})
+  find_package (PostgreSQL REQUIRED)
+  if (NOT PostgreSQL_FOUND)
+    message (SEND_ERROR "The PostgreSQL library is required.")
+  endif (NOT PostgreSQL_FOUND)
+endif (BACKEND STREQUAL SQLITE3)
+
+message (STATUS "Looking for gpgme...")
+find_library (GPGME gpgme)
+if (NOT GPGME)
+  message (SEND_ERROR "The gpgme library is required.")
+else (NOT GPGME)
+  message (STATUS "Looking for gpgme... ${GPGME}")
+  execute_process (COMMAND gpgme-config --cflags
+    OUTPUT_VARIABLE GPGME_CFLAGS
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+  execute_process (COMMAND gpgme-config --libs
+    OUTPUT_VARIABLE GPGME_LDFLAGS
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+endif (NOT GPGME)
+
 if (BACKEND STREQUAL SQLITE3)
   set (BACKEND_FILES sql_sqlite3.c manage_sqlite3.c)
 else (BACKEND STREQUAL SQLITE3)
