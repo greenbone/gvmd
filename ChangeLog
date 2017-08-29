@@ -1,5 +1,10 @@
 2017-08-29  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	* src/CMakeLists.txt: Move 'include_directories' down in file since
+	the variables are no longer already set when the file is processed.
+
+2017-08-29  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	Make it possible skip dependency checks during configuration. This
 	makes it possible to generate documentation and source tarballs in
 	environments where said dependencies are not present.

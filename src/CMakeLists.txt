@@ -25,10 +25,6 @@
 
 ## Libraries
 
-include_directories (${LIBGVM_GMP_INCLUDE_DIRS}
-                     ${LIBGVM_BASE_INCLUDE_DIRS} ${LIBGVM_UTIL_INCLUDE_DIRS}
-                     ${LIBGVM_OSP_INCLUDE_DIRS}  ${GLIB_INCLUDE_DIRS})
-
 find_package (Threads)
 
 ## Dependency checks
@@ -74,6 +70,10 @@ else (NOT GPGME)
     OUTPUT_VARIABLE GPGME_LDFLAGS
     OUTPUT_STRIP_TRAILING_WHITESPACE)
 endif (NOT GPGME)
+
+include_directories (${LIBGVM_GMP_INCLUDE_DIRS}
+                     ${LIBGVM_BASE_INCLUDE_DIRS} ${LIBGVM_UTIL_INCLUDE_DIRS}
+                     ${LIBGVM_OSP_INCLUDE_DIRS}  ${GLIB_INCLUDE_DIRS})
 
 if (BACKEND STREQUAL SQLITE3)
   set (BACKEND_FILES sql_sqlite3.c manage_sqlite3.c)
