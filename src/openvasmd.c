@@ -661,8 +661,8 @@ fork_connection_internal (openvas_connection_t *client_connection, gchar* uuid,
           {
             if (openvas_server_new (GNUTLS_CLIENT,
                                     CACERT,
-                                    SCANNERCERT,
-                                    SCANNERKEY,
+                                    CLIENTCERT,
+                                    CLIENTKEY,
                                     &client_connection->session,
                                     &client_connection->credentials))
               exit (EXIT_FAILURE);

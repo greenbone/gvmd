@@ -1,5 +1,13 @@
 2017-08-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r29475.
+
+	* src/gvmd.c (fork_connection_internal): Use the client cert to connect
+	back to ourself, because the server cert may not be marked for such usage,
+	which would result in a key usage violation.
+
+2017-08-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r29467.
 
 	* src/manage_sql.c (init_result_get_iterator_severity): Inline
