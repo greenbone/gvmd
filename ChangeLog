@@ -1,3 +1,10 @@
+2017-08-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r29467.
+
+	* src/manage_sql.c (init_result_get_iterator_severity): Inline
+	current_severity, which is only available for Postgres.
+
 2017-08-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r29468.
