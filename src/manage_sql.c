@@ -59199,16 +59199,16 @@ host_routes_xml (host_t host)
 int
 manage_report_host_details (report_t report, const char *ip, entity_t entity)
 {
+  int in_assets;
   entities_t details;
   entity_t detail;
   char *uuid;
 
-  /* Only add to assets if "Add to Assets" is set on the task. */
-  if (sql_int ("SELECT value = 'no' FROM task_preferences"
-               " WHERE task = (SELECT task FROM reports WHERE id = %llu)"
-               " AND name = 'in_assets';",
-               report))
-    return 0;
+  in_assets = sql_int ("SELECT not(value = 'no') FROM task_preferences"
+                       " WHERE task = (SELECT task FROM reports"
+                       "                WHERE id = %llu)"
+                       " AND name = 'in_assets';",
+                       report);
 
   details = entity->entities;
   if (identifiers == NULL)
@@ -59222,6 +59222,7 @@ manage_report_host_details (report_t report, const char *ip, entity_t entity)
         {
           entity_t source, source_type, source_name, source_desc, name, value;
 
+          /* Parse host detail and add to report */
           source = entity_child (detail, "source");
           if (source == NULL)
             goto error;
@@ -59244,76 +59245,85 @@ manage_report_host_details (report_t report, const char *ip, entity_t entity)
            (report, ip, entity_text (source_type), entity_text (source_name),
             entity_text (source_desc), entity_text (name), entity_text (value));
 
-          if (strcmp (entity_text (name), "hostname") == 0)
+          /* Only add to assets if "Add to Assets" is set on the task. */
+          if (in_assets)
             {
-              identifier_t *identifier;
+              if (strcmp (entity_text (name), "hostname") == 0)
+                {
+                  identifier_t *identifier;
 
-              identifier = g_malloc (sizeof (identifier_t));
-              identifier->ip = g_strdup (ip);
-              identifier->name = g_strdup ("hostname");
-              identifier->value = g_strdup (entity_text (value));
-              identifier->source_id = g_strdup (uuid);
-              identifier->source_type = g_strdup ("Report Host Detail");
-              identifier->source_data = g_strdup (entity_text (source_name));
-              array_add (identifiers, identifier);
-              array_add_new_string (identifier_hosts, g_strdup (ip));
-            }
-          if (strcmp (entity_text (name), "MAC") == 0)
-            {
-              identifier_t *identifier;
+                  identifier = g_malloc (sizeof (identifier_t));
+                  identifier->ip = g_strdup (ip);
+                  identifier->name = g_strdup ("hostname");
+                  identifier->value = g_strdup (entity_text (value));
+                  identifier->source_id = g_strdup (uuid);
+                  identifier->source_type = g_strdup ("Report Host Detail");
+                  identifier->source_data
+                    = g_strdup (entity_text (source_name));
+                  array_add (identifiers, identifier);
+                  array_add_new_string (identifier_hosts, g_strdup (ip));
+                }
+              if (strcmp (entity_text (name), "MAC") == 0)
+                {
+                  identifier_t *identifier;
 
-              identifier = g_malloc (sizeof (identifier_t));
-              identifier->ip = g_strdup (ip);
-              identifier->name = g_strdup ("MAC");
-              identifier->value = g_strdup (entity_text (value));
-              identifier->source_id = g_strdup (uuid);
-              identifier->source_type = g_strdup ("Report Host Detail");
-              identifier->source_data = g_strdup (entity_text (source_name));
-              array_add (identifiers, identifier);
-              array_add_new_string (identifier_hosts, g_strdup (ip));
-            }
-          if (strcmp (entity_text (name), "DNS-via-TargetDefinition") == 0)
-            {
-              identifier_t *identifier;
+                  identifier = g_malloc (sizeof (identifier_t));
+                  identifier->ip = g_strdup (ip);
+                  identifier->name = g_strdup ("MAC");
+                  identifier->value = g_strdup (entity_text (value));
+                  identifier->source_id = g_strdup (uuid);
+                  identifier->source_type = g_strdup ("Report Host Detail");
+                  identifier->source_data
+                    = g_strdup (entity_text (source_name));
+                  array_add (identifiers, identifier);
+                  array_add_new_string (identifier_hosts, g_strdup (ip));
+                }
+              if (strcmp (entity_text (name), "DNS-via-TargetDefinition") == 0)
+                {
+                  identifier_t *identifier;
 
-              identifier = g_malloc (sizeof (identifier_t));
-              identifier->ip = g_strdup (ip);
-              identifier->name = g_strdup ("DNS-via-TargetDefinition");
-              identifier->value = g_strdup (entity_text (value));
-              identifier->source_id = g_strdup (uuid);
-              identifier->source_type = g_strdup ("Report Host Detail");
-              identifier->source_data = g_strdup (entity_text (source_name));
-              array_add (identifiers, identifier);
-              array_add_new_string (identifier_hosts, g_strdup (ip));
-            }
-          if (strcmp (entity_text (name), "OS") == 0
-              && g_str_has_prefix (entity_text (value), "cpe:"))
-            {
-              identifier_t *identifier;
+                  identifier = g_malloc (sizeof (identifier_t));
+                  identifier->ip = g_strdup (ip);
+                  identifier->name = g_strdup ("DNS-via-TargetDefinition");
+                  identifier->value = g_strdup (entity_text (value));
+                  identifier->source_id = g_strdup (uuid);
+                  identifier->source_type = g_strdup ("Report Host Detail");
+                  identifier->source_data
+                    = g_strdup (entity_text (source_name));
+                  array_add (identifiers, identifier);
+                  array_add_new_string (identifier_hosts, g_strdup (ip));
+                }
+              if (strcmp (entity_text (name), "OS") == 0
+                  && g_str_has_prefix (entity_text (value), "cpe:"))
+                {
+                  identifier_t *identifier;
 
-              identifier = g_malloc (sizeof (identifier_t));
-              identifier->ip = g_strdup (ip);
-              identifier->name = g_strdup ("OS");
-              identifier->value = g_strdup (entity_text (value));
-              identifier->source_id = g_strdup (uuid);
-              identifier->source_type = g_strdup ("Report Host Detail");
-              identifier->source_data = g_strdup (entity_text (source_name));
-              array_add (identifiers, identifier);
-              array_add_new_string (identifier_hosts, g_strdup (ip));
-            }
-          if (strcmp (entity_text (name), "ssh-key") == 0)
-            {
-              identifier_t *identifier;
+                  identifier = g_malloc (sizeof (identifier_t));
+                  identifier->ip = g_strdup (ip);
+                  identifier->name = g_strdup ("OS");
+                  identifier->value = g_strdup (entity_text (value));
+                  identifier->source_id = g_strdup (uuid);
+                  identifier->source_type = g_strdup ("Report Host Detail");
+                  identifier->source_data
+                    = g_strdup (entity_text (source_name));
+                  array_add (identifiers, identifier);
+                  array_add_new_string (identifier_hosts, g_strdup (ip));
+                }
+              if (strcmp (entity_text (name), "ssh-key") == 0)
+                {
+                  identifier_t *identifier;
 
-              identifier = g_malloc (sizeof (identifier_t));
-              identifier->ip = g_strdup (ip);
-              identifier->name = g_strdup ("ssh-key");
-              identifier->value = g_strdup (entity_text (value));
-              identifier->source_id = g_strdup (uuid);
-              identifier->source_type = g_strdup ("Report Host Detail");
-              identifier->source_data = g_strdup (entity_text (source_name));
-              array_add (identifiers, identifier);
-              array_add_new_string (identifier_hosts, g_strdup (ip));
+                  identifier = g_malloc (sizeof (identifier_t));
+                  identifier->ip = g_strdup (ip);
+                  identifier->name = g_strdup ("ssh-key");
+                  identifier->value = g_strdup (entity_text (value));
+                  identifier->source_id = g_strdup (uuid);
+                  identifier->source_type = g_strdup ("Report Host Detail");
+                  identifier->source_data
+                    = g_strdup (entity_text (source_name));
+                  array_add (identifiers, identifier);
+                  array_add_new_string (identifier_hosts, g_strdup (ip));
+                }
             }
         }
       details = next_entities (details);

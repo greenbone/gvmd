@@ -1,3 +1,10 @@
+2017-08-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r29468.
+
+	* src/manage_sql.c (manage_report_host_details): Add the host details
+	to the report even if the task preference in_assets is set to "no".
+
 2017-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (manage_create_sql_functions): Correct .so location.
