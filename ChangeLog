@@ -1,3 +1,9 @@
+2017-08-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/gvmd.c (fork_connection_internal): Use the client cert to connect
+	back to ourself, because the server cert may not be marked for such usage,
+	which would result in a key usage violation.
+
 2017-08-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (manage_report_host_details): Add the host details
