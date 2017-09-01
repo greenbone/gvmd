@@ -22325,6 +22325,36 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                         "Condition does not match event type"));
                     log_event_fail ("alert", "Alert", NULL, "created");
                     break;
+                  case 31:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_alert",
+                                        "Unexpected event data name"));
+                    log_event_fail ("alert", "Alert", NULL, "created");
+                    break;
+                  case 32:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_alert",
+                                        "Syntax error in event data"));
+                    log_event_fail ("alert", "Alert", NULL, "created");
+                    break;
+                  case 40:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_alert",
+                                        "Error in SMB credential"));
+                    log_event_fail ("alert", "Alert", NULL, "created");
+                    break;
+                  case 41:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_alert",
+                                        "Error in SMB share path"));
+                    log_event_fail ("alert", "Alert", NULL, "created");
+                    break;
+                  case 42:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_alert",
+                                        "Error in SMB file path"));
+                    log_event_fail ("alert", "Alert", NULL, "created");
+                    break;
                   case 99:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_alert",
@@ -26007,6 +26037,36 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                  (XML_ERROR_SYNTAX ("modify_alert",
                                     "Condition does not match event type"));
                 log_event_fail ("alert", "Alert", NULL, "modify");
+                break;
+              case 31:
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_ERROR_SYNTAX ("modify_alert",
+                                    "Unexpected event data name"));
+                log_event_fail ("alert", "Alert", NULL, "modified");
+                break;
+              case 32:
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_ERROR_SYNTAX ("modify_alert",
+                                    "Syntax error in event data"));
+                log_event_fail ("alert", "Alert", NULL, "modified");
+                break;
+              case 40:
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_ERROR_SYNTAX ("modify_alert",
+                                    "Error in SMB credential"));
+                log_event_fail ("alert", "Alert", NULL, "modified");
+                break;
+              case 41:
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_ERROR_SYNTAX ("modify_alert",
+                                     "Error in SMB share path"));
+                log_event_fail ("alert", "Alert", NULL, "modified");
+                break;
+              case 42:
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_ERROR_SYNTAX ("modify_alert",
+                                     "Error in SMB file path"));
+                log_event_fail ("alert", "Alert", NULL, "modified");
                 break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL

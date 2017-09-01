@@ -6914,6 +6914,73 @@ validate_send_data (alert_method_t method, const gchar *name, gchar **data)
 }
 
 /**
+ * @brief Validate method data for the Send method.
+ *
+ * @param[in]  method          Method that data corresponds to.
+ * @param[in]  name            Name of data.
+ * @param[in]  data            The data.
+ *
+ * @return 0 valid, 40 invalid credential, 41 invalid SMB share path,
+ *         42 invalid SMB file path, -1 error.
+ */
+int
+validate_smb_data (alert_method_t method, const gchar *name, gchar **data)
+{
+  if (method == ALERT_METHOD_SMB)
+    {
+      if (strcmp (name, "smb_credential") == 0)
+        {
+          credential_t credential;
+          if (find_credential_with_permission (*data, &credential,
+                                              "get_credentials"))
+            return -1;
+          else if (credential == 0)
+            return 40;
+          else
+            {
+              gchar *username;
+              username = credential_value (credential, "username");
+
+              if (username == NULL || strlen (username) == 0)
+                {
+                  g_free (username);
+                  return 40;
+                }
+
+              if (strchr (username, '@') || strchr (username, ':'))
+                {
+                  g_free (username);
+                  return 40;
+                }
+
+              g_free (username);
+            }
+        }
+
+      if (strcmp (name, "smb_share_path") == 0)
+        {
+          if (g_regex_match_simple ("^(?>\\\\\\\\|\\/\\/)[^:?<>|]+"
+                                    "(?>\\\\|\\/)[^:?<>|]+$", *data, 0, 0)
+              == FALSE)
+            {
+              return 41;
+            }
+        }
+
+      if (strcmp (name, "smb_file_path") == 0)
+        {
+          if (g_regex_match_simple ("^[^:?<>|]+$", *data, 0, 0)
+              == FALSE)
+            {
+              return 42;
+            }
+        }
+    }
+
+  return 0;
+}
+
+/**
  * @brief Check alert params.
  *
  * @param[in]  event           Type of event.
@@ -6967,7 +7034,9 @@ check_alert_params (event_t event, alert_condition_t condition,
  *         SCP host, 17 failed to find report format for SCP method, 18 error
  *         in SCP credential, 19 error in SCP path, 20 method does not match
  *         event, 21 condition does not match event, 31 unexpected event data
- *         name, 32 syntax error in event data, 99 permission denied, -1 error.
+ *         name, 32 syntax error in event data, 40 invalid SMB credential
+ *       , 41 invalid SMB share path, 42 invalid SMB file path,
+ *         99 permission denied, -1 error.
  */
 int
 create_alert (const char* name, const char* comment, const char* filter_id,
@@ -7195,6 +7264,15 @@ create_alert (const char* name, const char* comment, const char* filter_id,
           return ret;
         }
 
+      ret = validate_smb_data (method, name, &data);
+      if (ret)
+        {
+          g_free (name);
+          g_free (data);
+          sql_rollback ();
+          return ret;
+        }
+
       sql ("INSERT INTO alert_method_data (alert, name, data)"
            " VALUES (%llu, '%s', '%s');",
            *alert,
@@ -7296,8 +7374,9 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
  *         SCP host, 17 failed to find report format for SCP method, 18 error
  *         in SCP credential, 19 error in SCP path, 20 method does not match
  *         event, 21 condition does not match event, 31 unexpected event data
- *         name, 32 syntax error in event data, 99 permission denied,
- *         -1 internal error.
+ *         name, 32 syntax error in event data, 40 invalid SMB credential
+ *       , 41 invalid SMB share path, 42 invalid SMB file path,
+ *         99 permission denied, -1 internal error.
  */
 int
 modify_alert (const char *alert_id, const char *name, const char *comment,
@@ -7555,6 +7634,15 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
             }
 
           ret = validate_send_data (method, name, &data);
+          if (ret)
+            {
+              g_free (name);
+              g_free (data);
+              sql_rollback ();
+              return ret;
+            }
+
+          ret = validate_smb_data (method, name, &data);
           if (ret)
             {
               g_free (name);
@@ -9042,6 +9130,51 @@ scp_to_host (const char *password, const char *username, const char *host,
 }
 
 /**
+ * @brief Send a report to a host via SMB.
+ *
+ * @param[in]  password       Password.
+ * @param[in]  username       Username.
+ * @param[in]  share          Name/address of host and name of the share.
+ * @param[in]  path           Destination filename with path inside the share.
+ * @param[in]  report         Report that should be sent.
+ * @param[in]  report_size    Size of the report.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+smb_send_to_host (const char *password, const char *username,
+                  const char *share, const char *path,
+                  const char *report, gsize report_size)
+{
+  gchar *clean_password, *clean_username, *clean_share, *clean_path;
+  gchar *command_args;
+  int ret;
+
+  g_debug ("smb as %s to share: %s, path: %s", username, share, path);
+
+  if (password == NULL || username == NULL || share == NULL || path == NULL)
+    return -1;
+
+  clean_password = g_shell_quote (password);
+  clean_username = g_shell_quote (username);
+  clean_share = g_shell_quote (share);
+  clean_path = g_shell_quote (path);
+  command_args = g_strdup_printf ("%s %s %s %s",
+                                  clean_password, clean_username,
+                                  clean_share, clean_path);
+  g_free (clean_password);
+  g_free (clean_username);
+  g_free (clean_share);
+  g_free (clean_path);
+
+  ret = run_alert_script ("c427a688-b653-40ab-a9d0-d6ba842a9d63", command_args,
+                          report, report_size);
+
+  g_free (command_args);
+  return ret;
+}
+
+/**
  * @brief Send a report to a Sourcefire Defense Center.
  *
  * @param[in]  ip         IP of center.
@@ -10309,6 +10442,109 @@ email_secinfo (alert_t alert, task_t task, event_t event,
 }
 
 /**
+ * @brief Generate report content for alert
+ *
+ * 
+ *
+ * @return 0 success, -1 error, -2 failed to find report format, -3 failed to
+ *         find filter.
+ */
+static int
+report_content_for_alert (alert_t alert, report_t report, task_t task,
+                          const get_data_t *get,
+                          const char *report_format_data_name,
+                          const char *fallback_format_id,
+                          int notes_details, int overrides_details,
+                          gchar **content, gsize *content_length,
+                          gchar **extension, gchar **content_type,
+                          gchar **term, gchar **report_zone,
+                          gchar **host_summary)
+{
+  report_format_t report_format;
+  char *format_uuid;
+  gchar *report_content;
+
+  assert (content);
+
+  // Get last report from task if no report is given
+  if (report == 0)
+    switch (sql_int64 (&report,
+                        "SELECT max (id) FROM reports"
+                        " WHERE task = %llu",
+                        task))
+      {
+        case 0:
+          if (report)
+            break;
+        case 1:        /* Too few rows in result of query. */
+        case -1:
+          return -1;
+          break;
+        default:       /* Programming error. */
+          assert (0);
+          return -1;
+      }
+
+  // Get report format or use fallback
+  if (report_format_data_name)
+    format_uuid = alert_data (alert,
+                              "method",
+                              report_format_data_name);
+  else
+    format_uuid = NULL;
+
+  if (format_uuid && strlen (format_uuid))
+    {
+      if (find_report_format_with_permission (format_uuid,
+                                              &report_format,
+                                              "get_report_formats")
+          || (report_format == 0))
+        {
+          g_warning ("%s: Could not find RFP '%s' for %s",
+                     __FUNCTION__, format_uuid,
+                     alert_method_name (alert_method (alert)));
+          g_free (format_uuid);
+          return -2;
+        }
+      g_free (format_uuid);
+    }
+  else
+    {
+      g_free (format_uuid);
+      if (find_report_format_with_permission
+            (fallback_format_id,
+             &report_format,
+             "get_report_formats")
+          || (report_format == 0))
+        {
+          g_warning ("%s: Could not find fallback RFP '%s' for %s",
+                      __FUNCTION__, fallback_format_id,
+                     alert_method_name (alert_method (alert)));
+          return -2;
+        }
+    }
+
+  // Generate report content
+  report_content = manage_report (report, get, report_format,
+                                  notes_details,
+                                  overrides_details,
+                                  NULL, /* Type. */
+                                  content_length,
+                                  extension,
+                                  content_type,
+                                  term,
+                                  report_zone,
+                                  host_summary);
+
+  if (report_content == NULL)
+    return -1;
+
+  *content = report_content;
+
+  return 0;
+}
+
+/**
  * @brief Escalate an event.
  *
  * @param[in]  alert   Alert.
@@ -11102,6 +11338,75 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           free (port);
           g_free (report_content);
 
+          return ret;
+        }
+      case ALERT_METHOD_SMB:
+        {
+          char *credential_id, *username, *password, *share_path, *file_path;
+          gchar *report_content, *extension;
+          gsize content_length;
+          credential_t credential;
+          int ret;
+
+          credential_id = alert_data (alert, "method", "smb_credential");
+          share_path = alert_data (alert, "method", "smb_share_path");
+          file_path = alert_data (alert, "method", "smb_file_path");
+
+          report_content = NULL;
+          extension = NULL;
+
+          g_debug ("smb_credential: %s", credential_id);
+          g_debug ("smb_share_path: %s", share_path);
+          g_debug ("smb_file_path: %s", file_path);
+
+          ret = report_content_for_alert
+                  (alert, report, task, get,
+                   "smb_report_format",
+                   "a994b278-1f62-11e1-96ac-406186ea4fc5", /* XML fallback */
+                   notes_details, overrides_details,
+                   &report_content, &content_length, &extension,
+                   NULL, NULL, NULL, NULL);
+          if (ret || report_content == NULL)
+            {
+              free (credential_id);
+              free (share_path);
+              free (file_path);
+              g_free (report_content);
+              g_free (extension);
+              return ret ? ret : -1;
+            }
+
+          credential = 0;
+          ret = find_credential_with_permission (credential_id, &credential,
+                                                 "get_credentials");
+          if (ret || credential == 0)
+            {
+              if (ret == 0)
+                {
+                  g_warning ("%s: Could not find credential %s",
+                             __FUNCTION__, credential_id);
+                }
+              free (credential_id);
+              free (share_path);
+              free (file_path);
+              g_free (report_content);
+              g_free (extension);
+              return ret ? -1 : -4;
+            }
+
+          username = credential_value (credential, "username");
+          password = credential_encrypted_value (credential, "password");
+
+          ret = smb_send_to_host (password, username, share_path, file_path,
+                                  report_content, content_length);
+
+          g_free (username);
+          g_free (password);
+          free (credential_id);
+          free (share_path);
+          free (file_path);
+          g_free (report_content);
+          g_free (extension);
           return ret;
         }
       case ALERT_METHOD_SNMP:
@@ -39992,11 +40297,9 @@ credential_in_use (credential_t credential)
                        " WHERE credential = %llu;",
                        credential)
            || sql_int ("SELECT count (*) FROM alert_method_data"
-                       " WHERE name = 'scp_credential'"
-                       " AND data = '%s'",
-                       uuid)
-           || sql_int ("SELECT count (*) FROM alert_method_data"
-                       " WHERE name = 'verinice_server_credential'"
+                       " WHERE (name = 'scp_credential'"
+                       "        OR name = 'smb_credential'"
+                       "        OR name = 'verinice_server_credential')"
                        " AND data = '%s'",
                        uuid));
 
@@ -40027,12 +40330,10 @@ trash_credential_in_use (credential_t credential)
                        " AND credential_location"
                        "      = " G_STRINGIFY (LOCATION_TRASH) ";",
                        credential)
-           || sql_int ("SELECT count (*) FROM alert_method_data_trash"
-                       " WHERE name = 'scp_credential'"
-                       " AND data = '%s'",
-                       uuid)
-           || sql_int ("SELECT count (*) FROM alert_method_data_trash"
-                       " WHERE name = 'verinice_server_credential'"
+           || sql_int ("SELECT count (*) FROM alert_method_data"
+                       " WHERE (name = 'scp_credential'"
+                       "        OR name = 'smb_credential'"
+                       "        OR name = 'verinice_server_credential')"
                        " AND data = '%s'",
                        uuid));
 
@@ -49453,7 +49754,10 @@ report_format_in_use (report_format_t report_format)
                     " WHERE data = (SELECT uuid FROM report_formats"
                     "               WHERE id = %llu)"
                     " AND (name = 'notice_attach_format'"
-                    "      OR name = 'notice_report_format');",
+                    "      OR name = 'notice_report_format'"
+                    "      OR name = 'scp_report_format'"
+                    "      OR name = 'send_report_format'"
+                    "      OR name = 'smb_report_format');",
                     report_format);
 }
 
@@ -49472,7 +49776,10 @@ trash_report_format_in_use (report_format_t report_format)
                     "               FROM report_formats_trash"
                     "               WHERE id = %llu)"
                     " AND (name = 'notice_attach_format'"
-                    "      OR name = 'notice_report_format');",
+                    "      OR name = 'notice_report_format'"
+                    "      OR name = 'scp_report_format'"
+                    "      OR name = 'send_report_format'"
+                    "      OR name = 'smb_report_format');",
                     report_format);
 }
 

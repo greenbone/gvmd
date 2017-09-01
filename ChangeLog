@@ -1,3 +1,29 @@
+2017-09-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add SMB alert method and fix checks if alerts are using credentials
+	or report formats.
+
+	* CMakeLists.txt: Install new SMB alert script.
+
+	* src/gmp.c (gmp_xml_handle_end_element): In cases for MODIFY_ALERT and
+	CREATE_ALERT handle errors in event data and SMB method data.
+
+	* src/manage_sql.c (validate_smb_data): New function.
+	(create_alert, modify_alert): Add validation of SMB method data.
+	(smb_send_to_host, report_content_for_alert): New functions.
+	(escalate_2): Add case for SMB method.
+	(credential_in_use, trash_credential_in_use): Put alert method checks
+	into a single SQL query and add check for smb_credential.
+	(report_format_in_use, trash_report_format_in_use): Add checks for for
+	scp_report_format, send_report_format and smb_report_format.
+
+	* src/manage.c (alert_method_name, alert_method_from_name): Add new SMB
+	alert method.
+
+	* src/manage.h (alert_method_t): Add ALERT_METHOD_SMB.
+
+	* src/alert_methods/SMB/alert: New file.
+
 2017-08-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/gvmd.c (fork_connection_internal): Use the client cert to connect
