@@ -579,8 +579,8 @@ fork_connection_for_schedular (int *client_socket,
 
         if (openvas_server_new (GNUTLS_CLIENT,
                                 CACERT,
-                                SCANNERCERT,
-                                SCANNERKEY,
+                                CLIENTCERT,
+                                CLIENTKEY,
                                 client_session,
                                 client_credentials))
           exit (EXIT_FAILURE);

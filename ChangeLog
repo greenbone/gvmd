@@ -1,3 +1,11 @@
+2017-09-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r29475.
+
+	* src/gvmd.c (fork_connection_internal): Use the client cert to connect
+	back to ourself, because the server cert may not be marked for such usage,
+	which would result in a key usage violation.
+
 2017-08-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r29412.
@@ -6,12 +14,6 @@
 	the difference in timezones when calculating the months between the
 	present time and the first time, otherwise too few months may be used
 	which causes tasks to repeat forever.
-
-2017-08-14  Matthew Mundell <matthew.mundell@greenbone.net>
-
-	Backport r29348.
-
-	* src/manage_sql.c (copy_permission, delete_permission): Only check command
 
 2017-08-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
