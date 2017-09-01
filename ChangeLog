@@ -1,5 +1,10 @@
 2017-09-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_pg_server.c (sql_severity_matches_ov): Add PG_RETURN_NULL
+	in case where first argument is null.
+
+2017-09-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Add SMB alert method and fix checks if alerts are using credentials
 	or report formats.
 
