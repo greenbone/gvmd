@@ -1,3 +1,14 @@
+2017-09-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (smb_send_to_host): Rename parameters share and path
+	to share_path and file_path.
+	(report_content_for_alert): Add parameter used_report_format and
+	documentation for parameters.
+	(escalate_2): Apply gvm_export_file_name to the file path of the SMB
+	method.
+	(trash_credential_in_use): Use alert_method_data_trash instead of
+	alert_method_data.
+
 2017-09-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_pg_server.c (sql_severity_matches_ov): Add PG_RETURN_NULL
