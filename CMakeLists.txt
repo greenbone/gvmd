@@ -538,6 +538,10 @@ install (FILES src/alert_methods/SCP/alert
 install (FILES src/alert_methods/Send/alert
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_alert_methods/4a398d42-87c0-11e5-a1c0-28d24461215b/
          PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+ 
+install (FILES src/alert_methods/SMB/alert
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_alert_methods/c427a688-b653-40ab-a9d0-d6ba842a9d63/
+         PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 install (FILES src/alert_methods/SNMP/alert
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_alert_methods/9d435134-15d3-11e6-bf5c-28d24461215b/
