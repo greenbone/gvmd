@@ -68,6 +68,14 @@ struct sql_stmt
 /* Variables. */
 
 /**
+ * @brief Whether to log errors.
+ *
+ * Used to turn off logging when cancelling statements on exit.  Defined
+ * in sql.c.
+ */
+extern int log_errors;
+
+/**
  * @brief Handle on the database.
  */
 PGconn *conn = NULL;
@@ -492,11 +500,14 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
       if (PQresultStatus (result) != PGRES_TUPLES_OK
           && PQresultStatus (result) != PGRES_COMMAND_OK)
         {
-          g_warning ("%s: PQexec failed: %s (%i)\n",
-                     __FUNCTION__,
-                     PQresultErrorMessage (result),
-                     PQresultStatus (result));
-          g_warning ("%s: SQL: %s\n", __FUNCTION__, stmt->sql);
+          if (log_errors)
+            {
+              g_warning ("%s: PQexec failed: %s (%i)\n",
+                         __FUNCTION__,
+                         PQresultErrorMessage (result),
+                         PQresultStatus (result));
+              g_warning ("%s: SQL: %s\n", __FUNCTION__, stmt->sql);
+            }
 #if 0
           // FIX ?
           PQclear (result);
@@ -536,7 +547,8 @@ sql_explain_internal (const char* sql, va_list args)
   explain_sql = g_strconcat ("EXPLAIN ", sql, NULL);
   if (sql_prepare_internal (1, 1, explain_sql, args, &explain_stmt))
     {
-      g_warning ("%s : Failed to prepare EXPLAIN statement", __FUNCTION__);
+      if (log_errors)
+        g_warning ("%s : Failed to prepare EXPLAIN statement", __FUNCTION__);
       g_free (explain_sql);
       return -1;
     }
@@ -946,6 +958,7 @@ sql_cancel_internal ()
     {
       if (PQcancel (cancel, errbuf, 256))
         {
+          log_errors = 0;
           PQfreeCancel (cancel);
         }
       else
