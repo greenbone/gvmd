@@ -9454,8 +9454,8 @@ scp_to_host (const char *password, const char *username, const char *host,
  *
  * @param[in]  password       Password.
  * @param[in]  username       Username.
- * @param[in]  share          Name/address of host and name of the share.
- * @param[in]  path           Destination filename with path inside the share.
+ * @param[in]  share_path     Name/address of host and name of the share.
+ * @param[in]  file_path      Destination filename with path inside the share.
  * @param[in]  report         Report that should be sent.
  * @param[in]  report_size    Size of the report.
  *
@@ -9463,29 +9463,30 @@ scp_to_host (const char *password, const char *username, const char *host,
  */
 static int
 smb_send_to_host (const char *password, const char *username,
-                  const char *share, const char *path,
+                  const char *share_path, const char *file_path,
                   const char *report, gsize report_size)
 {
-  gchar *clean_password, *clean_username, *clean_share, *clean_path;
+  gchar *clean_password, *clean_username, *clean_share_path, *clean_file_path;
   gchar *command_args;
   int ret;
 
-  g_debug ("smb as %s to share: %s, path: %s", username, share, path);
+  g_debug ("smb as %s to share: %s, path: %s", username, share_path, file_path);
 
-  if (password == NULL || username == NULL || share == NULL || path == NULL)
+  if (password == NULL || username == NULL 
+      || share_path == NULL || file_path == NULL)
     return -1;
 
   clean_password = g_shell_quote (password);
   clean_username = g_shell_quote (username);
-  clean_share = g_shell_quote (share);
-  clean_path = g_shell_quote (path);
+  clean_share_path = g_shell_quote (share_path);
+  clean_file_path = g_shell_quote (file_path);
   command_args = g_strdup_printf ("%s %s %s %s",
                                   clean_password, clean_username,
-                                  clean_share, clean_path);
+                                  clean_share_path, clean_file_path);
   g_free (clean_password);
   g_free (clean_username);
-  g_free (clean_share);
-  g_free (clean_path);
+  g_free (clean_share_path);
+  g_free (clean_file_path);
 
   ret = run_alert_script ("c427a688-b653-40ab-a9d0-d6ba842a9d63", command_args,
                           report, report_size);
@@ -10762,7 +10763,21 @@ email_secinfo (alert_t alert, task_t task, event_t event,
 /**
  * @brief Generate report content for alert
  *
- * 
+ * @param[in]  alert  The alert the report is generated for.
+ * @param[in]  report Report or NULL to get last report of task.
+ * @param[in]  task   Task the report belongs to.
+ * @param[in]  get    GET data for the report.
+ * @param[in]  report_format_data_name  Name of alert data with report format.
+ * @param[in]  fallback_format_id       UUID of fallback report format.
+ * @param[in]  notes_details     Whether to include details of notes in report.
+ * @param[in]  overrides_details Whether to include override details in report.
+ * @param[out] content              Report content location.
+ * @param[out] content_length       Length of report content.
+ * @param[out] extension            File extension of report format.
+ * @param[out] content_type         Content type of report format.
+ * @param[out] term                 Filter term.
+ * @param[out] host_summary         Summary of results per host.
+ * @param[out] used_report_format   Report format used.
  *
  * @return 0 success, -1 error, -2 failed to find report format, -3 failed to
  *         find filter.
@@ -10776,7 +10791,8 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
                           gchar **content, gsize *content_length,
                           gchar **extension, gchar **content_type,
                           gchar **term, gchar **report_zone,
-                          gchar **host_summary)
+                          gchar **host_summary,
+                          report_format_t *used_report_format)
 {
   report_format_t report_format;
   char *format_uuid;
@@ -11660,22 +11676,27 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
         }
       case ALERT_METHOD_SMB:
         {
-          char *credential_id, *username, *password, *share_path, *file_path;
-          gchar *report_content, *extension;
+          char *credential_id, *username, *password;
+          char *share_path, *file_path_format;
+          report_format_t report_format;
+          char *name, *report_id, *format_name;
+          char *creation_time, *modification_time;
+          gchar *file_path, *report_content, *extension;
           gsize content_length;
           credential_t credential;
           int ret;
 
           credential_id = alert_data (alert, "method", "smb_credential");
           share_path = alert_data (alert, "method", "smb_share_path");
-          file_path = alert_data (alert, "method", "smb_file_path");
+          file_path_format = alert_data (alert, "method", "smb_file_path");
 
           report_content = NULL;
           extension = NULL;
+          report_format = 0;
 
           g_debug ("smb_credential: %s", credential_id);
           g_debug ("smb_share_path: %s", share_path);
-          g_debug ("smb_file_path: %s", file_path);
+          g_debug ("smb_file_path: %s", file_path_format);
 
           ret = report_content_for_alert
                   (alert, report, task, get,
@@ -11683,16 +11704,52 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                    "a994b278-1f62-11e1-96ac-406186ea4fc5", /* XML fallback */
                    notes_details, overrides_details,
                    &report_content, &content_length, &extension,
-                   NULL, NULL, NULL, NULL);
+                   NULL, NULL, NULL, NULL, &report_format);
           if (ret || report_content == NULL)
             {
               free (credential_id);
               free (share_path);
-              free (file_path);
+              free (file_path_format);
               g_free (report_content);
               g_free (extension);
               return ret ? ret : -1;
             }
+
+          name = task_name (task);
+          report_id = report_uuid (report);
+
+          format_name
+            = sql_string ("SELECT name"
+                          " FROM report_formats"
+                          " WHERE id = %llu",
+                          report_format);
+
+          creation_time
+            = sql_string ("SELECT iso_time (start_time)"
+                          " FROM reports"
+                          " WHERE id = %llu",
+                          report);
+
+          modification_time
+            = sql_string ("SELECT iso_time (end_time)"
+                          " FROM reports"
+                          " WHERE id = %llu",
+                          report);
+
+          file_path = openvas_export_file_name (file_path_format,
+                                                current_credentials.username,
+                                                "report",
+                                                report_id,
+                                                creation_time,
+                                                modification_time,
+                                                name,
+                                                format_name);
+
+          free (name);
+          free (report_id);
+          free (format_name);
+          free (creation_time);
+          free (modification_time);
 
           credential = 0;
           ret = find_credential_with_permission (credential_id, &credential,
@@ -41430,7 +41487,7 @@ trash_credential_in_use (credential_t credential)
                        " AND credential_location"
                        "      = " G_STRINGIFY (LOCATION_TRASH) ";",
                        credential)
-           || sql_int ("SELECT count (*) FROM alert_method_data"
+           || sql_int ("SELECT count (*) FROM alert_method_data_trash"
                        " WHERE (name = 'scp_credential'"
                        "        OR name = 'smb_credential'"
                        "        OR name = 'verinice_server_credential')"
