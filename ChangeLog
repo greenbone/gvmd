@@ -1,3 +1,14 @@
+2017-09-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Skip warnings that occur due to cancelling the Postgres SQL on exit.
+
+	* src/sql.c (log_errors): New variable.
+	(sqlv, sql_quiet, sql_x_internal, next): Check log_errors.
+
+	* src/sql_pg.c (sql_exec_internal, sql_explain_internal): Check
+	log_errors.
+	(sql_cancel_internal): Clear log_errors on success.
+
 2017-09-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (smb_send_to_host): Rename parameters share and path

@@ -52,6 +52,16 @@ int
 sql_explain (const char*, ...);
 
 
+/* Variables. */
+
+/**
+ * @brief Whether to log errors.
+ *
+ * Used to turn off logging when cancelling statements on exit.
+ */
+int log_errors = 1;
+
+
 /* Helpers. */
 
 /**
@@ -167,7 +177,7 @@ sqlv (int retry, char* sql, va_list args)
       /* Run statement. */
 
       while ((ret = sql_exec_internal (retry, stmt)) == 1);
-      if (ret == -1)
+      if ((ret == -1) && log_errors)
         g_warning ("%s: sql_exec_internal failed\n", __FUNCTION__);
       sql_finalize (stmt);
       if (ret == 2)
@@ -286,7 +296,8 @@ sql_quiet (char* sql, ...)
       while ((ret = sql_exec_internal (1, stmt)) == 1);
       if (ret == -1)
         {
-          g_warning ("%s: sql_exec_internal failed\n", __FUNCTION__);
+          if (log_errors)
+            g_warning ("%s: sql_exec_internal failed\n", __FUNCTION__);
           abort ();
         }
       if (ret == -2 || ret == 2)
@@ -338,7 +349,8 @@ sql_x_internal (int log, char* sql, va_list args, sql_stmt_t** stmt_return)
       ret = sql_exec_internal (1, *stmt_return);
       if (ret == -1)
         {
-          g_warning ("%s: sql_exec_internal failed\n", __FUNCTION__);
+          if (log_errors)
+            g_warning ("%s: sql_exec_internal failed\n", __FUNCTION__);
           return -1;
         }
       if (ret == 0)
@@ -691,7 +703,8 @@ next (iterator_t* iterator)
         }
       if (ret == -1)
         {
-          g_warning ("%s: sql_exec_internal failed\n", __FUNCTION__);
+          if (log_errors)
+            g_warning ("%s: sql_exec_internal failed\n", __FUNCTION__);
           abort ();
         }
       if (ret == -2)
