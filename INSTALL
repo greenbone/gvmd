@@ -541,6 +541,12 @@ Prerequisites for SCP alert:
 Prerequisites for Send alert:
 * socat
 
+Prerequisites for SNMP alert:
+* snmp
+
+Prerequisites for SMB alert:
+* smbclient
+
 Prerequisites for splitting large XML files (see tools/extra/README):
 * python
 
