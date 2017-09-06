@@ -1,3 +1,8 @@
+2017-09-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (result_iterator_level): Return "" instead of NULL
+	on failure, because some callers do not check for NULL.
+
 2017-09-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* INSTALL: Add prerequisites for SNMP and SMB alert methods.
