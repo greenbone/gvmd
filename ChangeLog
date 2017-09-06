@@ -1,3 +1,10 @@
+2017-09-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r29517.
+
+	* src/manage_sql.c (result_iterator_level): Return "" instead of NULL
+	on failure, because some callers do not check for NULL.
+
 2017-09-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r29513.

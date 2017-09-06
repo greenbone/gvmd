@@ -22604,7 +22604,7 @@ result_iterator_level (iterator_t *iterator)
   const char* ret;
 
   if (iterator->done)
-    return NULL;
+    return "";
 
   /* auto_type */
   if (iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 5))
@@ -22612,7 +22612,7 @@ result_iterator_level (iterator_t *iterator)
 
   /* new_severity */
   if (iterator_null (iterator, GET_ITERATOR_COLUMN_COUNT + 12))
-    return NULL;
+    return "";
 
   severity = iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 12);
 
