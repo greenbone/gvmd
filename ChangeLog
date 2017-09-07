@@ -1,3 +1,10 @@
+2017-09-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r29521.
+
+	* src/manage_migrators.c (UPDATE_CHART_SETTINGS): Insert dummy name,
+	because name may not be NULL.
+
 2017-09-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r29517.

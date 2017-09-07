@@ -11873,8 +11873,8 @@ migrate_162_to_163 ()
 
 
 #define UPDATE_CHART_SETTINGS(type, default, left_uuid, right_uuid)          \
-  sql ("INSERT INTO settings (owner, uuid, value)"                           \
-       " SELECT owner, '%s', 'left-' || '%s' FROM settings"                  \
+  sql ("INSERT INTO settings (owner, uuid, name, value)"                     \
+       " SELECT owner, '%s', 'Dummy', 'left-' || '%s' FROM settings"         \
        " WHERE uuid = '%s'"                                                  \
        " AND NOT EXISTS (SELECT * FROM settings AS old_settings"             \
        "                 WHERE old_settings.uuid = '%s'"                     \
