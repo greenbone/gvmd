@@ -1,3 +1,8 @@
+2017-09-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_migrators.c (UPDATE_CHART_SETTINGS): Insert dummy name,
+	because name may not be NULL.
+
 2017-09-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (result_iterator_level): Return "" instead of NULL
