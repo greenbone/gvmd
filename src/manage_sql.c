@@ -27014,7 +27014,7 @@ static int
 report_progress_active (report_t report, int maximum_hosts, gchar **hosts_xml)
 {
   long total = 0;
-  int num_hosts = 0, total_progress;
+  int num_hosts = 0, total_progress, dead_hosts = 0;
   iterator_t hosts;
   GString *string;
 
@@ -27030,6 +27030,8 @@ report_progress_active (report_t report, int maximum_hosts, gchar **hosts_xml)
       current_port = host_iterator_current_port (&hosts);
       if (max_port)
         {
+          if (max_port == -1)
+            dead_hosts++;
           progress = (current_port * 100) / max_port;
           if (progress < 0) progress = 0;
           else if (progress > 100) progress = 100;
@@ -27051,8 +27053,8 @@ report_progress_active (report_t report, int maximum_hosts, gchar **hosts_xml)
     }
   cleanup_iterator (&hosts);
 
-  total_progress = maximum_hosts
-                   ? (total / maximum_hosts) : 0;
+  total_progress = (maximum_hosts - dead_hosts)
+                   ? (total / (maximum_hosts - dead_hosts)) : 0;
 
 #if 1
   g_debug ("   total: %li\n", total);
