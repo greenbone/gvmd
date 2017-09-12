@@ -1,3 +1,17 @@
+2017-09-12  Juan Jose Nicola  <juan.nicola@greenbone.net>
+
+	Backport r29549.
+
+	* src/manage_pg.c (manage_create_sql_functions): Check for
+	max_port = -1 in report_progress_active to know	if a host is dead,
+	in which case the host will not be take into account to calculate the
+	progress.
+
+	* src/manage_sql.c (report_progress_active): Add new variable
+	dead_hosts. Check for max_port = -1 to know if a host is dead, in
+	which case the host will not be take into account to calculate the
+	progress.
+
 2017-09-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r29521.
