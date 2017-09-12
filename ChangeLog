@@ -1,5 +1,12 @@
 2017-09-12  Juan Jose Nicola  <juan.nicola@greenbone.net>
 
+	Backport r29556.
+
+	* src/manage_pg.c (manage_create_sql_functions): Handle the case in which
+	all hosts are dead during total_progress calculation.
+
+2017-09-12  Juan Jose Nicola  <juan.nicola@greenbone.net>
+
 	Backport r29549.
 
 	* src/manage_pg.c (manage_create_sql_functions): Check for
