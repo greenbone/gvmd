@@ -1,3 +1,8 @@
+2017-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_result_get_iterator_severity): Removed unused
+	columns.
+
 2017-09-14  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* INSTALL: Add missing Debian package when building gvm on Jessie with
@@ -11,7 +16,7 @@
 2017-09-11  Juan Jose Nicola  <juan.nicola@greenbone.net>
 
 	* src/manage_pg.c (manage_create_sql_functions): Check for
-	max_port = -1 in report_progress_active to know	if a host is dead,
+	max_port = -1 in report_progress_active to know if a host is dead,
 	in which case the host will not be take into account to calculate the
 	progress.
 

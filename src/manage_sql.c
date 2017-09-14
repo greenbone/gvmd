@@ -21835,7 +21835,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   free (user_id);
   pre_sql = g_strdup_printf ("WITH valid_overrides"
                              " AS (SELECT nvt, hosts, new_severity, port,"
-                             "            severity, task, result, creation_time"
+                             "            severity, result"
                              "     FROM overrides"
                              "     WHERE %s"
                              "     AND (task = 0"
