@@ -9152,7 +9152,7 @@ smb_send_to_host (const char *password, const char *username,
 
   g_debug ("smb as %s to share: %s, path: %s", username, share_path, file_path);
 
-  if (password == NULL || username == NULL 
+  if (password == NULL || username == NULL
       || share_path == NULL || file_path == NULL)
     return -1;
 
