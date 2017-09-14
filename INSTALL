@@ -35,7 +35,10 @@ Please see the section "Prerequisites for Optional Features" below additional
 optional prerequisites.
 
 Install prerequisites on Debian GNU/Linux 'Jessie' 8:
-# apt-get install libsqlite3-dev | libpq-dev
+For SQLite backend:
+  # apt-get install libsqlite3-dev
+For PostgreSQL backend:
+  # apt-get install libpq-dev postgresql-server-dev-9.4
 
 
 Compiling Greenbone Vulnerability Manager
