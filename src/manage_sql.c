@@ -4730,23 +4730,14 @@ init_get_iterator2_pre (iterator_t* iterator, const char *type,
                    order,
                    extra_order ? extra_order : "");
   else if (distinct == 0)
-    /* The purpose of the inner SELECT is to use the minimum number of columns
-     * when considering the whole table.  Once the filtering has reduced the
-     * selection to the rows that will appear on the page, then the outer SELECT
-     * includes all the requested columns. */
     init_iterator (iterator,
                    "%sSELECT %s"
                    " FROM %ss %s"
-                   " WHERE uuid IN (SELECT uuid"
-                   "                FROM %ss %s"
-                   "                WHERE %s"
-                   "                %s%s%s%s%s"
-                   "                LIMIT %s OFFSET %i)"
-                   "%s%s;",
+                   " WHERE %s"
+                   " %s%s%s%s%s%s"
+                   " LIMIT %s OFFSET %i;",
                    pre_sql ? pre_sql : "",
                    columns,
-                   type,
-                   extra_tables ? extra_tables : "",
                    type,
                    extra_tables ? extra_tables : "",
                    owned_clause,
@@ -4755,10 +4746,9 @@ init_get_iterator2_pre (iterator_t* iterator, const char *type,
                    clause ? ")" : "",
                    extra_where ? extra_where : "",
                    order,
+                   extra_order ? extra_order : "",
                    sql_select_limit (max),
-                   first,
-                   order,
-                   extra_order ? extra_order : "");
+                   first);
   else
     {
       init_iterator (iterator,
