@@ -1,8 +1,14 @@
 2017-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_result_get_iterator_severity): Clean up SQL
+	alignment.
+
+2017-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_result_get_iterator_severity): Check the override
 	and dynamic settings in C instead of in SQL, to make things simpler for
-	the query planner.
+	the query planner.  At the same time remove the opts table when autofp is
+	0, because it is no longer used.
 
 2017-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
