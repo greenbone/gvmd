@@ -2641,6 +2641,7 @@ create_tables ()
        "  host text,"
        "  port text,"
        "  nvt text,"
+       "  result_nvt integer," // REFERENCES result_nvts (id),"
        "  type text,"
        "  description text,"
        "  report integer REFERENCES reports (id) ON DELETE RESTRICT,"
@@ -2650,6 +2651,14 @@ create_tables ()
        "  qod_type text,"
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
        "  date integer);");
+
+  /* All the NVTs that have ever been encountered in results and overrides.
+   *
+   * This gives the textual NVT oids an integer ID, so that they can be
+   * compared faster when calculating overridden severity. */
+  sql ("CREATE TABLE IF NOT EXISTS result_nvts"
+       " (id SERIAL PRIMARY KEY,"
+       "  nvt text UNIQUE NOT NULL);");
 
   sql ("CREATE TABLE IF NOT EXISTS report_formats"
        " (id SERIAL PRIMARY KEY,"
@@ -2801,6 +2810,7 @@ create_tables ()
        "  uuid text UNIQUE NOT NULL,"
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
        "  nvt text NOT NULL,"
+       "  result_nvt integer," // REFERENCES result_nvts (id),"
        "  creation_time integer,"
        "  modification_time integer,"
        "  text text,"
@@ -2817,6 +2827,7 @@ create_tables ()
        "  uuid text UNIQUE NOT NULL,"
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
        "  nvt text NOT NULL,"
+       "  result_nvt integer," // REFERENCES result_nvts (id),"
        "  creation_time integer,"
        "  modification_time integer,"
        "  text text,"

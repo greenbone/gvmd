@@ -14154,6 +14154,67 @@ migrate_187_to_188 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 188 to version 189.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_188_to_189 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 188. */
+
+  if (manage_db_version () != 188)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Schedules tables got "byday" column. */
+
+  sql ("CREATE TABLE result_nvts (id SERIAL PRIMARY KEY,"
+       "                          nvt text UNIQUE NOT NULL);");
+
+  sql ("INSERT INTO result_nvts (nvt)"
+       " SELECT DISTINCT nvt"
+       " FROM (SELECT DISTINCT nvt FROM results"
+       "       UNION SELECT DISTINCT nvt FROM overrides"
+       "       UNION SELECT DISTINCT nvt FROM overrides_trash)"
+       "      AS sub;");
+
+  sql ("ALTER TABLE results ADD COLUMN result_nvt integer;");
+
+  sql ("UPDATE results"
+       " SET result_nvt = (SELECT id FROM result_nvts"
+       "                   WHERE result_nvts.nvt = results.nvt);");
+
+  sql ("ALTER TABLE overrides ADD COLUMN result_nvt integer;");
+
+  sql ("UPDATE overrides"
+       " SET result_nvt = (SELECT id FROM result_nvts"
+       "                   WHERE result_nvts.nvt = overrides.nvt)"
+       " WHERE nvt IS NOT NULL;");
+
+  sql ("ALTER TABLE overrides_trash ADD COLUMN result_nvt integer;");
+
+  sql ("UPDATE overrides_trash"
+       " SET result_nvt = (SELECT id FROM result_nvts"
+       "                   WHERE result_nvts.nvt = overrides_trash.nvt)"
+       " WHERE nvt IS NOT NULL;");
+
+  /* Set the database version to 189. */
+
+  set_db_version (189);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -14356,6 +14417,7 @@ static migrator_t database_migrators[]
     {186, migrate_185_to_186},
     {187, migrate_186_to_187},
     {188, migrate_187_to_188},
+    {189, migrate_188_to_189},
     /* End marker. */
     {-1, NULL}};
 

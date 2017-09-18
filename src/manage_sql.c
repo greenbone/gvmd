@@ -18540,6 +18540,21 @@ find_result_with_permission (const char* uuid, result_t* result,
 }
 
 /**
+ * @brief Ensure an NVT occurs in the result_nvts table.
+ *
+ * @param[in]  nvt  NVT OID.
+ */
+void
+result_nvt_notice (const gchar *nvt)
+{
+  if (nvt == NULL
+      || sql_int ("SELECT EXISTS (SELECT * FROM result_nvts WHERE nvt = '%s');",
+                  nvt))
+    return;
+  sql ("INSERT into result_nvts (nvt) VALUES ('%s');", nvt);
+}
+
+/**
  * @brief Make an OSP result.
  *
  * @param[in]  task         The task associated with the result.
@@ -18604,6 +18619,7 @@ make_osp_result (task_t task, const char *host, const char *nvt,
     }
   else
     result_severity = sql_quote (severity);
+  result_nvt_notice (quoted_nvt);
   sql ("INSERT into results"
        " (owner, date, task, host, port, nvt, nvt_version, severity, type,"
        "  qod, qod_type, description, uuid)"
@@ -18940,14 +18956,16 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
       severity = g_strdup ("0.0");
     }
   quoted_descr = sql_quote (description ?: "");
+  result_nvt_notice (nvt);
   sql ("INSERT into results"
        " (owner, date, task, host, port, nvt, nvt_version, severity, type,"
-       "  description, uuid, qod, qod_type)"
+       "  description, uuid, qod, qod_type, result_nvt)"
        " VALUES"
        " (NULL, m_now (), %llu, '%s', '%s', '%s', '%s', '%s', '%s',"
-       "  '%s', make_uuid (), %i, '%s');",
+       "  '%s', make_uuid (), %i, '%s',"
+       "  (SELECT id FROM result_nvts WHERE nvt = '%s'));",
        task, host ?: "", port ?: "", nvt ?: "", nvt_revision, severity, type,
-       quoted_descr, qod, quoted_qod_type);
+       quoted_descr, qod, quoted_qod_type, nvt ? nvt : "");
 
   g_free (quoted_descr);
   g_free (quoted_qod_type);
@@ -18974,14 +18992,16 @@ make_cve_result (task_t task, const char* host, const char *nvt, double cvss,
 {
   gchar *quoted_descr;
   quoted_descr = sql_quote (description ?: "");
+  result_nvt_notice (nvt);
   sql ("INSERT into results"
        " (owner, date, task, host, port, nvt, nvt_version, severity, type,"
-       "  description, uuid, qod, qod_type)"
+       "  description, uuid, qod, qod_type, result_nvt)"
        " VALUES"
        " (NULL, m_now (), %llu, '%s', '', '%s', '', '%1.1f', '%s',"
-       "  '%s', make_uuid (), %i, '');",
+       "  '%s', make_uuid (), %i, '',"
+       "  (SELECT id FROM result_nvts WHERE nvt = '%s'));",
        task, host ?: "", nvt, cvss, severity_to_type (cvss),
-       quoted_descr, QOD_DEFAULT);
+       quoted_descr, QOD_DEFAULT, nvt);
 
   g_free (quoted_descr);
   return sql_last_insert_id ();
@@ -20258,12 +20278,14 @@ create_report (array_t *results, const char *task_id, const char *task_name,
       else
         quoted_qod = g_strdup (G_STRINGIFY (QOD_DEFAULT));
       quoted_qod_type = sql_quote (result->qod_type ? result->qod_type : "");
+      result_nvt_notice (quoted_nvt_oid);
       sql ("INSERT INTO results"
            " (uuid, owner, date, task, host, port, nvt, type, description,"
            "  nvt_version, severity, qod, qod_type)"
            " VALUES"
            " (make_uuid (), %llu, m_now (), %llu, '%s', '%s', '%s', '%s', '%s',"
-           "  '%s', '%s', '%s', '%s');",
+           "  '%s', '%s', '%s', '%s',"
+           "  (SELECT id FROM result_nvts WHERE nvt = '%s'));",
            owner,
            task,
            quoted_host,
@@ -20276,7 +20298,8 @@ create_report (array_t *results, const char *task_id, const char *task_name,
            quoted_scan_nvt_version,
            quoted_severity,
            quoted_qod,
-           quoted_qod_type);
+           quoted_qod_type,
+           quoted_nvt_oid);
 
       g_free (quoted_host);
       g_free (quoted_port);
@@ -21720,7 +21743,8 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
       if (apply_overrides)
         columns[1].select
           = "(SELECT coalesce ((SELECT new_severity FROM valid_overrides"
-            "                   WHERE valid_overrides.nvt = results.nvt"
+            "                   WHERE valid_overrides.result_nvt"
+            "                         = results.result_nvt"
             "                   AND (valid_overrides.result = 0"
             "                        OR valid_overrides.result"
             "                           = results.id)"
@@ -21778,7 +21802,8 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
       if (apply_overrides)
         columns[1].select
           = "(SELECT coalesce ((SELECT new_severity FROM valid_overrides"
-            "                   WHERE valid_overrides.nvt = results.nvt"
+            "                   WHERE valid_overrides.result_nvt"
+            "                         = results.result_nvt"
             "                   AND (valid_overrides.result = 0"
             "                        OR valid_overrides.result"
             "                           = results.id)"
@@ -21832,7 +21857,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   owned_clause = acl_where_owned_for_get ("override", user_id);
   free (user_id);
   pre_sql = g_strdup_printf ("WITH valid_overrides"
-                             " AS (SELECT nvt, hosts, new_severity, port,"
+                             " AS (SELECT result_nvt, hosts, new_severity, port,"
                              "            severity, result"
                              "     FROM overrides"
                              "     WHERE %s"
@@ -43665,6 +43690,7 @@ create_override (const char* active, const char* nvt, const char* text,
   quoted_hosts = sql_insert (hosts);
   quoted_port = sql_insert (port);
 
+  result_nvt_notice (nvt);
   sql ("INSERT INTO overrides"
        " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
        "  port, severity, new_severity, task, result, end_time)"
@@ -43750,7 +43776,7 @@ copy_override (const char *override_id, override_t* new_override)
 {
   return copy_resource ("override", NULL, NULL, override_id,
                         "nvt, text, hosts, port, severity, new_severity, task,"
-                        " result, end_time",
+                        " result, end_time, result_nvt",
                         1, new_override, NULL);
 }
 
@@ -43824,10 +43850,10 @@ delete_override (const char *override_id, int ultimate)
     {
       sql ("INSERT INTO overrides_trash"
            " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
-           "  port, severity, new_severity, task, result, end_time)"
+           "  port, severity, new_severity, task, result, end_time, result_nvt)"
            " SELECT uuid, owner, nvt, creation_time, modification_time, text,"
            "        hosts, port, severity, new_severity,task,"
-           "        result, end_time"
+           "        result, end_time, result_nvt"
            " FROM overrides WHERE id = %llu;",
            override);
 
@@ -44084,6 +44110,7 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
 
   // Check active status for changes, get old reports for rebuild if necessary
   //  and update override.
+  result_nvt_notice (quoted_nvt);
   if ((active == NULL) || (strcmp (active, "-2") == 0))
     {
       if (cache_invalidated)
@@ -57448,10 +57475,10 @@ manage_restore (const char *id)
 
       sql ("INSERT INTO overrides"
            " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
-           "  port, severity, new_severity, task, result, end_time)"
+           "  port, severity, new_severity, task, result, end_time, result_nvt)"
            " SELECT uuid, owner, nvt, creation_time, modification_time, text,"
            "        hosts, port, severity, new_severity, task,"
-           "        result, end_time"
+           "        result, end_time, result_nvt"
            " FROM overrides_trash WHERE id = %llu;",
            resource);
 

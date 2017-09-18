@@ -1,3 +1,26 @@
+2017-09-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Store an integer NVT identifier on results and overrides.  Use to improve
+	speed of applying overrides to results when counting report results.
+	Hence increase database version to 188.  Add database migration from
+	version 188 to 189.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 189.
+
+	* src/manage_migrators.c (migrate_188_to_189): New function.
+
+	* src/manage_pg.c (create_tables): Add result_nvts.  Add result_nvt
+	columns to results, overrides and overrides_trash.
+
+	* src/manage_sql.c (result_nvt_notice): New function.
+	(make_osp_result, make_result, make_cve_result, create_report)
+	(create_override, modify_override): Ensure NVTs of results are always in
+	result_nvts.  Set result_nvt when creating results and when creating,
+	modifying or copying overrides.
+	(init_result_get_iterator_severity): Compare override and result NVTs
+	using the integer result_nvt instead of the string nvt, to increase speed.
+	(delete_override, manage_restore): Handle result_nvt.
+
 2017-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_result_get_iterator2_pre): Remove the inner
