@@ -27226,10 +27226,10 @@ report_active (report_t report)
  * @return Progress XML.
  */
 static int
-report_progress_active (report_t report, int maximum_hosts, gchar **hosts_xml)
+report_progress_active (report_t report, long maximum_hosts, gchar **hosts_xml)
 {
-  long total = 0;
-  int num_hosts = 0, total_progress, dead_hosts = 0;
+  long total = 0, num_hosts = 0, dead_hosts = 0;
+  int total_progress;
   iterator_t hosts;
   GString *string;
 
@@ -27273,8 +27273,8 @@ report_progress_active (report_t report, int maximum_hosts, gchar **hosts_xml)
 
 #if 1
   g_debug ("   total: %li\n", total);
-  g_debug ("   num_hosts: %i\n", num_hosts);
-  g_debug ("   maximum_hosts: %i\n", maximum_hosts);
+  g_debug ("   num_hosts: %li\n", num_hosts);
+  g_debug ("   maximum_hosts: %li\n", maximum_hosts);
   g_debug ("   total_progress: %i\n", total_progress);
 #endif
 
@@ -27303,7 +27303,8 @@ report_progress (report_t report, task_t task, gchar **hosts_xml)
 {
   target_t target;
   char *hosts, *exclude_hosts;
-  int maximum_hosts, progress;
+  int progress;
+  long maximum_hosts;
 
   if (report == 0)
     {
