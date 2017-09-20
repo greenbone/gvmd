@@ -1,3 +1,9 @@
+2017-09-20  Juan Jose Nicola  <juan.nicola@greenbone.net>
+
+	* src/manage_sql.c (report_progress_active): Receive maximum_hosts as long
+	instead of int. dead_hosts and num_hosts are now long data type.
+	(report_progress): maximum_hosts is now long type.
+
 2017-09-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Store an integer NVT identifier on results and overrides.  Use to improve
