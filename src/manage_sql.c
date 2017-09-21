@@ -39046,12 +39046,14 @@ init_nvt_preference_iterator (iterator_t* iterator, const char *name)
                      " AND name != 'nasl_no_signature_check'"
                      " AND name != 'network_targets'"
                      " AND name != 'ntp_save_sessions'"
+                     " AND name != '%s[entry]:Timeout'"
                      " AND name NOT %s 'server_info_%%'"
                      /* Task preferences. */
                      " AND name != 'max_checks'"
                      " AND name != 'max_hosts'"
                      " ORDER BY name ASC",
                      sql_ilike_op (),
+                     quoted_name,
                      quoted_name,
                      sql_ilike_op ());
       g_free (quoted_name);
@@ -39064,11 +39066,13 @@ init_nvt_preference_iterator (iterator_t* iterator, const char *name)
                    " AND name != 'nasl_no_signature_check'"
                    " AND name != 'network_targets'"
                    " AND name != 'ntp_save_sessions'"
+                   " AND name NOT %s '%%[entry]:Timeout'"
                    " AND name NOT %s 'server_info_%%'"
                    /* Task preferences. */
                    " AND name != 'max_checks'"
                    " AND name != 'max_hosts'"
                    " ORDER BY name ASC",
+                   sql_ilike_op (),
                    sql_ilike_op ());
 }
 
@@ -39218,7 +39222,9 @@ nvt_preference_count (const char *name)
 {
   gchar *quoted_name = sql_quote (name);
   int ret = sql_int ("SELECT COUNT(*) FROM nvt_preferences"
-                     " WHERE name %s '%s[%%';",
+                     " WHERE name != '%s[entry]:Timeout'"
+                     "   AND name %s '%s[%%';",
+                     quoted_name,
                      sql_ilike_op (),
                      quoted_name);
   g_free (quoted_name);

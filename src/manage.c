@@ -7583,6 +7583,7 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
       GString *cert_refs_str, *tags_str, *buffer;
       iterator_t cert_refs_iterator, tags;
       gchar *tag_name_esc, *tag_value_esc, *tag_comment_esc;
+      char *default_timeout = nvt_default_timeout (oid);
 
       DEF (copyright);
       DEF (family);
@@ -7679,7 +7680,8 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                               "<xrefs>%s</xrefs>"
                               "<tags>%s</tags>"
                               "<preference_count>%i</preference_count>"
-                              "<timeout>%s</timeout>",
+                              "<timeout>%s</timeout>"
+                              "<default_timeout>%s</default_timeout>",
                               oid,
                               name_text,
                               get_iterator_creation_time (nvts)
@@ -7704,7 +7706,8 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                               xref_text,
                               tag_text,
                               pref_count,
-                              timeout ? timeout : "");
+                              timeout ? timeout : "",
+                              default_timeout ? default_timeout : "");
       g_free (copyright_text);
       g_free (family_text);
       g_free (version_text);
@@ -7722,8 +7725,10 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
 
           xml_string_append (buffer,
                              "<preferences>"
-                             "<timeout>%s</timeout>",
-                             timeout ? timeout : "");
+                             "<timeout>%s</timeout>"
+                             "<default_timeout>%s</default_timeout>",
+                             timeout ? timeout : "",
+                             default_timeout ? default_timeout : "");
 
           init_nvt_preference_iterator (&prefs, nvt_name);
           while (next (&prefs))
@@ -7735,6 +7740,7 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
 
       xml_string_append (buffer, close_tag ? "</nvt>" : "");
       msg = g_string_free (buffer, FALSE);
+      free (default_timeout);
     }
   else
     msg = g_strdup_printf

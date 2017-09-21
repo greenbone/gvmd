@@ -13451,6 +13451,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <e>tags</e>
               <o><e>preference_count</e></o>
               <o><e>timeout</e></o>
+              <o><e>default_timeout</e></o>
               <o><e>preferences</e></o>
             </g>
           </o>
@@ -13626,16 +13627,27 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>text</pattern>
         </ele>
         <ele>
+          <name>default_timeout</name>
+          <summary>The default_timeout of the NVT</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
           <name>preferences</name>
           <summary>List of preferences of the NVT</summary>
           <pattern>
             <e>timeout</e>
+            <e>default_timeout</e>
             <any><e>preference</e></any>
             text
           </pattern>
           <ele>
             <name>timeout</name>
             <summary>The timeout of the NVT</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>default_timeout</name>
+            <summary>The default timeout of the NVT</summary>
             <pattern>text</pattern>
           </ele>
           <ele>

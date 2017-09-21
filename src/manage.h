@@ -1978,6 +1978,9 @@ nvt_iterator_qod_type ( iterator_t *iterator );
 const char*
 nvt_iterator_solution_type (iterator_t*);
 
+char*
+nvt_default_timeout (const char *);
+
 int
 family_nvt_count (const char *);
 

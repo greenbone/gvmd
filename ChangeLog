@@ -1,3 +1,19 @@
+2017-09-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Show NVT timeout as a new element instead of as a normal preference.
+
+	* src/manage_sql_nvts.c (nvt_default_timeout): New function.
+
+	* src/manage_sql.c (init_nvt_preference_iterator)
+	(nvt_preference_count): Do not select timeout preferences.
+
+	* src/manage.c (get_nvti_xml): Add default_timeout subelements.
+
+	* src/manage.h (nvt_default_timeout): New function prototype.
+
+	* src/schema_formats/XML/GMP.xml.in (get_nvts): Add default_timeout
+	subelements to response.
+
 2017-09-20  Juan Jose Nicola  <juan.nicola@greenbone.net>
 
 	* src/manage_sql.c (report_progress_active): Receive maximum_hosts as long

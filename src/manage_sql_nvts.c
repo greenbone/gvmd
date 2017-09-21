@@ -927,6 +927,23 @@ DEF_ACCESS (nvt_iterator_qod_type, GET_ITERATOR_COLUMN_COUNT + 14);
 DEF_ACCESS (nvt_iterator_solution_type, GET_ITERATOR_COLUMN_COUNT + 15);
 
 /**
+ * @brief Get the default timeout of an NVT.
+ *
+ * @param[in]  oid  The OID of the NVT to get the timeout of.
+ *
+ * @return  Newly allocated string of the timeout in seconds or NULL.
+ */
+char *
+nvt_default_timeout (const char* oid)
+{
+  return sql_string ("SELECT value FROM nvt_preferences"
+                     " WHERE name = (SELECT name FROM nvts"
+                     "               WHERE oid = '%s')"
+                     "              || '[entry]:Timeout'",
+                     oid);
+}
+
+/**
  * @brief Get the number of NVTs in one or all families.
  *
  * @param[in]  family  Family name.  NULL for all families.
