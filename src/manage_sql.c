@@ -20596,6 +20596,19 @@ report_add_result (report_t report, result_t result)
        " WHERE id = %llu;",
        report, report, result);
 
+  if (sql_int ("SELECT NOT EXISTS (SELECT * from result_nvt_reports"
+               "                   WHERE result_nvt = (SELECT result_nvt"
+               "                                       FROM results"
+               "                                       WHERE id = %llu)"
+               "                   AND report = %llu);",
+       result,
+       report))
+    sql ("INSERT INTO result_nvt_reports (result_nvt, report)"
+         " VALUES ((SELECT result_nvt FROM results WHERE id = %llu),"
+         "         %llu);",
+         result,
+         report);
+
   qod = sql_int ("SELECT qod FROM results WHERE id = %llu;",
                  result);
 
