@@ -2674,6 +2674,10 @@ create_tables ()
        " (id SERIAL PRIMARY KEY,"
        "  nvt text UNIQUE NOT NULL);");
 
+  sql ("CREATE TABLE IF NOT EXISTS result_nvt_reports"
+       " (result_nvt INTEGER,"
+       "  report INTEGER);");
+
   sql ("CREATE TABLE IF NOT EXISTS report_formats"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
@@ -3157,6 +3161,11 @@ create_tables ()
        "         'report, host');");
 
   manage_create_result_indexes ();
+
+  sql ("SELECT create_index"
+       "        ('result_nvt_reports_by_report',"
+       "         'result_nvt_reports',"
+       "         'report');");
 }
 
 /**
