@@ -24280,6 +24280,7 @@ delete_report_internal (report_t report)
   sql ("DELETE FROM results WHERE report = %llu;", report);
 
   sql ("DELETE FROM report_counts WHERE report = %llu;", report);
+  sql ("DELETE FROM result_nvt_reports WHERE report = %llu;", report);
   sql ("DELETE FROM reports WHERE id = %llu;", report);
 
   /* Adjust permissions. */
@@ -62770,6 +62771,9 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
        " WHERE report IN (SELECT id FROM reports WHERE owner = %llu);",
        user);
   sql ("DELETE FROM results"
+       " WHERE report IN (SELECT id FROM reports WHERE owner = %llu);",
+       user);
+  sql ("DELETE FROM result_nvt_reports"
        " WHERE report IN (SELECT id FROM reports WHERE owner = %llu);",
        user);
   sql ("DELETE FROM reports WHERE owner = %llu;", user);

@@ -1,5 +1,11 @@
 2017-09-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (delete_report_internal): Delete report from
+	result_nvt_reports.
+	(delete_user): Delete user's result_nvt_reports.
+
+2017-09-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (report_add_result): Add entry in result_nvt_reports.
 
 2017-09-22  Matthew Mundell <matthew.mundell@greenbone.net>
