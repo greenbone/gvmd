@@ -2020,6 +2020,20 @@ manage_create_sql_functions ()
 /* Creation. */
 
 /**
+ * @brief Create result indexes.
+ */
+void
+manage_create_result_indexes ()
+{
+  sql ("SELECT create_index ('results_by_host_and_qod', 'results',"
+       "                     'host, qod');");
+  sql ("SELECT create_index ('results_by_report', 'results', 'report');");
+  sql ("SELECT create_index ('results_by_nvt', 'results', 'nvt');");
+  sql ("SELECT create_index ('results_by_task', 'results', 'task');");
+  sql ("SELECT create_index ('results_by_date', 'results', 'date');");
+}
+
+/**
  * @brief Create all tables.
  */
 void
@@ -3141,12 +3155,8 @@ create_tables ()
        "        ('report_hosts_by_report_and_host',"
        "         'report_hosts',"
        "         'report, host');");
-  sql ("SELECT create_index ('results_by_host_and_qod', 'results',"
-       "                     'host, qod');");
-  sql ("SELECT create_index ('results_by_report', 'results', 'report');");
-  sql ("SELECT create_index ('results_by_nvt', 'results', 'nvt');");
-  sql ("SELECT create_index ('results_by_task', 'results', 'task');");
-  sql ("SELECT create_index ('results_by_date', 'results', 'date');");
+
+  manage_create_result_indexes ();
 }
 
 /**

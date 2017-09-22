@@ -3430,6 +3430,32 @@ manage_create_sql_functions ()
 /* Creation. */
 
 /**
+ * @brief Create result indexes.
+ */
+void
+manage_create_result_indexes ()
+{
+  sql ("CREATE INDEX IF NOT EXISTS results_by_uuid"
+       " ON results (uuid);");
+  sql ("CREATE INDEX IF NOT EXISTS results_by_host"
+       " ON results (host);");
+  sql ("CREATE INDEX IF NOT EXISTS results_by_host_and_qod"
+       " ON results (host, qod);");
+  sql ("CREATE INDEX IF NOT EXISTS results_by_nvt"
+       " ON results (nvt);");
+  sql ("CREATE INDEX IF NOT EXISTS results_by_report"
+       " ON results (report);");
+  sql ("CREATE INDEX IF NOT EXISTS results_by_report_host"
+       " ON results (report, host);");
+  sql ("CREATE INDEX IF NOT EXISTS results_by_task"
+       " ON results (task);");
+  sql ("CREATE INDEX IF NOT EXISTS results_by_task_qod_severity"
+       " ON results (task, qod, severity);");
+  sql ("CREATE INDEX IF NOT EXISTS results_by_type"
+       " ON results (type);");
+}
+
+/**
  * @brief Create all tables.
  */
 void
@@ -3680,24 +3706,7 @@ create_tables ()
        " (id INTEGER PRIMARY KEY, uuid, task INTEGER, host, port, nvt,"
        "  type, description, report, nvt_version, severity REAL,"
        "  qod INTEGER, qod_type TEXT, owner INTEGER, date INTEGER)");
-  sql ("CREATE INDEX IF NOT EXISTS results_by_uuid"
-       " ON results (uuid);");
-  sql ("CREATE INDEX IF NOT EXISTS results_by_host"
-       " ON results (host);");
-  sql ("CREATE INDEX IF NOT EXISTS results_by_host_and_qod"
-       " ON results (host, qod);");
-  sql ("CREATE INDEX IF NOT EXISTS results_by_nvt"
-       " ON results (nvt);");
-  sql ("CREATE INDEX IF NOT EXISTS results_by_report"
-       " ON results (report);");
-  sql ("CREATE INDEX IF NOT EXISTS results_by_report_host"
-       " ON results (report, host);");
-  sql ("CREATE INDEX IF NOT EXISTS results_by_task"
-       " ON results (task);");
-  sql ("CREATE INDEX IF NOT EXISTS results_by_task_qod_severity"
-       " ON results (task, qod, severity);");
-  sql ("CREATE INDEX IF NOT EXISTS results_by_type"
-       " ON results (type);");
+  manage_create_result_indexes ();
   sql ("CREATE TABLE IF NOT EXISTS roles"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
        "  creation_time, modification_time);");

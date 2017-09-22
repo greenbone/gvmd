@@ -179,6 +179,9 @@
 int
 manage_create_migrate_51_to_52_convert ();
 
+int
+manage_create_result_indexes ();
+
 
 /* Types. */
 
@@ -14174,7 +14177,7 @@ migrate_188_to_189 ()
 
   /* Update the database. */
 
-  /* Schedules tables got "byday" column. */
+  /* Table result_nvts was added, with links in results and overrides. */
 
   sql ("CREATE TABLE result_nvts (id SERIAL PRIMARY KEY,"
        "                          nvt text UNIQUE NOT NULL);");
@@ -14186,11 +14189,49 @@ migrate_188_to_189 ()
        "       UNION SELECT DISTINCT nvt FROM overrides_trash)"
        "      AS sub;");
 
-  sql ("ALTER TABLE results ADD COLUMN result_nvt integer;");
+  if (sql_is_sqlite3 ())
+    sql ("CREATE TABLE IF NOT EXISTS results_188"
+         " (id INTEGER PRIMARY KEY, uuid, task INTEGER, host, port, nvt,"
+         "  result_nvt, type, description, report, nvt_version, severity REAL,"
+         "  qod INTEGER, qod_type TEXT, owner INTEGER, date INTEGER)");
+  else
+    sql ("CREATE TABLE IF NOT EXISTS results_188"
+         " (id SERIAL PRIMARY KEY,"
+         "  uuid text UNIQUE NOT NULL,"
+         "  task integer REFERENCES tasks (id) ON DELETE RESTRICT,"
+         "  host text,"
+         "  port text,"
+         "  nvt text,"
+         "  result_nvt integer," // REFERENCES result_nvts (id),"
+         "  type text,"
+         "  description text,"
+         "  report integer REFERENCES reports (id) ON DELETE RESTRICT,"
+         "  nvt_version text,"
+         "  severity real,"
+         "  qod integer,"
+         "  qod_type text,"
+         "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+         "  date integer);");
 
-  sql ("UPDATE results"
-       " SET result_nvt = (SELECT id FROM result_nvts"
-       "                   WHERE result_nvts.nvt = results.nvt);");
+  sql ("INSERT INTO results_188"
+       " (id, uuid, task, host, port, nvt, result_nvt, type, description,"
+       "  report, nvt_version, severity, qod, qod_type, owner, date)"
+       " SELECT id, uuid, task, host, port, nvt,"
+       "           (SELECT id FROM result_nvts"
+       "            WHERE result_nvts.nvt = results.nvt),"
+       "           type, description, report, nvt_version,"
+       "           severity, qod, qod_type, owner, date"
+       "    FROM results;");
+
+  /* This also removes indexes. */
+  if (sql_is_sqlite3 ())
+    sql ("DROP TABLE results;");
+  else
+    sql ("DROP TABLE results CASCADE;");
+  sql ("ALTER TABLE results_188 RENAME TO results;");
+
+  /* Ensure result indexes exist, for the SQL in the next migrator. */
+  manage_create_result_indexes ();
 
   sql ("ALTER TABLE overrides ADD COLUMN result_nvt integer;");
 

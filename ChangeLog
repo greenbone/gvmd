@@ -1,3 +1,14 @@
+2017-09-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_migrators.c (migrate_188_to_189): Recreate the table instead
+	of updating it, to set the new column, because recreating is faster.
+
+	* src/manage_pg.c (manage_create_result_indexes): New function.
+	(create_tables): Use manage_create_result_indexes.
+
+	* src/manage_sqlite3.c (manage_create_result_indexes): New function.
+	(create_tables): Use manage_create_result_indexes.
+
 2017-09-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Show NVT timeout as a new element instead of as a normal preference.
