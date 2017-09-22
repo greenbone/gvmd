@@ -1409,7 +1409,7 @@ manage_create_sql_functions ()
  " coalesce"                                                \
  "  ((SELECT overrides.new_severity"                        \
  "    FROM overrides"                                       \
- "    WHERE overrides.nvt = results.nvt"                    \
+ "    WHERE overrides.result_nvt = results.result_nvt"      \
  "    AND ((overrides.owner IS NULL)"                       \
  "         OR (overrides.owner ="                           \
  "             (SELECT id FROM users"                       \
@@ -2942,7 +2942,7 @@ create_tables ()
        "        overrides.severity AS ov_old_severity,"
        "        overrides.new_severity AS ov_new_severity"
        " FROM users, results, overrides"
-       " WHERE overrides.nvt = results.nvt"
+       " WHERE overrides.result_nvt = results.result_nvt"
        " AND (overrides.result = 0 OR overrides.result = results.id)"
        " AND %s"
        " AND ((overrides.end_time = 0)"

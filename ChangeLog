@@ -1,5 +1,11 @@
 2017-09-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_pg.c (OVERRIDES_SQL, create_tables): Use result_nvt instead
+	of nvt when matching overrides to results, to increase the speed of the
+	regular result iterator.
+
+2017-09-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sqlite3.c (create_tables): Add result_nvt fields, tables and
 	index.
 
