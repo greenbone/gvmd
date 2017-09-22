@@ -1,3 +1,16 @@
+2017-09-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Cancel GMP commands if client connection is closed.
+
+	* src/gvmd.c (connection_watcher_data_t): New typedef.
+	(connection_watcher_data_new, watch_client_connection): New functions.
+	(serve_client): Watch whether the client connection is closed in a
+	new thread.
+	(main): Add option client-watch-interval.
+
+	* src/sql_pg.c (sql_exec_internal): Disable error logging if error was
+	caused by the query being canceled.
+
 2017-09-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (create_tables): Add result_nvt_reports and

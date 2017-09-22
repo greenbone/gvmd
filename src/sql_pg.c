@@ -513,6 +513,13 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
       if (PQresultStatus (result) != PGRES_TUPLES_OK
           && PQresultStatus (result) != PGRES_COMMAND_OK)
         {
+          char *sqlstate = PQresultErrorField (result, PG_DIAG_SQLSTATE);
+          if (strcmp (sqlstate, "57014") == 0) /* query_canceled */
+            {
+              log_errors = 0;
+              g_debug ("%s: canceled SQL: %s\n", __FUNCTION__, stmt->sql);
+            }
+
           if (log_errors)
             {
               g_warning ("%s: PQexec failed: %s (%i)\n",
