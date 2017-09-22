@@ -3619,11 +3619,11 @@ create_tables ()
   sql ("CREATE INDEX IF NOT EXISTS nvt_cves_by_oid"
        " ON nvt_cves (oid);");
   sql ("CREATE TABLE IF NOT EXISTS overrides"
-       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt,"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, result_nvt,"
        "  creation_time, modification_time, text, hosts, port, severity,"
        "  new_severity, task INTEGER, result INTEGER, end_time);");
   sql ("CREATE TABLE IF NOT EXISTS overrides_trash"
-       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt,"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, result_nvt,"
        "  creation_time, modification_time, text, hosts, port, severity,"
        "  new_severity, task INTEGER, result INTEGER, end_time);");
   sql ("CREATE TABLE IF NOT EXISTS permissions"
@@ -3704,9 +3704,15 @@ create_tables ()
        " (id INTEGER PRIMARY KEY, resource_type, resource INTEGER)");
   sql ("CREATE TABLE IF NOT EXISTS results"
        " (id INTEGER PRIMARY KEY, uuid, task INTEGER, host, port, nvt,"
-       "  type, description, report, nvt_version, severity REAL,"
+       "  result_nvt, type, description, report, nvt_version, severity REAL,"
        "  qod INTEGER, qod_type TEXT, owner INTEGER, date INTEGER)");
   manage_create_result_indexes ();
+  sql ("CREATE TABLE IF NOT EXISTS result_nvts"
+       " (id SERIAL PRIMARY KEY, nvt text UNIQUE NOT NULL);");
+  sql ("CREATE TABLE IF NOT EXISTS result_nvt_reports"
+       " (result_nvt INTEGER, report INTEGER);");
+  sql ("CREATE INDEX IF NOT EXISTS result_nvt_reports_by_report"
+       " ON result_nvt_reports (report);");
   sql ("CREATE TABLE IF NOT EXISTS roles"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
        "  creation_time, modification_time);");

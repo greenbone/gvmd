@@ -1,3 +1,8 @@
+2017-09-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sqlite3.c (create_tables): Add result_nvt fields, tables and
+	index.
+
 2017-09-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Cancel GMP commands if client connection is closed.
