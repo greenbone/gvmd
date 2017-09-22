@@ -14256,6 +14256,47 @@ migrate_188_to_189 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 189 to version 190.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_189_to_190 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 189. */
+
+  if (manage_db_version () != 189)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Table result_nvts_reports was added, with an index. */
+
+  sql ("CREATE TABLE result_nvt_reports (result_nvt INTEGER, report INTEGER);");
+
+  sql ("INSERT INTO result_nvt_reports (result_nvt, report)"
+       " SELECT DISTINCT result_nvts.id, results.report"
+       " FROM result_nvts, results"
+       " WHERE result_nvts.id = results.result_nvt;");
+
+  sql ("CREATE INDEX result_nvt_reports_by_report"
+       " ON result_nvt_reports (report);");
+
+  /* Set the database version to 190. */
+
+  set_db_version (190);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -14459,6 +14500,7 @@ static migrator_t database_migrators[]
     {187, migrate_186_to_187},
     {188, migrate_187_to_188},
     {189, migrate_188_to_189},
+    {190, migrate_189_to_190},
     /* End marker. */
     {-1, NULL}};
 

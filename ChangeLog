@@ -1,5 +1,19 @@
 2017-09-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Store which reports each NVT applies to.  Use to select fewer overrides
+	when counting report results, to make the counting faster.  Hence increase
+	database version to 189.  Add database migration from version 189 to 190.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 190.
+
+	* src/manage_migrators.c (migrate_189_to_190): New function.
+	(database_migrators): Add migrate_189_to_190.
+
+	* src/manage_sql.c (init_result_get_iterator_severity): Only SELECT
+	overrides that apply to the report.
+
+2017-09-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_migrators.c (migrate_188_to_189): Recreate the table instead
 	of updating it, to set the new column, because recreating is faster.
 
@@ -41,6 +55,7 @@
 	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 189.
 
 	* src/manage_migrators.c (migrate_188_to_189): New function.
+	(database_migrators): Add migrate_188_to_189.
 
 	* src/manage_pg.c (create_tables): Add result_nvts.  Add result_nvt
 	columns to results, overrides and overrides_trash.

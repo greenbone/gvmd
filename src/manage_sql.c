@@ -21861,6 +21861,11 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                              "            severity, result"
                              "     FROM overrides"
                              "     WHERE %s"
+                             /*    Only use if override's NVT is in report. */
+                             "     AND EXISTS (SELECT * FROM result_nvt_reports"
+                             "                 WHERE report = %llu"
+                             "                 AND result_nvt"
+                             "                     = overrides.result_nvt)"
                              "     AND (task = 0"
                              "          OR task = (SELECT reports.task"
                              "                     FROM reports"
@@ -21870,6 +21875,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                              "           creation_time DESC)"
                              " ",
                              owned_clause,
+                             report,
                              report);
   g_free (owned_clause);
 
