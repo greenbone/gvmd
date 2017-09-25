@@ -1,3 +1,9 @@
+2017-09-25  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (handle_osp_scan): Check and report erroneous progress
+	value instead of asserting only.
+	(run_otp_task): Check hosts value instead of asserting only.
+
 2017-09-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (OVERRIDES_SQL, create_tables): Use result_nvt instead

@@ -3708,7 +3708,16 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
           /* Get the full OSP report. */
           progress = get_osp_scan_report (scan_id, host, port, ca_pub, key_pub,
                                           key_priv, 1, &report_xml);
-          assert (progress == 100);
+          if (progress != 100)
+            {
+              result_t result = make_osp_result
+                                 (task, "", "", threat_message_type ("Error"),
+                                  "Erroneous scan progress value", "", "",
+                                  QOD_DEFAULT);
+              report_add_result (report, result);
+              rc = -1;
+              break;
+            }
           parse_osp_report (task, report, report_xml);
           g_free (report_xml);
           delete_osp_scan (scan_id, host, port, ca_pub, key_pub, key_priv);
@@ -5123,10 +5132,9 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
   /* Send network_targets preference. */
 
   hosts = target_hosts (target);
-  assert (hosts);
-  if (sendf_to_server ("network_targets <|> %s\n", hosts ? hosts : ""))
+  if (!hosts || sendf_to_server ("network_targets <|> %s\n", hosts))
     {
-      free (hosts);
+      g_free (hosts);
       g_ptr_array_add (preference_files, NULL);
       array_free (preference_files);
       slist_free (files);
