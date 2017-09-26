@@ -2723,6 +2723,8 @@ create_tables ()
        "  modification_time);");
   sql ("CREATE INDEX IF NOT EXISTS host_identifiers_by_host"
        " ON host_identifiers (host);");
+  sql ("CREATE INDEX IF NOT EXISTS host_identifiers_by_value"
+       " ON host_identifiers (value);");
   sql ("CREATE TABLE IF NOT EXISTS oss"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
        "  creation_time, modification_time);");

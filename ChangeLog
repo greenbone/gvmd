@@ -1,3 +1,11 @@
+2017-09-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r29678.
+
+	* src/manage_pg.c (create_tables): Add host_identifiers_by_value.
+
+	* src/manage_sqlite3.c (create_tables): Add host_identifiers_by_value.
+
 2017-09-20  Juan Jose Nicola  <juan.nicola@greenbone.net>
 
 	Backport r29619.
