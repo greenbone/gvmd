@@ -21926,93 +21926,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   columns[0].filter = "auto_type";
   columns[0].type = KEYWORD_TYPE_INTEGER;
 
-  columns[1].select
-    = "(SELECT CASE"
-      "        WHEN dynamic != 0"
-      "        THEN CASE"
-      "             WHEN override != 0"
-      "             THEN coalesce ((SELECT new_severity FROM valid_overrides"
-      "                             WHERE valid_overrides.nvt = results.nvt"
-      "                             AND (valid_overrides.result = 0"
-      "                                  OR valid_overrides.result"
-      "                                     = results.id)"
-      "                             AND (valid_overrides.hosts is NULL"
-      "                                  OR valid_overrides.hosts = ''"
-      "                                  OR hosts_contains"
-      "                                      (valid_overrides.hosts,"
-      "                                       results.host))"
-      "                             AND (valid_overrides.port is NULL"
-      "                                  OR valid_overrides.port = ''"
-      "                                  OR valid_overrides.port"
-      "                                     = results.port)"
-      "                             AND severity_matches_ov"
-      "                                  (coalesce"
-      "                                    ((CASE WHEN results.severity"
-      "                                                > " G_STRINGIFY
-                                                            (SEVERITY_LOG)
-      "                                      THEN (SELECT"
-      "                                             CAST (cvss_base"
-      "                                                   AS double precision)"
-      "                                            FROM nvts"
-      "                                            WHERE nvts.oid"
-      "                                                  = results.nvt)"
-      "                                      ELSE results.severity"
-      "                                      END),"
-      "                                     results.severity),"
-      "                                   valid_overrides.severity)"
-      "                             LIMIT 1),"
-      "                            coalesce ((CASE WHEN results.severity"
-      "                                                 > " G_STRINGIFY
-                                                             (SEVERITY_LOG)
-      "                                       THEN (SELECT"
-      "                                             CAST (cvss_base"
-      "                                                   AS double precision)"
-      "                                             FROM nvts"
-      "                                             WHERE nvts.oid"
-      "                                                   = results.nvt)"
-      "                                       ELSE results.severity"
-      "                                       END),"
-      "                                      results.severity))"
-      "             ELSE coalesce ((CASE WHEN results.severity"
-      "                                       > " G_STRINGIFY (SEVERITY_LOG)
-      "                             THEN (SELECT CAST (cvss_base"
-      "                                                AS double precision)"
-      "                                   FROM nvts"
-      "                                   WHERE nvts.oid = results.nvt)"
-      "                             ELSE results.severity"
-      "                             END),"
-      "                            results.severity)"
-      "             END"
-      "        ELSE CASE"
-      "             WHEN override != 0"
-      "             THEN coalesce ((SELECT new_severity FROM valid_overrides"
-      "                             WHERE valid_overrides.nvt = results.nvt"
-      "                             AND (valid_overrides.result = 0"
-      "                                  OR valid_overrides.result"
-      "                                     = results.id)"
-      "                             AND (valid_overrides.hosts is NULL"
-      "                                  OR valid_overrides.hosts = ''"
-      "                                  OR hosts_contains"
-      "                                      (valid_overrides.hosts,"
-      "                                       results.host))"
-      "                             AND (valid_overrides.port is NULL"
-      "                                  OR valid_overrides.port = ''"
-      "                                  OR valid_overrides.port"
-      "                                     = results.port)"
-      "                             AND severity_matches_ov"
-      "                                  (results.severity,"
-      "                                   valid_overrides.severity)"
-      "                             LIMIT 1),"
-      "                            results.severity)"
-      "             ELSE results.severity"
-      "             END"
-      "        END)";
-  columns[1].filter = "severity";
-  columns[1].type = KEYWORD_TYPE_DOUBLE;
-
-  columns[2].select = NULL;
-  columns[2].filter = NULL;
-  columns[2].type = KEYWORD_TYPE_UNKNOWN;
+  dynamic_severity = setting_dynamic_severity_int ();
 
   if (get->filt_id && strcmp (get->filt_id, "0"))
     {
@@ -22027,17 +21941,111 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   apply_overrides = value ? strcmp (value, "0") : 0;
   g_free (value);
 
+  if (dynamic_severity)
+    {
+      if (apply_overrides)
+        columns[1].select
+          = "(SELECT coalesce ((SELECT new_severity FROM valid_overrides"
+            "                        WHERE valid_overrides.nvt = results.nvt"
+            "                        AND (valid_overrides.result = 0"
+            "                             OR valid_overrides.result"
+            "                                = results.id)"
+            "                        AND (valid_overrides.hosts is NULL"
+            "                             OR valid_overrides.hosts = ''"
+            "                             OR hosts_contains"
+            "                                 (valid_overrides.hosts,"
+            "                                  results.host))"
+            "                        AND (valid_overrides.port is NULL"
+            "                             OR valid_overrides.port = ''"
+            "                             OR valid_overrides.port"
+            "                                = results.port)"
+            "                        AND severity_matches_ov"
+            "                             (coalesce"
+            "                               ((CASE WHEN results.severity"
+            "                                           > " G_STRINGIFY
+                                                             (SEVERITY_LOG)
+            "                                 THEN (SELECT"
+            "                                        CAST (cvss_base"
+            "                                              AS double precision)"
+            "                                       FROM nvts"
+            "                                       WHERE nvts.oid"
+            "                                             = results.nvt)"
+            "                                 ELSE results.severity"
+            "                                 END),"
+            "                                results.severity),"
+            "                              valid_overrides.severity)"
+            "                        LIMIT 1),"
+            "                       coalesce ((CASE WHEN results.severity"
+            "                                            > " G_STRINGIFY
+                                                              (SEVERITY_LOG)
+            "                                  THEN (SELECT"
+            "                                        CAST (cvss_base"
+            "                                              AS double precision)"
+            "                                        FROM nvts"
+            "                                        WHERE nvts.oid"
+            "                                              = results.nvt)"
+            "                                  ELSE results.severity"
+            "                                  END),"
+            "                                 results.severity)))";
+      else
+        columns[1].select
+          = "(SELECT coalesce ((CASE WHEN results.severity"
+            "                                  > " G_STRINGIFY (SEVERITY_LOG)
+            "                        THEN (SELECT CAST (cvss_base"
+            "                                           AS double precision)"
+            "                              FROM nvts"
+            "                              WHERE nvts.oid = results.nvt)"
+            "                        ELSE results.severity"
+            "                        END),"
+            "                       results.severity))";
+    }
+  else
+    {
+      if (apply_overrides)
+        columns[1].select
+          = "(SELECT coalesce ((SELECT new_severity FROM valid_overrides"
+            "                   WHERE valid_overrides.nvt = results.nvt"
+            "                   AND (valid_overrides.result = 0"
+            "                        OR valid_overrides.result"
+            "                           = results.id)"
+            "                   AND (valid_overrides.hosts is NULL"
+            "                        OR valid_overrides.hosts = ''"
+            "                        OR hosts_contains"
+            "                            (valid_overrides.hosts,"
+            "                             results.host))"
+            "                   AND (valid_overrides.port is NULL"
+            "                        OR valid_overrides.port = ''"
+            "                        OR valid_overrides.port"
+            "                           = results.port)"
+            "                   AND severity_matches_ov"
+            "                        (results.severity,"
+            "                         valid_overrides.severity)"
+            "                   LIMIT 1),"
+            "                  results.severity))";
+      else
+        columns[1].select
+          = "(SELECT results.severity)";
+    }
+
+  columns[1].filter = "severity";
+  columns[1].type = KEYWORD_TYPE_DOUBLE;
+
+  columns[2].select = NULL;
+  columns[2].filter = NULL;
+  columns[2].type = KEYWORD_TYPE_UNKNOWN;
+
   value = filter_term_value (filter ? filter : get->filter, "autofp");
   autofp = value ? atoi (value) : 0;
   g_free (value);
 
   if (autofp == 0)
-    columns[0].select = "0";
-
-  dynamic_severity = setting_dynamic_severity_int ();
-
-  extra_tables = result_iterator_opts_table (autofp, apply_overrides,
-                                             dynamic_severity);
+    {
+      columns[0].select = "0";
+      extra_tables = NULL;
+    }
+  else
+    extra_tables = result_iterator_opts_table (autofp, apply_overrides,
+                                               dynamic_severity);
 
   extra_where = results_extra_where (get, report, host,
                                      autofp, apply_overrides, dynamic_severity,
