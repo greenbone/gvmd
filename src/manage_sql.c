@@ -21946,58 +21946,58 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
       if (apply_overrides)
         columns[1].select
           = "(SELECT coalesce ((SELECT new_severity FROM valid_overrides"
-            "                        WHERE valid_overrides.nvt = results.nvt"
-            "                        AND (valid_overrides.result = 0"
-            "                             OR valid_overrides.result"
-            "                                = results.id)"
-            "                        AND (valid_overrides.hosts is NULL"
-            "                             OR valid_overrides.hosts = ''"
-            "                             OR hosts_contains"
-            "                                 (valid_overrides.hosts,"
-            "                                  results.host))"
-            "                        AND (valid_overrides.port is NULL"
-            "                             OR valid_overrides.port = ''"
-            "                             OR valid_overrides.port"
-            "                                = results.port)"
-            "                        AND severity_matches_ov"
-            "                             (coalesce"
-            "                               ((CASE WHEN results.severity"
-            "                                           > " G_STRINGIFY
+            "                   WHERE valid_overrides.nvt = results.nvt"
+            "                   AND (valid_overrides.result = 0"
+            "                        OR valid_overrides.result"
+            "                           = results.id)"
+            "                   AND (valid_overrides.hosts is NULL"
+            "                        OR valid_overrides.hosts = ''"
+            "                        OR hosts_contains"
+            "                            (valid_overrides.hosts,"
+            "                             results.host))"
+            "                   AND (valid_overrides.port is NULL"
+            "                        OR valid_overrides.port = ''"
+            "                        OR valid_overrides.port"
+            "                           = results.port)"
+            "                   AND severity_matches_ov"
+            "                        (coalesce"
+            "                          ((CASE WHEN results.severity"
+            "                                      > " G_STRINGIFY
                                                              (SEVERITY_LOG)
-            "                                 THEN (SELECT"
-            "                                        CAST (cvss_base"
-            "                                              AS double precision)"
-            "                                       FROM nvts"
-            "                                       WHERE nvts.oid"
-            "                                             = results.nvt)"
-            "                                 ELSE results.severity"
-            "                                 END),"
-            "                                results.severity),"
-            "                              valid_overrides.severity)"
-            "                        LIMIT 1),"
-            "                       coalesce ((CASE WHEN results.severity"
-            "                                            > " G_STRINGIFY
+            "                            THEN (SELECT"
+            "                                   CAST (cvss_base"
+            "                                         AS double precision)"
+            "                                  FROM nvts"
+            "                                  WHERE nvts.oid"
+            "                                        = results.nvt)"
+            "                            ELSE results.severity"
+            "                            END),"
+            "                           results.severity),"
+            "                         valid_overrides.severity)"
+            "                   LIMIT 1),"
+            "                  coalesce ((CASE WHEN results.severity"
+            "                                       > " G_STRINGIFY
                                                               (SEVERITY_LOG)
-            "                                  THEN (SELECT"
-            "                                        CAST (cvss_base"
-            "                                              AS double precision)"
-            "                                        FROM nvts"
-            "                                        WHERE nvts.oid"
-            "                                              = results.nvt)"
-            "                                  ELSE results.severity"
-            "                                  END),"
-            "                                 results.severity)))";
+            "                             THEN (SELECT"
+            "                                   CAST (cvss_base"
+            "                                         AS double precision)"
+            "                                   FROM nvts"
+            "                                   WHERE nvts.oid"
+            "                                         = results.nvt)"
+            "                             ELSE results.severity"
+            "                             END),"
+            "                            results.severity)))";
       else
         columns[1].select
           = "(SELECT coalesce ((CASE WHEN results.severity"
-            "                                  > " G_STRINGIFY (SEVERITY_LOG)
+            "                             > " G_STRINGIFY (SEVERITY_LOG)
             "                        THEN (SELECT CAST (cvss_base"
             "                                           AS double precision)"
             "                              FROM nvts"
             "                              WHERE nvts.oid = results.nvt)"
             "                        ELSE results.severity"
             "                        END),"
-            "                       results.severity))";
+            "                  results.severity))";
     }
   else
     {
