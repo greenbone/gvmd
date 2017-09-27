@@ -1,5 +1,14 @@
 2017-09-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r29594.  I think this had more effect in trunk because r27089
+	made trunk use the UUID for the join, but here we still use the id.
+
+	* src/manage_sql.c (init_result_get_iterator2_pre): Remove the inner
+	SELECT, which actually makes things slower.  Perhaps this was faster
+	with some older version of SQLite.
+
+2017-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r29593.
 
 	* src/manage_sql.c (init_result_get_iterator_severity): Clean up SQL
