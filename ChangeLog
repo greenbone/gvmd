@@ -1,3 +1,10 @@
+2017-09-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r29703.
+
+	* src/manage_sql.c (setting_normalise): Allow max_rows to be 0, as was
+	originally intended.
+
 2017-09-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r29594.  I think this had more effect in trunk because r27089
