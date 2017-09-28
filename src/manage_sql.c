@@ -61491,7 +61491,7 @@ setting_normalise (const gchar *uuid, const gchar *value)
     {
       int max_rows;
       max_rows = atoi (value);
-      if (max_rows <= 0)
+      if (max_rows < 0)
         return NULL;
       return g_strdup_printf ("%i", max_rows);
     }
