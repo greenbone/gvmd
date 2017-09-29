@@ -10489,7 +10489,7 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
   if (filter)
     {
       alert_filter_get = g_malloc0 (sizeof (get_data_t));
-      alert_filter_get->filt_id = filt_id;
+      alert_filter_get->filt_id = g_strdup (filt_id);
       alert_filter_get->filter = filter_term (filt_id);
     }
   else
@@ -10567,8 +10567,11 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
                                   report_zone,
                                   host_summary);
 
-  get_data_reset (alert_filter_get);
-  g_free (alert_filter_get);
+  if (alert_filter_get)
+    {
+      get_data_reset (alert_filter_get);
+      g_free (alert_filter_get);
+    }
 
   if (report_content == NULL)
     return -1;
@@ -10672,7 +10675,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               if (filter)
                 {
                   alert_filter_get = g_malloc0 (sizeof (get_data_t));
-                  alert_filter_get->filt_id = filt_id;
+                  alert_filter_get->filt_id = g_strdup (filt_id);
                   alert_filter_get->filter = filter_term (filt_id);
                 }
               else
@@ -10705,8 +10708,11 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                           free (name);
                           free (to_address);
                           free (from_address);
-                          get_data_reset (alert_filter_get);
-                          g_free (alert_filter_get);
+                          if (alert_filter_get)
+                            {
+                              get_data_reset (alert_filter_get);
+                              g_free (alert_filter_get);
+                            }
                           return -1;
                           break;
                         default:       /* Programming error. */
@@ -10734,8 +10740,11 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                       free (name);
                       free (to_address);
                       free (from_address);
-                      get_data_reset (alert_filter_get);
-                      g_free (alert_filter_get);
+                      if (alert_filter_get)
+                        {
+                          get_data_reset (alert_filter_get);
+                          g_free (alert_filter_get);
+                        }
                       return -2;
                     }
                   g_free (format_uuid);
@@ -10757,8 +10766,11 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                                   &term,
                                                   &report_zone,
                                                   &host_summary);
-                  get_data_reset (alert_filter_get);
-                  g_free (alert_filter_get);
+                  if (alert_filter_get)
+                    {
+                      get_data_reset (alert_filter_get);
+                      g_free (alert_filter_get);
+                    }
                   if (report_content == NULL)
                     {
                       free (event_desc);
@@ -10838,8 +10850,11 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                           free (name);
                           free (to_address);
                           free (from_address);
-                          get_data_reset (alert_filter_get);
-                          g_free (alert_filter_get);
+                          if (alert_filter_get)
+                            {
+                              get_data_reset (alert_filter_get);
+                              g_free (alert_filter_get);
+                            }
                           return -1;
                           break;
                         default:       /* Programming error. */
@@ -10867,8 +10882,11 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                       free (name);
                       free (to_address);
                       free (from_address);
-                      get_data_reset (alert_filter_get);
-                      g_free (alert_filter_get);
+                      if (alert_filter_get)
+                        {
+                          get_data_reset (alert_filter_get);
+                          g_free (alert_filter_get);
+                        }
                       return -2;
                     }
                   g_free (format_uuid);
@@ -10891,8 +10909,11 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                                   &term,
                                                   &report_zone,
                                                   &host_summary);
-                  get_data_reset (alert_filter_get);
-                  g_free (alert_filter_get);
+                  if (alert_filter_get)
+                    {
+                      get_data_reset (alert_filter_get);
+                      g_free (alert_filter_get);
+                    }
                   if (report_content == NULL)
                     {
                       g_free (event_desc);
@@ -10985,8 +11006,11 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   g_free (event_desc);
                   g_free (generic_desc);
                   g_free (condition_desc);
-                  get_data_reset (alert_filter_get);
-                  g_free (alert_filter_get);
+                  if (alert_filter_get)
+                    {
+                      get_data_reset (alert_filter_get);
+                      g_free (alert_filter_get);
+                    }
                 }
               free (filt_id);
               free (notice);
@@ -11227,6 +11251,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               }
 
           filt_id = alert_filter_id (alert);
+          filter = 0;
           if (filt_id)
             {
               if (find_filter_with_permission (filt_id, &filter, "get_filters"))
@@ -11238,7 +11263,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           if (filter)
             {
               alert_filter_get = g_malloc0 (sizeof (get_data_t));
-              alert_filter_get->filt_id = filt_id;
+              alert_filter_get->filt_id = g_strdup (filt_id);
               alert_filter_get->filter = filter_term (filt_id);
             }
           else
@@ -11257,8 +11282,11 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                           NULL,
                                           NULL);
           free (filt_id);
-          get_data_reset (alert_filter_get);
-          g_free (alert_filter_get);
+          if (alert_filter_get)
+            {
+              get_data_reset (alert_filter_get);
+              g_free (alert_filter_get);
+            }
           if (report_content == NULL)
             {
               g_warning ("%s: Empty Report", __FUNCTION__);
@@ -11383,6 +11411,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               }
 
           filt_id = alert_filter_id (alert);
+          filter = 0;
           if (filt_id)
             {
               if (find_filter_with_permission (filt_id, &filter, "get_filters"))
@@ -11394,7 +11423,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           if (filter)
             {
               alert_filter_get = g_malloc0 (sizeof (get_data_t));
-              alert_filter_get->filt_id = filt_id;
+              alert_filter_get->filt_id = g_strdup (filt_id);
               alert_filter_get->filter = filter_term (filt_id);
             }
           else
@@ -11412,8 +11441,11 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                           NULL,
                                           NULL,
                                           NULL);
-          get_data_reset (alert_filter_get);
-          g_free (alert_filter_get);
+          if (alert_filter_get)
+            {
+              get_data_reset (alert_filter_get);
+              g_free (alert_filter_get);
+            }
           free (filt_id);
           if (report_content == NULL)
             {
@@ -11641,6 +11673,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               }
 
           filt_id = alert_filter_id (alert);
+          filter = 0;
           if (filt_id)
             {
               if (find_filter_with_permission (filt_id, &filter, "get_filters"))
@@ -11652,7 +11685,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           if (filter)
             {
               alert_filter_get = g_malloc0 (sizeof (get_data_t));
-              alert_filter_get->filt_id = filt_id;
+              alert_filter_get->filt_id = g_strdup (filt_id);
               alert_filter_get->filter = filter_term (filt_id);
             }
           else
@@ -11670,8 +11703,11 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                           NULL,
                                           NULL,
                                           NULL);
-          get_data_reset (alert_filter_get);
-          g_free (alert_filter_get);
+          if (alert_filter_get)
+            {
+              get_data_reset (alert_filter_get);
+              g_free (alert_filter_get);
+            }
           if (report_content == NULL)
             return -1;
 
@@ -11780,6 +11816,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               }
 
           filt_id = alert_filter_id (alert);
+          filter = 0;
           if (filt_id)
             {
               if (find_filter_with_permission (filt_id, &filter, "get_filters"))
@@ -11791,7 +11828,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           if (filter)
             {
               alert_filter_get = g_malloc0 (sizeof (get_data_t));
-              alert_filter_get->filt_id = filt_id;
+              alert_filter_get->filt_id = g_strdup (filt_id);
               alert_filter_get->filter = filter_term (filt_id);
             }
           else
@@ -11809,8 +11846,11 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                           NULL,
                                           NULL,
                                           NULL);
-          get_data_reset (alert_filter_get);
-          g_free (alert_filter_get);
+          if (alert_filter_get)
+            {
+              get_data_reset (alert_filter_get);
+              g_free (alert_filter_get);
+            }
           if (report_content == NULL)
             {
               g_warning ("Empty Report");

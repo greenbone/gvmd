@@ -1,3 +1,9 @@
+2017-09-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (report_content_for_alert, escalate_2): Copy filt_id
+	to avoid double free in alert_filter_get.  Check if alert_filter_get
+	is NULL before calling get_data_reset.
+
 2017-09-29  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Address documentation issues.
