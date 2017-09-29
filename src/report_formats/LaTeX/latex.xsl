@@ -277,7 +277,7 @@ TODOS: Solve Whitespace/Indentation problem of this file.
           <xsl:when test="$strlen_before_dollar &gt; 0 and $strlen_before_backslash &gt; 0">
             <!-- string contains both $ and \ . -->
             <xsl:choose>
-              <xsl:when test="$strlen_before_dollar &gt; $strlen_before_backslash">
+              <xsl:when test="$strlen_before_dollar &lt; $strlen_before_backslash">
                 <!-- $ before \. -->
                 <xsl:value-of select="concat(substring-before($string, '$'), '\$')"/>
                 <xsl:call-template name="latex-replace-backslash-dollar">
