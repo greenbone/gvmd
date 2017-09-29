@@ -1,5 +1,13 @@
 2017-09-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Backport r29722.
+
+	* src/manage_sql.c (report_content_for_alert, escalate_2): Copy fields
+	details, ignore_pagination and ignore_max_rows_per_page from the
+	original get data to alert_filter_get.
+
+2017-09-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Backport r29720.
 
 	* src/manage_sql.c (report_content_for_alert, escalate_2): Copy filt_id
