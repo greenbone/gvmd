@@ -10467,10 +10467,33 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
                           report_format_t *used_report_format)
 {
   report_format_t report_format;
-  char *format_uuid;
+  char *filt_id, *format_uuid;
+  filter_t filter;
+  get_data_t *alert_filter_get;
   gchar *report_content;
 
   assert (content);
+
+  // Get filter
+  filt_id = alert_filter_id (alert);
+  filter = 0;
+  if (filt_id)
+    {
+      if (find_filter_with_permission (filt_id, &filter,
+                                       "get_filters"))
+        return -1;
+      if (filter == 0)
+        return -3;
+    }
+
+  if (filter)
+    {
+      alert_filter_get = g_malloc0 (sizeof (get_data_t));
+      alert_filter_get->filt_id = filt_id;
+      alert_filter_get->filter = filter_term (filt_id);
+    }
+  else
+    alert_filter_get = NULL;
 
   // Get last report from task if no report is given
   if (report == 0)
@@ -10531,7 +10554,9 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
     }
 
   // Generate report content
-  report_content = manage_report (report, get, report_format,
+  report_content = manage_report (report,
+                                  alert_filter_get ? alert_filter_get : get,
+                                  report_format,
                                   notes_details,
                                   overrides_details,
                                   NULL, /* Type. */
@@ -10541,6 +10566,9 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
                                   term,
                                   report_zone,
                                   host_summary);
+
+  get_data_reset (alert_filter_get);
+  g_free (alert_filter_get);
 
   if (report_content == NULL)
     return -1;
@@ -10610,6 +10638,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               char *name, *notice, *from_address, *filt_id;
               gchar *base64, *type, *extension;
               filter_t filter;
+              get_data_t *alert_filter_get;
 
               base64 = NULL;
               type = NULL;
@@ -10640,6 +10669,15 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                     return -3;
                 }
 
+              if (filter)
+                {
+                  alert_filter_get = g_malloc0 (sizeof (get_data_t));
+                  alert_filter_get->filt_id = filt_id;
+                  alert_filter_get->filter = filter_term (filt_id);
+                }
+              else
+                alert_filter_get = NULL;
+
               name = task_name (task);
               if (notice && strcmp (notice, "0") == 0)
                 {
@@ -10667,6 +10705,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                           free (name);
                           free (to_address);
                           free (from_address);
+                          get_data_reset (alert_filter_get);
+                          g_free (alert_filter_get);
                           return -1;
                           break;
                         default:       /* Programming error. */
@@ -10694,6 +10734,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                       free (name);
                       free (to_address);
                       free (from_address);
+                      get_data_reset (alert_filter_get);
+                      g_free (alert_filter_get);
                       return -2;
                     }
                   g_free (format_uuid);
@@ -10702,7 +10744,10 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   term = NULL;
                   report_zone = NULL;
                   host_summary = NULL;
-                  report_content = manage_report (report, get, report_format,
+                  report_content = manage_report (report,
+                                                  alert_filter_get
+                                                    ? alert_filter_get : get,
+                                                  report_format,
                                                   notes_details,
                                                   overrides_details,
                                                   NULL, /* Type. */
@@ -10712,6 +10757,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                                   &term,
                                                   &report_zone,
                                                   &host_summary);
+                  get_data_reset (alert_filter_get);
+                  g_free (alert_filter_get);
                   if (report_content == NULL)
                     {
                       free (event_desc);
@@ -10791,6 +10838,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                           free (name);
                           free (to_address);
                           free (from_address);
+                          get_data_reset (alert_filter_get);
+                          g_free (alert_filter_get);
                           return -1;
                           break;
                         default:       /* Programming error. */
@@ -10818,6 +10867,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                       free (name);
                       free (to_address);
                       free (from_address);
+                      get_data_reset (alert_filter_get);
+                      g_free (alert_filter_get);
                       return -2;
                     }
                   g_free (format_uuid);
@@ -10826,7 +10877,11 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   term = NULL;
                   report_zone = NULL;
                   host_summary = NULL;
-                  report_content = manage_report (report, get, report_format,
+                  report_content = manage_report (report,
+                                                  alert_filter_get
+                                                    ? alert_filter_get
+                                                    : get,
+                                                  report_format,
                                                   notes_details,
                                                   overrides_details,
                                                   NULL, /* Type. */
@@ -10836,6 +10891,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                                   &term,
                                                   &report_zone,
                                                   &host_summary);
+                  get_data_reset (alert_filter_get);
+                  g_free (alert_filter_get);
                   if (report_content == NULL)
                     {
                       g_free (event_desc);
@@ -10928,6 +10985,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   g_free (event_desc);
                   g_free (generic_desc);
                   g_free (condition_desc);
+                  get_data_reset (alert_filter_get);
+                  g_free (alert_filter_get);
                 }
               free (filt_id);
               free (notice);
@@ -11071,6 +11130,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           report_format_t report_format;
           int ret;
           filter_t filter;
+          get_data_t *alert_filter_get;
 
           if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
             {
@@ -11175,7 +11235,19 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                 return -3;
             }
 
-          report_content = manage_report (report, get, report_format,
+          if (filter)
+            {
+              alert_filter_get = g_malloc0 (sizeof (get_data_t));
+              alert_filter_get->filt_id = filt_id;
+              alert_filter_get->filter = filter_term (filt_id);
+            }
+          else
+            alert_filter_get = NULL;
+
+          report_content = manage_report (report,
+                                          alert_filter_get ? alert_filter_get
+                                                           : get,
+                                          report_format,
                                           notes_details, overrides_details,
                                           NULL, /* Type. */
                                           &content_length,
@@ -11185,6 +11257,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                           NULL,
                                           NULL);
           free (filt_id);
+          get_data_reset (alert_filter_get);
+          g_free (alert_filter_get);
           if (report_content == NULL)
             {
               g_warning ("%s: Empty Report", __FUNCTION__);
@@ -11236,6 +11310,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           report_format_t report_format;
           int ret;
           filter_t filter;
+          get_data_t *alert_filter_get;
 
           if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
             {
@@ -11316,7 +11391,19 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                 return -3;
             }
 
-          report_content = manage_report (report, get, report_format,
+          if (filter)
+            {
+              alert_filter_get = g_malloc0 (sizeof (get_data_t));
+              alert_filter_get->filt_id = filt_id;
+              alert_filter_get->filter = filter_term (filt_id);
+            }
+          else
+            alert_filter_get = NULL;
+
+          report_content = manage_report (report,
+                                          alert_filter_get ? alert_filter_get
+                                                           : get,
+                                          report_format,
                                           notes_details, overrides_details,
                                           NULL, /* Type. */
                                           &content_length,
@@ -11325,6 +11412,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                           NULL,
                                           NULL,
                                           NULL);
+          get_data_reset (alert_filter_get);
+          g_free (alert_filter_get);
           free (filt_id);
           if (report_content == NULL)
             {
@@ -11518,6 +11607,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           report_format_t report_format;
           int ret;
           filter_t filter;
+          get_data_t *alert_filter_get;
 
           if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
             {
@@ -11559,7 +11649,19 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                 return -3;
             }
 
-          report_content = manage_report (report, get, report_format,
+          if (filter)
+            {
+              alert_filter_get = g_malloc0 (sizeof (get_data_t));
+              alert_filter_get->filt_id = filt_id;
+              alert_filter_get->filter = filter_term (filt_id);
+            }
+          else
+            alert_filter_get = NULL;
+
+          report_content = manage_report (report,
+                                          alert_filter_get ? alert_filter_get
+                                                           : get,
+                                          report_format,
                                           notes_details, overrides_details,
                                           NULL, /* Type. */
                                           &content_length,
@@ -11568,6 +11670,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                           NULL,
                                           NULL,
                                           NULL);
+          get_data_reset (alert_filter_get);
+          g_free (alert_filter_get);
           if (report_content == NULL)
             return -1;
 
@@ -11623,6 +11727,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           report_format_t report_format;
           int ret;
           filter_t filter;
+          get_data_t *alert_filter_get;
 
           if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
             {
@@ -11683,7 +11788,19 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                 return -3;
             }
 
-          report_content = manage_report (report, get, report_format,
+          if (filter)
+            {
+              alert_filter_get = g_malloc0 (sizeof (get_data_t));
+              alert_filter_get->filt_id = filt_id;
+              alert_filter_get->filter = filter_term (filt_id);
+            }
+          else
+            alert_filter_get = NULL;
+
+          report_content = manage_report (report,
+                                          alert_filter_get ? alert_filter_get
+                                                           : get,
+                                          report_format,
                                           notes_details, overrides_details,
                                           NULL, /* Type. */
                                           &content_length,
@@ -11692,6 +11809,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                           NULL,
                                           NULL,
                                           NULL);
+          get_data_reset (alert_filter_get);
+          g_free (alert_filter_get);
           if (report_content == NULL)
             {
               g_warning ("Empty Report");
