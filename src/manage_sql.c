@@ -10489,6 +10489,10 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
   if (filter)
     {
       alert_filter_get = g_malloc0 (sizeof (get_data_t));
+      alert_filter_get->details = get->details;
+      alert_filter_get->ignore_pagination = get->ignore_pagination;
+      alert_filter_get->ignore_max_rows_per_page 
+        = get->ignore_max_rows_per_page;
       alert_filter_get->filt_id = g_strdup (filt_id);
       alert_filter_get->filter = filter_term (filt_id);
     }
@@ -10675,6 +10679,10 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               if (filter)
                 {
                   alert_filter_get = g_malloc0 (sizeof (get_data_t));
+                  alert_filter_get->details = get->details;
+                  alert_filter_get->ignore_pagination = get->ignore_pagination;
+                  alert_filter_get->ignore_max_rows_per_page
+                    = get->ignore_max_rows_per_page;
                   alert_filter_get->filt_id = g_strdup (filt_id);
                   alert_filter_get->filter = filter_term (filt_id);
                 }
@@ -11263,6 +11271,10 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           if (filter)
             {
               alert_filter_get = g_malloc0 (sizeof (get_data_t));
+              alert_filter_get->details = get->details;
+              alert_filter_get->ignore_pagination = get->ignore_pagination;
+              alert_filter_get->ignore_max_rows_per_page
+                = get->ignore_max_rows_per_page;
               alert_filter_get->filt_id = g_strdup (filt_id);
               alert_filter_get->filter = filter_term (filt_id);
             }
@@ -11423,6 +11435,10 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           if (filter)
             {
               alert_filter_get = g_malloc0 (sizeof (get_data_t));
+              alert_filter_get->details = get->details;
+              alert_filter_get->ignore_pagination = get->ignore_pagination;
+              alert_filter_get->ignore_max_rows_per_page
+                = get->ignore_max_rows_per_page;
               alert_filter_get->filt_id = g_strdup (filt_id);
               alert_filter_get->filter = filter_term (filt_id);
             }
@@ -11685,6 +11701,10 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           if (filter)
             {
               alert_filter_get = g_malloc0 (sizeof (get_data_t));
+              alert_filter_get->details = get->details;
+              alert_filter_get->ignore_pagination = get->ignore_pagination;
+              alert_filter_get->ignore_max_rows_per_page
+                = get->ignore_max_rows_per_page;
               alert_filter_get->filt_id = g_strdup (filt_id);
               alert_filter_get->filter = filter_term (filt_id);
             }
@@ -11828,6 +11848,10 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           if (filter)
             {
               alert_filter_get = g_malloc0 (sizeof (get_data_t));
+              alert_filter_get->details = get->details;
+              alert_filter_get->ignore_pagination = get->ignore_pagination;
+              alert_filter_get->ignore_max_rows_per_page
+                = get->ignore_max_rows_per_page;
               alert_filter_get->filt_id = g_strdup (filt_id);
               alert_filter_get->filter = filter_term (filt_id);
             }
