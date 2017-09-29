@@ -1,3 +1,10 @@
+2017-09-29  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Backport r29705.
+
+	* src/report_formats/LaTeX/latex.xsl (latex-replace-backslash-dollar):
+	Handle (sub-)strings starting with '\' or '$' character correctly.
+
 2017-09-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r29703.

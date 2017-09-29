@@ -300,13 +300,27 @@ TODOS: Solve Whitespace/Indentation problem of this file.
               <xsl:with-param name="string" select="substring-after($string, '\')"/>
             </xsl:call-template>
           </xsl:when>
-          <xsl:otherwise>
+          <xsl:when test="string-length($before_dollar) &gt; 0">
             <!-- Only $ is occuring -->
             <xsl:value-of select="concat(substring-before($string, '$'),'\$')"/>
             <xsl:call-template name="latex-replace-backslash-dollar">
               <xsl:with-param name="string" select="substring-after($string, '$')"/>
             </xsl:call-template>
-          </xsl:otherwise>
+          </xsl:when>
+          <xsl:when test="substring($string, 1, 1) = '\'">
+            <!-- \ is occurring as first character -->
+            <xsl:text>$\backslash$</xsl:text>
+            <xsl:call-template name="latex-replace-backslash-dollar">
+              <xsl:with-param name="string" select="substring-after($string, '\')"/>
+            </xsl:call-template>
+          </xsl:when>
+          <xsl:when test="substring($string, 1, 1) = '$'">
+            <!-- $ is occurring as first character -->
+            <xsl:text>\$</xsl:text>
+            <xsl:call-template name="latex-replace-backslash-dollar">
+              <xsl:with-param name="string" select="substring-after($string, '$')"/>
+            </xsl:call-template>
+          </xsl:when>
         </xsl:choose>
       </xsl:when>
       <xsl:otherwise>
