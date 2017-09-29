@@ -1,5 +1,13 @@
 2017-09-29  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	Backport r29706.
+
+	* src/report_formats/LaTeX/latex.xsl (latex-replace-backslash-dollar):
+	Reverse conditional to handle (sub-)string containing both '\' and '$'
+	characters correctly.
+
+2017-09-29  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	Backport r29705.
 
 	* src/report_formats/LaTeX/latex.xsl (latex-replace-backslash-dollar):
