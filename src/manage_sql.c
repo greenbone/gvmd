@@ -27459,6 +27459,7 @@ tz_revert (gchar *zone, char *tz)
 {
   if (zone && strlen (zone))
     {
+      gchar *quoted_tz;
       /* Revert to stored TZ. */
       if (tz)
         {
@@ -27472,6 +27473,9 @@ tz_revert (gchar *zone, char *tz)
         }
       else
         unsetenv ("TZ");
+
+      quoted_tz = sql_insert (tz);
+      sql ("UPDATE current_credentials SET tz_override = %s", quoted_tz);
 
       g_free (tz);
     }
@@ -28566,6 +28570,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (zone && strlen (zone))
     {
+      gchar *quoted_zone;
       /* Store current TZ. */
       tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
 
@@ -28578,6 +28583,9 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           g_free (zone);
           return -1;
         }
+
+      quoted_zone = sql_insert (zone);
+      sql ("UPDATE current_credentials SET tz_override = %s", quoted_zone);
 
       tzset ();
     }

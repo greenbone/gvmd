@@ -50,7 +50,8 @@ manage_session_init (const char *uuid)
 {
   sql ("CREATE TEMPORARY TABLE IF NOT EXISTS current_credentials"
        " (id SERIAL PRIMARY KEY,"
-       "  uuid text UNIQUE NOT NULL);");
+       "  uuid text UNIQUE NOT NULL,"
+       "  tz_override text);");
   sql ("DELETE FROM current_credentials;");
   if (uuid)
     sql ("INSERT INTO current_credentials (uuid) VALUES ('%s');", uuid);
@@ -985,9 +986,11 @@ manage_create_sql_functions ()
        "   user_zone text;"
        "   user_offset interval;"
        " BEGIN"
-       "   user_zone := (SELECT timezone FROM users"
-       "                 WHERE uuid = (SELECT uuid"
-       "                               FROM current_credentials));"
+       "   user_zone :="
+       "     coalesce ((SELECT tz_override FROM current_credentials),"
+       "               (SELECT timezone FROM users"
+       "                WHERE uuid = (SELECT uuid"
+       "                              FROM current_credentials)));"
        "   BEGIN"
        "     user_offset := age (now () AT TIME ZONE user_zone,"
        "                         now () AT TIME ZONE 'UTC');"
@@ -2041,9 +2044,11 @@ create_tables ()
 {
   gchar *owned_clause;
 
+  sql ("DROP TABLE IF EXISTS current_credentials");
   sql ("CREATE TABLE IF NOT EXISTS current_credentials"
        " (id SERIAL PRIMARY KEY,"
-       "  uuid text UNIQUE NOT NULL);");
+       "  uuid text UNIQUE NOT NULL,"
+       "  tz_override text);");
 
   sql ("CREATE TABLE IF NOT EXISTS meta"
        " (id SERIAL PRIMARY KEY,"

@@ -1,5 +1,20 @@
 2017-09-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_pg.c (manage_session_init): Add tz_override column
+	to current_credentials.
+	(manage_create_sql_functions): In iso_time get timezone from
+	current_credentials and use default of user only as fallback.
+	(create_tables): Drop current_credentials and create table again
+	with tz_override column added.
+	
+	* src/manage_sql.c (tz_revert, print_report_xml_start): Update
+	tz_override column in current_credentials.
+
+	* src/manage_sqlite3.c (manage_session_init): Add tz_override column
+	to current_credentials.
+
+2017-09-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (report_content_for_alert, escalate_2): Copy fields
 	details, ignore_pagination and ignore_max_rows_per_page from the
 	original get data to alert_filter_get.
