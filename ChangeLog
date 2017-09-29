@@ -1,3 +1,10 @@
+2017-09-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r29710.
+
+	* src/manage_sql.c (report_content_for_alert, escalate_2): If a filter
+	is set in the alert, use it to filter the results.
+
 2017-09-29  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Backport r29706.
