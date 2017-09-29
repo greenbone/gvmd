@@ -344,7 +344,7 @@ typedef struct {
 /**
  * @brief  Create a new connection watcher thread data structure.
  *
- * @param[in]  gvm_connection   GVM connection to client to watch.
+ * @param[in]  client_connection   GVM connection to client to watch.
  *
  * @return  Newly allocated watcher thread data.
  */

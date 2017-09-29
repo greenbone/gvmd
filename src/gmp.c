@@ -14893,7 +14893,6 @@ get_feed_info (int feed_type, gchar **feed_name, gchar **feed_version,
  *
  * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
- * @param[in]  sync_script  Sync script.
  * @param[in]  feed_type    Type of feed.
  */
 static void

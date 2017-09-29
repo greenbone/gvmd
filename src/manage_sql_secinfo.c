@@ -1902,7 +1902,6 @@ update_cert_bund_advisories (int last_cert_update)
 /**
  * @brief Update SCAP CPEs.
  *
- * @param[in]  xml_path          XML path.
  * @param[in]  last_scap_update  Time of last SCAP update.
  *
  * @return 0 nothing to do, 1 updated, -1 error.
@@ -3827,7 +3826,7 @@ update_cert_timestamp ()
 /**
  * @brief Update DFN-CERT Max CVSS.
  *
- * @param[in]  update_dfn_cert  Whether CERT-Bund updated.
+ * @param[in]  updated_dfn_cert  Whether CERT-Bund updated.
  * @param[in]  last_cert_update  Time of last CERT update.
  * @param[in]  last_scap_update  Time of last SCAP update.
  */
@@ -3859,7 +3858,7 @@ update_cvss_dfn_cert (int updated_dfn_cert, int last_cert_update,
 /**
  * @brief Update CERT-Bund Max CVSS.
  *
- * @param[in]  update_cert_bund  Whether CERT-Bund updated.
+ * @param[in]  updated_cert_bund  Whether CERT-Bund updated.
  * @param[in]  last_cert_update  Time of last CERT update.
  * @param[in]  last_scap_update  Time of last SCAP update.
  */
