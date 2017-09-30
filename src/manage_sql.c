@@ -27448,18 +27448,19 @@ severity_class_xml (const gchar *severity)
 /**
  * @brief Restore original TZ.
  *
- * @param[in]  zone  Only revert if this is at least one character.  Freed here
- *                   always.
- * @param[in]  tz    Original TZ.  Freed here if revert occurs.
+ * @param[in]  zone             Only revert if this is at least one character.
+ *                               Freed here always.
+ * @param[in]  tz               Original TZ.  Freed here if revert occurs.
+ * @param[in]  old_tz_override  Original tz_override.  Freed here on revert.
  *
  * @return 0 success, -1 error.
  */
 static int
-tz_revert (gchar *zone, char *tz)
+tz_revert (gchar *zone, char *tz, char *old_tz_override)
 {
   if (zone && strlen (zone))
     {
-      gchar *quoted_tz;
+      gchar *quoted_old_tz_override;
       /* Revert to stored TZ. */
       if (tz)
         {
@@ -27468,15 +27469,19 @@ tz_revert (gchar *zone, char *tz)
               g_warning ("%s: Failed to switch to original TZ", __FUNCTION__);
               g_free (tz);
               g_free (zone);
+              free (old_tz_override);
               return -1;
             }
         }
       else
         unsetenv ("TZ");
 
-      quoted_tz = sql_insert (tz);
-      sql ("UPDATE current_credentials SET tz_override = %s", quoted_tz);
+      quoted_old_tz_override = sql_insert (old_tz_override);
+      sql ("UPDATE current_credentials SET tz_override = %s",
+           quoted_old_tz_override);
+      g_free (quoted_old_tz_override);
 
+      free (old_tz_override);
       g_free (tz);
     }
   g_free (zone);
@@ -28431,6 +28436,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   int search_phrase_exact, apply_overrides;
   double severity, f_severity;
   gchar *tz, *zone;
+  char *old_tz_override;
   GString *filters_buffer, *filters_extra_buffer, *host_summary_buffer;
   gchar *term_value;
   GHashTable *f_host_ports;
@@ -28584,14 +28590,21 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           return -1;
         }
 
+      old_tz_override = sql_string ("SELECT tz_override"
+                                    " FROM current_credentials;");
+
       quoted_zone = sql_insert (zone);
       sql ("UPDATE current_credentials SET tz_override = %s", quoted_zone);
+      g_free (quoted_zone);
 
       tzset ();
     }
   else
-    /* Keep compiler quiet. */
-    tz = NULL;
+    {
+      /* Keep compiler quiet. */
+      tz = NULL;
+      old_tz_override = NULL;
+    }
 
   if (delta && report)
     {
@@ -28637,7 +28650,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           g_free (search_phrase);
           g_free (min_qod);
           g_free (delta_states);
-          tz_revert (zone, tz);
+          tz_revert (zone, tz, old_tz_override);
           return -1;
         }
       PRINT (out,
@@ -29012,7 +29025,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       g_free (min_qod);
       g_free (delta_states);
 
-      tz_revert (zone, tz);
+      tz_revert (zone, tz, old_tz_override);
 
       if (ret)
         return ret;
@@ -29050,7 +29063,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       g_free (min_qod);
       g_free (delta_states);
 
-      tz_revert (zone, tz);
+      tz_revert (zone, tz, old_tz_override);
 
       if (ret)
         return ret;
@@ -29071,7 +29084,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     {
       free (uuid);
       g_free (term);
-      tz_revert (zone, tz);
+      tz_revert (zone, tz, old_tz_override);
       return -1;
     }
   free (uuid);
@@ -29127,7 +29140,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                  min_qod, apply_overrides, f_host_ports))
         {
           g_free (term);
-          tz_revert (zone, tz);
+          tz_revert (zone, tz, old_tz_override);
           g_hash_table_destroy (f_host_ports);
           return -1;
         }
@@ -29220,7 +29233,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           g_free (delta_states);
           cleanup_iterator (&results);
           cleanup_iterator (&delta_results);
-          tz_revert (zone, tz);
+          tz_revert (zone, tz, old_tz_override);
           g_hash_table_destroy (f_host_ports);
           g_hash_table_destroy (f_host_holes);
           g_hash_table_destroy (f_host_warnings);
@@ -29450,7 +29463,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
               if (print_report_host_details_xml
                    (host_iterator_report_host (&hosts), out))
                 {
-                  tz_revert (zone, tz);
+                  tz_revert (zone, tz, old_tz_override);
                   if (host_summary_buffer)
                     g_string_free (host_summary_buffer, TRUE);
                   g_hash_table_destroy (f_host_ports);
@@ -29555,7 +29568,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           if (print_report_host_details_xml
                (host_iterator_report_host (&hosts), out))
             {
-              tz_revert (zone, tz);
+              tz_revert (zone, tz, old_tz_override);
               if (host_summary_buffer)
                 g_string_free (host_summary_buffer, TRUE);
               g_hash_table_destroy (f_host_ports);
@@ -29603,7 +29616,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (delta == 0 && print_report_errors_xml (report, out))
     {
-      tz_revert (zone, tz);
+      tz_revert (zone, tz, old_tz_override);
       if (host_summary_buffer)
         g_string_free (host_summary_buffer, TRUE);
       return -1;

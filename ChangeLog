@@ -1,3 +1,10 @@
+2017-09-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (tz_revert): Add param old_tz_override and use that
+	to revert tz_override as it may differ from tz.
+	(print_report_xml_start): Get old value of tz_override on timezone
+	change and pass it to tz_revert later.  Free quoted_zone after use.
+
 2017-09-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_pg.c (manage_session_init): Add tz_override column
