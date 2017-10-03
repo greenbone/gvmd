@@ -1619,72 +1619,74 @@ manage_create_sql_functions ()
            "$$ LANGUAGE SQL;",
            TASK_STATUS_DONE);
 
-      sql ("CREATE OR REPLACE FUNCTION task_severity (integer, integer,"
-           "                                          integer)"
-           " RETURNS double precision AS $$"
-           /* Calculate the severity of a task. */
-           "  SELECT CASE"
-           "         WHEN (SELECT target IS NULL OR target = 0"
-           "               FROM tasks WHERE id = $1)"
-           "         THEN CAST (NULL AS double precision)"
-           "         WHEN dynamic_severity () AND CAST ($2 AS boolean)"
-           /*        Dynamic severity, overrides on. */
-           "         THEN (SELECT"
-           "                round"
-           "                 (max (" OVERRIDES_SQL
-                                      ("current_severity"
-                                       " (results.severity,"
-                                       "  results.nvt)") ")::numeric,"
-           "                  2)"
-           "               FROM results"
-           "               WHERE results.report = (SELECT id FROM reports"
-           "                                       WHERE reports.task = $1"
-           "                                       AND reports.scan_run_status = %u"
-           "                                       ORDER BY reports.date DESC"
-           "                                                LIMIT 1 OFFSET 0)"
-           "                 AND results.qod >= $3)"
-           "         WHEN dynamic_severity ()"
-           /*        Dynamic severity, overrides off. */
-           "         THEN (SELECT round (max (current_severity"
-           "                                   (results.severity,"
-           "                                    results.nvt))::numeric,"
-           "                             2)"
-           "               FROM results"
-           "               WHERE results.report = (SELECT id FROM reports"
-           "                                       WHERE reports.task = $1"
-           "                                       AND reports.scan_run_status = %u"
-           "                                       ORDER BY reports.date DESC"
-           "                                                LIMIT 1 OFFSET 0)"
-           "                 AND results.qod >= $3)"
-           "         WHEN CAST ($2 AS boolean)"
-           /*        Overrides on. */
-           "         THEN (SELECT round"
-           "                       (max (" OVERRIDES_SQL ("results.severity") ")"
-           "                              ::numeric,"
-           "                        2)"
-           "               FROM results"
-           "               WHERE results.report = (SELECT id FROM reports"
-           "                                       WHERE reports.task = $1"
-           "                                       AND reports.scan_run_status = %u"
-           "                                       ORDER BY reports.date DESC"
-           "                                       LIMIT 1 OFFSET 0)"
-           "                 AND results.qod >= $3)"
-           /*        Overrides off. */
-           // FIX need rounding in sqlite?
-           "         ELSE (SELECT round (max (results.severity)::numeric, 2)"
-           "               FROM results"
-           "               WHERE results.report = (SELECT id FROM reports"
-           "                                       WHERE reports.task = $1"
-           "                                       AND reports.scan_run_status = %u"
-           "                                       ORDER BY reports.date DESC"
-           "                                                LIMIT 1 OFFSET 0)"
-           "                 AND results.qod >= $3)"
-           "         END;"
-           "$$ LANGUAGE SQL;",
-           TASK_STATUS_DONE,
-           TASK_STATUS_DONE,
-           TASK_STATUS_DONE,
-           TASK_STATUS_DONE);
+      /* result_nvt column (in OVERRIDES_SQL) was added in version 189. */
+      if (current_db_version >= 189)
+        sql ("CREATE OR REPLACE FUNCTION task_severity (integer, integer,"
+             "                                          integer)"
+             " RETURNS double precision AS $$"
+             /* Calculate the severity of a task. */
+             "  SELECT CASE"
+             "         WHEN (SELECT target IS NULL OR target = 0"
+             "               FROM tasks WHERE id = $1)"
+             "         THEN CAST (NULL AS double precision)"
+             "         WHEN dynamic_severity () AND CAST ($2 AS boolean)"
+             /*        Dynamic severity, overrides on. */
+             "         THEN (SELECT"
+             "                round"
+             "                 (max (" OVERRIDES_SQL
+                                        ("current_severity"
+                                         " (results.severity,"
+                                         "  results.nvt)") ")::numeric,"
+             "                  2)"
+             "               FROM results"
+             "               WHERE results.report = (SELECT id FROM reports"
+             "                                       WHERE reports.task = $1"
+             "                                       AND reports.scan_run_status = %u"
+             "                                       ORDER BY reports.date DESC"
+             "                                                LIMIT 1 OFFSET 0)"
+             "                 AND results.qod >= $3)"
+             "         WHEN dynamic_severity ()"
+             /*        Dynamic severity, overrides off. */
+             "         THEN (SELECT round (max (current_severity"
+             "                                   (results.severity,"
+             "                                    results.nvt))::numeric,"
+             "                             2)"
+             "               FROM results"
+             "               WHERE results.report = (SELECT id FROM reports"
+             "                                       WHERE reports.task = $1"
+             "                                       AND reports.scan_run_status = %u"
+             "                                       ORDER BY reports.date DESC"
+             "                                                LIMIT 1 OFFSET 0)"
+             "                 AND results.qod >= $3)"
+             "         WHEN CAST ($2 AS boolean)"
+             /*        Overrides on. */
+             "         THEN (SELECT round"
+             "                       (max (" OVERRIDES_SQL ("results.severity") ")"
+             "                              ::numeric,"
+             "                        2)"
+             "               FROM results"
+             "               WHERE results.report = (SELECT id FROM reports"
+             "                                       WHERE reports.task = $1"
+             "                                       AND reports.scan_run_status = %u"
+             "                                       ORDER BY reports.date DESC"
+             "                                       LIMIT 1 OFFSET 0)"
+             "                 AND results.qod >= $3)"
+             /*        Overrides off. */
+             // FIX need rounding in sqlite?
+             "         ELSE (SELECT round (max (results.severity)::numeric, 2)"
+             "               FROM results"
+             "               WHERE results.report = (SELECT id FROM reports"
+             "                                       WHERE reports.task = $1"
+             "                                       AND reports.scan_run_status = %u"
+             "                                       ORDER BY reports.date DESC"
+             "                                                LIMIT 1 OFFSET 0)"
+             "                 AND results.qod >= $3)"
+             "         END;"
+             "$$ LANGUAGE SQL;",
+             TASK_STATUS_DONE,
+             TASK_STATUS_DONE,
+             TASK_STATUS_DONE,
+             TASK_STATUS_DONE);
     }
 
   sql ("CREATE OR REPLACE FUNCTION run_status_name (integer)"
@@ -1904,13 +1906,15 @@ manage_create_sql_functions ()
            "$$ LANGUAGE SQL"
            " IMMUTABLE;");
 
-      sql ("CREATE OR REPLACE FUNCTION task_threat_level (integer, integer,"
-           "                                              integer)"
-           " RETURNS text AS $$"
-           /* Calculate the threat level of a task. */
-           "  SELECT severity_to_level (task_severity ($1, $2, $3), 0);"
-           "$$ LANGUAGE SQL"
-           " IMMUTABLE;");
+      /* result_nvt column was added in version 189. */
+      if (current_db_version >= 189)
+        sql ("CREATE OR REPLACE FUNCTION task_threat_level (integer, integer,"
+             "                                              integer)"
+             " RETURNS text AS $$"
+             /* Calculate the threat level of a task. */
+             "  SELECT severity_to_level (task_severity ($1, $2, $3), 0);"
+             "$$ LANGUAGE SQL"
+             " IMMUTABLE;");
     }
 
   if (sql_int ("SELECT (EXISTS (SELECT * FROM information_schema.tables"

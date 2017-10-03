@@ -1,3 +1,8 @@
+2017-10-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_pg.c (manage_create_sql_functions): Add two version checks,
+	to prevent referencing the result_nvt column before it is created.
+
 2017-09-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (tz_revert): Add param old_tz_override and use that
@@ -13,7 +18,7 @@
 	current_credentials and use default of user only as fallback.
 	(create_tables): Drop current_credentials and create table again
 	with tz_override column added.
-	
+
 	* src/manage_sql.c (tz_revert, print_report_xml_start): Update
 	tz_override column in current_credentials.
 
