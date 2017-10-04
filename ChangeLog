@@ -1,3 +1,17 @@
+2017-10-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r29651 with fixes from r29738.
+	Cancel OMP commands if client connection is closed.
+
+	* src/openvasmd.c (connection_watcher_data_t): New typedef.
+	(connection_watcher_data_new, watch_client_connection): New functions.
+	(serve_client): Watch whether the client connection is closed in a
+	new thread.
+	(main): Add option client-watch-interval.
+
+	* src/sql_pg.c (sql_exec_internal): Disable error logging if error was
+	caused by the query being canceled.
+
 2017-09-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r29726.

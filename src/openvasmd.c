@@ -204,6 +204,16 @@
 #define SCHEDULE_PERIOD 10
 
 /**
+ * @brief Default value for client_watch_interval
+ */
+#define DEFAULT_CLIENT_WATCH_INTERVAL 1
+
+/**
+ * @brief Interval in seconds to check whether client connection was closed.
+ */
+int client_watch_interval = DEFAULT_CLIENT_WATCH_INTERVAL;
+
+/**
  * @brief The socket accepting OMP connections from clients.
  */
 int manager_socket = -1;
@@ -325,6 +335,95 @@ set_gnutls_priority (gnutls_session_t *session, const char *priority)
 
 /* Forking, serving the client. */
 
+/*
+ * Connection watcher thread data
+ */
+typedef struct {
+  openvas_connection_t *client_connection;
+  int connection_closed;
+  pthread_mutex_t mutex;
+} connection_watcher_data_t;
+
+
+/**
+ * @brief  Create a new connection watcher thread data structure.
+ *
+ * @param[in]  openvas_connection   OpenVAS connection to client to watch.
+ *
+ * @return  Newly allocated watcher thread data.
+ */
+static connection_watcher_data_t*
+connection_watcher_data_new (openvas_connection_t *client_connection)
+{
+  connection_watcher_data_t *watcher_data;
+  watcher_data = g_malloc (sizeof (connection_watcher_data_t));
+
+  watcher_data->client_connection = client_connection;
+  watcher_data->connection_closed = 0;
+  pthread_mutex_init  (&(watcher_data->mutex), NULL);
+
+  return watcher_data;
+}
+
+/**
+ * @brief   Thread start routine watching the client connection.
+ *
+ * @param[in] data  The connection data watcher struct.
+ *
+ * @return  Always NULL.
+ */
+static void*
+watch_client_connection (void* data)
+{
+  int active;
+  connection_watcher_data_t *watcher_data;
+  openvas_connection_t *client_connection;
+
+  pthread_setcancelstate (PTHREAD_CANCEL_DISABLE, NULL);
+  watcher_data = (connection_watcher_data_t*) data;
+  client_connection = watcher_data->client_connection;
+
+  pthread_mutex_lock (&(watcher_data->mutex));
+  active = 1;
+  pthread_mutex_unlock (&(watcher_data->mutex));
+
+  while (active)
+    {
+      pthread_setcancelstate (PTHREAD_CANCEL_ENABLE, NULL);
+      sleep (client_watch_interval);
+      pthread_setcancelstate (PTHREAD_CANCEL_DISABLE, NULL);
+
+      pthread_mutex_lock (&(watcher_data->mutex));
+
+      if (watcher_data->connection_closed)
+        {
+          active = 0;
+          pthread_mutex_unlock (&(watcher_data->mutex));
+          continue;
+        }
+      int ret;
+      char buf[1];
+      errno = 0;
+
+      ret = recv (client_connection->socket, buf, 1, MSG_PEEK);
+
+      if (ret >= 0)
+        {
+          if (watcher_data->connection_closed == 0)
+            {
+              g_debug ("%s: Client connection closed", __FUNCTION__);
+              sql_cancel ();
+              active = 0;
+              watcher_data->connection_closed = 1;
+            }
+        }
+
+      pthread_mutex_unlock (&(watcher_data->mutex));
+    }
+
+  return NULL;
+}
+
 /**
  * @brief Serve the client.
  *
@@ -340,6 +439,9 @@ set_gnutls_priority (gnutls_session_t *session, const char *priority)
 int
 serve_client (int server_socket, openvas_connection_t *client_connection)
 {
+  pthread_t watch_thread;
+  connection_watcher_data_t *watcher_data;
+
   if (server_socket > 0)
     {
       int optval;
@@ -354,6 +456,17 @@ serve_client (int server_socket, openvas_connection_t *client_connection)
                       strerror (errno));
           exit (EXIT_FAILURE);
         }
+    }
+
+  if (client_watch_interval)
+    {
+      watcher_data = connection_watcher_data_new (client_connection);
+      pthread_create (&watch_thread, NULL, watch_client_connection,
+                      watcher_data);
+    }
+  else
+    {
+      watcher_data = NULL;
     }
 
   if (client_connection->tls
@@ -381,10 +494,37 @@ serve_client (int server_socket, openvas_connection_t *client_connection)
   if (serve_omp (client_connection, database, disabled_commands, NULL))
     goto server_fail;
 
+  if (watcher_data)
+    {
+      pthread_mutex_lock (&(watcher_data->mutex));
+      watcher_data->connection_closed = 1;
+      pthread_mutex_unlock (&(watcher_data->mutex));
+      pthread_cancel (watch_thread);
+      g_free (watcher_data);
+    }
   return EXIT_SUCCESS;
+
  fail:
-  openvas_connection_free (client_connection);
+  if (watcher_data)
+    {
+      pthread_mutex_lock (&(watcher_data->mutex));
+      openvas_connection_free (client_connection);
+      watcher_data->connection_closed = 1;
+      pthread_mutex_unlock (&(watcher_data->mutex));
+    }
+  else
+    {
+      openvas_connection_free (client_connection);
+    }
  server_fail:
+  if (watcher_data)
+    {
+      pthread_mutex_lock (&(watcher_data->mutex));
+      watcher_data->connection_closed = 1;
+      pthread_mutex_unlock (&(watcher_data->mutex));
+      pthread_cancel (watch_thread);
+      g_free (watcher_data);
+    }
   return EXIT_FAILURE;
 }
 
@@ -1612,6 +1752,12 @@ main (int argc, char** argv)
     = {
         { "backup", '\0', 0, G_OPTION_ARG_NONE, &backup_database, "Backup the database.", NULL },
         { "check-alerts", '\0', 0, G_OPTION_ARG_NONE, &check_alerts, "Check SecInfo alerts.", NULL },
+        { "client-watch-interval", '\0', 0, G_OPTION_ARG_INT,
+          &client_watch_interval,
+          "Check if client connection was closed every <number> seconds."
+          " 0 to disable. Defaults to "
+          G_STRINGIFY (DEFAULT_CLIENT_WATCH_INTERVAL) " seconds.",
+          "<number>" },
         { "database", 'd', 0, G_OPTION_ARG_STRING, &database, "Use <file/name> as database for SQLite/Postgres.", "<file/name>" },
         { "disable-cmds", '\0', 0, G_OPTION_ARG_STRING, &disable, "Disable comma-separated <commands>.", "<commands>" },
         { "disable-encrypted-credentials", '\0', 0, G_OPTION_ARG_NONE,
@@ -1720,6 +1866,13 @@ main (int argc, char** argv)
         ("This is free software: you are free to change and redistribute it.\n"
          "There is NO WARRANTY, to the extent permitted by law.\n\n");
       exit (EXIT_SUCCESS);
+    }
+
+  /* Ensure client_watch_interval is not negative */
+
+  if (client_watch_interval < 0)
+    {
+      client_watch_interval = 0;
     }
 
   /* Check which type of socket to use. */
