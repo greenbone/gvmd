@@ -393,9 +393,9 @@ watch_client_connection (void* data)
 
       if (watcher_data->connection_closed)
         {
-          active = 1;
+          active = 0;
           pthread_mutex_unlock (&(watcher_data->mutex));
-          break;
+          continue;
         }
       int ret;
       char buf[1];
@@ -460,6 +460,10 @@ serve_client (int server_socket, gvm_connection_t *client_connection)
       pthread_create (&watch_thread, NULL, watch_client_connection,
                       watcher_data);
     }
+  else
+    {
+      watcher_data = NULL;
+    }
 
   if (client_connection->tls
       && gvm_server_attach (client_connection->socket, &client_session))
@@ -486,7 +490,7 @@ serve_client (int server_socket, gvm_connection_t *client_connection)
   if (serve_gmp (client_connection, database, disabled_commands))
     goto server_fail;
 
-  if (client_watch_interval)
+  if (watcher_data)
     {
       pthread_mutex_lock (&(watcher_data->mutex));
       watcher_data->connection_closed = 1;
@@ -497,7 +501,7 @@ serve_client (int server_socket, gvm_connection_t *client_connection)
   return EXIT_SUCCESS;
 
  fail:
-  if (client_watch_interval)
+  if (watcher_data)
     {
       pthread_mutex_lock (&(watcher_data->mutex));
       gvm_connection_free (client_connection);
@@ -509,7 +513,7 @@ serve_client (int server_socket, gvm_connection_t *client_connection)
       gvm_connection_free (client_connection);
     }
  server_fail:
-  if (client_watch_interval)
+  if (watcher_data)
     {
       pthread_mutex_lock (&(watcher_data->mutex));
       watcher_data->connection_closed = 1;
@@ -1800,6 +1804,13 @@ main (int argc, char** argv)
         ("This is free software: you are free to change and redistribute it.\n"
          "There is NO WARRANTY, to the extent permitted by law.\n\n");
       exit (EXIT_SUCCESS);
+    }
+
+  /* Ensure client_watch_interval is not negative */
+
+  if (client_watch_interval < 0)
+    {
+      client_watch_interval = 0;
     }
 
   /* Check which type of socket to use. */

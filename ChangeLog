@@ -1,3 +1,11 @@
+2017-10-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/gvmd.c (watch_client_connection): Fix use of "active" variable
+	in connection_closed case.
+	(serve_client): Init watcher_data as NULL if it's not used and check
+	if watcher_data is NULL instead of client_watch_interval.
+	(main): Ensure client_watch_interval is not negative.
+
 2017-10-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (manage_create_sql_functions): Add two version checks,
