@@ -1,5 +1,12 @@
 2017-10-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r29781.
+
+	* src/sql_pg.c (sql_exec_internal): NULL check sqlstate before doing a
+	strcmp on it.
+
+2017-10-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r29780.
 
 	* src/manage.c (manage_schedule): Just return successfully when an error
