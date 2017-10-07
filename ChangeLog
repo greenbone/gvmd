@@ -1,3 +1,12 @@
+2017-10-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r29780.
+
+	* src/manage.c (manage_schedule): Just return successfully when an error
+	occurs in manage_update_nvti_cache or init_task_schedule_iterator.  This
+	prevents Manager from exiting when these functions fail because the db is
+	down.
+
 2017-10-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r29651 with fixes from r29738.
@@ -31,7 +40,7 @@
 	current_credentials and use default of user only as fallback.
 	(create_tables): Drop current_credentials and create table again
 	with tz_override column added.
-	
+
 	* src/manage_sql.c (tz_revert, print_report_xml_start): Update
 	tz_override column in current_credentials.
 

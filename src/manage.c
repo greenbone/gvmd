@@ -6436,7 +6436,14 @@ manage_schedule (int (*fork_connection) (openvas_connection_t *, gchar *),
   if (ret)
     {
       if (ret == -1)
-        g_warning ("%s: manage_update_nvti_cache error\n", __FUNCTION__);
+        {
+          g_warning ("%s: manage_update_nvti_cache error"
+                     " (Perhaps the db went down?)",
+                     __FUNCTION__);
+          /* Just ignore, in case the db went down temporarily. */
+          return 0;
+        }
+
       return ret;
     }
 
@@ -6450,7 +6457,14 @@ manage_schedule (int (*fork_connection) (openvas_connection_t *, gchar *),
   if (ret)
     {
       if (ret == -1)
-        g_warning ("%s: iterator init error\n", __FUNCTION__);
+        {
+          g_warning ("%s: iterator init error"
+                     " (Perhaps the db went down?)",
+                     __FUNCTION__);
+          /* Just ignore, in case the db went down temporarily. */
+          return 0;
+        }
+
       return ret;
     }
   /* This iterator runs in an exclusive transaction, so this loop is atomic. */
