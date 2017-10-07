@@ -1,5 +1,10 @@
 2017-10-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/sql_pg.c (sql_exec_internal): NULL check sqlstate before doing a
+	strcmp on it.
+
+2017-10-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (manage_schedule): Just return successfully when an error
 	occurs in manage_update_nvti_cache or init_task_schedule_iterator.  This
 	prevents Manager from exiting when these functions fail because the db is
