@@ -20464,7 +20464,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
       result_nvt_notice (quoted_nvt_oid);
       sql ("INSERT INTO results"
            " (uuid, owner, date, task, host, port, nvt, type, description,"
-           "  nvt_version, severity, qod, qod_type)"
+           "  nvt_version, severity, qod, qod_type, result_nvt)"
            " VALUES"
            " (make_uuid (), %llu, m_now (), %llu, '%s', '%s', '%s', '%s', '%s',"
            "  '%s', '%s', '%s', '%s',"
