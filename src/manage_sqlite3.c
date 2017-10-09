@@ -2168,9 +2168,7 @@ sql_severity_matches_ov (sqlite3_context *context, int argc,
 
   if (sqlite3_value_type (argv[0]) == SQLITE_NULL)
     {
-      sqlite3_result_error (context,
-                            "First parameter of severity_matches_ov is NULL",
-                            -1);
+      sqlite3_result_int (context, 0);
       return;
     }
 
