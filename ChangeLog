@@ -1,5 +1,16 @@
 2017-10-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r29806.
+
+	* src/manage_pg_server.c (sql_severity_matches): Just return 0 if the
+	first argument is NULL, because it is legitimate for the first arg to be
+	NULL, for example for old reports that have Open Port results, which have
+	no associated NVTs.
+
+	* src/manage_sqlite3.c (sql_severity_matches_ov): As above.
+
+2017-10-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r29781.
 
 	* src/sql_pg.c (sql_exec_internal): NULL check sqlstate before doing a

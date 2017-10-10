@@ -215,9 +215,7 @@ Datum
 sql_severity_matches_ov (PG_FUNCTION_ARGS)
 {
   if (PG_ARGISNULL (0))
-    ereport (ERROR,
-             (errmsg_internal
-               ("First parameter of severity_matches_ov is NULL")));
+    PG_RETURN_BOOL (0);
   else if (PG_ARGISNULL (1))
     PG_RETURN_BOOL (1);
   else
