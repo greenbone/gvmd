@@ -1,3 +1,9 @@
+2017-10-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/gmp.c (client_state_t, gmp_xml_handle_start_element)
+	(gmp_xml_handle_end_element, gmp_xml_handle_text): Handle error
+	message elements in CREATE_REPORT command.
+
 2017-10-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg_server.c (sql_severity_matches): Just return 0 if the

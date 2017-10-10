@@ -5237,6 +5237,17 @@ typedef enum
   CLIENT_CREATE_REPORT_REPORT,
   CLIENT_CREATE_REPORT_RR,
   CLIENT_CREATE_REPORT_RR_FILTERS,
+  CLIENT_CREATE_REPORT_RR_ERRORS,
+  CLIENT_CREATE_REPORT_RR_ERRORS_COUNT,
+  CLIENT_CREATE_REPORT_RR_ERRORS_ERROR,
+  CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_DESCRIPTION,
+  CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_HOST,
+  CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_NVT,
+  CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_NVT_CVSS_BASE,
+  CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_NVT_NAME,
+  CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_PORT,
+  CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_SCAN_NVT_VERSION,
+  CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_SEVERITY,
   /* RR_H is for RR_HOST because it clashes with entities like HOST_START. */
   CLIENT_CREATE_REPORT_RR_H,
   CLIENT_CREATE_REPORT_RR_HOSTS,
@@ -9483,7 +9494,11 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         ELSE_ERROR ("create_report");
 
       case CLIENT_CREATE_REPORT_RR:
-        if (strcasecmp ("FILTERS", element_name) == 0)
+        if (strcasecmp ("ERRORS", element_name) == 0)
+          {
+            set_client_state (CLIENT_CREATE_REPORT_RR_ERRORS);
+          }
+        else if (strcasecmp ("FILTERS", element_name) == 0)
           {
             gmp_parser->read_over = 1;
             set_client_state (CLIENT_CREATE_REPORT_RR_FILTERS);
@@ -9547,6 +9562,50 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gmp_parser->read_over = 1;
             set_client_state (CLIENT_CREATE_REPORT_RR_TASK);
           }
+        ELSE_ERROR ("create_report");
+
+      case CLIENT_CREATE_REPORT_RR_ERRORS:
+        if (strcasecmp ("COUNT", element_name) == 0)
+          {
+            gmp_parser->read_over = 1;
+            set_client_state (CLIENT_CREATE_REPORT_RR_ERRORS_COUNT);
+          }
+        else if (strcasecmp ("ERROR", element_name) == 0)
+          {
+            set_client_state (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR);
+          }
+        ELSE_ERROR ("create_report");
+
+      case CLIENT_CREATE_REPORT_RR_ERRORS_ERROR:
+        if (strcasecmp ("DESCRIPTION", element_name) == 0)
+          set_client_state
+           (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_DESCRIPTION);
+        else if (strcasecmp ("HOST", element_name) == 0)
+          {
+            gmp_parser->read_over = 1;
+            set_client_state (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_HOST);
+          }
+        else if (strcasecmp ("NVT", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "oid",
+                              &create_report_data->result_nvt_oid);
+            set_client_state (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_NVT);
+          }
+        else if (strcasecmp ("PORT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_PORT);
+        else if (strcasecmp ("SCAN_NVT_VERSION", element_name) == 0)
+          set_client_state
+           (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_SCAN_NVT_VERSION);
+        else if (strcasecmp ("SEVERITY", element_name) == 0)
+          set_client_state (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_SEVERITY);
+        ELSE_ERROR ("create_report");
+
+      case CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_NVT:
+        if (strcasecmp ("CVSS_BASE", element_name) == 0)
+          set_client_state
+           (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_NVT_CVSS_BASE);
+        else if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_NVT_NAME);
         ELSE_ERROR ("create_report");
 
       case CLIENT_CREATE_REPORT_RR_HOST_END:
@@ -23865,6 +23924,66 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         else
           set_client_state (CLIENT_CREATE_REPORT);
         break;
+
+      CLOSE (CLIENT_CREATE_REPORT_RR, ERRORS);
+      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_ERRORS, COUNT);
+      case CLIENT_CREATE_REPORT_RR_ERRORS_ERROR:
+        {
+          create_report_result_t *result;
+
+          assert (strcasecmp ("ERROR", element_name) == 0);
+          assert (create_report_data->results);
+
+          if (create_report_data->result_scan_nvt_version == NULL)
+            create_report_data->result_scan_nvt_version = strdup ("");
+
+          if (create_report_data->result_severity == NULL)
+            {
+              create_report_data->result_severity = strdup ("-3.0");
+            }
+
+          if (create_report_data->result_threat == NULL)
+            {
+              create_report_data->result_threat = strdup ("Error");
+            }
+
+          result = g_malloc (sizeof (create_report_result_t));
+          result->description = create_report_data->result_description;
+          result->host = create_report_data->result_host;
+          result->nvt_oid = create_report_data->result_nvt_oid;
+          result->scan_nvt_version
+            = create_report_data->result_scan_nvt_version;
+          result->port = create_report_data->result_port;
+          result->qod = NULL;
+          result->qod_type = NULL;
+          result->severity = create_report_data->result_severity;
+          result->threat = create_report_data->result_threat;
+
+          array_add (create_report_data->results, result);
+
+          create_report_data->result_description = NULL;
+          create_report_data->result_host = NULL;
+          create_report_data->result_nvt_oid = NULL;
+          create_report_data->result_port = NULL;
+          create_report_data->result_qod = NULL;
+          create_report_data->result_qod_type = NULL;
+          create_report_data->result_scan_nvt_version = NULL;
+          create_report_data->result_severity = NULL;
+          create_report_data->result_threat = NULL;
+
+          set_client_state (CLIENT_CREATE_REPORT_RR_ERRORS);
+          break;
+        }
+      CLOSE (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR, DESCRIPTION);
+      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR, HOST);
+      CLOSE (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR, NVT);
+      CLOSE (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR, PORT);
+      CLOSE (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR, SCAN_NVT_VERSION);
+      CLOSE (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR, SEVERITY);
+
+      CLOSE (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_NVT, CVSS_BASE);
+      CLOSE (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_NVT, NAME);
+
       CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR, FILTERS);
       CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR, HOST_COUNT);
       case CLIENT_CREATE_REPORT_RR_HOST_END:
@@ -29921,6 +30040,18 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_REPORT_IN_ASSETS,
               &create_report_data->in_assets);
+
+      APPEND (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_DESCRIPTION,
+              &create_report_data->result_description);
+
+      APPEND (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_HOST,
+              &create_report_data->result_host);
+
+      APPEND (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_SCAN_NVT_VERSION,
+              &create_report_data->result_scan_nvt_version);
+
+      APPEND (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_PORT,
+              &create_report_data->result_port);
 
       APPEND (CLIENT_CREATE_REPORT_RR_HOST_END,
               &create_report_data->host_end);
