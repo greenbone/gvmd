@@ -1,3 +1,8 @@
+2017-10-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_resource_tag_iterator): Use full permission
+	check, instead of only selecting tags owned by the user.
+
 2017-10-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/gmp.c (client_state_t, gmp_xml_handle_start_element)
