@@ -66659,9 +66659,15 @@ init_resource_tag_iterator (iterator_t* iterator, const char* type,
                             resource_t resource, int active_only,
                             const char* sort_field, int ascending)
 {
+  get_data_t get;
+  gchar *owned_clause;
+
   assert (type);
   assert (resource);
   assert (current_credentials.uuid);
+
+  get.trash = 0;
+  owned_clause = acl_where_owned ("tag", &get, 1, "any", 0, NULL);
 
   init_iterator (iterator,
                  "SELECT id, uuid, name, value, comment"
@@ -66669,15 +66675,16 @@ init_resource_tag_iterator (iterator_t* iterator, const char* type,
                  " WHERE resource_type = '%s'"
                  " AND resource = %llu"
                  "%s"
-                 " AND " ACL_USER_OWNS ()
+                 " AND %s"
                  " ORDER BY %s %s;",
                  type,
                  resource,
                  active_only ? " AND active=1" : "",
-                 current_credentials.uuid,
+                 owned_clause,
                  sort_field ? sort_field : "active DESC, name",
                  ascending ? "ASC" : "DESC");
 
+  g_free (owned_clause);
   return 0;
 }
 

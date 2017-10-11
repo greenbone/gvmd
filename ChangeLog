@@ -1,3 +1,10 @@
+2017-10-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r29829.
+
+	* src/manage_sql.c (init_resource_tag_iterator): Use full permission
+	check, instead of only selecting tags owned by the user.
+
 2017-10-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r29806.
