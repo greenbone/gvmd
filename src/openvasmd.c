@@ -500,6 +500,7 @@ serve_client (int server_socket, openvas_connection_t *client_connection)
       watcher_data->connection_closed = 1;
       pthread_mutex_unlock (&(watcher_data->mutex));
       pthread_cancel (watch_thread);
+      pthread_join (watch_thread, NULL);
       g_free (watcher_data);
     }
   return EXIT_SUCCESS;
@@ -523,6 +524,7 @@ serve_client (int server_socket, openvas_connection_t *client_connection)
       watcher_data->connection_closed = 1;
       pthread_mutex_unlock (&(watcher_data->mutex));
       pthread_cancel (watch_thread);
+      pthread_join (watch_thread, NULL);
       g_free (watcher_data);
     }
   return EXIT_FAILURE;

@@ -1,3 +1,9 @@
+2017-10-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r29866.
+
+	* src/openvasmd.c (serve_client): Join the watcher thread after cancel.
+
 2017-10-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r29829.
