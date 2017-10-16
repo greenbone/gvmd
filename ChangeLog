@@ -1,3 +1,7 @@
+2017-10-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/gvmd.c (serve_client): Join the watcher thread after cancel.
+
 2017-10-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_resource_tag_iterator): Use full permission
