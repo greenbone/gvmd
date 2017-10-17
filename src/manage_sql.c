@@ -30210,6 +30210,14 @@ apply_report_format (gchar *report_format_id,
       return NULL;
     }
 
+  /* Check if report format is active */
+  if (report_format_active (report_format) == 0)
+    {
+      g_message ("%s: Report format '%s' is not active",
+                 __FUNCTION__, report_format_id);
+      return NULL;
+    }
+
   /* Get subreports. */
   temp_dirs = NULL;
   temp_files = NULL;

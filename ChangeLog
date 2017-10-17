@@ -1,3 +1,8 @@
+2017-10-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (apply_report_format): Return NULL if report format
+	is not active.
+
 2017-10-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/gvmd.c (serve_client): Join the watcher thread after cancel.
