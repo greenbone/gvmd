@@ -134,21 +134,6 @@ In order to use PostgreSQL as database backend, follow the
 instructions given in file doc/postgres-HOWTO.
 
 
-Initializing the Database
--------------------------
-
-Now you can initialize the Greenbone Vulnerability Manager database.
-You need a running OpenVAS Scanner (openvassd) for this
-as the Manager will retrieve all NVT details from the Scanner.
-Run this command if you are using the default ports:
-
-    $ gvmd --rebuild
-
-This command can be repeated anytime to update the database
-with updated NVT data, regardless of whether gvmd already
-runs as a service in the background or not.
-
-
 Migrating to Version 8.0
 ------------------------
 
@@ -275,8 +260,9 @@ analyze
 
 cleanup-config-prefs
   This option removes duplicate preferences from Scan Configs and corrects
-  some broken preference values.  For the latter, make sure the NVT preferences
-  in the database are up to date, e.g. by running gvmd --rebuild.
+  some broken preference values.  For the latter, the NVT preferences in the
+  database must be up to date (if Manager and Scanner are both running, then
+  this should happen automatically).
 
 remove-open-port-results
   This option removes results which were used in older versions of GVM to

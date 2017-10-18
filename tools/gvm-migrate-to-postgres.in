@@ -1159,7 +1159,7 @@ copy_data () {
     test_sql_exit "Could not generate CSV for $TABLE"
   done
 
-  # Force a --rebuild.
+  # Force a rebuild of Manager's NVT data.
   pg "DELETE FROM meta WHERE name = 'nvts_feed_version';"
   pg "UPDATE configs SET family_count = 0, nvt_count = 0, families_growing = 0, nvts_growing = 0;"
 

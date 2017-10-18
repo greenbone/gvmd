@@ -14589,7 +14589,7 @@ manage_migrate (GSList *log_config, const gchar *database)
 
   if (old_version == -2)
     {
-      g_warning ("%s: no task tables yet, run a --rebuild to create them.\n",
+      g_warning ("%s: no task tables yet, so no need to migrate them\n",
                  __FUNCTION__);
       version_current = 1;
     }

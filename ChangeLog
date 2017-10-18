@@ -1,3 +1,17 @@
+2017-10-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Remove stray mentions of --rebuild and --update.
+
+	* INSTALL, doc/postgres-HOWTO: Remove --rebuild steps.
+
+	* src/manage_migrators.c (manage_migrate): Remove --rebuild.
+
+	* src/manage_sql.c (manage_option_setup): Remove --rebuild/--update.
+
+	* src/manage_sql_nvts.c: Remove --update from docs.
+
+	* tools/gvm-migrate-to-postgres.in: Adjust --rebuild comment.
+
 2017-10-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (apply_report_format): Return NULL if report format

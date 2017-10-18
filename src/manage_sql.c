@@ -1113,9 +1113,7 @@ manage_option_setup (GSList *log_config, const gchar *database)
         fprintf (stderr, "Database is wrong version.\n");
         return ret;
       case -3:
-        fprintf (stderr,
-                 "Database must be initialised"
-                 " (with --update or --rebuild).\n");
+        fprintf (stderr, "Database must be initialised.\n");
         return ret;
       default:
         fprintf (stderr, "Internal error.\n");
@@ -10491,7 +10489,7 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
       alert_filter_get = g_malloc0 (sizeof (get_data_t));
       alert_filter_get->details = get->details;
       alert_filter_get->ignore_pagination = get->ignore_pagination;
-      alert_filter_get->ignore_max_rows_per_page 
+      alert_filter_get->ignore_max_rows_per_page
         = get->ignore_max_rows_per_page;
       alert_filter_get->filt_id = g_strdup (filt_id);
       alert_filter_get->filter = filter_term (filt_id);
@@ -14723,13 +14721,11 @@ check_db_versions (int nvt_cache_mode)
                          " OR name = 'nvt_preferences_enabled';",
                          sql_schema ())
               || count < 2)
-            g_warning ("database must be initialised from scanner"
-                       " (with --update or --rebuild)");
+            g_warning ("database must be initialised from scanner");
         }
       else
         /* Assume database is missing. */
-        g_warning ("database must be initialised from scanner"
-                   " (with --update or --rebuild)");
+        g_warning ("database must be initialised from scanner");
     }
 
   /* Check SCAP database version. */
@@ -16058,13 +16054,6 @@ init_manage_internal (GSList *log_config,
    *                         serve_client
    *                     fork two
    *                         gmp_auth, gmp_start_task_report, gmp_resume_task_report.
-   *     --rebuild --update
-   *         rebuild_nvt_cache_retry
-   *             forks update_or_rebuild_nvt_cache
-   *                 init_gmpd  cache -1 or -2
-   *                     init_manage
-   *                 serve_gmp
-   *                     init_gmpd_process
    *     --create-user --delete-user --get-users
    *         manage_create, ...
    *             init_manage_helper
@@ -16187,7 +16176,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
  *
  * This should be called at the beginning of any program that accesses the
  * database.  Forked processes should call init_manage_process.  The daemon
- * itself calls init_manage, including in NVT cache mode (--rebuild/update).
+ * itself calls init_manage, including in NVT cache mode.
  *
  * @param[in]  log_config      Log configuration.
  * @param[in]  database        Location of database.
@@ -16482,8 +16471,8 @@ manage_scanner_set (const char *uuid)
   if (!current_credentials.uuid)
     current_credentials.uuid = "";
   /* This is only ever used to find the default scanner.  If the credentials
-   * are empty, for example during --rebuild, this will find the scanner
-   * regardless of permissions and ownership. */
+   * are empty this will find the scanner regardless of permissions and
+   * ownership. */
   if (find_scanner_with_permission (uuid, &scanner, "get_scanners")
       || scanner == 0)
     {

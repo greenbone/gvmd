@@ -44,19 +44,17 @@ Migrating from SQLite to PostgreSQL
 -----------------------------------
 
 1 Run "gvm-migrate-to-postgres" into a clean newly created
-  PostgreSQL database like described above. It is essentially important
-  that you do not run "--rebuild" before the migration as it would
-  create a fresh one and therefore prevent migration.
+  PostgreSQL database like described above.
 
-  If you accidentally already rebuild the database or for other reasons
+  If you accidentally already rebuilt the database or for other reasons
   want to start from scratch, apply the dropping of all data as
-  described below.
+  described below.  It is essentially important that you do not start
+  Manager before the migration as it would create a fresh one and therefore
+  prevent migration.
 
-2 Run "gvmd --rebuild".
+2 Run "greenbone-scapdata-sync".
 
-3 Run "greenbone-scapdata-sync".
-
-4 Run "greenbone-certdata-sync".
+3 Run "greenbone-certdata-sync".
 
 
 Handy script to drop all data
