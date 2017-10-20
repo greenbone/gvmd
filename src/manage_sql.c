@@ -39,6 +39,7 @@
 #include "lsc_user.h"
 #include "sql.h"
 #include "scanner.h"
+#include "utils.h"
 
 #include <arpa/inet.h>
 #include <assert.h>
@@ -20482,6 +20483,16 @@ insert_report_host_detail (report_t report, const char *host,
 }
 
 /**
+ * @brief Number of results per transaction, when uploading report.
+ */
+#define CREATE_REPORT_CHUNK_SIZE 10
+
+/**
+ * @brief Number of microseconds to sleep between insert chunks.
+ */
+#define CREATE_REPORT_CHUNK_SLEEP 1000
+
+/**
  * @brief Create a report from an array of results.
  *
  * @param[in]   results       Array of create_report_result_t pointers.
@@ -20509,7 +20520,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
                array_t *host_starts, array_t *host_ends, array_t *details,
                char **report_id)
 {
-  int index, in_assets_int;
+  int index, in_assets_int, count;
   create_report_result_t *result, *end, *start;
   report_t report;
   user_t owner;
@@ -20624,6 +20635,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
   sql_begin_immediate ();
   g_debug ("%s: add hosts", __FUNCTION__);
   index = 0;
+  count = 0;
   while ((start = (create_report_result_t*) g_ptr_array_index (host_starts,
                                                                index++)))
     if (start->host && start->description)
@@ -20687,10 +20699,20 @@ create_report (array_t *results, const char *task_id, const char *task_name,
       g_free (quoted_qod_type);
 
       report_add_result (report, sql_last_insert_id ());
+
+      count++;
+      if (count == CREATE_REPORT_CHUNK_SIZE)
+        {
+          sql_commit ();
+          openvas_usleep (CREATE_REPORT_CHUNK_SLEEP);
+          sql_begin_immediate ();
+          count = 0;
+        }
     }
 
   g_debug ("%s: add host ends", __FUNCTION__);
   index = 0;
+  count = 0;
   while ((end = (create_report_result_t*) g_ptr_array_index (host_ends,
                                                              index++)))
     if (end->host)
@@ -20712,6 +20734,15 @@ create_report (array_t *results, const char *task_id, const char *task_name,
                quoted_host);
 
         g_free (quoted_host);
+
+        count++;
+        if (count == CREATE_REPORT_CHUNK_SIZE)
+          {
+            sql_commit ();
+            openvas_usleep (CREATE_REPORT_CHUNK_SLEEP);
+            sql_begin_immediate ();
+            count = 0;
+          }
       }
 
   g_debug ("%s: add host details", __FUNCTION__);

@@ -1,3 +1,13 @@
+2017-10-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r29880.
+
+	* src/manage_sql.c (CREATE_REPORT_CHUNK_SIZE)
+	(CREATE_REPORT_CHUNK_SLEEP): New defines.
+	(create_report): Insert results and host details in chunks, instead
+	of using a single transaction that could block Manager for large
+	reports.
+
 2017-10-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r29872.
