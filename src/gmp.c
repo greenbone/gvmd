@@ -18544,6 +18544,21 @@ handle_get_system_reports (gmp_parser_t *gmp_parser, GError **error)
             return;
           }
         break;
+      case 4:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_UNAVAILABLE ("get_system_reports",
+                                  "Could not connect to slave"));
+        break;
+      case 5:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_UNAVAILABLE ("get_system_reports",
+                                  "Authentication to slave failed"));
+        break;
+      case 6:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_UNAVAILABLE ("get_system_reports",
+                                  "Failed to get system report from slave"));
+        break;
       case 99:
         SEND_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("get_system_reports",
