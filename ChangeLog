@@ -1,3 +1,15 @@
+2017-10-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r29906.
+
+	* src/omp.c (get_slave_system_report_types, get_system_report_types)
+	(init_system_report_type_iterator, slave_system_report)
+	(manage_system_report): Return different values when slave connection,
+	authentication or get_system_reports fails.
+
+	* src/manage.c (handle_get_system_reports): Add new response messages
+	for new return values of init_system_report_type_iterator.
+
 2017-10-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r29880.

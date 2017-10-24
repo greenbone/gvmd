@@ -5789,7 +5789,9 @@ credential_full_type (const char* abbreviation)
  * @param[out]  start          Actual start of types, which caller must free.
  * @param[out]  slave_id       ID of OMP slave.
  *
- * @return 0 if successful, 2 failed to find slave, -1 otherwise.
+ * @return 0 if successful, 2 failed to find slave, 3 unused, 4 could not
+ * connect to slave, 5 authentication failed, 6 failed to get system report,
+ * -1 otherwise.
  */
 static int
 get_slave_system_report_types (const char *required_type, gchar ***start,
@@ -5801,6 +5803,7 @@ get_slave_system_report_types (const char *required_type, gchar ***start,
   gnutls_session_t session;
   entity_t get, report;
   entities_t reports;
+  int ret = -1;
 
   if (find_scanner (slave_id, &slave))
     return -1;
@@ -5821,19 +5824,25 @@ get_slave_system_report_types (const char *required_type, gchar ***start,
 
   socket = openvas_server_open (&session, host, port);
   free (host);
-  if (socket == -1) return -1;
+  if (socket == -1) return 4;
 
   g_debug ("   %s: connected\n", __FUNCTION__);
 
   /* Authenticate using the slave login. */
 
   if (slave_authenticate (&session, slave))
-    goto fail;
+    {
+      ret = 5;
+      goto fail;
+    }
 
   g_debug ("   %s: authenticated\n", __FUNCTION__);
 
   if (omp_get_system_reports (&session, required_type, 1, &get))
-    goto fail;
+    {
+      ret = 6;
+      goto fail;
+    }
 
   openvas_server_close (socket, session);
 
@@ -5874,7 +5883,7 @@ get_slave_system_report_types (const char *required_type, gchar ***start,
 
  fail:
   openvas_server_close (socket, session);
-  return -1;
+  return ret;
 }
 
 /**
@@ -5891,7 +5900,9 @@ get_slave_system_report_types (const char *required_type, gchar ***start,
  * @param[out]  slave_id       ID of slave.
  *
  * @return 0 if successful, 1 failed to find report type, 2 failed to find
- *         slave, 3 serving the fallback, -1 otherwise.
+ *         slave, 3 serving the fallback, 4 could not connect to slave,
+ *         5 authentication failed, 6 failed to get system report,
+ *         -1 otherwise.
  */
 static int
 get_system_report_types (const char *required_type, gchar ***start,
@@ -5990,7 +6001,9 @@ get_system_report_types (const char *required_type, gchar ***start,
  * @param[in]  slave_id    ID of slave to get reports from.  0 for local.
  *
  * @return 0 on success, 1 failed to find report type, 2 failed to find slave,
- *         3 used the fallback report, 99 permission denied, -1 on error.
+ *         3 used the fallback report,  4 could not connect to slave,
+ *         5 authentication failed, 6 failed to get system report,
+ *         99 permission denied, -1 on error.
  */
 int
 init_system_report_type_iterator (report_type_iterator_t* iterator,
@@ -6079,7 +6092,9 @@ report_type_iterator_title (report_type_iterator_t* iterator)
  * @param[out] report     On success, report in base64 if such a report exists
  *                        else NULL.  Arbitrary on error.
  *
- * @return 0 if successful, 2 failed to find slave, -1 otherwise.
+ * @return 0 if successful, 2 failed to find slave, 3 unused, 4 could not
+ * connect to slave, 5 authentication failed, 6 failed to get system report,
+ * -1 otherwise.
  */
 static int
 slave_system_report (const char *name, const char *duration,
@@ -6093,6 +6108,7 @@ slave_system_report (const char *name, const char *duration,
   entity_t get, entity;
   entities_t reports;
   omp_get_system_reports_opts_t opts;
+  int ret = -1;
 
   if (find_scanner (slave_id, &slave))
     return -1;
@@ -6113,14 +6129,17 @@ slave_system_report (const char *name, const char *duration,
 
   socket = openvas_server_open (&session, host, port);
   free (host);
-  if (socket == -1) return -1;
+  if (socket == -1) return 4;
 
   g_debug ("   %s: connected\n", __FUNCTION__);
 
   /* Authenticate using the slave login. */
 
   if (slave_authenticate (&session, slave))
-    goto fail;
+    {
+      ret = 5;
+      goto fail;
+    }
 
   g_debug ("   %s: authenticated\n", __FUNCTION__);
 
@@ -6132,7 +6151,10 @@ slave_system_report (const char *name, const char *duration,
   opts.brief = 0;
 
   if (omp_get_system_reports_ext (&session, opts, &get))
-    goto fail;
+    {
+      ret = 6;
+      goto fail;
+    }
 
   openvas_server_close (socket, session);
 
@@ -6149,11 +6171,12 @@ slave_system_report (const char *name, const char *duration,
     }
 
   free_entity (get);
-  return -1;
+  g_warning ("   %s: error getting entity\n", __FUNCTION__);
+  return 6;
 
  fail:
   openvas_server_close (socket, session);
-  return -1;
+  return ret;
 }
 
 /**
@@ -6178,7 +6201,8 @@ slave_system_report (const char *name, const char *duration,
  *                        else NULL.  Arbitrary on error.
  *
  * @return 0 if successful (including failure to find report), -1 on error,
- *         3 if used the fallback report.
+ *         3 if used the fallback report,  4 could not connect to slave,
+ *         5 authentication failed, 6 failed to get system report.
  */
 int
 manage_system_report (const char *name, const char *duration,
