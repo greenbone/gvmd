@@ -1,5 +1,10 @@
 2017-10-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (SCANNER_ITERATOR_COLUMNS): Rename the column
+	containing the type of the credential to credential_type.
+
+2017-10-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/gmp.c (get_slave_system_report_types, get_system_report_types)
 	(init_system_report_type_iterator, slave_system_report)
 	(manage_system_report): Return different values when slave connection,

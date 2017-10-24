@@ -46090,7 +46090,7 @@ delete_scanner (const char *scanner_id, int ultimate)
      KEYWORD_TYPE_STRING },                                            \
    {                                                                   \
      "(SELECT type FROM credentials WHERE id = credential)",           \
-     "type",                                                           \
+     "credential_type",                                                \
      KEYWORD_TYPE_STRING                                               \
    },                                                                  \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                \
