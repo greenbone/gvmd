@@ -2790,7 +2790,7 @@ verify_scanner (const char *, char **);
 #define SCHEDULE_TIMEOUT_MIN_SECS 20
 
 /**
- * @brief Default for schedule_timeout in seconds.
+ * @brief Default for schedule_timeout in minutes.
  */
 #define SCHEDULE_TIMEOUT_DEFAULT 60
 
