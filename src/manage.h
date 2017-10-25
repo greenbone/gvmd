@@ -2810,6 +2810,22 @@ verify_scanner (const char *, char **);
 
 /* Scheduling. */
 
+/**
+ * @brief Seconds between calls to manage_schedule.
+ */
+#define SCHEDULE_PERIOD 10
+
+/**
+ * @brief Minimum schedule timeout seconds.
+ * This value must be greater than SCHEDULE_PERIOD.
+ */
+#define SCHEDULE_TIMEOUT_MIN_SECS 20
+
+/**
+ * @brief Default for schedule_timeout in seconds.
+ */
+#define SCHEDULE_TIMEOUT_DEFAULT 60
+
 gboolean
 find_schedule_with_permission (const char*, schedule_t*, const char*);
 
@@ -2921,6 +2937,12 @@ task_schedule_iterator_byday (iterator_t *);
 int
 modify_schedule (const char *, const char*, const char *, time_t, time_t, time_t,
                  const char *, time_t, const char *);
+
+int
+get_schedule_timeout ();
+
+void
+set_schedule_timeout (int);
 
 
 /* Report Formats. */

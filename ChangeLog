@@ -1,3 +1,23 @@
+2017-10-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Have task schedules time out if they do start not within a certain
+	time after the scheduled time.
+
+	* src/gvmd.c (SCHEDULE_PERIOD): Remove. Moved to src/manage.h.
+	(main): Add schedule-timeout option.
+
+	* src/manage.c (manage_schedule): Add check if task schedule timed out.
+	(get_schedule_timeout, set_schedule_timeout): New functions.
+
+	* src/manage.h (SCHEDULE_PERIOD): Moved here from gvmd.c.
+	(SCHEDULE_TIMEOUT_MIN_SECS, SCHEDULE_TIMEOUT_DEFAULT): New #defines.
+	(get_schedule_timeout, set_schedule_timeout): New prototypes.
+
+	* src/manage_sql.c (task_schedule_iterator_schedule)
+	(task_schedule_iterator_timed_out): New functions.
+
+	* src/manage_sql.h (task_schedule_iterator_timed_out): New prototype.
+
 2017-10-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (SCANNER_ITERATOR_COLUMNS): Rename the column

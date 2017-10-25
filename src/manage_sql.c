@@ -47914,6 +47914,20 @@ task_schedule_iterator_task (iterator_t* iterator)
 DEF_ACCESS (task_schedule_iterator_task_uuid, 1);
 
 /**
+ * @brief Get the schedule from a task schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The schedule.
+ */
+schedule_t
+task_schedule_iterator_schedule (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (schedule_t) iterator_int64 (iterator, 2);
+}
+
+/**
  * @brief Get the next time from a task schedule iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -48119,6 +48133,53 @@ task_schedule_iterator_stop_due (iterator_t* iterator)
             return TRUE;
         }
     }
+
+  return FALSE;
+}
+
+/**
+ * @brief Get if schedule of task in iterator is timed out.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Whether task schedule is timed out.
+ */
+gboolean
+task_schedule_iterator_timed_out (iterator_t* iterator)
+{
+  time_t schedule_timeout_secs;
+  int duration;
+  task_status_t run_status;
+  time_t start_time, timeout_time;
+
+  if (get_schedule_timeout () < 0)
+    return FALSE;
+
+  if (iterator->done) return FALSE;
+
+  start_time = task_schedule_iterator_next_time (iterator);
+
+  if (start_time == 0)
+    return FALSE;
+
+  schedule_timeout_secs = get_schedule_timeout () * 60;
+  if (schedule_timeout_secs < SCHEDULE_TIMEOUT_MIN_SECS)
+    schedule_timeout_secs = SCHEDULE_TIMEOUT_MIN_SECS;
+
+  run_status = task_run_status (task_schedule_iterator_task (iterator));
+  duration = task_schedule_iterator_duration (iterator);
+
+  if (duration < schedule_timeout_secs)
+    timeout_time = start_time + duration;
+  else
+    timeout_time = start_time + schedule_timeout_secs;
+
+  if ((run_status == TASK_STATUS_DONE
+       || run_status == TASK_STATUS_INTERNAL_ERROR
+       || run_status == TASK_STATUS_NEW
+       || run_status == TASK_STATUS_STOPPED)
+      && (timeout_time <= time (NULL)))
+    return TRUE;
 
   return FALSE;
 }
