@@ -1,5 +1,9 @@
 2017-10-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage.h (SCHEDULE_TIMEOUT_DEFAULT): Use correct unit in doc.
+
+2017-10-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Have task schedules time out if they do start not within a certain
 	time after the scheduled time.
 
