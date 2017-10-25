@@ -325,6 +325,8 @@ time_t task_schedule_iterator_period_months (iterator_t *);
 
 time_t task_schedule_iterator_duration (iterator_t *);
 
+gboolean task_schedule_iterator_timed_out (iterator_t *);
+
 gboolean task_schedule_iterator_start_due (iterator_t *);
 
 gboolean task_schedule_iterator_stop_due (iterator_t *);

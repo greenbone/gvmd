@@ -158,6 +158,7 @@
 
 extern volatile int termination_signal;
 
+static int schedule_timeout = SCHEDULE_TIMEOUT_DEFAULT;
 
 
 /* Certificate and key management. */
@@ -6497,6 +6498,10 @@ manage_schedule (int (*fork_connection) (openvas_connection_t *, gchar *),
       {
         time_t first_time, period, period_months;
         const char* timezone;
+        int timed_out;
+
+        /* Check if task schedule is timed out before updating next due time */
+        timed_out = task_schedule_iterator_timed_out (&schedules);
 
         /* Update the task schedule info to prevent multiple schedules. */
 
@@ -6515,6 +6520,15 @@ manage_schedule (int (*fork_connection) (openvas_connection_t *, gchar *),
 
         if (previous_start_task == task_schedule_iterator_task (&schedules))
           continue;
+
+        if (timed_out)
+          {
+            g_message (" %s: Task timed out: %s",
+                       __FUNCTION__,
+                       task_schedule_iterator_task_uuid (&schedules));
+            continue;
+          }
+
         previous_start_task = task_schedule_iterator_task (&schedules);
 
         /* Add task UUID and owner name and UUID to the list. */
@@ -6861,6 +6875,31 @@ manage_schedule (int (*fork_connection) (openvas_connection_t *, gchar *),
   auto_delete_reports ();
 
   return 0;
+}
+
+/**
+ * @brief Get the current schedule timeout.
+ *
+ * @return The schedule timeout in minutes.
+ */
+int
+get_schedule_timeout ()
+{
+  return schedule_timeout;
+}
+
+/**
+ * @brief Set the schedule timeout.
+ *
+ * @param new_timeout The new schedule timeout in minutes.
+ */
+void
+set_schedule_timeout (int new_timeout)
+{
+  if (new_timeout < 0)
+    schedule_timeout = -1;
+  else
+    schedule_timeout = new_timeout;
 }
 
 

@@ -199,11 +199,6 @@
 #define MAX_CONNECTIONS 512
 
 /**
- * @brief Seconds between calls to manage_schedule.
- */
-#define SCHEDULE_PERIOD 10
-
-/**
  * @brief Default value for client_watch_interval
  */
 #define DEFAULT_CLIENT_WATCH_INTERVAL 1
@@ -1727,6 +1722,7 @@ main (int argc, char** argv)
   static gchar *scanner_ca_pub = NULL;
   static gchar *scanner_key_pub = NULL;
   static gchar *scanner_key_priv = NULL;
+  static int schedule_timeout = SCHEDULE_TIMEOUT_DEFAULT;
   static gchar *delete_scanner = NULL;
   static gchar *verify_scanner = NULL;
   static gchar *priorities = "NORMAL";
@@ -1798,6 +1794,7 @@ main (int argc, char** argv)
           "Verify scanner <scanner-uuid> and exit.", "<scanner-uuid>" },
         { "delete-scanner", '\0', 0, G_OPTION_ARG_STRING, &delete_scanner, "Delete scanner <scanner-uuid> and exit.", "<scanner-uuid>" },
         { "get-scanners", '\0', 0, G_OPTION_ARG_NONE, &get_scanners, "List scanners and exit.", NULL },
+        { "schedule-timeout", '\0', 0, G_OPTION_ARG_INT, &schedule_timeout, "Time out tasks that are more than <time> minutes overdue. -1 to disable, 0 for minimum time, default: " G_STRINGIFY (SCHEDULE_TIMEOUT_DEFAULT), "<time>" },
         { "foreground", 'f', 0, G_OPTION_ARG_NONE, &foreground, "Run in foreground.", NULL },
         { "inheritor", '\0', 0, G_OPTION_ARG_STRING, &inheritor, "Have <username> inherit from deleted user.", "<username>" },
         { "listen", 'a', 0, G_OPTION_ARG_STRING, &manager_address_string, "Listen on <address>.", "<address>" },
@@ -1876,6 +1873,10 @@ main (int argc, char** argv)
     {
       client_watch_interval = 0;
     }
+
+  /* Set schedule_timeout */
+
+  set_schedule_timeout (schedule_timeout);
 
   /* Check which type of socket to use. */
 
