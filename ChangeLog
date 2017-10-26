@@ -1,3 +1,8 @@
+2017-10-26  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (task_schedule_iterator_timed_out): Use duration
+	only if it is not zero.
+
 2017-10-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage.h (SCHEDULE_TIMEOUT_DEFAULT): Use correct unit in doc.
