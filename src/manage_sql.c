@@ -1477,6 +1477,113 @@ manage_option_cleanup ()
   cleanup_manage_process (TRUE);
 }
 
+/**
+ * @brief Iterator column.
+ */
+typedef struct
+{
+  gchar *select;       ///< Column for SELECT.
+  gchar *filter;       ///< Filter column name.  NULL to use select_column.
+  keyword_type_t type; ///< Type of column.
+} column_t;
+
+/**
+ * @brief Print an array of columns.
+ *
+ * @param[in]  columns  Columns.
+ */
+void
+column_array_print (column_t *columns)
+{
+  g_debug ("%s: %p", __FUNCTION__, columns);
+  g_debug ("%s: {", __FUNCTION__);
+  while (columns->select)
+    {
+      g_debug ("%s:   { \"%s\", \"%s\", %i }",
+               __FUNCTION__,
+               columns->select,
+               columns->filter ? columns->filter : "NULL",
+               columns->type);
+      columns++;
+    }
+  g_debug ("%s: }", __FUNCTION__);
+}
+
+/**
+ * @brief Copy an array of columns.
+ *
+ * @param[in]  columns  Columns.
+ */
+column_t *
+column_array_copy (column_t *columns)
+{
+  column_t *point, *start;
+  int count;
+
+  count = 1;
+  point = columns;
+  while (point->select)
+    {
+      point++;
+      count++;
+    }
+
+  g_debug ("%s: %i", __FUNCTION__, count);
+  start = g_malloc0 (sizeof (column_t) * count);
+  point = start;
+
+  while (columns->select)
+    {
+      point->select = g_strdup (columns->select);
+      point->filter = columns->filter ? g_strdup (columns->filter) : NULL;
+      point->type = columns->type;
+      point++;
+      columns++;
+    }
+  return start;
+}
+
+/**
+ * @brief Free an array of columns.
+ *
+ * @param[in]  columns  Columns.
+ */
+void
+column_array_free (column_t *columns)
+{
+  while (columns->filter)
+    {
+      g_free (columns->select);
+      g_free (columns->filter);
+      columns++;
+    }
+  g_free (columns);
+}
+
+/**
+ * @brief Set the select clause of a column in an array of columns.
+ *
+ * Frees the existing select clause.
+ *
+ * @param[in]  columns  Columns.
+ * @param[in]  filter   Filter term name.
+ * @param[in]  select   Select clause.
+ */
+void
+column_array_set (column_t *columns, const gchar *filter, gchar *select)
+{
+  while (columns->select)
+    {
+      if (columns->filter && (strcmp (columns->filter, filter) == 0))
+        {
+          g_free (columns->select);
+          columns->select = select;
+          break;
+        }
+      columns++;
+    }
+}
+
 
 /* Filter utilities. */
 
@@ -2723,16 +2830,6 @@ get_join (int first, int last_was_and, int last_was_not)
     }
   return pre;
 }
-
-/**
- * @brief Iterator column.
- */
-typedef struct
-{
-  gchar *select;       ///< Column for SELECT.
-  gchar *filter;       ///< Filter column name.  NULL to use select_column.
-  keyword_type_t type; ///< Type of column.
-} column_t;
 
 /**
  * @brief Get the column expression for a filter column.
@@ -21830,15 +21927,7 @@ where_qod (const char* min_qod)
     { "port", "location", KEYWORD_TYPE_STRING },                              \
     { "nvt", NULL, KEYWORD_TYPE_STRING },                                     \
     { "severity_to_type (severity)", "original_type", KEYWORD_TYPE_STRING },  \
-    { "severity_to_type ((SELECT new_severity FROM result_new_severities"     \
-      "                  WHERE result_new_severities.result = results.id"     \
-      "                  AND result_new_severities.user"                      \
-      "                      = (SELECT users.id"                              \
-      "                         FROM current_credentials, users"              \
-      "                         WHERE current_credentials.uuid = users.uuid)" \
-      "                  AND result_new_severities.override = opts.override"  \
-      "                  AND result_new_severities.dynamic = opts.dynamic"    \
-      "                  LIMIT 1))",                                          \
+    { "'Log Message'", /* Adjusted by init_result_get_iterator_severity. */   \
       "type",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
     { "description", NULL, KEYWORD_TYPE_STRING },                             \
@@ -22112,9 +22201,10 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                    const gchar *extra_order)
 {
   column_t columns[3];
-  static column_t filterable_columns[]
+  static column_t static_filterable_columns[]
     = RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE;
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
+  column_t *filterable_columns;
   int ret;
   gchar *filter, *value;
   int autofp, apply_overrides, dynamic_severity;
@@ -22144,6 +22234,23 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   value = filter_term_value (filter ? filter : get->filter, "apply_overrides");
   apply_overrides = value ? strcmp (value, "0") : 0;
   g_free (value);
+
+  filterable_columns = column_array_copy (static_filterable_columns);
+  column_array_set
+   (filterable_columns,
+    "type",
+    g_strdup_printf ("severity_to_type"
+                     " ((SELECT new_severity FROM result_new_severities"
+                     "   WHERE result_new_severities.result = results.id"
+                     "   AND result_new_severities.user"
+                     "       = (SELECT users.id"
+                     "          FROM current_credentials, users"
+                     "          WHERE current_credentials.uuid = users.uuid)"
+                     "   AND result_new_severities.override = %i"
+                     "   AND result_new_severities.dynamic = %i"
+                     "   LIMIT 1))",
+                     apply_overrides,
+                     dynamic_severity));
 
   if (dynamic_severity)
     {
@@ -22298,6 +22405,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                 pre_sql,
                                 1);
   table_order_if_sort_not_specified = 0;
+  column_array_free (filterable_columns);
   g_free (pre_sql);
   g_free (extra_tables);
   g_free (extra_where);

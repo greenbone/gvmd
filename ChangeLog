@@ -1,3 +1,16 @@
+2017-10-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r29938.
+
+	* src/manage_sql.c (column_array_print, column_array_copy)
+	(column_array_free, column_array_set): New functions.
+	(RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE): Put a dummy select clause
+	for "type".
+	(init_result_get_iterator_severity): Use an allocated structure for the
+	filterable columns, replacing the type column with preset override and
+	dynamic values.  This avoids using the opts table, which seemed to help
+	performance.
+
 2017-10-26  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r29936.
