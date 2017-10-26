@@ -48866,7 +48866,7 @@ task_schedule_iterator_timed_out (iterator_t* iterator)
   run_status = task_run_status (task_schedule_iterator_task (iterator));
   duration = task_schedule_iterator_duration (iterator);
 
-  if (duration < schedule_timeout_secs)
+  if (duration && (duration < schedule_timeout_secs))
     timeout_time = start_time + duration;
   else
     timeout_time = start_time + schedule_timeout_secs;
