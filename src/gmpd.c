@@ -167,8 +167,19 @@ read_from_client_unix (int client_socket)
           return -1;
         }
       if (count == 0)
-        /* End of file. */
-        return -3;
+        {
+          /* End of file. */
+
+          if (from_client_end)
+            /* There's still client input to process, so pretend we read
+             * something, to prevent serve_gmp from exiting.
+             *
+             * This should instead be dealt with in serve_gmp, but that function
+             * has got quite complex. */
+            return 0;
+
+          return -3;
+        }
       from_client_end += count;
     }
 
@@ -221,8 +232,19 @@ read_from_client_tls (gnutls_session_t* client_session)
           return -1;
         }
       if (count == 0)
-        /* End of file. */
-        return -3;
+        {
+          /* End of file. */
+
+          if (from_client_end)
+            /* There's still client input to process, so pretend we read
+             * something, to prevent serve_gmp from exiting.
+             *
+             * This should instead be dealt with in serve_gmp, but that function
+             * has got quite complex. */
+            return 0;
+
+          return -3;
+        }
       from_client_end += count;
     }
 
@@ -692,6 +714,11 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
                 break;
               case -3:       /* End of file. */
                 g_debug ("   EOF reading from client.\n");
+                if (client_connection->socket > 0
+                    && FD_ISSET (client_connection->socket, &writefds))
+                  /* Write rest of to_client to client, so that the client gets
+                   * any buffered output and the response to the error. */
+                  write_to_client (client_connection);
                 rc = 0;
                 goto client_free;
               default:       /* Programming error. */

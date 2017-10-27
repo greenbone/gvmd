@@ -1,3 +1,12 @@
+2017-10-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/gmpd.c (read_from_client_unix, read_from_client_tls): When EOF is
+	reached and there's still input from the client to process, then return 0,
+	so that the caller processes the input, before realising EOF has been
+	reached.
+	(serve_gmp): If read_from_client gets EOF, write any remaining buffered
+	response to the client before exiting.
+
 2017-10-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (column_array_print, column_array_copy)
