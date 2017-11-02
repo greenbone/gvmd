@@ -19310,6 +19310,7 @@ result_detection_reference (result_t result, char **ref, char **product,
                             char **location, char **oid, char **name)
 {
   char *report, *host = NULL;
+  gchar *quoted_location = NULL;
 
   if ((ref == NULL) || (product == NULL) || (location == NULL) || (oid == NULL)
       || (name == NULL))
@@ -19352,6 +19353,7 @@ result_detection_reference (result_t result, char **ref, char **product,
                           report, host, result);
   if (*location == NULL)
     goto detect_cleanup;
+  quoted_location = sql_quote (*location);
 
   *product = sql_string ("SELECT name"
                          " FROM report_host_details"
@@ -19362,7 +19364,7 @@ result_detection_reference (result_t result, char **ref, char **product,
                          " AND source_name = '%s'"
                          " AND name != 'detected_at'"
                          " AND value = '%s';",
-                         report, host, *oid, *location);
+                         report, host, *oid, quoted_location);
   if (*product == NULL)
     goto detect_cleanup;
 
@@ -19383,18 +19385,20 @@ result_detection_reference (result_t result, char **ref, char **product,
                      " AND nvt = '%s'"
                      " AND (description LIKE '%%%s%%'"
                      "      OR port LIKE '%%%s%%');",
-                     report, host, *oid, *location, *location);
+                     report, host, *oid, quoted_location, quoted_location);
   if (*ref == NULL)
     goto detect_cleanup;
 
   g_free (report);
   g_free (host);
+  g_free (quoted_location);
 
   return 0;
 
 detect_cleanup:
   g_free (report);
   g_free (host);
+  g_free (quoted_location);
 
   return -1;
 }

@@ -1,3 +1,8 @@
+2017-11-02  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (result_detection_reference): Quote the location
+	string for SQL queries.
+
 2017-10-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/gmpd.c (read_from_client_unix, read_from_client_tls): When EOF is
