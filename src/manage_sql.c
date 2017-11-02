@@ -44425,7 +44425,7 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
   quoted_text = sql_insert (text);
   quoted_hosts = sql_insert (hosts);
   quoted_port = sql_insert (port);
-  quoted_nvt = sql_insert (nvt);
+  quoted_nvt = sql_quote (nvt);
 
   // Tests if a cache rebuild is necessary.
   //  The "active" status is checked separately
@@ -44502,9 +44502,9 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
            quoted_hosts,
            quoted_port,
            quoted_severity,
-           nvt ? "nvt = " : "",
+           nvt ? "nvt = '" : "",
            nvt ? quoted_nvt : "",
-           nvt ? "," : "",
+           nvt ? "'," : "",
            new_severity_dbl,
            task,
            result,
@@ -44558,9 +44558,9 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
            quoted_hosts,
            quoted_port,
            quoted_severity,
-           nvt ? "nvt = " : "",
+           nvt ? "nvt = '" : "",
            nvt ? quoted_nvt : "",
-           nvt ? "," : "",
+           nvt ? "'," : "",
            new_severity_dbl,
            task,
            result,

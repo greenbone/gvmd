@@ -1,5 +1,10 @@
 2017-11-02  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (modify_override): Use sql_quote to quote nvt
+	instead of sql_insert.
+
+2017-11-02  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (result_detection_reference): Quote the location
 	string for SQL queries.
 
