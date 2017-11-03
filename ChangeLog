@@ -1,3 +1,11 @@
+2017-11-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r29950.
+
+	* src/manage_sql.c (print_report_port_xml): Replace most filter
+	parameters with one for the get data.
+	(print_report_xml_start): Adjust print_report_port_xml params.
+
 2017-11-02  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r29946.
