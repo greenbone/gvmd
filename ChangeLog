@@ -1,5 +1,10 @@
 2017-11-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/schema_formats/XML/GMP.xml.in: Add get_vulns command and a note
+	about it in the Compatibility Changes section.
+
+2017-11-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (print_report_port_xml): Replace most filter
 	parameters with one for the get data.
 	(print_report_xml_start): Adjust print_report_port_xml params.
