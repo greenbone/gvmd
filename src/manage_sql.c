@@ -26730,50 +26730,27 @@ print_report_assets_xml (FILE *out, const char *host, int first_result, int
  *
  * @param[in]  report           The report.
  * @param[in]  out              File stream.
+ * @param[in]  get              Result get data.
  * @param[in]  first_result     The result to start from.  The results are 0
  *                              indexed.
  * @param[in]  max_results      The maximum number of results returned.
  * @param[in]  sort_order       Whether to sort ascending or descending.
- * @param[in]  sort_field       Field to sort on, or NULL for "type".
- * @param[in]  levels           String describing threat levels (message types)
- * @param[in]  autofp           Whether to apply the auto FP filter.
- * @param[in]  search_phrase    Phrase that results must include.  All
- *                              results if NULL or "".
- * @param[in]  search_phrase_exact    Whether search phrase is exact.
- * @param[in]  min_qod          Minimum QoD of included results. All
- *                              results if NULL.
- * @param[in]  apply_overrides    Whether to apply overrides.
+ * @param[in]  sort_field       Field to sort on.
  * @param[out] host_ports       Hash table for counting ports per host.
  *
  * @return 0 on success, -1 error.
  */
 static int
-print_report_port_xml (report_t report, FILE *out, int first_result,
-                       int max_results, int sort_order, const char *sort_field,
-                       const char *levels, int autofp,
-                       const char *search_phrase, int search_phrase_exact,
-                       const char *min_qod, int apply_overrides,
+print_report_port_xml (report_t report, FILE *out, const get_data_t *get,
+                       int first_result, int max_results,
+                       int sort_order, const char *sort_field,
                        GHashTable *host_ports)
 {
   iterator_t results;
   result_buffer_t *last_item;
   GArray *ports = g_array_new (TRUE, FALSE, sizeof (gchar*));
 
-  get_data_t result_get;
-  memset (&result_get, 0, sizeof (result_get));
-  result_get.type = g_strdup ("result");
-
-  result_get.filter = g_strdup_printf ("sort%s=%s first=%d rows=%d"
-                                       " levels=%s %s\"%s\"",
-                                       sort_order ? "" : "-reverse",
-                                       sort_field, first_result, max_results,
-                                       levels ? levels : "hmlgdf",
-                                       search_phrase_exact ? "=" : "",
-                                       search_phrase ? search_phrase : "");
-
-  init_result_get_iterator (&results, &result_get, report, NULL, NULL);
-
-  get_data_reset (&result_get);
+  init_result_get_iterator (&results, get, report, NULL, NULL);
 
   /* Buffer the results, removing duplicates. */
 
@@ -29263,12 +29240,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (get->details && (delta == 0))
     {
-      if (print_report_port_xml (report, out,
-                                 ignore_pagination ? 0 : first_result,
-                                 ignore_pagination ? -1 : max_results,
-                                 sort_order, sort_field, levels, autofp,
-                                 search_phrase, search_phrase_exact,
-                                 min_qod, apply_overrides, f_host_ports))
+      if (print_report_port_xml (report, out, get, first_result, max_results,
+                                 sort_order, sort_field, f_host_ports))
         {
           g_free (term);
           tz_revert (zone, tz, old_tz_override);
