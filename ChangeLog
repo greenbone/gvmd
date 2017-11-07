@@ -1,3 +1,16 @@
+2017-11-07  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Fix return values of various delete commands.
+
+	* src/manage_sql.c (delete_report, delete_config)
+	(delete_credential): Change return values to ones expected by
+	CASE_DELETE in gmp.c and update documentation accordingly.
+	(manage_delete_scanner): Add message for CVE scanner and general
+	case for predefined scanners.
+	(delete_scanner): Check for predefined scanners after permission check
+	and add case for default scanner.  Update return value doc.
+	(delete_schedule): Add missing case to return value doc.
+
 2017-11-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/schema_formats/XML/GMP.xml.in: Add get_vulns command and a note
