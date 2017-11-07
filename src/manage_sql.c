@@ -24883,8 +24883,7 @@ modify_report (const char *report_id, const char *comment)
  * @param[in]  report_id  UUID of report.
  * @param[in]  dummy      Dummy arg to match other delete functions.
  *
- * @return 0 success, 1 report is hidden, 2 report is in use, 99 permission
- *         denied, -1 error.
+ * @return 0 success, 2 failed to find report, 99 permission denied, -1 error.
  */
 int
 delete_report (const char *report_id, int dummy)
@@ -24910,7 +24909,7 @@ delete_report (const char *report_id, int dummy)
   if (report == 0)
     {
       sql_rollback ();
-      return 1;
+      return 2;
     }
 
   ret = delete_report_internal (report);
@@ -35404,7 +35403,7 @@ copy_config (const char* name, const char* comment, const char *config_id,
  * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
  *
  * @return 0 success, 1 fail because a task refers to the config, 2 failed to
- *         find config, 99 permission denied, -1 error.
+ *         find config, 3 config is predefined, 99 permission denied, -1 error.
  */
 int
 delete_config (const char *config_id, int ultimate)
@@ -35419,7 +35418,7 @@ delete_config (const char *config_id, int ultimate)
       || (strcmp (config_id, CONFIG_UUID_HOST_DISCOVERY) == 0)
       || (strcmp (config_id, CONFIG_UUID_SYSTEM_DISCOVERY) == 0)
       || (strcmp (config_id, CONFIG_UUID_EMPTY) == 0))
-    return 1;
+    return 3;
 
   sql_begin_immediate ();
 
@@ -41510,8 +41509,8 @@ modify_credential (const char *credential_id,
  * @param[in]  credential_id      UUID of Credential.
  * @param[in]  ultimate           Whether to remove entirely, or to trashcan.
  *
- * @return 0 success, 1 fail because the credential is in use, 99 permission
- *         denied, -1 error.
+ * @return 0 success, 1 fail because the credential is in use,
+ *         2 failed to find credential, 99 permission denied, -1 error.
  */
 int
 delete_credential (const char *credential_id, int ultimate)
@@ -46336,6 +46335,12 @@ manage_delete_scanner (GSList *log_config, const gchar *database,
 
   g_info ("   Deleting scanner.\n");
 
+  if (!strcmp (uuid, SCANNER_UUID_CVE))
+    {
+      fprintf (stderr, "Default CVE Scanner can't be deleted.\n");
+      return 3;
+    }
+
   if (!strcmp (uuid, SCANNER_UUID_DEFAULT))
     {
       fprintf (stderr, "Default OpenVAS Scanner can't be deleted.\n");
@@ -46357,6 +46362,9 @@ manage_delete_scanner (GSList *log_config, const gchar *database,
         break;
       case 2:
         fprintf (stderr, "Failed to find scanner.\n");
+        break;
+      case 3:
+        fprintf (stderr, "Scanner is predefined.\n");
         break;
       default:
         fprintf (stderr, "Internal Error.\n");
@@ -46966,16 +46974,13 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
  * @param[in]  scanner_id   UUID of scanner.
  * @param[in]  ultimate     Whether to remove entirely, or to trashcan.
  *
- * @return 0 success, 1 scanner in use, 2 failed to find scanner, 99 permission
- *         denied, -1 error.
+ * @return 0 success, 1 scanner in use, 2 failed to find scanner,
+ *         3 predefined scanner, 99 permission denied, -1 error.
  */
 int
 delete_scanner (const char *scanner_id, int ultimate)
 {
   scanner_t scanner = 0;
-
-  if (strcmp (scanner_id, SCANNER_UUID_CVE) == 0)
-    return 99;
 
   sql_begin_immediate ();
 
@@ -46984,6 +46989,10 @@ delete_scanner (const char *scanner_id, int ultimate)
       sql_rollback ();
       return 99;
     }
+
+  if (strcmp (scanner_id, SCANNER_UUID_CVE) == 0
+      || strcmp (scanner_id, SCANNER_UUID_DEFAULT) == 0)
+    return 3;
 
   if (find_scanner_with_permission (scanner_id, &scanner, "delete_scanner"))
     {
@@ -48127,7 +48136,7 @@ copy_schedule (const char* name, const char* comment, const char *schedule_id,
  * @param[in]  ultimate     Whether to remove entirely, or to trashcan.
  *
  * @return 0 success, 1 fail because a task refers to the schedule,
- *         99 permission denied, -1 error.
+ *         2 failed to find schedule, 99 permission denied, -1 error.
  */
 int
 delete_schedule (const char *schedule_id, int ultimate)
