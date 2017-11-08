@@ -1,3 +1,8 @@
+2017-11-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (where_levels): Always append the final paren,
+	because it's also required for the False Positive case.
+
 2017-11-07  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Fix return values of various delete commands.
