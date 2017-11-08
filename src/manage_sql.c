@@ -21677,7 +21677,8 @@ where_levels (const char* levels, const char *new_severity_sql)
                                 new_severity_sql);
       count++;
     }
-  else if (count)
+
+  if (count)
     levels_sql = g_string_append (levels_sql, ")");
 
   if (count == 6)
