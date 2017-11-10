@@ -1,3 +1,13 @@
+2017-11-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_get_iterator2_pre): If order is NULL or empty, then
+	skip extra_order.  Order shouldn't be NULL or empty, but at least the SQL
+	will be valid if it ever is.
+	(result_cmp): Add type and original_type.  Default to to "vulnerability"
+	for safety.
+	(print_report_xml_start): Add type and original_type to delta sort check.
+	Add defaults for all other possible fields, for now.
+
 2017-11-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (where_levels): Always append the final paren,

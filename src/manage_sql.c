@@ -4776,6 +4776,12 @@ init_get_iterator2_pre (iterator_t* iterator, const char *type,
       max = -1;
     }
 
+  if (strlen (order) == 0)
+    {
+      g_free (order);
+      order = NULL;
+    }
+
   if (resource && get->trash)
     init_iterator (iterator,
                    "%sSELECT %s"
@@ -4790,8 +4796,8 @@ init_get_iterator2_pre (iterator_t* iterator, const char *type,
                    extra_tables ? extra_tables : "",
                    resource,
                    owned_clause,
-                   order,
-                   extra_order ? extra_order : "");
+                   order ? order : "",
+                   order ? (extra_order ? extra_order : "") : "");
   else if (get->trash)
     init_iterator (iterator,
                    "%sSELECT %s"
@@ -4807,8 +4813,8 @@ init_get_iterator2_pre (iterator_t* iterator, const char *type,
                    extra_tables ? extra_tables : "",
                    owned_clause,
                    extra_where ? extra_where : "",
-                   order,
-                   extra_order ? extra_order : "");
+                   order ? order : "",
+                   order ? (extra_order ? extra_order : "") : "");
   else if (resource)
     init_iterator (iterator,
                    "%sSELECT %s"
@@ -4822,8 +4828,8 @@ init_get_iterator2_pre (iterator_t* iterator, const char *type,
                    extra_tables ? extra_tables : "",
                    resource,
                    owned_clause,
-                   order,
-                   extra_order ? extra_order : "");
+                   order ? order : "",
+                   order ? (extra_order ? extra_order : "") : "");
   else if (distinct == 0)
     init_iterator (iterator,
                    "%sSELECT %s"
@@ -4840,8 +4846,8 @@ init_get_iterator2_pre (iterator_t* iterator, const char *type,
                    clause ? clause : "",
                    clause ? ")" : "",
                    extra_where ? extra_where : "",
-                   order,
-                   extra_order ? extra_order : "",
+                   order ? order : "",
+                   order ? (extra_order ? extra_order : "") : "",
                    sql_select_limit (max),
                    first);
   else
@@ -4863,8 +4869,8 @@ init_get_iterator2_pre (iterator_t* iterator, const char *type,
                    clause ? clause : "",
                    clause ? ")" : "",
                    extra_where ? extra_where : "",
-                   order,
-                   extra_order ? extra_order : "",
+                   order ? order : "",
+                   order ? (extra_order ? extra_order : "") : "",
                    sql_select_limit (max),
                    first,
                    distinct ? ") AS subquery_for_distinct" : "");
@@ -25091,7 +25097,8 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
   int ret;
   double severity, delta_severity;
 
-  if (sort_field == NULL) sort_field = "type";
+  if (sort_field == NULL)
+    sort_field = "type";
 
   g_debug ("   delta: %s: sort_order: %i", __FUNCTION__, sort_order);
   g_debug ("   delta: %s: sort_field: %s", __FUNCTION__, sort_field);
@@ -25120,7 +25127,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
    *  unless it is the sort_field.
    */
 
-  /* Check sort_field first, also using sort_order (0´is descending). */
+  /* Check sort_field first, also using sort_order (0 is descending). */
   if (strcmp (sort_field, "ROWID") == 0)
     {
       if (sort_order)
@@ -25130,15 +25137,6 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
         return result_iterator_result (results)
                 < result_iterator_result (delta_results);
     }
-  else if (strcmp (sort_field, "name") == 0
-           || strcmp (sort_field, "vulnerability") == 0)
-    {
-      ret = strcmp (name, delta_name);
-      if (sort_order == 0)
-        ret = -ret;
-      if (ret)
-        return ret;
-    }
   else if (strcmp (sort_field, "host") == 0)
     {
       ret = collate_ip (NULL,
@@ -25146,7 +25144,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       if (sort_order == 0)
         ret = -ret;
       g_debug ("   delta: %s: host (%s): %s VS %s (%i)",
-               __FUNCTION__, sort_field ? "desc" : "asc",
+               __FUNCTION__, sort_order ? "desc" : "asc",
                host, delta_host, ret);
       if (ret)
         return ret;
@@ -25158,7 +25156,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       if (sort_order == 0)
         ret = -ret;
       g_debug ("   delta: %s: port (%s): %s VS %s (%i)",
-               __FUNCTION__, sort_field ? "desc" : "asc",
+               __FUNCTION__, sort_order ? "desc" : "asc",
                port, delta_port, ret);
       if (ret)
         return ret;
@@ -25172,7 +25170,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       else
         ret = 0;
       g_debug ("   delta: %s: severity (%s): %f VS %f (%i)",
-               __FUNCTION__, sort_field ? "desc" : "asc",
+               __FUNCTION__, sort_order ? "desc" : "asc",
                severity, delta_severity, ret);
       if (ret)
         return ret;
@@ -25183,7 +25181,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       if (sort_order)
         ret = -ret;
       g_debug ("   delta: %s: nvt (%s): %s VS %s (%i)",
-               __FUNCTION__, sort_field ? "desc" : "asc",
+               __FUNCTION__, sort_order ? "desc" : "asc",
                nvt, delta_nvt, ret);
       if (ret)
         return ret;
@@ -25194,8 +25192,51 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       if (sort_order == 0)
         ret = -ret;
       g_debug ("   delta: %s: description (%s): %s VS %s (%i)",
-               __FUNCTION__, sort_field ? "desc" : "asc",
+               __FUNCTION__, sort_order ? "desc" : "asc",
                descr, delta_descr, ret);
+      if (ret)
+        return ret;
+    }
+  else if (strcmp (sort_field, "type") == 0)
+    {
+      const char *type, *delta_type;
+
+      type = result_iterator_type (results);
+      delta_type = result_iterator_type (delta_results);
+
+      ret = strcmp (type, delta_type);
+      if (sort_order == 0)
+        ret = -ret;
+      g_debug ("   delta: %s: type (%s): %s VS %s (%i)",
+               __FUNCTION__, sort_order ? "desc" : "asc",
+               descr, delta_descr, ret);
+      if (ret)
+        return ret;
+    }
+  else if (strcmp (sort_field, "original_type") == 0)
+    {
+      const char *type, *delta_type;
+
+      type = result_iterator_original_type (results);
+      delta_type = result_iterator_original_type (delta_results);
+
+      ret = strcmp (type, delta_type);
+      if (sort_order == 0)
+        ret = -ret;
+      g_debug ("   delta: %s: original_type (%s): %s VS %s (%i)",
+               __FUNCTION__, sort_order ? "desc" : "asc",
+               descr, delta_descr, ret);
+      if (ret)
+        return ret;
+    }
+  else
+    {
+      /* Default to "vulnerability" (a.k.a "name") for unknown sort fields.
+       *
+       * Also done in print_report_xml_start, so this is just a safety check. */
+      ret = strcmp (name, delta_name);
+      if (sort_order == 0)
+        ret = -ret;
       if (ret)
         return ret;
     }
@@ -27846,6 +27887,7 @@ print_report_delta_xml (FILE *out, iterator_t *results,
 
   g_debug ("   delta: %s: start", __FUNCTION__);
   g_debug ("   delta: %s: sort_field: %s", __FUNCTION__, sort_field);
+  g_debug ("   delta: %s: sort_order: %i", __FUNCTION__, sort_order);
   g_debug ("   delta: %s: max_results: %i", __FUNCTION__, max_results);
   done = !next (results);
   delta_done = !next (delta_results);
@@ -28654,18 +28696,34 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       && strcmp (sort_field, "host")
       && strcmp (sort_field, "port")
       && strcmp (sort_field, "location")
-      && strcmp (sort_field, "severity"))
+      && strcmp (sort_field, "severity")
+      && strcmp (sort_field, "type")
+      && strcmp (sort_field, "original_type"))
     {
-      g_debug ("   delta: %s: exit because sort_field: %s", __FUNCTION__,
-              sort_field);
-      fclose (out);
-      g_free (term);
-      g_free (sort_field);
-      g_free (levels);
-      g_free (search_phrase);
-      g_free (min_qod);
-      g_free (delta_states);
-      return -1;
+      if ((strcmp (sort_field, "task") == 0)
+          || (strcmp (sort_field, "task_id") == 0)
+          || (strcmp (sort_field, "report_id") == 0))
+        {
+          /* These don't affect delta report, so sort by vulnerability. */
+          g_free (sort_field);
+          sort_field = g_strdup ("vulnerability");
+        }
+      else
+        {
+          /* The remaining filterable fields for the result iterator, all of
+           * which may be used as a sort field.  These could be added to
+           * result_cmp.  For now sort by vulnerability. */
+#if 0
+          "uuid", "comment", "created", "modified", "_owner"
+          "nvt",
+          "auto_type",
+          "report", "cvss_base", "nvt_version",
+          "original_severity", "date",
+          "solution_type", "qod", "qod_type", "cve", "hostname"
+#endif
+          g_free (sort_field);
+          sort_field = g_strdup ("vulnerability");
+        }
     }
 
   levels = levels ? levels : g_strdup ("hmlgd");
