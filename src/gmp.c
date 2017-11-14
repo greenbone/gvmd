@@ -410,7 +410,7 @@ init_get (gchar *command, get_data_t * get, const gchar *setting_name,
 
   /* Switch to the default filter from the setting, if required. */
 
-  if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_USER_SETTING) == 0)
     {
       char *user_filter = setting_filter (setting_name);
 
@@ -428,7 +428,7 @@ init_get (gchar *command, get_data_t * get, const gchar *setting_name,
 
   /* Get the actual filter string. */
 
-  if (get->filt_id && strcmp (get->filt_id, "0"))
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
     {
       filter = filter_term (get->filt_id);
       if (filter == NULL)
@@ -6257,7 +6257,7 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
   int first, max, sort_order;
   GString *type_many, *msg;
 
-  if (get->filt_id && strcmp (get->filt_id, "0"))
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
     {
       if (get->filter_replacement)
         filter = g_strdup (get->filter_replacement);
@@ -13014,7 +13014,7 @@ get_next (iterator_t *resources, get_data_t *get, int *first, int *count,
    {
      gchar *new_filter;
 
-     if (get->filt_id && strcmp (get->filt_id, "0"))
+     if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
        /* If filtering by a named filter, then just end, because changing
         * the filter term would probably surprise the user. */
        return 1;
@@ -13516,7 +13516,7 @@ handle_get_aggregates (gmp_parser_t *gmp_parser, GError **error)
                             c_sums);
     }
 
-  if (get->filt_id && strcmp (get->filt_id, "0"))
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
     {
       if (get->filter_replacement)
         filter = g_strdup (get->filter_replacement);
@@ -15346,7 +15346,7 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
     }
 
   get = &get_info_data->get;
-  if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_USER_SETTING) == 0)
     {
       char *user_filter;
       gchar *name;
@@ -16816,7 +16816,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       /* An asset report. */
 
       get = &get_reports_data->get;
-      if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
+      if (get->filt_id && strcmp (get->filt_id, FILT_ID_USER_SETTING) == 0)
         {
           g_free (get->filt_id);
           get->filt_id = g_strdup ("0");
@@ -16893,7 +16893,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       /* A prognostic report. */
 
       get = &get_reports_data->get;
-      if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
+      if (get->filt_id && strcmp (get->filt_id, FILT_ID_USER_SETTING) == 0)
         {
           g_free (get->filt_id);
           get->filt_id = g_strdup ("0");
@@ -17013,7 +17013,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       get = &get_reports_data->report_get;
 
       /* Get overrides value from report filter. */
-      if (get->filt_id && strcmp (get->filt_id, "0"))
+      if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
         {
           filter = filter_term (get->filt_id);
           if (filter == NULL)
@@ -17723,7 +17723,7 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
       int count, filtered, ret, first;
 
       if (get_results_data->get.filt_id
-          && strcmp (get_results_data->get.filt_id, "0"))
+          && strcmp (get_results_data->get.filt_id, FILT_ID_NONE))
         {
           filter = filter_term (get_results_data->get.filt_id);
         }
@@ -19172,7 +19172,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
   SEND_GET_START ("task");
 
   get = &get_tasks_data->get;
-  if (get->filt_id && strcmp (get->filt_id, "0"))
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
     {
       filter = filter_term (get->filt_id);
       if (filter == NULL)

@@ -4721,7 +4721,7 @@ init_get_iterator2_pre (iterator_t* iterator, const char *type,
         return 1;
     }
 
-  if (get->filt_id && strcmp (get->filt_id, "0"))
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
     {
       if (get->filter_replacement)
         /* Replace the filter term with one given by the caller.  This is
@@ -5092,7 +5092,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
       return 0;
     }
 
-  if (get->filt_id && strcmp (get->filt_id, "0"))
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
     {
       if (get->filter_replacement)
         /* Replace the filter term with one given by the caller.  This is
@@ -5735,7 +5735,7 @@ count2 (const char *type, const get_data_t *get, column_t *select_columns,
 
   assert (get);
 
-  if (get->filt_id && strcmp (get->filt_id, "0"))
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
     {
       filter = filter_term (get->filt_id);
       if (filter == NULL)
@@ -13204,7 +13204,7 @@ init_task_iterator (iterator_t* iterator, const get_data_t *get)
   gchar *extra_tables;
   int ret;
 
-  if (get->filt_id && strcmp (get->filt_id, "0"))
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
     {
       filter = filter_term (get->filt_id);
       if (filter == NULL)
@@ -17016,7 +17016,7 @@ task_count (const get_data_t *get)
   gchar *extra_tables;
   int ret;
 
-  if (get->filt_id && strcmp (get->filt_id, "0"))
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
     {
       filter = filter_term (get->filt_id);
       if (filter == NULL)
@@ -21255,7 +21255,7 @@ init_report_iterator (iterator_t* iterator, const get_data_t *get)
   gchar *extra_tables;
   int ret;
 
-  if (get->filt_id && strcmp (get->filt_id, "0"))
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
     {
       filter = filter_term (get->filt_id);
       if (filter == NULL)
@@ -22041,7 +22041,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
 
   dynamic_severity = setting_dynamic_severity_int ();
 
-  if (get->filt_id && strcmp (get->filt_id, "0"))
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
     {
       filter = filter_term (get->filt_id);
       if (filter == NULL)
@@ -22264,7 +22264,7 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
 
   gchar *extra_tables, *extra_where;
 
-  if (get->filt_id && strcmp (get->filt_id, "0"))
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
     {
       filter = filter_term (get->filt_id);
       if (filter == NULL)
@@ -22332,7 +22332,7 @@ result_count (const get_data_t *get, report_t report, const char* host)
   int apply_overrides, autofp, dynamic_severity;
   gchar *extra_tables, *extra_where;
 
-  if (get->filt_id && strcmp (get->filt_id, "0"))
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
     {
       filter = filter_term (get->filt_id);
       if (filter == NULL)
@@ -23934,7 +23934,7 @@ report_severity_data (report_t report, const char *host,
   gchar *filter, *value;
   int apply_overrides, autofp;
 
-  if (get->filt_id && strcmp (get->filt_id, "0"))
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
     {
       filter = filter_term (get->filt_id);
     }
@@ -24276,7 +24276,8 @@ report_counts_id_full (report_t report, int* debugs, int* holes, int* infos,
       || strcmp (current_credentials.uuid, "") == 0)
     g_warning ("%s: called by NULL or dummy user", __FUNCTION__);
 
-  if (get->filt_id && strlen (get->filt_id) && strcmp (get->filt_id, "0"))
+  if (get->filt_id && strlen (get->filt_id)
+      && strcmp (get->filt_id, FILT_ID_NONE))
     {
       filter = filter_term (get->filt_id);
       if (filter == NULL)
@@ -28644,11 +28645,13 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   assert (get);
 
-  if ((get->filt_id && strlen (get->filt_id) && strcmp (get->filt_id, "0"))
+  if ((get->filt_id && strlen (get->filt_id) 
+       && strcmp (get->filt_id, FILT_ID_NONE))
       || (get->filter && strlen (get->filter)))
     {
       term = NULL;
-      if (get->filt_id && strlen (get->filt_id) && strcmp (get->filt_id, "0"))
+      if (get->filt_id && strlen (get->filt_id) 
+          && strcmp (get->filt_id, FILT_ID_NONE))
         {
           term = filter_term (get->filt_id);
           if (term == NULL)
@@ -43528,7 +43531,7 @@ note_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
 
   /* Treat the "task_id" filter keyword as if the task was given in "task". */
 
-  if (get->filt_id && strcmp (get->filt_id, "0"))
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
     {
       filter = filter_term (get->filt_id);
       if (filter == NULL)
@@ -43666,7 +43669,7 @@ init_note_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
 
   /* Treat the "task_id" filter keyword as if the task was given in "task". */
 
-  if (get->filt_id && strcmp (get->filt_id, "0"))
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
     {
       filter = filter_term (get->filt_id);
       if (filter == NULL)
@@ -44814,7 +44817,7 @@ override_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
 
   /* Treat the "task_id" filter keyword as if the task was given in "task". */
 
-  if (get->filt_id && strcmp (get->filt_id, "0"))
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
     {
       filter = filter_term (get->filt_id);
       if (filter == NULL)
@@ -44953,7 +44956,7 @@ init_override_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
 
   /* Treat the "task_id" filter keyword as if the task was given in "task". */
 
-  if (get->filt_id && strcmp (get->filt_id, "0"))
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
     {
       filter = filter_term (get->filt_id);
       if (filter == NULL)
@@ -64256,7 +64259,7 @@ init_vuln_iterator (iterator_t* iterator, const get_data_t *get)
   static const char *filter_columns[] = VULN_ITERATOR_FILTER_COLUMNS;
   static column_t select_columns[] = VULN_ITERATOR_COLUMNS;
 
-  if (get->filt_id && strcmp (get->filt_id, "0"))
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
     {
       if (get->filter_replacement)
         /* Replace the filter term with one given by the caller.  This is
@@ -64412,7 +64415,7 @@ vuln_count (const get_data_t *get)
   gchar *extra_tables, *extra_where;
   int ret;
 
-  if (get->filt_id && strcmp (get->filt_id, "0"))
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
     {
       if (get->filter_replacement)
         /* Replace the filter term with one given by the caller.  This is

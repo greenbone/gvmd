@@ -1127,7 +1127,7 @@ total_info_count (const get_data_t *get, int filtered)
       static column_t select_columns[] = ALL_INFO_ITERATOR_COLUMNS;
       gchar *filter;
 
-      if (get->filt_id && strcmp (get->filt_id, "0"))
+      if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
         {
           filter = filter_term (get->filt_id);
           if (filter == NULL)
@@ -1201,7 +1201,7 @@ init_all_info_iterator (iterator_t* iterator, get_data_t *get,
   gchar *cert_clause, *dfn_clause, *ovaldef_clause, *cve_order;
   gchar *cpe_order, *nvt_order, *cert_order, *dfn_order, *ovaldef_order;
 
-  if (get->filt_id && strcmp (get->filt_id, "0"))
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
     {
       filter = filter_term (get->filt_id);
       if (filter == NULL)

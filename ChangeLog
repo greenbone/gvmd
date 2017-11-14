@@ -1,3 +1,10 @@
+2017-11-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage.h (FILT_ID_NONE, FILT_ID_USER_SETTING): New macros.
+
+	* src/gmp.c, src/manage_sql.c, src/manage_sql_secinfo.c: Use new
+	macros for special filt_id values.
+
 2017-11-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_get_iterator2_pre): If order is NULL or empty, then
