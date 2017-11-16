@@ -51838,6 +51838,7 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
 
   /* Get any new results and hosts from the slave. */
 
+  sql_begin_immediate ();
   hosts = (*report)->entities;
   while ((host_start = first_entity (hosts)))
     {
@@ -51848,7 +51849,7 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
 
           host = entity_child (host_start, "host");
           if (host == NULL)
-            return -1;
+            goto rollback_fail;
 
           uuid = report_uuid (current_report);
           host_notice (entity_text (host), "ip", entity_text (host),
@@ -51861,6 +51862,7 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
         }
       hosts = next_entities (hosts);
     }
+  sql_commit ();
 
   entity = entity_child (*report, "results");
   if (entity == NULL)
