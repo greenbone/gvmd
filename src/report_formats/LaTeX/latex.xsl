@@ -267,67 +267,9 @@ TODOS: Solve Whitespace/Indentation problem of this file.
   <!-- Replaces backslash characters by $\backslash$ and $ by \$ -->
   <xsl:template name="latex-replace-backslash-dollar">
     <xsl:param name="string"/>
-    <xsl:choose>
-      <xsl:when test="contains($string, '\') or contains($string, '$')">
-        <xsl:variable name="before_backslash" select="substring-before($string, '\')"/>
-        <xsl:variable name="before_dollar" select="substring-before($string, '$')"/>
-        <xsl:variable name="strlen_before_backslash" select="string-length($before_backslash)"/>
-        <xsl:variable name="strlen_before_dollar" select="string-length($before_dollar)"/>
-        <xsl:choose>
-          <xsl:when test="$strlen_before_dollar &gt; 0 and $strlen_before_backslash &gt; 0">
-            <!-- string contains both $ and \ . -->
-            <xsl:choose>
-              <xsl:when test="$strlen_before_dollar &lt; $strlen_before_backslash">
-                <!-- $ before \. -->
-                <xsl:value-of select="concat(substring-before($string, '$'), '\$')"/>
-                <xsl:call-template name="latex-replace-backslash-dollar">
-                  <xsl:with-param name="string" select="substring-after($string, '$')"/>
-                </xsl:call-template>
-              </xsl:when>
-              <xsl:otherwise>
-                <!-- \ before $. -->
-                <xsl:value-of select="concat(substring-before($string, '\'), '$\backslash$')"/>
-                <xsl:call-template name="latex-replace-backslash-dollar">
-                  <xsl:with-param name="string" select="substring-after($string, '\')"/>
-                </xsl:call-template>
-              </xsl:otherwise>
-            </xsl:choose>
-          </xsl:when>
-          <xsl:when test="string-length($before_backslash) &gt; 0">
-            <!-- Only \ is occuring -->
-            <xsl:value-of select="concat(substring-before($string, '\'),'$\backslash$')"/>
-            <xsl:call-template name="latex-replace-backslash-dollar">
-              <xsl:with-param name="string" select="substring-after($string, '\')"/>
-            </xsl:call-template>
-          </xsl:when>
-          <xsl:when test="string-length($before_dollar) &gt; 0">
-            <!-- Only $ is occuring -->
-            <xsl:value-of select="concat(substring-before($string, '$'),'\$')"/>
-            <xsl:call-template name="latex-replace-backslash-dollar">
-              <xsl:with-param name="string" select="substring-after($string, '$')"/>
-            </xsl:call-template>
-          </xsl:when>
-          <xsl:when test="substring($string, 1, 1) = '\'">
-            <!-- \ is occurring as first character -->
-            <xsl:text>$\backslash$</xsl:text>
-            <xsl:call-template name="latex-replace-backslash-dollar">
-              <xsl:with-param name="string" select="substring-after($string, '\')"/>
-            </xsl:call-template>
-          </xsl:when>
-          <xsl:when test="substring($string, 1, 1) = '$'">
-            <!-- $ is occurring as first character -->
-            <xsl:text>\$</xsl:text>
-            <xsl:call-template name="latex-replace-backslash-dollar">
-              <xsl:with-param name="string" select="substring-after($string, '$')"/>
-            </xsl:call-template>
-          </xsl:when>
-        </xsl:choose>
-      </xsl:when>
-      <xsl:otherwise>
-        <!-- Neither $ nor \ occuring. -->
-        <xsl:value-of select="$string"/>
-      </xsl:otherwise>
-    </xsl:choose>
+    <xsl:value-of select="str:replace(str:replace($string,
+                                                  '\', '$\backslash$'),
+                                      '$', '\$')"/>
   </xsl:template>
 
   <xsl:template name="escape_special_chars">

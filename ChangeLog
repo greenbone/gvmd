@@ -1,3 +1,10 @@
+2017-11-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r29968.
+
+	* src/report_formats/LaTeX/latex.xsl (latex-replace-backslash-dollar):
+	Use function str:replace instead of recursive template calls.
+
 2017-11-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r29963.
