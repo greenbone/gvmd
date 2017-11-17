@@ -1155,7 +1155,7 @@ update_nvt_cache (int register_cleanup, int skip_create_tables)
 static int
 update_nvt_cache_retry ()
 {
-  proctitle_set ("gvmd: Reloading");
+  proctitle_set ("gvmd: Reloading NVTs");
 
   /* Don't ignore SIGCHLD, in order to wait for child process. */
   setup_signal_handler (SIGCHLD, SIG_DFL, 0);

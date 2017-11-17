@@ -1,3 +1,8 @@
+2017-11-17  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/gvmd.c (update_nvt_cache_retry): Make proctitle
+	clearer.
+
 2017-11-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (update_from_slave): Wrap host inserts in a
