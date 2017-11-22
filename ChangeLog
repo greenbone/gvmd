@@ -1,3 +1,8 @@
+2017-11-22  Juan Jose Nicola  <juan.nicola@greenbone.net>
+
+	* src/manage_sql.c (report_progress): Delete a log message used to debug.
+	It should have not be committed with the last revision.
+
 2017-11-21  Juan Jose Nicola  <juan.nicola@greenbone.net>
 
 	* src/gmp.c (handle_get_targets): Call manage_count_hosts_max instead
