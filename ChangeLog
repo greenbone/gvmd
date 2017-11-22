@@ -1,3 +1,13 @@
+2017-11-22  Juan Jose Nicola  <juan.nicola@greenbone.net>
+
+	Backport r29978 and r29979.
+
+	* src/gmp.c (handle_get_targets): Call manage_count_hosts_max instead
+	of manage_count_hosts and pass 0 as 3rd argument.
+
+	* src/manage_sql.c (report_progress): Call manage_count_hosts_max instead
+	of manage_count_hosts and pass 0 as 3rd argument.
+
 2017-11-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r29970.

@@ -18702,7 +18702,7 @@ handle_get_targets (omp_parser_t *omp_parser, GError **error)
 
           hosts = target_iterator_hosts (&targets);
           exclude_hosts = target_iterator_exclude_hosts (&targets);
-          max_hosts = manage_count_hosts (hosts, exclude_hosts);
+          max_hosts = manage_count_hosts_max (hosts, exclude_hosts, 0);
           reverse_lookup_only = target_iterator_reverse_lookup_only
                                   (&targets);
           reverse_lookup_unify = target_iterator_reverse_lookup_unify

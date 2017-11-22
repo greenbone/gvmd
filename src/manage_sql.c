@@ -27675,7 +27675,7 @@ report_progress (report_t report, task_t task, gchar **hosts_xml)
       hosts = target ? target_hosts (target) : NULL;
       exclude_hosts = target ? target_exclude_hosts (target) : NULL;
     }
-  maximum_hosts = hosts ? manage_count_hosts (hosts, exclude_hosts) : 0;
+  maximum_hosts = hosts ? manage_count_hosts_max (hosts, exclude_hosts, 0) : 0;
   g_free (hosts);
   g_free (exclude_hosts);
 
