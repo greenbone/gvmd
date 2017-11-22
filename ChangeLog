@@ -1,3 +1,11 @@
+2017-11-21  Juan Jose Nicola  <juan.nicola@greenbone.net>
+
+	* src/gmp.c (handle_get_targets): Call manage_count_hosts_max instead
+	of manage_count_hosts and pass 0 as 3rd argument.
+
+	* src/manage_sql.c (report_progress): Call manage_count_hosts_max instead
+	of manage_count_hosts and pass 0 as 3rd argument.
+
 2017-11-17  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/gvmd.c (update_nvt_cache_retry): Make proctitle
