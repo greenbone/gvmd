@@ -1,5 +1,9 @@
 2017-11-23  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/gmp.c (handle_get_reports): Use macros for special filt_ids.
+
+2017-11-23  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/gmp.c (handle_get_reports): Check filt_id before the "OK"
 	response has started so a regular error response can be sent if
 	the filt_id cannot be found.

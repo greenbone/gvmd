@@ -16753,8 +16753,8 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
     }
 
   if (get_reports_data->get.filt_id
-      && strcmp (get_reports_data->get.filt_id, "0")
-      && strcmp (get_reports_data->get.filt_id, "-2"))
+      && strcmp (get_reports_data->get.filt_id, FILT_ID_NONE)
+      && strcmp (get_reports_data->get.filt_id, FILT_ID_USER_SETTING))
     {
       filter_t filter;
       if (find_filter_with_permission (get_reports_data->get.filt_id,
