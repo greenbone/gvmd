@@ -16510,6 +16510,36 @@ handle_get_reports (omp_parser_t *omp_parser, GError **error)
       return;
     }
 
+  if (get_reports_data->get.filt_id
+      && strcmp (get_reports_data->get.filt_id, "0")
+      && strcmp (get_reports_data->get.filt_id, "-2"))
+    {
+      filter_t filter;
+      if (find_filter_with_permission (get_reports_data->get.filt_id,
+                                       &filter,
+                                       "get_filters"))
+        {
+          get_reports_data_reset (get_reports_data);
+          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
+          set_client_state (CLIENT_AUTHENTIC);
+          return;
+        }
+
+      if (filter == 0)
+        {
+          if (send_find_error_to_client ("get_reports", "filter",
+                                         get_reports_data->get.filt_id,
+                                         omp_parser))
+            {
+              error_send_to_client (error);
+              return;
+            }
+          get_reports_data_reset (get_reports_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          return;
+        }
+    }
+
   if ((strcmp (get_reports_data->type, "scan") == 0)
       && get_reports_data->report_id
       && request_report == 0)
