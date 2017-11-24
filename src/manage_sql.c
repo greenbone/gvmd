@@ -17157,6 +17157,8 @@ resource_count (const char *type, const get_data_t *get)
   static column_t select_columns[] = {{ "owner", NULL }, { NULL, NULL }};
   get_data_t count_get;
 
+  const char *extra_where;
+
   memset (&count_get, '\0', sizeof (count_get));
   count_get.trash = get->trash;
   if (type_owned (type))
@@ -17164,21 +17166,35 @@ resource_count (const char *type, const get_data_t *get)
   else
     count_get.filter = "rows=-1 first=1 permission=any";
 
+  if (strcmp (type, "task") == 0)
+    {
+      extra_where = (get->trash
+                      ? " AND hidden = 2"
+                      : " AND hidden = 0");
+    }
+  else if (strcmp (type, "report") == 0)
+    {
+      extra_where = " AND (SELECT hidden FROM tasks"
+                    "      WHERE tasks.id = task)"
+                    "     = 0";
+    }
+  else if (strcmp (type, "result") == 0)
+    {
+      extra_where = " AND (severity != " G_STRINGIFY (SEVERITY_ERROR) ")"
+                    " AND (SELECT hidden FROM tasks"
+                    "      WHERE tasks.id = task)"
+                    "     = 0";
+    }
+  else
+    extra_where = NULL;
+
   return count (get->subtype ? get->subtype : type,
                 &count_get,
                 type_owned (type) ? select_columns : NULL,
                 type_owned (type) ? select_columns : NULL,
                 type_owned (type) ? filter_columns : NULL,
                 0, NULL,
-                strcmp (type, "task")
-                 ? ((strcmp (type, "report") && strcmp (type, "result"))
-                     ? NULL
-                     : " AND (SELECT hidden FROM tasks"
-                       "      WHERE tasks.id = task)"
-                       "     = 0")
-                 : (get->trash
-                     ? " AND hidden = 2"
-                     : " AND hidden = 0"),
+                extra_where,
                 type_owned (type));
 }
 
