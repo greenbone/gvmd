@@ -16914,10 +16914,16 @@ resource_count (const char *type, const get_data_t *get)
                      ? " AND hidden = 2"
                      : " AND hidden = 0";
     }
-  else if (strcmp (type, "report") == 0
-           || strcmp (type, "result") == 0)
+  else if (strcmp (type, "report") == 0)
     {
       extra_where = " AND (SELECT hidden FROM tasks"
+                    "      WHERE tasks.id = task)"
+                    "     = 0";
+    }
+  else if (strcmp (type, "result") == 0)
+    {
+      extra_where = " AND (severity != " G_STRINGIFY (SEVERITY_ERROR) ")"
+                    " AND (SELECT hidden FROM tasks"
                     "      WHERE tasks.id = task)"
                     "     = 0";
     }
