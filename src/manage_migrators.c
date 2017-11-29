@@ -13977,6 +13977,13 @@ migrate_183_to_184 ()
 
   sql ("DELETE FROM permissions_trash WHERE name = 'get_nvt_feed_version';");
 
+  /* Deactivate report formats that are not predefined,
+   *  as some older ones may cause problems.
+   */
+  sql ("UPDATE report_formats SET flags = (flags & ~1) WHERE id NOT IN"
+       " (SELECT resource FROM resources_predefined"
+       "  WHERE resource_type='report_format');");
+
   /* Set the database version to 184. */
 
   set_db_version (184);
