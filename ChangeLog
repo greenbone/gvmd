@@ -1,3 +1,8 @@
+2017-12-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/gmp.c (buffer_results_xml): Use buffer_xml_append_printf for
+	report and task elements.
+
 2017-11-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_migrators.c (migrate_183_to_184): Also deactivate

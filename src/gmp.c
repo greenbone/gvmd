@@ -11608,12 +11608,12 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       result_task_name = task_name (result_iterator_task (results));
       result_report_id = report_uuid (result_iterator_report (results));
 
-      g_string_append_printf (buffer,
-                              "<report id=\"%s\"/>"
-                              "<task id=\"%s\"><name>%s</name></task>",
-                              result_report_id,
-                              result_task_id,
-                              result_task_name);
+      buffer_xml_append_printf (buffer,
+                                "<report id=\"%s\"/>"
+                                "<task id=\"%s\"><name>%s</name></task>",
+                                result_report_id,
+                                result_task_id,
+                                result_task_name);
 
       free (result_report_id);
       free (result_task_id);
