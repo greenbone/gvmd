@@ -1,3 +1,10 @@
+2017-12-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (keyword_type_from_string): Remove.  No longer used.
+	(filter_clause): When the search keyword does not specify a column, search
+	only in text columns, because numeric column may be slow to calculate and
+	add limited value.
+
 2017-12-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/gmp.c (buffer_results_xml): Use buffer_xml_append_printf for
