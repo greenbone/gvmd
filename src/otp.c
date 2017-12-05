@@ -108,14 +108,9 @@ make_message (const char* host)
 {
   message_t* message;
 
-  message = (message_t*) g_malloc (sizeof (message_t));
-
+  message = (message_t*) g_malloc0 (sizeof (message_t));
   message->host = g_strdup (host);
-  message->description = NULL;
-  message->oid = NULL;
-  message->port.number = 0;
   message->port.protocol = PORT_PROTOCOL_OTHER;
-  message->port.string = NULL;
 
   return message;
 }
@@ -129,10 +124,25 @@ static void
 free_message (message_t* message)
 {
   if (message->host) free (message->host);
+  if (message->hostname) free (message->hostname);
   if (message->description) free (message->description);
   if (message->oid) free (message->oid);
   if (message->port.string) free (message->port.string);
   free (message);
+}
+
+/**
+ * @brief Set the hostname of a message.
+ *
+ * @param[in]  message      Pointer to the message.  Used directly, freed by
+ *                          free_message.
+ * @param[in]  hostname     Hostname.
+ */
+static void
+set_message_hostname (message_t* message, char* hostname)
+{
+  if (message->hostname) free (message->hostname);
+  message->hostname = hostname;
 }
 
 /**
@@ -334,14 +344,17 @@ typedef enum
   SCANNER_DONE,
   SCANNER_ERRMSG_DESCRIPTION,
   SCANNER_ERRMSG_HOST,
+  SCANNER_ERRMSG_HOSTNAME,
   SCANNER_ERRMSG_NUMBER,
   SCANNER_ERRMSG_OID,
   SCANNER_ALARM_DESCRIPTION,
   SCANNER_ALARM_HOST,
+  SCANNER_ALARM_HOSTNAME,
   SCANNER_ALARM_NUMBER,
   SCANNER_ALARM_OID,
   SCANNER_LOG_DESCRIPTION,
   SCANNER_LOG_HOST,
+  SCANNER_LOG_HOSTNAME,
   SCANNER_LOG_NUMBER,
   SCANNER_LOG_OID,
   SCANNER_NVT_INFO,
@@ -957,6 +970,13 @@ process_otp_scanner_input ()
                 {
                   assert (current_message == NULL);
                   current_message = make_message (field);
+                  set_scanner_state (SCANNER_ERRMSG_HOSTNAME);
+                  break;
+                }
+              case SCANNER_ERRMSG_HOSTNAME:
+                {
+                  if (current_message)
+                    set_message_hostname (current_message, g_strdup (field));
                   set_scanner_state (SCANNER_ERRMSG_NUMBER);
                   break;
                 }
@@ -1029,6 +1049,13 @@ process_otp_scanner_input ()
                 {
                   assert (current_message == NULL);
                   current_message = make_message (field);
+                  set_scanner_state (SCANNER_ALARM_HOSTNAME);
+                  break;
+                }
+              case SCANNER_ALARM_HOSTNAME:
+                {
+                  if (current_message)
+                    set_message_hostname (current_message, g_strdup (field));
                   set_scanner_state (SCANNER_ALARM_NUMBER);
                   break;
                 }
@@ -1101,6 +1128,13 @@ process_otp_scanner_input ()
                 {
                   assert (current_message == NULL);
                   current_message = make_message (field);
+                  set_scanner_state (SCANNER_LOG_HOSTNAME);
+                  break;
+                }
+              case SCANNER_LOG_HOSTNAME:
+                {
+                  if (current_message)
+                    set_message_hostname (current_message, g_strdup (field));
                   set_scanner_state (SCANNER_LOG_NUMBER);
                   break;
                 }

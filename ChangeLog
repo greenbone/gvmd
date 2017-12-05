@@ -1,3 +1,14 @@
+2017-12-05  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage.h (message_t): Add hostname field.
+
+	* src/otp.c (make_message): Use g_malloc0 to zero fields.
+	(free_message): Free hostname.
+	(set_message_hostname): New function.
+	(scanner_state_t): Add SCANNER_ERRMSG_HOSTNAME, SCANNER_ALARM_HOSTNAME
+	and SCANNER_LOG_HOSTNAME values.
+	(process_otp_scanner_input): Handle new scanner states.
+
 2017-12-05  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Double max length of the user-defined message in email alerts and make

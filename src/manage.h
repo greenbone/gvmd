@@ -204,6 +204,7 @@ typedef struct
 typedef struct
 {
   char* host;           ///< Host message describes.
+  char* hostname;       ///< Hostname message describes.
   port_t port;          ///< The port.
   char* description;    ///< Description of the message.
   char* oid;            ///< NVT identifier.
