@@ -364,6 +364,42 @@ void (*progress) () = NULL;
 static int max_hosts = MANAGE_MAX_HOSTS;
 
 /**
+ * @brief Default max number of bytes of reports included in email alerts.
+ */
+#define MAX_CONTENT_LENGTH 20000
+
+/**
+ * @brief Maximum number of bytes of reports included in email alerts.
+ *
+ * A value less or equal to 0 allows any size.
+ */
+static int max_content_length = MAX_CONTENT_LENGTH;
+
+/**
+ * @brief Default max number of bytes of reports attached to email alerts.
+ */
+#define MAX_ATTACH_LENGTH 1048576
+
+/**
+ * @brief Maximum number of bytes of reports attached to email alerts.
+ *
+ * A value less or equal to 0 allows any size.
+ */
+static int max_attach_length = MAX_ATTACH_LENGTH;
+
+/**
+ * @brief Default max number of bytes of user-defined message in email alerts.
+ */
+#define MAX_EMAIL_MESSAGE_LENGTH 2000
+
+/**
+ * @brief Maximum number of bytes of user-defined message text in email alerts.
+ *
+ * A value less or equal to 0 allows any size.
+ */
+static int max_email_message_length = MAX_EMAIL_MESSAGE_LENGTH;
+
+/**
  * @brief Memory cache of NVT information from the database.
  */
 nvtis_t* nvti_cache = NULL;
@@ -7694,7 +7730,7 @@ create_alert (const char* name, const char* comment, const char* filter_id,
 
       if (method == ALERT_METHOD_EMAIL
           && strcmp (name, "message") == 0
-          && strlen (data) > 1000)
+          && strlen (data) > max_email_message_length)
         {
           g_free (name);
           g_free (data);
@@ -8065,7 +8101,7 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
 
           if (method == ALERT_METHOD_EMAIL
               && strcmp (name, "message") == 0
-              && strlen (data) > 1000)
+              && strlen (data) > max_email_message_length)
             {
               g_free (name);
               g_free (data);
@@ -10249,30 +10285,6 @@ send_to_verinice (const char *url, const char *username, const char *password,
     return 0;
   }
 }
-
-/**
- * @brief Default max number of bytes of reports included in email alerts.
- */
-#define MAX_CONTENT_LENGTH 20000
-
-/**
- * @brief Maximum number of bytes of reports included in email alerts.
- *
- * A value less or equal to 0 allows any size.
- */
-static int max_content_length = MAX_CONTENT_LENGTH;
-
-/**
- * @brief Default max number of bytes of reports attached to email alerts.
- */
-#define MAX_ATTACH_LENGTH 1048576
-
-/**
- * @brief Maximum number of bytes of reports attached to email alerts.
- *
- * A value less or equal to 0 allows any size.
- */
-static int max_attach_length = MAX_ATTACH_LENGTH;
 
 /**
  * @brief Format string for simple notice alert email.
@@ -16353,6 +16365,7 @@ cleanup_tables ()
  * @param[in]  max_ips_per_target  Max number of IPs per target.
  * @param[in]  max_email_attachment_size  Max size of email attachments.
  * @param[in]  max_email_include_size     Max size of email inclusions.
+ * @param[in]  max_email_message_size     Max size of email user message text.
  * @param[in]  update_progress     Function to update progress, or NULL. *
  * @param[in]  stop_tasks          Stop any active tasks.
  * @param[in]  fork_connection     Function to fork a connection that will
@@ -16371,6 +16384,7 @@ init_manage_internal (GSList *log_config,
                       int max_ips_per_target,
                       int max_email_attachment_size,
                       int max_email_include_size,
+                      int max_email_message_size,
                       void (*update_progress) (),
                       int stop_tasks,
                       int (*fork_connection)
@@ -16435,6 +16449,8 @@ init_manage_internal (GSList *log_config,
     max_attach_length = max_email_attachment_size;
   if (max_email_include_size)
     max_content_length = max_email_include_size;
+  if (max_email_message_size)
+    max_email_message_length = max_email_message_size;
   progress = update_progress;
 
   g_log_set_handler (G_LOG_DOMAIN,
@@ -16505,6 +16521,7 @@ init_manage_internal (GSList *log_config,
  * @param[in]  max_ips_per_target  Max number of IPs per target.
  * @param[in]  max_email_attachment_size  Max size of email attachments.
  * @param[in]  max_email_include_size     Max size of email inclusions.
+ * @param[in]  max_email_message_size     Max size of email user message text.
  * @param[in]  update_progress     Function to update progress, or NULL. *
  * @param[in]  fork_connection     Function to fork a connection that will
  *                                 accept OMP requests.  Used to start tasks
@@ -16517,7 +16534,8 @@ init_manage_internal (GSList *log_config,
 int
 init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
              int max_ips_per_target, int max_email_attachment_size,
-             int max_email_include_size, void (*update_progress) (),
+             int max_email_include_size, int max_email_message_size,
+             void (*update_progress) (),
              int (*fork_connection) (openvas_connection_t*, gchar*),
              int skip_db_check)
 {
@@ -16527,6 +16545,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
                                max_ips_per_target,
                                max_email_attachment_size,
                                max_email_include_size,
+                               max_email_message_size,
                                update_progress,
                                1,  /* Stop active tasks. */
                                fork_connection,
@@ -16559,6 +16578,7 @@ init_manage_helper (GSList *log_config, const gchar *database,
                                max_ips_per_target,
                                0,   /* Default max_email_attachment_size. */
                                0,   /* Default max_email_include_size. */
+                               0,   /* Default max_email_message_size */
                                update_progress,
                                0,   /* Stop active tasks. */
                                NULL,

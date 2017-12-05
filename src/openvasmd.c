@@ -1136,6 +1136,7 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
                      manage_max_hosts (),
                      0, /* Max email attachment size. */
                      0, /* Max email include size. */
+                     0, /* Max email message size. */
                      progress,
                      NULL,
                      skip_create_tables))
@@ -1708,6 +1709,7 @@ main (int argc, char** argv)
   static int max_ips_per_target = MANAGE_MAX_HOSTS;
   static int max_email_attachment_size = 0;
   static int max_email_include_size = 0;
+  static int max_email_message_size = 0;
   static int verbose = 0;
   static gchar *create_user = NULL;
   static gchar *delete_user = NULL;
@@ -1808,6 +1810,7 @@ main (int argc, char** argv)
         { "max-ips-per-target", '\0', 0, G_OPTION_ARG_INT, &max_ips_per_target, "Maximum number of IPs per target.", "<number>"},
         { "max-email-attachment-size", '\0', 0, G_OPTION_ARG_INT, &max_email_attachment_size, "Maximum size of alert email attachments, in bytes.", "<number>"},
         { "max-email-include-size", '\0', 0, G_OPTION_ARG_INT, &max_email_include_size, "Maximum size of inlined content in alert emails, in bytes.", "<number>"},
+        { "max-email-message-size", '\0', 0, G_OPTION_ARG_INT, &max_email_message_size, "Maximum size of user-defined message text in alert emails, in bytes.", "<number>"},
         { "migrate", 'm', 0, G_OPTION_ARG_NONE, &migrate_database, "Migrate the database and exit.", NULL },
         { "modify-setting", '\0', 0, G_OPTION_ARG_STRING, &modify_setting,
           "Modify setting <uuid> and exit.", "<uuid>" },
@@ -2319,7 +2322,8 @@ main (int argc, char** argv)
   /* Initialise OMP daemon. */
 
   switch (init_ompd (log_config, 0, database, max_ips_per_target,
-                     max_email_attachment_size, max_email_include_size, NULL,
+                     max_email_attachment_size, max_email_include_size,
+                     max_email_message_size, NULL,
                      fork_connection_for_event, 0))
     {
       case 0:

@@ -38,7 +38,7 @@
 #define TO_CLIENT_BUFFER_SIZE 26214400
 
 int
-init_omp (GSList*, int, const gchar*, int, int, int, void (*) (),
+init_omp (GSList*, int, const gchar*, int, int, int, int, void (*) (),
           int (*) (openvas_connection_t *, gchar*),
           int);
 

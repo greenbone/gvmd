@@ -56,7 +56,7 @@ extern buffer_size_t from_scanner_end;
 extern struct sockaddr_in scanner_address;
 
 int
-init_ompd (GSList*, int, const gchar*, int, int, int, void (*) (),
+init_ompd (GSList*, int, const gchar*, int, int, int, int, void (*) (),
            int (*) (openvas_connection_t *, gchar *),
            int);
 

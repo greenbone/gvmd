@@ -103,6 +103,7 @@ static int ompd_nvt_cache_mode = 0;
  * @param[in]  max_ips_per_target  Max number of IPs per target.
  * @param[in]  max_email_attachment_size  Max size of email attachments.
  * @param[in]  max_email_include_size     Max size of email inclusions.
+ * @param[in]  max_email_message_size     Max size of email user message text.
  * @param[in]  progress         Function to update progress, or NULL.
  * @param[in]  fork_connection  Function to fork a connection to the OMP
  *                              daemon layer, or NULL.
@@ -115,12 +116,14 @@ static int ompd_nvt_cache_mode = 0;
 int
 init_ompd (GSList *log_config, int nvt_cache_mode, const gchar *database,
            int max_ips_per_target, int max_email_attachment_size,
-           int max_email_include_size, void (*progress) (),
+           int max_email_include_size, int max_email_message_size,
+           void (*progress) (),
            int (*fork_connection) (openvas_connection_t *, gchar*),
            int skip_db_check)
 {
   return init_omp (log_config, nvt_cache_mode, database, max_ips_per_target,
                    max_email_attachment_size, max_email_include_size,
+                   max_email_message_size,
                    progress, fork_connection, skip_db_check);
 }
 

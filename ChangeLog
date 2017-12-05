@@ -1,3 +1,34 @@
+2017-12-05  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r29999.
+
+	Double max length of the user-defined message in email alerts and make
+	it configurable with a new option, --max-email-message-size.
+
+	* src/openvasmd.c (update_or_rebuild_nvt_cache): Add parameter for
+	init_ompd.
+	(main): Add option --max-email-message-size.
+
+	* src/manage_sql.c (MAX_CONTENT_LENGTH, max_content_length)
+	(MAX_ATTACH_LENGTH, max_attach_length): Move closer to the top.
+	(MAX_EMAIL_MESSAGE_LENGTH, max_email_message_length): New macro and
+	static variable.
+	(create_alert, modify_alert): Use max_email_message_length instead of
+	hardcoded value for the maximum length of the email message.
+	(init_manage_internal, init_manage): Add parameter
+	max_email_message_size.
+	(init_manage_helper): Add parameter for init_manage_internal.
+
+	* src/manage.h (init_manage): Add parameter.
+
+	* src/omp.c (init_omp): Add parameter max_email_message_size.
+
+	* src/omp.h (init_omp): Add parameter.
+
+	* src/ompd.c (init_ompd): Add parameter max_email_message_size.
+
+	* src/ompd.h (init_ompd): Add parameter.
+
 2017-12-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r29994.

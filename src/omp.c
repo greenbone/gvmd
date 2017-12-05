@@ -30590,6 +30590,7 @@ extern buffer_size_t from_client_end;
  * @param[in]  max_ips_per_target  Max number of IPs per target.
  * @param[in]  max_email_attachment_size  Max size of email attachments.
  * @param[in]  max_email_include_size     Max size of email inclusions.
+ * @param[in]  max_email_message_size     Max size of email user message text.
  * @param[in]  progress         Function to update progress, or NULL.
  * @param[in]  fork_connection  Function to fork a connection to the OMP
  *                              daemon layer, or NULL.
@@ -30602,7 +30603,8 @@ extern buffer_size_t from_client_end;
 int
 init_omp (GSList *log_config, int nvt_cache_mode, const gchar *database,
           int max_ips_per_target, int max_email_attachment_size,
-          int max_email_include_size, void (*progress) (),
+          int max_email_include_size, int max_email_message_size,
+          void (*progress) (),
           int (*fork_connection) (openvas_connection_t *, gchar*),
           int skip_db_check)
 {
@@ -30613,6 +30615,7 @@ init_omp (GSList *log_config, int nvt_cache_mode, const gchar *database,
   command_data_init (&command_data);
   return init_manage (log_config, nvt_cache_mode, database, max_ips_per_target,
                       max_email_attachment_size, max_email_include_size,
+                      max_email_message_size,
                       progress, fork_connection, skip_db_check);
 }
 
