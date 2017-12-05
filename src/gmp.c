@@ -30736,6 +30736,7 @@ extern buffer_size_t from_client_end;
  * @param[in]  max_ips_per_target  Max number of IPs per target.
  * @param[in]  max_email_attachment_size  Max size of email attachments.
  * @param[in]  max_email_include_size     Max size of email inclusions.
+ * @param[in]  max_email_message_size     Max size of email user message text.
  * @param[in]  fork_connection  Function to fork a connection to the GMP
  *                              daemon layer, or NULL.
  * @param[in]  skip_db_check    Skip DB check.
@@ -30746,7 +30747,7 @@ extern buffer_size_t from_client_end;
 int
 init_gmp (GSList *log_config, int nvt_cache_mode, const gchar *database,
           int max_ips_per_target, int max_email_attachment_size,
-          int max_email_include_size,
+          int max_email_include_size, int max_email_message_size,
           int (*fork_connection) (gvm_connection_t *, gchar*),
           int skip_db_check)
 {
@@ -30757,6 +30758,7 @@ init_gmp (GSList *log_config, int nvt_cache_mode, const gchar *database,
   command_data_init (&command_data);
   return init_manage (log_config, nvt_cache_mode, database, max_ips_per_target,
                       max_email_attachment_size, max_email_include_size,
+                      max_email_message_size,
                       fork_connection, skip_db_check);
 }
 

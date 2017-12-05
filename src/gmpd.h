@@ -56,7 +56,7 @@ extern buffer_size_t from_scanner_end;
 extern struct sockaddr_in scanner_address;
 
 int
-init_gmpd (GSList*, int, const gchar*, int, int, int,
+init_gmpd (GSList*, int, const gchar*, int, int, int, int,
            int (*) (gvm_connection_t *, gchar *),
            int);
 

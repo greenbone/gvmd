@@ -1,3 +1,32 @@
+2017-12-05  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Double max length of the user-defined message in email alerts and make
+	it configurable with a new option, --max-email-message-size.
+
+	* src/gvmd.c (update_or_rebuild_nvt_cache): Add parameter for
+	init_gmpd.
+	(main): Add option --max-email-message-size.
+
+	* src/manage_sql.c (MAX_CONTENT_LENGTH, max_content_length)
+	(MAX_ATTACH_LENGTH, max_attach_length): Move closer to the top.
+	(MAX_EMAIL_MESSAGE_LENGTH, max_email_message_length): New macro and
+	static variable.
+	(create_alert, modify_alert): Use max_email_message_length instead of
+	hardcoded value for the maximum length of the email message.
+	(init_manage_internal, init_manage): Add parameter
+	max_email_message_size.
+	(init_manage_helper): Add parameter for init_manage_internal.
+
+	* src/gmp.c (init_gmp): Add parameter max_email_message_size.
+
+	* src/gmp.h (init_gmp): Add parameter.
+
+	* src/gmpd.c (init_gmpd): Add parameter max_email_message_size.
+
+	* src/gmpd.h (init_gmpd): Add parameter.
+
+	* src/manage.h (init_manage): Add parameter.
+
 2017-12-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (keyword_type_from_string): Remove.  No longer used.

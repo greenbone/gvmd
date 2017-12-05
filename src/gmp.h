@@ -38,7 +38,7 @@
 #define TO_CLIENT_BUFFER_SIZE 26214400
 
 int
-init_gmp (GSList*, int, const gchar*, int, int, int,
+init_gmp (GSList*, int, const gchar*, int, int, int, int,
           int (*) (gvm_connection_t *, gchar*),
           int);
 

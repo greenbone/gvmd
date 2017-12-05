@@ -68,7 +68,7 @@ typedef struct
 } name_value_t;
 
 int
-init_manage (GSList*, int, const gchar *, int, int, int,
+init_manage (GSList*, int, const gchar *, int, int, int, int,
              int (*) (gvm_connection_t *, gchar *),
              int);
 
