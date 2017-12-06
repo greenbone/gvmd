@@ -1,3 +1,8 @@
+2017-12-06  Juan Jose Nicola  <juan.nicola@greenbone.net>
+
+	* src/manage.sql (setup_full_config_prefs): Remove query related to the
+	preference log_whole_attack, since it is no more send it by the scanner.
+
 2017-12-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/report_formats/LaTeX/latex.xsl: Remove template
