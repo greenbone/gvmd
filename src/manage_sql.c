@@ -58820,8 +58820,7 @@ manage_empty_trashcan ()
  * of the scan, if the host has identifiers, then this decision is revised
  * by \ref hosts_set_identifiers to take the identifiers into account.
  *
- * Host identifiers can be ip, hostname, MAC, DNS-via-TargetDefinition, OS or
- * ssh-key.
+ * Host identifiers can be ip, hostname, MAC, OS or ssh-key.
  *
  * This documentation includes some pseudo-code and tabular definition.
  * Eventually one of them will repalce the other.
@@ -58849,9 +58848,8 @@ manage_empty_trashcan ()
  * IP addess X with Hostname Y. | Host A with Name=X and ip=X and hostname<>Y.                                | Create host with Name=X, ip=X and hostname=Y.
  * IP addess X with Hostname Y. | Host A with Name=X and ip=X and hostname=Y and host B with Name=X and ip=X. | Add ip=X and hostname=Y to host (Newst(A,B)).
  *
- * Follow up action: If a MAC, DNS-via-TargetDefinition, OS or ssh-key was
- * detected, then the respective identifiers are added to the asset host
- * selected during asset update.
+ * Follow up action: If a MAC, OS or ssh-key was detected, then the respective
+ * identifiers are added to the asset host selected during asset update.
  *
  * Operating Systems
  * -----------------
@@ -59635,21 +59633,6 @@ manage_report_host_details (report_t report, const char *ip, entity_t entity)
                   array_add (identifiers, identifier);
                   array_add_new_string (identifier_hosts, g_strdup (ip));
                 }
-              if (strcmp (entity_text (name), "DNS-via-TargetDefinition") == 0)
-                {
-                  identifier_t *identifier;
-
-                  identifier = g_malloc (sizeof (identifier_t));
-                  identifier->ip = g_strdup (ip);
-                  identifier->name = g_strdup ("DNS-via-TargetDefinition");
-                  identifier->value = g_strdup (entity_text (value));
-                  identifier->source_id = g_strdup (uuid);
-                  identifier->source_type = g_strdup ("Report Host Detail");
-                  identifier->source_data
-                    = g_strdup (entity_text (source_name));
-                  array_add (identifiers, identifier);
-                  array_add_new_string (identifier_hosts, g_strdup (ip));
-                }
               if (strcmp (entity_text (name), "OS") == 0
                   && g_str_has_prefix (entity_text (value), "cpe:"))
                 {
@@ -59933,7 +59916,7 @@ DEF_ACCESS (host_identifier_iterator_os_title,
      "(SELECT value"                                                  \
      " FROM host_identifiers"                                         \
      " WHERE host = hosts.id"                                         \
-     " AND (name = 'hostname' or name = 'DNS-via-TargetDefinition')"  \
+     " AND name = 'hostname'"                                         \
      " ORDER by creation_time DESC"                                   \
      " LIMIT 1)",                                                     \
      "hostname",                                                      \
@@ -60391,7 +60374,6 @@ identifier_name (const char *name)
 {
   return (strcmp ("hostname", name) == 0)
          || (strcmp ("MAC", name) == 0)
-         || (strcmp ("DNS-via-TargetDefinition", name) == 0)
          || (strcmp ("OS", name) == 0)
          || (strcmp ("ssh-key", name) == 0);
 }

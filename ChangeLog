@@ -1,5 +1,13 @@
 2017-12-05  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (manage_report_host_details)
+	(host_identifier_iterator_os_title, identifier_name),
+	src/report_formats/Anonymous_XML/Anonymous_XML.xsl: Don't check for
+	DNS-via-TargetDefinition host detail, as it is a duplicate of hostname
+	host detail.
+
+2017-12-05  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
 	* src/manage.h (message_t): Add hostname field.
 
 	* src/otp.c (make_message): Use g_malloc0 to zero fields.

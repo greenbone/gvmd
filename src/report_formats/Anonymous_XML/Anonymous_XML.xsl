@@ -99,9 +99,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:template match="host/detail[substring (name, 1, 4) = 'MAC-']" >
   </xsl:template>
 
-  <xsl:template match="host/detail[substring (name, 1, 8) = 'DNS-via-']" >
-  </xsl:template>
-
   <xsl:template match="host/detail[substring (name, 1, 5) = 'Cert:']" >
   </xsl:template>
 
