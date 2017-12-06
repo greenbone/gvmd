@@ -264,14 +264,6 @@ TODOS: Solve Whitespace/Indentation problem of this file.
 </xsl:text>
   </xsl:template>
 
-  <!-- Replaces backslash characters by $\backslash$ and $ by \$ -->
-  <xsl:template name="latex-replace-backslash-dollar">
-    <xsl:param name="string"/>
-    <xsl:value-of select="str:replace(str:replace($string,
-                                                  '\', '$\backslash$'),
-                                      '$', '\$')"/>
-  </xsl:template>
-
   <xsl:template name="escape_special_chars">
     <xsl:param name="string"/>
     <xsl:value-of select="str:replace(
@@ -281,7 +273,9 @@ TODOS: Solve Whitespace/Indentation problem of this file.
       str:replace(
       str:replace(
       str:replace(
+      str:replace(
       $string,
+      '$', '\$'),
       '_', '\_'),
       '%', '\%'),
       '&amp;','\&amp;'),
@@ -297,14 +291,15 @@ TODOS: Solve Whitespace/Indentation problem of this file.
     <xsl:param name="string"/>
     <!-- Replace backslashes and $'s .-->
     <xsl:choose>
-      <xsl:when test="contains($string, '\') or contains($string, '$')">
-        <xsl:call-template name="escape_special_chars">
-          <xsl:with-param name="string">
-            <xsl:call-template name="latex-replace-backslash-dollar">
-              <xsl:with-param name="string" select="$string"/>
-            </xsl:call-template>
-          </xsl:with-param>
-        </xsl:call-template>
+      <xsl:when test="contains($string, '\')">
+        <xsl:for-each select="str:tokenize($string, '\')">
+          <xsl:if test="position() != 1">
+            <xsl:text>\textbackslash{}</xsl:text>
+          </xsl:if>
+          <xsl:call-template name="escape_special_chars">
+            <xsl:with-param name="string" select="."/>
+          </xsl:call-template>
+        </xsl:for-each>
       </xsl:when>
       <xsl:otherwise>
         <xsl:call-template name="escape_special_chars">

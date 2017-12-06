@@ -1,3 +1,12 @@
+2017-12-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r30004.
+
+	* src/report_formats/LaTeX/latex.xsl: Remove template
+	latex-replace-backslash-dollar. Instead dollar signs are replaced in
+	escape_special_chars and backslashes are replaced with \textbackslash{}
+	in escape_text.
+
 2017-12-05  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r29999.
