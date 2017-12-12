@@ -2555,6 +2555,11 @@ create_tables ()
   sql ("SELECT create_index ('host_identifiers_by_value',"
        "                     'host_identifiers', 'value');");
 
+  sql ("SELECT create_index ('host_max_severities_by_host',"
+       "                     'host_max_severities', 'host');");
+  sql ("SELECT create_index ('host_oss_by_host',"
+       "                     'host_oss', 'host');");
+
   sql ("SELECT create_index ('nvt_cves_by_oid', 'nvt_cves', 'oid');");
   sql ("SELECT create_index ('nvt_selectors_by_family_or_nvt',"
        "                     'nvt_selectors',"
