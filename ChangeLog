@@ -1,3 +1,8 @@
+2017-12-18  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_pg_server.c (sql_next_time): Check if timezone is non-NULL
+	instead of the number of arguments as it can be given as NULL.
+
 2017-12-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (create_tables): Add indexes host_max_severities_by_host
