@@ -78,7 +78,7 @@ sql_next_time (PG_FUNCTION_ARGS)
     }
 
   ret = next_time (first, period, period_months, timezone, 0);
-  if (PG_NARGS() >= 4)
+  if (timezone)
     pfree (timezone);
   PG_RETURN_INT32 (ret);
 }
