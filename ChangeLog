@@ -1,3 +1,12 @@
+2017-12-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r29997.
+
+	* src/manage_sql.c (keyword_type_from_string): Remove.  No longer used.
+	(filter_clause): When the search keyword does not specify a column, search
+	only in text columns, because numeric column may be slow to calculate and
+	add limited value.
+
 2017-12-18  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r30030.

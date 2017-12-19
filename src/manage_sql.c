@@ -3002,40 +3002,6 @@ columns_build_select (column_t *select_columns)
 }
 
 /**
- * @brief Return keyword type of a string.
- *
- * @param[in]  string  String.
- *
- * @return Type.
- */
-static keyword_type_t
-keyword_type_from_string (const char* string)
-{
-  gchar *stripped, *stripped_end;
-  double value;
-  int end;
-
-  stripped = g_strstrip (g_strdup (string));
-  strtol (stripped, &stripped_end, 10);
-  if (*stripped_end == '\0')
-    {
-      g_free (stripped);
-      return KEYWORD_TYPE_INTEGER;
-    }
-
-  end = 0;
-  if ((sscanf (stripped, "%lf%n", &value, &end) == 1)
-      && (end == strlen (stripped)))
-    {
-      g_free (stripped);
-      return KEYWORD_TYPE_DOUBLE;
-    }
-
-  g_free (stripped);
-  return KEYWORD_TYPE_STRING;
-}
-
-/**
  * @brief Check whether a keyword applies to a column.
  *
  * @param[in]  keyword  Keyword.
@@ -4051,7 +4017,6 @@ filter_clause (const char* type, const char* filter,
       else
         {
           const char *filter_column;
-          keyword_type_t type;
 
           g_string_append_printf (clause,
                                   "%s(",
@@ -4060,10 +4025,6 @@ filter_clause (const char* type, const char* filter,
                                     : (last_was_and ? " AND " : " OR ")));
 
           quoted_keyword = sql_quote (keyword->string);
-          type = last_was_re
-                  /* Prevent type-based shortcuts when term is a regex. */
-                  ? KEYWORD_TYPE_UNKNOWN
-                  : keyword_type_from_string (keyword->string);
           if (last_was_not)
             for (index = 0;
                  (filter_column = filter_columns[index]) != NULL;
@@ -4078,11 +4039,8 @@ filter_clause (const char* type, const char* filter,
                                                                  filter_column,
                                                                  &column_type);
 
-                if (type == KEYWORD_TYPE_UNKNOWN
-                    || type == KEYWORD_TYPE_INTEGER
-                    || type == KEYWORD_TYPE_DOUBLE
-                    || (column_type != KEYWORD_TYPE_INTEGER
-                        && column_type != KEYWORD_TYPE_DOUBLE))
+                if (column_type != KEYWORD_TYPE_INTEGER
+                    && column_type != KEYWORD_TYPE_DOUBLE)
                   column_type_matches = 1;
 
                 if (keyword_applies_to_column (keyword, filter_column)
@@ -4119,12 +4077,8 @@ filter_clause (const char* type, const char* filter,
                                                                  where_columns,
                                                                  filter_column,
                                                                  &column_type);
-
-               if (type == KEYWORD_TYPE_UNKNOWN
-                    || type == KEYWORD_TYPE_INTEGER
-                    || type == KEYWORD_TYPE_DOUBLE
-                    || (column_type != KEYWORD_TYPE_INTEGER
-                        && column_type != KEYWORD_TYPE_DOUBLE))
+                if (column_type != KEYWORD_TYPE_INTEGER
+                    && column_type != KEYWORD_TYPE_DOUBLE)
                   column_type_matches = 1;
 
                 if (keyword_applies_to_column (keyword, filter_column)
