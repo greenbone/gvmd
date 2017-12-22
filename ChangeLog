@@ -1,5 +1,11 @@
 2017-12-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_utils.c (next_time): Set TZ environment variable to
+	get correct number of months between first run and current time
+	and when calculating the next due date.
+
+2017-12-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Use next_time function in update_duration_schedule_periods as it is
 	also usable for monthly schedules.
 
