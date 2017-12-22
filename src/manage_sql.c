@@ -18837,8 +18837,8 @@ update_duration_schedule_periods (task_t task)
   duration_expired_element
    = /* The task has started, so assume that the start time was the last
       * most recent start of the period. */
-     " AND (SELECT first_time"
-     "             + (((m_now () - first_time) / period) * period)"
+     " AND (SELECT next_time (first_time, period, period_months,"
+     "                        timezone, -1)"
      "             + duration"
      "      FROM schedules"
      "      WHERE schedules.id = schedule)"
