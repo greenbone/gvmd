@@ -553,6 +553,12 @@ manage_create_sql_functions ()
        " LANGUAGE C;",
        GVM_LIB_INSTALL_DIR);
 
+  sql ("CREATE OR REPLACE FUNCTION next_time (integer, integer, integer, integer, text, integer)"
+       " RETURNS integer"
+       " AS '%s/libgvm-pg-server', 'sql_next_time'"
+       " LANGUAGE C;",
+       GVM_LIB_INSTALL_DIR);
+
   sql ("CREATE OR REPLACE FUNCTION severity_matches_ov (double precision,"
        "                                                double precision)"
        " RETURNS boolean"

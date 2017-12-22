@@ -55,12 +55,12 @@ PG_FUNCTION_INFO_V1 (sql_next_time);
 /**
  * @brief Get the next time given schedule times.
  *
- * This is a callback for a SQL function of three to four arguments.
+ * This is a callback for a SQL function of four to six arguments.
  */
 Datum
 sql_next_time (PG_FUNCTION_ARGS)
 {
-  int32 first, period, period_months, byday;
+  int32 first, period, period_months, byday, periods_offset;
   char *timezone;
   int32 ret;
 
@@ -78,7 +78,13 @@ sql_next_time (PG_FUNCTION_ARGS)
       timezone = textndup (timezone_arg, VARSIZE (timezone_arg) - VARHDRSZ);
     }
 
-  ret = next_time (first, period, period_months, byday, timezone, 0);
+  if (PG_NARGS() < 6 || PG_ARGISNULL (5))
+    periods_offset = 0;
+  else
+    periods_offset = PG_GETARG_INT32 (5);
+
+  ret = next_time (first, period, period_months, byday, timezone,
+                   periods_offset);
   if (timezone)
     pfree (timezone);
   PG_RETURN_INT32 (ret);

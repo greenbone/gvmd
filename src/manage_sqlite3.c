@@ -1293,7 +1293,7 @@ sql_parse_time (sqlite3_context *context, int argc, sqlite3_value** argv)
 /**
  * @brief Calculate the next time from now given a start time and a period.
  *
- * This is a callback for a scalar SQL function of 4 or 5 arguments.
+ * This is a callback for a scalar SQL function of four to six arguments.
  *
  * @param[in]  context  SQL context.
  * @param[in]  argc     Number of arguments.
@@ -1304,10 +1304,10 @@ sql_next_time (sqlite3_context *context, int argc, sqlite3_value** argv)
 {
   time_t first;
   time_t period;
-  int period_months, byday;
+  int period_months, byday, periods_offset;
   const char *timezone;
 
-  assert (argc == 4 || argc == 5);
+  assert (argc == 4 || argc == 5 || argc == 6);
 
   first = sqlite3_value_int (argv[0]);
   period = sqlite3_value_int (argv[1]);
@@ -1318,9 +1318,14 @@ sql_next_time (sqlite3_context *context, int argc, sqlite3_value** argv)
   else
     timezone = (char*) sqlite3_value_text (argv[4]);
 
+  if (argc < 6 || sqlite3_value_type (argv[5]) == SQLITE_NULL)
+    periods_offset = 0;
+  else
+    periods_offset = sqlite3_value_int (argv[5]);
+
   sqlite3_result_int (context,
                       next_time (first, period, period_months, byday, timezone,
-                                 0));
+                                 periods_offset));
 }
 
 /**
@@ -2977,6 +2982,20 @@ manage_create_sql_functions ()
   if (sqlite3_create_function (task_db,
                                "next_time",
                                5,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_next_time,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create next_time", __FUNCTION__);
+      return -1;
+    }
+
+  if (sqlite3_create_function (task_db,
+                               "next_time",
+                               6,               /* Number of args. */
                                SQLITE_UTF8,
                                NULL,            /* Callback data. */
                                sql_next_time,

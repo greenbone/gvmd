@@ -1,3 +1,21 @@
+2017-12-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Use next_time function in update_duration_schedule_periods as it is
+	also usable for monthly schedules.
+
+	* src/manage_pg_server.c (sql_next_time): Add new argument
+	periods_offset.
+
+	* src/manage_pg.c (manage_create_sql_functions): Add next_time with
+	additional integer argument periods_offset.
+
+	* src/manage_sql.c (update_duration_schedule_periods): Use next_time
+	function to calculate the most recent start time.
+
+	* src/manage_sqlite3.c (sql_next_time): Add new argument
+	periods_offset.
+	(manage_create_sql_functions): Add next_time with additional argument.
+
 2017-12-18  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_pg_server.c (sql_next_time): Check if timezone is non-NULL
