@@ -48238,7 +48238,7 @@ task_schedule_iterator_stop_due (iterator_t* iterator)
   first = task_schedule_iterator_first_time (iterator);
   period = task_schedule_iterator_period (iterator);
   period_months = task_schedule_iterator_period_months (iterator);
-  byday = task_schedule_iterator_duration (iterator);
+  byday = task_schedule_iterator_byday (iterator);
   duration = task_schedule_iterator_duration (iterator);
   timezone = task_schedule_iterator_timezone (iterator);
 

@@ -1,5 +1,10 @@
 2017-12-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (task_schedule_iterator_stop_due): Use correct
+	iterator accessor task_schedule_iterator_byday to get byday.
+
+2017-12-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_utils.c (next_time): Set TZ environment variable to
 	get correct number of months between first run and current time
 	and when calculating the next due date.
