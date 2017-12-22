@@ -316,14 +316,42 @@ next_time (time_t first, int period, int period_months, const char* timezone,
   else if (period_months > 0)
     {
       time_t ret;
+      gchar *tz;
+
+      /* Store current TZ. */
+      tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
+
+      if (setenv ("TZ", timezone ? timezone : "UTC", 1) == -1)
+        {
+          g_warning ("%s: Failed to switch to timezone", __FUNCTION__);
+          if (tz != NULL)
+            setenv ("TZ", tz, 1);
+          g_free (tz);
+          return 0;
+        }
+
+      tzset ();
+
+      /* Calculate new time */
       periods_diff = months_between (first, now) / period_months;
       periods_diff += periods_offset;
-      if (add_months (first, (periods_diff + 1) * period_months)
-          >= now)
-        ret = add_months (first, (periods_diff + 1) * period_months);
-      else
-        ret = add_months (first, periods_diff * period_months);
+      ret = add_months (first, (periods_diff + 1) * period_months);
       ret -= offset_diff;
+
+      /* Revert to stored TZ. */
+      if (tz)
+        {
+          if (setenv ("TZ", tz, 1) == -1)
+            {
+              g_warning ("%s: Failed to switch to original TZ", __FUNCTION__);
+              g_free (tz);
+            }
+        }
+      else
+        unsetenv ("TZ");
+
+      g_free (tz);
+
       return ret;
     }
   else if (periods_offset == -1)
