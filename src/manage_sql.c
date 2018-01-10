@@ -10969,6 +10969,7 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
     return -1;
 
   *content = report_content;
+  *used_report_format = report_format;
 
   return 0;
 }
