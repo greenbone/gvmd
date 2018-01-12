@@ -1,3 +1,39 @@
+2018-01-12  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Make TEST_ALERT fail if an error occurs in the alert script and allow
+	it to add a detailed error message to the response.
+
+	* src/alert_methods/SCP/alert: Write error messages to stderr in
+	addition to logger.
+
+	* src/alert_methods/Send/alert: Exit with the same exit code as socat.
+
+	* src/alert_methods/SMB/alert: Exit with code from smbclient and output
+	messages to stderr.
+
+	* src/alert_methods/SNMP/alert: Output exit code and stderr text to
+	stderr.
+
+	* src/alert_methods/Sourcefire/alert: Exit with code from connector.
+
+	* src/alert_methods/verinice/alert: Exit with code from connector.
+
+	* src/gmp.c (gmp_xml_handle_end_element): In CLIENT_TEST_ALERT case,
+	handle new manage_test_alert return code for failed alert script.
+
+	* src/manage.h (manage_alert, manage_test_alert): Add new parameter.
+
+	* src/manage_sql.c (run_alert_script): Fail with a special return code
+	if the script ends with a non-zero exit code and add new message output
+	parameter. Remove temporary files on error.
+	(snmp_to_host, send_to_host, scp_to_host, smb_send_to_host)
+	(escalate_2, manage_alert, escalate_1, manage_test_alert):  Add new 
+	script_message output parameter.
+	(event, manage_send_report): Add param for escalate function calls.
+
+	* src/schema_formats/XML/GMP.xml.in: Add new status_details element
+	to test_alert command.
+
 2018-01-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (report_content_for_alert): Set the output param

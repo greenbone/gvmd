@@ -8791,17 +8791,22 @@ http_get (const char *url)
  * @param[in]  command_args  Args for the "alert" script.
  * @param[in]  report        Report that should be sent.
  * @param[in]  report_size   Size of the report.
+ * @param[out] message       Custom error message of the script.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, -1 error, -5 alert script failed.
  */
 static int
 run_alert_script (const char *alert_id, const char *command_args,
-                  const char *report, int report_size)
+                  const char *report, int report_size, gchar **message)
 {
   gchar *script, *script_dir;
   gchar *report_file;
   char report_dir[] = "/tmp/gvmd_alert_XXXXXX";
+  char alert_err[] = "/tmp/gvmd_alert_err_XXXXXX";
   GError *error;
+
+  if (message)
+    *message = NULL;
 
   if (report == NULL)
     return -1;
@@ -8816,6 +8821,13 @@ run_alert_script (const char *alert_id, const char *command_args,
       return -1;
     }
 
+  if (mkstemp (alert_err) == -1)
+    {
+      g_warning ("%s: mkstemp for error failed\n", __FUNCTION__);
+      gvm_file_remove_recurse (report_dir);
+      return -1;
+    }
+
   report_file = g_strdup_printf ("%s/report", report_dir);
 
   error = NULL;
@@ -8825,6 +8837,8 @@ run_alert_script (const char *alert_id, const char *command_args,
       g_warning ("%s", error->message);
       g_error_free (error);
       g_free (report_file);
+      gvm_file_remove_recurse (report_dir);
+      gvm_file_remove_recurse (alert_err);
       return -1;
     }
 
@@ -8844,6 +8858,8 @@ run_alert_script (const char *alert_id, const char *command_args,
       g_free (report_file);
       g_free (script);
       g_free (script_dir);
+      gvm_file_remove_recurse (report_dir);
+      gvm_file_remove_recurse (alert_err);
       return -1;
     }
 
@@ -8865,6 +8881,8 @@ run_alert_script (const char *alert_id, const char *command_args,
         g_free (previous_dir);
         g_free (script);
         g_free (script_dir);
+        gvm_file_remove_recurse (report_dir);
+        gvm_file_remove_recurse (alert_err);
         return -1;
       }
 
@@ -8877,6 +8895,8 @@ run_alert_script (const char *alert_id, const char *command_args,
         g_free (previous_dir);
         g_free (script);
         g_free (script_dir);
+        gvm_file_remove_recurse (report_dir);
+        gvm_file_remove_recurse (alert_err);
         return -1;
       }
     g_free (script_dir);
@@ -8884,10 +8904,11 @@ run_alert_script (const char *alert_id, const char *command_args,
     /* Call the script. */
 
     command = g_strdup_printf ("%s %s %s"
-                               " > /dev/null 2> /dev/null",
+                               " > /dev/null 2> %s",
                                script,
                                command_args,
-                               report_file);
+                               report_file,
+                               alert_err);
     g_free (script);
 
     g_debug ("   command: %s\n", command);
@@ -8910,6 +8931,8 @@ run_alert_script (const char *alert_id, const char *command_args,
             g_free (previous_dir);
             g_free (report_file);
             g_free (command);
+            gvm_file_remove_recurse (report_dir);
+            gvm_file_remove_recurse (alert_err);
             return -1;
           }
         g_free (report_file);
@@ -8947,8 +8970,9 @@ run_alert_script (const char *alert_id, const char *command_args,
                   }
 
                 ret = system (command);
-                /* Ignore the shell command exit status, because we've not
-                 * specified what it must be in the past. */
+                /*
+                 * Check shell command exit status, assuming 0 means success.
+                 */
                 if (ret == -1)
                   {
                     g_warning ("%s (child):"
@@ -8958,6 +8982,44 @@ run_alert_script (const char *alert_id, const char *command_args,
                                WEXITSTATUS (ret),
                                command);
                     exit (EXIT_FAILURE);
+                  }
+                else if (ret != 0)
+                  {
+                    if (g_file_get_contents (alert_err, message,
+                                              NULL, &error) == FALSE)
+                      {
+                        g_warning ("%s: failed to test error message: %s",
+                                    __FUNCTION__, error->message);
+                        g_error_free (error);
+                        if (message)
+                          g_free (*message);
+                        exit (EXIT_FAILURE);
+                      }
+
+                    if (message == NULL)
+                      exit (EXIT_FAILURE);
+                    else if (*message == NULL || strcmp (*message, "") == 0)
+                      {
+                        g_free (*message);
+                        *message
+                          = g_strdup_printf ("Exited with code %d.",
+                                              WEXITSTATUS (ret));
+
+                        if (g_file_set_contents (alert_err, *message,
+                                                  strlen (*message),
+                                                  &error) == FALSE)
+                          {
+                            g_warning ("%s: failed to write error message:"
+                                        " %s",
+                                        __FUNCTION__, error->message);
+                            g_error_free (error);
+                            g_free (*message);
+                            exit (EXIT_FAILURE);
+                          }
+                      }
+
+                    g_free (*message);
+                    exit (2);
                   }
 
                 exit (EXIT_SUCCESS);
@@ -8974,6 +9036,8 @@ run_alert_script (const char *alert_id, const char *command_args,
                            __FUNCTION__);
               g_free (previous_dir);
               g_free (command);
+              gvm_file_remove_recurse (report_dir);
+              gvm_file_remove_recurse (alert_err);
               return -1;
               break;
 
@@ -8993,6 +9057,8 @@ run_alert_script (const char *alert_id, const char *command_args,
                           g_warning ("%s: and chdir failed\n",
                                      __FUNCTION__);
                         g_free (previous_dir);
+                        gvm_file_remove_recurse (report_dir);
+                        gvm_file_remove_recurse (alert_err);
                         return -1;
                       }
                     if (errno == EINTR)
@@ -9004,6 +9070,8 @@ run_alert_script (const char *alert_id, const char *command_args,
                       g_warning ("%s: and chdir failed\n",
                                  __FUNCTION__);
                     g_free (previous_dir);
+                    gvm_file_remove_recurse (report_dir);
+                    gvm_file_remove_recurse (alert_err);
                     return -1;
                   }
                 if (WIFEXITED (status))
@@ -9011,6 +9079,30 @@ run_alert_script (const char *alert_id, const char *command_args,
                     {
                     case EXIT_SUCCESS:
                       break;
+                    case 2: // script failed
+                      if (message)
+                        {
+                          GError *error = NULL;
+                          if (g_file_get_contents (alert_err, message,
+                                                   NULL, &error) == FALSE)
+                            {
+                              g_warning ("%s: failed to get error message: %s",
+                                         __FUNCTION__, error->message);
+                              g_error_free (error);
+                            }
+
+                          if (strcmp (*message, "") == 0)
+                            {
+                              g_free (*message);
+                              *message = NULL;
+                            }
+                        }
+                      if (chdir (previous_dir))
+                        g_warning ("%s: chdir failed\n",
+                                   __FUNCTION__);
+                      gvm_file_remove_recurse (report_dir);
+                      gvm_file_remove_recurse (alert_err);
+                      return -5;
                     case EXIT_FAILURE:
                     default:
                       g_warning ("%s: child failed, %s\n",
@@ -9020,6 +9112,8 @@ run_alert_script (const char *alert_id, const char *command_args,
                         g_warning ("%s: and chdir failed\n",
                                    __FUNCTION__);
                       g_free (previous_dir);
+                      gvm_file_remove_recurse (report_dir);
+                      gvm_file_remove_recurse (alert_err);
                       return -1;
                     }
                 else
@@ -9031,6 +9125,8 @@ run_alert_script (const char *alert_id, const char *command_args,
                       g_warning ("%s: and chdir failed\n",
                                  __FUNCTION__);
                     g_free (previous_dir);
+                    gvm_file_remove_recurse (report_dir);
+                    gvm_file_remove_recurse (alert_err);
                     return -1;
                   }
 
@@ -9060,7 +9156,41 @@ run_alert_script (const char *alert_id, const char *command_args,
                          __FUNCTION__);
             g_free (previous_dir);
             g_free (command);
+            gvm_file_remove_recurse (report_dir);
+            gvm_file_remove_recurse (alert_err);
             return -1;
+          }
+        else if (ret)
+          {
+            if (message)
+              {
+                GError *error = NULL;
+                if (g_file_get_contents (alert_err, message, NULL, &error)
+                      == FALSE)
+                  {
+                    g_warning ("%s: failed to get error message: %s",
+                               __FUNCTION__, error->message);
+                    g_error_free (error);
+                  }
+
+                if (strcmp (*message, "") == 0)
+                  {
+                    g_free (*message);
+                    *message = NULL;
+                  }
+
+                if (*message == NULL)
+                  {
+                    *message
+                      = g_strdup_printf ("Exited with code %d.",
+                                         WEXITSTATUS (ret));
+                  }
+              }
+            g_free (previous_dir);
+            g_free (command);
+            gvm_file_remove_recurse (report_dir);
+            gvm_file_remove_recurse (alert_err);
+            return -5;
           }
       }
 
@@ -9074,6 +9204,8 @@ run_alert_script (const char *alert_id, const char *command_args,
                    __FUNCTION__,
                    strerror (errno));
         g_free (previous_dir);
+        gvm_file_remove_recurse (report_dir);
+        gvm_file_remove_recurse (alert_err);
         return -1;
       }
     g_free (previous_dir);
@@ -9081,6 +9213,7 @@ run_alert_script (const char *alert_id, const char *command_args,
     /* Remove the directory. */
 
     gvm_file_remove_recurse (report_dir);
+    gvm_file_remove_recurse (alert_err);
 
     return 0;
   }
@@ -9092,11 +9225,13 @@ run_alert_script (const char *alert_id, const char *command_args,
  * @param[in]  community  Community.
  * @param[in]  agent      Agent.
  * @param[in]  message    Message.
+ * @param[out] script_message  Custom error message of the script.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, -1 error, -5 alert script failed.
  */
 static int
-snmp_to_host (const char *community, const char *agent, const char *message)
+snmp_to_host (const char *community, const char *agent, const char *message,
+              gchar **script_message)
 {
   gchar *clean_community, *clean_agent, *clean_message, *command_args;
   int ret;
@@ -9119,7 +9254,7 @@ snmp_to_host (const char *community, const char *agent, const char *message)
   g_free (clean_message);
 
   ret = run_alert_script ("9d435134-15d3-11e6-bf5c-28d24461215b", command_args,
-                          "", 0);
+                          "", 0, script_message);
 
   g_free (command_args);
   return ret;
@@ -9132,12 +9267,14 @@ snmp_to_host (const char *community, const char *agent, const char *message)
  * @param[in]  port         Port of host.
  * @param[in]  report      Report that should be sent.
  * @param[in]  report_size Size of the report.
+ * @param[out] script_message  Custom error message of the script.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, -1 error, -5 alert script failed.
  */
 static int
 send_to_host (const char *host, const char *port,
-              const char *report, int report_size)
+              const char *report, int report_size,
+              gchar **script_message)
 {
   gchar *clean_host, *clean_port, *command_args;
   int ret;
@@ -9154,7 +9291,7 @@ send_to_host (const char *host, const char *port,
   g_free (clean_port);
 
   ret = run_alert_script ("4a398d42-87c0-11e5-a1c0-28d24461215b", command_args,
-                          report, report_size);
+                          report, report_size, script_message);
 
   g_free (command_args);
   return ret;
@@ -9170,13 +9307,14 @@ send_to_host (const char *host, const char *port,
  * @param[in]  known_hosts  Content for known_hosts file.
  * @param[in]  report       Report that should be sent.
  * @param[in]  report_size  Size of the report.
+ * @param[out] script_message  Custom error message of the alert script.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, -1 error, -5 alert script failed.
  */
 static int
 scp_to_host (const char *password, const char *username, const char *host,
              const char *path, const char *known_hosts, const char *report,
-             int report_size)
+             int report_size, gchar **script_message)
 {
   gchar *clean_password, *clean_username, *clean_host, *clean_path;
   gchar *clean_known_hosts, *command_args;
@@ -9204,7 +9342,7 @@ scp_to_host (const char *password, const char *username, const char *host,
   g_free (clean_known_hosts);
 
   ret = run_alert_script ("2db07698-ec49-11e5-bcff-28d24461215b", command_args,
-                          report, report_size);
+                          report, report_size, script_message);
 
   g_free (command_args);
   return ret;
@@ -9219,13 +9357,15 @@ scp_to_host (const char *password, const char *username, const char *host,
  * @param[in]  file_path      Destination filename with path inside the share.
  * @param[in]  report         Report that should be sent.
  * @param[in]  report_size    Size of the report.
+ * @param[out] script_message Custom error message of the alert script.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, -1 error, -5 alert script failed.
  */
 static int
 smb_send_to_host (const char *password, const char *username,
                   const char *share_path, const char *file_path,
-                  const char *report, gsize report_size)
+                  const char *report, gsize report_size,
+                  gchar **script_message)
 {
   gchar *clean_password, *clean_username, *clean_share_path, *clean_file_path;
   gchar *command_args;
@@ -9250,7 +9390,7 @@ smb_send_to_host (const char *password, const char *username,
   g_free (clean_file_path);
 
   ret = run_alert_script ("c427a688-b653-40ab-a9d0-d6ba842a9d63", command_args,
-                          report, report_size);
+                          report, report_size, script_message);
 
   g_free (command_args);
   return ret;
@@ -10666,18 +10806,23 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
  * @param[in]  get         GET data for report.
  * @param[in]  notes_details      If notes, Whether to include details.
  * @param[in]  overrides_details  If overrides, Whether to include details.
+ * @param[out] script_message  Custom error message from the script.
  *
  * @return 0 success, -1 error, -2 failed to find report format, -3 failed to
- *         find filter, -4 failed to find credential.
+ *         find filter, -4 failed to find credential, -5 alert script failed.
  */
 static int
 escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             const void* event_data, alert_method_t method,
             alert_condition_t condition,
-            const get_data_t *get, int notes_details, int overrides_details)
+            const get_data_t *get, int notes_details, int overrides_details,
+            gchar **script_message)
 {
   char *name_alert, *name_task;
   gchar *event_desc, *alert_desc;
+
+  if (script_message)
+    *script_message = NULL;
 
   name_alert = alert_name (alert);
   name_task = task_name (task);
@@ -11263,7 +11408,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   free (path);
 
                   ret = scp_to_host (password, username, host, alert_path,
-                                     known_hosts, message, strlen (message));
+                                     known_hosts, message, strlen (message),
+                                     script_message);
 
                   g_free (message);
                   free (password);
@@ -11398,7 +11544,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               free (path);
 
               ret = scp_to_host (password, username, host, alert_path,
-                                 known_hosts, report_content, content_length);
+                                 known_hosts, report_content, content_length,
+                                 script_message);
 
               free (password);
               free (username);
@@ -11431,7 +11578,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               g_debug ("send host: %s", host);
               g_debug ("send port: %s", port);
 
-              ret = send_to_host (host, port, message, strlen (message));
+              ret = send_to_host (host, port, message, strlen (message),
+                                  script_message);
 
               g_free (message);
               free (host);
@@ -11543,7 +11691,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           g_debug ("send host: %s", host);
           g_debug ("send port: %s", port);
 
-          ret = send_to_host (host, port, report_content, content_length);
+          ret = send_to_host (host, port, report_content, content_length,
+                              script_message);
 
           free (host);
           free (port);
@@ -11650,7 +11799,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           password = credential_encrypted_value (credential, "password");
 
           ret = smb_send_to_host (password, username, share_path, file_path,
-                                  report_content, content_length);
+                                  report_content, content_length,
+                                  script_message);
 
           g_free (username);
           g_free (password);
@@ -11707,7 +11857,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               g_free (event_desc);
             }
 
-          ret = snmp_to_host (community, agent, message);
+          ret = snmp_to_host (community, agent, message, script_message);
 
           free (agent);
           free (community);
@@ -12072,14 +12222,16 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
  * @param[in]  event_data  Event data.
  * @param[in]  method      Method from alert.
  * @param[in]  condition   Condition from alert, which was met by event.
+ * @param[out] script_message  Custom error message from alert script.
  *
  * @return 0 success, -1 error, -2 failed to find report format for alert,
- *         -3 failed to find filter for alert, -4 failed to find credential.
+ *         -3 failed to find filter for alert, -4 failed to find credential,
+ *         -5 alert script failed.
  */
 static int
 escalate_1 (alert_t alert, task_t task, report_t report, event_t event,
             const void* event_data, alert_method_t method,
-            alert_condition_t condition)
+            alert_condition_t condition, gchar **script_message)
 {
   int ret;
   get_data_t get;
@@ -12103,7 +12255,7 @@ escalate_1 (alert_t alert, task_t task, report_t report, event_t event,
     }
 
   ret = escalate_2 (alert, task, report, event, event_data, method, condition,
-                    &get, 1, 1);
+                    &get, 1, 1, script_message);
   free (results_filter);
   g_free (get.filter);
   return ret;
@@ -12116,15 +12268,16 @@ escalate_1 (alert_t alert, task_t task, report_t report, event_t event,
  * @param[in]  task_id     Task UUID.
  * @param[in]  event       Event.
  * @param[in]  event_data  Event data.
+ * @param[out] script_message  Custom error message from alert script.
  *
  * @return 0 success, 1 failed to find alert, 2 failed to find task,
  *         99 permission denied, -1 error, -2 failed to find report format
  *         for alert, -3 failed to find filter for alert, -4 failed to find
- *         credential for alert.
+ *         credential for alert, -5 alert script failed.
  */
 int
 manage_alert (const char *alert_id, const char *task_id, event_t event,
-              const void* event_data)
+              const void* event_data, gchar **script_message)
 {
   alert_t alert;
   task_t task;
@@ -12151,7 +12304,8 @@ manage_alert (const char *alert_id, const char *task_id, event_t event,
 
   condition = alert_condition (alert);
   method = alert_method (alert);
-  return escalate_1 (alert, task, 0, event, event_data, method, condition);
+  return escalate_1 (alert, task, 0, event, event_data, method, condition,
+                     script_message);
 }
 
 /**
@@ -12214,14 +12368,15 @@ manage_alert (const char *alert_id, const char *task_id, event_t event,
  * @brief Test an alert.
  *
  * @param[in]  alert_id    Alert UUID.
+ * @param[out] script_message  Custom message from the alert script.
  *
  * @return 0 success, 1 failed to find alert, 2 failed to find task,
  *         99 permission denied, -1 error, -2 failed to find report format
  *         for alert, -3 failed to find filter for alert, -4 failed to find
- *         credential for alert.
+ *         credential for alert, -5 alert script failed.
  */
 int
-manage_test_alert (const char *alert_id)
+manage_test_alert (const char *alert_id, gchar **script_message)
 {
   int ret;
   alert_t alert;
@@ -12253,9 +12408,11 @@ manage_test_alert (const char *alert_id)
       free (alert_event_data);
 
       if (alert_event (alert) == EVENT_NEW_SECINFO)
-        ret = manage_alert (alert_id, "0", EVENT_NEW_SECINFO, (void*) type);
+        ret = manage_alert (alert_id, "0", EVENT_NEW_SECINFO, (void*) type,
+                            script_message);
       else
-        ret = manage_alert (alert_id, "0", EVENT_UPDATED_SECINFO, (void*) type);
+        ret = manage_alert (alert_id, "0", EVENT_UPDATED_SECINFO, (void*) type,
+                            script_message);
 
       g_free (type);
 
@@ -12300,7 +12457,8 @@ manage_test_alert (const char *alert_id)
   ret = manage_alert (alert_id,
                       task_id,
                       EVENT_TASK_RUN_STATUS_CHANGED,
-                      (void*) TASK_STATUS_DONE);
+                      (void*) TASK_STATUS_DONE,
+                      script_message);
  exit:
   delete_task (task, 1);
   free (task_id);
@@ -12709,7 +12867,8 @@ event (task_t task, report_t report, event_t event, void* event_data)
                   event,
                   event_data,
                   alert_method (alert),
-                  condition);
+                  condition,
+                  NULL);
     }
 
   g_array_free (alerts_triggered, TRUE);
@@ -30627,7 +30786,7 @@ manage_send_report (report_t report, report_t delta_report,
 
       ret = escalate_2 (alert, task, report, EVENT_TASK_RUN_STATUS_CHANGED,
                         (void*) TASK_STATUS_DONE, method, condition,
-                        get, notes_details, overrides_details);
+                        get, notes_details, overrides_details, NULL);
       if (ret == -3)
         return -4;
       if (ret == -1)

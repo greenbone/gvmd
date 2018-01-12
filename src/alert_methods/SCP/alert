@@ -37,32 +37,42 @@ echo $KNOWN_HOSTS > $KNOWN_HOSTS_FILE
 PASSWORD_FILE=`mktemp` || exit 1
 echo $PASSWORD > $PASSWORD_FILE
 
+log_error() {
+  logger "SCP alert: $1"
+  echo "$1" >&2
+}
+
 # Escape destination twice because it is also expanded on the remote end.
-sshpass -f ${PASSWORD_FILE} scp -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2 /etc/ssh/ssh_known_hosts" "${REPORT_FILE}" "${USERNAME}@${HOST}:'${DEST}'"
+sshpass -f ${PASSWORD_FILE} scp -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2 /etc/ssh/ssh_known_hosts" "${REPORT_FILE}" "${USERNAME}@${HOST}:'${DEST}'" 2>/dev/null
 
 EXIT_CODE=$?
 if [ $EXIT_CODE -eq 1 ]
 then
-  logger "SCP alert: sshpass failed with exit code ${EXIT_CODE}: Invalid command line argument"
+  log_error "sshpass failed with exit code ${EXIT_CODE}: Invalid command line argument"
 elif [ $EXIT_CODE -eq 2 ]
 then
-  logger "SCP alert: sshpass failed with exit code ${EXIT_CODE}: Conflicting arguments given"
+  log_error "sshpass failed with exit code ${EXIT_CODE}: Conflicting arguments given"
 elif [ $EXIT_CODE -eq 3 ]
 then
-  logger "SCP alert: sshpass failed with exit code ${EXIT_CODE}: General runtime error"
+  log_error "sshpass failed with exit code ${EXIT_CODE}: General runtime error"
 elif [ $EXIT_CODE -eq 4 ]
 then
-  logger "SCP alert: sshpass failed with exit code ${EXIT_CODE}: Unrecognized response from ssh (parse error)"
+  log_error "sshpass failed with exit code ${EXIT_CODE}: Unrecognized response from ssh (parse error)"
 elif [ $EXIT_CODE -eq 5 ]
 then
-  logger "SCP alert: sshpass failed with exit code ${EXIT_CODE}: Invalid/incorrect password"
+  log_error "sshpass failed with exit code ${EXIT_CODE}: Invalid/incorrect password"
 elif [ $EXIT_CODE -eq 6 ]
 then
-  logger "SCP alert: sshpass failed with exit code ${EXIT_CODE}: Host public key is unknown."
+  log_error "sshpass failed with exit code ${EXIT_CODE}: Host public key is unknown."
+elif [ $EXIT_CODE -eq 127 ]
+then
+  log_error "sshpass failed with exit code ${EXIT_CODE}: Command not found."
 elif [ $EXIT_CODE -ne 0 ]
 then
-  logger "SCP alert: sshpass failed with exit code ${EXIT_CODE}"
+  log_error "sshpass failed with exit code ${EXIT_CODE}"
 fi
 
 rm $KNOWN_HOSTS_FILE
 rm $PASSWORD_FILE
+
+exit $EXIT_CODE

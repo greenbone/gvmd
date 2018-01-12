@@ -30,4 +30,7 @@ SHARE_LOCATION=$3        # \\host\share.
 DEST_PATH=$4
 REPORT_PATH=$5
 
-smbclient -U "$USERNAME%$PASSWORD" "$SHARE_LOCATION" -c "put \"$REPORT_PATH\" \"$DEST_PATH\""
+smbclient -U "$USERNAME%$PASSWORD" "$SHARE_LOCATION" -c "put \"$REPORT_PATH\" \"$DEST_PATH\"" >&2
+EXIT_CODE=$?
+
+exit $EXIT_CODE

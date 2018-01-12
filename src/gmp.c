@@ -28764,7 +28764,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_TEST_ALERT:
         if (test_alert_data->alert_id)
           {
-            switch (manage_test_alert (test_alert_data->alert_id))
+            gchar *script_message = NULL;
+            switch (manage_test_alert (test_alert_data->alert_id,
+                                       &script_message))
               {
                 case 0:
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("test_alert"));
@@ -28803,6 +28805,32 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("test_alert",
                                       "Failed to find credential for alert"));
+                  break;
+                case -5:
+                  if (script_message)
+                    {
+                      gchar *msg;
+                      msg = g_markup_printf_escaped
+                              ("<test_alert_response status=\"400\""
+                               " status_text=\"Alert script failed\">"
+                               "<status_details>%s</status_details>"
+                               "</test_alert_response>",
+                               script_message);
+
+                      if (send_to_client (msg, gmp_parser->client_writer,
+                                          gmp_parser->client_writer_data))
+                        {
+                          error_send_to_client (error);
+                          g_free (msg);
+                          return;
+                        }
+                    }
+                  else
+                    {
+                      SEND_TO_CLIENT_OR_FAIL
+                      (XML_ERROR_SYNTAX ("test_alert",
+                                         "Alert script failed"));
+                    }
                   break;
                 default: /* Programming error. */
                   assert (0);
