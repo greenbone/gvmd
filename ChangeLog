@@ -1,3 +1,15 @@
+2018-01-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Split the functionality of run_alert_script into three functions
+	to make handling alert methods with additional files simpler.
+
+	* src/manage_sql.c (alert_script_init, alert_script_exec)
+	(alert_script_cleanup): New functions.
+	(run_alert_script): Move functionality to the new functions and add
+	parameter report_filename.
+	(snmp_to_host, send_to_host, scp_to_host, smb_send_to_host): Add
+	report_filename param to run_alert_script calls.
+
 2018-01-12  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Make TEST_ALERT fail if an error occurs in the alert script and allow
