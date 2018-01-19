@@ -1,5 +1,27 @@
 2018-01-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Make alerts using run_alert_script send the password to the script
+	in a temporary file instead of having it visible in the shell command.
+
+	* src/alert_methods/SCP/alert: Change params to get the password
+	directly as a password file.
+
+	* src/alert_methods/SMB/alert: Change params to get the username and
+	password as an authfile.
+
+	* src/manage_sql.c (alert_script_init): Create error output file in
+	temp dir and add options to create an extra data file.
+	(alert_script_exec): Add option to pass in an extra data file and chown
+	the error and extra files.
+	(alert_script_cleanup): Adjust to new init output where file path
+	strings have to be freed only report_dir has to be deleted.
+	(run_alert_script): Adjust to new structure of alert script functions.
+	(snmp_to_host, send_to_host, scp_to_host, smb_send_to_host): Add new
+	params for run_alert_script, using it to pass the password to the
+	scripts where applicable.
+
+2018-01-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Split the functionality of run_alert_script into three functions
 	to make handling alert methods with additional files simpler.
 
