@@ -7062,6 +7062,66 @@ validate_smb_data (alert_method_t method, const gchar *name, gchar **data)
 }
 
 /**
+ * @brief Validate method data for the TippingPoint method.
+ *
+ * @param[in]  method          Method that data corresponds to.
+ * @param[in]  name            Name of data.
+ * @param[in]  data            The data.
+ *
+ * @return 0 valid, 50 invalid credential, 51 invalid hostname,
+ *  52 invalid certificate, 53 invalid TLS workaround setting.
+ */
+int
+validate_tippingpoint_data (alert_method_t method, const gchar *name,
+                             gchar **data)
+{
+  if (method == ALERT_METHOD_TIPPINGPOINT)
+    {
+      if (strcmp (name, "tp_sms_credential") == 0)
+        {
+          credential_t credential;
+          if (find_credential_with_permission (*data, &credential,
+                                               "get_credentials"))
+            return -1;
+          else if (credential == 0)
+            return 50;
+          else
+            {
+              if (strcmp (credential_type (credential), "up"))
+                return 50;
+
+            }
+        }
+
+      if (strcmp (name, "tp_sms_hostname") == 0)
+        {
+          if (g_regex_match_simple ("^[0-9A-Za-z][0-9A-Za-z.-]*$",
+                                    *data, 0, 0)
+              == FALSE)
+            {
+              return 51;
+            }
+        }
+
+      if (strcmp (name, "tp_sms_tls_certificate") == 0)
+        {
+          // TODO: Check certificate, return 52 on failure
+        }
+
+      if (strcmp (name, "tp_sms_tls_workaround") == 0)
+        {
+          if (g_regex_match_simple ("^0|1$", *data, 0, 0)
+              == FALSE)
+            {
+              return 53;
+            }
+        }
+    }
+
+  return 0;
+}
+
+/**
  * @brief Check alert params.
  *
  * @param[in]  event           Type of event.
@@ -7117,6 +7177,9 @@ check_alert_params (event_t event, alert_condition_t condition,
  *         event, 21 condition does not match event, 31 unexpected event data
  *         name, 32 syntax error in event data, 40 invalid SMB credential
  *       , 41 invalid SMB share path, 42 invalid SMB file path,
+ *         50 invalid TippingPoint credential, 51 invalid TippingPoint hostname,
+ *         52 invalid TippingPoint certificate, 53 invalid TippingPoint TLS
+ *         workaround setting.
  *         99 permission denied, -1 error.
  */
 int
@@ -7354,6 +7417,15 @@ create_alert (const char* name, const char* comment, const char* filter_id,
           return ret;
         }
 
+      ret = validate_tippingpoint_data (method, name, &data);
+      if (ret)
+        {
+          g_free (name);
+          g_free (data);
+          sql_rollback ();
+          return ret;
+        }
+
       sql ("INSERT INTO alert_method_data (alert, name, data)"
            " VALUES (%llu, '%s', '%s');",
            *alert,
@@ -7457,6 +7529,9 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
  *         event, 21 condition does not match event, 31 unexpected event data
  *         name, 32 syntax error in event data, 40 invalid SMB credential
  *       , 41 invalid SMB share path, 42 invalid SMB file path,
+ *         50 invalid TippingPoint credential, 51 invalid TippingPoint hostname,
+ *         52 invalid TippingPoint certificate, 53 invalid TippingPoint TLS
+ *         workaround setting.
  *         99 permission denied, -1 internal error.
  */
 int
@@ -7724,6 +7799,15 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
             }
 
           ret = validate_smb_data (method, name, &data);
+          if (ret)
+            {
+              g_free (name);
+              g_free (data);
+              sql_rollback ();
+              return ret;
+            }
+
+          ret = validate_tippingpoint_data (method, name, &data);
           if (ret)
             {
               g_free (name);
@@ -10181,6 +10265,105 @@ send_to_verinice (const char *url, const char *username, const char *password,
 }
 
 /**
+ * @brief Convert an XML report and send it to a TippingPoint SMS.
+ *
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+send_to_tippingpoint (const char *report, size_t report_size,
+                      const char *username, const char *password,
+                      const char *hostname, const char *certificate,
+                      int cert_workaround, gchar **message)
+{
+  const char *alert_id = "5b39c481-9137-4876-b734-263849dd96ce";
+  char report_dir[] = "/tmp/gvmd_alert_XXXXXX";
+  gchar *auth_config, *report_path, *error_path, *extra_path, *cert_path;
+  gchar *command_args, *hostname_clean, *convert_script;
+  GError *error = NULL;
+  int ret;
+
+  /* Setup auth file contents */
+  auth_config = g_strdup_printf ("machine %s\n"
+                                 "login %s\n"
+                                 "password %s\n",
+                                 cert_workaround ? "Tippingpoint" : hostname,
+                                 username, password);
+
+  /* Setup common files. */
+  ret = alert_script_init ("report", report, report_size,
+                           auth_config, strlen (auth_config),
+                           report_dir,
+                           &report_path, &error_path, &extra_path);
+  g_free (auth_config);
+
+  if (ret)
+    return ret;
+
+  /* Setup certificate file */
+  cert_path = g_build_filename (report_dir, "cacert.pem", NULL);
+
+  if (g_file_set_contents (cert_path,
+                           certificate, strlen (certificate),
+                           &error) == FALSE)
+    {
+      g_warning ("%s: Failed to write TLS certificate to file: %s",
+                 __FUNCTION__, error->message);
+      alert_script_cleanup (report_dir, report_path, error_path, extra_path);
+      g_free (cert_path);
+      return -1;
+    }
+
+  if (geteuid () == 0)
+    {
+      struct passwd *nobody;
+
+      /* Run the command with lower privileges in a fork. */
+
+      nobody = getpwnam ("nobody");
+      if ((nobody == NULL)
+          || chown (cert_path, nobody->pw_uid, nobody->pw_gid))
+        {
+          g_warning ("%s: Failed to set permissions for user nobody: %s\n",
+                      __FUNCTION__,
+                      strerror (errno));
+          g_free (cert_path);
+          alert_script_cleanup (report_dir, report_path, error_path,
+                                extra_path);
+          return -1;
+        }
+    }
+
+  /* Build args and run the script */
+  hostname_clean = g_shell_quote (hostname);
+  convert_script = g_build_filename (GVMD_DATA_DIR,
+                                     "global_alert_methods",
+                                     alert_id,
+                                     "report-convert.py",
+                                     NULL);
+
+  command_args = g_strdup_printf ("%s %s %d %s",
+                                  hostname_clean, cert_path, cert_workaround,
+                                  convert_script);
+
+  g_free (hostname_clean);
+  g_free (cert_path);
+  g_free (convert_script);
+
+  ret = alert_script_exec (alert_id, command_args, report_path, report_dir,
+                           error_path, extra_path, message);
+  if (ret)
+    {
+      alert_script_cleanup (report_dir, report_path, error_path, extra_path);
+      return ret;
+    }
+
+  /* Remove the directory. */
+  ret = alert_script_cleanup (report_dir, report_path, error_path, extra_path);
+  return ret;
+}
+
+/**
  * @brief Format string for simple notice alert email.
  */
 #define SIMPLE_NOTICE_FORMAT                                                  \
@@ -12112,6 +12295,92 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           g_free (message);
 
           return 0;
+        }
+      case ALERT_METHOD_TIPPINGPOINT:
+        {
+          int ret;
+          report_format_t report_format;
+          gchar *report_content, *extension;
+          size_t content_length;
+          char *credential_id, *username, *password, *hostname, *certificate;
+          credential_t credential;
+          char *tls_cert_workaround_str;
+          int tls_cert_workaround;
+
+          /* TLS certificate subject workaround setting */
+          tls_cert_workaround_str 
+            = alert_data (alert, "method",
+                          "tp_sms_tls_workaround");
+          if (tls_cert_workaround_str)
+            tls_cert_workaround = !!(atoi (tls_cert_workaround_str));
+          else
+            tls_cert_workaround = 0;
+          g_free (tls_cert_workaround_str);
+
+          /* SSL / TLS Certificate */
+          certificate = alert_data (alert, "method",
+                                    "tp_sms_tls_certificate");
+
+          /* Hostname / IP address */
+          hostname = alert_data (alert, "method",
+                                 "tp_sms_hostname");
+
+          /* Credential */
+          credential_id = alert_data (alert, "method",
+                                      "tp_sms_credential");
+          if (find_credential_with_permission (credential_id, &credential,
+                                               "get_credentials"))
+            {
+              g_free (certificate);
+              g_free (hostname);
+              g_free (credential_id);
+              return -1;
+            }
+          else if (credential == 0)
+            {
+              g_free (certificate);
+              g_free (hostname);
+              g_free (credential_id);
+              return -4;
+            }
+          else
+            {
+              g_free (credential_id);
+              username = credential_value (credential, "username");
+              password = credential_encrypted_value (credential, "password");
+            }
+
+          /* Report content */
+          extension = NULL;
+          ret = report_content_for_alert
+                  (alert, report, task, get,
+                   NULL, /* Report format not configurable */
+                   "a994b278-1f62-11e1-96ac-406186ea4fc5", /* XML fallback */
+                   notes_details, overrides_details,
+                   &report_content, &content_length, &extension,
+                   NULL, NULL, NULL, NULL, &report_format);
+          g_free (extension);
+          if (ret)
+            {
+              g_free (username);
+              g_free (password);
+              g_free (hostname);
+              g_free (certificate);
+              return ret;
+            }
+
+          /* Send report */
+          ret = send_to_tippingpoint (report_content, content_length,
+                                      username, password, hostname,
+                                      certificate, tls_cert_workaround,
+                                      script_message);
+
+          g_free (username);
+          g_free (password);
+          g_free (hostname);
+          g_free (certificate);
+          g_free (report_content);
+          return ret;
         }
       case ALERT_METHOD_VERINICE:
         {

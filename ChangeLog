@@ -1,3 +1,28 @@
+2018-01-23  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add new alert method "TippingPoint SMS".
+
+	* CMakeLists.txt: Install new scripts.
+
+	* src/alert_methods/TippingPoint/alert: New shell script for alert.
+
+	* src/alert_methods/TippingPoint/report-convert.py: New python helper
+	script for alert.
+
+	* src/gmp.c (gmp_xml_handle_end_element): In the CREATE_ALERT and
+	MODIFY_ALERT commands, handle return codes for new alert method.
+
+	* src/manage.c (alert_method_name, alert_method_from_name): Add new
+	alert method "TippingPoint SMS".
+
+	* src/manage.h (alert_method_t): Add ALERT_METHOD_TIPPINGPOINT.
+
+	* src/manage_sql.c (validate_tippingpoint_data): New function.
+	(create_alert, modify_alert): Add validation of TippingPoint method
+	data and document new error return codes.
+	(send_to_tippingpoint): New function.
+	(escalate_2): Add case for ALERT_METHOD_TIPPINGPOINT.
+
 2018-01-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Make alerts using run_alert_script send the password to the script

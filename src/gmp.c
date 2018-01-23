@@ -22458,6 +22458,32 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                         "Error in SMB file path"));
                     log_event_fail ("alert", "Alert", NULL, "created");
                     break;
+                  case 50:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_alert",
+                                        "Error in TippingPoint credential"));
+                    log_event_fail ("alert", "Alert", NULL, "created");
+                    break;
+                  case 51:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_alert",
+                                        "Error in TippingPoint hostname"));
+                    log_event_fail ("alert", "Alert", NULL, "created");
+                    break;
+                  case 52:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_alert",
+                                        "Error in TippingPoint TLS"
+                                        " certificate"));
+                    log_event_fail ("alert", "Alert", NULL, "created");
+                    break;
+                  case 53:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_alert",
+                                        "TippingPoint TLS workaround must be"
+                                        " set to 0 or 1"));
+                    log_event_fail ("alert", "Alert", NULL, "created");
+                    break;
                   case 99:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_alert",
@@ -26230,6 +26256,32 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   (XML_ERROR_SYNTAX ("modify_alert",
                                      "Error in SMB file path"));
                 log_event_fail ("alert", "Alert", NULL, "modified");
+                break;
+              case 50:
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_ERROR_SYNTAX ("create_alert",
+                                    "Error in TippingPoint credential"));
+                log_event_fail ("alert", "Alert", NULL, "created");
+                break;
+              case 51:
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_ERROR_SYNTAX ("create_alert",
+                                    "Error in TippingPoint hostname"));
+                log_event_fail ("alert", "Alert", NULL, "created");
+                break;
+              case 52:
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_ERROR_SYNTAX ("create_alert",
+                                    "Error in TippingPoint TLS"
+                                    " certificate"));
+                log_event_fail ("alert", "Alert", NULL, "created");
+                break;
+              case 53:
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_ERROR_SYNTAX ("create_alert",
+                                    "TippingPoint TLS workaround must be"
+                                    " set to 0 or 1"));
+                log_event_fail ("alert", "Alert", NULL, "created");
                 break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL

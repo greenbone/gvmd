@@ -1155,6 +1155,7 @@ alert_method_name (alert_method_t method)
       case ALERT_METHOD_SOURCEFIRE:  return "Sourcefire Connector";
       case ALERT_METHOD_START_TASK:  return "Start Task";
       case ALERT_METHOD_SYSLOG:      return "Syslog";
+      case ALERT_METHOD_TIPPINGPOINT:return "TippingPoint SMS";
       case ALERT_METHOD_VERINICE:    return "verinice Connector";
       default:                       return "Internal Error";
     }
@@ -1230,6 +1231,8 @@ alert_method_from_name (const char* name)
     return ALERT_METHOD_START_TASK;
   if (strcasecmp (name, "Syslog") == 0)
     return ALERT_METHOD_SYSLOG;
+  if (strcasecmp (name, "TippingPoint SMS") == 0)
+    return ALERT_METHOD_TIPPINGPOINT;
   if (strcasecmp (name, "verinice Connector") == 0)
     return ALERT_METHOD_VERINICE;
   return ALERT_METHOD_ERROR;
