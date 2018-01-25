@@ -1643,9 +1643,6 @@ manage_create_sql_functions ()
              "                                   LIMIT 1 OFFSET 0), $2, $3))"
              "         END;"
              "$$ LANGUAGE SQL;",
-             TASK_STATUS_DONE,
-             TASK_STATUS_DONE,
-             TASK_STATUS_DONE,
              TASK_STATUS_DONE);
     }
 

@@ -1,5 +1,10 @@
 2018-01-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_pg.c (manage_create_sql_functions): Remove superfluous
+	parameters in creation of task_severity function.
+
+2018-01-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* ChangeLog: Fix / clarify last entry for src/manage_pg.c.
 
 2018-01-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
