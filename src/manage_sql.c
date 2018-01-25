@@ -18812,90 +18812,14 @@ set_task_schedule_next_time_uuid (const gchar *task_id, time_t time)
 char *
 task_severity (task_t task, int overrides, int min_qod, int offset)
 {
-  char* severity;
-  gchar *severity_sql, *ov, *new_severity_sql;
+  double severity;
 
-  if (current_credentials.uuid == NULL)
+  severity = task_severity_double (task, overrides, min_qod, offset);
+
+  if (severity == SEVERITY_MISSING)
     return NULL;
-
-  if (task_target (task) == 0)
-    /* Container task. */
-    return NULL;
-
-  if (setting_dynamic_severity_int ())
-    severity_sql = g_strdup ("CASE WHEN results.severity"
-                             "          > " G_STRINGIFY (SEVERITY_LOG)
-                             " THEN coalesce ((SELECT CAST (cvss_base"
-                             "                              AS REAL)"
-                             "                 FROM nvts"
-                             "                 WHERE nvts.oid"
-                             "                         = results.nvt),"
-                             "                results.severity)"
-                             " ELSE results.severity END");
   else
-    severity_sql = g_strdup ("results.severity");
-
-  if (overrides)
-    {
-      gchar *owned_clause;
-
-      owned_clause = acl_where_owned_for_get ("override", NULL);
-
-      ov = g_strdup_printf
-            ("SELECT overrides.new_severity"
-             " FROM overrides"
-             " WHERE overrides.nvt = results.nvt"
-             " AND %s"
-             " AND ((overrides.end_time = 0)"
-             "      OR (overrides.end_time >= m_now ()))"
-             " AND (overrides.task = results.task"
-             "      OR overrides.task = 0)"
-             " AND (overrides.result = results.id"
-             "      OR overrides.result = 0)"
-             " AND (overrides.hosts is NULL"
-             "      OR overrides.hosts = ''"
-             "      OR hosts_contains (overrides.hosts, results.host))"
-             " AND (overrides.port is NULL"
-             "      OR overrides.port = ''"
-             "      OR overrides.port = results.port)"
-             " AND severity_matches_ov (%s, overrides.severity)"
-             " ORDER BY overrides.result DESC, overrides.task DESC,"
-             " overrides.port DESC, overrides.severity ASC,"
-             " overrides.creation_time DESC"
-             " LIMIT 1",
-             owned_clause,
-             severity_sql);
-
-      new_severity_sql = g_strdup_printf ("coalesce ((%s), %s)",
-                                          ov, severity_sql);
-
-      g_free (owned_clause);
-      g_free (ov);
-    }
-  else
-    new_severity_sql = g_strdup (severity_sql);
-
-  g_free (severity_sql);
-
-  severity = sql_string ("SELECT max (%s)"
-                         " FROM results"
-                         " WHERE results.report"
-                         "       = +(SELECT id FROM reports"
-                         "           WHERE reports.task = %llu"
-                         "           AND reports.scan_run_status = %u"
-                         "           ORDER BY reports.date DESC"
-                         "           LIMIT 1 OFFSET %d)"
-                         "       AND results.qod"
-                         "            >= %d;",
-                         new_severity_sql,
-                         task,
-                         TASK_STATUS_DONE,
-                         offset,
-                         min_qod);
-
-  g_free (new_severity_sql);
-
-  return severity;
+    return g_strdup_printf ("%0.1f", severity);
 }
 
 /**
@@ -18913,20 +18837,21 @@ task_severity (task_t task, int overrides, int min_qod, int offset)
 double
 task_severity_double (task_t task, int overrides, int min_qod, int offset)
 {
-  char* severity;
-  double severity_dbl;
-  severity = task_severity (task, overrides, min_qod, offset);
+  report_t report;
 
-  if (severity == NULL || sscanf (severity, "%lf", &severity_dbl) != 1)
-    {
-      free (severity);
-      return SEVERITY_MISSING;
-    }
-  else
-    {
-      free (severity);
-      return severity_dbl;
-    }
+  if (current_credentials.uuid == NULL
+      || task_target (task) == 0 /* Container task. */)
+    return SEVERITY_MISSING;
+
+  sql_int64 (&report,
+             "SELECT id FROM reports"
+             "           WHERE reports.task = %llu"
+             "           AND reports.scan_run_status = %u"
+             "           ORDER BY reports.date DESC"
+             "           LIMIT 1 OFFSET %d",
+             task, TASK_STATUS_DONE, offset);
+
+  return report_severity (report, overrides, min_qod);
 }
 
 /**

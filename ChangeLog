@@ -1,3 +1,14 @@
+2018-01-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Simplify task_severity by using the function report_severity, which can
+	also improve performance by using the counts cache.
+
+	* src/manage_pg.c (manage_create_sql_functions): Get the report
+	severity using report_severity instead of checking the results.
+
+	* src/manage_sql.c (task_severity): Use task_severity_double.
+	(task_severity_double): Use the report_severity to get the severity.
+
 2018-01-23  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Add new alert method "TippingPoint SMS".
