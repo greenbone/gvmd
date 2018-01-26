@@ -16303,6 +16303,44 @@ cleanup_tables ()
        " WHERE \"user\" NOT IN (SELECT id FROM users);");
   sql ("DELETE FROM role_users_trash"
        " WHERE \"user\" NOT IN (SELECT id FROM users);");
+
+  /*
+   * Remove permissions of deleted users, groups and roles.
+   */
+  sql ("DELETE FROM permissions"
+       " WHERE (subject_type = 'user'"
+       "        AND subject NOT IN (SELECT id FROM users))"
+       "    OR (subject_type = 'group'"
+       "        AND subject_location = " G_STRINGIFY (LOCATION_TABLE)
+       "        AND subject NOT IN (SELECT id FROM groups))"
+       "    OR (subject_type = 'group'"
+       "        AND subject_location = " G_STRINGIFY (LOCATION_TRASH)
+       "        AND subject NOT IN (SELECT id FROM groups_trash))"
+       "    OR (subject_type = 'role'"
+       "        AND subject_location = " G_STRINGIFY (LOCATION_TABLE)
+       "        AND subject NOT IN (SELECT id FROM roles))"
+       "    OR (subject_type = 'role'"
+       "        AND subject_location = " G_STRINGIFY (LOCATION_TRASH)
+       "        AND subject NOT IN (SELECT id FROM roles_trash));");
+
+  sql ("DELETE FROM permissions_trash"
+       " WHERE (subject_type = 'user'"
+       "        AND subject NOT IN (SELECT id FROM users))"
+       "    OR (subject_type = 'group'"
+       "        AND subject_location = " G_STRINGIFY (LOCATION_TABLE)
+       "        AND subject NOT IN (SELECT id FROM groups))"
+       "    OR (subject_type = 'group'"
+       "        AND subject_location = " G_STRINGIFY (LOCATION_TRASH)
+       "        AND subject NOT IN (SELECT id FROM groups_trash))"
+       "    OR (subject_type = 'role'"
+       "        AND subject_location = " G_STRINGIFY (LOCATION_TABLE)
+       "        AND subject NOT IN (SELECT id FROM roles))"
+       "    OR (subject_type = 'role'"
+       "        AND subject_location = " G_STRINGIFY (LOCATION_TRASH)
+       "        AND subject NOT IN (SELECT id FROM roles_trash));");
+
+  sql ("DELETE FROM permissions_get_tasks"
+       " WHERE user NOT IN (SELECT id FROM users);");
 }
 
 /**
