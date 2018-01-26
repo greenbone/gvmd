@@ -1,3 +1,8 @@
+2018-01-26  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (cleanup_tables): Remove permissions of deleted
+	users, groups and roles.
+
 2018-01-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_pg.c (manage_create_sql_functions): Remove superfluous
