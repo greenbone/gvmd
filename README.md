@@ -1,40 +1,46 @@
-About Greenbone Vulnerability Manager
--------------------------------------
+# About Greenbone Vulnerability Manager
 
 The Greenbone Vulnerability Manager is the central management service between
 security scanners and the user clients.
 
 It manages the storage of any vulnerability management configurations and of the
 scan results. Access to data, control commands and workflows is offered via the
-XML-based Greenbone Management Protocol (GMP). The primary scanner 'OpenVAS Scanner'
+XML-based Greenbone Management Protocol (GMP). The primary scanner
+*[OpenVAS Scanner](https://github.com/greenbone/openvas-scanner)*
 is controlled directly via protocol OTP while any other remote scanner is coupled
 with the Open Scanner Protocol (OSP).
 
 Greenbone Vulnerability Manager is licensed under GNU General Public License
-Version 2 or any later version.  Please see file COPYING for details.
+Version 2 or any later version.  Please see file [COPYING](COPYING) for details.
 
 All parts of Greenbone Vulnerability Manager are Copyright (C) by Greenbone
 Networks GmbH (see http://www.greenbone.net).
 
 
-Howto use
----------
+# Howto use
 
 Starting Greenbone Vulnerability Manager:
 
 In case everything was installed using the defaults, then starting the manager
 can be done with this simple command:
 
+```sh
     gvmd
+```
 
 
 A command like
 
+
+```sh
     gvmd --update
+```
 
 or
 
+```sh
     gvmd --rebuild
+```
 
 will update the Manager's NVT cache, and then exit.  The cache must be
 updated every time the OpenVAS Scanner syncs with the NVT feed.  The --rebuild
@@ -47,4 +53,6 @@ Manager process the SIGHUP signal (signal number 1).
 
 To see all available command line options of gvmd enter this command:
 
+```sh
     gvmd --help
+```
