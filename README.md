@@ -22,34 +22,11 @@ Networks GmbH (see http://www.greenbone.net).
 Starting Greenbone Vulnerability Manager:
 
 In case everything was installed using the defaults, then starting the manager
-can be done with this simple command:
+daemon can be done with this simple command:
 
 ```sh
     gvmd
 ```
-
-
-A command like
-
-
-```sh
-    gvmd --update
-```
-
-or
-
-```sh
-    gvmd --rebuild
-```
-
-will update the Manager's NVT cache, and then exit.  The cache must be
-updated every time the OpenVAS Scanner syncs with the NVT feed.  The --rebuild
-option is faster as it locks the database the entire time, whereas --update
-allows clients to access the Manager during the update.
-
-An update within a running Manager can also be invoked by sending the main
-Manager process the SIGHUP signal (signal number 1).
-
 
 To see all available command line options of gvmd enter this command:
 
