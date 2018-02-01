@@ -551,6 +551,14 @@ install (FILES src/alert_methods/Sourcefire/alert
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_alert_methods/cd1f5a34-6bdc-11e0-9827-002264764cea/
          PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
+install (FILES src/alert_methods/TippingPoint/alert
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_alert_methods/5b39c481-9137-4876-b734-263849dd96ce/
+         PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+
+install (FILES src/alert_methods/TippingPoint/report-convert.py
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_alert_methods/5b39c481-9137-4876-b734-263849dd96ce/
+         PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+
 install (FILES src/alert_methods/verinice/alert
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_alert_methods/f9d97653-f89b-41af-9ba1-0f6ee00e9c1a/
          PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
