@@ -18474,6 +18474,7 @@ task_upload_progress (task_t task)
   if (report)
     {
       int count;
+      int using_sqlite = sql_is_sqlite3 ();
       get_data_t get;
       memset (&get, 0, sizeof (get_data_t));
       get.filter = g_strdup ("min_qod=0");
@@ -18481,9 +18482,11 @@ task_upload_progress (task_t task)
       get_data_reset (&get);
 
       return sql_int ("SELECT"
-                      " max (min (((%i * 100) / upload_result_count), 100), -1)"
+                      " %s (%s (((%i * 100) / upload_result_count), 100), -1)"
                       " FROM tasks"
                       " WHERE id = %llu;",
+                      using_sqlite ? "max" : "greatest",
+                      using_sqlite ? "min" : "least",
                       count,
                       task);
     }
