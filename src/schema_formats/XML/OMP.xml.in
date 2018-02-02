@@ -25097,7 +25097,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <type>text</type>
           <required>1</required>
         </attrib>
+        <o><e>status_details</e></o>
       </pattern>
+      <elem>
+        <name>status_details</name>
+        <summary>
+          Detailed error message when the test fails
+        </summary>
+        <type>text</type>
+      </elem>
     </response>
     <example>
       <summary>Test an alert</summary>

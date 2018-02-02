@@ -22067,6 +22067,32 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                         "Error in SMB file path"));
                     log_event_fail ("alert", "Alert", NULL, "created");
                     break;
+                  case 50:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_alert",
+                                        "Error in TippingPoint credential"));
+                    log_event_fail ("alert", "Alert", NULL, "created");
+                    break;
+                  case 51:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_alert",
+                                        "Error in TippingPoint hostname"));
+                    log_event_fail ("alert", "Alert", NULL, "created");
+                    break;
+                  case 52:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_alert",
+                                        "Error in TippingPoint TLS"
+                                        " certificate"));
+                    log_event_fail ("alert", "Alert", NULL, "created");
+                    break;
+                  case 53:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_alert",
+                                        "TippingPoint TLS workaround must be"
+                                        " set to 0 or 1"));
+                    log_event_fail ("alert", "Alert", NULL, "created");
+                    break;
                   case 99:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_alert",
@@ -25766,6 +25792,32 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                     "Error in SMB file path"));
                 log_event_fail ("alert", "Alert", NULL, "modified");
                 break;
+              case 50:
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_ERROR_SYNTAX ("create_alert",
+                                    "Error in TippingPoint credential"));
+                log_event_fail ("alert", "Alert", NULL, "created");
+                break;
+              case 51:
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_ERROR_SYNTAX ("create_alert",
+                                    "Error in TippingPoint hostname"));
+                log_event_fail ("alert", "Alert", NULL, "created");
+                break;
+              case 52:
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_ERROR_SYNTAX ("create_alert",
+                                    "Error in TippingPoint TLS"
+                                    " certificate"));
+                log_event_fail ("alert", "Alert", NULL, "created");
+                break;
+              case 53:
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_ERROR_SYNTAX ("create_alert",
+                                    "TippingPoint TLS workaround must be"
+                                    " set to 0 or 1"));
+                log_event_fail ("alert", "Alert", NULL, "created");
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_alert",
@@ -28497,7 +28549,9 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_TEST_ALERT:
         if (test_alert_data->alert_id)
           {
-            switch (manage_test_alert (test_alert_data->alert_id))
+            gchar *script_message = NULL;
+            switch (manage_test_alert (test_alert_data->alert_id,
+                                       &script_message))
               {
                 case 0:
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("test_alert"));
@@ -28536,6 +28590,32 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("test_alert",
                                       "Failed to find credential for alert"));
+                  break;
+                case -5:
+                  if (script_message)
+                    {
+                      gchar *msg;
+                      msg = g_markup_printf_escaped
+                              ("<test_alert_response status=\"400\""
+                               " status_text=\"Alert script failed\">"
+                               "<status_details>%s</status_details>"
+                               "</test_alert_response>",
+                               script_message);
+
+                      if (send_to_client (msg, omp_parser->client_writer,
+                                          omp_parser->client_writer_data))
+                        {
+                          error_send_to_client (error);
+                          g_free (msg);
+                          return;
+                        }
+                    }
+                  else
+                    {
+                      SEND_TO_CLIENT_OR_FAIL
+                      (XML_ERROR_SYNTAX ("test_alert",
+                                         "Alert script failed"));
+                    }
                   break;
                 default: /* Programming error. */
                   assert (0);

@@ -7429,6 +7429,66 @@ validate_smb_data (alert_method_t method, const gchar *name, gchar **data)
 }
 
 /**
+ * @brief Validate method data for the TippingPoint method.
+ *
+ * @param[in]  method          Method that data corresponds to.
+ * @param[in]  name            Name of data.
+ * @param[in]  data            The data.
+ *
+ * @return 0 valid, 50 invalid credential, 51 invalid hostname,
+ *  52 invalid certificate, 53 invalid TLS workaround setting.
+ */
+int
+validate_tippingpoint_data (alert_method_t method, const gchar *name,
+                             gchar **data)
+{
+  if (method == ALERT_METHOD_TIPPINGPOINT)
+    {
+      if (strcmp (name, "tp_sms_credential") == 0)
+        {
+          credential_t credential;
+          if (find_credential_with_permission (*data, &credential,
+                                               "get_credentials"))
+            return -1;
+          else if (credential == 0)
+            return 50;
+          else
+            {
+              if (strcmp (credential_type (credential), "up"))
+                return 50;
+
+            }
+        }
+
+      if (strcmp (name, "tp_sms_hostname") == 0)
+        {
+          if (g_regex_match_simple ("^[0-9A-Za-z][0-9A-Za-z.-]*$",
+                                    *data, 0, 0)
+              == FALSE)
+            {
+              return 51;
+            }
+        }
+
+      if (strcmp (name, "tp_sms_tls_certificate") == 0)
+        {
+          // TODO: Check certificate, return 52 on failure
+        }
+
+      if (strcmp (name, "tp_sms_tls_workaround") == 0)
+        {
+          if (g_regex_match_simple ("^0|1$", *data, 0, 0)
+              == FALSE)
+            {
+              return 53;
+            }
+        }
+    }
+
+  return 0;
+}
+
+/**
  * @brief Check alert params.
  *
  * @param[in]  event           Type of event.
@@ -7483,6 +7543,9 @@ check_alert_params (event_t event, alert_condition_t condition,
  *         event, 21 condition does not match event, 31 unexpected event data
  *         name, 32 syntax error in event data, 40 invalid SMB credential
  *       , 41 invalid SMB share path, 42 invalid SMB file path,
+ *         50 invalid TippingPoint credential, 51 invalid TippingPoint hostname,
+ *         52 invalid TippingPoint certificate, 53 invalid TippingPoint TLS
+ *         workaround setting.
  *         99 permission denied, -1 error.
  */
 int
@@ -7719,6 +7782,15 @@ create_alert (const char* name, const char* comment, const char* filter_id,
           return ret;
         }
 
+      ret = validate_tippingpoint_data (method, name, &data);
+      if (ret)
+        {
+          g_free (name);
+          g_free (data);
+          sql_rollback ();
+          return ret;
+        }
+
       sql ("INSERT INTO alert_method_data (alert, name, data)"
            " VALUES (%llu, '%s', '%s');",
            *alert,
@@ -7820,6 +7892,9 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
  *         event, 21 condition does not match event, 31 unexpected event data
  *         name, 32 syntax error in event data, 40 invalid SMB credential
  *       , 41 invalid SMB share path, 42 invalid SMB file path,
+ *         50 invalid TippingPoint credential, 51 invalid TippingPoint hostname,
+ *         52 invalid TippingPoint certificate, 53 invalid TippingPoint TLS
+ *         workaround setting.
  *         99 permission denied, -1 internal error.
  */
 int
@@ -8082,6 +8157,15 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
             }
 
           ret = validate_smb_data (method, name, &data);
+          if (ret)
+            {
+              g_free (name);
+              g_free (data);
+              sql_rollback ();
+              return ret;
+            }
+
+          ret = validate_tippingpoint_data (method, name, &data);
           if (ret)
             {
               g_free (name);
@@ -9109,30 +9193,34 @@ http_get (const char *url)
 }
 
 /**
- * @brief Run an alert's "alert" script.
+ * @brief Initialize common files and variables for an alert script.
  *
- * @param[in]  alert_id      ID of alert.
- * @param[in]  command_args  Args for the "alert" script.
- * @param[in]  report        Report that should be sent.
- * @param[in]  report_size   Size of the report.
+ * The temporary file / dir parameters will be modified by mkdtemp / mkstemp
+ *  to contain the actual path.
+ * The extra data is meant for data that should not be logged like passwords.
+ *
+ * @param[in]     report_filename Filename for the report or NULL for default.
+ * @param[in]     report          Report that should be sent.
+ * @param[in]     report_size     Size of the report.
+ * @param[in]     extra_content   Optional extra data, e.g. credentials
+ * @param[in]     extra_size      Optional extra data length
+ * @param[in,out] report_dir      Template for temporary report directory
+ * @param[out]    report_path     Pointer to store path to report file at
+ * @param[out]    error_file      Temporary file for error messages
+ * @param[out]    extra_file      Temporary extra data file
  *
  * @return 0 success, -1 error.
  */
 static int
-run_alert_script (const char *alert_id, const char *command_args,
-                  const char *report, int report_size)
+alert_script_init (const char *report_filename, const char* report,
+                   size_t report_size,
+                   const char *extra_content, size_t extra_size,
+                   char *report_dir,
+                   gchar **report_path, gchar **error_path, gchar **extra_path)
 {
-  gchar *script, *script_dir;
-  gchar *report_file;
-  char report_dir[] = "/tmp/openvasmd_alert_XXXXXX";
   GError *error;
 
-  if (report == NULL)
-    return -1;
-
-  g_debug ("report: %s", report);
-
-  /* Setup files. */
+  /* Create temp directory */
 
   if (mkdtemp (report_dir) == NULL)
     {
@@ -9140,19 +9228,96 @@ run_alert_script (const char *alert_id, const char *command_args,
       return -1;
     }
 
-  report_file = g_strdup_printf ("%s/report", report_dir);
+  /* Create report file */
+
+  *report_path = g_strdup_printf ("%s/%s",
+                                  report_dir,
+                                  report_filename ? report_filename
+                                                  : "report");
 
   error = NULL;
-  g_file_set_contents (report_file, report, report_size, &error);
+  g_file_set_contents (*report_path, report, report_size, &error);
   if (error)
     {
-      g_warning ("%s", error->message);
+      g_warning ("%s: could not write report: %s",
+                 __FUNCTION__, error->message);
       g_error_free (error);
-      g_free (report_file);
+      g_free (*report_path);
+      openvas_file_remove_recurse (report_dir);
       return -1;
     }
 
-  /* Setup file names. */
+  /* Create error file */
+
+  *error_path = g_strdup_printf ("%s/error_XXXXXX", report_dir);
+
+  if (mkstemp (*error_path) == -1)
+    {
+      g_warning ("%s: mkstemp for error output failed\n", __FUNCTION__);
+      openvas_file_remove_recurse (report_dir);
+      g_free (*report_path);
+      g_free (*error_path);
+      return -1;
+    }
+
+  /* Create extra data file */
+
+  if (extra_content)
+    {
+      *extra_path = g_strdup_printf ("%s/extra_XXXXXX", report_dir);
+      if (mkstemp (*extra_path) == -1)
+        {
+          g_warning ("%s: mkstemp for extra data failed\n", __FUNCTION__);
+          openvas_file_remove_recurse (report_dir);
+          g_free (*report_path);
+          g_free (*error_path);
+          g_free (*extra_path);
+          return -1;
+        }
+
+      error = NULL;
+      g_file_set_contents (*extra_path, extra_content, extra_size, &error);
+      if (error)
+        {
+          g_warning ("%s: could not write extra data: %s",
+                    __FUNCTION__, error->message);
+          g_error_free (error);
+          openvas_file_remove_recurse (report_dir);
+          g_free (*report_path);
+          g_free (*error_path);
+          g_free (*extra_path);
+          return -1;
+        }
+    }
+  else
+    *extra_path = NULL;
+
+  return 0;
+}
+
+/**
+ * @brief Execute the alert script.
+ *
+ * @param[in]  alert_id      UUID of the alert.
+ * @param[in]  command_args  Args for the "alert" script.
+ * @param[in]  report_path   Path to temporary file containing the report
+ * @param[in]  report_dir    Temporary directory for the report
+ * @param[in]  error_path    Path to the script error message file
+ * @param[in]  extra_path    Path to the extra data file
+ * @param[out] message       Custom error message generated by the script
+ *
+ * @return 0 success, -1 error, -5 alert script failed.
+ */
+static int
+alert_script_exec (const char *alert_id, const char *command_args,
+                   const char *report_path, const char *report_dir,
+                   const char *error_path, const char *extra_path,
+                   gchar **message)
+{
+  gchar *script, *script_dir;
+  GError *error;
+
+  /* Setup script file name. */
   script_dir = g_build_filename (OPENVAS_DATA_DIR,
                                  "openvasmd",
                                  "global_alert_methods",
@@ -9166,12 +9331,12 @@ run_alert_script (const char *alert_id, const char *command_args,
       g_warning ("%s: Failed to find alert script: %s\n",
            __FUNCTION__,
            script);
-      g_free (report_file);
       g_free (script);
       g_free (script_dir);
       return -1;
     }
 
+  /* Run the script */
   {
     gchar *command;
     char *previous_dir;
@@ -9186,7 +9351,6 @@ run_alert_script (const char *alert_id, const char *command_args,
         g_warning ("%s: Failed to getcwd: %s\n",
                    __FUNCTION__,
                    strerror (errno));
-        g_free (report_file);
         g_free (previous_dir);
         g_free (script);
         g_free (script_dir);
@@ -9198,7 +9362,6 @@ run_alert_script (const char *alert_id, const char *command_args,
         g_warning ("%s: Failed to chdir: %s\n",
                    __FUNCTION__,
                    strerror (errno));
-        g_free (report_file);
         g_free (previous_dir);
         g_free (script);
         g_free (script_dir);
@@ -9208,11 +9371,21 @@ run_alert_script (const char *alert_id, const char *command_args,
 
     /* Call the script. */
 
-    command = g_strdup_printf ("%s %s %s"
-                               " > /dev/null 2> /dev/null",
-                               script,
-                               command_args,
-                               report_file);
+    if (extra_path)
+      command = g_strdup_printf ("%s %s %s %s"
+                                 " > /dev/null 2> %s",
+                                 script,
+                                 command_args,
+                                 extra_path,
+                                 report_path,
+                                 error_path);
+    else
+      command = g_strdup_printf ("%s %s %s"
+                                 " > /dev/null 2> %s",
+                                 script,
+                                 command_args,
+                                 report_path,
+                                 error_path);
     g_free (script);
 
     g_debug ("   command: %s\n", command);
@@ -9227,17 +9400,18 @@ run_alert_script (const char *alert_id, const char *command_args,
         nobody = getpwnam ("nobody");
         if ((nobody == NULL)
             || chown (report_dir, nobody->pw_uid, nobody->pw_gid)
-            || chown (report_file, nobody->pw_uid, nobody->pw_gid))
+            || chown (report_path, nobody->pw_uid, nobody->pw_gid)
+            || chown (error_path, nobody->pw_uid, nobody->pw_gid)
+            || (extra_path && chown (extra_path, nobody->pw_uid,
+                                     nobody->pw_gid)))
           {
             g_warning ("%s: Failed to set permissions for user nobody: %s\n",
                        __FUNCTION__,
                        strerror (errno));
             g_free (previous_dir);
-            g_free (report_file);
             g_free (command);
             return -1;
           }
-        g_free (report_file);
 
         pid = fork ();
         switch (pid)
@@ -9270,8 +9444,9 @@ run_alert_script (const char *alert_id, const char *command_args,
                   }
 
                 ret = system (command);
-                /* Ignore the shell command exit status, because we've not
-                 * specified what it must be in the past. */
+                /*
+                 * Check shell command exit status, assuming 0 means success.
+                 */
                 if (ret == -1)
                   {
                     g_warning ("%s (child):"
@@ -9281,6 +9456,44 @@ run_alert_script (const char *alert_id, const char *command_args,
                                WEXITSTATUS (ret),
                                command);
                     exit (EXIT_FAILURE);
+                  }
+                else if (ret != 0)
+                  {
+                    if (g_file_get_contents (error_path, message,
+                                             NULL, &error) == FALSE)
+                      {
+                        g_warning ("%s: failed to test error message: %s",
+                                    __FUNCTION__, error->message);
+                        g_error_free (error);
+                        if (message)
+                          g_free (*message);
+                        exit (EXIT_FAILURE);
+                      }
+
+                    if (message == NULL)
+                      exit (EXIT_FAILURE);
+                    else if (*message == NULL || strcmp (*message, "") == 0)
+                      {
+                        g_free (*message);
+                        *message
+                          = g_strdup_printf ("Exited with code %d.",
+                                              WEXITSTATUS (ret));
+
+                        if (g_file_set_contents (error_path, *message,
+                                                 strlen (*message),
+                                                 &error) == FALSE)
+                          {
+                            g_warning ("%s: failed to write error message:"
+                                        " %s",
+                                        __FUNCTION__, error->message);
+                            g_error_free (error);
+                            g_free (*message);
+                            exit (EXIT_FAILURE);
+                          }
+                      }
+
+                    g_free (*message);
+                    exit (2);
                   }
 
                 exit (EXIT_SUCCESS);
@@ -9334,6 +9547,28 @@ run_alert_script (const char *alert_id, const char *command_args,
                     {
                     case EXIT_SUCCESS:
                       break;
+                    case 2: // script failed
+                      if (message)
+                        {
+                          GError *error = NULL;
+                          if (g_file_get_contents (error_path, message,
+                                                   NULL, &error) == FALSE)
+                            {
+                              g_warning ("%s: failed to get error message: %s",
+                                         __FUNCTION__, error->message);
+                              g_error_free (error);
+                            }
+
+                          if (strcmp (*message, "") == 0)
+                            {
+                              g_free (*message);
+                              *message = NULL;
+                            }
+                        }
+                      if (chdir (previous_dir))
+                        g_warning ("%s: chdir failed\n",
+                                   __FUNCTION__);
+                      return -5;
                     case EXIT_FAILURE:
                     default:
                       g_warning ("%s: child failed, %s\n",
@@ -9366,7 +9601,6 @@ run_alert_script (const char *alert_id, const char *command_args,
     else
       {
         /* Just run the command as the current user. */
-        g_free (report_file);
 
         ret = system (command);
         /* Ignore the shell command exit status, because we've not
@@ -9385,6 +9619,36 @@ run_alert_script (const char *alert_id, const char *command_args,
             g_free (command);
             return -1;
           }
+        else if (ret)
+          {
+            if (message)
+              {
+                GError *error = NULL;
+                if (g_file_get_contents (error_path, message, NULL, &error)
+                      == FALSE)
+                  {
+                    g_warning ("%s: failed to get error message: %s",
+                               __FUNCTION__, error->message);
+                    g_error_free (error);
+                  }
+
+                if (strcmp (*message, "") == 0)
+                  {
+                    g_free (*message);
+                    *message = NULL;
+                  }
+
+                if (*message == NULL)
+                  {
+                    *message
+                      = g_strdup_printf ("Exited with code %d.",
+                                         WEXITSTATUS (ret));
+                  }
+              }
+            g_free (previous_dir);
+            g_free (command);
+            return -5;
+          }
       }
 
     g_free (command);
@@ -9400,13 +9664,85 @@ run_alert_script (const char *alert_id, const char *command_args,
         return -1;
       }
     g_free (previous_dir);
-
-    /* Remove the directory. */
-
-    openvas_file_remove_recurse (report_dir);
-
-    return 0;
   }
+  return 0;
+}
+
+/**
+ * @brief Clean up common files and variables for running alert script.
+ *
+ * @param[in]  report_dir   The temporary directory.
+ * @param[in]  report_path  The temporary report file path to free.
+ * @param[in]  error_path   The temporary error file path to free.
+ * @param[in]  extra_path   The temporary extra data file path to free.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+alert_script_cleanup (const char *report_dir,
+                      gchar *report_path, gchar *error_path, gchar *extra_path)
+{
+  openvas_file_remove_recurse (report_dir);
+  g_free (report_path);
+  g_free (error_path);
+  g_free (extra_path);
+  return 0;
+}
+
+/**
+ * @brief Run an alert's "alert" script with one file of extra data.
+ *
+ * @param[in]  alert_id         ID of alert.
+ * @param[in]  command_args     Args for the "alert" script.
+ * @param[in]  report_filename  Optional report file name, default: "report"
+ * @param[in]  report           Report that should be sent.
+ * @param[in]  report_size      Size of the report.
+ * @param[in]  extra_content    Optional extra data like passwords
+ * @param[in]  extra_size       Size of the report.
+ * @param[out] script_message   Custom error message of the script.
+ *
+ * @return 0 success, -1 error, -5 alert script failed.
+ */
+static int
+run_alert_script (const char *alert_id, const char *command_args,
+                  const char *report_filename, const char *report,
+                  size_t report_size,
+                  const char *extra_content, size_t extra_size,
+                  gchar **message)
+{
+  char report_dir[] = "/tmp/openvasmd_alert_XXXXXX";
+  gchar *report_path, *error_path, *extra_path;
+  int ret;
+
+  if (message)
+    *message = NULL;
+
+  if (report == NULL)
+    return -1;
+
+  g_debug ("report: %s", report);
+
+  /* Setup files. */
+  ret = alert_script_init (report_filename, report, report_size,
+                           extra_content, extra_size,
+                           report_dir,
+                           &report_path, &error_path, &extra_path);
+  if (ret)
+    return ret;
+
+  /* Run the script */
+  ret = alert_script_exec (alert_id, command_args, report_path, report_dir,
+                           error_path, extra_path, message);
+  if (ret)
+    {
+      alert_script_cleanup (report_dir, report_path, error_path, extra_path);
+      return ret;
+    }
+
+  /* Remove the directory. */
+  ret = alert_script_cleanup (report_dir, report_path, error_path, extra_path);
+
+  return ret;
 }
 
 /**
@@ -9415,11 +9751,13 @@ run_alert_script (const char *alert_id, const char *command_args,
  * @param[in]  community  Community.
  * @param[in]  agent      Agent.
  * @param[in]  message    Message.
+ * @param[out] script_message  Custom error message of the script.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, -1 error, -5 alert script failed.
  */
 static int
-snmp_to_host (const char *community, const char *agent, const char *message)
+snmp_to_host (const char *community, const char *agent, const char *message,
+              gchar **script_message)
 {
   gchar *clean_community, *clean_agent, *clean_message, *command_args;
   int ret;
@@ -9442,7 +9780,7 @@ snmp_to_host (const char *community, const char *agent, const char *message)
   g_free (clean_message);
 
   ret = run_alert_script ("9d435134-15d3-11e6-bf5c-28d24461215b", command_args,
-                          "", 0);
+                          "report", "", 0, NULL, 0, script_message);
 
   g_free (command_args);
   return ret;
@@ -9455,12 +9793,14 @@ snmp_to_host (const char *community, const char *agent, const char *message)
  * @param[in]  port         Port of host.
  * @param[in]  report      Report that should be sent.
  * @param[in]  report_size Size of the report.
+ * @param[out] script_message  Custom error message of the script.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, -1 error, -5 alert script failed.
  */
 static int
 send_to_host (const char *host, const char *port,
-              const char *report, int report_size)
+              const char *report, int report_size,
+              gchar **script_message)
 {
   gchar *clean_host, *clean_port, *command_args;
   int ret;
@@ -9477,7 +9817,8 @@ send_to_host (const char *host, const char *port,
   g_free (clean_port);
 
   ret = run_alert_script ("4a398d42-87c0-11e5-a1c0-28d24461215b", command_args,
-                          report, report_size);
+                          "report", report, report_size, NULL, 0,
+                          script_message);
 
   g_free (command_args);
   return ret;
@@ -9493,15 +9834,16 @@ send_to_host (const char *host, const char *port,
  * @param[in]  known_hosts  Content for known_hosts file.
  * @param[in]  report       Report that should be sent.
  * @param[in]  report_size  Size of the report.
+ * @param[out] script_message  Custom error message of the alert script.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, -1 error, -5 alert script failed.
  */
 static int
 scp_to_host (const char *password, const char *username, const char *host,
              const char *path, const char *known_hosts, const char *report,
-             int report_size)
+             int report_size, gchar **script_message)
 {
-  gchar *clean_password, *clean_username, *clean_host, *clean_path;
+  gchar *clean_username, *clean_host, *clean_path;
   gchar *clean_known_hosts, *command_args;
   int ret;
 
@@ -9513,21 +9855,20 @@ scp_to_host (const char *password, const char *username, const char *host,
   if (known_hosts == NULL)
     known_hosts = "";
 
-  clean_password = g_shell_quote (password);
   clean_username = g_shell_quote (username);
   clean_host = g_shell_quote (host);
   clean_path = g_shell_quote (path);
   clean_known_hosts = g_shell_quote (known_hosts);
-  command_args = g_strdup_printf ("%s %s %s %s %s", clean_password, clean_username,
+  command_args = g_strdup_printf ("%s %s %s %s", clean_username,
                                   clean_host, clean_path, clean_known_hosts);
-  g_free (clean_password);
   g_free (clean_username);
   g_free (clean_host);
   g_free (clean_path);
   g_free (clean_known_hosts);
 
-  ret = run_alert_script ("2db07698-ec49-11e5-bcff-28d24461215b", command_args,
-                          report, report_size);
+  ret = run_alert_script ("2db07698-ec49-11e5-bcff-28d24461215b",
+                          command_args, "report", report, report_size,
+                          password, strlen (password), script_message);
 
   g_free (command_args);
   return ret;
@@ -9542,15 +9883,18 @@ scp_to_host (const char *password, const char *username, const char *host,
  * @param[in]  file_path      Destination filename with path inside the share.
  * @param[in]  report         Report that should be sent.
  * @param[in]  report_size    Size of the report.
+ * @param[out] script_message Custom error message of the alert script.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, -1 error, -5 alert script failed.
  */
 static int
 smb_send_to_host (const char *password, const char *username,
                   const char *share_path, const char *file_path,
-                  const char *report, gsize report_size)
+                  const char *report, gsize report_size,
+                  gchar **script_message)
 {
-  gchar *clean_password, *clean_username, *clean_share_path, *clean_file_path;
+  gchar *clean_share_path, *clean_file_path;
+  gchar *authfile_content;
   gchar *command_args;
   int ret;
 
@@ -9560,21 +9904,22 @@ smb_send_to_host (const char *password, const char *username,
       || share_path == NULL || file_path == NULL)
     return -1;
 
-  clean_password = g_shell_quote (password);
-  clean_username = g_shell_quote (username);
   clean_share_path = g_shell_quote (share_path);
   clean_file_path = g_shell_quote (file_path);
-  command_args = g_strdup_printf ("%s %s %s %s",
-                                  clean_password, clean_username,
+  authfile_content = g_strdup_printf ("username = %s\n"
+                                      "password = %s\n",
+                                      username, password);
+  command_args = g_strdup_printf ("%s %s",
                                   clean_share_path, clean_file_path);
-  g_free (clean_password);
-  g_free (clean_username);
   g_free (clean_share_path);
   g_free (clean_file_path);
 
   ret = run_alert_script ("c427a688-b653-40ab-a9d0-d6ba842a9d63", command_args,
-                          report, report_size);
+                          "report", report, report_size,
+                          authfile_content, strlen (authfile_content),
+                          script_message);
 
+  g_free (authfile_content);
   g_free (command_args);
   return ret;
 }
@@ -10238,6 +10583,106 @@ send_to_verinice (const char *url, const char *username, const char *password,
 
     return 0;
   }
+}
+
+/**
+ * @brief Convert an XML report and send it to a TippingPoint SMS.
+ *
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+send_to_tippingpoint (const char *report, size_t report_size,
+                      const char *username, const char *password,
+                      const char *hostname, const char *certificate,
+                      int cert_workaround, gchar **message)
+{
+  const char *alert_id = "5b39c481-9137-4876-b734-263849dd96ce";
+  char report_dir[] = "/tmp/openvasmd_alert_XXXXXX";
+  gchar *auth_config, *report_path, *error_path, *extra_path, *cert_path;
+  gchar *command_args, *hostname_clean, *convert_script;
+  GError *error = NULL;
+  int ret;
+
+  /* Setup auth file contents */
+  auth_config = g_strdup_printf ("machine %s\n"
+                                 "login %s\n"
+                                 "password %s\n",
+                                 cert_workaround ? "Tippingpoint" : hostname,
+                                 username, password);
+
+  /* Setup common files. */
+  ret = alert_script_init ("report", report, report_size,
+                           auth_config, strlen (auth_config),
+                           report_dir,
+                           &report_path, &error_path, &extra_path);
+  g_free (auth_config);
+
+  if (ret)
+    return ret;
+
+  /* Setup certificate file */
+  cert_path = g_build_filename (report_dir, "cacert.pem", NULL);
+
+  if (g_file_set_contents (cert_path,
+                           certificate, strlen (certificate),
+                           &error) == FALSE)
+    {
+      g_warning ("%s: Failed to write TLS certificate to file: %s",
+                 __FUNCTION__, error->message);
+      alert_script_cleanup (report_dir, report_path, error_path, extra_path);
+      g_free (cert_path);
+      return -1;
+    }
+
+  if (geteuid () == 0)
+    {
+      struct passwd *nobody;
+
+      /* Run the command with lower privileges in a fork. */
+
+      nobody = getpwnam ("nobody");
+      if ((nobody == NULL)
+          || chown (cert_path, nobody->pw_uid, nobody->pw_gid))
+        {
+          g_warning ("%s: Failed to set permissions for user nobody: %s\n",
+                      __FUNCTION__,
+                      strerror (errno));
+          g_free (cert_path);
+          alert_script_cleanup (report_dir, report_path, error_path,
+                                extra_path);
+          return -1;
+        }
+    }
+
+  /* Build args and run the script */
+  hostname_clean = g_shell_quote (hostname);
+  convert_script = g_build_filename (OPENVAS_DATA_DIR,
+                                     "openvasmd",
+                                     "global_alert_methods",
+                                     alert_id,
+                                     "report-convert.py",
+                                     NULL);
+
+  command_args = g_strdup_printf ("%s %s %d %s",
+                                  hostname_clean, cert_path, cert_workaround,
+                                  convert_script);
+
+  g_free (hostname_clean);
+  g_free (cert_path);
+  g_free (convert_script);
+
+  ret = alert_script_exec (alert_id, command_args, report_path, report_dir,
+                           error_path, extra_path, message);
+  if (ret)
+    {
+      alert_script_cleanup (report_dir, report_path, error_path, extra_path);
+      return ret;
+    }
+
+  /* Remove the directory. */
+  ret = alert_script_cleanup (report_dir, report_path, error_path, extra_path);
+  return ret;
 }
 
 /**
@@ -10987,18 +11432,23 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
  * @param[in]  get         GET data for report.
  * @param[in]  notes_details      If notes, Whether to include details.
  * @param[in]  overrides_details  If overrides, Whether to include details.
+ * @param[out] script_message  Custom error message from the script.
  *
  * @return 0 success, -1 error, -2 failed to find report format, -3 failed to
- *         find filter, -4 failed to find credential.
+ *         find filter, -4 failed to find credential, -5 alert script failed.
  */
 static int
 escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             const void* event_data, alert_method_t method,
             alert_condition_t condition,
-            const get_data_t *get, int notes_details, int overrides_details)
+            const get_data_t *get, int notes_details, int overrides_details,
+            gchar **script_message)
 {
   char *name_alert, *name_task;
   gchar *event_desc, *alert_desc;
+
+  if (script_message)
+    *script_message = NULL;
 
   name_alert = alert_name (alert);
   name_task = task_name (task);
@@ -11584,7 +12034,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   free (path);
 
                   ret = scp_to_host (password, username, host, alert_path,
-                                     known_hosts, message, strlen (message));
+                                     known_hosts, message, strlen (message),
+                                     script_message);
 
                   g_free (message);
                   free (password);
@@ -11719,7 +12170,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               free (path);
 
               ret = scp_to_host (password, username, host, alert_path,
-                                 known_hosts, report_content, content_length);
+                                 known_hosts, report_content, content_length,
+                                 script_message);
 
               free (password);
               free (username);
@@ -11752,7 +12204,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               g_debug ("send host: %s", host);
               g_debug ("send port: %s", port);
 
-              ret = send_to_host (host, port, message, strlen (message));
+              ret = send_to_host (host, port, message, strlen (message),
+                                  script_message);
 
               g_free (message);
               free (host);
@@ -11864,7 +12317,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           g_debug ("send host: %s", host);
           g_debug ("send port: %s", port);
 
-          ret = send_to_host (host, port, report_content, content_length);
+          ret = send_to_host (host, port, report_content, content_length,
+                              script_message);
 
           free (host);
           free (port);
@@ -11971,7 +12425,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           password = credential_encrypted_value (credential, "password");
 
           ret = smb_send_to_host (password, username, share_path, file_path,
-                                  report_content, content_length);
+                                  report_content, content_length,
+                                  script_message);
 
           g_free (username);
           g_free (password);
@@ -12028,7 +12483,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               g_free (event_desc);
             }
 
-          ret = snmp_to_host (community, agent, message);
+          ret = snmp_to_host (community, agent, message, script_message);
 
           free (agent);
           free (community);
@@ -12162,6 +12617,92 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           g_free (message);
 
           return 0;
+        }
+      case ALERT_METHOD_TIPPINGPOINT:
+        {
+          int ret;
+          report_format_t report_format;
+          gchar *report_content, *extension;
+          size_t content_length;
+          char *credential_id, *username, *password, *hostname, *certificate;
+          credential_t credential;
+          char *tls_cert_workaround_str;
+          int tls_cert_workaround;
+
+          /* TLS certificate subject workaround setting */
+          tls_cert_workaround_str 
+            = alert_data (alert, "method",
+                          "tp_sms_tls_workaround");
+          if (tls_cert_workaround_str)
+            tls_cert_workaround = !!(atoi (tls_cert_workaround_str));
+          else
+            tls_cert_workaround = 0;
+          g_free (tls_cert_workaround_str);
+
+          /* SSL / TLS Certificate */
+          certificate = alert_data (alert, "method",
+                                    "tp_sms_tls_certificate");
+
+          /* Hostname / IP address */
+          hostname = alert_data (alert, "method",
+                                 "tp_sms_hostname");
+
+          /* Credential */
+          credential_id = alert_data (alert, "method",
+                                      "tp_sms_credential");
+          if (find_credential_with_permission (credential_id, &credential,
+                                               "get_credentials"))
+            {
+              g_free (certificate);
+              g_free (hostname);
+              g_free (credential_id);
+              return -1;
+            }
+          else if (credential == 0)
+            {
+              g_free (certificate);
+              g_free (hostname);
+              g_free (credential_id);
+              return -4;
+            }
+          else
+            {
+              g_free (credential_id);
+              username = credential_value (credential, "username");
+              password = credential_encrypted_value (credential, "password");
+            }
+
+          /* Report content */
+          extension = NULL;
+          ret = report_content_for_alert
+                  (alert, report, task, get,
+                   NULL, /* Report format not configurable */
+                   "a994b278-1f62-11e1-96ac-406186ea4fc5", /* XML fallback */
+                   notes_details, overrides_details,
+                   &report_content, &content_length, &extension,
+                   NULL, NULL, NULL, NULL, &report_format);
+          g_free (extension);
+          if (ret)
+            {
+              g_free (username);
+              g_free (password);
+              g_free (hostname);
+              g_free (certificate);
+              return ret;
+            }
+
+          /* Send report */
+          ret = send_to_tippingpoint (report_content, content_length,
+                                      username, password, hostname,
+                                      certificate, tls_cert_workaround,
+                                      script_message);
+
+          g_free (username);
+          g_free (password);
+          g_free (hostname);
+          g_free (certificate);
+          g_free (report_content);
+          return ret;
         }
       case ALERT_METHOD_VERINICE:
         {
@@ -12393,14 +12934,16 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
  * @param[in]  event_data  Event data.
  * @param[in]  method      Method from alert.
  * @param[in]  condition   Condition from alert, which was met by event.
+ * @param[out] script_message  Custom error message from alert script.
  *
  * @return 0 success, -1 error, -2 failed to find report format for alert,
- *         -3 failed to find filter for alert, -4 failed to find credential.
+ *         -3 failed to find filter for alert, -4 failed to find credential,
+ *         -5 alert script failed.
  */
 static int
 escalate_1 (alert_t alert, task_t task, report_t report, event_t event,
             const void* event_data, alert_method_t method,
-            alert_condition_t condition)
+            alert_condition_t condition, gchar **script_message)
 {
   int ret;
   get_data_t get;
@@ -12424,7 +12967,7 @@ escalate_1 (alert_t alert, task_t task, report_t report, event_t event,
     }
 
   ret = escalate_2 (alert, task, report, event, event_data, method, condition,
-                    &get, 1, 1);
+                    &get, 1, 1, script_message);
   free (results_filter);
   g_free (get.filter);
   return ret;
@@ -12437,15 +12980,16 @@ escalate_1 (alert_t alert, task_t task, report_t report, event_t event,
  * @param[in]  task_id     Task UUID.
  * @param[in]  event       Event.
  * @param[in]  event_data  Event data.
+ * @param[out] script_message  Custom error message from alert script.
  *
  * @return 0 success, 1 failed to find alert, 2 failed to find task,
  *         99 permission denied, -1 error, -2 failed to find report format
  *         for alert, -3 failed to find filter for alert, -4 failed to find
- *         credential for alert.
+ *         credential for alert, -5 alert script failed.
  */
 int
 manage_alert (const char *alert_id, const char *task_id, event_t event,
-              const void* event_data)
+              const void* event_data, gchar **script_message)
 {
   alert_t alert;
   task_t task;
@@ -12472,7 +13016,8 @@ manage_alert (const char *alert_id, const char *task_id, event_t event,
 
   condition = alert_condition (alert);
   method = alert_method (alert);
-  return escalate_1 (alert, task, 0, event, event_data, method, condition);
+  return escalate_1 (alert, task, 0, event, event_data, method, condition,
+                     script_message);
 }
 
 /**
@@ -12535,14 +13080,15 @@ manage_alert (const char *alert_id, const char *task_id, event_t event,
  * @brief Test an alert.
  *
  * @param[in]  alert_id    Alert UUID.
+ * @param[out] script_message  Custom message from the alert script.
  *
  * @return 0 success, 1 failed to find alert, 2 failed to find task,
  *         99 permission denied, -1 error, -2 failed to find report format
  *         for alert, -3 failed to find filter for alert, -4 failed to find
- *         credential for alert.
+ *         credential for alert, -5 alert script failed.
  */
 int
-manage_test_alert (const char *alert_id)
+manage_test_alert (const char *alert_id, gchar **script_message)
 {
   int ret;
   alert_t alert;
@@ -12574,9 +13120,11 @@ manage_test_alert (const char *alert_id)
       free (alert_event_data);
 
       if (alert_event (alert) == EVENT_NEW_SECINFO)
-        ret = manage_alert (alert_id, "0", EVENT_NEW_SECINFO, (void*) type);
+        ret = manage_alert (alert_id, "0", EVENT_NEW_SECINFO, (void*) type,
+                            script_message);
       else
-        ret = manage_alert (alert_id, "0", EVENT_UPDATED_SECINFO, (void*) type);
+        ret = manage_alert (alert_id, "0", EVENT_UPDATED_SECINFO, (void*) type,
+                            script_message);
 
       g_free (type);
 
@@ -12621,7 +13169,8 @@ manage_test_alert (const char *alert_id)
   ret = manage_alert (alert_id,
                       task_id,
                       EVENT_TASK_RUN_STATUS_CHANGED,
-                      (void*) TASK_STATUS_DONE);
+                      (void*) TASK_STATUS_DONE,
+                      script_message);
  exit:
   delete_task (task, 1);
   free (task_id);
@@ -13029,7 +13578,8 @@ event (task_t task, report_t report, event_t event, void* event_data)
                   event,
                   event_data,
                   alert_method (alert),
-                  condition);
+                  condition,
+                  NULL);
     }
 
   g_array_free (alerts_triggered, TRUE);
@@ -30779,7 +31329,7 @@ manage_send_report (report_t report, report_t delta_report,
 
       ret = escalate_2 (alert, task, report, EVENT_TASK_RUN_STATUS_CHANGED,
                         (void*) TASK_STATUS_DONE, method, condition,
-                        get, notes_details, overrides_details);
+                        get, notes_details, overrides_details, NULL);
       if (ret == -3)
         return -4;
       if (ret == -1)

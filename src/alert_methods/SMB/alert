@@ -24,10 +24,12 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-PASSWORD=$1
-USERNAME=$2
-SHARE_LOCATION=$3        # \\host\share.
-DEST_PATH=$4
-REPORT_PATH=$5
+SHARE_LOCATION=$1        # \\host\share.
+DEST_PATH=$2             # Path relative to the share
+AUTH_PATH=$3             # Path to the authentication file
+REPORT_PATH=$4           # Path to the report
 
-smbclient -U "$USERNAME%$PASSWORD" "$SHARE_LOCATION" -c "put \"$REPORT_PATH\" \"$DEST_PATH\""
+smbclient -A "$AUTH_PATH" "$SHARE_LOCATION" -c "put \"$REPORT_PATH\" \"$DEST_PATH\"" >&2
+EXIT_CODE=$?
+
+exit $EXIT_CODE
