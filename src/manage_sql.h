@@ -36,13 +36,6 @@
 /* Internal types and preprocessor definitions. */
 
 /**
- * @brief Absolute maximum number of IPs per target.
- *
- * The number of 70000 is chosen to cover "192.168.0.0-192.168.255.255".
- */
-#define ABSOLUTE_MAX_IPS_PER_TARGET 70000
-
-/**
  * @brief UUID of 'Full and fast' config.
  */
 #define CONFIG_UUID_FULL_AND_FAST "daba56c8-73ec-11df-a475-002264764cea"
