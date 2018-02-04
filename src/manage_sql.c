@@ -74,13 +74,6 @@
 #include <openvas/base/pwpolicy.h>
 #include <openvas/omp/omp.h>
 
-/**
- * @brief Absolute maximum number of IPs per target.
- *
- * The number of 70000 is choosen to cover "192.168.0.0-192.168.255.255".
- */
-#define ABSOLUTE_MAX_IPS_PER_TARGET 70000
-
 #undef G_LOG_DOMAIN
 /**
  * @brief GLib log domain.
@@ -1480,7 +1473,7 @@ manage_option_setup (GSList *log_config, const gchar *database)
 
   db = database ? database : sql_default_database ();
 
-  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
+  ret = init_manage_helper (log_config, db, MANAGE_ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
   assert (ret != -4);
   switch (ret)
     {
@@ -16981,7 +16974,7 @@ init_manage_internal (GSList *log_config,
    *             init_manage_process (sorts out db state itself) */
 
   if ((max_ips_per_target <= 0)
-      || (max_ips_per_target > ABSOLUTE_MAX_IPS_PER_TARGET))
+      || (max_ips_per_target > MANAGE_ABSOLUTE_MAX_IPS_PER_TARGET))
     return -4;
 
   max_hosts = max_ips_per_target;
