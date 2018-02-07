@@ -16881,9 +16881,6 @@ cleanup_tables ()
        "    OR (subject_type = 'role'"
        "        AND subject_location = " G_STRINGIFY (LOCATION_TRASH)
        "        AND subject NOT IN (SELECT id FROM roles_trash));");
-
-  sql ("DELETE FROM permissions_get_tasks"
-       " WHERE \"user\" NOT IN (SELECT id FROM users);");
 }
 
 /**
