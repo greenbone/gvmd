@@ -42344,6 +42344,7 @@ credential_in_use (credential_t credential)
            || sql_int ("SELECT count (*) FROM alert_method_data"
                        " WHERE (name = 'scp_credential'"
                        "        OR name = 'smb_credential'"
+                       "        OR name = 'tp_sms_credential'"
                        "        OR name = 'verinice_server_credential')"
                        " AND data = '%s'",
                        uuid));
@@ -42378,6 +42379,7 @@ trash_credential_in_use (credential_t credential)
            || sql_int ("SELECT count (*) FROM alert_method_data_trash"
                        " WHERE (name = 'scp_credential'"
                        "        OR name = 'smb_credential'"
+                       "        OR name = 'tp_sms_credential'"
                        "        OR name = 'verinice_server_credential')"
                        " AND data = '%s'",
                        uuid));
