@@ -1348,7 +1348,7 @@ advice given in each description, in order to rectify the issue.
           <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'vuldetect')"/>
         </xsl:call-template>
 
-        <xsl:text>Details:</xsl:text>
+        <xsl:text>Details:</xsl:text><xsl:call-template name="newline"/>
         <xsl:choose>
           <xsl:when test="nvt/@oid = 0">
             <xsl:if test="delta/text()">
@@ -1375,7 +1375,7 @@ advice given in each description, in order to rectify the issue.
         </xsl:choose>
         <xsl:if test="scan_nvt_version != ''">
           <xsl:call-template name="latex-newline"/>
-          Version used:
+          <xsl:text>Version used:</xsl:text><xsl:call-template name="newline"/>
           <xsl:call-template name="text-to-escaped-row">
             <xsl:with-param name="string" select="scan_nvt_version"/>
           </xsl:call-template>
@@ -1386,11 +1386,11 @@ advice given in each description, in order to rectify the issue.
           <xsl:call-template name="latex-newline"/>
           <xsl:text>\textbf{Product Detection Result}</xsl:text>
           <xsl:call-template name="latex-newline"/>
-          Product:
+          <xsl:text>Product:</xsl:text><xsl:call-template name="newline"/>
           <xsl:call-template name="text-to-escaped-row">
             <xsl:with-param name="string" select="detection/result/details/detail[name = 'product']/value/text()"/>
           </xsl:call-template>
-          Method:
+          <xsl:text>Method:</xsl:text><xsl:call-template name="newline"/>
           <xsl:call-template name="text-to-escaped-row">
             <xsl:with-param name="string" select="detection/result/details/detail[name = 'source_name']/value/text()"/>
           </xsl:call-template>
