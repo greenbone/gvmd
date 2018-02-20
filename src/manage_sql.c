@@ -13987,6 +13987,8 @@ task_average_scan_duration (task_t task)
 void
 init_manage_process (int update_nvt_cache, const gchar *database)
 {
+  lockfile_t lockfile;
+
   if (sql_is_open ())
     return;
 
@@ -14012,14 +14014,15 @@ init_manage_process (int update_nvt_cache, const gchar *database)
 
   /* Lock to avoid an error return from Postgres when multiple processes
    * create a function at the same time. */
-  sql_begin_exclusive ();
+  if (lockfile_lock (&lockfile, "gvm-create-functions"))
+    abort ();
   if (manage_create_sql_functions ())
     {
-      sql_rollback ();
+      lockfile_unlock (&lockfile);
       g_warning ("%s: failed to create functions", __FUNCTION__);
       abort ();
     }
-  sql_commit ();
+  lockfile_unlock (&lockfile);
 }
 
 /**

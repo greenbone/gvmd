@@ -28,10 +28,15 @@
 
 #include "utils.h"
 
+#include <assert.h>
 #include <errno.h>
-#include <glib.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/file.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #undef G_LOG_DOMAIN
 /**
@@ -347,4 +352,100 @@ iso_time_tz (time_t *epoch_time, const char *timezone, const char **abbrev)
 
   g_free (tz);
   return ret;
+}
+
+
+/* Locks. */
+
+/**
+ * @brief Lock a file exclusively.
+ *
+ * Block until file is locked.
+ *
+ * @param[in]  lockfile           Lockfile.
+ * @param[in]  lockfile_basename  Basename of lock file.
+ *
+ * @return 0 sync complete, 1 already locked, -1 error
+ */
+int
+lockfile_lock (lockfile_t *lockfile, const gchar *lockfile_basename)
+{
+  int fd;
+  gchar *lockfile_name;
+
+  /* Open the lock file. */
+
+  lockfile_name = g_build_filename (g_get_tmp_dir (), lockfile_basename, NULL);
+
+  fd = open (lockfile_name, O_RDWR | O_CREAT | O_APPEND,
+             /* "-rw-r--r--" */
+             S_IWUSR | S_IRUSR | S_IROTH | S_IRGRP);
+  if (fd == -1)
+    {
+      g_warning ("Failed to open lock file '%s': %s", lockfile_name,
+                 strerror (errno));
+      lockfile->name = NULL;
+      g_free (lockfile_name);
+      return -1;
+    }
+
+  lockfile->fd = fd;
+
+  /* Lock the lockfile. */
+
+  if (flock (fd, LOCK_EX))  /* Exclusive, blocking. */
+    {
+      lockfile->name = NULL;
+      g_free (lockfile_name);
+      if (errno == EWOULDBLOCK)
+        return 1;
+       g_debug ("%s: flock: %s", __FUNCTION__, strerror (errno));
+      g_free (lockfile_name);
+      return -1;
+    }
+
+  lockfile->name = lockfile_name;
+
+  return 0;
+}
+
+/**
+ * @brief Unlock a file.
+ *
+ * @param[in]  lockfile  Lockfile.
+ *
+ * @return 0 success, -1 error
+ */
+int
+lockfile_unlock (lockfile_t *lockfile)
+{
+  if (lockfile->name == NULL)
+    return 0;
+
+  assert (lockfile->fd);
+
+  /* Close the lock file. */
+
+  if (close (lockfile->fd))
+    {
+      g_free (lockfile->name);
+      lockfile->name = NULL;
+      g_warning ("Failed to close lock file: %s", strerror (errno));
+      return -1;
+    }
+
+  /* Remove the lock file. */
+
+  if (unlink (lockfile->name))
+    {
+      g_free (lockfile->name);
+      lockfile->name = NULL;
+      g_warning ("Failed to remove lock file: %s", strerror (errno));
+      return -1;
+    }
+
+  g_free (lockfile->name);
+  lockfile->name = NULL;
+
+  return 0;
 }
