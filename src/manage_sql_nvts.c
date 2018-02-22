@@ -185,7 +185,7 @@ int chunk_count = 0;
  *
  * @return An NVT.
  */
-nvt_t
+static nvt_t
 make_nvt_from_nvti (const nvti_t *nvti)
 {
   gchar *qod_str, *qod_type;
@@ -199,7 +199,7 @@ make_nvt_from_nvti (const nvti_t *nvti)
 
   if (chunk_count == 0)
     {
-      sql_begin_exclusive ();
+      sql_begin_immediate ();
       chunk_count++;
     }
   else if (chunk_count == CHUNK_SIZE)
@@ -1127,7 +1127,7 @@ manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list)
   iterator_t configs;
   int count;
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
   if (sql_is_sqlite3 ())
     {
       sql ("DELETE FROM nvt_cves;");
@@ -1143,11 +1143,11 @@ manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list)
 
   /* NVTs and preferences are buffered, insert them into DB. */
   insert_nvts_list (nvts_list);
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
   insert_nvt_preferences_list (nvt_preferences_list);
   sql_commit ();
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Remove preferences from configs where the preference has vanished from
    * the associated NVT. */
