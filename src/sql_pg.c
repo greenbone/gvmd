@@ -639,8 +639,7 @@ sql_begin_exclusive_giveup ()
 void
 sql_begin_immediate ()
 {
-  /* TODO This is just an exclusive lock. */
-  sql_begin_exclusive ();
+  sql ("BEGIN;");
 }
 
 /**
@@ -651,8 +650,12 @@ sql_begin_immediate ()
 int
 sql_begin_immediate_giveup ()
 {
-  /* TODO This is just an exclusive lock. */
-  return sql_begin_exclusive_giveup ();
+  int ret;
+
+  ret = sql_giveup ("BEGIN;");
+  if (ret)
+    return ret;
+  return 0;
 }
 
 /**
