@@ -66702,14 +66702,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
       else
         old_size = state.st_size;
 
-      if (sql_is_sqlite3 ())
-        sql ("VACUUM;");
-      else
-        {
-          sql_begin_exclusive ();
-          sql ("VACUUM;");
-          sql_commit ();
-        }
+      sql ("VACUUM;");
 
       ret = stat (db, &state);
       if (ret)
