@@ -66767,7 +66767,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
     {
       int changes_iana, changes_old_format;
 
-      sql_begin_exclusive ();
+      sql_begin_immediate ();
       sql ("UPDATE results"
            " SET port = substr (port, 1,"
            "                    strpos (port, ' (IANA:') - 1)"
@@ -66789,7 +66789,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
   else if (strcasecmp (name, "cleanup-result-severities") == 0)
     {
       int missing_severity_changes = 0;
-      sql_begin_exclusive();
+      sql_begin_immediate ();
 
       if (sql_is_sqlite3 ())
         sql ("UPDATE results"
@@ -66823,7 +66823,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
     {
       int changes;
 
-      sql_begin_exclusive ();
+      sql_begin_immediate ();
 
       changes = cleanup_schedule_times ();
 
