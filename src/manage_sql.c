@@ -48485,7 +48485,7 @@ init_task_schedule_iterator (iterator_t* iterator)
   get_data_t get;
   array_t *permissions;
 
-  ret = sql_begin_exclusive_giveup ();
+  ret = sql_begin_immediate_giveup ();
   if (ret)
     return ret;
 

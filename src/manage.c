@@ -6802,7 +6802,7 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
 
       return ret;
     }
-  /* This iterator runs in an exclusive transaction, so this loop is atomic. */
+  /* This iterator runs in a transaction. */
   while (next (&schedules))
     if (task_schedule_iterator_start_due (&schedules))
       {
