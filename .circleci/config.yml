@@ -1,0 +1,40 @@
+version: 2
+jobs:
+  build_sqlite:
+    docker:
+      - image: wiegandm/openvas-manager-7.0-sqlite-debian-jessie
+    steps:
+      - run:
+          working_directory: ~/gvm-libs
+          name: Checkout openvas-libraries-9.0
+          command: git clone --depth 1 https://github.com/greenbone/gvm-libs.git -b openvas-libraries-9.0
+      - run:
+          working_directory: ~/gvm-libs
+          name: Configure and compile openvas-libraries-9.0
+          command: pushd gvm-libs && mkdir build && cd build/ && cmake -DCMAKE_BUILD_TYPE=Release .. && make install && popd
+      - checkout
+      - run:
+          name: Configure and Compile
+          command: mkdir build && cd build/ && cmake -DCMAKE_BUILD_TYPE=Release .. && make install
+  build_postgresql:
+    docker:
+      - image: wiegandm/openvas-manager-7.0-postgresql-debian-jessie
+    steps:
+      - run:
+          working_directory: ~/gvm-libs
+          name: Checkout openvas-libraries-9.0
+          command: git clone --depth 1 https://github.com/greenbone/gvm-libs.git -b openvas-libraries-9.0
+      - run:
+          working_directory: ~/gvm-libs
+          name: Configure and compile openvas-libraries-9.0
+          command: pushd gvm-libs && mkdir build && cd build/ && cmake -DCMAKE_BUILD_TYPE=Release .. && make install && popd
+      - checkout
+      - run:
+          name: Configure and Compile
+          command: mkdir build && cd build/ && cmake -DBACKEND=POSTGRESQL -DCMAKE_BUILD_TYPE=Release .. && make install
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build_sqlite
+      - build_postgresql
