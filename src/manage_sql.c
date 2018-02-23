@@ -63287,7 +63287,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
         return 5;
     }
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   if (acl_user_may ("delete_user") == 0)
     {
@@ -63334,7 +63334,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       free (uuid);
     }
 
-  /* Set requested and running tasks to stopped. */
+  /* Fail if there are any active tasks. */
 
   memset (&get, '\0', sizeof (get));
   current_uuid = current_credentials.uuid;
@@ -63368,7 +63368,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   free (current_credentials.uuid);
   current_credentials.uuid = current_uuid;
 
-  /* Transfer ownership of objects to the inheritor if one is given */
+  /* Check if there's an inheritor. */
+
   if (inheritor_id && strcmp (inheritor_id, ""))
     {
       if (strcmp (inheritor_id, "self") == 0)
@@ -63419,6 +63420,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
     {
       gchar *deleted_user_id, *deleted_user_name;
       gchar *real_inheritor_id, *real_inheritor_name;
+
+      /* Transfer ownership of objects to the inheritor. */
 
       if (inheritor == user)
         {
