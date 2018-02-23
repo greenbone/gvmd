@@ -66835,7 +66835,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
     }
   else if (strcasecmp (name, "rebuild-permissions-cache") == 0)
     {
-      sql_begin_exclusive ();
+      sql_begin_immediate ();
 
       sql ("DELETE FROM permissions_get_tasks");
 
@@ -66850,7 +66850,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
     {
       int changes;
 
-      sql_begin_exclusive ();
+      sql_begin_immediate ();
 
       reports_build_count_cache (1, &changes);
 
@@ -66865,7 +66865,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
     {
       int changes;
 
-      sql_begin_exclusive ();
+      sql_begin_immediate ();
 
       reports_build_count_cache (0, &changes);
 
