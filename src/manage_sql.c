@@ -25035,6 +25035,10 @@ delete_report_internal (report_t report)
                TASK_STATUS_STOP_WAITING))
     return 2;
 
+  /* This needs to have exclusive access to reports because otherwise at this
+   * point another process (like a RESUME_TASK handler) could store the report
+   * ID and then start trying to access that report after we've deleted it. */
+
   if (report_task (report, &task))
     return -1;
 
@@ -25211,7 +25215,20 @@ delete_report (const char *report_id, int dummy)
   report_t report;
   int ret;
 
-  sql_begin_exclusive ();
+  if (sql_is_sqlite3 ())
+    sql_begin_exclusive ();
+  else
+    {
+      sql_begin_immediate ();
+
+      /* This prevents other processes (in particular a RESUME_TASK) from getting
+       * a reference to the report ID, and then using that reference to try access
+       * the deleted report.
+       *
+       * If the report is running already then delete_report_internal will
+       * ROLLBACK. */
+      sql ("LOCK table reports IN ACCESS EXCLUSIVE MODE;");
+    }
 
   if (acl_user_may ("delete_report") == 0)
     {
