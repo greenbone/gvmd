@@ -611,7 +611,6 @@ void
 sql_begin_exclusive ()
 {
   sql ("BEGIN;");
-  sql ("SELECT pg_advisory_xact_lock (1);");
 }
 
 /**
@@ -627,10 +626,7 @@ sql_begin_exclusive_giveup ()
   ret = sql_giveup ("BEGIN;");
   if (ret)
     return ret;
-  if (sql_int ("SELECT pg_try_advisory_xact_lock (1);"))
-    return 0;
-  sql_rollback ();
-  return 1;
+  return 0;
 }
 
 /**
