@@ -19146,8 +19146,23 @@ auto_delete_reports ()
 
   g_debug ("%s", __FUNCTION__);
 
-  if (sql_begin_exclusive_giveup ())
-    return;
+  if (sql_is_sqlite3 ())
+    {
+      if (sql_begin_exclusive_giveup ())
+        return;
+    }
+  else
+    {
+      sql_begin_immediate ();
+
+      /* As in delete_report, this prevents other processes from getting the
+       * report ID. */
+      if (sql_error ("LOCK table reports IN ACCESS EXCLUSIVE MODE NOWAIT;"))
+        {
+          sql ("ROLLBACK;");
+          return;
+        }
+    }
 
   init_iterator (&tasks,
                  "SELECT id, name,"
