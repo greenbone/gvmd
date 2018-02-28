@@ -12850,6 +12850,8 @@ manage_test_alert (const char *alert_id, gchar **script_message)
                       (void*) TASK_STATUS_DONE,
                       script_message);
  exit:
+  /* No one should be running this task, so we don't worry about the lock.  We
+   * could guarantee that no one runs the task, but this is a very rare case. */
   delete_task (task, 1);
   free (task_id);
   free (report_id);
@@ -32018,6 +32020,8 @@ find_trash_task (const char*, task_t*);
  *
  * Stop the task beforehand with \ref stop_task_internal, if it is running.
  *
+ * This is only used for DELETE_TASK in gmp.c.
+ *
  * @param[in]  task_id   UUID of task.
  * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
  *
@@ -32109,6 +32113,16 @@ request_delete_task_uuid (const char *task_id, int ultimate)
       case 0:    /* Stopped. */
         {
           int ret;
+
+          if (ultimate)
+            /* This prevents other processes (for example a START_TASK) from
+             * getting a reference to a report ID or the task ID, and then using
+             * that reference to try access the deleted report or task.
+             *
+             * If the task is running already then delete_task will lead to
+             * ROLLBACK. */
+            sql ("LOCK table reports IN ACCESS EXCLUSIVE MODE;");
+
           ret = delete_task (task, ultimate);
           if (ret)
             sql_rollback ();
@@ -32241,7 +32255,24 @@ delete_task_lock (task_t task, int ultimate)
 
   g_debug ("   delete task %llu\n", task);
 
-  sql_begin_exclusive ();
+  if (sql_is_sqlite3 ())
+    sql_begin_exclusive ();
+  else
+    {
+      sql_begin_immediate ();
+
+      /* This prevents other processes (for example a START_TASK) from getting
+       * a reference to a report ID or the task ID, and then using that
+       * reference to try access the deleted report or task.
+       *
+       * If the task is already active then delete_report (via delete_task)
+       * will fail and rollback. */
+      if (sql_error ("LOCK table reports IN ACCESS EXCLUSIVE MODE;"))
+        {
+          sql_rollback ();
+          return -1;
+        }
+    }
 
   if (sql_int ("SELECT hidden FROM tasks WHERE id = %llu;", task))
     {
