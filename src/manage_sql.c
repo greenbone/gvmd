@@ -203,7 +203,7 @@ static void report_severity_data (report_t, const char *, const get_data_t *,
 static gchar* apply_report_format (gchar *, gchar *, gchar *, gchar *,
                                    GList **);
 
-static int cache_report_counts (report_t, int, int, severity_data_t*, int);
+static int cache_report_counts (report_t, int, int, severity_data_t*);
 
 static char*
 task_owner_uuid (task_t);
@@ -24677,32 +24677,23 @@ report_counts_from_cache (report_t report, int override, int min_qod,
  * @param[in]   override  Whether overrides were applied to the results.
  * @param[in]   min_qod   The minimum QoD of the results.
  * @param[in]   data      Severity data struct containing the message counts.
- * @param[in]   make_transaction  True to wrap in an exclusive transaction.
  *
  * @return      0 if successful, 1 gave up, -1 error (see sql_giveup).
  */
 static int
 cache_report_counts (report_t report, int override, int min_qod,
-                     severity_data_t* data, int make_transaction)
+                     severity_data_t* data)
 {
-  /* Try cache results.  Give up if the database is locked because this could
-   * happen while the caller has an SQL statement open.  If another process
-   * tries to write to the database between the statement open and
-   * cache_report_counts then they'll deadlock. */
   int i, ret;
   double severity;
   int end_time;
 
-  // Do not cache results when using dynamic severity.
+  /* Do not cache results when using dynamic severity. */
+
   if (setting_dynamic_severity_int ())
     return 0;
 
-  if (make_transaction)
-    {
-      ret = sql_begin_exclusive_giveup ();
-      if (ret)
-        return ret;
-    }
+  /* Try cache results. */
 
   ret = sql_giveup ("DELETE FROM report_counts"
                     " WHERE report = %llu"
@@ -24713,8 +24704,6 @@ cache_report_counts (report_t report, int override, int min_qod,
                     report, override, min_qod, current_credentials.uuid);
   if (ret)
     {
-      if (make_transaction)
-        sql_rollback ();
       return ret;
     }
 
@@ -24732,8 +24721,6 @@ cache_report_counts (report_t report, int override, int min_qod,
                         report, current_credentials.uuid, override, min_qod);
       if (ret)
         {
-          if (make_transaction)
-            sql_rollback ();
           return ret;
         }
     }
@@ -24769,22 +24756,11 @@ cache_report_counts (report_t report, int override, int min_qod,
                                 min_qod, severity, data->counts[i], end_time);
               if (ret)
                 {
-                  if (make_transaction)
-                    sql_rollback ();
                   return ret;
                 }
             }
           i++;
           severity = severity_data_value (i);
-        }
-    }
-  if (make_transaction)
-    {
-      ret = sql_giveup ("COMMIT;");
-      if (ret)
-        {
-          sql_rollback ();
-          return ret;
         }
     }
   return 0;
@@ -24962,10 +24938,10 @@ report_counts_id_full (report_t report, int* debugs, int* holes, int* infos,
   if (filter_cacheable && !cache_exists)
     {
       if (unfiltered_requested)
-        cache_report_counts (report, override, 0, &severity_data, 0);
+        cache_report_counts (report, override, 0, &severity_data);
       if (filtered_requested)
         cache_report_counts (report, override, min_qod_int,
-                             &filtered_severity_data, 0);
+                             &filtered_severity_data);
     }
 
   cleanup_severity_data (&severity_data);
