@@ -18090,6 +18090,8 @@ set_task_run_status (task_t task, task_status_t status)
 /**
  * @brief Atomically set the run state of a task to requested.
  *
+ * Only used by run_slave_or_gmp_task and run_otp_task.
+ *
  * @param[in]  task    Task.
  * @param[out] status  Old run status of task.
  *
@@ -18099,8 +18101,22 @@ int
 set_task_requested (task_t task, task_status_t *status)
 {
   task_status_t run_status;
+  char *uuid, *name;
+  int update_report;
 
-  sql_begin_exclusive ();
+  /* Locking here prevents another process from starting the task
+   * concurrently. */
+  if (sql_is_sqlite3 ())
+    sql_begin_exclusive ();
+  else
+    {
+      sql_begin_immediate ();
+      if (sql_error ("LOCK table tasks IN ACCESS EXCLUSIVE MODE;"))
+        {
+          sql ("ROLLBACK;");
+          return 1;
+        }
+    }
 
   run_status = task_run_status (task);
   if (run_status == TASK_STATUS_REQUESTED
@@ -18118,9 +18134,48 @@ set_task_requested (task_t task, task_status_t *status)
       return 1;
     }
 
-  set_task_run_status (task, TASK_STATUS_REQUESTED);
+  /* This does the work of set_task_run_status, but spread across the COMMIT. */
+
+  update_report = 0;
+  if ((task == current_scanner_task) && current_report)
+    update_report = 1;
+
+  sql ("UPDATE tasks SET run_status = %u WHERE id = %llu;",
+       TASK_STATUS_REQUESTED,
+       task);
+
+  task_uuid (task, &uuid);
+  name = task_name (task);
+  g_log ("event task", G_LOG_LEVEL_MESSAGE,
+         "Status of task %s (%s) has changed to %s",
+         name, uuid, run_status_name (TASK_STATUS_REQUESTED));
+  free (uuid);
+  free (name);
 
   sql_commit ();
+
+  /* Do these outside the transaction, because they modify reports, and
+   * other places LOCK reports, so there would be a danger of deadlock
+   * between the LOCKs on tasks and reports.
+   *
+   * Updating the report status outside the locked environment should be
+   * OK, because it's a very rare case that someone stops the task when
+   * it is in requested state.  (Because current_report is set we are the
+   * only ones who can progress it to the running states.) */
+
+  if (update_report)
+    {
+      sql ("UPDATE reports SET scan_run_status = %u WHERE id = %llu;",
+           TASK_STATUS_REQUESTED,
+           current_report);
+
+      if (current_report && setting_auto_cache_rebuild_int ())
+        report_cache_counts (current_report, 0, 0, NULL);
+    }
+
+  event (task,
+         (task == current_scanner_task) ? current_report : 0,
+         EVENT_TASK_RUN_STATUS_CHANGED, (void*) TASK_STATUS_REQUESTED);
 
   *status = run_status;
   return 0;
