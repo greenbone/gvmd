@@ -258,7 +258,7 @@ create_tables_version_4 ()
 int
 migrate_0_to_1 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 0. */
 
@@ -314,7 +314,7 @@ migrate_1_to_2 ()
 {
   iterator_t nvts;
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 1. */
 
@@ -362,7 +362,7 @@ migrate_1_to_2 ()
 int
 migrate_2_to_3 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 2. */
 
@@ -416,7 +416,7 @@ migrate_3_to_4 ()
 {
   iterator_t nvts;
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 3. */
 
@@ -916,7 +916,7 @@ migrate_4_to_5_copy_data ()
 int
 migrate_4_to_5 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 4. */
 
@@ -1044,7 +1044,7 @@ migrate_5_to_6_move_other_config (const char *predefined_config_name,
 int
 migrate_5_to_6 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 5. */
 
@@ -1116,7 +1116,7 @@ migrate_5_to_6 ()
 int
 migrate_6_to_7 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 6. */
 
@@ -1149,7 +1149,7 @@ migrate_6_to_7 ()
 int
 migrate_7_to_8 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 7. */
 
@@ -1183,7 +1183,7 @@ migrate_7_to_8 ()
 int
 migrate_8_to_9 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 8. */
 
@@ -1290,7 +1290,7 @@ migrate_9_to_10 ()
 {
   iterator_t rows;
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 9. */
 
@@ -1361,7 +1361,7 @@ migrate_9_to_10 ()
 int
 migrate_10_to_11 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 10. */
 
@@ -1416,7 +1416,7 @@ migrate_10_to_11 ()
 int
 migrate_11_to_12 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 11. */
 
@@ -1499,7 +1499,7 @@ migrate_12_to_13 ()
 {
   iterator_t rows;
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 12. */
 
@@ -1578,7 +1578,7 @@ migrate_12_to_13 ()
 int
 migrate_13_to_14 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 13. */
 
@@ -1614,7 +1614,7 @@ migrate_13_to_14 ()
 int
 migrate_14_to_15 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 14. */
 
@@ -1651,7 +1651,7 @@ migrate_14_to_15 ()
 int
 migrate_15_to_16 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 15. */
 
@@ -1698,7 +1698,7 @@ migrate_16_to_17 ()
 {
   iterator_t rows;
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 16. */
 
@@ -1780,7 +1780,7 @@ migrate_17_to_18_set_pref (config_t config)
 int
 migrate_17_to_18 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 17. */
 
@@ -1836,7 +1836,7 @@ migrate_17_to_18 ()
 int
 migrate_18_to_19 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 18. */
 
@@ -1977,7 +1977,7 @@ migrate_19_to_20 ()
 {
   iterator_t rows;
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 19. */
 
@@ -2082,7 +2082,7 @@ migrate_19_to_20 ()
 int
 migrate_20_to_21 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 20. */
 
@@ -2119,7 +2119,7 @@ migrate_21_to_22 ()
 {
   iterator_t rows;
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 21. */
 
@@ -2352,7 +2352,7 @@ migrate_21_to_22 ()
 int
 migrate_22_to_23 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 22. */
 
@@ -2391,7 +2391,7 @@ migrate_22_to_23 ()
 int
 migrate_23_to_24 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 23. */
 
@@ -2428,7 +2428,7 @@ migrate_24_to_25 ()
 {
   iterator_t rows;
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 24. */
 
@@ -2556,7 +2556,7 @@ migrate_24_to_25 ()
 int
 migrate_25_to_26 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 25. */
 
@@ -2590,7 +2590,7 @@ migrate_25_to_26 ()
 int
 migrate_26_to_27 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 26. */
 
@@ -2628,7 +2628,7 @@ migrate_26_to_27 ()
 int
 migrate_27_to_28 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 27. */
 
@@ -2662,7 +2662,7 @@ migrate_27_to_28 ()
 int
 migrate_28_to_29 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 28. */
 
@@ -2696,7 +2696,7 @@ migrate_28_to_29 ()
 int
 migrate_29_to_30 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 29. */
 
@@ -2730,7 +2730,7 @@ migrate_29_to_30 ()
 int
 migrate_30_to_31 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 30. */
 
@@ -2764,7 +2764,7 @@ migrate_30_to_31 ()
 int
 migrate_31_to_32 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 31. */
 
@@ -2803,7 +2803,7 @@ migrate_31_to_32 ()
 int
 migrate_32_to_33 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 32. */
 
@@ -2867,7 +2867,7 @@ migrate_33_to_34_set_pref (config_t config)
 int
 migrate_33_to_34 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 33. */
 
@@ -2905,7 +2905,7 @@ migrate_33_to_34 ()
 int
 migrate_34_to_35 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 34. */
 
@@ -2969,7 +2969,7 @@ migrate_35_to_36 ()
   iterator_t tasks;
   char *scanner_range, *quoted_scanner_range;
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 35. */
 
@@ -3083,7 +3083,7 @@ migrate_35_to_36 ()
 int
 migrate_36_to_37 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 36. */
 
@@ -3123,7 +3123,7 @@ migrate_37_to_38 ()
 {
   gchar *old_dir, *new_dir;
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 37. */
 
@@ -3235,7 +3235,7 @@ migrate_37_to_38 ()
 int
 migrate_38_to_39 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 38. */
 
@@ -3302,7 +3302,7 @@ migrate_39_to_40_set_pref (config_t config)
 int
 migrate_39_to_40 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 39. */
 
@@ -3341,7 +3341,7 @@ migrate_39_to_40 ()
 int
 migrate_40_to_41 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 40. */
 
@@ -3393,7 +3393,7 @@ migrate_40_to_41 ()
 int
 migrate_41_to_42 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Require that the database is currently version 41. */
 
@@ -3446,7 +3446,7 @@ migrate_41_to_42 ()
 int
 migrate_42_to_43 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Require that the database is currently version 42. */
 
@@ -3493,7 +3493,7 @@ migrate_42_to_43 ()
 int
 migrate_43_to_44 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Require that the database is currently version 43. */
 
@@ -3536,7 +3536,7 @@ migrate_43_to_44 ()
 int
 migrate_44_to_45 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Require that the database is currently version 44. */
 
@@ -3570,7 +3570,7 @@ migrate_44_to_45 ()
 int
 migrate_45_to_46 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Require that the database is currently version 45. */
 
@@ -3604,7 +3604,7 @@ migrate_45_to_46 ()
 int
 migrate_46_to_47 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Require that the database is currently version 46. */
 
@@ -3646,7 +3646,7 @@ migrate_46_to_47 ()
 int
 migrate_47_to_48 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Require that the database is currently version 47. */
 
@@ -3684,7 +3684,7 @@ migrate_47_to_48 ()
 int
 migrate_48_to_49 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Require that the database is currently version 48. */
 
@@ -3728,7 +3728,7 @@ migrate_48_to_49 ()
 int
 migrate_49_to_50 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 49. */
 
@@ -3780,7 +3780,7 @@ migrate_49_to_50 ()
 int
 migrate_50_to_51 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 50. */
 
@@ -3814,7 +3814,7 @@ migrate_50_to_51 ()
 int
 migrate_51_to_52 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 51. */
 
@@ -3861,7 +3861,7 @@ migrate_51_to_52 ()
 int
 migrate_52_to_53 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 52. */
 
@@ -3901,7 +3901,7 @@ migrate_52_to_53 ()
 int
 migrate_53_to_54 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 53. */
 
@@ -3976,7 +3976,7 @@ migrate_54_to_55_format (const char *old_uuid, const char *new_uuid)
 int
 migrate_54_to_55 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 54. */
 
@@ -4737,7 +4737,7 @@ migrate_55_to_56 ()
 {
   iterator_t rows;
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 55. */
 
@@ -5018,7 +5018,7 @@ migrate_55_to_56 ()
 int
 migrate_56_to_57 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 56. */
 
@@ -5137,7 +5137,7 @@ migrate_56_to_57 ()
 int
 migrate_57_to_58 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 57. */
 
@@ -5194,7 +5194,7 @@ migrate_57_to_58 ()
 int
 migrate_58_to_59 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 58. */
 
@@ -5260,7 +5260,7 @@ migrate_58_to_59 ()
 int
 migrate_59_to_60 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 59. */
 
@@ -5296,7 +5296,7 @@ migrate_59_to_60 ()
 int
 migrate_60_to_61 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 60. */
 
@@ -5338,7 +5338,7 @@ migrate_60_to_61 ()
 int
 migrate_61_to_62 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 61. */
 
@@ -5384,7 +5384,7 @@ migrate_61_to_62 ()
 int
 migrate_62_to_63 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 62. */
 
@@ -5442,7 +5442,7 @@ migrate_62_to_63 ()
 int
 migrate_63_to_64 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 63. */
 
@@ -5483,7 +5483,7 @@ migrate_63_to_64 ()
 int
 migrate_64_to_65 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 64. */
 
@@ -5521,7 +5521,7 @@ migrate_64_to_65 ()
 int
 migrate_65_to_66 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 65. */
 
@@ -5562,7 +5562,7 @@ migrate_65_to_66 ()
 int
 migrate_66_to_67 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 66. */
 
@@ -5599,7 +5599,7 @@ migrate_66_to_67 ()
 int
 migrate_67_to_68 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 67. */
 
@@ -5646,7 +5646,7 @@ migrate_67_to_68 ()
 int
 migrate_68_to_69 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 68. */
 
@@ -5695,7 +5695,7 @@ migrate_68_to_69 ()
 int
 migrate_69_to_70 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 69. */
 
@@ -5737,7 +5737,7 @@ migrate_69_to_70 ()
 int
 migrate_70_to_71 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 70. */
 
@@ -5779,7 +5779,7 @@ migrate_70_to_71 ()
 int
 migrate_71_to_72 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 71. */
 
@@ -5828,7 +5828,7 @@ migrate_71_to_72 ()
 int
 migrate_72_to_73 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 72. */
 
@@ -5876,7 +5876,7 @@ migrate_72_to_73 ()
 int
 migrate_73_to_74 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 73. */
 
@@ -5921,7 +5921,7 @@ migrate_73_to_74 ()
 int
 migrate_74_to_75 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 74. */
 
@@ -5978,7 +5978,7 @@ migrate_74_to_75 ()
 int
 migrate_75_to_76 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 75. */
 
@@ -6016,7 +6016,7 @@ migrate_75_to_76 ()
 int
 migrate_76_to_77 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 76. */
 
@@ -6064,7 +6064,7 @@ migrate_76_to_77 ()
 int
 migrate_77_to_78 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 77. */
   if (manage_db_version () != 77)
@@ -6110,7 +6110,7 @@ migrate_77_to_78 ()
 int
 migrate_78_to_79 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 78. */
 
@@ -6429,7 +6429,7 @@ migrate_79_to_80 ()
   gchar *dir;
   struct stat state;
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 79. */
 
@@ -6802,7 +6802,7 @@ migrate_79_to_80 ()
 int
 migrate_80_to_81 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 80. */
 
@@ -6867,7 +6867,7 @@ migrate_80_to_81 ()
 int
 migrate_81_to_82 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 80. */
 
@@ -6896,7 +6896,7 @@ migrate_81_to_82 ()
 int
 migrate_82_to_83 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 82. */
 
@@ -6955,7 +6955,7 @@ migrate_82_to_83 ()
 int
 migrate_83_to_84 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 83. */
 
@@ -6987,7 +6987,7 @@ migrate_83_to_84 ()
 int
 migrate_84_to_85 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 84. */
 
@@ -7023,7 +7023,7 @@ migrate_84_to_85 ()
 int
 migrate_85_to_86 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 85. */
 
@@ -7058,7 +7058,7 @@ migrate_85_to_86 ()
 int
 migrate_86_to_87 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 86. */
 
@@ -7108,7 +7108,7 @@ migrate_86_to_87 ()
 int
 migrate_87_to_88 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 87. */
 
@@ -7160,7 +7160,7 @@ migrate_87_to_88 ()
 int
 migrate_88_to_89 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 87. */
 
@@ -7270,7 +7270,7 @@ migrate_88_to_89 ()
 int
 migrate_89_to_90 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 89. */
 
@@ -7305,7 +7305,7 @@ migrate_89_to_90 ()
 int
 migrate_90_to_91 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 90. */
 
@@ -7392,7 +7392,7 @@ migrate_90_to_91 ()
 int
 migrate_91_to_92 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 91. */
 
@@ -7435,7 +7435,7 @@ migrate_91_to_92 ()
 int
 migrate_92_to_93 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 92. */
 
@@ -7469,7 +7469,7 @@ migrate_92_to_93 ()
 int
 migrate_93_to_94 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 93. */
 
@@ -7501,7 +7501,7 @@ migrate_93_to_94 ()
 int
 migrate_94_to_95 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 94. */
 
@@ -7535,7 +7535,7 @@ migrate_94_to_95 ()
 int
 migrate_95_to_96 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 95. */
 
@@ -7573,7 +7573,7 @@ migrate_95_to_96 ()
 int
 migrate_96_to_97 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 96. */
 
@@ -7605,7 +7605,7 @@ migrate_96_to_97 ()
 int
 migrate_97_to_98 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 97. */
 
@@ -7638,7 +7638,7 @@ migrate_97_to_98 ()
 int
 migrate_98_to_99 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 98. */
 
@@ -7676,7 +7676,7 @@ migrate_98_to_99 ()
 int
 migrate_99_to_100 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 99. */
 
@@ -7723,7 +7723,7 @@ migrate_99_to_100 ()
 int
 migrate_100_to_101 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 100. */
 
@@ -7777,7 +7777,7 @@ migrate_100_to_101 ()
 int
 migrate_101_to_102 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 101. */
 
@@ -7829,7 +7829,7 @@ migrate_101_to_102 ()
 int
 migrate_102_to_103 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 102. */
 
@@ -7873,7 +7873,7 @@ migrate_102_to_103 ()
 int
 migrate_103_to_104 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 103. */
 
@@ -7906,7 +7906,7 @@ migrate_103_to_104 ()
 int
 migrate_104_to_105 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 104. */
 
@@ -7955,7 +7955,7 @@ migrate_104_to_105 ()
 int
 migrate_105_to_106 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 105. */
 
@@ -7988,7 +7988,7 @@ migrate_105_to_106 ()
 int
 migrate_106_to_107 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 106. */
 
@@ -8021,7 +8021,7 @@ migrate_106_to_107 ()
 int
 migrate_107_to_108 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 107. */
 
@@ -8056,7 +8056,7 @@ migrate_107_to_108 ()
 int
 migrate_108_to_109 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 108. */
 
@@ -8103,7 +8103,7 @@ migrate_108_to_109 ()
 int
 migrate_109_to_110 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 109. */
 
@@ -8140,7 +8140,7 @@ migrate_109_to_110 ()
 int
 migrate_110_to_111 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 110. */
 
@@ -8177,7 +8177,7 @@ migrate_110_to_111 ()
 int
 migrate_111_to_112 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 111. */
 
@@ -8219,7 +8219,7 @@ migrate_111_to_112 ()
 int
 migrate_112_to_113 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 112. */
 
@@ -8253,7 +8253,7 @@ migrate_112_to_113 ()
 int
 migrate_113_to_114 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 113. */
 
@@ -8290,7 +8290,7 @@ migrate_113_to_114 ()
 int
 migrate_114_to_115 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 114. */
 
@@ -8339,7 +8339,7 @@ migrate_114_to_115 ()
 int
 migrate_115_to_116 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 115. */
 
@@ -8399,7 +8399,7 @@ migrate_116_to_117 ()
 {
   int scap_loaded = manage_scap_loaded ();
   int cert_loaded = manage_cert_loaded ();
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 116. */
 
@@ -8642,7 +8642,7 @@ migrate_116_to_117 ()
 int
 migrate_117_to_118 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 117. */
 
@@ -8763,7 +8763,7 @@ migrate_117_to_118 ()
 int
 migrate_118_to_119 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 118. */
 
@@ -8805,7 +8805,7 @@ migrate_118_to_119 ()
 int
 migrate_119_to_120 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 119. */
 
@@ -8847,7 +8847,7 @@ migrate_119_to_120 ()
 int
 migrate_120_to_121 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 120. */
 
@@ -8883,7 +8883,7 @@ migrate_120_to_121 ()
 int
 migrate_121_to_122 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 121. */
 
@@ -8922,7 +8922,7 @@ migrate_122_to_123 ()
   int column_found = 0;
   iterator_t column_data;
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 122. */
 
@@ -8969,7 +8969,7 @@ migrate_122_to_123 ()
 int
 migrate_123_to_124 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 123. */
 
@@ -9031,7 +9031,7 @@ migrate_123_to_124 ()
 int
 migrate_124_to_125 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 124. */
 
@@ -9068,7 +9068,7 @@ migrate_124_to_125 ()
 int
 migrate_125_to_126 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 125. */
 
@@ -9138,7 +9138,7 @@ migrate_125_to_126 ()
 int
 migrate_126_to_127 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 126. */
 
@@ -9176,7 +9176,7 @@ migrate_126_to_127 ()
 int
 migrate_127_to_128 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 127. */
 
@@ -9210,7 +9210,7 @@ migrate_127_to_128 ()
 int
 migrate_128_to_129 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 128. */
 
@@ -9266,7 +9266,7 @@ migrate_129_to_130 ()
   char *quoted_ca_pub, *quoted_key_pub, *quoted_key_priv;
   GError *error = NULL;
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 129. */
 
@@ -9342,7 +9342,7 @@ migrate_129_to_130 ()
 int
 migrate_130_to_131 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 130. */
 
@@ -9383,7 +9383,7 @@ migrate_130_to_131 ()
 int
 migrate_131_to_132 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 131. */
 
@@ -9482,7 +9482,7 @@ migrate_131_to_132 ()
 int
 migrate_132_to_133 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 132. */
 
@@ -9527,7 +9527,7 @@ migrate_132_to_133 ()
 int
 migrate_133_to_134 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 133. */
 
@@ -9572,7 +9572,7 @@ migrate_133_to_134 ()
 int
 migrate_134_to_135 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 134. */
 
@@ -9605,7 +9605,7 @@ migrate_134_to_135 ()
 int
 migrate_135_to_136 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 135. */
 
@@ -9647,7 +9647,7 @@ migrate_135_to_136 ()
 int
 migrate_136_to_137 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 136. */
 
@@ -9684,7 +9684,7 @@ migrate_136_to_137 ()
 int
 migrate_137_to_138 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 137. */
 
@@ -9761,7 +9761,7 @@ migrate_138_to_139 ()
 {
   iterator_t nvts;
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 138. */
 
@@ -9811,7 +9811,7 @@ migrate_138_to_139 ()
 int
 migrate_139_to_140 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 139. */
 
@@ -9848,7 +9848,7 @@ migrate_139_to_140 ()
 int
 migrate_140_to_141 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 140. */
 
@@ -9879,7 +9879,7 @@ migrate_140_to_141 ()
 int
 migrate_141_to_142 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 141. */
 
@@ -9914,7 +9914,7 @@ migrate_141_to_142 ()
 int
 migrate_142_to_143 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 142. */
 
@@ -9950,7 +9950,7 @@ int
 migrate_143_to_144 ()
 {
   iterator_t nvts;
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 143. */
 
@@ -10010,7 +10010,7 @@ migrate_143_to_144 ()
 int
 migrate_144_to_145 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 144. */
 
@@ -10043,7 +10043,7 @@ migrate_144_to_145 ()
 int
 migrate_145_to_146 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 145. */
 
@@ -10077,7 +10077,7 @@ migrate_145_to_146 ()
 int
 migrate_146_to_147 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 146. */
 
@@ -10110,7 +10110,7 @@ migrate_146_to_147 ()
 int
 migrate_147_to_148 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 147. */
 
@@ -10143,7 +10143,7 @@ migrate_147_to_148 ()
 int
 migrate_148_to_149 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 148. */
 
@@ -10176,7 +10176,7 @@ migrate_148_to_149 ()
 int
 migrate_149_to_150 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 149. */
 
@@ -10220,7 +10220,7 @@ migrate_149_to_150 ()
 int
 migrate_150_to_151 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 150. */
 
@@ -10260,7 +10260,7 @@ migrate_150_to_151 ()
 int
 migrate_151_to_152 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 151. */
 
@@ -10303,7 +10303,7 @@ migrate_151_to_152 ()
 int
 migrate_152_to_153 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 152. */
 
@@ -10347,7 +10347,7 @@ migrate_153_to_154 ()
   const char *primary_key_type = sql_is_sqlite3 () ? "INTEGER" : "SERIAL";
   iterator_t credentials;
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 153. */
 
@@ -10558,7 +10558,7 @@ migrate_153_to_154 ()
 int
 migrate_154_to_155 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 154. */
 
@@ -10597,7 +10597,7 @@ migrate_154_to_155 ()
 int
 migrate_155_to_156 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 155. */
 
@@ -10806,7 +10806,7 @@ int
 migrate_156_to_157 ()
 {
   iterator_t slaves;
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 156. */
 
@@ -11138,7 +11138,7 @@ migrate_156_to_157 ()
 int
 migrate_157_to_158 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 157. */
 
@@ -11187,7 +11187,7 @@ int
 migrate_158_to_159 ()
 {
   iterator_t scanners;
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 158. */
 
@@ -11568,7 +11568,7 @@ migrate_158_to_159 ()
 int
 migrate_159_to_160 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 159. */
 
@@ -11609,7 +11609,7 @@ migrate_160_to_161 ()
   iterator_t iter;
   iter.crypt_ctx = NULL;
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 160. */
 
@@ -11797,7 +11797,7 @@ migrate_160_to_161 ()
 int
 migrate_161_to_162 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 161. */
 
@@ -11848,7 +11848,7 @@ migrate_161_to_162 ()
 int
 migrate_162_to_163 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 162. */
 
@@ -11995,7 +11995,7 @@ migrate_162_to_163 ()
 int
 migrate_163_to_164 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 163. */
 
@@ -12073,7 +12073,7 @@ migrate_163_to_164 ()
 int
 migrate_164_to_165 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 164. */
 
@@ -12117,7 +12117,7 @@ int
 migrate_165_to_166 ()
 {
   iterator_t alert_data;
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 165. */
 
@@ -12483,7 +12483,7 @@ insert_predefined (const gchar *uuid)
 int
 migrate_166_to_167 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 166. */
 
@@ -12541,7 +12541,7 @@ migrate_167_to_168 ()
 {
   const char *uuid;
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 167. */
 
@@ -12652,7 +12652,7 @@ migrate_168_to_169 ()
   const char *uuid;
   iterator_t users;
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 168. */
 
@@ -12756,7 +12756,7 @@ migrate_169_to_170_add_permission (const gchar *role, const gchar *permission)
 int
 migrate_169_to_170 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 169. */
 
@@ -12797,7 +12797,7 @@ migrate_170_to_171 ()
   gchar *old_dir, *new_dir;
   struct stat state;
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 170. */
 
@@ -12917,7 +12917,7 @@ migrate_171_to_172 ()
   const gchar *subdir_name;
   struct stat state;
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 171. */
 
@@ -13078,7 +13078,7 @@ migrate_171_to_172 ()
 int
 migrate_172_to_173 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 172. */
 
@@ -13130,7 +13130,7 @@ migrate_172_to_173 ()
 int
 migrate_173_to_174 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
   report_format_t report_format;
 
   /* Ensure that the database is currently version 173. */
@@ -13192,7 +13192,7 @@ migrate_174_to_175 ()
   const gchar *subdir_name;
   GDir *old_dir;
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 174. */
 
@@ -13345,7 +13345,7 @@ int
 migrate_175_to_176 ()
 {
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 175. */
 
@@ -13380,7 +13380,7 @@ migrate_176_to_177 ()
 {
   int now;
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 176. */
 
@@ -13435,7 +13435,7 @@ int
 migrate_177_to_178 ()
 {
   credential_t credential;
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 177. */
 
@@ -13507,7 +13507,7 @@ migrate_177_to_178 ()
 int
 migrate_178_to_179 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 178. */
 
@@ -13581,7 +13581,7 @@ migrate_179_to_180_update_ref (const gchar *table, int trash)
 int
 migrate_179_to_180 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 179. */
 
@@ -13673,7 +13673,7 @@ migrate_179_to_180 ()
 int
 migrate_180_to_181 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 180. */
 
@@ -13860,7 +13860,7 @@ migrate_181_to_182_move (const char *dest)
 int
 migrate_181_to_182 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 181. */
 
@@ -13900,7 +13900,7 @@ migrate_181_to_182 ()
 int
 migrate_182_to_183 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 182. */
 
@@ -13961,7 +13961,7 @@ migrate_182_to_183 ()
 int
 migrate_183_to_184 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 183. */
 
@@ -14003,7 +14003,7 @@ migrate_183_to_184 ()
 int
 migrate_184_to_185 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 184. */
 
@@ -14060,7 +14060,7 @@ migrate_184_to_185 ()
 int
 migrate_185_to_186 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 185. */
 
@@ -14098,7 +14098,7 @@ migrate_185_to_186 ()
 int
 migrate_186_to_187 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 186. */
 
@@ -14135,7 +14135,7 @@ migrate_186_to_187 ()
 int
 migrate_187_to_188 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 187. */
 
@@ -14172,7 +14172,7 @@ migrate_187_to_188 ()
 int
 migrate_188_to_189 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 188. */
 
@@ -14271,7 +14271,7 @@ migrate_188_to_189 ()
 int
 migrate_189_to_190 ()
 {
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   /* Ensure that the database is currently version 189. */
 
