@@ -37158,7 +37158,7 @@ manage_set_config_nvts (const gchar *config_id, const char* family,
   gchar *quoted_family, *quoted_selector;
   int new_nvt_count = 0, old_nvt_count;
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   if (find_config_with_permission (config_id, &config, "modify_config"))
     {
@@ -39214,7 +39214,7 @@ manage_set_config_families (const gchar *config_id,
   int constraining;
   char *selector;
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   if (find_config_with_permission (config_id, &config, "modify_config"))
     {
