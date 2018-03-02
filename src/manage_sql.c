@@ -16434,6 +16434,8 @@ clean_auth_cache ()
 /**
  * @brief Ensure that the database is in order.
  *
+ * Only called by init_manage_internal, and ultimately only by the main process.
+ *
  * @param[in]  check_encryption_key  Whether to check encryption key.
  *
  * @return 0 success, -1 error.
@@ -16441,7 +16443,10 @@ clean_auth_cache ()
 static int
 check_db (int check_encryption_key)
 {
-  sql_begin_exclusive ();
+  /* The file locks managed at startup ensure that this is the only Manager
+   * process accessing the db.  Nothing else should be accessing the db, access
+   * should always go through Manager. */
+  sql_begin_immediate ();
   create_tables ();
   check_db_sequences ();
   set_db_version (GVMD_DATABASE_VERSION);
@@ -16763,6 +16768,8 @@ init_manage_internal (GSList *log_config,
 
   if (skip_db_check == 0)
     {
+      /* This only happens for init_manage callers with skip_db_check set, so
+       * there is ultimately only one caller case, the main process. */
       ret = check_db (check_encryption_key);
       if (ret)
         return ret;

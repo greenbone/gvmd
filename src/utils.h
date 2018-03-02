@@ -69,6 +69,15 @@ int
 lockfile_lock (lockfile_t *, const gchar *);
 
 int
+lockfile_lock_nb (lockfile_t *, const gchar *);
+
+int
+lockfile_lock_shared_nb (lockfile_t *, const gchar *);
+
+int
 lockfile_unlock (lockfile_t *);
+
+int
+lockfile_locked (const gchar *);
 
 #endif /* not _GVMD_UTILS_H */

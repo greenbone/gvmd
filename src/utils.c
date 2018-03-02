@@ -358,24 +358,26 @@ iso_time_tz (time_t *epoch_time, const char *timezone, const char **abbrev)
 /* Locks. */
 
 /**
- * @brief Lock a file exclusively.
+ * @brief Lock a file.
  *
  * Block until file is locked.
  *
  * @param[in]  lockfile           Lockfile.
  * @param[in]  lockfile_basename  Basename of lock file.
+ * @param[in]  operation          LOCK_EX (exclusive) or LOCK_SH (shared).
  *
- * @return 0 sync complete, 1 already locked, -1 error
+ * @return 0 success, 1 already locked, -1 error
  */
-int
-lockfile_lock (lockfile_t *lockfile, const gchar *lockfile_basename)
+static int
+lock_internal (lockfile_t *lockfile, const gchar *lockfile_basename,
+               int operation)
 {
   int fd;
   gchar *lockfile_name;
 
   /* Open the lock file. */
 
-  lockfile_name = g_build_filename (g_get_tmp_dir (), lockfile_basename, NULL);
+  lockfile_name = g_build_filename (GVM_RUN_DIR, lockfile_basename, NULL);
 
   fd = open (lockfile_name, O_RDWR | O_CREAT | O_APPEND,
              /* "-rw-r--r--" */
@@ -393,13 +395,13 @@ lockfile_lock (lockfile_t *lockfile, const gchar *lockfile_basename)
 
   /* Lock the lockfile. */
 
-  if (flock (fd, LOCK_EX))  /* Exclusive, blocking. */
+  if (flock (fd, operation))  /* Exclusive, blocking. */
     {
       lockfile->name = NULL;
       g_free (lockfile_name);
       if (errno == EWOULDBLOCK)
         return 1;
-       g_debug ("%s: flock: %s", __FUNCTION__, strerror (errno));
+       g_warning ("%s: flock: %s", __FUNCTION__, strerror (errno));
       g_free (lockfile_name);
       return -1;
     }
@@ -407,6 +409,55 @@ lockfile_lock (lockfile_t *lockfile, const gchar *lockfile_basename)
   lockfile->name = lockfile_name;
 
   return 0;
+}
+
+/**
+ * @brief Lock a file exclusively.
+ *
+ * Block until file is locked.
+ *
+ * @param[in]  lockfile           Lockfile.
+ * @param[in]  lockfile_basename  Basename of lock file.
+ *
+ * @return 0 success, 1 already locked, -1 error
+ */
+int
+lockfile_lock (lockfile_t *lockfile, const gchar *lockfile_basename)
+{
+  g_debug ("%s: lock '%s'", __FUNCTION__, lockfile_basename);
+  return lock_internal (lockfile, lockfile_basename, LOCK_EX);
+}
+
+/**
+ * @brief Lock a file exclusively, without blocking.
+ *
+ * @param[in]  lockfile           Lockfile.
+ * @param[in]  lockfile_basename  Basename of lock file.
+ *
+ * @return 0 success, 1 already locked, -1 error
+ */
+int
+lockfile_lock_nb (lockfile_t *lockfile, const gchar *lockfile_basename)
+{
+  g_debug ("%s: lock '%s'", __FUNCTION__, lockfile_basename);
+  return lock_internal (lockfile, lockfile_basename, LOCK_EX | LOCK_NB);
+}
+
+/**
+ * @brief Lock a file with a shared lock.
+ *
+ * Block until file is locked.
+ *
+ * @param[in]  lockfile           Lockfile.
+ * @param[in]  lockfile_basename  Basename of lock file.
+ *
+ * @return 0 success, 1 already locked, -1 error
+ */
+int
+lockfile_lock_shared_nb (lockfile_t *lockfile, const gchar *lockfile_basename)
+{
+  g_debug ("%s: lock '%s'", __FUNCTION__, lockfile_basename);
+  return lock_internal (lockfile, lockfile_basename, LOCK_SH | LOCK_NB);
 }
 
 /**
@@ -424,6 +475,8 @@ lockfile_unlock (lockfile_t *lockfile)
 
   assert (lockfile->fd);
 
+  g_debug ("%s: unlock '%s'", __FUNCTION__, lockfile->name);
+
   /* Close the lock file. */
 
   if (close (lockfile->fd))
@@ -438,9 +491,11 @@ lockfile_unlock (lockfile_t *lockfile)
 
   if (unlink (lockfile->name))
     {
+      g_warning ("Failed to remove lock file %s: %s",
+                 lockfile->name,
+                 strerror (errno));
       g_free (lockfile->name);
       lockfile->name = NULL;
-      g_warning ("Failed to remove lock file: %s", strerror (errno));
       return -1;
     }
 
@@ -448,4 +503,25 @@ lockfile_unlock (lockfile_t *lockfile)
   lockfile->name = NULL;
 
   return 0;
+}
+
+/**
+ * @brief Check if a file is locked.
+ *
+ * @param[in]  lockfile_basename  Basename of lock file.
+ *
+ * @return 0 free, 1 locked, -1 error
+ */
+int
+lockfile_locked (const gchar *lockfile_basename)
+{
+  int ret;
+  lockfile_t lockfile;
+
+  g_debug ("%s: check '%s'", __FUNCTION__, lockfile_basename);
+
+  ret = lockfile_lock_nb (&lockfile, lockfile_basename);
+  if ((ret == 0) && lockfile_unlock (&lockfile))
+    return -1;
+  return ret;
 }
