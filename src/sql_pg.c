@@ -610,7 +610,9 @@ sql_explain_internal (const char* sql, va_list args)
 void
 sql_begin_exclusive ()
 {
-  sql ("BEGIN;");
+  /* No longer used under Postgres. */
+  assert (0);
+  abort ();
 }
 
 /**
@@ -621,12 +623,10 @@ sql_begin_exclusive ()
 int
 sql_begin_exclusive_giveup ()
 {
-  int ret;
-
-  ret = sql_giveup ("BEGIN;");
-  if (ret)
-    return ret;
-  return 0;
+  /* No longer used under Postgres. */
+  assert (0);
+  abort ();
+  return -1;
 }
 
 /**
