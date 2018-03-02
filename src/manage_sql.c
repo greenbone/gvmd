@@ -24508,6 +24508,9 @@ report_severity_data (report_t report, const char *host,
   gchar *filter, *value;
   int apply_overrides, autofp;
 
+  if (report == 0)
+    return;
+
   if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
     {
       filter = filter_term (get->filt_id);
