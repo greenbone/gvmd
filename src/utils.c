@@ -28,10 +28,15 @@
 
 #include "utils.h"
 
+#include <assert.h>
 #include <errno.h>
-#include <glib.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/file.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #undef G_LOG_DOMAIN
 /**
@@ -346,5 +351,177 @@ iso_time_tz (time_t *epoch_time, const char *timezone, const char **abbrev)
     unsetenv ("TZ");
 
   g_free (tz);
+  return ret;
+}
+
+
+/* Locks. */
+
+/**
+ * @brief Lock a file.
+ *
+ * Block until file is locked.
+ *
+ * @param[in]  lockfile           Lockfile.
+ * @param[in]  lockfile_basename  Basename of lock file.
+ * @param[in]  operation          LOCK_EX (exclusive) or LOCK_SH (shared).
+ *
+ * @return 0 success, 1 already locked, -1 error
+ */
+static int
+lock_internal (lockfile_t *lockfile, const gchar *lockfile_basename,
+               int operation)
+{
+  int fd;
+  gchar *lockfile_name;
+
+  /* Open the lock file. */
+
+  lockfile_name = g_build_filename (GVM_RUN_DIR, lockfile_basename, NULL);
+
+  fd = open (lockfile_name, O_RDWR | O_CREAT | O_APPEND,
+             /* "-rw-r--r--" */
+             S_IWUSR | S_IRUSR | S_IROTH | S_IRGRP);
+  if (fd == -1)
+    {
+      g_warning ("Failed to open lock file '%s': %s", lockfile_name,
+                 strerror (errno));
+      lockfile->name = NULL;
+      g_free (lockfile_name);
+      return -1;
+    }
+
+  lockfile->fd = fd;
+
+  /* Lock the lockfile. */
+
+  if (flock (fd, operation))  /* Exclusive, blocking. */
+    {
+      lockfile->name = NULL;
+      g_free (lockfile_name);
+      if (errno == EWOULDBLOCK)
+        return 1;
+       g_warning ("%s: flock: %s", __FUNCTION__, strerror (errno));
+      g_free (lockfile_name);
+      return -1;
+    }
+
+  lockfile->name = lockfile_name;
+
+  return 0;
+}
+
+/**
+ * @brief Lock a file exclusively.
+ *
+ * Block until file is locked.
+ *
+ * @param[in]  lockfile           Lockfile.
+ * @param[in]  lockfile_basename  Basename of lock file.
+ *
+ * @return 0 success, 1 already locked, -1 error
+ */
+int
+lockfile_lock (lockfile_t *lockfile, const gchar *lockfile_basename)
+{
+  g_debug ("%s: lock '%s'", __FUNCTION__, lockfile_basename);
+  return lock_internal (lockfile, lockfile_basename, LOCK_EX);
+}
+
+/**
+ * @brief Lock a file exclusively, without blocking.
+ *
+ * @param[in]  lockfile           Lockfile.
+ * @param[in]  lockfile_basename  Basename of lock file.
+ *
+ * @return 0 success, 1 already locked, -1 error
+ */
+int
+lockfile_lock_nb (lockfile_t *lockfile, const gchar *lockfile_basename)
+{
+  g_debug ("%s: lock '%s'", __FUNCTION__, lockfile_basename);
+  return lock_internal (lockfile, lockfile_basename, LOCK_EX | LOCK_NB);
+}
+
+/**
+ * @brief Lock a file with a shared lock.
+ *
+ * Block until file is locked.
+ *
+ * @param[in]  lockfile           Lockfile.
+ * @param[in]  lockfile_basename  Basename of lock file.
+ *
+ * @return 0 success, 1 already locked, -1 error
+ */
+int
+lockfile_lock_shared_nb (lockfile_t *lockfile, const gchar *lockfile_basename)
+{
+  g_debug ("%s: lock '%s'", __FUNCTION__, lockfile_basename);
+  return lock_internal (lockfile, lockfile_basename, LOCK_SH | LOCK_NB);
+}
+
+/**
+ * @brief Unlock a file.
+ *
+ * @param[in]  lockfile  Lockfile.
+ *
+ * @return 0 success, -1 error
+ */
+int
+lockfile_unlock (lockfile_t *lockfile)
+{
+  if (lockfile->name == NULL)
+    return 0;
+
+  assert (lockfile->fd);
+
+  g_debug ("%s: unlock '%s'", __FUNCTION__, lockfile->name);
+
+  /* Close the lock file. */
+
+  if (close (lockfile->fd))
+    {
+      g_free (lockfile->name);
+      lockfile->name = NULL;
+      g_warning ("Failed to close lock file: %s", strerror (errno));
+      return -1;
+    }
+
+  /* Remove the lock file. */
+
+  if (unlink (lockfile->name))
+    {
+      g_warning ("Failed to remove lock file %s: %s",
+                 lockfile->name,
+                 strerror (errno));
+      g_free (lockfile->name);
+      lockfile->name = NULL;
+      return -1;
+    }
+
+  g_free (lockfile->name);
+  lockfile->name = NULL;
+
+  return 0;
+}
+
+/**
+ * @brief Check if a file is locked.
+ *
+ * @param[in]  lockfile_basename  Basename of lock file.
+ *
+ * @return 0 free, 1 locked, -1 error
+ */
+int
+lockfile_locked (const gchar *lockfile_basename)
+{
+  int ret;
+  lockfile_t lockfile;
+
+  g_debug ("%s: check '%s'", __FUNCTION__, lockfile_basename);
+
+  ret = lockfile_lock_nb (&lockfile, lockfile_basename);
+  if ((ret == 0) && lockfile_unlock (&lockfile))
+    return -1;
   return ret;
 }

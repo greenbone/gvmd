@@ -1933,9 +1933,6 @@ nvts_feed_version ();
 void
 set_nvts_feed_version (const char*);
 
-nvt_t
-make_nvt_from_nvti (const nvti_t*);
-
 gboolean
 find_nvt (const char*, nvt_t*);
 

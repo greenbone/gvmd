@@ -203,7 +203,7 @@ static void report_severity_data (report_t, const char *, const get_data_t *,
 static gchar* apply_report_format (gchar *, gchar *, gchar *, gchar *,
                                    GList **);
 
-static int cache_report_counts (report_t, int, int, severity_data_t*, int);
+static int cache_report_counts (report_t, int, int, severity_data_t*);
 
 static char*
 task_owner_uuid (task_t);
@@ -12850,6 +12850,8 @@ manage_test_alert (const char *alert_id, gchar **script_message)
                       (void*) TASK_STATUS_DONE,
                       script_message);
  exit:
+  /* No one should be running this task, so we don't worry about the lock.  We
+   * could guarantee that no one runs the task, but this is a very rare case. */
   delete_task (task, 1);
   free (task_id);
   free (report_id);
@@ -13987,6 +13989,8 @@ task_average_scan_duration (task_t task)
 void
 init_manage_process (int update_nvt_cache, const gchar *database)
 {
+  lockfile_t lockfile;
+
   if (sql_is_open ())
     return;
 
@@ -14012,14 +14016,15 @@ init_manage_process (int update_nvt_cache, const gchar *database)
 
   /* Lock to avoid an error return from Postgres when multiple processes
    * create a function at the same time. */
-  sql_begin_exclusive ();
+  if (lockfile_lock (&lockfile, "gvm-create-functions"))
+    abort ();
   if (manage_create_sql_functions ())
     {
-      sql_rollback ();
+      lockfile_unlock (&lockfile);
       g_warning ("%s: failed to create functions", __FUNCTION__);
       abort ();
     }
-  sql_commit ();
+  lockfile_unlock (&lockfile);
 }
 
 /**
@@ -16429,6 +16434,8 @@ clean_auth_cache ()
 /**
  * @brief Ensure that the database is in order.
  *
+ * Only called by init_manage_internal, and ultimately only by the main process.
+ *
  * @param[in]  check_encryption_key  Whether to check encryption key.
  *
  * @return 0 success, -1 error.
@@ -16436,7 +16443,10 @@ clean_auth_cache ()
 static int
 check_db (int check_encryption_key)
 {
-  sql_begin_exclusive ();
+  /* The file locks managed at startup ensure that this is the only Manager
+   * process accessing the db.  Nothing else should be accessing the db, access
+   * should always go through Manager. */
+  sql_begin_immediate ();
   create_tables ();
   check_db_sequences ();
   set_db_version (GVMD_DATABASE_VERSION);
@@ -16758,6 +16768,8 @@ init_manage_internal (GSList *log_config,
 
   if (skip_db_check == 0)
     {
+      /* This only happens for init_manage callers with skip_db_check set, so
+       * there is ultimately only one caller case, the main process. */
       ret = check_db (check_encryption_key);
       if (ret)
         return ret;
@@ -18085,6 +18097,8 @@ set_task_run_status (task_t task, task_status_t status)
 /**
  * @brief Atomically set the run state of a task to requested.
  *
+ * Only used by run_slave_or_gmp_task and run_otp_task.
+ *
  * @param[in]  task    Task.
  * @param[out] status  Old run status of task.
  *
@@ -18094,8 +18108,22 @@ int
 set_task_requested (task_t task, task_status_t *status)
 {
   task_status_t run_status;
+  char *uuid, *name;
+  int update_report;
 
-  sql_begin_exclusive ();
+  /* Locking here prevents another process from starting the task
+   * concurrently. */
+  if (sql_is_sqlite3 ())
+    sql_begin_exclusive ();
+  else
+    {
+      sql_begin_immediate ();
+      if (sql_error ("LOCK table tasks IN ACCESS EXCLUSIVE MODE;"))
+        {
+          sql ("ROLLBACK;");
+          return 1;
+        }
+    }
 
   run_status = task_run_status (task);
   if (run_status == TASK_STATUS_REQUESTED
@@ -18113,9 +18141,48 @@ set_task_requested (task_t task, task_status_t *status)
       return 1;
     }
 
-  set_task_run_status (task, TASK_STATUS_REQUESTED);
+  /* This does the work of set_task_run_status, but spread across the COMMIT. */
+
+  update_report = 0;
+  if ((task == current_scanner_task) && current_report)
+    update_report = 1;
+
+  sql ("UPDATE tasks SET run_status = %u WHERE id = %llu;",
+       TASK_STATUS_REQUESTED,
+       task);
+
+  task_uuid (task, &uuid);
+  name = task_name (task);
+  g_log ("event task", G_LOG_LEVEL_MESSAGE,
+         "Status of task %s (%s) has changed to %s",
+         name, uuid, run_status_name (TASK_STATUS_REQUESTED));
+  free (uuid);
+  free (name);
 
   sql_commit ();
+
+  /* Do these outside the transaction, because they modify reports, and
+   * other places LOCK reports, so there would be a danger of deadlock
+   * between the LOCKs on tasks and reports.
+   *
+   * Updating the report status outside the locked environment should be
+   * OK, because it's a very rare case that someone stops the task when
+   * it is in requested state.  (Because current_report is set we are the
+   * only ones who can progress it to the running states.) */
+
+  if (update_report)
+    {
+      sql ("UPDATE reports SET scan_run_status = %u WHERE id = %llu;",
+           TASK_STATUS_REQUESTED,
+           current_report);
+
+      if (current_report && setting_auto_cache_rebuild_int ())
+        report_cache_counts (current_report, 0, 0, NULL);
+    }
+
+  event (task,
+         (task == current_scanner_task) ? current_report : 0,
+         EVENT_TASK_RUN_STATUS_CHANGED, (void*) TASK_STATUS_REQUESTED);
 
   *status = run_status;
   return 0;
@@ -19143,8 +19210,23 @@ auto_delete_reports ()
 
   g_debug ("%s", __FUNCTION__);
 
-  if (sql_begin_exclusive_giveup ())
-    return;
+  if (sql_is_sqlite3 ())
+    {
+      if (sql_begin_exclusive_giveup ())
+        return;
+    }
+  else
+    {
+      sql_begin_immediate ();
+
+      /* As in delete_report, this prevents other processes from getting the
+       * report ID. */
+      if (sql_error ("LOCK table reports IN ACCESS EXCLUSIVE MODE NOWAIT;"))
+        {
+          sql ("ROLLBACK;");
+          return;
+        }
+    }
 
   init_iterator (&tasks,
                  "SELECT id, name,"
@@ -24605,32 +24687,23 @@ report_counts_from_cache (report_t report, int override, int min_qod,
  * @param[in]   override  Whether overrides were applied to the results.
  * @param[in]   min_qod   The minimum QoD of the results.
  * @param[in]   data      Severity data struct containing the message counts.
- * @param[in]   make_transaction  True to wrap in an exclusive transaction.
  *
  * @return      0 if successful, 1 gave up, -1 error (see sql_giveup).
  */
 static int
 cache_report_counts (report_t report, int override, int min_qod,
-                     severity_data_t* data, int make_transaction)
+                     severity_data_t* data)
 {
-  /* Try cache results.  Give up if the database is locked because this could
-   * happen while the caller has an SQL statement open.  If another process
-   * tries to write to the database between the statement open and
-   * cache_report_counts then they'll deadlock. */
   int i, ret;
   double severity;
   int end_time;
 
-  // Do not cache results when using dynamic severity.
+  /* Do not cache results when using dynamic severity. */
+
   if (setting_dynamic_severity_int ())
     return 0;
 
-  if (make_transaction)
-    {
-      ret = sql_begin_exclusive_giveup ();
-      if (ret)
-        return ret;
-    }
+  /* Try cache results. */
 
   ret = sql_giveup ("DELETE FROM report_counts"
                     " WHERE report = %llu"
@@ -24641,8 +24714,6 @@ cache_report_counts (report_t report, int override, int min_qod,
                     report, override, min_qod, current_credentials.uuid);
   if (ret)
     {
-      if (make_transaction)
-        sql_rollback ();
       return ret;
     }
 
@@ -24660,8 +24731,6 @@ cache_report_counts (report_t report, int override, int min_qod,
                         report, current_credentials.uuid, override, min_qod);
       if (ret)
         {
-          if (make_transaction)
-            sql_rollback ();
           return ret;
         }
     }
@@ -24697,22 +24766,11 @@ cache_report_counts (report_t report, int override, int min_qod,
                                 min_qod, severity, data->counts[i], end_time);
               if (ret)
                 {
-                  if (make_transaction)
-                    sql_rollback ();
                   return ret;
                 }
             }
           i++;
           severity = severity_data_value (i);
-        }
-    }
-  if (make_transaction)
-    {
-      ret = sql_giveup ("COMMIT;");
-      if (ret)
-        {
-          sql_rollback ();
-          return ret;
         }
     }
   return 0;
@@ -24890,10 +24948,10 @@ report_counts_id_full (report_t report, int* debugs, int* holes, int* infos,
   if (filter_cacheable && !cache_exists)
     {
       if (unfiltered_requested)
-        cache_report_counts (report, override, 0, &severity_data, 0);
+        cache_report_counts (report, override, 0, &severity_data);
       if (filtered_requested)
         cache_report_counts (report, override, min_qod_int,
-                             &filtered_severity_data, 0);
+                             &filtered_severity_data);
     }
 
   cleanup_severity_data (&severity_data);
@@ -25034,6 +25092,10 @@ delete_report_internal (report_t report)
                TASK_STATUS_STOP_REQUESTED_GIVEUP,
                TASK_STATUS_STOP_WAITING))
     return 2;
+
+  /* This needs to have exclusive access to reports because otherwise at this
+   * point another process (like a RESUME_TASK handler) could store the report
+   * ID and then start trying to access that report after we've deleted it. */
 
   if (report_task (report, &task))
     return -1;
@@ -25211,7 +25273,20 @@ delete_report (const char *report_id, int dummy)
   report_t report;
   int ret;
 
-  sql_begin_exclusive ();
+  if (sql_is_sqlite3 ())
+    sql_begin_exclusive ();
+  else
+    {
+      sql_begin_immediate ();
+
+      /* This prevents other processes (in particular a RESUME_TASK) from getting
+       * a reference to the report ID, and then using that reference to try access
+       * the deleted report.
+       *
+       * If the report is running already then delete_report_internal will
+       * ROLLBACK. */
+      sql ("LOCK table reports IN ACCESS EXCLUSIVE MODE;");
+    }
 
   if (acl_user_may ("delete_report") == 0)
     {
@@ -31986,6 +32061,8 @@ find_trash_task (const char*, task_t*);
  *
  * Stop the task beforehand with \ref stop_task_internal, if it is running.
  *
+ * This is only used for DELETE_TASK in gmp.c.
+ *
  * @param[in]  task_id   UUID of task.
  * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
  *
@@ -32077,6 +32154,16 @@ request_delete_task_uuid (const char *task_id, int ultimate)
       case 0:    /* Stopped. */
         {
           int ret;
+
+          if (ultimate)
+            /* This prevents other processes (for example a START_TASK) from
+             * getting a reference to a report ID or the task ID, and then using
+             * that reference to try access the deleted report or task.
+             *
+             * If the task is running already then delete_task will lead to
+             * ROLLBACK. */
+            sql ("LOCK table reports IN ACCESS EXCLUSIVE MODE;");
+
           ret = delete_task (task, ultimate);
           if (ret)
             sql_rollback ();
@@ -32209,7 +32296,24 @@ delete_task_lock (task_t task, int ultimate)
 
   g_debug ("   delete task %llu\n", task);
 
-  sql_begin_exclusive ();
+  if (sql_is_sqlite3 ())
+    sql_begin_exclusive ();
+  else
+    {
+      sql_begin_immediate ();
+
+      /* This prevents other processes (for example a START_TASK) from getting
+       * a reference to a report ID or the task ID, and then using that
+       * reference to try access the deleted report or task.
+       *
+       * If the task is already active then delete_report (via delete_task)
+       * will fail and rollback. */
+      if (sql_error ("LOCK table reports IN ACCESS EXCLUSIVE MODE;"))
+        {
+          sql_rollback ();
+          return -1;
+        }
+    }
 
   if (sql_int ("SELECT hidden FROM tasks WHERE id = %llu;", task))
     {
@@ -37064,7 +37168,7 @@ manage_set_config_nvts (const gchar *config_id, const char* family,
   gchar *quoted_family, *quoted_selector;
   int new_nvt_count = 0, old_nvt_count;
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   if (find_config_with_permission (config_id, &config, "modify_config"))
     {
@@ -39120,7 +39224,7 @@ manage_set_config_families (const gchar *config_id,
   int constraining;
   char *selector;
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   if (find_config_with_permission (config_id, &config, "modify_config"))
     {
@@ -48485,7 +48589,7 @@ init_task_schedule_iterator (iterator_t* iterator)
   get_data_t get;
   array_t *permissions;
 
-  ret = sql_begin_exclusive_giveup ();
+  ret = sql_begin_immediate_giveup ();
   if (ret)
     return ret;
 
@@ -63287,7 +63391,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
         return 5;
     }
 
-  sql_begin_exclusive ();
+  sql_begin_immediate ();
 
   if (acl_user_may ("delete_user") == 0)
     {
@@ -63334,7 +63438,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       free (uuid);
     }
 
-  /* Set requested and running tasks to stopped. */
+  /* Fail if there are any active tasks. */
 
   memset (&get, '\0', sizeof (get));
   current_uuid = current_credentials.uuid;
@@ -63368,7 +63472,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   free (current_credentials.uuid);
   current_credentials.uuid = current_uuid;
 
-  /* Transfer ownership of objects to the inheritor if one is given */
+  /* Check if there's an inheritor. */
+
   if (inheritor_id && strcmp (inheritor_id, ""))
     {
       if (strcmp (inheritor_id, "self") == 0)
@@ -63419,6 +63524,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
     {
       gchar *deleted_user_id, *deleted_user_name;
       gchar *real_inheritor_id, *real_inheritor_name;
+
+      /* Transfer ownership of objects to the inheritor. */
 
       if (inheritor == user)
         {
@@ -66702,14 +66809,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
       else
         old_size = state.st_size;
 
-      if (sql_is_sqlite3 ())
-        sql ("VACUUM;");
-      else
-        {
-          sql_begin_exclusive ();
-          sql ("VACUUM;");
-          sql_commit ();
-        }
+      sql ("VACUUM;");
 
       ret = stat (db, &state);
       if (ret)
@@ -66774,7 +66874,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
     {
       int changes_iana, changes_old_format;
 
-      sql_begin_exclusive ();
+      sql_begin_immediate ();
       sql ("UPDATE results"
            " SET port = substr (port, 1,"
            "                    strpos (port, ' (IANA:') - 1)"
@@ -66796,7 +66896,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
   else if (strcasecmp (name, "cleanup-result-severities") == 0)
     {
       int missing_severity_changes = 0;
-      sql_begin_exclusive();
+      sql_begin_immediate ();
 
       if (sql_is_sqlite3 ())
         sql ("UPDATE results"
@@ -66830,7 +66930,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
     {
       int changes;
 
-      sql_begin_exclusive ();
+      sql_begin_immediate ();
 
       changes = cleanup_schedule_times ();
 
@@ -66842,7 +66942,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
     }
   else if (strcasecmp (name, "rebuild-permissions-cache") == 0)
     {
-      sql_begin_exclusive ();
+      sql_begin_immediate ();
 
       sql ("DELETE FROM permissions_get_tasks");
 
@@ -66857,7 +66957,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
     {
       int changes;
 
-      sql_begin_exclusive ();
+      sql_begin_immediate ();
 
       reports_build_count_cache (1, &changes);
 
@@ -66872,7 +66972,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
     {
       int changes;
 
-      sql_begin_exclusive ();
+      sql_begin_immediate ();
 
       reports_build_count_cache (0, &changes);
 

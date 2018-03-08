@@ -323,6 +323,33 @@ set_gnutls_priority (gnutls_session_t *session, const char *priority)
     g_warning ("Invalid GnuTLS priority: %s\n", errp);
 }
 
+/**
+ * @brief Lock gvm-helping for an option.
+ *
+ * @param[in]  lockfile_checking  The gvm-checking lockfile.
+ *
+ * @return 0 success, -1 failed.
+ */
+static int
+option_lock (lockfile_t *lockfile_checking)
+{
+  lockfile_t lockfile_helping;
+
+  if (lockfile_lock_shared_nb (&lockfile_helping, "gvm-helping"))
+    {
+      g_critical ("%s: Error getting helping lock\n", __FUNCTION__);
+      return -1;
+    }
+
+  if (lockfile_unlock (lockfile_checking))
+    {
+      g_critical ("%s: Error releasing checking lock\n", __FUNCTION__);
+      return -1;
+    }
+
+  return 0;
+}
+
 
 /* Forking, serving the client. */
 
@@ -1070,7 +1097,7 @@ handle_sigabrt_simple (int signal)
  * @return If this function did not exit itself, returns exit code.
  */
 static int
-update_nvt_cache (int register_cleanup, int skip_create_tables)
+update_nvt_cache (int register_cleanup)
 {
   int ret;
   gvm_connection_t connection;
@@ -1087,7 +1114,7 @@ update_nvt_cache (int register_cleanup, int skip_create_tables)
                      0, /* Max email include size. */
                      0, /* Max email message size. */
                      NULL,
-                     skip_create_tables))
+                     1  /* Skip DB check (including table creation). */))
     {
       case 0:
         break;
@@ -1176,7 +1203,7 @@ update_nvt_cache_retry ()
       else if (child_pid == 0)
         {
           /* Child: Try reload. */
-          int ret = update_nvt_cache (0, 1);
+          int ret = update_nvt_cache (0);
 
           exit (ret);
         }
@@ -1690,6 +1717,7 @@ main (int argc, char** argv)
   static gchar *disable = NULL;
   static gchar *value = NULL;
   GError *error = NULL;
+  lockfile_t lockfile_checking, lockfile_serving;
   GOptionContext *option_context;
   static GOptionEntry option_entries[]
     = {
@@ -1907,261 +1935,81 @@ main (int argc, char** argv)
              manage_db_supported_version ());
 #endif
 
-  if (backup_database)
+  /* Get exclusivity on the startup locks.
+   *
+   * The main process keeps this open until after init_gmpd, so that check_db
+   * has exclusive access to the db.
+   *
+   * Helper and migrator processes just keep this open long enough to check the
+   * other startup locks.
+   *
+   * There are 3 startup locks:
+   *  1 gvm-serving: the main process (exclusive)
+   *  2 gvm-helping: an option process, like --create-user (shared)
+   *  3 gvm-migrating: a --migrate process (exclusive).
+   *
+   * The locks are inherited by forked processes, and are only released when all
+   * associated files are closed (i.e. when all processes exit). */
+
+
+  switch (lockfile_lock_nb (&lockfile_checking, "gvm-checking"))
     {
-      /* Backup the database and then exit. */
-
-      proctitle_set ("gvmd: Backing up database");
-
-      g_info ("   Backing up database.\n");
-
-      switch (manage_backup_db (database))
-        {
-          case 0:
-            g_info ("   Backup succeeded.\n");
-            return EXIT_SUCCESS;
-          case -1:
-            g_critical ("%s: database backup failed\n",
-                        __FUNCTION__);
-            return EXIT_FAILURE;
-          default:
-            assert (0);
-            g_critical ("%s: strange return from manage_backup_db\n",
-                        __FUNCTION__);
-            return EXIT_FAILURE;
-        }
-    }
-
-  if (disable_password_policy)
-    gvm_disable_password_policy ();
-  else
-    {
-      gchar *password_policy;
-      password_policy = g_build_filename (GVM_SYSCONF_DIR,
-                                          "pwpolicy.conf",
-                                          NULL);
-      if (g_file_test (password_policy, G_FILE_TEST_EXISTS) == FALSE)
-        g_warning ("%s: password policy missing: %s\n",
-                   __FUNCTION__,
-                   password_policy);
-      g_free (password_policy);
-    }
-
-  if (optimize)
-    {
-      int ret;
-
-      proctitle_set ("gvmd: Optimizing");
-
-      ret = manage_optimize (log_config, database, optimize);
-      log_config_free ();
-      if (ret)
+      case 0:
+        break;
+      case 1:
+        g_warning ("%s: Another process is busy starting up", __FUNCTION__);
         return EXIT_FAILURE;
-      return EXIT_SUCCESS;
-    }
-
-  if (create_scanner)
-    {
-      int ret;
-      scanner_type_t type;
-      char *stype;
-
-      /* Create the scanner and then exit. */
-
-      proctitle_set ("gvmd: Creating scanner");
-
-      if (!scanner_host)
-        scanner_host = OPENVASSD_ADDRESS;
-      if (!scanner_port)
-        scanner_port = G_STRINGIFY (OPENVASSD_PORT);
-      if (!scanner_ca_pub)
-        scanner_ca_pub = CACERT;
-      if (!scanner_key_pub)
-        scanner_key_pub = CLIENTCERT;
-      if (!scanner_key_priv)
-        scanner_key_priv = CLIENTKEY;
-
-      if (!scanner_type || !strcasecmp (scanner_type, "OpenVAS"))
-        type = SCANNER_TYPE_OPENVAS;
-      else if (!strcasecmp (scanner_type, "OSP"))
-        type = SCANNER_TYPE_OSP;
-      else
-        {
-          printf ("Invalid scanner type value.\n");
-          return EXIT_FAILURE;
-        }
-      stype = g_strdup_printf ("%u", type);
-      ret = manage_create_scanner (log_config, database, create_scanner,
-                                   scanner_host, scanner_port, stype,
-                                   scanner_ca_pub, scanner_key_pub,
-                                   scanner_key_priv);
-      g_free (stype);
-      log_config_free ();
-      if (ret)
+      case -1:
+      default:
+        g_critical ("%s: Error trying to get checking lock\n", __FUNCTION__);
         return EXIT_FAILURE;
-      return EXIT_SUCCESS;
-    }
-
-  if (modify_scanner)
-    {
-      int ret;
-      char *stype;
-
-      /* Modify the scanner and then exit. */
-
-      proctitle_set ("gvmd: Modifying scanner");
-
-      if (scanner_type)
-        {
-          scanner_type_t type;
-
-          if (strcasecmp (scanner_type, "OpenVAS") == 0)
-            type = SCANNER_TYPE_OPENVAS;
-          else if (strcasecmp (scanner_type, "OSP") == 0)
-            type = SCANNER_TYPE_OSP;
-          else
-            {
-              g_warning ("Invalid scanner type value.\n");
-              return EXIT_FAILURE;
-            }
-
-          stype = g_strdup_printf ("%u", type);
-        }
-      else
-        stype = NULL;
-
-      ret = manage_modify_scanner (log_config, database, modify_scanner,
-                                   scanner_name, scanner_host, scanner_port,
-                                   stype, scanner_ca_pub, scanner_key_pub,
-                                   scanner_key_priv);
-      g_free (stype);
-      log_config_free ();
-      if (ret)
-        return EXIT_FAILURE;
-      return EXIT_SUCCESS;
-    }
-
-  if (check_alerts)
-    {
-      int ret;
-
-      proctitle_set ("gvmd: Checking alerts");
-
-      ret = manage_check_alerts (log_config, database);
-      log_config_free ();
-      if (ret)
-        return EXIT_FAILURE;
-      return EXIT_SUCCESS;
-    }
-
-  if (create_user)
-    {
-      int ret;
-
-      proctitle_set ("gvmd: Creating user");
-
-      ret = manage_create_user (log_config, database, create_user, password, role);
-      log_config_free ();
-      if (ret)
-        return EXIT_FAILURE;
-      return EXIT_SUCCESS;
-    }
-
-  if (delete_user)
-    {
-      int ret;
-
-      proctitle_set ("gvmd: Deleting user");
-
-      ret = manage_delete_user (log_config, database, delete_user, inheritor);
-      log_config_free ();
-      if (ret)
-        return EXIT_FAILURE;
-      return EXIT_SUCCESS;
-    }
-
-  if (get_users)
-    {
-      int ret;
-
-      proctitle_set ("gvmd: Getting users");
-
-      ret = manage_get_users (log_config, database, role);
-      log_config_free ();
-      if (ret)
-        return EXIT_FAILURE;
-      return EXIT_SUCCESS;
-    }
-
-  if (get_scanners)
-    {
-      int ret;
-
-      proctitle_set ("gvmd: Getting scanners");
-
-      ret = manage_get_scanners (log_config, database);
-      log_config_free ();
-      if (ret)
-        return EXIT_FAILURE;
-      return EXIT_SUCCESS;
-    }
-
-  if (delete_scanner)
-    {
-      int ret;
-
-      proctitle_set ("gvmd: Deleting scanner");
-
-      ret = manage_delete_scanner (log_config, database, delete_scanner);
-      log_config_free ();
-      if (ret)
-        return EXIT_FAILURE;
-      return EXIT_SUCCESS;
-    }
-
-  if (verify_scanner)
-    {
-      int ret;
-
-      proctitle_set ("gvmd: Verifying scanner");
-
-      ret = manage_verify_scanner (log_config, database, verify_scanner);
-      log_config_free ();
-      if (ret)
-        return EXIT_FAILURE;
-      return EXIT_SUCCESS;
-    }
-
-  if (new_password)
-    {
-      int ret;
-
-      proctitle_set ("gvmd: Modifying user password");
-
-      ret = manage_set_password (log_config, database, user, new_password);
-      log_config_free ();
-      if (ret)
-        return EXIT_FAILURE;
-      return EXIT_SUCCESS;
-    }
-
-  if (modify_setting)
-    {
-      int ret;
-
-      proctitle_set ("gvmd: Modifying setting");
-
-      ret = manage_modify_setting (log_config, database, user,
-                                   modify_setting, value);
-      log_config_free ();
-      if (ret)
-        return EXIT_FAILURE;
-      return EXIT_SUCCESS;
     }
 
   if (migrate_database)
     {
+      lockfile_t lockfile_migrating;
+
       /* Migrate the database to the version supported by this manager. */
+
+      switch (lockfile_locked ("gvm-serving"))
+        {
+          case 1:
+            g_warning ("%s: Main process is running, refusing to migrate",
+                       __FUNCTION__);
+            return EXIT_FAILURE;
+          case -1:
+            g_warning ("%s: Error checking serving lock",
+                       __FUNCTION__);
+            return EXIT_FAILURE;
+        }
+
+      switch (lockfile_locked ("gvm-helping"))
+        {
+          case 1:
+            g_warning ("%s: An option process is running, refusing to migrate",
+                       __FUNCTION__);
+            return EXIT_FAILURE;
+          case -1:
+            g_warning ("%s: Error checking helping lock",
+                       __FUNCTION__);
+            return EXIT_FAILURE;
+        }
+
+      switch (lockfile_lock_nb (&lockfile_migrating, "gvm-migrating"))
+        {
+          case 1:
+            g_warning ("%s: A migrate is already running", __FUNCTION__);
+            return EXIT_FAILURE;
+          case -1:
+            g_critical ("%s: Error getting migrating lock\n", __FUNCTION__);
+            return EXIT_FAILURE;
+        }
+
+      if (lockfile_unlock (&lockfile_checking))
+        {
+          g_critical ("%s: Error releasing checking lock\n", __FUNCTION__);
+          return EXIT_FAILURE;
+        }
 
       proctitle_set ("gvmd: Migrating database");
 
@@ -2208,11 +2056,318 @@ main (int argc, char** argv)
         }
     }
 
+  /* For the main process and for option processes, refuse to start when a
+   * migrate is in process. */
+
+  if (lockfile_locked ("gvm-migrating"))
+    {
+      g_warning ("%s: A migrate is in progress", __FUNCTION__);
+      return EXIT_FAILURE;
+    }
+
+  /* Handle non-migrate options.
+   *
+   * These can run concurrently, so they set the shared lock gvm-helping, and
+   * release gvm-checking, via option_lock. */
+
+  if (backup_database)
+    {
+      /* Backup the database and then exit. */
+
+      proctitle_set ("gvmd: Backing up database");
+
+      g_info ("   Backing up database.\n");
+
+      /* TODO Not sure about locking.  Not used by Postgres.  Perhaps remove. */
+
+      switch (manage_backup_db (database))
+        {
+          case 0:
+            g_info ("   Backup succeeded.\n");
+            return EXIT_SUCCESS;
+          case -1:
+            g_critical ("%s: database backup failed\n",
+                        __FUNCTION__);
+            return EXIT_FAILURE;
+          default:
+            assert (0);
+            g_critical ("%s: strange return from manage_backup_db\n",
+                        __FUNCTION__);
+            return EXIT_FAILURE;
+        }
+    }
+
+  if (disable_password_policy)
+    gvm_disable_password_policy ();
+  else
+    {
+      gchar *password_policy;
+      password_policy = g_build_filename (GVM_SYSCONF_DIR,
+                                          "pwpolicy.conf",
+                                          NULL);
+      if (g_file_test (password_policy, G_FILE_TEST_EXISTS) == FALSE)
+        g_warning ("%s: password policy missing: %s\n",
+                   __FUNCTION__,
+                   password_policy);
+      g_free (password_policy);
+    }
+
+  if (optimize)
+    {
+      int ret;
+
+      proctitle_set ("gvmd: Optimizing");
+
+      if (option_lock (&lockfile_checking))
+        return EXIT_FAILURE;
+
+      ret = manage_optimize (log_config, database, optimize);
+      log_config_free ();
+      if (ret)
+        return EXIT_FAILURE;
+      return EXIT_SUCCESS;
+    }
+
+  if (create_scanner)
+    {
+      int ret;
+      scanner_type_t type;
+      char *stype;
+
+      /* Create the scanner and then exit. */
+
+      proctitle_set ("gvmd: Creating scanner");
+
+      if (option_lock (&lockfile_checking))
+        return EXIT_FAILURE;
+
+      if (!scanner_host)
+        scanner_host = OPENVASSD_ADDRESS;
+      if (!scanner_port)
+        scanner_port = G_STRINGIFY (OPENVASSD_PORT);
+      if (!scanner_ca_pub)
+        scanner_ca_pub = CACERT;
+      if (!scanner_key_pub)
+        scanner_key_pub = CLIENTCERT;
+      if (!scanner_key_priv)
+        scanner_key_priv = CLIENTKEY;
+
+      if (!scanner_type || !strcasecmp (scanner_type, "OpenVAS"))
+        type = SCANNER_TYPE_OPENVAS;
+      else if (!strcasecmp (scanner_type, "OSP"))
+        type = SCANNER_TYPE_OSP;
+      else
+        {
+          printf ("Invalid scanner type value.\n");
+          return EXIT_FAILURE;
+        }
+      stype = g_strdup_printf ("%u", type);
+      ret = manage_create_scanner (log_config, database, create_scanner,
+                                   scanner_host, scanner_port, stype,
+                                   scanner_ca_pub, scanner_key_pub,
+                                   scanner_key_priv);
+      g_free (stype);
+      log_config_free ();
+      if (ret)
+        return EXIT_FAILURE;
+      return EXIT_SUCCESS;
+    }
+
+  if (modify_scanner)
+    {
+      int ret;
+      char *stype;
+
+      /* Modify the scanner and then exit. */
+
+      proctitle_set ("gvmd: Modifying scanner");
+
+      if (option_lock (&lockfile_checking))
+        return EXIT_FAILURE;
+
+      if (scanner_type)
+        {
+          scanner_type_t type;
+
+          if (strcasecmp (scanner_type, "OpenVAS") == 0)
+            type = SCANNER_TYPE_OPENVAS;
+          else if (strcasecmp (scanner_type, "OSP") == 0)
+            type = SCANNER_TYPE_OSP;
+          else
+            {
+              g_warning ("Invalid scanner type value.\n");
+              return EXIT_FAILURE;
+            }
+
+          stype = g_strdup_printf ("%u", type);
+        }
+      else
+        stype = NULL;
+
+      ret = manage_modify_scanner (log_config, database, modify_scanner,
+                                   scanner_name, scanner_host, scanner_port,
+                                   stype, scanner_ca_pub, scanner_key_pub,
+                                   scanner_key_priv);
+      g_free (stype);
+      log_config_free ();
+      if (ret)
+        return EXIT_FAILURE;
+      return EXIT_SUCCESS;
+    }
+
+  if (check_alerts)
+    {
+      int ret;
+
+      proctitle_set ("gvmd: Checking alerts");
+
+      if (option_lock (&lockfile_checking))
+        return EXIT_FAILURE;
+
+      ret = manage_check_alerts (log_config, database);
+      log_config_free ();
+      if (ret)
+        return EXIT_FAILURE;
+      return EXIT_SUCCESS;
+    }
+
+  if (create_user)
+    {
+      int ret;
+
+      proctitle_set ("gvmd: Creating user");
+
+      if (option_lock (&lockfile_checking))
+        return EXIT_FAILURE;
+
+      ret = manage_create_user (log_config, database, create_user, password, role);
+      log_config_free ();
+      if (ret)
+        return EXIT_FAILURE;
+      return EXIT_SUCCESS;
+    }
+
+  if (delete_user)
+    {
+      int ret;
+
+      proctitle_set ("gvmd: Deleting user");
+
+      if (option_lock (&lockfile_checking))
+        return EXIT_FAILURE;
+
+      ret = manage_delete_user (log_config, database, delete_user, inheritor);
+      log_config_free ();
+      if (ret)
+        return EXIT_FAILURE;
+      return EXIT_SUCCESS;
+    }
+
+  if (get_users)
+    {
+      int ret;
+
+      proctitle_set ("gvmd: Getting users");
+
+      if (option_lock (&lockfile_checking))
+        return EXIT_FAILURE;
+
+      ret = manage_get_users (log_config, database, role);
+      log_config_free ();
+      if (ret)
+        return EXIT_FAILURE;
+      return EXIT_SUCCESS;
+    }
+
+  if (get_scanners)
+    {
+      int ret;
+
+      proctitle_set ("gvmd: Getting scanners");
+
+      if (option_lock (&lockfile_checking))
+        return EXIT_FAILURE;
+
+      ret = manage_get_scanners (log_config, database);
+      log_config_free ();
+      if (ret)
+        return EXIT_FAILURE;
+      return EXIT_SUCCESS;
+    }
+
+  if (delete_scanner)
+    {
+      int ret;
+
+      proctitle_set ("gvmd: Deleting scanner");
+
+      if (option_lock (&lockfile_checking))
+        return EXIT_FAILURE;
+
+      ret = manage_delete_scanner (log_config, database, delete_scanner);
+      log_config_free ();
+      if (ret)
+        return EXIT_FAILURE;
+      return EXIT_SUCCESS;
+    }
+
+  if (verify_scanner)
+    {
+      int ret;
+
+      proctitle_set ("gvmd: Verifying scanner");
+
+      if (option_lock (&lockfile_checking))
+        return EXIT_FAILURE;
+
+      ret = manage_verify_scanner (log_config, database, verify_scanner);
+      log_config_free ();
+      if (ret)
+        return EXIT_FAILURE;
+      return EXIT_SUCCESS;
+    }
+
+  if (new_password)
+    {
+      int ret;
+
+      proctitle_set ("gvmd: Modifying user password");
+
+      if (option_lock (&lockfile_checking))
+        return EXIT_FAILURE;
+
+      ret = manage_set_password (log_config, database, user, new_password);
+      log_config_free ();
+      if (ret)
+        return EXIT_FAILURE;
+      return EXIT_SUCCESS;
+    }
+
+  if (modify_setting)
+    {
+      int ret;
+
+      proctitle_set ("gvmd: Modifying setting");
+
+      if (option_lock (&lockfile_checking))
+        return EXIT_FAILURE;
+
+      ret = manage_modify_setting (log_config, database, user,
+                                   modify_setting, value);
+      log_config_free ();
+      if (ret)
+        return EXIT_FAILURE;
+      return EXIT_SUCCESS;
+    }
+
   if (encrypt_all_credentials)
     {
       int ret;
 
       proctitle_set ("gvmd: Encrypting all credentials");
+
+      if (option_lock (&lockfile_checking))
+        return EXIT_FAILURE;
 
       ret = manage_encrypt_all_credentials (log_config, database);
       log_config_free ();
@@ -2227,6 +2382,9 @@ main (int argc, char** argv)
 
       proctitle_set ("gvmd: Decrypting all credentials");
 
+      if (option_lock (&lockfile_checking))
+        return EXIT_FAILURE;
+
       ret = manage_decrypt_all_credentials (log_config, database);
       log_config_free ();
       if (ret)
@@ -2235,6 +2393,25 @@ main (int argc, char** argv)
     }
 
   /* Run the standard manager. */
+
+  if (lockfile_locked ("gvm-helping"))
+    {
+      g_warning ("%s: An option process is running", __FUNCTION__);
+      return EXIT_FAILURE;
+    }
+
+  switch (lockfile_lock_nb (&lockfile_serving, "gvm-serving"))
+    {
+      case 0:
+        break;
+      case 1:
+        g_warning ("%s: Main process is already running", __FUNCTION__);
+        return EXIT_FAILURE;
+      case -1:
+      default:
+        g_critical ("%s: Error trying to get serving lock\n", __FUNCTION__);
+        return EXIT_FAILURE;
+    }
 
   if (foreground == FALSE)
     {
@@ -2289,6 +2466,14 @@ main (int argc, char** argv)
         g_critical ("%s: failed to initialise GMP daemon\n", __FUNCTION__);
         log_config_free ();
         exit (EXIT_FAILURE);
+    }
+
+  /* Release the checking lock, so that option processes may start. */
+
+  if (lockfile_unlock (&lockfile_checking))
+    {
+      g_critical ("%s: Error releasing checking lock\n", __FUNCTION__);
+      return EXIT_FAILURE;
     }
 
   /* Register the `cleanup' function. */
