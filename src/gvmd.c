@@ -2276,7 +2276,11 @@ main (int argc, char** argv)
         exit (EXIT_FAILURE);
         break;
       case -4:
-        g_critical ("%s: --max-ips-per-target out of range\n", __FUNCTION__);
+        g_critical ("%s: --max-ips-per-target out of range"
+                    " (min=1, max=%i, requested=%i)\n",
+                    __FUNCTION__,
+                    MANAGE_ABSOLUTE_MAX_IPS_PER_TARGET,
+                    max_ips_per_target);
         log_config_free ();
         exit (EXIT_FAILURE);
         break;

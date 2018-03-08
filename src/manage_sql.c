@@ -1139,7 +1139,7 @@ manage_option_setup (GSList *log_config, const gchar *database)
 
   db = database ? database : sql_default_database ();
 
-  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET);
+  ret = init_manage_helper (log_config, db, MANAGE_ABSOLUTE_MAX_IPS_PER_TARGET);
   assert (ret != -4);
   switch (ret)
     {
@@ -16723,7 +16723,7 @@ init_manage_internal (GSList *log_config,
    *             init_manage_process (sorts out db state itself) */
 
   if ((max_ips_per_target <= 0)
-      || (max_ips_per_target > ABSOLUTE_MAX_IPS_PER_TARGET))
+      || (max_ips_per_target > MANAGE_ABSOLUTE_MAX_IPS_PER_TARGET))
     return -4;
 
   max_hosts = max_ips_per_target;
@@ -18222,6 +18222,7 @@ task_upload_progress (task_t task)
   if (report)
     {
       int count;
+      int using_sqlite = sql_is_sqlite3 ();
       get_data_t get;
       memset (&get, 0, sizeof (get_data_t));
       get.filter = g_strdup ("min_qod=0");
@@ -18229,9 +18230,11 @@ task_upload_progress (task_t task)
       get_data_reset (&get);
 
       return sql_int ("SELECT"
-                      " max (min (((%i * 100) / upload_result_count), 100), -1)"
+                      " %s (%s (((%i * 100) / upload_result_count), 100), -1)"
                       " FROM tasks"
                       " WHERE id = %llu;",
+                      using_sqlite ? "max" : "greatest",
+                      using_sqlite ? "min" : "least",
                       count,
                       task);
     }
@@ -24422,6 +24425,9 @@ report_severity_data (report_t report, const char *host,
 
   gchar *filter, *value;
   int apply_overrides, autofp;
+
+  if (report == 0)
+    return;
 
   if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
     {
@@ -41274,6 +41280,7 @@ credential_in_use (credential_t credential)
            || sql_int ("SELECT count (*) FROM alert_method_data"
                        " WHERE (name = 'scp_credential'"
                        "        OR name = 'smb_credential'"
+                       "        OR name = 'tp_sms_credential'"
                        "        OR name = 'verinice_server_credential')"
                        " AND data = '%s'",
                        uuid));
@@ -41308,6 +41315,7 @@ trash_credential_in_use (credential_t credential)
            || sql_int ("SELECT count (*) FROM alert_method_data_trash"
                        " WHERE (name = 'scp_credential'"
                        "        OR name = 'smb_credential'"
+                       "        OR name = 'tp_sms_credential'"
                        "        OR name = 'verinice_server_credential')"
                        " AND data = '%s'",
                        uuid));

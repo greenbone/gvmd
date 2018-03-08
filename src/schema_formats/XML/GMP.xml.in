@@ -16998,6 +16998,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <summary>Whether to include additional details of the results</summary>
         <type>boolean</type>
       </attrib>
+      <attrib>
+        <name>get_counts</name>
+        <summary>Whether to include result counts</summary>
+        <type>boolean</type>
+      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -17015,7 +17020,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <e>filters</e>
         <e>sort</e>
         <e>results</e>
-        <e>result_count</e>
+        <o><e>result_count</e></o>
       </pattern>
       <ele>
         <name>result</name>

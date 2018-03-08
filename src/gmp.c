@@ -2865,6 +2865,7 @@ typedef struct
   char *task_id;         ///< Task associated with results.
   int notes_details;     ///< Boolean.  Whether to include details of above.
   int overrides_details; ///< Boolean.  Whether to include details of above.
+  int get_counts;        ///< Boolean.  Whether to include result counts.
 } get_results_data_t;
 
 /**
@@ -6242,6 +6243,7 @@ buffer_get_filter_xml (GString *msg, const char* type,
  *
  * @param[in]  type                  Type.
  * @param[in]  get                   GET data.
+ * @param[in]  get_counts            Include counts.
  * @param[in]  count                 Page count.
  * @param[in]  filtered              Filtered count.
  * @param[in]  full                  Full count.
@@ -6249,9 +6251,10 @@ buffer_get_filter_xml (GString *msg, const char* type,
  * @param[in]  write_to_client_data  Data for write_to_client.
  */
 int
-send_get_end (const char *type, get_data_t *get, int count, int filtered,
-              int full, int (*write_to_client) (const char *, void*),
-              void* write_to_client_data)
+send_get_end_internal (const char *type, get_data_t *get, int get_counts,
+                       int count, int filtered, int full,
+                       int (*write_to_client) (const char *, void*),
+                       void* write_to_client_data)
 {
   gchar *sort_field, *filter;
   int first, max, sort_order;
@@ -6342,23 +6345,26 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
                             "<sort>"
                             "<field>%s<order>%s</order></field>"
                             "</sort>"
-                            "<%s start=\"%i\" max=\"%i\"/>"
-                            "<%s_count>"
-                            "%i"
-                            "<filtered>%i</filtered>"
-                            "<page>%i</page>"
-                            "</%s_count>"
-                            "</get_%s_response>",
+                            "<%s start=\"%i\" max=\"%i\"/>",
                             sort_field,
                             sort_order ? "ascending" : "descending",
                             type_many->str,
                             first,
-                            max,
-                            type,
-                            full,
-                            filtered,
-                            count,
-                            type,
+                            max);
+  if (get_counts)
+    buffer_xml_append_printf (msg,
+                              "<%s_count>"
+                              "%i"
+                              "<filtered>%i</filtered>"
+                              "<page>%i</page>"
+                              "</%s_count>",
+                              type,
+                              full,
+                              filtered,
+                              count,
+                              type);
+  buffer_xml_append_printf (msg,
+                            "</get_%s_response>",
                             type_many->str);
   g_string_free (type_many, TRUE);
   g_free (sort_field);
@@ -6371,6 +6377,46 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
     }
   g_string_free (msg, TRUE);
   return 0;
+}
+
+/**
+ * @brief Send end of GET response.
+ *
+ * @param[in]  type                  Type.
+ * @param[in]  get                   GET data.
+ * @param[in]  count                 Page count.
+ * @param[in]  filtered              Filtered count.
+ * @param[in]  full                  Full count.
+ * @param[in]  write_to_client       Function that sends to clients.
+ * @param[in]  write_to_client_data  Data for write_to_client.
+ */
+int
+send_get_end (const char *type, get_data_t *get, int count, int filtered,
+              int full, int (*write_to_client) (const char *, void*),
+              void* write_to_client_data)
+{
+  return send_get_end_internal (type, get, 1, count, filtered, full,
+                                write_to_client, write_to_client_data);
+}
+
+/**
+ * @brief Send end of GET response, skipping result counts.
+ *
+ * @param[in]  type                  Type.
+ * @param[in]  get                   GET data.
+ * @param[in]  count                 Page count.
+ * @param[in]  filtered              Filtered count.
+ * @param[in]  full                  Full count.
+ * @param[in]  write_to_client       Function that sends to clients.
+ * @param[in]  write_to_client_data  Data for write_to_client.
+ */
+int
+send_get_end_no_counts (const char *type, get_data_t *get,
+                        int (*write_to_client) (const char *, void*),
+                        void* write_to_client_data)
+{
+  return send_get_end_internal (type, get, 0, 0, 0, 0, write_to_client,
+                                write_to_client_data);
 }
 
 /**
@@ -7577,6 +7623,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               get_results_data->overrides_details = strcmp (attribute, "0");
             else
               get_results_data->overrides_details = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "get_counts", &attribute))
+              get_results_data->get_counts = strcmp (attribute, "0");
+            else
+              get_results_data->get_counts = 1;
 
             set_client_state (CLIENT_GET_RESULTS);
           }
@@ -17750,7 +17802,7 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
       const char* filter;
       iterator_t results;
       int notes, overrides;
-      int count, filtered, ret, first;
+      int count, ret, first;
 
       if (get_results_data->get.filt_id
           && strcmp (get_results_data->get.filt_id, FILT_ID_NONE))
@@ -17835,12 +17887,32 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
       manage_filter_controls (get_results_data->get.filter,
                               &first, NULL, NULL, NULL);
 
-      filtered = get_results_data->get.id
-                  ? 1 : result_count (&get_results_data->get,
-                                      0 /* No report */,
-                                      NULL /* No host */);
+      if (get_results_data->get_counts)
+        {
+          int filtered;
 
-      SEND_GET_END ("result", &get_results_data->get, count, filtered);
+          filtered = get_results_data->get.id
+                      ? 1 : result_count (&get_results_data->get,
+                                          0 /* No report */,
+                                          NULL /* No host */);
+
+          if (send_get_end ("result", &get_results_data->get, count, filtered,
+                            resource_count ("result", &get_results_data->get),
+                            gmp_parser->client_writer,
+                            gmp_parser->client_writer_data))
+            {
+              error_send_to_client (error);
+              return;
+            }
+        }
+      else if (send_get_end_no_counts ("result",
+                                       &get_results_data->get,
+                                       gmp_parser->client_writer,
+                                       gmp_parser->client_writer_data))
+        {
+          error_send_to_client (error);
+          return;
+        }
     }
 
   get_results_data_reset (get_results_data);
