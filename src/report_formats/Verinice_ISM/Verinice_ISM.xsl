@@ -482,7 +482,7 @@ CIS</value>
   <!-- End Info elements -->
 
 
-  <xsl:template match="report/host_start">
+  <xsl:template match="report/host">
     <xsl:param name="task_id"/>
     <xsl:variable name="addr">
       <xsl:value-of select="host"/>
@@ -952,7 +952,7 @@ CIS</value>
             </syncAttribute>
             <extId><xsl:value-of select="$task_id"/>-ism-assets</extId>
             <extObjectType>gsm_ism_assets</extObjectType>
-            <xsl:apply-templates select="report/host_start">
+            <xsl:apply-templates select="report/host">
               <xsl:with-param name="task_id">
                 <xsl:value-of select="$task_id"/>
               </xsl:with-param>

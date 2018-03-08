@@ -1160,7 +1160,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </tr>
       </xsl:for-each>
       <tr>
-        <td>Total: <xsl:value-of select="count(host_start)"/></td>
+        <td>Total: <xsl:value-of select="count(host)"/></td>
         <td></td>
         <td></td>
         <td><xsl:value-of select="count(results/result[threat/text() = 'High'])"/></td>
@@ -1186,7 +1186,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
            <td>Result</td>
            <td>Port/User</td>
          </tr>
-         <xsl:for-each select="host_start">
+         <xsl:for-each select="host">
            <xsl:sort select="key('host-by-ip', host)/detail[name='hostname']/value/text()"/>
            <xsl:call-template name="auth-success-row"/>
          </xsl:for-each>

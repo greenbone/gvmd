@@ -902,7 +902,7 @@ advice given in each description, in order to rectify the issue.
           <xsl:with-param name="header-color">openvas_report</xsl:with-param>
           <xsl:with-param name="header-text">Host&amp;Protocol&amp;Result&amp;Port/User</xsl:with-param>
         </xsl:call-template>
-        <xsl:for-each select="host_start">
+        <xsl:for-each select="host">
           <xsl:sort select="key('host-by-ip', host)/detail[name='hostname']/value/text()"/>
           <xsl:call-template name="auth-success-row"/>
         </xsl:for-each>
