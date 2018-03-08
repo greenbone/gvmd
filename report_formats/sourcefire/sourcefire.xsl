@@ -88,13 +88,9 @@ where
 <xsl:template match="result">
 AddScanResult,<xsl:value-of select="host"/>,"GVM",<xsl:value-of select="nvt/@oid"/>,<xsl:call-template name="portport" select="port"/>,<xsl:call-template name="portproto" select="port"/>,"<xsl:value-of select="nvt/name"/>","<xsl:value-of select="translate(description, '&quot;&#10;', &quot;' &quot;)"/>","cve_ids: <xsl:value-of select="translate(nvt/cve, ',', '')"/>","bugtraq_ids: <xsl:value-of select="translate(nvt/bid, ',', '')"/>"</xsl:template>
 
-<!-- MATCH HOST_START -->
-<xsl:template match="host_start">
-AddHost,<xsl:value-of select="host"/>
-</xsl:template>
-
-<!-- MATCH HOST_END -->
-<xsl:template match="host_end">
+<!-- MATCH HOST -->
+<xsl:template match="host">
+AddHost,<xsl:value-of select="ip"/>
 </xsl:template>
 
 <!-- MATCH SCAN_START -->
@@ -140,7 +136,7 @@ AddHost,<xsl:value-of select="host"/>
      host input importer. -->
 <xsl:template match="report"># Sourcefire Host Input File
 SetSource,GVM
-<xsl:apply-templates select="host_start"/>
+<xsl:apply-templates select="host"/>
 <xsl:apply-templates select="results"/>
 </xsl:template>
 

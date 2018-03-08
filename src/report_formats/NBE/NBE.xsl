@@ -425,13 +425,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
 <xsl:template match="report">
   <xsl:apply-templates select="scan_start"/>
-  <xsl:for-each select="host_start">
-    <xsl:variable name="host"><xsl:value-of select="host/text()"/></xsl:variable>
+  <xsl:for-each select="host">
+    <xsl:variable name="host"><xsl:value-of select="ip/text()"/></xsl:variable>
 
     <xsl:text>timestamps||</xsl:text>
     <xsl:value-of select="$host"/>
     <xsl:text>|host_start|</xsl:text>
-    <xsl:call-template name="ctime"/>
+    <xsl:call-template name="ctime">
+      <xsl:with-param name="date" select="start/text()"/>
+    </xsl:call-template>
     <xsl:text>|</xsl:text>
     <xsl:call-template name="newline"/>
 
@@ -440,7 +442,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:text>timestamps||</xsl:text>
     <xsl:value-of select="$host"/>
     <xsl:text>|host_end|</xsl:text>
-    <xsl:call-template name="ctime" select="../host_end[host/text()=$host]/text()"/>
+    <xsl:call-template name="ctime">
+      <xsl:with-param name="date" select="end/text()"/>
+    </xsl:call-template>
     <xsl:text>|</xsl:text>
     <xsl:call-template name="newline"/>
   </xsl:for-each>
