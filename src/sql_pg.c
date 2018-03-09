@@ -610,8 +610,9 @@ sql_explain_internal (const char* sql, va_list args)
 void
 sql_begin_exclusive ()
 {
-  sql ("BEGIN;");
-  sql ("SELECT pg_advisory_xact_lock (1);");
+  /* No longer used under Postgres. */
+  assert (0);
+  abort ();
 }
 
 /**
@@ -622,15 +623,10 @@ sql_begin_exclusive ()
 int
 sql_begin_exclusive_giveup ()
 {
-  int ret;
-
-  ret = sql_giveup ("BEGIN;");
-  if (ret)
-    return ret;
-  if (sql_int ("SELECT pg_try_advisory_xact_lock (1);"))
-    return 0;
-  sql_rollback ();
-  return 1;
+  /* No longer used under Postgres. */
+  assert (0);
+  abort ();
+  return -1;
 }
 
 /**
@@ -639,8 +635,7 @@ sql_begin_exclusive_giveup ()
 void
 sql_begin_immediate ()
 {
-  /* TODO This is just an exclusive lock. */
-  sql_begin_exclusive ();
+  sql ("BEGIN;");
 }
 
 /**
@@ -651,8 +646,12 @@ sql_begin_immediate ()
 int
 sql_begin_immediate_giveup ()
 {
-  /* TODO This is just an exclusive lock. */
-  return sql_begin_exclusive_giveup ();
+  int ret;
+
+  ret = sql_giveup ("BEGIN;");
+  if (ret)
+    return ret;
+  return 0;
 }
 
 /**

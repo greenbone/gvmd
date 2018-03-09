@@ -1011,7 +1011,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
     <xsl:call-template name="text-align-left">
       <xsl:with-param name="width" select="$col1-width "/>
-      <xsl:with-param name="content" select="concat('Total: ', count(host_start))"/>
+      <xsl:with-param name="content" select="concat('Total: ', count(host))"/>
     </xsl:call-template>
     <xsl:call-template name="text-align-right">
       <xsl:with-param name="width" select="$col2-width +1 "/>
