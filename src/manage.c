@@ -8401,15 +8401,6 @@ gvm_migrate_secinfo (int feed_type)
       return -1;
     }
 
-  /* Remove the lock file. */
-
-  if (unlink (lockfile_name))
-    {
-      g_free (lockfile_name);
-      g_warning ("Failed to remove lock file: %s", strerror (errno));
-      return -1;
-    }
-
   g_free (lockfile_name);
 
   return ret;

@@ -487,17 +487,7 @@ lockfile_unlock (lockfile_t *lockfile)
       return -1;
     }
 
-  /* Remove the lock file. */
-
-  if (unlink (lockfile->name))
-    {
-      g_warning ("Failed to remove lock file %s: %s",
-                 lockfile->name,
-                 strerror (errno));
-      g_free (lockfile->name);
-      lockfile->name = NULL;
-      return -1;
-    }
+  /* Clear the lock file data. */
 
   g_free (lockfile->name);
   lockfile->name = NULL;
