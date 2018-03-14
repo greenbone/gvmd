@@ -48618,16 +48618,11 @@ init_task_schedule_iterator (iterator_t* iterator)
                  " FROM tasks, schedules, users"
                  " WHERE tasks.schedule = schedules.id"
                  " AND tasks.hidden = 0"
-                 /* And a user may run the task. */
-                 " AND %s"
-                 /* And the same user has access to the schedule. */
-                 " AND %s"
+                 " AND (tasks.owner = (users.id))"
                  /* Sort by task and prefer owner of task or schedule as user */
                  " ORDER BY tasks.id,"
                  "          (users.id = tasks.owner) DESC,"
-                 "          (users.id = schedules.owner) DESC;",
-                 task_clause,
-                 schedule_clause);
+                 "          (users.id = schedules.owner) DESC;");
 
   g_free (task_clause);
   g_free (schedule_clause);
