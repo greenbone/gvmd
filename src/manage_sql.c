@@ -48585,13 +48585,10 @@ int
 init_task_schedule_iterator (iterator_t* iterator)
 {
   int ret;
-  get_data_t get;
 
   ret = sql_begin_immediate_giveup ();
   if (ret)
     return ret;
-
-  get.trash = 0;
 
   init_iterator (iterator,
                  "SELECT tasks.id, tasks.uuid,"
