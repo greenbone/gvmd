@@ -1,3 +1,5 @@
+[![CircleCI](https://circleci.com/gh/greenbone/gvm/tree/master.svg?style=svg)](https://circleci.com/gh/greenbone/gvm/tree/master)
+
 # About Greenbone Vulnerability Manager
 
 The Greenbone Vulnerability Manager is the central management service between

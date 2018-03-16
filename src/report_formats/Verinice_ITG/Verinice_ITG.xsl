@@ -228,7 +228,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </xsl:if>
     </xsl:for-each>
   </xsl:template>
-  <xsl:template match="report/host_start">
+  <xsl:template match="report/host">
     <xsl:param name="task_id"/>
     <xsl:variable name="addr">
       <xsl:value-of select="host"/>
@@ -300,7 +300,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <children>
             <extId><xsl:value-of select="$task_id"/>-server-group</extId>
             <extObjectType>gsm_itg_server_group</extObjectType>
-            <xsl:apply-templates select="report/host_start">
+            <xsl:apply-templates select="report/host">
               <xsl:with-param name="task_id">
                 <xsl:value-of select="$task_id"/>
               </xsl:with-param>
