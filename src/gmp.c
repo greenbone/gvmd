@@ -21290,6 +21290,32 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                  (XML_ERROR_SYNTAX ("delete_user",
                                     "Attempt to delete current user"));
                 break;
+              case 6:
+                if (send_find_error_to_client ("delete_user", "inheriting user",
+                                               delete_user_data->inheritor_id,
+                                               gmp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
+              case 7:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("delete_user",
+                                    "Inheritor is the same as the deleted"
+                                    " user."));
+                break;
+              case 8:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("delete_user",
+                                    "Invalid inheritor."));
+                break;
+              case 9:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("delete_user",
+                                    "Resources owned by the user are still"
+                                    " in use by others."));
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("delete_user",
