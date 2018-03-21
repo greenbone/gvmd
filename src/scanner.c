@@ -875,12 +875,28 @@ openvas_scanner_set_certs (const char *ca_pub, const char *key_pub,
 int
 openvas_scanner_is_loading ()
 {
-  /* Add little delay in case we read before scanner write, as the socket is
-   * non-blocking. */
-  openvas_usleep (500000);
-  openvas_scanner_read ();
+  int attempts = 5;
+  int ret = 0;
+  while (attempts >= 0)
+    {
+      /* Add little delay in case we read before scanner write, as the socket is
+       * non-blocking. */
+      attempts = attempts - 1;
+      openvas_usleep (500000);
+      openvas_scanner_read ();
 
-  if (process_otp_scanner_input (NULL) == 3)
-    return 1;
-  return 0;
+      switch (process_otp_scanner_input (NULL))
+        {
+          case 3:
+            /* Still loading. */
+            return 1;
+          case 5:
+            /* Empty message. Try again. */
+            ret = 1;
+            break;
+          default:
+            return 0;
+        }
+    }
+  return ret;
 }
