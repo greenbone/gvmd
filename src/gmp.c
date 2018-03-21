@@ -10777,7 +10777,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
 
           free (name_task);
 
-          if (include_result && note_iterator_result (notes))
+          if (include_result && uuid_result && note_iterator_result (notes))
             {
               iterator_t results;
               get_data_t *result_get;
@@ -10785,7 +10785,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
                                                     1, /* apply_overrides */
                                                     0, /* autofp*/
                                                     0  /* min_qod */);
-
+              result_get->id = g_strdup (uuid_result);
               init_result_get_iterator (&results, result_get,
                                         0,     /* No report restriction */
                                         NULL,  /* No host restriction */
@@ -11049,7 +11049,8 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
 
           free (name_task);
 
-          if (include_result && override_iterator_result (overrides))
+          if (include_result && uuid_result
+              && override_iterator_result (overrides))
             {
               iterator_t results;
               get_data_t *result_get;
@@ -11057,8 +11058,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                                     1, /* apply_overrides */
                                                     0, /* autofp */
                                                     0  /* min_qod */);
-              result_uuid (override_iterator_result (overrides),
-                           &(result_get->id));
+              result_get->id = g_strdup (uuid_result);
               init_result_get_iterator (&results, result_get,
                                         0,  /* No report restriction */
                                         NULL, /* No host restriction */
