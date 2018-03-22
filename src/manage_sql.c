@@ -42042,41 +42042,51 @@ modify_credential (const char *credential_id,
   if (next (&iterator))
     {
       gchar *key_private_truncated = NULL;
-      const char* type = credential_iterator_type (&iterator);
+      const char *key_private_to_use;
+      const char *type = credential_iterator_type (&iterator);
 
       if (key_private)
         {
-          if (key_private)
-            {
-              char *key_public;
-              /* Try truncate the private key, but if that fails try get the
-               * public key anyway, in case it's a key type that
-               * truncate_private_key does not understand. */
-              key_private_truncated = truncate_private_key (key_private);
+          char *key_public = NULL;
+          /* Try truncate the private key, but if that fails try get the
+           * public key anyway, in case it's a key type that
+           * truncate_private_key does not understand. */
+          key_private_truncated = truncate_private_key (key_private);
+          key_private_to_use = key_private_truncated ? key_private_truncated
+                                                     : key_private;
 
+          if (strcmp (type, "cc") == 0)
+            {
               key_public = openvas_ssh_public_from_private
-                              (key_private_truncated
-                                ? key_private_truncated
-                                : key_private,
+                              (key_private_to_use,
+                               NULL);
+            }
+          else if (strcmp (type, "usk") == 0)
+            {
+              key_public = openvas_ssh_public_from_private
+                              (key_private_to_use,
                                password
                                 ? password
-                                : credential_iterator_private_key (&iterator));
-
-              g_free (key_public);
-
-              if (key_public == NULL)
-                {
-                  sql_rollback ();
-                  cleanup_iterator (&iterator);
-                  return 8;
-                }
+                                : credential_iterator_password (&iterator));
             }
+
+          if (key_public == NULL)
+            {
+              sql_rollback ();
+              cleanup_iterator (&iterator);
+              g_free (key_public);
+              return 8;
+            }
+          g_free (key_public);
         }
+      else
+        key_private_to_use = NULL;
 
       if (strcmp (type, "cc") == 0)
         {
-          if (key_private)
-            set_credential_private_key (credential, key_private_truncated,
+          if (key_private_to_use)
+            set_credential_private_key (credential,
+                                        key_private_to_use,
                                         NULL);
         }
       else if (strcmp (type, "up") == 0)
@@ -42086,12 +42096,12 @@ modify_credential (const char *credential_id,
         }
       else if (strcmp (type, "usk") == 0)
         {
-          if (key_private || password)
+          if (key_private_to_use || password)
             {
               set_credential_private_key
                 (credential,
                  key_private_truncated
-                  ? key_private_truncated
+                  ? key_private_to_use
                   : credential_iterator_private_key (&iterator),
                 password
                   ? password
