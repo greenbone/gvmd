@@ -2647,7 +2647,18 @@ slave_setup (openvas_connection_t *connection, const char *name, task_t task,
               g_free (private_key_copy);
 
               if (ret)
-                goto fail;
+                {
+                  if (ret == -1)
+                    goto fail;
+                  else
+                    {
+                      g_warning ("Could not create slave SSH credential"
+                                 " (status %d)."
+                                 " Continuing without credential.",
+                                 ret);
+                      slave_ssh_credential_uuid = NULL;
+                    }
+                }
             }
         }
 
@@ -2687,7 +2698,18 @@ slave_setup (openvas_connection_t *connection, const char *name, task_t task,
               g_free (user_copy);
               g_free (password_copy);
               if (ret)
-                goto fail_ssh_credential;
+                {
+                  if (ret == -1)
+                    goto fail_ssh_credential;
+                  else
+                    {
+                      g_warning ("Could not create slave SMB credential"
+                                 " (status %d)."
+                                 " Continuing without credential.",
+                                 ret);
+                      slave_smb_credential_uuid = NULL;
+                    }
+                }
             }
         }
 
@@ -2727,7 +2749,18 @@ slave_setup (openvas_connection_t *connection, const char *name, task_t task,
               g_free (user_copy);
               g_free (password_copy);
               if (ret)
-                goto fail_smb_credential;
+                {
+                  if (ret == -1)
+                    goto fail_smb_credential;
+                  else
+                    {
+                      g_warning ("Could not create slave ESXi credential"
+                                 " (status %d)."
+                                 " Continuing without credential.",
+                                 ret);
+                      slave_esxi_credential_uuid = NULL;
+                    }
+                }
             }
         }
 
@@ -2791,7 +2824,18 @@ slave_setup (openvas_connection_t *connection, const char *name, task_t task,
               g_free (privacy_password_copy);
               g_free (privacy_algorithm_copy);
               if (ret)
-                goto fail_esxi_credential;
+                {
+                  if (ret == -1)
+                    goto fail_esxi_credential;
+                  else
+                    {
+                      g_warning ("Could not create slave SNMP credential"
+                                 " (status %d)."
+                                 " Continuing without credential",
+                                 ret);
+                      slave_snmp_credential_uuid = NULL;
+                    }
+                }
             }
         }
 
