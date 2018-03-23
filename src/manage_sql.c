@@ -41907,7 +41907,10 @@ copy_credential (const char* name, const char* comment,
  * @param[in]   allow_insecure      Whether to allow insecure use.
  *
  * @return 0 success, 1 failed to find credential, 2 credential with new name
- *         exists, 3 credential_id required, 99 permission denied,
+ *         exists, 3 credential_id required, 4 invalid login name,
+ *         5 invalid certificate, 6 invalid auth_algorithm,
+ *         7 invalid privacy_algorithm, 8 invalid private key,
+ *         99 permission denied,
  *         -1 internal error.
  */
 int
@@ -41921,6 +41924,7 @@ modify_credential (const char *credential_id,
 {
   credential_t credential;
   iterator_t iterator;
+  int ret;
 
   if (credential_id == NULL)
     return 3;
@@ -41977,26 +41981,113 @@ modify_credential (const char *credential_id,
              credential);
     }
 
-  if (login)
-    set_credential_login (credential, login);
+  ret = 0;
 
-  if (certificate)
-    set_credential_certificate (credential, certificate);
+  if (login && ret == 0)
+    {
+      const char *s;
+      s = login;
+      // Check if login contains only alphanumeric characters
+      if (strcmp (login, "") == 0)
+        ret = 4;
+      while (*s && ret == 0)
+        if (isalnum (*s))
+          s++;
+        else
+          ret = 4;
 
-  if (auth_algorithm)
-    set_credential_auth_algorithm (credential, auth_algorithm);
+      if (ret == 0)
+        set_credential_login (credential, login);
+    }
 
-  if (privacy_algorithm)
-    set_credential_privacy_algorithm (credential, privacy_algorithm);
+  if (certificate && ret == 0)
+    {
+      // Truncate certificate which also validates it.
+      gchar *certificate_truncated;
+      certificate_truncated = truncate_certificate (certificate);
+      if (certificate_truncated == NULL)
+        {
+          set_credential_certificate (credential, certificate_truncated);
+          g_free (certificate_truncated);
+        }
+      else
+        ret = 5;
+    }
+
+  if (auth_algorithm && ret == 0)
+    {
+      if (strcmp (auth_algorithm, "md5")
+          && strcmp (auth_algorithm, "sha1"))
+        ret = 6;
+      else
+        set_credential_auth_algorithm (credential, auth_algorithm);
+    }
+
+  if (privacy_algorithm && ret == 0)
+    {
+      if (strcmp (auth_algorithm, "aes")
+          && strcmp (auth_algorithm, "des"))
+        ret = 7;
+      else
+        set_credential_privacy_algorithm (credential, privacy_algorithm);
+    }
+
+  if (ret)
+    {
+      sql_rollback ();
+      return ret;
+    }
 
   init_credential_iterator_one (&iterator, credential);
   if (next (&iterator))
     {
-      const char* type = credential_iterator_type (&iterator);
+      gchar *key_private_truncated = NULL;
+      const char *key_private_to_use;
+      const char *type = credential_iterator_type (&iterator);
+
+      if (key_private)
+        {
+          char *key_public = NULL;
+          /* Try truncate the private key, but if that fails try get the
+           * public key anyway, in case it's a key type that
+           * truncate_private_key does not understand. */
+          key_private_truncated = truncate_private_key (key_private);
+          key_private_to_use = key_private_truncated ? key_private_truncated
+                                                     : key_private;
+
+          if (strcmp (type, "cc") == 0)
+            {
+              key_public = openvas_ssh_public_from_private
+                              (key_private_to_use,
+                               NULL);
+            }
+          else if (strcmp (type, "usk") == 0)
+            {
+              key_public = openvas_ssh_public_from_private
+                              (key_private_to_use,
+                               password
+                                ? password
+                                : credential_iterator_password (&iterator));
+            }
+
+          if (key_public == NULL)
+            {
+              sql_rollback ();
+              cleanup_iterator (&iterator);
+              g_free (key_public);
+              return 8;
+            }
+          g_free (key_public);
+        }
+      else
+        key_private_to_use = NULL;
+
       if (strcmp (type, "cc") == 0)
         {
-          if (key_private)
-            set_credential_private_key (credential, key_private, NULL);
+          if (key_private_to_use)
+            set_credential_private_key (credential,
+                                        key_private_to_use,
+                                        NULL);
         }
       else if (strcmp (type, "up") == 0)
         {
@@ -42005,12 +42096,12 @@ modify_credential (const char *credential_id,
         }
       else if (strcmp (type, "usk") == 0)
         {
-          if (key_private || password)
+          if (key_private_to_use || password)
             {
               set_credential_private_key
                 (credential,
-                 key_private
-                  ? key_private
+                 key_private_truncated
+                  ? key_private_to_use
                   : credential_iterator_private_key (&iterator),
                 password
                   ? password
@@ -42040,6 +42131,8 @@ modify_credential (const char *credential_id,
           sql_rollback ();
           cleanup_iterator (&iterator);
         }
+
+      g_free (key_private_truncated);
     }
   else
     {
