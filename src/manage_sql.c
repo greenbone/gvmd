@@ -48585,26 +48585,10 @@ int
 init_task_schedule_iterator (iterator_t* iterator)
 {
   int ret;
-  gchar *task_clause, *schedule_clause;
-  get_data_t get;
-  array_t *permissions;
 
   ret = sql_begin_immediate_giveup ();
   if (ret)
     return ret;
-
-  get.trash = 0;
-  permissions = make_array ();
-  array_add (permissions, g_strdup ("start_task"));
-  task_clause = acl_where_owned_user ("", "users.id", "task", &get, 1,
-                                      "any", 0, permissions);
-  array_free (permissions);
-
-  permissions = make_array ();
-  array_add (permissions, g_strdup ("get_schedules"));
-  schedule_clause = acl_where_owned_user ("", "users.id", "schedule", &get, 1,
-                                          "any", 0, permissions);
-  array_free (permissions);
 
   init_iterator (iterator,
                  "SELECT tasks.id, tasks.uuid,"
@@ -48618,19 +48602,12 @@ init_task_schedule_iterator (iterator_t* iterator)
                  " FROM tasks, schedules, users"
                  " WHERE tasks.schedule = schedules.id"
                  " AND tasks.hidden = 0"
-                 /* And a user may run the task. */
-                 " AND %s"
-                 /* And the same user has access to the schedule. */
-                 " AND %s"
+                 " AND (tasks.owner = (users.id))"
                  /* Sort by task and prefer owner of task or schedule as user */
                  " ORDER BY tasks.id,"
                  "          (users.id = tasks.owner) DESC,"
-                 "          (users.id = schedules.owner) DESC;",
-                 task_clause,
-                 schedule_clause);
+                 "          (users.id = schedules.owner) DESC;");
 
-  g_free (task_clause);
-  g_free (schedule_clause);
   return 0;
 }
 

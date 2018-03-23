@@ -1017,8 +1017,10 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
             /* to_scanner buffer still full. */
             g_debug ("   scanner input stalled\n");
           else
-            /* Programming error. */
-            assert (ret == 0);
+            {
+              /* Programming error. */
+              assert (ret == 0 || ret == 5);
+            }
         }
 
       if (process_gmp_change () == -1)
