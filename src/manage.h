@@ -4058,6 +4058,11 @@ const char*
 tag_name_iterator_name (iterator_t*);
 
 int
+user_resources_in_use (user_t,
+                       const char *, int(*)(resource_t),
+                       const char *, int(*)(resource_t));
+
+int
 init_resource_tag_iterator (iterator_t*, const char*, resource_t, int,
                             const char*, int);
 
