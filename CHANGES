@@ -1,3 +1,45 @@
+SUMMARY OF RELEASE CHANGES FOR OPENVAS-MANAGER-6.0
+====================================================
+
+For detailed code changes, please visit
+ https://github.com/greenbone/gvm/commits/openvas-manager-6.0
+ or get the entire source code repository and view log history:
+ $ git clone https://github.com/greenbone/gvm.git
+ $ cd gvm && git checkout openvas-manager-6.0 && git log
+
+openvas-manager 6.0.12 (2018-03-27)
+
+This is the twelfth maintenance release of the openvas-manager 6.0 module for
+the Open Vulnerability Assessment System release 8 (OpenVAS-8).
+
+This release addresses permission issues and contains performance improvements.
+It also addresses an issue which cause to GSA to partly crash. Please see below
+for a comprehensive list of changes. 
+
+Many thanks to everyone who contributed to this release:
+Matthew Mundell, Timo Pollmeier and Michael Wiegand.
+
+Main changes compared to 6.0.11:
+* An issue which impacted on the performance of rebuilding reports cache on
+  override and permission changes has been addressed.
+* An issue which caused an internal error when editing specific options and
+  saving override has been addressed.
+* An issue which impacted on the performance when deleting overrides has been
+  addressed.
+* An issue which caused a deadlock in case of running too many task at once
+  has been addressed.
+* An issue which caused to not be possible for Superadmin to move a report
+  format to trash has been addressed.
+* An issue which caused that dropdownlists in scanconfig edit dialog were gone
+  has been addressed.
+* An issue which caused that orphaned permissions could not be deleted has been
+  addressed.
+* An issue which caused GSA to partly crash when using special characters on
+  target has been addressed.
+* An issue which caused scheduled task to be triggered several times has been
+  addressed.
+
+
 openvas-manager 6.0.11 (2017-06-21)
 
 This is the eleventh maintenance release of the openvas-manager 6.0 module for
