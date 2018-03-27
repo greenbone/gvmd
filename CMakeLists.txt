@@ -33,6 +33,8 @@ if (POLICY CMP0005)
   cmake_policy (SET CMP0005 NEW)
 endif (POLICY CMP0005)
 
+SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+
 include (FindPkgConfig)
 
 if (NOT CMAKE_BUILD_TYPE)
@@ -43,27 +45,16 @@ if (NOT BACKEND STREQUAL POSTGRESQL)
   set (BACKEND SQLITE3)
 endif (NOT BACKEND STREQUAL POSTGRESQL)
 
-## Retrieve svn revision (at configure time)
-#  Not using Subversion_WC_INFO, as it would have to connect to the repo
-find_program (SVN_EXECUTABLE svn DOC "subversion command line client")
-
-macro (Subversion_GET_REVISION dir variable)
-  execute_process (COMMAND ${SVN_EXECUTABLE} info ${CMAKE_SOURCE_DIR}/${dir}
-    OUTPUT_VARIABLE ${variable}
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
-  string (REGEX REPLACE "^(.*\n)?Revision: ([^\n]+).*"
-    "\\2" ${variable} "${${variable}}")
-endmacro (Subversion_GET_REVISION)
+## Retrieve git revision (at configure time)
+include (GetGit)
 
 if (NOT CMAKE_BUILD_TYPE MATCHES "Release")
-  if (EXISTS "${CMAKE_SOURCE_DIR}/.svn/" OR EXISTS "${CMAKE_SOURCE_DIR}/../.svn/")
-    if (SVN_EXECUTABLE)
-      Subversion_GET_REVISION(. ProjectRevision)
-      set (SVN_REVISION "~svn${ProjectRevision}")
-    else (SVN_EXECUTABLE)
-      set (SVN_REVISION "~svn")
-    endif (SVN_EXECUTABLE)
-  endif (EXISTS "${CMAKE_SOURCE_DIR}/.svn/" OR EXISTS "${CMAKE_SOURCE_DIR}/../.svn/")
+  if (EXISTS "${CMAKE_SOURCE_DIR}/.git/")
+    if (GIT_FOUND)
+      Git_GET_REVISION(. ProjectRevision)
+      set (GIT_REVISION "~git-${ProjectRevision}")
+    endif (GIT_FOUND)
+  endif (EXISTS "${CMAKE_SOURCE_DIR}/.git/")
 endif (NOT CMAKE_BUILD_TYPE MATCHES "Release")
 
 ## Project version
@@ -77,9 +68,11 @@ set (PROJECT_VERSION_PATCH 0)
 # unset if this is a stable release series.
 set (PROJECT_BETA_RELEASE 1)
 
-if (SVN_REVISION)
-  set (PROJECT_VERSION_SVN "${SVN_REVISION}")
-endif (SVN_REVISION)
+if (GIT_REVISION)
+  set (PROJECT_VERSION_GIT "${GIT_REVISION}")
+else (GIT_REVISION)
+  set (PROJECT_VERSION_GIT "~git")
+endif (GIT_REVISION)
 
 # If PROJECT_BETA_RELEASE is set, the version string will be set to:
 #   "major.minor+beta${PROJECT_BETA_RELEASE}"
@@ -107,14 +100,14 @@ set (CPACK_SOURCE_TOPLEVEL_TAG "")
 set (CPACK_SYSTEM_NAME "")
 set (CPACK_TOPLEVEL_TAG "")
 
-set (CPACK_PACKAGE_VERSION "${PROJECT_VERSION_STRING}${PROJECT_VERSION_SVN}")
+set (CPACK_PACKAGE_VERSION "${PROJECT_VERSION_STRING}${PROJECT_VERSION_GIT}")
 
 set (CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CPACK_PACKAGE_VERSION}")
 set (CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CPACK_PACKAGE_VERSION}")
 set (CPACK_PACKAGE_VENDOR "Greenbone Networks GmbH")
 set (CPACK_SOURCE_IGNORE_FILES
 "${CMAKE_BINARY_DIR}"
-"/.svn/"
+"/.git/"
 "swp$"
 )
 

@@ -116,8 +116,8 @@
 #include "comm.h"
 #include "utils.h"
 
-#ifdef SVN_REV_AVAILABLE
-#include "svnrevision.h"
+#ifdef GIT_REV_AVAILABLE
+#include "gitrevision.h"
 #endif
 
 #undef G_LOG_DOMAIN
@@ -1824,8 +1824,8 @@ main (int argc, char** argv)
   if (print_version)
     {
       printf ("Greenbone Vulnerability Manager %s\n", GVMD_VERSION);
-#ifdef GVMD_SVN_REVISION
-      printf ("SVN revision %i\n", GVMD_SVN_REVISION);
+#ifdef GVMD_GIT_REVISION
+      printf ("GIT revision %s\n", GVMD_GIT_REVISION);
 #endif
       printf ("Manager DB revision %i\n", manage_db_supported_version ());
       printf ("Copyright (C) 2010-2017 Greenbone Networks GmbH\n");
@@ -1924,10 +1924,10 @@ main (int argc, char** argv)
       }
   }
 
-#ifdef GVMD_SVN_REVISION
-  g_message ("   Greenbone Vulnerability Manager version %s (SVN revision %i) (DB revision %i)\n",
+#ifdef GVMD_GIT_REVISION
+  g_message ("   Greenbone Vulnerability Manager version %s (GIT revision %s) (DB revision %i)\n",
              GVMD_VERSION,
-             GVMD_SVN_REVISION,
+             GVMD_GIT_REVISION,
              manage_db_supported_version ());
 #else
   g_message ("   Greenbone Vulnerability Manager version %s (DB revision %i)\n",
