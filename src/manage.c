@@ -2582,7 +2582,6 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
 
               user_copy = g_strdup (user);
               password_copy = g_strdup (password);
-              cleanup_iterator (&credentials);
 
               opts = gmp_create_lsc_credential_opts_defaults;
               opts.name = name;
@@ -2596,6 +2595,8 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
               else
                 private_key_copy = NULL;
               opts.comment = "Slave SSH credential created by Master";
+
+              cleanup_iterator (&credentials);
 
               ret = gmp_create_lsc_credential_ext (&connection->session, opts,
                                                    &slave_ssh_credential_uuid);
@@ -2640,7 +2641,6 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
 
               user_copy = g_strdup (user);
               password_copy = g_strdup (password);
-              cleanup_iterator (&credentials);
 
               opts = gmp_create_lsc_credential_opts_defaults;
               smb_name = g_strdup_printf ("%ssmb", name);
@@ -2648,6 +2648,8 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
               opts.login = user_copy;
               opts.passphrase = password_copy;
               opts.comment = "Slave SMB credential created by Master";
+
+              cleanup_iterator (&credentials);
 
               ret = gmp_create_lsc_credential_ext (&connection->session, opts,
                                                    &slave_smb_credential_uuid);
@@ -2691,7 +2693,6 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
 
               user_copy = g_strdup (user);
               password_copy = g_strdup (password);
-              cleanup_iterator (&credentials);
 
               opts = gmp_create_lsc_credential_opts_defaults;
               esxi_name = g_strdup_printf ("%sesxi", name);
@@ -2699,6 +2700,8 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
               opts.login = user_copy;
               opts.passphrase = password_copy;
               opts.comment = "Slave ESXi credential created by Master";
+
+              cleanup_iterator (&credentials);
 
               ret = gmp_create_lsc_credential_ext (&connection->session, opts,
                                                    &slave_esxi_credential_uuid);
@@ -2758,7 +2761,6 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
               auth_algorithm_copy = g_strdup (auth_algorithm);
               privacy_password_copy = g_strdup (privacy_password);
               privacy_algorithm_copy = g_strdup (privacy_algorithm);
-              cleanup_iterator (&credentials);
 
               opts = gmp_create_lsc_credential_opts_defaults;
               snmp_name = g_strdup_printf ("%ssnmp", name);
@@ -2770,6 +2772,8 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
               opts.privacy_password = privacy_password_copy;
               opts.privacy_algorithm = privacy_algorithm_copy;
               opts.comment = "Slave SNMP credential created by Master";
+
+              cleanup_iterator (&credentials);
 
               ret = gmp_create_lsc_credential_ext (&connection->session, opts,
                                                    &slave_snmp_credential_uuid);
