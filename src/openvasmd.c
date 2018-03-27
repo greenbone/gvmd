@@ -115,8 +115,8 @@
 #include "ovas-mngr-comm.h"
 #include "utils.h"
 
-#ifdef SVN_REV_AVAILABLE
-#include "svnrevision.h"
+#ifdef GIT_REV_AVAILABLE
+#include "gitrevision.h"
 #endif
 
 #undef G_LOG_DOMAIN
@@ -1858,8 +1858,8 @@ main (int argc, char** argv)
   if (print_version)
     {
       printf ("OpenVAS Manager %s\n", OPENVASMD_VERSION);
-#ifdef OPENVASMD_SVN_REVISION
-      printf ("SVN revision %i\n", OPENVASMD_SVN_REVISION);
+#ifdef OPENVASMD_GIT_REVISION
+      printf ("GIT revision %s\n", OPENVASMD_GIT_REVISION);
 #endif
       printf ("Manager DB revision %i\n", manage_db_supported_version ());
       printf ("Copyright (C) 2010-2016 Greenbone Networks GmbH\n");
@@ -1949,10 +1949,10 @@ main (int argc, char** argv)
   g_free (rc_name);
   setup_log_handlers (log_config);
 
-#ifdef OPENVASMD_SVN_REVISION
-  g_message ("   OpenVAS Manager version %s (SVN revision %i) (DB revision %i)\n",
+#ifdef OPENVASMD_GIT_REVISION
+  g_message ("   OpenVAS Manager version %s (GIT revision %s) (DB revision %i)\n",
              OPENVASMD_VERSION,
-             OPENVASMD_SVN_REVISION,
+             OPENVASMD_GIT_REVISION,
              manage_db_supported_version ());
 #else
   g_message ("   OpenVAS Manager version %s (DB revision %i)\n",
