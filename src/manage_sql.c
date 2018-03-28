@@ -57751,7 +57751,7 @@ filter_iterator_type (iterator_t* iterator)
   const char *ret;
   if (iterator->done) return NULL;
   ret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT);
-  return ret ? type_pretty_name (ret) : "";
+  return ret ? ret : "";
 }
 
 /**
