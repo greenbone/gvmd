@@ -3850,59 +3850,6 @@ valid_type (const char* type)
 }
 
 /**
- * @brief Return pretty name of type.
- *
- * @param[in]  type  Database name.
- *
- * @return 1 yes, 0 no.
- */
-const char *
-type_pretty_name (const char* type)
-{
-  if (strcasecmp (type, "agent") == 0)
-    return "Agent";
-  if (strcasecmp (type, "alert") == 0)
-    return "Alert";
-  if (strcasecmp (type, "asset") == 0)
-    return "Asset";
-  if (strcasecmp (type, "config") == 0)
-    return "Config";
-  if (strcasecmp (type, "credential") == 0)
-    return "Credential";
-  if (strcasecmp (type, "filter") == 0)
-    return "Filter";
-  if (strcasecmp (type, "note") == 0)
-    return "Note";
-  if (strcasecmp (type, "override") == 0)
-    return "Override";
-  if (strcasecmp (type, "permission") == 0)
-    return "Permission";
-  if (strcasecmp (type, "port_list") == 0)
-    return "Port List";
-  if (strcasecmp (type, "report") == 0)
-    return "Report";
-  if (strcasecmp (type, "report_format") == 0)
-    return "Report Format";
-  if (strcasecmp (type, "result") == 0)
-    return "Result";
-  if (strcasecmp (type, "role") == 0)
-    return "Role";
-  if (strcasecmp (type, "scanner") == 0)
-    return "Scanner";
-  if (strcasecmp (type, "schedule") == 0)
-    return "Schedule";
-  if (strcasecmp (type, "tag") == 0)
-    return "Tag";
-  if (strcasecmp (type, "target") == 0)
-    return "Target";
-  if (strcasecmp (type, "task") == 0)
-    return "Task";
-  if (strcasecmp (type, "info") == 0)
-    return "SecInfo";
-  return "";
-}
-
-/**
  * @brief Return DB name of type.
  *
  * @param[in]  type  Database or pretty name.
