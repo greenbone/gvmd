@@ -4056,6 +4056,11 @@ int
 user_hosts_allow (const char *);
 
 int
+user_resources_in_use (user_t,
+                       const char *, int(*)(resource_t),
+                       const char *, int(*)(resource_t));
+
+int
 init_vuln_iterator (iterator_t*, const get_data_t*);
 
 int
