@@ -1,3 +1,119 @@
+SUMMARY OF RELEASE CHANGES FOR OPENVAS-MANAGER 7.0
+==================================================
+
+For detailed code changes, please visit
+ https://github.com/greenbone/gvm/commits/openvas-manager-7.0
+or get the entire source code repository and view log history:
+$ git clone https://github.com/greenbone/gvm.git
+$ cd gvm && git checkout openvas-manager-7.0 && git log
+
+openvas-manager 7.0.3 (2018-03-29)
+
+This is the third maintenance release of the openvas-manager 7.0 module for the
+Open Vulnerability Assessment System release 9 (OpenVAS-9). The OpenVAS Manager
+is the central management service between the actual security scanners and the
+user clients.
+
+This release fixes various issues, improves the migration routine and
+especially addresses performance issues.
+
+Many thanks to everyone who has contributed to this release:
+Matthew Mundell, Timo Pollmeier, Jan-Oliver Wagner, Michael Wiegand,
+Raphael Grewe, Christian Fischer and Juan Jose Nicola.
+
+Main changes since 7.0.2:
+* Performance when creating, deleting or modifying overrides and permissions
+  has been improved. This includes rebuilding the reports cache only
+  for affected users and reports.
+* SQL queries are now canceled if the connection is closed by a client
+  to prevent abandoned requests like closed pages in GSA from keeping the
+  database busy.
+* The loading of NVTs has been improved with SQL simplifications.
+* An issue where an invalid regular expression in a filter caused an error has
+  been addressed.
+* An issue which caused processes to wait busily has been addressed.
+* The verify_scanner command can now be used to verify OMP Scanners.
+* An issue generating ISO time strings with zero or negative offsets has been
+  addressed.
+* An issue which caused to not be possible for Superadmin to move a report
+  format to trash has been addressed.
+* Handling of credentials has been improved.
+* Result list performance has been improved.
+* An issue which caused a problem in an Alert method has been addressed.
+* Password parameter to --create-user of openvasmd has been introduced.
+* An issue which caused an internal error when editing specific options and
+  saving override has been addressed.
+* An issue which caused report counts not to include all results has been
+  addressed.
+* Postgres start and stop speed has been improved.
+* An issue which prevented deleting orphaned permissions has been addressed.
+* An issue with XML escaping of targets and other resources referenced in
+  tasks has been addressed so reserved characters can no longer cause errors
+  in clients like GSA.
+* User password policy warning has been improved.
+* Performance of the report results counting has been improved.
+* Host details have been added to Host Report.
+* An issue with the SQL function current_severity being undefined in the SQLite
+  backend has been addressed.
+* An issue with not being able to delete users due to the order the delete
+  statements violating foreign key constraints has been addressed.
+* If resources of a deleted user are still in use, the command will now fail
+  with a message saying so.
+* The SMB alert method has been added.
+* Documentation has been updated.
+* Several issues which caused problem after migrations have been addressed.
+* The running scan progress bar has been improved.
+* An issue with escaping dollar signs and backslashes in the LaTeX report
+  has been addressed.
+* An issue which caused alerts to not work has been addressed.
+* An issue which caused timezone filter to have no effect on start and end
+  time of the scan has been addressed.
+* An issue which caused the Manager to exit when the DB is down has been
+  addressed.
+* An issue which caused user tags with read permissions to not be listed has
+  been addressed.
+* An issue which caused blocks on all other user actions under certain
+  circumstances has been addressed.
+* When a slave is unavailable get_system_reports will return a more specific
+  error message.
+* A schedule timeout has been introduced.
+* Several issues which caused an internal error setting a report filter have
+  been addressed.
+* An issue which caused a race condition when accessing manager socket too
+  quickly has been addressed.
+* An issue which caused users not to be able to run tasks under certain
+  circumstances has been addressed.
+* Result filtering of port summary in reports has been addressed.
+* An issue with delete commands returning wrong reasons for failures like
+  wrong UUIDs or resources being predefined has been addressed.
+* An issue which caused sort-reverse filter to break delta reports has been
+  addressed.
+* Several other performance improvements has been done.
+* An issue which caused errors when an invalid filt_id is given has been
+  addressed.
+* An issue which caused users to not be able to access the vulnerability
+  details in reports has been addressed.
+* Message text for mail alerts has been improved.
+* Wrong font in PDF report has been addressed.
+* The enable option Log whole attack has been removed from scan config.
+* An issue which caused a segfault in the PostgreSQL next_time function
+  under certain circumstances has been addressed.
+* An issue with time calculations of schedules has been addressed.
+* An issue which caused permission problem because of deleted users has been
+  addressed.
+* New alert method Tipping Point SMS has been added.
+* Details to --max-ips-per-target error message have been added.
+* An issue which would cause an error in a fresh DB under certain circumstances
+  has been addressed.
+* An issue which caused a started task to hang in Requested status has been
+  addressed.
+* An issue which caused overwriting of credentials under certain circumstances
+  has been addressed.
+* Credentials which can not be created on slave are now ignored to avoid scans
+  getting stuck in the requested status because of bad credentials.
+* An issue with creating SQL functions in a new PostgreSQL database has
+  been addressed.
+
 openvas-manager 7.0.2 (2017-06-21)
 
 This is the second maintenance release of the openvas-manager 7.0 module for the
