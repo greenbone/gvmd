@@ -548,9 +548,6 @@ Prerequisites for SMB alert:
 Prerequisites for Tipping Point alert:
 * python3-lxml
 
-Prerequisites for splitting large XML files (see tools/extra/README):
-* python
-
 
 Static code analysis with the Clang Static Analyzer
 ---------------------------------------------------
