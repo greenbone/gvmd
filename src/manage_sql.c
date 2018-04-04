@@ -41588,7 +41588,7 @@ validate_credential_username (const gchar *username)
   s = username;
   while (*s)
     if (isalnum (*s)
-        || strchr ("-_\\@", *s))
+        || strchr ("-_\\.@", *s))
       s++;
     else
       return 0;
