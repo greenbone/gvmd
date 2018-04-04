@@ -41513,6 +41513,7 @@ create_credential (const char* name, const char* comment, const char* login,
   else
     {
       g_warning ("%s: Cannot determine type of new credential", __FUNCTION__);
+      sql_rollback ();
       return -1;
     }
 
@@ -41610,7 +41611,10 @@ create_credential (const char* name, const char* comment, const char* login,
         set_credential_data (new_credential,
                              "certificate", certificate_truncated);
       else
-        return 17;
+        {
+          sql_rollback();
+          return 17;
+        }
       g_free (certificate_truncated);
     }
   if (auth_algorithm)
@@ -41636,7 +41640,10 @@ create_credential (const char* name, const char* comment, const char* login,
       if (key_private)
         key_private_truncated = truncate_private_key (key_private);
       else
-        return 3;
+        {
+          sql_rollback();
+          return 3;
+        }
 
       key_public = openvas_ssh_public_from_private (key_private_truncated
                                                      ? key_private_truncated
@@ -41645,6 +41652,7 @@ create_credential (const char* name, const char* comment, const char* login,
       if (key_public == NULL)
         {
           g_free (key_private_truncated);
+          sql_rollback();
           return 3;
         }
       g_free (key_public);
