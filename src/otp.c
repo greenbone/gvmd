@@ -812,6 +812,11 @@ process_otp_scanner_input ()
                      "Waiting for scanner to load: No information provided. (Message: %s)\n", messages);
             return 3;
           }
+        /* If message is empty we assume the scanner is still loading. */
+        if (!*messages)
+          {
+            return 5;
+          }
         if (from_scanner_end - from_scanner_start < ver_len)
           {
             /* Need more input. */

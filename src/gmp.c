@@ -10777,7 +10777,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
 
           free (name_task);
 
-          if (include_result && note_iterator_result (notes))
+          if (include_result && uuid_result && note_iterator_result (notes))
             {
               iterator_t results;
               get_data_t *result_get;
@@ -10785,7 +10785,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
                                                     1, /* apply_overrides */
                                                     0, /* autofp*/
                                                     0  /* min_qod */);
-
+              result_get->id = g_strdup (uuid_result);
               init_result_get_iterator (&results, result_get,
                                         0,     /* No report restriction */
                                         NULL,  /* No host restriction */
@@ -11049,7 +11049,8 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
 
           free (name_task);
 
-          if (include_result && override_iterator_result (overrides))
+          if (include_result && uuid_result
+              && override_iterator_result (overrides))
             {
               iterator_t results;
               get_data_t *result_get;
@@ -11057,8 +11058,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                                     1, /* apply_overrides */
                                                     0, /* autofp */
                                                     0  /* min_qod */);
-              result_uuid (override_iterator_result (overrides),
-                           &(result_get->id));
+              result_get->id = g_strdup (uuid_result);
               init_result_get_iterator (&results, result_get,
                                         0,  /* No report restriction */
                                         NULL, /* No host restriction */
@@ -21290,6 +21290,32 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                  (XML_ERROR_SYNTAX ("delete_user",
                                     "Attempt to delete current user"));
                 break;
+              case 6:
+                if (send_find_error_to_client ("delete_user", "inheriting user",
+                                               delete_user_data->inheritor_id,
+                                               gmp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
+              case 7:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("delete_user",
+                                    "Inheritor is the same as the deleted"
+                                    " user."));
+                break;
+              case 8:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("delete_user",
+                                    "Invalid inheritor."));
+                break;
+              case 9:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("delete_user",
+                                    "Resources owned by the user are still"
+                                    " in use by others."));
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("delete_user",
@@ -26835,8 +26861,40 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 4:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Attempt to change login or password of"
-                                    " packaged credential"));
+                                    "Login name must not be empty and contain"
+                                    " only alphanumeric characters"));
+                log_event_fail ("credential", "Credential",
+                                modify_credential_data->credential_id,
+                                "modified");
+                break;
+              case 5:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_credential",
+                                    "Invalid or empty certificate"));
+                log_event_fail ("credential", "Credential",
+                                modify_credential_data->credential_id,
+                                "modified");
+                break;
+              case 6:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_credential",
+                                    "Invalid or empty auth_algorithm"));
+                log_event_fail ("credential", "Credential",
+                                modify_credential_data->credential_id,
+                                "modified");
+                break;
+              case 7:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_credential",
+                                    "Invalid or empty privacy_algorithm"));
+                log_event_fail ("credential", "Credential",
+                                modify_credential_data->credential_id,
+                                "modified");
+                break;
+              case 8:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_credential",
+                                    "Invalid or empty private key"));
                 log_event_fail ("credential", "Credential",
                                 modify_credential_data->credential_id,
                                 "modified");

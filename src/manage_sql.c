@@ -3850,59 +3850,6 @@ valid_type (const char* type)
 }
 
 /**
- * @brief Return pretty name of type.
- *
- * @param[in]  type  Database name.
- *
- * @return 1 yes, 0 no.
- */
-const char *
-type_pretty_name (const char* type)
-{
-  if (strcasecmp (type, "agent") == 0)
-    return "Agent";
-  if (strcasecmp (type, "alert") == 0)
-    return "Alert";
-  if (strcasecmp (type, "asset") == 0)
-    return "Asset";
-  if (strcasecmp (type, "config") == 0)
-    return "Config";
-  if (strcasecmp (type, "credential") == 0)
-    return "Credential";
-  if (strcasecmp (type, "filter") == 0)
-    return "Filter";
-  if (strcasecmp (type, "note") == 0)
-    return "Note";
-  if (strcasecmp (type, "override") == 0)
-    return "Override";
-  if (strcasecmp (type, "permission") == 0)
-    return "Permission";
-  if (strcasecmp (type, "port_list") == 0)
-    return "Port List";
-  if (strcasecmp (type, "report") == 0)
-    return "Report";
-  if (strcasecmp (type, "report_format") == 0)
-    return "Report Format";
-  if (strcasecmp (type, "result") == 0)
-    return "Result";
-  if (strcasecmp (type, "role") == 0)
-    return "Role";
-  if (strcasecmp (type, "scanner") == 0)
-    return "Scanner";
-  if (strcasecmp (type, "schedule") == 0)
-    return "Schedule";
-  if (strcasecmp (type, "tag") == 0)
-    return "Tag";
-  if (strcasecmp (type, "target") == 0)
-    return "Target";
-  if (strcasecmp (type, "task") == 0)
-    return "Task";
-  if (strcasecmp (type, "info") == 0)
-    return "SecInfo";
-  return "";
-}
-
-/**
  * @brief Return DB name of type.
  *
  * @param[in]  type  Database or pretty name.
@@ -40954,7 +40901,10 @@ copy_credential (const char* name, const char* comment,
  * @param[in]   allow_insecure      Whether to allow insecure use.
  *
  * @return 0 success, 1 failed to find credential, 2 credential with new name
- *         exists, 3 credential_id required, 99 permission denied,
+ *         exists, 3 credential_id required, 4 invalid login name,
+ *         5 invalid certificate, 6 invalid auth_algorithm,
+ *         7 invalid privacy_algorithm, 8 invalid private key,
+ *         99 permission denied,
  *         -1 internal error.
  */
 int
@@ -40968,6 +40918,7 @@ modify_credential (const char *credential_id,
 {
   credential_t credential;
   iterator_t iterator;
+  int ret;
 
   if (credential_id == NULL)
     return 3;
@@ -41024,26 +40975,113 @@ modify_credential (const char *credential_id,
              credential);
     }
 
-  if (login)
-    set_credential_login (credential, login);
+  ret = 0;
 
-  if (certificate)
-    set_credential_certificate (credential, certificate);
+  if (login && ret == 0)
+    {
+      const char *s;
+      s = login;
+      // Check if login contains only alphanumeric characters
+      if (strcmp (login, "") == 0)
+        ret = 4;
+      while (*s && ret == 0)
+        if (isalnum (*s))
+          s++;
+        else
+          ret = 4;
 
-  if (auth_algorithm)
-    set_credential_auth_algorithm (credential, auth_algorithm);
+      if (ret == 0)
+        set_credential_login (credential, login);
+    }
 
-  if (privacy_algorithm)
-    set_credential_privacy_algorithm (credential, privacy_algorithm);
+  if (certificate && ret == 0)
+    {
+      // Truncate certificate which also validates it.
+      gchar *certificate_truncated;
+      certificate_truncated = truncate_certificate (certificate);
+      if (certificate_truncated == NULL)
+        {
+          set_credential_certificate (credential, certificate_truncated);
+          g_free (certificate_truncated);
+        }
+      else
+        ret = 5;
+    }
+
+  if (auth_algorithm && ret == 0)
+    {
+      if (strcmp (auth_algorithm, "md5")
+          && strcmp (auth_algorithm, "sha1"))
+        ret = 6;
+      else
+        set_credential_auth_algorithm (credential, auth_algorithm);
+    }
+
+  if (privacy_algorithm && ret == 0)
+    {
+      if (strcmp (auth_algorithm, "aes")
+          && strcmp (auth_algorithm, "des"))
+        ret = 7;
+      else
+        set_credential_privacy_algorithm (credential, privacy_algorithm);
+    }
+
+  if (ret)
+    {
+      sql_rollback ();
+      return ret;
+    }
 
   init_credential_iterator_one (&iterator, credential);
   if (next (&iterator))
     {
-      const char* type = credential_iterator_type (&iterator);
+      gchar *key_private_truncated = NULL;
+      const char *key_private_to_use;
+      const char *type = credential_iterator_type (&iterator);
+
+      if (key_private)
+        {
+          char *key_public = NULL;
+          /* Try truncate the private key, but if that fails try get the
+           * public key anyway, in case it's a key type that
+           * truncate_private_key does not understand. */
+          key_private_truncated = truncate_private_key (key_private);
+          key_private_to_use = key_private_truncated ? key_private_truncated
+                                                     : key_private;
+
+          if (strcmp (type, "cc") == 0)
+            {
+              key_public = gvm_ssh_public_from_private
+                              (key_private_to_use,
+                               NULL);
+            }
+          else if (strcmp (type, "usk") == 0)
+            {
+              key_public = gvm_ssh_public_from_private
+                              (key_private_to_use,
+                               password
+                                ? password
+                                : credential_iterator_password (&iterator));
+            }
+
+          if (key_public == NULL)
+            {
+              sql_rollback ();
+              cleanup_iterator (&iterator);
+              g_free (key_public);
+              return 8;
+            }
+          g_free (key_public);
+        }
+      else
+        key_private_to_use = NULL;
+
       if (strcmp (type, "cc") == 0)
         {
-          if (key_private)
-            set_credential_private_key (credential, key_private, NULL);
+          if (key_private_to_use)
+            set_credential_private_key (credential,
+                                        key_private_to_use,
+                                        NULL);
         }
       else if (strcmp (type, "up") == 0)
         {
@@ -41052,12 +41090,12 @@ modify_credential (const char *credential_id,
         }
       else if (strcmp (type, "usk") == 0)
         {
-          if (key_private || password)
+          if (key_private_to_use || password)
             {
               set_credential_private_key
                 (credential,
-                 key_private
-                  ? key_private
+                 key_private_truncated
+                  ? key_private_to_use
                   : credential_iterator_private_key (&iterator),
                 password
                   ? password
@@ -41087,6 +41125,8 @@ modify_credential (const char *credential_id,
           sql_rollback ();
           cleanup_iterator (&iterator);
         }
+
+      g_free (key_private_truncated);
     }
   else
     {
@@ -48585,26 +48625,10 @@ int
 init_task_schedule_iterator (iterator_t* iterator)
 {
   int ret;
-  gchar *task_clause, *schedule_clause;
-  get_data_t get;
-  array_t *permissions;
 
   ret = sql_begin_immediate_giveup ();
   if (ret)
     return ret;
-
-  get.trash = 0;
-  permissions = make_array ();
-  array_add (permissions, g_strdup ("start_task"));
-  task_clause = acl_where_owned_user ("", "users.id", "task", &get, 1,
-                                      "any", 0, permissions);
-  array_free (permissions);
-
-  permissions = make_array ();
-  array_add (permissions, g_strdup ("get_schedules"));
-  schedule_clause = acl_where_owned_user ("", "users.id", "schedule", &get, 1,
-                                          "any", 0, permissions);
-  array_free (permissions);
 
   init_iterator (iterator,
                  "SELECT tasks.id, tasks.uuid,"
@@ -48618,19 +48642,12 @@ init_task_schedule_iterator (iterator_t* iterator)
                  " FROM tasks, schedules, users"
                  " WHERE tasks.schedule = schedules.id"
                  " AND tasks.hidden = 0"
-                 /* And a user may run the task. */
-                 " AND %s"
-                 /* And the same user has access to the schedule. */
-                 " AND %s"
+                 " AND (tasks.owner = (users.id))"
                  /* Sort by task and prefer owner of task or schedule as user */
                  " ORDER BY tasks.id,"
                  "          (users.id = tasks.owner) DESC,"
-                 "          (users.id = schedules.owner) DESC;",
-                 task_clause,
-                 schedule_clause);
+                 "          (users.id = schedules.owner) DESC;");
 
-  g_free (task_clause);
-  g_free (schedule_clause);
   return 0;
 }
 
@@ -57681,7 +57698,7 @@ filter_iterator_type (iterator_t* iterator)
   const char *ret;
   if (iterator->done) return NULL;
   ret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT);
-  return ret ? type_pretty_name (ret) : "";
+  return ret ? ret : "";
 }
 
 /**
@@ -62812,6 +62829,10 @@ manage_delete_user (GSList *log_config, const gchar *database,
       case 8:
         fprintf (stderr, "Invalid inheritor.\n");
         break;
+      case 9:
+        fprintf (stderr,
+                 "Resources owned by the user are still in use by others.\n");
+        break;
       default:
         fprintf (stderr, "Internal Error.\n");
         break;
@@ -63365,7 +63386,8 @@ copy_user (const char* name, const char* comment, const char *user_id,
  *
  * @return 0 success, 2 failed to find user, 4 user has active tasks,
  *         5 attempted suicide, 6 inheritor not found, 7 inheritor same as
- *         deleted user, 8 invalid inheritor, 99 permission denied, -1 error.
+ *         deleted user, 8 invalid inheritor, 9 resources still in use,
+ *         99 permission denied, -1 error.
  */
 int
 delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
@@ -63650,6 +63672,10 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
            inheritor, user);
       sql ("UPDATE users SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
+      sql ("UPDATE groups_trash SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE roles_trash SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
 
       /* Delete user */
       sql ("DELETE FROM group_users WHERE \"user\" = %llu;", user);
@@ -63666,32 +63692,122 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       return 0;
     }
 
-  /* Delete owned resources */
-
+  /* Delete settings and miscellaneous resources not referenced directly */
+  // Agents
+  /* skip the "in use" check because it always returns 0
+  if (user_resources_in_use (user,
+                             "agents", agent_in_use,
+                             "agents_trash", trash_agent_in_use))
+    {
+      sql_rollback ();
+      return 9;
+    }
+  */
   sql ("DELETE FROM agents WHERE owner = %llu;", user);
   sql ("DELETE FROM agents_trash WHERE owner = %llu;", user);
+  // Settings
+  sql ("DELETE FROM settings WHERE owner = %llu;", user);
 
+  /* Delete data modifiers (not directly referenced) */
+  // Notes
+  sql ("DELETE FROM notes WHERE owner = %llu;", user);
+  sql ("DELETE FROM notes_trash WHERE owner = %llu;", user);
+  // Overrides
+  sql ("DELETE FROM overrides WHERE owner = %llu;", user);
+  sql ("DELETE FROM overrides_trash WHERE owner = %llu;", user);
+  // Tags
+  sql ("DELETE FROM tags WHERE owner = %llu;", user);
+  sql ("DELETE FROM tags_trash WHERE owner = %llu;", user);
+
+  /* Delete assets (not directly referenced) */
+  // Hosts
+  sql ("DELETE FROM host_details WHERE host IN"
+       " (SELECT id FROM hosts WHERE owner = %llu);", user);
+  sql ("DELETE FROM host_max_severities WHERE host IN"
+       " (SELECT id FROM hosts WHERE owner = %llu);", user);
+  sql ("DELETE FROM host_identifiers WHERE owner = %llu;", user);
+  sql ("DELETE FROM host_oss WHERE owner = %llu;", user);
+  sql ("DELETE FROM hosts WHERE owner = %llu;", user);
+  // OSs
+  sql ("DELETE FROM oss WHERE owner = %llu;", user);
+
+  /* Delete report data and tasks (not directly referenced) */
+  // Hosts
+  sql ("DELETE FROM report_counts WHERE \"user\" = %llu", user);
+  sql ("DELETE FROM report_host_details"
+       " WHERE report_host IN (SELECT id FROM report_hosts"
+       "                       WHERE report IN (SELECT id FROM reports"
+       "                                        WHERE owner = %llu));",
+       user);
+  sql ("DELETE FROM report_hosts"
+       " WHERE report IN (SELECT id FROM reports WHERE owner = %llu);",
+       user);
+  // Results
+  sql ("DELETE FROM results"
+       " WHERE report IN (SELECT id FROM reports WHERE owner = %llu);",
+       user);
+  // Reports
+  sql ("DELETE FROM result_nvt_reports"
+       " WHERE report IN (SELECT id FROM reports WHERE owner = %llu);",
+       user);
+  sql ("DELETE FROM reports WHERE owner = %llu;", user);
+
+  /* Delete tasks (not directly referenced) */
+  if (user_resources_in_use (user,
+                             "tasks", target_in_use,
+                             NULL, NULL))
+    {
+      sql_rollback ();
+      return 9;
+    }
+  sql ("DELETE FROM task_alerts"
+       " WHERE task IN (SELECT id FROM tasks WHERE owner = %llu);",
+       user);
+  sql ("DELETE FROM task_files"
+       " WHERE task IN (SELECT id FROM tasks WHERE owner = %llu);",
+       user);
+  sql ("DELETE FROM task_preferences"
+       " WHERE task IN (SELECT id FROM tasks WHERE owner = %llu);",
+       user);
+  sql ("DELETE FROM tasks WHERE owner = %llu;", user);
+
+  /* Delete resouces directly used by tasks */
+  // Alerts
+  if (user_resources_in_use (user,
+                             "alerts", alert_in_use,
+                             "alerts_trash", trash_alert_in_use))
+    {
+      sql_rollback ();
+      return 9;
+    }
   sql ("DELETE FROM alert_condition_data"
        " WHERE alert IN (SELECT id FROM alerts WHERE owner = %llu);",
        user);
-  sql ("DELETE FROM alert_condition_data"
+  sql ("DELETE FROM alert_condition_data_trash"
        " WHERE alert IN (SELECT id FROM alerts_trash WHERE owner = %llu);",
        user);
   sql ("DELETE FROM alert_event_data"
        " WHERE alert IN (SELECT id FROM alerts WHERE owner = %llu);",
        user);
-  sql ("DELETE FROM alert_event_data"
+  sql ("DELETE FROM alert_event_data_trash"
        " WHERE alert IN (SELECT id FROM alerts_trash WHERE owner = %llu);",
        user);
   sql ("DELETE FROM alert_method_data"
        " WHERE alert IN (SELECT id FROM alerts WHERE owner = %llu);",
        user);
-  sql ("DELETE FROM alert_method_data"
+  sql ("DELETE FROM alert_method_data_trash"
        " WHERE alert IN (SELECT id FROM alerts_trash WHERE owner = %llu);",
        user);
   sql ("DELETE FROM alerts WHERE owner = %llu;", user);
   sql ("DELETE FROM alerts_trash WHERE owner = %llu;", user);
-
+  // Configs
+  if (user_resources_in_use (user,
+                             "configs", config_in_use,
+                             "configs_trash", trash_config_in_use))
+    {
+      sql_rollback ();
+      return 9;
+    }
   sql ("DELETE FROM nvt_selectors"
        " WHERE name IN (SELECT nvt_selector FROM configs WHERE owner = %llu)"
        " AND name != '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
@@ -63707,60 +63823,60 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
        user);
   sql ("DELETE FROM configs WHERE owner = %llu;", user);
   sql ("DELETE FROM configs_trash WHERE owner = %llu;", user);
+  // Scanners
+  if (user_resources_in_use (user,
+                             "scanners", scanner_in_use,
+                             "scanners_trash", trash_scanner_in_use))
+    {
+      sql_rollback ();
+      return 9;
+    }
+  sql ("DELETE FROM scanners WHERE owner = %llu;", user);
+  sql ("DELETE FROM scanners_trash WHERE owner = %llu;", user);
+  // Schedules
+  if (user_resources_in_use (user,
+                             "schedules", schedule_in_use,
+                             "schedules_trash", trash_schedule_in_use))
+    {
+      sql_rollback ();
+      return 9;
+    }
+  sql ("DELETE FROM schedules WHERE owner = %llu;", user);
+  sql ("DELETE FROM schedules_trash WHERE owner = %llu;", user);
+  // Targets
+  if (user_resources_in_use (user,
+                             "targets", target_in_use,
+                             "targets_trash", trash_target_in_use))
+    {
+      sql_rollback ();
+      return 9;
+    }
+  sql ("DELETE FROM targets_login_data WHERE target IN"
+       " (SELECT id FROM targets WHERE owner = %llu);", user);
+  sql ("DELETE FROM targets_trash_login_data WHERE target IN"
+       " (SELECT id FROM targets_trash WHERE owner = %llu);", user);
+  sql ("DELETE FROM targets WHERE owner = %llu;", user);
+  sql ("DELETE FROM targets_trash WHERE owner = %llu;", user);
 
-  sql ("DELETE FROM credentials_data WHERE credential IN"
-       " (SELECT id FROM credentials WHERE owner = %llu);",
-       user);
-  sql ("DELETE FROM credentials_trash_data WHERE credential IN"
-       " (SELECT id FROM credentials_trash WHERE owner = %llu);",
-       user);
-
-  sql ("DELETE FROM credentials WHERE owner = %llu;", user);
-  sql ("DELETE FROM credentials_trash WHERE owner = %llu;", user);
-
-  sql ("DELETE FROM host_identifiers WHERE owner = %llu;", user);
-  sql ("DELETE FROM host_oss WHERE owner = %llu;", user);
-  sql ("DELETE FROM hosts WHERE owner = %llu;", user);
-
+  /* Delete resources used indirectly by tasks */
+  // Filters (used by alerts and settings)
+  if (user_resources_in_use (user,
+                             "filters", filter_in_use,
+                             "filters_trash", trash_filter_in_use))
+    {
+      sql_rollback ();
+      return 9;
+    }
   sql ("DELETE FROM filters WHERE owner = %llu;", user);
   sql ("DELETE FROM filters_trash WHERE owner = %llu;", user);
-  sql ("DELETE FROM notes WHERE owner = %llu;", user);
-  sql ("DELETE FROM notes_trash WHERE owner = %llu;", user);
-
-  sql ("DELETE FROM oss WHERE owner = %llu;", user);
-
-  /* Make permissions global if they are owned by the user and are related
-   * to users/groups/roles that are owned by the user. */
-  sql ("UPDATE permissions SET owner = NULL"
-       " WHERE owner = %llu"
-       " AND ((subject_type = 'user' AND subject IN (SELECT id FROM users WHERE owner = %llu))"
-       "      OR (subject_type = 'group' AND subject IN (SELECT id FROM groups WHERE owner = %llu))"
-       "      OR (subject_type = 'role' AND subject IN (SELECT id FROM roles WHERE owner = %llu))"
-       "      OR (resource_type = 'user' AND resource IN (SELECT id FROM users WHERE owner = %llu))"
-       "      OR (resource_type = 'group' AND resource IN (SELECT id FROM groups WHERE owner = %llu))"
-       "      OR (resource_type = 'role' AND resource IN (SELECT id FROM roles WHERE owner = %llu)));",
-       user,
-       user,
-       user,
-       user,
-       user,
-       user,
-       user);
-
-  /* Make users, roles and groups global if they are owned by the user. */
-  sql ("UPDATE users SET owner = NULL WHERE owner = %llu;", user);
-  sql ("UPDATE roles SET owner = NULL WHERE owner = %llu;", user);
-  sql ("UPDATE groups SET owner = NULL WHERE owner = %llu;", user);
-
-  /* Remove all other permissions owned by the user or given on the user. */
-  sql ("DELETE FROM permissions"
-       " WHERE owner = %llu"
-       " OR subject_type = 'user' AND subject = %llu"
-       " OR (resource_type = 'user' AND resource = %llu);",  /* For Super. */
-       user,
-       user,
-       user);
-
+  // Port lists (used by targets)
+  if (user_resources_in_use (user,
+                             "port_lists", port_list_in_use,
+                             "port_lists_trash", trash_port_list_in_use))
+    {
+      sql_rollback ();
+      return 9;
+    }
   sql ("DELETE FROM port_ranges"
        " WHERE port_list IN (SELECT id FROM port_lists WHERE owner = %llu);",
        user);
@@ -63770,7 +63886,16 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
        user);
   sql ("DELETE FROM port_lists WHERE owner = %llu;", user);
   sql ("DELETE FROM port_lists_trash WHERE owner = %llu;", user);
-
+  // Report formats (used by alerts)
+  if (user_resources_in_use (user,
+                             "report_formats",
+                             report_format_in_use,
+                             "report_formats_trash",
+                             trash_report_format_in_use))
+    {
+      sql_rollback ();
+      return 9;
+    }
   sql ("DELETE FROM report_format_param_options"
        " WHERE report_format_param"
        "       IN (SELECT id FROM report_format_params"
@@ -63797,50 +63922,64 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   sql ("DELETE FROM report_formats WHERE owner = %llu;", user);
   sql ("DELETE FROM report_formats_trash WHERE owner = %llu;", user);
 
-  sql ("DELETE FROM report_counts WHERE \"user\" = %llu", user);
-  sql ("DELETE FROM report_host_details"
-       " WHERE report_host IN (SELECT id FROM report_hosts"
-       "                       WHERE report IN (SELECT id FROM reports"
-       "                                        WHERE owner = %llu));",
+  /* Delete credentials last because they can be used in various places */
+  if (user_resources_in_use (user,
+                             "credentials", credential_in_use,
+                             "credentials_trash", trash_credential_in_use))
+    {
+      sql_rollback ();
+      return 9;
+    }
+  sql ("DELETE FROM credentials_data WHERE credential IN"
+       " (SELECT id FROM credentials WHERE owner = %llu);",
        user);
-  sql ("DELETE FROM report_hosts"
-       " WHERE report IN (SELECT id FROM reports WHERE owner = %llu);",
+  sql ("DELETE FROM credentials_trash_data WHERE credential IN"
+       " (SELECT id FROM credentials_trash WHERE owner = %llu);",
        user);
-  sql ("DELETE FROM results"
-       " WHERE report IN (SELECT id FROM reports WHERE owner = %llu);",
-       user);
-  sql ("DELETE FROM result_nvt_reports"
-       " WHERE report IN (SELECT id FROM reports WHERE owner = %llu);",
-       user);
-  sql ("DELETE FROM reports WHERE owner = %llu;", user);
 
-  sql ("DELETE FROM overrides WHERE owner = %llu;", user);
-  sql ("DELETE FROM overrides_trash WHERE owner = %llu;", user);
+  sql ("DELETE FROM credentials WHERE owner = %llu;", user);
+  sql ("DELETE FROM credentials_trash WHERE owner = %llu;", user);
+
+  /* Make permissions global if they are owned by the user and are related
+   * to users/groups/roles that are owned by the user. */
+  sql ("UPDATE permissions SET owner = NULL"
+       " WHERE owner = %llu"
+       " AND ((subject_type = 'user' AND subject IN (SELECT id FROM users WHERE owner = %llu))"
+       "      OR (subject_type = 'group' AND subject IN (SELECT id FROM groups WHERE owner = %llu))"
+       "      OR (subject_type = 'role' AND subject IN (SELECT id FROM roles WHERE owner = %llu))"
+       "      OR (resource_type = 'user' AND resource IN (SELECT id FROM users WHERE owner = %llu))"
+       "      OR (resource_type = 'group' AND resource IN (SELECT id FROM groups WHERE owner = %llu))"
+       "      OR (resource_type = 'role' AND resource IN (SELECT id FROM roles WHERE owner = %llu)));",
+       user,
+       user,
+       user,
+       user,
+       user,
+       user,
+       user);
+
+  /* Make users, roles and groups global if they are owned by the user. */
+  sql ("UPDATE users SET owner = NULL WHERE owner = %llu;", user);
+  sql ("UPDATE roles SET owner = NULL WHERE owner = %llu;", user);
+  sql ("UPDATE groups SET owner = NULL WHERE owner = %llu;", user);
+  sql ("UPDATE roles_trash SET owner = NULL WHERE owner = %llu;", user);
+  sql ("UPDATE groups_trash SET owner = NULL WHERE owner = %llu;", user);
+
+  /* Remove all other permissions owned by the user or given on the user. */
+  sql ("DELETE FROM permissions"
+       " WHERE owner = %llu"
+       " OR subject_type = 'user' AND subject = %llu"
+       " OR (resource_type = 'user' AND resource = %llu);",  /* For Super. */
+       user,
+       user,
+       user);
+  sql ("DELETE FROM permissions_get_tasks WHERE \"user\" = %llu;", user);
+
+  /* Delete permissions granted by the user */
   sql ("DELETE FROM permissions WHERE owner = %llu;", user);
   sql ("DELETE FROM permissions_trash WHERE owner = %llu;", user);
-  sql ("DELETE FROM schedules WHERE owner = %llu;", user);
-  sql ("DELETE FROM schedules_trash WHERE owner = %llu;", user);
-  sql ("DELETE FROM settings WHERE owner = %llu;", user);
-  sql ("DELETE FROM tags WHERE owner = %llu;", user);
-  sql ("DELETE FROM tags_trash WHERE owner = %llu;", user);
-  sql ("DELETE FROM targets WHERE owner = %llu;", user);
-  sql ("DELETE FROM targets_trash WHERE owner = %llu;", user);
 
-  sql ("DELETE FROM task_files"
-       " WHERE task IN (SELECT id FROM tasks WHERE owner = %llu);",
-       user);
-  sql ("DELETE FROM task_alerts"
-       " WHERE task IN (SELECT id FROM tasks WHERE owner = %llu);",
-       user);
-  sql ("DELETE FROM task_preferences"
-       " WHERE task IN (SELECT id FROM tasks WHERE owner = %llu);",
-       user);
-  sql ("DELETE FROM tasks WHERE owner = %llu;", user);
-
-  sql ("UPDATE groups SET owner = 0 WHERE owner = %llu;", user);
-  sql ("UPDATE roles SET owner = 0 WHERE owner = %llu;", user);
-  sql ("UPDATE users SET owner = 0 WHERE owner = %llu;", user);
-
+  /* Remove user from groups and roles */
   sql ("DELETE FROM group_users WHERE \"user\" = %llu;", user);
   sql ("DELETE FROM group_users_trash WHERE \"user\" = %llu;", user);
   sql ("DELETE FROM role_users WHERE \"user\" = %llu;", user);
@@ -64652,6 +64791,47 @@ user_role_iterator_readable (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return iterator_int (iterator, 4);
+}
+
+/**
+ * @brief Check if a user still has resources that are in use.
+ *
+ * @param
+ */
+int
+user_resources_in_use (user_t user,
+                       const char *table, int(*in_use)(resource_t),
+                       const char *trash_table, int(*trash_in_use)(resource_t))
+{
+  iterator_t iter;
+  int has_resource_in_use = 0;
+
+  init_iterator (&iter, "SELECT id FROM %s WHERE owner = %llu",
+                 table, user);
+  while (next (&iter) && has_resource_in_use == 0)
+    {
+      resource_t resource = iterator_int64 (&iter, 0);
+      has_resource_in_use = in_use (resource);
+    }
+  cleanup_iterator (&iter);
+  if (has_resource_in_use)
+    return 1;
+
+  if (trash_table == NULL || trash_in_use == NULL)
+    return 0;
+
+  init_iterator (&iter, "SELECT id FROM %s WHERE owner = %llu",
+                 trash_table, user);
+  while (next (&iter) && has_resource_in_use == 0)
+    {
+      resource_t resource = iterator_int64 (&iter, 0);
+      has_resource_in_use = trash_in_use (resource);
+    }
+  cleanup_iterator (&iter);
+  if (has_resource_in_use)
+    return 2;
+
+  return 0;
 }
 
 /**
