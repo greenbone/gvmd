@@ -41583,6 +41583,31 @@ set_credential_data (credential_t credential,
 }
 
 /**
+ * @brief Test if a username is valid to use in a credential.
+ *
+ * Valid usernames may only contain alphanumeric characters and a few
+ *  special ones to avoid problems with installer package generation.
+ *
+ * @param[in]  username  The username string to test.
+ *
+ * @return Whether the username is valid.
+ */
+static int
+validate_credential_username (const gchar *username)
+{
+  const char *s;
+  s = username;
+  while (*s)
+    if (isalnum (*s)
+        || strchr ("-_\\@", *s))
+      s++;
+    else
+      return 0;
+
+  return 1;
+}
+
+/**
  * @brief Test if a username is valid for a credential export format.
  *
  * @param[in]  username  The username string to test.
@@ -41655,7 +41680,7 @@ validate_credential_username_for_format (const gchar *username,
  * @param[in]  allow_insecure  Whether to allow insecure uses.
  * @param[out] credential      Created Credential.
  *
- * @return 0 success, 1 LSC credential exists already, 2 name contains space,
+ * @return 0 success, 1 LSC credential exists already, 2 invalid username,
  *         3 Failed to create public key from private key/password,
  *         4 Invalid credential type, 5 login username missing,
  *         6 password missing, 7 private key missing, 8 certificate missing,
@@ -41839,11 +41864,20 @@ create_credential (const char* name, const char* comment, const char* login,
 
   /* Add non-secret data */
   if (login)
-    set_credential_data (new_credential,
-                         "username", login);
-  if (key_public)
-    set_credential_data (new_credential, "public_key", key_public);
+    {
+      /*
+       * Ensure the login does not contain characters that cause problems
+       *  with package generation.
+       */
+      if (validate_credential_username (login) == 0)
+        {
+          sql_rollback ();
+          return 2;
+        }
 
+      set_credential_data (new_credential,
+                           "username", login);
+    }
   if (certificate)
     {
       gchar *certificate_truncated;
@@ -41852,7 +41886,10 @@ create_credential (const char* name, const char* comment, const char* login,
         set_credential_data (new_credential,
                              "certificate", certificate_truncated);
       else
-        return 17;
+        {
+          sql_rollback();
+          return 17;
+        }
       g_free (certificate_truncated);
     }
   if (auth_algorithm)
@@ -42008,23 +42045,6 @@ create_credential (const char* name, const char* comment, const char* login,
   /*
    * Auto-generate credential
    */
-
-  /* Ensure the login is alphanumeric, to help the package generation. */
-
-  if (login)
-    {
-      const char *s;
-      s = login;
-      while (*s)
-        if (isalnum (*s))
-          s++;
-        else
-          {
-            g_free (quoted_name);
-            sql_rollback ();
-            return 2;
-          }
-    }
 
   /* Create the keys and packages. */
 
@@ -42232,16 +42252,13 @@ modify_credential (const char *credential_id,
 
   if (login && ret == 0)
     {
-      const char *s;
-      s = login;
-      // Check if login contains only alphanumeric characters
-      if (strcmp (login, "") == 0)
+      /*
+       * Ensure the login is not empty and does not contain characters that
+       *  cause problems with package generation.
+       */
+      if (strcmp (login, "") == 0
+          || validate_credential_username (login) == 0)
         ret = 4;
-      while (*s && ret == 0)
-        if (isalnum (*s))
-          s++;
-        else
-          ret = 4;
 
       if (ret == 0)
         set_credential_login (credential, login);
