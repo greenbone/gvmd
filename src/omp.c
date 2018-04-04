@@ -22423,7 +22423,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                  (XML_ERROR_SYNTAX ("create_credential",
                                     "Login may only contain alphanumeric"
                                     " characters or the following:"
-                                    " - _ \\ @"));
+                                    " - _ \\ . @"));
                 break;
               case 3:
                 SEND_TO_CLIENT_OR_FAIL
@@ -26397,7 +26397,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                  (XML_ERROR_SYNTAX ("modify_credential",
                                     "Login name must not be empty and may"
                                     " contain only alphanumeric characters"
-                                    " or the following: - _ \\ @"));
+                                    " or the following: - _ \\ . @"));
                 log_event_fail ("credential", "Credential",
                                 modify_credential_data->credential_id,
                                 "modified");
