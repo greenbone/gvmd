@@ -184,6 +184,8 @@ sqlv (int retry, char* sql, va_list args)
         continue;
       if (ret == -2)
         return 1;
+      if (ret == -3)
+        return -1;
       assert (ret == -1 || ret == 0);
       return ret;
     }
@@ -300,7 +302,7 @@ sql_quiet (char* sql, ...)
             g_warning ("%s: sql_exec_internal failed\n", __FUNCTION__);
           abort ();
         }
-      if (ret == -2 || ret == 2)
+      if (ret == -3 || ret == -2 || ret == 2)
         {
           /* Busy or locked, with statement reset.  Or schema changed. */
           sql_finalize (stmt);
@@ -356,7 +358,7 @@ sql_x_internal (int log, char* sql, va_list args, sql_stmt_t** stmt_return)
       if (ret == 0)
         /* Too few rows. */
         return 1;
-      if (ret == -2 || ret == 2)
+      if (ret == -3 || ret == -2 || ret == 2)
         {
           /* Busy or locked, with statement reset.  Or schema changed. */
           sql_finalize (*stmt_return);
@@ -707,7 +709,7 @@ next (iterator_t* iterator)
             g_warning ("%s: sql_exec_internal failed\n", __FUNCTION__);
           abort ();
         }
-      if (ret == -2)
+      if (ret == -3 || ret == -2)
         {
           /* Busy or locked, with statement reset.  Just try step again like
            * we used to do in sql_exec_internal.  We're not supposed to do this
