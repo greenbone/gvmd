@@ -18067,7 +18067,7 @@ set_task_requested (task_t task, task_status_t *status)
       sql_begin_immediate ();
       if (sql_error ("LOCK table tasks IN ACCESS EXCLUSIVE MODE;"))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return 1;
         }
     }
@@ -19170,7 +19170,7 @@ auto_delete_reports ()
        * report ID. */
       if (sql_error ("LOCK table reports IN ACCESS EXCLUSIVE MODE NOWAIT;"))
         {
-          sql ("ROLLBACK;");
+          sql_rollback ();
           return;
         }
     }
