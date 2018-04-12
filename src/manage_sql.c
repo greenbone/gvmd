@@ -25161,7 +25161,7 @@ report_severity (report_t report, int overrides, int min_qod)
                  " FROM report_counts"
                  " WHERE report = %llu"
                  " AND override = %d"
-                 " AND user = (SELECT id FROM users WHERE uuid = '%s')"
+                 " AND \"user\" = (SELECT id FROM users WHERE uuid = '%s')"
                  " AND min_qod = %d"
                  " AND (end_time = 0 or end_time >= m_now ());",
                  report, overrides, current_credentials.uuid, min_qod);
