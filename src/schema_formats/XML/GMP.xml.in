@@ -1815,8 +1815,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <any><e>host</e></any>
             <e>timestamp</e>
             <e>scan_start</e>
-            <any><e>host_start</e></any>
-            <any><e>host_end</e></any>
             <e>scan_end</e>
             <e>errors</e>
           </g>
@@ -2872,30 +2870,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>scan_start</name>
         <summary>Start time of scan</summary>
         <pattern><t>iso_time</t></pattern>
-      </ele>
-      <ele>
-        <name>host_start</name>
-        <summary>Start time of a particular host</summary>
-        <pattern>
-          <t>iso_time</t>
-          <e>host</e>
-        </pattern>
-        <ele>
-          <name>host</name>
-          <pattern>text</pattern>
-        </ele>
-      </ele>
-      <ele>
-        <name>host_end</name>
-        <summary>End time of a particular host</summary>
-        <pattern>
-          <t>iso_time</t>
-          <e>host</e>
-        </pattern>
-        <ele>
-          <name>host</name>
-          <pattern>text</pattern>
-        </ele>
       </ele>
       <ele>
         <name>scan_end</name>
@@ -4908,8 +4882,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 </result>
                 <truncated>...</truncated>
               </results>
-              <host_start>2010-02-02T19:11:21+00:00<host>127.0.1.1</host></host_start>
-              <host_end>2010-02-02T19:11:52+00:00<host>127.0.1.1</host></host_end>
               <scan_end>2010-02-02T19:11:52+00:00</scan_end>
               <errors>
                 <count>0</count>
@@ -13466,7 +13438,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>category</name>
           <summary>The category of the NVT</summary>
-	  <pattern><t>integer</t></pattern>
+      <pattern><t>integer</t></pattern>
         </ele>
         <ele>
           <name>creation_time</name>
@@ -16124,8 +16096,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 </result>
                 <truncated>...</truncated>
               </results>
-              <host_start>2010-02-02T19:11:21+00:00<host>127.0.1.1</host></host_start>
-              <host_end>2010-02-02T19:11:52+00:00<host>127.0.1.1</host></host_end>
+              <host>
+                <ip>127.0.1.1</ip>
+                <asset asset_id="167a7f18-df86-4695-a6ff-2516ffe2ad43"/>
+                <start>2010-02-21T15:35:31Z</start>
+                <end>2010-02-21T16:31:13Z</end>
+                <truncated>...</truncated>
+              </host>
               <scan_end>2010-02-02T19:11:52+00:00</scan_end>
               <errors>
                 <count>0</count>
@@ -25649,6 +25626,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         The SYNC_FEED, SYNC_SCAP and SYNC_CERT commands have been removed, as
         they are no longer used by GSA, and they have been (or will be)
         superceded by automatic feed updating.
+      </p>
+    </description>
+    <version>8.0</version>
+  </change>
+  <change>
+    <command>GET_REPORTS</command>
+    <summary>HOST_START and HOST_END no longer returned</summary>
+    <description>
+      <p>
+        The element REPORT no longer contains the elements HOST_START and HOST_END.
+      </p>
+      <p>
+        Both elements were already redundant. The elements START and END of
+        the REPORT element HOST contain the same timestamps.
       </p>
     </description>
     <version>8.0</version>
