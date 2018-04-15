@@ -2186,26 +2186,6 @@ update_end_times (entity_t report)
   entities = report->entities;
   while ((end = first_entity (entities)))
     {
-      if (strcmp (entity_name (end), "host_end") == 0)
-        {
-          entity_t host;
-          char *text;
-
-          /* Set the end time this way first, in case the slave is
-           * very old. */
-
-          host = entity_child (end, "host");
-          if (host == NULL)
-            return -1;
-
-          text = entity_text (end);
-          while (*text && isspace (*text)) text++;
-          if (*text != '\0')
-            set_scan_host_end_time (current_report,
-                                    entity_text (host),
-                                    entity_text (end));
-        }
-
       if (strcmp (entity_name (end), "host") == 0)
         {
           entity_t ip, time;
