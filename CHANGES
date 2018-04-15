@@ -1,3 +1,30 @@
+SUMMARY OF RELEASE CHANGES FOR GREENBONE VULNERABILITY MANAGER
+==============================================================
+
+For detailed code changes, please visit
+ https://github.com/greenbone/gvm/commits/master
+or get the entire source code repository and view log history:
+$ git clone https://github.com/greenbone/gvm.git
+$ cd gvm && git log
+
+
+gvm 8.0+beta1 (2018-XX-XX)
+
+This is the first beta release of the gvm module 1.0 for the Greenbone
+Vulnerability Management (GVM) framework.
+
+It was renamed from openvas-manager to gvm (greenbone vulnerability manager).
+ 
+Apart from this, the module covers a number of significant advances
+and clean-ups compared to the previous openvas-manager module.
+
+Many thanks to everyone who has contributed to this release:
+TODO
+
+Main changes compared to the 6.0 series:
+TODO
+
+
 openvas-manager 7.0.0 (2016-11-09)
 
 This is the first release of the openvas-manager 7.0 module for the Open
