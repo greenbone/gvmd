@@ -338,34 +338,26 @@ openvas_scanner_realloc ()
 int
 openvas_scanner_write (int nvt_cache_mode)
 {
-  int ret = 0;
-
   if (openvas_scanner_socket == -1)
     return -1;
   switch (scanner_init_state)
     {
       case SCANNER_INIT_TOP:
         if (!openvas_scanner_unix_path)
-          ret = gvm_server_connect (openvas_scanner_socket,
-                                    &openvas_scanner_address,
-                                    &openvas_scanner_session);
-        switch (ret)
+          return -1;
+        else
           {
-            case 0:
-              set_scanner_init_state (SCANNER_INIT_CONNECTED);
-              /* The socket must have O_NONBLOCK set, in case an "asynchronous network
-               * error" removes the data between `select' and `read'. */
-              if (fcntl (openvas_scanner_socket, F_SETFL, O_NONBLOCK) == -1)
-                {
-                  g_warning ("%s: failed to set scanner socket flag: %s\n",
-                             __FUNCTION__, strerror (errno));
-                  return -1;
-                }
-              /* Fall through to SCANNER_INIT_CONNECTED case below, to write
-               * version string. */
-              break;
-            default:
-              return -1;
+            set_scanner_init_state (SCANNER_INIT_CONNECTED);
+            /* The socket must have O_NONBLOCK set, in case an "asynchronous network
+             * error" removes the data between `select' and `read'. */
+            if (fcntl (openvas_scanner_socket, F_SETFL, O_NONBLOCK) == -1)
+              {
+                g_warning ("%s: failed to set scanner socket flag: %s\n",
+                           __FUNCTION__, strerror (errno));
+                return -1;
+              }
+            /* Fall through to SCANNER_INIT_CONNECTED case below, to write
+             * version string. */
           }
         /* fallthrough */
       case SCANNER_INIT_CONNECTED:
