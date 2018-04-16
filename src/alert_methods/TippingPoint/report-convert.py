@@ -1,7 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # coding: utf-8
 #
-# OpenVAS
+# GVM
 # $Id$
 # Description: Escalator method script: TippingPoint SMS upload.
 #

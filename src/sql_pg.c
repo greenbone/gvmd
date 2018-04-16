@@ -489,7 +489,8 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
  * @param[in]  retry  Whether to keep retrying while database is busy or locked.
  * @param[in]  stmt   Statement.
  *
- * @return 0 complete, 1 row available in results, -1 error, -2 gave up.
+ * @return 0 complete, 1 row available in results, -1 error, -2 gave up,
+ *         -3 lock unavailable.
  */
 int
 sql_exec_internal (int retry, sql_stmt_t *stmt)
@@ -521,6 +522,13 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
             {
               log_errors = 0;
               g_debug ("%s: canceled SQL: %s\n", __FUNCTION__, stmt->sql);
+            }
+          else if (sqlstate && (strcmp (sqlstate, "55P03") == 0))
+            {
+              g_debug ("%s: lock unavailable: %s",
+                       __FUNCTION__,
+                       PQresultErrorMessage(result));
+              return -3;
             }
 
           if (log_errors)

@@ -3850,59 +3850,6 @@ valid_type (const char* type)
 }
 
 /**
- * @brief Return pretty name of type.
- *
- * @param[in]  type  Database name.
- *
- * @return 1 yes, 0 no.
- */
-const char *
-type_pretty_name (const char* type)
-{
-  if (strcasecmp (type, "agent") == 0)
-    return "Agent";
-  if (strcasecmp (type, "alert") == 0)
-    return "Alert";
-  if (strcasecmp (type, "asset") == 0)
-    return "Asset";
-  if (strcasecmp (type, "config") == 0)
-    return "Config";
-  if (strcasecmp (type, "credential") == 0)
-    return "Credential";
-  if (strcasecmp (type, "filter") == 0)
-    return "Filter";
-  if (strcasecmp (type, "note") == 0)
-    return "Note";
-  if (strcasecmp (type, "override") == 0)
-    return "Override";
-  if (strcasecmp (type, "permission") == 0)
-    return "Permission";
-  if (strcasecmp (type, "port_list") == 0)
-    return "Port List";
-  if (strcasecmp (type, "report") == 0)
-    return "Report";
-  if (strcasecmp (type, "report_format") == 0)
-    return "Report Format";
-  if (strcasecmp (type, "result") == 0)
-    return "Result";
-  if (strcasecmp (type, "role") == 0)
-    return "Role";
-  if (strcasecmp (type, "scanner") == 0)
-    return "Scanner";
-  if (strcasecmp (type, "schedule") == 0)
-    return "Schedule";
-  if (strcasecmp (type, "tag") == 0)
-    return "Tag";
-  if (strcasecmp (type, "target") == 0)
-    return "Target";
-  if (strcasecmp (type, "task") == 0)
-    return "Task";
-  if (strcasecmp (type, "info") == 0)
-    return "SecInfo";
-  return "";
-}
-
-/**
  * @brief Return DB name of type.
  *
  * @param[in]  type  Database or pretty name.
@@ -25037,7 +24984,7 @@ report_severity (report_t report, int overrides, int min_qod)
                  " FROM report_counts"
                  " WHERE report = %llu"
                  " AND override = %d"
-                 " AND user = (SELECT id FROM users WHERE uuid = '%s')"
+                 " AND \"user\" = (SELECT id FROM users WHERE uuid = '%s')"
                  " AND min_qod = %d"
                  " AND (end_time = 0 or end_time >= m_now ());",
                  report, overrides, current_credentials.uuid, min_qod);
@@ -27753,18 +27700,6 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
           double h_severity;
 
           PRINT (out,
-                 "<host_start>"
-                 "<host>%s</host>%s"
-                 "</host_start>"
-                 "<host_end>"
-                 "<host>%s</host>%s"
-                 "</host_end>",
-                 buffer_host->ip,
-                 scan_start,
-                 buffer_host->ip,
-                 scan_end);
-
-          PRINT (out,
                  "<host>"
                  "<ip>%s</ip>"
                  "<start>%s</start>"
@@ -30212,21 +30147,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
               PRINT (out,
                      "</host>");
-
-              PRINT (out,
-                     "<host_start>"
-                     "<host>%s</host>%s"
-                     "</host_start>",
-                     host,
-                     host_iterator_start_time (&hosts));
-              PRINT (out,
-                     "<host_end>"
-                     "<host>%s</host>%s"
-                     "</host_end>",
-                     host,
-                     host_iterator_end_time (&hosts)
-                       ? host_iterator_end_time (&hosts)
-                       : "");
             }
           cleanup_iterator (&hosts);
         }
@@ -30317,22 +30237,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
           PRINT (out,
                  "</host>");
-
-          PRINT (out,
-                 "<host_start><host>%s</host>%s</host_start>",
-                 host_iterator_host (&hosts),
-                 host_iterator_start_time (&hosts));
         }
-      cleanup_iterator (&hosts);
-
-      init_report_host_iterator (&hosts, report, NULL, 0);
-      while (next (&hosts))
-        PRINT (out,
-               "<host_end><host>%s</host>%s</host_end>",
-               host_iterator_host (&hosts),
-               host_iterator_end_time (&hosts)
-                ? host_iterator_end_time (&hosts)
-                : "");
       cleanup_iterator (&hosts);
     }
 
@@ -52513,23 +52418,27 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
   hosts = (*report)->entities;
   while ((host_start = first_entity (hosts)))
     {
-      if (strcmp (entity_name (host_start), "host_start") == 0)
+      if (strcmp (entity_name (host_start), "host") == 0)
         {
-          entity_t host;
+          entity_t ip;
           char *uuid;
 
-          host = entity_child (host_start, "host");
-          if (host == NULL)
+          ip = entity_child (host_start, "ip");
+          if (ip == NULL)
+            goto rollback_fail;
+
+          start = entity_child (host_start, "start");
+          if (start == NULL)
             goto rollback_fail;
 
           uuid = report_uuid (current_report);
-          host_notice (entity_text (host), "ip", entity_text (host),
+          host_notice (entity_text (ip), "ip", entity_text (ip),
                        "Report Host", uuid, 1, 1);
           free (uuid);
 
           set_scan_host_start_time (current_report,
-                                    entity_text (host),
-                                    entity_text (host_start));
+                                    entity_text (ip),
+                                    entity_text (start));
         }
       hosts = next_entities (hosts);
     }
@@ -57751,7 +57660,7 @@ filter_iterator_type (iterator_t* iterator)
   const char *ret;
   if (iterator->done) return NULL;
   ret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT);
-  return ret ? type_pretty_name (ret) : "";
+  return ret ? ret : "";
 }
 
 /**
