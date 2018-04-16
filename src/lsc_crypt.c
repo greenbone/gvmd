@@ -156,41 +156,6 @@ get32 (const void *buffer)
   return value;
 }
 
-/**
- * @brief Log function with extra gpg-error style output
- *
- * If \p err is not 0, the appropriate error string is appended to
- * the output.  It takes care to only add the error source string if
- * it makes sense.
- *
- * @param level  The GLib style log level
- * @param err    An gpg-error value or 0
- * @param fmt    The printf style format string, followed by its
- *                arguments.
- */
-static void
-log_gpgme (GLogLevelFlags level, gpg_error_t err, const char *fmt, ...)
-{
-  va_list arg_ptr;
-  char *msg;
-
-  va_start (arg_ptr, fmt);
-  msg = g_strdup_vprintf (fmt, arg_ptr);
-  va_end (arg_ptr);
-  if (err && gpg_err_source (err) != GPG_ERR_SOURCE_ANY)
-    g_log (G_LOG_DOMAIN, level, "%s: %s <%s>",
-           msg, gpg_strerror (err), gpg_strsource (err));
-  else if (err)
-    g_log (G_LOG_DOMAIN, level, "%s: %s",
-           msg, gpg_strerror (err));
-  else
-    g_log (G_LOG_DOMAIN, level, "%s",
-           msg);
-  g_free (msg);
-}
-
-
-
 
 /* Local functions. */
 
