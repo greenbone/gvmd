@@ -10,7 +10,7 @@ prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
 file=${GVM_LOG_DIR}/gvmd.log
 level=127
 
-[md   comm
+[md   comm]
 prepend=%t %s %p
 separator=:
 prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
