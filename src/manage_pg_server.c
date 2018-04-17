@@ -90,6 +90,52 @@ sql_next_time (PG_FUNCTION_ARGS)
   PG_RETURN_INT32 (ret);
 }
 
+PG_FUNCTION_INFO_V1 (sql_next_time_ical);
+
+/**
+ * @brief Get the next time given schedule times.
+ *
+ * This is a callback for a SQL function of four to six arguments.
+ */
+Datum
+sql_next_time_ical (PG_FUNCTION_ARGS)
+{
+  char *ical_string, *timezone;
+  int periods_offset;
+  int32 ret;
+
+  if (PG_NARGS() < 1 || PG_ARGISNULL (0))
+    {
+      PG_RETURN_NULL ();
+    }
+  else
+    {
+      text* ical_string_arg;
+      ical_string_arg = PG_GETARG_TEXT_P (0);
+      ical_string = textndup (ical_string_arg,
+                              VARSIZE (ical_string_arg) - VARHDRSZ);
+    }
+
+  if (PG_NARGS() < 2 || PG_ARGISNULL (1))
+    timezone = NULL;
+  else
+    {
+      text* timezone_arg;
+      timezone_arg = PG_GETARG_TEXT_P (1);
+      timezone = textndup (timezone_arg, VARSIZE (timezone_arg) - VARHDRSZ);
+    }
+
+  periods_offset = PG_GETARG_INT32 (2);
+
+  ret = icalendar_next_time_from_string (ical_string, timezone,
+                                         periods_offset);
+  if (ical_string)
+    pfree (ical_string);
+  if (timezone)
+    pfree (timezone);
+  PG_RETURN_INT32 (ret);
+}
+
 PG_FUNCTION_INFO_V1 (sql_max_hosts);
 
 /**
