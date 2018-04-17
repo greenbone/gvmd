@@ -2,8 +2,8 @@ INSTALLATION INSTRUCTIONS FOR GREENBONE VULNERABILITY MANAGER
 =============================================================
 
 Please note: The reference system used by most of the developers is Debian
-GNU/Linux 'Jessie' 8. The build might fail on any other systems.
-Also it is necessary to install dependent development packages.
+GNU/Linux 'Stretch' 9. The build might fail on any other system. Also it is
+necessary to install dependent development packages.
 
 IMPORTANT NOTICE: This version changes quite a number of locations
 and names compared to the previous version. It is highly recommended to
@@ -35,11 +35,11 @@ Prerequisites for building documentation:
 Please see the section "Prerequisites for Optional Features" below additional
 optional prerequisites.
 
-Install prerequisites on Debian GNU/Linux 'Jessie' 8:
+Install prerequisites on Debian GNU/Linux 'Stretch' 9:
 For SQLite backend:
   # apt-get install libsqlite3-dev
 For PostgreSQL backend:
-  # apt-get install libpq-dev postgresql-server-dev-9.4
+  # apt-get install libpq-dev postgresql-server-dev-9.6
 
 
 Compiling Greenbone Vulnerability Manager
