@@ -32287,27 +32287,16 @@ cleanup_schedule_times ()
 {
   sql ("UPDATE tasks"
         " SET schedule_next_time"
-        "   = (SELECT next_time (first_time,"
-        "                        period,"
-        "                        period_months,"
-        "                        byday,"
-        "                        timezone)"
+        "   = (SELECT next_time_ical (icalendar, timezone)"
         "      FROM schedules"
         "      WHERE schedules.id = tasks.schedule)"
         " WHERE schedule_next_time != 0"
         "   AND schedule_next_time"
-        "         = (SELECT next_time (first_time,"
-        "                              period,"
-        "                              period_months,"
-        "                              byday)"
+        "         = (SELECT next_time_ical (icalendar, timezone)"
         "              FROM schedules"
         "             WHERE schedules.id = tasks.schedule)"
         "   AND schedule_next_time"
-        "         != (SELECT next_time (first_time,"
-        "                               period,"
-        "                               period_months,"
-        "                               byday,"
-        "                               timezone)"
+        "         != (SELECT next_time_ical (icalendar, timezone)"
         "              FROM schedules"
         "             WHERE schedules.id = tasks.schedule);");
 
@@ -47893,6 +47882,8 @@ byday_from_string (const char* byday)
  *
  * @param[in]   name        Name of schedule.
  * @param[in]   comment     Comment on schedule.
+ * @param[in]   ical_string iCalendar string.  Overrides first_time, period,
+ *                           period_months, byday and duration.
  * @param[in]   first_time  First time action will run.
  * @param[in]   period      How often the action will run in seconds.  0 means
  *                          once.
@@ -47900,21 +47891,26 @@ byday_from_string (const char* byday)
  * @param[in]   byday       Which days of week schedule will run.
  * @param[in]   duration    The length of the time window the action will run
  *                          in.  0 means entire duration of action.
- * @param[out]  timezone    Timezone.
+ * @param[in]   timezone    Timezone.
  * @param[out]  schedule    Created schedule.
+ * @param[out]  error_out   Output for iCalendar errors and warnings.
  *
  * @return 0 success, 1 schedule exists already, 2 syntax error in byday,
- *         99 permission denied.
+ *         3 error in iCal string, 99 permission denied.
  */
 int
-create_schedule (const char* name, const char *comment, time_t first_time,
+create_schedule (const char* name, const char *comment,
+                 const char *ical_string, time_t first_time,
                  time_t period, time_t period_months, const char *byday,
-                 time_t duration, const char* timezone, schedule_t *schedule)
+                 time_t duration, const char* timezone, schedule_t *schedule,
+                 gchar **error_out)
 {
-  gchar *quoted_name, *quoted_timezone;
+  gchar *quoted_comment, *quoted_name, *quoted_timezone;
   gchar *insert_timezone;
   long offset;
   int byday_mask;
+  icalcomponent *ical_component;
+  gchar *quoted_ical;
 
   assert (current_credentials.uuid);
 
@@ -47961,46 +47957,60 @@ create_schedule (const char* name, const char *comment, time_t first_time,
     }
 
   offset = current_offset (insert_timezone);
+  quoted_comment = sql_quote (comment ? comment : "");
   quoted_timezone = sql_quote (insert_timezone);
 
-  if (comment)
+  if (ical_string && strcmp (ical_string, ""))
     {
-      gchar *quoted_comment = sql_nquote (comment, strlen (comment));
-      sql ("INSERT INTO schedules"
-           " (uuid, name, owner, comment, first_time, period, period_months,"
-           "  byday, duration, timezone, initial_offset, creation_time,"
-           "  modification_time)"
-           " VALUES"
-           " (make_uuid (), '%s',"
-           "  (SELECT id FROM users WHERE users.uuid = '%s'),"
-           "  '%s', %i, %i, %i, %i, %i,"
-           "  '%s',"
-           "  %li, m_now (), m_now ());",
-           quoted_name, current_credentials.uuid, quoted_comment, first_time,
-           period, period_months, byday_mask, duration, quoted_timezone,
-           offset);
-      g_free (quoted_comment);
+      ical_component = icalendar_from_string (ical_string, error_out);
+      if (ical_component == NULL)
+        {
+          g_free (quoted_name);
+          g_free (quoted_comment);
+          g_free (insert_timezone);
+          g_free (quoted_timezone);
+          return 3;
+        }
+      quoted_ical = sql_quote (icalcomponent_as_ical_string (ical_component));
+      first_time = icalendar_first_time_from_vcalendar (ical_component,
+                                                        timezone);
+      duration = icalendar_duration_from_vcalendar (ical_component);
+
+      icalendar_approximate_rrule_from_vcalendar (ical_component,
+                                                  &period,
+                                                  &period_months,
+                                                  &byday_mask);
     }
   else
-    sql ("INSERT INTO schedules"
-         " (uuid, name, owner, comment, first_time, period, period_months,"
-         "  byday, duration, timezone, initial_offset, creation_time,"
-         "  modification_time)"
-         " VALUES"
-         " (make_uuid (), '%s',"
-         "  (SELECT id FROM users WHERE users.uuid = '%s'),"
-         "  '', %i, %i, %i, %i, %i,"
-         "  '%s',"
-         "  %li, m_now (), m_now ());",
-         quoted_name, current_credentials.uuid, first_time, period,
-         period_months, byday_mask, duration, quoted_timezone, offset);
+    {
+      ical_component = icalendar_from_old_schedule_data
+                          (first_time, period, period_months, duration,
+                           byday_mask, timezone);
+      quoted_ical = sql_quote (icalcomponent_as_ical_string (ical_component));
+    }
+
+  sql ("INSERT INTO schedules"
+       " (uuid, name, owner, comment, first_time, period, period_months,"
+       "  byday, duration, timezone, icalendar, initial_offset,"
+       "  creation_time, modification_time)"
+       " VALUES"
+       " (make_uuid (), '%s',"
+       "  (SELECT id FROM users WHERE users.uuid = '%s'),"
+       "  '%s', %i, %i, %i, %i, %i,"
+       "  '%s', '%s',"
+       "  %li, m_now (), m_now ());",
+       quoted_name, current_credentials.uuid, quoted_comment, first_time,
+       period, period_months, byday_mask, duration, quoted_timezone,
+       quoted_ical, offset);
 
   if (schedule)
     *schedule = sql_last_insert_id ();
 
   g_free (quoted_name);
+  g_free (quoted_comment);
   g_free (insert_timezone);
   g_free (quoted_timezone);
+  g_free (quoted_ical);
 
   sql_commit ();
 
@@ -48025,7 +48035,7 @@ copy_schedule (const char* name, const char* comment, const char *schedule_id,
 {
   return copy_resource ("schedule", name, comment, schedule_id,
                         "first_time, period, period_months, byday, duration,"
-                        " timezone, initial_offset",
+                        " timezone, initial_offset, icalendar",
                         1, new_schedule, NULL);
 }
 
@@ -48109,10 +48119,10 @@ delete_schedule (const char *schedule_id, int ultimate)
       sql ("INSERT INTO schedules_trash"
            " (uuid, owner, name, comment, first_time, period, period_months,"
            "  byday, duration, timezone, initial_offset, creation_time,"
-           "  modification_time)"
+           "  modification_time, icalendar)"
            " SELECT uuid, owner, name, comment, first_time, period, period_months,"
            "        byday, duration, timezone, initial_offset, creation_time,"
-           "        modification_time"
+           "        modification_time, icalendar"
            " FROM schedules WHERE id = %llu;",
            schedule);
 
@@ -48350,7 +48360,8 @@ schedule_info (schedule_t schedule, time_t *first_time, time_t *next_time,
    { "duration", NULL, KEYWORD_TYPE_INTEGER },                             \
    { "timezone", NULL, KEYWORD_TYPE_STRING },                              \
    { "initial_offset", NULL, KEYWORD_TYPE_INTEGER },                       \
-   { "next_time (first_time, period, period_months, byday)",               \
+   { "icalendar", NULL, KEYWORD_TYPE_STRING },                             \
+   { "next_time_ical (icalendar, timezone)",                               \
      "next_run",                                                           \
      KEYWORD_TYPE_INTEGER },                                               \
    { "first_time", "first_run", KEYWORD_TYPE_INTEGER },                    \
@@ -48370,6 +48381,7 @@ schedule_info (schedule_t schedule, time_t *first_time, time_t *next_time,
    { "duration", NULL, KEYWORD_TYPE_INTEGER },                             \
    { "timezone", NULL, KEYWORD_TYPE_STRING },                              \
    { "initial_offset", NULL, KEYWORD_TYPE_INTEGER },                       \
+   { "icalendar", NULL, KEYWORD_TYPE_STRING },                             \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                    \
  }
 
@@ -48431,22 +48443,6 @@ schedule_iterator_first_time (iterator_t* iterator)
   int ret;
   if (iterator->done) return -1;
   ret = (time_t) iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT);
-  return ret;
-}
-
-/**
- * @brief Get the next time a schedule could be schedulable.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Next time an action associated with schedule could be run.
- */
-time_t
-schedule_iterator_next_time (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = (time_t) iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
   return ret;
 }
 
@@ -48571,6 +48567,32 @@ schedule_iterator_initial_offset (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the iCalendar string from a schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The iCalendar string or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (schedule_iterator_icalendar, GET_ITERATOR_COLUMN_COUNT + 7);
+
+/**
+ * @brief Get the next time a schedule could be schedulable.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Next time an action associated with schedule could be run.
+ */
+time_t
+schedule_iterator_next_time (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (time_t) iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
+  return ret;
+}
+
+/**
  * @brief Initialise a task schedule iterator.
  *
  * Lock the database before initialising.
@@ -48591,12 +48613,9 @@ init_task_schedule_iterator (iterator_t* iterator)
   init_iterator (iterator,
                  "SELECT tasks.id, tasks.uuid,"
                  " schedules.id, tasks.schedule_next_time,"
-                 " schedules.period, schedules.period_months,"
-                 " schedules.byday,"
-                 " schedules.first_time,"
+                 " schedules.icalendar, schedules.timezone,"
                  " schedules.duration,"
-                 " users.uuid, users.name,"
-                 " schedules.timezone, schedules.initial_offset"
+                 " users.uuid, users.name"
                  " FROM tasks, schedules, users"
                  " WHERE tasks.schedule = schedules.id"
                  " AND tasks.hidden = 0"
@@ -48674,73 +48693,36 @@ task_schedule_iterator_next_time (iterator_t* iterator)
 }
 
 /**
- * @brief Get the period from a task schedule iterator.
+ * @brief Get the iCalendar string from a task schedule iterator.
  *
  * @param[in]  iterator  Iterator.
  *
  * @return period.
  */
-time_t
-task_schedule_iterator_period (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return (time_t) iterator_int64 (iterator, 4);
-}
+DEF_ACCESS (task_schedule_iterator_icalendar, 4);
 
 /**
- * @brief Get the period months from a task schedule iterator.
+ * @brief Get the timezone from a task schedule iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Period months.
+ * @return Timezone, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
  */
-time_t
-task_schedule_iterator_period_months (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return (time_t) iterator_int64 (iterator, 5);
-}
+DEF_ACCESS (task_schedule_iterator_timezone, 5);
 
 /**
- * @brief Get the byday flags from a task schedule iterator.
+ * @brief Get the next time from a task schedule iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Byday mask.
- */
-time_t
-task_schedule_iterator_byday (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return (time_t) iterator_int64 (iterator, 6);
-}
-
-/**
- * @brief Get the first time from a task schedule iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return First time.
- */
-time_t
-task_schedule_iterator_first_time (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return (time_t) iterator_int64 (iterator, 7);
-}
-
-/**
- * @brief Get the duration from a task schedule iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Duration.
+ * @return Next time.
  */
 time_t
 task_schedule_iterator_duration (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (time_t) iterator_int64 (iterator, 8);
+  return (time_t) iterator_int64 (iterator, 6);
 }
 
 /**
@@ -48751,7 +48733,7 @@ task_schedule_iterator_duration (iterator_t* iterator)
  * @return Owner UUID, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (task_schedule_iterator_owner_uuid, 9);
+DEF_ACCESS (task_schedule_iterator_owner_uuid, 7);
 
 /**
  * @brief Get the task owner name from a task schedule iterator.
@@ -48761,31 +48743,7 @@ DEF_ACCESS (task_schedule_iterator_owner_uuid, 9);
  * @return Owner name, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (task_schedule_iterator_owner_name, 10);
-
-/**
- * @brief Get the timezone from a task schedule iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Timezone, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (task_schedule_iterator_timezone, 11);
-
-/**
- * @brief Get the initial offset from a task schedule iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Initial offset.
- */
-time_t
-task_schedule_iterator_initial_offset (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return (time_t) iterator_int64 (iterator, 12);
-}
+DEF_ACCESS (task_schedule_iterator_owner_name, 8);
 
 /**
  * @brief Get the start due state from a task schedule iterator.
@@ -48829,18 +48787,14 @@ task_schedule_iterator_start_due (iterator_t* iterator)
 gboolean
 task_schedule_iterator_stop_due (iterator_t* iterator)
 {
-  time_t first, period, period_months, duration;
-  int byday;
-  const char *timezone;
+  const char *icalendar, *timezone;
+  time_t duration;
 
   if (iterator->done) return FALSE;
 
-  first = task_schedule_iterator_first_time (iterator);
-  period = task_schedule_iterator_period (iterator);
-  period_months = task_schedule_iterator_period_months (iterator);
-  byday = task_schedule_iterator_byday (iterator);
-  duration = task_schedule_iterator_duration (iterator);
+  icalendar = task_schedule_iterator_icalendar (iterator);
   timezone = task_schedule_iterator_timezone (iterator);
+  duration = task_schedule_iterator_duration (iterator);
 
   if (duration)
     {
@@ -48860,7 +48814,7 @@ task_schedule_iterator_stop_due (iterator_t* iterator)
 
           now = time (NULL);
 
-          start = next_time (first, period, period_months, byday, timezone, -1);
+          start = icalendar_next_time_from_string (icalendar, timezone, -1);
           if ((start + duration) < now)
             return TRUE;
         }
@@ -48986,6 +48940,8 @@ schedule_task_iterator_readable (iterator_t* iterator)
  * @param[in]   schedule_id  UUID of schedule.
  * @param[in]   name         Name of schedule.
  * @param[in]   comment      Comment on schedule.
+ * @param[in]   ical_string  iCalendar string.  Overrides first_time, period,
+ *                           period_months, byday and duration.
  * @param[in]   first_time   First time action will run.
  * @param[in]   period       How often the action will run in seconds.  0 means
  *                           once.
@@ -48994,24 +48950,30 @@ schedule_task_iterator_readable (iterator_t* iterator)
  * @param[in]   duration     The length of the time window the action will run
  *                           in.  0 means entire duration of action.
  * @param[in]   timezone     Timezone.
+ * @param[out]  error_out    Output for iCalendar errors and warnings.
  *
  * @return 0 success, 1 failed to find schedule, 2 schedule with new name exists,
- *         3 error in type name, 4 schedule_id required, 5 syntax error in byday,
+ *         3 error in type name, 4 schedule_id required,
+ *         5 syntax error in byday, 6 error in iCalendar,
  *         99 permission denied, -1 internal error.
  */
 int
 modify_schedule (const char *schedule_id, const char *name, const char *comment,
+                 const char *ical_string,
                  time_t first_time, time_t period, time_t period_months,
-                 const char *byday, time_t duration, const char *timezone)
+                 const char *byday, time_t duration, const char *timezone,
+                 gchar **error_out)
 {
-  gchar *quoted_name, *quoted_comment, *quoted_timezone;
+  gchar *quoted_name, *quoted_comment, *quoted_timezone, *quoted_icalendar;
+  icalcomponent *ical_component;
   gchar *first_time_string, *duration_string, *period_string;
   gchar *period_months_string, *offset_string, *byday_mask_string;
   schedule_t schedule;
-  time_t real_first_time, real_period, real_period_months, new_next_time;
+  time_t real_first_time, real_period, real_period_months, real_duration;
+  time_t new_next_time;
   int real_byday;
   int byday_mask = 0;
-  const char *real_timezone;
+  gchar *real_timezone;
   iterator_t schedule_iter;
 
   if (schedule_id == NULL)
@@ -49063,65 +49025,14 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
   else
     quoted_name = NULL;
 
+  /* Update basic data */
   quoted_comment = comment ? sql_quote (comment) : NULL;
-
-  if (duration == -1)
-    duration_string = NULL;
-  else
-    duration_string = g_strdup_printf ("%li", duration);
-
-  if (first_time == -1)
-    first_time_string = NULL;
-  else
-    first_time_string = g_strdup_printf ("%li", first_time);
-
-  if ((period_months == -1) || (period_months == 0))
-    {
-      if (period == -1)
-        {
-          period_months_string = NULL;
-          period_string = NULL;
-        }
-      else
-        {
-          period_months_string = g_strdup ("0");
-          period_string = g_strdup_printf ("%li", period);
-        }
-    }
-  else
-    {
-      period_months_string = g_strdup_printf ("%li", period_months);
-      period_string = g_strdup ("0");
-    }
-
-  if (first_time)
-    {
-      if (timezone)
-        offset_string = g_strdup_printf ("%li", current_offset (timezone));
-      else
-        offset_string = NULL;
-    }
-  else
-    offset_string = NULL;
-
   quoted_timezone = timezone ? sql_quote (timezone) : NULL;
-
-  if (byday)
-    byday_mask_string = g_strdup_printf ("%i", byday_mask);
-  else
-    byday_mask_string = NULL;
 
   sql ("UPDATE schedules SET"
        " name = %s%s%s,"
        " comment = %s%s%s,"
-       " timezone = %s%s%s,"
-       " first_time = %s,"
-       " period = %s,"
-       " period_months = %s,"
-       " byday = %s,"
-       " duration = %s,"
-       " initial_offset = %s,"
-       " modification_time = m_now ()"
+       " timezone = %s%s%s"
        " WHERE id = %llu;",
        quoted_name ? "'" : "",
        quoted_name ? quoted_name : "name",
@@ -49132,17 +49043,126 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
        quoted_timezone ? "'" : "",
        quoted_timezone ? quoted_timezone : "timezone",
        quoted_timezone ? "'" : "",
-       first_time ? first_time_string : "first_time",
-       period_string ? period_string : "period",
-       period_months_string ? period_months_string : "period_months",
-       byday_mask_string ? byday_mask_string : "byday",
-       (duration >= 0) ? duration_string : "duration",
-       offset_string ? offset_string : "initial_offset",
        schedule);
+
+  real_timezone 
+    = sql_string ("SELECT timezone FROM schedules WHERE id = %llu;",
+                  schedule);
+
+  /* Update times */
+  if (ical_string && strcmp (ical_string, ""))
+    {
+      time_t ical_first_time, ical_duration;
+      ical_component = icalendar_from_string (ical_string, error_out);
+      if (ical_component == NULL)
+        {
+          g_free (real_timezone);
+          return 6;
+        }
+
+        quoted_icalendar = sql_quote (icalcomponent_as_ical_string (ical_component));
+
+      ical_first_time = icalendar_first_time_from_vcalendar (ical_component,
+                                                             real_timezone);
+      ical_duration = icalendar_duration_from_vcalendar (ical_component);
+
+      sql ("UPDATE schedules SET"
+           " icalendar = '%s'"
+           " first_time = %ld"
+           " period = 0,"
+           " period_months = 0,"
+           " byday = 0,"
+           " duration = %d,"
+           " initial_offset = 0,"
+           " modification_time = m_now ()"
+           " WHERE id = %llu;",
+           quoted_icalendar,
+           ical_first_time,
+           ical_duration);
+    }
+  else
+    {
+      if (byday)
+        {
+          byday_mask = byday_from_string (byday);
+          if (byday_mask == -1)
+            {
+              g_free (quoted_name);
+              g_free (quoted_comment);
+              g_free (quoted_timezone);
+              sql_rollback ();
+              return 5;
+            }
+          byday_mask_string = g_strdup_printf ("%i", byday_mask);
+        }
+      else
+        byday_mask_string = NULL;
+
+      if (duration == -1)
+        duration_string = NULL;
+      else
+        duration_string = g_strdup_printf ("%li", duration);
+
+      if (first_time == -1)
+        first_time_string = NULL;
+      else
+        first_time_string = g_strdup_printf ("%li", first_time);
+
+      if ((period_months == -1) || (period_months == 0))
+        {
+          if (period == -1)
+            {
+              period_months_string = NULL;
+              period_string = NULL;
+            }
+          else
+            {
+              period_months_string = g_strdup ("0");
+              period_string = g_strdup_printf ("%li", period);
+            }
+        }
+      else
+        {
+          period_months_string = g_strdup_printf ("%li", period_months);
+          period_string = g_strdup ("0");
+        }
+
+      if (first_time)
+        {
+          if (timezone)
+            offset_string = g_strdup_printf ("%li", current_offset (timezone));
+          else
+            offset_string = NULL;
+        }
+      else
+        offset_string = NULL;
+
+      ical_component = NULL;
+        quoted_icalendar = NULL;
+
+      sql ("UPDATE schedules SET"
+           " icalendar = '',"
+           " first_time = %s,"
+           " period = %s,"
+           " period_months = %s,"
+           " byday = %s,"
+           " duration = %s,"
+           " initial_offset = %s,"
+           " modification_time = m_now ()"
+           " WHERE id = %llu;",
+           first_time ? first_time_string : "first_time",
+           period_string ? period_string : "period",
+           period_months_string ? period_months_string : "period_months",
+           byday_mask_string ? byday_mask_string : "byday",
+           (duration >= 0) ? duration_string : "duration",
+           offset_string ? offset_string : "initial_offset",
+           schedule);
+
+    }
 
   // Update scheduled next times for tasks
   init_iterator (&schedule_iter,
-                 "SELECT first_time, period, period_months, byday, timezone"
+                 "SELECT first_time, period, period_months, duration, byday"
                  " FROM schedules"
                  " WHERE id = %llu",
                  schedule);
@@ -49151,15 +49171,33 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
   real_first_time = (time_t) iterator_int64 (&schedule_iter, 0);
   real_period = (time_t) iterator_int64 (&schedule_iter, 1);
   real_period_months = (time_t) iterator_int64 (&schedule_iter, 2);
-  real_byday = iterator_int (&schedule_iter, 3);
-  real_timezone = iterator_string (&schedule_iter, 4);
+  real_duration = (time_t) iterator_int64 (&schedule_iter, 3);
+  real_byday = iterator_int (&schedule_iter, 4);
 
-  new_next_time = next_time (real_first_time,
-                             real_period,
-                             real_period_months,
-                             real_byday,
-                             real_timezone,
-                             0);
+  if (ical_component == NULL
+      && (byday_mask_string
+          || first_time_string
+          || period_string
+          || period_months_string
+          || byday_mask_string
+          || duration_string
+          || offset_string))
+    {
+      // Generate iCalendar here if using old-style schedule data
+      ical_component = icalendar_from_old_schedule_data
+                          (real_first_time,
+                           real_period, real_period_months,
+                           real_duration, real_byday,
+                           real_timezone);
+      quoted_icalendar
+        = sql_quote (icalcomponent_as_ical_string (ical_component));
+
+      sql ("UPDATE schedules SET icalendar = '%s' WHERE id = %llu",
+           quoted_icalendar, schedule);
+    }
+
+  new_next_time = icalendar_next_time_from_vcalendar (ical_component,
+                                                      real_timezone, 0);
 
   cleanup_iterator (&schedule_iter);
 
@@ -49177,6 +49215,11 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
   g_free (quoted_comment);
   g_free (quoted_name);
   g_free (quoted_timezone);
+  g_free (quoted_icalendar);
+
+  free (real_timezone);
+  if (ical_component)
+    icalcomponent_free (ical_component);
 
   sql_commit ();
 
@@ -59012,10 +59055,10 @@ manage_restore (const char *id)
       sql ("INSERT INTO schedules"
            " (uuid, owner, name, comment, first_time, period, period_months,"
            "  byday, duration, timezone, initial_offset, creation_time,"
-           "  modification_time)"
+           "  modification_time, icalendar)"
            " SELECT uuid, owner, name, comment, first_time, period,"
            "        period_months, byday, duration, timezone, initial_offset,"
-           "        creation_time, modification_time"
+           "        creation_time, modification_time, icalendar"
            " FROM schedules_trash WHERE id = %llu;",
            resource);
 

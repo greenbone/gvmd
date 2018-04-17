@@ -31,6 +31,7 @@
 #include <string.h> /* for strcmp */
 
 #include <gvm/base/hosts.h>
+#include <gvm/util/uuidutils.h>
 
 #undef G_LOG_DOMAIN
 /**
@@ -751,4 +752,809 @@ valid_db_resource_type (const char* type)
          || (strcasecmp (type, "target") == 0)
          || (strcasecmp (type, "task") == 0)
          || (strcasecmp (type, "user") == 0);
+}
+
+#define GVM_PRODID "-//Greenbone.net//NONSGML Greenbone Security Manager " \
+                   GVMD_VERSION "//EN"
+
+/**
+ * @brief Try to get a built-in libical timezone from a tzid or city name.
+ *
+ * @param[in]  tzid  The tzid or Olson city name.
+ *
+ * @return The built-in timezone if found or UTC otherwise.
+ */
+static icaltimezone*
+icalendar_timezone_from_tzid (const char *tzid)
+{
+  icaltimezone *tz;
+
+  // If tzid is not NULL, try to get a libical built-in.
+  if (tzid)
+    {
+      tz = icaltimezone_get_builtin_timezone_from_tzid (tzid);
+      if (tz == NULL)
+        tz = icaltimezone_get_builtin_timezone (tzid);
+    }
+
+  // Fall back to UTC if tzid was null or not a built-in timezone
+  if (tzid == NULL)
+    tz = icaltimezone_get_utc_timezone ();
+
+  return tz;
+}
+
+/**
+ * @brief Create an iCalendar component from old schedule data.
+ *
+ * @param[in]  first_time     The first run time.
+ * @param[in]  period         The period in seconds.
+ * @param[in]  period_months  The period in months.
+ * @param[in]  duration       The duration in seconds.
+ * @param[in]  byday_mask     The byday mask.
+ * @param[in]  timezone       The timezone id / city name.
+ *
+ * @return  The generated iCalendar component.
+ */
+icalcomponent *
+icalendar_from_old_schedule_data (time_t first_time,
+                                  time_t period, time_t period_months,
+                                  time_t duration,
+                                  int byday_mask,
+                                  const char *timezone)
+{
+  gchar *uid;
+  icalcomponent *ical_new, *vevent;
+  icaltimezone *ical_timezone;
+  icaltimetype dtstart, dtstamp;
+  int has_recurrence;
+  struct icalrecurrencetype recurrence;
+  struct icaldurationtype ical_duration;
+
+  // Setup base calendar component
+  ical_new = icalcomponent_new_vcalendar ();
+  icalcomponent_add_property (ical_new, icalproperty_new_version ("2.0"));
+  icalcomponent_add_property (ical_new,
+                              icalproperty_new_prodid (GVM_PRODID));
+
+  // Create event component
+  vevent = icalcomponent_new_vevent ();
+  icalcomponent_add_component (ical_new, vevent);
+
+  // Generate UID for event
+  uid = gvm_uuid_make ();
+  icalcomponent_set_uid (vevent, uid);
+  g_free (uid);
+  uid = NULL;
+
+  // Set timestamp
+  dtstamp = icaltime_current_time_with_zone (icaltimezone_get_utc_timezone ());
+  icalcomponent_set_dtstamp (vevent, dtstamp);
+
+  // Get timezone and set first start time
+  if (timezone)
+    {
+      ical_timezone = icalendar_timezone_from_tzid (timezone);
+      dtstart = icaltime_from_timet_with_zone (first_time, 0, ical_timezone);
+    }
+  else
+    {
+      ical_timezone = NULL;
+      dtstart = icaltime_from_timet (first_time, 0);
+    }
+  icalcomponent_set_dtstart (vevent, dtstart);
+
+  // Get recurrence rule if applicable
+  icalrecurrencetype_clear (&recurrence);
+  if (period_months)
+    {
+      if (period_months % 12 == 0)
+        {
+          recurrence.freq = ICAL_YEARLY_RECURRENCE;
+          recurrence.interval = period_months / 12;
+        }
+      else
+        {
+          recurrence.freq = ICAL_MONTHLY_RECURRENCE;
+          recurrence.interval = period_months;
+        }
+      has_recurrence = 1;
+    }
+  else if (period)
+    {
+      if (period % 604800 == 0)
+        {
+          recurrence.freq = ICAL_WEEKLY_RECURRENCE;
+          recurrence.interval = period / 604800;
+        }
+      else if (period % 86400 == 0)
+        {
+          recurrence.freq = ICAL_DAILY_RECURRENCE;
+          recurrence.interval = period / 86400;
+        }
+      else if (period % 3600 == 0)
+        {
+          recurrence.freq = ICAL_HOURLY_RECURRENCE;
+          recurrence.interval = period / 3600;
+        }
+      else if (period % 60 == 0)
+        {
+          recurrence.freq = ICAL_MINUTELY_RECURRENCE;
+          recurrence.interval = period / 60;
+        }
+      else
+        {
+          recurrence.freq = ICAL_SECONDLY_RECURRENCE;
+          recurrence.interval = period;
+        }
+
+      has_recurrence = 1;
+    }
+  else
+    has_recurrence = 0;
+
+  // Add set by_day and add the RRULE if applicable
+  if (has_recurrence)
+    {
+      if (byday_mask)
+        {
+          int ical_day, array_pos;
+
+          // iterate over libical days starting at 1 for Sunday.
+          array_pos = 0;
+          for (ical_day = 1; ical_day <= 7; ical_day++)
+            {
+              int mask_bit;
+              // Convert to GVM byday mask bit index starting at 0 for Monday.
+              mask_bit = (ical_day == 1) ? 1 : (ical_day - 2);
+              if (byday_mask & (1 << mask_bit))
+                {
+                  recurrence.by_day[array_pos] = ical_day;
+                  array_pos ++;
+                }
+            }
+        }
+
+      icalcomponent_add_property (vevent,
+                                  icalproperty_new_rrule (recurrence));
+    }
+
+  // Add duration
+  if (duration)
+    {
+      ical_duration = icaldurationtype_from_int (duration);
+      icalcomponent_set_duration (vevent, ical_duration);
+    }
+
+  return ical_new;
+}
+
+/**
+ * @brief Simplify an VEVENT iCal component.
+ *
+ * @param[in]  vevent          The VEVENT component to simplify.
+ * @param[in]  used_tzids      GHashTable to collect ids of the used timezones.
+ * @param[out] error           Output of iCal errors or warnings.
+ * @param[out] warnings_buffer GString buffer to write warnings to.
+ *
+ * @return  A newly allocated, simplified VEVENT component.
+ */
+static icalcomponent *
+icalendar_simplify_vevent (icalcomponent *vevent, GHashTable *used_tzids,
+                           gchar **error, GString *warnings_buffer)
+{
+  icalproperty *error_prop;
+  gchar *uid;
+  icalcomponent *vevent_simplified;
+  icaltimetype dtstart, dtstamp;
+  const char *start_tzid;
+  struct icaldurationtype duration;
+  icalproperty *rrule_prop, *rdate_prop, *exdate_prop, *exrule_prop;
+
+  // Only handle VEVENT components
+  assert (icalcomponent_isa (vevent) == ICAL_VEVENT_COMPONENT);
+
+  // Check for errors
+  icalrestriction_check (vevent);
+  error_prop = icalcomponent_get_first_property (vevent,
+                                                 ICAL_XLICERROR_PROPERTY);
+  if (error_prop)
+    {
+      if (error)
+        *error = g_strdup_printf ("Error in VEVENT: %s",
+                                  icalproperty_get_xlicerror (error_prop));
+      return NULL;
+    }
+
+  // Get mandatory first start time
+  dtstart = icalcomponent_get_dtstart (vevent);
+  if (icaltime_is_null_time (dtstart))
+    {
+      if (error)
+        *error = g_strdup_printf ("VEVENT must have a dtstart property");
+      return NULL;
+    }
+
+  // Get timezone id used in start time
+  start_tzid = icaltime_get_tzid (dtstart);
+  if (start_tzid && used_tzids)
+    g_hash_table_add (used_tzids, g_strdup (start_tzid));
+
+  // Get duration or try to calculate it from end time
+  duration = icalcomponent_get_duration (vevent);
+  if (icaldurationtype_is_null_duration (duration))
+    {
+      icaltimetype dtend;
+      dtend = icalcomponent_get_dtend (vevent);
+
+      duration = icaltime_subtract (dtend, dtstart);
+    }
+
+  /*
+   * Try to get only the first recurrence rule and ignore any others.
+   * Technically there can be multiple ones but behavior is undefined in
+   *  the iCalendar specification.
+   */
+  rrule_prop = icalcomponent_get_first_property (vevent,
+                                                 ICAL_RRULE_PROPERTY);
+
+  // Warn about RDATE currently being unsupported
+  // TODO: Add support for RDATE here and icalendar_next_time_from_vcalendar
+  rdate_prop = icalcomponent_get_first_property (vevent,
+                                                 ICAL_RDATE_PROPERTY);
+  if (rdate_prop)
+    {
+      g_string_append_printf (warnings_buffer,
+                              "<warning>"
+                              "VEVENT contains an RDATE property,"
+                              " which is currently not supported and"
+                              " will be ignored."
+                              "</warning>");
+    }
+
+  // Warn about EXDATE currently being unsupported
+  // TODO: Add support for EXDATE here and icalendar_next_time_from_vcalendar
+  exdate_prop = icalcomponent_get_first_property (vevent,
+                                                  ICAL_RDATE_PROPERTY);
+  if (exdate_prop)
+    {
+      g_string_append_printf (warnings_buffer,
+                              "<warning>"
+                              "VEVENT contains an EXDATE property,"
+                              " which is currently not supported and"
+                              " will be ignored."
+                              "</warning>");
+    }
+
+  // Warn about EXRULE being deprecated
+  exrule_prop = icalcomponent_get_first_property (vevent,
+                                                  ICAL_EXRULE_PROPERTY);
+  if (exrule_prop)
+    {
+      g_string_append_printf (warnings_buffer,
+                              "<warning>"
+                              "VEVENT contains the deprecated EXRULE property,"
+                              " which will be ignored."
+                              "</warning>");
+    }
+
+  // Create new, simplified VEVENT from collected data.
+  vevent_simplified = icalcomponent_new_vevent ();
+  icalcomponent_set_dtstart (vevent_simplified, dtstart);
+  icalcomponent_set_duration (vevent_simplified, duration);
+  if (rrule_prop)
+    {
+      icalproperty *prop_clone = icalproperty_new_clone (rrule_prop);
+      icalcomponent_add_property (vevent_simplified, prop_clone);
+    }
+
+  // Generate UID for event
+  uid = gvm_uuid_make ();
+  icalcomponent_set_uid (vevent_simplified, uid);
+  g_free (uid);
+  uid = NULL;
+
+  // Set timestamp
+  dtstamp = icaltime_current_time_with_zone (icaltimezone_get_utc_timezone ());
+  icalcomponent_set_dtstamp (vevent_simplified, dtstamp);
+
+  return vevent_simplified;
+}
+
+#define ICAL_RETURN_ERROR(message)              \
+  do                                            \
+    {                                           \
+      if (error)                                \
+        *error = message;                       \
+      icalcomponent_free (ical_parsed);         \
+      icalcomponent_free (ical_new);            \
+      g_string_free (warnings_buffer, TRUE);    \
+      g_hash_table_destroy (tzids);             \
+      return NULL;                              \
+    }                                           \
+  while (0)
+
+/**
+ * @brief Creates a new, simplified VCALENDAR component from a string.
+ *
+ * @param[in]  ical_string  The ical_string to create the component from.
+ * @param[out] error        Output of iCal errors or warnings.
+ *
+ * @return  A newly allocated, simplified VCALENDAR component.
+ */
+icalcomponent *
+icalendar_from_string (const char *ical_string, gchar **error)
+{
+  icalcomponent *ical_new, *ical_parsed;
+  icalproperty *error_prop;
+  GHashTable *tzids;
+  GString *warnings_buffer;
+  int vevent_count = 0;
+  int other_component_count = 0;
+  icalcompiter ical_iter;
+  icalcomponent *new_vevent;
+  GHashTableIter tzids_iter;
+  gchar *tzid;
+
+  // Parse the iCalendar string
+  ical_parsed = icalcomponent_new_from_string (ical_string);
+  if (ical_parsed == NULL)
+    {
+      if (error)
+        *error = g_strdup_printf ("Could not parse iCalendar string");
+      return NULL;
+    }
+
+  // Check for errors
+  icalrestriction_check (ical_parsed);
+  error_prop = icalcomponent_get_first_property (ical_parsed,
+                                                 ICAL_XLICERROR_PROPERTY);
+  if (error_prop)
+    {
+      if (error)
+        *error = g_strdup_printf ("Error in root component: %s",
+                                  icalproperty_get_xlicerror (error_prop));
+      icalcomponent_free (ical_parsed);
+      return NULL;
+    }
+
+  // Create buffers and new VCALENDAR
+  warnings_buffer = g_string_new ("");
+  tzids = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+
+  ical_new = icalcomponent_new_vcalendar ();
+  icalcomponent_add_property (ical_new, icalproperty_new_version ("2.0"));
+  icalcomponent_add_property (ical_new,
+                              icalproperty_new_prodid (GVM_PRODID));
+
+  switch (icalcomponent_isa (ical_parsed))
+    {
+      case ICAL_NO_COMPONENT:
+        // The text must contain valid iCalendar component
+        ICAL_RETURN_ERROR
+            (g_strdup_printf ("String contains no iCalendar component"));
+        break;
+      case ICAL_XROOT_COMPONENT:
+      case ICAL_VCALENDAR_COMPONENT:
+        // Check multiple components
+        ical_iter = icalcomponent_begin_component (ical_parsed,
+                                                   ICAL_ANY_COMPONENT);
+        icalcomponent *subcomp;
+        while ((subcomp = icalcompiter_deref (&ical_iter)))
+          {
+            icalcomponent *new_vevent;
+            switch (icalcomponent_isa (subcomp))
+              {
+                case ICAL_VEVENT_COMPONENT:
+                  // Copy and simplify only the first VEVENT, ignoring all
+                  //  following ones.
+                  if (vevent_count == 0)
+                    {
+                      new_vevent = icalendar_simplify_vevent
+                                      (subcomp, tzids, error, warnings_buffer);
+                      if (new_vevent == NULL)
+                        ICAL_RETURN_ERROR (*error);
+                      icalcomponent_add_component (ical_new, new_vevent);
+                    }
+                  vevent_count ++;
+                  break;
+                case ICAL_VTIMEZONE_COMPONENT:
+                  // Timezones are collected separately
+                  break;
+                case ICAL_VJOURNAL_COMPONENT:
+                case ICAL_VTODO_COMPONENT:
+                  // VJOURNAL and VTODO components are ignored
+                  other_component_count ++;
+                  break;
+                default:
+                  // Unexpected components
+                  ICAL_RETURN_ERROR
+                      (g_strdup_printf ("Unexpected component type: %s",
+                                        icalcomponent_kind_to_string
+                                            (icalcomponent_isa (subcomp))));
+              }
+            icalcompiter_next (&ical_iter);
+          }
+
+        if (vevent_count == 0)
+          {
+            ICAL_RETURN_ERROR
+                (g_strdup_printf ("iCalendar string must contain a VEVENT"));
+          }
+        else if (vevent_count > 1)
+          {
+            g_string_append_printf (warnings_buffer,
+                                    "<warning>"
+                                    "iCalendar contains %d VEVENT components"
+                                    " but only the first one will be used"
+                                    "</warning>",
+                                    vevent_count);
+          }
+
+        if (other_component_count)
+          {
+            g_string_append_printf (warnings_buffer,
+                                    "<warning>"
+                                    "iCalendar contains %d VTODO and/or"
+                                    " VJOURNAL component(s) which will be"
+                                    " ignored"
+                                    "</warning>",
+                                    other_component_count);
+          }
+        break;
+      case ICAL_VEVENT_COMPONENT:
+        new_vevent = icalendar_simplify_vevent (ical_parsed, tzids,
+                                                error, warnings_buffer);
+        if (new_vevent == NULL)
+          ICAL_RETURN_ERROR (*error);
+        icalcomponent_add_component (ical_new, new_vevent);
+        break;
+      default:
+        ICAL_RETURN_ERROR
+            (g_strdup_printf ("iCalendar string must be a VCALENDAR or VEVENT"
+                              " component or consist of multiple elements."));
+        break;
+    }
+
+  g_hash_table_iter_init (&tzids_iter, tzids);
+  while (g_hash_table_iter_next (&tzids_iter, (gpointer*)(&tzid), NULL))
+    {
+      icaltimezone *tz;
+      tz = icalcomponent_get_timezone (ical_parsed, tzid);
+      if (tz)
+        {
+          icalcomponent *tz_component;
+
+          tz_component = icaltimezone_get_component (tz);
+          if (tz_component)
+            {
+              icalcomponent *tz_component_copy;
+              tz_component_copy = icalcomponent_new_clone (tz_component);
+              icalcomponent_add_component (ical_new, tz_component_copy);
+            }
+        }
+    }
+
+  g_hash_table_destroy (tzids);
+  icalcomponent_free (ical_parsed);
+
+  if (error)
+    *error = g_string_free (warnings_buffer, FALSE);
+  else
+    g_string_free (warnings_buffer, TRUE);
+
+  return ical_new;
+}
+
+/**
+ * @brief Approximate the recurrence of a VCALENDAR as classic schedule data.
+ * The VCALENDAR must have simplified with icalendar_from_string for this to
+ *  work reliably.
+ *
+ * @param[in]  vcalendar       The VCALENDAR component to get the data from.
+ * @param[out] period          Output of the period in seconds.
+ * @param[out] period_months   Output of the period in months.
+ * @param[out] byday_mask      Output of the GVM byday mask.
+ *
+ * @return 0 success, 1 invalid vcalendar.
+ */
+int
+icalendar_approximate_rrule_from_vcalendar (icalcomponent *vcalendar,
+                                            time_t *period,
+                                            time_t *period_months,
+                                            int *byday_mask)
+{
+  icalcomponent *vevent;
+  icalproperty *rrule_prop;
+
+
+  assert (period);
+  assert (period_months);
+  assert (byday_mask);
+
+  *period = 0;
+  *period_months = 0;
+  *byday_mask = 0;
+
+  // Component must be a VCALENDAR
+  if (vcalendar == NULL
+      || icalcomponent_isa (vcalendar) != ICAL_VCALENDAR_COMPONENT)
+    return 1;
+
+  // Process only the first VEVENT
+  // Others should be removed by icalendar_from_string
+  vevent = icalcomponent_get_first_component (vcalendar,
+                                              ICAL_VEVENT_COMPONENT);
+  if (vevent == NULL)
+    return -1;
+
+  // Process only first RRULE.
+  rrule_prop = icalcomponent_get_first_property (vevent,
+                                                 ICAL_RRULE_PROPERTY);
+  if (rrule_prop)
+    {
+      struct icalrecurrencetype recurrence;
+      recurrence = icalproperty_get_rrule (rrule_prop);
+      int array_pos;
+
+      // Get period or period_months
+      switch (recurrence.freq)
+        {
+          case ICAL_YEARLY_RECURRENCE:
+            *period_months = recurrence.interval * 12;
+            break;
+          case ICAL_MONTHLY_RECURRENCE:
+            *period_months = recurrence.interval;
+            break;
+          case ICAL_WEEKLY_RECURRENCE:
+            *period = recurrence.interval * 604800;
+            break;
+          case ICAL_DAILY_RECURRENCE:
+            *period = recurrence.interval * 86400;
+            break;
+          case ICAL_HOURLY_RECURRENCE:
+            *period = recurrence.interval * 3600;
+            break;
+          case ICAL_MINUTELY_RECURRENCE:
+            *period = recurrence.interval * 60;
+            break;
+          case ICAL_SECONDLY_RECURRENCE:
+            *period = recurrence.interval;
+          case ICAL_NO_RECURRENCE:
+            break;
+          default:
+            return -1;
+        }
+
+      /*
+       * Try to approximate byday mask
+       * - libical days start at 1 for Sunday.
+       * - GVM byday mask bit index starts at 0 for Monday -> Sunday = 6
+       */
+      array_pos = 0;
+      while (recurrence.by_day[array_pos] != ICAL_RECURRENCE_ARRAY_MAX)
+        {
+          int ical_day = icalrecurrencetype_day_day_of_week
+                            (recurrence.by_day[array_pos]);
+          int mask_bit = -1;
+
+          if (ical_day == 1)
+            mask_bit = 6;
+          else if (ical_day)
+            mask_bit = ical_day - 2;
+
+          if (mask_bit != -1)
+            {
+              *byday_mask |= (1 << mask_bit);
+            }
+          array_pos ++;
+        }
+    }
+
+  return 0;
+}
+
+/**
+ * @brief  Get the next or previous due time from a VCALENDAR component.
+ * The VCALENDAR must have simplified with icalendar_from_string for this to
+ *  work reliably.
+ *
+ * @param[in]  vcalendar       The VCALENDAR component to get the time from.
+ * @param[in]  default_tzid    Timezone id to use if none is set in the iCal.
+ * @param[in]  periods_offset  0 for next, -1 for previous from/before now.
+ *
+ * @return The next or previous time as a time_t.
+ */
+time_t
+icalendar_next_time_from_vcalendar (icalcomponent *vcalendar,
+                                    const char *default_tzid,
+                                    int periods_offset)
+{
+  icalcomponent *vevent;
+  icaltimetype dtstart, ical_now;
+  icaltimezone *tz;
+  icalproperty *rrule_prop;
+  time_t next_time = 0;
+
+  // Only offsets -1 and 0 will work properly
+  if (periods_offset < -1 || periods_offset > 0)
+    return 0;
+
+  // Component must be a VCALENDAR
+  if (vcalendar == NULL
+      || icalcomponent_isa (vcalendar) != ICAL_VCALENDAR_COMPONENT)
+    return 0;
+
+  // Process only the first VEVENT
+  // Others should be removed by icalendar_from_string
+  vevent = icalcomponent_get_first_component (vcalendar,
+                                              ICAL_VEVENT_COMPONENT);
+  if (vevent == NULL)
+    return 0;
+
+  // Get start time and timezone
+  dtstart = icalcomponent_get_dtstart (vevent);
+  if (icaltime_is_null_time (dtstart))
+    return 0;
+
+  tz = (icaltimezone*)(icaltime_get_timezone (dtstart));
+  if (tz == NULL)
+    tz = icalendar_timezone_from_tzid (default_tzid);
+
+  // Get current time
+  ical_now = icaltime_current_time_with_zone (tz);
+  // Set timezone explicitly because icaltime_current_time_with_zone doesn't.
+  if (ical_now.zone == NULL)
+    {
+      ical_now.zone = tz;
+    }
+
+  rrule_prop = icalcomponent_get_first_property (vevent, ICAL_RRULE_PROPERTY);
+  if (rrule_prop)
+    {
+      struct icalrecurrencetype recurrence;
+      icalrecur_iterator *recur_iter;
+      icaltimetype recur_time;
+
+      recurrence = icalproperty_get_rrule (rrule_prop);
+      recur_iter = icalrecur_iterator_new (recurrence, dtstart);
+
+      // Get the first recurrence time
+      recur_time = icalrecur_iterator_next (recur_iter);
+
+      next_time = icaltime_as_timet_with_zone (recur_time, tz);
+
+      while (icaltime_is_null_time (recur_time) == 0
+             && icaltime_compare (recur_time, ical_now) < 0)
+        {
+          next_time = icaltime_as_timet_with_zone (recur_time, tz);
+          recur_time = icalrecur_iterator_next (recur_iter);
+        }
+      if (periods_offset == 0)
+        {
+          next_time = icaltime_as_timet_with_zone (recur_time, tz);
+        }
+    }
+  else
+    {
+      if (icaltime_compare (dtstart, ical_now) >= 0)
+        {
+          if (periods_offset == 0)
+            next_time = icaltime_as_timet_with_zone (dtstart, tz);
+          else
+            next_time = 0;
+        }
+      else
+        {
+          if (periods_offset == -1)
+            next_time = icaltime_as_timet_with_zone (dtstart, tz);
+          else
+            next_time = 0;
+        }
+    }
+
+  return next_time;
+}
+
+/**
+ * @brief  Get the next or previous due time from a VCALENDAR string.
+ * The string must be a VCALENDAR simplified with icalendar_from_string for
+ *  this to work reliably.
+ *
+ * @param[in]  ical_string     The VCALENDAR string to get the time from.
+ * @param[in]  default_tzid    Timezone id to use if none is set in the iCal.
+ * @param[in]  periods_offset  0 for next, -1 for previous from/before now.
+ *
+ * @return The next or previous time as a time_t.
+ */
+time_t
+icalendar_next_time_from_string (const char *ical_string,
+                                 const char *default_tzid,
+                                 int periods_offset)
+{
+  time_t next_time;
+  icalcomponent *ical_parsed;
+
+  ical_parsed = icalcomponent_new_from_string (ical_string);
+  next_time = icalendar_next_time_from_vcalendar (ical_parsed, default_tzid,
+                                                  periods_offset);
+  icalcomponent_free (ical_parsed);
+  return next_time;
+}
+
+/**
+ * @brief  Get the duration VCALENDAR component.
+ * The VCALENDAR must have simplified with icalendar_from_string for this to
+ *  work reliably.
+ *
+ * @param[in]  vcalendar       The VCALENDAR component to get the time from.
+ *
+ * @return The duration in seconds.
+ */
+int
+icalendar_duration_from_vcalendar (icalcomponent *vcalendar)
+{
+  icalcomponent *vevent;
+  struct icaldurationtype duration;
+
+  // Component must be a VCALENDAR
+  if (vcalendar == NULL
+      || icalcomponent_isa (vcalendar) != ICAL_VCALENDAR_COMPONENT)
+    return 0;
+
+  // Process only the first VEVENT
+  // Others should be removed by icalendar_from_string
+  vevent = icalcomponent_get_first_component (vcalendar,
+                                              ICAL_VEVENT_COMPONENT);
+  if (vevent == NULL)
+    return 0;
+
+  // Get the duration
+  duration = icalcomponent_get_duration (vevent);
+
+  // Convert to time_t
+  return icaldurationtype_as_int (duration);
+}
+
+/**
+ * @brief  Get the first time from a VCALENDAR component.
+ * The VCALENDAR must have simplified with icalendar_from_string for this to
+ *  work reliably.
+ *
+ * @param[in]  vcalendar       The VCALENDAR component to get the time from.
+ * @param[in]  default_tzid    Timezone id to use if none is set in the iCal.
+ *
+ * @return The first time as a time_t.
+ */
+time_t
+icalendar_first_time_from_vcalendar (icalcomponent *vcalendar,
+                                     const char *default_tzid)
+{
+  icalcomponent *vevent;
+  icaltimetype dtstart;
+  icaltimezone *tz;
+
+  // Component must be a VCALENDAR
+  if (vcalendar == NULL
+      || icalcomponent_isa (vcalendar) != ICAL_VCALENDAR_COMPONENT)
+    return 0;
+
+  // Process only the first VEVENT
+  // Others should be removed by icalendar_from_string
+  vevent = icalcomponent_get_first_component (vcalendar,
+                                              ICAL_VEVENT_COMPONENT);
+  if (vevent == NULL)
+    return 0;
+
+  // Get start time and timezone
+  dtstart = icalcomponent_get_dtstart (vevent);
+  if (icaltime_is_null_time (dtstart))
+    return 0;
+
+  tz = (icaltimezone*)(icaltime_get_timezone (dtstart));
+  if (tz == NULL)
+    tz = icalendar_timezone_from_tzid (default_tzid);
+
+  // Convert to time_t
+  return icaltime_as_timet_with_zone (dtstart, tz);
 }

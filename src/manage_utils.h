@@ -31,6 +31,7 @@
 #define _XOPEN_SOURCE
 #include <time.h>
 #include <glib.h>
+#include <libical/ical.h>
 
 // Log message severity constant
 #define SEVERITY_LOG 0.0
@@ -76,5 +77,39 @@ level_max_severity (const char*, const char*);
 
 int
 valid_db_resource_type (const char*);
+
+
+typedef struct 
+{
+  icalcomponent *ical;
+  icaltimezone *ical_tz;
+  gchar *ical_string;
+  gchar *tz_string;
+} schedule_ical_t;
+
+icalcomponent *
+icalendar_from_old_schedule_data (time_t, time_t, time_t, time_t, int,
+                                  const char *);
+
+icalcomponent *
+icalendar_from_string (const char *, gchar **);
+
+int
+icalendar_approximate_rrule_from_vcalendar (icalcomponent *,
+                                            time_t *, time_t *, int *);
+
+time_t
+icalendar_next_time_from_vcalendar (icalcomponent*, const char*, int);
+
+time_t
+icalendar_next_time_from_string (const char *, const char*, int);
+
+int
+icalendar_duration_from_vcalendar (icalcomponent *);
+
+time_t
+icalendar_first_time_from_vcalendar (icalcomponent *, const char *);
+
+
 
 #endif /* not _GVMD_MANAGE_UTILS_H */

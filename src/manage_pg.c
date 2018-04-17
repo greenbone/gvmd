@@ -559,6 +559,18 @@ manage_create_sql_functions ()
        " LANGUAGE C;",
        GVM_LIB_INSTALL_DIR);
 
+  sql ("CREATE OR REPLACE FUNCTION next_time_ical (text, text)"
+       " RETURNS integer"
+       " AS '%s/libgvm-pg-server', 'sql_next_time_ical'"
+       " LANGUAGE C;",
+       GVM_LIB_INSTALL_DIR);
+
+  sql ("CREATE OR REPLACE FUNCTION next_time_ical (text, text, integer)"
+       " RETURNS integer"
+       " AS '%s/libgvm-pg-server', 'sql_next_time_ical'"
+       " LANGUAGE C;",
+       GVM_LIB_INSTALL_DIR);
+
   sql ("CREATE OR REPLACE FUNCTION severity_matches_ov (double precision,"
        "                                                double precision)"
        " RETURNS boolean"
@@ -2495,7 +2507,8 @@ create_tables ()
        "  timezone text,"
        "  initial_offset integer,"
        "  creation_time integer,"
-       "  modification_time integer);");
+       "  modification_time integer,"
+       "  icalendar text);");
 
   sql ("CREATE TABLE IF NOT EXISTS schedules_trash"
        " (id SERIAL PRIMARY KEY,"
@@ -2511,7 +2524,8 @@ create_tables ()
        "  timezone text,"
        "  initial_offset integer,"
        "  creation_time integer,"
-       "  modification_time integer);");
+       "  modification_time integer,"
+       "  icalendar text);");
 
   sql ("CREATE TABLE IF NOT EXISTS scanners_trash"
        " (id SERIAL PRIMARY KEY,"
