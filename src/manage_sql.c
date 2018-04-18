@@ -49060,11 +49060,19 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
           return 6;
         }
 
-        quoted_icalendar = sql_quote (icalcomponent_as_ical_string (ical_component));
+      quoted_icalendar = sql_quote (icalcomponent_as_ical_string
+                                      (ical_component));
 
       ical_first_time = icalendar_first_time_from_vcalendar (ical_component,
                                                              real_timezone);
       ical_duration = icalendar_duration_from_vcalendar (ical_component);
+
+      byday_mask_string = NULL;
+      duration_string = NULL;
+      first_time_string = NULL;
+      offset_string = NULL;
+      period_string = NULL;
+      period_months_string = NULL;
 
       sql ("UPDATE schedules SET"
            " icalendar = '%s'"
