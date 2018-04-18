@@ -1348,12 +1348,12 @@ sql_next_time_ical (sqlite3_context *context, int argc, sqlite3_value** argv)
   if (argc < 1 || sqlite3_value_type (argv[0]) == SQLITE_NULL)
     icalendar = NULL;
   else
-    icalendar = sqlite3_value_text (argv[0]);
+    icalendar = (char*) sqlite3_value_text (argv[0]);
 
   if (argc < 2 || sqlite3_value_type (argv[1]) == SQLITE_NULL)
     timezone = NULL;
   else
-    timezone = sqlite3_value_text (argv[1]);
+    timezone = (char*) sqlite3_value_text (argv[1]);
 
   if (argc < 3 || sqlite3_value_type (argv[2]) == SQLITE_NULL)
     periods_offset = 0;
