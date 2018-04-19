@@ -360,11 +360,10 @@ iso_time_tz (time_t *epoch_time, const char *timezone, const char **abbrev)
 /**
  * @brief Lock a file.
  *
- * Block until file is locked.
- *
  * @param[in]  lockfile           Lockfile.
  * @param[in]  lockfile_basename  Basename of lock file.
  * @param[in]  operation          LOCK_EX (exclusive) or LOCK_SH (shared).
+ *                                Maybe ORd with LOCK_NB to prevent blocking.
  *
  * @return 0 success, 1 already locked, -1 error
  */
@@ -395,7 +394,7 @@ lock_internal (lockfile_t *lockfile, const gchar *lockfile_basename,
 
   /* Lock the lockfile. */
 
-  if (flock (fd, operation))  /* Exclusive, blocking. */
+  if (flock (fd, operation))  /* Blocks, unless operation includes LOCK_NB. */
     {
       lockfile->name = NULL;
       g_free (lockfile_name);
@@ -445,8 +444,6 @@ lockfile_lock_nb (lockfile_t *lockfile, const gchar *lockfile_basename)
 
 /**
  * @brief Lock a file with a shared lock.
- *
- * Block until file is locked.
  *
  * @param[in]  lockfile           Lockfile.
  * @param[in]  lockfile_basename  Basename of lock file.
