@@ -24984,7 +24984,7 @@ report_severity (report_t report, int overrides, int min_qod)
                  " FROM report_counts"
                  " WHERE report = %llu"
                  " AND override = %d"
-                 " AND user = (SELECT id FROM users WHERE uuid = '%s')"
+                 " AND \"user\" = (SELECT id FROM users WHERE uuid = '%s')"
                  " AND min_qod = %d"
                  " AND (end_time = 0 or end_time >= m_now ());",
                  report, overrides, current_credentials.uuid, min_qod);
@@ -27700,18 +27700,6 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
           double h_severity;
 
           PRINT (out,
-                 "<host_start>"
-                 "<host>%s</host>%s"
-                 "</host_start>"
-                 "<host_end>"
-                 "<host>%s</host>%s"
-                 "</host_end>",
-                 buffer_host->ip,
-                 scan_start,
-                 buffer_host->ip,
-                 scan_end);
-
-          PRINT (out,
                  "<host>"
                  "<ip>%s</ip>"
                  "<start>%s</start>"
@@ -30159,21 +30147,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
               PRINT (out,
                      "</host>");
-
-              PRINT (out,
-                     "<host_start>"
-                     "<host>%s</host>%s"
-                     "</host_start>",
-                     host,
-                     host_iterator_start_time (&hosts));
-              PRINT (out,
-                     "<host_end>"
-                     "<host>%s</host>%s"
-                     "</host_end>",
-                     host,
-                     host_iterator_end_time (&hosts)
-                       ? host_iterator_end_time (&hosts)
-                       : "");
             }
           cleanup_iterator (&hosts);
         }
@@ -30264,22 +30237,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
           PRINT (out,
                  "</host>");
-
-          PRINT (out,
-                 "<host_start><host>%s</host>%s</host_start>",
-                 host_iterator_host (&hosts),
-                 host_iterator_start_time (&hosts));
         }
-      cleanup_iterator (&hosts);
-
-      init_report_host_iterator (&hosts, report, NULL, 0);
-      while (next (&hosts))
-        PRINT (out,
-               "<host_end><host>%s</host>%s</host_end>",
-               host_iterator_host (&hosts),
-               host_iterator_end_time (&hosts)
-                ? host_iterator_end_time (&hosts)
-                : "");
       cleanup_iterator (&hosts);
     }
 
@@ -52460,23 +52418,27 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
   hosts = (*report)->entities;
   while ((host_start = first_entity (hosts)))
     {
-      if (strcmp (entity_name (host_start), "host_start") == 0)
+      if (strcmp (entity_name (host_start), "host") == 0)
         {
-          entity_t host;
+          entity_t ip;
           char *uuid;
 
-          host = entity_child (host_start, "host");
-          if (host == NULL)
+          ip = entity_child (host_start, "ip");
+          if (ip == NULL)
+            goto rollback_fail;
+
+          start = entity_child (host_start, "start");
+          if (start == NULL)
             goto rollback_fail;
 
           uuid = report_uuid (current_report);
-          host_notice (entity_text (host), "ip", entity_text (host),
+          host_notice (entity_text (ip), "ip", entity_text (ip),
                        "Report Host", uuid, 1, 1);
           free (uuid);
 
           set_scan_host_start_time (current_report,
-                                    entity_text (host),
-                                    entity_text (host_start));
+                                    entity_text (ip),
+                                    entity_text (start));
         }
       hosts = next_entities (hosts);
     }
