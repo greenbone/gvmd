@@ -8,22 +8,55 @@ $ git clone https://github.com/greenbone/gvm.git
 $ cd gvm && git log
 
 
-gvm 8.0+beta1 (2018-XX-XX)
+gvm 8.0+beta1 (2018-04-30)
 
-This is the first beta release of the gvm module 1.0 for the Greenbone
+This is the first beta release of the gvm module 8.0 for the Greenbone
 Vulnerability Management (GVM) framework.
 
 It was renamed from openvas-manager to gvm (greenbone vulnerability manager).
- 
-Apart from this, the module covers a number of significant advances
-and clean-ups compared to the previous openvas-manager module.
+
+Apart from the new name, the module covers a number of significant advances
+and clean-ups compared to the previous version 7.0.
 
 Many thanks to everyone who has contributed to this release:
-TODO
+Hani Benhabiles, Antony Falegkos, Christian Fischer, Matthew Mundell, Juan
+Nicola, Timo Pollmeier, Jan-Oliver Wagner and Michael Wiegand.
 
-Main changes compared to the 6.0 series:
-TODO
-
+Main changes compared to the 7.0 series:
+* The central service component "OpenVAS-Manager" has been  renamed to
+  "Greenbone Vulnerability Manager". Subsequently, the central binary has been
+  renamed from "openvasmd" to "gvmd". Also any other occurence of "OpenVAS
+  Manager" or related terms has been renamed accordingly, including the API from
+  "OMP" to "GMP".
+* The new GMP command GET_VULNS allows for a view on found vulnerabilities with
+  quantities on results and hosts, across all reports.
+* The required minimum version of new dependency GVM Libraries is 1.0 and
+  the dependency to the openvas-libraries module has been removed. Therefore
+  many include directives have been adapted to the new source code.
+* The gmvd proctitle is set for each process to indicate what the process
+  is doing.
+* The elements host_start and host_end has been removed from report element,
+  which eliminate redundant information since there are already available in the
+  host element.
+* iCal standard (RFC2445) support has been introduced for "schedule" objects.
+* The gvm daemon automatically detects new SCAP and CERT data as well as when new
+  NVTs are available from the OpenVAS Scanner and will load/update the database
+  accordingly. Therefore the --rebuild, --update and --progress options have
+  been removed.
+* Transition from global objects to ownerless-predefined objects: The possibility
+  to configure users, groups or roles to have arbitrary
+  permissions over pre-defined objects has been added.
+  For example, a role could be configured with only one specific Scan Config,
+  Scanner or Port List to use. The default permissions, however, do not change.
+* The update of SCAP and CERT data has been changed from external scripts
+  into internal routines of gvmd. This makes the process faster
+  and consumes less resources.
+* Documentation has been updated.
+* Several memory management aspects have been improved.
+* Various code cleanups and improvements.
+* The CMake building process was improved.
+* The minimum required version of GLib has been raised to 2.42.
+* The minimum required version of CMake has been raised to 3.0.
 
 openvas-manager 7.0.0 (2016-11-09)
 
