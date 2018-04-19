@@ -998,34 +998,6 @@ icalendar_simplify_vevent (icalcomponent *vevent, GHashTable *used_tzids,
   rrule_prop = icalcomponent_get_first_property (vevent,
                                                  ICAL_RRULE_PROPERTY);
 
-  // Warn about RDATE currently being unsupported
-  // TODO: Add support for RDATE here and icalendar_next_time_from_vcalendar
-  rdate_prop = icalcomponent_get_first_property (vevent,
-                                                 ICAL_RDATE_PROPERTY);
-  if (rdate_prop)
-    {
-      g_string_append_printf (warnings_buffer,
-                              "<warning>"
-                              "VEVENT contains an RDATE property,"
-                              " which is currently not supported and"
-                              " will be ignored."
-                              "</warning>");
-    }
-
-  // Warn about EXDATE currently being unsupported
-  // TODO: Add support for EXDATE here and icalendar_next_time_from_vcalendar
-  exdate_prop = icalcomponent_get_first_property (vevent,
-                                                  ICAL_RDATE_PROPERTY);
-  if (exdate_prop)
-    {
-      g_string_append_printf (warnings_buffer,
-                              "<warning>"
-                              "VEVENT contains an EXDATE property,"
-                              " which is currently not supported and"
-                              " will be ignored."
-                              "</warning>");
-    }
-
   // Warn about EXRULE being deprecated
   exrule_prop = icalcomponent_get_first_property (vevent,
                                                   ICAL_EXRULE_PROPERTY);
@@ -1046,6 +1018,47 @@ icalendar_simplify_vevent (icalcomponent *vevent, GHashTable *used_tzids,
     {
       icalproperty *prop_clone = icalproperty_new_clone (rrule_prop);
       icalcomponent_add_property (vevent_simplified, prop_clone);
+    }
+
+  // Simplify and copy RDATE properties
+  rdate_prop = icalcomponent_get_first_property (vevent,
+                                                 ICAL_RDATE_PROPERTY);
+  while (rdate_prop)
+    {
+      struct icaldatetimeperiodtype old_datetimeperiod, new_datetimeperiod;
+      icalproperty *new_rdate;
+
+      old_datetimeperiod = icalproperty_get_rdate (rdate_prop);
+
+      // Reduce period to a simple date or datetime.
+      new_datetimeperiod.period = icalperiodtype_null_period ();
+      if (icalperiodtype_is_null_period (old_datetimeperiod.period))
+        {
+          new_datetimeperiod.time = old_datetimeperiod.time;
+        }
+      else
+        {
+          new_datetimeperiod.time = old_datetimeperiod.period.start;
+        }
+      new_rdate = icalproperty_new_rdate (new_datetimeperiod);
+      icalcomponent_add_property (vevent_simplified, new_rdate);
+
+      rdate_prop
+        = icalcomponent_get_next_property (vevent, ICAL_RDATE_PROPERTY);
+    }
+
+  // Copy EXDATE properties
+  exdate_prop = icalcomponent_get_first_property (vevent,
+                                                  ICAL_EXDATE_PROPERTY);
+  while (exdate_prop)
+    {
+      icalproperty *prop_clone;
+
+      prop_clone = icalproperty_new_clone (exdate_prop);
+      icalcomponent_add_property (vevent_simplified, prop_clone);
+
+      exdate_prop
+        = icalcomponent_get_next_property (vevent, ICAL_EXDATE_PROPERTY);
     }
 
   // Generate UID for event
@@ -1377,6 +1390,8 @@ icalendar_next_time_from_recurrence (struct icalrecurrencetype recurrence,
   icaltimetype recur_time;
 
   recur_iter = icalrecur_iterator_new (recurrence, dtstart);
+
+  // TODO: Handle EXDATEs and RDATEs
 
   // Get the first rule-based recurrence time
   recur_time = icalrecur_iterator_next (recur_iter);

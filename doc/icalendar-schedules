@@ -35,9 +35,10 @@ Other restrictions and caveats
  occurrences will be removed.
 - If a DTEND property is given in the VEVENT, it will be converted to a
  DURATION property.
+- RDATE properties specifying a time period will be reduced to a simple start
+ time, discarding the end time or duration of the RDATE period.
 - Any property besides DTSTART, DTEND, DURATION and RRULE will be removed.
- This includes the RDATE and EXDATE properties, which are currently not
- supported and the deprecated EXRULE property.
+ This includes the deprecated EXRULE property.
 - Some properties like PRODID, UID and DTSTAMP may be modified.
 
 
