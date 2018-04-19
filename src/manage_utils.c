@@ -1355,6 +1355,50 @@ icalendar_approximate_rrule_from_vcalendar (icalcomponent *vcalendar,
 }
 
 /**
+ * @brief Calculate the next time of a recurrence
+ *
+ * @param[in]  recurrence     The recurrence rule to evaluate.
+ * @param[in]  dtstart        The start time of the recurrence.
+ * @param[in]  reference_time The reference time (usually the current time).
+ * @param[in]  tz             The icaltimezone to use.
+ * @param[in]  periods_offset 0 for next, -1 for previous from/before reference.
+ *
+ * @return  The next time.
+ */
+time_t
+icalendar_next_time_from_recurrence (struct icalrecurrencetype recurrence,
+                                     icaltimetype dtstart,
+                                     icaltimetype reference_time,
+                                     icaltimezone *tz,
+                                     int periods_offset)
+{
+  time_t next_time;
+  icalrecur_iterator *recur_iter;
+  icaltimetype recur_time;
+
+  recur_iter = icalrecur_iterator_new (recurrence, dtstart);
+
+  // Get the first rule-based recurrence time
+  recur_time = icalrecur_iterator_next (recur_iter);
+  next_time = icaltime_as_timet_with_zone (recur_time, tz);
+
+  // Iterate over rule-based recurrences
+  while (icaltime_is_null_time (recur_time) == 0
+          && icaltime_compare (recur_time, reference_time) < 0)
+    {
+      next_time = icaltime_as_timet_with_zone (recur_time, tz);
+      recur_time = icalrecur_iterator_next (recur_iter);
+    }
+  // Get time from iterator one last time if the next time is requested
+  if (periods_offset == 0)
+    {
+      next_time = icaltime_as_timet_with_zone (recur_time, tz);
+    }
+
+  return next_time;
+}
+
+/**
  * @brief  Get the next or previous due time from a VCALENDAR component.
  * The VCALENDAR must have simplified with icalendar_from_string for this to
  *  work reliably.
@@ -1413,27 +1457,11 @@ icalendar_next_time_from_vcalendar (icalcomponent *vcalendar,
   if (rrule_prop)
     {
       struct icalrecurrencetype recurrence;
-      icalrecur_iterator *recur_iter;
-      icaltimetype recur_time;
-
       recurrence = icalproperty_get_rrule (rrule_prop);
-      recur_iter = icalrecur_iterator_new (recurrence, dtstart);
-
-      // Get the first recurrence time
-      recur_time = icalrecur_iterator_next (recur_iter);
-
-      next_time = icaltime_as_timet_with_zone (recur_time, tz);
-
-      while (icaltime_is_null_time (recur_time) == 0
-             && icaltime_compare (recur_time, ical_now) < 0)
-        {
-          next_time = icaltime_as_timet_with_zone (recur_time, tz);
-          recur_time = icalrecur_iterator_next (recur_iter);
-        }
-      if (periods_offset == 0)
-        {
-          next_time = icaltime_as_timet_with_zone (recur_time, tz);
-        }
+      next_time
+        = icalendar_next_time_from_recurrence (recurrence,
+                                               dtstart, ical_now, tz,
+                                               periods_offset);
     }
   else
     {
