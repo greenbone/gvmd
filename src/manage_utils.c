@@ -1368,12 +1368,96 @@ icalendar_approximate_rrule_from_vcalendar (icalcomponent *vcalendar,
 }
 
 /**
+ * @brief Collect the times of EXDATE or RDATE properties from an VEVENT.
+ * The returned GPtrArray will contain pointers to icaltimetype structs, which
+ *  will be freed with g_ptr_array_free.
+ *
+ * @param[in]  vevent  The VEVENT component to collect times.
+ * @param[in]  type    The property to get the times from.
+ *
+ * @return  GPtrArray with pointers to collected times or NULL on error.
+ */
+GPtrArray*
+icalendar_times_from_vevent (icalcomponent *vevent, icalproperty_kind type)
+{
+  GPtrArray* times;
+  icalproperty *date_prop;
+
+  if (icalcomponent_isa (vevent) != ICAL_VEVENT_COMPONENT
+      || (type != ICAL_EXDATE_PROPERTY && type != ICAL_RDATE_PROPERTY))
+    return NULL;
+
+  times = g_ptr_array_new_with_free_func (g_free);
+
+  date_prop = icalcomponent_get_first_property (vevent, type);
+  while (date_prop)
+    {
+      icaltimetype *time;
+      time = g_malloc0 (sizeof (icaltimetype));
+      if (type == ICAL_EXDATE_PROPERTY)
+        {
+          *time = icalproperty_get_exdate (date_prop);
+        }
+      else if (type == ICAL_RDATE_PROPERTY)
+        {
+          struct icaldatetimeperiodtype datetimeperiod;
+          datetimeperiod = icalproperty_get_rdate (date_prop);
+          // Assume periods have been converted to date or datetime
+          *time = datetimeperiod.time;
+        }
+      g_ptr_array_insert (times, -1, time);
+      date_prop = icalcomponent_get_next_property (vevent, type);
+    }
+
+  return times;
+}
+
+/**
+ * @brief  Tests if an icaltimetype matches one in a GPtrArray.
+ * When an icaltimetype is a date, only the date must match, otherwise both
+ *  date and time must match.
+ *
+ * @param[in]  time         The icaltimetype to try to find a match of.
+ * @param[in]  times_array  Array of pointers to check for a matching time.
+ *
+ * @return  Whether a match was found.
+ */
+gboolean
+icalendar_time_matches_array (icaltimetype time, GPtrArray *times_array)
+{
+  gboolean found = FALSE;
+  int index;
+
+  if (times_array == NULL)
+    return FALSE;
+
+  for (index = 0;
+       found == FALSE && index < times_array->len;
+       index++)
+    {
+      int compare_result;
+      icaltimetype *array_time = g_ptr_array_index (times_array, index);
+
+      if (array_time->is_date)
+        compare_result = icaltime_compare_date_only (time, *array_time);
+      else
+        compare_result = icaltime_compare (time, *array_time);
+
+      if (compare_result == 0)
+        found = TRUE;
+    }
+  return found;
+}
+
+/**
  * @brief Calculate the next time of a recurrence
  *
  * @param[in]  recurrence     The recurrence rule to evaluate.
  * @param[in]  dtstart        The start time of the recurrence.
  * @param[in]  reference_time The reference time (usually the current time).
  * @param[in]  tz             The icaltimezone to use.
+ * @param[in]  exdates        GList of EXDATE dates or datetimes to skip.
+ * @param[in]  rdates         GList of RDATE datetimes to include.
  * @param[in]  periods_offset 0 for next, -1 for previous from/before reference.
  *
  * @return  The next time.
@@ -1383,34 +1467,62 @@ icalendar_next_time_from_recurrence (struct icalrecurrencetype recurrence,
                                      icaltimetype dtstart,
                                      icaltimetype reference_time,
                                      icaltimezone *tz,
+                                     GPtrArray *exdates,
+                                     GPtrArray *rdates,
                                      int periods_offset)
 {
-  time_t next_time;
   icalrecur_iterator *recur_iter;
-  icaltimetype recur_time;
+  icaltimetype recur_time, prev_time, next_time;
 
   recur_iter = icalrecur_iterator_new (recurrence, dtstart);
 
-  // TODO: Handle EXDATEs and RDATEs
-
-  // Get the first rule-based recurrence time
+  /* Get the first rule-based recurrence time, skipping ahead in case DTSTART
+   *  is excluded by EXDATEs.  */
   recur_time = icalrecur_iterator_next (recur_iter);
-  next_time = icaltime_as_timet_with_zone (recur_time, tz);
-
-  // Iterate over rule-based recurrences
-  while (icaltime_is_null_time (recur_time) == 0
-          && icaltime_compare (recur_time, reference_time) < 0)
+  while (icaltime_is_null_time (recur_time) == FALSE
+         && icalendar_time_matches_array (recur_time, exdates))
     {
-      next_time = icaltime_as_timet_with_zone (recur_time, tz);
       recur_time = icalrecur_iterator_next (recur_iter);
     }
-  // Get time from iterator one last time if the next time is requested
-  if (periods_offset == 0)
+
+  // Set the first recur_time as either the previous or next time.
+  if (icaltime_compare (recur_time, reference_time) < 0)
     {
-      next_time = icaltime_as_timet_with_zone (recur_time, tz);
+      prev_time = recur_time;
+      next_time = icaltime_null_time ();
+    }
+  else
+    {
+      prev_time = icaltime_null_time ();
+      next_time = recur_time;
     }
 
-  return next_time;
+  // Iterate over rule-based recurrences up to first time after reference time
+  while (icaltime_is_null_time (recur_time) == FALSE
+         && icaltime_compare (recur_time, reference_time) < 0)
+    {
+      if (icalendar_time_matches_array (recur_time, exdates) == FALSE)
+        prev_time = recur_time;
+
+      recur_time = icalrecur_iterator_next (recur_iter);
+    }
+
+  // Skip further ahead if last recurrence time is in EXDATEs
+  while (icaltime_is_null_time (recur_time) == FALSE
+         && icalendar_time_matches_array (recur_time, exdates))
+    {
+      recur_time = icalrecur_iterator_next (recur_iter);
+    }
+
+  // Select last recur_time as the next_time
+  next_time = recur_time;
+
+  // TODO: consider RDATEs
+
+  if (periods_offset == -1)
+    return icaltime_as_timet_with_zone (prev_time, tz);
+  else
+    return icaltime_as_timet_with_zone (next_time, tz);
 }
 
 /**
@@ -1433,6 +1545,7 @@ icalendar_next_time_from_vcalendar (icalcomponent *vcalendar,
   icaltimetype dtstart, ical_now;
   icaltimezone *tz;
   icalproperty *rrule_prop;
+  GPtrArray *exdates, *rdates;
   time_t next_time = 0;
 
   // Only offsets -1 and 0 will work properly
@@ -1468,6 +1581,11 @@ icalendar_next_time_from_vcalendar (icalcomponent *vcalendar,
       ical_now.zone = tz;
     }
 
+  // Get EXDATEs and RDATEs
+  exdates = icalendar_times_from_vevent (vevent, ICAL_EXDATE_PROPERTY);
+  rdates = icalendar_times_from_vevent (vevent, ICAL_RDATE_PROPERTY);
+
+  // Try to get RRULE property and calculate the next time
   rrule_prop = icalcomponent_get_first_property (vevent, ICAL_RRULE_PROPERTY);
   if (rrule_prop)
     {
@@ -1476,6 +1594,7 @@ icalendar_next_time_from_vcalendar (icalcomponent *vcalendar,
       next_time
         = icalendar_next_time_from_recurrence (recurrence,
                                                dtstart, ical_now, tz,
+                                               exdates, rdates,
                                                periods_offset);
     }
   else
@@ -1495,6 +1614,9 @@ icalendar_next_time_from_vcalendar (icalcomponent *vcalendar,
             next_time = 0;
         }
     }
+
+  g_ptr_array_free (exdates, TRUE);
+  g_ptr_array_free (rdates, TRUE);
 
   return next_time;
 }
