@@ -7,7 +7,7 @@
 # Timo Pollmeier <timo.pollmeier@greenbone.net>
 #
 # Copyright:
-# Copyright (C) 2009-2014 Greenbone Networks GmbH
+# Copyright (C) 2009-2018 Greenbone Networks GmbH
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -39,7 +39,7 @@ pkg_check_modules (LIBGVM_UTIL REQUIRED libgvm_util>=1.0.0)
 pkg_check_modules (LIBGVM_OSP REQUIRED libgvm_osp>=1.0.0)
 pkg_check_modules (LIBGVM_GMP REQUIRED libgvm_gmp>=1.0.0)
 pkg_check_modules (GNUTLS REQUIRED gnutls>=3.2.15)
-pkg_check_modules (GLIB REQUIRED glib-2.0>=2.32)
+pkg_check_modules (GLIB REQUIRED glib-2.0>=2.42)
 pkg_check_modules (LIBICAL REQUIRED libical>=1.00)
 
 if (BACKEND STREQUAL SQLITE3)
