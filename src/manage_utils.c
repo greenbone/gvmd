@@ -1450,6 +1450,56 @@ icalendar_time_matches_array (icaltimetype time, GPtrArray *times_array)
 }
 
 /**
+ * @brief  Get the next or previous time from a list of RDATEs.
+ *
+ * @param[in]  rdates         The list of RDATEs.
+ * @param[in]  tz             The icaltimezone to use.
+ * @param[in]  ref_time_ical  The reference time (usually the current time).
+ * @param[in]  periods_offset 0 for next, -1 for previous from/before reference.
+ *
+ * @return  The next or previous time as time_t.
+ */
+time_t
+icalendar_next_time_from_rdates (GPtrArray *rdates,
+                                 icaltimetype ref_time_ical,
+                                 icaltimezone *tz,
+                                 int periods_offset)
+{
+  int index;
+  time_t ref_time, closest_time;
+  int old_diff;
+
+  closest_time = 0;
+  ref_time = icaltime_as_timet_with_zone (ref_time_ical, tz);
+  if (periods_offset < 0)
+    old_diff = INT_MIN;
+  else
+    old_diff = INT_MAX;
+
+  for (index = 0; index < rdates->len; index++)
+    {
+      icaltimetype *iter_time_ical;
+      time_t iter_time;
+      int time_diff;
+
+      iter_time_ical = g_ptr_array_index (rdates, index);
+      iter_time = icaltime_as_timet_with_zone (*iter_time_ical, tz);
+      time_diff = iter_time - ref_time;
+
+      // Cases: previous (offset -1): lastest before reference
+      //        next     (offset  0): earliest after reference
+      if ((periods_offset == -1 && time_diff < 0 && time_diff > old_diff)
+          || (periods_offset == 0 && time_diff > 0 && time_diff < old_diff))
+        {
+          closest_time = iter_time;
+          old_diff = time_diff;
+        }
+    }
+
+  return closest_time;
+}
+
+/**
  * @brief Calculate the next time of a recurrence
  *
  * @param[in]  recurrence     The recurrence rule to evaluate.
@@ -1473,6 +1523,7 @@ icalendar_next_time_from_recurrence (struct icalrecurrencetype recurrence,
 {
   icalrecur_iterator *recur_iter;
   icaltimetype recur_time, prev_time, next_time;
+  time_t rrule_time, rdates_time;
 
   recur_iter = icalrecur_iterator_new (recurrence, dtstart);
 
@@ -1517,12 +1568,28 @@ icalendar_next_time_from_recurrence (struct icalrecurrencetype recurrence,
   // Select last recur_time as the next_time
   next_time = recur_time;
 
-  // TODO: consider RDATEs
+  // Get time from RDATEs
+  rdates_time = icalendar_next_time_from_rdates (rdates, reference_time, tz,
+                                                 periods_offset);
 
+  // Select appropriate time as the RRULE time, compare it to the RDATEs time
+  //  and return the appropriate time.
   if (periods_offset == -1)
-    return icaltime_as_timet_with_zone (prev_time, tz);
+    {
+      rrule_time = icaltime_as_timet_with_zone (prev_time, tz);
+      if (rdates_time == 0 || rrule_time - rdates_time > 0)
+        return rrule_time;
+      else
+        return rdates_time;
+    }
   else
-    return icaltime_as_timet_with_zone (next_time, tz);
+    {
+      rrule_time = icaltime_as_timet_with_zone (next_time, tz);
+      if (rdates_time == 0 || rrule_time - rdates_time < 0)
+        return rrule_time;
+      else
+        return rdates_time;
+    }
 }
 
 /**
