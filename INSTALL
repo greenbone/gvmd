@@ -21,6 +21,7 @@ Prerequisites:
 * libgvm_base, libgvm_util, libgvm_osp, libgvm_gmp >= 1.0.0
 * sqlite3 library >= 3.8.3 or PostgreSQL database
 * pkg-config
+* libical >= 1.0.0
 
 Prerequisites for certificate generation:
 * GnuTLS certtool

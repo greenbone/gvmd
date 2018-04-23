@@ -5166,6 +5166,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>name</e>
       <o><e>comment</e></o>
       <o><e>copy</e></o>
+      <o><e>icalendar</e></o>
       <o><e>first_time</e></o>
       <o><e>duration</e></o>
       <o><e>period</e></o>
@@ -5188,6 +5189,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>The UUID of an existing schedule</summary>
       <pattern>
         <t>uuid</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>icalendar</name>
+      <summary>iCalendar text containing the time data. Replaces first_time, duration and period.</summary>
+      <pattern>
+        text
       </pattern>
     </ele>
     <ele>
@@ -18292,6 +18300,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>user_tags</e>
           <e>first_time</e>
           <e>next_time</e>
+          <e>icalendar</e>
           <e>timezone</e>
           <e>timezone_abbrev</e>
           <e>period</e>
@@ -18420,6 +18429,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>next_time</name>
           <summary>The next time the task will run</summary>
           <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>icalendar</name>
+          <summary>iCalendar text containing the time data.</summary>
+          <pattern>
+            text
+          </pattern>
         </ele>
         <ele>
           <name>timezone</name>
@@ -18636,8 +18652,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <user_tags>
               <count>0</count>
             </user_tags>
-            <first_time>Tue Jun 29 00:00:00 2010</first_time>
-            <next_time>Tue Jun 29 00:00:00 2010</next_time>
+            <first_time>2010-07-29T00:00:00+02:00</first_time>
+            <next_time>2010-07-29T00:00:00+02:00</next_time>
+            <icalendar>[...]</icalendar>
             <period>86400</period>
             <period_months>0</period_months>
             <simple_period>1<unit>day</unit></simple_period>
@@ -24330,6 +24347,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </attrib>
       <o><e>comment</e></o>
       <o><e>name</e></o>
+      <o><e>icalendar</e></o>
       <o><e>first_time</e></o>
       <o><e>duration</e></o>
       <o><e>period</e></o>
@@ -24344,6 +24362,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <name>name</name>
       <summary>Name of schedule</summary>
       <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>icalendar</name>
+      <summary>iCalendar text containing the time data. Replaces first_time, duration and period.</summary>
+      <pattern>
+        text
+      </pattern>
     </ele>
     <ele>
       <name>first_time</name>
