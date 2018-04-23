@@ -1612,6 +1612,7 @@ icalendar_next_time_from_vcalendar (icalcomponent *vcalendar,
   icaltimetype dtstart, ical_now;
   icaltimezone *tz;
   icalproperty *rrule_prop;
+  struct icalrecurrencetype recurrence;
   GPtrArray *exdates, *rdates;
   time_t next_time = 0;
 
@@ -1652,36 +1653,20 @@ icalendar_next_time_from_vcalendar (icalcomponent *vcalendar,
   exdates = icalendar_times_from_vevent (vevent, ICAL_EXDATE_PROPERTY);
   rdates = icalendar_times_from_vevent (vevent, ICAL_RDATE_PROPERTY);
 
-  // Try to get RRULE property and calculate the next time
+  // Try to get the recurrence from the RRULE property
   rrule_prop = icalcomponent_get_first_property (vevent, ICAL_RRULE_PROPERTY);
   if (rrule_prop)
-    {
-      struct icalrecurrencetype recurrence;
-      recurrence = icalproperty_get_rrule (rrule_prop);
-      next_time
-        = icalendar_next_time_from_recurrence (recurrence,
-                                               dtstart, ical_now, tz,
-                                               exdates, rdates,
-                                               periods_offset);
-    }
+    recurrence = icalproperty_get_rrule (rrule_prop);
   else
-    {
-      if (icaltime_compare (dtstart, ical_now) >= 0)
-        {
-          if (periods_offset == 0)
-            next_time = icaltime_as_timet_with_zone (dtstart, tz);
-          else
-            next_time = 0;
-        }
-      else
-        {
-          if (periods_offset == -1)
-            next_time = icaltime_as_timet_with_zone (dtstart, tz);
-          else
-            next_time = 0;
-        }
-    }
+    icalrecurrencetype_clear (&recurrence);
 
+  // Calculate next time.
+  next_time = icalendar_next_time_from_recurrence (recurrence,
+                                                   dtstart, ical_now, tz,
+                                                   exdates, rdates,
+                                                   periods_offset);
+
+  // Cleanup
   g_ptr_array_free (exdates, TRUE);
   g_ptr_array_free (rdates, TRUE);
 
