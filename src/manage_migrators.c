@@ -14304,6 +14304,126 @@ migrate_189_to_190 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 190 to version 191.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_190_to_191 ()
+{
+  iterator_t schedule_iter;
+  schedule_t schedule;
+  time_t first_time, period, period_months, duration;
+  int byday;
+  const char *timezone;
+  icalcomponent *ical_component;
+  gchar *quoted_ical;
+
+
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 190. */
+
+  if (manage_db_version () != 190)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Add the column "icalendar" to the schedules tables. */
+
+  sql ("ALTER TABLE schedules ADD COLUMN icalendar text;");
+
+  sql ("ALTER TABLE schedules_trash ADD COLUMN icalendar text;");
+
+  /* Calculate iCalendar strings for regular schedules table */
+  init_iterator (&schedule_iter,
+                 "SELECT id, first_time, period, period_months, duration,"
+                 " byday, timezone"
+                 " FROM schedules");
+
+  while (next (&schedule_iter))
+    {
+      schedule = iterator_int64 (&schedule_iter, 0);
+      first_time = (time_t) iterator_int64 (&schedule_iter, 1);
+      period = (time_t) iterator_int64 (&schedule_iter, 2);
+      period_months = (time_t) iterator_int64 (&schedule_iter, 3);
+      duration = (time_t) iterator_int64 (&schedule_iter, 4);
+      byday = iterator_int (&schedule_iter, 5);
+      timezone = iterator_string (&schedule_iter, 6);
+
+      ical_component
+        = icalendar_from_old_schedule_data (first_time, period, period_months,
+                                            duration, byday, timezone);
+      quoted_ical = sql_quote (icalcomponent_as_ical_string (ical_component));
+
+      g_debug ("%s: schedule %llu - first: %s (%s), period: %ld,"
+               " period_months: %ld, duration: %ld - byday: %d\n"
+               "generated iCalendar:\n%s",
+               __FUNCTION__, schedule,
+               iso_time_tz (&first_time, timezone, NULL),
+               timezone, period, period_months, duration, byday,
+               quoted_ical);
+
+      sql ("UPDATE schedules SET icalendar = '%s' WHERE id = %llu",
+           quoted_ical, schedule);
+
+      icalcomponent_free (ical_component);
+      g_free (quoted_ical);
+    }
+
+  cleanup_iterator (&schedule_iter);
+
+  /* Calculate iCalendar strings for schedules_trash table */
+  init_iterator (&schedule_iter,
+                 "SELECT id, first_time, period, period_months, duration,"
+                 " byday, timezone"
+                 " FROM schedules_trash");
+
+  while (next (&schedule_iter))
+    {
+      schedule = iterator_int64 (&schedule_iter, 0);
+      first_time = (time_t) iterator_int64 (&schedule_iter, 1);
+      period = (time_t) iterator_int64 (&schedule_iter, 2);
+      period_months = (time_t) iterator_int64 (&schedule_iter, 3);
+      duration = (time_t) iterator_int64 (&schedule_iter, 4);
+      byday = iterator_int (&schedule_iter, 5);
+      timezone = iterator_string (&schedule_iter, 6);
+
+      ical_component
+        = icalendar_from_old_schedule_data (first_time, period, period_months,
+                                            duration, byday, timezone);
+      quoted_ical = sql_quote (icalcomponent_as_ical_string (ical_component));
+
+      g_debug ("%s: trash schedule %llu - first: %s (%s), period: %ld,"
+               " period_months: %ld, duration: %ld - byday: %d\n"
+               "generated iCalendar:\n%s",
+               __FUNCTION__, schedule,
+               iso_time_tz (&first_time, timezone, NULL),
+               timezone, period, period_months, duration, byday,
+               quoted_ical);
+
+      sql ("UPDATE schedules_trash SET icalendar = '%s' WHERE id = %llu",
+           quoted_ical, schedule);
+
+      icalcomponent_free (ical_component);
+      g_free (quoted_ical);
+    }
+
+  cleanup_iterator (&schedule_iter);
+
+  /* Set the database version to 191. */
+
+  set_db_version (191);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -14508,6 +14628,7 @@ static migrator_t database_migrators[]
     {188, migrate_187_to_188},
     {189, migrate_188_to_189},
     {190, migrate_189_to_190},
+    {191, migrate_190_to_191},
     /* End marker. */
     {-1, NULL}};
 

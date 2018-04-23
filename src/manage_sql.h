@@ -413,25 +413,21 @@ schedule_t task_schedule_iterator_schedule (iterator_t *);
 
 time_t task_schedule_iterator_next_time (iterator_t *);
 
-time_t task_schedule_iterator_period (iterator_t *);
+const char *task_schedule_iterator_icalendar (iterator_t *);
 
-time_t task_schedule_iterator_period_months (iterator_t *);
+const char *task_schedule_iterator_timezone (iterator_t *);
 
 time_t task_schedule_iterator_duration (iterator_t *);
+
+const char *task_schedule_iterator_owner_uuid (iterator_t *);
+
+const char *task_schedule_iterator_owner_name (iterator_t *);
 
 gboolean task_schedule_iterator_timed_out (iterator_t *);
 
 gboolean task_schedule_iterator_start_due (iterator_t *);
 
 gboolean task_schedule_iterator_stop_due (iterator_t *);
-
-time_t task_schedule_iterator_first_time (iterator_t *);
-
-const char *task_schedule_iterator_owner_uuid (iterator_t *);
-
-const char *task_schedule_iterator_owner_name (iterator_t *);
-
-const char *task_schedule_iterator_timezone (iterator_t *);
 
 time_t task_schedule_iterator_initial_offset (iterator_t *);
 

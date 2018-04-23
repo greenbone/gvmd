@@ -1604,6 +1604,7 @@ typedef struct
   char *duration;                ///< Duration of schedule (how long it runs for).
   char *duration_unit;           ///< Unit of duration: "hour", "day", "week", ....
   char *timezone;                ///< Time zone of the schedule
+  char *icalendar;               ///< iCalendar string
 } create_schedule_data_t;
 
 /**
@@ -1628,6 +1629,7 @@ create_schedule_data_reset (create_schedule_data_t *data)
   free (data->duration);
   free (data->duration_unit);
   free (data->timezone);
+  free (data->icalendar);
 
   memset (data, 0, sizeof (create_schedule_data_t));
 }
@@ -3637,6 +3639,7 @@ typedef struct
   char *duration;                ///< Duration of schedule (how long it runs for).
   char *duration_unit;           ///< Unit of duration: "hour", "day", "week", ....
   char *timezone;                ///< Timezone.
+  char *icalendar;               ///< iCalendar string.
 } modify_schedule_data_t;
 
 /**
@@ -3661,6 +3664,7 @@ modify_schedule_data_reset (modify_schedule_data_t *data)
   free (data->duration);
   free (data->duration_unit);
   free (data->timezone);
+  free (data->icalendar);
 
   memset (data, 0, sizeof (modify_schedule_data_t));
 }
@@ -5334,6 +5338,7 @@ typedef enum
   CLIENT_CREATE_SCHEDULE_FIRST_TIME_MINUTE,
   CLIENT_CREATE_SCHEDULE_FIRST_TIME_MONTH,
   CLIENT_CREATE_SCHEDULE_FIRST_TIME_YEAR,
+  CLIENT_CREATE_SCHEDULE_ICALENDAR,
   CLIENT_CREATE_SCHEDULE_NAME,
   CLIENT_CREATE_SCHEDULE_PERIOD,
   CLIENT_CREATE_SCHEDULE_PERIOD_UNIT,
@@ -5586,6 +5591,7 @@ typedef enum
   CLIENT_MODIFY_SCHEDULE_FIRST_TIME_MINUTE,
   CLIENT_MODIFY_SCHEDULE_FIRST_TIME_MONTH,
   CLIENT_MODIFY_SCHEDULE_FIRST_TIME_YEAR,
+  CLIENT_MODIFY_SCHEDULE_ICALENDAR,
   CLIENT_MODIFY_SCHEDULE_NAME,
   CLIENT_MODIFY_SCHEDULE_PERIOD,
   CLIENT_MODIFY_SCHEDULE_PERIOD_UNIT,
@@ -8080,6 +8086,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_SCHEDULE_DURATION);
         else if (strcasecmp ("FIRST_TIME", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME);
+        else if (strcasecmp ("ICALENDAR", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SCHEDULE_ICALENDAR);
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE_NAME);
         else if (strcasecmp ("PERIOD", element_name) == 0)
@@ -8606,6 +8614,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_SCHEDULE_DURATION);
         else if (strcasecmp ("FIRST_TIME", element_name) == 0)
           set_client_state (CLIENT_MODIFY_SCHEDULE_FIRST_TIME);
+        else if (strcasecmp ("ICALENDAR", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_SCHEDULE_ICALENDAR);
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_MODIFY_SCHEDULE_NAME);
         else if (strcasecmp ("PERIOD", element_name) == 0)
@@ -18339,7 +18349,7 @@ handle_get_schedules (gmp_parser_t *gmp_parser, GError **error)
         {
           time_t first_time, next_time;
           gchar *iso;
-          const char *timezone, *abbrev;
+          const char *timezone, *abbrev, *icalendar;
           char *simple_period_unit, *simple_duration_unit;
           int period, period_minutes, period_hours, period_days;
           int period_weeks, period_months, duration, duration_minutes;
@@ -18361,6 +18371,7 @@ handle_get_schedules (gmp_parser_t *gmp_parser, GError **error)
           timezone = schedule_iterator_timezone (&schedules);
           first_time = schedule_iterator_first_time (&schedules);
           next_time = schedule_iterator_next_time (&schedules);
+          icalendar = schedule_iterator_icalendar (&schedules);
 
           /* Duplicate static string because there's an iso_time_tz below. */
           abbrev = NULL;
@@ -18439,6 +18450,7 @@ handle_get_schedules (gmp_parser_t *gmp_parser, GError **error)
           SENDF_TO_CLIENT_OR_FAIL
            ("<first_time>%s</first_time>"
             "<next_time>%s</next_time>"
+            "<icalendar>%s</icalendar>"
             "<period>%ld</period>"
             "<period_months>%ld</period_months>"
             "<simple_period>%i<unit>%s</unit></simple_period>"
@@ -18449,6 +18461,7 @@ handle_get_schedules (gmp_parser_t *gmp_parser, GError **error)
             "<timezone_abbrev>%s</timezone_abbrev>",
             iso,
             (next_time == 0 ? "over" : iso_time_tz (&next_time, timezone, NULL)),
+            icalendar ? icalendar : "",
             schedule_iterator_period (&schedules),
             schedule_iterator_period_months (&schedules),
             simple_period,
@@ -18497,6 +18510,444 @@ handle_get_schedules (gmp_parser_t *gmp_parser, GError **error)
       SEND_GET_END ("schedule", &get_schedules_data->get, count, filtered);
     }
   get_schedules_data_reset (get_schedules_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
+ * @brief Handle end of CREATE_SCHEDULE element.
+ *
+ * @param[in]  gmp_parser   GMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_create_schedule (gmp_parser_t *gmp_parser, GError **error)
+{
+  time_t first_time, period, period_months, duration;
+  schedule_t new_schedule;
+  gchar *ical_error = NULL;
+
+  period_months = 0;
+
+  // Copy the schedule
+  if (create_schedule_data->copy)
+    {
+      switch (copy_schedule (create_schedule_data->name,
+                             create_schedule_data->comment,
+                             create_schedule_data->copy,
+                             &new_schedule))
+        {
+          case 0:
+            {
+              char *uuid;
+              uuid = schedule_uuid (new_schedule);
+              SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_schedule"),
+                                       uuid);
+              log_event ("schedule", "Schedule", uuid, "created");
+              free (uuid);
+              break;
+            }
+          case 1:
+            SEND_TO_CLIENT_OR_FAIL
+              (XML_ERROR_SYNTAX ("create_schedule",
+                                 "Schedule exists already"));
+            log_event_fail ("schedule", "Schedule", NULL, "created");
+            break;
+          case 2:
+            if (send_find_error_to_client ("create_schedule", "schedule",
+                                           create_schedule_data->copy,
+                                           gmp_parser))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            log_event_fail ("schedule", "Schedule", NULL, "created");
+            break;
+          case 99:
+            SEND_TO_CLIENT_OR_FAIL
+              (XML_ERROR_SYNTAX ("create_schedule",
+                                 "Permission denied"));
+            log_event_fail ("schedule", "Schedule", NULL, "created");
+            break;
+          case -1:
+          default:
+            SEND_TO_CLIENT_OR_FAIL
+              (XML_INTERNAL_ERROR ("create_schedule"));
+            log_event_fail ("schedule", "Schedule", NULL, "created");
+            break;
+        }
+      goto create_schedule_leave;
+    }
+  else if (create_schedule_data->name == NULL)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("create_schedule",
+                          "CREATE_SCHEDULE requires a NAME entity"));
+      goto create_schedule_leave;
+    }
+  else if (create_schedule_data->icalendar
+           && strcmp (create_schedule_data->icalendar, ""))
+    {
+      first_time = 0;
+      period = 0;
+      period_months = 0;
+      duration = 0;
+    }
+  else
+    {
+      // Classic schedule
+      if ((first_time = time_from_strings
+                              (create_schedule_data->first_time_hour,
+                               create_schedule_data->first_time_minute,
+                               create_schedule_data->first_time_day_of_month,
+                               create_schedule_data->first_time_month,
+                               create_schedule_data->first_time_year,
+                               create_schedule_data->timezone))
+                == -1)
+        {
+          SEND_TO_CLIENT_OR_FAIL
+            (XML_ERROR_SYNTAX ("create_schedule",
+                               "Failed to create time from FIRST_TIME"
+                               " elements"));
+          goto create_schedule_leave;
+        }
+      else if ((period = interval_from_strings
+                           (create_schedule_data->period,
+                            create_schedule_data->period_unit,
+                            &period_months))
+                == -3)
+        {
+          SEND_TO_CLIENT_OR_FAIL
+            (XML_ERROR_SYNTAX ("create_schedule",
+                               "PERIOD out of range"));
+          goto create_schedule_leave;
+        }
+      else if (period < -1)
+        {
+          SEND_TO_CLIENT_OR_FAIL
+            (XML_ERROR_SYNTAX ("create_schedule",
+                               "Failed to create interval from PERIOD"));
+          goto create_schedule_leave;
+        }
+      else if ((duration = interval_from_strings
+                            (create_schedule_data->duration,
+                              create_schedule_data->duration_unit,
+                              NULL))
+                == -3)
+        {
+          SEND_TO_CLIENT_OR_FAIL
+            (XML_ERROR_SYNTAX ("create_schedule",
+                               "DURATION out of range"));
+          goto create_schedule_leave;
+        }
+      else if (duration < -1)
+        {
+          SEND_TO_CLIENT_OR_FAIL
+            (XML_ERROR_SYNTAX ("create_schedule",
+                               "Failed to create interval from DURATION"));
+          goto create_schedule_leave;
+        }
+#if 0
+      /* The actual time of a period in months can vary, so it's extremely
+       * hard to do this check.  The schedule will still work fine if the
+       * duration is longer than the period. */
+      else if (period_months
+                && (duration > (period_months * 60 * 60 * 24 * 28)))
+        {
+          SEND_TO_CLIENT_OR_FAIL
+            (XML_ERROR_SYNTAX ("create_schedule",
+                               "Duration too long for number of months"));
+          goto create_schedule_leave;
+        }
+#endif
+      else if (period && (duration > period))
+        {
+          SEND_TO_CLIENT_OR_FAIL
+            (XML_ERROR_SYNTAX ("create_schedule",
+                               "Duration is longer than period"));
+          goto create_schedule_leave;
+        }
+    }
+
+  switch (create_schedule (create_schedule_data->name,
+                           create_schedule_data->comment,
+                           create_schedule_data->icalendar,
+                           first_time,
+                           period == -1 ? 0 : period,
+                           period_months,
+                           create_schedule_data->byday,
+                           duration == -1 ? 0 : duration,
+                           create_schedule_data->timezone,
+                           &new_schedule,
+                           &ical_error))
+    {
+      case 0:
+        {
+          char *uuid = schedule_uuid (new_schedule);
+          SENDF_TO_CLIENT_OR_FAIL
+            ("<create_schedule_response status=\"201\""
+             " status_text=\"OK, resource created\""
+             " id=\"%s\">",
+             uuid);
+          if (ical_error)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+                ("<status_details>");
+              SEND_TO_CLIENT_OR_FAIL
+                (ical_error ? ical_error : "");
+              SEND_TO_CLIENT_OR_FAIL
+                ("</status_details>");
+            }
+          SEND_TO_CLIENT_OR_FAIL 
+            ("</create_schedule_response>");
+          log_event ("schedule", "Schedule", uuid, "created");
+          free (uuid);
+          break;
+        }
+      case 1:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("create_schedule",
+                            "Schedule exists already"));
+        log_event_fail ("schedule", "Schedule", NULL, "created");
+        break;
+      case 2:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("create_schedule",
+                            "Syntax error in BYDAY"));
+        log_event_fail ("schedule", "Schedule", NULL, "created");
+        break;
+      case 3:
+        {
+          SENDF_TO_CLIENT_OR_FAIL
+            ("<create_schedule_response status=\"400\""
+             " status_text=\"Invalid ICALENDAR: %s\">"
+             "</create_schedule_response>", ical_error);
+          log_event_fail ("schedule", "Schedule", NULL, "created");
+        }
+        break;
+      case 99:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("create_schedule",
+                            "Permission denied"));
+        log_event_fail ("schedule", "Schedule", NULL, "created");
+        break;
+      case -1:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_INTERNAL_ERROR ("create_schedule"));
+        log_event_fail ("schedule", "Schedule", NULL, "created");
+        break;
+      default:
+        assert (0);
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_INTERNAL_ERROR ("create_schedule"));
+        log_event_fail ("schedule", "Schedule", NULL, "created");
+        break;
+    }
+
+create_schedule_leave:
+  create_schedule_data_reset (create_schedule_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
+ * @brief Handle end of MODIFY_SCHEDULE element.
+ *
+ * @param[in]  gmp_parser   GMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_modify_schedule (gmp_parser_t *gmp_parser, GError **error)
+{
+  time_t first_time, period, period_months, duration;
+  period_months = 0;
+  gchar *ical_error = NULL;
+
+  if (modify_schedule_data->icalendar)
+    {
+      first_time = 0;
+      period = 0;
+      period_months = 0;
+      duration = 0;
+    }
+  else
+    {
+      /* Only change schedule "first time" if given. */
+      first_time = modify_schedule_data->first_time_hour
+                    || modify_schedule_data->first_time_minute
+                    || modify_schedule_data->first_time_day_of_month
+                    || modify_schedule_data->first_time_month
+                    || modify_schedule_data->first_time_year;
+
+      if (first_time
+          && ((first_time
+                = time_from_strings
+                    (modify_schedule_data->first_time_hour,
+                     modify_schedule_data->first_time_minute,
+                     modify_schedule_data->first_time_day_of_month,
+                     modify_schedule_data->first_time_month,
+                     modify_schedule_data->first_time_year,
+                     modify_schedule_data->timezone))
+              == -1))
+        {
+          SEND_TO_CLIENT_OR_FAIL
+            (XML_ERROR_SYNTAX ("modify_schedule",
+                               "Failed to create time from FIRST_TIME"
+                               " elements"));
+          goto modify_schedule_leave;
+        }
+      else if ((period = interval_from_strings
+                           (modify_schedule_data->period,
+                            modify_schedule_data->period_unit,
+                            &period_months))
+                == -3)
+        {
+          SEND_TO_CLIENT_OR_FAIL
+            (XML_ERROR_SYNTAX ("modify_schedule",
+                               "PERIOD out of range"));
+          goto modify_schedule_leave;
+        }
+      else if (period < -1)
+        {
+          SEND_TO_CLIENT_OR_FAIL
+            (XML_ERROR_SYNTAX ("modify_schedule",
+                               "Failed to create interval from PERIOD"));
+          goto modify_schedule_leave;
+        }
+      else if ((duration = interval_from_strings
+                             (modify_schedule_data->duration,
+                              modify_schedule_data->duration_unit,
+                              NULL))
+                == -3)
+        {
+          SEND_TO_CLIENT_OR_FAIL
+            (XML_ERROR_SYNTAX ("modify_schedule",
+                               "DURATION out of range"));
+          goto modify_schedule_leave;
+        }
+      else if (duration < -1)
+        {
+          SEND_TO_CLIENT_OR_FAIL
+            (XML_ERROR_SYNTAX ("modify_schedule",
+                               "Failed to create interval from DURATION"));
+          goto modify_schedule_leave;
+        }
+#if 0
+      /* The actual time of a period in months can vary, so it's extremely
+       * hard to do this check.  The schedule will still work fine if the
+       * duration is longer than the period. */
+      else if (period_months
+               && (duration > (period_months * 60 * 60 * 24 * 28)))
+        {
+          SEND_TO_CLIENT_OR_FAIL
+            (XML_ERROR_SYNTAX ("modify_schedule",
+                               "Duration too long for number of months"));
+          goto create_schedule_leave;
+        }
+#endif
+      else if (period && (duration > period))
+        {
+          SEND_TO_CLIENT_OR_FAIL
+            (XML_ERROR_SYNTAX ("modify_schedule",
+                               "Duration is longer than period"));
+          goto modify_schedule_leave;
+        }
+
+    }
+
+  switch (modify_schedule
+                (modify_schedule_data->schedule_id,
+                 modify_schedule_data->name,
+                 modify_schedule_data->comment,
+                 modify_schedule_data->icalendar,
+                 first_time,
+                 period == -1 ? 0 : period,
+                 period_months,
+                 modify_schedule_data->byday,
+                 duration == -1 ? 0 : duration,
+                 modify_schedule_data->timezone,
+                 &ical_error))
+    {
+      case 0:
+        SENDF_TO_CLIENT_OR_FAIL
+          ("<create_schedule_response status=\"200\""
+           " status_text=\"OK\">"
+           "<status_details>%s</status_details>"
+           "</create_schedule_response>",
+           ical_error ? ical_error : "");
+        log_event ("schedule", "Schedule",
+                   modify_schedule_data->schedule_id, "modified");
+        break;
+      case 1:
+        if (send_find_error_to_client ("modify_schedule", "schedule",
+                                        modify_schedule_data->schedule_id,
+                                        gmp_parser))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        log_event_fail ("schedule", "Schedule",
+                        modify_schedule_data->schedule_id,
+                        "modified");
+        break;
+      case 2:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("modify_schedule",
+                            "Schedule with new name exists already"));
+        log_event_fail ("schedule", "Schedule",
+                        modify_schedule_data->schedule_id,
+                        "modified");
+        break;
+      case 3:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("modify_schedule",
+                            "Error in type name"));
+        log_event_fail ("schedule", "Schedule",
+                        modify_schedule_data->schedule_id,
+                        "modified");
+        break;
+      case 4:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("modify_schedule",
+                            "MODIFY_SCHEDULE requires a schedule_id"));
+        log_event_fail ("schedule", "Schedule",
+                        modify_schedule_data->schedule_id,
+                        "modified");
+        break;
+      case 5:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("modify_schedule",
+                            "Syntax error in BYDAY"));
+        log_event_fail ("schedule", "Schedule",
+                        modify_schedule_data->schedule_id, "modified");
+        break;
+      case 6:
+        {
+          SENDF_TO_CLIENT_OR_FAIL
+            ("<modify_schedule_response status=\"400\""
+             " status_text=\"Invalid ICALENDAR: %s\">"
+             "</modify_schedule_response>", ical_error);
+          log_event_fail ("schedule", "Schedule",
+                          modify_schedule_data->schedule_id, "modified");
+        }
+        break;
+      case 99:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("modify_schedule",
+                            "Permission denied"));
+        log_event_fail ("schedule", "Schedule",
+                        modify_schedule_data->schedule_id,
+                        "modified");
+        break;
+      default:
+      case -1:
+        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_schedule"));
+        log_event_fail ("schedule", "Schedule",
+                        modify_schedule_data->schedule_id,
+                        "modified");
+        break;
+    }
+
+modify_schedule_leave:
+  modify_schedule_data_reset (modify_schedule_data);
   set_client_state (CLIENT_AUTHENTIC);
 }
 
@@ -24813,163 +25264,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_CREATE_SCHEDULE:
         {
-          time_t first_time, period, period_months, duration;
-          schedule_t new_schedule;
-
-          period_months = 0;
-
           assert (strcasecmp ("CREATE_SCHEDULE", element_name) == 0);
-
-          if (create_schedule_data->copy)
-            switch (copy_schedule (create_schedule_data->name,
-                                   create_schedule_data->comment,
-                                   create_schedule_data->copy,
-                                   &new_schedule))
-              {
-                case 0:
-                  {
-                    char *uuid;
-                    uuid = schedule_uuid (new_schedule);
-                    SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_schedule"),
-                                             uuid);
-                    log_event ("schedule", "Schedule", uuid, "created");
-                    free (uuid);
-                    break;
-                  }
-                case 1:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("create_schedule",
-                                      "Schedule exists already"));
-                  log_event_fail ("schedule", "Schedule", NULL, "created");
-                  break;
-                case 2:
-                  if (send_find_error_to_client ("create_schedule", "schedule",
-                                                 create_schedule_data->copy,
-                                                 gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  log_event_fail ("schedule", "Schedule", NULL, "created");
-                  break;
-                case 99:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("create_schedule",
-                                      "Permission denied"));
-                  log_event_fail ("schedule", "Schedule", NULL, "created");
-                  break;
-                case -1:
-                default:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("create_schedule"));
-                  log_event_fail ("schedule", "Schedule", NULL, "created");
-                  break;
-              }
-          else if (create_schedule_data->name == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_schedule",
-                                "CREATE_SCHEDULE requires a NAME entity"));
-          else if ((first_time = time_from_strings
-                                  (create_schedule_data->first_time_hour,
-                                   create_schedule_data->first_time_minute,
-                                   create_schedule_data->first_time_day_of_month,
-                                   create_schedule_data->first_time_month,
-                                   create_schedule_data->first_time_year,
-                                   create_schedule_data->timezone))
-                   == -1)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_schedule",
-                                "Failed to create time from FIRST_TIME"
-                                " elements"));
-          else if ((period = interval_from_strings
-                              (create_schedule_data->period,
-                               create_schedule_data->period_unit,
-                               &period_months))
-                   == -3)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_schedule",
-                                "PERIOD out of range"));
-          else if (period < -1)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_schedule",
-                                "Failed to create interval from PERIOD"));
-          else if ((duration = interval_from_strings
-                                (create_schedule_data->duration,
-                                 create_schedule_data->duration_unit,
-                                 NULL))
-                   == -3)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_schedule",
-                                "DURATION out of range"));
-          else if (duration < -1)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_schedule",
-                                "Failed to create interval from DURATION"));
-#if 0
-          /* The actual time of a period in months can vary, so it's extremely
-           * hard to do this check.  The schedule will still work fine if the
-           * duration is longer than the period. */
-          else if (period_months
-                   && (duration > (period_months * 60 * 60 * 24 * 28)))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_schedule",
-                                "Duration too long for number of months"));
-#endif
-          else if (period && (duration > period))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_schedule",
-                                "Duration is longer than period"));
-          else switch (create_schedule (create_schedule_data->name,
-                                        create_schedule_data->comment,
-                                        first_time,
-                                        period == -1 ? 0 : period,
-                                        period_months,
-                                        create_schedule_data->byday,
-                                        duration == -1 ? 0 : duration,
-                                        create_schedule_data->timezone,
-                                        &new_schedule))
-            {
-              case 0:
-                {
-                  char *uuid = schedule_uuid (new_schedule);
-                  SENDF_TO_CLIENT_OR_FAIL
-                   (XML_OK_CREATED_ID ("create_schedule"), uuid);
-                  log_event ("schedule", "Schedule", uuid, "created");
-                  free (uuid);
-                  break;
-                }
-              case 1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_schedule",
-                                    "Schedule exists already"));
-                log_event_fail ("schedule", "Schedule", NULL, "created");
-                break;
-              case 2:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_schedule",
-                                    "Syntax error in BYDAY"));
-                log_event_fail ("schedule", "Schedule", NULL, "created");
-                break;
-              case 99:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_schedule",
-                                    "Permission denied"));
-                log_event_fail ("schedule", "Schedule", NULL, "created");
-                break;
-              case -1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("create_schedule"));
-                log_event_fail ("schedule", "Schedule", NULL, "created");
-                break;
-              default:
-                assert (0);
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("create_schedule"));
-                log_event_fail ("schedule", "Schedule", NULL, "created");
-                break;
-            }
-          create_schedule_data_reset (create_schedule_data);
-          set_client_state (CLIENT_AUTHENTIC);
+          handle_create_schedule (gmp_parser, error);
           break;
         }
       CLOSE (CLIENT_CREATE_SCHEDULE, BYDAY);
@@ -24977,6 +25273,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_SCHEDULE, COPY);
       CLOSE (CLIENT_CREATE_SCHEDULE, DURATION);
       CLOSE (CLIENT_CREATE_SCHEDULE, FIRST_TIME);
+      CLOSE (CLIENT_CREATE_SCHEDULE, ICALENDAR);
       CLOSE (CLIENT_CREATE_SCHEDULE, NAME);
       CLOSE (CLIENT_CREATE_SCHEDULE, PERIOD);
       CLOSE (CLIENT_CREATE_SCHEDULE, TIMEZONE);
@@ -27779,153 +28076,14 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_SCHEDULE:
         {
-          time_t first_time, period, period_months, duration;
-
           assert (strcasecmp ("MODIFY_SCHEDULE", element_name) == 0);
-
-          period_months = 0;
-
-          /* Only change schedule "first time" if given. */
-          first_time = modify_schedule_data->first_time_hour
-                        || modify_schedule_data->first_time_minute
-                        || modify_schedule_data->first_time_day_of_month
-                        || modify_schedule_data->first_time_month
-                        || modify_schedule_data->first_time_year;
-
-          if (first_time
-              && ((first_time
-                    = time_from_strings
-                       (modify_schedule_data->first_time_hour,
-                        modify_schedule_data->first_time_minute,
-                        modify_schedule_data->first_time_day_of_month,
-                        modify_schedule_data->first_time_month,
-                        modify_schedule_data->first_time_year,
-                        modify_schedule_data->timezone))
-                  == -1))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_schedule",
-                                "Failed to create time from FIRST_TIME"
-                                " elements"));
-          else if ((period = interval_from_strings
-                              (modify_schedule_data->period,
-                               modify_schedule_data->period_unit,
-                               &period_months))
-                   == -3)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_schedule",
-                                "PERIOD out of range"));
-          else if (period < -1)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_schedule",
-                                "Failed to create interval from PERIOD"));
-          else if ((duration = interval_from_strings
-                                (modify_schedule_data->duration,
-                                 modify_schedule_data->duration_unit,
-                                 NULL))
-                   == -3)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_schedule",
-                                "DURATION out of range"));
-          else if (duration < -1)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_schedule",
-                                "Failed to create interval from DURATION"));
-#if 0
-          /* The actual time of a period in months can vary, so it's extremely
-           * hard to do this check.  The schedule will still work fine if the
-           * duration is longer than the period. */
-          else if (period_months
-                   && (duration > (period_months * 60 * 60 * 24 * 28)))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_schedule",
-                                "Duration too long for number of months"));
-#endif
-          else if (period && (duration > period))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_schedule",
-                                "Duration is longer than period"));
-          else switch (modify_schedule
-                        (modify_schedule_data->schedule_id,
-                         modify_schedule_data->name,
-                         modify_schedule_data->comment,
-                         first_time,
-                         period == -1 ? 0 : period,
-                         period_months,
-                         modify_schedule_data->byday,
-                         duration == -1 ? 0 : duration,
-                         modify_schedule_data->timezone))
-            {
-              case 0:
-                SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_schedule"));
-                log_event ("schedule", "Schedule",
-                           modify_schedule_data->schedule_id, "modified");
-                break;
-              case 1:
-                if (send_find_error_to_client ("modify_schedule", "schedule",
-                                               modify_schedule_data->schedule_id,
-                                               gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                log_event_fail ("schedule", "Schedule",
-                                modify_schedule_data->schedule_id,
-                                "modified");
-                break;
-              case 2:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_schedule",
-                                    "Schedule with new name exists already"));
-                log_event_fail ("schedule", "Schedule",
-                                modify_schedule_data->schedule_id,
-                                "modified");
-                break;
-              case 3:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_schedule",
-                                    "Error in type name"));
-                log_event_fail ("schedule", "Schedule",
-                                modify_schedule_data->schedule_id,
-                                "modified");
-                break;
-              case 4:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_schedule",
-                                    "MODIFY_SCHEDULE requires a schedule_id"));
-                log_event_fail ("schedule", "Schedule",
-                                modify_schedule_data->schedule_id,
-                                "modified");
-                break;
-              case 5:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_schedule",
-                                    "Syntax error in BYDAY"));
-                log_event_fail ("schedule", "Schedule", NULL, "modified");
-                break;
-              case 99:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_schedule",
-                                    "Permission denied"));
-                log_event_fail ("schedule", "Schedule",
-                                modify_schedule_data->schedule_id,
-                                "modified");
-                break;
-              default:
-              case -1:
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_schedule"));
-                log_event_fail ("schedule", "Schedule",
-                                modify_schedule_data->schedule_id,
-                                "modified");
-                break;
-            }
-
-          modify_schedule_data_reset (modify_schedule_data);
-          set_client_state (CLIENT_AUTHENTIC);
+          handle_modify_schedule (gmp_parser, error);
           break;
         }
       CLOSE (CLIENT_MODIFY_SCHEDULE, COMMENT);
       CLOSE (CLIENT_MODIFY_SCHEDULE, DURATION);
       CLOSE (CLIENT_MODIFY_SCHEDULE, FIRST_TIME);
+      CLOSE (CLIENT_MODIFY_SCHEDULE, ICALENDAR);
       CLOSE (CLIENT_MODIFY_SCHEDULE, NAME);
       CLOSE (CLIENT_MODIFY_SCHEDULE, PERIOD);
       CLOSE (CLIENT_MODIFY_SCHEDULE, BYDAY);
@@ -30492,6 +30650,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_SCHEDULE_FIRST_TIME_YEAR,
               &create_schedule_data->first_time_year);
 
+      APPEND (CLIENT_CREATE_SCHEDULE_ICALENDAR,
+              &create_schedule_data->icalendar);
+
       APPEND (CLIENT_CREATE_SCHEDULE_NAME,
               &create_schedule_data->name);
 
@@ -30832,6 +30993,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_SCHEDULE_FIRST_TIME_YEAR,
               &modify_schedule_data->first_time_year);
+
+      APPEND (CLIENT_MODIFY_SCHEDULE_ICALENDAR,
+              &modify_schedule_data->icalendar);
 
       APPEND (CLIENT_MODIFY_SCHEDULE_NAME,
               &modify_schedule_data->name);

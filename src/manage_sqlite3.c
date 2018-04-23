@@ -1329,6 +1329,43 @@ sql_next_time (sqlite3_context *context, int argc, sqlite3_value** argv)
 }
 
 /**
+ * @brief Calculate the next time from now based on an iCalendar string.
+ *
+ * This is a callback for a scalar SQL function of two to three arguments.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_next_time_ical (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  int periods_offset;
+  const char *icalendar, *timezone;
+
+  assert (argc == 2 || argc == 3 );
+
+  if (argc < 1 || sqlite3_value_type (argv[0]) == SQLITE_NULL)
+    icalendar = NULL;
+  else
+    icalendar = (char*) sqlite3_value_text (argv[0]);
+
+  if (argc < 2 || sqlite3_value_type (argv[1]) == SQLITE_NULL)
+    timezone = NULL;
+  else
+    timezone = (char*) sqlite3_value_text (argv[1]);
+
+  if (argc < 3 || sqlite3_value_type (argv[2]) == SQLITE_NULL)
+    periods_offset = 0;
+  else
+    periods_offset = sqlite3_value_int (argv[2]);
+
+  sqlite3_result_int (context,
+                      icalendar_next_time_from_string (icalendar, timezone,
+                                                       periods_offset));
+}
+
+/**
  * @brief Get the current time as an epoch integer.
  *
  * This is a callback for a scalar SQL function of zero arguments.
@@ -3008,6 +3045,34 @@ manage_create_sql_functions ()
     }
 
   if (sqlite3_create_function (task_db,
+                               "next_time_ical",
+                               2,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_next_time_ical,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create next_time_ical", __FUNCTION__);
+      return -1;
+    }
+
+  if (sqlite3_create_function (task_db,
+                               "next_time_ical",
+                               3,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_next_time_ical,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create next_time_ical", __FUNCTION__);
+      return -1;
+    }
+
+  if (sqlite3_create_function (task_db,
                                "m_now",
                                0,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3754,11 +3819,11 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS schedules"
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment,"
        "  first_time, period, period_months, byday, duration, timezone,"
-       "  initial_offset, creation_time, modification_time);");
+       "  initial_offset, creation_time, modification_time, icalendar);");
   sql ("CREATE TABLE IF NOT EXISTS schedules_trash"
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment,"
        "  first_time, period, period_months, byday, duration, timezone,"
-       "  initial_offset, creation_time, modification_time);");
+       "  initial_offset, creation_time, modification_time, icalendar);");
   sql ("CREATE TABLE IF NOT EXISTS settings"
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, value);");
   sql ("CREATE TABLE IF NOT EXISTS tags"
