@@ -4038,7 +4038,7 @@ find_resource_with_permission (const char* type, const char* uuid,
   gchar *quoted_uuid;
   if (uuid == NULL)
     return TRUE;
-  if ((type == NULL) || (valid_type (type) == 0))
+  if ((type == NULL) || (valid_db_resource_type (type) == 0))
     return TRUE;
   quoted_uuid = sql_quote (uuid);
   if (acl_user_has_access_uuid (type, quoted_uuid, permission, trash) == 0)
@@ -31989,7 +31989,10 @@ request_delete_task_uuid (const char *task_id, int ultimate)
 
   g_debug ("   request delete task %s\n", task_id);
 
-  sql_begin_immediate ();
+  if (sql_is_sqlite3 ())
+    sql_begin_exclusive ();
+  else
+    sql_begin_immediate ();
 
   if (acl_user_may ("delete_task") == 0)
     {
@@ -32060,7 +32063,8 @@ request_delete_task_uuid (const char *task_id, int ultimate)
         {
           int ret;
 
-          if (ultimate)
+          if (ultimate
+              && (sql_is_sqlite3 () == 0))
             /* This prevents other processes (for example a START_TASK) from
              * getting a reference to a report ID or the task ID, and then using
              * that reference to try access the deleted report or task.
