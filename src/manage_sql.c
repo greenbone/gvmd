@@ -31989,7 +31989,10 @@ request_delete_task_uuid (const char *task_id, int ultimate)
 
   g_debug ("   request delete task %s\n", task_id);
 
-  sql_begin_immediate ();
+  if (sql_is_sqlite3 ())
+    sql_begin_exclusive ();
+  else
+    sql_begin_immediate ();
 
   if (acl_user_may ("delete_task") == 0)
     {
@@ -32060,7 +32063,8 @@ request_delete_task_uuid (const char *task_id, int ultimate)
         {
           int ret;
 
-          if (ultimate)
+          if (ultimate
+              && (sql_is_sqlite3 () == 0))
             /* This prevents other processes (for example a START_TASK) from
              * getting a reference to a report ID or the task ID, and then using
              * that reference to try access the deleted report or task.

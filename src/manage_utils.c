@@ -835,13 +835,12 @@ icalendar_from_old_schedule_data (time_t first_time,
   if (timezone)
     {
       ical_timezone = icalendar_timezone_from_tzid (timezone);
-      dtstart = icaltime_from_timet_with_zone (first_time, 0, ical_timezone);
     }
   else
     {
       ical_timezone = NULL;
-      dtstart = icaltime_from_timet (first_time, 0);
     }
+  dtstart = icaltime_from_timet_with_zone (first_time, 0, ical_timezone);
   icalcomponent_set_dtstart (vevent, dtstart);
 
   // Get recurrence rule if applicable
