@@ -4038,7 +4038,7 @@ find_resource_with_permission (const char* type, const char* uuid,
   gchar *quoted_uuid;
   if (uuid == NULL)
     return TRUE;
-  if ((type == NULL) || (valid_type (type) == 0))
+  if ((type == NULL) || (valid_db_resource_type (type) == 0))
     return TRUE;
   quoted_uuid = sql_quote (uuid);
   if (acl_user_has_access_uuid (type, quoted_uuid, permission, trash) == 0)
