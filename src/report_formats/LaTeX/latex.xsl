@@ -541,7 +541,9 @@ All dates are displayed using the timezone ``</xsl:text>
         <xsl:value-of select="timezone_abbrev"/>
         <xsl:text>''.
 The task was ``</xsl:text>
-        <xsl:value-of select="/report/task/name"/>
+        <xsl:call-template name="escape_text">
+          <xsl:with-param name="string" select="/report/task/name"/>
+        </xsl:call-template>
         <xsl:text>''.  The first scan started at </xsl:text>
         <xsl:apply-templates select="scan_start"/>
 <xsl:text> and ended at </xsl:text>
@@ -568,7 +570,9 @@ All dates are displayed using the timezone ``</xsl:text>
         <xsl:value-of select="timezone_abbrev"/>
         <xsl:text>''.
 The task was ``</xsl:text>
-        <xsl:value-of select="/report/task/name"/>
+        <xsl:call-template name="escape_text">
+          <xsl:with-param name="string" select="/report/task/name"/>
+        </xsl:call-template>
         <xsl:text>''.  The scan started at </xsl:text>
         <xsl:apply-templates select="scan_start"/>
 <xsl:text> and ended at </xsl:text>
