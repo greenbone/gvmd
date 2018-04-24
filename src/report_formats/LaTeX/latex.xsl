@@ -280,9 +280,9 @@ TODOS: Solve Whitespace/Indentation problem of this file.
       '%', '\%'),
       '&amp;','\&amp;'),
       '#', '\#'),
-      '^', '\^'),
       '}', '\}'),
-      '{', '\}')"/>
+      '{', '\}'),
+      '^', '\^{}')"/>
   </xsl:template>
 
   <!-- Escape text for normal latex environment. Following characters get a
