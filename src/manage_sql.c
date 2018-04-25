@@ -18056,7 +18056,8 @@ set_task_requested (task_t task, task_status_t *status)
 {
   task_status_t run_status;
   char *uuid, *name;
-  int update_report;
+
+  assert ((task != current_scanner_task) && (current_report == 0));
 
   /* Locking here prevents another process from starting the task
    * concurrently. */
@@ -18090,10 +18091,6 @@ set_task_requested (task_t task, task_status_t *status)
 
   /* This does the work of set_task_run_status, but spread across the COMMIT. */
 
-  update_report = 0;
-  if ((task == current_scanner_task) && current_report)
-    update_report = 1;
-
   sql ("UPDATE tasks SET run_status = %u WHERE id = %llu;",
        TASK_STATUS_REQUESTED,
        task);
@@ -18108,24 +18105,9 @@ set_task_requested (task_t task, task_status_t *status)
 
   sql_commit ();
 
-  /* Do these outside the transaction, because they modify reports, and
-   * other places LOCK reports, so there would be a danger of deadlock
-   * between the LOCKs on tasks and reports.
-   *
-   * Updating the report status outside the locked environment should be
-   * OK, because it's a very rare case that someone stops the task when
-   * it is in requested state.  (Because current_report is set we are the
-   * only ones who can progress it to the running states.) */
-
-  if (update_report)
-    {
-      sql ("UPDATE reports SET scan_run_status = %u WHERE id = %llu;",
-           TASK_STATUS_REQUESTED,
-           current_report);
-
-      if (current_report && setting_auto_cache_rebuild_int ())
-        report_cache_counts (current_report, 0, 0, NULL);
-    }
+  /* Do this outside the transaction, in case one of the event handlers modify
+   * reports, to reduce the danger of deadlock between the LOCKs on tasks and
+   * reports. */
 
   event (task,
          (task == current_scanner_task) ? current_report : 0,
