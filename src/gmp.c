@@ -14549,7 +14549,7 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
 {
   iterator_t credentials;
   int count, filtered, ret, first;
-  int format;
+  credential_format_t format;
   char *data_format;
 
   data_format = get_credentials_data->format;
@@ -14558,25 +14558,25 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
       if (strlen (data_format))
         {
           if (strcasecmp (data_format, "key") == 0)
-            format = 1;
+            format = CREDENTIAL_FORMAT_KEY;
           else if (strcasecmp (data_format, "rpm") == 0)
-            format = 2;
+            format = CREDENTIAL_FORMAT_RPM;
           else if (strcasecmp (data_format, "deb") == 0)
-            format = 3;
+            format = CREDENTIAL_FORMAT_DEB;
           else if (strcasecmp (data_format, "exe") == 0)
-            format = 4;
+            format = CREDENTIAL_FORMAT_EXE;
           else if (strcasecmp (data_format, "pem") == 0)
-            format = 5;
+            format = CREDENTIAL_FORMAT_PEM;
           else
-            format = -1;
+            format = CREDENTIAL_FORMAT_ERROR;
         }
       else
-        format = 0;
+        format = CREDENTIAL_FORMAT_NONE;
     }
   else
-    format = 0;
+    format = CREDENTIAL_FORMAT_NONE;
 
-  if (format == -1)
+  if (format == CREDENTIAL_FORMAT_ERROR)
     SEND_TO_CLIENT_OR_FAIL
       (XML_ERROR_SYNTAX ("get_credentials",
                          "GET_CREDENTIALS format attribute should"
@@ -14700,7 +14700,7 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
         {
           char *package;
 
-          case 1: /* key */
+          case CREDENTIAL_FORMAT_KEY:
             {
               char *pub;
               const char *pass;
@@ -14712,30 +14712,34 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
               g_free (pub);
               break;
             }
-          case 2: /* rpm */
+          case CREDENTIAL_FORMAT_RPM:
             package = credential_iterator_rpm (&credentials);
             SENDF_TO_CLIENT_OR_FAIL
               ("<package format=\"rpm\">%s</package>", package ?: "");
             g_free (package);
             break;
-          case 3: /* deb */
+          case CREDENTIAL_FORMAT_DEB:
             package = credential_iterator_deb (&credentials);
             SENDF_TO_CLIENT_OR_FAIL
               ("<package format=\"deb\">%s</package>", package ?: "");
             g_free (package);
             break;
-          case 4: /* exe */
+          case CREDENTIAL_FORMAT_EXE:
             package = credential_iterator_exe (&credentials);
             SENDF_TO_CLIENT_OR_FAIL
               ("<package format=\"exe\">%s</package>", package ?: "");
             g_free (package);
             break;
-          case 5:
+          case CREDENTIAL_FORMAT_PEM:
             {
               SENDF_TO_CLIENT_OR_FAIL
                 ("<certificate>%s</certificate>", cert ?: "");
               break;
             }
+          case CREDENTIAL_FORMAT_NONE:
+            break;
+          default:
+            g_warning ("%s: Unexpected credential format.", __FUNCTION__);
         }
 
       if (get_credentials_data->scanners)
