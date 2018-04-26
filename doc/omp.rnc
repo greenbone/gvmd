@@ -5562,7 +5562,7 @@ get_credentials
        attribute trash { boolean }?
        & # Whether to include a list of targets using the credentials.
        attribute targets { boolean }?
-       & attribute format { xsd:token { pattern = "key|rpm|deb|exe" } }?
+       & attribute format { xsd:token { pattern = "key|rpm|deb|exe|pem" } }?
      }
 
 ## Command get_feeds
@@ -5849,6 +5849,8 @@ get_results
        attribute override_details { boolean }?
        & # Whether to include additional details of the results.
        attribute details { boolean }?
+       & # Whether to include result counts.
+       attribute get_counts { boolean }?
      }
 
 ## Command get_roles
@@ -10518,13 +10520,15 @@ get_credentials_response_credential
        & get_credentials_response_credential_user_tags
        & get_credentials_response_credential_type
        & get_credentials_response_credential_full_type
+       & get_credentials_response_credential_formats
        & get_credentials_response_credential_auth_algorithm?
        & get_credentials_response_credential_privacy?
        & get_credentials_response_credential_certificate_info?
        & get_credentials_response_credential_scanners?
        & get_credentials_response_credential_targets?
        & ( get_credentials_response_credential_public_key
-           | get_credentials_response_credential_package )
+           | get_credentials_response_credential_package
+           | get_credentials_response_credential_certificate )
      }
 
 # Owner of the credential.
@@ -10678,6 +10682,20 @@ get_credentials_response_credential_full_type
        text
      }
 
+# The export formats available for the credential.
+get_credentials_response_credential_formats
+ = element formats
+     {
+       get_credentials_response_credential_formats_format*
+     }
+
+# Format as used in the command.
+get_credentials_response_credential_formats_format
+ = element format
+     {
+       xsd:token { pattern = "key|rpm|deb|exe|pem" }
+     }
+
 # The SNMP authentication algorithm.
 get_credentials_response_credential_auth_algorithm
  = element auth_algorithm
@@ -10778,6 +10796,12 @@ get_credentials_response_credential_package
      {
        base64
        & attribute format { xsd:token { pattern = "rpm|deb|exe" } }
+     }
+
+get_credentials_response_credential_certificate
+ = element certificate
+     {
+       text
      }
 
 get_credentials_response_filters
@@ -14357,7 +14381,7 @@ get_results_response
        & get_results_response_filters
        & get_results_response_sort
        & get_results_response_results
-       & get_results_response_result_count
+       & get_results_response_result_count?
      }
 
 get_results_response_result
@@ -18249,6 +18273,7 @@ test_alert_response
      {
        attribute status { status }
        & attribute status_text { text }
+       & status_details?
      }
 
 ## Response to verify_agent

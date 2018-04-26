@@ -10327,6 +10327,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <alt>rpm</alt>
             <alt>deb</alt>
             <alt>exe</alt>
+            <alt>pem</alt>
           </alts>
         </type>
       </attrib>
@@ -10370,6 +10371,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>user_tags</e>
           <e>type</e>
           <e>full_type</e>
+          <e>formats</e>
           <o><e>auth_algorithm</e></o>
           <o><e>privacy</e></o>
           <o><e>certificate_info</e></o>
@@ -10378,6 +10380,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <or>
             <e>public_key</e>
             <e>package</e>
+            <e>certificate</e>
           </or>
         </pattern>
         <ele>
@@ -10520,6 +10523,28 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </pattern>
         </ele>
         <ele>
+          <name>formats</name>
+          <summary>The export formats available for the credential</summary>
+          <pattern>
+            <any><e>format</e></any>
+          </pattern>
+          <ele>
+            <name>format</name>
+            <summary>Format as used in the command</summary>
+            <pattern>
+              <t>
+                <alts>
+                  <alt>key</alt>
+                  <alt>rpm</alt>
+                  <alt>deb</alt>
+                  <alt>exe</alt>
+                  <alt>pem</alt>
+                </alts>
+              </t>
+            </pattern>
+          </ele>
+        </ele>
+        <ele>
           <name>auth_algorithm</name>
           <summary>The SNMP authentication algorithm</summary>
           <pattern>
@@ -10634,6 +10659,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </attrib>
             base64
           </pattern>
+        </ele>
+        <ele>
+          <name>certificate</name>
+          <pattern>text</pattern>
         </ele>
       </ele>
       <ele>
@@ -10775,6 +10804,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </user_tags>
             <type>usk</type>
             <full_type>username + SSH key</full_type>
+            <formats>
+              <format>key</format>
+              <format>rpm</format>
+              <format>deb</format>
+            </formats>
           </credential>
           <credential id="8e305b0b-260d-450d-91a8-dadf0b144e15">
             <name>bob</name>
@@ -10786,6 +10820,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <login>bob</login>
             <type>up</type>
             <full_type>username + password</full_type>
+            <formats>
+              <format>exe</format>
+            </formats>
           </credential>
           <truncated>...</truncated>
         </get_credentials_response>
