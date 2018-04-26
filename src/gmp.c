@@ -14624,6 +14624,7 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
   while (1)
     {
       const char *private_key, *login, *type, *cert;
+      gchar *formats_xml;
 
       ret = get_next (&credentials, &get_credentials_data->get,
                       &first, &count, init_credential_iterator);
@@ -14650,6 +14651,10 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
         login ? login : "",
         type ? type : "",
         type ? credential_full_type (type) : "");
+
+      formats_xml = credential_iterator_formats_xml (&credentials);
+      SEND_TO_CLIENT_OR_FAIL (formats_xml);
+      g_free (formats_xml);
 
       if (type && (strcmp (type, "snmp") == 0))
         {
