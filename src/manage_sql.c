@@ -40357,6 +40357,53 @@ set_credential_data (credential_t credential,
 }
 
 /**
+ * @brief Test if a username is valid for a credential export format.
+ *
+ * @param[in]  username  The username string to test.
+ * @param[in]  format    The credential format to validate for.
+ *
+ * @return Whether the username is valid.
+ */
+gboolean
+validate_credential_username_for_format (const gchar *username,
+                                         credential_format_t format)
+{
+  const char *s, *name_characters;
+
+  name_characters = NULL;
+  switch (format)
+    {
+      case CREDENTIAL_FORMAT_NONE:
+      case CREDENTIAL_FORMAT_KEY:
+      case CREDENTIAL_FORMAT_PEM:
+        // No validation required
+        break;
+      case CREDENTIAL_FORMAT_RPM:
+      case CREDENTIAL_FORMAT_DEB:
+        name_characters = "-_";
+        break;
+      case CREDENTIAL_FORMAT_EXE:
+        name_characters = "-_\\.@";
+        break;
+      case CREDENTIAL_FORMAT_ERROR:
+        return 0;
+    }
+
+  if (name_characters)
+    {
+      s = username;
+      while (*s)
+        if (isalnum (*s)
+            || strchr (name_characters, *s))
+          s++;
+        else
+          return FALSE;
+    }
+
+  return TRUE;
+}
+
+/**
  * @brief Length of password generated in create_credential.
  */
 #define PASSWORD_LENGTH 10
@@ -41980,8 +42027,15 @@ credential_iterator_rpm (iterator_t *iterator)
   if (!public_key)
     return NULL;
   login = credential_iterator_login (iterator);
-  if (lsc_user_rpm_recreate (login, public_key, &rpm, &rpm_size))
+  if (credential_iterator_format_available
+          (iterator, CREDENTIAL_FORMAT_RPM) == FALSE)
     {
+      g_free (public_key);
+      return NULL;
+    }
+  else if (lsc_user_rpm_recreate (login, public_key, &rpm, &rpm_size))
+    {
+      g_warning ("%s: Failed to create RPM base for DEB\n", __FUNCTION__);
       g_free (public_key);
       return NULL;
     }
@@ -42017,7 +42071,13 @@ credential_iterator_deb (iterator_t *iterator)
   if (!public_key)
     return NULL;
   login = credential_iterator_login (iterator);
-  if (lsc_user_rpm_recreate (login, public_key, &rpm, &rpm_size))
+  if (credential_iterator_format_available
+          (iterator, CREDENTIAL_FORMAT_DEB) == FALSE)
+    {
+      g_free (public_key);
+      return NULL;
+    }
+  else if (lsc_user_rpm_recreate (login, public_key, &rpm, &rpm_size))
     {
       g_warning ("%s: Failed to create RPM base for DEB\n", __FUNCTION__);
       g_free (public_key);
@@ -42057,13 +42117,103 @@ credential_iterator_exe (iterator_t *iterator)
 
   login = credential_iterator_login (iterator);
   password = credential_iterator_password (iterator);
-  if (lsc_user_exe_recreate (login, password, &exe, &exe_size))
+  if (credential_iterator_format_available
+          (iterator, CREDENTIAL_FORMAT_EXE) == FALSE)
     return NULL;
+  else if (lsc_user_exe_recreate (login, password, &exe, &exe_size))
+    {
+      g_warning ("%s: Failed to create EXE\n", __FUNCTION__);
+      return NULL;
+    }
   exe64 = (exe && exe_size)
           ? g_base64_encode (exe, exe_size)
           : g_strdup ("");
   free (exe);
   return exe64;
+}
+
+/**
+ * @brief  Test if a credential format is available for an iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  format    The format to test availability of.
+ *
+ * @return  Whether format is available for the current credential of iterator.
+ */
+gboolean
+credential_iterator_format_available (iterator_t* iterator,
+                                      credential_format_t format)
+{
+  const char *type, *login, *private_key;
+
+  type = credential_iterator_type (iterator);
+  login = credential_iterator_login (iterator);
+  private_key = credential_iterator_private_key (iterator);
+
+  switch (format)
+    {
+      case CREDENTIAL_FORMAT_NONE:
+        return TRUE;
+      case CREDENTIAL_FORMAT_KEY:
+      case CREDENTIAL_FORMAT_RPM:
+      case CREDENTIAL_FORMAT_DEB:
+        if (strcasecmp (type, "usk") == 0 && private_key)
+          return validate_credential_username_for_format (login, format);
+        else
+          return FALSE;
+      case CREDENTIAL_FORMAT_EXE:
+        if (strcasecmp (type, "up") == 0)
+          return validate_credential_username_for_format (login, format);
+        else
+          return FALSE;
+      case CREDENTIAL_FORMAT_PEM:
+        if (strcasecmp (type, "cc") == 0)
+          return validate_credential_username_for_format (login, format);
+        else
+          return FALSE;
+      case CREDENTIAL_FORMAT_ERROR:
+        return FALSE;
+    }
+  return FALSE;
+}
+
+/**
+ * @brief  Get XML of available formats for a credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return  Newly allocated XML string.
+ */
+gchar *
+credential_iterator_formats_xml (iterator_t* iterator)
+{
+  GString *xml;
+
+  xml = g_string_new ("<formats>");
+
+  if (credential_iterator_format_available (iterator,
+                                            CREDENTIAL_FORMAT_KEY))
+    g_string_append (xml, "<format>key</format>");
+
+  if (credential_iterator_format_available (iterator,
+                                            CREDENTIAL_FORMAT_RPM))
+    g_string_append (xml, "<format>rpm</format>");
+
+  if (credential_iterator_format_available (iterator,
+                                            CREDENTIAL_FORMAT_DEB))
+    g_string_append (xml, "<format>deb</format>");
+
+  if (credential_iterator_format_available (iterator,
+                                            CREDENTIAL_FORMAT_EXE))
+    g_string_append (xml, "<format>exe</format>");
+
+  if (credential_iterator_format_available (iterator,
+                                            CREDENTIAL_FORMAT_PEM))
+    g_string_append (xml, "<format>pem</format>");
+
+  g_string_append (xml, "</formats>");
+
+  return g_string_free (xml, FALSE);
 }
 
 /**
