@@ -2098,8 +2098,25 @@ task_role_iterator_uuid (iterator_t*);
 
 /* Credentials. */
 
+/**
+ * @brief Export formats for credentials
+ */
+typedef enum
+{
+  CREDENTIAL_FORMAT_NONE = 0,   /// normal XML output
+  CREDENTIAL_FORMAT_KEY = 1,    /// public key
+  CREDENTIAL_FORMAT_RPM = 2,    /// RPM package
+  CREDENTIAL_FORMAT_DEB = 3,    /// DEB package
+  CREDENTIAL_FORMAT_EXE = 4,    /// EXE installer
+  CREDENTIAL_FORMAT_PEM = 5,    /// Certificate PEM
+  CREDENTIAL_FORMAT_ERROR = -1  /// Error / Invalid format
+} credential_format_t;
+
 gboolean
 find_credential_with_permission (const char*, credential_t*, const char*);
+
+gboolean
+validate_credential_username_for_format (const gchar *, credential_format_t);
 
 int
 create_credential (const char*, const char*, const char*, const char*,
@@ -2200,6 +2217,12 @@ credential_iterator_exe (iterator_t*);
 
 const char*
 credential_iterator_certificate (iterator_t*);
+
+gboolean
+credential_iterator_format_available (iterator_t*, credential_format_t);
+
+gchar *
+credential_iterator_formats_xml (iterator_t* iterator);
 
 char*
 credential_uuid (credential_t);

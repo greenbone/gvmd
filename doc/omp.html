@@ -17353,7 +17353,7 @@ get_assets_response_asset_count_page
           </li>
 <li>
           @<b>format</b>
-          ("key", "rpm", "deb" or "exe")
+          ("key", "rpm", "deb", "exe" or "pem")
           </li>
 </ul>
 </li>
@@ -17483,6 +17483,15 @@ get_assets_response_asset_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>formats</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The export formats available for the credential.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>format</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Format as used in the command.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>auth_algorithm</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">The SNMP authentication algorithm.</div>
 <ul style="list-style: none"></ul>
@@ -17559,6 +17568,10 @@ get_assets_response_asset_count_page
           @<b>format</b>
           ("rpm", "deb" or "exe")
           </li></ul>
+</li>
+<li>
+              &lt;<b>certificate</b>&gt;
+              <ul style="list-style: none"></ul>
 </li>
 </ul>
 </li>
@@ -17662,7 +17675,7 @@ get_assets_response_asset_count_page
        &amp; attribute scanners { boolean }?
        &amp; attribute trash { boolean }?
        &amp; attribute targets { boolean }?
-       &amp; attribute format { xsd:token { pattern = "key|rpm|deb|exe" } }?
+       &amp; attribute format { xsd:token { pattern = "key|rpm|deb|exe|pem" } }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_credentials_response
@@ -17694,13 +17707,15 @@ get_credentials_response_credential
        &amp; get_credentials_response_credential_user_tags
        &amp; get_credentials_response_credential_type
        &amp; get_credentials_response_credential_full_type
+       &amp; get_credentials_response_credential_formats
        &amp; get_credentials_response_credential_auth_algorithm?
        &amp; get_credentials_response_credential_privacy?
        &amp; get_credentials_response_credential_certificate_info?
        &amp; get_credentials_response_credential_scanners?
        &amp; get_credentials_response_credential_targets?
        &amp; ( get_credentials_response_credential_public_key
-           | get_credentials_response_credential_package )
+           | get_credentials_response_credential_package
+           | get_credentials_response_credential_certificate )
      }
 
 get_credentials_response_credential_owner
@@ -17833,6 +17848,18 @@ get_credentials_response_credential_full_type
        text
      }
 
+get_credentials_response_credential_formats
+ = element formats
+     {
+       get_credentials_response_credential_formats_format*
+     }
+
+get_credentials_response_credential_formats_format
+ = element format
+     {
+       xsd:token { pattern = "key|rpm|deb|exe|pem" }
+     }
+
 get_credentials_response_credential_auth_algorithm
  = element auth_algorithm
      {
@@ -17924,6 +17951,12 @@ get_credentials_response_credential_package
      {
        base64
        &amp; attribute format { xsd:token { pattern = "rpm|deb|exe" } }
+     }
+
+get_credentials_response_credential_certificate
+ = element certificate
+     {
+       text
      }
 
 get_credentials_response_filters
@@ -18046,6 +18079,11 @@ get_credentials_response_credential_count_page
      &lt;/user_tags&gt;
      &lt;type&gt;usk&lt;/type&gt;
      &lt;full_type&gt;username + SSH key&lt;/full_type&gt;
+     &lt;formats&gt;
+       &lt;format&gt;key&lt;/format&gt;
+       &lt;format&gt;rpm&lt;/format&gt;
+       &lt;format&gt;deb&lt;/format&gt;
+     &lt;/formats&gt;
    &lt;/credential&gt;
    &lt;credential id="8e305b0b-260d-450d-91a8-dadf0b144e15"&gt;
      &lt;name&gt;bob&lt;/name&gt;
@@ -18057,6 +18095,9 @@ get_credentials_response_credential_count_page
      &lt;login&gt;bob&lt;/login&gt;
      &lt;type&gt;up&lt;/type&gt;
      &lt;full_type&gt;username + password&lt;/full_type&gt;
+     &lt;formats&gt;
+       &lt;format&gt;exe&lt;/format&gt;
+     &lt;/formats&gt;
    &lt;/credential&gt;
    ...
  &lt;/get_credentials_response&gt;
@@ -26000,6 +26041,11 @@ get_report_formats_response_report_format_count_page
           (<a href="#type_boolean">boolean</a>)
           Whether to include additional details of the results.
           </li>
+<li>
+          @<b>get_counts</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to include result counts.
+          </li>
 </ul>
 </li>
 <li style="margin-top: 15px;">
@@ -26088,7 +26134,7 @@ get_report_formats_response_report_format_count_page
 </li>
 <li>
               &lt;<b>result_count</b>&gt;
-              <ul style="list-style: none">
+              ?<ul style="list-style: none">
 <li>
               &lt;<b>filtered</b>&gt;
               <div style="margin-left: 15px; display: inline;">Number of results after filtering.</div>
@@ -26116,6 +26162,7 @@ get_report_formats_response_report_format_count_page
        &amp; attribute note_details { boolean }?
        &amp; attribute override_details { boolean }?
        &amp; attribute details { boolean }?
+       &amp; attribute get_counts { boolean }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_results_response
@@ -26127,7 +26174,7 @@ get_report_formats_response_report_format_count_page
        &amp; get_results_response_filters
        &amp; get_results_response_sort
        &amp; get_results_response_results
-       &amp; get_results_response_result_count
+       &amp; get_results_response_result_count?
      }
 
 get_results_response_result
@@ -37690,6 +37737,10 @@ start_task_response_report_id
           @<b>status_text</b>
           (text)
           </li>
+<li>
+              &lt;<a href="#element_"><b>status_details</b></a>&gt;
+              ?<div style="margin-left: 15px; display: inline;">.</div>
+</li>
 </ul>
 </li>
 </ul>
@@ -37706,6 +37757,7 @@ start_task_response_report_id
      {
        attribute status { status }
        &amp; attribute status_text { text }
+       &amp; status_details?
      }
 </pre></div>
 </div>
