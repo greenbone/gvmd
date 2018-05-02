@@ -297,7 +297,7 @@ lsc_user_rpm_create (const gchar *username,
 
   g_debug ("%s: Attempting RPM build\n", __FUNCTION__);
   cmd = (gchar **) g_malloc (5 * sizeof (gchar *));
-  cmd[0] = g_strdup ("./openvas-lsc-rpm-creator.sh");
+  cmd[0] = g_strdup ("./gvm-lsc-rpm-creator.sh");
   cmd[1] = g_strdup ("--target");
   cmd[2] = g_strdup (tmpdir);
   cmd[3] = g_build_filename (tmpdir, pubkey_basename, NULL);
