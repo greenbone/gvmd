@@ -5885,8 +5885,9 @@ get_slave_system_report_types (const char *required_type, gchar ***start,
 
 /**
  * @brief Command called by get_system_report_types.
+ *        gvmcg stands for gvm-create-graphs.
  */
-#define COMMAND "openvasmr 0 titles"
+#define COMMAND "gvmcg 0 titles"
 
 /**
  * @brief Get system report types.
@@ -5925,7 +5926,7 @@ get_system_report_types (const char *required_type, gchar ***start,
       || (WIFEXITED (exit_status) == 0)
       || WEXITSTATUS (exit_status))
     {
-      g_debug ("%s: openvasmr failed with %d", __FUNCTION__, exit_status);
+      g_debug ("%s: gvmcg failed with %d", __FUNCTION__, exit_status);
       g_debug ("%s: stdout: %s", __FUNCTION__, astdout);
       g_debug ("%s: stderr: %s", __FUNCTION__, astderr);
       g_free (astdout);
@@ -6249,21 +6250,21 @@ manage_system_report (const char *name, const char *duration,
     {
       if (end_time && strcmp (end_time, ""))
         {
-          command = g_strdup_printf ("openvasmr %ld %ld %s",
+          command = g_strdup_printf ("gvmcg %ld %ld %s",
                                      start_time_num,
                                      end_time_num,
                                      name);
         }
       else if (duration && strcmp (duration, ""))
         {
-          command = g_strdup_printf ("openvasmr %ld %ld %s",
+          command = g_strdup_printf ("gvmcg %ld %ld %s",
                                      start_time_num,
                                      start_time_num + duration_num,
                                      name);
         }
       else
         {
-          command = g_strdup_printf ("openvasmr %ld %ld %s",
+          command = g_strdup_printf ("gvmcg %ld %ld %s",
                                      start_time_num,
                                      start_time_num + DEFAULT_DURATION,
                                      name);
@@ -6273,14 +6274,14 @@ manage_system_report (const char *name, const char *duration,
     {
       if (duration && strcmp (duration, ""))
         {
-          command = g_strdup_printf ("openvasmr %ld %ld %s",
+          command = g_strdup_printf ("gvmcg %ld %ld %s",
                                      end_time_num - duration_num,
                                      end_time_num,
                                      name);
         }
       else
         {
-          command = g_strdup_printf ("openvasmr %ld %ld %s",
+          command = g_strdup_printf ("gvmcg %ld %ld %s",
                                      end_time_num - DEFAULT_DURATION,
                                      end_time_num,
                                      name);
@@ -6290,13 +6291,13 @@ manage_system_report (const char *name, const char *duration,
     {
       if (duration && strcmp (duration, ""))
         {
-          command = g_strdup_printf ("openvasmr %ld %s",
+          command = g_strdup_printf ("gvmcg %ld %s",
                                      duration_num,
                                      name);
         }
       else
         {
-          command = g_strdup_printf ("openvasmr %ld %s",
+          command = g_strdup_printf ("gvmcg %ld %s",
                                      DEFAULT_DURATION,
                                      name);
         }
@@ -6320,7 +6321,7 @@ manage_system_report (const char *name, const char *duration,
       gsize output_len;
       GString *buffer;
 
-      g_debug ("%s: openvasmr failed with %d", __FUNCTION__, exit_status);
+      g_debug ("%s: gvmcg failed with %d", __FUNCTION__, exit_status);
       g_debug ("%s: stdout: %s", __FUNCTION__, astdout);
       g_debug ("%s: stderr: %s", __FUNCTION__, astderr);
       g_free (astdout);
