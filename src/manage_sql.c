@@ -42017,7 +42017,7 @@ credential_iterator_rpm (iterator_t *iterator)
     }
   else if (lsc_user_rpm_recreate (login, public_key, &rpm, &rpm_size))
     {
-      g_warning ("%s: Failed to create RPM base for DEB\n", __FUNCTION__);
+      g_warning ("%s: Failed to create RPM\n", __FUNCTION__);
       g_free (public_key);
       return NULL;
     }
