@@ -124,6 +124,12 @@ int
 sql_begin_exclusive_giveup ();
 
 void
+sql_begin_exclusive_lock (int);
+
+int
+sql_begin_exclusive_giveup_lock (int);
+
+void
 sql_begin_immediate ();
 
 int

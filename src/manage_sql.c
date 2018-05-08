@@ -53267,7 +53267,7 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
 
   /* Get any new results and hosts from the slave. */
 
-  sql_begin_immediate ();
+  sql_begin_exclusive_lock (task);
   hosts = (*report)->entities;
   while ((host_start = first_entity (hosts)))
     {
@@ -53299,7 +53299,7 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
 
   assert (current_report);
 
-  sql_begin_immediate ();
+  sql_begin_exclusive_lock (task);
   results = entity->entities;
   while ((entity = first_entity (results)))
     {
