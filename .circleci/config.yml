@@ -2,7 +2,7 @@ version: 2
 jobs:
   build_sqlite:
     docker:
-      - image: wiegandm/gvm-sqlite-debian-stretch
+      - image: greenbone/build-env-gvm-master-debian-stretch-gcc-sqlite
     steps:
       - run:
           working_directory: ~/gvm-libs
@@ -18,7 +18,7 @@ jobs:
           command: mkdir build && cd build/ && cmake -DCMAKE_BUILD_TYPE=Release .. && make install
   build_postgresql:
     docker:
-      - image: wiegandm/gvm-postgresql-debian-stretch
+      - image: greenbone/build-env-gvm-master-debian-stretch-gcc-postgresql
     steps:
       - run:
           working_directory: ~/gvm-libs
