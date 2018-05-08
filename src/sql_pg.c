@@ -676,6 +676,30 @@ sql_begin_immediate_giveup ()
 }
 
 /**
+ * @brief Begin an immediate transaction.
+ *
+ * @param[in]  key       Transaction key may be a resource id.
+ */
+void
+sql_begin_immediate_with_key (int key)
+{
+  sql_begin_exclusive_lock (key);
+}
+
+/**
+ * @brief Begin an immediate transaction.
+ *
+ * @param[in]  key       A used transaction key.
+ *
+ * @return 0 got lock, 1 gave up, -1 error.
+ */
+int
+sql_begin_immediate_giveup_with_key (int key)
+{
+  return sql_begin_exclusive_giveup_lock (key);
+}
+
+/**
  * @brief Commit a transaction.
  */
 void

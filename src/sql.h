@@ -136,6 +136,12 @@ int
 sql_begin_immediate_giveup ();
 
 void
+sql_begin_immediate_with_key (int);
+
+int
+sql_begin_immediate_giveup_with_key (int);
+
+void
 sql_commit ();
 
 void
