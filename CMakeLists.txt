@@ -224,6 +224,7 @@ set (GVMD_VERSION "${PROJECT_VERSION_STRING}")
 # Configure Doxyfile with version number
 configure_file (doc/Doxyfile.in doc/Doxyfile)
 configure_file (doc/Doxyfile_full.in doc/Doxyfile_full)
+configure_file (doc/Doxyfile_xml.in doc/Doxyfile_xml)
 configure_file (doc/example-gvm-manage-certs.conf.in doc/example-gvm-manage-certs.conf @ONLY)
 configure_file (VERSION.in VERSION)
 configure_file (src/gvmd_log_conf.cmake_in src/gvmd_log.conf)
