@@ -4288,6 +4288,12 @@ manage_run_wizard (const gchar *, int (*) (void*, gchar*, gchar**),
 
 /* Helpers. */
 
+void
+truncate_text (gchar *, size_t, gboolean, const char *);
+
+gchar *
+xml_escape_text_truncated (const char *, size_t, const char *);
+
 char *
 iso_time (time_t *);
 
