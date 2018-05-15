@@ -42042,8 +42042,8 @@ credential_iterator_deb (iterator_t *iterator)
 {
   const char *login, *private_key, *pass;
   char *public_key;
-  void *deb, *rpm;
-  gsize deb_size, rpm_size;
+  void *deb;
+  gsize deb_size;
   gchar *deb64;
 
   if (iterator->done) return NULL;
@@ -42060,20 +42060,14 @@ credential_iterator_deb (iterator_t *iterator)
       g_free (public_key);
       return NULL;
     }
-  else if (lsc_user_rpm_recreate (login, public_key, &rpm, &rpm_size))
+  else if (lsc_user_deb_recreate (login, public_key, &deb, &deb_size))
     {
-      g_warning ("%s: Failed to create RPM base for DEB\n", __FUNCTION__);
+      g_warning ("%s: Failed to create DEB\n", __FUNCTION__);
       g_free (public_key);
       return NULL;
     }
   g_free (public_key);
 
-  if (lsc_user_deb_recreate (login, rpm, rpm_size, &deb, &deb_size))
-    {
-      free (rpm);
-      return NULL;
-    }
-  free (rpm);
   deb64 = (deb && deb_size)
           ? g_base64_encode (deb, deb_size)
           : g_strdup ("");
