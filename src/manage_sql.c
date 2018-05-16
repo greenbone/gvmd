@@ -61021,7 +61021,9 @@ asset_os_count (const get_data_t *get)
 {
   static const char *extra_columns[] = OS_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = OS_ITERATOR_COLUMNS;
-  return count ("os", get, columns, NULL, extra_columns, 0, 0, 0, TRUE);
+  static column_t where_columns[] = OS_ITERATOR_WHERE_COLUMNS;
+  return count2 ("os", get, columns, NULL, where_columns, NULL,
+                 extra_columns, 0, 0, 0, TRUE);
 }
 
 /**
