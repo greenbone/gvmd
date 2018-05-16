@@ -60837,7 +60837,8 @@ asset_host_count (const get_data_t *get)
  */
 #define OS_ITERATOR_FILTER_COLUMNS                                           \
  { GET_ITERATOR_FILTER_COLUMNS, "title", "hosts", "latest_severity",         \
-   "highest_severity", "average_severity", "average_severity_score", NULL }
+   "highest_severity", "average_severity", "average_severity_score",         \
+   "severity", NULL }
 
 /**
  * @brief OS iterator columns.
@@ -60914,6 +60915,18 @@ asset_host_count (const get_data_t *get)
      "       AS hosts)"                                                       \
      " AS severities)",                                                       \
      "average_severity_score",                                                \
+     KEYWORD_TYPE_DOUBLE                                                      \
+   },                                                                         \
+   {                                                                          \
+     "(SELECT round (CAST (avg (severity) AS numeric), 2)"                    \
+     " FROM (SELECT (SELECT severity FROM host_max_severities"                \
+     "               WHERE host = hosts.host"                                 \
+     "               ORDER BY creation_time DESC LIMIT 1)"                    \
+     "              AS severity"                                              \
+     "       FROM (SELECT distinct host FROM host_oss WHERE os = oss.id)"     \
+     "       AS hosts)"                                                       \
+     " AS severities)",                                                       \
+     "severity",                                                              \
      KEYWORD_TYPE_DOUBLE                                                      \
    },                                                                         \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
