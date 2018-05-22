@@ -1355,6 +1355,8 @@ process_otp_scanner_input ()
                                     name, &value_start, &value_end);
                     if (count == 1 && value_start > 0 && value_end > 0
                         && ((strcmp (name, "SSH Authorization") == 0)
+                            || (strcmp (name, "SNMP Authorization") == 0)
+                            || (strcmp (name, "ESXi Authorization") == 0)
                             || (strcmp (name, "SMB Authorization") == 0)))
                       current_scanner_preference = NULL;
                     else
