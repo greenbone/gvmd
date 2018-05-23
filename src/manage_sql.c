@@ -47847,18 +47847,26 @@ verify_scanner (const char *scanner_id, char **version)
       host = scanner_iterator_host (&scanner);
       port = scanner_iterator_port (&scanner);
       if (host == NULL)
-        return -1;
+        {
+          cleanup_iterator (&scanner);
+          return -1;
+        }
 
       if (connection_open (&connection, host, port))
-        return 2;
+        {
+          cleanup_iterator (&scanner);
+          return 2;
+        }
 
       if (gmp_ping_c (&connection, 0, version))
         {
           gvm_connection_close (&connection);
+          cleanup_iterator (&scanner);
           return 2;
         }
       g_debug ("%s: *version: %s", __FUNCTION__, *version);
       gvm_connection_close (&connection);
+      cleanup_iterator (&scanner);
       return 0;
     }
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OSP)
@@ -47908,6 +47916,7 @@ verify_scanner (const char *scanner_id, char **version)
     {
       if (version)
         *version = g_strdup ("OTP/2.0");
+      cleanup_iterator (&scanner);
       return 0;
     }
   assert (0);
