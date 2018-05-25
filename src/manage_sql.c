@@ -25735,7 +25735,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       /* Default to "vulnerability" (a.k.a "name") for unknown sort fields.
        *
        * Also done in print_report_xml_start, so this is just a safety check. */
-      ret = strcmp (name, delta_name);
+      ret = strcmp (name ? name : "", delta_name ? delta_name : "");
       if (sort_order == 0)
         ret = -ret;
       if (ret)
