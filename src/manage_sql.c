@@ -25735,7 +25735,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       /* Default to "vulnerability" (a.k.a "name") for unknown sort fields.
        *
        * Also done in print_report_xml_start, so this is just a safety check. */
-      ret = strcmp (name, delta_name);
+      ret = strcmp (name ? name : "", delta_name ? delta_name : "");
       if (sort_order == 0)
         ret = -ret;
       if (ret)
@@ -29161,21 +29161,14 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   else
     {
       term = NULL;
-      first_result = 0;
-      max_results = -1;
-      sort_field = NULL;
-      sort_order = 1;
-      result_hosts_only = 1;
-      min_qod = NULL;
-      levels = NULL;
-      delta_states = NULL;
-      search_phrase = NULL;
-      search_phrase_exact = 0;
-      autofp = 0;
-      notes = 0;
-      overrides = 0;
-      apply_overrides = 0;
-      zone = NULL;
+      /* Set the filter parameters to defaults. */
+      manage_report_filter_controls (term ? term : get->filter,
+                                     &first_result, &max_results, &sort_field,
+                                     &sort_order, &result_hosts_only,
+                                     &min_qod, &levels, &delta_states,
+                                     &search_phrase, &search_phrase_exact,
+                                     &autofp, &notes, &overrides,
+                                     &apply_overrides, &zone);
     }
 
   max_results = manage_max_rows (max_results);
