@@ -25735,7 +25735,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       /* Default to "vulnerability" (a.k.a "name") for unknown sort fields.
        *
        * Also done in print_report_xml_start, so this is just a safety check. */
-      ret = strcmp (name, delta_name);
+      ret = strcmp (name ? name : "", delta_name ? delta_name : "");
       if (sort_order == 0)
         ret = -ret;
       if (ret)
@@ -29161,21 +29161,14 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   else
     {
       term = NULL;
-      first_result = 0;
-      max_results = -1;
-      sort_field = NULL;
-      sort_order = 1;
-      result_hosts_only = 1;
-      min_qod = NULL;
-      levels = NULL;
-      delta_states = NULL;
-      search_phrase = NULL;
-      search_phrase_exact = 0;
-      autofp = 0;
-      notes = 0;
-      overrides = 0;
-      apply_overrides = 0;
-      zone = NULL;
+      /* Set the filter parameters to defaults. */
+      manage_report_filter_controls (term ? term : get->filter,
+                                     &first_result, &max_results, &sort_field,
+                                     &sort_order, &result_hosts_only,
+                                     &min_qod, &levels, &delta_states,
+                                     &search_phrase, &search_phrase_exact,
+                                     &autofp, &notes, &overrides,
+                                     &apply_overrides, &zone);
     }
 
   max_results = manage_max_rows (max_results);
@@ -47847,18 +47840,26 @@ verify_scanner (const char *scanner_id, char **version)
       host = scanner_iterator_host (&scanner);
       port = scanner_iterator_port (&scanner);
       if (host == NULL)
-        return -1;
+        {
+          cleanup_iterator (&scanner);
+          return -1;
+        }
 
       if (connection_open (&connection, host, port))
-        return 2;
+        {
+          cleanup_iterator (&scanner);
+          return 2;
+        }
 
       if (gmp_ping_c (&connection, 0, version))
         {
           gvm_connection_close (&connection);
+          cleanup_iterator (&scanner);
           return 2;
         }
       g_debug ("%s: *version: %s", __FUNCTION__, *version);
       gvm_connection_close (&connection);
+      cleanup_iterator (&scanner);
       return 0;
     }
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OSP)
@@ -47908,6 +47909,7 @@ verify_scanner (const char *scanner_id, char **version)
     {
       if (version)
         *version = g_strdup ("OTP/2.0");
+      cleanup_iterator (&scanner);
       return 0;
     }
   assert (0);
@@ -60837,7 +60839,8 @@ asset_host_count (const get_data_t *get)
  */
 #define OS_ITERATOR_FILTER_COLUMNS                                           \
  { GET_ITERATOR_FILTER_COLUMNS, "title", "hosts", "latest_severity",         \
-   "highest_severity", "average_severity", "average_severity_score", NULL }
+   "highest_severity", "average_severity", "average_severity_score",         \
+   "severity", NULL }
 
 /**
  * @brief OS iterator columns.
@@ -60914,6 +60917,18 @@ asset_host_count (const get_data_t *get)
      "       AS hosts)"                                                       \
      " AS severities)",                                                       \
      "average_severity_score",                                                \
+     KEYWORD_TYPE_DOUBLE                                                      \
+   },                                                                         \
+   {                                                                          \
+     "(SELECT round (CAST (avg (severity) AS numeric), 2)"                    \
+     " FROM (SELECT (SELECT severity FROM host_max_severities"                \
+     "               WHERE host = hosts.host"                                 \
+     "               ORDER BY creation_time DESC LIMIT 1)"                    \
+     "              AS severity"                                              \
+     "       FROM (SELECT distinct host FROM host_oss WHERE os = oss.id)"     \
+     "       AS hosts)"                                                       \
+     " AS severities)",                                                       \
+     "severity",                                                              \
      KEYWORD_TYPE_DOUBLE                                                      \
    },                                                                         \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
@@ -61021,7 +61036,9 @@ asset_os_count (const get_data_t *get)
 {
   static const char *extra_columns[] = OS_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = OS_ITERATOR_COLUMNS;
-  return count ("os", get, columns, NULL, extra_columns, 0, 0, 0, TRUE);
+  static column_t where_columns[] = OS_ITERATOR_WHERE_COLUMNS;
+  return count2 ("os", get, columns, NULL, where_columns, NULL,
+                 extra_columns, 0, 0, 0, TRUE);
 }
 
 /**

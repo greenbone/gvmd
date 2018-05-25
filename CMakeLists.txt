@@ -47,6 +47,8 @@ if (NOT BACKEND STREQUAL POSTGRESQL)
   set (BACKEND SQLITE3)
 endif (NOT BACKEND STREQUAL POSTGRESQL)
 
+OPTION (ENABLE_COVERAGE "Enable support for coverage analysis" OFF)
+
 ## Retrieve git revision (at configure time)
 include (GetGit)
 
@@ -224,6 +226,7 @@ set (GVMD_VERSION "${PROJECT_VERSION_STRING}")
 # Configure Doxyfile with version number
 configure_file (doc/Doxyfile.in doc/Doxyfile)
 configure_file (doc/Doxyfile_full.in doc/Doxyfile_full)
+configure_file (doc/Doxyfile_xml.in doc/Doxyfile_xml)
 configure_file (doc/example-gvm-manage-certs.conf.in doc/example-gvm-manage-certs.conf @ONLY)
 configure_file (VERSION.in VERSION)
 configure_file (src/gvmd_log_conf.cmake_in src/gvmd_log.conf)
@@ -236,12 +239,16 @@ configure_file (tools/gvm-manage-certs.in tools/gvm-manage-certs @ONLY)
 
 ## Program
 
+if (ENABLE_COVERAGE)
+  set (COVERAGE_FLAGS "--coverage")
+endif (ENABLE_COVERAGE)
+
 set (HARDENING_FLAGS            "-Wformat -Wformat-security -D_FORTIFY_SOURCE=2 -fstack-protector")
 set (LINKER_HARDENING_FLAGS     "-Wl,-z,relro -Wl,-z,now")
 
 set (CMAKE_C_FLAGS              "${CMAKE_C_FLAGS} -Wall -D_BSD_SOURCE -D_ISOC99_SOURCE -D_SVID_SOURCE -D_DEFAULT_SOURCE -D_FILE_OFFSET_BITS=64")
 
-set (CMAKE_C_FLAGS_DEBUG        "${CMAKE_C_FLAGS_DEBUG} -Werror")
+set (CMAKE_C_FLAGS_DEBUG        "${CMAKE_C_FLAGS_DEBUG} -Werror ${COVERAGE_FLAGS}")
 set (CMAKE_C_FLAGS_RELEASE      "${CMAKE_C_FLAGS_RELEASE} ${HARDENING_FLAGS}")
 
 if (NOT SKIP_SRC)
