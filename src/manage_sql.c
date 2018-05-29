@@ -29345,9 +29345,9 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     }
   else
     {
-      term = NULL;
-      /* Set the filter parameters to defaults. */
-      manage_report_filter_controls (term ? term : get->filter,
+      term = g_strdup ("");
+      /* Set the filter parameters to defaults */
+      manage_report_filter_controls (term,
                                      &first_result, &max_results, &sort_field,
                                      &sort_order, &result_hosts_only,
                                      &min_qod, &levels, &delta_states,
