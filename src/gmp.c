@@ -21565,10 +21565,10 @@ handle_create_tags (gmp_parser_t *gmp_parser, GError **error)
                                        "\">"
                                        "<status_details>"
                                        "<count>"
-                                       "<created>%d</count>"
+                                       "<created>%d</created>"
                                        "<failed>%d</failed>"
                                        "</count>"
-                                       "<status_details>"
+                                       "</status_details>"
                                        "</create_tags_response>",
                                        created_count,
                                        failed_count);
