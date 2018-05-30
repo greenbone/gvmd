@@ -65723,6 +65723,74 @@ create_tag (const char * name, const char * comment, const char * value,
 }
 
 /**
+ * @brief Create tags for multiple resources.
+ *
+ * @param[in]  name             Name of the tags.
+ * @param[in]  comment          Comment for the tags.
+ * @param[in]  value            Value of the tags.
+ * @param[in]  resources_type   Resource type to attach the tags to.
+ * @param[in]  resources_filter Filter for resources to attach the tags to.
+ * @param[in]  resource_ids     Unique IDs of the resource to attach tags to.
+ * @param[in]  active           0 for inactive, NULL or any other for active.
+ * @param[out] created_count    Number of created tags.
+ * @param[out] failed_count     Number of failed attempts to create a tag.
+ *
+ * @return 0 success, 1 too many resources selected, 99 permission denied,
+ *   -1 error.
+ */
+int
+create_tags (const char *name, const char *comment, const char *value,
+             const char *resources_type, const char *resources_filter,
+             array_t *resource_ids, const char *active,
+             int *created_count, int *failed_count)
+{
+  int max_bulk_count = 1000; // TODO: Make this a setting
+  int requested_count;
+
+  /* Basic checks */
+  if (acl_user_may ("create_tag") == 0)
+    {
+      return 99;
+    }
+
+  /* Process list of UUIDs */
+  requested_count = resource_ids->len - 1;
+
+  if (requested_count > max_bulk_count)
+    return 1;
+  else if (requested_count > 0)
+    {
+      gchar *resource_id;
+      int index = 0;
+
+      while ((resource_id
+                = (gchar*) g_ptr_array_index (resource_ids, index++)))
+        {
+          resource_t resource;
+          tag_t tag = 0;
+
+          if (find_resource_with_permission
+                  (resources_type, resource_id, &resource, NULL, 0) == FALSE
+              && resource)
+            {
+              create_tag (name, comment, value, resources_type, resource_id,
+                          active, &tag);
+            }
+          if (tag)
+            *created_count = *created_count + 1;
+          else
+            *failed_count = *failed_count + 1;
+        }
+    }
+
+  /* Process filter */
+
+  // TODO
+
+  return 0;
+}
+
+/**
  * @brief Delete a tag.
  *
  * @param[in]  tag_id     UUID of tag.

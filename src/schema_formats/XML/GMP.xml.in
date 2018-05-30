@@ -3108,6 +3108,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>create_scanner</c>
           <c>create_schedule</c>
           <c>create_tag</c>
+          <c>create_tags</c>
           <c>create_target</c>
           <c>create_task</c>
           <c>create_user</c>
@@ -3232,6 +3233,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>create_scanner</r>
             <r>create_schedule</r>
             <r>create_tag</r>
+            <r>create_tags</r>
             <r>create_target</r>
             <r>create_task</r>
             <r>create_user</r>
@@ -5404,6 +5406,156 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <create_tag_response status="201"
                              status_text="OK, resource created"
                              id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_tag_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>create_tags</name>
+    <summary>Create tags for multiple resources</summary>
+    <description>
+      <p>
+        The client uses the create_tags command to create one or more new tags.
+        It works similar to create_tag but uses a filter or list of ids to
+        select the resources.
+      </p>
+    </description>
+    <pattern>
+      <e>name</e>
+      <e>resources</e>
+<!-- TODO: Enable copying or remove
+      <o><e>copy</e></o>
+-->
+      <o><e>value</e></o>
+      <o><e>comment</e></o>
+      <o><e>active</e></o>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>A full tag name consisting of namespace and predicate</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>resources</name>
+      <summary>Identifies the resources the tag is to be attached to</summary>
+      <pattern>
+<!-- TODO: Implement filter
+        <attrib>
+          <name>filter</name>
+          <summary>Filters to select the resources to attach tags to</summary>
+          <type>text</type>
+          <required>0</required>
+        </attrib>
+-->
+        <any><e>resource</e></any>
+        <e>type</e>
+      </pattern>
+      <ele>
+        <name>resource</name>
+        <summary>Identifies a resource the tag is to be attached to</summary>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>ID of the resource the tag is to be attached to</summary>
+            <type>uuid</type>
+            <required>0</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>type</name>
+        <summary>GMP type of the resource the tag is to be attached to</summary>
+        <pattern>text</pattern>
+      </ele>
+    </ele>
+<!-- TODO: Implement copying or remove
+    <ele>
+      <name>copy</name>
+      <summary>UUID of an existing tag to copy</summary>
+      <pattern><t>uuid</t></pattern>
+    </ele>
+-->
+    <ele>
+      <name>value</name>
+      <summary>Value associated with the tag</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>Comment to add to the tag</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>active</name>
+      <summary>Whether the tag is active</summary>
+      <pattern>boolean</pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <e>status_details</e>
+      </pattern>
+      <ele>
+        <name>status_details</name>
+        <summary>Details about the tag creation</summary>
+        <pattern>
+          <e>count</e>
+        </pattern>
+        <ele>
+          <name>count</name>
+          <summary></summary>
+          <pattern>
+            <e>created</e>
+            <e>failed</e>
+          </pattern>
+          <ele>
+            <name>created</name>
+            <summary>Number of tags created</summary>
+            <pattern>
+              <t>integer</t>
+            </pattern>
+          </ele>
+          <ele>
+            <name>failed</name>
+            <summary>Number of failed attempts</summary>
+            <pattern>
+              <t>integer</t>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Create a tag attached to a target</summary>
+      <request>
+        <create_tag>
+          <name>geo:long</name>
+          <resources>
+            <resource id="b493b7a8-7489-11df-a3ec-002264764cea"/>
+            <resource id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/>
+            <type>target</type>
+          </resources>
+          <value>52.2788</value>
+        </create_tag>
+      </request>
+      <response>
+        <create_tag_response status="201"
+                             status_text="OK, resources created">
+          <status_details>
+            <count>
+              <created>2</created>
+              <failed>0</failed>
+            </count>
+          </status_details>
         </create_tag_response>
       </response>
     </example>
