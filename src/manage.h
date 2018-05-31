@@ -4304,13 +4304,13 @@ int
 column_is_timestamp (const char*);
 
 char*
-type_columns (const char *, int);
+type_columns (const char *);
 
 const char**
-type_filter_columns (const char *, int);
+type_filter_columns (const char *);
 
 char*
-type_trash_columns (const char *, int);
+type_trash_columns (const char *);
 
 gchar*
 type_opts_table (const char *, int, int, int, const char *, const char *,

@@ -4901,10 +4901,10 @@ init_get_iterator (iterator_t* iterator, const char *type,
 
 // FIX
 column_t *
-type_select_columns (const char *type, int);
+type_select_columns (const char *type);
 
 column_t *
-type_where_columns (const char *type, int);
+type_where_columns (const char *type);
 
 /**
  * @brief Append expression for a column to an array.
@@ -5063,11 +5063,11 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   g_free (apply_overrides_str);
   g_free (min_qod_str);
 
-  select_columns = type_select_columns (type, apply_overrides);
-  columns = type_columns (type, apply_overrides);
-  trash_columns = type_trash_columns (type, apply_overrides);
-  where_columns = type_where_columns (type, apply_overrides);
-  filter_columns = type_filter_columns (type, apply_overrides);
+  select_columns = type_select_columns (type);
+  columns = type_columns (type);
+  trash_columns = type_trash_columns (type);
+  where_columns = type_where_columns (type);
+  filter_columns = type_filter_columns (type);
   opts_table = type_opts_table (type, autofp, apply_overrides, min_qod,
                                 task_id, report_id, host);
 
@@ -66461,12 +66461,11 @@ column_is_timestamp (const char* column)
  * @brief Return the SQL column definition for a resource iterator.
  *
  * @param[in]  type             Resource type to get columns of.
- * @param[in]  apply_overrides  Whether to apply overrides.
  *
  * @return The SQL column definitions.
  */
 char*
-type_columns (const char *type, int apply_overrides)
+type_columns (const char *type)
 {
   if (type == NULL)
     return NULL;
@@ -66556,12 +66555,11 @@ type_columns (const char *type, int apply_overrides)
  * @brief Return the columns for a resource iterator.
  *
  * @param[in]  type             Resource type to get columns of.
- * @param[in]  apply_overrides  Whether to apply overrides.
  *
  * @return The columns.
  */
 column_t *
-type_select_columns (const char *type, int apply_overrides)
+type_select_columns (const char *type)
 {
   static column_t task_columns[] = TASK_ITERATOR_COLUMNS;
   static column_t report_columns[] = REPORT_ITERATOR_COLUMNS;
@@ -66621,12 +66619,11 @@ type_select_columns (const char *type, int apply_overrides)
  * @brief Return the columns for a resource iterator.
  *
  * @param[in]  type             Resource type to get columns of.
- * @param[in]  apply_overrides  Whether to apply overrides.
  *
  * @return The columns.
  */
 column_t *
-type_where_columns (const char *type, int apply_overrides)
+type_where_columns (const char *type)
 {
   static column_t task_columns[] = TASK_ITERATOR_WHERE_COLUMNS;
   static column_t report_columns[] = REPORT_ITERATOR_WHERE_COLUMNS;
@@ -66650,12 +66647,11 @@ type_where_columns (const char *type, int apply_overrides)
  * @brief Return the filter columns for a resource iterator.
  *
  * @param[in]  type             Resource type to get columns of.
- * @param[in]  apply_overrides  Whether to apply overrides.
  *
  * @return The filter columns.
  */
 const char**
-type_filter_columns (const char *type, int apply_overrides)
+type_filter_columns (const char *type)
 {
   if (type == NULL)
     return NULL;
@@ -66748,12 +66744,11 @@ type_filter_columns (const char *type, int apply_overrides)
  * @brief Return the SQL column definition for a trash resource iterator.
  *
  * @param[in]  type             Resource type to get columns of.
- * @param[in]  apply_overrides  Whether to apply overrides.
  *
  * @return The SQL column definitions.
  */
 char*
-type_trash_columns (const char *type, int apply_overrides)
+type_trash_columns (const char *type)
 {
   if (type == NULL)
     return NULL;
