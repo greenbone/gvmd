@@ -4327,6 +4327,9 @@ type_opts_table (const char *, const char *);
 gchar*
 type_table (const char *, int);
 
+gchar*
+type_extra_where (const char *, int, const char *);
+
 gboolean
 manage_migrate_needs_timezone (GSList *, const gchar *);
 

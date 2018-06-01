@@ -5131,46 +5131,10 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                                 permissions);
 
   if (given_extra_where)
-    {
-      extra_where = g_strdup (given_extra_where);
-    }
-  else if (strcasecmp (type, "TASK") == 0)
-    {
-      if (get->trash)
-        extra_where = g_strdup (" AND hidden = 2");
-      else
-        extra_where = g_strdup (" AND hidden = 0");
-    }
-  else if (strcasecmp (type, "REPORT") == 0)
-    {
-      if (get->trash)
-        extra_where = g_strdup (" AND (SELECT hidden FROM tasks"
-                                "      WHERE tasks.id = task)"
-                                "     = 2");
-      else
-        extra_where = g_strdup (" AND (SELECT hidden FROM tasks"
-                                "      WHERE tasks.id = task)"
-                                "     = 0");
-    }
-  else if (strcasecmp (type, "RESULT") == 0)
-    {
-      int autofp, apply_overrides;
-
-      autofp = filter_term_autofp (filter ? filter : get->filter);
-      apply_overrides
-        = filter_term_apply_overrides (filter ? filter : get->filter);
-
-      extra_where = results_extra_where (get->trash, 0, NULL,
-                                         autofp, apply_overrides,
-                                         setting_dynamic_severity_int (),
-                                         filter ? filter : get->filter);
-    }
-  else if (strcasecmp (type, "VULN") == 0)
-    {
-      extra_where = vulns_extra_where ();
-    }
+    extra_where = g_strdup (given_extra_where);
   else
-    extra_where = g_strdup ("");
+    extra_where = type_extra_where (type, get->trash,
+                                    filter ? filter : get->filter);
 
   g_free (owner_filter);
   array_free (permissions);
@@ -66852,6 +66816,60 @@ type_table (const char *type, int trash)
     }
   else
     return NULL;
+}
+
+/**
+ * @brief Return addition to the WHERE clause if required for a resource type.
+ *
+ * @param[in]  type     Resource type to get columns of.
+ * @param[in]  trash    Whether to get the trash table.
+ * @param[in]  filter   The filter term.
+ *
+ * @return The newly allocated WHERE clause additions.
+ */
+gchar*
+type_extra_where (const char *type, int trash, const char *filter)
+{
+  gchar *extra_where;
+
+  if (strcasecmp (type, "TASK") == 0)
+    {
+      if (trash)
+        extra_where = g_strdup (" AND hidden = 2");
+      else
+        extra_where = g_strdup (" AND hidden = 0");
+    }
+  else if (strcasecmp (type, "REPORT") == 0)
+    {
+      if (trash)
+        extra_where = g_strdup (" AND (SELECT hidden FROM tasks"
+                                "      WHERE tasks.id = task)"
+                                "     = 2");
+      else
+        extra_where = g_strdup (" AND (SELECT hidden FROM tasks"
+                                "      WHERE tasks.id = task)"
+                                "     = 0");
+    }
+  else if (strcasecmp (type, "RESULT") == 0)
+    {
+      int autofp, apply_overrides;
+
+      autofp = filter_term_autofp (filter);
+      apply_overrides = filter_term_apply_overrides (filter);
+
+      extra_where = results_extra_where (trash, 0, NULL,
+                                         autofp, apply_overrides,
+                                         setting_dynamic_severity_int (),
+                                         filter);
+    }
+  else if (strcasecmp (type, "VULN") == 0)
+    {
+      extra_where = vulns_extra_where ();
+    }
+  else
+    extra_where = g_strdup ("");
+
+  return extra_where;
 }
 
 /**
