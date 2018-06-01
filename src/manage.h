@@ -3576,6 +3576,15 @@ gchar*
 filter_term_value (const char *, const char *);
 
 int
+filter_term_apply_overrides (const char *);
+
+int
+filter_term_autofp (const char *);
+
+int
+filter_term_min_qod (const char *);
+
+int
 create_filter (const char*, const char*, const char*, const char*, int,
                filter_t*);
 

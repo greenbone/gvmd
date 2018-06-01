@@ -4987,7 +4987,6 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                          const char *given_extra_where)
 {
   int owned;
-  gchar *autofp_str, *apply_overrides_str, *min_qod_str;
   gchar *task_id, *report_id, *host;
   int autofp, apply_overrides, min_qod;
   column_t *select_columns, *where_columns;
@@ -5045,23 +5044,16 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   else
     filter = NULL;
 
-  autofp_str = filter_term_value (filter ? filter : get->filter,
-                                  "autofp");
-  autofp = autofp_str ? atoi (autofp_str) : 0;
-  apply_overrides_str = filter_term_value (filter ? filter : get->filter,
-                                           "apply_overrides");
-  apply_overrides = apply_overrides_str ? atoi (apply_overrides_str) : 1;
-  min_qod_str = filter_term_value (filter ? filter : get->filter, "min_qod");
-  min_qod = (min_qod_str && strcmp (min_qod_str, ""))
-              ? atoi (min_qod_str) : MIN_QOD_DEFAULT;
+  apply_overrides
+    = filter_term_apply_overrides (filter ? filter : get->filter);
+  autofp = filter_term_autofp (filter ? filter : get->filter);
+  min_qod = filter_term_min_qod (filter ? filter : get->filter);
   task_id = filter_term_value (filter ? filter : get->filter,
                                "task_id");
   report_id = filter_term_value (filter ? filter : get->filter,
                                  "report_id");
   host = filter_term_value (filter ? filter : get->filter,
                             "host");
-  g_free (apply_overrides_str);
-  g_free (min_qod_str);
 
   select_columns = type_select_columns (type);
   columns = type_columns (type);
@@ -13665,7 +13657,6 @@ init_task_iterator (iterator_t* iterator, const get_data_t *get)
   static column_t columns_min[] = TASK_ITERATOR_COLUMNS_MIN;
   static column_t where_columns_min[] = TASK_ITERATOR_WHERE_COLUMNS_MIN;
   char *filter;
-  gchar *value;
   int overrides, min_qod;
   gchar *extra_tables;
   int ret;
@@ -13678,14 +13669,10 @@ init_task_iterator (iterator_t* iterator, const get_data_t *get)
     }
   else
     filter = NULL;
-  value = filter_term_value (filter ? filter : get->filter, "apply_overrides");
-  overrides = value && strcmp (value, "0");
-  g_free (value);
 
-  value = filter_term_value (filter ? filter : get->filter, "min_qod");
-  if (value == NULL || sscanf (value, "%d", &min_qod) != 1)
-    min_qod = MIN_QOD_DEFAULT;
-  g_free (value);
+  overrides = filter_term_apply_overrides (filter ? filter : get->filter);
+  min_qod = filter_term_min_qod (filter ? filter : get->filter);
+
   free (filter);
 
   extra_tables = task_iterator_opts_table (overrides, min_qod, 0);
@@ -17535,7 +17522,6 @@ task_count (const get_data_t *get)
   static column_t columns[] = TASK_ITERATOR_COLUMNS;
   static column_t where_columns[] = TASK_ITERATOR_WHERE_COLUMNS;
   char *filter;
-  gchar *value;
   int overrides, min_qod;
   gchar *extra_tables;
   int ret;
@@ -17548,14 +17534,10 @@ task_count (const get_data_t *get)
     }
   else
     filter = NULL;
-  value = filter_term_value (filter ? filter : get->filter, "apply_overrides");
-  overrides = value && strcmp (value, "0");
-  g_free (value);
 
-  value = filter_term_value (filter ? filter : get->filter, "min_qod");
-  if (value == NULL || sscanf (value, "%d", &min_qod) != 1)
-    min_qod = MIN_QOD_DEFAULT;
-  g_free (value);
+  overrides = filter_term_apply_overrides (filter ? filter : get->filter);
+  min_qod = filter_term_min_qod (filter ? filter : get->filter);
+
   free (filter);
 
   extra_tables = task_iterator_opts_table (overrides, min_qod, 0);
@@ -21754,7 +21736,6 @@ init_report_iterator (iterator_t* iterator, const get_data_t *get)
   static column_t columns[] = REPORT_ITERATOR_COLUMNS;
   static column_t where_columns[] = REPORT_ITERATOR_WHERE_COLUMNS;
   char *filter;
-  gchar *value;
   int overrides, min_qod;
   gchar *extra_tables;
   int ret;
@@ -21767,14 +21748,10 @@ init_report_iterator (iterator_t* iterator, const get_data_t *get)
     }
   else
     filter = NULL;
-  value = filter_term_value (filter ? filter : get->filter, "apply_overrides");
-  overrides = value && strcmp (value, "0");
-  g_free (value);
 
-  value = filter_term_value (filter ? filter : get->filter, "min_qod");
-  if (value == NULL || sscanf (value, "%d", &min_qod) != 1)
-    min_qod = MIN_QOD_DEFAULT;
-  g_free (value);
+  overrides = filter_term_apply_overrides (filter ? filter : get->filter);
+  min_qod = filter_term_min_qod (filter ? filter : get->filter);
+
   free (filter);
 
   extra_tables = report_iterator_opts_table (overrides, min_qod);
@@ -22184,28 +22161,18 @@ where_levels_auto (const char *levels, const char *new_severity_sql,
  *
  * @param[in]  min_qod  Minimum value for QoD.
  *
- * @return WHERE clause if one is required, else NULL.
+ * @return WHERE clause if one is required, else an empty string.
  */
 static gchar*
-where_qod (const char* min_qod)
+where_qod (int min_qod)
 {
   gchar *qod_sql;
 
-  if (min_qod && strlen (min_qod))
-    {
-      gchar *quoted_qod;
-
-      if (atoi (min_qod) == 0)
-        return g_strdup ("");
-
-      quoted_qod = sql_quote (min_qod);
-      qod_sql = g_strdup_printf (" AND (qod >= CAST ('%s' AS INTEGER))",
-                                 quoted_qod);
-      g_free (quoted_qod);
-    }
+  if (min_qod <= 0)
+    qod_sql = g_strdup ("");
   else
-    qod_sql = g_strdup_printf (" AND (qod >= CAST ('%d' AS INTEGER))",
-                               MIN_QOD_DEFAULT);
+    qod_sql = g_strdup_printf (" AND (qod >= CAST (%d AS INTEGER))",
+                               min_qod);
 
   return qod_sql;
 }
@@ -22416,14 +22383,14 @@ results_extra_where (const get_data_t *get, report_t report, const gchar* host,
                      const gchar *filter)
 {
   gchar *extra_where;
-  gchar *levels, *min_qod;
+  int min_qod;
+  gchar *levels;
   gchar *report_clause, *host_clause, *min_qod_clause;
   GString *levels_clause;
   gchar *new_severity_sql, *auto_type_sql;
 
   // Get filter values
-  min_qod = filter_term_value (filter, "min_qod");
-
+  min_qod = filter_term_min_qod (filter);
   levels = filter_term_value (filter, "levels");
   if (levels == NULL)
     levels = g_strdup ("hmlgdf");
@@ -22477,7 +22444,6 @@ results_extra_where (const get_data_t *get, report_t report, const gchar* host,
     host_clause = NULL;
 
   min_qod_clause = where_qod (min_qod);
-  g_free (min_qod);
 
   levels_clause = where_levels_auto (levels ? levels : "hmlgdf",
                                      new_severity_sql, auto_type_sql);
@@ -22529,7 +22495,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
   column_t *filterable_columns;
   int ret;
-  gchar *filter, *value;
+  gchar *filter;
   int autofp, apply_overrides, dynamic_severity;
   gchar *extra_tables, *extra_where, *owned_clause;
   gchar *pre_sql;
@@ -22554,9 +22520,8 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   else
     filter = NULL;
 
-  value = filter_term_value (filter ? filter : get->filter, "apply_overrides");
-  apply_overrides = value ? strcmp (value, "0") : 0;
-  g_free (value);
+  apply_overrides
+    = filter_term_apply_overrides (filter ? filter : get->filter);
 
   filterable_columns = column_array_copy (static_filterable_columns);
   column_array_set
@@ -22670,9 +22635,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   columns[2].filter = NULL;
   columns[2].type = KEYWORD_TYPE_UNKNOWN;
 
-  value = filter_term_value (filter ? filter : get->filter, "autofp");
-  autofp = value ? atoi (value) : 0;
-  g_free (value);
+  autofp = filter_term_autofp (filter ? filter : get->filter);
 
   if (autofp == 0)
     {
@@ -22763,7 +22726,7 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
   int ret;
-  gchar *filter, *value;
+  gchar *filter;
   int autofp, apply_overrides, dynamic_severity;
 
   gchar *extra_tables, *extra_where;
@@ -22777,14 +22740,9 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   else
     filter = NULL;
 
-  value = filter_term_value (filter ? filter : get->filter, "apply_overrides");
-  apply_overrides = value ? strcmp (value, "0") : 0;
-  g_free (value);
-
-  value = filter_term_value (filter ? filter : get->filter, "autofp");
-  autofp = value ? atoi (value) : 0;
-  g_free (value);
-
+  apply_overrides
+    = filter_term_apply_overrides (filter ? filter : get->filter);
+  autofp = filter_term_autofp (filter ? filter : get->filter);
   dynamic_severity = setting_dynamic_severity_int ();
 
   extra_tables
@@ -22832,7 +22790,7 @@ result_count (const get_data_t *get, report_t report, const char* host)
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
   int ret;
-  gchar *filter, *value;
+  gchar *filter;
   int apply_overrides, autofp, dynamic_severity;
   gchar *extra_tables, *extra_where;
 
@@ -22845,14 +22803,9 @@ result_count (const get_data_t *get, report_t report, const char* host)
   else
     filter = NULL;
 
-  value = filter_term_value (filter, "apply_overrides");
-  apply_overrides = value && strcmp (value, "0");
-  g_free (value);
-
-  value = filter_term_value (filter, "autofp");
-  autofp = value ? atoi (value) : 0;
-  g_free (value);
-
+  apply_overrides
+    = filter_term_apply_overrides (filter);
+  autofp = filter_term_autofp (filter);
   dynamic_severity = setting_dynamic_severity_int ();
 
   extra_tables
@@ -24435,7 +24388,7 @@ report_severity_data (report_t report, const char *host,
 {
   iterator_t results;
 
-  gchar *filter, *value;
+  gchar *filter;
   int apply_overrides, autofp;
 
   if (report == 0)
@@ -24448,13 +24401,9 @@ report_severity_data (report_t report, const char *host,
   else
     filter = NULL;
 
-  value = filter_term_value (filter ? filter : get->filter, "apply_overrides");
-  apply_overrides = value ? strcmp (value, "0") : 0;
-  g_free (value);
-
-  value = filter_term_value (filter ? filter : get->filter, "autofp");
-  autofp = value ? atoi (value) : 0;
-  g_free (value);
+  apply_overrides
+    = filter_term_apply_overrides (filter ? filter : get->filter);
+  autofp = filter_term_autofp (filter ? filter : get->filter);
 
   if (severity_data)
     {
@@ -57398,6 +57347,85 @@ filter_term_value (const char *term, const char *column)
 }
 
 /**
+ * @brief Return the value of the apply_overrides keyword of a filter term.
+ *
+ * @param[in]  term    Filter term.
+ *
+ * @return Value of apply_overrides if it exists, else APPLY_OVERRIDES_DEFAULT.
+ */
+int
+filter_term_apply_overrides (const char *term)
+{
+  if (term)
+    {
+      int ret;
+      gchar *apply_overrides_str;
+
+      apply_overrides_str = filter_term_value (term, "apply_overrides");
+      ret = apply_overrides_str
+              ? (strcmp (apply_overrides_str, "0") ? 1 : 0)
+              : APPLY_OVERRIDES_DEFAULT;
+
+      g_free (apply_overrides_str);
+      return ret;
+    }
+  else
+    return APPLY_OVERRIDES_DEFAULT;
+}
+
+/**
+ * @brief Return the value of the autofp keyword of a filter term.
+ *
+ * @param[in]  term    Filter term.
+ *
+ * @return Value of autofp if it exists, else 0.
+ */
+int
+filter_term_autofp (const char *term)
+{
+  if (term)
+    {
+      int ret;
+      gchar *autofp_str;
+
+      autofp_str = filter_term_value (term, "autofp");
+      ret = autofp_str ? atoi (autofp_str) : 0;
+
+      g_free (autofp_str);
+      return ret;
+    }
+  else
+    return 0;
+}
+
+/**
+ * @brief Return the value of the min_qod keyword of a filter term.
+ *
+ * @param[in]  term    Filter term.
+ *
+ * @return Value of min_qod if it exists, else MIN_QOD_DEFAULT.
+ */
+int
+filter_term_min_qod (const char *term)
+{
+  if (term)
+    {
+      int ret;
+      gchar *min_qod_str;
+
+      min_qod_str = filter_term_value (term, "min_qod");
+      ret = (min_qod_str && strcmp (min_qod_str, ""))
+              ? atoi (min_qod_str) : MIN_QOD_DEFAULT;
+
+      g_free (min_qod_str);
+      return ret;
+    }
+  else
+    return MIN_QOD_DEFAULT;
+}
+
+
+/**
  * @brief Create a filter.
  *
  * @param[in]   name            Name of filter.
@@ -61265,7 +61293,7 @@ create_asset_report (const char *report_id, const char *term)
 {
   resource_t report;
   iterator_t hosts;
-  gchar *quoted_report_id, *apply_overrides_string, *min_qod_string;
+  gchar *quoted_report_id;
   int apply_overrides, min_qod;
 
   if (report_id == NULL)
@@ -61360,18 +61388,8 @@ create_asset_report (const char *report_id, const char *term)
     }
   cleanup_iterator (&hosts);
   hosts_set_identifiers ();
-  apply_overrides_string = filter_term_value (term, "apply_overrides");
-  if (apply_overrides_string)
-    apply_overrides = atoi (apply_overrides_string);
-  else
-    apply_overrides = 1;
-  g_free (apply_overrides_string);
-  min_qod_string = filter_term_value (term, "min_qod");
-  if (min_qod_string)
-    min_qod = atoi (min_qod_string);
-  else
-    min_qod = MIN_QOD_DEFAULT;
-  g_free (min_qod_string);
+  apply_overrides = filter_term_apply_overrides (term);
+  min_qod = filter_term_min_qod (term);
   hosts_set_max_severity (report, &apply_overrides, &min_qod);
   hosts_set_details (report);
 
@@ -65160,7 +65178,7 @@ vuln_iterator_opts_table (const gchar *task_id, const gchar *report_id,
 static gchar*
 vuln_iterator_opts_from_filter (const gchar *filter)
 {
-  gchar *task_id, *report_id, *host, *min_qod_str;
+  gchar *task_id, *report_id, *host;
   int min_qod;
   gchar *ret;
 
@@ -65169,16 +65187,13 @@ vuln_iterator_opts_from_filter (const gchar *filter)
   task_id = filter_term_value (filter, "task_id");
   report_id = filter_term_value (filter, "report_id");
   host = filter_term_value (filter, "host");
-  min_qod_str = filter_term_value (filter, "min_qod");
-  min_qod = (min_qod_str && strcmp (min_qod_str, ""))
-              ? atoi (min_qod_str) : MIN_QOD_DEFAULT;
+  min_qod = filter_term_min_qod (filter);
 
   ret = vuln_iterator_opts_table (task_id, report_id, host, min_qod);
 
   g_free (task_id);
   g_free (report_id);
   g_free (host);
-  g_free (min_qod_str);
 
   return ret;
 }
