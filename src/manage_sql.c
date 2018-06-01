@@ -309,7 +309,7 @@ static void
 check_for_updated_cert ();
 
 static gchar*
-results_extra_where (const get_data_t*, report_t, const gchar*,
+results_extra_where (int, report_t, const gchar*,
                      int, int, int, const gchar*);
 
 static int
@@ -5160,7 +5160,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
       apply_overrides
         = filter_term_apply_overrides (filter ? filter : get->filter);
 
-      extra_where = results_extra_where (get, 0, NULL,
+      extra_where = results_extra_where (get->trash, 0, NULL,
                                          autofp, apply_overrides,
                                          setting_dynamic_severity_int (),
                                          filter ? filter : get->filter);
@@ -22360,7 +22360,7 @@ result_iterator_opts_table (int autofp, int override, int dynamic)
 /**
  * @brief Get extra_where string for a result iterator or count.
  *
- * @param[in]  get              GET data.
+ * @param[in]  trash            Whether to get results from trashcan.
  * @param[in]  report           Report to restrict returned results to.
  * @param[in]  host             Host to restrict returned results to.
  * @param[in]  autofp           Whether to apply auto FP filter.
@@ -22371,7 +22371,7 @@ result_iterator_opts_table (int autofp, int override, int dynamic)
  * @return     Newly allocated extra_where string.
  */
 static gchar*
-results_extra_where (const get_data_t *get, report_t report, const gchar* host,
+results_extra_where (int trash, report_t report, const gchar* host,
                      int autofp, int apply_overrides, int dynamic_severity,
                      const gchar *filter)
 {
@@ -22450,7 +22450,7 @@ results_extra_where (const get_data_t *get, report_t report, const gchar* host,
                                 min_qod_clause ? min_qod_clause : "",
                                 report_clause
                                  ? ""
-                                 : get->trash
+                                 : trash
                                     ? " AND ((SELECT (hidden = 2) FROM tasks"
                                       "       WHERE tasks.id = task))"
                                     : " AND ((SELECT (hidden = 0) FROM tasks"
@@ -22639,7 +22639,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
     extra_tables = result_iterator_opts_table (autofp, apply_overrides,
                                                dynamic_severity);
 
-  extra_where = results_extra_where (get, report, host,
+  extra_where = results_extra_where (get->trash, report, host,
                                      autofp, apply_overrides, dynamic_severity,
                                      filter ? filter : get->filter);
 
@@ -22741,7 +22741,7 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   extra_tables
     = result_iterator_opts_table (autofp, apply_overrides, dynamic_severity);
 
-  extra_where = results_extra_where (get, report, host,
+  extra_where = results_extra_where (get->trash, report, host,
                                      autofp, apply_overrides, dynamic_severity,
                                      filter ? filter : get->filter);
 
@@ -22804,7 +22804,7 @@ result_count (const get_data_t *get, report_t report, const char* host)
   extra_tables
     = result_iterator_opts_table (autofp, apply_overrides, dynamic_severity);
 
-  extra_where = results_extra_where (get, report, host,
+  extra_where = results_extra_where (get->trash, report, host,
                                      autofp, apply_overrides, dynamic_severity,
                                      filter ? filter : get->filter);
 
