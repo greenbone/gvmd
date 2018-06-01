@@ -4987,8 +4987,6 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                          const char *given_extra_where)
 {
   int owned;
-  gchar *task_id, *report_id, *host;
-  int autofp, apply_overrides, min_qod;
   column_t *select_columns, *where_columns;
   gchar *columns;
   gchar *trash_columns;
@@ -5044,24 +5042,12 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   else
     filter = NULL;
 
-  apply_overrides
-    = filter_term_apply_overrides (filter ? filter : get->filter);
-  autofp = filter_term_autofp (filter ? filter : get->filter);
-  min_qod = filter_term_min_qod (filter ? filter : get->filter);
-  task_id = filter_term_value (filter ? filter : get->filter,
-                               "task_id");
-  report_id = filter_term_value (filter ? filter : get->filter,
-                                 "report_id");
-  host = filter_term_value (filter ? filter : get->filter,
-                            "host");
-
   select_columns = type_select_columns (type);
   columns = type_columns (type);
   trash_columns = type_trash_columns (type);
   where_columns = type_where_columns (type);
   filter_columns = type_filter_columns (type);
-  opts_table = type_opts_table (type, autofp, apply_overrides, min_qod,
-                                task_id, report_id, host);
+  opts_table = type_opts_table (type, filter ? filter : get->filter);
 
   if (columns == NULL || filter_columns == NULL)
     {
@@ -5168,7 +5154,14 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
     }
   else if (strcasecmp (type, "RESULT") == 0)
     {
-      extra_where = results_extra_where (get, 0, NULL, autofp, apply_overrides,
+      int autofp, apply_overrides;
+
+      autofp = filter_term_autofp (filter ? filter : get->filter);
+      apply_overrides
+        = filter_term_apply_overrides (filter ? filter : get->filter);
+
+      extra_where = results_extra_where (get, 0, NULL,
+                                         autofp, apply_overrides,
                                          setting_dynamic_severity_int (),
                                          filter ? filter : get->filter);
     }
@@ -66782,40 +66775,51 @@ type_trash_columns (const char *type)
 }
 
 /**
- * @brief Return the subquery definition for a resource type.
+ * @brief Return the opts subquery definition for a resource type.
  *
- * @param[in]  type             Resource type to get columns of.
- * @param[in]  autofp           Whether to apply auto FP filter.
- * @param[in]  apply_overrides  Whether to apply overrides.
- * @param[in]  min_qod          Minimum QoD.
- * @param[in]  task_id          UUID of task to limit results to.
- * @param[in]  report_id        UUID of report to limit results to.
- * @param[in]  host             IP address of host to limit results to.
+ * @param[in]  type    Resource type to get columns of.
+ * @param[in]  filter  Filter to apply.
  *
  * @return The SQL subquery definition.
  */
 gchar*
-type_opts_table (const char *type, int autofp, int apply_overrides, int min_qod,
-                 const char *task_id, const char *report_id, const char *host)
+type_opts_table (const char *type, const char *filter)
 {
   if (type == NULL)
     return NULL;
   else if (strcasecmp (type, "TASK") == 0)
     {
-      return task_iterator_opts_table (apply_overrides, min_qod, 0);
+      return task_iterator_opts_table (filter_term_apply_overrides (filter),
+                                       filter_term_min_qod (filter), 0);
     }
   else if (strcasecmp (type, "REPORT") == 0)
     {
-      return report_iterator_opts_table (apply_overrides, min_qod);
+      return report_iterator_opts_table (filter_term_apply_overrides (filter),
+                                         filter_term_min_qod (filter));
     }
   else if (strcasecmp (type, "RESULT") == 0)
     {
-      return result_iterator_opts_table (autofp, apply_overrides,
+      return result_iterator_opts_table (filter_term_autofp (filter),
+                                         filter_term_apply_overrides (filter),
                                          setting_dynamic_severity_int ());
     }
   else if (strcasecmp (type, "VULN") == 0)
     {
-      return vuln_iterator_opts_table (task_id, report_id, host, min_qod);
+      gchar *task_id, *report_id, *host;
+      gchar *ret;
+
+      task_id = filter_term_value (filter, "task_id");
+      report_id = filter_term_value (filter, "report_id");
+      host = filter_term_value (filter, "host");
+
+      ret = vuln_iterator_opts_table (task_id, report_id, host,
+                                      filter_term_min_qod (filter));
+
+      g_free (task_id);
+      g_free (report_id);
+      g_free (host);
+
+      return ret;
     }
   else
     return NULL;
