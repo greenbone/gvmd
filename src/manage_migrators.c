@@ -14424,6 +14424,40 @@ migrate_190_to_191 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 191 to version 192.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_191_to_192 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 191. */
+
+  if (manage_db_version () != 191)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The "classic" . */
+
+  sql ("UPDATE settings SET value = 'nist'"
+       " WHERE name = 'Severity Class' AND value = 'classic';");
+
+  /* Set the database version to 192. */
+
+  set_db_version (192);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -14629,6 +14663,7 @@ static migrator_t database_migrators[]
     {189, migrate_188_to_189},
     {190, migrate_189_to_190},
     {191, migrate_190_to_191},
+    {192, migrate_191_to_192},
     /* End marker. */
     {-1, NULL}};
 
