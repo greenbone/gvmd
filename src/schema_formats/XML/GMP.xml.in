@@ -2310,7 +2310,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>
             <alts>
               <alt>nist</alt>
-              <alt>classic</alt>
               <alt>pci-dss</alt>
             </alts>
           </pattern>
@@ -25747,6 +25746,21 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <command>GET_VULNS</command>
     <summary>The new command GET_VULNS has been added</summary>
     <description></description>
+    <version>8.0</version>
+  </change>
+  <change>
+    <command>GET_SETTINGS, GET_REPORTS, MODIFY_SETTING</command>
+    <summary>Severity class OpenVAS Classic removed</summary>
+    <description>
+      <p>
+        Severity Class "OpenVAS Classic" (short name "classic", UUID
+		"dc1d556a-89e1-11e3-bc21-406186ea4fc5") has been removed.
+      </p>
+      <p>
+	    When migrating to this version all users using the "OpenVAS Classic"
+		class will be switched to "NVD Vulnerability Severity Ratings".
+      </p>
+    </description>
     <version>8.0</version>
   </change>
 
