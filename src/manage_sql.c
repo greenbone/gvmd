@@ -59911,8 +59911,6 @@ hosts_set_identifiers ()
               host_new = 0;
             }
 
-          g_free (quoted_host_name);
-
           /* Add the host identifiers. */
 
           index = 0;
@@ -60027,13 +60025,15 @@ hosts_set_identifiers ()
                 }
 
               if (host_new)
-                /* Make sure all existing identifiers from this report refer to
-                 * this host.  Currently these will only be the Report Host
-                 * identifiers added for OTP HOST_START in otp.c. */
+                /* Make sure the Report Host identifiers added for OTP
+                 * HOST_START in otp.c refer to the new host. */
                 sql ("UPDATE host_identifiers SET host = %llu"
-                     " WHERE source_id = '%s';",
+                     " WHERE source_id = '%s'"
+                     " AND name = 'ip'",
+                     " AND value = '%s';",
                      host_new,
-                     quoted_source_id);
+                     quoted_source_id,
+                     quoted_host_name);
 
               g_free (quoted_source_type);
               g_free (quoted_source_id);
@@ -60043,6 +60043,8 @@ hosts_set_identifiers ()
 
               index++;
             }
+
+          g_free (quoted_host_name);
           host_index++;
         }
 
