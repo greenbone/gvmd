@@ -60029,7 +60029,7 @@ hosts_set_identifiers ()
                  * HOST_START in otp.c refer to the new host. */
                 sql ("UPDATE host_identifiers SET host = %llu"
                      " WHERE source_id = '%s'"
-                     " AND name = 'ip'",
+                     " AND name = 'ip'"
                      " AND value = '%s';",
                      host_new,
                      quoted_source_id,
