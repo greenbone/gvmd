@@ -1227,7 +1227,7 @@ int
 manage_report_host_detail (report_t, const char *, const char *);
 
 void
-hosts_set_identifiers ();
+hosts_set_identifiers (report_t);
 
 void
 hosts_set_max_severity (report_t, int*, int*);
