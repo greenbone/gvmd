@@ -13724,7 +13724,7 @@ task_status_t
 task_iterator_run_status (iterator_t* iterator)
 {
   task_status_t ret;
-  if (iterator->done) return TASK_STATUS_INTERNAL_ERROR;
+  if (iterator->done) return TASK_STATUS_INTERRUPTED;
   ret = (unsigned int) iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT);
   return ret;
 }
@@ -16866,7 +16866,7 @@ manage_cleanup_process_error (int signal)
         {
           g_warning ("%s: Error exit, setting running task to Internal Error",
                      __FUNCTION__);
-          set_task_run_status (current_scanner_task, TASK_STATUS_INTERNAL_ERROR);
+          set_task_run_status (current_scanner_task, TASK_STATUS_INTERRUPTED);
         }
       sql_close ();
     }
@@ -18179,7 +18179,7 @@ task_iterator_current_report (iterator_t *iterator)
       || run_status == TASK_STATUS_STOP_REQUESTED
       || run_status == TASK_STATUS_STOP_REQUESTED_GIVEUP
       || run_status == TASK_STATUS_STOPPED
-      || run_status == TASK_STATUS_INTERNAL_ERROR)
+      || run_status == TASK_STATUS_INTERRUPTED)
     {
       return (unsigned int) sql_int ("SELECT max(id) FROM reports"
                                      " WHERE task = %llu"
@@ -18199,7 +18199,7 @@ task_iterator_current_report (iterator_t *iterator)
                                      TASK_STATUS_STOP_REQUESTED,
                                      TASK_STATUS_STOP_REQUESTED_GIVEUP,
                                      TASK_STATUS_STOPPED,
-                                     TASK_STATUS_INTERNAL_ERROR);
+                                     TASK_STATUS_INTERRUPTED);
     }
   return (report_t) 0;
 }
@@ -21013,7 +21013,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
       case -1:
         /* Parent when error. */
         g_warning ("%s: fork: %s\n", __FUNCTION__, strerror (errno));
-        set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
+        set_task_run_status (task, TASK_STATUS_INTERRUPTED);
         return -1;
         break;
       default:
@@ -29077,7 +29077,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
    * report_scan_run_status call.  Still GCC 4.4.5 (Debian 4.4.5-8) gives a
    * "may be used uninitialized" warning, so init it here to quiet the
    * warning. */
-  run_status = TASK_STATUS_INTERNAL_ERROR;
+  run_status = TASK_STATUS_INTERRUPTED;
 
   if (type
       && strcmp (type, "scan")
@@ -29264,7 +29264,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
              uuid,
              run_status_name (run_status
                                ? run_status
-                               : TASK_STATUS_INTERNAL_ERROR));
+                               : TASK_STATUS_INTERRUPTED));
 
       if (report_timestamp (uuid, &timestamp))
         {
@@ -29476,7 +29476,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
         "<scan_run_status>%s</scan_run_status>",
         run_status_name (run_status
                           ? run_status
-                          : TASK_STATUS_INTERNAL_ERROR));
+                          : TASK_STATUS_INTERRUPTED));
 
       PRINT (out,
              "<hosts><count>%i</count></hosts>",
@@ -48880,7 +48880,7 @@ task_schedule_iterator_start_due (iterator_t* iterator)
   start_time = task_schedule_iterator_next_time (iterator);
 
   if ((run_status == TASK_STATUS_DONE
-       || run_status == TASK_STATUS_INTERNAL_ERROR
+       || run_status == TASK_STATUS_INTERRUPTED
        || run_status == TASK_STATUS_NEW
        || run_status == TASK_STATUS_STOPPED)
       && (start_time > 0)
@@ -48974,7 +48974,7 @@ task_schedule_iterator_timed_out (iterator_t* iterator)
     timeout_time = start_time + schedule_timeout_secs;
 
   if ((run_status == TASK_STATUS_DONE
-       || run_status == TASK_STATUS_INTERNAL_ERROR
+       || run_status == TASK_STATUS_INTERRUPTED
        || run_status == TASK_STATUS_NEW
        || run_status == TASK_STATUS_STOPPED)
       && (timeout_time <= time (NULL)))

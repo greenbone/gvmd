@@ -2955,7 +2955,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
             goto fail_snmp_credential;
           if (ret)
             {
-              set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
+              set_task_run_status (task, TASK_STATUS_INTERRUPTED);
               ret_fail = ret_giveup;
               goto fail_snmp_credential;
             }
@@ -3204,7 +3204,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
                     {
                       /* Resource Missing. */
                       g_warning ("%s: Task missing on slave", __FUNCTION__);
-                      set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
+                      set_task_run_status (task, TASK_STATUS_INTERRUPTED);
                       goto giveup;
                     }
                   break;
@@ -3237,7 +3237,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
           case TASK_STATUS_REQUESTED:
           case TASK_STATUS_RUNNING:
           case TASK_STATUS_STOP_WAITING:
-          case TASK_STATUS_INTERNAL_ERROR:
+          case TASK_STATUS_INTERRUPTED:
             break;
         }
 
@@ -3247,7 +3247,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
         {
           /* Resource Missing. */
           g_warning ("%s: Task missing on slave", __FUNCTION__);
-          set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
+          set_task_run_status (task, TASK_STATUS_INTERRUPTED);
           goto giveup;
         }
       else if (ret)
@@ -3263,7 +3263,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
       if (status == NULL)
         {
           g_warning ("%s: Slave task status was NULL", __FUNCTION__);
-          set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
+          set_task_run_status (task, TASK_STATUS_INTERRUPTED);
           goto giveup;
         }
       status_done = (strcmp (status, "Done") == 0);
@@ -3308,7 +3308,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
             {
               /* Resource Missing. */
               g_warning ("%s: Task report missing on slave", __FUNCTION__);
-              set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
+              set_task_run_status (task, TASK_STATUS_INTERRUPTED);
               goto giveup;
             }
           if (ret && ret2)
@@ -3988,9 +3988,9 @@ fork_osp_scan_handler (task_t task, target_t target)
         g_warning ("%s: Failed to fork: %s\n",
                    __FUNCTION__,
                    strerror (errno));
-        set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
+        set_task_run_status (task, TASK_STATUS_INTERRUPTED);
         set_report_scan_run_status (current_report,
-                                    TASK_STATUS_INTERNAL_ERROR);
+                                    TASK_STATUS_INTERRUPTED);
         current_report = (report_t) 0;
         return -9;
       default:
@@ -4257,9 +4257,9 @@ fork_cve_scan_handler (task_t task, target_t target)
         g_warning ("%s: Failed to fork: %s\n",
                    __FUNCTION__,
                    strerror (errno));
-        set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
+        set_task_run_status (task, TASK_STATUS_INTERRUPTED);
         set_report_scan_run_status (current_report,
-                                    TASK_STATUS_INTERNAL_ERROR);
+                                    TASK_STATUS_INTERRUPTED);
         current_report = (report_t) 0;
         return -9;
       default:
@@ -4287,8 +4287,8 @@ fork_cve_scan_handler (task_t task, target_t target)
   if (hosts == NULL)
     {
       g_warning ("%s: target hosts is NULL", __FUNCTION__);
-      set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
-      set_report_scan_run_status (current_report, TASK_STATUS_INTERNAL_ERROR);
+      set_task_run_status (task, TASK_STATUS_INTERRUPTED);
+      set_report_scan_run_status (current_report, TASK_STATUS_INTERRUPTED);
       exit (1);
     }
 
@@ -4304,8 +4304,8 @@ fork_cve_scan_handler (task_t task, target_t target)
     if (cve_scan_host (task, gvm_host))
       {
         g_warning ("%s: cve_scan_host failed", __FUNCTION__);
-        set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
-        set_report_scan_run_status (current_report, TASK_STATUS_INTERNAL_ERROR);
+        set_task_run_status (task, TASK_STATUS_INTERRUPTED);
+        set_report_scan_run_status (current_report, TASK_STATUS_INTERRUPTED);
         gvm_hosts_free (gvm_hosts);
         exit (1);
       }
@@ -4636,7 +4636,7 @@ run_slave_or_gmp_task (task_t task, int from, char **report_id,
 
   /** @todo Also reset status on report, as current_scanner_task is 0 here. */
 
-  run_status = TASK_STATUS_INTERNAL_ERROR;
+  run_status = TASK_STATUS_INTERRUPTED;
 
   /* Fork a child to start and handle the task while the parent responds to
    * the client. */
@@ -4883,7 +4883,7 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
 
   /** @todo Also reset status on report, as current_scanner_task is 0 here. */
 
-  run_status = TASK_STATUS_INTERNAL_ERROR;
+  run_status = TASK_STATUS_INTERRUPTED;
 
   /* Fork a child to start and handle the task while the parent responds to
    * the client. */
@@ -5838,7 +5838,7 @@ manage_check_current_task ()
           case TASK_STATUS_RUNNING:
           case TASK_STATUS_STOP_WAITING:
           case TASK_STATUS_STOPPED:
-          case TASK_STATUS_INTERNAL_ERROR:
+          case TASK_STATUS_INTERRUPTED:
             break;
         }
     }

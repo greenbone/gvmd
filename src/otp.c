@@ -1591,7 +1591,7 @@ process_otp_scanner_input ()
                         }
                       switch (task_run_status (current_scanner_task))
                         {
-                          case TASK_STATUS_INTERNAL_ERROR:
+                          case TASK_STATUS_INTERRUPTED:
                             break;
                           case TASK_STATUS_STOP_REQUESTED:
                           case TASK_STATUS_STOP_WAITING:
