@@ -1369,7 +1369,7 @@ run_status_name (task_status_t status)
         return "Stop Requested";
 
       case TASK_STATUS_STOPPED:          return "Stopped";
-      default:                           return "Internal Error";
+      default:                           return "Interrupted";
     }
 }
 
@@ -1406,7 +1406,7 @@ run_status_name_internal (task_status_t status)
         return "Stop Waiting";
 
       case TASK_STATUS_STOPPED:          return "Stopped";
-      default:                           return "Internal Error";
+      default:                           return "Interrupted";
     }
 }
 
@@ -3342,7 +3342,9 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
         }
       else if (strcmp (status, "Stop Requested") == 0)
         set_task_run_status (task, TASK_STATUS_STOP_WAITING);
-      else if ((strcmp (status, "Internal Error") == 0)
+      else if ((strcmp (status, "Interrupted") == 0)
+               /* Keeping this in case the slave is older. */
+               || (strcmp (status, "Internal Error") == 0)
                || (strcmp (status, "Delete Requested") == 0))
         {
           free_entity (get_tasks);

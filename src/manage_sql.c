@@ -2709,7 +2709,7 @@ keyword_applies_to_column (keyword_t *keyword, const char* column)
       && (strstr ("Running", keyword->string) == NULL)
       && (strstr ("Stop Requested", keyword->string) == NULL)
       && (strstr ("Stopped", keyword->string) == NULL)
-      && (strstr ("Internal Error", keyword->string) == NULL))
+      && (strstr ("Interrupted", keyword->string) == NULL))
     return 0;
   return 1;
 }
@@ -16864,7 +16864,7 @@ manage_cleanup_process_error (int signal)
     {
       if (current_scanner_task)
         {
-          g_warning ("%s: Error exit, setting running task to Internal Error",
+          g_warning ("%s: Error exit, setting running task to Interrupted",
                      __FUNCTION__);
           set_task_run_status (current_scanner_task, TASK_STATUS_INTERRUPTED);
         }
