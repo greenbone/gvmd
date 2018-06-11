@@ -59798,9 +59798,11 @@ identifier_free (identifier_t *identifier)
  * At the end of a scan this revises the decision about which asset host to use
  * for each host that has identifiers.  The rules for this decision are described
  * in \ref asset_rules.  (The initial decision is made by \ref host_notice.)
+ *
+ * @param[in]  report  Report that the identifiers come from.
  */
 void
-hosts_set_identifiers ()
+hosts_set_identifiers (report_t report)
 {
   if (identifier_hosts)
     {
@@ -59903,6 +59905,18 @@ hosts_set_identifiers ()
                    quoted_host_name);
 
               host_new = host = sql_last_insert_id ();
+
+              /* Make sure the Report Host identifiers added for OTP HOST_START in
+               * otp.c refer to the new host. */
+
+              sql ("UPDATE host_identifiers SET host = %llu"
+                   " WHERE source_id = (SELECT uuid FROM reports"
+                   "                    WHERE id = %llu)"
+                   " AND name = 'ip'"
+                   " AND value = '%s';",
+                   host_new,
+                   report,
+                   quoted_host_name);
             }
           else
             {
@@ -59910,8 +59924,6 @@ hosts_set_identifiers ()
 
               host_new = 0;
             }
-
-          g_free (quoted_host_name);
 
           /* Add the host identifiers. */
 
@@ -60026,15 +60038,6 @@ hosts_set_identifiers ()
                          host);
                 }
 
-              if (host_new)
-                /* Make sure all existing identifiers from this report refer to
-                 * this host.  Currently these will only be the Report Host
-                 * identifiers added for OTP HOST_START in otp.c. */
-                sql ("UPDATE host_identifiers SET host = %llu"
-                     " WHERE source_id = '%s';",
-                     host_new,
-                     quoted_source_id);
-
               g_free (quoted_source_type);
               g_free (quoted_source_id);
               g_free (quoted_source_data);
@@ -60043,6 +60046,8 @@ hosts_set_identifiers ()
 
               index++;
             }
+
+          g_free (quoted_host_name);
           host_index++;
         }
 
@@ -61326,7 +61331,7 @@ create_asset_report (const char *report_id, const char *term)
       cleanup_iterator (&details);
     }
   cleanup_iterator (&hosts);
-  hosts_set_identifiers ();
+  hosts_set_identifiers (report);
   apply_overrides_string = filter_term_value (term, "apply_overrides");
   if (apply_overrides_string)
     apply_overrides = atoi (apply_overrides_string);
