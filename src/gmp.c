@@ -19871,36 +19871,59 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             {
               time_t first_time, next_time;
               int period, period_months, duration;
+              gchar *icalendar, *timezone;
 
-              if (schedule_info (schedule, &first_time, &next_time, &period,
-                                 &period_months, &duration) == 0)
-                SENDF_TO_CLIENT_OR_FAIL ("<schedule id=\"%s\">"
-                                         "<name>%s</name>"
-                                         "<next_time>%s</next_time>"
-                                         "<trash>%d</trash>"
-                                         "<first_time>%s</first_time>"
-                                         "<period>%d</period>"
-                                         "<period_months>"
-                                         "%d"
-                                         "</period_months>"
-                                         "<duration>%d</duration>"
-                                         "</schedule>"
-                                         "<schedule_periods>"
-                                         "%d"
-                                         "</schedule_periods>",
-                                         task_schedule_uuid,
-                                         task_schedule_name,
-                                         next_time
-                                          ? iso_time (&next_time)
-                                          : "over",
-                                         schedule_in_trash,
-                                         first_time
-                                          ? iso_time (&first_time)
-                                          : "",
-                                         period,
-                                         period_months,
-                                         duration,
-                                         task_schedule_periods (index));
+              icalendar = timezone = NULL;
+
+              if (schedule_info (schedule, schedule_in_trash,
+                                 &first_time, &next_time, &period,
+                                 &period_months, &duration,
+                                 &icalendar, &timezone) == 0)
+                {
+                  gchar *first_time_str, *next_time_str;
+
+                  // Copy ISO time strings to avoid one overwriting the other
+                  first_time_str = g_strdup (first_time
+                                              ? iso_time (&first_time)
+                                              : "");
+                  next_time_str = g_strdup (next_time
+                                              ? iso_time (&next_time)
+                                              : "over");
+
+                  SENDF_TO_CLIENT_OR_FAIL ("<schedule id=\"%s\">"
+                                           "<name>%s</name>"
+                                           "<trash>%d</trash>"
+                                           "<first_time>%s</first_time>"
+                                           "<next_time>%s</next_time>"
+                                           "<icalendar>%s</icalendar>"
+                                           "<period>%d</period>"
+                                           "<period_months>"
+                                           "%d"
+                                           "</period_months>"
+                                           "<duration>%d</duration>"
+                                           "<timezone>%s</timezone>"
+                                           "</schedule>"
+                                           "<schedule_periods>"
+                                           "%d"
+                                           "</schedule_periods>",
+                                           task_schedule_uuid,
+                                           task_schedule_name,
+                                           schedule_in_trash,
+                                           first_time_str,
+                                           next_time_str,
+                                           icalendar ? icalendar : "",
+                                           period,
+                                           period_months,
+                                           duration,
+                                           timezone ? timezone : "",
+                                           task_schedule_periods (index));
+
+                  g_free (first_time_str);
+                  g_free (next_time_str);
+                }
+
+              g_free (icalendar);
+              g_free (timezone);
             }
           else
             {

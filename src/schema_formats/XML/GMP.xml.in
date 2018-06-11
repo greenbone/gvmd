@@ -20715,28 +20715,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <required>1</required>
             </attrib>
             <e>name</e>
-            <o><e>next_time</e></o>
-            <o><e>permissions</e></o>
             <e>trash</e>
             <o><e>first_time</e></o>
+            <o><e>next_time</e></o>
+            <o><e>icalendar</e></o>
             <o><e>period</e></o>
             <o><e>period_months</e></o>
             <o><e>duration</e></o>
+            <o><e>timezone</e></o>
           </pattern>
           <ele>
             <name>name</name>
             <summary>The name of the schedule</summary>
             <pattern><t>name</t></pattern>
-          </ele>
-          <ele>
-            <name>next_time</name>
-            <summary>The next date and time the schedule will be run in ISO format or "over".</summary>
-            <pattern><t>iso_time</t></pattern>
-          </ele>
-          <ele>
-          <name>permissions</name>
-          <summary>Permissions the user has on the schedule</summary>
-          <pattern></pattern>
           </ele>
           <ele>
             <name>trash</name>
@@ -20746,6 +20737,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <ele>
             <name>first_time</name>
             <summary>The first time was or will be run</summary>
+            <pattern><t>iso_time</t></pattern>
+          </ele>
+          <ele>
+            <name>next_time</name>
+            <summary>The next date and time the schedule will be run in ISO format or "over".</summary>
+            <pattern><t>iso_time</t></pattern>
+          </ele>
+          <ele>
+            <name>icalendar</name>
+            <summary>iCalendar text containing the time data.</summary>
             <pattern><t>iso_time</t></pattern>
           </ele>
           <ele>
@@ -20762,6 +20763,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <name>duration</name>
             <summary>The maximum duration of the task in seconds or 0 for unlimited</summary>
             <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>timezone</name>
+            <summary>The timezone the schedule will follow.</summary>
+            <pattern>text</pattern>
           </ele>
         </ele>
         <ele>
