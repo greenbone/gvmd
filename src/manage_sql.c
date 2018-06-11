@@ -27860,7 +27860,8 @@ report_active (report_t report)
       || run_status == TASK_STATUS_DELETE_ULTIMATE_REQUESTED
       || run_status == TASK_STATUS_STOP_REQUESTED
       || run_status == TASK_STATUS_STOP_REQUESTED_GIVEUP
-      || run_status == TASK_STATUS_STOPPED)
+      || run_status == TASK_STATUS_STOPPED
+      || run_status == TASK_STATUS_INTERRUPTED)
     return 1;
   return 0;
 }
