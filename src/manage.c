@@ -4516,9 +4516,10 @@ run_task_prepare_report (task_t task, char **report_id, int from,
 {
   if ((from == 1)
       || ((from == 2)
-          && (run_status == TASK_STATUS_STOPPED)))
+          && ((run_status == TASK_STATUS_STOPPED)
+              || (run_status == TASK_STATUS_INTERRUPTED))))
     {
-      if (task_last_stopped_report (task, last_stopped_report))
+      if (task_last_resumable_report (task, last_stopped_report))
         {
           g_debug ("   error getting last stopped report.\n");
           return -1;
@@ -5600,8 +5601,8 @@ stop_task (const char *task_id)
  * @param[in]   task_id    Task UUID.
  * @param[out]  report_id  If successful, ID of the resultant report.
  *
- * @return 22 caller error (task must be in "stopped" state), or any
- *         start_task error.
+ * @return 22 caller error (task must be in "stopped" or "interrupted" state),
+ *         or any start_task error.
  */
 int
 resume_task (const char *task_id, char **report_id)
@@ -5619,7 +5620,8 @@ resume_task (const char *task_id, char **report_id)
     return 3;
 
   run_status = task_run_status (task);
-  if (run_status == TASK_STATUS_STOPPED)
+  if ((run_status == TASK_STATUS_STOPPED)
+      || (run_status == TASK_STATUS_INTERRUPTED))
     return run_task (task_id, report_id, 1);
   return 22;
 }

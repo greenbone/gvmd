@@ -29324,7 +29324,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     case 22:
                       SEND_TO_CLIENT_OR_FAIL
                        (XML_ERROR_SYNTAX ("resume_task",
-                                          "Task must be in Stopped state"));
+                                          "Task must be in Stopped or Interrupted state"));
                       log_event_fail ("task", "Task",
                                       resume_task_data->task_id,
                                       "resumed");

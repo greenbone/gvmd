@@ -1274,7 +1274,7 @@ void
 report_set_source_iface (report_t, const gchar *);
 
 int
-task_last_stopped_report (task_t, report_t *);
+task_last_resumable_report (task_t, report_t *);
 
 gchar*
 task_second_last_report_id (task_t);

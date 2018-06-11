@@ -18360,14 +18360,16 @@ task_second_last_report (task_t task, report_t *report)
  * @return 0 success, -1 error.
  */
 int
-task_last_stopped_report (task_t task, report_t *report)
+task_last_resumable_report (task_t task, report_t *report)
 {
   switch (sql_int64 (report,
                      "SELECT id FROM reports WHERE task = %llu"
-                     " AND scan_run_status = %u"
+                     " AND (scan_run_status = %u"
+                     "      OR scan_run_status = %u)"
                      " ORDER BY date DESC LIMIT 1;",
                      task,
-                     TASK_STATUS_STOPPED))
+                     TASK_STATUS_STOPPED,
+                     TASK_STATUS_INTERRUPTED))
     {
       case 0:
         break;
