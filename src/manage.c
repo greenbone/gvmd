@@ -3313,9 +3313,9 @@ slave_setup (openvas_connection_t *connection, const char *name, task_t task,
           free_entity (get_tasks);
 
           /* Add results to assets. */
-          hosts_set_identifiers ();
           if (current_report)
             {
+              hosts_set_identifiers (current_report);
               hosts_set_max_severity (current_report, NULL, NULL);
               hosts_set_details (current_report);
             }
