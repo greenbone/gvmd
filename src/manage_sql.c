@@ -4986,24 +4986,16 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                          const char *extra_tables,
                          const char *given_extra_where)
 {
-  int owned;
   column_t *select_columns, *where_columns;
-  gchar *columns;
-  gchar *trash_columns;
-  gchar *opts_table;
   const char **filter_columns;
-  int first, max;
-  gchar *from_table, *extra_where, *clause, *filter_order, *filter;
-  gchar *owned_clause;
-  array_t *permissions;
-  resource_t resource = 0;
-  gchar *owner_filter;
   GString *aggregate_select, *outer_col_select;
   gchar *aggregate_group_by;
   gchar *outer_group_by_column, *outer_subgroup_column;
   gchar *select_group_column, *select_subgroup_column;
   GArray *select_data_columns, *select_text_columns;
   GString *order_clause;
+  gchar *inner_select;
+  int build_select_ret;
 
   assert (get);
 
@@ -5027,44 +5019,14 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
       return 0;
     }
 
-  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
-    {
-      if (get->filter_replacement)
-        /* Replace the filter term with one given by the caller.  This is
-         * used by GET_REPORTS to use the default filter with any task (when
-         * given the special value of -3 in filt_id). */
-        filter = g_strdup (get->filter_replacement);
-      else
-        filter = filter_term (get->filt_id);
-      if (filter == NULL)
-        return 2;
-    }
-  else
-    filter = NULL;
-
   select_columns = type_select_columns (type);
-  columns = type_columns (type);
-  trash_columns = type_trash_columns (type);
   where_columns = type_where_columns (type);
   filter_columns = type_filter_columns (type);
-  opts_table = type_opts_table (type, filter ? filter : get->filter);
 
-  if (columns == NULL || filter_columns == NULL)
-    {
-      g_free (columns);
-      g_free (trash_columns);
-      g_free (opts_table);
-      return 5;
-    }
-  if (get->trash && trash_columns == NULL)
-    {
-      g_free (columns);
-      g_free (trash_columns);
-      g_free (opts_table);
-      return 6;
-    }
-
-  owned = type_owned (type);
+  if (filter_columns == NULL)
+    return 5;
+  if (get->trash)  // TODO: Add test if trash is supported
+    return 6;
 
   if (data_columns && data_columns->len > 0)
     {
@@ -5075,9 +5037,6 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                                   g_array_index (data_columns, gchar*, i))
               == 0)
             {
-              g_free (columns);
-              g_free (trash_columns);
-              g_free (opts_table);
               return 3;
             }
         }
@@ -5091,53 +5050,21 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                                   g_array_index (text_columns, gchar*, i))
               == 0)
             {
-              g_free (columns);
-              g_free (trash_columns);
-              g_free (opts_table);
               return 7;
             }
         }
     }
   if (group_column && vector_find_filter (filter_columns, group_column) == 0)
     {
-      g_free (columns);
-      g_free (trash_columns);
-      g_free (opts_table);
       return 4;
     }
   if (subgroup_column
       && vector_find_filter (filter_columns, subgroup_column) == 0)
     {
-      g_free (columns);
-      g_free (trash_columns);
-      g_free (opts_table);
       return 8;
     }
   select_data_columns = g_array_new (TRUE, TRUE, sizeof (gchar*));
   select_text_columns = g_array_new (TRUE, TRUE, sizeof (gchar*));
-
-  clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
-                          select_columns, where_columns, get->trash,
-                          &filter_order, &first, &max, &permissions,
-                          &owner_filter);
-
-  g_free (filter);
-
-  if (resource)
-    /* Ownership test is done above by find function. */
-    owned_clause = g_strdup (" 1");
-  else
-    owned_clause = acl_where_owned (type, get, owned, owner_filter, resource,
-                                permissions);
-
-  if (given_extra_where)
-    extra_where = g_strdup (given_extra_where);
-  else
-    extra_where = type_extra_where (type, get->trash,
-                                    filter ? filter : get->filter);
-
-  g_free (owner_filter);
-  array_free (permissions);
 
   select_group_column = NULL;
   select_subgroup_column = NULL;
@@ -5330,7 +5257,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                              select_group_column,
                              select_subgroup_column);
 
-          aggregate_group_by = g_strdup_printf (" GROUP BY %s, %s",
+          aggregate_group_by = g_strdup_printf ("%s, %s",
                                                 select_group_column,
                                                 select_subgroup_column);
         }
@@ -5342,8 +5269,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                              " CAST (NULL AS TEXT) AS aggregate_subgroup_value",
                              select_group_column);
 
-          aggregate_group_by = g_strdup_printf (" GROUP BY %s",
-                                                select_group_column);
+          aggregate_group_by = g_strdup (select_group_column);
         }
 
 
@@ -5355,7 +5281,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                          " CAST (NULL AS TEXT) AS aggregate_group_value,"
                          " CAST (NULL AS TEXT) AS aggregate_subgroup_value");
 
-      aggregate_group_by = g_strdup ("");
+      aggregate_group_by = NULL;
     }
 
   int col_index;
@@ -5400,48 +5326,34 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                               col_index);
     }
 
-  from_table = type_table (type, get->trash);
+  inner_select = NULL;
+  build_select_ret = type_build_select (type, aggregate_select->str, get,
+                                        distinct, 0, extra_tables,
+                                        given_extra_where, aggregate_group_by,
+                                        &inner_select);
 
-  init_iterator (iterator,
-                 "SELECT sum(aggregate_count) AS outer_count,"
-                 " %s AS outer_group_column,"
-                 " %s AS outer_subgroup_column"
-                 " %s"
-                 " FROM (SELECT%s %s"
-                 "       FROM %s%s%s"
-                 "       WHERE"
-                 "       %s%s"
-                 "       %s%s%s"
-                 "       %s)"
-                 "      AS agg_sub"
-                 " GROUP BY outer_group_column, outer_subgroup_column %s"
-                 " LIMIT %s OFFSET %d;",
-                 outer_group_by_column,
-                 outer_subgroup_column,
-                 outer_col_select->str,
-                 distinct ? " DISTINCT" : "",
-                 aggregate_select->str,
-                 from_table,
-                 opts_table ? opts_table : "",
-                 extra_tables ? extra_tables : "",
-                 owned_clause,
-                 extra_where,
-                 clause ? " AND (" : "",
-                 clause ? clause : "",
-                 clause ? ")" : "",
-                 aggregate_group_by,
-                 order_clause->str,
-                 sql_select_limit (max_groups),
-                 first_group);
+  if (build_select_ret == 0)
+    {
+      init_iterator (iterator,
+                    "SELECT sum(aggregate_count) AS outer_count,"
+                    " %s AS outer_group_column,"
+                    " %s AS outer_subgroup_column"
+                    " %s"
+                    " FROM (%s)"
+                    "      AS agg_sub"
+                    " GROUP BY outer_group_column, outer_subgroup_column"
+                    " %s"
+                    " LIMIT %s OFFSET %d;",
+                    outer_group_by_column,
+                    outer_subgroup_column,
+                    outer_col_select->str,
+                    inner_select,
+                    order_clause->str,
+                    sql_select_limit (max_groups),
+                    first_group);
+    }
 
-  g_free (columns);
-  g_free (trash_columns);
-  g_free (opts_table);
-  g_free (owned_clause);
-  g_free (extra_where);
-  g_free (filter_order);
   g_string_free (order_clause, TRUE);
-  g_free (clause);
   g_free (aggregate_group_by);
   g_string_free (aggregate_select, TRUE);
   g_string_free (outer_col_select, TRUE);
@@ -5449,6 +5361,18 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   g_free (outer_subgroup_column);
   g_free (select_group_column);
   g_free (select_subgroup_column);
+  g_free (inner_select);
+
+  switch (build_select_ret)
+    {
+      case 0:
+        break;
+      case 1:
+        return 2;
+      default:
+        return -1;
+    }
+
   return 0;
 }
 
@@ -66842,6 +66766,118 @@ type_extra_where (const char *type, int trash, const char *filter)
     extra_where = g_strdup ("");
 
   return extra_where;
+}
+
+/**
+ * @brief Builds a filtered SELECT statement for a certain type.
+ *
+ * @param[in]  type               Resource type
+ * @param[in]  columns_str        Columns to get (as used in SQL)
+ * @param[in]  get                The get data
+ * @param[in]  distinct           Whether to get distinct items
+ * @param[in]  ordered            Whether to apply the ordering
+ * @param[in]  extra_tables       Extra tables / subqueries
+ * @param[in]  given_extra_where  Extra expressions for WHERE clause
+ * @param[in]  group_by           Column(s) to group by, NULL for no grouping
+ * @param[out] select             Output of newly allocated SELECT statement
+ *
+ * @return 0: success, 1: filter not found, -1 error.
+ */
+int
+type_build_select (const char *type, const char *columns_str,
+                   const get_data_t *get,
+                   gboolean distinct, gboolean ordered,
+                   const char *extra_tables, const char *given_extra_where,
+                   const char *group_by,
+                   gchar **select)
+{
+  gchar *filter;
+  gchar *from_table, *opts_table;
+  gchar *clause, *extra_where, *filter_order;
+  int first, max;
+  gchar *owned_clause, *owner_filter;
+  array_t *permissions;
+
+  column_t *select_columns, *where_columns;
+  const char **filter_columns;
+  gchar *pagination_clauses;
+
+  assert (select);
+
+  // Get filter
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
+    {
+      if (get->filter_replacement)
+        /* Replace the filter term with one given by the caller.  This is
+         * used by GET_REPORTS to use the default filter with any task (when
+         * given the special value of -3 in filt_id). */
+        filter = g_strdup (get->filter_replacement);
+      else
+        filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        {
+          return 1;
+        }
+    }
+  else
+    filter = NULL;
+
+  // FROM ... part
+  from_table = type_table (type, get->trash);
+
+  opts_table = type_opts_table (type, filter ? filter : get->filter);
+
+  // WHERE ... part
+  select_columns = type_select_columns (type);
+  where_columns = type_where_columns (type);
+  filter_columns = type_filter_columns (type);
+
+  clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
+                          select_columns, where_columns, get->trash,
+                          &filter_order, &first, &max, &permissions,
+                          &owner_filter);
+
+  owned_clause = acl_where_owned (type, get, type_owned (type),
+                                  owner_filter, 0, permissions);
+
+  if (given_extra_where)
+    extra_where = g_strdup (given_extra_where);
+  else
+    extra_where = type_extra_where (type, get->trash,
+                                    filter ? filter : get->filter);
+
+  pagination_clauses = NULL;
+
+  *select = g_strdup_printf
+             ("SELECT%s %s"  // DISTINCT, columns
+              " FROM %s%s%s" // from_table, opts_table, extra_tables
+              " WHERE"
+              " %s%s"        // owned_clause, extra_where
+              " %s%s%s"      // (filter) clause
+              " %s%s"        // group_by
+              " %s"          // ORDER BY (filter_order)
+              " %s",         // pagination_clauses
+              distinct ? " DISTINCT" : "",
+              columns_str,
+              from_table,
+              opts_table ? opts_table : "",
+              extra_tables ? extra_tables : "",
+              owned_clause,
+              extra_where,
+              clause ? " AND (" : "",
+              clause ? clause : "",
+              clause ? ")" : "",
+              group_by ? " GROUP BY " : "",
+              group_by ? group_by : "",
+              (ordered && filter_order) ? filter_order : "",
+              pagination_clauses ? pagination_clauses : "");
+
+  g_free (from_table);
+  g_free (opts_table);
+  g_free (owned_clause);
+  g_free (extra_where);
+
+  return 0;
 }
 
 /**

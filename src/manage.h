@@ -4336,6 +4336,14 @@ type_table (const char *, int);
 gchar*
 type_extra_where (const char *, int, const char *);
 
+int
+type_build_select (const char *type, const char *columns_str,
+                   const get_data_t *get,
+                   gboolean distinct, gboolean ordered,
+                   const char *extra_tables, const char *given_extra_where,
+                   const char *group_by,
+                   gchar **select);
+
 gboolean
 manage_migrate_needs_timezone (GSList *, const gchar *);
 
