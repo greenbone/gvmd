@@ -37,6 +37,16 @@
  */
 #define TO_CLIENT_BUFFER_SIZE 26214400
 
+/**
+ * @brief The maximum length in bytes for long result text like the description.
+ */
+#define TRUNCATE_TEXT_LENGTH 10000000
+
+/**
+ * @brief The text to append when text is truncated.
+ */
+#define TRUNCATE_TEXT_SUFFIX "[...]\n(text truncated)"
+
 int
 init_gmp (GSList*, int, const gchar*, int, int, int, int,
           int (*) (gvm_connection_t *, gchar*),

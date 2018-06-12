@@ -388,6 +388,103 @@ certificate_time_status (time_t activates, time_t expires)
 /* Helpers. */
 
 /**
+ * @brief Truncates text to a maximum length, optionally appends a suffix.
+ *
+ * Note: The string is modified in place instead of allocating a new one.
+ * With the xml option the function will avoid cutting the string in the middle
+ *  of XML entities, but element tags will be ignored.
+ *
+ * @param[in,out] string   The string to truncate.
+ * @param[in]     max_len  The maximum length in bytes.
+ * @param[in]     xml      Whether to preserve XML entities.
+ * @param[in]     suffix   The suffix to append when the string is shortened.
+ */
+void
+truncate_text (gchar *string, size_t max_len, gboolean xml, const char *suffix)
+{
+  if (strlen (string) <= max_len)
+    return;
+  else
+    {
+      size_t offset;
+      offset = max_len;
+
+      // Move offset according according to suffix length
+      if (suffix && strlen (suffix) < max_len)
+        offset = offset - strlen (suffix);
+
+      // Go back to start of UTF-8 character
+      if (offset > 0 && (string[offset] & 0x80) == 0x80)
+        {
+          offset = g_utf8_find_prev_char (string, string + offset) - string;
+        }
+
+      if (xml)
+        {
+          // If the offset is in the middle of an XML entity,
+          //  move the offset to the start of that entity.
+          ssize_t entity_start_offset = offset;
+
+          while (entity_start_offset >= 0 
+                 && string[entity_start_offset] != '&')
+            {
+              entity_start_offset --;
+            }
+
+          if (entity_start_offset >= 0)
+            {
+              char *entity_end = strchr(string + entity_start_offset, ';');
+              if (entity_end && (entity_end - string) >= offset)
+                offset = entity_start_offset;
+            }
+        }
+
+      // Truncate the string, inserting the suffix if applicable
+      if (suffix && strlen (suffix) < max_len)
+        sprintf (string + offset, "%s", suffix);
+      else
+        string[offset] = '\0';
+    }
+}
+
+/**
+ * @brief XML escapes text truncating to a maximum length with a suffix.
+ *
+ * Note: The function will avoid cutting the string in the middle of XML
+ *  entities.
+ *
+ * @param[in]  string   The string to truncate.
+ * @param[in]  max_len  The maximum length in bytes.
+ * @param[in]  suffix   The suffix to append when the string is shortened.
+ *
+ * @return Newly allocated string with XML escaped, truncated text.
+ */
+gchar *
+xml_escape_text_truncated (const char *string, size_t max_len,
+                           const char *suffix)
+{
+  gchar *escaped;
+  gssize orig_len;
+
+  orig_len = strlen (string);
+  if (orig_len <= max_len)
+    escaped = g_markup_escape_text (string, -1);
+  else
+    {
+      gchar *offset_next;
+      ssize_t offset;
+
+      offset_next = g_utf8_find_next_char (string + max_len,
+                                           string + orig_len);
+      offset = offset_next - string;
+      escaped = g_markup_escape_text (string, offset);
+    }
+
+  truncate_text (escaped, max_len, TRUE, suffix);
+  return escaped;
+}
+
+/**
  * @brief Free an slist of pointers, including the pointers.
  *
  * @param[in]  list  The list.
@@ -3270,9 +3367,9 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
           free_entity (get_tasks);
 
           /* Add results to assets. */
-          hosts_set_identifiers ();
           if (current_report)
             {
+              hosts_set_identifiers (current_report);
               hosts_set_max_severity (current_report, NULL, NULL);
               hosts_set_details (current_report);
             }

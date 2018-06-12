@@ -25641,7 +25641,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       /* Default to "vulnerability" (a.k.a "name") for unknown sort fields.
        *
        * Also done in print_report_xml_start, so this is just a safety check. */
-      ret = strcmp (name, delta_name);
+      ret = strcmp (name ? name : "", delta_name ? delta_name : "");
       if (sort_order == 0)
         ret = -ret;
       if (ret)
@@ -27943,32 +27943,6 @@ severity_class_xml (const gchar *severity)
                                 strcmp (severity, "nist") == 0
                                  ? "NVD Vulnerability Severity Ratings"
                                  : "BSI Schwachstellenampel (Germany)");
-      else if (strcmp (severity, "classic") == 0)
-        return g_strdup_printf ("<severity_class"
-                                " id=\"dc1d556a-89e1-11e3-bc21-406186ea4fc5\">"
-                                "<name>classic</name>"
-                                "<full_name>OpenVAS Classic</full_name>"
-                                "<severity_range>"
-                                "<name>None</name>"
-                                "<min>0.0</min>"
-                                "<max>0.0</max>"
-                                "</severity_range>"
-                                "<severity_range>"
-                                "<name>Low</name>"
-                                "<min>0.1</min>"
-                                "<max>2.0</max>"
-                                "</severity_range>"
-                                "<severity_range>"
-                                "<name>Medium</name>"
-                                "<min>2.1</min>"
-                                "<max>5.0</max>"
-                                "</severity_range>"
-                                "<severity_range>"
-                                "<name>High</name>"
-                                "<min>5.1</min>"
-                                "<max>10.0</max>"
-                                "</severity_range>"
-                                "</severity_class>");
       else if (strcmp (severity, "pci-dss") == 0)
         return g_strdup_printf ("<severity_class"
                                 " id=\"e442e476-89e1-11e3-bfc6-406186ea4fc5\">"
@@ -29066,22 +29040,15 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     }
   else
     {
-      term = NULL;
-      first_result = 0;
-      max_results = -1;
-      sort_field = NULL;
-      sort_order = 1;
-      result_hosts_only = 1;
-      min_qod = NULL;
-      levels = NULL;
-      delta_states = NULL;
-      search_phrase = NULL;
-      search_phrase_exact = 0;
-      autofp = 0;
-      notes = 0;
-      overrides = 0;
-      apply_overrides = 0;
-      zone = NULL;
+      term = g_strdup ("");
+      /* Set the filter parameters to defaults */
+      manage_report_filter_controls (term,
+                                     &first_result, &max_results, &sort_field,
+                                     &sort_order, &result_hosts_only,
+                                     &min_qod, &levels, &delta_states,
+                                     &search_phrase, &search_phrase_exact,
+                                     &autofp, &notes, &overrides,
+                                     &apply_overrides, &zone);
     }
 
   max_results = manage_max_rows (max_results);
@@ -59816,9 +59783,11 @@ identifier_free (identifier_t *identifier)
  * At the end of a scan this revises the decision about which asset host to use
  * for each host that has identifiers.  The rules for this decision are described
  * in \ref asset_rules.  (The initial decision is made by \ref host_notice.)
+ *
+ * @param[in]  report  Report that the identifiers come from.
  */
 void
-hosts_set_identifiers ()
+hosts_set_identifiers (report_t report)
 {
   if (identifier_hosts)
     {
@@ -59921,6 +59890,18 @@ hosts_set_identifiers ()
                    quoted_host_name);
 
               host_new = host = sql_last_insert_id ();
+
+              /* Make sure the Report Host identifiers added for OTP HOST_START in
+               * otp.c refer to the new host. */
+
+              sql ("UPDATE host_identifiers SET host = %llu"
+                   " WHERE source_id = (SELECT uuid FROM reports"
+                   "                    WHERE id = %llu)"
+                   " AND name = 'ip'"
+                   " AND value = '%s';",
+                   host_new,
+                   report,
+                   quoted_host_name);
             }
           else
             {
@@ -59928,8 +59909,6 @@ hosts_set_identifiers ()
 
               host_new = 0;
             }
-
-          g_free (quoted_host_name);
 
           /* Add the host identifiers. */
 
@@ -60044,15 +60023,6 @@ hosts_set_identifiers ()
                          host);
                 }
 
-              if (host_new)
-                /* Make sure all existing identifiers from this report refer to
-                 * this host.  Currently these will only be the Report Host
-                 * identifiers added for OTP HOST_START in otp.c. */
-                sql ("UPDATE host_identifiers SET host = %llu"
-                     " WHERE source_id = '%s';",
-                     host_new,
-                     quoted_source_id);
-
               g_free (quoted_source_type);
               g_free (quoted_source_id);
               g_free (quoted_source_data);
@@ -60061,6 +60031,8 @@ hosts_set_identifiers ()
 
               index++;
             }
+
+          g_free (quoted_host_name);
           host_index++;
         }
 
@@ -61344,7 +61316,7 @@ create_asset_report (const char *report_id, const char *term)
       cleanup_iterator (&details);
     }
   cleanup_iterator (&hosts);
-  hosts_set_identifiers ();
+  hosts_set_identifiers (report);
   apply_overrides = filter_term_apply_overrides (term);
   min_qod = filter_term_min_qod (term);
   hosts_set_max_severity (report, &apply_overrides, &min_qod);

@@ -1227,7 +1227,7 @@ int
 manage_report_host_detail (report_t, const char *, const char *);
 
 void
-hosts_set_identifiers ();
+hosts_set_identifiers (report_t);
 
 void
 hosts_set_max_severity (report_t, int*, int*);
@@ -4296,6 +4296,12 @@ manage_run_wizard (const gchar *, int (*) (void*, gchar*, gchar**),
 
 
 /* Helpers. */
+
+void
+truncate_text (gchar *, size_t, gboolean, const char *);
+
+gchar *
+xml_escape_text_truncated (const char *, size_t, const char *);
 
 char *
 iso_time (time_t *);
