@@ -3910,6 +3910,38 @@ type_db_name (const char* type)
 }
 
 /**
+ * @brief Check whether a resource type is an asset subtype.
+ *
+ * @param[in]  type  Type of resource.
+ *
+ * @return 1 yes, 0 no.
+ */
+static int
+type_is_asset_subtype (const char *type)
+{
+  return ((strcasecmp (type, "host")
+           && strcasecmp (type, "os")) == 0);
+}
+
+/**
+ * @brief Check whether a resource type is an info subtype, excluding allinfo.
+ *
+ * @param[in]  type  Type of resource.
+ *
+ * @return 1 yes, 0 no.
+ */
+static int
+type_is_info_subtype (const char *type)
+{
+  return ((strcasecmp (type, "nvt")
+           && strcasecmp (type, "cve")
+           && strcasecmp (type, "cpe")
+           && strcasecmp (type, "ovaldef")
+           && strcasecmp (type, "cert_bund_adv")
+           && strcasecmp (type, "dfn_cert_adv")) == 0);
+}
+
+/**
  * @brief Check whether a type has a name and comment.
  *
  * @param[in]  type          Type of resource.
@@ -3949,12 +3981,7 @@ type_has_trash (const char *type)
   return (strcasecmp (type, "report")
           && strcasecmp (type, "result")
           && strcasecmp (type, "info")
-          && strcasecmp (type, "nvt")
-          && strcasecmp (type, "cve")
-          && strcasecmp (type, "cpe")
-          && strcasecmp (type, "ovaldef")
-          && strcasecmp (type, "cert_bund_adv")
-          && strcasecmp (type, "dfn_cert_adv")
+          && type_is_info_subtype (type) == 0
           && strcasecmp (type, "allinfo")
           && strcasecmp (type, "vuln")
           && strcasecmp (type, "user"));
@@ -3971,12 +3998,7 @@ int
 type_owned (const char* type)
 {
   return (strcasecmp (type, "info")
-          && strcasecmp (type, "nvt")
-          && strcasecmp (type, "cve")
-          && strcasecmp (type, "cpe")
-          && strcasecmp (type, "ovaldef")
-          && strcasecmp (type, "cert_bund_adv")
-          && strcasecmp (type, "dfn_cert_adv")
+          && type_is_info_subtype (type) == 0
           && strcasecmp (type, "allinfo")
           && strcasecmp (type, "vuln"));
 }
@@ -4662,8 +4684,7 @@ init_get_iterator2_pre (iterator_t* iterator, const char *type,
        * uuid= in the filter (instead of passing get->id). */
       const char* permission;
       /* Special case: "get_assets" subtypes */
-      if (strcasecmp (type, "host") == 0
-          || strcasecmp (type, "os") == 0)
+      if (type_is_asset_subtype (type))
         permission = "get_assets";
       else
         permission = NULL;
@@ -54335,14 +54356,9 @@ permission_iterator_resource_readable (iterator_t* iterator)
   if (type == NULL || uuid == NULL)
     return 0;
 
-  if ((strcmp (type, "cpe") == 0)
-      || (strcmp (type, "cve") == 0)
-      || (strcmp (type, "ovaldef") == 0)
-      || (strcmp (type, "cert_bund_adv") == 0)
-      || (strcmp (type, "dfn_cert_adv") == 0))
+  if (type_is_info_subtype (type))
     permission = g_strdup ("get_info");
-  else if ((strcmp (type, "host") == 0)
-           || (strcmp (type, "os") == 0))
+  else if (type_is_asset_subtype (type))
     permission = g_strdup ("get_assets");
   else
     permission = g_strdup_printf ("get_%ss", type);
@@ -65515,14 +65531,9 @@ create_tag (const char * name, const char * comment, const char * value,
       return -1;
     }
 
-  if ((strcmp (lc_resource_type, "cpe") == 0)
-      || (strcmp (lc_resource_type, "cve") == 0)
-      || (strcmp (lc_resource_type, "ovaldef") == 0)
-      || (strcmp (lc_resource_type, "cert_bund_adv") == 0)
-      || (strcmp (lc_resource_type, "dfn_cert_adv") == 0))
+  if (type_is_info_subtype (lc_resource_type))
     resource_permission = g_strdup ("get_info");
-  else if ((strcmp (lc_resource_type, "host") == 0)
-           || (strcmp (lc_resource_type, "os") == 0))
+  else if (type_is_asset_subtype (lc_resource_type))
     resource_permission = g_strdup ("get_assets");
   else
     resource_permission = g_strdup_printf ("get_%ss", resource_type);
@@ -65765,14 +65776,9 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
       gchar *resource_permission;
       int resource_location = LOCATION_TABLE;
 
-      if ((strcmp (lc_resource_type, "cpe") == 0)
-          || (strcmp (lc_resource_type, "cve") == 0)
-          || (strcmp (lc_resource_type, "ovaldef") == 0)
-          || (strcmp (lc_resource_type, "cert_bund_adv") == 0)
-          || (strcmp (lc_resource_type, "dfn_cert_adv") == 0))
+      if (type_is_info_subtype (lc_resource_type))
         resource_permission = g_strdup ("get_info");
-      else if ((strcmp (lc_resource_type, "host") == 0)
-               || (strcmp (lc_resource_type, "os") == 0))
+      else if (type_is_asset_subtype (lc_resource_type))
         resource_permission = g_strdup ("get_assets");
       else
         resource_permission = g_strdup_printf ("get_%ss", resource_type);
@@ -66024,14 +66030,9 @@ tag_iterator_resource_readable (iterator_t* iterator)
   if (type == NULL || uuid == NULL)
     return 0;
 
-  if ((strcmp (type, "cpe") == 0)
-      || (strcmp (type, "cve") == 0)
-      || (strcmp (type, "ovaldef") == 0)
-      || (strcmp (type, "cert_bund_adv") == 0)
-      || (strcmp (type, "dfn_cert_adv") == 0))
+  if (type_is_info_subtype (type))
     permission = g_strdup ("get_info");
-  else if ((strcmp (type, "host") == 0)
-           || (strcmp (type, "os") == 0))
+  else if (type_is_asset_subtype (type))
     permission = g_strdup ("get_assets");
   else
     permission = g_strdup_printf ("get_%ss", type);
