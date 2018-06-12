@@ -3937,6 +3937,30 @@ type_has_comment (const char *type)
 }
 
 /**
+ * @brief Check whether a resource type uses the trashcan.
+ *
+ * @param[in]  type  Type of resource.
+ *
+ * @return 1 yes, 0 no.
+ */
+static int
+type_has_trash (const char *type)
+{
+  return (strcasecmp (type, "report")
+          && strcasecmp (type, "result")
+          && strcasecmp (type, "info")
+          && strcasecmp (type, "nvt")
+          && strcasecmp (type, "cve")
+          && strcasecmp (type, "cpe")
+          && strcasecmp (type, "ovaldef")
+          && strcasecmp (type, "cert_bund_adv")
+          && strcasecmp (type, "dfn_cert_adv")
+          && strcasecmp (type, "allinfo")
+          && strcasecmp (type, "vuln")
+          && strcasecmp (type, "user"));
+}
+
+/**
  * @brief Check whether a resource type has an owner.
  *
  * @param[in]  type  Type of resource.
@@ -4486,15 +4510,7 @@ resource_name (const char *type, const char *uuid, int location, char **name)
                         " WHERE uuid = '%s';",
                         type,
                         uuid);
-  else if ((strcmp (type, "nvt"))
-           && (strcmp (type, "cpe"))
-           && (strcmp (type, "cve"))
-           && (strcmp (type, "ovaldef"))
-           && (strcmp (type, "cert_bund_adv"))
-           && (strcmp (type, "dfn_cert_adv"))
-           && (strcmp (type, "report"))
-           && (strcmp (type, "result"))
-           && (strcmp (type, "user")))
+  else if (type_has_trash (type))
     *name = sql_string ("SELECT name"
                         " FROM %ss%s"
                         " WHERE uuid = '%s';",
@@ -5025,7 +5041,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
 
   if (filter_columns == NULL)
     return 5;
-  if (get->trash)  // TODO: Add test if trash is supported
+  if (get->trash && type_has_trash (type) == 0)
     return 6;
 
   if (data_columns && data_columns->len > 0)
@@ -17365,15 +17381,7 @@ resource_id_exists (const char *type, const char * id)
 int
 trash_id_exists (const char *type, const char * id)
 {
-  if ((strcmp (type, "nvt") == 0)
-      || (strcmp (type, "cpe") == 0)
-      || (strcmp (type, "cve") == 0)
-      || (strcmp (type, "ovaldef") == 0)
-      || (strcmp (type, "cert_bund_adv") == 0)
-      || (strcmp (type, "dfn_cert_adv") == 0)
-      || (strcmp (type, "report") == 0)
-      || (strcmp (type, "result") == 0)
-      || (strcmp (type, "user") == 0))
+  if (type_has_trash (type) == 0)
     return 0;
   else if (strcmp (type, "task"))
     return !!sql_int ("SELECT count(*)"
@@ -65528,17 +65536,7 @@ create_tag (const char * name, const char * comment, const char * value,
       return -1;
     }
   else if (resource == 0
-           && (strcmp (lc_resource_type, "nvt"))
-           && (strcmp (lc_resource_type, "cve"))
-           && (strcmp (lc_resource_type, "cpe"))
-           && (strcmp (lc_resource_type, "host"))
-           && (strcmp (lc_resource_type, "os"))
-           && (strcmp (lc_resource_type, "ovaldef"))
-           && (strcmp (lc_resource_type, "cert_bund_adv"))
-           && (strcmp (lc_resource_type, "dfn_cert_adv"))
-           && (strcmp (lc_resource_type, "report"))
-           && (strcmp (lc_resource_type, "result"))
-           && (strcmp (lc_resource_type, "user")))
+           && type_has_trash (lc_resource_type))
     {
       if (find_resource_with_permission (resource_type, resource_uuid,
                                          &resource, resource_permission, 1))
@@ -65788,17 +65786,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
           return -1;
         }
       else if (resource == 0
-              && (strcmp (lc_resource_type, "nvt"))
-              && (strcmp (lc_resource_type, "cve"))
-              && (strcmp (lc_resource_type, "cpe"))
-              && (strcmp (lc_resource_type, "host"))
-              && (strcmp (lc_resource_type, "os"))
-              && (strcmp (lc_resource_type, "ovaldef"))
-              && (strcmp (lc_resource_type, "cert_bund_adv"))
-              && (strcmp (lc_resource_type, "dfn_cert_adv"))
-              && (strcmp (lc_resource_type, "report"))
-              && (strcmp (lc_resource_type, "result"))
-              && (strcmp (lc_resource_type, "user")))
+               && type_has_trash (lc_resource_type))
         {
           if (find_resource_with_permission (resource_type, resource_uuid,
                                              &resource, resource_permission, 1))
