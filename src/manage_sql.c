@@ -16507,7 +16507,7 @@ stop_active_tasks ()
               task_t index = get_iterator_resource (&tasks);
               /* Set the current user, for event checks. */
               current_credentials.uuid = task_owner_uuid (index);
-              set_task_run_status (index, TASK_STATUS_STOPPED);
+              set_task_run_status (index, TASK_STATUS_INTERRUPTED);
               free (current_credentials.uuid);
               break;
             }
@@ -16825,7 +16825,8 @@ init_manage_helper (GSList *log_config, const gchar *database,
 /**
  * @brief Cleanup the manage library.
  *
- * Optionally put any running task in the stopped state and close the database.
+ * Optionally put any running task in the interrupted state and close the
+ * database.
  *
  * @param[in]  cleanup  If TRUE perform all cleanup operations, else only
  *                      those required at the start of a forked process.
@@ -16838,7 +16839,7 @@ cleanup_manage_process (gboolean cleanup)
       if (cleanup)
         {
           if (current_scanner_task)
-            set_task_run_status (current_scanner_task, TASK_STATUS_STOPPED);
+            set_task_run_status (current_scanner_task, TASK_STATUS_INTERRUPTED);
           cleanup_prognosis_iterator ();
           sql_close ();
         }
