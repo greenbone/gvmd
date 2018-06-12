@@ -48275,28 +48275,35 @@ schedule_duration (schedule_t schedule)
  * @brief Return info about a schedule.
  *
  * @param[in]  schedule    Schedule.
+ * @param[in]  trash       Whether to get schedule from trash.
  * @param[out] first_time  First time schedule ran.
  * @param[out] next_time   Next time schedule will run.
  * @param[out] period      Period.
  * @param[out] period_months  Period months.
  * @param[out] duration       Duration.
+ * @param[out] byday          byday string.
+ * @param[out] icalendar      iCalendar string.
+ * @param[out] timezone       timezone string.
  *
  * @return 0 success, -1 error.
  */
 int
-schedule_info (schedule_t schedule, time_t *first_time, time_t *next_time,
-               int *period, int *period_months, int *duration)
+schedule_info (schedule_t schedule, int trash,
+               time_t *first_time, time_t *next_time,
+               int *period, int *period_months, int *duration,
+               gchar **icalendar, gchar **timezone)
 {
   iterator_t schedules;
 
   init_iterator (&schedules,
                  "SELECT"
                  " first_time,"
-                 " next_time (first_time, period,"
-                 "            period_months, byday),"
-                 " period, period_months, duration"
-                 " FROM schedules"
+                 " next_time_ical (icalendar, timezone),"
+                 " period, period_months, duration,"
+                 " icalendar, timezone"
+                 " FROM schedules%s"
                  " WHERE id = %llu",
+                 trash ? "_trash" : "",
                  schedule);
   if (next (&schedules))
     {
@@ -48305,6 +48312,8 @@ schedule_info (schedule_t schedule, time_t *first_time, time_t *next_time,
       *period = iterator_int (&schedules, 2);
       *period_months = iterator_int (&schedules, 3);
       *duration = iterator_int (&schedules, 4);
+      *icalendar = g_strdup (iterator_string (&schedules, 5));
+      *timezone = g_strdup (iterator_string (&schedules, 6));
       cleanup_iterator (&schedules);
       return 0;
     }
