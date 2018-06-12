@@ -11613,7 +11613,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
 {
   const char *descr = result_iterator_descr (results);
   const char *name, *owner_name, *comment, *creation_time, *modification_time;
-  gchar *nl_descr, *asset_id;
+  gchar *nl_descr, *nl_descr_escaped, *asset_id;
   const char *qod = result_iterator_qod (results);
   const char *qod_type = result_iterator_qod_type (results);
   result_t result = result_iterator_result (results);
@@ -11621,7 +11621,18 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   char *detect_ref, *detect_cpe, *detect_loc, *detect_oid, *detect_name;
   task_t selected_task;
 
-  nl_descr = descr ? convert_to_newlines (descr) : NULL;
+  if (descr)
+    {
+      nl_descr = convert_to_newlines (descr);
+      nl_descr_escaped = xml_escape_text_truncated (nl_descr,
+                                                    TRUNCATE_TEXT_LENGTH,
+                                                    TRUNCATE_TEXT_SUFFIX);
+    }
+  else
+    {
+      nl_descr = NULL;
+      nl_descr_escaped = NULL;
+    }
 
   result_uuid (result, &uuid);
 
@@ -11767,14 +11778,16 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     "<scan_nvt_version>%s</scan_nvt_version>"
     "<threat>%s</threat>"
     "<severity>%.1f</severity>"
-    "<qod><value>%s</value><type>%s</type></qod>"
-    "<description>%s</description>",
+    "<qod><value>%s</value><type>%s</type></qod>",
     result_iterator_scan_nvt_version (results),
     result_iterator_level (results),
     result_iterator_severity_double (results),
     qod ? qod : "",
-    qod_type ? qod_type : "",
-    descr ? nl_descr : "");
+    qod_type ? qod_type : "");
+
+  g_string_append_printf (buffer,
+                          "<description>%s</description>",
+                          descr ? nl_descr_escaped : "");
 
   if (include_overrides)
     buffer_xml_append_printf (buffer,
@@ -11819,9 +11832,13 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
               /* Remove the leading filename lines. */
               split = g_strsplit ((gchar*) diff, "\n", 3);
               if (split[0] && split[1] && split[2])
-                diff_xml = g_markup_escape_text (split[2], strlen (split[2]));
+                diff_xml = xml_escape_text_truncated (split[2],
+                                                      TRUNCATE_TEXT_LENGTH,
+                                                      TRUNCATE_TEXT_SUFFIX);
               else
-                diff_xml = g_markup_escape_text (diff, strlen (diff));
+                diff_xml = xml_escape_text_truncated (diff,
+                                                      TRUNCATE_TEXT_LENGTH,
+                                                      TRUNCATE_TEXT_SUFFIX);
               g_strfreev (split);
               g_string_append_printf (buffer, "<diff>%s</diff>", diff_xml);
               g_free (diff_xml);
@@ -11848,7 +11865,11 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       g_string_append (buffer, "</delta>");
     }
 
-  if (descr) g_free (nl_descr);
+  if (descr)
+    {
+      g_free (nl_descr);
+      g_free (nl_descr_escaped);
+    }
 
   g_string_append (buffer, "</result>");
 }
@@ -19850,36 +19871,59 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             {
               time_t first_time, next_time;
               int period, period_months, duration;
+              gchar *icalendar, *timezone;
 
-              if (schedule_info (schedule, &first_time, &next_time, &period,
-                                 &period_months, &duration) == 0)
-                SENDF_TO_CLIENT_OR_FAIL ("<schedule id=\"%s\">"
-                                         "<name>%s</name>"
-                                         "<next_time>%s</next_time>"
-                                         "<trash>%d</trash>"
-                                         "<first_time>%s</first_time>"
-                                         "<period>%d</period>"
-                                         "<period_months>"
-                                         "%d"
-                                         "</period_months>"
-                                         "<duration>%d</duration>"
-                                         "</schedule>"
-                                         "<schedule_periods>"
-                                         "%d"
-                                         "</schedule_periods>",
-                                         task_schedule_uuid,
-                                         task_schedule_name,
-                                         next_time
-                                          ? iso_time (&next_time)
-                                          : "over",
-                                         schedule_in_trash,
-                                         first_time
-                                          ? iso_time (&first_time)
-                                          : "",
-                                         period,
-                                         period_months,
-                                         duration,
-                                         task_schedule_periods (index));
+              icalendar = timezone = NULL;
+
+              if (schedule_info (schedule, schedule_in_trash,
+                                 &first_time, &next_time, &period,
+                                 &period_months, &duration,
+                                 &icalendar, &timezone) == 0)
+                {
+                  gchar *first_time_str, *next_time_str;
+
+                  // Copy ISO time strings to avoid one overwriting the other
+                  first_time_str = g_strdup (first_time
+                                              ? iso_time (&first_time)
+                                              : "");
+                  next_time_str = g_strdup (next_time
+                                              ? iso_time (&next_time)
+                                              : "over");
+
+                  SENDF_TO_CLIENT_OR_FAIL ("<schedule id=\"%s\">"
+                                           "<name>%s</name>"
+                                           "<trash>%d</trash>"
+                                           "<first_time>%s</first_time>"
+                                           "<next_time>%s</next_time>"
+                                           "<icalendar>%s</icalendar>"
+                                           "<period>%d</period>"
+                                           "<period_months>"
+                                           "%d"
+                                           "</period_months>"
+                                           "<duration>%d</duration>"
+                                           "<timezone>%s</timezone>"
+                                           "</schedule>"
+                                           "<schedule_periods>"
+                                           "%d"
+                                           "</schedule_periods>",
+                                           task_schedule_uuid,
+                                           task_schedule_name,
+                                           schedule_in_trash,
+                                           first_time_str,
+                                           next_time_str,
+                                           icalendar ? icalendar : "",
+                                           period,
+                                           period_months,
+                                           duration,
+                                           timezone ? timezone : "",
+                                           task_schedule_periods (index));
+
+                  g_free (first_time_str);
+                  g_free (next_time_str);
+                }
+
+              g_free (icalendar);
+              g_free (timezone);
             }
           else
             {

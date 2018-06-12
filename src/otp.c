@@ -1355,6 +1355,8 @@ process_otp_scanner_input ()
                                     name, &value_start, &value_end);
                     if (count == 1 && value_start > 0 && value_end > 0
                         && ((strcmp (name, "SSH Authorization") == 0)
+                            || (strcmp (name, "SNMP Authorization") == 0)
+                            || (strcmp (name, "ESXi Authorization") == 0)
                             || (strcmp (name, "SMB Authorization") == 0)))
                       current_scanner_preference = NULL;
                     else
@@ -1580,9 +1582,9 @@ process_otp_scanner_input ()
                       /* Stop transaction now, because delete_task_lock and
                        * set_scan_end_time_otp run transactions themselves. */
                       manage_transaction_stop (TRUE);
-                      hosts_set_identifiers ();
                       if (current_report)
                         {
+                          hosts_set_identifiers (current_report);
                           hosts_set_max_severity (current_report, NULL, NULL);
                           hosts_set_details (current_report);
                           set_scan_end_time_otp (current_report, field);
