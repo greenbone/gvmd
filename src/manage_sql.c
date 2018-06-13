@@ -140,6 +140,9 @@ stop_task_internal (task_t);
 int
 validate_username (const gchar *);
 
+void
+set_task_interrupted (task_t, const gchar *);
+
 
 /* Port range headers. */
 
@@ -328,6 +331,9 @@ vulns_extra_where ();
 
 static gboolean
 lookup_report_format (const char*, report_format_t*);
+
+static int
+task_last_report_any_status (task_t, report_t *);
 
 
 /* Variables. */
@@ -16507,7 +16513,13 @@ stop_active_tasks ()
               task_t index = get_iterator_resource (&tasks);
               /* Set the current user, for event checks. */
               current_credentials.uuid = task_owner_uuid (index);
-              set_task_run_status (index, TASK_STATUS_INTERRUPTED);
+              task_last_report_any_status (index, &current_report);
+              set_task_interrupted (index,
+                                    "Task process exited abnormally"
+                                    " (e.g. machine lost power or process was"
+                                    " sent SIGKILL)."
+                                    "  Setting scan status to Interrupted.");
+              current_report = 0;
               free (current_credentials.uuid);
               break;
             }
@@ -16839,7 +16851,18 @@ cleanup_manage_process (gboolean cleanup)
       if (cleanup)
         {
           if (current_scanner_task)
-            set_task_run_status (current_scanner_task, TASK_STATUS_INTERRUPTED);
+            {
+              if (current_report)
+                {
+                  result_t result;
+                  result = make_result (current_scanner_task,
+                                        "", "", "", "Error Message",
+                                        "Interrupting scan because GVM is"
+                                        " exiting.");
+                  report_add_result (current_report, result);
+                }
+              set_task_run_status (current_scanner_task, TASK_STATUS_INTERRUPTED);
+            }
           cleanup_prognosis_iterator ();
           sql_close ();
         }
@@ -16867,7 +16890,9 @@ manage_cleanup_process_error (int signal)
         {
           g_warning ("%s: Error exit, setting running task to Interrupted",
                      __FUNCTION__);
-          set_task_run_status (current_scanner_task, TASK_STATUS_INTERRUPTED);
+          set_task_interrupted (current_scanner_task,
+                                "Error exit, setting running task to"
+                                " Interrupted.");
         }
       sql_close ();
     }
@@ -18303,6 +18328,37 @@ task_last_report (task_t task, report_t *report)
                      " ORDER BY date DESC LIMIT 1;",
                      task,
                      TASK_STATUS_DONE))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *report = 0;
+        return 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        return -1;
+        break;
+    }
+  return 0;
+}
+
+/**
+ * @brief Get the report from the most recently invocation of task.
+ *
+ * @param[in]  task    The task.
+ * @param[out] report  Report return, 0 if successfully failed to select report.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+task_last_report_any_status (task_t task, report_t *report)
+{
+  switch (sql_int64 (report,
+                     "SELECT id FROM reports WHERE task = %llu"
+                     " ORDER BY date DESC LIMIT 1;",
+                     task))
     {
       case 0:
         break;
@@ -21016,7 +21072,11 @@ create_report (array_t *results, const char *task_id, const char *task_name,
       case -1:
         /* Parent when error. */
         g_warning ("%s: fork: %s\n", __FUNCTION__, strerror (errno));
-        set_task_run_status (task, TASK_STATUS_INTERRUPTED);
+        current_report = report;
+        set_task_interrupted (task,
+                              "Failed to fork child to import report."
+                              "  Setting task status to Interrupted.");
+        current_report = 0;
         return -1;
         break;
       default:
