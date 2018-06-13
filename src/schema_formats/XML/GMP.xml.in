@@ -5320,7 +5320,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </description>
     <pattern>
       <e>name</e>
-      <e>resource</e>
+      <e>resources</e>
       <o><e>copy</e></o>
       <o><e>value</e></o>
       <o><e>comment</e></o>
@@ -5332,20 +5332,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <pattern>text</pattern>
     </ele>
     <ele>
-      <name>resource</name>
-      <summary>Identifies a resource the tag is to be attached to</summary>
+      <name>resources</name>
+      <summary>Identifies the resources the tag is to be attached to</summary>
       <pattern>
-        <attrib>
-          <name>id</name>
-          <summary>ID of the resource the tag is to be attached to</summary>
-          <type>uuid</type>
-          <required>0</required>
-        </attrib>
+        <any><e>resource</e></any>
         <e>type</e>
       </pattern>
       <ele>
+        <name>resource</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>ID of a resource the tag is to be attached to</summary>
+            <type>uuid</type>
+            <required>0</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
         <name>type</name>
-        <summary>GMP type of the resource the tag is to be attached to</summary>
+        <summary>GMP type of the resources the tag is to be attached to</summary>
         <pattern>text</pattern>
       </ele>
     </ele>
@@ -19057,44 +19063,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>Name of the owner</summary>
           </column>
           <column>
-            <name>resource_type</name>
-            <type>text</type>
-            <summary>Type of resource the tag applies to</summary>
-          </column>
-          <column>
-            <name>resource</name>
-            <type>name</type>
-            <summary>Internal ID of resource the tag applies to</summary>
-          </column>
-          <column>
-            <name>resource_uuid</name>
-            <type>text</type>
-            <summary>Unique ID of resource the tag applies to</summary>
-          </column>
-          <column>
-            <name>resource_location</name>
-            <type>boolean</type>
-            <summary>Whether the resource is in the trash</summary>
-          </column>
-          <column>
             <name>active</name>
             <type>boolean</type>
             <summary>Whether the tag is active</summary>
           </column>
           <column>
+            <name>resources</name>
+            <type>name</type>
+            <summary>Total number of resources the tag is attached to</summary>
+          </column>
+          <column>
+            <name>resource_type</name>
+            <type>text</type>
+            <summary>Type of resource the tag applies to</summary>
+          </column>
+          <column>
             <name>value</name>
             <type>name</type>
             <summary>Value of the tag</summary>
-          </column>
-          <column>
-            <name>orphan</name>
-            <type>boolean</type>
-            <summary>Whether the tag is an orphan</summary>
-          </column>
-          <column>
-            <name>resource_name</name>
-            <type>name</type>
-            <summary>Name of resource the tag applies to</summary>
           </column>
         </filter_keywords>
       </attrib>
@@ -19151,7 +19137,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <e>modification_time</e>
               <e>writable</e>
               <e>in_use</e>
-              <e>resource</e>
+              <e>resources</e>
               <e>value</e>
               <e>active</e>
               <e>orphan</e>
@@ -19221,39 +19207,45 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
-          <name>resource</name>
-          <summary>Identifies a resource the tag is attached to</summary>
+          <name>resources</name>
+          <summary>Identifies the resources the tag is to be attached to</summary>
           <pattern>
-            <attrib>
-              <name>id</name>
-              <summary>ID of the resource the tag is attached to</summary>
-              <type>uuid</type>
-              <required>1</required>
-            </attrib>
+            <any><e>resource</e></any>
             <e>type</e>
-            <e>name</e>
-            <e>trash</e>
-            <o><e>permissions</e></o>
           </pattern>
           <ele>
+            <name>resource</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <summary>ID of a resource the tag is attached to</summary>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>trash</e>
+              <o><e>permissions</e></o>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the attached resource if available, empty otherwise</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>trash</name>
+              <summary>Whether the resource is in the trashcan</summary>
+              <pattern><t>boolean</t></pattern>
+            </ele>
+            <ele>
+              <name>permissions</name>
+              <summary>Permissions the user has on the resource</summary>
+              <pattern></pattern>
+            </ele>
+          </ele>
+          <ele>
             <name>type</name>
-            <summary>GMP type of the resource the tag is attached to</summary>
+            <summary>GMP type of the resources the tag is attached to</summary>
             <pattern>text</pattern>
-          </ele>
-          <ele>
-            <name>name</name>
-            <summary>Name of the attach resource if available, empty otherwise</summary>
-            <pattern>text</pattern>
-          </ele>
-          <ele>
-            <name>trash</name>
-            <summary>Whether the resource is in the trashcan</summary>
-            <pattern><t>boolean</t></pattern>
-          </ele>
-          <ele>
-            <name>permissions</name>
-            <summary>Permissions the user has on the resource</summary>
-            <pattern></pattern>
           </ele>
         </ele>
         <ele>
@@ -24768,7 +24760,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <required>1</required>
       </attrib>
       <o><e>name</e></o>
-      <o><e>resource</e></o>
+      <o><e>resources</e></o>
       <o><e>value</e></o>
       <o><e>comment</e></o>
       <o><e>active</e></o>
@@ -24779,20 +24771,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <pattern>text</pattern>
     </ele>
     <ele>
-      <name>resource</name>
-      <summary>Identifies a resource the tag is to be attached to</summary>
+      <name>resources</name>
+      <summary>Identifies the resources the tag is to be attached to</summary>
       <pattern>
-        <attrib>
-          <name>id</name>
-          <summary>ID of the resource the tag is to be attached to</summary>
-          <type>uuid</type>
-          <required>0</required>
-        </attrib>
+        <any><e>resource</e></any>
         <e>type</e>
       </pattern>
       <ele>
+        <name>resource</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>ID of a resource the tag is to be attached to</summary>
+            <type>uuid</type>
+            <required>0</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
         <name>type</name>
-        <summary>GMP type of the resource the tag is to be attached to</summary>
+        <summary>GMP type of the resources the tag is to be attached to</summary>
         <pattern>text</pattern>
       </ele>
     </ele>
@@ -25681,6 +25679,25 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         The OpenVAS Management Protocol (OMP) is renamed to Greenbone Management Protocol (GMP).
         The protocol as such does not change except for the changes documented here
         between OMP 7.0 and GMP 8.0.
+      </p>
+    </description>
+    <version>8.0</version>
+  </change>
+  <change>
+    <command>CREATE_TAG, GET_TAGS, MODIFY_TAG</command>
+    <summary>RESOURCE replaced with RESOURCES, removed filter keywords</summary>
+    <description>
+      <p>
+        In the tag commands the single RESOURCE element is replaced with a
+        RESOURCES element which contains the TYPE and which may contain
+        one or more RESOURCE elements to specify the resources the tag
+        is attached to.
+      </p>
+      <p>
+        Additionally the filter keywords orphan, resource, resource_location,
+        resource_name and resource_uuid have been removed from GET_TAGS.
+        Instead the keyword resources has been added which selects the total
+        number of resources a tag is attached to.
       </p>
     </description>
     <version>8.0</version>

@@ -2867,13 +2867,17 @@ create_tables ()
        "  name text NOT NULL,"
        "  comment text,"
        "  resource_type text,"
-       "  resource integer,"
-       "  resource_uuid text,"
-       "  resource_location integer,"
        "  active integer,"
        "  value text,"
        "  creation_time integer,"
        "  modification_time integer);");
+
+  sql ("CREATE TABLE IF NOT EXISTS tag_resources"
+       " (tag integer REFERENCES tags (id),"
+       "  resource_type text,"
+       "  resource integer,"
+       "  resource_uuid text,"
+       "  resource_location integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS tags_trash"
        " (id SERIAL PRIMARY KEY,"
@@ -2882,13 +2886,17 @@ create_tables ()
        "  name text NOT NULL,"
        "  comment text,"
        "  resource_type text,"
-       "  resource integer,"
-       "  resource_uuid text,"
-       "  resource_location integer,"
        "  active integer,"
        "  value text,"
        "  creation_time integer,"
        "  modification_time integer);");
+
+  sql ("CREATE TABLE IF NOT EXISTS tag_resources_trash"
+       " (tag integer REFERENCES tags_trash (id),"
+       "  resource_type text,"
+       "  resource integer,"
+       "  resource_uuid text,"
+       "  resource_location integer);");
 
   /* Create result views. */
 
@@ -3108,6 +3116,18 @@ create_tables ()
 
   sql ("SELECT create_index ('report_counts_by_report_and_override',"
        "                     'report_counts', 'report, override');");
+
+  sql ("SELECT create_index ('tag_resources_by_resource',"
+       "                     'tag_resources',"
+       "                     'resource_type, resource, resource_location');");
+  sql ("SELECT create_index ('tag_resources_by_resource_uuid',"
+       "                     'tag_resources',"
+       "                     'resource_type, resource, resource_location');");
+  sql ("SELECT create_index ('tag_resources_by_tag',"
+       "                     'tag_resources', 'tag');");
+
+  sql ("SELECT create_index ('tag_resources_trash_by_tag',"
+       "                     'tag_resources_trash', 'tag');");
 
 
 #if 0
