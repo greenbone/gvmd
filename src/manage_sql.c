@@ -16542,7 +16542,7 @@ stop_active_tasks ()
        " OR scan_run_status = %u"
        " OR scan_run_status = %u"
        " OR scan_run_status = %u;",
-       TASK_STATUS_STOPPED,
+       TASK_STATUS_INTERRUPTED,
        TASK_STATUS_DELETE_REQUESTED,
        TASK_STATUS_DELETE_ULTIMATE_REQUESTED,
        TASK_STATUS_DELETE_ULTIMATE_WAITING,
