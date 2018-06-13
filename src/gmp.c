@@ -17125,7 +17125,8 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
   if ((get_reports_data->report_get.id == NULL)
       || (strlen (get_reports_data->report_get.id) == 0))
     {
-      gchar *overrides, *min_qod, *filter;
+      int overrides, min_qod;
+      gchar *filter;
       get_data_t * get;
 
       /* For simplicity, use a fixed result filter when filtering
@@ -17144,19 +17145,14 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       else
         filter = NULL;
       g_free (get_reports_data->get.filter);
-      overrides
-        = filter_term_value (filter ? filter : get->filter, "apply_overrides");
-      min_qod
-        = filter_term_value (filter ? filter : get->filter, "min_qod");
+      overrides = filter_term_apply_overrides (filter ? filter : get->filter);
+      min_qod = filter_term_min_qod (filter ? filter : get->filter);
       g_free (filter);
 
       /* Setup result filter from overrides. */
       get_reports_data->get.filter
-        = g_strdup_printf ("apply_overrides=%i min_qod=%s",
-                           overrides && strcmp (overrides, "0"),
-                           min_qod ? min_qod : G_STRINGIFY (MIN_QOD_DEFAULT));
-      g_free (overrides);
-      g_free (min_qod);
+        = g_strdup_printf ("apply_overrides=%i min_qod=%i",
+                           overrides, min_qod);
     }
 
   ret = init_report_iterator (&reports, &get_reports_data->report_get);
@@ -19702,7 +19698,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
   int count, filtered, ret, first;
   get_data_t *get;
   const char *filter;
-  gchar *overrides, *min_qod_str, *clean_filter;
+  gchar *clean_filter;
   int apply_overrides, min_qod;
 
   if (get_tasks_data->get.details && get_tasks_data->get.trash)
@@ -19766,17 +19762,12 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
     }
   else
     filter = NULL;
+
   clean_filter = manage_clean_filter (filter ? filter : get->filter);
-  overrides = filter_term_value (clean_filter, "apply_overrides");
-  min_qod_str = filter_term_value (clean_filter, "min_qod");
+  apply_overrides = filter_term_apply_overrides (clean_filter);
+  min_qod = filter_term_min_qod (clean_filter);
   g_free (clean_filter);
-  apply_overrides = overrides
-                      ? strcmp (overrides, "0")
-                      : APPLY_OVERRIDES_DEFAULT;
-  g_free (overrides);
-  if (min_qod_str == NULL
-      || sscanf (min_qod_str, "%d", &min_qod) != 1)
-    min_qod = MIN_QOD_DEFAULT;
+
   SENDF_TO_CLIENT_OR_FAIL ("<apply_overrides>%i</apply_overrides>",
                            apply_overrides);
 
@@ -20606,7 +20597,6 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       count++;
     }
   cleanup_iterator (&tasks);
-  g_free (min_qod_str);
   filtered = get_tasks_data->get.id
               ? 1
               : task_count (&get_tasks_data->get);
