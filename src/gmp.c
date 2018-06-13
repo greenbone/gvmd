@@ -661,6 +661,11 @@ check_private_key (const char *key_str)
 #define STATUS_OK_CREATED_TEXT         "OK, resource created"
 
 /**
+ * @brief Response code on success, when multiple resource is created.
+ */
+#define STATUS_OK_CREATED_MANY_TEXT    "OK, resources created"
+
+/**
  * @brief Response code on success, when the operation will finish later.
  */
 #define STATUS_OK_REQUESTED            "202"
@@ -1725,6 +1730,40 @@ create_tag_data_reset (create_tag_data_t *data)
   free (data->value);
   free (data->copy);
   memset (data, 0, sizeof (create_tag_data_t));
+}
+
+/**
+ * @brief Command data for the create_tag command.
+ */
+typedef struct
+{
+  char *active;           ///< Whether the tag is active.
+  char *resources_filter; ///< ID of the resource to which to attach the tag.
+  array_t *resource_ids;  ///< IDs of the resource to which to attach the tag.
+  char *resources_type;   ///< Type of the resource to which to attach the tag.
+  char *comment;          ///< Comment to add to the tag.
+  char *name;             ///< Name of the tag.
+  char *value;            ///< Value of the tag.
+//   char *copy;             ///< UUID of resource to copy.
+} create_tags_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+create_tags_data_reset (create_tags_data_t *data)
+{
+  free (data->active);
+  free (data->resources_filter);
+  array_free (data->resource_ids);
+  free (data->resources_type);
+  free (data->comment);
+  free (data->name);
+  free (data->value);
+//   free (data->copy);
+  memset (data, 0, sizeof (create_tags_data_t));
 }
 
 /**
@@ -4258,6 +4297,7 @@ typedef union
   create_scanner_data_t create_scanner;               ///< create_scanner
   create_schedule_data_t create_schedule;             ///< create_schedule
   create_tag_data_t create_tag;                       ///< create_tag
+  create_tags_data_t create_tags;                     ///< create_tags
   create_target_data_t create_target;                 ///< create_target
   create_task_data_t create_task;                     ///< create_task
   create_user_data_t create_user;                     ///< create_user
@@ -4470,6 +4510,12 @@ create_schedule_data_t *create_schedule_data
  */
 create_tag_data_t *create_tag_data
  = (create_tag_data_t*) &(command_data.create_tag);
+
+/**
+ * @brief Parser callback data for CREATE_TAGS.
+ */
+create_tags_data_t *create_tags_data
+ = (create_tags_data_t*) &(command_data.create_tags);
 
 /**
  * @brief Parser callback data for CREATE_TARGET.
@@ -5351,6 +5397,15 @@ typedef enum
   CLIENT_CREATE_TAG_RESOURCE,
   CLIENT_CREATE_TAG_RESOURCE_TYPE,
   CLIENT_CREATE_TAG_VALUE,
+  CLIENT_CREATE_TAGS,
+  CLIENT_CREATE_TAGS_ACTIVE,
+  CLIENT_CREATE_TAGS_COMMENT,
+//   CLIENT_CREATE_TAGS_COPY,
+  CLIENT_CREATE_TAGS_NAME,
+  CLIENT_CREATE_TAGS_RESOURCES,
+  CLIENT_CREATE_TAGS_RESOURCES_RESOURCE,
+  CLIENT_CREATE_TAGS_RESOURCES_TYPE,
+  CLIENT_CREATE_TAGS_VALUE,
   CLIENT_CREATE_TARGET,
   CLIENT_CREATE_TARGET_ALIVE_TESTS,
   CLIENT_CREATE_TARGET_ASSET_HOSTS,
@@ -6875,6 +6930,11 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         else if (strcasecmp ("CREATE_TAG", element_name) == 0)
           {
             set_client_state (CLIENT_CREATE_TAG);
+          }
+        else if (strcasecmp ("CREATE_TAGS", element_name) == 0)
+          {
+            set_client_state (CLIENT_CREATE_TAGS);
+            create_tags_data->resource_ids = make_array ();
           }
         else if (strcasecmp ("CREATE_TARGET", element_name) == 0)
           {
@@ -10069,6 +10129,56 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state (CLIENT_CREATE_TAG_RESOURCE_TYPE);
           }
         ELSE_ERROR ("create_tag");
+
+      case CLIENT_CREATE_TAGS:
+        if (strcasecmp ("ACTIVE", element_name) == 0)
+          {
+            gvm_append_string (&create_tags_data->active, "");
+            set_client_state (CLIENT_CREATE_TAGS_ACTIVE);
+          }
+        else if (strcasecmp ("COMMENT", element_name) == 0)
+          {
+            gvm_append_string (&create_tags_data->comment, "");
+            set_client_state (CLIENT_CREATE_TAGS_COMMENT);
+          }
+//         else if (strcasecmp ("COPY", element_name) == 0)
+//           {
+//             gvm_append_string (&create_tags_data->copy, "");
+//             set_client_state (CLIENT_CREATE_TAGS_COPY);
+//           }
+        else if (strcasecmp ("NAME", element_name) == 0)
+          {
+            gvm_append_string (&create_tags_data->name, "");
+            set_client_state (CLIENT_CREATE_TAGS_NAME);
+          }
+        else if (strcasecmp ("RESOURCES", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "filter",
+                              &create_tags_data->resources_filter);
+            set_client_state (CLIENT_CREATE_TAGS_RESOURCES);
+          }
+        else if (strcasecmp ("VALUE", element_name) == 0)
+          {
+            gvm_append_string (&create_tags_data->value, "");
+            set_client_state (CLIENT_CREATE_TAGS_VALUE);
+          }
+        ELSE_ERROR ("create_tags");
+
+      case CLIENT_CREATE_TAGS_RESOURCES:
+        if (strcasecmp ("RESOURCE", element_name) == 0)
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values, "id",
+                                &attribute))
+              array_add (create_tags_data->resource_ids, g_strdup (attribute));
+            set_client_state (CLIENT_CREATE_TAGS_RESOURCES_RESOURCE);
+          }
+        else if (strcasecmp ("TYPE", element_name) == 0)
+          {
+            gvm_append_string (&create_tags_data->resources_type, "");
+            set_client_state (CLIENT_CREATE_TAGS_RESOURCES_TYPE);
+          }
+        ELSE_ERROR ("create_tags");
 
       case CLIENT_CREATE_TARGET:
         if (strcasecmp ("ASSET_HOSTS", element_name) == 0)
@@ -21409,6 +21519,108 @@ modify_config_leave:
   set_client_state (CLIENT_AUTHENTIC);
 }
 
+/**
+ * @brief Handle end of CREATE_TAGS element.
+ *
+ * @param[in]  gmp_parser   GMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_create_tags (gmp_parser_t *gmp_parser, GError **error)
+{
+  int created_count, failed_count;
+  created_count = 0;
+  failed_count = 0;
+
+  array_terminate (create_tags_data->resource_ids);
+
+  if (create_tags_data->name == NULL)
+    SEND_TO_CLIENT_OR_FAIL
+      (XML_ERROR_SYNTAX ("create_tags",
+                         "CREATE_TAGS requires"
+                         " a NAME element"));
+  else if (strlen (create_tags_data->name) == 0)
+    SEND_TO_CLIENT_OR_FAIL
+      (XML_ERROR_SYNTAX ("create_tags",
+                         "CREATE_TAGS name must be"
+                         " at least one character long"));
+  else if ((create_tags_data->resources_filter == NULL
+            || strcmp (create_tags_data->resources_filter, "") == 0)
+           && create_tags_data->resource_ids->len <= 1) // incl. NULL sentinel
+    SEND_TO_CLIENT_OR_FAIL
+      (XML_ERROR_SYNTAX ("create_tags",
+                        "CREATE_TAG requires"
+                        " a RESOURCES element with filter attribute or"
+                        " at least one RESOURCE element with id attribute"));
+  else if (create_tags_data->resources_type == NULL)
+    SEND_TO_CLIENT_OR_FAIL
+      (XML_ERROR_SYNTAX ("create_tags",
+                         "RESOURCES in CREATE_TAGS requires"
+                         " a TYPE element"));
+  else if (valid_db_resource_type (create_tags_data->resources_type) == 0)
+    SEND_TO_CLIENT_OR_FAIL
+      (XML_ERROR_SYNTAX ("create_tags",
+                         "TYPE in CREATE_TAGS/RESOURCES must be"
+                         " a valid resource type."));
+  else if (strcasecmp (create_tags_data->resources_type, "tag") == 0)
+    SEND_TO_CLIENT_OR_FAIL
+      (XML_ERROR_SYNTAX ("create_tags",
+                         "TYPE type in CREATE_TAGS/RESOURCES must not"
+                         " be 'tag'."));
+  else
+    {
+      switch (create_tags (create_tags_data->name,
+                           create_tags_data->comment,
+                           create_tags_data->value,
+                           create_tags_data->resources_type,
+                           create_tags_data->resources_filter,
+                           create_tags_data->resource_ids,
+                           create_tags_data->active,
+                           &created_count,
+                           &failed_count))
+        {
+          case 0:
+            {
+              SENDF_TO_CLIENT_OR_FAIL ("<create_tags_response"
+                                       " status=\"" STATUS_OK_CREATED "\""
+                                       " status_text=\""
+                                       STATUS_OK_CREATED_MANY_TEXT
+                                       "\">"
+                                       "<status_details>"
+                                       "<count>"
+                                       "<created>%d</created>"
+                                       "<failed>%d</failed>"
+                                       "</count>"
+                                       "</status_details>"
+                                       "</create_tags_response>",
+                                       created_count,
+                                       failed_count);
+//               log_event ("tag", "Tag", uuid, "created");
+              break;
+            }
+          case 1:
+            SEND_TO_CLIENT_OR_FAIL
+              (XML_ERROR_SYNTAX ("create_tags",
+                                 "Too many resources selected"));
+          case 99:
+            SEND_TO_CLIENT_OR_FAIL
+              (XML_ERROR_SYNTAX ("create_tags",
+                                "Permission denied"));
+            log_event_fail ("tag", "Tags", NULL, "created");
+            break;
+          case -1:
+            SEND_TO_CLIENT_OR_FAIL
+              (XML_INTERNAL_ERROR ("create_tags"));
+            log_event_fail ("tag", "Tags", NULL, "created");
+            break;
+        }
+    }
+
+// create_tags_leave:
+  create_tags_data_reset (create_tags_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
 extern char client_address[];
 
 /**
@@ -25479,6 +25691,20 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_TAG, VALUE);
 
       CLOSE (CLIENT_CREATE_TAG_RESOURCE, TYPE);
+
+      case CLIENT_CREATE_TAGS:
+        assert (strcasecmp ("CREATE_TAGS", element_name) == 0);
+        return handle_create_tags (gmp_parser, error);
+
+      CLOSE (CLIENT_CREATE_TAGS, ACTIVE);
+      CLOSE (CLIENT_CREATE_TAGS, RESOURCES);
+//       CLOSE (CLIENT_CREATE_TAGS, COPY);
+      CLOSE (CLIENT_CREATE_TAGS, COMMENT);
+      CLOSE (CLIENT_CREATE_TAGS, NAME);
+      CLOSE (CLIENT_CREATE_TAGS, VALUE);
+
+      CLOSE (CLIENT_CREATE_TAGS_RESOURCES, TYPE);
+      CLOSE (CLIENT_CREATE_TAGS_RESOURCES, RESOURCE);
 
       case CLIENT_CREATE_TARGET:
         {
@@ -30736,6 +30962,25 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_TAG_VALUE,
               &create_tag_data->value);
+
+
+      APPEND (CLIENT_CREATE_TAGS_ACTIVE,
+              &create_tags_data->active);
+
+//       APPEND (CLIENT_CREATE_TAGS_COPY,
+//               &create_tags_data->copy);
+
+      APPEND (CLIENT_CREATE_TAGS_COMMENT,
+              &create_tags_data->comment);
+
+      APPEND (CLIENT_CREATE_TAGS_NAME,
+              &create_tags_data->name);
+
+      APPEND (CLIENT_CREATE_TAGS_VALUE,
+              &create_tags_data->value);
+
+      APPEND (CLIENT_CREATE_TAGS_RESOURCES_TYPE,
+              &create_tags_data->resources_type);
 
 
       APPEND (CLIENT_CREATE_TARGET_EXCLUDE_HOSTS,

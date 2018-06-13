@@ -4139,6 +4139,10 @@ create_tag (const char *, const char *, const char *, const char *,
             const char *, const char *, tag_t *);
 
 int
+create_tags (const char *, const char *, const char *, const char *,
+             const char *, array_t *, const char *, int *, int *);
+
+int
 delete_tag (const char *, int);
 
 int
