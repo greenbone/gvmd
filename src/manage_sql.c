@@ -65528,7 +65528,7 @@ tag_add_resource (tag_t tag, const char *type, const char *uuid,
 
   if (already_added == 0)
     {
-printf ("%s - add %s %s\n", __FUNCTION__, type, uuid);
+      g_debug ("%s - adding %s %s\n", __FUNCTION__, type, uuid);
       sql ("INSERT INTO tag_resources"
            " (tag, resource_type, resource, resource_uuid, resource_location)"
            " VALUES (%llu, '%s', %llu, %s, %d)",
@@ -65536,7 +65536,7 @@ printf ("%s - add %s %s\n", __FUNCTION__, type, uuid);
     }
   else
     {
-printf ("%s - skip %s %s\n", __FUNCTION__, type, uuid);
+      g_debug ("%s - skipping %s %s\n", __FUNCTION__, type, uuid);
     }
 
   g_free (quoted_resource_uuid);
