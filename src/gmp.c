@@ -25493,7 +25493,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   case 2:
                     SEND_TO_CLIENT_OR_FAIL 
                       ("<create_tag_response"
-                       " status=\"" G_STRINGIFY (STATUS_ERROR_MISSING) "\""
+                       " status=\"" STATUS_ERROR_MISSING "\""
                        " status_text=\"No resources found for filter\"/>");
                     log_event_fail ("tag", "Tag", NULL, "created");
                     break;
@@ -28339,13 +28339,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 4:
                 SEND_TO_CLIENT_OR_FAIL 
                   ("<create_tag_response"
-                    " status=\"" G_STRINGIFY (STATUS_ERROR_MISSING) "\""
+                    " status=\"" STATUS_ERROR_MISSING "\""
                     " status_text=\"No resources found for filter\"/>");
                 log_event_fail ("tag", "Tag", NULL, "modified");
                 break;
               case 5:
                 SEND_TO_CLIENT_OR_FAIL
-                  (XML_ERROR_SYNTAX ("create_tag",
+                 (XML_ERROR_SYNTAX ("modify_tag",
                                     "Too many resources selected"));
                 log_event_fail ("tag", "Tag", NULL, "modified");
                 break;

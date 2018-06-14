@@ -65643,7 +65643,7 @@ tag_add_resources_list (tag_t tag, const char *type, array_t *uuids,
  * @param[in]  permission  The permission required to get the resource.
  * @param[out] error_extra Extra error output. Contains UUID if not found.
  *
- * @return 0 success, -1 error, 1 resource not found.
+ * @return 0 success, -1 error, 1 resource not found, 2 no resources returned.
  */
 static int
 tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
@@ -65651,7 +65651,7 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
   iterator_t resources;
   gchar *iterator_select;
   get_data_t resources_get;
-  int ret = 0;
+  int ret;
 
   resources_get.filter = g_strdup (filter);
   resources_get.filt_id = FILT_ID_NONE;
@@ -65677,6 +65677,7 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
   g_free (resources_get.type);
 
   init_iterator (&resources, "%s", iterator_select);
+  ret = 2;
   while (next (&resources))
     {
       resource_t resource;
@@ -65972,7 +65973,7 @@ delete_tag (const char *tag_id, int ultimate)
  *
  * @return 0 success, 1 failed to find tag, 2 tag_id required,
  *         3 resource ID not found (sets error_extra to UUID),
- *         3 filter returned no results, 4 too many resources selected,
+ *         4 filter returned no results, 5 too many resources selected,
  *         99 permission denied, -1 internal error.
  */
 int
