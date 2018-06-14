@@ -65635,6 +65635,67 @@ tag_add_resources_list (tag_t tag, const char *type, array_t *uuids,
 }
 
 /**
+ * @brief Find resources using a filter and insert as tag resources.
+ *
+ * @param[in]  tag         Tag to attach to the resource.
+ * @param[in]  type        The resource type.
+ * @param[in]  uuids       The array of resource UUIDs.
+ * @param[in]  permission  The permission required to get the resource.
+ * @param[out] error_extra Extra error output. Contains UUID if not found.
+ *
+ * @return 0 success, -1 error, 1 resource not found.
+ */
+static int
+tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
+{
+  iterator_t resources;
+  gchar *iterator_select;
+  get_data_t resources_get;
+  int ret = 0;
+
+  resources_get.filter = g_strdup (filter);
+  resources_get.filt_id = FILT_ID_NONE;
+  resources_get.trash = LOCATION_TABLE;
+  resources_get.type = g_strdup (type);
+
+  switch (type_build_select (type,
+                             "id, uuid",
+                             &resources_get, 0, 0, NULL, NULL, NULL,
+                             &iterator_select))
+    {
+      case 0:
+        break;
+      default:
+        g_warning ("%s: Failed to build filter SELECT", __FUNCTION__);
+        sql_rollback ();
+        g_free (resources_get.filter);
+        g_free (resources_get.type);
+        return -1;
+    }
+
+  g_free (resources_get.filter);
+  g_free (resources_get.type);
+
+  init_iterator (&resources, "%s", iterator_select);
+  while (next (&resources))
+    {
+      resource_t resource;
+      const char *current_uuid;
+
+      resource = iterator_int64 (&resources, 0);
+      current_uuid = iterator_string (&resources, 1);
+
+      ret = tag_add_resource (tag, type, current_uuid, resource,
+                              LOCATION_TABLE);
+    }
+  cleanup_iterator (&resources);
+
+  g_free (iterator_select);
+
+  return ret;
+}
+
+/**
  * @brief Find a tag for a specific permission, given a UUID.
  *
  * @param[in]   uuid        UUID of tag.
@@ -65780,6 +65841,22 @@ create_tag (const char * name, const char * comment, const char * value,
         }
     }
 
+  /* Handle filter */
+  if (resources_filter && strcmp (resources_filter, ""))
+    {
+      int ret;
+      ret = tag_add_resources_filter (new_tag, lc_resource_type,
+                                      resources_filter);
+
+      if (ret)
+        {
+          // Assume tag_add_resources_list return codes match
+          sql_rollback ();
+          g_free (lc_resource_type);
+          return ret;
+        }
+    }
+
   g_free (lc_resource_type);
 
   if (tag)
@@ -65907,6 +65984,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
   gchar *quoted_name, *quoted_comment, *quoted_value;
   gchar *lc_resource_type, *quoted_resource_type;
   tag_t tag;
+  gchar *current_resource_type;
 
   if (tag_id == NULL)
     return 2;
@@ -66005,27 +66083,30 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
   g_free (quoted_comment);
   g_free (quoted_value);
 
+  current_resource_type = sql_string ("SELECT resource_type"
+                                      " FROM tags"
+                                      " WHERE id = %llu",
+                                      tag);
+
+  /* Clear old resources */
+  if (resource_uuids
+      || (resources_filter && strcmp (resources_filter, "")))
+    {
+      sql ("DELETE FROM tag_resources WHERE tag = %llu", tag);
+    }
+
   /* Handle resource IDs */
   if (resource_uuids)
     {
-      gchar *current_resource_type;
       int ret;
-
-      sql ("DELETE FROM tag_resources WHERE tag = %llu", tag);
-
-      current_resource_type = sql_string ("SELECT resource_type"
-                                          " FROM tags"
-                                          " WHERE id = %llu",
-                                          tag);
 
       ret = tag_add_resources_list (tag, current_resource_type, resource_uuids,
                                     error_extra);
 
-      g_free (current_resource_type);
-
       if (ret)
         {
           sql_rollback ();
+          g_free (current_resource_type);
           g_free (lc_resource_type);
           // Assume return codes besides -1 are offset from create_tag
           if (ret > 0)
@@ -66035,6 +66116,28 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
         }
     }
 
+  /* Handle filter */
+  if (resources_filter && strcmp (resources_filter, ""))
+    {
+      int ret;
+      ret = tag_add_resources_filter (tag, current_resource_type,
+                                      resources_filter);
+
+      if (ret)
+        {
+          // Assume tag_add_resources_list return codes match
+          sql_rollback ();
+          g_free (current_resource_type);
+          g_free (lc_resource_type);
+          // Assume return codes besides -1 are offset from create_tag
+          if (ret > 0)
+            return ret + 2;
+          else
+            return ret;
+        }
+    }
+
+  g_free (current_resource_type);
   g_free (lc_resource_type);
 
   sql_commit ();

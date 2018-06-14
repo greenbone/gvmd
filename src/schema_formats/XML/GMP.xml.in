@@ -5335,6 +5335,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <name>resources</name>
       <summary>Identifies the resources the tag is to be attached to</summary>
       <pattern>
+        <attrib>
+          <name>filter</name>
+          <type>text</type>
+          <summary>Filter term to select resources the tag is to be attached to</summary>
+          <required>0</required>
+        </attrib>
         <any><e>resource</e></any>
         <e>type</e>
       </pattern>
@@ -24774,6 +24780,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <name>resources</name>
       <summary>Identifies the resources the tag is to be attached to</summary>
       <pattern>
+        <attrib>
+          <name>filter</name>
+          <type>text</type>
+          <summary>Filter term to select resources the tag is to be attached to</summary>
+          <required>0</required>
+        </attrib>
         <any><e>resource</e></any>
         <e>type</e>
       </pattern>
