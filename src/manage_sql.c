@@ -65623,7 +65623,6 @@ tag_add_resources_list (tag_t tag, const char *type, array_t *uuids,
                                    resource_permission);
       if (ret)
         {
-          sql_rollback ();
           g_free (resource_permission);
           if (error_extra)
             *error_extra = g_strdup (current_uuid);
@@ -65688,6 +65687,112 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
 
       ret = tag_add_resource (tag, type, current_uuid, resource,
                               LOCATION_TABLE);
+    }
+  cleanup_iterator (&resources);
+
+  g_free (iterator_select);
+
+  return ret;
+}
+
+/**
+ * @brief Remove resources from a tag using a UUIDs array.
+ *
+ * @param[in]  tag         Tag to attach to the resource.
+ * @param[in]  type        The resource type.
+ * @param[in]  uuids       The array of resource UUIDs.
+ * @param[in]  permission  The permission required to get the resource.
+ * @param[out] error_extra Extra error output. Contains UUID if not found.
+ *
+ * @return 0 success, -1 error, 1 resource not found.
+ */
+static int
+tag_remove_resources_list (tag_t tag, const char *type, array_t *uuids,
+                           gchar **error_extra)
+{
+  gchar *current_uuid;
+  int index;
+
+  index = 0;
+  while ((current_uuid = g_ptr_array_index (uuids, index++)))
+    {
+      gchar *uuid_escaped = g_markup_escape_text (current_uuid, -1);
+
+      if (sql_int ("SELECT count(*) FROM tag_resources"
+                   " WHERE tag = %llu AND resource_uuid = '%s'",
+                   tag, uuid_escaped) == 0)
+        {
+          if (error_extra)
+            *error_extra = g_strdup (current_uuid);
+          g_free (uuid_escaped);
+          return 1;
+        }
+
+      sql ("DELETE FROM tag_resources"
+           " WHERE tag = %llu AND resource_uuid = '%s'",
+           tag, uuid_escaped);
+      g_free (uuid_escaped);
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Remove resources from a tag using a filter.
+ *
+ * @param[in]  tag         Tag to attach to the resource.
+ * @param[in]  type        The resource type.
+ * @param[in]  uuids       The array of resource UUIDs.
+ * @param[in]  permission  The permission required to get the resource.
+ * @param[out] error_extra Extra error output. Contains UUID if not found.
+ *
+ * @return 0 success, -1 error, 1 resource not found, 2 no resources returned.
+ */
+static int
+tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
+{
+  iterator_t resources;
+  gchar *iterator_select;
+  get_data_t resources_get;
+  int ret;
+
+  resources_get.filter = g_strdup (filter);
+  resources_get.filt_id = FILT_ID_NONE;
+  resources_get.trash = LOCATION_TABLE;
+  resources_get.type = g_strdup (type);
+
+  switch (type_build_select (type,
+                             "id",
+                             &resources_get, 0, 0, NULL, NULL, NULL,
+                             &iterator_select))
+    {
+      case 0:
+        break;
+      default:
+        g_warning ("%s: Failed to build filter SELECT", __FUNCTION__);
+        sql_rollback ();
+        g_free (resources_get.filter);
+        g_free (resources_get.type);
+        return -1;
+    }
+
+  g_free (resources_get.filter);
+  g_free (resources_get.type);
+
+  init_iterator (&resources, "%s", iterator_select);
+  ret = 2;
+  while (next (&resources))
+    {
+      resource_t resource;
+
+      resource = iterator_int64 (&resources, 0);
+
+      ret = 0;
+      sql ("DELETE FROM tag_resources"
+           " WHERE tag = %llu"
+           " AND resource = %llu"
+           " AND resource_location = %d",
+           tag, resource, resources_get.trash);
     }
   cleanup_iterator (&resources);
 
@@ -65968,19 +66073,22 @@ delete_tag (const char *tag_id, int ultimate)
  * @param[in]  resource_type     New resource type to attach the tag to or NULL.
  * @param[in]  resource_uuids    New Unique IDs of the resources to attach.
  * @param[in]  resources_filter  Filter to select resources to attach tag to.
+ * @param[in]  resources_action  Resources action, e.g. "add" or "remove".
  * @param[in]  active            0 for inactive, any other for active or NULL.
  * @param[out] error_extra  Extra string for error (e.g. missing resource ID)
  *
  * @return 0 success, 1 failed to find tag, 2 tag_id required,
- *         3 resource ID not found (sets error_extra to UUID),
- *         4 filter returned no results, 5 too many resources selected,
+ *         3 unexpected resource action,
+ *         4 resource ID not found (sets error_extra to UUID),
+ *         5 filter returned no results, 6 too many resources selected,
  *         99 permission denied, -1 internal error.
  */
 int
 modify_tag (const char *tag_id, const char *name, const char *comment,
             const char *value, const char *resource_type,
             array_t *resource_uuids, const char *resources_filter,
-            const char *active, gchar **error_extra)
+            const char *resources_action, const char *active,
+            gchar **error_extra)
 {
   gchar *quoted_name, *quoted_comment, *quoted_value;
   gchar *lc_resource_type, *quoted_resource_type;
@@ -66090,10 +66198,23 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
                                       tag);
 
   /* Clear old resources */
-  if (resource_uuids
-      || (resources_filter && strcmp (resources_filter, "")))
+  if (resources_action == NULL
+      || strcmp (resources_action, "") == 0
+      || strcmp (resources_action, "set") == 0)
     {
-      sql ("DELETE FROM tag_resources WHERE tag = %llu", tag);
+      if (resource_uuids
+          || (resources_filter && strcmp (resources_filter, "")))
+        {
+          sql ("DELETE FROM tag_resources WHERE tag = %llu", tag);
+        }
+    }
+  else if (strcmp (resources_action, "add")
+           && strcmp (resources_action, "remove"))
+    {
+      sql_rollback ();
+      g_free (current_resource_type);
+      g_free (lc_resource_type);
+      return 3;
     }
 
   /* Handle resource IDs */
@@ -66101,8 +66222,12 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
     {
       int ret;
 
-      ret = tag_add_resources_list (tag, current_resource_type, resource_uuids,
-                                    error_extra);
+      if (resources_action && strcmp (resources_action, "remove") == 0)
+        ret = tag_remove_resources_list (tag, current_resource_type,
+                                         resource_uuids, error_extra);
+      else
+        ret = tag_add_resources_list (tag, current_resource_type,
+                                      resource_uuids, error_extra);
 
       if (ret)
         {
@@ -66111,7 +66236,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
           g_free (lc_resource_type);
           // Assume return codes besides -1 are offset from create_tag
           if (ret > 0)
-            return ret + 2;
+            return ret + 3;
           else
             return ret;
         }
@@ -66121,8 +66246,13 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
   if (resources_filter && strcmp (resources_filter, ""))
     {
       int ret;
-      ret = tag_add_resources_filter (tag, current_resource_type,
-                                      resources_filter);
+
+      if (resources_action && strcmp (resources_action, "remove") == 0)
+        ret = tag_remove_resources_filter (tag, current_resource_type,
+                                           resources_filter);
+      else
+        ret = tag_add_resources_filter (tag, current_resource_type,
+                                        resources_filter);
 
       if (ret)
         {
@@ -66132,7 +66262,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
           g_free (lc_resource_type);
           // Assume return codes besides -1 are offset from create_tag
           if (ret > 0)
-            return ret + 2;
+            return ret + 3;
           else
             return ret;
         }

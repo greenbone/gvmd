@@ -3680,6 +3680,7 @@ typedef struct
   char *active;           ///< Whether the tag is active.
   array_t *resource_ids;  ///< IDs of the resource to which to attach the tag.
   char *resource_type;    ///< Type of the resource to which to attach the tag.
+  char *resources_action; ///< Resources edit action, e.g. "remove" or "add".
   char *resources_filter; ///< Filter used to select resources.
   char *comment;          ///< Comment to add to the tag.
   char *name;             ///< Name of the tag.
@@ -3699,6 +3700,7 @@ modify_tag_data_reset (modify_tag_data_t *data)
   free (data->active);
   array_free (data->resource_ids);
   free (data->resource_type);
+  free (data->resources_action);
   free (data->resources_filter);
   free (data->comment);
   free (data->name);
@@ -8676,6 +8678,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             modify_tag_data->resource_ids = make_array ();
             append_attribute (attribute_names, attribute_values, "filter",
                               &modify_tag_data->resources_filter);
+            append_attribute (attribute_names, attribute_values, "action",
+                              &modify_tag_data->resources_action);
             set_client_state (CLIENT_MODIFY_TAG_RESOURCES);
           }
         else if (strcasecmp ("COMMENT", element_name) == 0)
@@ -28300,6 +28304,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                    modify_tag_data->resource_type,
                                    modify_tag_data->resource_ids,
                                    modify_tag_data->resources_filter,
+                                   modify_tag_data->resources_action,
                                    modify_tag_data->active,
                                    &error_extra))
             {
@@ -28326,6 +28331,14 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 log_event_fail ("tag", "Tag", modify_tag_data->tag_id,
                                 "modified");
               case 3:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_tag",
+                                    "RESOURCES action must be"
+                                    " 'add', 'set', 'remove'"
+                                    " or empty."));
+                log_event_fail ("tag", "Tag", modify_tag_data->tag_id,
+                                "modified");
+              case 4:
                 if (send_find_error_to_client ("modify_tag", "resource",
                                                 error_extra,
                                                 gmp_parser))
@@ -28336,14 +28349,14 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   }
                 g_free (error_extra);
                 log_event_fail ("tag", "Tag", NULL, "modified");
-              case 4:
+              case 5:
                 SEND_TO_CLIENT_OR_FAIL 
                   ("<create_tag_response"
                     " status=\"" STATUS_ERROR_MISSING "\""
                     " status_text=\"No resources found for filter\"/>");
                 log_event_fail ("tag", "Tag", NULL, "modified");
                 break;
-              case 5:
+              case 6:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_tag",
                                     "Too many resources selected"));
