@@ -49120,8 +49120,8 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
       period_months_string = NULL;
 
       sql ("UPDATE schedules SET"
-           " icalendar = '%s'"
-           " first_time = %ld"
+           " icalendar = '%s',"
+           " first_time = %ld,"
            " period = 0,"
            " period_months = 0,"
            " byday = 0,"
