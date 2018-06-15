@@ -964,7 +964,14 @@ icalendar_simplify_vevent (icalcomponent *vevent, GHashTable *used_tzids,
       icaltimetype dtend;
       dtend = icalcomponent_get_dtend (vevent);
 
-      duration = icaltime_subtract (dtend, dtstart);
+      if (icaltime_is_null_time (dtend))
+        {
+          duration = icaldurationtype_null_duration ();
+        }
+      else
+        {
+          duration = icaltime_subtract (dtend, dtstart);
+        }
     }
 
   /*
