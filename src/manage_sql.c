@@ -49131,7 +49131,8 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
            " WHERE id = %llu;",
            quoted_icalendar,
            ical_first_time,
-           ical_duration);
+           ical_duration,
+           schedule);
     }
   else
     {
