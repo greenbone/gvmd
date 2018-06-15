@@ -1227,7 +1227,7 @@ int
 manage_report_host_detail (report_t, const char *, const char *);
 
 void
-hosts_set_identifiers ();
+hosts_set_identifiers (report_t);
 
 void
 hosts_set_max_severity (report_t, int*, int*);
@@ -2909,7 +2909,8 @@ int
 schedule_period (schedule_t);
 
 int
-schedule_info (schedule_t, time_t *, time_t *, int *, int *, int *);
+schedule_info (schedule_t, int, time_t *, time_t *, int *, int *, int *,
+               gchar **, gchar **);
 
 int
 init_schedule_iterator (iterator_t*, const get_data_t *);
@@ -3574,6 +3575,15 @@ filter_term (const char *);
 
 gchar*
 filter_term_value (const char *, const char *);
+
+int
+filter_term_apply_overrides (const char *);
+
+int
+filter_term_autofp (const char *);
+
+int
+filter_term_min_qod (const char *);
 
 int
 create_filter (const char*, const char*, const char*, const char*, int,
@@ -4310,20 +4320,30 @@ int
 column_is_timestamp (const char*);
 
 char*
-type_columns (const char *, int);
+type_columns (const char *);
 
 const char**
-type_filter_columns (const char *, int);
+type_filter_columns (const char *);
 
 char*
-type_trash_columns (const char *, int);
+type_trash_columns (const char *);
 
 gchar*
-type_opts_table (const char *, int, int, int, const char *, const char *,
-                 const char *);
+type_opts_table (const char *, const char *);
 
 gchar*
 type_table (const char *, int);
+
+gchar*
+type_extra_where (const char *, int, const char *);
+
+int
+type_build_select (const char *type, const char *columns_str,
+                   const get_data_t *get,
+                   gboolean distinct, gboolean ordered,
+                   const char *extra_tables, const char *given_extra_where,
+                   const char *group_by,
+                   gchar **select);
 
 gboolean
 manage_migrate_needs_timezone (GSList *, const gchar *);
