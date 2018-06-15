@@ -285,7 +285,7 @@ migrate_0_to_1 ()
    * already. */
 
   sql ("UPDATE reports SET scan_run_status = '%u';",
-       TASK_STATUS_INTERNAL_ERROR);
+       TASK_STATUS_INTERRUPTED);
 
   sql ("UPDATE reports SET scan_run_status = '%u'"
        " WHERE start_time IS NULL OR end_time IS NULL;",
