@@ -14458,6 +14458,133 @@ migrate_191_to_192 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 192 to version 193.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_192_to_193 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 192. */
+
+  if (manage_db_version () != 192)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Create new tables for tag resources */
+
+  if (sql_is_sqlite3 ())
+    {
+      sql ("CREATE TABLE IF NOT EXISTS tag_resources"
+           " (tag INTEGER,"
+           "  resource_type text,"
+           "  resource INTEGER,"
+           "  resource_uuid TEXT,"
+           "  resource_location INTEGER);");
+
+      sql ("CREATE TABLE IF NOT EXISTS tag_resources_trash"
+           " (tag INTEGER,"
+           "  resource_type text,"
+           "  resource INTEGER,"
+           "  resource_uuid TEXT,"
+           "  resource_location INTEGER);");
+    }
+  else
+    {
+      sql ("CREATE TABLE IF NOT EXISTS tag_resources"
+          " (tag integer REFERENCES tags (id),"
+          "  resource_type text,"
+          "  resource integer,"
+          "  resource_uuid text,"
+          "  resource_location integer);");
+
+      sql ("CREATE TABLE IF NOT EXISTS tag_resources_trash"
+          " (tag integer REFERENCES tags_trash (id),"
+          "  resource_type text,"
+          "  resource integer,"
+          "  resource_uuid text,"
+          "  resource_location integer);");
+    }
+
+  /* Move tag resources to new tables */
+
+  sql ("INSERT INTO tag_resources"
+       " (tag, resource_type, resource, resource_uuid, resource_location)"
+       " SELECT id, resource_type, resource, resource_uuid, resource_location"
+       "   FROM tags"
+       "  WHERE resource != 0");
+
+  sql ("INSERT INTO tag_resources_trash"
+       " (tag, resource_type, resource, resource_uuid, resource_location)"
+       " SELECT id, resource_type, resource, resource_uuid, resource_location"
+       "   FROM tags_trash"
+       "  WHERE resource != 0");
+
+  /* Drop tag resource columns except resource_type */
+
+  if (sql_is_sqlite3 ())
+    {
+      sql ("ALTER TABLE tags RENAME TO tags_191;");
+      sql ("ALTER TABLE tags_trash RENAME TO tags_trash_191;");
+
+      sql ("CREATE TABLE tags"
+           " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
+           "  creation_time, modification_time, resource_type,"
+           "  active, value);");
+
+      sql ("INSERT INTO tags"
+           " (id, uuid, owner, name, comment,"
+           "  creation_time, modification_time, resource_type,"
+           "  active, value)"
+           " SELECT id, uuid, owner, name, comment,"
+           "  creation_time, modification_time, resource_type,"
+           "  active, value"
+           " FROM tags_191;");
+
+      sql ("CREATE TABLE tags_trash"
+           " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
+           "  creation_time, modification_time, resource_type,"
+           "  active, value);");
+
+      sql ("INSERT INTO tags_trash"
+           " (id, uuid, owner, name, comment,"
+           "  creation_time, modification_time, resource_type,"
+           "  active, value)"
+           " SELECT id, uuid, owner, name, comment,"
+           "  creation_time, modification_time, resource_type,"
+           "  active, value"
+           " FROM tags_trash_191;");
+
+      sql ("DROP TABLE tags_191;");
+      sql ("DROP TABLE tags_trash_191;");
+    }
+  else
+    {
+      sql ("ALTER TABLE tags DROP COLUMN resource;");
+      sql ("ALTER TABLE tags DROP COLUMN resource_uuid;");
+      sql ("ALTER TABLE tags DROP COLUMN resource_location;");
+
+      sql ("ALTER TABLE tags_trash DROP COLUMN resource;");
+      sql ("ALTER TABLE tags_trash DROP COLUMN resource_uuid;");
+      sql ("ALTER TABLE tags_trash DROP COLUMN resource_location;");
+    }
+
+  /* Set the database version to 193. */
+
+  set_db_version (193);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -14664,6 +14791,7 @@ static migrator_t database_migrators[]
     {190, migrate_189_to_190},
     {191, migrate_190_to_191},
     {192, migrate_191_to_192},
+    {193, migrate_192_to_193},
     /* End marker. */
     {-1, NULL}};
 

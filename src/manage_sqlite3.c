@@ -3828,18 +3828,30 @@ create_tables ()
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, value);");
   sql ("CREATE TABLE IF NOT EXISTS tags"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
-       "  creation_time, modification_time, resource_type, resource,"
-       "  resource_uuid, resource_location, active, value);");
-  sql ("CREATE INDEX IF NOT EXISTS tags_by_resource"
-       " ON tags (resource_type, resource);");
+       "  creation_time, modification_time, resource_type,"
+       "  active, value);");
   sql ("CREATE INDEX IF NOT EXISTS tags_by_name"
        " ON tags (name);");
   sql ("CREATE UNIQUE INDEX IF NOT EXISTS tags_by_uuid"
        " ON tags (uuid);");
+  sql ("CREATE TABLE IF NOT EXISTS tag_resources"
+       " (tag INTEGER, resource_type text, resource INTEGER,"
+       "  resource_uuid TEXT, resource_location INTEGER);");
+  sql ("CREATE INDEX IF NOT EXISTS tag_resources_by_resource"
+       " ON tag_resources (resource_type, resource, resource_location);");
+  sql ("CREATE INDEX IF NOT EXISTS tag_resources_by_resource_uuid"
+       " ON tag_resources (resource_type, resource_uuid);");
+  sql ("CREATE INDEX IF NOT EXISTS tag_resources_by_tag"
+       " ON tag_resources (tag);");
   sql ("CREATE TABLE IF NOT EXISTS tags_trash"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
-       "  creation_time, modification_time, resource_type, resource,"
-       "  resource_uuid, resource_location, active, value);");
+       "  creation_time, modification_time, resource_type,"
+       "  active, value);");
+  sql ("CREATE TABLE IF NOT EXISTS tag_resources_trash"
+       " (tag INTEGER, resource_type text, resource INTEGER,"
+       "  resource_uuid TEXT, resource_location INTEGER);");
+  sql ("CREATE INDEX IF NOT EXISTS tag_resources_trash_by_tag"
+       " ON tag_resources_trash (tag);");
   sql ("CREATE TABLE IF NOT EXISTS targets"
        " (id INTEGER PRIMARY KEY, uuid text UNIQUE NOT NULL,"
        "  owner integer, name text NOT NULL,"
