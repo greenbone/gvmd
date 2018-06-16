@@ -6882,7 +6882,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_SCHEDULE);
         else if (strcasecmp ("CREATE_TAG", element_name) == 0)
           {
-            modify_tag_data->resource_ids = NULL;
+            create_tag_data->resource_ids = NULL;
             set_client_state (CLIENT_CREATE_TAG);
           }
         else if (strcasecmp ("CREATE_TARGET", element_name) == 0)
