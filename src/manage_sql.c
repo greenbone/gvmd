@@ -140,6 +140,9 @@ stop_task_internal (task_t);
 int
 validate_username (const gchar *);
 
+void
+set_task_interrupted (task_t, const gchar *);
+
 
 /* Port range headers. */
 
@@ -328,6 +331,9 @@ vulns_extra_where ();
 
 static gboolean
 lookup_report_format (const char*, report_format_t*);
+
+static int
+task_last_report_any_status (task_t, report_t *);
 
 
 /* Variables. */
@@ -2709,7 +2715,7 @@ keyword_applies_to_column (keyword_t *keyword, const char* column)
       && (strstr ("Running", keyword->string) == NULL)
       && (strstr ("Stop Requested", keyword->string) == NULL)
       && (strstr ("Stopped", keyword->string) == NULL)
-      && (strstr ("Internal Error", keyword->string) == NULL))
+      && (strstr ("Interrupted", keyword->string) == NULL))
     return 0;
   return 1;
 }
@@ -13624,7 +13630,7 @@ task_status_t
 task_iterator_run_status (iterator_t* iterator)
 {
   task_status_t ret;
-  if (iterator->done) return TASK_STATUS_INTERNAL_ERROR;
+  if (iterator->done) return TASK_STATUS_INTERRUPTED;
   ret = (unsigned int) iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT);
   return ret;
 }
@@ -16407,7 +16413,13 @@ stop_active_tasks ()
               task_t index = get_iterator_resource (&tasks);
               /* Set the current user, for event checks. */
               current_credentials.uuid = task_owner_uuid (index);
-              set_task_run_status (index, TASK_STATUS_STOPPED);
+              task_last_report_any_status (index, &current_report);
+              set_task_interrupted (index,
+                                    "Task process exited abnormally"
+                                    " (e.g. machine lost power or process was"
+                                    " sent SIGKILL)."
+                                    "  Setting scan status to Interrupted.");
+              current_report = 0;
               free (current_credentials.uuid);
               break;
             }
@@ -16430,7 +16442,7 @@ stop_active_tasks ()
        " OR scan_run_status = %u"
        " OR scan_run_status = %u"
        " OR scan_run_status = %u;",
-       TASK_STATUS_STOPPED,
+       TASK_STATUS_INTERRUPTED,
        TASK_STATUS_DELETE_REQUESTED,
        TASK_STATUS_DELETE_ULTIMATE_REQUESTED,
        TASK_STATUS_DELETE_ULTIMATE_WAITING,
@@ -16725,7 +16737,8 @@ init_manage_helper (GSList *log_config, const gchar *database,
 /**
  * @brief Cleanup the manage library.
  *
- * Optionally put any running task in the stopped state and close the database.
+ * Optionally put any running task in the interrupted state and close the
+ * database.
  *
  * @param[in]  cleanup  If TRUE perform all cleanup operations, else only
  *                      those required at the start of a forked process.
@@ -16738,7 +16751,18 @@ cleanup_manage_process (gboolean cleanup)
       if (cleanup)
         {
           if (current_scanner_task)
-            set_task_run_status (current_scanner_task, TASK_STATUS_STOPPED);
+            {
+              if (current_report)
+                {
+                  result_t result;
+                  result = make_result (current_scanner_task,
+                                        "", "", "", "Error Message",
+                                        "Interrupting scan because GVM is"
+                                        " exiting.");
+                  report_add_result (current_report, result);
+                }
+              set_task_run_status (current_scanner_task, TASK_STATUS_INTERRUPTED);
+            }
           cleanup_prognosis_iterator ();
           sql_close ();
         }
@@ -16764,9 +16788,11 @@ manage_cleanup_process_error (int signal)
     {
       if (current_scanner_task)
         {
-          g_warning ("%s: Error exit, setting running task to Internal Error",
+          g_warning ("%s: Error exit, setting running task to Interrupted",
                      __FUNCTION__);
-          set_task_run_status (current_scanner_task, TASK_STATUS_INTERNAL_ERROR);
+          set_task_interrupted (current_scanner_task,
+                                "Error exit, setting running task to"
+                                " Interrupted.");
         }
       sql_close ();
     }
@@ -18066,7 +18092,7 @@ task_iterator_current_report (iterator_t *iterator)
       || run_status == TASK_STATUS_STOP_REQUESTED
       || run_status == TASK_STATUS_STOP_REQUESTED_GIVEUP
       || run_status == TASK_STATUS_STOPPED
-      || run_status == TASK_STATUS_INTERNAL_ERROR)
+      || run_status == TASK_STATUS_INTERRUPTED)
     {
       return (unsigned int) sql_int ("SELECT max(id) FROM reports"
                                      " WHERE task = %llu"
@@ -18086,7 +18112,7 @@ task_iterator_current_report (iterator_t *iterator)
                                      TASK_STATUS_STOP_REQUESTED,
                                      TASK_STATUS_STOP_REQUESTED_GIVEUP,
                                      TASK_STATUS_STOPPED,
-                                     TASK_STATUS_INTERNAL_ERROR);
+                                     TASK_STATUS_INTERRUPTED);
     }
   return (report_t) 0;
 }
@@ -18206,6 +18232,37 @@ task_last_report (task_t task, report_t *report)
 }
 
 /**
+ * @brief Get the report from the most recently invocation of task.
+ *
+ * @param[in]  task    The task.
+ * @param[out] report  Report return, 0 if successfully failed to select report.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+task_last_report_any_status (task_t task, report_t *report)
+{
+  switch (sql_int64 (report,
+                     "SELECT id FROM reports WHERE task = %llu"
+                     " ORDER BY date DESC LIMIT 1;",
+                     task))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *report = 0;
+        return 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        return -1;
+        break;
+    }
+  return 0;
+}
+
+/**
  * @brief Get the report from second most recently completed invocation of task.
  *
  * @param[in]  task    The task.
@@ -18247,14 +18304,16 @@ task_second_last_report (task_t task, report_t *report)
  * @return 0 success, -1 error.
  */
 int
-task_last_stopped_report (task_t task, report_t *report)
+task_last_resumable_report (task_t task, report_t *report)
 {
   switch (sql_int64 (report,
                      "SELECT id FROM reports WHERE task = %llu"
-                     " AND scan_run_status = %u"
+                     " AND (scan_run_status = %u"
+                     "      OR scan_run_status = %u)"
                      " ORDER BY date DESC LIMIT 1;",
                      task,
-                     TASK_STATUS_STOPPED))
+                     TASK_STATUS_STOPPED,
+                     TASK_STATUS_INTERRUPTED))
     {
       case 0:
         break;
@@ -20900,7 +20959,11 @@ create_report (array_t *results, const char *task_id, const char *task_name,
       case -1:
         /* Parent when error. */
         g_warning ("%s: fork: %s\n", __FUNCTION__, strerror (errno));
-        set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
+        current_report = report;
+        set_task_interrupted (task,
+                              "Failed to fork child to import report."
+                              "  Setting task status to Interrupted.");
+        current_report = 0;
         return -1;
         break;
       default:
@@ -27722,7 +27785,8 @@ report_active (report_t report)
       || run_status == TASK_STATUS_DELETE_ULTIMATE_REQUESTED
       || run_status == TASK_STATUS_STOP_REQUESTED
       || run_status == TASK_STATUS_STOP_REQUESTED_GIVEUP
-      || run_status == TASK_STATUS_STOPPED)
+      || run_status == TASK_STATUS_STOPPED
+      || run_status == TASK_STATUS_INTERRUPTED)
     return 1;
   return 0;
 }
@@ -28939,7 +29003,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
    * report_scan_run_status call.  Still GCC 4.4.5 (Debian 4.4.5-8) gives a
    * "may be used uninitialized" warning, so init it here to quiet the
    * warning. */
-  run_status = TASK_STATUS_INTERNAL_ERROR;
+  run_status = TASK_STATUS_INTERRUPTED;
 
   if (type
       && strcmp (type, "scan")
@@ -29126,7 +29190,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
              uuid,
              run_status_name (run_status
                                ? run_status
-                               : TASK_STATUS_INTERNAL_ERROR));
+                               : TASK_STATUS_INTERRUPTED));
 
       if (report_timestamp (uuid, &timestamp))
         {
@@ -29338,7 +29402,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
         "<scan_run_status>%s</scan_run_status>",
         run_status_name (run_status
                           ? run_status
-                          : TASK_STATUS_INTERNAL_ERROR));
+                          : TASK_STATUS_INTERRUPTED));
 
       PRINT (out,
              "<hosts><count>%i</count></hosts>",
@@ -48751,7 +48815,7 @@ task_schedule_iterator_start_due (iterator_t* iterator)
   start_time = task_schedule_iterator_next_time (iterator);
 
   if ((run_status == TASK_STATUS_DONE
-       || run_status == TASK_STATUS_INTERNAL_ERROR
+       || run_status == TASK_STATUS_INTERRUPTED
        || run_status == TASK_STATUS_NEW
        || run_status == TASK_STATUS_STOPPED)
       && (start_time > 0)
@@ -48845,7 +48909,7 @@ task_schedule_iterator_timed_out (iterator_t* iterator)
     timeout_time = start_time + schedule_timeout_secs;
 
   if ((run_status == TASK_STATUS_DONE
-       || run_status == TASK_STATUS_INTERNAL_ERROR
+       || run_status == TASK_STATUS_INTERRUPTED
        || run_status == TASK_STATUS_NEW
        || run_status == TASK_STATUS_STOPPED)
       && (timeout_time <= time (NULL)))
@@ -49059,8 +49123,8 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
       period_months_string = NULL;
 
       sql ("UPDATE schedules SET"
-           " icalendar = '%s'"
-           " first_time = %ld"
+           " icalendar = '%s',"
+           " first_time = %ld,"
            " period = 0,"
            " period_months = 0,"
            " byday = 0,"
@@ -49070,7 +49134,8 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
            " WHERE id = %llu;",
            quoted_icalendar,
            ical_first_time,
-           ical_duration);
+           ical_duration,
+           schedule);
     }
   else
     {

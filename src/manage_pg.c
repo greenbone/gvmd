@@ -1679,7 +1679,7 @@ manage_create_sql_functions ()
        "         THEN 'Stop Requested'"
        "         WHEN $1 = %i"
        "         THEN 'Stopped'"
-       "         ELSE 'Internal Error'"
+       "         ELSE 'Interrupted'"
        "         END;"
        "$$ LANGUAGE SQL"
        " IMMUTABLE;",

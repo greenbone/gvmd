@@ -227,7 +227,7 @@ typedef enum
   TASK_STATUS_STOP_REQUESTED   = 10,
   TASK_STATUS_STOP_WAITING     = 11,
   TASK_STATUS_STOPPED = 12,
-  TASK_STATUS_INTERNAL_ERROR = 13,
+  TASK_STATUS_INTERRUPTED = 13,
   TASK_STATUS_DELETE_ULTIMATE_REQUESTED = 14,
   TASK_STATUS_STOP_REQUESTED_GIVEUP = 15,
   TASK_STATUS_DELETE_WAITING = 16,
@@ -1274,7 +1274,7 @@ void
 report_set_source_iface (report_t, const gchar *);
 
 int
-task_last_stopped_report (task_t, report_t *);
+task_last_resumable_report (task_t, report_t *);
 
 gchar*
 task_second_last_report_id (task_t);
