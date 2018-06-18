@@ -14585,6 +14585,62 @@ migrate_192_to_193 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 193 to version 194.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_193_to_194 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 193. */
+
+  if (manage_db_version () != 193)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The version column was dropped from the nvts table. */
+
+  if (sql_is_sqlite3 ())
+    {
+      sql ("ALTER TABLE nvts RENAME TO nvts_193;");
+
+      sql ("CREATE TABLE IF NOT EXISTS nvts"
+           " (id INTEGER PRIMARY KEY, uuid, oid, name, comment,"
+           "  copyright, cve, bid, xref, tag, category INTEGER, family,"
+           "  cvss_base, creation_time, modification_time, solution_type TEXT,"
+           "  qod INTEGER, qod_type TEXT);");
+
+      sql ("INSERT INTO nvts"
+           " (id, uuid, oid, name, comment, copyright, cve, bid, xref, tag,"
+           "  category, family, cvss_base, creation_time, modification_time,"
+           "  solution_type, qod, qod_type)"
+           " SELECT"
+           "  id, uuid, oid, name, comment, copyright, cve, bid, xref, tag,"
+           "  category, family, cvss_base, creation_time, modification_time,"
+           "  solution_type, qod, qod_type"
+           " FROM nvts_193;");
+
+      sql ("DROP TABLE nvts_193;");
+    }
+  else
+    sql ("ALTER TABLE nvts DROP COLUMN version;");
+
+  /* Set the database version to 194. */
+
+  set_db_version (194);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -14792,6 +14848,7 @@ static migrator_t database_migrators[]
     {191, migrate_190_to_191},
     {192, migrate_191_to_192},
     {193, migrate_192_to_193},
+    {194, migrate_193_to_194},
     /* End marker. */
     {-1, NULL}};
 
