@@ -19662,7 +19662,9 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
           quoted_qod_type = g_strdup ("");
         }
 
-      nvt_revision = sql_string ("SELECT version FROM nvts WHERE uuid = '%s';",
+      nvt_revision = sql_string ("SELECT iso_time (modification_time)"
+                                 " FROM nvts"
+                                 " WHERE uuid = '%s';",
                                  nvt);
     }
   else
