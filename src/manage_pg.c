@@ -2733,7 +2733,6 @@ create_tables ()
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
        "  oid text UNIQUE NOT NULL,"
-       "  version text,"
        "  name text,"
        "  comment text,"
        "  copyright text,"
