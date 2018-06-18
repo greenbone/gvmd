@@ -44,7 +44,7 @@
    { "''", "_owner", KEYWORD_TYPE_STRING },                                 \
    { "0", NULL, KEYWORD_TYPE_INTEGER },                                     \
    { "oid", NULL, KEYWORD_TYPE_STRING },                                    \
-   { "version", NULL, KEYWORD_TYPE_STRING },                                \
+   { "modification_time", "version", KEYWORD_TYPE_INTEGER },                \
    { "name", NULL, KEYWORD_TYPE_STRING },                                   \
    { "copyright", NULL, KEYWORD_TYPE_STRING },                              \
    { "cve", NULL, KEYWORD_TYPE_STRING },                                    \
@@ -72,7 +72,7 @@
    { "''", "_owner", KEYWORD_TYPE_STRING },                                 \
    { "0", NULL, KEYWORD_TYPE_STRING },                                      \
    { "oid", NULL, KEYWORD_TYPE_STRING },                                    \
-   { "version", NULL, KEYWORD_TYPE_STRING },                                \
+   { "modification_time", "version", KEYWORD_TYPE_INTEGER },                \
    { "nvts.name", NULL, KEYWORD_TYPE_STRING },                              \
    { "copyright", NULL, KEYWORD_TYPE_STRING },                              \
    { "cve", NULL, KEYWORD_TYPE_STRING },                                    \

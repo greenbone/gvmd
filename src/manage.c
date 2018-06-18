@@ -7861,7 +7861,6 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
 
       DEF (copyright);
       DEF (family);
-      DEF (version);
       DEF (xref);
       DEF (tag);
 
@@ -7968,7 +7967,9 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                               nvt_iterator_category (nvts),
                               copyright_text,
                               family_text,
-                              version_text,
+                              get_iterator_modification_time (nvts)
+                               ? get_iterator_modification_time (nvts)
+                               : "",
                               nvt_iterator_cvss_base (nvts)
                                ? nvt_iterator_cvss_base (nvts)
                                : "",
@@ -7984,7 +7985,6 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                               default_timeout ? default_timeout : "");
       g_free (copyright_text);
       g_free (family_text);
-      g_free (version_text);
       g_free (xref_text);
       g_free (tag_text);
       g_string_free(cert_refs_str, 1);
