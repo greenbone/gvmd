@@ -14444,7 +14444,7 @@ migrate_191_to_192 ()
 
   /* Update the database. */
 
-  /* The "classic" . */
+  /* The "classic" severity class was removed. */
 
   sql ("UPDATE settings SET value = 'nist'"
        " WHERE name = 'Severity Class' AND value = 'classic';");
