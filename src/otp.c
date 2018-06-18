@@ -1256,7 +1256,6 @@ process_otp_scanner_input ()
                 }
               case SCANNER_PLUGIN_LIST_PLUGIN_VERSION:
                 {
-                  nvti_set_version (current_plugin, field);
                   set_scanner_state (SCANNER_PLUGIN_LIST_CVE_ID);
                   break;
                 }
