@@ -13755,7 +13755,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <copyright>GNU GPL v2</copyright>
             <summary>Find what is listening on which port</summary>
             <family>Service detection</family>
-            <version>$Revision: 1852 $</version>
+            <version>2012-09-19T20:56:15+02:00</version>
             <cvss_base></cvss_base>
             <cve_id>NOCVE</cve_id>
             <bugtraq_id>NOBID</bugtraq_id>
