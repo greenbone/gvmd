@@ -1700,13 +1700,14 @@ create_target_data_reset (create_target_data_t *data)
  */
 typedef struct
 {
-  char *active;        ///< Whether the tag is active.
-  char *resource_id;   ///< ID of the resource to which to attach the tag.
-  char *resource_type; ///< Type of the resource to which to attach the tag.
-  char *comment;       ///< Comment to add to the tag.
-  char *name;          ///< Name of the tag.
-  char *value;         ///< Value of the tag.
-  char *copy;          ///< UUID of resource to copy.
+  char *active;           ///< Whether the tag is active.
+  array_t *resource_ids;  ///< IDs of the resource to which to attach the tag.
+  char *resource_type;    ///< Type of the resource to which to attach the tag.
+  char *resources_filter; ///< Filter used to select resources.
+  char *comment;          ///< Comment to add to the tag.
+  char *name;             ///< Name of the tag.
+  char *value;            ///< Value of the tag.
+  char *copy;             ///< UUID of resource to copy.
 } create_tag_data_t;
 
 /**
@@ -1718,8 +1719,9 @@ static void
 create_tag_data_reset (create_tag_data_t *data)
 {
   free (data->active);
+  array_free (data->resource_ids);
   free (data->resource_type);
-  free (data->resource_id);
+  free (data->resources_filter);
   free (data->comment);
   free (data->name);
   free (data->value);
@@ -3674,14 +3676,16 @@ modify_schedule_data_reset (modify_schedule_data_t *data)
  */
 typedef struct
 {
-  char *tag_id;         ///< UUID of the tag.
-  char *active;         ///< Whether the tag is active.
-  char *resource_id;    ///< ID of the resource to which to attach the tag.
-  char *resource_type;  ///< Type of the resource to which to attach the tag.
-  char *comment;        ///< Comment to add to the tag.
-  char *name;           ///< Name of the tag.
-  char *value;          ///< Value of the tag.
-  int  resource_count;  ///< Number of attach tags.
+  char *tag_id;           ///< UUID of the tag.
+  char *active;           ///< Whether the tag is active.
+  array_t *resource_ids;  ///< IDs of the resource to which to attach the tag.
+  char *resource_type;    ///< Type of the resource to which to attach the tag.
+  char *resources_action; ///< Resources edit action, e.g. "remove" or "add".
+  char *resources_filter; ///< Filter used to select resources.
+  char *comment;          ///< Comment to add to the tag.
+  char *name;             ///< Name of the tag.
+  char *value;            ///< Value of the tag.
+  int  resource_count;    ///< Number of attach tags.
 } modify_tag_data_t;
 
 /**
@@ -3694,8 +3698,10 @@ modify_tag_data_reset (modify_tag_data_t *data)
 {
   free (data->tag_id);
   free (data->active);
+  array_free (data->resource_ids);
   free (data->resource_type);
-  free (data->resource_id);
+  free (data->resources_action);
+  free (data->resources_filter);
   free (data->comment);
   free (data->name);
   free (data->value);
@@ -5348,8 +5354,9 @@ typedef enum
   CLIENT_CREATE_TAG_COMMENT,
   CLIENT_CREATE_TAG_COPY,
   CLIENT_CREATE_TAG_NAME,
-  CLIENT_CREATE_TAG_RESOURCE,
-  CLIENT_CREATE_TAG_RESOURCE_TYPE,
+  CLIENT_CREATE_TAG_RESOURCES,
+  CLIENT_CREATE_TAG_RESOURCES_RESOURCE,
+  CLIENT_CREATE_TAG_RESOURCES_TYPE,
   CLIENT_CREATE_TAG_VALUE,
   CLIENT_CREATE_TARGET,
   CLIENT_CREATE_TARGET_ALIVE_TESTS,
@@ -5603,8 +5610,9 @@ typedef enum
   CLIENT_MODIFY_TAG_ACTIVE,
   CLIENT_MODIFY_TAG_COMMENT,
   CLIENT_MODIFY_TAG_NAME,
-  CLIENT_MODIFY_TAG_RESOURCE,
-  CLIENT_MODIFY_TAG_RESOURCE_TYPE,
+  CLIENT_MODIFY_TAG_RESOURCES,
+  CLIENT_MODIFY_TAG_RESOURCES_RESOURCE,
+  CLIENT_MODIFY_TAG_RESOURCES_TYPE,
   CLIENT_MODIFY_TAG_VALUE,
   CLIENT_MODIFY_TARGET,
   CLIENT_MODIFY_TARGET_ALIVE_TESTS,
@@ -6874,6 +6882,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_SCHEDULE);
         else if (strcasecmp ("CREATE_TAG", element_name) == 0)
           {
+            create_tag_data->resource_ids = NULL;
             set_client_state (CLIENT_CREATE_TAG);
           }
         else if (strcasecmp ("CREATE_TARGET", element_name) == 0)
@@ -7925,6 +7934,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("MODIFY_TAG", element_name) == 0)
           {
+            modify_tag_data->resource_ids = NULL;
             append_attribute (attribute_names, attribute_values, "tag_id",
                               &modify_tag_data->tag_id);
             set_client_state (CLIENT_MODIFY_TAG);
@@ -8663,11 +8673,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&modify_tag_data->active, "");
             set_client_state (CLIENT_MODIFY_TAG_ACTIVE);
           }
-        else if (strcasecmp ("RESOURCE", element_name) == 0)
+        else if (strcasecmp ("RESOURCES", element_name) == 0)
           {
-            append_attribute (attribute_names, attribute_values, "id",
-                              &modify_tag_data->resource_id);
-            set_client_state (CLIENT_MODIFY_TAG_RESOURCE);
+            modify_tag_data->resource_ids = make_array ();
+            append_attribute (attribute_names, attribute_values, "filter",
+                              &modify_tag_data->resources_filter);
+            append_attribute (attribute_names, attribute_values, "action",
+                              &modify_tag_data->resources_action);
+            set_client_state (CLIENT_MODIFY_TAG_RESOURCES);
           }
         else if (strcasecmp ("COMMENT", element_name) == 0)
           {
@@ -8686,11 +8699,19 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         ELSE_ERROR ("modify_tag");
 
-      case CLIENT_MODIFY_TAG_RESOURCE:
-        if (strcasecmp ("TYPE", element_name) == 0)
+      case CLIENT_MODIFY_TAG_RESOURCES:
+        if (strcasecmp ("RESOURCE", element_name) == 0)
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values, "id",
+                                &attribute))
+              array_add (modify_tag_data->resource_ids, g_strdup (attribute));
+            set_client_state (CLIENT_MODIFY_TAG_RESOURCES_RESOURCE);
+          }
+        else if (strcasecmp ("TYPE", element_name) == 0)
           {
             gvm_append_string (&modify_tag_data->resource_type, "");
-            set_client_state (CLIENT_MODIFY_TAG_RESOURCE_TYPE);
+            set_client_state (CLIENT_MODIFY_TAG_RESOURCES_TYPE);
           }
         ELSE_ERROR ("modify_tag");
 
@@ -10034,11 +10055,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&create_tag_data->active, "");
             set_client_state (CLIENT_CREATE_TAG_ACTIVE);
           }
-        else if (strcasecmp ("RESOURCE", element_name) == 0)
+        else if (strcasecmp ("RESOURCES", element_name) == 0)
           {
-            append_attribute (attribute_names, attribute_values, "id",
-                              &create_tag_data->resource_id);
-            set_client_state (CLIENT_CREATE_TAG_RESOURCE);
+            create_tag_data->resource_ids = make_array ();
+            append_attribute (attribute_names, attribute_values, "filter",
+                              &create_tag_data->resources_filter);
+            set_client_state (CLIENT_CREATE_TAG_RESOURCES);
           }
         else if (strcasecmp ("COMMENT", element_name) == 0)
           {
@@ -10062,11 +10084,19 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         ELSE_ERROR ("create_tag");
 
-      case CLIENT_CREATE_TAG_RESOURCE:
-        if (strcasecmp ("TYPE", element_name) == 0)
+      case CLIENT_CREATE_TAG_RESOURCES:
+        if (strcasecmp ("RESOURCE", element_name) == 0)
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values, "id",
+                                &attribute))
+              array_add (create_tag_data->resource_ids, g_strdup (attribute));
+            set_client_state (CLIENT_CREATE_TAG_RESOURCES_RESOURCE);
+          }
+        else if (strcasecmp ("TYPE", element_name) == 0)
           {
             gvm_append_string (&create_tag_data->resource_type, "");
-            set_client_state (CLIENT_CREATE_TAG_RESOURCE_TYPE);
+            set_client_state (CLIENT_CREATE_TAG_RESOURCES_TYPE);
           }
         ELSE_ERROR ("create_tag");
 
@@ -17125,7 +17155,8 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
   if ((get_reports_data->report_get.id == NULL)
       || (strlen (get_reports_data->report_get.id) == 0))
     {
-      gchar *overrides, *min_qod, *filter;
+      int overrides, min_qod;
+      gchar *filter;
       get_data_t * get;
 
       /* For simplicity, use a fixed result filter when filtering
@@ -17144,19 +17175,14 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       else
         filter = NULL;
       g_free (get_reports_data->get.filter);
-      overrides
-        = filter_term_value (filter ? filter : get->filter, "apply_overrides");
-      min_qod
-        = filter_term_value (filter ? filter : get->filter, "min_qod");
+      overrides = filter_term_apply_overrides (filter ? filter : get->filter);
+      min_qod = filter_term_min_qod (filter ? filter : get->filter);
       g_free (filter);
 
       /* Setup result filter from overrides. */
       get_reports_data->get.filter
-        = g_strdup_printf ("apply_overrides=%i min_qod=%s",
-                           overrides && strcmp (overrides, "0"),
-                           min_qod ? min_qod : G_STRINGIFY (MIN_QOD_DEFAULT));
-      g_free (overrides);
-      g_free (min_qod);
+        = g_strdup_printf ("apply_overrides=%i min_qod=%i",
+                           overrides, min_qod);
     }
 
   ret = init_report_iterator (&reports, &get_reports_data->report_get);
@@ -19300,27 +19326,46 @@ handle_get_tags (gmp_parser_t *gmp_parser, GError **error)
 
           SEND_GET_COMMON (tag, &get_tags_data->get, &tags);
 
-          SENDF_TO_CLIENT_OR_FAIL ("<resource id=\"%s\">"
+          SENDF_TO_CLIENT_OR_FAIL ("<resources>"
                                    "<type>%s</type>"
-                                   "<name>%s</name>"
-                                   "<trash>%d</trash>",
-                                   tag_iterator_resource_uuid (&tags),
+                                   "<count><total>%d</total></count>",
                                    tag_iterator_resource_type (&tags),
-                                   tag_iterator_resource_name (&tags),
-                                   tag_iterator_resource_location (&tags));
+                                   tag_iterator_resources (&tags));
 
-          if (tag_iterator_resource_readable (&tags) == 0)
-            SENDF_TO_CLIENT_OR_FAIL ("<permissions/>");
+          if (get_tags_data->get.details)
+            {
+              iterator_t resources;
 
+              init_tag_resources_iterator (&resources,
+                                          get_iterator_resource (&tags),
+                                          get_tags_data->get.trash);
 
-          SENDF_TO_CLIENT_OR_FAIL ("</resource>"
+              while (next (&resources))
+                {
+                  SENDF_TO_CLIENT_OR_FAIL
+                  ("<resource id=\"%s\">"
+                    "<name>%s</name>"
+                    "<trash>%d</trash>",
+                    tag_resource_iterator_uuid (&resources),
+                    tag_resource_iterator_name (&resources)
+                      ? tag_resource_iterator_name (&resources) : "",
+                    tag_resource_iterator_location (&resources));
+
+                  if (tag_resource_iterator_readable (&resources) == 0)
+                    SENDF_TO_CLIENT_OR_FAIL ("<permissions/>");
+
+                  SEND_TO_CLIENT_OR_FAIL ("</resource>");
+                }
+
+              cleanup_iterator (&resources);
+            }
+
+          SENDF_TO_CLIENT_OR_FAIL ("</resources>"
                                    "<value>%s</value>"
                                    "<active>%d</active>"
-                                   "<orphan>%d</orphan>"
                                    "</tag>",
                                    value,
-                                   tag_iterator_active (&tags),
-                                   tag_iterator_orphan (&tags));
+                                   tag_iterator_active (&tags));
           g_free (value);
         }
       count++;
@@ -19702,7 +19747,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
   int count, filtered, ret, first;
   get_data_t *get;
   const char *filter;
-  gchar *overrides, *min_qod_str, *clean_filter;
+  gchar *clean_filter;
   int apply_overrides, min_qod;
 
   if (get_tasks_data->get.details && get_tasks_data->get.trash)
@@ -19766,17 +19811,12 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
     }
   else
     filter = NULL;
+
   clean_filter = manage_clean_filter (filter ? filter : get->filter);
-  overrides = filter_term_value (clean_filter, "apply_overrides");
-  min_qod_str = filter_term_value (clean_filter, "min_qod");
+  apply_overrides = filter_term_apply_overrides (clean_filter);
+  min_qod = filter_term_min_qod (clean_filter);
   g_free (clean_filter);
-  apply_overrides = overrides
-                      ? strcmp (overrides, "0")
-                      : APPLY_OVERRIDES_DEFAULT;
-  g_free (overrides);
-  if (min_qod_str == NULL
-      || sscanf (min_qod_str, "%d", &min_qod) != 1)
-    min_qod = MIN_QOD_DEFAULT;
+
   SENDF_TO_CLIENT_OR_FAIL ("<apply_overrides>%i</apply_overrides>",
                            apply_overrides);
 
@@ -19871,36 +19911,59 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             {
               time_t first_time, next_time;
               int period, period_months, duration;
+              gchar *icalendar, *timezone;
 
-              if (schedule_info (schedule, &first_time, &next_time, &period,
-                                 &period_months, &duration) == 0)
-                SENDF_TO_CLIENT_OR_FAIL ("<schedule id=\"%s\">"
-                                         "<name>%s</name>"
-                                         "<next_time>%s</next_time>"
-                                         "<trash>%d</trash>"
-                                         "<first_time>%s</first_time>"
-                                         "<period>%d</period>"
-                                         "<period_months>"
-                                         "%d"
-                                         "</period_months>"
-                                         "<duration>%d</duration>"
-                                         "</schedule>"
-                                         "<schedule_periods>"
-                                         "%d"
-                                         "</schedule_periods>",
-                                         task_schedule_uuid,
-                                         task_schedule_name,
-                                         next_time
-                                          ? iso_time (&next_time)
-                                          : "over",
-                                         schedule_in_trash,
-                                         first_time
-                                          ? iso_time (&first_time)
-                                          : "",
-                                         period,
-                                         period_months,
-                                         duration,
-                                         task_schedule_periods (index));
+              icalendar = timezone = NULL;
+
+              if (schedule_info (schedule, schedule_in_trash,
+                                 &first_time, &next_time, &period,
+                                 &period_months, &duration,
+                                 &icalendar, &timezone) == 0)
+                {
+                  gchar *first_time_str, *next_time_str;
+
+                  // Copy ISO time strings to avoid one overwriting the other
+                  first_time_str = g_strdup (first_time
+                                              ? iso_time (&first_time)
+                                              : "");
+                  next_time_str = g_strdup (next_time
+                                              ? iso_time (&next_time)
+                                              : "over");
+
+                  SENDF_TO_CLIENT_OR_FAIL ("<schedule id=\"%s\">"
+                                           "<name>%s</name>"
+                                           "<trash>%d</trash>"
+                                           "<first_time>%s</first_time>"
+                                           "<next_time>%s</next_time>"
+                                           "<icalendar>%s</icalendar>"
+                                           "<period>%d</period>"
+                                           "<period_months>"
+                                           "%d"
+                                           "</period_months>"
+                                           "<duration>%d</duration>"
+                                           "<timezone>%s</timezone>"
+                                           "</schedule>"
+                                           "<schedule_periods>"
+                                           "%d"
+                                           "</schedule_periods>",
+                                           task_schedule_uuid,
+                                           task_schedule_name,
+                                           schedule_in_trash,
+                                           first_time_str,
+                                           next_time_str,
+                                           icalendar ? icalendar : "",
+                                           period,
+                                           period_months,
+                                           duration,
+                                           timezone ? timezone : "",
+                                           task_schedule_periods (index));
+
+                  g_free (first_time_str);
+                  g_free (next_time_str);
+                }
+
+              g_free (icalendar);
+              g_free (timezone);
             }
           else
             {
@@ -20583,7 +20646,6 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       count++;
     }
   cleanup_iterator (&tasks);
-  g_free (min_qod_str);
   filtered = get_tasks_data->get.id
               ? 1
               : task_count (&get_tasks_data->get);
@@ -25324,6 +25386,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
           assert (strcasecmp ("CREATE_TAG", element_name) == 0);
 
+          if (create_tag_data->resource_ids)
+            array_terminate (create_tag_data->resource_ids);
+
           if (create_tag_data->copy)
             switch (copy_tag (create_tag_data->name,
                               create_tag_data->comment,
@@ -25379,43 +25444,38 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("create_tag",
                                 "CREATE_TAG name must be"
                                 " at least one character long"));
-          else if (create_tag_data->resource_id == NULL)
+          else if (create_tag_data->resource_ids == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_tag",
                                 "CREATE_TAG requires"
-                                " a RESOURCE element with id attribute"));
+                                " a RESOURCES element with TYPE elememnt"));
           else if (create_tag_data->resource_type == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_tag",
-                                "RESOURCE in CREATE_TAG requires"
+                                "RESOURCES in CREATE_TAG requires"
                                 " a TYPE element"));
-          else if (valid_db_resource_type (create_tag_data->resource_type) == 0)
+          else if (valid_db_resource_type (create_tag_data->resource_type)
+                     == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_tag",
-                                "TYPE in CREATE_TAG/RESOURCE must be"
+                                "TYPE in CREATE_TAG/RESOURCES must be"
                                 " a valid resource type."));
           else if (strcasecmp (create_tag_data->resource_type, "tag") == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_tag",
-                                "TYPE type in CREATE_TAG/RESOURCE must not"
+                                "TYPE type in CREATE_TAG/RESOURCES must not"
                                 " be 'tag'."));
-          else if (create_tag_data->resource_id
-                   && strlen (create_tag_data->resource_id) > 0
-                   && resource_id_exists (create_tag_data->resource_type,
-                                          create_tag_data->resource_id) == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_tag",
-                                "RESOURCE id must refer to an existing"
-                                " resource or be empty."));
           else
             {
+              gchar *error_extra = NULL;
               switch (create_tag (create_tag_data->name,
                                   create_tag_data->comment,
                                   create_tag_data->value,
                                   create_tag_data->resource_type,
-                                  create_tag_data->resource_id,
+                                  create_tag_data->resource_ids,
+                                  create_tag_data->resources_filter,
                                   create_tag_data->active,
-                                  &new_tag))
+                                  &new_tag, &error_extra))
                 {
                   case 0:
                     {
@@ -25427,6 +25487,30 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       free (uuid);
                       break;
                     }
+                  case 1:
+                    if (send_find_error_to_client ("create_tag", "resource",
+                                                   error_extra,
+                                                   gmp_parser))
+                      {
+                        error_send_to_client (error);
+                        g_free (error_extra);
+                        return;
+                      }
+                    g_free (error_extra);
+                    log_event_fail ("tag", "Tag", NULL, "created");
+                  case 2:
+                    SEND_TO_CLIENT_OR_FAIL 
+                      ("<create_tag_response"
+                       " status=\"" STATUS_ERROR_MISSING "\""
+                       " status_text=\"No resources found for filter\"/>");
+                    log_event_fail ("tag", "Tag", NULL, "created");
+                    break;
+                  case 3:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_tag",
+                                        "Too many resources selected"));
+                    log_event_fail ("tag", "Tag", NULL, "created");
+                    break;
                   case 99:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_tag",
@@ -25449,13 +25533,14 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         }
 
       CLOSE (CLIENT_CREATE_TAG, ACTIVE);
-      CLOSE (CLIENT_CREATE_TAG, RESOURCE);
+      CLOSE (CLIENT_CREATE_TAG, RESOURCES);
       CLOSE (CLIENT_CREATE_TAG, COPY);
       CLOSE (CLIENT_CREATE_TAG, COMMENT);
       CLOSE (CLIENT_CREATE_TAG, NAME);
       CLOSE (CLIENT_CREATE_TAG, VALUE);
 
-      CLOSE (CLIENT_CREATE_TAG_RESOURCE, TYPE);
+      CLOSE (CLIENT_CREATE_TAG_RESOURCES, TYPE);
+      CLOSE (CLIENT_CREATE_TAG_RESOURCES, RESOURCE);
 
       case CLIENT_CREATE_TARGET:
         {
@@ -28189,6 +28274,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_MODIFY_TAG:
         {
           assert (strcasecmp ("MODIFY_TAG", element_name) == 0);
+          gchar *error_extra = NULL;
+
+          if (modify_tag_data->resource_ids)
+            array_terminate (modify_tag_data->resource_ids);
 
           if (modify_tag_data->tag_id == NULL)
             SEND_TO_CLIENT_OR_FAIL
@@ -28204,31 +28293,24 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                    valid_db_resource_type (modify_tag_data->resource_type) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_tag",
-                                "TYPE in MODIFY_TAG/RESOURCE must be"
+                                "TYPE in MODIFY_TAG/RESOURCES must be"
                                 " a valid resource type."));
           else if (modify_tag_data->resource_type
                    && strcasecmp (modify_tag_data->resource_type, "tag") == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_tag",
-                                "TYPE type in MODIFY_TAG/RESOURCE must not"
+                                "TYPE type in MODIFY_TAG/RESOURCES must not"
                                 " be 'tag'."));
-          else if (modify_tag_data->resource_id
-                   && strlen (modify_tag_data->resource_id) > 0
-                   && (resource_id_exists (modify_tag_data->resource_type,
-                                           modify_tag_data->resource_id) == 0)
-                   && (trash_id_exists (modify_tag_data->resource_type,
-                                        modify_tag_data->resource_id) == 0))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_tag",
-                                "RESOURCE id must refer to an"
-                                " existing resource or be empty."));
           else switch (modify_tag (modify_tag_data->tag_id,
                                    modify_tag_data->name,
                                    modify_tag_data->comment,
                                    modify_tag_data->value,
                                    modify_tag_data->resource_type,
-                                   modify_tag_data->resource_id,
-                                   modify_tag_data->active))
+                                   modify_tag_data->resource_ids,
+                                   modify_tag_data->resources_filter,
+                                   modify_tag_data->resources_action,
+                                   modify_tag_data->active,
+                                   &error_extra))
             {
               case 0:
                 SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_tag"));
@@ -28252,6 +28334,38 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                     "MODIFY_TAG requires a tag_id"));
                 log_event_fail ("tag", "Tag", modify_tag_data->tag_id,
                                 "modified");
+              case 3:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_tag",
+                                    "RESOURCES action must be"
+                                    " 'add', 'set', 'remove'"
+                                    " or empty."));
+                log_event_fail ("tag", "Tag", modify_tag_data->tag_id,
+                                "modified");
+              case 4:
+                if (send_find_error_to_client ("modify_tag", "resource",
+                                                error_extra,
+                                                gmp_parser))
+                  {
+                    error_send_to_client (error);
+                    g_free (error_extra);
+                    return;
+                  }
+                g_free (error_extra);
+                log_event_fail ("tag", "Tag", NULL, "modified");
+              case 5:
+                SEND_TO_CLIENT_OR_FAIL 
+                  ("<create_tag_response"
+                    " status=\"" STATUS_ERROR_MISSING "\""
+                    " status_text=\"No resources found for filter\"/>");
+                log_event_fail ("tag", "Tag", NULL, "modified");
+                break;
+              case 6:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_tag",
+                                    "Too many resources selected"));
+                log_event_fail ("tag", "Tag", NULL, "modified");
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_tag",
@@ -28273,12 +28387,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         }
 
       CLOSE (CLIENT_MODIFY_TAG, ACTIVE);
-      CLOSE (CLIENT_MODIFY_TAG, RESOURCE);
+      CLOSE (CLIENT_MODIFY_TAG, RESOURCES);
       CLOSE (CLIENT_MODIFY_TAG, COMMENT);
       CLOSE (CLIENT_MODIFY_TAG, NAME);
       CLOSE (CLIENT_MODIFY_TAG, VALUE);
 
-      CLOSE (CLIENT_MODIFY_TAG_RESOURCE, TYPE);
+      CLOSE (CLIENT_MODIFY_TAG_RESOURCES, RESOURCE);
+      CLOSE (CLIENT_MODIFY_TAG_RESOURCES, TYPE);
 
       case CLIENT_MODIFY_TARGET:
         {
@@ -29324,7 +29439,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     case 22:
                       SEND_TO_CLIENT_OR_FAIL
                        (XML_ERROR_SYNTAX ("resume_task",
-                                          "Task must be in Stopped state"));
+                                          "Task must be in Stopped or Interrupted state"));
                       log_event_fail ("task", "Task",
                                       resume_task_data->task_id,
                                       "resumed");
@@ -30699,7 +30814,7 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_TAG_ACTIVE,
               &create_tag_data->active);
 
-      APPEND (CLIENT_CREATE_TAG_RESOURCE_TYPE,
+      APPEND (CLIENT_CREATE_TAG_RESOURCES_TYPE,
               &create_tag_data->resource_type);
 
       APPEND (CLIENT_CREATE_TAG_COPY,
@@ -31043,7 +31158,7 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_TAG_ACTIVE,
               &modify_tag_data->active);
 
-      APPEND (CLIENT_MODIFY_TAG_RESOURCE_TYPE,
+      APPEND (CLIENT_MODIFY_TAG_RESOURCES_TYPE,
               &modify_tag_data->resource_type);
 
       APPEND (CLIENT_MODIFY_TAG_COMMENT,

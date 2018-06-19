@@ -627,17 +627,6 @@ level_min_severity (const char *level, const char *class)
     return SEVERITY_DEBUG;
   else if (strcasecmp (level, "Error") == 0)
     return SEVERITY_ERROR;
-  else if (strcasecmp (class, "classic") == 0)
-    {
-      if (strcasecmp (level, "high") == 0)
-        return 5.1;
-      else if (strcasecmp (level, "medium") == 0)
-        return 2.1;
-      else if (strcasecmp (level, "low") == 0)
-        return 0.1;
-      else
-        return SEVERITY_UNDEFINED;
-    }
   else if (strcasecmp (class, "pci-dss") == 0)
     {
       if (strcasecmp (level, "high") == 0)
@@ -678,17 +667,6 @@ level_max_severity (const char *level, const char *class)
     return SEVERITY_DEBUG;
   else if (strcasecmp (level, "Error") == 0)
     return SEVERITY_ERROR;
-  else if (strcasecmp (class, "classic") == 0)
-    {
-      if (strcasecmp (level, "high") == 0)
-        return 10.0;
-      else if (strcasecmp (level, "medium") == 0)
-        return 5.0;
-      else if (strcasecmp (level, "low") == 0)
-        return 2.0;
-      else
-        return SEVERITY_UNDEFINED;
-    }
   else if (strcasecmp (class, "pci-dss") == 0)
     {
       if (strcasecmp (level, "high") == 0)
@@ -986,7 +964,14 @@ icalendar_simplify_vevent (icalcomponent *vevent, GHashTable *used_tzids,
       icaltimetype dtend;
       dtend = icalcomponent_get_dtend (vevent);
 
-      duration = icaltime_subtract (dtend, dtstart);
+      if (icaltime_is_null_time (dtend))
+        {
+          duration = icaldurationtype_null_duration ();
+        }
+      else
+        {
+          duration = icaltime_subtract (dtend, dtstart);
+        }
     }
 
   /*

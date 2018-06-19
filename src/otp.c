@@ -1256,7 +1256,6 @@ process_otp_scanner_input ()
                 }
               case SCANNER_PLUGIN_LIST_PLUGIN_VERSION:
                 {
-                  nvti_set_version (current_plugin, field);
                   set_scanner_state (SCANNER_PLUGIN_LIST_CVE_ID);
                   break;
                 }
@@ -1582,16 +1581,16 @@ process_otp_scanner_input ()
                       /* Stop transaction now, because delete_task_lock and
                        * set_scan_end_time_otp run transactions themselves. */
                       manage_transaction_stop (TRUE);
-                      hosts_set_identifiers ();
                       if (current_report)
                         {
+                          hosts_set_identifiers (current_report);
                           hosts_set_max_severity (current_report, NULL, NULL);
                           hosts_set_details (current_report);
                           set_scan_end_time_otp (current_report, field);
                         }
                       switch (task_run_status (current_scanner_task))
                         {
-                          case TASK_STATUS_INTERNAL_ERROR:
+                          case TASK_STATUS_INTERRUPTED:
                             break;
                           case TASK_STATUS_STOP_REQUESTED:
                           case TASK_STATUS_STOP_WAITING:
