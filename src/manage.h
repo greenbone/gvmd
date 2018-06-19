@@ -4145,14 +4145,15 @@ copy_tag (const char*, const char*, const char*, tag_t*);
 
 int
 create_tag (const char *, const char *, const char *, const char *,
-            const char *, const char *, tag_t *);
+            array_t *, const char *, const char *, tag_t *, gchar **);
 
 int
 delete_tag (const char *, int);
 
 int
 modify_tag (const char *, const char *, const char *, const char *,
-            const char *, const char *, const char *);
+            const char *, array_t *, const char *, const char *, const char*,
+            gchar **);
 
 int
 init_tag_iterator (iterator_t*, const get_data_t*);
@@ -4163,26 +4164,32 @@ tag_count (const get_data_t *get);
 const char*
 tag_iterator_resource_type (iterator_t*);
 
-const char*
-tag_iterator_resource_uuid (iterator_t*);
-
-int
-tag_iterator_resource_location (iterator_t*);
-
 int
 tag_iterator_active (iterator_t*);
 
 const char*
 tag_iterator_value (iterator_t*);
 
+int
+tag_iterator_resources (iterator_t*);
+
+void
+init_tag_resources_iterator (iterator_t*, tag_t, int);
+
+resource_t
+tag_resource_iterator_id (iterator_t*);
+
 const char*
-tag_iterator_resource_name (iterator_t*);
+tag_resource_iterator_uuid (iterator_t*);
 
 int
-tag_iterator_resource_readable (iterator_t*);
+tag_resource_iterator_location (iterator_t*);
+
+const char*
+tag_resource_iterator_name (iterator_t*);
 
 int
-tag_iterator_orphan (iterator_t*);
+tag_resource_iterator_readable (iterator_t*);
 
 int
 init_tag_name_iterator (iterator_t*, const get_data_t*);
