@@ -32032,29 +32032,30 @@ delete_task (task_t task, int ultimate)
     {
       permissions_set_locations ("task", task, task, LOCATION_TRASH);
       tags_set_locations ("task", task, task, LOCATION_TRASH);
-      sql ("UPDATE tags SET resource_location = "
-           G_STRINGIFY (LOCATION_TRASH)
+
+      sql ("UPDATE tag_resources"
+           " SET resource_location = " G_STRINGIFY (LOCATION_TRASH)
            " WHERE resource_type = 'report'"
            " AND resource IN (SELECT id FROM reports"
            "                  WHERE reports.task = %llu);",
            task);
-      sql ("UPDATE tags SET resource_location = "
-           G_STRINGIFY (LOCATION_TRASH)
+      sql ("UPDATE tag_resources"
+           " SET resource_location = " G_STRINGIFY (LOCATION_TRASH)
            " WHERE resource_type = 'result'"
-           " AND resource IN (SELECT results.id FROM results"
+           " AND resource IN (SELECT id FROM results"
            "                  WHERE results.task = %llu);",
            task);
 
-      sql ("UPDATE tags_trash SET resource_location = "
-           G_STRINGIFY (LOCATION_TRASH)
+      sql ("UPDATE tag_resources_trash"
+           " SET resource_location = " G_STRINGIFY (LOCATION_TRASH)
            " WHERE resource_type = 'report'"
            " AND resource IN (SELECT id FROM reports"
            "                  WHERE reports.task = %llu);",
            task);
-      sql ("UPDATE tags_trash SET resource_location = "
-           G_STRINGIFY (LOCATION_TRASH)
+      sql ("UPDATE tag_resources_trash"
+           " SET resource_location = " G_STRINGIFY (LOCATION_TRASH)
            " WHERE resource_type = 'result'"
-           " AND resource IN (SELECT results.id FROM results"
+           " AND resource IN (SELECT id FROM results"
            "                  WHERE results.task = %llu);",
            task);
 
