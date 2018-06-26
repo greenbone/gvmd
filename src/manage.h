@@ -227,7 +227,7 @@ typedef enum
   TASK_STATUS_STOP_REQUESTED   = 10,
   TASK_STATUS_STOP_WAITING     = 11,
   TASK_STATUS_STOPPED = 12,
-  TASK_STATUS_INTERNAL_ERROR = 13,
+  TASK_STATUS_INTERRUPTED = 13,
   TASK_STATUS_DELETE_ULTIMATE_REQUESTED = 14,
   TASK_STATUS_STOP_REQUESTED_GIVEUP = 15,
   TASK_STATUS_DELETE_WAITING = 16,
@@ -1274,7 +1274,7 @@ void
 report_set_source_iface (report_t, const gchar *);
 
 int
-task_last_stopped_report (task_t, report_t *);
+task_last_resumable_report (task_t, report_t *);
 
 gchar*
 task_second_last_report_id (task_t);
@@ -1501,7 +1501,7 @@ int
 report_progress (report_t, task_t, gchar **);
 
 gchar *
-manage_report (report_t, const get_data_t *, report_format_t,
+manage_report (report_t, report_t, const get_data_t *, report_format_t,
                int, int, const char *,
                gsize *, gchar **, gchar **, gchar **, gchar **, gchar **);
 
@@ -3577,6 +3577,15 @@ gchar*
 filter_term_value (const char *, const char *);
 
 int
+filter_term_apply_overrides (const char *);
+
+int
+filter_term_autofp (const char *);
+
+int
+filter_term_min_qod (const char *);
+
+int
 create_filter (const char*, const char*, const char*, const char*, int,
                filter_t*);
 
@@ -4136,14 +4145,15 @@ copy_tag (const char*, const char*, const char*, tag_t*);
 
 int
 create_tag (const char *, const char *, const char *, const char *,
-            const char *, const char *, tag_t *);
+            array_t *, const char *, const char *, tag_t *, gchar **);
 
 int
 delete_tag (const char *, int);
 
 int
 modify_tag (const char *, const char *, const char *, const char *,
-            const char *, const char *, const char *);
+            const char *, array_t *, const char *, const char *, const char*,
+            gchar **);
 
 int
 init_tag_iterator (iterator_t*, const get_data_t*);
@@ -4154,26 +4164,32 @@ tag_count (const get_data_t *get);
 const char*
 tag_iterator_resource_type (iterator_t*);
 
-const char*
-tag_iterator_resource_uuid (iterator_t*);
-
-int
-tag_iterator_resource_location (iterator_t*);
-
 int
 tag_iterator_active (iterator_t*);
 
 const char*
 tag_iterator_value (iterator_t*);
 
+int
+tag_iterator_resources (iterator_t*);
+
+void
+init_tag_resources_iterator (iterator_t*, tag_t, int);
+
+resource_t
+tag_resource_iterator_id (iterator_t*);
+
 const char*
-tag_iterator_resource_name (iterator_t*);
+tag_resource_iterator_uuid (iterator_t*);
 
 int
-tag_iterator_resource_readable (iterator_t*);
+tag_resource_iterator_location (iterator_t*);
+
+const char*
+tag_resource_iterator_name (iterator_t*);
 
 int
-tag_iterator_orphan (iterator_t*);
+tag_resource_iterator_readable (iterator_t*);
 
 int
 init_tag_name_iterator (iterator_t*, const get_data_t*);
@@ -4311,20 +4327,30 @@ int
 column_is_timestamp (const char*);
 
 char*
-type_columns (const char *, int);
+type_columns (const char *);
 
 const char**
-type_filter_columns (const char *, int);
+type_filter_columns (const char *);
 
 char*
-type_trash_columns (const char *, int);
+type_trash_columns (const char *);
 
 gchar*
-type_opts_table (const char *, int, int, int, const char *, const char *,
-                 const char *);
+type_opts_table (const char *, const char *);
 
 gchar*
 type_table (const char *, int);
+
+gchar*
+type_extra_where (const char *, int, const char *);
+
+int
+type_build_select (const char *type, const char *columns_str,
+                   const get_data_t *get,
+                   gboolean distinct, gboolean ordered,
+                   const char *extra_tables, const char *given_extra_where,
+                   const char *group_by,
+                   gchar **select);
 
 gboolean
 manage_migrate_needs_timezone (GSList *, const gchar *);

@@ -365,7 +365,6 @@ typedef enum
   SCANNER_PLUGIN_LIST_FAMILY,
   SCANNER_PLUGIN_LIST_NAME,
   SCANNER_PLUGIN_LIST_OID,
-  SCANNER_PLUGIN_LIST_PLUGIN_VERSION,
   SCANNER_PLUGIN_LIST_TAGS,
   SCANNER_PLUGIN_LIST_XREFS,
   SCANNER_PREFERENCE_NAME,
@@ -1251,12 +1250,6 @@ process_otp_scanner_input ()
               case SCANNER_PLUGIN_LIST_FAMILY:
                 {
                   nvti_set_family (current_plugin, field);
-                  set_scanner_state (SCANNER_PLUGIN_LIST_PLUGIN_VERSION);
-                  break;
-                }
-              case SCANNER_PLUGIN_LIST_PLUGIN_VERSION:
-                {
-                  nvti_set_version (current_plugin, field);
                   set_scanner_state (SCANNER_PLUGIN_LIST_CVE_ID);
                   break;
                 }
@@ -1591,7 +1584,7 @@ process_otp_scanner_input ()
                         }
                       switch (task_run_status (current_scanner_task))
                         {
-                          case TASK_STATUS_INTERNAL_ERROR:
+                          case TASK_STATUS_INTERRUPTED:
                             break;
                           case TASK_STATUS_STOP_REQUESTED:
                           case TASK_STATUS_STOP_WAITING:

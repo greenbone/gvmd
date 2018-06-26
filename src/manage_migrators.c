@@ -285,7 +285,7 @@ migrate_0_to_1 ()
    * already. */
 
   sql ("UPDATE reports SET scan_run_status = '%u';",
-       TASK_STATUS_INTERNAL_ERROR);
+       TASK_STATUS_INTERRUPTED);
 
   sql ("UPDATE reports SET scan_run_status = '%u'"
        " WHERE start_time IS NULL OR end_time IS NULL;",
@@ -14444,7 +14444,7 @@ migrate_191_to_192 ()
 
   /* Update the database. */
 
-  /* The "classic" . */
+  /* The "classic" severity class was removed. */
 
   sql ("UPDATE settings SET value = 'nist'"
        " WHERE name = 'Severity Class' AND value = 'classic';");
@@ -14452,6 +14452,189 @@ migrate_191_to_192 ()
   /* Set the database version to 192. */
 
   set_db_version (192);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 192 to version 193.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_192_to_193 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 192. */
+
+  if (manage_db_version () != 192)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Create new tables for tag resources */
+
+  if (sql_is_sqlite3 ())
+    {
+      sql ("CREATE TABLE IF NOT EXISTS tag_resources"
+           " (tag INTEGER,"
+           "  resource_type text,"
+           "  resource INTEGER,"
+           "  resource_uuid TEXT,"
+           "  resource_location INTEGER);");
+
+      sql ("CREATE TABLE IF NOT EXISTS tag_resources_trash"
+           " (tag INTEGER,"
+           "  resource_type text,"
+           "  resource INTEGER,"
+           "  resource_uuid TEXT,"
+           "  resource_location INTEGER);");
+    }
+  else
+    {
+      sql ("CREATE TABLE IF NOT EXISTS tag_resources"
+          " (tag integer REFERENCES tags (id),"
+          "  resource_type text,"
+          "  resource integer,"
+          "  resource_uuid text,"
+          "  resource_location integer);");
+
+      sql ("CREATE TABLE IF NOT EXISTS tag_resources_trash"
+          " (tag integer REFERENCES tags_trash (id),"
+          "  resource_type text,"
+          "  resource integer,"
+          "  resource_uuid text,"
+          "  resource_location integer);");
+    }
+
+  /* Move tag resources to new tables */
+
+  sql ("INSERT INTO tag_resources"
+       " (tag, resource_type, resource, resource_uuid, resource_location)"
+       " SELECT id, resource_type, resource, resource_uuid, resource_location"
+       "   FROM tags"
+       "  WHERE resource != 0");
+
+  sql ("INSERT INTO tag_resources_trash"
+       " (tag, resource_type, resource, resource_uuid, resource_location)"
+       " SELECT id, resource_type, resource, resource_uuid, resource_location"
+       "   FROM tags_trash"
+       "  WHERE resource != 0");
+
+  /* Drop tag resource columns except resource_type */
+
+  if (sql_is_sqlite3 ())
+    {
+      sql ("ALTER TABLE tags RENAME TO tags_191;");
+      sql ("ALTER TABLE tags_trash RENAME TO tags_trash_191;");
+
+      sql ("CREATE TABLE tags"
+           " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
+           "  creation_time, modification_time, resource_type,"
+           "  active, value);");
+
+      sql ("INSERT INTO tags"
+           " (id, uuid, owner, name, comment,"
+           "  creation_time, modification_time, resource_type,"
+           "  active, value)"
+           " SELECT id, uuid, owner, name, comment,"
+           "  creation_time, modification_time, resource_type,"
+           "  active, value"
+           " FROM tags_191;");
+
+      sql ("CREATE TABLE tags_trash"
+           " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
+           "  creation_time, modification_time, resource_type,"
+           "  active, value);");
+
+      sql ("INSERT INTO tags_trash"
+           " (id, uuid, owner, name, comment,"
+           "  creation_time, modification_time, resource_type,"
+           "  active, value)"
+           " SELECT id, uuid, owner, name, comment,"
+           "  creation_time, modification_time, resource_type,"
+           "  active, value"
+           " FROM tags_trash_191;");
+
+      sql ("DROP TABLE tags_191;");
+      sql ("DROP TABLE tags_trash_191;");
+    }
+  else
+    {
+      sql ("ALTER TABLE tags DROP COLUMN resource;");
+      sql ("ALTER TABLE tags DROP COLUMN resource_uuid;");
+      sql ("ALTER TABLE tags DROP COLUMN resource_location;");
+
+      sql ("ALTER TABLE tags_trash DROP COLUMN resource;");
+      sql ("ALTER TABLE tags_trash DROP COLUMN resource_uuid;");
+      sql ("ALTER TABLE tags_trash DROP COLUMN resource_location;");
+    }
+
+  /* Set the database version to 193. */
+
+  set_db_version (193);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 193 to version 194.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_193_to_194 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 193. */
+
+  if (manage_db_version () != 193)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The version column was dropped from the nvts table. */
+
+  if (sql_is_sqlite3 ())
+    {
+      sql ("ALTER TABLE nvts RENAME TO nvts_193;");
+
+      sql ("CREATE TABLE IF NOT EXISTS nvts"
+           " (id INTEGER PRIMARY KEY, uuid, oid, name, comment,"
+           "  copyright, cve, bid, xref, tag, category INTEGER, family,"
+           "  cvss_base, creation_time, modification_time, solution_type TEXT,"
+           "  qod INTEGER, qod_type TEXT);");
+
+      sql ("INSERT INTO nvts"
+           " (id, uuid, oid, name, comment, copyright, cve, bid, xref, tag,"
+           "  category, family, cvss_base, creation_time, modification_time,"
+           "  solution_type, qod, qod_type)"
+           " SELECT"
+           "  id, uuid, oid, name, comment, copyright, cve, bid, xref, tag,"
+           "  category, family, cvss_base, creation_time, modification_time,"
+           "  solution_type, qod, qod_type"
+           " FROM nvts_193;");
+
+      sql ("DROP TABLE nvts_193;");
+    }
+  else
+    sql ("ALTER TABLE nvts DROP COLUMN version;");
+
+  /* Set the database version to 194. */
+
+  set_db_version (194);
 
   sql_commit ();
 
@@ -14664,6 +14847,8 @@ static migrator_t database_migrators[]
     {190, migrate_189_to_190},
     {191, migrate_190_to_191},
     {192, migrate_191_to_192},
+    {193, migrate_192_to_193},
+    {194, migrate_193_to_194},
     /* End marker. */
     {-1, NULL}};
 

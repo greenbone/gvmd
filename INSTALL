@@ -552,6 +552,8 @@ Prerequisites for SMB alert:
 Prerequisites for Tipping Point alert:
 * python3-lxml
 
+Prerequisites for key generation on systems with low entropy:
+* haveged (or a similar tool)
 
 Static code analysis with the Clang Static Analyzer
 ---------------------------------------------------
