@@ -151,7 +151,7 @@ echo "useradd -c \"${USER_COMMENT}\" -d /home/${USERNAME} -m -s /bin/bash ${USER
 echo "%post" >> ${SPEC_FILE}
 echo "#!/bin/sh" >> ${SPEC_FILE}
 echo "set -e  # abort on errors" >> ${SPEC_FILE}
-echo "chown -R ${USERNAME} /home/${USERNAME}/.ssh" >> ${SPEC_FILE}
+echo "chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}" >> ${SPEC_FILE}
 echo "chmod 500 /home/${USERNAME}/.ssh" >> ${SPEC_FILE}
 echo "chmod 400 /home/${USERNAME}/.ssh/authorized_keys" >> ${SPEC_FILE}
 

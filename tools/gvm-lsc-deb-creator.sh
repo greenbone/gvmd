@@ -183,7 +183,7 @@ touch "${POSTINST_FILE}"
 chmod "0755" "${POSTINST_FILE}"
 echo "#!/bin/sh" > ${POSTINST_FILE}
 echo "set -e  # abort on errors" >> ${POSTINST_FILE}
-echo "chown -R ${USERNAME} /home/${USERNAME}/.ssh" >> ${POSTINST_FILE}
+echo "chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}" >> ${POSTINST_FILE}
 echo "chmod 500 /home/${USERNAME}/.ssh" >> ${POSTINST_FILE}
 echo "chmod 400 /home/${USERNAME}/.ssh/authorized_keys" >> ${POSTINST_FILE}
 
